@@ -1,0 +1,127 @@
+#!/bin/sh
+
+RELEASE_HOME='release'
+BIN_DIR='bin'
+COMMON_DIR='common'
+EMAIL_DIR='email_lib'
+MAPI_DIR='mapi_lib'
+MAKE_DIR='make_include'
+HTTP_DIR='http'
+MIDB_DIR='midb'
+ZCORE_DIR='zcore'
+PROC_DIR='proc_plugins'
+HPM_DIR='hpm_plugins'
+SERVICE_DIR='service_plugins'
+PHP_DIR='php'
+LOGS_INFO='logs'
+CONFIGS_DIR='config'
+DATA_DIR='data'
+LIB_DIR='lib'
+TOKEN_DIR='token'
+SDK_DIR='sdk'
+COMMON_LIB='common.so'
+EMAIL_LIB='email_lib.so'
+RPC_LIB='rpc_lib.so'
+MAPI_LIB='mapi_lib.so'
+SCHEDULER_LIB='epoll_scheduler.so'
+HTTP_NAME='http'
+MIDB_NAME='midb'
+ZCORE_NAME='zcore'
+
+rm -rf $RELEASE_HOME
+mkdir $RELEASE_HOME
+mkdir $RELEASE_HOME/$BIN_DIR
+mkdir $RELEASE_HOME/$PROC_DIR
+mkdir $RELEASE_HOME/$HPM_DIR
+mkdir $RELEASE_HOME/$PHP_DIR
+mkdir $RELEASE_HOME/$SERVICE_DIR
+mkdir $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR
+mkdir $RELEASE_HOME/$SERVICE_DIR/$MIDB_DIR
+mkdir $RELEASE_HOME/$SERVICE_DIR/$ZCORE_DIR
+mkdir $RELEASE_HOME/$LOGS_INFO
+mkdir $RELEASE_HOME/$LOGS_INFO/$HTTP_DIR
+mkdir $RELEASE_HOME/$LOGS_INFO/$ZCORE_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR/$HTTP_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR/$MIDB_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR/$ZCORE_DIR
+mkdir $RELEASE_HOME/$DATA_DIR
+mkdir $RELEASE_HOME/$LIB_DIR
+mkdir $RELEASE_HOME/$TOKEN_DIR
+mkdir $RELEASE_HOME/$DATA_DIR/$HTTP_DIR
+mkdir $RELEASE_HOME/$DATA_DIR/$MIDB_DIR
+mkdir $RELEASE_HOME/$DATA_DIR/$ZCORE_DIR
+mkdir $RELEASE_HOME/$SDK_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$COMMON_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$COMMON_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$EMAIL_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$EMAIL_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$MAPI_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$MAPI_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$MAKE_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/sample
+cp scripts/install* $RELEASE_HOME
+cp medusa/medusa.bin $RELEASE_HOME/$BIN_DIR
+cp scripts/medusa.sh $RELEASE_HOME/$BIN_DIR
+cp scripts/medusa.service $RELEASE_HOME/$BIN_DIR
+cp -R php/* $RELEASE_HOME/$PHP_DIR
+cp http/$HTTP_NAME $RELEASE_HOME/$BIN_DIR
+cp http/$CONFIGS_DIR/http.cfg $RELEASE_HOME/$CONFIGS_DIR/http.cfg
+cp http/$DATA_DIR/* $RELEASE_HOME/$DATA_DIR/$HTTP_DIR
+cp midb/$MIDB_NAME $RELEASE_HOME/$BIN_DIR
+cp midb/$CONFIGS_DIR/midb.cfg $RELEASE_HOME/$CONFIGS_DIR/midb.cfg
+cp midb/$DATA_DIR/* $RELEASE_HOME/$DATA_DIR/$MIDB_DIR
+cp zcore/$ZCORE_NAME $RELEASE_HOME/$BIN_DIR
+cp zcore/$CONFIGS_DIR/zcore.cfg $RELEASE_HOME/$CONFIGS_DIR/zcore.cfg
+cp -R zcore/$DATA_DIR/* $RELEASE_HOME/$DATA_DIR/$ZCORE_DIR
+cp common/$COMMON_LIB $RELEASE_HOME/$LIB_DIR
+cp email_lib/$EMAIL_LIB $RELEASE_HOME/$LIB_DIR
+cp rpc_lib/$RPC_LIB $RELEASE_HOME/$LIB_DIR
+cp mapi_lib/$MAPI_LIB $RELEASE_HOME/$LIB_DIR
+cp epoll_scheduler/$SCHEDULER_LIB $RELEASE_HOME/$LIB_DIR
+cp $PROC_DIR/*/*.proc  $RELEASE_HOME/$PROC_DIR
+cp $PROC_DIR/*/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$HTTP_DIR
+cp $PROC_DIR/*/$CONFIGS_DIR/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$HTTP_DIR
+cp -R $PROC_DIR/$DATA_DIR/* $RELEASE_HOME/$DATA_DIR/$HTTP_DIR
+cp -R $PROC_DIR/exchange_emsmdb/data $RELEASE_HOME/$DATA_DIR/$HTTP_DIR/exchange_emsmdb
+cp $SERVICE_DIR/ip_container/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/ip_container.svc
+cp $SERVICE_DIR/ip_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/ip_filter.svc
+cp $SERVICE_DIR/str_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/user_filter.svc
+cp $SERVICE_DIR/log_plugin/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/log_plugin.svc
+cp $SERVICE_DIR/exmdb_provider/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/exmdb_provider.svc
+cp $SERVICE_DIR/exmdb_provider/config/exmdb_provider.cfg $RELEASE_HOME/$CONFIGS_DIR/$HTTP_DIR
+cp $SERVICE_DIR/mysql_adaptor/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/mysql_adaptor.svc
+cp $SERVICE_DIR/lang_charset/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/lang_charset.svc
+cp $SERVICE_DIR/codepage_lang/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/codepage_lang.svc
+cp $SERVICE_DIR/mime_extension/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/mime_extension.svc
+cp $SERVICE_DIR/ms_locale/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/ms_locale.svc
+cp $SERVICE_DIR/timer_agent/*.svc $RELEASE_HOME/$SERVICE_DIR/$HTTP_DIR/timer_agent.svc
+cp $SERVICE_DIR/$CONFIGS_DIR/$HTTP_DIR/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$HTTP_DIR
+cp -R $SERVICE_DIR/$DATA_DIR/$HTTP_DIR/* $RELEASE_HOME/$DATA_DIR/$HTTP_DIR
+cp $SERVICE_DIR/event_proxy/*.svc $RELEASE_HOME/$SERVICE_DIR/$MIDB_DIR/event_proxy.svc
+cp $SERVICE_DIR/lang_charset/*.svc $RELEASE_HOME/$SERVICE_DIR/$MIDB_DIR/lang_charset.svc
+cp $SERVICE_DIR/mime_extension/*.svc $RELEASE_HOME/$SERVICE_DIR/$MIDB_DIR/mime_extension.svc
+cp $SERVICE_DIR/ms_locale/*.svc $RELEASE_HOME/$SERVICE_DIR/$MIDB_DIR/ms_locale.svc
+cp $SERVICE_DIR/mysql_adaptor/*.svc $RELEASE_HOME/$SERVICE_DIR/$MIDB_DIR/mysql_adaptor.svc
+cp $SERVICE_DIR/$CONFIGS_DIR/$MIDB_DIR/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$MIDB_DIR
+cp -R $SERVICE_DIR/$DATA_DIR/$MIDB_DIR/* $RELEASE_HOME/$DATA_DIR/$MIDB_DIR
+cp $SERVICE_DIR/log_plugin/*.svc $RELEASE_HOME/$SERVICE_DIR/$ZCORE_DIR/log_plugin.svc
+cp $SERVICE_DIR/mysql_adaptor/*.svc $RELEASE_HOME/$SERVICE_DIR/$ZCORE_DIR/mysql_adaptor.svc
+cp $SERVICE_DIR/lang_charset/*.svc $RELEASE_HOME/$SERVICE_DIR/$ZCORE_DIR/lang_charset.svc
+cp $SERVICE_DIR/codepage_lang/*.svc $RELEASE_HOME/$SERVICE_DIR/$ZCORE_DIR/codepage_lang.svc
+cp $SERVICE_DIR/mime_extension/*.svc $RELEASE_HOME/$SERVICE_DIR/$ZCORE_DIR/mime_extension.svc
+cp $SERVICE_DIR/ms_locale/*.svc $RELEASE_HOME/$SERVICE_DIR/$ZCORE_DIR/ms_locale.svc
+cp $SERVICE_DIR/$CONFIGS_DIR/$ZCORE_DIR/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$ZCORE_DIR
+cp -R $SERVICE_DIR/$DATA_DIR/$ZCORE_DIR/* $RELEASE_HOME/$DATA_DIR/$ZCORE_DIR
+dos2unix $RELEASE_HOME/$BIN_DIR/*.sh
+chmod a+x $RELEASE_HOME/$BIN_DIR/*.sh
+cp common/include/*.h $RELEASE_HOME/$SDK_DIR/$COMMON_DIR/include
+cp email_lib/include/*.h $RELEASE_HOME/$SDK_DIR/$EMAIL_DIR/include
+cp mapi_lib/include/*.h $RELEASE_HOME/$SDK_DIR/$MAPI_DIR/include
+cp make_include/* $RELEASE_HOME/$SDK_DIR/$MAKE_DIR
+cp service_plugins/include/*.h $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/include
+cp service_plugins/sample/* $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/sample
+cd $RELEASE_HOME/$SERVICE_DIR && ln -s ../$LIB_DIR .
+cd ../$SDK_DIR && ln -s ../$LIB_DIR .

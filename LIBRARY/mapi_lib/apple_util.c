@@ -1,0 +1,352 @@
+#include "apple_util.h"
+#include "ext_buffer.h"
+#include <string.h>
+#include <stdlib.h>
+
+
+BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
+{
+	BINARY *pbin;
+	BINARY tmp_bin;
+	BINARY tmp_bin1;
+	EXT_PUSH ext_push;
+	APPLEFILE applefile;
+	ASFINDERINFO fdr_entry;
+	ENTRY_DATA entry_buff[3];
+	
+	memset(&applefile.header, 0, sizeof(ASHEADER));
+	applefile.header.magic_num = APPLEDOUBLE_MAGIC;
+	applefile.header.version_num = APPLEFILE_VERSION;
+	if (0 == pbinhex->res_len) {
+		applefile.count = 2;
+	} else {
+		applefile.count = 3;
+	}
+	applefile.pentries = entry_buff;
+	entry_buff[0].entry_id = AS_FINDERINFO;
+	entry_buff[0].pentry = &fdr_entry;
+	fdr_entry.valid_count = 3;
+	fdr_entry.finfo.fd_type = pbinhex->type;
+	fdr_entry.finfo.fd_creator = pbinhex->creator;
+	fdr_entry.finfo.fd_flags = pbinhex->flags & 0xFFF8;
+	entry_buff[1].entry_id = AS_REALNAME;
+	entry_buff[1].pentry = &tmp_bin;
+	tmp_bin.cb = strlen(pbinhex->file_name);
+	tmp_bin.pb = (void*)pbinhex->file_name;
+	if (0 != pbinhex->res_len) {
+		entry_buff[2].entry_id = AS_RESOURCE;
+		entry_buff[2].pentry = &tmp_bin1;
+		tmp_bin1.cb = pbinhex->res_len;
+		tmp_bin1.pb = pbinhex->presource;
+	}
+	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+		return FALSE;
+	}
+	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
+		ext_buffer_push_free(&ext_push);
+		return FALSE;
+	}
+	pbin = malloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	pbin->pb = ext_push.data;
+	return pbin;
+}
+
+BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
+{
+	BINARY *pbin;
+	BINARY tmp_bin;
+	BINARY tmp_bin1;
+	EXT_PUSH ext_push;
+	ASMACINFO mac_info;
+	APPLEFILE applefile;
+	ASFILEDATES entry_date;
+	ENTRY_DATA entry_buff[5];
+	ASFINDERINFO finder_entry;
+	
+	applefile.header.magic_num = APPLEDOUBLE_MAGIC;
+	applefile.header.version_num = APPLEFILE_VERSION;
+	memset(applefile.header.filler, 0, 16);
+	applefile.count = 0;
+	applefile.pentries = entry_buff;
+	entry_buff[applefile.count].entry_id = AS_REALNAME;
+	entry_buff[applefile.count].pentry = &tmp_bin;
+	tmp_bin.cb = strlen(pmacbin->header.file_name);
+	tmp_bin.pb = (void*)pmacbin->header.file_name;
+	applefile.count ++;
+	entry_buff[applefile.count].entry_id = AS_FILEDATES;
+	entry_buff[applefile.count].pentry = &entry_date;
+	entry_date.create = pmacbin->header.creat_time;
+	entry_date.modify = pmacbin->header.modify_time;
+	entry_date.backup = 0;
+	entry_date.access = 0;
+	applefile.count ++;
+	entry_buff[applefile.count].entry_id = AS_FINDERINFO;
+	entry_buff[applefile.count].pentry = &finder_entry;
+	finder_entry.valid_count = 6;
+	finder_entry.finfo.fd_type = pmacbin->header.type;
+	finder_entry.finfo.fd_creator = pmacbin->header.creator;
+	finder_entry.finfo.fd_flags = ((uint16_t)
+		pmacbin->header.original_flags) << 8 |
+		pmacbin->header.finder_flags;
+	finder_entry.finfo.fd_folder = pmacbin->header.folder_id;
+	finder_entry.finfo.fd_location.v = pmacbin->header.point_v;
+	finder_entry.finfo.fd_location.h = pmacbin->header.point_h;
+	applefile.count ++;
+	entry_buff[applefile.count].entry_id = AS_MACINFO;
+	entry_buff[applefile.count].pentry = &mac_info;
+	memset(&mac_info, 0 , sizeof(ASMACINFO));
+	mac_info.attribute = (pmacbin->header.protected_flag >> 1) & 0x01;
+	applefile.count ++;
+	if (0 != pmacbin->header.res_len) {
+		entry_buff[applefile.count].entry_id = AS_RESOURCE;
+		entry_buff[applefile.count].pentry = &tmp_bin1;
+		tmp_bin1.cb = pmacbin->header.res_len;
+		tmp_bin1.pb = (void*)pmacbin->presource;
+		applefile.count ++;
+	}
+	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+		return NULL;
+	}
+	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin = malloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	pbin->pb = ext_push.data;
+	return pbin;
+}
+
+BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
+	const void *pdata, uint32_t data_len)
+{
+	int i;
+	BINARY *pbin;
+	MACBINARY macbin;
+	EXT_PUSH ext_push;
+	
+	memset(&macbin, 0, sizeof(MACBINARY));
+	for (i=0; i<papplefile->count; i++) {
+		if (AS_REALNAME == papplefile->pentries[i].entry_id) {
+			if (((BINARY*)papplefile->pentries[i].pentry)->cb > 63) {
+				memcpy(macbin.header.file_name,
+					((BINARY*)papplefile->pentries[i].pentry)->pb, 63);
+			} else {
+				memcpy(macbin.header.file_name,
+					((BINARY*)papplefile->pentries[i].pentry)->pb,
+					((BINARY*)papplefile->pentries[i].pentry)->cb);
+			}
+			
+		} else if (AS_FINDERINFO == papplefile->pentries[i].entry_id) {
+			macbin.header.type = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_type;
+			macbin.header.creator = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_creator;
+			macbin.header.original_flags = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_flags >> 8;
+			macbin.header.finder_flags = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_flags & 0xFF;
+			macbin.header.folder_id = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_folder;
+			macbin.header.point_v = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_location.v;
+			macbin.header.point_h = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_location.h;
+		} else if (AS_RESOURCE == papplefile->pentries[i].entry_id) {
+			macbin.header.res_len = ((BINARY*)
+				papplefile->pentries[i].pentry)->cb;
+			macbin.presource = ((BINARY*)
+				papplefile->pentries[i].pentry)->pb;
+		} else if (AS_MACINFO == papplefile->pentries[i].entry_id) {
+			macbin.header.protected_flag = (((ASMACINFO*)
+				papplefile->pentries[i].pentry)->attribute & 0x01) << 1;
+		} else if (AS_FILEDATES == papplefile->pentries[i].entry_id) {
+			macbin.header.creat_time = ((ASFILEDATES*)
+				papplefile->pentries[i].pentry)->create;
+			macbin.header.modify_time = ((ASFILEDATES*)
+				papplefile->pentries[i].pentry)->modify;
+		}
+	}
+	macbin.header.version = 130;
+	macbin.header.mini_version = 129; 
+	memcpy(&macbin.header.signature, "mBIN", 4);
+	macbin.header.data_len = data_len;
+	macbin.pdata = (void*)pdata;
+	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+		return NULL;
+	}
+	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin = malloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	pbin->pb = ext_push.data;
+	return pbin;
+}
+
+BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
+{
+	int i;
+	BINARY *pbin;
+	MACBINARY macbin;
+	EXT_PUSH ext_push;
+	
+	memset(&macbin, 0, sizeof(MACBINARY));
+	for (i=0; i<papplefile->count; i++) {
+		if (AS_REALNAME == papplefile->pentries[i].entry_id) {
+			if (((BINARY*)papplefile->pentries[i].pentry)->cb > 63) {
+				memcpy(macbin.header.file_name,
+					((BINARY*)papplefile->pentries[i].pentry)->pb, 63);
+			} else {
+				memcpy(macbin.header.file_name,
+					((BINARY*)papplefile->pentries[i].pentry)->pb,
+					((BINARY*)papplefile->pentries[i].pentry)->cb);
+			}
+		} else if (AS_FINDERINFO == papplefile->pentries[i].entry_id) {
+			macbin.header.type = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_type;
+			macbin.header.creator = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_creator;
+			macbin.header.original_flags = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_flags >> 8;
+			macbin.header.finder_flags = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_flags & 0xFF;
+			macbin.header.folder_id = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_folder;
+			macbin.header.point_v = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_location.v;
+			macbin.header.point_h = ((ASFINDERINFO*)
+				papplefile->pentries[i].pentry)->finfo.fd_location.h;
+		} else if (AS_RESOURCE == papplefile->pentries[i].entry_id) {
+			macbin.header.res_len = ((BINARY*)
+				papplefile->pentries[i].pentry)->cb;
+			macbin.presource = ((BINARY*)
+				papplefile->pentries[i].pentry)->pb;
+		} else if (AS_MACINFO == papplefile->pentries[i].entry_id) {
+			macbin.header.protected_flag = (((ASMACINFO*)
+				papplefile->pentries[i].pentry)->attribute & 0x01) << 1;
+		} else if (AS_FILEDATES == papplefile->pentries[i].entry_id) {
+			macbin.header.creat_time = ((ASFILEDATES*)
+				papplefile->pentries[i].pentry)->create;
+			macbin.header.modify_time = ((ASFILEDATES*)
+				papplefile->pentries[i].pentry)->modify;
+		} else if (AS_DATA == papplefile->pentries[i].entry_id) {
+			macbin.header.data_len = ((BINARY*)
+				papplefile->pentries[i].pentry)->cb;
+			macbin.pdata = ((BINARY*)papplefile->pentries[i].pentry)->pb;
+		}
+	}
+	macbin.header.version = 130;
+	macbin.header.mini_version = 129; 
+	memcpy(&macbin.header.signature, "mBIN", 4);
+	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+		return NULL;
+	}
+	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin = malloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	pbin->pb = ext_push.data;
+	return pbin;
+}
+
+BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
+{
+	BINARY *pbin;
+	MACBINARY macbin;
+	EXT_PUSH ext_push;
+	
+	memset(&macbin, 0, sizeof(MACBINARY));
+	strcpy(macbin.header.file_name, pbinhex->file_name);
+	macbin.header.type = pbinhex->type;
+	macbin.header.creator = pbinhex->creator;
+	macbin.header.version = 130;
+	macbin.header.mini_version = 129; 
+	memcpy(&macbin.header.signature, "mBIN", 4);
+	macbin.header.original_flags = pbinhex->flags >> 8;
+	macbin.header.finder_flags = pbinhex->flags & 0xF8;
+	if (0 != pbinhex->data_len) {
+		macbin.header.data_len = pbinhex->data_len;
+		macbin.pdata = pbinhex->pdata;
+	}
+	if (0 != pbinhex->res_len) {
+		macbin.header.res_len = pbinhex->res_len;
+		macbin.presource = pbinhex->presource;
+	}
+	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+		return NULL;
+	}
+	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin = malloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	pbin->pb = ext_push.data;
+	return pbin;
+}
+
+BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
+{
+	int i;
+	BINARY *pbin;
+	EXT_PUSH ext_push;
+	APPLEFILE applefile;
+	
+	applefile.header = papplefile->header;
+	applefile.header.magic_num = APPLEDOUBLE_MAGIC;
+	applefile.count = 0;
+	applefile.pentries = malloc(sizeof(ENTRY_DATA)*papplefile->count);
+	if (NULL == applefile.pentries) {
+		return NULL;
+	}
+	for (i=0; i<papplefile->count; i++) {
+		if (AS_DATA == papplefile->pentries[i].entry_id) {
+			continue;
+		}
+		applefile.pentries[applefile.count] = papplefile->pentries[i];
+		applefile.count ++;
+	}
+	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
+		free(applefile.pentries);
+		return FALSE;
+	}
+	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
+		ext_buffer_push_free(&ext_push);
+		free(applefile.pentries);
+		return FALSE;
+	}
+	free(applefile.pentries);
+	pbin = malloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		ext_buffer_push_free(&ext_push);
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	pbin->pb = ext_push.data;
+	return pbin;
+}

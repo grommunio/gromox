@@ -1,0 +1,15 @@
+#!/bin/sh
+
+
+mkdir /var/medusa
+cp -R * /var/medusa
+groupadd -g 800 herculiz
+useradd herculiz -u 800 -g herculiz -d /var/herculiz -s /bin/nologin
+chown -R herculiz:herculiz /var/medusa
+chmod -R a+rw /var/medusa
+mv /var/medusa/bin/medusa.bin /usr/bin/medusa
+mv /var/medusa/bin/medusa.service /usr/lib/systemd/system/medusa.service
+rm -f /var/medusa/bin/medusa.sh
+systemctl enable medusa.service
+echo "MEDUSA SERVICE is installed OK"
+echo

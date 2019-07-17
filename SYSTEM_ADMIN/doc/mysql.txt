@@ -1,0 +1,188 @@
+CREATE DATABASE email;
+
+
+GRANT ALL PRIVILEGES ON *.* TO athena@localhost IDENTIFIED BY 'athena';
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON email.* TO posidon@localhost IDENTIFIED BY 'posidon';
+
+GRANT SELECT, UPDATE ON email.* TO herculiz@localhost IDENTIFIED BY 'herculiz';
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON email.* TO pandora@localhost IDENTIFIED BY 'pandora';
+
+FLUSH PRIVILEGES;
+
+
+USE email;
+
+CREATE TABLE orgs (
+id int(10) unsigned NOT NULL auto_increment,
+memo varchar(128) NOT NULL default '',
+PRIMARY KEY (id)
+) ENGINE=MyISAM;
+
+
+CREATE TABLE domains (
+id int(10) unsigned NOT NULL auto_increment,
+org_id int(10) unsigned NOT NULL default 0,
+domainname varchar(64) NOT NULL,
+password varchar(40) NOT NULL default '',
+homedir varchar(128) NOT NULL default '',
+media varchar(64) NOT NULL default '',
+max_size int(10) unsigned NOT NULL,
+max_user int(10) unsigned NOT NULL,
+title varchar(128) NOT NULL default '',
+address varchar(128) NOT NULL default '',
+admin_name varchar(32) NOT NULL default '',
+tel varchar(64) NOT NULL default '',
+create_day DATE  NOT NULL,
+end_day DATE NOT NULL,
+privilege_bits int(10) unsigned NOT NULL,
+domain_status tinyint NOT NULL default '0',
+domain_type tinyint NOT NULL default '0',
+PRIMARY KEY (id),
+UNIQUE KEY (domainname),
+KEY (homedir, domain_type),
+KEY (org_id)
+) ENGINE=MyISAM;
+
+
+CREATE TABLE groups (
+id int(10) unsigned NOT NULL auto_increment,
+groupname varchar(128) NOT NULL,
+password varchar(40) NOT NULL default '',
+domain_id int(10) unsigned NOT NULL,
+max_size int(10) unsigned NOT NULL,
+max_user int(10) unsigned NOT NULL,
+title varchar(128) NOT NULL,
+create_day DATE  NOT NULL,
+privilege_bits int(10) unsigned NOT NULL,
+group_status tinyint NOT NULL default '0',
+PRIMARY KEY (id),
+UNIQUE KEY (groupname),
+KEY (domain_id)
+) ENGINE=MyISAM;
+
+
+CREATE TABLE users (
+id int(10) unsigned NOT NULL auto_increment,
+username varchar(128) NOT NULL,
+password varchar(40) NOT NULL default '',
+real_name varchar(32) NOT NULL default '',
+title varchar(128) NOT NULL default '',
+memo varchar(128) NOT NULL default '',
+domain_id int(10) unsigned NOT NULL,
+group_id int(10) unsigned NOT NULL,
+maildir varchar(128) NOT NULL default '',
+max_size int(10) unsigned NOT NULL,
+max_file int(10) unsigned NOT NULL,
+create_day DATE  NOT NULL,
+lang varchar(32) NOT NULL default '',
+timezone varchar(64) NOT NULL default '',
+mobile_phone varchar(20) NOT NULL default '',
+privilege_bits int(10) unsigned NOT NULL,
+sub_type tinyint NOT NULL default '0',
+address_status tinyint NOT NULL default '0',
+address_type tinyint NOT NULL default '0',
+cell varchar(20) NOT NULL default '',
+tel varchar(20) NOT NULL default '',
+nickname varchar(32) NOT NULL default '',
+homeaddress varchar(128) NOT NULL default '',
+PRIMARY KEY (id),
+UNIQUE KEY (username),
+KEY (group_id),
+KEY (domain_id),
+UNIQUE KEY(domain_id, username),
+UNIQUE KEY(group_id, username),
+KEY (maildir, address_type)
+) ENGINE=MyISAM;
+
+
+CREATE TABLE aliases (
+id int(10) unsigned NOT NULL auto_increment,
+aliasname varchar(128) NOT NULL,
+mainname varchar(128) NOT NULL,
+PRIMARY KEY (id),
+UNIQUE KEY (aliasname),
+KEY (mainname)
+) ENGINE=MyISAM;
+
+
+CREATE TABLE forwards (
+id int(10) unsigned NOT NULL auto_increment,
+username varchar(128) NOT NULL,
+forward_type tinyint NOT NULL default '0',
+destination varchar(128) NOT NULL,
+PRIMARY KEY (id),
+UNIQUE KEY (username)
+) ENGINE=MyISAM;
+
+
+CREATE TABLE mlists (
+id int(10) unsigned NOT NULL auto_increment,
+listname varchar(128) NOT NULL,
+domain_id int(10) unsigned NOT NULL,
+list_type tinyint NOT NULL,
+list_privilege tinyint NOT NULL default '0',
+PRIMARY KEY (id),
+KEY (domain_id),
+UNIQUE KEY (listname)
+) ENGINE=MyISAM;
+
+
+CREATE TABLE associations (
+id int(10) unsigned NOT NULL auto_increment,
+username varchar(128) NOT NULL,
+list_id int(10) NOT NULL,
+PRIMARY KEY (id),
+KEY (username),
+KEY (list_id),
+UNIQUE KEY (list_id, username)
+) ENGINE=MyISAM;
+
+CREATE TABLE classes (
+id int(10) unsigned NOT NULL auto_increment,
+classname varchar(128) NOT NULL,
+listname varchar(128),
+domain_id int(10) unsigned NOT NULL,
+group_id int(10) unsigned NOT NULL,
+PRIMARY KEY (id),
+KEY (listname),
+KEY (domain_id),
+KEY (group_id)
+) ENGINE=MyISAM;
+
+CREATE TABLE hierarchy (
+id int(10) unsigned NOT NULL auto_increment,
+class_id int(10) unsigned NOT NULL,
+child_id int(10) unsigned NOT NULL,
+domain_id int(10) unsigned NOT NULL,
+group_id int(10) unsigned NOT NULL,
+PRIMARY KEY(id),
+KEY (class_id),
+KEY (child_id),
+KEY (domain_id),
+KEY (group_id)
+) ENGINE=MyISAM;
+
+CREATE TABLE members (
+id int(10) unsigned NOT NULL auto_increment,
+username varchar(128) NOT NULL,
+class_id int(10) unsigned NOT NULL,
+domain_id int(10) unsigned NOT NULL,
+group_id int(10) unsigned NOT NULL,
+PRIMARY KEY (id),
+KEY (username),
+KEY (class_id),
+KEY (domain_id),
+KEY (group_id),
+UNIQUE KEY (class_id, username)
+) ENGINE=MyISAM;
+
+CREATE TABLE specifieds (
+id int(10) unsigned NOT NULL auto_increment,
+username varchar(128) NOT NULL,
+list_id int(10) NOT NULL,
+PRIMARY KEY (id),
+KEY (list_id)
+) ENGINE=MyISAM;
+

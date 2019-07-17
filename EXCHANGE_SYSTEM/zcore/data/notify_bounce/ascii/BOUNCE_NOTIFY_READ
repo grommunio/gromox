@@ -1,0 +1,14 @@
+Content-Type: text/plain; format=flowed
+Subject: Your message has been read!
+
+Hi,
+  Your message has been displayed to "<user>".
+
+Below is the original mail information:
+   Time:    <time>
+   From:    <from>
+   To:      <rcpts>
+   Subject: <subject>
+   Parts:   <parts>
+   Length:  <length>
+

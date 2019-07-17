@@ -1,0 +1,98 @@
+return\ OK
+special\ protected
+remote\ MTA\ sends\ too\ many\ mails
+illegal\ multipart
+virus\ mail
+system\ user\ sends\ too\ many\ mails
+need\ authentification
+illegal\ xmailer
+boundary\ string\ filtered
+foxmail\ 3.11
+forbidden\ rcpt
+subject\ audited
+dynamic\ domain\ filtered
+from\ audited
+property-1
+property-2
+porperty-3
+attachment\ file\ audited
+forbidden\ domain
+nick\ name\ filtered
+scamming\ content\ filtered
+enumerating\ user\ accounts
+domain\ after\ "helo"\ filtered
+famous\ site\ protection
+"from\ address"\ format\ illegal
+too\ many\ dots\ in\ subject
+uri\ rbl\ filtered
+special\ out-going\ limitation
+property-4
+property-5
+property-6
+property-7
+property-8
+property-9
+header\ field\ filtered
+forbidden\ mail\ from
+rcpt\ too\ many
+dns\ rbl\ filtered
+attachment\ intercepted
+property-10
+property-11
+property-12
+property-13
+property-14
+property-15
+property-16
+property-17
+base64\ encoding\ error
+attachment\ name\ wildcard
+property-18
+property-19
+property-20
+keyword\ mail\ subject
+keyword\ head\ from
+keyword\ head\ to
+keyword\ head\ cc
+keyword\ mail\ content
+keyword\ attachment\ name
+property-21
+property-22
+property-23
+property-24
+property-25
+property-26
+property-27
+property-28
+property-29
+property-30
+property-31
+property-32
+property-33
+property-34
+property-35
+property-36
+property-37
+property-38
+property-39
+property-40
+property-41
+property-42
+property-43
+property-44
+property-45
+property-46
+property-47
+property-48
+property-49
+property-50
+property-51
+property-52
+property-53
+property-54
+property-55
+property-56
+property-57
+property-58
+property-59
+property-60

@@ -1,0 +1,112 @@
+CHARSET					us-ascii
+ERROR_HTML_TITLE		error
+ERROR_REQUEST			request\ error!
+ERROR_SESSION			you\ are\ not\ logged\ in,\ please\ login\ first
+ERROR_PRIVILEGE			you\ havn't\ privilege\ to\ access\ this\ feature
+ERROR_INTERNAL			internal\ error!
+ERROR_TIMEOUT			time\ out,\ please\ relogin
+ERROR_MIGRATING         system\ is\ now\ migarting\ storage\ data\ of\ this\ domain,\ please\ try\ later
+BACK_LABEL				relogin
+RESULT_HTML_TITLE		domain\ list
+RESULT_TABLE_TITLE		domain\ list
+STORAGE_DEFAULT         default\ storage
+MAIN_DOMAIN				domain
+MAIN_ALIAS				alias
+MAIN_TITLE				title
+MAIN_DOMAIN_STROAGE     storage\ type
+MAIN_MAX_SIZE			maximum\ space
+MAIN_MAX_USER			maximum\ users
+MAIN_ADDRESS			address
+MAIN_ADMINISTRATOR		administrator
+MAIN_TELEPHONE			telephone
+MAIN_CREATING_DAY		beginning\ date
+MAIN_ENDDING_DAY		end\ date
+MAIN_DOMAIN_STATUS		status
+MAIN_DOMAIN_TYPE		type
+MAIN_PRIVILEGE			value-added\ functionality
+OPTION_BACKUP			mail\ archive
+OPTION_MONITOR			mail\ monitor
+OPTION_UNCHECKUSR		ignore\ checking\ user
+OPTION_SUBSYSTEM		mail\ sub-system
+OPTION_NETDISK			net\ disk
+OPTION_EXTPASSWD		extended\ cryptosecurity
+ACTUAL_SIZE				actual\ allocated\ space
+ACTUAL_USER				actual\ users
+RESULT_SUMMARY			found\ %d\ records,\ total\ %d\ pages
+CURRENT_PAGE			current\ page
+FIRST_PAGE				first\ page
+PREV_PAGE				previous\ page
+NEXT_PAGE				next\ page
+LAST_PAGE				last\ page
+STATUS_NORMAL			normal
+STATUS_SUSPEND			suspended
+STATUS_OUTOFDATE		out-of-date
+STATUS_DELETED			deleted
+OPTION_UNSELECTED		not\ selected\ ---\ all
+TYPE_NORMAL				ordinary\ domain
+TYPE_ALIAS				alias\ domain
+MAIN_OPERATION			operation
+ADDING_HTML_TITLE		add\ domain
+CONTINUE_ADDING			continue\ adding
+ADDING_OK				domain\ has\ been\ successfully\ added\ into\ system
+OK_LABEL				OK
+ADD_LABEL				add\ domain
+ALIAS_LABEL				add\ alias
+DELETE_LABEL			delete
+EDIT_LABEL				view\ &\ edit
+VIEW_LABEL				view\ detail
+RESTORE_LABEL			restore
+SAVE_LABEL				save
+SEARCH_LABEL			find
+CHANGE_PASSWORD			change\ domain\ password
+BACK_TO_LIST			back\ to\ list
+EDIT_HTML_TITLE			edit\ domain
+WHOLE_LIST				whole\ list
+EDIT_OK					domain\ information\ has\ been\ sucessfully\ changed
+READDING_LABEL			add\ another
+ADDING_EXIST			the\ domain\ you\ adding\ is\ already\ in\ system
+HOMEDIR_FAIL			fail\ to\ allocate\ home\ directory\ for\ domain
+ALIAS_EXIST				alias\ is\ already\ in\ system
+ALIAS_NOT_MAIN			the\ "main"\ domain\ is\ also\ an\ alias\ domain
+ALIAS_MAIN_NOTEXIST	can\ not\ find\ main\ domain\ in\ system
+ALIAS_OK				domain\ has\ been\ sucessfully\ aliased
+RESTORE_ERROR			fail\ to\ restore\ domain\ from\ system
+RESTORE_ALIAS			domain\ is\ an\ alias,\ please\ restore\ the\ main\ domain\ first
+RETRYING_LABEL			back
+EDIT_NOEXIST			cannot\ find\ the\ domain, which\ you\ want\ to\ edit
+PASSWORD_NOEXIST		cannot\ find\ the\ domain, which\ you\ want\ to\ change\ password
+PASSWORD_ALIAS			cannot\ change\ alias\ domain\ password
+PASSWORD_OK				domain\ password\ has\ beed\ sucessfully\ changed
+REMOVE_HTML_TITLE		remove\ domain
+CONFIRM_DELETE			are\ you\ sure\ to\ delete\ this\ domain?
+REMOVE_OK				domain\ has\ been\ successfully\ removed\ from\ system
+RESTORE_OK				domain\ has\ been\ successfully\ restored\ from\ system
+RESTORE_HTML_TITLE		restore\ domain
+SEARCH_HTML_TITLE		search\ domain
+ADD_HTML_TITLE			add\ domain
+ALIAS_HTML_TITLE		add\ alias
+PROMPT_ALIAS			domain\ is\ alias\ of\ %s,\ please\ go\ to\ main\ domain\ to\ edit
+PROMPT_OUTOFDATE		domain\ is\ out-of-date,\ please\ change\ end\ date\ to\ activate
+PASSWORD_HTML_TITLE		change\ domain\ password
+NEW_PASSWORD			new\ password
+RAND_PASSWORD           random\ generated\ password
+RETYPE_NEW_PASSWORD		retype\ new\ password
+NULL_PASSWORD_ERROR		new\ password\ cannot\ be\ null,\ please\ input\ password
+LENGTH_PASSWORD_ERROR	please\ make\ the\ password\ string\ length\ less\ than\ 32
+NEW_PASSWORD_ERROR		new\ passwords\ differ
+MSGERR_DOMAIN			please\ specify\ the\ domain\ name
+MSGERR_DOMAIN_LEN		please\ make\ the\ domain\ string\ length\ less\ than\ 64
+MSGERR_TITLE_LEN		please\ make\ the\ title\ string\ length\ less\ than\ 128
+MSGERR_ADDRESS_LEN		please\ make\ the\ address\ string\ length\ less\ than\ 128
+MSGERR_ADMINNAME_LEN	please\ make\ the\ administrator\ string\ length\ less\ than\ 32
+MSGERR_TEL_LEN			please\ make\ the\ telephone\ string\ length\ less\ than\ 64
+MSGERR_ALIAS			please\ specify\ the\ alias
+MSGERR_ALIAS_LEN		please\ make\ the\ alias\ string\ length\ less\ than\ 64
+MSGERR_SIZE				maximum\ space\ error
+MSGERR_USER				maximum\ users\ error
+MSGERR_ENDDING_DAY		maturity\ must\ be\ specified
+CALENDAR_MONTH			"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"
+CALENDAR_WEEK			"su","mo","tu","we","th","fr","sa"
+CALENDAR_YEAR			""
+CALENDAR_TODAY			"today"
+COMPANY_INFORMATION		2018\ Shanghai\ Gridware\ Information\ Technology

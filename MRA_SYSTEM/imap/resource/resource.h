@@ -1,0 +1,177 @@
+#ifndef _H_RESOURCE_
+#define _H_RESOURCE_
+#include "common_types.h"
+
+enum {
+    RES_LISTEN_PORT = 0,
+	RES_LISTEN_SSL_PORT,
+    RES_HOST_ID,
+	RES_DEFAULT_DOMAIN,
+
+    RES_CONTEXT_NUM,
+    RES_CONTEXT_AVERAGE_MEM,
+    RES_CONTEXT_MAX_MEM,
+	RES_CONTEXT_AVERAGE_MITEM,
+
+    RES_IMAP_AUTH_TIMES,
+    RES_IMAP_CONN_TIMEOUT,
+	RES_IMAP_AUTOLOGOUT_TIME,
+	RES_IMAP_SUPPORT_STARTTLS,
+	RES_IMAP_CERTIFICATE_PATH,
+	RES_IMAP_CERTIFICATE_PASSWD,
+	RES_IMAP_PRIVATE_KEY_PATH,
+	RES_IMAP_FORCE_STARTTLS,
+
+    RES_THREAD_INIT_NUM,
+    RES_THREAD_CHARGE_NUM,
+
+    RES_IMAP_RETURN_CODE_PATH,
+	RES_IMAP_LANG_PATH,
+	
+	RES_DEFAULT_LANG,
+
+    RES_CONSOLE_SERVER_IP,
+    RES_CONSOLE_SERVER_PORT,
+
+    RES_SERVICE_PLUGIN_PATH,
+    RES_RUNNING_IDENTITY,
+    RES_BLOCK_INTERVAL_AUTHS,
+    RES_CONFIG_FILE_PATH,
+    RES_DATA_FILE_PATH,
+    MAX_RES_CONFG_VAR_NUM
+};
+
+typedef struct _IMAP_RETURN_CODE {
+    int     code;
+    char    comment[512];
+} IMAP_RETURN_CODE;
+
+enum {
+	IMAP_CODE_2160001=0,
+	IMAP_CODE_2160002,
+	IMAP_CODE_2160003,
+	IMAP_CODE_2160004,
+
+	IMAP_CODE_2170000,
+	IMAP_CODE_2170001,
+	IMAP_CODE_2170002,
+	IMAP_CODE_2170003,
+	IMAP_CODE_2170004,
+	IMAP_CODE_2170005,
+	IMAP_CODE_2170006,
+	IMAP_CODE_2170007,
+	IMAP_CODE_2170008,
+	IMAP_CODE_2170009,
+	IMAP_CODE_2170010,
+	IMAP_CODE_2170011,
+	IMAP_CODE_2170012,
+	IMAP_CODE_2170013,
+	IMAP_CODE_2170014,
+	IMAP_CODE_2170015,
+	IMAP_CODE_2170016,
+	IMAP_CODE_2170017,
+	IMAP_CODE_2170018,
+	IMAP_CODE_2170019,
+	IMAP_CODE_2170020,
+	IMAP_CODE_2170021,
+	IMAP_CODE_2170022,
+	IMAP_CODE_2170023,
+	IMAP_CODE_2170024,
+	IMAP_CODE_2170025,
+	IMAP_CODE_2170026,
+	IMAP_CODE_2170027,
+	IMAP_CODE_2170028,
+	IMAP_CODE_2170029,
+	IMAP_CODE_2170030,
+
+	IMAP_CODE_2180000,
+	IMAP_CODE_2180001,
+	IMAP_CODE_2180002,
+	IMAP_CODE_2180003,
+	IMAP_CODE_2180004,
+	IMAP_CODE_2180005,
+	IMAP_CODE_2180006,
+	IMAP_CODE_2180007,
+	IMAP_CODE_2180008,
+	IMAP_CODE_2180009,
+	IMAP_CODE_2180010,
+	IMAP_CODE_2180011,
+	IMAP_CODE_2180012,
+	IMAP_CODE_2180013,
+	IMAP_CODE_2180014,
+	IMAP_CODE_2180015,
+	IMAP_CODE_2180016,
+	IMAP_CODE_2180017,
+	IMAP_CODE_2180018,
+	IMAP_CODE_2180019,
+	IMAP_CODE_2180020,
+
+	IMAP_CODE_2190001,
+	IMAP_CODE_2190002,
+	IMAP_CODE_2190003,
+	IMAP_CODE_2190004,
+	IMAP_CODE_2190005,
+	IMAP_CODE_2190006,
+	IMAP_CODE_2190007,
+	IMAP_CODE_2190008,
+	IMAP_CODE_2190009,
+	IMAP_CODE_2190010,
+	IMAP_CODE_2190011,
+	IMAP_CODE_2190012,
+	IMAP_CODE_2190013,
+	IMAP_CODE_2190014,
+	IMAP_CODE_2190015,
+	IMAP_CODE_2190016,
+	IMAP_CODE_2190017,
+	
+	IMAP_CODE_2200000,
+	IMAP_CODE_2200001,
+	IMAP_CODE_2200002,
+	IMAP_CODE_2200003,
+	IMAP_CODE_2200004,
+	IMAP_CODE_2200005,
+	IMAP_CODE_2200006,
+	IMAP_CODE_2200007,
+	IMAP_CODE_2200008,
+	IMAP_CODE_2200009,
+	IMAP_CODE_2200010
+};
+
+void resource_init(char* cfg_filename);
+
+void resource_free();
+
+int resource_run();
+
+int resource_stop();
+
+BOOL resource_save();
+
+BOOL resource_get_integer(int key, int* value);
+
+const char* resource_get_string(int key);
+
+BOOL resource_set_integer(int key, int value);
+
+BOOL resource_set_string(int key, char* value);
+
+char* resource_get_imap_code(int code_type, int n, int *len);
+
+BOOL resource_refresh_imap_code_table();
+
+char** resource_get_folder_strings(const char*lang);
+
+const char* resource_get_default_charset(const char *lang);
+
+BOOL resource_get_digest_string(char *src, char *tag, char *buff, int buff_len);
+
+BOOL resource_get_digest_integer(char *src, char *tag, long *pinteger);
+
+void resource_set_digest_string(char *src, int length, const char *tag, char *value);
+
+void resource_set_digest_integer(char *src, int length, const char *tag, long value);
+
+char* resource_get_error_string(int errno);
+
+
+#endif /* _H_RESOURCE_ */

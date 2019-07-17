@@ -1,0 +1,14 @@
+Content-Type: text/plain; format=flowed
+Subject: Delivery failure, use's mailbox is full
+From: "Mail Daemon"<postmaster@system>
+
+Hi,
+  I am sorry to tell you that <rcpt>'s mailbox is full, we cannot deliver any message into this mailbox, please try it later. Thank you!
+
+Below is the original mail information:
+   Time:    <time>
+   From:    <from>
+   To:      <rcpts>
+   Subject: <subject>
+   Parts:   <parts>
+   Length:  <length>

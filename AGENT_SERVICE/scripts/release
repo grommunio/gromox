@@ -1,0 +1,44 @@
+#!/bin/sh
+
+RELEASE_HOME='release'
+BIN_DIR='bin'
+TOOLS_DIR='tools'
+CONFIGS_DIR='config'
+DATA_DIR='data'
+LIB_DIR='lib'
+TOKEN_DIR='token'
+COMMON_LIB='common.so'
+EMAIL_LIB='email_lib.so'
+WEBKIT_LIB='webkit_lib.so'
+RPC_LIB='rpc_lib.so'
+MAPI_LIB='mapi_lib.so'
+
+rm -rf $RELEASE_HOME
+mkdir $RELEASE_HOME
+mkdir $RELEASE_HOME/$BIN_DIR
+mkdir $RELEASE_HOME/$TOOLS_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR
+mkdir $RELEASE_HOME/$DATA_DIR
+mkdir $RELEASE_HOME/$LIB_DIR
+mkdir $RELEASE_HOME/$TOKEN_DIR
+cp scripts/install* $RELEASE_HOME
+cp pandora/pandora.bin $RELEASE_HOME/$BIN_DIR
+cp scripts/pandora.sh $RELEASE_HOME/$BIN_DIR
+cp scripts/pandora.service $RELEASE_HOME/$BIN_DIR
+cp config/pandora.cfg $RELEASE_HOME/$CONFIGS_DIR
+cp data/*.txt $RELEASE_HOME/$DATA_DIR
+cp common/$COMMON_LIB $RELEASE_HOME/$LIB_DIR
+cp email_lib/$EMAIL_LIB $RELEASE_HOME/$LIB_DIR
+cp webkit_lib/$WEBKIT_LIB $RELEASE_HOME/$LIB_DIR
+cp rpc_lib/$RPC_LIB $RELEASE_HOME/$LIB_DIR
+cp mapi_lib/$MAPI_LIB $RELEASE_HOME/$LIB_DIR
+cp amysql/amysql $RELEASE_HOME/$BIN_DIR
+cp asession/asession $RELEASE_HOME/$BIN_DIR
+cp alock/alock $RELEASE_HOME/$BIN_DIR
+cp asensor/asensor $RELEASE_HOME/$BIN_DIR
+cp amidb/amidb $RELEASE_HOME/$BIN_DIR
+cp digest/digest $RELEASE_HOME/$TOOLS_DIR
+cp freebusy/freebusy $RELEASE_HOME/$TOOLS_DIR
+cp rtf2html/rtf2html $RELEASE_HOME/$TOOLS_DIR
+dos2unix $RELEASE_HOME/$BIN_DIR/*.sh
+chmod a+rx $RELEASE_HOME/$BIN_DIR/*.sh

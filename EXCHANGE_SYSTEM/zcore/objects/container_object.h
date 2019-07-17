@@ -1,0 +1,48 @@
+#ifndef _H_CONTAINER_OBJECT_
+#define _H_CONTAINER_OBJECT_
+#include <stdint.h>
+#include "mapi_types.h"
+
+typedef struct _CONTAINER_OBJECT {
+	int base_id;
+	uint32_t minid;
+	LONG_ARRAY *pminid_array;
+} CONTAINER_OBJECT;
+
+CONTAINER_OBJECT* container_object_create(int base_id, uint32_t minid);
+
+void container_object_free(CONTAINER_OBJECT *pcontainer);
+
+void container_object_clear_restriction(
+	CONTAINER_OBJECT *pcontainer);
+
+BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
+	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
+	
+BOOL container_object_restrict_user_table(
+	CONTAINER_OBJECT *pcontainer,
+	const RESTRICTION *prestriction);
+
+BOOL container_object_get_container_table_num(
+	CONTAINER_OBJECT *pcontainer, BOOL b_depth,
+	uint32_t *pnum);
+
+void container_object_get_container_table_all_proptags(
+	PROPTAG_ARRAY *pproptags);
+
+BOOL container_object_query_container_table(
+	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
+	BOOL b_depth, uint32_t start_pos, int32_t row_needed,
+	TARRAY_SET *pset);
+
+BOOL container_object_get_user_table_num(
+	CONTAINER_OBJECT *pcontainer, uint32_t *pnum);
+
+void container_object_get_user_table_all_proptags(
+	PROPTAG_ARRAY *pproptags);
+
+BOOL container_object_query_user_table(
+	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
+	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset);
+
+#endif /* _H_CONTAINER_OBJECT_ */

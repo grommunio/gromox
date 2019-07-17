@@ -1,0 +1,6 @@
+#domain(asterisk supported)		uri_path			directory
+*								/data/css			/var/posidon/data/css
+*								/data/script		/var/posidon/data/script
+*								/data/picture		/var/posidon/data/picture
+*								/html				/var/posidon/html
+*								/					/var/webmail/public

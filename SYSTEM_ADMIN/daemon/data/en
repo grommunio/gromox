@@ -1,0 +1,9 @@
+CHARSET					us-ascii
+FROM_NAME				mail\ system\ notifier
+SUBJECT_TURN_OUTOFDATE	your\ domain\ in\ our\ mail\ system\ is\ out-of-date
+SUBJECT_WILL_OUTOFDATE	your\ domain\ in\ our\ mail\ system\ will\ be\ out-of-date
+SUBJECT_PASSWORD_AGING	please\ change\ your\ password\ of\ mailbox\ ASAP
+HTML_TITLE				notify\ message
+CONTENT_TURN_OUTOFDATE	please\ attention!\ domain\ %s\ is\ now\ out-of-date,\ users\ under\ this\ domain\ will\ no\ longer\ send\ or\ receive\ any\ email!
+CONTENT_WILL_OUTOFDATE	please\ attention!\ domain\ %s\ will\ be\ out-of-date\ in\ a\ week,\ please\ contact\ the\ mail\ system\ administrator!
+CONTENT_PASSWORD_AGING	password\ of\ mailbox\ %s\ will\ be\ invalid\ in\ a\ week,\ change\ it\ ASAP!

@@ -1,0 +1,26 @@
+CHARSET					us-ascii
+ERROR_HTML_TITLE		error
+ERROR_REQUEST			request\ error!
+ERROR_SESSION			you\ are\ not\ logged\ in,\ please\ login\ first
+ERROR_PRIVILEGE			you\ havn't\ privilege\ to\ access\ this\ feature
+ERROR_INTERNAL			internal\ error!
+ERROR_TIMEOUT			time\ out,\ please\ relogin
+BACK_LABEL				relogin
+MAIN_HTML_TITLE			mail\ system\ information
+REAL_DOMAIN_NUM			real\ domain\ number
+BACKUP_DOMAIN_NUM		mail\ archive\ domain\ number
+MONITOR_DOMAIN_NUM		mail\ monitor\ domain\ number
+UNCHECK_USER_DOMAIN_NUM	ignore\ checking\ user\ domain\ number
+SUBSYSTEM_DOMAIN_NUM	mail\ sub-system\ domain\ number
+NETDISK_DOMAIN_NUM		netdisk\ domain\ number
+EXTPASSWD_DOMAIN_NUM	password\ regularly\ changing\ domain\ number
+ALIAS_DOMAIN_NUM		alias\ domain\ number
+OUT_OF_DATE_DOMAIN_NUM	out-of-date\ domain\ number
+DELETED_DOMAIN_NUM		deleted\ domain\ number
+SUSPEND_DOMAIN_NUM		suspended\ domain\ number
+TOTAL_GROUP_NUM			total\ group\ number
+ALLOC_ADDRESS_NUM		allocated\ address\ number
+REAL_ADDRESS_NUM		read\ address\ number
+ALIAS_ADDRESS_NUM		alias\ address\ number
+MLIST_NUM				mail\ list\ number
+TOTAL_SPACE				total\ allocated\ space

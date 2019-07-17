@@ -1,0 +1,130 @@
+CHARSET					us-ascii
+ERROR_HTML_TITLE		error
+ERROR_REQUEST			request\ error!
+ERROR_SESSION			time\ out\ or\ not\ logged\ in,\ please\ relogin
+ERROR_INTERNAL			internal\ error!
+ERROR_MIGRATING         system\ is\ now\ migarting\ data,\ please\ try\ later
+BACK_LABEL				relogin
+RESULT_HTML_TITLE		user\ list
+RESULT_TABLE_TITLE		user\ list
+MAIN_USERNAME			username
+MAIN_ALIAS				alias\ user
+MAIN_USER_TITLE			job\ title
+MAIN_REAL_NAME			real\ name
+MAIN_NICKNAME			nick\ name
+MAIN_TEL				telephone
+MAIN_CELL				mobile\ phone
+MAIN_HOMEADDRESS		family\ address
+MAIN_MEMO				memo
+MAIN_MAX_SIZE			maximum\ space
+MAIN_LANGUAGE			exchange\ language
+LANGUAGE_ITEMS			en:English|zh:Simplified\ Chinese|jp:Japanese|cn:Triditional\ Chinese
+MAIN_TYPE				type
+USER_TYPE_NORMAL		normal
+USER_TYPE_ROOM			room
+USER_TYPE_EQUIPMENT		equipment
+MAIN_GROUP				department
+MAIN_PASSWORD			password
+MAIN_RAND				random\ generated\ password
+MAIN_RETYPE				retype\ password
+TIP_PASSWORD			default\ password\ is\ the\ random\ password,\ you\ can\ also\ input\ your\ password
+MAIN_EXTPASS_TYPE		password\ expire\ date
+PASSWORD_AGING_NEVER	never\ expire
+PASSWORD_AGING_DEFAULT	default\ expire\ date
+PASSWORD_AGING_1YEAR	expire\ after\ 1\ year
+PASSWORD_AGING_6MONTH	expire\ after\ 6\ months
+PASSWORD_AGING_3MONTH	expire\ after\ 3\ months
+PASSWORD_AGING_1MONTH	expire\ after\ 1\ month
+MAIN_CREATING_DAY		beginning\ date
+MAIN_ADDRESS_STATUS		status
+MAIN_ADDRESS_TYPE		type
+RESULT_SUMMARY			found\ %d\ records,\ total\ %d\ pages
+CURRENT_PAGE			current\ page
+FIRST_PAGE				first\ page
+PREV_PAGE				previous\ page
+NEXT_PAGE				next\ page
+LAST_PAGE				last\ page
+STATUS_NORMAL			normal
+STATUS_SUSPEND			suspended
+OPTION_UNSELECTED		not\ selected\ ---\ all
+TYPE_NORMAL				ordinary\ user
+TYPE_ALIAS				alias\ user
+MAIN_OPERATION			operation
+ADDING_HTML_TITLE		add\ user
+CONTINUE_ADDING			continue\ adding
+ADDING_OK				user\ has\ been\ successfully\ added\ into\ system
+OK_LABEL				OK
+ADD_LABEL				add\ user
+ALIAS_LABEL				add\ alias
+DELETE_LABEL			delete
+EDIT_LABEL				view\ &\ edit
+SAVE_LABEL				save
+SEARCH_LABEL			find
+PAGING_EX_LABEL			display\ used\ space
+BACK_TO_LIST			back\ to\ list
+EDIT_HTML_TITLE			edit\ user
+WHOLE_LIST				whole\ list
+EDIT_OK					user\ information\ has\ been\ sucessfully\ changed
+READDING_LABEL			add\ another
+ALIAS_OK				user\ has\ been\ sucessfully\ aliased
+RETRYING_LABEL			back
+REMOVE_HTML_TITLE		remove\ user
+CONFIRM_DELETE			are\ you\ sure\ to\ delete\ this\ user?
+REMOVE_OK				user\ has\ been\ successfully\ removed\ from\ system
+SEARCH_HTML_TITLE		search\ user
+ADD_HTML_TITLE			add\ user
+ALIAS_HTML_TITLE		add\ alias
+FREE_GROUP				direct\ user
+DATE_FORMAT				%Y-%m-%d
+PROMPT_ALIAS			user\ is\ alias\ of\ %s,\ please\ go\ to\ main\ user\ to\ edit
+PROMPT_ROOM				this\ account\ is\ type\ of\ room
+PROMPT_EQUIPMENT		this\ account\ is\ type\ of\ equipment
+ADD_ERROR_MAILDIR		fail\ to\ allocate\ space\ for\ user,\ please\ contact\ system\ administrator
+ADD_ERROR_NODOMAIN		fail\ to\ add\ user,\ domain\ does\ not\ exist
+ADD_ERROR_DOMAINNOTMAIN	fail\ to\ add\ user,\ domain\ is\ an\ alias
+ADD_ERROR_SIZEFULL		cannot\ add\ user,\ domain\ left\ space\ is\ less\ than\ user's\ space
+ADD_ERROR_USERFULL		cannot\ add\ user,\ domain\ users\ is\ out\ of\ limitation
+ADD_ERROR_NOGROUP		fail\ to\ add\ user,\ cannot\ find\ department\ information
+ADD_ERROR_GROUPERR		fail\ to\ add\ user,\ department\ information\ error
+ADD_ERROR_MLIST			cannot\ add\ user,\ address\ is\ used\ by\ mail\ list
+ADD_ERROR_EXIST			cannot\ add\ user,\ user\ already\ exists
+EDIT_ERROR_NOCACHE		fail\ to\ edit\ user,\ cannot\ find\ information\ from\ cache
+EDIT_ERROR_NODOMAIN		fail\ to\ edit\ user,\ domain\ does\ not\ exist
+EDIT_ERROR_DOMAINNOTMAIN	fail\ to\ edit\ user,\ domain\ does\ not\ exist
+EDIT_ERROR_NOGROUP		fail\ to\ edit\ user,\ cannot\ find\ department\ information
+EDIT_ERROR_GROUPERR		fail\ to\ edit\ user,\ department\ information\ error
+EDIT_ERROR_NOEXIST		fail\ to\ edit\ user,\ user\ does\ not\ exist
+EDIT_ERROR_SIZEFULL		cannot\ change\ user's\ space,\ domain\ space\ is\ used\ up
+EDIT_ERROR_NOTMAIN		fail\ to\ edit\ user,\ user\ is\ an\ alias
+ALIAS_ERROR_NODOMAIN	fail\ to\ alias\ user,\ domain\ does\ not\ exist
+ALIAS_ERROR_DOMAINNOTMAIN	fail\ to\ alias\ user,\ domain\ is\ an\ alias
+ALIAS_ERROR_FULL		cannot\ alias\ user,\ limitation\ of\ alias\ number\ is\ reached
+ALIAS_ERROR_MLIST		cannot\ alias\ user,\ address\ is\ used\ by\ mail\ list
+ALIAS_ERROR_EXIST		cannot\ alias\ user,\ user\ already\ exists
+ALIAS_ERROR_NOEXIST		cannot\ alias\ user,\ ordinary\ user\ does\ not\ exist
+ALIAS_ERROR_NOTMAIN		cannot\ alias\ user,\ aliased\ user\ cannot\ be\ alias\ or\ mail\ address\ list
+MAIN_PRIVILEGE			user\ privilege
+OPTION_POP3_IMAP		allow\ pop3\ or\ imap\ downloading
+OPTION_SMTP				allow\ smtp\ sending
+OPTION_CHGPASSWD		allow\ change\ password
+OPTION_PUBADDR			public\ user\ information
+OPTION_NETDISK			net\ disk
+MSGERR_NULL_PASSWORD	password\ cannot\ be\ null,\ please\ input\ password
+MSGERR_PASSWORD_LEN		please\ make\ the\ password\ string\ length\ less\ than\ 32
+MSGERR_PASSWORD_DIFF	passwords\ differ
+MSGERR_USERNAME			please\ specify\ the\ username
+MSGERR_USERNAME_LEN		please\ make\ the\ username\ string\ length\ less\ than\ 128
+MSGERR_LOCALERR			illegal\ character\ found\ in\ username
+MSGERR_ALIASERR			illegal\ character\ found\ in\ alias
+MSGERR_DOMAINDIFF		domain\ within\ username\ error,\ please\ fill\ right\ domain\ name
+MSGERR_TITLE_LEN		please\ make\ the\ job\ title\ string\ length\ less\ than\ 32
+MSGERR_REALNAME_LEN		please\ make\ the\ real\ name\ string\ length\ less\ than\ 32
+MSGERR_MEMO_LEN			please\ make\ the\ memo\ string\ length\ less\ than\ 128
+MSGERR_ALIAS			please\ specify\ the\ alias
+MSGERR_ALIAS_LEN		please\ make\ the\ alias\ string\ length\ less\ than\ 128
+MSGERR_SIZE				maximum\ space\ error
+CALENDAR_MONTH			"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"
+CALENDAR_WEEK			"su","mo","tu","we","th","fr","sa"
+CALENDAR_YEAR			""
+CALENDAR_TODAY			"today"
+COMPANY_INFORMATION		2018\ Shanghai\ Gridware\ Information\ Technology

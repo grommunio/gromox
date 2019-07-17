@@ -1,0 +1,15 @@
+#!/bin/sh
+
+
+mkdir /var/apollo
+cp -R * /var/apollo
+groupadd -g 800 herculiz
+useradd herculiz -u 800 -g herculiz -d /var/herculiz -s /bin/nologin
+chown -R herculiz:herculiz /var/apollo
+chmod -R a+rw /var/apollo
+mv /var/apollo/bin/apollo.bin /usr/bin/apollo
+mv /var/apollo/bin/apollo.sh /etc/rc.d/init.d/apollo
+rm -f /var/apollo/bin/apollo.service
+chkconfig --add apollo
+echo "APOLLO MRA is installed OK"
+echo

@@ -1,0 +1,73 @@
+#ifndef _H_ATTACHMENT_OBJECT_
+#define _H_ATTACHMENT_OBJECT_
+#include "message_object.h"
+
+/* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
+	so they can operate internal variables of each other */
+
+
+typedef struct _ATTACHMENT_OBJECT {
+	BOOL b_new;
+	BOOL b_touched;
+	MESSAGE_OBJECT *pparent;
+	uint32_t instance_id;
+	uint32_t attachment_num;
+	uint8_t open_flags;
+	DOUBLE_LIST stream_list;
+} ATTACHMENT_OBJECT;
+
+ATTACHMENT_OBJECT* attachment_object_create(MESSAGE_OBJECT *pparent,
+	uint32_t attachment_num, uint8_t open_flags);
+
+uint32_t attachment_object_get_instance_id(
+	ATTACHMENT_OBJECT *pattachment);
+
+BOOL attachment_object_init_attachment(
+	ATTACHMENT_OBJECT *pattachment);
+
+void attachment_object_free(ATTACHMENT_OBJECT *pattachment);
+
+uint32_t attachment_object_get_attachment_num(
+	ATTACHMENT_OBJECT *pattachment);
+
+uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment);
+
+uint8_t attachment_object_get_open_flags(ATTACHMENT_OBJECT *pattachment);
+
+void attachment_object_set_open_flags(
+	ATTACHMENT_OBJECT *pattachment, uint8_t open_flags);
+
+uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment);
+
+BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment);
+
+BOOL attachment_object_append_stream_object(
+	ATTACHMENT_OBJECT *pattachment, STREAM_OBJECT *pstream);
+
+BOOL attachment_object_commit_stream_object(
+	ATTACHMENT_OBJECT *pattachment, STREAM_OBJECT *pstream);
+
+BOOL attachment_object_flush_streams(ATTACHMENT_OBJECT *pattachment);
+
+BOOL attachment_object_get_all_proptags(
+	ATTACHMENT_OBJECT *pattachment, PROPTAG_ARRAY *pproptags);
+
+BOOL attachment_object_check_readonly_property(
+	ATTACHMENT_OBJECT *pattachment, uint32_t proptag);
+
+BOOL attachment_object_get_properties(
+	ATTACHMENT_OBJECT *pattachment, uint32_t size_limit,
+	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
+
+BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
+	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems);
+
+BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
+	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);
+
+BOOL attachment_object_copy_properties(
+	ATTACHMENT_OBJECT *pattachment, ATTACHMENT_OBJECT *pattachment_src,
+	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force,
+	BOOL *pb_cycle, PROBLEM_ARRAY *pproblems);
+
+#endif /* _H_ATTACHMENT_OBJECT_ */

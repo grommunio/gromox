@@ -1,0 +1,13 @@
+#!/bin/sh
+
+
+mkdir /var/pandora
+cp -R * /var/pandora
+chown -R apache /var/pandora
+chmod -R a+wr /var/pandora
+mv /var/pandora/bin/pandora.bin /usr/bin/pandora
+mv /var/pandora/bin/pandora.service /usr/lib/systemd/system/pandora.service
+rm -f /var/pandora/bin/pandora.sh
+systemctl enable pandora.service
+echo "PANDORA webmail agent service is installed OK"
+echo

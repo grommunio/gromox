@@ -1,0 +1,208 @@
+000001		refused by special protection's ip auditor
+
+000002		remote MTA sends too many mails whithin some interval
+
+000003		multiple part mail without boundary string
+
+000004		virus mail
+
+000005		system user sends too many mails whithin some interval
+
+000006		need authentification
+
+000007		illegal xmailer
+
+000008		spam mailer's boundary string
+
+000009		foxmail 3.11 spam mail
+		
+000010		rcpt to address is forbidden
+
+000011		subject has been audited by subject auditor
+
+000012		dynamic dns such as ms12.hinet.net, trm448.88ip.cn ...
+			
+000013		audit the domain to refuse empty from address "none@none" 
+
+000014		single part email, formail or outlook express MUA, gb2312 charset
+			and the encoding is 7bit or 8 bit
+
+000015		the encoding contains upcase "=?GB2312" encoding string in subject
+			or attachment file name string
+
+000016		big5 mail with boundary "=_cbKenPzHCFke" "--=====9136859896916=_"
+			"--66848254399745002836"
+
+000017		attachment file name has been audited
+
+000018		from or rcpt to forbidden domain
+
+000019		from nick name contains 公司，小姐，先生 without encoding
+
+000020		single part mail without x-mailer, content contains 发票, 电话 ...
+
+000021		some spammer will enumerate system users with multiple RCPT TO  
+			addresses of same prefix alphabet like: 
+			a.brochhagen@aerodev.com a1exp@aerodev.com aaje@aerodev.com ...
+
+000022		filtered by hello filter, ip address can not follow the helo command
+
+000023		filtered by site protection, which means IP and domain is different
+			for the famous mail service providers such as hotmail sina 163 ...
+
+000024		check the from address in SMTP envelop and the address should be
+			composed in ascii characters and 200572@084503.com should not occur
+
+000025		there's many "." in subject, such as 优.点.网.给.您.额.外.收.获
+
+000026		filtered by URI rbl such as surbl.org or uribl.com
+
+000027		...
+
+000028		mail contents contains X-Mailer: Microsoft (Foxmail) ...
+
+000029		text/plain length is 0 and text/html length is larger than 620
+
+000030		single part html mail containing "<iframe", "<img src" or
+			"src=\"http"
+
+000031		boundary string is like 463c0621-a1f9-4ece-ad6e-0406623ca6b6
+
+000032		us-ascii spam mail, text/plain or text/html single part, 7,8 bit 
+			encoding, no "Received" field and contain URL in mail content
+
+000033		boundary is like --UT2FA.FLVP2AF3DLY.VHFFW
+
+000034		mail head has tag "X-Unsent"
+
+000035		from address in mail envelop is forbidden
+
+000036		too many rcpt address in mail envelop
+
+000037		blocked by dns RBL
+
+000038		intercepted by precise interception
+
+000039		boundary string is like ----=tbgnu200_1365_53701481.9062312
+
+000040		boundary is like ----=_NextPart_000_0062_19964T73.23769621 and
+			"Message-Id:" field in MIME head is like "<1147779752-@bao.com>"
+
+000041		X-Mailer's value is "Microsoft Outlook Express", pharmacy
+			advertisment mail!
+
+000042		X-Mailer's value is Microsoft Outlook Express; windows-1252
+			encoding and has embedding picture(s) in message
+
+000043		single part mail without X-Mailer field in mail head, URL in mail
+			content and quoted-printable encoding message
+
+000044		multiple parts message, X-Mailer is like VxzHLXJqoK3hvGy,
+			boundary is like ----=_NextPart_s4yQH3AIgsv3oiCJSeh
+
+000045		Message-ID field in MIME head like "<rhtemcwpxnipk4w@niagara.com>"
+			X-Mailer like "Gorham WebMail 1.49" and Content-Type is 
+			"text/html; charset=ISO8859-1"
+
+000046		content contains more than two composed keywords
+
+000047		base64 decoding error
+
+000048		message size is less than 200 and ...
+
+000049		software advertisement spam produced by office outlook
+
+000050		boundary is like "=_rdPK8cecf4XoPB" and no X-Mailer in head
+
+000051		outlook express message with Message-ID like
+			001301c70f65$76c1bbb0$07763f8c@xxx and boundary 
+			string like ----=_NextPart_000_0010_01C70F65.76C1BBB0 
+			01c70f65 and 76c1bbb0 are same in both boundary and message ID
+
+000052		subject keyword filtered
+
+000053		mail head from keyword filtered
+
+000054		mail head to keyword filtered
+
+000055		mail head cc keyword filtered
+
+000056		mail content keyword filtered
+
+000057		mail attachment file name filtered
+
+000058		FalunGong mail, no X-Mailer tag; text/plain only contains carriage
+			return, line feed and space; some pictures are embedded in message.
+
+000059		xmailer is like "siu9z 10.41.1837" or boundary string is like
+			_nyKwDk2qTdyieC5zR6U7QSBrt
+
+000060		single part text/html mail Message-ID is like 
+			<20061211180744.63043.xxx@xxx> and subject is like
+			"rRn12_137Z?2006/{{PL"
+
+000061		X-Mailer is "Outlook Express" and boundary string is like 
+			"----=_NextPart_000_0000_..."
+
+000062		boundary is like "----=_02FD_01AB5EFF.1F9C7510" or Microsoft style
+			boundary but X-Mailer is like "Zsjhdf 6"
+
+000063		single part mail by Foxmail 5.0 [cn], no "Received" in MIME head,
+			Message-ID is like "<20070320193100375746@gmx.com>"
+			
+000064		Microsoft Outlook Express message, Message-ID is like
+			1bbbf001c85a3d$7bde4bd0$6702a8c0@yourd0f670b45a
+
+000065		xmailer is like "5.0 [30 Apr 2007 19:54:05 -0600]"
+
+000066		Microsoft Outlook Express message, single part and subject like
+			#^ &
+			=?GB2312?B?...
+
+000067		Microsoft Outlook Express message, Message-ID is like
+			<004182622656$11028805$21068558@hdqtdgnvv.net>
+
+000068		Microsoft Outlook Express "multipart/related" message,
+			"Undisclosed-Recipient:;" in mail head.
+
+000069		single part mail, "Received" tag same as "Date" tag in mail head
+
+000070		"Microsoft Outlook Express" message, iso-8859-1 and +0000 or
+			koi8-r message, no received, boundary and Message-ID mismatch
+
+000071		Message-ID is like <20090624132909.nroyzpzttlvc@mx10.southsidesky.com>
+			mx10.southsidesky.com is helo domain, From Tag in head is like
+			<domain@81890.net>; Subject is composed by ascii characters
+
+000072		spam of picture, multipart/related and begine of html is fixed
+
+000073		Microsoft Outlook Express and boundary is like ----=_NextPart_23...
+
+000074		message of "text/plain" "format=flowed" and last line is like
+			http://...
+
+000075		message of charset "koi8-r" and text/plain contains
+			"&quote;" or "&nbsp;"
+
+000076		Microsoft Outlook, Build ... message with text/plain and image/...
+
+000077		Microsoft Outlook Express message, text/plain; format=flowed;
+			charset=\"iso-8859-1\"; reply-type=original and no received tag
+			in mail head
+
+000078		Microsoft Outlook Express message and Date is ... +0000,
+			time interval between nowtime and date is 6442 or 6443
+
+000079		Microsoft Outlook Express or Thunderbird message, single text plain
+			message and 1 or 2 empty lines, with url link, less than 5 lines
+
+000080		total message length is less than 8 bytes
+
+000081		Thunderbird message and single text/html; charset=ISO-8859-1
+			content lenth is between 240 and 300, href in content
+
+000082		single application/octet-stream picture message or multipart/mixed
+			message, boundary is like pUeK6A=_YdE5om5xORCFoiNwpe1kTHWqHP
+
+000083		no X-Mailer and has X-Originating-Email, X-Sender and Message-Id
+			in mail head; </body>\r\n</style>\r\n in content

@@ -1,0 +1,2 @@
+#prefix			private|public		ip_address		port
+#/u-data/m1/	private				127.0.0.1		5000

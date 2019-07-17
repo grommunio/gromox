@@ -1,0 +1,203 @@
+#!/bin/sh
+
+RELEASE_HOME='release'
+BIN_DIR='bin'
+COMMON_DIR='common'
+EMAIL_LIB_DIR='email_lib'
+MAPI_LIB_DIR='mapi_lib'
+MAKE_DIR='make_include'
+SMTP_DIR='smtp'
+DELIVERY_DIR='delivery'
+AS_DIR='as_plugins'
+FLUSHER_DIR='flusher_plugins'
+SERVICE_DIR='service_plugins'
+MPC_DIR='mpc_plugins'
+LOGS_INFO='logs'
+CONFIGS_DIR='config'
+DATA_DIR='data'
+LIB_DIR='lib'
+SDK_DIR='sdk'
+COMMON_LIB='common.so'
+SCHEDULER_LIB='epoll_scheduler.so'
+EMAIL_LIB='email_lib.so'
+MAPI_LIB='mapi_lib.so'
+SMTP_NAME='smtp'
+DELIVERY_NAME='delivery'
+
+rm -rf $RELEASE_HOME
+mkdir $RELEASE_HOME
+mkdir $RELEASE_HOME/$BIN_DIR
+mkdir $RELEASE_HOME/$AS_DIR
+mkdir $RELEASE_HOME/$FLUSHER_DIR
+mkdir $RELEASE_HOME/$SERVICE_DIR
+mkdir $RELEASE_HOME/$MPC_DIR
+mkdir $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR
+mkdir $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR
+mkdir $RELEASE_HOME/$LOGS_INFO
+mkdir $RELEASE_HOME/$LOGS_INFO/$SMTP_DIR
+mkdir $RELEASE_HOME/$LOGS_INFO/$DELIVERY_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR/$SMTP_DIR
+mkdir $RELEASE_HOME/$CONFIGS_DIR/$DELIVERY_DIR
+mkdir $RELEASE_HOME/$DATA_DIR
+mkdir $RELEASE_HOME/$LIB_DIR
+mkdir $RELEASE_HOME/$DATA_DIR/$SMTP_DIR
+mkdir $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/precise_interception
+mkdir $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/domain_keyword
+mkdir $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/keyword_filter
+mkdir $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/domain_limit
+mkdir $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/domain_limit/allow
+mkdir $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/domain_limit/deny
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/anonymous_keyword
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/domain_monitor
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/domain_sign
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/mail_approving
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/domain_keyword
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/group_monitor
+mkdir $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/system_sign
+mkdir $RELEASE_HOME/$SDK_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$AS_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$AS_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$AS_DIR/sample
+mkdir $RELEASE_HOME/$SDK_DIR/$COMMON_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$COMMON_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$EMAIL_LIB_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$EMAIL_LIB_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$MAPI_LIB_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$MAPI_LIB_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$FLUSHER_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$FLUSHER_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$FLUSHER_DIR/sample
+mkdir $RELEASE_HOME/$SDK_DIR/$MAKE_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$MPC_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$MPC_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$MPC_DIR/sample
+mkdir $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR
+mkdir $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/include
+mkdir $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/sample
+cp scripts/install* $RELEASE_HOME
+cp herculiz/README $RELEASE_HOME
+cp herculiz/herculiz.bin $RELEASE_HOME/$BIN_DIR
+cp scripts/herculiz.sh $RELEASE_HOME/$BIN_DIR
+cp scripts/herculiz.service $RELEASE_HOME/$BIN_DIR
+cp smtp/$SMTP_NAME $RELEASE_HOME/$BIN_DIR
+cp delivery_app/$DELIVERY_NAME $RELEASE_HOME/$BIN_DIR
+cp smtp/$CONFIGS_DIR/smtp.cfg $RELEASE_HOME/$CONFIGS_DIR/smtp.cfg
+cp delivery_app/$CONFIGS_DIR/delivery.cfg $RELEASE_HOME/$CONFIGS_DIR/delivery.cfg
+cp smtp/$DATA_DIR/*.txt $RELEASE_HOME/$DATA_DIR/$SMTP_DIR
+cp common/$COMMON_LIB $RELEASE_HOME/$LIB_DIR
+cp epoll_scheduler/$SCHEDULER_LIB $RELEASE_HOME/$LIB_DIR
+cp email_lib/$EMAIL_LIB $RELEASE_HOME/$LIB_DIR
+cp mapi_lib/$MAPI_LIB $RELEASE_HOME/$LIB_DIR
+cp $AS_DIR/*/*.pas $RELEASE_HOME/$AS_DIR
+cp $AS_DIR/*/*.bak $RELEASE_HOME/$AS_DIR
+cp $AS_DIR/*/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$SMTP_DIR
+cp $AS_DIR/*/*.txt $RELEASE_HOME/$DATA_DIR/$SMTP_DIR
+cp $AS_DIR/domain_keyword/domain_keyword/*.txt $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/domain_keyword
+cp $AS_DIR/keyword_filter/keyword_filter/*.txt $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/keyword_filter
+cp $MPC_DIR/anonymous_keyword/anonymous_keyword/*.txt $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/anonymous_keyword
+cp $MPC_DIR/domain_keyword/domain_keyword/*.txt $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/domain_keyword
+cp $SERVICE_DIR/ip_container/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/ip_container.svc
+cp $SERVICE_DIR/ip_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/ip_filter.svc
+cp $SERVICE_DIR/ip_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/protection_ip_audit.svc
+cp $SERVICE_DIR/ip_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/inmail_frequency_audit.svc
+cp $SERVICE_DIR/str_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/user_filter.svc
+cp $SERVICE_DIR/str_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/outmail_frequency_audit.svc
+cp $SERVICE_DIR/str_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/outmail_limitation_audit.svc
+cp $SERVICE_DIR/str_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/mail_subject_audit.svc
+cp $SERVICE_DIR/str_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/mail_from_audit.svc
+cp $SERVICE_DIR/str_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/special_protection_audit.svc
+cp $SERVICE_DIR/ip_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/relay_list.svc
+echo "127.0.0.1" > $RELEASE_HOME/$DATA_DIR/$SMTP_DIR/relay_list.txt
+cp $SERVICE_DIR/ip_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/ip_whitelist.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/domain_list.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/domain_whitelist.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_from.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_domain.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_rcpt.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/boundary_list.svc
+cp $SERVICE_DIR/log_plugin/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/log_plugin.svc
+cp $SERVICE_DIR/midb_agent/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/midb_agent.svc
+cp $SERVICE_DIR/mysql_adaptor/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/mysql_adaptor.svc
+cp $SERVICE_DIR/retrying_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/retrying_table.svc
+cp $SERVICE_DIR/tagging_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/tagging_table.svc
+cp $SERVICE_DIR/spam_statistic/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/spam_statistic.svc
+cp $SERVICE_DIR/$CONFIGS_DIR/$SMTP_DIR/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$SMTP_DIR
+cp $SERVICE_DIR/$DATA_DIR/$SMTP_DIR/*.txt $RELEASE_HOME/$DATA_DIR/$SMTP_DIR
+cp $SERVICE_DIR/ip_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/remote_delivery_forbidden.svc
+cp $SERVICE_DIR/log_plugin/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/log_plugin.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/domain_list.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/remote_mx_hello.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/single_rcpt.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/relay_domains.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/backup_list.svc
+cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/monitor_domains.svc
+cp $SERVICE_DIR/ip_filter/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/remote_delivery_audit.svc
+cp $SERVICE_DIR/dns_adaptor/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/dns_adaptor.svc
+cp $SERVICE_DIR/mysql_adaptor/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/mysql_adaptor.svc
+cp $SERVICE_DIR/console_control/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/smtp_console_control.svc
+cp $SERVICE_DIR/console_control/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/delivery_console_control.svc
+cp $SERVICE_DIR/spam_statistic/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/spam_statistic.svc
+cp $SERVICE_DIR/lang_charset/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/lang_charset.svc
+cp $SERVICE_DIR/sssp_agent/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/sssp_agent.svc
+cp $SERVICE_DIR/mime_extension/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/mime_extension.svc
+cp $SERVICE_DIR/ms_locale/*.svc $RELEASE_HOME/$SERVICE_DIR/$DELIVERY_DIR/ms_locale.svc
+cp $SERVICE_DIR/$CONFIGS_DIR/$DELIVERY_DIR/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$DELIVERY_DIR
+cp $SERVICE_DIR/$DATA_DIR/$DELIVERY_DIR/*.txt $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR
+cp $FLUSHER_DIR/*/*.flh $RELEASE_HOME/$FLUSHER_DIR
+cp $FLUSHER_DIR/*/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$SMTP_DIR
+cp $FLUSHER_DIR/*/*.sh $RELEASE_HOME/$BIN_DIR
+cp $MPC_DIR/self_monitor/self_monitor.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/alias_translator/alias_translator.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/archive_agent/archive_agent.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/mlist_expand/mlist_expand.hook $RELEASE_HOME/$MPC_DIR
+cp -R $MPC_DIR/mlist_expand/resource $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/mlist_bounce
+cp $MPC_DIR/anonymous_keyword/anonymous_keyword.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/antivirus_processor/antivirus_processor.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/domain_mailbox/domain_mailbox.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/domain_monitor/domain_monitor.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/mail_approving/mail_approving.hook $RELEASE_HOME/$MPC_DIR
+cp -R $MPC_DIR/mail_approving/resource $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/approving_bounce
+cp $MPC_DIR/domain_keyword/domain_keyword.hook $RELEASE_HOME/$MPC_DIR
+cp -R $MPC_DIR/domain_keyword/resource $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/keyword_bounce
+cp $MPC_DIR/domain_sign/domain_sign.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/domain_subsystem/domain_subsystem.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/exmdb_local/exmdb_local.hook $RELEASE_HOME/$MPC_DIR
+cp -R $MPC_DIR/exmdb_local/resource $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/local_bounce
+cp $MPC_DIR/from_replace/from_replace.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/group_monitor/group_monitor.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/mail_forwarder/mail_forwarder.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/mailbox_collector/mailbox_collector.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/message_insulation/message_insulation.hook $RELEASE_HOME/$MPC_DIR
+cp -R $MPC_DIR/message_insulation/resource $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/insulation_bounce
+cp $MPC_DIR/os_inspection/os_inspection.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/relay_agent/relay_agent.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/remote_postman/remote_postman.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/remote_postman/remote_routing.txt $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR
+cp -R $MPC_DIR/remote_postman/resource $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR/remote_bounce
+cp $MPC_DIR/report_forms/report_forms.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/spam_complain/spam_complain.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/spam_tagging/spam_tagging.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/status_forms/status_forms.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/system_sign/system_sign.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/system_updater/system_updater.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/user_forwarder/user_forwarder.hook $RELEASE_HOME/$MPC_DIR
+cp $MPC_DIR/*/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$DELIVERY_DIR
+cp $MPC_DIR/*/*.txt $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR
+dos2unix $RELEASE_HOME/$BIN_DIR/*.sh
+chmod a+x $RELEASE_HOME/$BIN_DIR/*.sh
+cp common/include/*.h $RELEASE_HOME/$SDK_DIR/$COMMON_DIR/include
+cp as_plugins/include/*.h $RELEASE_HOME/$SDK_DIR/$AS_DIR/include
+cp as_plugins/sample/* $RELEASE_HOME/$SDK_DIR/$AS_DIR/sample
+cp email_lib/include/*.h $RELEASE_HOME/$SDK_DIR/$EMAIL_LIB_DIR/include
+cp mapi_lib/include/*.h $RELEASE_HOME/$SDK_DIR/$MAPI_LIB_DIR/include
+cp flusher_plugins/include/*.h $RELEASE_HOME/$SDK_DIR/$FLUSHER_DIR/include
+cp flusher_plugins/sample/* $RELEASE_HOME/$SDK_DIR/$FLUSHER_DIR/sample
+cp make_include/* $RELEASE_HOME/$SDK_DIR/$MAKE_DIR
+cp mpc_plugins/include/*.h $RELEASE_HOME/$SDK_DIR/$MPC_DIR/include
+cp mpc_plugins/sample/* $RELEASE_HOME/$SDK_DIR/$MPC_DIR/sample
+cp service_plugins/include/*.h $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/include
+cp service_plugins/sample/* $RELEASE_HOME/$SDK_DIR/$SERVICE_DIR/sample
+cd $RELEASE_HOME/$SERVICE_DIR && ln -s ../$LIB_DIR .
+cd ../$SDK_DIR && ln -s ../$LIB_DIR .

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+
+mkdir /var/posidon
+cp -R * /var/posidon
+touch /var/posidon/logs/posidon_log.txt
+chown -R apache /var/posidon
+chmod -R a+wr /var/posidon
+mv /var/posidon/bin/posidon.bin /usr/bin/posidon
+mv /var/posidon/bin/posidon.sh /etc/rc.d/init.d/posidon
+rm -f /var/posidon/bin/posidon.service
+chkconfig --add posidon
+chown -R apache. /var/posidon
+echo "POSIDON domain administration web agent is installed OK"
+echo

@@ -1,0 +1,24 @@
+CHARSET					us-ascii
+ERROR_HTML_TITLE		error
+ERROR_REQUEST			request\ error!
+ERROR_INTERNAL			internal\ error!
+ERROR_SERVICE			session\ service\ may\ not\ be\ started
+ERROR_GROUP				department\ name\ error
+ERROR_STATUS			department\ is\ under\ disabled\ status
+ERROR_AUTH				bad\ group\ name\ or\ password
+BACK_LABEL				relogin
+LOGIN_HTML_TITLE		Green\ messenger\ mail\ system\ department\ administration\ login
+GROUP					department\ name
+PASSWORD				password
+LOGIN_LABEL				login
+MAIN_HTML_TITLE			Green\ messenger\ mail\ system\ department\ administration
+ITEM_GROUP_INFO			information
+ITEM_GROUP_USERS		users\ list
+ITEM_GROUP_BINPUT		users\ batch\ operation
+ITEM_GROUP_CLASSES		user\ class\ list
+ITEM_GROUP_CLISTS		class\ mail\ list
+ITEM_GROUP_LOG			log\ search
+ITEM_GROUP_ARCHIVE		mail\ archive
+ITEM_GROUP_MONITOR		mail\ minitoring
+ITEM_GROUP_EXIT			exit
+COMPANY_INFORMATION		2018\ Shanghai\ Gridware\ Information\ Technology
