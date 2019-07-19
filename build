@@ -1,5 +1,13 @@
 #!/bin/sh
 
+chmod a+x LIBRARY/scripts/*
+chmod a+x MTA_SYSTEM/scripts/*
+chmod a+x MRA_SYSTEM/scripts/*
+chmod a+x EXCHANGE_SYSTEM/scripts/*
+chmod a+x AGENT_SERVICE/scripts/*
+chmod a+x DOMAIN_ADMIN/scripts/*
+chmod a+x SYSTEM_ADMIN/scripts/*
+chmod a+x ARCHIVE_SYSTEM/scripts/*
 cd LIBRARY && make && cd ..
 cd MTA_SYSTEM && make && make release && cd ..
 cd MRA_SYSTEM && make && make release && cd ..
