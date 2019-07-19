@@ -3,7 +3,9 @@
 
 mkdir /var/pandora
 cp -R * /var/pandora
-chown -R apache /var/pandora
+groupadd -g 800 herculiz
+useradd herculiz -u 800 -g herculiz -d /var/herculiz -s /bin/nologin
+chown -R herculiz:herculiz /var/pandora
 chmod -R a+wr /var/pandora
 mv /var/pandora/bin/pandora.bin /usr/bin/pandora
 mv /var/pandora/bin/pandora.sh /etc/rc.d/init.d/pandora

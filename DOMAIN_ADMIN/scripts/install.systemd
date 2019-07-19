@@ -3,13 +3,15 @@
 
 mkdir /var/posidon
 cp -R * /var/posidon
+groupadd -g 800 herculiz
+useradd herculiz -u 800 -g herculiz -d /var/herculiz -s /bin/nologin
 touch /var/posidon/logs/posidon_log.txt
-chown -R apache /var/posidon
+chown -R herculiz:herculiz /var/posidon
 chmod -R a+wr /var/posidon
 mv /var/posidon/bin/posidon.bin /usr/bin/posidon
 mv /var/posidon/bin/posidon.service /usr/lib/systemd/system/posidon.service
 rm -f /var/pandora/bin/posidon.sh
 systemctl enable posidon.service
-chown -R apache. /var/posidon
+chown -R herculiz:herculiz /var/posidon
 echo "POSIDON mail administration service is installed OK"
 echo
