@@ -3,6 +3,7 @@
 
 mkdir /var/athena
 cp -R * /var/athena
+ln -s /var/herculiz /var/athena/gateway
 groupadd -g 800 herculiz
 useradd herculiz -u 800 -g herculiz -d /var/herculiz -s /bin/nologin
 touch /var/athena/logs/athena_log.txt

@@ -3,6 +3,7 @@
 
 mkdir /var/posidon
 cp -R * /var/posidon
+ln -s /var/herculiz /var/posidon/gateway
 groupadd -g 800 herculiz
 useradd herculiz -u 800 -g herculiz -d /var/herculiz -s /bin/nologin
 touch /var/posidon/logs/posidon_log.txt
