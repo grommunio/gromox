@@ -1,0 +1,204 @@
+yum -y install gcc gcc-c++ makedepend mariadb mariadb-server mariadb-devel sqlite-devel php php-devel php-fpm php-xml php-soap php-gd php-process php-pear php-mbstring php-mysql libtool unzip wget dos2unix
+
+#build php-mapi, caution!!! cannot do this step after libiconv
+cd STEEP_SYSTEM-master/AGENT_SERVICE/php_mapi
+sh -x build.sh
+cp modules/mapi.so /usr/lib64/php/modules/
+cp mapi.ini /etc/php.d/
+
+#download libiconv from http://www.gnu.org/software/libiconv/ (e.g. wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz)
+tar zxvf libiconv-1.16.tar.gz 
+cd libiconv-1.16
+./configure --prefix=/usr
+make && make install
+
+#download gumbo from https://github.com/google/gumbo-parser
+unzip gumbo-parser-master.zip
+cd gumbo-parser-master
+./autogen.sh
+./configure --prefix=/usr
+make && make install
+
+#download libspf2 from https://www.libspf2.org (e.g. https://www.libspf2.org/spf/libspf2-1.2.10.tar.gz)
+tar zxvf libspf2-1.2.10.tar.gz
+./configure --prefix=/usr
+make && make install
+
+#download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ caution!!! please download libxls-1.0.0.zip
+unzip libxls-1.0.0.zip
+./configure --prefix=/usr
+make && make install
+
+#build and install the whole system 
+cd STEEP_SYSTEM-master
+sh -x build && sh -x install
+
+#create database
+systemctl enable mariadb
+systemctl start mariadb
+mysql < /var/athena/doc/mysql.txt
+
+#close selinux by editting /etc/selinux/config, change "SELINUX=enforcing" to "SELINUX=disable"
+#also excute the command to turn off selinux
+setenforce 0
+
+#close the firewalld
+systemctl stop firewalld
+systemctl disable firewalld
+
+#config the httpd
+#change httpd listen port from 80 to 1080 by setting "Listen 1080"
+delete or comment the paragraph 
+<IfModule alias_module>
+...
+ScriptAlias /cgi-bin/ "/var/www/cgi-bin/"
+...
+</IfModule>
+
+<Directory "/var/www/cgi-bin">
+...
+</Directory>
+
+#start apache
+systemctl enable httpd
+systemctl start httpd
+
+
+#edit /etc/php-fpm.d/www.conf
+listen = /var/run/php5-fpm.sock
+
+#start php-fpm
+systemctl enable php-fpm
+systemctl start php-fpm
+
+#stop postfix
+systemctl stop postfix
+systemctl disable postfix
+
+#make ssl certificate directory
+mkdir /var/tls
+
+#upload key and certificate into /var/tls, for example
+-rw-r--r-- 1 root root 1675 Jun 11 19:19 mail.key
+-rw-r--r-- 1 root root 3725 Jun 11 19:19 mail.pem
+
+#if you want to modify X500_ORG_NAME, please find them in below files and set to the same value!
+/var/medusa/http/exchange_nsp.cfg
+/var/medusa/http/exchange_emsmdb.cfg
+/var/medusa/http/exmdb_provider.cfg
+/var/medusa/midb.cfg
+/var/medusa/zcore.cfg
+/var/herculiz/config/delivery/exmdb_local.cfg
+
+#if you want to modify DEFAULT_TIMEZONE, please find them in below files and set to the same value!
+medusa/config/midb.cfg
+medusa/config/zcore.cfg
+herculiz/config/delivery/exmdb_local.cfg
+
+#if you want to modify DEFAULT_CHARSET, please find them in below files and set to the same value!
+medusa/config/midb.cfg
+medusa/config/zcore.cfg
+herculiz/config/delivery/exmdb_local.cfg
+
+#config smtp and delivery
+cd /var/herculiz/config/
+#edit smtp.cfg
+#modify HOST_ID=your machine hostname (e.g. HOST_ID=host1.herculiz.com)
+#modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
+#modify SMTP_SUPPORT_STARTTLS=TRUE
+#modify SMTP_CERTIFICATE_PATH=/var/tls/mail.pem
+#if you the certificate has password set SMTP_CERTIFICATE_PASSWD=certificate password
+#modify SMTP_PRIVATE_KEY_PATH=/var/tls/mail.key
+#if you want to force starttls in smtp session, set SMTP_FORCE_STARTTLS=TRUE
+#edit delivery.cfg
+#modify HOST_IDyour machine hostname (e.g. HOST_ID=host1.herculiz.com)
+#modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
+#modify ADMIN_MAILBOX=your email address(e.g. ADMIN_MAILBOX = admin@herculiz.com)
+
+#config pop3 and imap
+#edit pop3.cfg
+#modify HOST_ID=your machine hostname (e.g. HOST_ID=host1.herculiz.com)
+#modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
+#modify POP3_SUPPORT_STLS=TRUE
+#modify POP3_CERTIFICATE_PATH=/var/tls/mail.pem
+#if you the certificate has password set POP3_CERTIFICATE_PASSWD=certificate password
+#modify POP3_PRIVATE_KEY_PATH=/var/tls/mail.key
+#if you want to force starttls in pop session, set POP3_FORCE_STLS=TRUE
+#edit imap.cfg
+#modify HOST_ID=your machine hostname (e.g. HOST_ID=host1.herculiz.com)
+#modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
+#modify IMAP_SUPPORT_STARTTLS=TRUE
+#modify IMAP_CERTIFICATE_PATH=/var/tls/mail.pem
+#if you the certificate has password set IMAP_CERTIFICATE_PASSWD=certificate password
+#modify IMAP_PRIVATE_KEY_PATH=/var/tls/mail.key
+#if you want to force starttls in pop session, set IMAP_FORCE_STARTTLS=TRUE
+
+#config http midb zcore
+#edit http.cfg
+#modify HOST_ID=your machine hostname (e.g. HOST_ID=host1.herculiz.com)
+#modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
+#modify HTTP_SUPPORT_SSL=TRUE
+#modify HTTP_CERTIFICATE_PATH=/var/tls/mail.pem
+#if you the certificate has password set HTTP_CERTIFICATE_PASSWD=certificate password
+#modify HTTP_PRIVATE_KEY_PATH=/var/tls/mail.key
+
+#start all steep services
+systemctl start medusa
+systemctl start apollo
+systemctl start herculiz
+systemctl start pandora
+systemctl start posidon
+
+#system administration
+#visit the system administration UI by http://xxx.xxx.xxx.xxx:1080/cgi-bin/admin_main
+
+login the system with the username "administrator" and the empty password (don't input anthing in password)
+
+#create and format storage directory
+mkdir /u-data
+mkdir /u-data/m1
+mkdir /u-data/s1
+mkdir /d-data
+mkdir /d-data/m1
+mkdir /d-data/s1
+cd /var/athena/tools/
+./format_area.sh /u-data/m1
+./format_area.sh /d-data/m1
+
+#if you have a ssd to accelerate sqlite database, you can link or mount a folder
+#under /u-data or /d-data, for example: ln /ssd/e1 /u-data/e1
+#you should also format the folder by excuting the script cd /var/athena/tools/ && ./format_area.sh /u-data/e1
+
+#finally login the administration UI, enter "system setup" --> "data area setup"
+#add two storage area
+
+data type: user data
+master data area: /u-data/m1
+database accelerating storage area:  leave empty or "/u-data/e1" if you have ssd storage
+slave data area: /u-data/s1  it's better to link this folder to another file system partition or mount a seperated storage on this directory
+maximum space: space for the area (e.g. 1000000M)
+maximum files: maximum files number kept in the area (e.g. 100000000)
+#finally add the user data area
+
+data type: domain data
+master data area: /d-data/m1
+database accelerating storage area:  leave empty or "/d-data/e1" if you have ssd storage
+slave data area: /d-data/s1  it's better to link this folder to another file system partition or mount a seperated storage on this directory
+maximum space: space for the area (e.g. 1000000M)
+maximum files: maximum files number kept in the area (e.g. 100000000)
+#finally add the domain data area
+
+#for reference of system administration and domain administration, please see the admin.pdf
+
+#install webmail, download webmail from https://github.com/steep-system/webmail and extract it into /var/webmail
+
+#install z-push
+#download z-push from https://github.com/Z-Hub/Z-Push and extract it
+mkdir -p /usr/share/z-push
+chown -R herculiz: /usr/share/z-push
+cp -R Z-Push-develop/src/* /usr/share/z-push/
+mkdir /var/lib/z-push
+mkdir /var/log/z-push
+chmod 777 /var/lib/z-push /var/log/z-push
+chown herculiz:herculiz /var/lib/z-push /var/log/z-push
+
