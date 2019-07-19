@@ -185,6 +185,12 @@ cp $MPC_DIR/system_updater/system_updater.hook $RELEASE_HOME/$MPC_DIR
 cp $MPC_DIR/user_forwarder/user_forwarder.hook $RELEASE_HOME/$MPC_DIR
 cp $MPC_DIR/*/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$DELIVERY_DIR
 cp $MPC_DIR/*/*.txt $RELEASE_HOME/$DATA_DIR/$DELIVERY_DIR
+unix2dos $RELEASE_HOME/mlist_bounce/*
+unix2dos $RELEASE_HOME/approving_bounce/*
+unix2dos $RELEASE_HOME/keyword_bounce/*
+unix2dos $RELEASE_HOME/local_bounce/*
+unix2dos $RELEASE_HOME/insulation_bounce/*
+unix2dos $RELEASE_HOME/remote_bounce/*
 dos2unix $RELEASE_HOME/$BIN_DIR/*.sh
 chmod a+x $RELEASE_HOME/$BIN_DIR/*.sh
 cp common/include/*.h $RELEASE_HOME/$SDK_DIR/$COMMON_DIR/include
