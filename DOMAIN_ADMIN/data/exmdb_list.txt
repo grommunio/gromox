@@ -1,0 +1,3 @@
+#prefix			private|public		ip_address		port
+/u-data/		private				127.0.0.1		5000
+/u-data/		public				127.0.0.1		5000
