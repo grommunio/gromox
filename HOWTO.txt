@@ -11,23 +11,25 @@ cp mapi.ini /etc/php.d/
 #download libiconv from http://www.gnu.org/software/libiconv/ (e.g. wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz)
 tar zxvf libiconv-1.16.tar.gz 
 cd libiconv-1.16
-./configure --prefix=/usr
+./configure --prefix=/usr --libdir=/usr/lib64
 make && make install
 
 #download gumbo from https://github.com/google/gumbo-parser
 unzip gumbo-parser-master.zip
 cd gumbo-parser-master
 ./autogen.sh
-./configure --prefix=/usr
+./configure --prefix=/usr --libdir=/usr/lib64
 make && make install
 
-#download libspf2 from https://www.libspf2.org (e.g. https://www.libspf2.org/spf/libspf2-1.2.10.tar.gz)
+#download libspf2 from https://www.libspf2.org (e.g. wget https://www.libspf2.org/spf/libspf2-1.2.10.tar.gz)
 tar zxvf libspf2-1.2.10.tar.gz
+cd libspf2-1.2.10
 ./configure --prefix=/usr
 make && make install
 
-#download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ caution!!! please download libxls-1.0.0.zip
-unzip libxls-1.0.0.zip
+#download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ caution!!! please download libxls-1.1.0.zip
+unzip libxls-1.1.0.zip
+cd libxls
 ./configure --prefix=/usr
 make && make install
 
@@ -40,7 +42,7 @@ systemctl enable mariadb
 systemctl start mariadb
 mysql < /var/athena/doc/mysql.txt
 
-#close selinux by editting /etc/selinux/config, change "SELINUX=enforcing" to "SELINUX=disable"
+#close selinux by editting /etc/selinux/config, change "SELINUX=enforcing" to "SELINUX=disabled"
 #also excute the command to turn off selinux
 setenforce 0
 
@@ -48,7 +50,7 @@ setenforce 0
 systemctl stop firewalld
 systemctl disable firewalld
 
-#config the httpd
+#config the httpd in /etc/httpd/conf/httpd.conf
 #change httpd listen port from 80 to 1080 by setting "Listen 1080"
 delete or comment the paragraph 
 <IfModule alias_module>
@@ -93,14 +95,14 @@ mkdir /var/tls
 /var/herculiz/config/delivery/exmdb_local.cfg
 
 #if you want to modify DEFAULT_TIMEZONE, please find them in below files and set to the same value!
-medusa/config/midb.cfg
-medusa/config/zcore.cfg
-herculiz/config/delivery/exmdb_local.cfg
+/var/medusa/config/midb.cfg
+/var/medusa/config/zcore.cfg
+/var/herculiz/config/delivery/exmdb_local.cfg
 
 #if you want to modify DEFAULT_CHARSET, please find them in below files and set to the same value!
-medusa/config/midb.cfg
-medusa/config/zcore.cfg
-herculiz/config/delivery/exmdb_local.cfg
+/var/medusa/config/midb.cfg
+/var/medusa/config/zcore.cfg
+/var/herculiz/config/delivery/exmdb_local.cfg
 
 #config smtp and delivery
 cd /var/herculiz/config/
@@ -113,7 +115,7 @@ cd /var/herculiz/config/
 #modify SMTP_PRIVATE_KEY_PATH=/var/tls/mail.key
 #if you want to force starttls in smtp session, set SMTP_FORCE_STARTTLS=TRUE
 #edit delivery.cfg
-#modify HOST_IDyour machine hostname (e.g. HOST_ID=host1.herculiz.com)
+#modify HOST_ID=your machine hostname (e.g. HOST_ID=host1.herculiz.com)
 #modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
 #modify ADMIN_MAILBOX=your email address(e.g. ADMIN_MAILBOX = admin@herculiz.com)
 
@@ -145,11 +147,7 @@ cd /var/herculiz/config/
 #modify HTTP_PRIVATE_KEY_PATH=/var/tls/mail.key
 
 #start all steep services
-systemctl start medusa
-systemctl start apollo
-systemctl start herculiz
-systemctl start pandora
-systemctl start posidon
+systemctl start medusa apollo herculiz pandora athena posidon
 
 #system administration
 #visit the system administration UI by http://xxx.xxx.xxx.xxx:1080/cgi-bin/admin_main
@@ -193,6 +191,9 @@ maximum files: maximum files number kept in the area (e.g. 100000000)
 #for reference of system administration and domain administration, please see the admin.pdf
 
 #install webmail, download webmail from https://github.com/steep-system/webmail and extract it into /var/webmail
+#edit /var/webmail/config/config.ini
+#under section [path]
+#modify host and vhost to your hostname of webmail
 
 #install z-push
 #download z-push from https://github.com/Z-Hub/Z-Push and extract it
