@@ -64,7 +64,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		pfile = config_file_init(config_file_path);
 		if (NULL == pfile) {
-			printf("[%s]: fail to open %s\n", file_name);
+			printf("[%s]: fail to open %s\n", file_name, config_file_path);
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_IP");
