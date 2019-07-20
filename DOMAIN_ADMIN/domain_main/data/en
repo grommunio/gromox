@@ -15,7 +15,7 @@ LOGIN_LABEL				login
 MAIN_HTML_TITLE			Green\ messenger\ mail\ system\ domain\ administration
 ITEM_DOMAIN_INFO		information
 ITEM_DOMAIN_CONFIG		configuration
-ITEM_DOMAIN_GROUPS		groups\ list
+ITEM_DOMAIN_GROUPS		department\ list
 ITEM_DOMAIN_USERS		users\ list
 ITEM_DOMAIN_BINPUT		users\ batch\ operation
 ITEM_DOMAIN_FOLDERS		public\ folder\ list

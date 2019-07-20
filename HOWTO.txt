@@ -24,13 +24,13 @@ make && make install
 #download libspf2 from https://www.libspf2.org (e.g. wget https://www.libspf2.org/spf/libspf2-1.2.10.tar.gz)
 tar zxvf libspf2-1.2.10.tar.gz
 cd libspf2-1.2.10
-./configure --prefix=/usr
+./configure --prefix=/usr --libdir=/usr/lib64
 make && make install
 
 #download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ caution!!! please download libxls-1.1.0.zip
 unzip libxls-1.1.0.zip
 cd libxls
-./configure --prefix=/usr
+./configure --prefix=/usr --libdir=/usr/lib64
 make && make install
 
 #build and install the whole system 
@@ -52,7 +52,8 @@ systemctl disable firewalld
 
 #config the httpd in /etc/httpd/conf/httpd.conf
 #change httpd listen port from 80 to 1080 by setting "Listen 1080"
-delete or comment the paragraph 
+#change User and Group from apache to herculiz 
+#delete or comment the paragraph 
 <IfModule alias_module>
 ...
 ScriptAlias /cgi-bin/ "/var/www/cgi-bin/"
@@ -214,3 +215,14 @@ mkdir /var/log/z-push
 chmod 777 /var/lib/z-push /var/log/z-push
 chown herculiz:herculiz /var/lib/z-push /var/log/z-push
 
+
+#host domain
+if you want to host a domain in the system (e.g. abc.com, hostname: exch1.herculiz.com)
+
+abc.com.						IN MX		10 exch1.herculiz.com.
+mail.abc.com.					IN CNAME	exch1.herculiz.com.
+autodiscover.abc.com.			IN CNAME	exch1.herculiz.com.
+_autodiscover._tcp.abc.com.		SRV 0 0 443 exch1.herculiz.com.
+
+#to add domain and username into system, please refer to sys-admin.pdf and domain-admin.pdf
+#after everything is ready, you can set up outlook account with just filling username and password.
