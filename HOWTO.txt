@@ -226,3 +226,5 @@ _autodiscover._tcp.abc.com.		SRV 0 0 443 exch1.herculiz.com.
 
 #to add domain and username into system, please refer to sys-admin.pdf and domain-admin.pdf
 #after everything is ready, you can set up outlook account with just filling username and password.
+
+If you have any question, please send me email by yangsongyi@ee-post.com
