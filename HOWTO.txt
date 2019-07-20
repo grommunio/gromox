@@ -93,11 +93,13 @@ mkdir /var/tls
 /var/medusa/midb.cfg
 /var/medusa/zcore.cfg
 /var/herculiz/config/delivery/exmdb_local.cfg
+#also change orgnization of section "exchange" in /var/medusa/php/config/config.ini
 
 #if you want to modify DEFAULT_TIMEZONE, please find them in below files and set to the same value!
 /var/medusa/config/midb.cfg
 /var/medusa/config/zcore.cfg
 /var/herculiz/config/delivery/exmdb_local.cfg
+#also change timezone of section "default" in /var/medusa/php/config/config.ini
 
 #if you want to modify DEFAULT_CHARSET, please find them in below files and set to the same value!
 /var/medusa/config/midb.cfg
@@ -120,6 +122,7 @@ cd /var/herculiz/config/
 #modify ADMIN_MAILBOX=your email address(e.g. ADMIN_MAILBOX = admin@herculiz.com)
 
 #config pop3 and imap
+cd /var/apollo/config/
 #edit pop3.cfg
 #modify HOST_ID=your machine hostname (e.g. HOST_ID=host1.herculiz.com)
 #modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
@@ -138,6 +141,7 @@ cd /var/herculiz/config/
 #if you want to force starttls in pop session, set IMAP_FORCE_STARTTLS=TRUE
 
 #config http midb zcore
+cd /var/medusa/config
 #edit http.cfg
 #modify HOST_ID=your machine hostname (e.g. HOST_ID=host1.herculiz.com)
 #modify DEFAULT_DOMAIN (e.g. DEFAULT_DOMAIN=herculiz.com)
@@ -145,6 +149,11 @@ cd /var/herculiz/config/
 #modify HTTP_CERTIFICATE_PATH=/var/tls/mail.pem
 #if you the certificate has password set HTTP_CERTIFICATE_PASSWD=certificate password
 #modify HTTP_PRIVATE_KEY_PATH=/var/tls/mail.key
+
+#config autodiscover and EWS
+cd /var/medusa/php/config
+#edit config.ini set hostname=autodiscover hostname under section "exchange"
+#set /u-data=proxy hostname (normally same as autodiscover hostname) under section "http-porxy"
 
 #start all steep services
 systemctl start medusa apollo herculiz pandora athena posidon
