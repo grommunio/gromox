@@ -8,6 +8,7 @@ groupadd -g 800 herculiz
 useradd herculiz -u 800 -g herculiz -d /var/herculiz -s /bin/nologin
 chown -R herculiz:herculiz /var/herculiz
 chmod -R a+rw /var/herculiz
+chmod a+x /var/herculiz
 mv /var/herculiz/bin/herculiz.bin /usr/bin/herculiz
 mv /var/herculiz/bin/herculiz.sh /etc/rc.d/init.d/herculiz
 rm -f /var/herculiz/bin/herculiz.service
