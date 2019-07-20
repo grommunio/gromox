@@ -217,12 +217,34 @@ chown herculiz:herculiz /var/lib/z-push /var/log/z-push
 
 
 #host domain
-if you want to host a domain in the system (e.g. abc.com, hostname: exch1.herculiz.com)
+if you want to host a domain in the system (e.g. herculiz.com, hostname: exch1.herculiz.com)
 
-abc.com.						IN MX		10 exch1.herculiz.com.
-mail.abc.com.					IN CNAME	exch1.herculiz.com.
-autodiscover.abc.com.			IN CNAME	exch1.herculiz.com.
-_autodiscover._tcp.abc.com.		SRV 0 0 443 exch1.herculiz.com.
+herculiz.com.						IN MX		10 exch1.herculiz.com.
+mail.herculiz.com.					IN CNAME	exch1.herculiz.com.
+autodiscover.herculiz.com.			IN CNAME	exch1.herculiz.com.
+_autodiscover._tcp.herculiz.com.	SRV 0 0 443 exch1.herculiz.com.
+
+#------------------------------------------------------------------------------------------------------
+#caution!!! if hosted domain is different from the certificate domain name, for example,
+#the hosted name is abc.com and certificate name is exch1.herculiz.com, then you must find
+#a different host (e.g. adjmp.herculiz.com), this host must turn off ssl support!
+#add a file named autodiscover.conf into /etc/httpd/conf.d on that no ssl host with the content below
+
+RewriteEngine on
+RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK)
+RewriteRule .* - [F]
+
+Redirect /Autodiscover/Autodiscover.xml https://exch1.herculiz.com/Autodiscover/Autodiscover.xml
+Redirect /autodiscover/autodiscover.xml https://exch1.herculiz.com/Autodiscover/Autodiscover.xml
+Redirect /AutoDiscover/AutoDiscover.xml https://exch1.herculiz.com/Autodiscover/Autodiscover.xml
+
+#and restart httpd (systemctl restart httpd)
+
+#the domain herculiz.com must have a a record
+adjmp.herculiz.com.			IN A 192.168.1.200
+#hosted domain abc.com should add a cname record
+autodiscover.abc.com		IN CNAME adjmp.herculiz.com
+#------------------------------------------------------------------------------------------------------
 
 #to add domain and username into system, please refer to sys-admin.pdf and domain-admin.pdf
 #after everything is ready, you can set up outlook account with just filling username and password.
