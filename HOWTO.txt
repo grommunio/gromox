@@ -197,7 +197,7 @@ maximum space: space for the area (e.g. 1000000M)
 maximum files: maximum files number kept in the area (e.g. 100000000)
 #finally add the domain data area
 
-#for reference of system administration and domain administration, please see the admin.pdf
+#for reference of system administration and domain administration, please see the sys-admin.pdf
 
 #install webmail, download webmail from https://github.com/steep-system/webmail and extract it into /var/webmail
 #edit /var/webmail/config/config.ini
