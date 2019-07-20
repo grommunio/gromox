@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 
-#define SPAM_STATISTIC_PROPERTY_014		14
+#define SPAM_STATISTIC_PROPERTY_001		14
 
 typedef void (*SPAM_STATISTIC)(int);
 
@@ -66,11 +66,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
-	int offset;
 	int out_len;
-	int tag_len;
-	int val_len;
-	char *ptr_at;
 	char buff[1024];
 	
 	if (TRUE == pmail->penvelop->is_outbound ||
@@ -86,7 +82,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	if (NULL != spam_statistic) {
-		spam_statistic(SPAM_STATISTIC_PROPERTY_014);
+		spam_statistic(SPAM_STATISTIC_PROPERTY_001);
 	}
 	strncpy(reason, g_return_reason, length);
 	return MESSAGE_REJECT;
