@@ -569,6 +569,8 @@ int list_ui_run()
 				}
 				memcpy(temp_address, ptr1, search_buff + len - 1 - ptr1);
 				temp_address[search_buff + len - 1 - ptr1] = '\0';
+				ltrim_string(temp_address);
+				rtrim_string(temp_address);
 				if (0 == strcasecmp(type, "insert-lst")) {
 					if (NULL == strchr(temp_address, '@')) {
 						goto GET_ERROR;
