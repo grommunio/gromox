@@ -27,7 +27,9 @@ static char g_return_reason[1024];
 static BOOL *g_context_list;
 
 
-static char *g_attachment_list[] = {"exe", "com", "bat", "scr", "cab", "js", "jse", "vbs", "vbe", "wsf", "jar"};
+static char *g_attachment_list[] ={
+	"exe", "com", "bat", "ps1", "scr", "cab",
+	"js", "jse", "vbs", "vbe", "wsf", "jar"};
 
 int AS_LibMain(int reason, void **ppdata, char *path)
 {
