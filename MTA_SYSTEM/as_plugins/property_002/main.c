@@ -1,9 +1,9 @@
-#include "as_common.h"
 #include "config_file.h"
+#include "as_common.h"
 #include "util.h"
 #include <ctype.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 
 #define SPAM_STATISTIC_PROPERTY_002		15
@@ -97,7 +97,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 				}
 				mem_file_read(&pmail->phead->f_others, buff, val_len);
 				if (NULL == search_string(buff, " localhost ", val_len) &&
-					NULL == search_string(buff, "127.0.0.1", val_len)) {
+					NULL == search_string(buff, "[127.0.0.1]", val_len)) {
 					return MESSAGE_ACCEPT;
 				}
 				continue;
