@@ -102,6 +102,11 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 				}
 				continue;
 			}
+		} else if (14 == tag_len) {
+			mem_file_read(&pmail->phead->f_others, buff, tag_len);
+			if (0 == strncasecmp("DKIM-Signature", buff, 14)) {
+				return MESSAGE_ACCEPT;
+			}
 		} else {
 			mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR,
 				tag_len, MEM_FILE_SEEK_CUR);
