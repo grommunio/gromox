@@ -1,14 +1,9 @@
-#include "arcfour.h"
-#include <stdint.h>
-
 /*
    Unix SMB/CIFS implementation.
 
-   UUID/GUID functions
+   An implementation of the arcfour algorithm
 
-   Copyright (C) Theodore Ts'o               1996, 1997,
-   Copyright (C) Jim McDonough                     2002.
-   Copyright (C) Andrew Tridgell                   2003.
+   Copyright (C) Andrew Tridgell 1998
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +18,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include "arcfour.h"
+#include <stdint.h>
 
 /* initialise the arcfour sbox with key */
 void arcfour_init(ARCFOUR_STATE *pstate, const DATA_BLOB *pkey) 
