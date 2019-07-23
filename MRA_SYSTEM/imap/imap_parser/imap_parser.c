@@ -705,8 +705,8 @@ CMD_PROCESSING:
 					}
 				}
 				
-				argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len,
-						argv, sizeof(argv)/sizeof(char*));
+				argc = parse_imap_args(pcontext->command_buffer,
+					pcontext->command_len, argv, sizeof(argv)/sizeof(char*));
 				
 				if (SCHED_STAT_APPENDED == pcontext->sched_stat) {
 					if (0 != argc) {
@@ -751,7 +751,7 @@ CMD_PROCESSING:
 											&string_length);
 					}
 					string_length = snprintf(reply_buff, 1024, "%s %s",
-										pcontext->tag_string, imap_reply_str);
+								pcontext->tag_string, imap_reply_str);
 					if (NULL != pcontext->connection.ssl) {
 						SSL_write(pcontext->connection.ssl, reply_buff, string_length);
 					} else {
@@ -765,7 +765,7 @@ CMD_PROCESSING:
 				if (argc < 2 || strlen(argv[0]) >= 32) {
 					/* IMAP_CODE_2180000: BAD command not support or parameter error */
 					imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
-					if (argc <= 0) {
+					if (argc <= 0 || strlen(argv[0]) >= 32) {
 						string_length = snprintf(reply_buff, 1024, "* %s", imap_reply_str);
 					} else {
 						string_length = snprintf(reply_buff, 1024, "%s %s", argv[0], imap_reply_str);
