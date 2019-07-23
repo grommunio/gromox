@@ -9,8 +9,11 @@
 #define SPAM_STATISTIC_PROPERTY_001		14
 
 typedef void (*SPAM_STATISTIC)(int);
+typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
+
 
 static SPAM_STATISTIC spam_statistic;
+static CHECK_TAGGING check_tagging;
 
 DECLARE_API;
 
@@ -29,6 +32,11 @@ BOOL AS_LibMain(int reason, void **ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
+		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
+		if (NULL == check_tagging) {
+			printf("[property_001]: fail to get \"check_tagging\" service\n");
+			return FALSE;
+		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
@@ -81,9 +89,14 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		buff, "Microsoft Outlook Express", 25)) {
 		return MESSAGE_ACCEPT;
 	}
+	if (TRUE == check_tagging(pmail->penvelop->from,
+		&pmail->penvelop->f_rcpt_to)) {
+		mark_context_spam(context_ID);
+		return MESSAGE_ACCEPT;
+	}
+	strncpy(reason, g_return_reason, length);
 	if (NULL != spam_statistic) {
 		spam_statistic(SPAM_STATISTIC_PROPERTY_001);
 	}
-	strncpy(reason, g_return_reason, length);
 	return MESSAGE_REJECT;
 }
