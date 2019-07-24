@@ -812,12 +812,11 @@ static BOOL read_mark(CONNECTION_NODE *pconnection)
 
 static void produce_session(const char *tag, char *session)
 {
-	int i, pos, mod;
 	char *pitem;
+	time_t cur_time;
+	int i, pos, mod;
 	char temp_time[16];
 	char temp_name[16];
-	time_t cur_time;
-	in_addr_t ip_addr;
 	
 	time(&cur_time);
 	/* fill 'g' if length is too short */
