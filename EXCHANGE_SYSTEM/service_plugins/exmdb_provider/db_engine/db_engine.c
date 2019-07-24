@@ -18,6 +18,10 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#define DB_LOCK_TIMEOUT					30
+
+#define MAX_DB_WAITING_THREADS			5
+
 #define MAX_DYNAMIC_NODES				100
 
 typedef struct _POPULATING_NODE {
@@ -167,12 +171,14 @@ DB_ITEM* db_engine_get_db(const char *path)
 	DB_ITEM temp_db;
 	char db_path[256];
 	char sql_string[256];
+	struct timespec timeout_tm;
 	
 	b_new = FALSE;
 	swap_string(htag, path);
 	pthread_mutex_lock(&g_hash_lock);
 	pdb = (DB_ITEM*)str_hash_query(g_hash_table, htag);
 	if (NULL == pdb) {
+		memset(&temp_db, 0, sizeof(DB_ITEM));
 		if (1 != str_hash_add(g_hash_table, htag, &temp_db)) {
 			pthread_mutex_unlock(&g_hash_lock);
 			printf("[exmdb_provider]: no room in db hash table!\n");
@@ -183,10 +189,21 @@ DB_ITEM* db_engine_get_db(const char *path)
 		time(&pdb->last_time);
 		pthread_mutex_init(&pdb->lock, NULL);
 		b_new = TRUE;
+	} else if (pdb->reference > MAX_DB_WAITING_THREADS) {
+		pthread_mutex_unlock(&g_hash_lock);	
+		printf("[exmdb_provider]: too many threads waiting on %s\n", path);
+		return NULL;
 	}
 	pdb->reference ++;
-	pthread_mutex_unlock(&g_hash_lock);
-	pthread_mutex_lock(&pdb->lock);
+	pthread_mutex_unlock(&g_hash_lock);	
+    clock_gettime(CLOCK_REALTIME, &timeout_tm);
+    timeout_tm.tv_sec += DB_LOCK_TIMEOUT;
+	if (0 != pthread_mutex_timedlock(&pdb->lock, &timeout_tm)) {
+		pthread_mutex_lock(&g_hash_lock);
+		pdb->reference --;
+		pthread_mutex_unlock(&g_hash_lock);
+		return NULL;
+	}
 	if (TRUE == b_new) {
 		double_list_init(&pdb->dynamic_list);
 		double_list_init(&pdb->tables.table_list);
