@@ -1,5 +1,6 @@
-#include "as_common.h"
 #include "util.h"
+#include "as_common.h"
+#include "mail_func.h"
 #include "config_file.h"
 #include <stdio.h>
 
@@ -103,11 +104,12 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 {
 	char *pdot;
 	size_t i, j;
-	char file_name[256];
-	unsigned short name_length;
-	MAIL_ENTITY mail_entity;
-    char attachment_name[1024];
+	char file_name[1024];
 	CONNECTION *pconnection;
+	MAIL_ENTITY mail_entity;
+	unsigned short name_length;
+    char attachment_name[1024];
+	
 
     switch (action) {
     case ACTION_BLOCK_NEW:
@@ -131,14 +133,15 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 			g_context_list[context_ID] = TRUE;
 			return MESSAGE_ACCEPT;
 		}
-
-		pdot = strrchr(attachment_name, '.');
+		decode_mime_string(attachment_name,
+			strlen(attachment_name),
+			file_name, sizeof(file_name));
+		pdot = strrchr(file_name, '.');
 		if (NULL == pdot) {
 			g_context_list[context_ID] = TRUE;
 			return MESSAGE_ACCEPT;
 		}
-
-
+		
 		for (i=0; i<sizeof(g_attachment_list)/sizeof(char*); i++) {
 			if (0 == strcasecmp(pdot + 1, g_attachment_list[i])) {
 				if (TRUE == check_tagging(mail_entity.penvelop->from,
@@ -193,7 +196,6 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 					}
 				}
 			}
-
 		}
 
 		g_context_list[context_ID] = TRUE;
