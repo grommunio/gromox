@@ -10,10 +10,8 @@
 
 
 typedef void (*SPAM_STATISTIC)(int);
-typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
 
 static SPAM_STATISTIC spam_statistic;
-static CHECK_TAGGING check_tagging;
 
 DECLARE_API;
 
@@ -32,11 +30,6 @@ BOOL AS_LibMain(int reason, void **ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
-		if (NULL == check_tagging) {
-			printf("[property_022]: fail to get \"check_tagging\" service\n");
-			return FALSE;
-		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
@@ -74,86 +67,43 @@ BOOL AS_LibMain(int reason, void **ppdata)
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
-	int out_len;
-	int tag_len;
-	int val_len;
+	int i;
+	char *ptr;
+	int tmp_len;
 	char buff[1024];
 	
 	if (TRUE == pmail->penvelop->is_outbound ||
 		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
-
-	if (SINGLE_PART_MAIL != pmail->phead->mail_part) {
+	tmp_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
+	if (MEM_END_OF_FILE == tmp_len) {
 		return MESSAGE_ACCEPT;
 	}
-
-	out_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
-	if (MEM_END_OF_FILE == out_len) {
-		return MESSAGE_ACCEPT;
-	}
-
 	if (0 != strncasecmp(buff, "Microsoft Outlook ", 18)) {
 		return MESSAGE_ACCEPT;
 	}
-
-	out_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
-	if (MEM_END_OF_FILE == out_len) {
+	tmp_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
+	if (MEM_END_OF_FILE == tmp_len) {
 		return MESSAGE_ACCEPT;
 	}
-	buff[out_len] = '\0';
-
-	if (0 != strcasecmp(buff, "text/plain; charset=\"gb2312\"")) {
+	ptr = search_string(buff, "boundary=\"----=_000_", tmp_len);
+	if (NULL == ptr) {
 		return MESSAGE_ACCEPT;
 	}
-
-	while (MEM_END_OF_FILE != mem_file_read(&pmail->phead->f_others, &tag_len,
-		sizeof(int))) {
-		if (8 == tag_len) {
-			mem_file_read(&pmail->phead->f_others, buff, tag_len);
-			if (0 == strncasecmp("Received", buff, 8)) {
-				return MESSAGE_ACCEPT;
-
-			}
-		} else if (9 == tag_len) {
-			mem_file_read(&pmail->phead->f_others, buff, tag_len);
-			if (0 == strncasecmp("X-MimeOLE", buff, 9)) {
-				return MESSAGE_ACCEPT;
-
-			}
-		} else if (26 == tag_len) {
-			mem_file_read(&pmail->phead->f_others, buff, tag_len);
-			if (0 == strncasecmp("Content-Transfer-Encoding", buff, 25)) {
-				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
-				mem_file_read(&pmail->phead->f_others, buff, val_len);
-				if (0 != strncmp(buff, "7bit", 4)) {
-					return MESSAGE_ACCEPT;
-				}
-				continue;
-			}
-
-		} else {
-			mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+	ptr += 20;
+	for (i=0; i<8; i++) {
+		if (0 == isdigit(ptr[i])) {
+			return MESSAGE_ACCEPT;
 		}
-		mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
-		mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR, val_len,
-			MEM_FILE_SEEK_CUR);
 	}
-	
-	if (TRUE == check_tagging(pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {
-		mark_context_spam(context_ID);
+	ptr += 8;
+	if (0 != strncmp(ptr, "_=----\"", 7)) {
 		return MESSAGE_ACCEPT;
-	} else {
-		if (NULL != spam_statistic) {
-			spam_statistic(SPAM_STATISTIC_PROPERTY_022);
-		}
-		strncpy(reason, g_return_reason, length);
-		return MESSAGE_REJECT;
 	}
-				
-
-	return MESSAGE_ACCEPT;
-	
+	if (NULL != spam_statistic) {
+		spam_statistic(SPAM_STATISTIC_PROPERTY_022);
+	}
+	strncpy(reason, g_return_reason, length);
+	return MESSAGE_REJECT;	
 }
-
