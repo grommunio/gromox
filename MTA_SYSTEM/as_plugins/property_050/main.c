@@ -74,98 +74,32 @@ BOOL AS_LibMain(int reason, void **ppdata)
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
-	int offset;
-	int out_len;
-	int tag_len;
-	int val_len;
-	char *ptr_at;
-	char *pdomain;
+	int i;
+	int tmp_len;
 	char buff[1024];
-	struct tm tmp_tm;
-	time_t tmp_time1;
-	time_t tmp_time2;
 	
 	if (TRUE == pmail->penvelop->is_outbound ||
 		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
-	
-	out_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
-    if (MEM_END_OF_FILE == out_len) {
+	tmp_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
+    if (MEM_END_OF_FILE == tmp_len) {
         return MESSAGE_ACCEPT;
     }
-	if (0 != strncasecmp(buff, "Foxmail 6,", 10) &&
-		0 != strncasecmp(buff, "Foxmail 7.", 10)) {
+	if (7 != tmp_len && 8 != tmp_len &&
+		' ' != buff[tmp_len - 2] &&
+		0 == isdigit(buff[tmp_len - 1])) {
 		return MESSAGE_ACCEPT;
 	}
-	while (MEM_END_OF_FILE != mem_file_read(&pmail->phead->f_others, &tag_len,
-		sizeof(int))) {
-		if (10 == tag_len) {
-			mem_file_read(&pmail->phead->f_others, buff, tag_len);
-			if (0 == strncasecmp("Message-ID", buff, 10)) {
-				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
-				if (val_len > 1024) {
-					return MESSAGE_ACCEPT;
-				}
-				mem_file_read(&pmail->phead->f_others, buff, val_len);
-				buff[val_len - 1] = '\0';
-				
-				ptr_at = strchr(buff, '@');
-				if (NULL == ptr_at) {
-					return MESSAGE_ACCEPT;
-				}
-				ptr_at ++;
-				pdomain =  strchr(pmail->penvelop->from, '@');
-				if (NULL == pdomain) {
-					return MESSAGE_ACCEPT;
-				}
-				pdomain ++;
-				if (0 != strcasecmp(ptr_at, pdomain)) {
-					return MESSAGE_ACCEPT;
-				}
-				
-				memset(&tmp_tm, 0, sizeof(tmp_tm));
-				if (NULL == strptime(buff, "<%Y%m%d%H%M%S", &tmp_tm)) {
-					return MESSAGE_ACCEPT;
-				}
-				tmp_time1 = mktime(&tmp_tm);
-
-				if (NULL == strptime(pmail->phead->compose_time, 
-					"%a, %d %b %Y %H:%M:%S", &tmp_tm)) {
-					return MESSAGE_ACCEPT;
-				}
-
-				tmp_time2 = mktime(&tmp_tm);
-
-				if (tmp_time2 > tmp_time1) {
-					return MESSAGE_ACCEPT;	
-				}
-				
-				if (tmp_time1 - tmp_time2 < 3) {
-					return MESSAGE_ACCEPT;
-				}
-				
-				if (TRUE == check_tagging(pmail->penvelop->from,
-					&pmail->penvelop->f_rcpt_to)) {
-					mark_context_spam(context_ID);
-					return MESSAGE_ACCEPT;
-				} else {
-					if (NULL != spam_statistic) {
-					spam_statistic(SPAM_STATISTIC_PROPERTY_050);
-				}
-					strncpy(reason, g_return_reason, length);
-					return MESSAGE_REJECT;
-				}
-			}
-		} else {
-			mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+	for (i=0; i<tmp_len-2; i++) {
+		if (0 == isalpha(buff[i])) {
+			return MESSAGE_ACCEPT;
 		}
-		mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
-		mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR, val_len,
-			MEM_FILE_SEEK_CUR);
 	}
-	return MESSAGE_ACCEPT;
-	
+	if (NULL != spam_statistic) {
+		spam_statistic(SPAM_STATISTIC_PROPERTY_050);
+	}
+	strncpy(reason, g_return_reason, length);
+	return MESSAGE_REJECT;
 }
 
