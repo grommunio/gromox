@@ -1,38 +1,34 @@
-#include "as_common.h"
 #include "config_file.h"
+#include "as_common.h"
 #include "util.h"
-#include <stdio.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
 
 #define SPAM_STATISTIC_PROPERTY_003		16
 
 typedef void (*SPAM_STATISTIC)(int);
-typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
 
-static int boundary_filter(int context_ID, MAIL_ENTITY *pmail,
-	CONNECTION *pconnection, char *reason, int length);
+static SPAM_STATISTIC spam_statistic;
 
 DECLARE_API;
 
-static SPAM_STATISTIC spam_statistic;
-static CHECK_TAGGING check_tagging;
+static char g_return_reason[1024];
 
-static char g_return_string[1024];
+static int head_filter(int context_ID, MAIL_ENTITY *pmail,
+	CONNECTION *pconnection, char *reason, int length);
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	CONFIG_FILE *pconfig_file;
-	char file_name[256], temp_path[256];
 	char *str_value, *psearch;
-
+	char file_name[256], temp_path[256];
+	
+    /* path conatins the config files directory */
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
-		if (NULL == check_tagging) {
-			printf("[property_003]: fail to get \"check_tagging\" service\n");
-			return FALSE;
-		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
@@ -47,100 +43,64 @@ int AS_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pconfig_file, "RETURN_STRING");
 		if (NULL == str_value) {
-			strcpy(g_return_string, "000016 you are now sending spam mail!");
+			strcpy(g_return_reason, "000016 you are now sending spam mail!");
 		} else {
-			strcpy(g_return_string, str_value);
+			strcpy(g_return_reason, str_value);
 		}
-		printf("[property_003]: return string is %s\n", g_return_string);
+		printf("[property_003]: return string is %s\n", g_return_reason);
 		config_file_free(pconfig_file);
-
-        /* invoke register_auditor for registering auditor of mime head */
-        if (FALSE == register_auditor(boundary_filter)) {
-			printf("[property_003]: fail to register auditor function\n");
-            return FALSE;
-        }
+		if (FALSE == register_auditor(head_filter)) {
+			return FALSE;
+		}
         return TRUE;
     case PLUGIN_FREE:
         return TRUE;
+    case SYS_THREAD_CREATE:
+        return TRUE;
+        /* a pool thread is created */
+    case SYS_THREAD_DESTROY:
+        return TRUE;
     }
-    return TRUE;
 }
 
-static int boundary_filter(int context_ID, MAIL_ENTITY *pmail,
-	CONNECTION *pconnection,  char *reason, int length)
+static int head_filter(int context_ID, MAIL_ENTITY *pmail,
+	CONNECTION *pconnection, char *reason, int length)
 {
-    int  i, out_len;
-    char buf[1024], *ptr, *pbackup;
-
-	if (TRUE == pmail->penvelop->is_relay) {
+	int tag_len;
+	int val_len;
+	int tmp_len;
+	char buff[1024];
+	
+	if (TRUE == pmail->penvelop->is_outbound ||
+		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
-    out_len = mem_file_read(&pmail->phead->f_content_type, buf, 1024);
-    if (MEM_END_OF_FILE == out_len) {   /* no content type */
+	tmp_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
+    if (MEM_END_OF_FILE == tmp_len) {
         return MESSAGE_ACCEPT;
     }
-    if (NULL == (ptr = search_string(buf, "boundary", out_len))) {
-        return MESSAGE_ACCEPT;
-    }
-    ptr += 8;
-    if (NULL == (ptr = strchr(ptr, '"'))) {
-        return MESSAGE_ACCEPT;
-    }
-    ptr++;
-    pbackup = ptr;
-    if (NULL == (ptr = strchr(ptr, '"'))) {
-        return MESSAGE_ACCEPT;
-    }
-    out_len = (int)(ptr - pbackup);
-    if (out_len <= 0 || out_len > 255) {
-        return MESSAGE_ACCEPT;
-    }
-    memmove(buf, pbackup, out_len);
-    buf[out_len] = '\0';
-
-	/*------------------------------------------------------------------*/
-FIRST_CHECK:
-	if (8 == out_len || 7 == out_len) {
-		if (0 != mem_file_get_total_length(&pmail->phead->f_xmailer)) {
-			goto SECOND_CHECK;
-		}
-		for (i=0; i<out_len; i++) {
-			if (!isdigit(buf[i])) {
-				goto SECOND_CHECK;
-			}
-		}
-		goto SPAM_FOUND;
-	}
-
-SECOND_CHECK:
-	if (20 == out_len) {
-		if (0 != mem_file_get_total_length(&pmail->phead->f_xmailer)) {
-			goto THIRD_CHECK;
-		}
-		for (i=0; i<20; i++) {
-			if (!isupper(buf[i])) {
-				goto THIRD_CHECK;
-			}
-		}
-		goto SPAM_FOUND;
-	}
-
-THIRD_CHECK:
-	return MESSAGE_ACCEPT;
-
-SPAM_FOUND:
-
-	if (TRUE == check_tagging(pmail->penvelop->from,
-		&pmail->penvelop->f_rcpt_to)) {
-		mark_context_spam(context_ID);
+	if (NULL != pconnection->ssl || 0 != strncasecmp(
+		buff, "Microsoft Outlook 1", 19)) {
 		return MESSAGE_ACCEPT;
-	} else {
-		strncpy(reason, g_return_string, length);
-		if (NULL != spam_statistic) {
-			spam_statistic(SPAM_STATISTIC_PROPERTY_003);
-		}
-		return MESSAGE_REJECT;
 	}
-    return MESSAGE_ACCEPT;
+	while (MEM_END_OF_FILE != mem_file_read(
+		&pmail->phead->f_others, &tag_len, sizeof(int))) {
+		if (12 == tag_len) {
+			mem_file_read(&pmail->phead->f_others, buff, tag_len);
+			if (0 == strncasecmp("Thread-Index", buff, 12)) {
+				return MESSAGE_ACCEPT;
+			}
+		} else {
+			mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR,
+				tag_len, MEM_FILE_SEEK_CUR);
+		}
+		mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
+		mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR,
+			val_len, MEM_FILE_SEEK_CUR);
+	}
+	strncpy(reason, g_return_reason, length);
+	if (NULL != spam_statistic) {
+		spam_statistic(SPAM_STATISTIC_PROPERTY_003);
+	}
+	return MESSAGE_REJECT;
 }
-
