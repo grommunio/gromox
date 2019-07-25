@@ -32,15 +32,19 @@
 #include <sys/types.h>
 
 
-#define FILENUM_PER_MIME		8
+#define FILENUM_PER_MIME				8
 
-#define CONFIG_ID_USERNAME		1
+#define CONFIG_ID_USERNAME				1
 
-#define MAX_DIGLEN				256*1024
+#define MAX_DIGLEN						256*1024
 
-#define CONDITION_TREE			DOUBLE_LIST
+#define CONDITION_TREE					DOUBLE_LIST
 
-#define RELOAD_INTERVAL			1800
+#define RELOAD_INTERVAL					1800
+
+#define DB_LOCK_TIMEOUT					30
+
+#define MAX_DB_WAITING_THREADS			3
 
 
 enum {
@@ -2889,6 +2893,7 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 	char temp_path[256];
 	char sql_string[1024];
 	IDB_ITEM *pidb, temp_idb;
+	struct timespec timeout_tm;
 	
 	b_load = FALSE;
 	swap_string(htag, path);
@@ -2958,10 +2963,21 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 		}
 		pthread_mutex_init(&pidb->lock, NULL);
 		b_load = TRUE;
+	} else if (pidb->reference > MAX_DB_WAITING_THREADS) {
+		pthread_mutex_unlock(&g_hash_lock);
+		debug_info("[mail_engine]: too many threads waiting on %s\n", path);
+		return NULL;
 	}
 	pidb->reference ++;
 	pthread_mutex_unlock(&g_hash_lock);
-	pthread_mutex_lock(&pidb->lock);
+	clock_gettime(CLOCK_REALTIME, &timeout_tm);
+    timeout_tm.tv_sec += DB_LOCK_TIMEOUT;
+	if (0 != pthread_mutex_timedlock(&pidb->lock, &timeout_tm)) {
+		pthread_mutex_lock(&g_hash_lock);
+		pidb->reference --;
+		pthread_mutex_unlock(&g_hash_lock);
+		return NULL;
+	}
 	if (TRUE == b_load) {
 		mail_engine_sync_mailbox(pidb);
 	} else {
