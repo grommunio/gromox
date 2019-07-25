@@ -202,7 +202,7 @@ int imap_parser_run()
 		return -4;
 	}
 	
-	g_alloc_file = lib_buffer_init(FILE_ALLOC_SIZE, 256*g_context_num, TRUE);
+	g_alloc_file = lib_buffer_init(FILE_ALLOC_SIZE, 1024*g_context_num, TRUE);
 	if (NULL == g_alloc_file) {
 		printf("[imap_parser]: fail to init mem file allocator\n");
 		return -5;
