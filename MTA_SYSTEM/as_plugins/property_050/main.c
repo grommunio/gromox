@@ -77,17 +77,16 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	int i;
 	int tmp_len;
 	char buff[1024];
-	
+
 	if (TRUE == pmail->penvelop->is_outbound ||
 		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
 	tmp_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
-    if (MEM_END_OF_FILE == tmp_len) {
-        return MESSAGE_ACCEPT;
-    }
-	if (7 != tmp_len && 8 != tmp_len &&
-		' ' != buff[tmp_len - 2] &&
+	if (7 != tmp_len && 8 != tmp_len) {
+		return MESSAGE_ACCEPT;
+	}
+	if (' ' != buff[tmp_len - 2] ||
 		0 == isdigit(buff[tmp_len - 1])) {
 		return MESSAGE_ACCEPT;
 	}
