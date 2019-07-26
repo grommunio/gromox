@@ -2743,17 +2743,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if ('\0' == argv[3][0]) {
-		if (PROTO_STAT_SELECT == pcontext->proto_stat) {
-			imap_parser_echo_modify(pcontext, NULL);
-		}
-		/* IMAP_CODE_2170012: OK XLIST completed */
-		imap_reply_str = resource_get_imap_code(
-			IMAP_CODE_2170012, 1, &string_length);
-		string_length = snprintf(buff, 1024,
-			"* XLIST (\\Noselect) \"/\" \"\"\r\n%s %s",
-			argv[0], imap_reply_str);
-		imap_parser_safe_write(pcontext, buff, string_length);
-		return DISPATCH_CONTINUE;
+		argv[3] = "*";
 	}
 	snprintf(search_pattern, 1024, "%s%s", argv[2], argv[3]);
 	mem_file_init(&temp_file, imap_parser_get_allocator());
