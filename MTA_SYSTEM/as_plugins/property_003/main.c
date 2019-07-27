@@ -79,8 +79,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
     if (MEM_END_OF_FILE == tmp_len) {
         return MESSAGE_ACCEPT;
     }
-	if (NULL != pconnection->ssl || 0 != strncasecmp(
-		buff, "Microsoft Outlook 1", 19)) {
+	if (0 != strncasecmp(buff, "Microsoft Outlook 1", 19)) {
 		return MESSAGE_ACCEPT;
 	}
 	while (MEM_END_OF_FILE != mem_file_read(
