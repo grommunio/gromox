@@ -2789,7 +2789,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 			} else {
 				prow->pprops[4].value.pstr =
 					ndr_stack_alloc(NDR_STACK_OUT, tmp_len);
-				memcpy(prow->pprops[4].value.pstr, str_dname, tmp_len);
+				memcpy(prow->pprops[4].value.pstr, tmp_title, tmp_len);
 			}
 		}
 		if (NULL == prow->pprops[4].value.pstr) {
