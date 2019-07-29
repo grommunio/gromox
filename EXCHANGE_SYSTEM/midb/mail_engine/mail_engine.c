@@ -40,7 +40,7 @@
 
 #define CONDITION_TREE					DOUBLE_LIST
 
-#define RELOAD_INTERVAL					1800
+#define RELOAD_INTERVAL					3600
 
 #define DB_LOCK_TIMEOUT					30
 
