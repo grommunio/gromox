@@ -3198,7 +3198,7 @@ static int mail_engine_mfree(int argc, char **argv, int sockd)
 		sqlite3_close(pidb->psqlite);
 		pidb->psqlite = NULL;
 	}
-	pidb->last_time = time(NULL) + g_cache_interval - 10;
+	pidb->last_time = time(NULL) - g_cache_interval - 10;
 	pthread_mutex_unlock(&pidb->lock);
 	pthread_mutex_lock(&g_hash_lock);
 	pidb->reference --;
