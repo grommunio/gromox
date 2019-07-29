@@ -69,29 +69,113 @@ BOOL AS_LibMain(int reason, void **ppdata)
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
-	int out_len;
+	int i;
+	int count;
+	int tmp_len;
+	int tag_len;
+	int val_len;
+	char *ptoken;
 	char buff[1024];
+	char *ptr1, *ptr2;
+	char boundary_string[256];
+	char messageid_string[256];
 	
-
 	if (TRUE == pmail->penvelop->is_relay ||
 		TRUE == pmail->penvelop->is_outbound) {
 		return MESSAGE_ACCEPT;
 	}
-	
-	if (MEM_END_OF_FILE == mem_file_read(&pmail->phead->f_xmailer, buff, 1024)){
+	if (0 != mem_file_get_total_length(&pmail->phead->f_xmailer)){
 		return MESSAGE_ACCEPT;
 	}
-	if (0 != strncasecmp(buff, "Foxmail 7.", 10)) {
+	tmp_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
+    if (MEM_END_OF_FILE == tmp_len) {   /* no content type */
+        return MESSAGE_ACCEPT;
+    }
+	if (NULL == (ptr1 = search_string(buff, "boundary", tmp_len))) {
 		return MESSAGE_ACCEPT;
 	}
-
-	if (0 == strncmp(pmail->phead->compose_time, "???, ", 4)) {
-		if (NULL != spam_statistic) {
-			spam_statistic(SPAM_STATISTIC_PROPERTY_048);
+	ptr1 += 8;
+	if (NULL == (ptr1 = strchr(ptr1, '"'))) {
+		return MESSAGE_ACCEPT;
+	}
+	ptr1 ++;
+	ptr2 = ptr1;
+	if (NULL == (ptr1 = strchr(ptr1, '"'))) {
+		return MESSAGE_ACCEPT;
+	}
+	memcpy(boundary_string, ptr2, ptr1 - ptr2);
+	boundary_string[ptr1 - ptr2] = '\0';
+	messageid_string[0] = '\0';
+	while (MEM_END_OF_FILE != mem_file_read(
+		&pmail->phead->f_others, &tag_len, sizeof(int))) {
+		if (10 == tag_len) {
+			mem_file_read(&pmail->phead->f_others, buff, tag_len);
+			if (0 == strncasecmp("Message-ID", buff, 10)) {
+				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
+				if (val_len >= 1024) {
+					return MESSAGE_ACCEPT;
+				}
+				mem_file_read(&pmail->phead->f_others, buff, val_len);
+				if ('<' == buff[0] && '>' == buff[val_len - 1]) {
+					memcpy(messageid_string, buff + 1, val_len - 2);
+					messageid_string[val_len - 2] = '\0';
+				} else {
+					memcpy(messageid_string, buff, val_len);
+					messageid_string[val_len] = '\0';
+				}
+				break;
+			}
+		} else {
+			mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR,
+				tag_len, MEM_FILE_SEEK_CUR);
 		}
-		strncpy(reason, g_return_reason, length);
-		return MESSAGE_REJECT;
+		mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
+		mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR, val_len,
+			MEM_FILE_SEEK_CUR);
 	}
-	return MESSAGE_ACCEPT;
+	ptoken = strrchr(messageid_string, '@');
+	if (NULL == ptoken) {
+		return MESSAGE_ACCEPT;
+	}
+	*ptoken = '\0';
+	count = 0;
+	tmp_len = strlen(messageid_string);
+	for (i=0; i<tmp_len; i++) {
+		if ('-' == messageid_string[i]) {
+			messageid_string[i] = '\0';
+			count ++;
+			if (2 == count) {
+				ptr1 = messageid_string + i + 1;
+			} else if (3 == count) {
+				ptr2 = messageid_string + i + 1;
+			}
+		}
+	}
+	if (3 != count) {
+		return MESSAGE_ACCEPT;
+	}
+	ptoken = strrchr(boundary_string, '_');
+	if (NULL == ptoken) {
+		return MESSAGE_ACCEPT;
+	}
+	*ptoken = '\0';
+	ptoken ++;
+	if (0 != strcmp(ptr2, ptoken)) {
+		return MESSAGE_ACCEPT;
+	}
+	ptoken = strrchr(boundary_string, '_');
+	if (NULL == ptoken) {
+		return MESSAGE_ACCEPT;
+	}
+	*ptoken = '\0';
+	ptoken ++;
+	if (0 != strcmp(ptr1, ptoken)) {
+		return MESSAGE_ACCEPT;
+	}
+	if (NULL != spam_statistic) {
+		spam_statistic(SPAM_STATISTIC_PROPERTY_048);
+	}
+	strncpy(reason, g_return_reason, length);
+	return MESSAGE_REJECT;
 }
 
