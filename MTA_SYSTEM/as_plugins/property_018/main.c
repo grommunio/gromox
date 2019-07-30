@@ -49,7 +49,7 @@ int AS_LibMain(int reason, void **ppdata)
 		config_file_free(pconfig_file);
 		/* invoke register_filter for registering all type of mime paragraph*/
 		if (FALSE == register_filter("text/plain" , xmailer_filter) ||
-		if (FALSE == register_filter("text/html" , xmailer_filter)) {
+			FALSE == register_filter("text/html" , xmailer_filter)) {
 			return FALSE;
 		}
 		return TRUE;
