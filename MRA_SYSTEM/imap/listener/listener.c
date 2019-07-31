@@ -27,11 +27,13 @@ static void* thread_work_func(void* arg);
 
 static void* thread_work_ssl_func(void* arg);
 
-static int    g_listener_sock;
-static int    g_listener_port;
-static int    g_listener_ssl_sock;
-static int    g_listener_ssl_port;
-static BOOL   g_stop_accept;
+static pthread_t g_thr_id;
+static BOOL g_stop_accept;
+static int g_listener_sock;
+static int g_listener_port;
+static pthread_t g_ssl_thr_id;
+static int g_listener_ssl_sock;
+static int g_listener_ssl_port;
 /*
  *    istener's construction function
  *    @param    
@@ -132,17 +134,17 @@ int listener_run()
  */
 int listerner_trigger_accept()
 {
-	pthread_t       thr_id;
-	pthread_attr_t  attr;
+	pthread_attr_t attr;
 
 	pthread_attr_init(&attr);
-	if(0 != pthread_create(&thr_id, &attr, thread_work_func, NULL)){
+	if(0 != pthread_create(&g_thr_id, &attr, thread_work_func, NULL)){
 		printf("[listener]: fail to create listener thread\n");
 		pthread_attr_destroy(&attr);
 		return -1;
 	}
 	if (g_listener_ssl_port > 0) {
-		if(0 != pthread_create(&thr_id, &attr, thread_work_ssl_func, NULL)){
+		if(0 != pthread_create(&g_ssl_thr_id,
+			&attr, thread_work_ssl_func, NULL)) {
 			printf("[listener]: fail to create listener thread\n");
 			pthread_attr_destroy(&attr);
 			return -2;
@@ -150,6 +152,21 @@ int listerner_trigger_accept()
 	}
 	pthread_attr_destroy(&attr);
 	return 0;
+}
+
+/*
+ *  stop accept the connection
+ */
+void listener_stop_accept()
+{
+	g_stop_accept = TRUE;
+	
+	shutdown(g_listener_sock, SHUT_RDWR);
+	pthread_join(g_thr_id, NULL);
+	if (g_listener_ssl_port > 0) {
+		shutdown(g_listener_ssl_sock, SHUT_RDWR);
+		pthread_join(g_ssl_thr_id, NULL);
+	}
 }
 
 /*
@@ -382,8 +399,8 @@ SERVICE_AVAILABLE:
  *    @return     
 		0    success
 */
-int listener_stop() {
-	g_stop_accept = TRUE;
+int listener_stop()
+{
 	if (g_listener_sock > 2) {
 		close(g_listener_sock);
 	}
@@ -397,7 +414,8 @@ int listener_stop() {
 /*
  *    listener's destruction function
  */
-void listener_free(){
+void listener_free()
+{
 	g_listener_port = 0;
 	g_listener_ssl_port = 0;
 }

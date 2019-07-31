@@ -405,7 +405,8 @@ SERVICE_AVAILABLE:
  *    @return     
 		0    success
 */
-int listener_stop() {
+int listener_stop()
+{
 	if (g_listener_sock > 2) {
 		close(g_listener_sock);
 	}
@@ -419,7 +420,8 @@ int listener_stop() {
 /*
  *    listener's destruction function
  */
-void listener_free(){
+void listener_free()
+{
 	g_listener_port = 0;
 	g_listener_ssl_port = 0;
 }

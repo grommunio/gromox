@@ -498,6 +498,7 @@ int main(int argc, char* argv[])
 	while (FALSE == g_notify_stop) {
 		sleep(3);
 	}
+	listener_stop_accept();
 	
 EXIT_PROGRAM:
 
