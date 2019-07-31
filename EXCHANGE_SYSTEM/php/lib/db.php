@@ -106,11 +106,11 @@ function get_domain_info_by_name($domain)
 	return array('homedir'=>$row[0], 'did'=>$row[1], 'domain'=>$row[2]);
 }
 
-function get_domain_info_by_id($user_id)
+function get_domain_info_by_id($domain_id)
 {
 	$db_conn = get_db_connection();
 	
-	$sql_string = "SELECT homedir, id, domainname FROM domains WHERE id=" . $user_id;
+	$sql_string = "SELECT homedir, id, domainname FROM domains WHERE id=" . $domain_id;
 	$results = mysql_query($sql_string, $db_conn);
 	if (!$results) {
 		die("fail to query database: " . mysql_error());
