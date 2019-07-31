@@ -180,7 +180,7 @@ function get_default_hostname()
 	return $db_config['hostname'];
 }
 
-function get_http_proxy($maildir, $host_name)
+function get_http_proxy($dir, $host_name)
 {
 	$config = get_app_config();
 	$http_proxy = $config['http-porxy'];
@@ -188,7 +188,7 @@ function get_http_proxy($maildir, $host_name)
 		return $host_name;
 	}
 	foreach ($http_proxy as $dir_prefix => $server_name) {
-		if (0 === strpos($maildir, $dir_prefix) && '/' == $maildir[strlen($dir_prefix)]) {
+		if (0 === strpos($dir, $dir_prefix) && '/' == $dir[strlen($dir_prefix)]) {
 			return $server_name;
 		}
 	}
