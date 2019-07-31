@@ -9,6 +9,7 @@ INCLUDE_PATHS=../../common/include\
 			  ../../rpc_lib/include\
 			  ../mod_fastcgi\
 			  ../pdu_processor\
+			  ../hpm_processor\
 			  ../http_parser\
 			  ../resource\
 			  ../service# add include paths here

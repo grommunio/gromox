@@ -1,4 +1,5 @@
 #include "hpm_processor.h"
+#include "pdu_processor.h"
 #include "http_parser.h"
 #include "resource.h"
 #include "service.h"
@@ -36,6 +37,14 @@ typedef struct _HPM_CONTEXT {
 	int cache_fd;
 	uint64_t cache_size;
 } HPM_CONTEXT;
+
+typedef struct _HTTP_AUTH_INFO {
+	BOOL b_authed;
+	const char* username;
+	const char* password;
+	const char* maildir;
+	const char* lang;
+} HTTP_AUTH_INFO;
 
 static int g_context_num;
 static uint64_t g_max_size;
@@ -155,6 +164,14 @@ static int hpm_processor_get_context_num()
 	return g_context_num;
 }
 
+static CONNECTION* hpm_processor_get_connection(int context_id)
+{
+	HTTP_CONTEXT *phttp;
+	
+	phttp = http_parser_get_contexts_list() + context_id;
+	return &phttp->connection;
+}
+
 static HTTP_REQUEST* hpm_processor_get_request(int context_id)
 {
 	HTTP_CONTEXT *phttp;
@@ -183,6 +200,30 @@ static HTTP_REQUEST* hpm_processor_get_request(int context_id)
 	mem_file_seek(&phttp->request.f_others,
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	return &phttp->request;
+}
+
+static HTTP_AUTH_INFO hpm_processor_get_auth_info(int context_id)
+{
+	HTTP_AUTH_INFO info;
+	HTTP_CONTEXT *phttp;
+	
+	phttp = http_parser_get_contexts_list() + context_id;
+	info.b_authed = phttp->b_authed;
+	info.username = phttp->username;
+	info.password = phttp->password;
+	info.maildir = phttp->maildir;
+	info.lang = phttp->lang;
+	return info;
+}
+
+static void hpm_processor_set_ep_info(
+	int context_id, const char *host, int port)
+{
+	HTTP_CONTEXT *phttp;
+	
+	phttp = http_parser_get_contexts_list() + context_id;
+	strncpy(phttp->host, host, sizeof(phttp->host));
+	phttp->port = port;
 }
 
 static BOOL hpm_processor_write_response(int context_id,
@@ -254,11 +295,32 @@ static void* hpm_processor_queryservice(char *service)
 	if (strcmp(service, "get_request") == 0) {
 		return hpm_processor_get_request;
 	}
+	if (strcmp(service, "get_auth_info") == 0) {
+		return hpm_processor_get_auth_info;
+	}
+	if (strcmp(service, "get_connection") == 0) {
+		return hpm_processor_get_connection;
+	}
 	if (strcmp(service, "write_response") == 0) {
 		return hpm_processor_write_response;
 	}
 	if (strcmp(service, "wakeup_context") == 0) {
 		return hpm_processor_wakeup_context;
+	}
+	if (strcmp(service, "set_context") == 0) {
+		return http_parser_set_context;
+	}
+	if (strcmp(service, "set_ep_info") == 0) {
+		return hpm_processor_set_ep_info;
+	}
+	if (strcmp(service, "ndr_stack_alloc") == 0) {
+		return pdu_processor_ndr_stack_alloc;
+	}
+	if (strcmp(service, "rpc_new_environment") == 0) {
+		return pdu_processor_rpc_new_environment;
+	}
+	if (strcmp(service, "rpc_free_environment") == 0) {
+		return pdu_processor_rpc_free_environment;
 	}
 	/* check if already exists in the reference list */
 	for (pnode=double_list_get_head(&g_cur_plugin->list_reference);
@@ -556,6 +618,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 				phpm_ctx->chunk_size = 0;
 				phpm_ctx->chunk_offset = 0;
 			}
+			phpm_ctx->content_length = content_length;
 			phpm_ctx->b_end = FALSE;
 			phpm_ctx->b_preproc = TRUE;
 			phpm_ctx->pinterface = &pplugin->interface;
@@ -635,7 +698,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 CHUNK_BEGIN:
 		if (phpm_ctx->chunk_size == phpm_ctx->chunk_offset) {
 			size = stream_peek_buffer(&phttp->stream_in, tmp_buff, 1024);
-			if (5 < size) {
+			if (size < 5) {
 				return TRUE;
 			}
 			if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
@@ -753,6 +816,7 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		}
 		close(phpm_ctx->cache_fd);
 		phpm_ctx->cache_fd = -1;
+		phpm_ctx->content_length = node_stat.st_size;
 		sprintf(tmp_path, "/tmp/http-%d", context_id);
 		remove(tmp_path);
 	}

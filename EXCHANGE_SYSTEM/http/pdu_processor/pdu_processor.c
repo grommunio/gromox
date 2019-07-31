@@ -1,4 +1,5 @@
 #include "pdu_processor.h"
+#include "hpm_processor.h"
 #include "alloc_context.h"
 #include "endian_macro.h"
 #include "http_parser.h"
@@ -1172,12 +1173,16 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext->b_ndr64 = b_ndr64;
 		pcontext->stat_flags = 0;
 		pcontext->pendpoint = pcall->pprocessor->pendpoint;
+#ifdef SUPPORT_ASSOC_GROUP
 		if (0 == pbind->assoc_group_id) {
+#endif
 			pcall->pprocessor->assoc_group_id = 
 				pdu_processor_allocate_group_id(pcall->pprocessor->pendpoint);
+#ifdef SUPPORT_ASSOC_GROUP
 		} else {
 			pcall->pprocessor->assoc_group_id = pbind->assoc_group_id;
 		}
+#endif
 		pcontext->assoc_group_id = pcall->pprocessor->assoc_group_id;
 		double_list_init(&pcontext->async_list);
 		pcall->pcontext = pcontext;
@@ -2049,14 +2054,11 @@ BUILD_BEGIN:
 	return TRUE;
 }
 
-/* only can be invoked in console thread */
-static BOOL pdu_processor_rpc_new_environment()
+/* only can be invoked in non-rpc thread!!! */
+BOOL pdu_processor_rpc_new_environment()
 {
 	NDR_STACK_ROOT *pstack_root;
 	
-	if (NULL != pthread_getspecific(g_call_key)) {
-		return FALSE;
-	}
 	pstack_root = pdu_processor_new_stack_root();
 	if (NULL == pstack_root) {
 		return FALSE;
@@ -2065,16 +2067,14 @@ static BOOL pdu_processor_rpc_new_environment()
 	return TRUE;
 }
 
-/* only can be invoked in console thread */
-static void pdu_processor_rpc_free_environment()
+/* only can be invoked in non-rpc thread!!! */
+void pdu_processor_rpc_free_environment()
 {
 	NDR_STACK_ROOT *pstack_root;
 	
-	if (NULL != pthread_getspecific(g_call_key)) {
-		return;
-	}
 	pstack_root = (NDR_STACK_ROOT*)pthread_getspecific(g_stack_key);
 	if (NULL != pstack_root) {
+		pthread_setspecific(g_stack_key, NULL);
 		pdu_processor_free_stack_root(pstack_root);
 	}
 }
@@ -3679,6 +3679,10 @@ static int pdu_processor_getversion()
 	return SERVICE_VERSION;
 }
 
+/* this function can also be invoked from hpm_plugins,
+	you should firt set context TLS before call this
+	function, if you don't do that, you will get nothing
+*/
 static DCERPC_INFO pdu_processor_get_rpc_info()
 {
 	DCERPC_INFO info;
@@ -3708,6 +3712,13 @@ static DCERPC_INFO pdu_processor_get_rpc_info()
 		if (NULL != pcall->pcontext) {
 			info.stat_flags = pcall->pcontext->stat_flags;
 		}
+	} else {
+		if ('\0' == pcontext->username[0]) {
+			info.is_login = FALSE;
+		} else {
+			info.is_login = TRUE;
+		}
+		info.stat_flags = 0;
 	}
 	return info;
 }

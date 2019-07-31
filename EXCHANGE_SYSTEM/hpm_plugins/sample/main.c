@@ -16,7 +16,6 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 {
 	HPM_INTERFACE interface;
 	
-	/* path conatins the config files directory */
 	switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
@@ -27,6 +26,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		if (FALSE == register_interface(&interface)) {
 			return FALSE;
 		}
+		register_talk(console_talk);
 		return TRUE;
 	case PLUGIN_FREE:
 		return TRUE;

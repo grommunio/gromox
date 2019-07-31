@@ -2287,6 +2287,11 @@ HTTP_CONTEXT* http_parser_get_context()
 	return (HTTP_CONTEXT*)pthread_getspecific(g_context_key);
 }
 
+void http_parser_set_context(int context_id)
+{
+	pthread_setspecific(g_context_key, g_context_list + context_id);
+}
+
 BOOL http_parser_get_password(const char *username, char *password)
 {
 	HTTP_CONTEXT *pcontext;

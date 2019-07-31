@@ -1032,7 +1032,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	SIMPLE_TREE_NODE *pnode;
 	SINGLE_LIST_NODE *psnode;
 	
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		return MAPI_E_NO_SUPPORT;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
@@ -1148,7 +1148,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	} else {
 		b_ephid = FALSE;
 	}
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*pprows = NULL;
 		return MAPI_E_NO_SUPPORT;
 	}
@@ -1365,7 +1365,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	SINGLE_LIST_NODE *psnode;
 	
 	
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*pprows = NULL;
 		return MAPI_E_NO_SUPPORT;
 	}
@@ -1881,7 +1881,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	SINGLE_LIST_NODE *psnode;
 	
 	
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
 		return MAPI_E_NO_SUPPORT;
@@ -2103,7 +2103,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
 	
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*ppoutmids = NULL;
 		return MAPI_E_NO_SUPPORT;
 	}
@@ -2182,6 +2182,10 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	AB_BASE *pbase;
 	SIMPLE_TREE_NODE *ptnode;
 	
+	if (NULL == pnames) {
+		*ppoutmids = NULL;
+		return MAPI_E_SUCCESS;
+	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*ppoutmids = NULL;
@@ -2233,9 +2237,9 @@ static int nsp_interface_get_default_proptags(int node_type,
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		if (NODE_TYPE_PERSOPN == node_type) {
-			pproptags->cvalues = 30;
+			pproptags->cvalues = 31;
 		} else {
-			pproptags->cvalues = 29;
+			pproptags->cvalues = 30;
 		}
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_OUT,
 						sizeof(uint32_t)*pproptags->cvalues);
@@ -2260,6 +2264,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 			pproptags->pproptag[14] = PROP_TAG_ACCOUNT;
 			pproptags->pproptag[15] = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
 			pproptags->pproptag[16] = PROP_TAG_ADDRESSBOOKPROXYADDRESSES;
+			pproptags->pproptag[17] = PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE;
 		} else {
 			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME_STRING8;
 			pproptags->pproptag[1] = PROP_TAG_NICKNAME_STRING8;
@@ -2279,21 +2284,22 @@ static int nsp_interface_get_default_proptags(int node_type,
 			pproptags->pproptag[14] = PROP_TAG_ACCOUNT_STRING8;
 			pproptags->pproptag[15] = PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8;
 			pproptags->pproptag[16] = PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8;
+			pproptags->pproptag[17] = PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE_STRING8;
 		}
-		pproptags->pproptag[17] = PROP_TAG_OBJECTTYPE;
-		pproptags->pproptag[18] = PROP_TAG_DISPLAYTYPE;
-		pproptags->pproptag[19] = PROP_TAG_ENTRYID;
-		pproptags->pproptag[20] = PROP_TAG_RECORDKEY;
-		pproptags->pproptag[21] = PROP_TAG_ORIGINALENTRYID;
-		pproptags->pproptag[22] = PROP_TAG_SEARCHKEY;
-		pproptags->pproptag[23] = PROP_TAG_INSTANCEKEY;
-		pproptags->pproptag[24] = PROP_TAG_MAPPINGSIGNATURE;
-		pproptags->pproptag[25] = PROP_TAG_SENDRICHINFO;
-		pproptags->pproptag[26] = PROP_TAG_TEMPLATEID;
-		pproptags->pproptag[27] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
-		pproptags->pproptag[28] = PROP_TAG_CREATIONTIME;
+		pproptags->pproptag[18] = PROP_TAG_OBJECTTYPE;
+		pproptags->pproptag[19] = PROP_TAG_DISPLAYTYPE;
+		pproptags->pproptag[20] = PROP_TAG_ENTRYID;
+		pproptags->pproptag[21] = PROP_TAG_RECORDKEY;
+		pproptags->pproptag[22] = PROP_TAG_ORIGINALENTRYID;
+		pproptags->pproptag[23] = PROP_TAG_SEARCHKEY;
+		pproptags->pproptag[24] = PROP_TAG_INSTANCEKEY;
+		pproptags->pproptag[25] = PROP_TAG_MAPPINGSIGNATURE;
+		pproptags->pproptag[26] = PROP_TAG_SENDRICHINFO;
+		pproptags->pproptag[27] = PROP_TAG_TEMPLATEID;
+		pproptags->pproptag[28] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
+		pproptags->pproptag[29] = PROP_TAG_CREATIONTIME;
 		if (NODE_TYPE_PERSOPN == node_type) {
-			pproptags->pproptag[29] = PROP_TAG_THUMBNAILPHOTO;
+			pproptags->pproptag[30] = PROP_TAG_THUMBNAILPHOTO;
 		}
 		break;
 	case NODE_TYPE_MLIST:
@@ -2467,6 +2473,10 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	SINGLE_LIST_NODE *psnode;
 	
 	
+	if (NULL == pstat) {
+		*pprows = NULL;
+		return MAPI_E_NO_SUPPORT;
+	}
 	if (flags & FLAG_EPHID) {
 		b_ephid = TRUE;
 	} else {
@@ -2636,7 +2646,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	SINGLE_LIST_NODE *psnode;
 	
 	
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (NULL != pstat && CODEPAGE_UNICODE == pstat->codepage) {
 		return MAPI_E_NO_SUPPORT;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
@@ -2655,7 +2665,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	pos1 = -1;
 	pos2 = -1;
 	i = 0;
-	if (0 == pstat->container_id) {
+	if (NULL == pstat || 0 == pstat->container_id) {
 		pgal_list = &pbase->gal_list;
 		for (psnode=single_list_get_head(pgal_list); NULL!=psnode;
 			psnode=single_list_get_after(pgal_list, psnode)) {
@@ -2911,6 +2921,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	BOOL b_unicode;
 	AB_BASE *pbase;
 	uint32_t result;
+	uint32_t codepage;
 	PROPERTY_ROW *prow;
 	DOMAIN_NODE *pdomain;
 	SINGLE_LIST_NODE *pnode;
@@ -2929,8 +2940,14 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		b_unicode = FALSE;
 	}
 	
+	if (NULL == pstat) {
+		codepage = 1252;
+	} else {
+		codepage = pstat->codepage;
+	}
+	
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
-	if (FALSE == b_unicode && CODEPAGE_UNICODE == pstat->codepage) {
+	if (FALSE == b_unicode && CODEPAGE_UNICODE == codepage) {
 		*pprows = NULL;
 		return MAPI_E_NO_SUPPORT;
 	}
@@ -2961,8 +2978,8 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
 	if (FALSE == nsp_interface_build_specialtable(prow,
-		b_unicode, pstat->codepage, FALSE, 0, 0,
-		NULL, NULL, &permeid)) {
+		b_unicode, codepage, FALSE, 0, 0, NULL, NULL,
+		&permeid)) {
 		*pprows = NULL;
 		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
@@ -2980,8 +2997,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		pnode=single_list_get_after(&pbase->list, pnode)) {
 		pdomain = pnode->pdata;
 		result = nsp_interface_get_tree_specialtables(
-			&pdomain->tree, b_unicode, pstat->codepage,
-			*pprows);
+			&pdomain->tree, b_unicode, codepage, *pprows);
 		if (MAPI_E_SUCCESS != result) {
 			ab_tree_put_base(pbase);
 			*pprows = NULL;

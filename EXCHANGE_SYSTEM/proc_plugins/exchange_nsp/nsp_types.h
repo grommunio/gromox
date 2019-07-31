@@ -229,7 +229,7 @@ typedef struct _RESTRICTION_AND_OR {
 	struct _RESTRICTION *pres;
 } RESTRICTION_AND, RESTRICTION_OR;
 
-typedef struct RESTRICTION_NOT {
+typedef struct _RESTRICTION_NOT {
 	struct _RESTRICTION *pres;
 } RESTRICTION_NOT;
 

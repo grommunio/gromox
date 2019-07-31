@@ -1336,7 +1336,7 @@ CHUNK_BEGIN:
 			phttp->pfast_context->chunk_offset) {
 			size = stream_peek_buffer(&phttp->stream_in,
 										tmp_buff, 1024);
-			if (5 < size) {
+			if (size < 5) {
 				return TRUE;
 			}
 			if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {

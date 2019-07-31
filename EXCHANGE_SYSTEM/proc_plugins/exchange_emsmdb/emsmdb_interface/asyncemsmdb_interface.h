@@ -2,7 +2,6 @@
 #define _H_ASYNCEMSMDB_INTERFACE_
 #include "asyncemsmdb_ndr.h"
 
-
 void asyncemsmdb_interface_init(int threads_num);
 
 int asyncemsmdb_interface_run();

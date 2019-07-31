@@ -18,11 +18,13 @@
 typedef struct _ASYNC_WAIT {
 	DOUBLE_LIST_NODE node;
 	time_t wait_time;
-	uint32_t async_id;
 	char username[256];
 	uint16_t cxr;
-	ECDOASYNCWAITEX_IN *pin;
-	ECDOASYNCWAITEX_OUT *pout;
+	uint32_t async_id;
+	union {
+		ECDOASYNCWAITEX_OUT *pout;
+		int context_id; /* when async_id is 0 */
+	} out_payload;
 } ASYNC_WAIT;
 
 static int g_threads_num;
@@ -42,6 +44,14 @@ static LIB_BUFFER *g_wait_allocator;
 static void *scan_work_func(void *param);
 
 static void *thread_work_func(void *param);
+
+static void (*active_hpm_context)(int context_id, BOOL b_pending);
+
+/* called by moh_emsmdb module */
+void asyncemsmdb_interface_register_active(void *pproc)
+{
+	active_hpm_context = pproc;
+}
 
 void asyncemsmdb_interface_init(int threads_num)
 {
@@ -66,8 +76,7 @@ int asyncemsmdb_interface_run()
 		printf("[exchange_emsmdb]: fail to allocate thread id buffer\n");
 		return -1;
 	}
-	g_async_hash = int_hash_init(2*context_num,
-					sizeof(ASYNC_WAIT*), NULL);
+	g_async_hash = int_hash_init(2*context_num, sizeof(ASYNC_WAIT*), NULL);
 	if (NULL == g_async_hash) {
 		printf("[exchange_emsmdb]: fail to init async ID hash table\n");
 		return -2;
@@ -85,8 +94,8 @@ int asyncemsmdb_interface_run()
 	}
 	g_notify_stop = FALSE;
 	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[exchange_emsmdb]: fail to create "
-			"scanning thread for asyncemsmdb\n");
+		printf("[exchange_emsmdb]: fail to create"
+			" scanning thread for asyncemsmdb\n");
 		g_notify_stop = TRUE;
 		return -5;
 	}
@@ -95,7 +104,7 @@ int asyncemsmdb_interface_run()
 			NULL, thread_work_func, NULL)) {
 			g_threads_num = i;
 			printf("[exchange_emsmdb]: fail to create "
-				"wake up thread for asyncemsmdb\n");
+					"wake up thread for asyncemsmdb\n");
 			return -6;
 		}
 	}
@@ -149,7 +158,6 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	char tmp_tag[256];
 	DCERPC_INFO rpc_info;
 	
-	
 	pwait = lib_buffer_get(g_wait_allocator);
 	if (NULL == pwait) {
 		pout->flags_out = 0;
@@ -158,7 +166,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	}
 	rpc_info = get_rpc_info();
 	if (FALSE == emsmdb_interface_check_acxh(
-		&pin->acxh, pwait->username, &pwait->cxr) ||
+		&pin->acxh, pwait->username, &pwait->cxr, TRUE) ||
 		0 != strcasecmp(rpc_info.username, pwait->username)) {
 		lib_buffer_put(g_wait_allocator, pwait);
 		pout->flags_out = 0;
@@ -175,21 +183,27 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	pwait->async_id = async_id;
 	lower_string(pwait->username);
 	time(&pwait->wait_time);
-	pwait->pin = pin;
-	pwait->pout = pout;
-	
+	if (0 == async_id) {
+		pwait->out_payload.context_id = pout->flags_out;
+	} else {
+		pwait->out_payload.pout = pout;
+	}
 	sprintf(tmp_tag, "%s:%d", pwait->username, (int)pwait->cxr);
 	lower_string(tmp_tag);
 	pthread_mutex_lock(&g_async_lock);
-	if (1 != int_hash_add(g_async_hash, async_id, &pwait)) {
-		pthread_mutex_unlock(&g_async_lock);
-		lib_buffer_put(g_wait_allocator, pwait);
-		pout->flags_out = 0;
-		pout->result = EC_ASYNC_WAIT_REJECT;
-		return DISPATCH_SUCCESS;
+	if (0 != async_id) {
+		if (1 != int_hash_add(g_async_hash, async_id, &pwait)) {
+			pthread_mutex_unlock(&g_async_lock);
+			lib_buffer_put(g_wait_allocator, pwait);
+			pout->flags_out = 0;
+			pout->result = EC_ASYNC_WAIT_REJECT;
+			return DISPATCH_SUCCESS;
+		}
 	}
 	if (1 != str_hash_add(g_tag_hash, tmp_tag, &pwait)) {
-		int_hash_remove(g_async_hash, async_id);
+		if (0 != async_id) {
+			int_hash_remove(g_async_hash, async_id);
+		}
 		pthread_mutex_unlock(&g_async_lock);
 		lib_buffer_put(g_wait_allocator, pwait);
 		pout->flags_out = 0;
@@ -222,16 +236,52 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	lib_buffer_put(g_wait_allocator, pwait);
 }
 
-static void asyncemsmdb_interface_activate(ASYNC_WAIT *pwait, BOOL b_pending)
+/* called by moh_emsmdb module */
+void asyncemsmdb_interface_remove(ACXH *pacxh)
 {
-	if (TRUE == rpc_build_environment(pwait->async_id)) {
-		pwait->pout->result = EC_SUCCESS;
-		if (TRUE == b_pending) {
-			pwait->pout->flags_out = FLAG_NOTIFICATION_PENDING;
-		} else {
-			pwait->pout->flags_out = 0;
+	uint16_t cxr;
+	ASYNC_WAIT *pwait;
+	char tmp_tag[256];
+	char username[256];
+	ASYNC_WAIT **ppwait;
+	
+	if (FALSE == emsmdb_interface_check_acxh(
+		pacxh, username, &cxr, FALSE)) {
+		return;
+	}
+	sprintf(tmp_tag, "%s:%d", username, cxr);
+	lower_string(tmp_tag);
+	pthread_mutex_lock(&g_async_lock);
+	ppwait = str_hash_query(g_tag_hash, tmp_tag);
+	if (NULL == ppwait) {
+		pthread_mutex_unlock(&g_async_lock);
+		return;
+	}
+	pwait = *ppwait;
+	if (0 != pwait->async_id) {
+		int_hash_remove(g_async_hash, pwait->async_id);
+	}
+	str_hash_remove(g_tag_hash, tmp_tag);
+	pthread_mutex_unlock(&g_async_lock);
+	lib_buffer_put(g_wait_allocator, pwait);
+}
+
+static void asyncemsmdb_interface_activate(
+	ASYNC_WAIT *pwait, BOOL b_pending)
+{
+	if (0 == pwait->async_id) {
+		active_hpm_context(pwait->out_payload.context_id, b_pending);
+	} else {
+		if (TRUE == rpc_build_environment(pwait->async_id)) {
+			pwait->out_payload.pout->result = EC_SUCCESS;
+			if (TRUE == b_pending) {
+				pwait->out_payload.pout->flags_out =
+							FLAG_NOTIFICATION_PENDING;
+			} else {
+				pwait->out_payload.pout->flags_out = 0;
+			}
+			async_reply(pwait->async_id, pwait->out_payload.pout);
 		}
-		async_reply(pwait->async_id, pwait->pout);
 	}
 	lib_buffer_put(g_wait_allocator, pwait);
 }
@@ -252,7 +302,9 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 	}
 	pwait = *ppwait;
 	str_hash_remove(g_tag_hash, tmp_tag);
-	int_hash_remove(g_async_hash, pwait->async_id);
+	if (0 != pwait->async_id) {
+		int_hash_remove(g_async_hash, pwait->async_id);
+	}
 	pthread_mutex_unlock(&g_async_lock);
 	pthread_mutex_lock(&g_list_lock);
 	double_list_append_as_tail(&g_wakeup_list, &pwait->node);
@@ -286,55 +338,37 @@ NEXT_WAKEUP:
 
 static void *scan_work_func(void *param)
 {
-	uint16_t cxr;
 	time_t cur_time;
-	uint32_t async_id;
 	ASYNC_WAIT *pwait;
-	char tmp_tag[256];
-	char username[256];
 	ASYNC_WAIT **ppwait;
-	INT_HASH_ITER *iter;
+	STR_HASH_ITER *iter;
 	DOUBLE_LIST temp_list;
-	DOUBLE_LIST temp_list1;
 	DOUBLE_LIST_NODE *pnode;
 	
 	double_list_init(&temp_list);
-	double_list_init(&temp_list1);
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 		time(&cur_time);
 		pthread_mutex_lock(&g_async_lock);
-		iter = int_hash_iter_init(g_async_hash);
-		for (int_hash_iter_begin(iter); FALSE == int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			ppwait = int_hash_iter_get_value(iter, &async_id);
+		iter = str_hash_iter_init(g_tag_hash);
+		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
+			str_hash_iter_forward(iter)) {
+			ppwait = str_hash_iter_get_value(iter, NULL);
 			pwait = *ppwait;
-			if (FALSE == emsmdb_interface_check_acxh(&pwait->pin->acxh,
-				username, &cxr) || cxr != pwait->cxr ||
-				0 != strcasecmp(username, pwait->username)) {
-				int_hash_iter_remove(iter);
-				sprintf(tmp_tag, "%s:%d", pwait->username, (int)pwait->cxr);
-				lower_string(tmp_tag);
-				str_hash_remove(g_tag_hash, tmp_tag);
+			if (cur_time - pwait->wait_time > WAITING_INTERVAL - 3) {
+				str_hash_iter_remove(iter);
+				if (0 != pwait->async_id) {
+					int_hash_remove(g_async_hash, pwait->async_id);
+				}
 				double_list_append_as_tail(&temp_list, &pwait->node);
-			} else if (cur_time - pwait->wait_time >= WAITING_INTERVAL) {
-				int_hash_iter_remove(iter);
-				sprintf(tmp_tag, "%s:%d", pwait->username, (int)pwait->cxr);
-				lower_string(tmp_tag);
-				str_hash_remove(g_tag_hash, tmp_tag);
-				double_list_append_as_tail(&temp_list1, &pwait->node);
 			}
 		}
-		int_hash_iter_free(iter);
+		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_async_lock);
 		while (pnode=double_list_get_from_head(&temp_list)) {
-			asyncemsmdb_interface_activate(pnode->pdata, TRUE);
-		}
-		while (pnode=double_list_get_from_head(&temp_list1)) {
 			asyncemsmdb_interface_activate(pnode->pdata, FALSE);
 		}
 	}
 	double_list_free(&temp_list);
-	double_list_free(&temp_list1);
 	pthread_exit(0);
 }

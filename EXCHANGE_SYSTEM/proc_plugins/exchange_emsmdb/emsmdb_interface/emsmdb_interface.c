@@ -35,12 +35,14 @@
 
 #define FLAG_PRIVILEGE_ADMIN			0x00000001
 
+#define HANLDE_VALID_INTERVAL			1200
+
+#define MAX_HANDLE_PER_USER				100
+
 
 typedef struct _HANDLE_DATA {
-	DOUBLE_LIST_NODE node_hrpc;
-	DOUBLE_LIST_NODE node_user;
+	DOUBLE_LIST_NODE node;
 	GUID guid;
-	uint64_t hrpc;
 	char username[256];
 	uint16_t cxr;
 	uint32_t last_handle;
@@ -50,6 +52,7 @@ typedef struct _HANDLE_DATA {
 	DOUBLE_LIST notify_list;
 	int rop_num;
 	uint16_t rop_left;	/* size left in rop response buffer */
+	time_t last_time;
 } HANDLE_DATA;
 
 typedef struct _NOTIFY_ITEM {
@@ -58,17 +61,17 @@ typedef struct _NOTIFY_ITEM {
 	GUID guid;
 } NOTIFY_ITEM;
 
-
+static BOOL g_notify_stop;
 static time_t g_start_time;
+static pthread_t g_scan_id;
 static pthread_mutex_t g_lock;
 static pthread_key_t g_handle_key;
-static INT_HASH_TABLE *g_hrpc_hash;
 static STR_HASH_TABLE *g_user_hash;
 static STR_HASH_TABLE *g_handle_hash;
 static pthread_mutex_t g_notify_lock;
 static STR_HASH_TABLE *g_notify_hash;
 
-
+static void* scan_work_func(void *pparam);
 
 static uint32_t emsmdb_interface_get_timestamp()
 {
@@ -76,7 +79,7 @@ static uint32_t emsmdb_interface_get_timestamp()
 }
 
 BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
-	char *username, uint16_t *pcxr)
+	char *username, uint16_t *pcxr, BOOL b_touch)
 {
 	char guid_string[64];
 	HANDLE_DATA *phandle;
@@ -88,6 +91,9 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	pthread_mutex_lock(&g_lock);
 	phandle = str_hash_query(g_handle_hash, guid_string);
 	if (NULL != phandle) {
+		if (TRUE == b_touch) {
+			time(&phandle->last_time);
+		}
 		strcpy(username, phandle->username);
 		*pcxr = phandle->cxr;
 		pthread_mutex_unlock(&g_lock);
@@ -119,21 +125,37 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 	return FALSE;
 }
 
+/* called by moh_emsmdb module */
+void emsmdb_interface_touch_handle(CXH *pcxh)
+{
+	HANDLE_DATA *phandle;
+	char guid_string[64];
+	
+	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
+		return;
+	}
+	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
+	pthread_mutex_lock(&g_lock);
+	phandle = str_hash_query(g_handle_hash, guid_string);
+	if (NULL != phandle) {
+		time(&phandle->last_time);
+	}
+	pthread_mutex_unlock(&g_lock);
+}
+
 static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
 {
-	uint64_t hrpc;
 	char guid_string[64];
 	HANDLE_DATA *phandle;
 	
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return NULL;
 	}
-	hrpc = get_binding_handle();
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (TRUE) {
 		pthread_mutex_lock(&g_lock);
 		phandle = str_hash_query(g_handle_hash, guid_string);
-		if (NULL == phandle || phandle->hrpc != hrpc) {
+		if (NULL == phandle) {
 			pthread_mutex_unlock(&g_lock);
 			return NULL;
 		}
@@ -199,34 +221,28 @@ static BOOL emsmdb_interface_alloc_cxr(DOUBLE_LIST *plist,
 		pnode=double_list_get_after(plist, pnode),i++) {
 		if (i < ((HANDLE_DATA*)pnode->pdata)->cxr) {
 			phandle->cxr = i;
-			double_list_insert_before(plist, pnode, &phandle->node_user);
+			double_list_insert_before(plist, pnode, &phandle->node);
 			return TRUE;
 		}
 	}
-	
 	if (i > 0xFFFF) {
 		return FALSE;
 	}
 	phandle->cxr = i;
-	double_list_append_as_tail(plist, &phandle->node_user);
+	double_list_append_as_tail(plist, &phandle->node);
 	return TRUE;
 }
 
-static BOOL emsmdb_interface_create_handle(uint64_t hrpc,
-	const char *username, uint16_t client_version[4],
-	uint16_t client_mode, uint32_t cpid, uint32_t lcid_string,
-	uint32_t lcid_sort, uint16_t *pcxr, CXH *pcxh)
+static BOOL emsmdb_interface_create_handle(const char *username,
+	uint16_t client_version[4], uint16_t client_mode, uint32_t cpid,
+	uint32_t lcid_string, uint32_t lcid_sort, uint16_t *pcxr, CXH *pcxh)
 {
-	int count;
-	int hash_id;
 	void *plogmap;
 	DOUBLE_LIST *plist;
-	DOUBLE_LIST *plist1;
 	DOUBLE_LIST tmp_list;
 	char guid_string[64];
 	HANDLE_DATA *phandle;
 	HANDLE_DATA temp_handle;
-	DOUBLE_LIST_NODE *pnode;
 	
 	
 	if (FALSE == common_util_verify_cpid(cpid)) {
@@ -235,89 +251,56 @@ static BOOL emsmdb_interface_create_handle(uint64_t hrpc,
 	temp_handle.b_processing = FALSE;
 	temp_handle.b_occupied = FALSE;
 	temp_handle.guid = guid_random_new();
-	temp_handle.hrpc = hrpc;
 	temp_handle.info.cpid = cpid;
 	temp_handle.info.lcid_string = lcid_string;
 	temp_handle.info.lcid_sort = lcid_sort;
 	memcpy(temp_handle.info.client_version, client_version, 4);
 	temp_handle.info.client_mode = client_mode;
 	temp_handle.info.upctx_ref = 0;
+	time(&temp_handle.last_time);
 	strncpy(temp_handle.username, username, 256);
 	lower_string(temp_handle.username);
 	
 	guid_to_string(&temp_handle.guid, guid_string, sizeof(guid_string));
-	hash_id = hrpc >> 32;
-	
 	pthread_mutex_lock(&g_lock);
-	plist = int_hash_query(g_hrpc_hash, hash_id);
-	if (NULL != plist) {
-		count = 0;
-		for (pnode=double_list_get_head(plist); NULL!=pnode;
-			pnode=double_list_get_after(plist, pnode)) {
-			phandle = (HANDLE_DATA*)pnode->pdata;
-			if (phandle->hrpc == hrpc) {
-				count ++;
-			}
-		}
-		if (count >= MAX_HANDLES_ON_CONTEXT) {
-			pthread_mutex_unlock(&g_lock);
-			return FALSE;
-		}
-	} else {
-		if (1 != int_hash_add(g_hrpc_hash, hash_id, &tmp_list)) {
-			pthread_mutex_unlock(&g_lock);
-			return FALSE;
-		}
-		plist = int_hash_query(g_hrpc_hash, hash_id);
-		double_list_init(plist);
-	}
 	if (1 != str_hash_add(g_handle_hash, guid_string, &temp_handle)) {
-		if (0 == double_list_get_nodes_num(plist)) {
-			double_list_free(plist);
-			int_hash_remove(g_hrpc_hash, hash_id);
-		}
 		pthread_mutex_unlock(&g_lock);
 		return FALSE;
 	}
 	phandle = str_hash_query(g_handle_hash, guid_string);
-	phandle->node_hrpc.pdata = phandle;
-	phandle->node_user.pdata = phandle;
+	phandle->node.pdata = phandle;
 	
 	phandle->last_handle = 0;
 	plogmap = rop_processor_create_logmap();
 	if (NULL == plogmap) {
-		if (0 == double_list_get_nodes_num(plist)) {
-			double_list_free(plist);
-			int_hash_remove(g_hrpc_hash, hash_id);
-		}
 		str_hash_remove(g_handle_hash, guid_string);
 		pthread_mutex_unlock(&g_lock);
 		return FALSE;
 	}
 	phandle->info.plogmap = plogmap;
 	
-	plist1 = str_hash_query(g_user_hash, temp_handle.username);
-	if (NULL == plist1) {
-		if (1 != str_hash_add(g_user_hash, temp_handle.username, &tmp_list)) {
-			if (0 == double_list_get_nodes_num(plist)) {
-				double_list_free(plist);
-				int_hash_remove(g_hrpc_hash, hash_id);
-			}
+	plist = str_hash_query(g_user_hash, temp_handle.username);
+	if (NULL == plist) {
+		if (1 != str_hash_add(g_user_hash,
+			temp_handle.username, &tmp_list)) {
 			str_hash_remove(g_handle_hash, guid_string);
 			pthread_mutex_unlock(&g_lock);
 			rop_processor_release_logmap(plogmap);
 			return FALSE;
 		}
-		plist1 = str_hash_query(g_user_hash, temp_handle.username);
-		double_list_init(plist1);
+		plist = str_hash_query(g_user_hash, temp_handle.username);
+		double_list_init(plist);
+	} else {
+		if (double_list_get_nodes_num(plist) >= MAX_HANDLE_PER_USER) {
+			str_hash_remove(g_handle_hash, guid_string);
+			pthread_mutex_unlock(&g_lock);
+			rop_processor_release_logmap(plogmap);
+			return FALSE;
+		}
 	}
-	if (FALSE == emsmdb_interface_alloc_cxr(plist1, phandle)) {
+	if (FALSE == emsmdb_interface_alloc_cxr(plist, phandle)) {
 		if (0 == double_list_get_nodes_num(plist)) {
 			double_list_free(plist);
-			int_hash_remove(g_hrpc_hash, hash_id);
-		}
-		if (0 == double_list_get_nodes_num(plist1)) {
-			double_list_free(plist1);
 			str_hash_remove(g_user_hash, temp_handle.username);
 		}
 		str_hash_remove(g_handle_hash, guid_string);
@@ -325,9 +308,7 @@ static BOOL emsmdb_interface_create_handle(uint64_t hrpc,
 		rop_processor_release_logmap(plogmap);
 		return FALSE;
 	}
-	
 	*pcxr = phandle->cxr;
-	double_list_append_as_tail(plist, &phandle->node_hrpc);
 	pthread_mutex_unlock(&g_lock);
 	
 	pcxh->handle_type = HANDLE_EXCHANGE_EMSMDB;
@@ -336,11 +317,9 @@ static BOOL emsmdb_interface_create_handle(uint64_t hrpc,
 	return TRUE;
 }
 
-static void emsmdb_interface_remove_handle(CXH *pcxh, BOOL b_check)
+static void emsmdb_interface_remove_handle(CXH *pcxh)
 {
 	int i;
-	int hash_id;
-	uint64_t hrpc;
 	void *plogmap;
 	DOUBLE_LIST *plist;
 	char guid_string[64];
@@ -350,18 +329,11 @@ static void emsmdb_interface_remove_handle(CXH *pcxh, BOOL b_check)
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return;
 	}
-	if (TRUE == b_check) {
-		hrpc = get_binding_handle();
-	}
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (TRUE) {
 		pthread_mutex_lock(&g_lock);
 		phandle = str_hash_query(g_handle_hash, guid_string);
 		if (NULL == phandle) {
-			pthread_mutex_unlock(&g_lock);
-			return;
-		}
-		if (TRUE == b_check && phandle->hrpc != hrpc) {
 			pthread_mutex_unlock(&g_lock);
 			return;
 		}
@@ -379,18 +351,9 @@ static void emsmdb_interface_remove_handle(CXH *pcxh, BOOL b_check)
 			break;
 		}
 	}
-	hash_id = phandle->hrpc >> 32;
-	plist = int_hash_query(g_hrpc_hash, hash_id);
-	if (NULL != plist) {
-		double_list_remove(plist, &phandle->node_hrpc);
-		if (0 == double_list_get_nodes_num(plist)) {
-			double_list_free(plist);
-			int_hash_remove(g_hrpc_hash, hash_id);
-		}
-	}
 	plist = str_hash_query(g_user_hash, phandle->username);
 	if (NULL != plist) {
-		double_list_remove(plist, &phandle->node_user);
+		double_list_remove(plist, &phandle->node);
 		if (0 == double_list_get_nodes_num(plist)) {
 			double_list_free(plist);
 			str_hash_remove(g_user_hash, phandle->username);
@@ -410,6 +373,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh, BOOL b_check)
 
 void emsmdb_interface_init()
 {
+	g_notify_stop = TRUE;
 	time(&g_start_time);
 	pthread_mutex_init(&g_lock, NULL);
 	pthread_mutex_init(&g_notify_lock, NULL);
@@ -421,26 +385,27 @@ int emsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_handle_hash = str_hash_init((context_num + 1)*MAX_HANDLES_ON_CONTEXT,
-						sizeof(HANDLE_DATA), NULL);
+	g_handle_hash = str_hash_init((context_num + 1)*
+		MAX_HANDLES_ON_CONTEXT, sizeof(HANDLE_DATA), NULL);
 	if (NULL == g_handle_hash) {
 		printf("[exchange_emsmdb]: fail to init handle hash table\n");
 		return -1;
 	}
-	g_hrpc_hash = int_hash_init(context_num + 1, sizeof(DOUBLE_LIST), NULL);
-	if (NULL == g_hrpc_hash) {
-		printf("[exchange_emsmdb]: fail to init hrpc hash table\n");
-		return -2;
-	}
 	g_user_hash = str_hash_init(context_num + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == g_user_hash) {
 		printf("[exchange_emsmdb]: fail to init user hash table\n");
-		return -3;
+		return -2;
 	}
-	g_notify_hash = str_hash_init(AVERAGE_NOTIFY_NUM*context_num,
-									sizeof(NOTIFY_ITEM), NULL);
+	g_notify_hash = str_hash_init(AVERAGE_NOTIFY_NUM
+			*context_num, sizeof(NOTIFY_ITEM), NULL);
 	if (NULL == g_notify_hash) {
 		printf("[exchange_emsmdb]: fail to init notify hash map\n");
+		return -3;
+	}
+	g_notify_stop = FALSE;
+	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
+		g_notify_stop = TRUE;
+		printf("[exchange_emsmdb]: fail create scanning thread\n");
 		return -4;
 	}
 	return 0;
@@ -448,6 +413,10 @@ int emsmdb_interface_run()
 
 int emsmdb_interface_stop()
 {
+	if (FALSE == g_notify_stop) {
+		g_notify_stop = TRUE;
+		pthread_join(g_scan_id, NULL);
+	}
 	if (NULL != g_notify_hash) {
 		str_hash_free(g_notify_hash);
 		g_notify_hash = NULL;
@@ -455,10 +424,6 @@ int emsmdb_interface_stop()
 	if (NULL != g_user_hash) {
 		str_hash_free(g_user_hash);
 		g_user_hash = NULL;
-	}
-	if (NULL != g_hrpc_hash) {
-		int_hash_free(g_hrpc_hash);
-		g_hrpc_hash = NULL;
 	}
 	if (NULL != g_handle_hash) {
 		str_hash_free(g_handle_hash);
@@ -476,7 +441,7 @@ void emsmdb_interface_free()
 
 int emsmdb_interface_disconnect(CXH *pcxh)
 {
-	emsmdb_interface_remove_handle(pcxh, TRUE);
+	emsmdb_interface_remove_handle(pcxh);
 	memset(pcxh, 0, sizeof(CXH));
 	return EC_SUCCESS;
 }
@@ -565,8 +530,8 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	
 	header_info.version = AUX_VERSION_1;
 	header_info.type = AUX_TYPE_EXORGINFO;
-	aux_orginfo.org_flags = PUBLIC_FOLDERS_ENABLED;
-	/* disable USE_AUTODISCOVER_FOR_PUBLIC_FOLDR_CONFIGURATION */
+	aux_orginfo.org_flags = PUBLIC_FOLDERS_ENABLED |
+		USE_AUTODISCOVER_FOR_PUBLIC_FOLDR_CONFIGURATION;
 	header_info.ppayload = &aux_orginfo;
 	node_info.pdata = &header_info;
 	double_list_append_as_tail(&aux_out.aux_list, &node_info);
@@ -671,7 +636,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	if (0xFFFFFFFF == cxr_link) {
 		*ptimestamp = emsmdb_interface_get_timestamp();
 	}
-	if (FALSE == emsmdb_interface_create_handle(hrpc,
+	if (FALSE == emsmdb_interface_create_handle(
 		rpc_info.username, client_version, client_mode,
 		cpid, lcid_string, lcid_sort, pcxr, pcxh)) {
 		result = EC_LOGIN_FAILURE;
@@ -713,21 +678,58 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	EXT_PULL ext_pull;
 	char username[256];
 	HANDLE_DATA *phandle;
+	DCERPC_INFO rpc_info;
 	struct timeval first_time;
 	
 	/* ms-oxcrpc 3.1.4.2 */
 	if (cb_in < 0x00000008 || *pcb_out < 0x00000008) {
+		*pflags = 0;
+		*pcb_out = 0;
+		*pcb_auxout = 0;
+		*ptrans_time = 0;
+		memset(pcxh, 0, sizeof(CXH));
 		return EC_RPC_FAIL;
 	}
 	if (cb_auxin > 0x1008) {
+		*pflags = 0;
+		*pcb_out = 0;
+		*pcb_auxout = 0;
+		*ptrans_time = 0;
+		memset(pcxh, 0, sizeof(CXH));
 		return EC_BAD_STUB_DATA;
 	}
 	gettimeofday(&first_time, NULL);
 	phandle = emsmdb_interface_get_handle_data(pcxh);
 	if (NULL == phandle) {
+		*pflags = 0;
+		*pcb_out = 0;
+		*pcb_auxout = 0;
+		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
 		return EC_ERROR;
 	}
+	rpc_info = get_rpc_info();
+	if (0 != strcasecmp(phandle->username, rpc_info.username)) {
+		emsmdb_interface_put_handle_data(phandle);
+		*pflags = 0;
+		*pcb_out = 0;
+		*pcb_auxout = 0;
+		*ptrans_time = 0;
+		memset(pcxh, 0, sizeof(CXH));
+		return EC_ACCESS_DENIED;
+	}
+	if (phandle->username, first_time.tv_sec -
+		phandle->last_time > HANLDE_VALID_INTERVAL) {
+		emsmdb_interface_put_handle_data(phandle);
+		emsmdb_interface_remove_handle(pcxh);
+		*pflags = 0;
+		*pcb_out = 0;
+		*pcb_auxout = 0;
+		*ptrans_time = 0;
+		memset(pcxh, 0, sizeof(CXH));
+		return EC_ERROR;
+	}
+	time(&phandle->last_time);
 	pthread_setspecific(g_handle_key, (const void*)phandle);
 	if (cb_auxin > 0) {
 		ext_buffer_pull_init(&ext_pull, pauxin,
@@ -773,33 +775,7 @@ int emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
 
 void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc)
 {
-	int i;
-	int count;
-	int hash_id;
-	DOUBLE_LIST *plist;
-	HANDLE_DATA *phandle;
-	DOUBLE_LIST_NODE *pnode;
-	CXH cxhs[MAX_HANDLES_ON_CONTEXT];
-	
-	count = 0;
-	hash_id = hrpc >> 32;
-	pthread_mutex_lock(&g_lock);
-	plist = int_hash_query(g_hrpc_hash, hash_id);
-	if (NULL != plist) {
-		for (pnode=double_list_get_head(plist); NULL!=pnode;
-			pnode=double_list_get_after(plist, pnode)) {
-			phandle = (HANDLE_DATA*)pnode->pdata;
-			if (phandle->hrpc == hrpc) {
-				cxhs[count].handle_type = HANDLE_EXCHANGE_EMSMDB;
-				cxhs[count].guid = phandle->guid;
-				count ++;
-			}
-		}
-	}
-	pthread_mutex_unlock(&g_lock);
-	for (i=0; i<count; i++) {
-		emsmdb_interface_remove_handle(&cxhs[i], FALSE);
-	}
+	/* do nothing */
 }
 
 const GUID* emsmdb_interface_get_handle()
@@ -993,6 +969,7 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 {
 	char tag_buff[256];
 	NOTIFY_ITEM tmp_notify;
+	
 	
 	tmp_notify.handle = handle;
 	tmp_notify.logon_id = logon_id;
@@ -1303,4 +1280,54 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	if (FALSE == b_processing) {
 		asyncemsmdb_interface_wakeup(username, cxr);
 	}
+}
+
+static void* scan_work_func(void *pparam)
+{
+	CXH cxh;
+	time_t cur_time;
+	STR_HASH_ITER *iter;
+	char guid_string[64];
+	HANDLE_DATA *phandle;
+	DOUBLE_LIST temp_list;
+	DOUBLE_LIST_NODE *pnode;
+	
+	double_list_init(&temp_list);
+	while (FALSE == g_notify_stop) {
+		time(&cur_time);
+		pthread_mutex_lock(&g_lock);
+		iter = str_hash_iter_init(g_handle_hash);
+		for (str_hash_iter_begin(iter);
+			FALSE == str_hash_iter_done(iter);
+			str_hash_iter_forward(iter)) {
+			phandle = str_hash_iter_get_value(iter, guid_string);
+			if (TRUE == phandle->b_processing ||
+				TRUE == phandle->b_occupied) {
+				continue;
+			}
+			if (cur_time - phandle->last_time > HANLDE_VALID_INTERVAL) {
+				pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+				if (NULL == pnode) {
+					continue;
+				}
+				pnode->pdata = strdup(guid_string);
+				if (NULL == pnode->pdata) {
+					free(pnode);
+					continue;
+				}
+				double_list_append_as_tail(&temp_list, pnode);
+			}
+		}
+		str_hash_iter_free(iter);
+		pthread_mutex_unlock(&g_lock);
+		while (pnode=double_list_get_from_head(&temp_list)) {
+			cxh.handle_type = HANDLE_EXCHANGE_EMSMDB;
+			guid_from_string(&cxh.guid, pnode->pdata);
+			emsmdb_interface_remove_handle(&cxh);
+			free(pnode->pdata);
+			free(pnode);
+		}
+		sleep(3);
+	}
+	pthread_exit(0);
 }

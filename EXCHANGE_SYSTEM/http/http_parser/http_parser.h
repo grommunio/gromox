@@ -144,6 +144,8 @@ void http_parser_free();
 
 int http_parser_get_context_socket(HTTP_CONTEXT *pcontext);
 
+void http_parser_set_context(int context_id);
+
 struct timeval http_parser_get_context_timestamp(HTTP_CONTEXT *pcontext);
 
 int http_parser_get_param(int param);

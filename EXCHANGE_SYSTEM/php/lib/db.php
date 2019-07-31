@@ -36,7 +36,6 @@ function get_db_connection()
 	return $dbconn;
 }
 
-
 function get_user_info_by_name($email_address)
 {
 	$db_conn = get_db_connection();
@@ -89,6 +88,38 @@ function get_user_info_by_id($user_id)
 		$timezone = $row[5];
 	}
 	return array('maildir'=>$row[0], 'real_name'=>$row[1], 'username'=>$row[2], 'domain'=>$domain, 'uid'=>$row[3], 'did'=>$row[4], 'timezone'=>$timezone);
+}
+
+function get_domain_info_by_name($domain)
+{
+	$db_conn = get_db_connection();
+	
+	$sql_string = "SELECT homedir, id, domainname FROM domains WHERE domainname='" . mysql_real_escape_string($domain) . "'";
+	$results = mysql_query($sql_string, $db_conn);
+	if (!$results) {
+		die("fail to query database: " . mysql_error());
+	}
+	if (1 != mysql_num_rows($results)) {
+		return NULL;
+	}
+	$row = mysql_fetch_row($results);
+	return array('homedir'=>$row[0], 'did'=>$row[1], 'domain'=>$row[2]);
+}
+
+function get_domain_info_by_id($user_id)
+{
+	$db_conn = get_db_connection();
+	
+	$sql_string = "SELECT homedir, id, domainname FROM domains WHERE id=" . $user_id;
+	$results = mysql_query($sql_string, $db_conn);
+	if (!$results) {
+		die("fail to query database: " . mysql_error());
+	}
+	if (1 != mysql_num_rows($results)) {
+		return NULL;
+	}
+	$row = mysql_fetch_row($results);
+	return array('homedir'=>$row[0], 'did'=>$row[1], 'domain'=>$row[2]);
 }
 
 ?>

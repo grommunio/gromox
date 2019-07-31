@@ -56,7 +56,7 @@ int emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh);
 void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc);
 
 BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
-	char *username, uint16_t *pcxr);
+	char *username, uint16_t *pcxr, BOOL b_touch);
 
 BOOL emsmdb_interface_check_notify(ACXH *pacxh);
 
