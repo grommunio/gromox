@@ -170,21 +170,6 @@ void listener_stop_accept()
 }
 
 /*
- *  stop accept the connection
- */
-void listener_stop_accept()
-{
-	g_stop_accept = TRUE;
-	
-	shutdown(g_listener_sock, SHUT_RDWR);
-	pthread_join(g_thr_id, NULL);
-	if (g_listener_ssl_port > 0) {
-		shutdown(g_listener_ssl_sock, SHUT_RDWR);
-		pthread_join(g_ssl_thr_id, NULL);
-	}
-}
-
-/*
  * listener's thread work function
  *
  */
