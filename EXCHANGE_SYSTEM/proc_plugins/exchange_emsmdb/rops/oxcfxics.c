@@ -1963,6 +1963,7 @@ uint32_t rop_syncimportmessagemove(
 	LOGON_OBJECT *plogon;
 	ICSUPCTX_OBJECT *pctx;
 	FOLDER_OBJECT *pfolder;
+	TAGGED_PROPVAL tmp_propval;
 	
 	if (22 != psrc_folder_id->cb ||
 		22 != psrc_message_id->cb ||
@@ -2088,6 +2089,13 @@ uint32_t rop_syncimportmessagemove(
 		pinfo->cpid, src_mid, folder_id, dst_mid,
 		TRUE, &b_result) || FALSE == b_result) {
 		return EC_ERROR;	
+	}
+	if (TRUE == b_newer) {
+		tmp_propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
+		tmp_propval.pvalue = pvalue;
+		exmdb_client_set_message_property(
+			logon_object_get_dir(plogon), NULL,
+			0, dst_mid, &tmp_propval, &b_result);
 	}
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0, dst_mid,
