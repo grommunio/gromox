@@ -12,6 +12,7 @@ SCRIPTS_PATH=./scripts
 REMOTE_LINKS=../common/common.so \
 			 ../epoll_scheduler/epoll_scheduler.so \
 			 ../email_lib/email_lib.so \
+			 ../webkit_lib/webkit_lib.so \
 			 ../rpc_lib/rpc_lib.so \
 			 ../mapi_lib/mapi_lib.so
 

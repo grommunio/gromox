@@ -26,6 +26,7 @@ ln -s ../LIBRARY/email_lib .
 ln -s ../LIBRARY/epoll_scheduler .
 ln -s ../LIBRARY/mapi_lib .
 ln -s ../LIBRARY/rpc_lib .
+ln -s ../LIBRARY/webkit_lib .
 make && make release && cd ..
 cd AGENT_SERVICE
 ln -s ../LIBRARY/common .
