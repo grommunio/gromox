@@ -8,90 +8,6 @@
 #include <sys/shm.h>
 #include <sys/types.h>
 
-#define BAR01_CID	"<000001c695cb$9bc2ea60$6601a8c0@herculiz>"
-#define BAR02_CID	"<000002c695cb$9bc2ea60$6601a8c0@herculiz>"
-#define BAR03_CID	"<000003c695cb$9bc2ea60$6601a8c0@herculiz>"
-#define PIC01_CID	"<001501c695cb$9bc2ea60$6601a8c0@herculiz>"
-#define PIC05_CID	"<001901c695cb$9bc53450$6601a8c0@herculiz>"
-
-#define BAR01_FILE	\
-"iVBORw0KGgoAAAANSUhEUgAAAA0AAAABBAMAAAD3Bzk0AAAAL3RFWHRDcmVhdGlvbiBUaW1lAGpl\r\n\
-dS4gMTYgamFudi4gMjAwMyAxMzo1MzoyNCArMDEwMBWH9CcAAAAHdElNRQfTARANAhb7Pf6OAAAA\r\n\
-CXBIWXMAAArwAAAK8AFCrDSYAAAABGdBTUEAALGPC/xhBQAAADBQTFRFCErOIWPWQoTve63/nL3/\r\n\
-hKXvc5TnY4zeUnvOKVq9ADmtAEKUEFKtAAAAAAAAAAAAlwAM9AAAABBJREFUeNpjYFR2Te9cfRwA\r\n\
-B44CzHWBU0YAAAAASUVORK5CYII=\r\n"
-
-#define BAR02_FILE	\
-"iVBORw0KGgoAAAANSUhEUgAAAA0AAAABBAMAAAD3Bzk0AAAAL3RFWHRDcmVhdGlvbiBUaW1lAGpl\r\n\
-dS4gMTYgamFudi4gMjAwMyAxMzo1Mzo1MyArMDEwMNrlw7AAAAAHdElNRQfTARAMNgJbD7MzAAAA\r\n\
-CXBIWXMAAArwAAAK8AFCrDSYAAAABGdBTUEAALGPC/xhBQAAACdQTFRFCMbOIc7WQufve///nPf/\r\n\
-hOfvc97nY9beUsbOMbW9AKWtAJSUEK2tSNELXAAAABBJREFUeNpjYFR2Te9cfQAAB4cCxXeYEo0A\r\n\
-AAAASUVORK5CYII=\r\n"
-
-#define BAR03_FILE	\
-"iVBORw0KGgoAAAANSUhEUgAAAA0AAAABBAMAAAD3Bzk0AAAAL3RFWHRDcmVhdGlvbiBUaW1lAGpl\r\n\
-dS4gMTYgamFudi4gMjAwMyAxMzo1Mjo1NSArMDEwMFb3nbQAAAAHdElNRQfTARAMNQJwIuDwAAAA\r\n\
-CXBIWXMAAArwAAAK8AFCrDSYAAAABGdBTUEAALGPC/xhBQAAACdQTFRFznMI1owh76VC/8Z7/9ac\r\n\
-78aE57Vz3q1jzpxSvYQxrWMAlEoArWMQ/jEWAgAAABBJREFUeNpjYFR2Te9cfQAAB4cCxXeYEo0A\r\n\
-AAAASUVORK5CYII="
-
-#define PIC01_FILE	\
-"R0lGODlhAwA3ANUAAHWQwX2XxV5+tGCAtnCMvmyJvE5xrFByrYKayICZx3+Yxlp6slFzrmaEuXqU\r\n\
-xMjIyHOPwFV2sGSCuGmGunmUw3eSwld4sWuIu3uVxFt7s2KBt1N1r1h5slh5sVx8s26LvXmTxAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAADADcAAAZSQINw\r\n\
-eCgaGchkcsNsRp5Qi7RD5VgX2IzWwxV4v9+BeKwpS87ohno9aV/e8IL8Q68T7niIfr8H+CuAgSCD\r\n\
-FIUOhxiJAYuMjAqPCZGSCJSVlQ+YQQA7\r\n"
-
-#define PIC05_FILE	\
-"R0lGODlhwwAwAPcAAP5VKvyLb/xtThik/2yJvGWDuP/9mMrU6HWQwf75tKuUnvPMBPv8/XCMvl5+\r\n\
-tOixBWGAttzj8Jer0Z6Obi+t/f780FCv9fL1+eeqBLTD3rrI4YyjzGmGu9Lb7ICZx6u72lp6svPY\r\n\
-h+Xq9P+0plV2sJGnzn+Yxn2Wxf+kkoWdyXOOwDFPrpC3+P6DXOjt9e/ITfDNdqGz1v/sasSudEyR\r\n\
-0e3w98iSjzOWx/6YgHqUxGyJv8WaKP/948+lJvN+E/zIwsLO5GR9q2S3+tWrIP/7kP/gA//DuZ63\r\n\
-5qbD/5TJ/0Niuum4NXeSwruOKuDm8Zyv09GvkoWFi1+JwZt2WHmUw01su/fmlCx30c22zPb4+9q+\r\n\
-brmtysenWnN+kOCMemCSzMOVRqS12PexAF96rPKrAKi52UFaseiwFa+/24ifymB+u3iSxVd4sVh5\r\n\
-sVh5slx7s6a32Kut0XuVxHCBn2qk11x7r5OYuVme3YCLsMjIyFN1r1R1r4KayIKbyIGax////wAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\r\n\
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAwwAwAAAI/wD1CBxI\r\n\
-sKDBgwgTKlzIsKHDhxAjSpxYcI/FixgzatzIsaPHjyBDihxJsqTJkxlJqFxJYkyXCTO0vJgxh6XN\r\n\
-mzhz6tzJs6fPn0CDCh1KVOVLLSGIEDFghWbRp1CjSp1KdSibq1e7cAlhIIGBr0xpYh1LtqzZs2jT\r\n\
-ql3Ltq3bt3Djpm1Dt00ULVa8ggVrRcucOnUDCx5MuLDhw4gTK17MuLHjx4XduGnTRUsCvUv3GiCi\r\n\
-JUodyaBDix5NurTp06hTq17NurXr16JB1JnD5XJmzWA5R3kDorfv38CDCx9OvLjx48iTK1/OvLnv\r\n\
-N2MmhKhwG/fezkHeaN/Ovbv37+DDi/8fT768+fPo06vfHqV2gurWv+rOvr6+/fv48+tXDwZGhfjx\r\n\
-cTZBEA4UaOCBCCao4IIMNujggxBGKOGEFFboQA8w8ACgZkp9BYMCFoYo4ogklmhihUPIwMN7ASq1\r\n\
-VAIV8FCBFjTU+MUXUkBw4o489uhjiRAM8UIFLO7l4lcwyphACC9wccMAA1BAwR1U5gjBlVhmqeWW\r\n\
-XHbp5ZdghinmmGSWaaaXQyxAxB+bbdYhjDFWYAUML5xxhhg7PAnlnhRYcIeVZwYq6KCEFmpomGkW\r\n\
-IeObcS4JwxJnYCApBnjquSefFnxx6KacduqpoQUkqmKMMloRwhJLTCrpA6xWeumrfX7/UcCstM6K\r\n\
-Za245qrrrrz26uuvwAYr7LDEFtDDAkUUYQAPTEKqKqvQtprnq7BmquutxWar7bbcduttokXIEEKk\r\n\
-q0Zr7gOuUntprL7+4e67wL77x67yemuvrvUKK++8987KwbHJygBDueeam666e1pgAQcMN0zrvvn2\r\n\
-GjGuE/drb8US79tvwwCHGwLBBUN7MMJRZtowww/DqzG3GFvMMrzBtswtx8h6jEHI54rRhKUkD2CB\r\n\
-ECc3HDHMs0I878RGHw1zvkNDnPLKBTjNa9NGFy111FALyzABHYsLMs4680wyBUJ8QcDZBDAsb9BB\r\n\
-Q6z2u0In/ba7HKy99txu171v3Hmz/6033Xi7bXTgcPttOAdod/0xzgbv3DOfQtyBdtp//0EAxGjL\r\n\
-O7nml7/bueefW64556SDzvnZpbs7+eagh4666a0nrfrqtNeu+Nchh/34nkJYQPvo+2beuuvEpy66\r\n\
-56cLbzzrSddOfPGwzw699M7X3sAONXvNeLRkgEHH7iVL3sD4r0t/evLLPy/78LKXb7nyRjt/fvTv\r\n\
-zz978tWjPX4Dt9+8/QPdg4MQdiclGuyvAe6DnwIXmL7QNc99x7sf+4aXP/vVj34MpGD+CLA/7AVs\r\n\
-cf9jFRhYgAQWUKBnFrhBFVRwwPEBL3YTlKDqggfBGiZweu+rIf4WiMMbOpCGG9RfA/9U4EGb+W97\r\n\
-3TtCEkp4QnVJSQlqUIEUWehC2e1PXgfEYhWNlsV3bfEPXUzaF1soxhZe0YtjbIAWtfhFNprxjUOU\r\n\
-YhG1tz0M+AAAABAAC5ZoQmpJ6QpmiKMUybgvQrorjGA8I8TCyEhEFlKNaHRkIuHIxjWi0Y2QxCQc\r\n\
-WyhFBMzxY0c0lx3viEc8CkCJJbTAuihwhRWYQQUIiCUCpkjLWtrylrjMpS53ycte+vKXwPylLD/5\r\n\
-tVGW8pimjMESkaDKKLFyBStQAixlGcxqWvOa2MymNnEZSyZ8MlrGRKY48xiHZQ7wmdCUJhPWyQRq\r\n\
-bvOd8IynPH3Jzm+Gc5ylFEAe8dj/gnIiAQlCaCU0o6kCdjJBDgZNqEIXytCGOvShEI2oRCdK0Yqu\r\n\
-EwFNeEDAYEBKfArgoyANqQBasIUlHsEMA40mAqjA0pZSwaIwjalMZ0rTmbY0ClPAQLhQkM88ivSn\r\n\
-LQhqAIRaUhagdKBKWKlLWVrTpjr1qVCdKEvXgAA8TKEJS2iBT4E60qC2IABgDWsAcDBWLLBACQM1\r\n\
-QxWYkIO2ujUHcoirXOdK17ra9a54zate98rXvvr1r3hta1xfilOQtqCrQv2qWHHAWMai4LGPHcEW\r\n\
-0ArNKiAAsJjNrGY3y9nO+vUEoD2BHPBgA68qdqxjbSwKcADZyI5gBEaILRYou9bQ/9oWtJ7NrW53\r\n\
-y9vP3ha0dvCCaVML2dcaF7ax/YFyjTCCH5zVDGpYw29t29vqWve6nQWtCba73RNQwQ6lHe5YXZtc\r\n\
-5f6AuasNgBfiUAUdcPe98MWufOdLX7vCF752UIBwTSvU1LJ2tWTlLxRU4IH73re+CE6wdbfrgQY7\r\n\
-uMDbza8X9svfCntVvTawAx8ezOEHK/jDIOZshztsAj/YIb82mDBY+QvWCdtAAXYowYZHTGID2/jG\r\n\
-OM6xjnfM4x77+Mc6brAfhkzkIhv5yEhOspKJ3IcmO/nJUI6ylKdM5Spb+cpYzrKWt0zlIfPhy2AO\r\n\
-s5jHTOYymxnMXE6zmtfM5ja7GTvKX37zm1NA5zrb+c54zrOe98znPvv5z4AOtKD33OQ8GPrQiE60\r\n\
-ohfN6EY7+tGQjrSkJ03pSlv60okOCAA7\r\n"
-
 
 #define HTML_01	\
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\r\n\
@@ -110,41 +26,21 @@ dropshadow(color=#000000,offx=2,offy=2); COLOR: #0b77d3; TEXT-ALIGN: center}\r\n
 BORDER-BOTTOM-WIDTH: 0px; BACKGROUND-COLOR: #ffffff; BORDER-RIGHT-WIDTH: 0px}\
 -->\r\n\
 </STYLE><TITLE>spam statistic</TITLE>\r\n\
-<META http-equiv=Content-Type content=\"text/html; charset=us-ascii\">\r\n\
-<META content=\"MSHTML 6.00.2900.2912\" name=GENERATOR></HEAD>\r\n\
+<META http-equiv=Content-Type content=\"text/html; charset=us-ascii\"></HEAD>\r\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\r\n\
-marginheight=\"0\" marginwidth=\"0\">\r\n\
-<CENTER><TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0><TBODY>\r\n\
-<TR><TD noWrap align=middle background=\r\n\
-\"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\" height=55>\r\n\
-<SPAN class=ReportTitle>Green Messenger Status Report</SPAN>\r\n\
-<TD vAlign=bottom noWrap width=\"22%\"\r\n\
-background=\"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\"><A\r\n\
-href=\"http://www.gridware.com.cn\" target=_blank><IMG height=48\r\n\
-src=\"cid:001901c695cb$9bc53450$6601a8c0@herculiz\" width=195 align=right\r\n\
-border=0></A></TD></TR></TBODY></TABLE><BR>\r\n\
+marginheight=\"0\" marginwidth=\"0\"><CENTER>\r\n\
 <TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0> <TBODY><TR>\r\n\
 <TD noWrap align=left height=23></TD></TR></TBODY></TABLE><BR>\r\n\
 <A name=General_Statistics></A>\r\n\
 <TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0><TBODY>\r\n\
 <TABLE class=ChartTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\r\n\
-<TBODY><TR><TD align=middle><CENTER>\r\n\
-<TABLE><TBODY><TR vAlign=bottom><TD>&nbsp;</TD>\r\n"
+<TBODY><TR><TD align=middle><CENTER>\r\n"
 
 #define HTML_02		\
-"<TD>&nbsp;</TD></TR><TR vAlign=center><TD>&nbsp;</TD>\r\n\
-<TD>01:00</TD><TD>02:00</TD><TD>03:00</TD><TD>04:00</TD>\r\n\
-<TD>05:00</TD><TD>06:00</TD><TD>07:00</TD><TD>08:00</TD>\r\n\
-<TD>09:00</TD><TD>10:00</TD><TD>11:00</TD><TD>12:00</TD>\r\n\
-<TD>13:00</TD><TD>14:00</TD><TD>15:00</TD><TD>16:00</TD>\r\n\
-<TD>17:00</TD><TD>18:00</TD><TD>19:00</TD><TD>20:00</TD>\r\n\
-<TD>21:00</TD><TD>22:00</TD><TD>23:00</TD><TD>24:00</TD>\r\n\
-<TD>&nbsp;</TD></TR></TBODY></TABLE><BR>\r\n\
-<TABLE><TBODY><TR><TD width=80 bgColor=#ececec>hour</TD>\r\n\
+"<TABLE><TBODY><TR><TD width=80 bgColor=#ececec>hour</TD>\r\n\
 <TD width=160 bgColor=#ffb055> CPU usage</TD>\r\n\
 <TD width=160 bgColor=#4477dd> network transmit</TD>\r\n\
 <TD width=160 bgColor=#66f0ff> connection concurrence</TD></TR>\r\n"
-
 
 #define HTML_03		\
 "</TBODY></TABLE><BR></CENTER></TD></TR></TBODY></TABLE></TD></TR> \
@@ -154,19 +50,6 @@ border=0></A></TD></TR></TBODY></TABLE><BR>\r\n\
 #define HTML_TBCELL_END		"</TD>\r\n"
 #define HTML_TBLINE_BEGIN	"<TR>"
 #define HTML_TBLINE_END		"</TR>\r\n"
-
-
-#define HTML_CHART_CPU1	"<IMG title=\"CPU usage: "
-#define HTML_CHART_CPU2 \
-"\" src=\"cid:000003c695cb$9bc2ea60$6601a8c0@herculiz\" height="
-#define HTML_CHART_NETWORK1	"<IMG title=\"Network transmit: "
-#define HTML_CHART_NETWORK2 \
-"\" src=\"cid:000001c695cb$9bc2ea60$6601a8c0@herculiz\" height="
-#define HTML_CHART_CONNECTION1 "<IMG title=\"Connection concurrence: "
-#define HTML_CHART_CONNECTION2	\
-"\" src=\"cid:000002c695cb$9bc2ea60$6601a8c0@herculiz\" height="
-#define HTML_CHART_END	" width=12 align=bottom>"
-
 
 
 #define MAX_UNIT_NUM		32
@@ -384,59 +267,6 @@ static void do_statistic()
 		}
 	}
 	
-	for (i=0; i<24; i++) {
-		memcpy(ptr, HTML_TBCELL_BEGIN, sizeof(HTML_TBCELL_BEGIN) - 1);
-		ptr += sizeof(HTML_TBCELL_BEGIN) - 1;
-		memcpy(ptr, HTML_CHART_CPU1, sizeof(HTML_CHART_CPU1) - 1);
-		ptr += sizeof(HTML_CHART_CPU1) - 1;
-		ptr += sprintf(ptr, "%d%%", (int)(g_cpu_status[i]*100));
-		memcpy(ptr, HTML_CHART_CPU2, sizeof(HTML_CHART_CPU2) - 1);
-		ptr += sizeof(HTML_CHART_CPU2) - 1;
-		if (200*g_cpu_status[i] < 1) {
-			*ptr = '1';
-			ptr ++;
-		} else {
-			ptr += sprintf(ptr, "%d", (int)(g_cpu_status[i]*200));
-		}
-		memcpy(ptr, HTML_CHART_END, sizeof(HTML_CHART_END) - 1);
-		ptr += sizeof(HTML_CHART_END) - 1;
-		memcpy(ptr, HTML_CHART_NETWORK1, sizeof(HTML_CHART_NETWORK1) - 1);
-		ptr += sizeof(HTML_CHART_NETWORK1) - 1;
-		if (g_network_status[i] > 0xFFFFFFFF) {
-			ptr += sprintf(ptr, "%dG", (int)(g_network_status[i]/0x3FFFFFFF));
-		} else {
-			bytetoa((size_t)g_network_status[i], ptr);
-			ptr += strlen(ptr);
-		}
-		memcpy(ptr, HTML_CHART_NETWORK2, sizeof(HTML_CHART_NETWORK2) - 1);
-		ptr += sizeof(HTML_CHART_NETWORK2) - 1;
-		if (0 == max_network || 0 == g_network_status[i] ||
-			(g_network_status[i]/max_network)*200 < 1) {
-			*ptr = '1';
-			ptr ++;
-		} else {
-			ptr += sprintf(ptr, "%d", 
-					(int)(200*(g_network_status[i]/max_network)));
-		}
-		memcpy(ptr, HTML_CHART_END, sizeof(HTML_CHART_END) - 1);
-		ptr += sizeof(HTML_CHART_END) - 1;
-		memcpy(ptr, HTML_CHART_CONNECTION1, sizeof(HTML_CHART_CONNECTION1) - 1);
-		ptr += sizeof(HTML_CHART_CONNECTION1) - 1;
-		ptr += sprintf(ptr, "%d", g_connection_status[i]);
-		memcpy(ptr, HTML_CHART_CONNECTION2, sizeof(HTML_CHART_CONNECTION2) - 1);
-		ptr += sizeof(HTML_CHART_CONNECTION2) - 1;
-		if (0 == max_connection || 0 == g_connection_status[i] ||
-			200*g_connection_status[i]/max_connection < 1) {
-			*ptr = 1;
-			ptr ++;
-		} else {
-			ptr += sprintf(ptr, "%d",200*g_connection_status[i]/max_connection);
-		}
-		memcpy(ptr, HTML_CHART_END, sizeof(HTML_CHART_END) - 1);
-		ptr += sizeof(HTML_CHART_END) - 1;
-		memcpy(ptr, HTML_TBCELL_END, sizeof(HTML_TBCELL_END) - 1);
-		ptr += sizeof(HTML_TBCELL_END) - 1;
-	}
 	memcpy(ptr, HTML_02, sizeof(HTML_02) - 1);
 	ptr += sizeof(HTML_02) - 1;
 
@@ -493,7 +323,8 @@ static void do_statistic()
 		sprintf(pcontext->pcontrol->from, "status-forms@%s",
 			get_default_domain());
 	}
-	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to,(void*)get_admin_mailbox());
+	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to,
+		(void*)get_admin_mailbox());
 	pmime = mail_add_head(pcontext->pmail);
 	if (NULL == pmime) {
 		put_context(pcontext);
@@ -507,59 +338,8 @@ static void do_statistic()
 	}
 	mime_set_content_type(pmime_child, "text/html");
 	mime_set_content_param(pmime_child, "charset", "us-ascii");
-	mime_write_content(pmime_child, html_buff, ptr - html_buff,
-						MIME_ENCODING_NONE);
-	pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
-	if (NULL == pmime_child) {
-		put_context(pcontext);
-		return;
-	}
-	mime_set_content_type(pmime_child, "image/gif");
-	mime_write_content(pmime_child, PIC01_FILE, sizeof(PIC01_FILE) - 1,
-						MIME_ENCODING_NONE);
-	mime_set_field(pmime_child, "Content-ID", PIC01_CID);
-	mime_set_field(pmime_child, "Content-Transfer-Encoding", "base64");
-	pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
-	if (NULL == pmime_child) {
-		put_context(pcontext);
-		return;
-	}
-	mime_set_content_type(pmime_child, "image/gif");
-	mime_write_content(pmime_child, PIC05_FILE, sizeof(PIC05_FILE),
-						MIME_ENCODING_NONE);
-	mime_set_field(pmime_child, "Content-ID", PIC05_CID);
-	mime_set_field(pmime_child, "Content-Transfer-Encoding", "base64");
-	pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
-	if (NULL == pmime_child) {
-		put_context(pcontext);
-		return;
-	}
-	mime_set_content_type(pmime_child, "image/png");
-	mime_write_content(pmime_child, BAR01_FILE, sizeof(BAR01_FILE),
-						MIME_ENCODING_NONE);
-	mime_set_field(pmime_child, "Content-ID", BAR01_CID);
-	mime_set_field(pmime_child, "Content-Transfer-Encoding", "base64");
-	pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
-	if (NULL == pmime_child) {
-		put_context(pcontext);
-		return;
-	}
-	mime_set_content_type(pmime_child, "image/png");
-	mime_write_content(pmime_child, BAR02_FILE, sizeof(BAR02_FILE),
-						MIME_ENCODING_NONE);
-	mime_set_field(pmime_child, "Content-ID", BAR02_CID);
-	mime_set_field(pmime_child, "Content-Transfer-Encoding", "base64");
-	pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
-	if (NULL == pmime_child) {
-		put_context(pcontext);
-		return;
-	}
-	mime_set_content_type(pmime_child, "image/png");
-	mime_write_content(pmime_child, BAR03_FILE, sizeof(BAR03_FILE),
-						MIME_ENCODING_NONE);
-	mime_set_field(pmime_child, "Content-ID", BAR03_CID);
-	mime_set_field(pmime_child, "Content-Transfer-Encoding", "base64");
-
+	mime_write_content(pmime_child, html_buff,
+		ptr - html_buff, MIME_ENCODING_NONE);
 
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
 							"(unkown@127.0.0.1)\r\n\tby herculiz with SMTP");
