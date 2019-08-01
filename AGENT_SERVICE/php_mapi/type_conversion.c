@@ -62,7 +62,7 @@ static uint32_t proptag_to_phptag(uint32_t proptag)
 	return proptag1;
 }
 
-static uint32_t phptag_to_proptag(uint32_t proptag)
+uint32_t phptag_to_proptag(uint32_t proptag)
 {
 	uint32_t proptag1;
 	

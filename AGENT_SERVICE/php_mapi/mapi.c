@@ -3271,7 +3271,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		pstream, probject->hsession,
 		probject->hobject, proptag);
 	result = zarafa_client_getpropval(probject->hsession,
-					probject->hobject, proptag, &pvalue);
+		probject->hobject, phptag_to_proptag(proptag), &pvalue);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
@@ -3882,7 +3882,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			goto THROW_EXCEPTION;
 		}
 		result = zarafa_client_getpropval(probject->hsession,
-						probject->hobject, proptag, &pvalue);
+			probject->hobject, phptag_to_proptag(proptag), &pvalue);
 		if (EC_SUCCESS != result) {
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;
