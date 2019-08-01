@@ -1191,8 +1191,8 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	}
 	if (FALSE == exmdb_client_get_instance_properties(
 		store_object_get_dir(pmessage->pstore),
-		0, pmessage->instance_id, &tmp_proptags,
-		&tmp_propvals)) {
+		pmessage->cpid, pmessage->instance_id,
+		&tmp_proptags, &tmp_propvals)) {
 		return FALSE;	
 	}
 	if (tmp_propvals.count > 0) {
