@@ -77,9 +77,6 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		TRUE == pmail->penvelop->is_outbound) {
 		return MESSAGE_ACCEPT;
 	}
-	if (mem_file_get_total_length(&pmail->phead->f_xmailer) > 0) {
-		return MESSAGE_ACCEPT;
-	}
     out_len = mem_file_read(&pmail->phead->f_content_type, buf, 1024);
     if (MEM_END_OF_FILE == out_len) {   /* no content type */
         return MESSAGE_ACCEPT;
@@ -97,33 +94,25 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
         return MESSAGE_ACCEPT;
     }
     out_len = (int)(ptr - pbackup);
-    if (21 != out_len) {
+    if (27 != out_len) {
         return MESSAGE_ACCEPT;
     }
     memmove(buf, pbackup, out_len);
     buf[out_len] = '\0';
-
-	if (0 != strncmp(buf, "----=_Part_", 11)) {
+	
+	if (0 != strncmp(buf, "===============", 15)
+		|| 0 != strncmp(buf + 25, "==", 2)) {
 		return MESSAGE_ACCEPT;
 	}
 	
-	for (i=11; i<21; i++) {
+	for (i=15; i<25; i++) {
 		if (0 == isdigit(buf[i])) {
 			return MESSAGE_ACCEPT;
 		}
 	}
-
-	
-	if (TRUE == check_tagging(pmail->penvelop->from,
-		&pmail->penvelop->f_rcpt_to)) {
-		mark_context_spam(context_ID);
-		return MESSAGE_ACCEPT;
-	} else {
-	    strncpy(reason, g_return_string, length);
-		if (NULL != spam_statistic) {
-			spam_statistic(SPAM_STATISTIC_PROPERTY_019);
-		}
-		return MESSAGE_REJECT;
+	strncpy(reason, g_return_string, length);
+	if (NULL != spam_statistic) {
+		spam_statistic(SPAM_STATISTIC_PROPERTY_019);
 	}
+	return MESSAGE_REJECT;
 }
-
