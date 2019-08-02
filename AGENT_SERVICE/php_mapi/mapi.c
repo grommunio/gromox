@@ -487,25 +487,10 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 			pstream->hsession, pstream->hparent,
 			pstream->proptag, &pstream->content_bin);
 	case PROPVAL_TYPE_STRING:
+	case PROPVAL_TYPE_WSTRING:
 		return zarafa_client_setpropval(pstream->hsession,
 			pstream->hparent, pstream->proptag & 0xFFFF0000
 			| PROPVAL_TYPE_WSTRING, pstream->content_bin.pb);
-	case PROPVAL_TYPE_WSTRING:
-		pstring = emalloc(2*pstream->content_bin.cb + 3);
-		if (NULL == pstring) {
-			return EC_OUT_OF_MEMORY;
-		}
-		if (!utf16_to_utf8(pstream->content_bin.pb,
-			pstream->content_bin.cb, pstring,
-			2*pstream->content_bin.cb + 3)) {
-			efree(pstring);
-			return EC_ERROR;
-		}
-		result = zarafa_client_setpropval(
-			pstream->hsession, pstream->hparent,
-			pstream->proptag, pstring);
-		efree(pstring);
-		return result;
 	default:
 		return EC_INVALID_PARAMETER;
 	}
@@ -3831,11 +3816,11 @@ ZEND_FUNCTION(mapi_openproperty)
 		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 			"rlsll", &pzresource, &proptag, &guidstr,
 			&guidlen, &interfaceflags, &flags) == FAILURE ||
-			NULL == pzresource || sizeof(GUID) != guidlen) {
+			NULL == pzresource || NULL == guidstr) {
 			MAPI_G(hr) = EC_INVALID_PARAMETER;
 			goto THROW_EXCEPTION;
 		}
-		ext_pack_pull_init(&pull_ctx, guidstr, guidlen);
+		ext_pack_pull_init(&pull_ctx, guidstr, sizeof(GUID));
 		ext_pack_pull_guid(&pull_ctx, &iid_guid);
 	}
 	zend_list_find(Z_RESVAL_P(pzresource), &type);
