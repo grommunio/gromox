@@ -216,12 +216,17 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 				return MESSAGE_ACCEPT;
 			}
 			a = archive_read_new();
+			if (NULL == a) {
+				g_context_list[context_ID] = TRUE;
+				return MESSAGE_ACCEPT;
+			}
 			archive_read_support_filter_all(a);
 			archive_read_support_format_all(a);
 			result = archive_read_open_memory(
 					a, mail_blk->parsed_buff,
 					mail_blk->parsed_length);
 			if (ARCHIVE_OK != result) {
+				archive_read_free(a);
 				g_context_list[context_ID] = TRUE;
 				return MESSAGE_ACCEPT;
 			}
@@ -232,6 +237,7 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 						sizeof(char*); i++) {
 						if (0 == strcasecmp(pdot + 1,
 							g_attachment_list[i])) {
+							archive_read_free(a);
 							if (TRUE == check_tagging(
 								mail_entity.penvelop->from,
 									&mail_entity.penvelop->f_rcpt_to)) {
@@ -253,7 +259,7 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 				}
 				archive_read_data_skip(a);
 			}
-			archive_read_free(a);	
+			archive_read_free(a);
 		}
 		g_context_list[context_ID] = TRUE;
 		return MESSAGE_ACCEPT;
