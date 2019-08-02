@@ -299,6 +299,12 @@ static BOOL folder_object_get_calculated_property(
 				return TRUE;
 			}
 		}
+		if (FALSE == exmdb_client_get_folder_property(
+			store_object_get_dir(pfolder->pstore), 0,
+			pfolder->folder_id, PROP_TAG_PARENTFOLDERID,
+			&pvalue) || NULL == pvalue) {
+			return FALSE;	
+		}
 		*ppvalue = common_util_calculate_folder_sourcekey(
 					pfolder->pstore, *(uint64_t*)pvalue);
 		return TRUE;
