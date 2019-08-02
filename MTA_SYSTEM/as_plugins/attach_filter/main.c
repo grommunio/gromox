@@ -105,7 +105,7 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
     char* reason, int length)
 {
 	char *pdot;
-	int i, result;
+	int i, j, result;
 	struct archive *a;
 	char file_name[1024];
 	CONNECTION *pconnection;
