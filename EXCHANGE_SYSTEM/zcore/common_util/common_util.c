@@ -2318,36 +2318,34 @@ CONVERT_ENTRYID:
 		}
 		double_list_append_as_tail(&temp_list, pnode);
 	}
-	if (0 == double_list_get_nodes_num(&temp_list)) {
-		return FALSE;
-	}
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-					PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
-	if (NULL == pvalue) {
-		body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-	} else {
-		if (*(uint32_t*)pvalue & MESSAGE_FORMAT_PLAIN_AND_HTML) {
+	if (double_list_get_nodes_num(&temp_list) > 0) {
+		pvalue = common_util_get_propvals(&pmsgctnt->proplist,
+						PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
+		if (NULL == pvalue) {
 			body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-		} else if (*(uint32_t*)pvalue & MESSAGE_FORMAT_HTML_ONLY) {
-			body_type = OXCMAIL_BODY_HTML_ONLY;
 		} else {
-			body_type = OXCMAIL_BODY_PLAIN_ONLY;
+			if (*(uint32_t*)pvalue & MESSAGE_FORMAT_PLAIN_AND_HTML) {
+				body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
+			} else if (*(uint32_t*)pvalue & MESSAGE_FORMAT_HTML_ONLY) {
+				body_type = OXCMAIL_BODY_HTML_ONLY;
+			} else {
+				body_type = OXCMAIL_BODY_PLAIN_ONLY;
+			}
 		}
-	}
-	common_util_set_dir(store_object_get_dir(pstore));
-	/* try to avoid TNEF message */
-	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
-		body_type, g_mime_pool, &imail, common_util_alloc,
-		common_util_get_propids, common_util_get_propname)) {
-		return FALSE;	
-	}
-	if (FALSE == common_util_send_mail(&imail,
-		store_object_get_account(pstore), &temp_list)) {
+		common_util_set_dir(store_object_get_dir(pstore));
+		/* try to avoid TNEF message */
+		if (FALSE == oxcmail_export(pmsgctnt, FALSE,
+			body_type, g_mime_pool, &imail, common_util_alloc,
+			common_util_get_propids, common_util_get_propname)) {
+			return FALSE;	
+		}
+		if (FALSE == common_util_send_mail(&imail,
+			store_object_get_account(pstore), &temp_list)) {
+			mail_free(&imail);
+			return FALSE;
+		}
 		mail_free(&imail);
-		return FALSE;
 	}
-	mail_free(&imail);
-	
 	pvalue = common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_DELETEAFTERSUBMIT);
 	b_delete = FALSE;
@@ -2356,8 +2354,8 @@ CONVERT_ENTRYID:
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist,
 							PROP_TAG_SENTMAILSVREID);
-	ptarget = common_util_get_propvals(&pmsgctnt->proplist,
-									PROP_TAG_TARGETENTRYID);
+	ptarget = common_util_get_propvals(
+		&pmsgctnt->proplist, PROP_TAG_TARGETENTRYID);
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(*ptarget,
 			&b_private, &accound_id, &folder_id, &new_id)) {
