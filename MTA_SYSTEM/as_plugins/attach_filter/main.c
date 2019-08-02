@@ -161,11 +161,42 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 					return MESSAGE_REJECT;
 				}
 			}
-
 		}
-
-		if (0 == strcasecmp(pdot + 1, "zip") ||
-			0 == strcasecmp(pdot + 1, "gz") ||
+		if (0 == strcasecmp(pdot + 1, "zip")) {
+			if (FALSE == mail_blk->is_parsed) {
+				g_context_list[context_ID] = TRUE;
+				return MESSAGE_ACCEPT;
+			}
+			for (j=0; j<mail_blk->parsed_length; j++) {
+				if (*(int*)(mail_blk->parsed_buff + j) == CENTRALFILEHEADERSIGNATURE) {
+					name_length = *(unsigned short*)(mail_blk->parsed_buff + j + 28);
+					if (name_length > 255) {
+						name_length = 255;
+					}
+					memcpy(file_name, mail_blk->parsed_buff + j + 46, name_length);
+					file_name[name_length] = '\0';
+					pdot = strrchr(file_name, '.');
+					if (NULL != pdot) {
+						for (i=0; i<sizeof(g_attachment_list)/sizeof(char*); i++) {
+							if (0 == strcasecmp(pdot + 1, g_attachment_list[i])) {
+								if (TRUE == check_tagging(
+									mail_entity.penvelop->from, &mail_entity.penvelop->f_rcpt_to)) {
+									mark_context_spam(context_ID);
+									g_context_list[context_ID] = TRUE;
+									return MESSAGE_ACCEPT;
+								} else {
+									if (NULL!= spam_statistic) {
+										spam_statistic(SPAM_STATISTIC_ATTACH_FILTER);
+									}
+									snprintf(reason, length, g_return_reason, g_attachment_list[i]);
+									return MESSAGE_REJECT;
+								}
+							}
+						}
+					}
+				}
+			}
+		} else if (0 == strcasecmp(pdot + 1, "gz") ||
 			0 == strcasecmp(pdot + 1, "bz2") ||
 			0 == strcasecmp(pdot + 1, "tar") ||
 			0 == strcasecmp(pdot + 1, "tgz") ||
@@ -226,7 +257,6 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 		}
 		g_context_list[context_ID] = TRUE;
 		return MESSAGE_ACCEPT;
-
     case ACTION_BLOCK_FREE:
 		g_context_list[context_ID] = FALSE;
         return MESSAGE_ACCEPT;
