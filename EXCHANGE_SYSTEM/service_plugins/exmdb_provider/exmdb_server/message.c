@@ -86,6 +86,13 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
+	if (FALSE == b_move &&
+		TRUE == common_util_check_msgsize_overflow(pdb->psqlite) &&
+		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
+		db_engine_put_db(pdb);
+		*pb_result = FALSE;
+		return TRUE;		
+	}
 	mid_val = rop_util_get_gc_value(message_id);
 	fid_val = rop_util_get_gc_value(dst_fid);
 	dst_val = rop_util_get_gc_value(dst_id);
@@ -5288,9 +5295,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	BOOL b_cc_me;
 	DB_ITEM *pdb;
 	void *pvalue;
-	uint64_t quota;
 	uint64_t nt_time;
-	uint64_t *ptotal;
 	uint64_t fid_val;
 	BINARY *pentryid;
 	char tmp_path[256];
@@ -5302,13 +5307,10 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	char mid_string[128];
 	char essdn_buff[1280];
 	TAGGED_PROPVAL propval;
-	PROPTAG_ARRAY proptags;
 	char display_name[1024];
 	DOUBLE_LIST folder_list;
 	DOUBLE_LIST_NODE *pnode;
-	TPROPVAL_ARRAY propvals;
 	MESSAGE_CONTENT tmp_msg;
-	uint32_t proptag_buff[3];
 	char digest_buff[MAX_DIGLEN];
 	static uint8_t fake_true = 1;
 	
@@ -5367,32 +5369,18 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	proptags.count = 3;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_PROHIBITRECEIVEQUOTA;
-	proptag_buff[1] = PROP_TAG_MESSAGESIZEEXTENDED;
-	proptag_buff[2] = PROP_TAG_OUTOFOFFICESTATE;
-	if (FALSE == common_util_get_properties(STORE_PROPERTIES_TABLE,
-		0, 0, pdb->psqlite, &proptags, &propvals)) {
+	if (TRUE == common_util_check_msgsize_overflow(pdb->psqlite) ||
+		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		db_engine_put_db(pdb);
-		return FALSE;
-	}
-	ptotal = common_util_get_propvals(&propvals,
-				PROP_TAG_MESSAGESIZEEXTENDED);
-	pvalue = common_util_get_propvals(&propvals,
-				PROP_TAG_PROHIBITRECEIVEQUOTA);
-	if (NULL != ptotal && NULL != pvalue) {
-		quota = *(uint32_t*)pvalue;
-		quota *= 1024;
-		if (*ptotal >= quota) {
-			db_engine_put_db(pdb);
-			*presult = 1;
-			return TRUE;
-		}
+		*presult = 1;
+		return TRUE;
 	}
 	if (TRUE == exmdb_server_check_private()) {
-		pvalue = common_util_get_propvals(
-			&propvals, PROP_TAG_OUTOFOFFICESTATE);
+		if (FALSE == common_util_get_property(STORE_PROPERTIES_TABLE,
+			0, 0, pdb->psqlite, PROP_TAG_OUTOFOFFICESTATE, &pvalue)) {
+			db_engine_put_db(pdb);
+			return FALSE;
+		}
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			b_oof = FALSE;
 		} else {
@@ -5592,6 +5580,12 @@ BOOL exmdb_server_write_message(const char *dir,
 	if (NULL == pdb->psqlite) {
 		db_engine_put_db(pdb);
 		return FALSE;
+	}
+	if (TRUE == common_util_check_msgsize_overflow(pdb->psqlite) ||
+		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
+		db_engine_put_db(pdb);
+		*pb_result = FALSE;
+		return TRUE;	
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL != pmid) {

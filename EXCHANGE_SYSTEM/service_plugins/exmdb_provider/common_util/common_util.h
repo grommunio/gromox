@@ -1537,7 +1537,7 @@ BOOL common_util_username_to_essdn(
 
 void common_util_pass_service(int service_id, void *func);
 
-void common_util_init(const char *org_name,
+void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
 
 int common_util_run();
@@ -1617,6 +1617,10 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	
 BOOL common_util_get_permission_property(uint64_t member_id,
 	sqlite3 *psqlite, uint32_t proptag, void **ppvalue);
+
+BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
+
+BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite);
 
 BOOL common_util_get_folder_type(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t *pfolder_type);

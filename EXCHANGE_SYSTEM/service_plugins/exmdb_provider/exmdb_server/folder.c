@@ -2298,6 +2298,13 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
+	if (TRUE == b_copy &&
+		TRUE == common_util_check_msgsize_overflow(pdb->psqlite) &&
+		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
+		db_engine_put_db(pdb);
+		*pb_partial = TRUE;
+		return TRUE;		
+	}
 	if (FALSE == common_util_get_folder_by_name(
 		pdb->psqlite, dst_val, str_new, &tmp_fid)) {
 		db_engine_put_db(pdb);

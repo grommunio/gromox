@@ -46,6 +46,7 @@ typedef struct _OPTIMIZE_STMTS {
 } OPTIMIZE_STMTS;
 
 static char g_org_name[256];
+static unsigned int g_max_msg;
 static pthread_key_t g_var_key;
 static pthread_key_t g_opt_key;
 static unsigned int g_max_rule_num;
@@ -267,10 +268,11 @@ void common_util_pass_service(int service_id, void *func)
 	}
 }
 
-void common_util_init(const char *org_name,
+void common_util_init(const char *org_name, uint32_t max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num)
 {
 	strcpy(g_org_name, org_name);
+	g_max_msg = max_msg;
 	g_max_rule_num = max_rule_num;
 	g_max_ext_rule_num = max_ext_rule_num;
 	pthread_key_create(&g_var_key, NULL);
@@ -1100,6 +1102,65 @@ static char* common_util_calculate_folder_path(
 	}
 	memmove(temp_path, temp_path + 4095 - len, len);
 	return common_util_dup(temp_path);
+}
+
+BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
+{
+	int sql_len;
+	uint32_t count;
+	sqlite3_stmt *pstmt;
+	char sql_string[64];
+	
+	if (0 == g_max_msg) {
+		return FALSE;
+	}
+	sql_len = sprintf(sql_string, "SELECT "
+		"count(message_id) FROM messages");
+	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
+		sql_string, sql_len, &pstmt, NULL)) {
+		return FALSE;
+	}
+	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		sqlite3_finalize(pstmt);
+		return FALSE;
+	}
+	count = sqlite3_column_int64(pstmt, 0);
+	sqlite3_finalize(pstmt);
+	if (count >= g_max_msg) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite)
+{
+	uint64_t quota;
+	uint64_t *ptotal;
+	uint32_t *pvalue;
+	PROPTAG_ARRAY proptags;
+	TPROPVAL_ARRAY propvals;
+	uint32_t proptag_buff[2];
+	
+	proptags.count = 2;
+	proptags.pproptag = proptag_buff;
+	proptag_buff[0] = PROP_TAG_PROHIBITRECEIVEQUOTA;
+	proptag_buff[1] = PROP_TAG_MESSAGESIZEEXTENDED;
+	if (FALSE == common_util_get_properties(STORE_PROPERTIES_TABLE,
+		0, 0, psqlite, &proptags, &propvals)) {
+		return FALSE;
+	}
+	ptotal = common_util_get_propvals(&propvals,
+				PROP_TAG_MESSAGESIZEEXTENDED);
+	pvalue = common_util_get_propvals(&propvals,
+				PROP_TAG_PROHIBITRECEIVEQUOTA);
+	if (NULL != ptotal && NULL != pvalue) {
+		quota = *(uint32_t*)pvalue;
+		quota *= 1024;
+		if (*ptotal >= quota) {
+			return TRUE;
+		}
+	}
+	return FALSE;
 }
 
 static uint32_t common_util_get_store_message_count(

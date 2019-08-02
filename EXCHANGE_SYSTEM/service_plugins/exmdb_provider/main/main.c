@@ -76,6 +76,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	int max_threads;
 	int threads_num;
 	int max_ext_rule;
+	int max_msg_count;
 	uint64_t mmap_size;
 	char separator[16];
 	char temp_buff[64];
@@ -227,6 +228,15 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		itvltoa(cache_interval, temp_buff);
 		printf("[exmdb_provider]: cache interval is %s\n", temp_buff);
 		
+		str_value = config_file_get_value(pconfig, "MAX_STORE_MESSAGE_COUNT");
+		if (NULL == str_value) {
+			max_msg_count = 0;
+		} else {
+			max_msg_count = atoi(str_value);
+		}
+		printf("[exmdb_provider]: maximum message "
+			"count per store is %d\n", max_msg_count);
+		
 		str_value = config_file_get_value(pconfig, "MAX_RULE_NUMBER");
 		if (NULL == str_value) {
 			max_rule = 1000;
@@ -238,7 +248,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				config_file_set_value(pconfig, "MAX_RULE_NUMBER", "1000");
 			}
 		}
-		printf("[exmdb_provider]: maximum rule number per folder is %d\n", max_rule);
+		printf("[exmdb_provider]: maximum rule "
+			"number per folder is %d\n", max_rule);
 		
 		str_value = config_file_get_value(pconfig, "MAX_EXT_RULE_NUMBER");
 		if (NULL == str_value) {
@@ -251,7 +262,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				config_file_set_value(pconfig, "MAX_RULE_NUMBER", "20");
 			}
 		}
-		printf("[exmdb_provider]: maximum ext rule number per folder is %d\n", max_ext_rule);
+		printf("[exmdb_provider]: maximum ext rule "
+			"number per folder is %d\n", max_ext_rule);
 		
 		str_value = config_file_get_value(pconfig, "SQLITE_SYNCHRONOUS");
 		if (NULL == str_value) {
@@ -319,7 +331,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		config_file_save(pconfig);
 		config_file_free(pconfig);
 		
-		common_util_init(org_name, max_rule, max_ext_rule);
+		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
 		bounce_producer_init(resource_path, separator);
 		db_engine_init(table_size, cache_interval,
 			b_async, b_wal, mmap_size, populating_num);
