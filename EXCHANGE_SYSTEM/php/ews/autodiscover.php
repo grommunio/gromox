@@ -94,7 +94,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$Protocol->addChild('ServerExclusiveConnect', 'off');
 		$Protocol = $Account->addChild('Protocol');
 		$Protocol->addChild('Type', 'EXPR');
-		$Protocol->addChild('Server', get_http_proxy($uinfo['homedir'], $host_name));
+		$Protocol->addChild('Server', get_http_proxy($dinfo['homedir'], $host_name));
 		$Protocol->addChild('SSL', 'On');
 		$Protocol->addChild('CertPrincipalName', 'None');
 		$Protocol->addChild('AuthPackage', 'basic');
