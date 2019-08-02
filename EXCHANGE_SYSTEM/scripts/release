@@ -23,6 +23,7 @@ COMMON_LIB='common.so'
 EMAIL_LIB='email_lib.so'
 RPC_LIB='rpc_lib.so'
 MAPI_LIB='mapi_lib.so'
+WEBKIT_LIB='webkit_lib.so'
 SCHEDULER_LIB='epoll_scheduler.so'
 HTTP_NAME='http'
 MIDB_NAME='midb'
@@ -80,6 +81,7 @@ cp common/$COMMON_LIB $RELEASE_HOME/$LIB_DIR
 cp email_lib/$EMAIL_LIB $RELEASE_HOME/$LIB_DIR
 cp rpc_lib/$RPC_LIB $RELEASE_HOME/$LIB_DIR
 cp mapi_lib/$MAPI_LIB $RELEASE_HOME/$LIB_DIR
+cp webkit_lib/$WEBKIT_LIB $RELEASE_HOME/$LIB_DIR
 cp epoll_scheduler/$SCHEDULER_LIB $RELEASE_HOME/$LIB_DIR
 cp $PROC_DIR/*/*.proc  $RELEASE_HOME/$PROC_DIR
 cp $PROC_DIR/*/*.cfg $RELEASE_HOME/$CONFIGS_DIR/$HTTP_DIR
