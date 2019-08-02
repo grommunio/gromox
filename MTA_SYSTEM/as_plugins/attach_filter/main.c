@@ -3,6 +3,8 @@
 #include "mail_func.h"
 #include "config_file.h"
 #include <stdio.h>
+#include <archive.h>
+#include <archive_entry.h>
 
 #define SPAM_STATISTIC_ATTACH_FILTER		17
 
@@ -103,12 +105,14 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
     char* reason, int length)
 {
 	char *pdot;
-	size_t i, j;
+	int i, result;
+	struct archive *a;
 	char file_name[1024];
 	CONNECTION *pconnection;
 	MAIL_ENTITY mail_entity;
 	unsigned short name_length;
     char attachment_name[1024];
+	struct archive_entry *entry;
 	
 
     switch (action) {
@@ -160,44 +164,66 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 
 		}
 
-		if (0 == strcasecmp(pdot + 1, "zip")) {
+		if (0 == strcasecmp(pdot + 1, "zip") ||
+			0 == strcasecmp(pdot + 1, "gz") ||
+			0 == strcasecmp(pdot + 1, "bz2") ||
+			0 == strcasecmp(pdot + 1, "tar") ||
+			0 == strcasecmp(pdot + 1, "tgz") ||
+			0 == strcasecmp(pdot + 1, "tbz2") ||
+			0 == strcasecmp(pdot + 1, "rar") ||
+			0 == strcasecmp(pdot + 1, "7z") ||
+			0 == strcasecmp(pdot + 1, "cab") ||
+			0 == strcasecmp(pdot + 1, "xar") ||
+			0 == strcasecmp(pdot + 1, "pax") ||
+			0 == strcasecmp(pdot + 1, "cpio") ||
+			0 == strcasecmp(pdot + 1, "iso") ||
+			0 == strcasecmp(pdot + 1, "ar") ||
+			0 == strcasecmp(pdot + 1, "lha") ||
+			0 == strcasecmp(pdot + 1, "lzh")) {
 			if (FALSE == mail_blk->is_parsed) {
 				g_context_list[context_ID] = TRUE;
 				return MESSAGE_ACCEPT;
 			}
-			for (j=0; j<mail_blk->parsed_length; j++) {
-				if (*(int*)(mail_blk->parsed_buff + j) == CENTRALFILEHEADERSIGNATURE) {
-					name_length = *(unsigned short*)(mail_blk->parsed_buff + j + 28);
-					if (name_length > 255) {
-						name_length = 255;
-					}
-					memcpy(file_name, mail_blk->parsed_buff + j + 46, name_length);
-					file_name[name_length] = '\0';
-					pdot = strrchr(file_name, '.');
-					if (NULL != pdot) {
-						for (i=0; i<sizeof(g_attachment_list)/sizeof(char*); i++) {
-							if (0 == strcasecmp(pdot + 1, g_attachment_list[i])) {
-								if (TRUE == check_tagging(
-									mail_entity.penvelop->from, &mail_entity.penvelop->f_rcpt_to)) {
-									mark_context_spam(context_ID);
-									g_context_list[context_ID] = TRUE;
-									return MESSAGE_ACCEPT;
-								} else {
-									if (NULL!= spam_statistic) {
-										spam_statistic(SPAM_STATISTIC_ATTACH_FILTER);
-									}
-									snprintf(reason, length, g_return_reason, g_attachment_list[i]);
-									return MESSAGE_REJECT;
+			a = archive_read_new();
+			archive_read_support_filter_all(a);
+			archive_read_support_format_all(a);
+			result = archive_read_open_memory(
+					a, mail_blk->parsed_buff,
+					mail_blk->parsed_length);
+			if (ARCHIVE_OK != result) {
+				g_context_list[context_ID] = TRUE;
+				return MESSAGE_ACCEPT;
+			}
+			while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
+				pdot = strrchr(archive_entry_pathname(entry), '.');
+				if (NULL != pdot) {
+					for (i=0; i<sizeof(g_attachment_list)/
+						sizeof(char*); i++) {
+						if (0 == strcasecmp(pdot + 1,
+							g_attachment_list[i])) {
+							if (TRUE == check_tagging(
+								mail_entity.penvelop->from,
+									&mail_entity.penvelop->f_rcpt_to)) {
+								mark_context_spam(context_ID);
+								g_context_list[context_ID] = TRUE;
+								return MESSAGE_ACCEPT;
+							} else {
+								if (NULL!= spam_statistic) {
+									spam_statistic(
+										SPAM_STATISTIC_ATTACH_FILTER);
 								}
+								snprintf(reason, length, g_return_reason,
+													g_attachment_list[i]);
+								return MESSAGE_REJECT;
 							}
-
 						}
 
 					}
 				}
+				archive_read_data_skip(a);
 			}
+			archive_read_free(a);	
 		}
-
 		g_context_list[context_ID] = TRUE;
 		return MESSAGE_ACCEPT;
 
@@ -207,7 +233,6 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
     }
     return MESSAGE_ACCEPT;
 }
-
 
 static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name)
 {
@@ -294,4 +319,3 @@ static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name)
     }
 	return FALSE;
 }
-

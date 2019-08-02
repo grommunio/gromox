@@ -27,6 +27,13 @@ cd libspf2-1.2.10
 ./configure --prefix=/usr --libdir=/usr/lib64
 make && make install
 
+#download libarchive from https://github.com/libarchive/libarchive
+unzip libarchive-master.zip
+cd libarchive-master
+build/autogen.sh 
+./configure --prefix=/usr --libdir=/usr/lib64
+make && make install
+
 #download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ caution!!! please download libxls-1.1.0.zip
 unzip libxls-1.1.0.zip
 cd libxls

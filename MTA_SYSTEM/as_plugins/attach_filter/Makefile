@@ -7,7 +7,7 @@ CPP_SOURCE_FILES=$(wildcard *.cxx *.cpp *.C)
 INCLUDE_PATHS=../include\
 			  ../../common/include# add include paths here
 LIBRARY_PATHS=# add library paths here
-LIBRARY_FILES=# add library files here
+LIBRARY_FILES=archive# add library files here
 COMPILING_FLAGS=#add here c or c++ flags for compiling
 LINK_FLAGS=$(patsubst %,-L%,$(LIBRARY_PATHS)) $(patsubst %,-l%,$(LIBRARY_FILES)) 
 INCLUDE_PATHS:=$(patsubst %,-I%,$(INCLUDE_PATHS))
