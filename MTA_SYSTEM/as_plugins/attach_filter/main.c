@@ -105,6 +105,7 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
     char* reason, int length)
 {
 	char *pdot;
+	char *pstring;
 	int i, j, result;
 	struct archive *a;
 	char file_name[1024];
@@ -231,30 +232,34 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 				return MESSAGE_ACCEPT;
 			}
 			while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-				pdot = strrchr(archive_entry_pathname(entry), '.');
-				if (NULL != pdot) {
-					for (i=0; i<sizeof(g_attachment_list)/
-						sizeof(char*); i++) {
-						if (0 == strcasecmp(pdot + 1,
-							g_attachment_list[i])) {
-							archive_read_free(a);
-							if (TRUE == check_tagging(
-								mail_entity.penvelop->from,
-									&mail_entity.penvelop->f_rcpt_to)) {
-								mark_context_spam(context_ID);
-								g_context_list[context_ID] = TRUE;
-								return MESSAGE_ACCEPT;
-							} else {
-								if (NULL!= spam_statistic) {
-									spam_statistic(
-										SPAM_STATISTIC_ATTACH_FILTER);
-								}
-								snprintf(reason, length, g_return_reason,
-													g_attachment_list[i]);
-								return MESSAGE_REJECT;
+				pstring = archive_entry_pathname(entry);
+				if (NULL == pstring) {
+					archive_read_data_skip(a);
+					continue;
+				}
+				pdot = strrchr(pstring, '.');
+				if (NULL == pdot) {
+					archive_read_data_skip(a);
+					continue;
+				}
+				for (i=0; i<sizeof(g_attachment_list)/sizeof(char*); i++) {
+					if (0 == strcasecmp(pdot + 1,
+						g_attachment_list[i])) {
+						archive_read_free(a);
+						if (TRUE == check_tagging(
+							mail_entity.penvelop->from,
+								&mail_entity.penvelop->f_rcpt_to)) {
+							mark_context_spam(context_ID);
+							g_context_list[context_ID] = TRUE;
+							return MESSAGE_ACCEPT;
+						} else {
+							if (NULL!= spam_statistic) {
+								spam_statistic(SPAM_STATISTIC_ATTACH_FILTER);
 							}
+							snprintf(reason, length, g_return_reason,
+												g_attachment_list[i]);
+							return MESSAGE_REJECT;
 						}
-
 					}
 				}
 				archive_read_data_skip(a);
