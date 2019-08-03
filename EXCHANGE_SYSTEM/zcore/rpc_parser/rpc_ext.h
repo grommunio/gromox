@@ -890,7 +890,6 @@ typedef struct _RESP_MESSAGETOVCF {
 
 typedef union _RESPONSE_PAYLOAD {
 	RESP_LOGON logon;
-	RESP_CHECKSESSION checksession;
 	RESP_UINFO uinfo;
 	RESP_OPENENTRY openentry;
 	RESP_OPENSTOREENTRY openstoreentry;
