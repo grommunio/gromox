@@ -958,6 +958,7 @@ BOOL ftstream_parser_process(FTSTREAM_PARSER *pstream,
 
 FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 {
+	int stream_id;
 	char path[256];
 	DCERPC_INFO rpc_info;
 	struct stat node_stat;
@@ -969,7 +970,7 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 	}
 	pstream->offset = 0;
 	pstream->st_size = 0;
-	pstream->id = common_util_get_ftstream_id();
+	stream_id = common_util_get_ftstream_id();
 	rpc_info = get_rpc_info();
 	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
 	if (0 != stat(path, &node_stat)) {
@@ -980,8 +981,7 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 			mkdir(path, 0777);
 		}
 	}
-	sprintf(path, "%s/tmp/faststream/%d.%s",
-		rpc_info.maildir, pstream->id, get_host_ID());
+	sprintf(pstream->path, "%s/%d.%s", path, stream_id, get_host_ID());
 	pstream->fd = open(path, O_CREAT|O_RDWR|O_TRUNC, 0666);
 	if (-1 == pstream->fd) {
 		free(pstream);
@@ -993,13 +993,7 @@ FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon)
 
 void ftstream_parser_free(FTSTREAM_PARSER *pstream)
 {
-	char path[256];
-	DCERPC_INFO rpc_info;
-	
 	close(pstream->fd);
-	rpc_info = get_rpc_info();
-	sprintf(path, "%s/tmp/faststream/%d.%s",
-		rpc_info.maildir, pstream->id, get_host_ID());
-	remove(path);
+	remove(pstream->path);
 	free(pstream);
 }

@@ -18,9 +18,9 @@
 
 typedef struct _FTSTREAM_PRODUCER {
 	int type;
-	int id;
 	int fd;
 	uint32_t offset;
+	char path[256];
 	uint8_t buffer[FTSTREAM_PRODUCER_BUFFER_LENGTH];
 	uint32_t buffer_offset;
 	uint32_t read_offset;

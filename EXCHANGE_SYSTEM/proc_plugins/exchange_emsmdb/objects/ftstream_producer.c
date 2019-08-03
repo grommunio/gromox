@@ -149,18 +149,13 @@ static void ftstream_producer_record_wsp(
 static BOOL ftstream_producer_write_internal(
 	FTSTREAM_PRODUCER *pstream,
 	const void *pbuff, uint32_t size)
-{
-	char path[256];
-	DCERPC_INFO rpc_info;
-	
+{	
 	if (size >= FTSTREAM_PRODUCER_BUFFER_LENGTH
 		|| FTSTREAM_PRODUCER_BUFFER_LENGTH -
 		pstream->buffer_offset < size) {
 		if (-1 == pstream->fd) {
-			rpc_info = get_rpc_info();
-			sprintf(path, "%s/tmp/faststream/%d.%s",
-				rpc_info.maildir, pstream->id, get_host_ID());
-			pstream->fd = open(path, O_CREAT|O_RDWR|O_TRUNC, 0666);
+			pstream->fd = open(pstream->path,
+				O_CREAT|O_RDWR|O_TRUNC, 0666);
 			if (-1 == pstream->fd) {
 				return FALSE;
 			}
@@ -1385,6 +1380,7 @@ BOOL ftstream_producer_write_hierarchysync(
 FTSTREAM_PRODUCER* ftstream_producer_create(
 	LOGON_OBJECT *plogon, uint8_t string_option)
 {
+	int stream_id;
 	char path[256];
 	DCERPC_INFO rpc_info;
 	struct stat node_stat;
@@ -1394,17 +1390,18 @@ FTSTREAM_PRODUCER* ftstream_producer_create(
 	if (NULL == pstream) {
 		return NULL;
 	}
-	pstream->id = common_util_get_ftstream_id();
+	stream_id = common_util_get_ftstream_id();
 	rpc_info = get_rpc_info();
 	sprintf(path, "%s/tmp/faststream", rpc_info.maildir);
 	if (0 != stat(path, &node_stat)) {
-		mkdir(path, 0777);
+		mkdir(pstream->path, 0777);
 	} else {
 		if (0 == S_ISDIR(node_stat.st_mode)) {
 			remove(path);
 			mkdir(path, 0777);
 		}
 	}
+	sprintf(pstream->path, "%s/%d.%s", path, stream_id, get_host_ID());
 	pstream->fd = -1;
 	pstream->offset = 0;
 	pstream->buffer_offset = 0;
@@ -1418,16 +1415,11 @@ FTSTREAM_PRODUCER* ftstream_producer_create(
 
 void ftstream_producer_free(FTSTREAM_PRODUCER *pstream)
 {
-	char path[256];
-	DCERPC_INFO rpc_info;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (-1 != pstream->fd) {
 		close(pstream->fd);
-		rpc_info = get_rpc_info();
-		sprintf(path, "%s/tmp/faststream/%d.%s",
-			rpc_info.maildir, pstream->id, get_host_ID());
-		remove(path);
+		remove(pstream->path);
 	}
 	while (pnode=double_list_get_from_head(&pstream->bp_list)) {
 		free(pnode->pdata);
@@ -1444,11 +1436,9 @@ int ftstream_producer_total_length(FTSTREAM_PRODUCER *pstream)
 BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 	void *pbuff, uint16_t *plen, BOOL *pb_last)
 {
-	char path[256];
 	POINT_NODE *ppoint;
 	POINT_NODE *ppoint1;
 	uint32_t cur_offset;
-	DCERPC_INFO rpc_info;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == pstream->b_read) {
@@ -1550,10 +1540,7 @@ BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 	if (-1 != pstream->fd) {
 		close(pstream->fd);
 		pstream->fd = -1;
-		rpc_info = get_rpc_info();
-		sprintf(path, "%s/tmp/faststream/%d.%s",
-			rpc_info.maildir, pstream->id, get_host_ID());
-		remove(path);
+		remove(pstream->path);
 	}
 	pstream->offset = 0;
 	pstream->buffer_offset = 0;

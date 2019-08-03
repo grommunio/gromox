@@ -8,10 +8,10 @@ typedef BOOL (*RECORD_MARKER)(void*, uint32_t);
 typedef BOOL (*RECORD_PROPVAL)(void*, const TAGGED_PROPVAL*);
 
 typedef struct _FTSTREAM_PARSER {
-	int id;
 	int fd;
 	uint32_t offset;
 	uint32_t st_size;
+	char path[256];
 	LOGON_OBJECT *plogon;	/* plogon is a protected member */
 } FTSTREAM_PARSER;
 
