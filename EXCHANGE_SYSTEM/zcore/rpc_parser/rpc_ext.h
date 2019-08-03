@@ -18,7 +18,7 @@ typedef struct _REQ_LOGON {
 
 typedef struct _REQ_CHECKSESSION {
 	GUID hsession;
-} REQ_CHECKSESSION
+} REQ_CHECKSESSION;
 
 typedef struct _REQ_UINFO {
 	char *username;
