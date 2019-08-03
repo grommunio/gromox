@@ -506,46 +506,54 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 								return FALSE;
 							}
 							temp_set.pparray[i]->ppropval[idx].proptag =
-														PROP_TAG_SOURCEKEY;
+													PROP_TAG_SOURCEKEY;
 							break;
 						}	
 					}
 				}
 			}
-			if (common_util_index_proptags(pcolumns,
-				PROP_TAG_STOREENTRYID) >= 0) {
-				pentryid = common_util_to_store_entryid(ptable->pstore);
-				if (NULL == pentryid) {
+		} else {
+			if (FALSE == exmdb_client_query_table(
+				store_object_get_dir(ptable->pstore),
+				username, pinfo->cpid, ptable->table_id,
+				pcolumns, ptable->position, row_needed,
+				&temp_set)) {
+				return FALSE;	
+			}
+		}
+		if (common_util_index_proptags(pcolumns,
+			PROP_TAG_STOREENTRYID) >= 0) {
+			pentryid = common_util_to_store_entryid(ptable->pstore);
+			if (NULL == pentryid) {
+				return FALSE;
+			}
+			for (i=0; i<temp_set.count; i++) {
+				ppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
+				if (NULL == ppropvals) {
 					return FALSE;
 				}
-				for (i=0; i<temp_set.count; i++) {
-					ppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
-					if (NULL == ppropvals) {
-						return FALSE;
-					}
-					ppropvals->count = temp_set.pparray[i]->count + 1;
-					ppropvals->ppropval = common_util_alloc(
-						sizeof(TAGGED_PROPVAL)*ppropvals->count);
-					if (NULL == ppropvals->ppropval) {
-						return FALSE;
-					}
-					memcpy(ppropvals->ppropval, temp_set.pparray[i]->ppropval,
-						sizeof(TAGGED_PROPVAL)*temp_set.pparray[i]->count);
-					ppropvals->ppropval[temp_set.pparray[i]->count].proptag =
-														PROP_TAG_STOREENTRYID;
-					ppropvals->ppropval[temp_set.pparray[i]->count].pvalue =
-																	pentryid;
-					temp_set.pparray[i] = ppropvals;
+				ppropvals->count = temp_set.pparray[i]->count + 1;
+				ppropvals->ppropval = common_util_alloc(
+					sizeof(TAGGED_PROPVAL)*ppropvals->count);
+				if (NULL == ppropvals->ppropval) {
+					return FALSE;
 				}
+				memcpy(ppropvals->ppropval, temp_set.pparray[i]->ppropval,
+					sizeof(TAGGED_PROPVAL)*temp_set.pparray[i]->count);
+				ppropvals->ppropval[temp_set.pparray[i]->count].proptag =
+													PROP_TAG_STOREENTRYID;
+				ppropvals->ppropval[temp_set.pparray[i]->count].pvalue =
+																pentryid;
+				temp_set.pparray[i] = ppropvals;
 			}
-			*pset = temp_set;
-			return TRUE;
 		}
+		*pset = temp_set;
+		return TRUE;
 	}
 	return exmdb_client_query_table(
-		store_object_get_dir(ptable->pstore), username,
-		pinfo->cpid, ptable->table_id, pcolumns,
-		ptable->position, row_needed, pset);
+		store_object_get_dir(ptable->pstore),
+		username, pinfo->cpid, ptable->table_id,
+		pcolumns, ptable->position, row_needed, pset);
 }
 
 void table_object_seek_current(TABLE_OBJECT *ptable,
