@@ -3713,7 +3713,7 @@ static DCERPC_INFO pdu_processor_get_rpc_info()
 			info.stat_flags = pcall->pcontext->stat_flags;
 		}
 	} else {
-		if ('\0' == pcontext->username[0]) {
+		if (NULL == pcontext || '\0' == pcontext->username[0]) {
 			info.is_login = FALSE;
 		} else {
 			info.is_login = TRUE;
