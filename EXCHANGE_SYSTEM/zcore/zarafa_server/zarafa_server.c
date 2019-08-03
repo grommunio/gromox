@@ -903,6 +903,8 @@ uint32_t zarafa_server_logon(const char *username,
 
 uint32_t zarafa_server_checksession(GUID hsession)
 {
+	USER_INFO *pinfo;
+	
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
 		return EC_ERROR;
