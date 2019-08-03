@@ -249,6 +249,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	uint32_t handle;
 	uint32_t end_pos;
 	USER_INFO *pinfo;
+	BINARY *pentryid;
 	uint64_t tmp_eid;
 	uint8_t mapi_type;
 	int32_t row_needed;
@@ -256,6 +257,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	TARRAY_SET temp_set;
 	const char *username;
 	STORE_OBJECT *pstore;
+	TPROPVAL_ARRAY *ppropvals;
 	PROPTAG_ARRAY tmp_columns;
 	
 	if (NULL == pcolumns) {
@@ -508,6 +510,32 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 							break;
 						}	
 					}
+				}
+			}
+			if (common_util_index_proptags(pcolumns,
+				PROP_TAG_STOREENTRYID) >= 0) {
+				pentryid = common_util_to_store_entryid(ptable->pstore);
+				if (NULL == pentryid) {
+					return FALSE;
+				}
+				for (i=0; i<temp_set.count; i++) {
+					ppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
+					if (NULL == ppropvals) {
+						return FALSE;
+					}
+					ppropvals->count = temp_set.pparray[i]->count + 1;
+					ppropvals->ppropval = common_util_alloc(
+						sizeof(TAGGED_PROPVAL)*ppropvals->count);
+					if (NULL == ppropvals->ppropval) {
+						return FALSE;
+					}
+					memcpy(ppropvals->ppropval, temp_set.pparray[i]->ppropval,
+						sizeof(TAGGED_PROPVAL)*temp_set.pparray[i]->count);
+					ppropvals->ppropval[temp_set.pparray[i]->count].proptag =
+														PROP_TAG_STOREENTRYID;
+					ppropvals->ppropval[temp_set.pparray[i]->count].pvalue =
+																	pentryid;
+					temp_set.pparray[i] = ppropvals;
 				}
 			}
 			*pset = temp_set;
