@@ -1457,6 +1457,16 @@ static BOOL rpc_ext_push_logon_response(
 	return TRUE;
 }
 
+static BOOL rpc_ext_pull_checksession_request(
+	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
+{
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_guid(
+		pext, &ppayload->unloadobject.hsession)) {
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static BOOL rpc_ext_pull_uinfo_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
@@ -3963,6 +3973,9 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	case CALL_ID_LOGON:
 		return rpc_ext_pull_logon_request(
 			&ext_pull, &prequest->payload);
+	case CALL_ID_CHECKSESSION:
+		return rpc_ext_pull_checksession_request(
+					&ext_pull, &prequest->payload);
 	case CALL_ID_UINFO:
 		return rpc_ext_pull_uinfo_request(
 			&ext_pull, &prequest->payload);
@@ -4275,6 +4288,9 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	case CALL_ID_LOGON:
 		b_result = rpc_ext_push_logon_response(
 				&ext_push, &presponse->payload);
+		break;
+	case CALL_ID_CHECKSESSION:
+		b_result = TRUE;
 		break;
 	case CALL_ID_UINFO:
 		b_result = rpc_ext_push_uinfo_response(

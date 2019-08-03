@@ -77,6 +77,10 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.logon.flags,
 			&presponse->payload.logon.hsession);
 		break;
+	case CALL_ID_CHECKSESSION:
+		presponse->result = zarafa_server_checksession(
+			prequest->payload.checksession.hsession);
+		break;
 	case CALL_ID_UINFO:
 		presponse->result = zarafa_server_uinfo(
 			prequest->payload.uinfo.username,

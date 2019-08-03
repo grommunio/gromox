@@ -901,6 +901,16 @@ uint32_t zarafa_server_logon(const char *username,
 	return EC_SUCCESS;
 }
 
+uint32_t zarafa_server_checksession(GUID hsession)
+{
+	pinfo = zarafa_server_query_session(hsession);
+	if (NULL == pinfo) {
+		return EC_ERROR;
+	}
+	zarafa_server_put_user_info(pinfo);
+	return EC_SUCCESS;
+}
+
 uint32_t zarafa_server_uinfo(const char *username,
 	BINARY *pentryid, char **ppdisplay_name, char **ppx500dn)
 {

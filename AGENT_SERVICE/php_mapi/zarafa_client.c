@@ -160,6 +160,19 @@ uint32_t zarafa_client_logon(const char *username,
 	return response.result;
 }
 
+uint32_t zarafa_client_checksession(GUID hsession)
+{
+	RPC_REQUEST request;
+	RPC_RESPONSE response;
+	
+	request.call_id = CALL_ID_CHECKSESSION;
+	request.payload.checksession.hsession = hsession;
+	if (!zarafa_client_do_rpc(&request, &response)) {
+		return EC_RPC_FAIL;
+	}
+	return response.result;
+}
+
 uint32_t zarafa_client_uinfo(const char *username,
 	BINARY *pentryid, char **ppdisplay_name, char **ppx500dn)
 {

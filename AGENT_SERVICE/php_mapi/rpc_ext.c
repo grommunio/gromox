@@ -27,6 +27,12 @@ static zend_bool rpc_ext_pull_logon_response(
 	return ext_pack_pull_guid(pctx, &ppayload->logon.hsession);
 }
 
+static zend_bool rpc_ext_push_checksession_request(
+	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+{
+	return ext_pack_push_guid(pctx, &ppayload->unloadobject.hsession);
+}
+
 static zend_bool rpc_ext_push_uinfo_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
@@ -1734,6 +1740,10 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 		b_result = rpc_ext_push_logon_request(
 				&push_ctx, &prequest->payload);
 		break;
+	case CALL_ID_CHECKSESSION:
+		b_result = rpc_ext_push_checksession_request(
+						&push_ctx, &prequest->payload);
+		break;
 	case CALL_ID_UINFO:
 		b_result = rpc_ext_push_uinfo_request(
 				&push_ctx, &prequest->payload);
@@ -2116,6 +2126,8 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	case CALL_ID_LOGON:
 		return rpc_ext_pull_logon_response(
 			&pull_ctx, &presponse->payload);
+	case CALL_ID_CHECKSESSION:
+		return 1;
 	case CALL_ID_UINFO:
 		return rpc_ext_pull_uinfo_response(
 			&pull_ctx, &presponse->payload);

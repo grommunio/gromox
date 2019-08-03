@@ -6519,6 +6519,7 @@ ZEND_FUNCTION(kc_session_restore)
 {
 	zval *pzres;
 	zval *pzdata;
+	GUID hsession;
 	BINARY data_bin;
 	uint32_t result;
 	PULL_CTX pull_ctx;
@@ -6532,6 +6533,16 @@ ZEND_FUNCTION(kc_session_restore)
 	}
 	data_bin.pb = Z_STRVAL_P(pzdata);
 	data_bin.cb = Z_STRLEN_P(pzdata);
+	ext_pack_pull_init(&pull_ctx, data_bin.pb, data_bin.cb);
+	if (!ext_pack_pull_guid(&pull_ctx, &hsession)) {
+		RETVAL_LONG(EC_INVALID_PARAMETER);
+		return;
+	}
+	result = zarafa_client_checksession(hsession);
+	if (EC_SUCCESS != result) {
+		RETVAL_LONG(result);
+		return;
+	}
 	presource = emalloc(sizeof(MAPI_RESOURCE));
 	if (NULL == presource) {
 		RETVAL_LONG(EC_OUT_OF_MEMORY);
@@ -6539,11 +6550,7 @@ ZEND_FUNCTION(kc_session_restore)
 	}
 	presource->type = MAPI_SESSION;
 	presource->hobject = 0;
-	ext_pack_pull_init(&pull_ctx, data_bin.pb, data_bin.cb);
-	if (!ext_pack_pull_guid(&pull_ctx, &presource->hsession)) {
-		RETVAL_LONG(EC_INVALID_PARAMETER);
-		return;
-	}
+	presource->hsession = hsession;
 	ZEND_REGISTER_RESOURCE(pzres, presource, le_mapi_session);
 	RETVAL_LONG(EC_SUCCESS);
 }

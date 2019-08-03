@@ -16,6 +16,10 @@ typedef struct _REQ_LOGON {
 	uint32_t flags;
 } REQ_LOGON;
 
+typedef struct _REQ_CHECKSESSION {
+	GUID hsession;
+} REQ_CHECKSESSION
+
 typedef struct _REQ_UINFO {
 	char *username;
 } REQ_UINFO;
@@ -547,6 +551,7 @@ typedef struct _REQ_VCFTOMESSAGE {
 
 typedef union _REQUEST_PAYLOAD {
 	REQ_LOGON logon;
+	REQ_CHECKSESSION checksession;
 	REQ_UINFO uinfo;
 	REQ_UNLOADOBJECT unloadobject;
 	REQ_OPENENTRY openentry;
@@ -885,6 +890,7 @@ typedef struct _RESP_MESSAGETOVCF {
 
 typedef union _RESPONSE_PAYLOAD {
 	RESP_LOGON logon;
+	RESP_CHECKSESSION checksession;
 	RESP_UINFO uinfo;
 	RESP_OPENENTRY openentry;
 	RESP_OPENSTOREENTRY openstoreentry;

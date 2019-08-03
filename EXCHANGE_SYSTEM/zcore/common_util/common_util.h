@@ -95,6 +95,7 @@
 #define CALL_ID_MESSAGETOVCF						0x57
 #define CALL_ID_VCFTOMESSAGE						0x58
 #define CALL_ID_UINFO								0x59
+#define CALL_ID_CHECKSESSION						0x60
 
 /* ---------------------- defined by zarafa ---------------------- */
 

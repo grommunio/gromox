@@ -91,12 +91,17 @@
 #define CALL_ID_MESSAGETOVCF						0x57
 #define CALL_ID_VCFTOMESSAGE						0x58
 #define CALL_ID_UINFO								0x59
+#define CALL_ID_CHECKSESSION						0x60
 
 typedef struct _REQ_LOGON {
 	char *username;
 	char *password;
 	uint32_t flags;
 } REQ_LOGON;
+
+typedef struct _REQ_CHECKSESSION {
+	GUID hsession;
+} REQ_CHECKSESSION;
 
 typedef struct _REQ_UINFO {
 	char *username;
@@ -637,6 +642,7 @@ typedef struct _REQ_RESTORESESSION {
 
 typedef union _REQUEST_PAYLOAD {
 	REQ_LOGON logon;
+	REQ_CHECKSESSION checksession;
 	REQ_UINFO uinfo;
 	REQ_UNLOADOBJECT unloadobject;
 	REQ_OPENENTRY openentry;
