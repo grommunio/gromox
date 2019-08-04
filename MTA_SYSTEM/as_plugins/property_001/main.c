@@ -85,8 +85,11 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
     if (MEM_END_OF_FILE == out_len) {
         return MESSAGE_ACCEPT;
     }
-	if (NULL != pconnection->ssl || (0 != strncasecmp(
-		buff, "Microsoft Outlook Express", 25) &&
+	if (NULL != pconnection->ssl) {
+		return MESSAGE_ACCEPT;
+	}
+		
+	if (0 != strncasecmp(buff, "Microsoft Outlook Express", 25) &&
 		0 != strncasecmp(buff, "FoxMail 4", 9) &&
 		0 != strncasecmp(buff, "Foxmail 5", 9) &&
 		0 != strncasecmp(buff, "mailer", 6)) {
