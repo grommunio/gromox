@@ -375,7 +375,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		pset->pparray[i] = ppropvals
+		pset->pparray[i] = ppropvals;
 		ppropvals->count = 0;
 		ppropvals->ppropval = common_util_alloc(
 						sizeof(TAGGED_PROPVAL)*5);
