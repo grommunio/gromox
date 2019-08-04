@@ -305,6 +305,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
 	char sql_string[256];
+	uint32_t message_flags;
 	TPROPVAL_ARRAY *ppropvals;
 	
 	pdb = db_engine_get_db(dir);
@@ -340,9 +341,9 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT message_id, "
-		"mid_string FROM messages WHERE parent_fid=%llu AND "
-		"is_associated=0", rop_util_get_gc_value(folder_id));
+	sql_len = sprintf(sql_string, "SELECT message_id, read_state,"
+			" mid_string FROM messages WHERE parent_fid=%llu AND "
+			"is_associated=0", rop_util_get_gc_value(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
@@ -401,11 +402,11 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
 								rop_util_make_eid_ex(1, message_id);
 		ppropvals->count ++;
-		if (SQLITE_NULL != sqlite3_column_type(pstmt, 1)) {
+		if (SQLITE_NULL != sqlite3_column_type(pstmt, 2)) {
 			ppropvals->ppropval[ppropvals->count].proptag =
 										PROP_TAG_MIDSTRING;
 			ppropvals->ppropval[ppropvals->count].pvalue =
-				common_util_dup(sqlite3_column_text(pstmt, 1));
+				common_util_dup(sqlite3_column_text(pstmt, 2));
 			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -420,6 +421,16 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_MESSAGEFLAGS);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+			message_flags = sqlite3_column_int64(pstmt1, 0);
+			message_flags &= ~MESSAGE_FLAG_READ;
+			message_flags &= ~MESSAGE_FLAG_HASATTACH;
+			message_flags &= ~MESSAGE_FLAG_FROMME;
+			message_flags &= ~MESSAGE_FLAG_FAI;
+			message_flags &= ~MESSAGE_FLAG_NOTIFYREAD;
+			message_flags &= ~MESSAGE_FLAG_NOTIFYUNREAD;
+			if (0 != sqlite3_column_int64(pstmt, 1)) {
+				message_flags |= MESSAGE_FLAG_READ;
+			}
 			ppropvals->ppropval[ppropvals->count].proptag =
 									PROP_TAG_MESSAGEFLAGS;
 			ppropvals->ppropval[ppropvals->count].pvalue =
@@ -433,7 +444,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 				return FALSE;
 			}
 			*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
-										sqlite3_column_int64(pstmt1, 0);
+														message_flags;
 			ppropvals->count ++;
 		}
 		sqlite3_reset(pstmt1);
