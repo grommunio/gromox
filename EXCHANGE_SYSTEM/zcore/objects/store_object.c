@@ -21,6 +21,7 @@
 
 #define HGROWING_SIZE									0x500
 
+#define PROP_TAG_ECSERVERVERSION						0x6716001F
 #define PROP_TAG_OOFSTATE								0x67600003
 #define PROP_TAG_OOFINTERNALREPLY						0x6761001F
 #define PROP_TAG_OOFINTERNALSUBJECT						0x6762001F
@@ -30,6 +31,7 @@
 #define PROP_TAG_OOFEXTERNALAUDIENCE					0x6766000B
 #define PROP_TAG_OOFEXTERNALREPLY						0x6767001F
 #define PROP_TAG_OOFEXTERNALSUBJECT						0x6768001F
+
 
 #define OOF_STATE_DISABLED								0x00000000
 #define OOF_STATE_ENABLED								0x00000001
@@ -787,6 +789,9 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->pproptag[pproptags->count] =
 				PROP_TAG_STORESUPPORTMASK;
 	pproptags->count ++;
+	pproptags->pproptag[pproptags->count] =
+					PROP_TAG_ECSERVERVERSION;
+	pproptags->count ++;
 	return TRUE;
 }
 
@@ -1359,6 +1364,9 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
+		return TRUE;
+	case PROP_TAG_ECSERVERVERSION:
+		*ppvalue = ZCORE_VERSION;
 		return TRUE;
 	case PROP_TAG_OOFSTATE:
 	case PROP_TAG_OOFINTERNALREPLY:

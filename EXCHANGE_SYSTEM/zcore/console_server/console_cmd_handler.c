@@ -2,6 +2,7 @@
 #include "console_server.h"
 #include "zarafa_server.h"
 #include "exmdb_client.h"
+#include "common_util.h"
 #include "service.h"
 #include "util.h"
 #include "guid.h"
@@ -12,8 +13,7 @@
 
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
-#define ZCORE_VERSION			"1.0"
-#define ZCORE_BUILT_DATE		"2019-03-01"
+#define ZCORE_BUILT_DATE		"2019-08-01"
 
 
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];

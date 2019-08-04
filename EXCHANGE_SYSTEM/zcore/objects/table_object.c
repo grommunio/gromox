@@ -242,10 +242,46 @@ static BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 			ptable->table_id, pcolumns);
 }
 
+static uint32_t table_object_get_folder_tag_access(
+	STORE_OBJECT *pstore, uint64_t folder_id, const char *username)
+{
+	uint64_t fid_val;
+	uint32_t tag_access;
+	uint32_t permission;
+	
+	if (TRUE == store_object_check_owner_mode(pstore)) {
+		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
+				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
+				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+	} else {
+		if (FALSE == exmdb_client_check_folder_permission(
+			store_object_get_dir(pstore), folder_id, username,
+			&permission)) {
+			return 0;
+		}
+		tag_access = TAG_ACCESS_READ;
+		if (permission & PERMISSION_FOLDEROWNER) {
+			tag_access = TAG_ACCESS_MODIFY |TAG_ACCESS_DELETE |
+				TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
+				TAG_ACCESS_FAI_CONTENTS;
+		} else {
+			if (permission & PERMISSION_CREATE) {
+				tag_access |= TAG_ACCESS_CONTENTS |
+							TAG_ACCESS_FAI_CONTENTS;
+			}
+			if (permission & PERMISSION_CREATESUBFOLDER) {
+				tag_access |= TAG_ACCESS_HIERARCHY;
+			}
+		}
+	}
+	return tag_access;
+}
+
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	const PROPTAG_ARRAY *pcolumns, uint16_t row_count, TARRAY_SET *pset)
 {
-	int i, idx;
+	int i, j;
+	int idx, idx1;
 	uint32_t handle;
 	uint32_t end_pos;
 	USER_INFO *pinfo;
@@ -257,6 +293,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	TARRAY_SET temp_set;
 	const char *username;
 	STORE_OBJECT *pstore;
+	uint32_t *ptag_access;
 	TPROPVAL_ARRAY *ppropvals;
 	PROPTAG_ARRAY tmp_columns;
 	
@@ -451,7 +488,13 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		HIERARCHY_TABLE == ptable->table_type)) {
 		idx = common_util_index_proptags(
 			pcolumns, PROP_TAG_SOURCEKEY);
-		if (idx >= 0) {
+		if (HIERARCHY_TABLE == ptable->table_type) {
+			idx1 = common_util_index_proptags(
+					pcolumns, PROP_TAG_ACCESS);
+		} else {
+			idx1 = -1;
+		}
+		if (idx >= 0 || idx1 >= 0) {
 			tmp_columns.pproptag = common_util_alloc(
 					sizeof(uint32_t)*pcolumns->count);
 			if (NULL == tmp_columns.pproptag) {
@@ -460,10 +503,15 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			tmp_columns.count = pcolumns->count;
 			memcpy(tmp_columns.pproptag, pcolumns->pproptag,
 						sizeof(uint32_t)*pcolumns->count);
-			if (CONTENT_TABLE == ptable->table_type) {
-				tmp_columns.pproptag[idx] = PROP_TAG_MID;
-			} else {
-				tmp_columns.pproptag[idx] = PROP_TAG_FOLDERID;
+			if (idx >= 0) {
+				if (CONTENT_TABLE == ptable->table_type) {
+					tmp_columns.pproptag[idx] = PROP_TAG_MID;
+				} else {
+					tmp_columns.pproptag[idx] = PROP_TAG_FOLDERID;
+				}
+			}
+			if (idx1 >= 0) {
+				tmp_columns.pproptag[idx1] = PROP_TAG_FOLDERID;
 			}
 			if (FALSE == exmdb_client_query_table(
 				store_object_get_dir(ptable->pstore), username,
@@ -473,42 +521,68 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			}
 			if (CONTENT_TABLE == ptable->table_type) {
 				for (i=0; i<temp_set.count; i++) {
-					for (idx=0; idx<temp_set.pparray[i]->count; idx++) {
+					for (j=0; j<temp_set.pparray[i]->count; j++) {
 						if (PROP_TAG_MID == 
-							temp_set.pparray[i]->ppropval[idx].proptag) {
+							temp_set.pparray[i]->ppropval[j].proptag) {
 							tmp_eid = *(uint64_t*)
-								temp_set.pparray[i]->ppropval[idx].pvalue;
-							temp_set.pparray[i]->ppropval[idx].pvalue =
+								temp_set.pparray[i]->ppropval[j].pvalue;
+							temp_set.pparray[i]->ppropval[j].pvalue =
 								common_util_calculate_message_sourcekey(
 								ptable->pstore, tmp_eid);
 							if (NULL ==
-								temp_set.pparray[i]->ppropval[idx].pvalue) {
+								temp_set.pparray[i]->ppropval[j].pvalue) {
 								return FALSE;
 							}
-							temp_set.pparray[i]->ppropval[idx].proptag =
-														PROP_TAG_SOURCEKEY;
+							temp_set.pparray[i]->ppropval[j].proptag =
+													PROP_TAG_SOURCEKEY;
 							break;
 						}	
 					}
 				}
 			} else {
-				for (i=0; i<temp_set.count; i++) {
-					for (idx=0; idx<temp_set.pparray[i]->count; idx++) {
-						if (PROP_TAG_FOLDERID == 
-							temp_set.pparray[i]->ppropval[idx].proptag) {
-							tmp_eid = *(uint64_t*)
-								temp_set.pparray[i]->ppropval[idx].pvalue;
-							temp_set.pparray[i]->ppropval[idx].pvalue =
-								common_util_calculate_folder_sourcekey(
-								ptable->pstore, tmp_eid);
-							if (NULL ==
-								temp_set.pparray[i]->ppropval[idx].pvalue) {
-								return FALSE;
-							}
-							temp_set.pparray[i]->ppropval[idx].proptag =
-													PROP_TAG_SOURCEKEY;
-							break;
-						}	
+				if (idx >= 0) {
+					for (i=0; i<temp_set.count; i++) {
+						for (j=0; j<temp_set.pparray[i]->count; j++) {
+							if (PROP_TAG_FOLDERID == 
+								temp_set.pparray[i]->ppropval[j].proptag) {
+								tmp_eid = *(uint64_t*)
+									temp_set.pparray[i]->ppropval[j].pvalue;
+								temp_set.pparray[i]->ppropval[j].pvalue =
+									common_util_calculate_folder_sourcekey(
+									ptable->pstore, tmp_eid);
+								if (NULL ==
+									temp_set.pparray[i]->ppropval[j].pvalue) {
+									return FALSE;
+								}
+								temp_set.pparray[i]->ppropval[j].proptag =
+														PROP_TAG_SOURCEKEY;
+								break;
+							}	
+						}
+					}
+				}
+				if (idx1 >= 0) {
+					for (i=0; i<temp_set.count; i++) {
+						for (j=0; j<temp_set.pparray[i]->count; j++) {
+							if (PROP_TAG_FOLDERID == 
+								temp_set.pparray[i]->ppropval[j].proptag) {
+								tmp_eid = *(uint64_t*)
+									temp_set.pparray[i]->ppropval[j].pvalue;
+								ptag_access = common_util_alloc(
+												sizeof(uint32_t));
+								if (NULL == ptag_access) {
+									return FALSE;
+								}
+								*(uint32_t*)ptag_access =
+									table_object_get_folder_tag_access(
+									ptable->pstore, tmp_eid, pinfo->username);
+								temp_set.pparray[i]->ppropval[j].proptag =
+															PROP_TAG_ACCESS;
+								temp_set.pparray[i]->ppropval[j].pvalue =
+															ptag_access;
+								break;
+							}	
+						}
 					}
 				}
 			}
