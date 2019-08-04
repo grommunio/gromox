@@ -20,9 +20,6 @@ int main(int argc, char **argv)
 	char *str_value;
 	CONFIG_FILE *pconfig;
 	char data_path[256];
-	char logo_path[256];
-	char logo_link[256];
-	char background_path[256];
 	char list_path[256];
 	char failure_path[256];
 	char admin_mailbox[256];
@@ -54,15 +51,7 @@ int main(int argc, char **argv)
 	} else {
 		strcpy(data_path, str_value);
 	}
-	str_value = config_file_get_value(pconfig, "LOGO_LINK");
-	if (NULL == str_value) {
-		strcpy(logo_link, "http://www.gridware.com.cn");
-	} else {
-		strcpy(logo_link, str_value);
-	}
 	printf("[system]: data path is %s\n", data_path);
-	sprintf(logo_path, "%s/picture/logo_bb.gif", data_path);
-	sprintf(background_path, "%s/picture/di1.gif", data_path);
 	sprintf(list_path, "%s/supervising_list.txt", data_path);
 	sprintf(failure_path, "%s/supervising_failure.txt", data_path);
 	str_value = config_file_get_value(pconfig, "ADMIN_MAILBOX");
@@ -99,7 +88,7 @@ int main(int argc, char **argv)
 	config_file_save(pconfig);
 	config_file_free(pconfig);
 
-	message_init(background_path, logo_path, logo_link);
+	message_init();
 	smtp_init();
 	pop3_init();
 	scheduler_init(list_path, failure_path, default_domain, admin_mailbox,

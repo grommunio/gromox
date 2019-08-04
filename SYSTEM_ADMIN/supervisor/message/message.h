@@ -28,8 +28,7 @@ enum {
 	MESSAGE_SUPERVISING_POP3
 };
 
-void message_init(const char *background_path, const char *logo_path,
-	const char *logo_link);
+void message_init();
 
 int message_run();
 

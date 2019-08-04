@@ -19,10 +19,6 @@ To: "
 
 #define MESSAGE_BODY_3	\
 "\r\nSubject: Mail system supervisor alarm, faulure on %s:%d!!!\r\n\
-Content-Type: multipart/related;\r\n\
-	boundary=\"----=_NextPart_000_0005_5F7091A5.ABB0874\"\r\n\r\n\
-This is a multi-part message in MIME format.\r\n\r\n\
-------=_NextPart_000_0005_5F7091A5.ABB0874\r\n\
 Content-Transfer-Encoding: 8bit\r\n\
 Content-Type: text/html;\r\n\
 	charset=\"us-ascii\"\r\n\r\n\
@@ -40,16 +36,7 @@ A:hover {COLOR: #0000ff; TEXT-DECORATION: underline}\r\n\
 <META http-equiv=Content-Type content=\"text/html; charset=us-ascii\">\r\n\
 <META content=\"MSHTML 6.00.2900.2912\" name=GENERATOR></HEAD>\r\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\r\n\
-marginheight=\"0\" marginwidth=\"0\">\r\n\
-<CENTER><TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0><TBODY>\r\n\
-<TR><TD noWrap align=middle background=\r\n\
-\"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\" height=55>\r\n\
-<SPAN class=AlarmTitle> Mail system supervisor alarm!!! </SPAN>\r\n\
-<TD vAlign=bottom noWrap width=\"22%\"\r\n\
-background=\"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\"><A\r\n\
-href=\"%s\" target=_blank><IMG height=48\r\n\
-src=\"cid:001901c695cb$9bc53450$6601a8c0@herculiz\" width=195 align=right\r\n\
-border=0></A></TD></TR></TBODY></TABLE><BR>\r\n\
+marginheight=\"0\" marginwidth=\"0\">\r\n<CENTER><BR>\r\n\
 <TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0> <TBODY><TR>\r\n\
 <P></P><BR><P></P><BR><P></P><BR><BR>\r\n"
 
@@ -57,35 +44,11 @@ border=0></A></TD></TR></TBODY></TABLE><BR>\r\n\
 
 #define MESSAGE_BODY_4	\
 "</TBODY></TABLE></TD></TR></TBODY></TABLE>\r\n\
-<P></P><BR><P></P><BR></CENTER></BODY></HTML>\r\n\
-------=_NextPart_000_0005_5F7091A5.ABB0874\r\n\
-Content-ID: <001501c695cb$9bc2ea60$6601a8c0@herculiz>\r\n\
-Content-Transfer-Encoding: base64\r\n\
-Content-Type: image/gif\r\n\r\n"
+<P></P><BR><P></P><BR></CENTER></BODY></HTML>\r\n
 
-/* fill image di1.gif */
-
-
-#define MESSAGE_BODY_5	\
-"------=_NextPart_000_0005_5F7091A5.ABB0874\r\n\
-Content-ID: <001901c695cb$9bc53450$6601a8c0@herculiz>\r\n\
-Content-Transfer-Encoding: base64\r\n\
-Content-Type: image/gif\r\n\r\n"
-
-/* fill image logo_bb.gif */
-
-#define MESSAGE_BODY_6	"------=_NextPart_000_0005_5F7091A5.ABB0874--\r\n"
-
-static char g_background_path[256];
-static char g_logo_path[256];
-static char g_logo_link[256];
-
-void message_init(const char *background_path, const char *logo_path,
-	const char *logo_link)
+void message_init()
 {
-	strcpy(g_background_path, background_path);
-	strcpy(g_logo_path, logo_path);
-	strcpy(g_logo_link, logo_link);
+	/* do nothing */
 }
 
 int message_run()
@@ -148,7 +111,7 @@ void message_alarm_message(char *buff, int type, const char *command,
 	len = strftime(ptr, 128, "%a, %d %b %Y %H:%M:%S %z", &temp_tm);
 	ptr += len;
 
-	len = sprintf(ptr, MESSAGE_BODY_3, ip, port, g_logo_link);
+	len = sprintf(ptr, MESSAGE_BODY_3, ip, port);
 	ptr += len;
 	
 	switch (type) {
@@ -228,49 +191,7 @@ void message_alarm_message(char *buff, int type, const char *command,
 		ptr += len;
 		break;
 	}
-
 	memcpy(ptr, MESSAGE_BODY_4, sizeof(MESSAGE_BODY_4) - 1);
 	ptr += sizeof(MESSAGE_BODY_4) - 1;
-
-	if (0 != stat(g_background_path, &node_stat) ||
-		node_stat.st_size > sizeof(img_buf)) {
-		goto NEXT_IMAGE;
-	}
-	fd = open(g_background_path, O_RDONLY);
-	if (-1 == fd) {
-		goto NEXT_IMAGE;
-	}
-	if (node_stat.st_size != read(fd, img_buf, sizeof(img_buf))) {
-		goto NEXT_IMAGE;
-	}
-	close(fd);
-	if (0 != encode64_ex(img_buf, node_stat.st_size, ptr, MESSAGE_BUFF_SIZE,
-		&len)) {
-		goto NEXT_IMAGE;
-	}
-	ptr += len;
-NEXT_IMAGE:
-	memcpy(ptr, MESSAGE_BODY_5, sizeof(MESSAGE_BODY_5) - 1);
-	ptr += sizeof(MESSAGE_BODY_5) - 1;
-
-	if (0 != stat(g_logo_path, &node_stat) ||
-		node_stat.st_size > sizeof(img_buf)) {
-		goto FINAL_MESSAGE;
-	}
-	fd = open(g_logo_path, O_RDONLY);
-	if (-1 == fd) {
-		goto FINAL_MESSAGE;
-	}
-	if (node_stat.st_size != read(fd, img_buf, sizeof(img_buf))) {
-		goto FINAL_MESSAGE;
-	}
-	close(fd);
-	if (0 != encode64_ex(img_buf, node_stat.st_size, ptr, MESSAGE_BUFF_SIZE,
-		&len)) {
-		goto FINAL_MESSAGE;
-	}
-	ptr += len;
-FINAL_MESSAGE:
-	memcpy(ptr, MESSAGE_BODY_6, sizeof(MESSAGE_BODY_6));
 }
 
