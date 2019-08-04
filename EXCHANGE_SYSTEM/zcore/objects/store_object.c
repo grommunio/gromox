@@ -21,7 +21,10 @@
 
 #define HGROWING_SIZE									0x500
 
+#define PROP_TAG_USERNAME								0x661A001F
+
 #define PROP_TAG_ECSERVERVERSION						0x6716001F
+
 #define PROP_TAG_OOFSTATE								0x67600003
 #define PROP_TAG_OOFINTERNALREPLY						0x6761001F
 #define PROP_TAG_OOFINTERNALSUBJECT						0x6762001F
@@ -31,7 +34,6 @@
 #define PROP_TAG_OOFEXTERNALAUDIENCE					0x6766000B
 #define PROP_TAG_OOFEXTERNALREPLY						0x6767001F
 #define PROP_TAG_OOFEXTERNALSUBJECT						0x6768001F
-
 
 #define OOF_STATE_DISABLED								0x00000000
 #define OOF_STATE_ENABLED								0x00000001
@@ -1261,6 +1263,9 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
+		return TRUE;
+	case PROP_TAG_USERNAME:
+		*ppvalue = pinfo->username;
 		return TRUE;
 	case PROP_TAG_USERENTRYID:
 		pinfo = zarafa_server_get_info();
