@@ -20,7 +20,7 @@
 
 #define DB_LOCK_TIMEOUT					30
 
-#define MAX_DB_WAITING_THREADS			3
+#define MAX_DB_WAITING_THREADS			5
 
 #define MAX_DYNAMIC_NODES				100
 

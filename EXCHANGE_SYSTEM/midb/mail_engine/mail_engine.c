@@ -44,7 +44,7 @@
 
 #define DB_LOCK_TIMEOUT					30
 
-#define MAX_DB_WAITING_THREADS			3
+#define MAX_DB_WAITING_THREADS			5
 
 
 enum {
@@ -2169,7 +2169,7 @@ static void mail_engine_sync_message(IDB_ITEM *pidb,
 	uint8_t b_unsent1;
 	char sql_string[256];
 	
-	if (NULL != mid_string || mod_time == mod_time1) {
+	if (NULL != mid_string || mod_time <= mod_time1) {
 		if (message_flags & MESSAGE_FLAG_UNSENT) {
 			b_unsent1 = 1;
 		} else {
