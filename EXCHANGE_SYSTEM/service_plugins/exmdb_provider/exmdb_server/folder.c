@@ -405,7 +405,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			ppropvals->ppropval[ppropvals->count].proptag =
 										PROP_TAG_MIDSTRING;
 			ppropvals->ppropval[ppropvals->count].pvalue =
-				common_util_dup(sqlite3_column_int64(pstmt, 1));
+				common_util_dup(sqlite3_column_text(pstmt, 1));
 			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
