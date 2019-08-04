@@ -2211,9 +2211,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	sqlite3 *psqlite;
 	uint32_t uidnext;
 	uint32_t uidnext1;
-	uint32_t table_id;
 	uint64_t mod_time;
-	uint32_t row_count;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
@@ -2221,32 +2219,15 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	sqlite3_stmt *pstmt3;
 	DOUBLE_LIST temp_list;
 	char sql_string[1024];
-	PROPTAG_ARRAY proptags;
 	uint32_t message_flags;
 	uint64_t received_time;
 	DOUBLE_LIST_NODE *pnode;
-	uint32_t proptag_buff[5];
 	
 	dir = common_util_get_maildir();
-	if (FALSE == exmdb_client_load_content_table(
-		dir, 0, rop_util_make_eid_ex(1, folder_id),
-		NULL, TABLE_FLAG_NONOTIFICATIONS, NULL, NULL,
-		&table_id, &row_count)) {
-		return FALSE;	
-	}
-	proptags.count = 5;
-	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MID;
-	proptag_buff[1] = PROP_TAG_MIDSTRING;
-	proptag_buff[2] = PROP_TAG_MESSAGEFLAGS;
-	proptag_buff[3] = PROP_TAG_LASTMODIFICATIONTIME;
-	proptag_buff[4] = PROP_TAG_MESSAGEDELIVERYTIME;
-	if (FALSE == exmdb_client_query_table(dir, NULL,
-		0, table_id, &proptags, 0, row_count, &rows)) {
-		exmdb_client_unload_table(dir, table_id);
+	if (FALSE == exmdb_client_query_folder_messages(
+		dir, folder_id, &rows)) {
 		return FALSE;
 	}
-	exmdb_client_unload_table(dir, table_id);
 	sql_len = sprintf(sql_string, "SELECT uidnext FROM"
 			" folders WHERE folder_id=%llu", folder_id);
 	if (SQLITE_OK != sqlite3_prepare_v2(pidb->psqlite,

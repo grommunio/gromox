@@ -291,6 +291,20 @@ static int exmdb_ext_push_check_folder_id_request(
 		ppayload->check_folder_id.folder_id);
 }
 
+static int exmdb_ext_pull_query_folder_messages_request(
+	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
+{
+	return ext_buffer_pull_uint64(pext,
+		&ppayload->query_folder_messgaes.folder_id);
+}
+
+static int exmdb_ext_push_query_folder_messages_request(
+	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
+{
+	return ext_buffer_push_uint64(pext,
+		ppayload->query_folder_messgaes.folder_id);
+}
+
 static int exmdb_ext_pull_check_folder_deleted_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
@@ -4802,6 +4816,9 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 	case CALL_ID_CHECK_FOLDER_ID:
 		return exmdb_ext_pull_check_folder_id_request(
 						&ext_pull, &prequest->payload);
+	case CALL_ID_QUERY_FOLDER_MESSAGES:
+		return exmdb_ext_pull_query_folder_messages_request(
+							&ext_pull, &prequest->payload);
 	case CALL_ID_CHECK_FOLDER_DELETED:
 		return exmdb_ext_pull_check_folder_deleted_request(
 							&ext_pull, &prequest->payload);
@@ -5210,6 +5227,10 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	case CALL_ID_CHECK_FOLDER_ID:
 		status = exmdb_ext_push_check_folder_id_request(
 						&ext_push, &prequest->payload);
+		break;
+	case CALL_ID_QUERY_FOLDER_MESSAGES:
+		status = exmdb_ext_push_query_folder_messages_request(
+								&ext_push, &prequest->payload);
 		break;
 	case CALL_ID_CHECK_FOLDER_DELETED:
 		status = exmdb_ext_push_check_folder_deleted_request(
@@ -5869,6 +5890,20 @@ static int exmdb_ext_push_check_folder_id_response(
 {
 	return ext_buffer_push_bool(pext,
 		ppayload->check_folder_id.b_exist);
+}
+
+static int exmdb_ext_pull_query_folder_messages_response(
+	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+{
+	return ext_buffer_pull_tarray_set(pext,
+		&ppayload->query_folder_messgaes.set);
+}
+
+static int exmdb_ext_push_query_folder_messages_response(
+	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+{
+	return ext_buffer_push_tarray_set(pext,
+		&ppayload->query_folder_messgaes.set);
 }
 
 static int exmdb_ext_pull_check_folder_deleted_response(
@@ -7684,6 +7719,9 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	case CALL_ID_CHECK_FOLDER_ID:
 		return exmdb_ext_pull_check_folder_id_response(
 						&ext_pull, &presponse->payload);
+	case CALL_ID_QUERY_FOLDER_MESSAGES:
+		return exmdb_ext_pull_query_folder_messages_response(
+							&ext_pull, &presponse->payload);
 	case CALL_ID_CHECK_FOLDER_DELETED:
 		return exmdb_ext_pull_check_folder_deleted_response(
 							&ext_pull, &presponse->payload);
@@ -8059,6 +8097,10 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	case CALL_ID_CHECK_FOLDER_ID:
 		status = exmdb_ext_push_check_folder_id_response(
 						&ext_push, &presponse->payload);
+		break;
+	case CALL_ID_QUERY_FOLDER_MESSAGES:
+		status = exmdb_ext_push_query_folder_messages_response(
+								&ext_push, &presponse->payload);
 		break;
 	case CALL_ID_CHECK_FOLDER_DELETED:
 		status = exmdb_ext_push_check_folder_deleted_response(

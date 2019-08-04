@@ -66,6 +66,9 @@ BOOL exmdb_client_get_folder_class_table(
 BOOL exmdb_client_check_folder_id(const char *dir,
 	uint64_t folder_id, BOOL *pb_exist);
 
+BOOL exmdb_client_query_folder_messages(const char *dir,
+	uint64_t folder_id, TARRAY_SET *pset);
+
 BOOL exmdb_client_check_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del);
 

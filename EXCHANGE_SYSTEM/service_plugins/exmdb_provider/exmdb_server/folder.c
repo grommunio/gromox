@@ -296,6 +296,194 @@ BOOL exmdb_server_check_folder_id(const char *dir,
 	return TRUE;
 }
 
+BOOL exmdb_server_query_folder_messages(const char *dir,
+	uint64_t folder_id, TARRAY_SET *pset)
+{
+	DB_ITEM *pdb;
+	int i, sql_len;
+	uint64_t message_id;
+	sqlite3_stmt *pstmt;
+	sqlite3_stmt *pstmt1;
+	char sql_string[256];
+	TPROPVAL_ARRAY *ppropvals;
+	
+	pdb = db_engine_get_db(dir);
+	if (NULL == pdb) {
+		return FALSE;
+	}
+	if (NULL == pdb->psqlite) {
+		db_engine_put_db(pdb);
+		return FALSE;
+	}
+	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	sql_len = sprintf(sql_string, "SELECT count(message_id) FROM"
+			" messages WHERE folder_id=%llu AND is_associated=0",
+			rop_util_get_gc_value(folder_id));
+	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
+		sql_string, sql_len, &pstmt, NULL)) {
+		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		db_engine_put_db(pdb);
+		return FALSE;
+	}
+	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		sqlite3_finalize(pstmt);
+		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		db_engine_put_db(pdb);
+		return FALSE;
+	}
+	pset->count = sqlite3_column_int64(pstmt, 0);
+	sqlite3_finalize(pstmt);
+	pset->pparray = common_util_alloc(sizeof(
+				TPROPVAL_ARRAY*)*pset->count);
+	if (NULL == pset->pparray) {
+		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		db_engine_put_db(pdb);
+		return FALSE;
+	}
+	sql_len = sprintf(sql_string, "SELECT message_id, "
+		"mid_string FROM messages WHERE folder_id=%llu AND "
+		"is_associated=0", rop_util_get_gc_value(folder_id));
+	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
+		sql_string, sql_len, &pstmt, NULL)) {
+		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		db_engine_put_db(pdb);
+		return FALSE;
+	}
+	sql_len = sprintf(sql_string, "SELECT propval "
+		"FROM message_properties WHERE message_id=?"
+		" AND proptag=?");
+	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
+		sql_string, sql_len, &pstmt1, NULL)) {
+		sqlite3_finalize(pstmt);
+		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		db_engine_put_db(pdb);
+		return FALSE;
+	}
+	for (i=0; i<pset->count; i++) {
+		if (SQLITE_ROW != sqlite3_step(pstmt)) {
+			sqlite3_finalize(pstmt);
+			sqlite3_finalize(pstmt1);
+			sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+			db_engine_put_db(pdb);
+			return FALSE;
+		}
+		ppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
+		if (NULL == ppropvals) {
+			sqlite3_finalize(pstmt);
+			sqlite3_finalize(pstmt1);
+			sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+			db_engine_put_db(pdb);
+			return FALSE;
+		}
+		pset->pparray[i] = ppropvals
+		ppropvals->count = 0;
+		ppropvals->ppropval = common_util_alloc(
+						sizeof(TAGGED_PROPVAL)*5);
+		if (NULL == ppropvals->ppropval) {
+			sqlite3_finalize(pstmt);
+			sqlite3_finalize(pstmt1);
+			sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+			db_engine_put_db(pdb);
+			return FALSE;
+		}
+		message_id = sqlite3_column_int64(pstmt, 0);
+		ppropvals->ppropval[ppropvals->count].proptag = PROP_TAG_MID;
+		ppropvals->ppropval[ppropvals->count].pvalue =
+					common_util_alloc(sizeof(uint64_t));
+		if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+			sqlite3_finalize(pstmt);
+			sqlite3_finalize(pstmt1);
+			sqlite3_exec(pdb->psqlite,
+				"COMMIT TRANSACTION", NULL, NULL, NULL);
+			db_engine_put_db(pdb);
+			return FALSE;
+		}
+		*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
+								rop_util_make_eid_ex(1, message_id);
+		ppropvals->count ++;
+		if (SQLITE_NULL != sqlite3_column_type(pstmt, 1)) {
+			ppropvals->ppropval[ppropvals->count].proptag =
+										PROP_TAG_MIDSTRING;
+			ppropvals->ppropval[ppropvals->count].pvalue =
+				common_util_dup(sqlite3_column_int64(pstmt, 1));
+			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+				sqlite3_finalize(pstmt);
+				sqlite3_finalize(pstmt1);
+				sqlite3_exec(pdb->psqlite,
+					"COMMIT TRANSACTION", NULL, NULL, NULL);
+				db_engine_put_db(pdb);
+				return FALSE;
+			}
+			ppropvals->count ++;
+		}
+		sqlite3_reset(pstmt1);
+		sqlite3_bind_int64(pstmt1, 1, message_id);
+		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_MESSAGEFLAGS);
+		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+			ppropvals->ppropval[ppropvals->count].proptag =
+									PROP_TAG_MESSAGEFLAGS;
+			ppropvals->ppropval[ppropvals->count].pvalue =
+						common_util_alloc(sizeof(uint32_t));
+			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+				sqlite3_finalize(pstmt);
+				sqlite3_finalize(pstmt1);
+				sqlite3_exec(pdb->psqlite,
+					"COMMIT TRANSACTION", NULL, NULL, NULL);
+				db_engine_put_db(pdb);
+				return FALSE;
+			}
+			*(uint32_t*)ppropvals->ppropval[ppropvals->count].pvalue =
+										sqlite3_column_int64(pstmt1, 0);
+			ppropvals->count ++;
+		}
+		sqlite3_reset(pstmt1);
+		sqlite3_bind_int64(pstmt1, 1, message_id);
+		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_LASTMODIFICATIONTIME);
+		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+			ppropvals->ppropval[ppropvals->count].proptag =
+							PROP_TAG_LASTMODIFICATIONTIME;
+			ppropvals->ppropval[ppropvals->count].pvalue =
+						common_util_alloc(sizeof(uint64_t));
+			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+				sqlite3_finalize(pstmt);
+				sqlite3_finalize(pstmt1);
+				sqlite3_exec(pdb->psqlite,
+					"COMMIT TRANSACTION", NULL, NULL, NULL);
+				db_engine_put_db(pdb);
+				return FALSE;
+			}
+			*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
+										sqlite3_column_int64(pstmt1, 0);
+			ppropvals->count ++;
+		}
+		sqlite3_reset(pstmt1);
+		sqlite3_bind_int64(pstmt1, 1, message_id);
+		sqlite3_bind_int64(pstmt1, 2, PROP_TAG_LASTMODIFICATIONTIME);
+		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
+			ppropvals->ppropval[ppropvals->count].proptag =
+								PROP_TAG_MESSAGEDELIVERYTIME;
+			ppropvals->ppropval[ppropvals->count].pvalue =
+						common_util_alloc(sizeof(uint64_t));
+			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
+				sqlite3_finalize(pstmt);
+				sqlite3_finalize(pstmt1);
+				sqlite3_exec(pdb->psqlite,
+					"COMMIT TRANSACTION", NULL, NULL, NULL);
+				db_engine_put_db(pdb);
+				return FALSE;
+			}
+			*(uint64_t*)ppropvals->ppropval[ppropvals->count].pvalue =
+										sqlite3_column_int64(pstmt1, 0);
+			ppropvals->count ++;
+		}
+	}
+	sqlite3_finalize(pstmt);
+	sqlite3_finalize(pstmt1);
+	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	db_engine_put_db(pdb);
+	return TRUE;
+}
+
 BOOL exmdb_server_check_folder_deleted(const char *dir,
 	uint64_t folder_id, BOOL *pb_del)
 {
