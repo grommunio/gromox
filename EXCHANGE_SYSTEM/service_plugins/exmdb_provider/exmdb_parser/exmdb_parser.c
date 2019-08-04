@@ -166,6 +166,10 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 		return exmdb_server_check_folder_id(prequest->dir,
 			prequest->payload.check_folder_id.folder_id,
 			&presponse->payload.check_folder_id.b_exist);
+	case CALL_ID_QUERY_FOLDER_MESSAGES:
+		return exmdb_server_query_folder_messages(prequest->dir,
+			prequest->payload.query_folder_messages.folder_id,
+			&presponse->payload.query_folder_messages.set);
 	case CALL_ID_CHECK_FOLDER_DELETED:
 		return exmdb_server_check_folder_deleted(prequest->dir,
 			prequest->payload.check_folder_deleted.folder_id,
