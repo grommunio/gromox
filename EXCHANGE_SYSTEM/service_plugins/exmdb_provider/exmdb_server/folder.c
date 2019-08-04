@@ -317,7 +317,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "SELECT count(message_id) FROM"
-			" messages WHERE folder_id=%llu AND is_associated=0",
+			" messages WHERE parent_fid=%llu AND is_associated=0",
 			rop_util_get_gc_value(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
@@ -341,7 +341,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "SELECT message_id, "
-		"mid_string FROM messages WHERE folder_id=%llu AND "
+		"mid_string FROM messages WHERE parent_fid=%llu AND "
 		"is_associated=0", rop_util_get_gc_value(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
