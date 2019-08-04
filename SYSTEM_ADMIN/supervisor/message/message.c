@@ -44,7 +44,7 @@ marginheight=\"0\" marginwidth=\"0\">\r\n<CENTER><BR>\r\n\
 
 #define MESSAGE_BODY_4	\
 "</TBODY></TABLE></TD></TR></TBODY></TABLE>\r\n\
-<P></P><BR><P></P><BR></CENTER></BODY></HTML>\r\n
+<P></P><BR><P></P><BR></CENTER></BODY></HTML>\r\n"
 
 void message_init()
 {
