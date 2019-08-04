@@ -138,7 +138,7 @@ static int exmdb_ext_push_query_folder_messages_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	return ext_buffer_push_uint64(pext,
-		ppayload->query_folder_messgaes.folder_id);
+		ppayload->query_folder_messages.folder_id);
 }
 
 static int exmdb_ext_push_check_folder_deleted_request(
@@ -2927,7 +2927,7 @@ static int exmdb_ext_pull_query_folder_messages_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
 	return ext_buffer_pull_tarray_set(pext,
-		&ppayload->query_folder_messgaes.set);
+		&ppayload->query_folder_messages.set);
 }
 
 static int exmdb_ext_pull_check_folder_deleted_response(
