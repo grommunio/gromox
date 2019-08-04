@@ -90,13 +90,12 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		TRUE == pmail->penvelop->is_outbound) {
 		return MESSAGE_ACCEPT;
 	}
-	out_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
-    if (MEM_END_OF_FILE == out_len) {
-        return MESSAGE_ACCEPT;
-    }
-	if (0 != strncasecmp(buff, "Foxmail 7", 9) &&
-		0 != strncasecmp(buff, "Microsoft ", 10)) {
-		return MESSAGE_ACCEPT;
+	if (0 != mem_file_get_total_length(&pmail->phead->f_xmailer)) {
+		out_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
+		if (0 != strncasecmp(buff, "Foxmail 7", 9) &&
+			0 != strncasecmp(buff, "Microsoft ", 10)) {
+			return MESSAGE_ACCEPT;
+		}
 	}
 	out_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
     if (MEM_END_OF_FILE == out_len) {   /* no content type */
