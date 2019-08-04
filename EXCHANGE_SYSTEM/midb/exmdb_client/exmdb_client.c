@@ -918,18 +918,9 @@ BOOL exmdb_client_check_folder_id(const char *dir,
 BOOL exmdb_client_query_folder_messages(const char *dir,
 	uint64_t folder_id, TARRAY_SET *pset)
 {
-	BOOL b_result;
-	BOOL b_private;
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
 	
-	if (TRUE == exmdb_client_check_local(dir, &b_private)) {
-		exmdb_server_build_environment(TRUE, b_private, dir);
-		b_result = exmdb_server_query_folder_messages(
-								dir, folder_id, pset);
-		exmdb_server_free_environment();
-		return b_result;
-	}
 	request.call_id = CALL_ID_QUERY_FOLDER_MESSAGES;
 	request.dir = (void*)dir;
 	request.payload.query_folder_messages.folder_id = folder_id;
