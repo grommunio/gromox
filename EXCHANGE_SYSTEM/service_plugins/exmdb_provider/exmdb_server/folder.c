@@ -296,6 +296,7 @@ BOOL exmdb_server_check_folder_id(const char *dir,
 	return TRUE;
 }
 
+/* this function is only used by midb for query */
 BOOL exmdb_server_query_folder_messages(const char *dir,
 	uint64_t folder_id, TARRAY_SET *pset)
 {
@@ -308,6 +309,9 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	uint32_t message_flags;
 	TPROPVAL_ARRAY *ppropvals;
 	
+	if (FALSE == exmdb_server_check_private()) {
+		return FALSE;
+	}
 	pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
 		return FALSE;
