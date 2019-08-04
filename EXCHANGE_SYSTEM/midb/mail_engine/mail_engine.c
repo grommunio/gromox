@@ -2225,7 +2225,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	
 	dir = common_util_get_maildir();
 	if (FALSE == exmdb_client_query_folder_messages(
-		dir, folder_id, &rows)) {
+		dir, rop_util_make_eid_ex(1, folder_id), &rows)) {
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "SELECT uidnext FROM"
