@@ -162,8 +162,7 @@ int mod_rewrite_stop()
 	REWRITE_NODE *prnode;
 	DOUBLE_LIST_NODE *pnode;
 	
-	for (pnode=double_list_get_head(&g_rewite_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_rewite_list, pnode)) {
+	while (pnode=double_list_get_from_head(&g_rewite_list)) {
 		prnode = (REWRITE_NODE*)pnode->pdata;
 		regfree(&prnode->search_pattern);
 		free(prnode->replace_string);
