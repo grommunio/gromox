@@ -76,28 +76,15 @@ static int xmailer_filter(int action, int context_ID,
 		if (MULTI_PARTS_MAIL == mail_entity.phead->mail_part) {
 			return MESSAGE_ACCEPT;
 		}
+		if (0 != mem_file_get_total_length(&mail_entity.phead->f_xmailer)) {
+			return MESSAGE_ACCEPT;
+		}
 		if (TRUE == mail_entity.penvelop->is_outbound ||
 			TRUE == mail_entity.penvelop->is_relay) {
 			return MESSAGE_ACCEPT;
 		}
 		if (mail_blk->original_length > 4096) {
 			return MESSAGE_ACCEPT;
-		}
-		fp_mime_field = &mail_entity.phead->f_others;
-		while (MEM_END_OF_FILE != mem_file_read(
-			fp_mime_field, &tag_len, sizeof(int))) {
-			if (8 == tag_len) {
-				mem_file_read(fp_mime_field, buff, tag_len);
-				if (0 == strncasecmp("Received", buff, 8)) {
-					return MESSAGE_ACCEPT;
-				}
-			} else {
-				mem_file_seek(fp_mime_field, MEM_FILE_READ_PTR,
-									tag_len, MEM_FILE_SEEK_CUR);
-			}
-			mem_file_read(fp_mime_field, &val_len, sizeof(int));
-			mem_file_seek(fp_mime_field, MEM_FILE_READ_PTR,
-								val_len, MEM_FILE_SEEK_CUR);
 		}
 		fp_mime_field = mail_blk->fp_mime_info;
 		while (MEM_END_OF_FILE != mem_file_read(
