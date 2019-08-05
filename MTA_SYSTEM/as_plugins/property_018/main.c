@@ -110,7 +110,8 @@ static int xmailer_filter(int action, int context_ID,
 						return MESSAGE_ACCEPT;
 					}
 					mem_file_read(fp_mime_field, buff, 4);
-					if (0 != strncasecmp(buff, "8bit", 4)) {
+					if (0 != strncasecmp(buff, "8bit", 4) &&
+						0 != strncasecmp(buff, "quoted-printable", 16)) {
 						return MESSAGE_ACCEPT;
 					}
 					
