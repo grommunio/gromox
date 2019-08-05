@@ -6,11 +6,11 @@
 #define ARRAY_CACHEITEM_NUMBER  200000
 
 typedef struct _ARRAY {
-    LIB_BUFFER* mbuf_pool;
-    SINGLE_LIST mlist;
-    size_t      data_size;
-    size_t      cur_size;
-    void*       cache_ptrs[ARRAY_CACHEITEM_NUMBER];
+	LIB_BUFFER* mbuf_pool;
+	SINGLE_LIST mlist;
+	size_t data_size;
+	size_t cur_size;
+	void **cache_ptrs;
 } ARRAY;
 
 #ifdef __cplusplus
@@ -21,7 +21,8 @@ void array_init(ARRAY* parray, LIB_BUFFER* pbuf_pool, size_t data_size);
 
 void array_free(ARRAY* parray);
 
-LIB_BUFFER* array_allocator_init(size_t data_size, size_t max_size, BOOL thread_safe);
+LIB_BUFFER* array_allocator_init(size_t data_size,
+	size_t max_size, BOOL thread_safe);
 
 void array_allocator_free(LIB_BUFFER* buf);
 
