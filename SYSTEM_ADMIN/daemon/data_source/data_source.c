@@ -1356,8 +1356,8 @@ RETRYING:
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow1[0]);
 		data_source_encode_squote(virtual_address, temp_address);
-		snprintf(sql_string, 4096, "UPDATE users SET password='%s', "
-			"WHERE username='%s'", password, temp_address);
+		snprintf(sql_string, 4096, "UPDATE users SET password='%s'"
+			" WHERE username='%s'", password, temp_address);
 		if (0 != mysql_query(pmysql, sql_string)) {
 			system_log_info("[data_source]: fail to query mysql server, "
 				"reason: %s", mysql_error(pmysql));
@@ -1369,7 +1369,7 @@ RETRYING:
 	for (j=0; j<rows; j++) {
 		myrow = mysql_fetch_row(pmyres);
 		data_source_encode_squote(myrow[0], temp_alias);
-		snprintf(sql_string, 4096, "UPDATE users SET password='%s', "
+		snprintf(sql_string, 4096, "UPDATE users SET password='%s'"
 			" WHERE username='%s'", password, temp_alias);	
 		if (0 != mysql_query(pmysql, sql_string)) {
 			system_log_info("[data_source]: fail to query mysql server, "
@@ -1384,8 +1384,8 @@ RETRYING:
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
 			data_source_encode_squote(virtual_address, temp_address);
-			snprintf(sql_string, 4096, "UPDATE users SET password='%s', "
-				"WHERE username='%s'", password, temp_address);
+			snprintf(sql_string, 4096, "UPDATE users SET password='%s'"
+				" WHERE username='%s'", password, temp_address);
 			if (0 != mysql_query(pmysql, sql_string)) {
 				system_log_info("[data_source]: fail to query mysql server, "
 					"reason: %s", mysql_error(pmysql));
