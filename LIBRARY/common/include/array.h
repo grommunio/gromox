@@ -3,7 +3,7 @@
 #include "lib_buffer.h"
 #include "single_list.h"
 
-#define ARRAY_CACHEITEM_NUMBER  20000
+#define ARRAY_CACHEITEM_NUMBER  200000
 
 typedef struct _ARRAY {
     LIB_BUFFER* mbuf_pool;
