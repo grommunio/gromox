@@ -1173,16 +1173,12 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext->b_ndr64 = b_ndr64;
 		pcontext->stat_flags = 0;
 		pcontext->pendpoint = pcall->pprocessor->pendpoint;
-#ifdef SUPPORT_ASSOC_GROUP
 		if (0 == pbind->assoc_group_id) {
-#endif
 			pcall->pprocessor->assoc_group_id = 
 				pdu_processor_allocate_group_id(pcall->pprocessor->pendpoint);
-#ifdef SUPPORT_ASSOC_GROUP
 		} else {
 			pcall->pprocessor->assoc_group_id = pbind->assoc_group_id;
 		}
-#endif
 		pcontext->assoc_group_id = pcall->pprocessor->assoc_group_id;
 		double_list_init(&pcontext->async_list);
 		pcall->pcontext = pcontext;
