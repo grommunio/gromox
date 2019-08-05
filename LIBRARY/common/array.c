@@ -187,7 +187,10 @@ void* array_get_item(ARRAY* parray, size_t index)
 		}
 	} else {
 		pnode=single_list_get_head(&parray->mlist);
-		for(i=0; i<=index; i++) {
+		if (NULL == pnode) {
+			return NULL;
+		}
+		for(i=1; i<=index; i++) {
 			pnode = single_list_get_after(&parray->mlist, pnode);
 			if (NULL == pnode) {
 				return NULL;
