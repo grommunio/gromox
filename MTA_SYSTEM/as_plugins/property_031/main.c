@@ -81,25 +81,17 @@ BOOL AS_LibMain(int reason, void **ppdata)
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
-	char buff[1024];
-	char *ptr, *pbackup;
 	int out_len;
-	
+	char buff[1024];
 
 	if (TRUE == pmail->penvelop->is_relay) {
-		return MESSAGE_ACCEPT;
-	}
-	
-	if (MEM_END_OF_FILE == mem_file_read(&pmail->phead->f_xmailer, buff, 1024)){
-		return MESSAGE_ACCEPT;
-	}
-	if (0 != strncasecmp(buff, "Microsoft Outlook Express", 25)) {
 		return MESSAGE_ACCEPT;
 	}
 	out_len = mem_file_read(&pmail->phead->f_mime_to, buff, 1024);
 	if (MEM_END_OF_FILE == out_len ||
 		0 == strncmp(buff, "<Undisclosed-Recipient:;@", 25) ||
-		0 == strncmp(buff, "<\"Undisclosed-Recipient:;\"@", 25)) {
+		0 == strncmp(buff, "<\"Undisclosed-Recipient:;\"@", 25) ||
+		0 == strncmp(buff, "undisclosed-recipients:;", 24)) {
 		if (TRUE == check_tagging(pmail->penvelop->from,
 			&pmail->penvelop->f_rcpt_to)) {
 			mark_context_spam(context_ID);
