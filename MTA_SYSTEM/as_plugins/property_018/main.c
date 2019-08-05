@@ -93,7 +93,7 @@ static int xmailer_filter(int action, int context_ID,
 				mem_file_read(fp_mime_field, buff, tag_len);
 				if (0 == strncasecmp(buff, "Content-Transfer-Encoding", 25)) {
 					mem_file_read(fp_mime_field, &val_len, sizeof(int));
-					if (4 != val_len) {
+					if (4 != val_len && 16 != val_len) {
 						return MESSAGE_ACCEPT;
 					}
 					mem_file_read(fp_mime_field, buff, 4);
