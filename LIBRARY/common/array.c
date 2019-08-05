@@ -117,8 +117,8 @@ void array_allocator_free(LIB_BUFFER* buf)
  */
 long array_append(ARRAY* parray, void* pdata)
 {
-	SINGLE_LIST_NODE   *node = NULL;
 	long ret_index;
+	SINGLE_LIST_NODE *pnode;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == parray || NULL == pdata) {	  
@@ -127,20 +127,20 @@ long array_append(ARRAY* parray, void* pdata)
 	}
 #endif
 
-	node = lib_buffer_get(parray->mbuf_pool);
-	if (NULL == node) {
+	pnode = lib_buffer_get(parray->mbuf_pool);
+	if (NULL == pnode) {
 		return -1;
 	}
-	node->pdata = (char*)node + sizeof(SINGLE_LIST_NODE);
-	memcpy(node->pdata, pdata, parray->data_size);
+	pnode->pdata = (char*)pnode + sizeof(SINGLE_LIST_NODE);
+	memcpy(pnode->pdata, pdata, parray->data_size);
 
-	single_list_append_as_tail(&parray->mlist, node);
+	single_list_append_as_tail(&parray->mlist, pnode);
 	ret_index = parray->cur_size;
 	parray->cur_size ++;
 	/* cache the ptr in cache table */
 	if (NULL != parray->cache_ptrs &&
 		ret_index < ARRAY_CACHEITEM_NUMBER) {
-		parray->cache_ptrs[ret_index] = node->pdata;
+		parray->cache_ptrs[ret_index] = pnode->pdata;
 	}
 	return ret_index;
 }
@@ -156,8 +156,9 @@ long array_append(ARRAY* parray, void* pdata)
  */
 void* array_get_item(ARRAY* parray, size_t index)
 {
-	SINGLE_LIST_NODE *pnode = NULL;
 	size_t i;
+	SINGLE_LIST_NODE *pnode;
+	
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == parray) {
@@ -226,14 +227,14 @@ size_t array_get_capacity(ARRAY* parray)
 
 void array_clear(ARRAY* parray)
 {
-	SINGLE_LIST_NODE *node;
+	SINGLE_LIST_NODE *pnode;
 #ifdef _DEBUG_UMTA
 	if (NULL == parray) {
 		debug_info("[array]: NULL pointer found in array_clear");
 	}
 #endif
-	while (NULL != (node=single_list_get_from_head(&parray->mlist))) {
-		lib_buffer_put(parray->mbuf_pool, node);
+	while (pnode=single_list_get_from_head(&parray->mlist)) {
+		lib_buffer_put(parray->mbuf_pool, pnode);
 	}
 	parray->cur_size = 0;
 	if (NULL != parray->cache_ptrs) {
