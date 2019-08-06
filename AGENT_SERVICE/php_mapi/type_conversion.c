@@ -25,7 +25,7 @@ time_t nttime_to_unix(uint64_t nt_time)
 /* in php-mapi the PROPVAL_TYPE_STRING means utf-8
 	string we don't user PROPVAL_TYPE_WSTRING,
 	there's no definition for ansi string */
-static uint32_t proptag_to_phptag(uint32_t proptag)
+uint32_t proptag_to_phptag(uint32_t proptag)
 {
 	uint32_t proptag1;
 	
@@ -162,6 +162,7 @@ zend_bool php_to_sortorder_set(zval *pzval,
 		} else {
 			proptag = idx;
 		}
+		proptag = phptag_to_proptag(proptag);
 		pset->psort[i].propid = proptag >> 16;
 		pset->psort[i].type = proptag & 0xFFFF;
 		convert_to_long_ex(&ppentry[0]);
@@ -978,7 +979,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 			return 0;
 		}
 		((RESTRICTION_SUBOBJ*)pres->pres)->subobject =
-						ppvalue_entry[0]->value.lval;
+			phptag_to_proptag(ppvalue_entry[0]->value.lval);
 		if (zend_hash_index_find(
 			pdata_hash, IDX_RESTRICTION,
 			(void**)&ppvalue_entry) == FAILURE) {
@@ -1125,14 +1126,14 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 		}
 		convert_to_long_ex(ppvalue_entry);
 		((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1 =
-								ppvalue_entry[0]->value.lval;
+			phptag_to_proptag(ppvalue_entry[0]->value.lval);
 		if (zend_hash_index_find(pdata_hash, IDX_PROPTAG2,
 			(void **)&ppvalue_entry) == FAILURE) {
 			return 0;
 		}
 		convert_to_long_ex(ppvalue_entry);
 		((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2 =
-								ppvalue_entry[0]->value.lval;
+			phptag_to_proptag(ppvalue_entry[0]->value.lval);
 		break;
 	case RESTRICTION_TYPE_BITMASK:
 		pres->pres = emalloc(sizeof(RESTRICTION_BITMASK));

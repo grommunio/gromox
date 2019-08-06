@@ -4218,7 +4218,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 		if (KIND_NONE == propnames.ppropname[i].kind) {
 			continue;
 		}
-		snprintf(num_buff, 20, "%i", proptags.pproptag[i]);
+		snprintf(num_buff, 20, "%i", proptag_to_phptag(proptags.pproptag[i]));
 		MAKE_STD_ZVAL(pzprop);
 		array_init(pzprop);
 		add_assoc_stringl(pzprop, "guid",
