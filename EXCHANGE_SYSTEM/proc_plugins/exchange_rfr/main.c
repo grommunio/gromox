@@ -122,11 +122,18 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
 	uint32_t cb, const char *mbserverdn, char *serverfqdn)
 {
 	char *ptoken;
-	char tmp_buff[16];
+	char tmp_unused[16];
+	char tmp_buff[1024];
 	
-	ptoken = strrchr(mbserverdn, '/');
+	strncpy(tmp_buff, mbserverdn, sizeof(tmp_buff));
+	ptoken = strrchr(tmp_buff, '/');
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
-		return rfr_get_newdsa(flags, NULL, tmp_buff, serverfqdn);
+		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn);
+	}
+	*ptoken = '\0';
+	ptoken = strrchr(tmp_buff, '/');
+	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
+		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn);
 	}
 	strncpy(serverfqdn, ptoken + 4, 1024);
 	return MAPI_E_SUCCESS;
