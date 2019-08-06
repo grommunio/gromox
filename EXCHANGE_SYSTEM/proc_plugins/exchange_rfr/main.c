@@ -38,12 +38,10 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 
 static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
-static BOOL (*get_username_from_id)(int user_id, char *username);
-
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
 
-#define MAPI_E_SUCCESS 		0x00000000
-#define MAPI_E_CALL_FAILED	0x80004005
+#define MAPI_E_SUCCESS 0x00000000
+
 
 BOOL PROC_LibMain(int reason, void **ppdata)
 {
@@ -55,12 +53,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		get_username_from_id = query_service("get_username_from_id");
-		if (NULL == get_username_from_id) {
-			printf("[exchange_rfr]: fail to get "
-				"\"get_username_from_id\" service\n");
-			return FALSE;
-		}
 		get_id_from_username = query_service("get_id_from_username");
 		if (NULL == get_id_from_username) {
 			printf("[exchange_rfr]: fail to get \"get_id_from_username\" service\n");
@@ -68,19 +60,16 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		pendpoint1 = register_endpoint("*", 6001);
 		if (NULL == pendpoint1) {
-			printf("[exchange_rfr]: fail to register"
-						" endpoint with port 6001\n");
+			printf("[exchange_rfr]: fail to register endpoint with port 6001\n");
 			return FALSE;
 		}
 		pendpoint2 = register_endpoint("*", 6002);
 		if (NULL == pendpoint2) {
-			printf("[exchange_rfr]: fail to register"
-						" endpoint with port 6002\n");
+			printf("[exchange_rfr]: fail to register endpoint with port 6002\n");
 			return FALSE;
 		}
 		strcpy(interface.name, "exchangeRFR");
-		guid_from_string(&interface.uuid,
-			"1544f5e0-613c-11d1-93df-00c04fd7bd09");
+		guid_from_string(&interface.uuid, "1544f5e0-613c-11d1-93df-00c04fd7bd09");
 		interface.version = 1;
 		interface.ndr_pull = exchange_rfr_ndr_pull;
 		interface.dispatch = exchange_rfr_dispatch;
@@ -99,39 +88,8 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	}
 }
 
-static int get_essdn_info(const char *pessdn, char *username)
-{
-	int tmp_len;
-	int user_id;
-	char *ptr, *pat;
-	const char *plocal;
-	char tmp_essdn[1024];
-	
-	ptr = strcasestr(pessdn, "/ou=Exchange Administrative "
-				"Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=");
-	if (NULL == ptr) {
-		return -1;
-	}
-	if ('-' != *(ptr + 85)) {
-		return -1;
-	}
-	plocal = ptr + 86;
-	user_id = decode_hex_int(ptr + 77);
-	if (FALSE == get_username_from_id(user_id, username)) {
-		return -1;
-	}
-	pat = strchr(username, '@');
-	if (NULL == pat) {
-		return -1;
-	}
-	if (0 != strncasecmp(username, plocal, pat - username)) {
-		return -1;
-	}
-	return user_id;
-}
-
-static uint32_t rfr_get_newdsa(uint32_t flags,
-	const char *puserdn, char *punused, char *pserver)
+static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
+	char *punused, char *pserver)
 {
 	int user_id;
 	char *ptoken;
@@ -140,19 +98,10 @@ static uint32_t rfr_get_newdsa(uint32_t flags,
 	DCERPC_INFO rpc_info;
 	
 	*punused = '\0';
+	rpc_info = get_rpc_info();
+	get_id_from_username(rpc_info.username, &user_id);
 	memset(username, 0, sizeof(username));
-	if (NULL == puserdn || '\0' == puserdn[0]) {
-		rpc_info = get_rpc_info();
-		strcpy(username, rpc_info.username);
-		get_id_from_username(username, &user_id);
-	} else {
-		user_id = get_essdn_info(puserdn, username);
-		if (user_id < 0) {
-			rpc_info = get_rpc_info();
-			strcpy(username, rpc_info.username);
-			get_id_from_username(username, &user_id);
-		}
-	}
+	strcpy(username, rpc_info.username);
 	ptoken = strchr(username, '@');
 	lower_string(username);
 	if (NULL != ptoken) {
