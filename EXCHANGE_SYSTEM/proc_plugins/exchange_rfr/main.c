@@ -40,6 +40,8 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
 static BOOL (*get_username_from_id)(int user_id, char *username);
 
+static BOOL (*get_id_from_username)(const char *username, int *puser_id);
+
 #define MAPI_E_SUCCESS 		0x00000000
 #define MAPI_E_CALL_FAILED	0x80004005
 
@@ -57,6 +59,11 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		if (NULL == get_username_from_id) {
 			printf("[exchange_rfr]: fail to get "
 				"\"get_username_from_id\" service\n");
+			return FALSE;
+		}
+		get_id_from_username = query_service("get_id_from_username");
+		if (NULL == get_id_from_username) {
+			printf("[exchange_rfr]: fail to get \"get_id_from_username\" service\n");
 			return FALSE;
 		}
 		pendpoint1 = register_endpoint("*", 6001);
@@ -130,12 +137,21 @@ static uint32_t rfr_get_newdsa(uint32_t flags,
 	char *ptoken;
 	char username[256];
 	char hex_string[32];
+	DCERPC_INFO rpc_info;
 	
 	*punused = '\0';
 	memset(username, 0, sizeof(username));
-	user_id = get_essdn_info(puserdn, username);
-	if (user_id < 0) {
-		return MAPI_E_CALL_FAILED;
+	if (NULL == puserdn || '\0' == puserdn[0]) {
+		rpc_info = get_rpc_info();
+		strcpy(username, rpc_info.username);
+		get_id_from_username(username, &user_id);
+	} else {
+		user_id = get_essdn_info(puserdn, username);
+		if (user_id < 0) {
+			rpc_info = get_rpc_info();
+			strcpy(username, rpc_info.username);
+			get_id_from_username(username, &user_id);
+		}
 	}
 	ptoken = strchr(username, '@');
 	lower_string(username);
@@ -157,17 +173,11 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
 	uint32_t cb, const char *mbserverdn, char *serverfqdn)
 {
 	char *ptoken;
-	char tmp_buff[1024];
+	char tmp_buff[16];
 	
-	strncpy(tmp_buff, mbserverdn, sizeof(tmp_buff));
-	ptoken = strrchr(tmp_buff, '/');
-	if (NULL == ptoken) {
-		return MAPI_E_CALL_FAILED;
-	}
-	*ptoken = '\0';
-	ptoken = strrchr(tmp_buff, '/');
+	ptoken = strrchr(mbserverdn, '/');
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
-		return MAPI_E_CALL_FAILED;
+		return rfr_get_newdsa(flags, NULL, tmp_buff, serverfqdn);
 	}
 	strncpy(serverfqdn, ptoken + 4, 1024);
 	return MAPI_E_SUCCESS;
