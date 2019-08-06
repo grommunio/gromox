@@ -21,6 +21,12 @@ request list like below:
 </Autodiscover>
 */
 
+if (!isset($_SERVER['HTTPS'])) {
+	require_once "../lib/conf.php";
+	header("Location: https://" . get_default_hostname() . "/Autodiscover/Autodiscover.xml");
+	exit;
+}
+
 if (0 != strcasecmp($_SERVER['REQUEST_METHOD'], "POST")) {
 	die("invalid request method, must be POST!");
 }
