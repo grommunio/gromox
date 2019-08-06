@@ -53,6 +53,7 @@ static pthread_t g_backup_id;
 static char g_list_path[256];
 static char g_backup_path[256];
 static BOOL g_parellel_scanning;
+static BOOL g_freetime_scanning;
 static char g_admin_mailbox[256];
 static char g_default_domain[256];
 static DOUBLE_LIST g_partition_list;
@@ -780,7 +781,8 @@ static void engine_copy_file(char *src_file, char *dst_file, size_t size)
 void engine_init(const char *list_path, int log_days,
 	int valid_days, const char *default_domain,
 	const char *admin_mailbox, const char *db_name,
-	const char *backup_path, BOOL parellel_scanning)
+	const char *backup_path, BOOL parellel_scanning,
+	BOOL freetime_scanning)
 {
 	g_log_days = log_days;
 	g_valid_days = valid_days;
@@ -792,6 +794,7 @@ void engine_init(const char *list_path, int log_days,
 	double_list_init(&g_partition_list);
 	g_created = FALSE;
 	g_parellel_scanning = parellel_scanning;
+	g_freetime_scanning = freetime_scanning;
 }
 
 void engine_free()
@@ -951,7 +954,7 @@ static void engine_check_working_time()
 	time_t cur_time;
 	struct tm temp_tm;
 	
-	if (FALSE == g_parellel_scanning) {
+	if (TRUE == g_freetime_scanning) {
 		time(&cur_time);
 		localtime_r(&cur_time, &temp_tm);
 		if (temp_tm.tm_hour >= 7 && temp_tm.tm_hour < 19) {

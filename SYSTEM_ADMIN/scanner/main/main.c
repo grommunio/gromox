@@ -20,30 +20,31 @@ static void term_handler(int signo);
 
 int main(int argc, char **argv)
 {
-	char *str_value;
-	char data_path[256];
-	char log_path[256];
-	char logo_path[256];
-	char logo_link[256];
-	char background_path[256];
-	char area_path[256];
-	char midb_path[256];
-	char backup_path[256];
-	char admin_mailbox[256];
-	char default_domain[256];
 	int log_days;
 	int valid_days;
-	char temp_buff[128];
-	char locker_ip[16];
-	int locker_port;
-	int max_interval;
-	char mysql_host[256];
 	int mysql_port;
-	char mysql_user[256];
-	char *mysql_passwd;
+	int locker_port;
+	char *str_value;
+	int max_interval;
 	char db_name[256];
+	char *mysql_passwd;
+	char locker_ip[16];
+	char log_path[256];
+	char data_path[256];
+	char logo_path[256];
+	char logo_link[256];
+	char area_path[256];
+	char midb_path[256];
+	char temp_buff[128];
+	char mysql_user[256];
+	char mysql_host[256];
 	CONFIG_FILE *pconfig;
+	char backup_path[256];
+	BOOL freetime_scanning;
 	BOOL parellel_scanning;
+	char admin_mailbox[256];
+	char default_domain[256];
+	char background_path[256];
 
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -152,6 +153,23 @@ int main(int argc, char **argv)
 		} else {
 			parellel_scanning = FALSE;
 			config_file_set_value(pconfig, "PARELLEL_SCANNING", "FALSE");
+		}
+	}
+	
+	str_value = config_file_get_value(pconfig, "FREETIME_SCANNING");
+	if (NULL == str_value) {
+		freetime_scanning = TRUE;
+		config_file_set_value(pconfig, "FREETIME_SCANNING", "TRUE");
+	} else {
+		if (0 == strcasecmp(str_value, "TRUE") ||
+			0 == strcasecmp(str_value, "ON")) {
+			freetime_scanning = TRUE;
+		} else if (0 == strcasecmp(str_value, "FALSE")
+			|| 0 == strcasecmp(str_value, "OFF")) {
+			freetime_scanning = FALSE;
+		} else {
+			freetime_scanning = TRUE;
+			config_file_set_value(pconfig, "FREETIME_SCANNING", "TRUE");
 		}
 	}
 	
@@ -269,7 +287,8 @@ int main(int argc, char **argv)
 	midb_client_init(midb_path);
 	
 	engine_init(area_path, log_days, valid_days, default_domain,
-		admin_mailbox, db_name, backup_path, parellel_scanning);
+		admin_mailbox, db_name, backup_path, parellel_scanning,
+		freetime_scanning);
 
 	config_file_save(pconfig);
 	config_file_free(pconfig);
