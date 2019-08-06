@@ -4138,6 +4138,10 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_SUPPORTED;
 	}
+	if (FALSE == store_object_check_private(pstore)) {
+		zarafa_server_put_user_info(pinfo);
+		return EC_NOT_SUPPORTED;
+	}
 	if (FALSE == exmdb_client_get_folder_by_class(
 		store_object_get_dir(pstore), pstrclass,
 		&folder_id, temp_class)) {
