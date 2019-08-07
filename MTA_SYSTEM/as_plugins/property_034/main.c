@@ -1,14 +1,11 @@
-#include "as_common.h"
-#include "config_file.h"
 #include "util.h"
-#include <ctype.h>
-#include <string.h>
-#include <time.h>
+#include "mem_file.h"
+#include "as_common.h"
+#include "mail_func.h"
+#include "config_file.h"
 #include <stdio.h>
 
-
-#define SPAM_STATISTIC_PROPERTY_034		71
-
+#define SPAM_STATISTIC_PROPERTY_034          71
 
 typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
@@ -20,25 +17,18 @@ DECLARE_API;
 
 static char g_return_reason[1024];
 
-static int head_filter(int context_ID, MAIL_ENTITY *pmail,
-	CONNECTION *pconnection, char *reason, int length);
+static int xmailer_filter(int action, int context_ID,
+	MAIL_BLOCK* mail_blk,  char* reason, int length);
 
-BOOL AS_LibMain(int reason, void **ppdata)
-{
+int AS_LibMain(int reason, void **ppdata)
+{	
 	CONFIG_FILE *pconfig_file;
 	char file_name[256], temp_path[256];
 	char *str_value, *psearch;
 	
-    /* path conatins the config files directory */
-    switch (reason) {
-    case PLUGIN_INIT:
+	switch (reason) {
+	case PLUGIN_INIT:
 		LINK_API(ppdata);
-		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
-		if (NULL == check_tagging) {
-			printf("[property_034]: fail to get \"check_tagging\" service\n");
-			return FALSE;
-		}
-		
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
@@ -59,138 +49,75 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		printf("[property_034]: return string is %s\n", g_return_reason);
 		config_file_free(pconfig_file);
-		if (FALSE == register_auditor(head_filter)) {
+		if (FALSE == register_filter("text/plain" , xmailer_filter)) {
 			return FALSE;
 		}
-        return TRUE;
-    case PLUGIN_FREE:
-        return TRUE;
-    case SYS_THREAD_CREATE:
-        return TRUE;
-        /* a pool thread is created */
-    case SYS_THREAD_DESTROY:
-        return TRUE;
-    }
+		return TRUE;
+	case PLUGIN_FREE:
+		return TRUE;
+	}
+	return TRUE;
 }
 
-static int head_filter(int context_ID, MAIL_ENTITY *pmail,
-	CONNECTION *pconnection, char *reason, int length)
+static int xmailer_filter(int action, int context_ID,
+	MAIL_BLOCK* mail_blk, char* reason, int length)
 {
-	int tag_len;
-	int val_len;
-	int i, out_len;
-	char buff[1024];
-	char *ptr, *ptr_at;
-	struct tm tmp_tm;
-	
-	if (TRUE == pmail->penvelop->is_outbound ||
-		TRUE == pmail->penvelop->is_relay) {
-		return MESSAGE_ACCEPT;
-	}
+	int out_len;
+	char tmp_buff[1024];
+	char tmp_buff1[1024];
+	MAIL_ENTITY mail_entity;
+	EMAIL_ADDR email_address;
+	ENCODE_STRING encode_string;
 
-	if (0 != strncasecmp(pmail->penvelop->hello_domain, "mx", 2)) {
-		return MESSAGE_ACCEPT;	
-	}
-
-	ptr = strchr(pmail->penvelop->hello_domain, '.');
-	if (NULL == ptr || (3 != ptr - pmail->penvelop->hello_domain &&
-		4 != ptr - pmail->penvelop->hello_domain)) {
+	switch (action) {
+	case ACTION_BLOCK_NEW:
 		return MESSAGE_ACCEPT;
-	}
-	for (i=2; i<ptr-pmail->penvelop->hello_domain; i++) {
-		if (0 == isdigit(pmail->penvelop->hello_domain[i])) {
+	case ACTION_BLOCK_PROCESSING:
+		mail_entity	= get_mail_entity(context_ID);
+		if (TRUE == mail_entity.penvelop->is_outbound ||
+			TRUE == mail_entity.penvelop->is_relay) {
 			return MESSAGE_ACCEPT;
 		}
-	}
-	
-	ptr_at = strchr(pmail->penvelop->from, '@');
-	if (NULL == ptr_at || 0 != strcmp(ptr_at + 1, ptr + 1)) {
-		return MESSAGE_ACCEPT;
-	}
-	
-	out_len = mem_file_read(&pmail->phead->f_subject, buff, 1024);
-    if (MEM_END_OF_FILE == out_len) {
-        return MESSAGE_ACCEPT; 
-	}
-
-	buff[out_len] = '\0';
-	if (NULL != strstr(buff, "=?")) {
-		return MESSAGE_ACCEPT;
-	}
-
-	for (i=0; i<out_len; i++) {
-		if (buff[i] > 126 || buff[i] < 32) {
+		if (MULTI_PARTS_MAIL != mail_entity.phead->mail_part) {
 			return MESSAGE_ACCEPT;
 		}
-	}
-
-	out_len = mem_file_read(&pmail->phead->f_mime_to, buff, 1024);
-	if (MEM_END_OF_FILE == out_len) {
-		return MESSAGE_ACCEPT;
-	}
-
-	if ('<' != buff[0] || '>' != buff[out_len - 1]) {
-		return MESSAGE_ACCEPT;
-	}
-	
-	while (MEM_END_OF_FILE != mem_file_read(&pmail->phead->f_others, &tag_len,
-		sizeof(int))) {
-		if (10 == tag_len) {
-			mem_file_read(&pmail->phead->f_others, buff, tag_len);
-			if (0 == strncasecmp("Message-ID", buff, 10)) {
-				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
-				if (val_len > 1024 || val_len < 33) {
-					return MESSAGE_ACCEPT;
-				}
-				mem_file_read(&pmail->phead->f_others, buff, val_len);
-				buff[val_len] = '\0';
-				if ('<' != buff[0] || '>' != buff[val_len - 1]) {
-					return MESSAGE_ACCEPT;
-				}
-				buff[val_len - 1] = '\0';
-				
-				ptr_at = strrchr(buff, '@');
-				if (NULL == ptr_at || 0 != strcmp(ptr_at + 1,
-					pmail->penvelop->hello_domain)) {
-					return MESSAGE_ACCEPT;
-				}
-				
-				
-				if (NULL != strptime(buff, "%Y%m%d%H%M%S.", &tmp_tm)) {
-					return MESSAGE_ACCEPT;
-				}
-
-				ptr = strchr(buff, '.') + 1;
-				if (ptr_at - ptr < 6) {
-					return MESSAGE_ACCEPT;
-				}
-				for (;ptr<ptr_at; ptr++) {
-					if (0 == islower(*ptr)) {
-						return MESSAGE_ACCEPT;
-					}
-				}
-				
-				if (TRUE == check_tagging(pmail->penvelop->from,
-					&pmail->penvelop->f_rcpt_to)) {
-					mark_context_spam(context_ID);
-					return MESSAGE_ACCEPT;
-				} else {
-					if (NULL != spam_statistic) {
-						spam_statistic(SPAM_STATISTIC_PROPERTY_034);
-					}
-					strncpy(reason, g_return_reason, length);
-					return MESSAGE_REJECT;
-				}
-			}
-		} else {
-			mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+		out_len = mem_file_read(&mail_entity.phead->f_mime_from,
+									tmp_buff, sizeof(tmp_buff));
+		if (MEM_END_OF_FILE == out_len) {
+			return MESSAGE_ACCEPT;
 		}
-		mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
-		mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR, val_len,
-			MEM_FILE_SEEK_CUR);
+		parse_mime_encode_string(tmp_buff, out_len, &encode_string);
+		if (0 != strcasecmp(encode_string.charset, "utf-8")) {
+			return MESSAGE_ACCEPT;
+		}
+		decode_mime_string(tmp_buff, out_len, tmp_buff1, sizeof(tmp_buff1));
+		parse_email_addr(&email_address, tmp_buff1);
+		if (0 != strcasecmp(email_address.domain, "outlook.com")) {
+			return MESSAGE_ACCEPT;
+		}
+		out_len = strlen(email_address.display_name);
+		if (7 != out_len && 10 != out_len) {
+			return MESSAGE_ACCEPT;
+		}
+		if (' ' != email_address.display_name[3] ||
+			FALSE == utf8_len(email_address.display_name,
+			&out_len) || (3 != out_len && 4 != out_len)) {
+			return MESSAGE_ACCEPT;	
+		}
+		if (0 != strncmp(mail_blk->parsed_buff, "[cid:000", 8)
+			&& NULL != memmem(mail_blk->parsed_buff,
+			mail_blk->parsed_length>200?200:mail_blk->parsed_length,
+			"\r\n\r\n[cid:000", 12)) {
+			return MESSAGE_ACCEPT;	
+		}
+		if (NULL != spam_statistic) {
+			spam_statistic(SPAM_STATISTIC_PROPERTY_034);
+		}
+		strncpy(reason, g_return_reason, length);
+		return MESSAGE_REJECT;
+		
+	case ACTION_BLOCK_FREE:
+		return MESSAGE_ACCEPT;
 	}
 	return MESSAGE_ACCEPT;
-	
 }
-
