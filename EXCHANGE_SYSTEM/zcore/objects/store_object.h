@@ -1,6 +1,7 @@
 #ifndef _H_STORE_OBJECT_
 #define _H_STORE_OBJECT_
 #include "element_data.h"
+#include "common_util.h"
 #include "mapi_types.h"
 #include "str_hash.h"
 #include "int_hash.h"
