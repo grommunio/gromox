@@ -1349,6 +1349,16 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
+	case PROP_TAG_COMMONVIEWSENTRYID:
+		if (FALSE == store_object_check_private(pstore)) {
+			return FALSE;
+		}
+		*ppvalue = common_util_to_folder_entryid(pstore,
+			rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS));
+		if (NULL == *ppvalue) {
+			return FALSE;
+		}
+		return TRUE;
 	case PROP_TAG_IPMPUBLICFOLDERSENTRYID:
 	case PROP_TAG_NONIPMSUBTREEENTRYID:
 		if (TRUE == store_object_check_private(pstore)) {
