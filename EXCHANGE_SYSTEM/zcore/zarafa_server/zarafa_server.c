@@ -1529,32 +1529,41 @@ uint32_t zarafa_server_openrules(GUID hsession,
 }
 
 uint32_t zarafa_server_getpermissions(GUID hsession,
-	uint32_t hfolder, PERMISSION_SET *pperm_set)
+	uint32_t hobject, PERMISSION_SET *pperm_set)
 {
+	void *pobject;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
-	FOLDER_OBJECT *pfolder;
 	
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
 		return EC_ERROR;
 	}
-	pfolder = object_tree_get_object(
-		pinfo->ptree, hfolder, &mapi_type);
-	if (NULL == pfolder) {
+	pobject = object_tree_get_object(
+		pinfo->ptree, hobject, &mapi_type);
+	if (NULL == pobject) {
 		zarafa_server_put_user_info(pinfo);
 		pperm_set->count = 0;
 		return EC_NULL_OBJECT;
 	}
-	if (MAPI_FOLDER != mapi_type) {
+	switch (mapi_type) {
+	case MAPI_STORE:
+		if (FALSE == folder_object_get_permissions(
+			pobject, pperm_set)) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;	
+		}
+		break;
+	case MAPI_FOLDER:
+		if (FALSE == folder_object_get_permissions(
+			pobject, pperm_set)) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
+		break;
+	default:
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_SUPPORTED;
-	}
-	if (FALSE == folder_object_get_permissions(
-		pfolder, pperm_set)) {
-		zarafa_server_put_user_info(pinfo);
-		return EC_ERROR;
-	}
 	zarafa_server_put_user_info(pinfo);
 	return EC_SUCCESS;
 }

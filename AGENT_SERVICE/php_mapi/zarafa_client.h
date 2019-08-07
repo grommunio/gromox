@@ -27,7 +27,7 @@ uint32_t zarafa_client_openrules(GUID hsession,
 	uint32_t hfolder, uint32_t *phobject);
 
 uint32_t zarafa_client_getpermissions(GUID hsession,
-	uint32_t hfolder, PERMISSION_SET *pperm_set);
+	uint32_t hobject, PERMISSION_SET *pperm_set);
 
 uint32_t zarafa_client_modifypermissions(GUID hsession,
 	uint32_t hfolder, const PERMISSION_SET *pset);

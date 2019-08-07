@@ -132,7 +132,7 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 	case CALL_ID_GETPERMISSIONS:
 		presponse->result = zarafa_server_getpermissions(
 			prequest->payload.getpermissions.hsession,
-			prequest->payload.getpermissions.hfolder,
+			prequest->payload.getpermissions.hobject,
 			&presponse->payload.getpermissions.perm_set);
 		break;
 	case CALL_ID_MODIFYPERMISSIONS:

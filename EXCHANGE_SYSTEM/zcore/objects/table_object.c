@@ -389,7 +389,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			NULL, pinfo->cpid, ptable->table_id,
 			pcolumns, ptable->position, row_needed,
 			pset)) {
-			return FALSE;	
+			return FALSE;
 		}
 		for (i=0; i<pset->count; i++) {
 			if (FALSE == common_util_convert_to_zrule_data(

@@ -59,7 +59,7 @@ typedef struct _REQ_OPENRULES {
 
 typedef struct _REQ_GETPERMISSIONS {
 	GUID hsession;
-	uint32_t hfolder;
+	uint32_t hobject;
 } REQ_GETPERMISSIONS;
 
 typedef struct _REQ_MODIFYPERMISSIONS {

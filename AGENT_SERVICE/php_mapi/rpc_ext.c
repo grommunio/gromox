@@ -161,7 +161,7 @@ static zend_bool rpc_ext_push_getpermissions_request(
 	if (!ext_pack_push_guid(pctx, &ppayload->getpermissions.hsession)) {
 		return 0;
 	}
-	return ext_pack_push_uint32(pctx, ppayload->getpermissions.hfolder); 
+	return ext_pack_push_uint32(pctx, ppayload->getpermissions.hobject); 
 }
 
 static zend_bool rpc_ext_pull_getpermissions_response(

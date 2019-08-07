@@ -4598,8 +4598,8 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 	uint32_t result;
 	zval *pzresource;
 	zval *pzdata_value;
-	MAPI_RESOURCE *pfolder;
 	PERMISSION_SET perm_set;
+	MAPI_RESOURCE *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rl", &pzresource, &acl_type) == FAILURE || NULL
@@ -4612,10 +4612,17 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		goto THROW_EXCEPTION;
 	}
 	zend_list_find(Z_RESVAL_P(pzresource), &type);
-	if (type == le_mapi_folder) {
-		ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
+	if (type == le_mapi_msgstore) {
+		ZEND_FETCH_RESOURCE(presource, MAPI_RESOURCE*,
+			&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
+		if (MAPI_STORE != presource->type) {
+			MAPI_G(hr) = EC_INVALID_OBJECT;
+			goto THROW_EXCEPTION;
+		}
+	} else if (type == le_mapi_folder) {
+		ZEND_FETCH_RESOURCE(presource, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
-		if (MAPI_FOLDER != pfolder->type) {
+		if (MAPI_FOLDER != presource->type) {
 			MAPI_G(hr) = EC_INVALID_OBJECT;
 			goto THROW_EXCEPTION;
 		}
@@ -4624,7 +4631,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getpermissions(
-		pfolder->hsession, pfolder->hobject,
+		presource->hsession, presource->hobject,
 		&perm_set);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;

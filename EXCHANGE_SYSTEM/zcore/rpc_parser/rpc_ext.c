@@ -1666,7 +1666,7 @@ static BOOL rpc_ext_pull_getpermissions_request(
 		return FALSE;
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		pext, &ppayload->getpermissions.hfolder)) {
+		pext, &ppayload->getpermissions.hobject)) {
 		return FALSE;	
 	}
 	return TRUE;

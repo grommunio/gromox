@@ -71,5 +71,8 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 
 BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 	const PROPTAG_ARRAY *pproptags);
+	
+BOOL store_object_get_permissions(STORE_OBJECT *pstore,
+	PERMISSION_SET *pperm_set);
 
 #endif /* _H_STORE_OBJECT_ */

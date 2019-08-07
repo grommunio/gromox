@@ -1786,3 +1786,125 @@ BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 			pinfo->ptree, pproptags->pproptag[i]);
 	}
 }
+
+static BOOL store_object_get_folder_permissions(
+	STORE_OBJECT *pstore, uint64_t folder_id,
+	PERMISSION_SET *pperm_set)
+{
+	int i, j;
+	const char *dir;
+	BINARY *pentryid;
+	uint32_t row_num;
+	uint32_t table_id;
+	uint32_t *prights;
+	uint32_t max_count;
+	PROPTAG_ARRAY proptags;
+	TARRAY_SET permission_set;
+	PERMISSION_ROW *pperm_row;
+	static uint32_t proptag_buff[] = {
+		PROP_TAG_ENTRYID,
+		PROP_TAG_MEMBERRIGHTS
+	};
+	
+	if (FALSE == exmdb_client_load_permission_table(
+		pstore->dir, folder_id, 0, &table_id, &row_num)) {
+		return FALSE;
+	}
+	proptags.count = 2;
+	proptags.pproptag = proptag_buff;
+	if (FALSE == exmdb_client_query_table(dir, NULL, 0,
+		table_id, &proptags, 0, row_num, &permission_set)) {
+		exmdb_client_unload_table(dir, table_id);
+		return FALSE;
+	}
+	exmdb_client_unload_table(pstore->dir, table_id);
+	max_count = (pperm_set->count/100)*100;
+	for (i=0; i<permission_set.count; i++) {
+		if (max_count == pperm_set->count) {
+			max_count += 100;
+			pperm_row = common_util_alloc(
+				sizeof(PERMISSION_ROW)*max_count);
+			if (NULL == pperm_row) {
+				return FALSE;
+			}
+			if (0 != pperm_set->count) {
+				memcpy(pperm_row, pperm_set->prows,
+					sizeof(PERMISSION_ROW)*pperm_set->count);
+			}
+			pperm_set->prows = pperm_row;
+		}
+		pentryid = common_util_get_propvals(
+				permission_set.pparray[i],
+				PROP_TAG_ENTRYID);
+		/* ignore the default and anonymous user */
+		if (NULL == pentryid || 0 == pentryid->cb) {
+			continue;
+		}
+		for (j=0; j<pperm_set->count; j++) {
+			if (pperm_set->prows[j].entryid.cb ==
+				pentryid->cb && 0 == memcmp(
+				pperm_set->prows[j].entryid.pb,
+				pentryid->pb, pentryid->cb)) {
+				break;	
+			}
+		}
+		prights = common_util_get_propvals(
+				permission_set.pparray[i],
+				PROP_TAG_MEMBERRIGHTS);
+		if (NULL == prights) {
+			continue;
+		}
+		if (j < pperm_set->count) {
+			pperm_set->prows[j].member_rights |= *prights;
+			continue;
+		}
+		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
+		pperm_set->prows[pperm_set->count].entryid = *pentryid;
+		pperm_set->prows[pperm_set->count].member_rights = *prights;
+		pperm_set->count ++;
+	}
+	return TRUE;
+}
+
+BOOL store_object_get_permissions(STORE_OBJECT *pstore,
+	PERMISSION_SET *pperm_set)
+{
+	int i;
+	uint32_t row_num;
+	uint32_t table_id;
+	TARRAY_SET tmp_set;
+	uint64_t folder_id;
+	uint32_t tmp_proptag;
+	PROPTAG_ARRAY proptags;
+	
+	if (TRUE == pstore->b_private) {
+		folder_id = rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE);
+	} else {
+		folder_id = rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE);
+	}
+	if (FALSE == exmdb_client_load_hierarchy_table(
+		pstore->dir, folder_id, NULL, TABLE_FLAG_DEPTH,
+		NULL, &table_id, &row_num)) {
+		return FALSE;
+	}
+	proptags.count = 1;
+	proptags.pproptag = &tmp_proptag;
+	tmp_proptag = PROP_TAG_FOLDERID;
+	if (FALSE == exmdb_client_query_table(pstore->dir, NULL,
+		0, table_id, &proptags, 0, row_num, &tmp_set)) {
+		return FALSE;
+	}
+	pperm_set->count = 0;
+	pperm_set->prows = NULL;
+	for (i=0; i<tmp_set.count; i++) {
+		if (0 == tmp_set.pparray[i]->count) {
+			continue;
+		}
+		if (FALSE == store_object_get_folder_permissions(pstore,
+			*(uint64_t*)tmp_set.pparray[i]->ppropval[0].pvalue,
+			pperm_set)) {
+			return FALSE;	
+		}
+	}
+	return TRUE;
+}
