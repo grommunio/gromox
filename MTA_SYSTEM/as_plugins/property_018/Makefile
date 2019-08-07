@@ -8,7 +8,7 @@ INCLUDE_PATHS=../include\
 			  ../../common/include# add include paths here
 LIBRARY_PATHS=# add library paths here
 LIBRARY_FILES=# add library files here
-COMPILING_FLAGS=#add here c or c++ flags for compiling
+COMPILING_FLAGS=-D_GNU_SOURCE#add here c or c++ flags for compiling
 LINK_FLAGS=$(patsubst %,-L%,$(LIBRARY_PATHS)) $(patsubst %,-l%,$(LIBRARY_FILES)) 
 INCLUDE_PATHS:=$(patsubst %,-I%,$(INCLUDE_PATHS))
 MAKE_PATH = ../../make_include#indicate location of the make_common.mk

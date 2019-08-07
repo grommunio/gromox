@@ -1,8 +1,8 @@
 #include "as_common.h"
-#include "mem_file.h"
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>
+#include <string.h>
 
 #define SPAM_STATISTIC_PROPERTY_018          49
 
@@ -62,10 +62,9 @@ int AS_LibMain(int reason, void **ppdata)
 static int xmailer_filter(int action, int context_ID,
 	MAIL_BLOCK* mail_blk,  char* reason, int length)
 {
-	int tag_len;
-	int val_len;
-	char buff[1024];
-	MEM_FILE *fp_mime_field;
+	char *ptr, *ptr1;
+	int i, count, len;
+	BOOL b_alph, b_num;
 	MAIL_ENTITY mail_entity;
 
 	switch (action) {
@@ -73,57 +72,50 @@ static int xmailer_filter(int action, int context_ID,
 		return MESSAGE_ACCEPT;
 	case ACTION_BLOCK_PROCESSING:
 		mail_entity	= get_mail_entity(context_ID);
-		if (MULTI_PARTS_MAIL == mail_entity.phead->mail_part) {
-			return MESSAGE_ACCEPT;
-		}
-		if (0 != mem_file_get_total_length(&mail_entity.phead->f_xmailer)) {
-			return MESSAGE_ACCEPT;
-		}
 		if (TRUE == mail_entity.penvelop->is_outbound ||
 			TRUE == mail_entity.penvelop->is_relay) {
 			return MESSAGE_ACCEPT;
 		}
-		if (mail_blk->original_length > 4096) {
+		if (mail_blk->parsed_length > 4096) {
 			return MESSAGE_ACCEPT;
 		}
-		fp_mime_field = mail_blk->fp_mime_info;
-		while (MEM_END_OF_FILE != mem_file_read(
-			fp_mime_field, &tag_len, sizeof(int))) {
-			if (25 == tag_len) {
-				mem_file_read(fp_mime_field, buff, tag_len);
-				if (0 == strncasecmp(buff, "Content-Transfer-Encoding", 25)) {
-					mem_file_read(fp_mime_field, &val_len, sizeof(int));
-					if (val_len >= sizeof(buff)) {
-						return MESSAGE_ACCEPT;
-					}
-					mem_file_read(fp_mime_field, buff, val_len);
-					buff[val_len] = '\0';
-					if (0 != strncasecmp(buff, "8bit", 4) &&
-						0 != strncasecmp(buff, "quoted-printable", 16)) {
-						return MESSAGE_ACCEPT;
-					}
-					
-					if (NULL == search_string((char*)mail_blk->original_buff,
-							"Bitcoin", mail_blk->original_length) &&
-						NULL == search_string((char*)mail_blk->original_buff,
-							"BTC ", mail_blk->original_length) &&
-						NULL == search_string((char*)mail_blk->original_buff,
-							" BTC", mail_blk->original_length)) {
-						return MESSAGE_ACCEPT;
-					}
-					if (NULL != spam_statistic) {
-						spam_statistic(SPAM_STATISTIC_PROPERTY_018);
-					}
-					strncpy(reason, g_return_reason, length);
-					return MESSAGE_REJECT;
-				}
-			} else {
-				mem_file_seek(fp_mime_field, MEM_FILE_READ_PTR,
-									tag_len, MEM_FILE_SEEK_CUR);
+		if (NULL == search_string(mail_blk->parsed_buff,
+				"Bitcoin", mail_blk->parsed_length) &&
+			NULL == search_string(mail_blk->parsed_buff,
+				"BTC ", mail_blk->parsed_length) &&
+			NULL == search_string(mail_blk->parsed_buff,
+				" BTC", mail_blk->parsed_length) &&
+			NULL == search_string(mail_blk->parsed_buff,
+				"\r\n[", mail_blk->parsed_length)) {
+			return MESSAGE_ACCEPT;
+		}
+		ptr = mail_blk->parsed_buff;
+		len = mail_blk->parsed_length;
+		while (ptr1 = memmem(ptr, len, "\r\n", 2)) {
+			ptr1 += 2;
+			len -= ptr1 - ptr;
+			ptr = ptr1;
+			if (0 != strncmp(ptr + 34, "\r\n", 2)) {
+				continue;
 			}
-			mem_file_read(fp_mime_field, &val_len, sizeof(int));
-			mem_file_seek(fp_mime_field, MEM_FILE_READ_PTR,
-								val_len, MEM_FILE_SEEK_CUR);
+			b_num = FALSE;
+			b_alph = FALSE;
+			for (i=0; i<34; i++) {
+				if (0 != isalpha(ptr[i])) {
+					b_alph = TRUE;
+				} else if (0 != isdigit(ptr[i])) {
+					b_num = TRUE;
+				} else {
+					break;
+				}
+			}
+			if (34 == i && TRUE == b_alph && TRUE == b_num) {
+				if (NULL != spam_statistic) {
+					spam_statistic(SPAM_STATISTIC_PROPERTY_018);
+				}
+				strncpy(reason, g_return_reason, length);
+				return MESSAGE_REJECT;
+			}
 		}
 		return MESSAGE_ACCEPT;
 	case ACTION_BLOCK_FREE:
