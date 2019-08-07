@@ -88,7 +88,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	out_len = mem_file_read(&pmail->phead->f_mime_to, buff, 1024);
-	if (24 != out_len) {
+	if (25 != out_len) {
 		return MESSAGE_ACCEPT;
 	}
 	if (0 == strncmp(buff, "undisclosed-recipients:;", 24)) {
