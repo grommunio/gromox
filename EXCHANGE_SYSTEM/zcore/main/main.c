@@ -22,8 +22,6 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 
-#define ZCORE_VERSION		"1.0"
-
 BOOL g_notify_stop = FALSE;
 
 static void term_handler(int signo)
