@@ -841,7 +841,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	if (NULL == pperm_set->prows) {
 		return FALSE;
 	}
-	if (TRUE == store_object_check_private(pfolder->pstor)) {
+	if (TRUE == store_object_check_private(pfolder->pstore)) {
 		pentry_id = common_util_username_to_addressbook_entryid(
 					store_object_get_account(pfolder->pstore));
 		if (NULL == pentry_id) {
