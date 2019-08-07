@@ -1872,6 +1872,7 @@ BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	int i;
 	uint32_t row_num;
 	uint32_t table_id;
+	BINARY *pentry_id;
 	TARRAY_SET tmp_set;
 	uint64_t folder_id;
 	uint32_t tmp_proptag;
@@ -1896,6 +1897,26 @@ BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	}
 	pperm_set->count = 0;
 	pperm_set->prows = NULL;
+	if (TRUE == pstore->b_private) {
+		pperm_set->prows = common_util_alloc(sizeof(PERMISSION_ROW)*100);
+		if (NULL == pperm_set->prows) {
+			return FALSE;
+		}
+		pentry_id = common_util_username_to_addressbook_entryid(
+												pstore->account);
+		if (NULL == pentry_id) {
+			return FALSE;
+		}
+		pperm_set->prows[0].flags = RIGHT_NORMAL;
+		pperm_set->prows[0].entryid = *pentry_id;
+		pperm_set->prows[0].member_rights =
+			PERMISSION_READANY|PERMISSION_CREATE|
+			PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
+			PERMISSION_EDITANY|PERMISSION_DELETEANY|
+			PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
+			PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+		pperm_set->count = 1;
+	}
 	for (i=0; i<tmp_set.count; i++) {
 		if (0 == tmp_set.pparray[i]->count) {
 			continue;

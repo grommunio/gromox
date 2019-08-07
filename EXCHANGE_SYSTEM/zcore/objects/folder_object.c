@@ -801,12 +801,13 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	PERMISSION_SET *pperm_set)
 {
-	int i;
-	void *pvalue;
+	int i, j;
 	uint32_t flags;
 	const char *dir;
 	uint32_t row_num;
+	uint32_t *prights;
 	uint32_t table_id;
+	BINARY *pentry_id;
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	static uint32_t proptag_buff[] = {
@@ -836,30 +837,55 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	exmdb_client_unload_table(dir, table_id);
 	pperm_set->count = 0;
 	pperm_set->prows = common_util_alloc(sizeof(
-			PERMISSION_ROW)*permission_set.count);
+		PERMISSION_ROW)*(permission_set.count + 1));
 	if (NULL == pperm_set->prows) {
 		return FALSE;
 	}
+	if (TRUE == store_object_check_private(pfolder->pstor)) {
+		pentry_id = common_util_username_to_addressbook_entryid(
+					store_object_get_account(pfolder->pstore));
+		if (NULL == pentry_id) {
+			return FALSE;
+		}
+		pperm_set->prows[0].flags = RIGHT_NORMAL;
+		pperm_set->prows[0].entryid = *pentry_id;
+		pperm_set->prows[0].member_rights =
+			PERMISSION_READANY|PERMISSION_CREATE|
+			PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
+			PERMISSION_EDITANY|PERMISSION_DELETEANY|
+			PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
+			PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+		pperm_set->count = 1;
+	}
 	for (i=0; i<permission_set.count; i++) {
-		pperm_set->prows[pperm_set->count].flags =
-										RIGHT_NORMAL;
-		pvalue = common_util_get_propvals(
-				permission_set.pparray[i],
-				PROP_TAG_ENTRYID);
+		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
+		pentry_id = common_util_get_propvals(
+			permission_set.pparray[i], PROP_TAG_ENTRYID);
 		/* ignore the default and anonymous user */
-		if (NULL == pvalue || 0 == ((BINARY*)pvalue)->cb) {
+		if (NULL == pentry_id || 0 == pentry_id->cb) {
 			continue;
 		}
-		pperm_set->prows[pperm_set->count].entryid =
-									*(BINARY*)pvalue;
-		pvalue = common_util_get_propvals(
+		for (j=0; j<pperm_set->count; j++) {
+			if (pperm_set->prows[j].entryid.cb ==
+				pentry_id->cb && 0 == memcmp(
+				pperm_set->prows[j].entryid.pb,
+				pentry_id->pb, pentry_id->cb)) {
+				break;	
+			}
+		}
+		prights = common_util_get_propvals(
 				permission_set.pparray[i],
 				PROP_TAG_MEMBERRIGHTS);
-		if (NULL == pvalue) {
+		if (NULL == prights) {
 			continue;
 		}
-		pperm_set->prows[pperm_set->count].member_rights =
-										*(uint32_t*)pvalue;
+		if (j < pperm_set->count) {
+			pperm_set->prows[j].member_rights |= *prights;
+			continue;
+		}
+		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
+		pperm_set->prows[pperm_set->count].entryid = *pentry_id;
+		pperm_set->prows[pperm_set->count].member_rights = *prights;
 		pperm_set->count ++;
 	}
 	return TRUE;
