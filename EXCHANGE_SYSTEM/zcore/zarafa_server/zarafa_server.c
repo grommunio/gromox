@@ -1564,6 +1564,7 @@ uint32_t zarafa_server_getpermissions(GUID hsession,
 	default:
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_SUPPORTED;
+	}
 	zarafa_server_put_user_info(pinfo);
 	return EC_SUCCESS;
 }
