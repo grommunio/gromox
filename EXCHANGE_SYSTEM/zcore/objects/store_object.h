@@ -1,7 +1,6 @@
 #ifndef _H_STORE_OBJECT_
 #define _H_STORE_OBJECT_
 #include "element_data.h"
-#include "common_util.h"
 #include "mapi_types.h"
 #include "str_hash.h"
 #include "int_hash.h"
@@ -18,6 +17,8 @@ typedef struct _STORE_OBJECT {
 	DOUBLE_LIST group_list;
 } STORE_OBJECT;
 
+
+struct _PERMISSION_SET;
 
 STORE_OBJECT* store_object_create(BOOL b_private,
 	int account_id, const char *account, const char *dir);
@@ -74,6 +75,6 @@ BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 	const PROPTAG_ARRAY *pproptags);
 	
 BOOL store_object_get_permissions(STORE_OBJECT *pstore,
-	PERMISSION_SET *pperm_set);
+	struct _PERMISSION_SET *pperm_set);
 
 #endif /* _H_STORE_OBJECT_ */
