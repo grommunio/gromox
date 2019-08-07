@@ -14,12 +14,14 @@ cdnd \
 daemon \
 daily_statistic \
 daily_status \
+dispasswd \
 dns_table \
 domain_blacklist \
 domain_list \
 domain_mailbox \
 domain_whitelist \
 dynamic_dnslist \
+enpasswd \
 event \
 forward_table \
 from_blacklist \
