@@ -348,7 +348,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	sqlite3_finalize(pstmt);
 	sql_len = sprintf(sql_string, "SELECT "
 		"username, permission FROM permissions");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
+	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		db_engine_put_db(pdb);
 		return FALSE;
