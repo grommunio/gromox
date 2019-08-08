@@ -702,7 +702,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 						continue;
 					}
 					tmp_propval.pvalue =
-						common_util_replace_folder_displayname(
+						(void*)common_util_replace_folder_displayname(
 						*(uint64_t*)temp_set.pparray[i]->ppropval[0].pvalue);
 					if (NULL == tmp_propval.pvalue) {
 						continue;
