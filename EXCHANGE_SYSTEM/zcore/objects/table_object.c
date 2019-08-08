@@ -320,7 +320,6 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	uint32_t *ptag_access;
 	TPROPVAL_ARRAY *ppropvals;
 	PROPTAG_ARRAY tmp_columns;
-	TAGGED_PROPVAL tmp_propval;
 	
 	if (NULL == pcolumns) {
 		if (NULL != ptable->pcolumns) {
@@ -677,40 +676,6 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			}
 		}
 		*pset = temp_set;
-		if (HIERARCHY_TABLE == ptable->table_type) {
-			idx1 = common_util_index_proptags(
-				pcolumns, PROP_TAG_DISPLAYNAME);
-			idx2 = common_util_index_proptags(
-				pcolumns, PROP_TAG_DISPLAYNAME_STRING8);
-			if (idx1 >=0 || idx2 >= 0) {
-				if (idx1 >= 0) {
-					tmp_propval.proptag = PROP_TAG_DISPLAYNAME;
-				} else {
-					tmp_propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
-				}
-				tmp_columns.count = 1;
-				tmp_columns.pproptag = &tmp_proptag;
-				tmp_proptag = PROP_TAG_FOLDERID;
-				if (FALSE == exmdb_client_query_table(
-					store_object_get_dir(ptable->pstore),
-					username, 0, ptable->table_id, &tmp_columns,
-					ptable->position, row_needed, &temp_set)) {
-					return FALSE;	
-				}
-				for (i=0; i<temp_set.count; i++) {
-					if (0 == temp_set.pparray[i]->count) {
-						continue;
-					}
-					tmp_propval.pvalue =
-						(void*)common_util_replace_folder_displayname(
-						*(uint64_t*)temp_set.pparray[i]->ppropval[0].pvalue);
-					if (NULL == tmp_propval.pvalue) {
-						continue;
-					}
-					common_util_set_propvals(pset->pparray[i], &tmp_propval);
-				}
-			}
-		}
 		return TRUE;
 	}
 	return exmdb_client_query_table(

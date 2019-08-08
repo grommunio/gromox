@@ -238,17 +238,6 @@ static BOOL folder_object_get_calculated_property(
 	case PROP_TAG_ACCESS:
 		*ppvalue = &pfolder->tag_access;
 		return TRUE;
-	case PROP_TAG_DISPLAYNAME:
-	case PROP_TAG_DISPLAYNAME_STRING8:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
-			return FALSE;
-		}
-		*ppvalue = (void*)common_util_replace_folder_displayname(
-											pfolder->folder_id);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		return TRUE;
 	case PROP_TAG_FOLDERID:
 		*ppvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == *ppvalue) {
