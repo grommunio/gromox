@@ -4891,7 +4891,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 		return EC_SUCCESS;
 	case MAPI_FOLDER:
 		pstore = folder_object_get_store(pobject);
-		if (FALSE == store_object_check_owner_mode(pobject)) {
+		if (FALSE == store_object_check_owner_mode(pstore)) {
 			if (FALSE == exmdb_client_check_folder_permission(
 				store_object_get_dir(pstore),
 				folder_object_get_id(pobject),
