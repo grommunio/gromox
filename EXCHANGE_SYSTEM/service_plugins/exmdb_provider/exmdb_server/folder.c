@@ -629,18 +629,18 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	}
 	if (TRUE == exmdb_server_check_private() &&
 		PRIVATE_FID_IPMSUBTREE == parent_id &&
-		(0 === strcasecmp(pname, "Inbox") ||
-		0 === strcasecmp(pname, "Drafts") ||
-		0 === strcasecmp(pname, "Outbox") ||
-		0 === strcasecmp(pname, "Sent Items") ||
-		0 === strcasecmp(pname, "Deleted Items") ||
-		0 === strcasecmp(pname, "Contacts") ||
-		0 === strcasecmp(pname, "Calendar") ||
-		0 === strcasecmp(pname, "Journal") ||
-		0 === strcasecmp(pname, "Notes") ||
-		0 === strcasecmp(pname, "Tasks") ||
-		0 === strcasecmp(pname, "Junk E-mail") ||
-		0 === strcasecmp(pname, "Sync Issues"))) {
+		(0 == strcasecmp(pname, "Inbox") ||
+		0 == strcasecmp(pname, "Drafts") ||
+		0 == strcasecmp(pname, "Outbox") ||
+		0 == strcasecmp(pname, "Sent Items") ||
+		0 == strcasecmp(pname, "Deleted Items") ||
+		0 == strcasecmp(pname, "Contacts") ||
+		0 == strcasecmp(pname, "Calendar") ||
+		0 == strcasecmp(pname, "Journal") ||
+		0 == strcasecmp(pname, "Notes") ||
+		0 == strcasecmp(pname, "Tasks") ||
+		0 == strcasecmp(pname, "Junk E-mail") ||
+		0 == strcasecmp(pname, "Sync Issues"))) {
 		*pfolder_id = 0;
 		return TRUE;	
 	}
