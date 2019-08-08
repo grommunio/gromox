@@ -277,11 +277,30 @@ static uint32_t table_object_get_folder_tag_access(
 	return tag_access;
 }
 
+static uint32_t table_object_get_folder_permission_rights(
+	STORE_OBJECT *pstore, uint64_t folder_id, const char *username)
+{
+	uint64_t fid_val;
+	uint32_t permission;
+	
+	if (TRUE == store_object_check_owner_mode(pstore)) {
+		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
+				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
+				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+	} else {
+		if (FALSE == exmdb_client_check_folder_permission(
+			store_object_get_dir(pstore), folder_id, username,
+			&permission)) {
+			return 0;
+		}
+	}
+	return permission;
+}
+
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	const PROPTAG_ARRAY *pcolumns, uint16_t row_count, TARRAY_SET *pset)
 {
 	int i, j;
-	int idx, idx1;
 	uint32_t handle;
 	uint32_t end_pos;
 	USER_INFO *pinfo;
@@ -289,10 +308,12 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	uint64_t tmp_eid;
 	uint8_t mapi_type;
 	int32_t row_needed;
+	int idx, idx1, idx2;
 	TARRAY_SET rcpt_set;
 	TARRAY_SET temp_set;
 	const char *username;
 	STORE_OBJECT *pstore;
+	uint32_t *ppermission;
 	uint32_t *ptag_access;
 	TPROPVAL_ARRAY *ppropvals;
 	PROPTAG_ARRAY tmp_columns;
@@ -491,10 +512,13 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		if (HIERARCHY_TABLE == ptable->table_type) {
 			idx1 = common_util_index_proptags(
 					pcolumns, PROP_TAG_ACCESS);
+			idx2 = common_util_index_proptags(
+					pcolumns, PROP_TAG_RIGHTS);
 		} else {
 			idx1 = -1;
+			idx2 = -1;
 		}
-		if (idx >= 0 || idx1 >= 0) {
+		if (idx >= 0 || idx1 >= 0 || idx2 >= 0) {
 			tmp_columns.pproptag = common_util_alloc(
 					sizeof(uint32_t)*pcolumns->count);
 			if (NULL == tmp_columns.pproptag) {
@@ -512,6 +536,9 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			}
 			if (idx1 >= 0) {
 				tmp_columns.pproptag[idx1] = PROP_TAG_FOLDERID;
+			}
+			if (idx2 >= 0) {
+				tmp_columns.pproptag[idx2] = PROP_TAG_FOLDERID;
 			}
 			if (FALSE == exmdb_client_query_table(
 				store_object_get_dir(ptable->pstore), username,
@@ -573,13 +600,37 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 								if (NULL == ptag_access) {
 									return FALSE;
 								}
-								*(uint32_t*)ptag_access =
+								*ptag_access =
 									table_object_get_folder_tag_access(
 									ptable->pstore, tmp_eid, pinfo->username);
 								temp_set.pparray[i]->ppropval[j].proptag =
 															PROP_TAG_ACCESS;
 								temp_set.pparray[i]->ppropval[j].pvalue =
 															ptag_access;
+								break;
+							}	
+						}
+					}
+				}
+				if (idx2 >= 0) {
+					for (i=0; i<temp_set.count; i++) {
+						for (j=0; j<temp_set.pparray[i]->count; j++) {
+							if (PROP_TAG_FOLDERID == 
+								temp_set.pparray[i]->ppropval[j].proptag) {
+								tmp_eid = *(uint64_t*)
+									temp_set.pparray[i]->ppropval[j].pvalue;
+								ppermission = common_util_alloc(
+												sizeof(uint32_t));
+								if (NULL == ppermission) {
+									return FALSE;
+								}
+								*ppermission =
+									table_object_get_folder_permission_rights(
+									ptable->pstore, tmp_eid, pinfo->username);
+								temp_set.pparray[i]->ppropval[j].proptag =
+															PROP_TAG_RIGHTS;
+								temp_set.pparray[i]->ppropval[j].pvalue =
+																ppermission;
 								break;
 							}	
 						}
