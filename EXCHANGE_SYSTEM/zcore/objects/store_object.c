@@ -1774,8 +1774,8 @@ BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 	USER_INFO *pinfo;
 	
 	pinfo = zarafa_server_get_info();
-	if (TRUE == pstore->b_private &&
-		pinfo->user_id == pstore->account_id) {
+	if (FALSE == pstore->b_private ||
+		pinfo->user_id != pstore->account_id) {
 		return TRUE;
 	}
 	for (i=0; i<pproptags->count; i++) {
@@ -1786,6 +1786,7 @@ BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 		object_tree_remove_zarafa_store_propval(
 			pinfo->ptree, pproptags->pproptag[i]);
 	}
+	return TRUE;
 }
 
 static BOOL store_object_get_folder_permissions(
