@@ -313,7 +313,6 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	int idx, idx1, idx2;
 	TARRAY_SET rcpt_set;
 	TARRAY_SET temp_set;
-	uint32_t tmp_proptag;
 	const char *username;
 	STORE_OBJECT *pstore;
 	uint32_t *ppermission;
