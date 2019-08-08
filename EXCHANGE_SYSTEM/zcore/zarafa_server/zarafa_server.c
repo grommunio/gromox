@@ -729,8 +729,34 @@ int zarafa_server_run()
 
 int zarafa_server_stop()
 {
+	USER_INFO *pinfo;
+	INT_HASH_ITER *iter;
+	SINK_NODE *psink_node;
+	DOUBLE_LIST_NODE *pnode;
+	
 	g_notify_stop = TRUE;
 	pthread_join(g_scan_id, NULL);
+	iter = int_hash_iter_init(g_session_table);
+	for (int_hash_iter_begin(iter);
+		FALSE == int_hash_iter_done(iter);
+		int_hash_iter_forward(iter)) {
+		pinfo = int_hash_iter_get_value(iter, NULL);
+		while (pnode=double_list_get_from_head(
+			&pinfo->sink_list)) {
+			psink_node = (SINK_NODE*)pnode->pdata;
+			close(psink_node->clifd);
+			free(psink_node->sink.padvise);
+			free(psink_node);
+		}
+		double_list_free(&pinfo->sink_list);
+		common_util_build_environment();
+		object_tree_free(pinfo->ptree);
+		common_util_free_environment();
+		if (NULL != pinfo->password) {
+			free(pinfo->password);
+		}
+	}
+	int_hash_iter_free(iter);
 	int_hash_free(g_session_table);
 	str_hash_free(g_user_table);
 	str_hash_free(g_notify_table);
