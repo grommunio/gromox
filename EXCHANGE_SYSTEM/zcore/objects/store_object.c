@@ -1302,8 +1302,9 @@ static BOOL store_object_get_calculated_property(
 			*ppvalue = common_util_to_folder_entryid(pstore,
 				rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE));
 		} else {
+			/* different from native MAPI */
 			*ppvalue = common_util_to_folder_entryid(pstore,
-				rop_util_make_eid_ex(1, PUBLIC_FID_ROOT));
+				rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE));
 		}
 		if (NULL == *ppvalue) {
 			return FALSE;
