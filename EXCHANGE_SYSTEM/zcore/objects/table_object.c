@@ -284,7 +284,7 @@ static uint32_t table_object_get_folder_permission_rights(
 	uint32_t permission;
 	
 	if (TRUE == store_object_check_owner_mode(pstore)) {
-		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
+		permission = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
 	} else {
