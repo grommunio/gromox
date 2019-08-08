@@ -801,7 +801,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	PERMISSION_SET *pperm_set)
 {
-	int i, j;
+	int i;
 	uint32_t flags;
 	const char *dir;
 	uint32_t row_num;
@@ -837,25 +837,9 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	exmdb_client_unload_table(dir, table_id);
 	pperm_set->count = 0;
 	pperm_set->prows = common_util_alloc(sizeof(
-		PERMISSION_ROW)*(permission_set.count + 1));
+		PERMISSION_ROW)*(permission_set.count));
 	if (NULL == pperm_set->prows) {
 		return FALSE;
-	}
-	if (TRUE == store_object_check_private(pfolder->pstore)) {
-		pentry_id = common_util_username_to_addressbook_entryid(
-					store_object_get_account(pfolder->pstore));
-		if (NULL == pentry_id) {
-			return FALSE;
-		}
-		pperm_set->prows[0].flags = RIGHT_NORMAL;
-		pperm_set->prows[0].entryid = *pentry_id;
-		pperm_set->prows[0].member_rights =
-			PERMISSION_READANY|PERMISSION_CREATE|
-			PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
-			PERMISSION_EDITANY|PERMISSION_DELETEANY|
-			PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
-			PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
-		pperm_set->count = 1;
 	}
 	for (i=0; i<permission_set.count; i++) {
 		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
@@ -865,22 +849,10 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 		if (NULL == pentry_id || 0 == pentry_id->cb) {
 			continue;
 		}
-		for (j=0; j<pperm_set->count; j++) {
-			if (pperm_set->prows[j].entryid.cb ==
-				pentry_id->cb && 0 == memcmp(
-				pperm_set->prows[j].entryid.pb,
-				pentry_id->pb, pentry_id->cb)) {
-				break;	
-			}
-		}
 		prights = common_util_get_propvals(
 				permission_set.pparray[i],
 				PROP_TAG_MEMBERRIGHTS);
 		if (NULL == prights) {
-			continue;
-		}
-		if (j < pperm_set->count) {
-			pperm_set->prows[j].member_rights |= *prights;
 			continue;
 		}
 		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
