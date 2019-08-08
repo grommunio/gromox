@@ -325,21 +325,22 @@ static zend_bool stream_object_set_length(
 {
 	void *pdata;
 	
+	/* always leave trail null for string */
 	if (NULL == pstream->content_bin.pb) {
-		pstream->content_bin.pb = emalloc(length);
+		pstream->content_bin.pb = emalloc(length + 1);
 		if (NULL == pstream->content_bin.pb) {
 			return 0;
 		}
-		memset(pstream->content_bin.pb, 0, length);
+		memset(pstream->content_bin.pb, 0, length + 1);
 	} else if (length > pstream->content_bin.cb) {
-		pdata = erealloc(pstream->content_bin.pb, length);
+		pdata = erealloc(pstream->content_bin.pb, length + 1);
 		if (NULL == pdata) {
 			return 0;
 		}
 		pstream->content_bin.pb = pdata;
 		memset(pstream->content_bin.pb
 			+ pstream->content_bin.cb, 0,
-			length - pstream->content_bin.cb);
+			length + 1 - pstream->content_bin.cb);
 	} else {
 		if (pstream->seek_offset > length) {
 			pstream->seek_offset = length;
