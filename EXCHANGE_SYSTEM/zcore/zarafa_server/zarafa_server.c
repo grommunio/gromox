@@ -3678,6 +3678,7 @@ uint32_t zarafa_server_queryrows(
 			if (1 != tmp_set.count) {
 				break;
 			}
+			table_object_seek_current(ptable, TRUE, 1);
 			prowset->pparray[prowset->count] = tmp_set.pparray[0];
 			prowset->count ++;
 			if (count == prowset->count) {

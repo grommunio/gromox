@@ -684,7 +684,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 }
 
 void table_object_seek_current(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count)
+	BOOL b_forward, uint32_t row_count)
 {
 	uint32_t total_rows;
 	

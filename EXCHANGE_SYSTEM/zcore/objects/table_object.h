@@ -55,7 +55,7 @@ BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
 	const RESTRICTION *prestriction);
 
 void table_object_seek_current(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint16_t row_count);
+	BOOL b_forward, uint32_t row_count);
 
 uint8_t table_object_get_table_type(TABLE_OBJECT *ptable);
 
