@@ -333,6 +333,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
+	*ppermission = 0;
 	sql_len = sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
 	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
@@ -345,6 +346,20 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		*ppermission |= sqlite3_column_int64(pstmt, 0);
 	}
 	sqlite3_finalize(pstmt);
+	sql_len = sprintf(sql_string, "SELECT "
+		"username, permission FROM permissions");
+	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
+		sql_string, sql_len, &pstmt, NULL)) {
+		db_engine_put_db(pdb);
+		return FALSE;
+	}
+	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		if (TRUE == common_util_check_mlist_include(
+			sqlite3_column_text(pstmt, 0), username)) {
+			*ppermission |= sqlite3_column_int64(pstmt, 1);
+		}
+	}
+	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
 	sprintf(temp_path, "%s/config/delegates.txt", dir);
 	pfile = list_file_init(temp_path, "%s:256");
@@ -352,7 +367,9 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		item_num = list_file_get_item_num(pfile);
 		pitem = list_file_get_list(pfile);
 		for (i=0; i<item_num; i++) {
-			if (0 == strcasecmp(pitem + 256*i, username)) {
+			if (0 == strcasecmp(pitem + 256*i, username) ||
+				TRUE == common_util_check_mlist_include(
+				pitem + 256*i, username)) {
 				*ppermission |= PERMISSION_SENDAS;
 				break;
 			}

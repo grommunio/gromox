@@ -188,7 +188,9 @@ static BOOL oxomsg_check_permission(const char *account,
 	item_num = list_file_get_item_num(pfile);
 	pitem = list_file_get_list(pfile);
 	for (i=0; i<item_num; i++) {
-		if (0 == strcasecmp(pitem + 256*i, account)) {
+		if (0 == strcasecmp(pitem + 256*i, account) ||
+			TRUE == common_util_check_mlist_include(
+			pitem + 256*i, account)) {
 			list_file_free(pfile);
 			return TRUE;
 		}

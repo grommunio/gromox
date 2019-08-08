@@ -583,6 +583,7 @@ static BOOL store_object_check_readonly_property(
 		return TRUE;
 	}
 	switch (proptag) {
+	case PROP_TAG_ACCESS:
 	case PROP_TAG_ACCESSLEVEL:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 	case PROP_TAG_CODEPAGEID:
@@ -617,6 +618,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_PROHIBITSENDQUOTA:
 	case PROP_TAG_INSTANCEKEY:
 	case PROP_TAG_RECORDKEY:
+	case PROP_TAG_RIGHTS:
 	case PROP_TAG_SEARCHKEY:
 	case PROP_TAG_SORTLOCALEID:
 	case PROP_TAG_STORAGEQUOTALIMIT:
@@ -1058,6 +1060,7 @@ static BOOL store_object_get_calculated_property(
 	int temp_len;
 	void *pvalue;
 	USER_INFO *pinfo;
+	uint32_t permission;
 	char temp_buff[1024];
 	static uint64_t tmp_ll = 0;
 	static uint8_t private_uid[] = {
@@ -1135,6 +1138,76 @@ static BOOL store_object_get_calculated_property(
 			*(uint8_t*)(*ppvalue) = 1;
 		} else {
 			*(uint8_t*)(*ppvalue) = 0;
+		}
+		return TRUE;
+	case PROP_TAG_ACCESS:
+		*ppvalue = common_util_alloc(sizeof(uint8_t));
+		if (NULL == *ppvalue) {
+			return FALSE;
+		}
+		if (TRUE == store_object_check_owner_mode(pstore)) {
+			*(uint32_t*)*ppvalue =
+				TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
+				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
+				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+		} else {
+			pinfo = zarafa_server_get_info();
+			if (TRUE == pstore->b_private) {
+				if (FALSE == exmdb_client_check_mailbox_permission(
+					pstore->dir, pinfo->username, &permission)) {
+					return FALSE;
+				}
+				*(uint32_t*)*ppvalue = TAG_ACCESS_READ;
+				if (permission & PERMISSION_FOLDEROWNER) {
+					*(uint32_t*)*ppvalue =
+						TAG_ACCESS_MODIFY | TAG_ACCESS_DELETE |
+						TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
+						TAG_ACCESS_FAI_CONTENTS;
+				} else {
+					if (permission & PERMISSION_CREATE) {
+						*(uint32_t*)*ppvalue |= TAG_ACCESS_CONTENTS |
+											TAG_ACCESS_FAI_CONTENTS;
+					}
+					if (permission & PERMISSION_CREATESUBFOLDER) {
+						*(uint32_t*)*ppvalue |= TAG_ACCESS_HIERARCHY;
+					}
+				}
+			} else {
+				*(uint32_t*)*ppvalue =
+					TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
+					TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
+					TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+			}
+		}
+		return TRUE;
+	case PROP_TAG_RIGHTS:
+		*ppvalue = common_util_alloc(sizeof(uint8_t));
+		if (NULL == *ppvalue) {
+			return FALSE;
+		}
+		if (TRUE == store_object_check_owner_mode(pstore)) {
+			*(uint32_t*)(*ppvalue) =
+					PERMISSION_READANY|PERMISSION_CREATE|
+					PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
+					PERMISSION_EDITANY|PERMISSION_DELETEANY|
+					PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
+					PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+		} else {
+			pinfo = zarafa_server_get_info();
+			if (TRUE == pstore->b_private) {
+				if (FALSE == exmdb_client_check_mailbox_permission(
+					pstore->dir, pinfo->username, &permission)) {
+					return FALSE;
+				}
+				*(uint32_t*)(*ppvalue) &= ~PERMISSION_SENDAS;
+			} else {
+				*(uint32_t*)(*ppvalue) =
+					PERMISSION_READANY|PERMISSION_CREATE|
+					PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
+					PERMISSION_EDITANY|PERMISSION_DELETEANY|
+					PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
+					PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
+			}
 		}
 		return TRUE;
 	case PROP_TAG_EMAILADDRESS:
