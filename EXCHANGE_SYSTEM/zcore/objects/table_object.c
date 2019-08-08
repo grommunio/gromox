@@ -284,9 +284,11 @@ static uint32_t table_object_get_folder_permission_rights(
 	uint32_t permission;
 	
 	if (TRUE == store_object_check_owner_mode(pstore)) {
-		permission = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+		permission = PERMISSION_READANY|PERMISSION_CREATE|
+				PERMISSION_EDITOWNED|PERMISSION_DELETEOWNED|
+				PERMISSION_EDITANY|PERMISSION_DELETEANY|
+				PERMISSION_CREATESUBFOLDER|PERMISSION_FOLDEROWNER|
+				PERMISSION_FOLDERCONTACT|PERMISSION_FOLDERVISIBLE;
 	} else {
 		if (FALSE == exmdb_client_check_folder_permission(
 			store_object_get_dir(pstore), folder_id, username,
