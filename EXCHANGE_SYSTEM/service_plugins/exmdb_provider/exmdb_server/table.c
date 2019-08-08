@@ -3094,6 +3094,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		exmdb_server_set_public_username(username);
 	}
 	idx = 0;
+	ppropvals->count = 0;
+	ppropvals->ppropval = NULL;
 	if (TABLE_TYPE_HIERARCHY == ptnode->type) {
 		if (TRUE == b_forward) {
 			sql_len = sprintf(sql_string, "SELECT folder_id,"
