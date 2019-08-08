@@ -345,6 +345,7 @@ static zend_bool stream_object_set_length(
 		if (pstream->seek_offset > length) {
 			pstream->seek_offset = length;
 		}
+		pstream->content_bin.pb[length] = '\0';
 	}
 	pstream->content_bin.cb = length;
 	return 1;
