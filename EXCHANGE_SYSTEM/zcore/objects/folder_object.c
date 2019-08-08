@@ -243,8 +243,8 @@ static BOOL folder_object_get_calculated_property(
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
-		*ppvalue = common_util_replace_folder_displayname(
-										pfolder->folder_id);
+		*ppvalue = (void*)common_util_replace_folder_displayname(
+											pfolder->folder_id);
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
