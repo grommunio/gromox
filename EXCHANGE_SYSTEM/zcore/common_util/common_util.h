@@ -533,4 +533,6 @@ uint64_t common_util_tm_to_nttime(struct tm unix_tm);
 
 BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm);
 
+const char* common_util_replace_folder_displayname(uint64_t folder_id);
+
 #endif /* _H_COMMON_UTIL_ */

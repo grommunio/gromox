@@ -3396,3 +3396,42 @@ BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm)
 	tz_free(sp);
 	return TRUE;
 }
+
+const char* common_util_replace_folder_displayname(uint64_t folder_id)
+{
+	switch (rop_util_get_gc_value(folder_id)) {
+	case PRIVATE_FID_IPMSUBTREE:
+		return "IPM_SUBTREE";
+	case PRIVATE_FID_INBOX:
+		return "Inbox";
+	case PRIVATE_FID_DRAFT:
+		return "Drafts";
+	case PRIVATE_FID_OUTBOX:
+		return "Outbox";
+	case PRIVATE_FID_SENT_ITEMS:
+		return "Sent Items";
+	case PRIVATE_FID_DELETED_ITEMS:
+		return "Deleted Items";
+	case PRIVATE_FID_CONTACTS:
+		return "Contacts";
+	case PRIVATE_FID_CALENDAR:
+		return "Calendar";
+	case PRIVATE_FID_JOURNAL:
+		return "Journal";
+	case PRIVATE_FID_NOTES:
+		return "Notes";
+	case PRIVATE_FID_TASKS:
+		return "Tasks";
+	case PRIVATE_FID_JUNK:
+		return "Junk E-mail";
+	case PRIVATE_FID_SYNC_ISSUES:
+		return "Sync Issues";
+	case PRIVATE_FID_CONFLICTS:
+		return "Conflicts";
+	case PRIVATE_FID_LOCAL_FAILURES:
+		return "Local Failures";
+	case PRIVATE_FID_SERVER_FAILURES:
+		return "Server Failures";
+	}
+	return NULL;
+}
