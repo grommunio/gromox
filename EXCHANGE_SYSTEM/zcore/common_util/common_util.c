@@ -3396,3 +3396,45 @@ BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm)
 	tz_free(sp);
 	return TRUE;
 }
+
+void common_util_replace_address_type(
+	TPROPVAL_ARRAY *ppropvals, BOOL b_zarafa)
+{
+	int i;
+	USER_INFO *pinfo;
+	
+	pinfo = zarafa_server_get_info();
+	if (0 == (pinfo->flags & LOGON_FLAG_ZARAFA_ADDRESS)) {
+		return;
+	}
+	for (i=0; i<ppropvals->count; i++) {
+		switch (ppropvals->ppropval[i].proptag) {
+		case PROP_TAG_ADDRESSTYPE:
+		case PROP_TAG_ADDRESSTYPE_STRING8:
+		case PROP_TAG_ORIGINALSENDERADDRESSTYPE:
+		case PROP_TAG_ORIGINALSENDERADDRESSTYPE_STRING8:
+		case PROP_TAG_ORIGINALSENTREPRESENTINGADDRESSTYPE:
+		case PROP_TAG_ORIGINALSENTREPRESENTINGADDRESSTYPE_STRING8:
+		case PROP_TAG_READRECEIPTADDRESSTYPE:
+		case PROP_TAG_READRECEIPTADDRESSTYPE_STRING8:
+		case PROP_TAG_RECEIVEDBYADDRESSTYPE:
+		case PROP_TAG_RECEIVEDBYADDRESSTYPE_STRING8:
+		case PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE:
+		case PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE_STRING8:
+		case PROP_TAG_SENDERADDRESSTYPE:
+		case PROP_TAG_SENDERADDRESSTYPE_STRING8:
+		case PROP_TAG_SENTREPRESENTINGADDRESSTYPE:
+		case PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8:
+			if (TRUE == b_zarafa) {
+				if (0 == strcasecmp(ppropvals->ppropval[i].pvalue, "EX")) {
+					ppropvals->ppropval[i].pvalue = "ZARAFA";
+				}
+			} else {
+				if (0 == strcasecmp(ppropvals->ppropval[i].pvalue, "ZARAFA")) {
+					ppropvals->ppropval[i].pvalue = "EX";
+				}
+			}
+			break;
+		}
+	}
+}

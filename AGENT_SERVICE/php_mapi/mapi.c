@@ -12,6 +12,8 @@
 
 #define TOOLS_PATH									"/var/pandora/tools"
 
+#define LOGON_FLAG_ZARAFA_ADDRESS					0x00000001
+
 #define PR_ATTACH_DATA_OBJ                          0x3701000D
 #define PR_CONTENTS_SYNCHRONIZER					0x662D000D
 #define PR_HIERARCHY_SYNCHRONIZER					0x662C000D
@@ -84,6 +86,7 @@ static zend_function_entry mapi_functions[] = {
 	ZEND_FE(mapi_createoneoff, NULL)
 	ZEND_FE(mapi_parseoneoff, NULL)
 	ZEND_FE(mapi_logon_zarafa, NULL)
+	ZEND_FE(mapi_logon_ex, NULL)
 	ZEND_FE(mapi_zarafa_getuser_by_name, NULL)
 	ZEND_FE(mapi_getmsgstorestable, NULL)
 	ZEND_FE(mapi_openmsgstore, NULL)
@@ -926,6 +929,61 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 		&username, &username_len, &password, &password_len, &server,
 		&server_len, &sslcert, &sslcert_len, &sslpass, &sslpass_len,
 		&flags, &wa_version, &wa_len, &misc_version, &misc_len)
+		== FAILURE || NULL == username || '\0' == username[0] ||
+		NULL == password) {
+		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		goto THROW_EXCEPTION;
+	}
+	presource = emalloc(sizeof(MAPI_RESOURCE));
+	if (NULL == presource) {
+		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		goto THROW_EXCEPTION;
+	}
+	if (PG(auto_globals_jit)) {
+		zend_is_auto_global(ZEND_STRL("_SERVER") TSRMLS_CC);
+	}
+	if (zend_hash_find(&EG(symbol_table), "_SERVER", sizeof("_SERVER"),
+		(void**)&ppzserver_vars) == SUCCESS && Z_TYPE_PP(ppzserver_vars)
+		== IS_ARRAY && zend_hash_find(Z_ARRVAL_PP(ppzserver_vars),
+		"REMOTE_USER", sizeof("REMOTE_USER"), (void**)&ppzusername)
+		== SUCCESS && Z_TYPE_PP(ppzusername) == IS_STRING &&
+		Z_STRLEN_PP(ppzusername) > 0) {
+		password = NULL;	
+	}
+	result = zarafa_client_logon(username, password,
+		LOGON_FLAG_ZARAFA_ADDRESS, &presource->hsession);
+	if (EC_SUCCESS != result) {
+		MAPI_G(hr) = result;
+		goto THROW_EXCEPTION;
+	}
+	presource->type = MAPI_SESSION;
+	presource->hobject = 0;
+	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
+	MAPI_G(hr) = EC_SUCCESS;
+	return;
+THROW_EXCEPTION:
+	if (MAPI_G(exceptions_enabled)) {
+		zend_throw_exception(MAPI_G(exception_ce),
+			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
+	}
+	RETVAL_FALSE;
+}
+
+ZEND_FUNCTION(mapi_logon_ex)
+{
+	long flags;
+	char *username;
+	char *password;
+	uint32_t result;
+	int username_len;
+	int password_len;
+	zval **ppzusername;
+	zval **ppzserver_vars;
+	MAPI_RESOURCE *presource;
+	
+	flags = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl",
+		&username, &username_len, &password, &password_len, &flags)
 		== FAILURE || NULL == username || '\0' == username[0] ||
 		NULL == password) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;

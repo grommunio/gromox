@@ -46,6 +46,7 @@ ZEND_FUNCTION(mapi_createoneoff);
 ZEND_FUNCTION(mapi_parseoneoff);
 
 ZEND_FUNCTION(mapi_logon_zarafa);
+ZEND_FUNCTION(mapi_logon_ex);
 ZEND_FUNCTION(mapi_zarafa_getuser_by_name);
 ZEND_FUNCTION(mapi_getmsgstorestable);
 ZEND_FUNCTION(mapi_openmsgstore);

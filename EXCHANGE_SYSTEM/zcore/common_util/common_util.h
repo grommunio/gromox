@@ -8,6 +8,8 @@
 
 #define SOCKET_TIMEOUT								60
 
+#define LOGON_FLAG_ZARAFA_ADDRESS					0x00000001
+
 #define CALL_ID_LOGON								0x00
 #define CALL_ID_UNLOADOBJECT						0x01
 #define CALL_ID_OPENENTRY							0x02
@@ -532,5 +534,8 @@ MESSAGE_CONTENT* common_util_vcf_to_message(
 uint64_t common_util_tm_to_nttime(struct tm unix_tm);
 
 BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm);
+
+void common_util_replace_address_type(
+	TPROPVAL_ARRAY *ppropvals, BOOL b_zarafa);
 
 #endif /* _H_COMMON_UTIL_ */

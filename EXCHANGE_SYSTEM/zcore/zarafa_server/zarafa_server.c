@@ -883,6 +883,7 @@ uint32_t zarafa_server_logon(const char *username,
 	} else {
 		tmp_info.password = strdup(password);
 	}
+	tmp_info.flags = flags;
 	time(&tmp_info.last_time);
 	double_list_init(&tmp_info.sink_list);
 	tmp_info.ptree = object_tree_create(maildir);
@@ -3701,6 +3702,11 @@ uint32_t zarafa_server_queryrows(
 			return EC_ERROR;	
 		}
 		table_object_seek_current(ptable, TRUE, prowset->count);
+	}
+	if (CONTENT_TABLE == table_type || USER_TABLE == table_type) {
+		for (i=0; i<prowset->count; i++) {
+			common_util_replace_address_type(prowset->pparray[i], TRUE);
+		}
 	}
 	zarafa_server_put_user_info(pinfo);
 	if ((STORE_TABLE != table_type &&

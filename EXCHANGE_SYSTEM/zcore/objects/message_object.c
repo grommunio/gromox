@@ -799,9 +799,17 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
 {
-	return exmdb_client_get_message_instance_rcpts(
-			store_object_get_dir(pmessage->pstore),
-			pmessage->instance_id, row_id, need_count, pset);
+	int i;
+	
+	if (FALSE == exmdb_client_get_message_instance_rcpts(
+		store_object_get_dir(pmessage->pstore),
+		pmessage->instance_id, row_id, need_count, pset)) {
+		return FALSE;	
+	}
+	for (i=0; i<pset->count; i++) {
+		common_util_replace_address_type(pset->pparray[i], TRUE);
+	}
+	return TRUE;
 }
 
 BOOL message_object_get_rowid_begin(
@@ -855,8 +863,11 @@ BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage,
 	const TARRAY_SET *pset)
 {
-	int i, j;
+	int i;
 	
+	for (i=0; i<pset->count; i++) {
+		common_util_replace_address_type(pset->pparray[i], FALSE);
+	}
 	if (FALSE == exmdb_client_update_message_instance_rcpts(
 		store_object_get_dir(pmessage->pstore),
 		pmessage->instance_id, pset)) {
@@ -1225,6 +1236,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 										&pmessage->cpid;
 		ppropvals->count ++;
 	}
+	common_util_replace_address_type(ppropvals, TRUE);
 	return TRUE;	
 }
 
@@ -1378,6 +1390,8 @@ static BOOL message_object_set_properties_internal(
 BOOL message_object_set_properties(MESSAGE_OBJECT *pmessage,
 	const TPROPVAL_ARRAY *ppropvals)
 {
+	common_util_replace_address_type(
+		(TPROPVAL_ARRAY*)ppropvals, FALSE);
 	return message_object_set_properties_internal(
 						pmessage, TRUE, ppropvals);
 }

@@ -43,5 +43,10 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		return FALSE;
 	}
 	pinfo = zarafa_server_get_info();
-	return ab_tree_fetch_node_properties(pnode, pproptags, ppropvals);
+	if (FALSE == ab_tree_fetch_node_properties(
+		pnode, pproptags, ppropvals)) {
+		return FALSE;	
+	}
+	common_util_replace_address_type(ppropval, TRUE);
+	return TRUE;
 }
