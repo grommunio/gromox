@@ -1010,6 +1010,8 @@ BOOL exmdb_server_set_folder_properties(
 			if (PROP_TAG_ADDITIONALRENENTRYIDS ==
 				pproperties->ppropval[i].proptag ||
 				PROP_TAG_ADDITIONALRENENTRYIDSEX ==
+				pproperties->ppropval[i].proptag ||
+				PROP_TAG_REMINDERSONLINEENTRYID ==
 				pproperties->ppropval[i].proptag) {
 				if (FALSE == common_util_set_property(
 					FOLDER_PROPERTIES_TABLE, PRIVATE_FID_INBOX,

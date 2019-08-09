@@ -425,6 +425,21 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
+	case PROP_TAG_REMINDERSONLINEENTRYID:
+		if (FALSE == logon_object_check_private(pfolder->plogon)) {
+			return FALSE;
+		}
+		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) {
+			return FALSE;
+		}
+		if (FALSE == exmdb_client_get_folder_property(
+			logon_object_get_dir(pfolder->plogon), 0,
+			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
+			PROP_TAG_REMINDERSONLINEENTRYID, &pvalue) ||
+			NULL == pvalue) {
+			return FALSE;
+		}
+		return TRUE;
 	case PROP_TAG_ADDITIONALRENENTRYIDS:
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
