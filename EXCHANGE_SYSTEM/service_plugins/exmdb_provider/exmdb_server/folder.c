@@ -989,7 +989,9 @@ BOOL exmdb_server_set_folder_properties(
 	const TPROPVAL_ARRAY *pproperties,
 	PROBLEM_ARRAY *pproblems)
 {
+	int i;
 	DB_ITEM *pdb;
+	BOOL b_result;
 	uint64_t fid_val;
 	
 	pdb = db_engine_get_db(dir);
@@ -1002,6 +1004,25 @@ BOOL exmdb_server_set_folder_properties(
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	if (TRUE == exmdb_server_check_private()
+		&& fid_val == PRIVATE_FID_ROOT) {
+		for (i=0; i<pproperties->count; i++) {
+			if (PROP_TAG_ADDITIONALRENENTRYIDS ==
+				pproperties->ppropval[i].proptag ||
+				PROP_TAG_ADDITIONALRENENTRYIDSEX ==
+				pproperties->ppropval[i].proptag) {
+				if (FALSE == common_util_set_property(
+					FOLDER_PROPERTIES_TABLE, PRIVATE_FID_INBOX,
+					0, pdb->psqlite, &pproperties->ppropval[i],
+					&b_result)) {
+					sqlite3_exec(pdb->psqlite,
+						"ROLLBACK", NULL, NULL, NULL);
+					db_engine_put_db(pdb);
+					return FALSE;
+				}
+			}
+		}
+	}
 	if (FALSE == common_util_set_properties(FOLDER_PROPERTIES_TABLE,
 		fid_val, cpid, pdb->psqlite, pproperties, pproblems)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
