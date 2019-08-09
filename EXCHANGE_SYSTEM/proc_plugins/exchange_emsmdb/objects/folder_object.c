@@ -429,7 +429,7 @@ static BOOL folder_object_get_calculated_property(
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
 		}
-		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) {
+		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT)) {
 			return FALSE;
 		}
 		if (FALSE == exmdb_client_get_folder_property(
