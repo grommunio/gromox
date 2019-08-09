@@ -1623,10 +1623,15 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 					return TRUE;
 				}
 			}
-			/* =SMTP:user@company.com */
 			ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
 			if (NULL != ptoken) {
+				/* =SMTP:user@company.com */
 				if (NULL != strcasestr(temp_buff, ptoken + 1)) {
+					return TRUE;
+				}
+			} else {
+				if (0 == strcasecmp(temp_buff,
+					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
 				}
 			}
