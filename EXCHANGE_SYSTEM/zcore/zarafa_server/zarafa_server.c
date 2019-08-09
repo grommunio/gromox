@@ -3624,7 +3624,7 @@ uint32_t zarafa_server_queryrows(
 	TARRAY_SET tmp_set;
 	TABLE_OBJECT *ptable;
 	uint32_t *pobject_type;
-	TAGGED_PROPVAL *ppropvas;
+	TAGGED_PROPVAL *ppropvals;
 	static uint32_t object_type_store = OBJECT_STORE;
 	static uint32_t object_type_folder = OBJECT_FOLDER;
 	static uint32_t object_type_message = OBJECT_MESSAGE;
@@ -3706,9 +3706,9 @@ uint32_t zarafa_server_queryrows(
 	if ((STORE_TABLE != table_type &&
 		HIERARCHY_TABLE != table_type &&
 		CONTENT_TABLE != table_type &&
-		ATTACHMENT_TABLE != table_type) ||
-		NULL == common_util_index_proptags(
-		pproptags, PROP_TAG_OBJECTTYPE)) {
+		ATTACHMENT_TABLE != table_type)
+		|| common_util_index_proptags(
+		pproptags, PROP_TAG_OBJECTTYPE) < 0) {
 		return EC_SUCCESS;
 	}
 	switch (table_type) {
@@ -3732,11 +3732,11 @@ uint32_t zarafa_server_queryrows(
 		if (NULL == ppropvals) {
 			return EC_ERROR;
 		}
-		memcpy(ppropval, prowset->pparray[i]->ppropval,
+		memcpy(ppropvals, prowset->pparray[i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*prowset->pparray[i]->count);
-		ppropval[prowset->pparray[i]->count].proptag = PROP_TAG_OBJECTTYPE;
-		ppropval[prowset->pparray[i]->count].pvalue = pobject_type;
-		prowset->pparray[i]->ppropval = ppropval;
+		ppropvals[prowset->pparray[i]->count].proptag = PROP_TAG_OBJECTTYPE;
+		ppropvals[prowset->pparray[i]->count].pvalue = pobject_type;
+		prowset->pparray[i]->ppropval = ppropvals;
 		prowset->pparray[i]->count ++;
 	}
 	return EC_SUCCESS;
