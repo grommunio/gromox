@@ -419,19 +419,6 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_FINDERENTRYID:
-		if (FALSE == store_object_check_private(pfolder->pstore)) {
-			return FALSE;
-		}
-		if (pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) &&
-			pfolder->folder_id != rop_util_make_eid_ex(
-			1, PRIVATE_FID_INBOX)) {
-			return FALSE;	
-		}
-		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
-					rop_util_make_eid_ex(1, PRIVATE_FID_FINDER));
-		return TRUE;
 	case PROP_TAG_ADDITIONALRENENTRYIDS:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
