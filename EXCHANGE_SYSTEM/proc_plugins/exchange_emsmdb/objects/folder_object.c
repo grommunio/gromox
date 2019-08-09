@@ -439,6 +439,7 @@ static BOOL folder_object_get_calculated_property(
 			NULL == pvalue) {
 			return FALSE;
 		}
+		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_ADDITIONALRENENTRYIDS:
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
