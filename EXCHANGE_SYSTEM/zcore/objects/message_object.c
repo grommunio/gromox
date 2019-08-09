@@ -953,7 +953,7 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	}
 	pproptags->count = 0;
 	pproptags->pproptag = common_util_alloc(
-		sizeof(uint32_t)*(tmp_proptags.count + 10));
+		sizeof(uint32_t)*(tmp_proptags.count + 15));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -975,9 +975,13 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	}
 	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESS;
 	pproptags->count ++;
+	pproptags->pproptag[pproptags->count] = PROP_TAG_ENTRYID;
+	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESSLEVEL;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_OBJECTTYPE;
+	pproptags->count ++;
+	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTENTRYID;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_PARENTSOURCEKEY;
 	pproptags->count ++;

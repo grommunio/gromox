@@ -62,7 +62,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 		return FALSE;		
 	}
 	pproptags->pproptag = common_util_alloc(sizeof(
-		uint32_t)*(tmp_proptags.count + 25));
+		uint32_t)*(tmp_proptags.count + 30));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -70,6 +70,8 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 		sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_ACCESS;
+	pproptags->count ++;
+	pproptags->pproptag[pproptags->count] = PROP_TAG_ENTRYID;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] = PROP_TAG_OBJECTTYPE;
 	pproptags->count ++;
