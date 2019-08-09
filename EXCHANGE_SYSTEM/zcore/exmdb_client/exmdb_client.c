@@ -1215,7 +1215,7 @@ BOOL exmdb_client_get_folder_all_proptags(const char *dir,
 	
 	request.call_id = CALL_ID_GET_FOLDER_ALL_PROPTAGS;
 	request.dir = (void*)dir;
-	request.payload.get_folder_all_proptags.folder_id;
+	request.payload.get_folder_all_proptags.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
