@@ -1658,6 +1658,11 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 				if (NULL != strcasestr(temp_buff, ptoken + 1)) {
 					return TRUE;
 				}
+			} else {
+				if (0 == strcasecmp(temp_buff,
+					pfilter->res.res_property.pprop->value.pstr)) {
+					return TRUE;
+				}
 			}
 			if (MAPI_E_SUCCESS == nsp_interface_fetch_property(
 				pnode, FALSE, codepage, PROP_TAG_DISPLAYNAME_STRING8,
