@@ -3707,8 +3707,9 @@ uint32_t zarafa_server_queryrows(
 		HIERARCHY_TABLE != table_type &&
 		CONTENT_TABLE != table_type &&
 		ATTACHMENT_TABLE != table_type)
-		|| common_util_index_proptags(
-		pproptags, PROP_TAG_OBJECTTYPE) < 0) {
+		|| (NULL != ppcoptags &&
+		common_util_index_proptags(pproptags,
+		PROP_TAG_OBJECTTYPE) < 0)) {
 		return EC_SUCCESS;
 	}
 	switch (table_type) {
