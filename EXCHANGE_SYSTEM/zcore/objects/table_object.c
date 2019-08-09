@@ -831,7 +831,6 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 	void *pparent_obj, uint8_t table_type, uint32_t table_flags)
 {
-	TARRAY_SET rcpt_set;
 	TABLE_OBJECT *ptable;
 	
 	ptable = malloc(sizeof(TABLE_OBJECT));

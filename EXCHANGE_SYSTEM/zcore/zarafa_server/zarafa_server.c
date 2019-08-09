@@ -3616,11 +3616,19 @@ uint32_t zarafa_server_queryrows(
 	uint32_t count, const RESTRICTION *prestriction,
 	const PROPTAG_ARRAY *pproptags, TARRAY_SET *prowset)
 {
+	int i;
 	int32_t position;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
+	uint8_t table_type;
 	TARRAY_SET tmp_set;
 	TABLE_OBJECT *ptable;
+	uint32_t *pobject_type;
+	TAGGED_PROPVAL *ppropvas;
+	static uint32_t object_type_store = OBJECT_STORE;
+	static uint32_t object_type_folder = OBJECT_FOLDER;
+	static uint32_t object_type_message = OBJECT_MESSAGE;
+	static uint32_t object_type_attachment = OBJECT_ATTACHMENT;
 	
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -3640,6 +3648,7 @@ uint32_t zarafa_server_queryrows(
 		zarafa_server_put_user_info(pinfo);
 		return EC_ERROR;
 	}
+	table_type = table_object_get_table_type(ptable);
 	if (0xFFFFFFFF != start) {
 		table_object_set_position(ptable, start);
 	}
@@ -3694,6 +3703,42 @@ uint32_t zarafa_server_queryrows(
 		table_object_seek_current(ptable, TRUE, prowset->count);
 	}
 	zarafa_server_put_user_info(pinfo);
+	if ((STORE_TABLE != table_type &&
+		HIERARCHY_TABLE != table_type &&
+		CONTENT_TABLE != table_type &&
+		ATTACHMENT_TABLE != table_type) ||
+		NULL == common_util_index_proptags(
+		pproptags, PROP_TAG_OBJECTTYPE)) {
+		return EC_SUCCESS;
+	}
+	switch (table_type) {
+	case STORE_TABLE:
+		pobject_type = &object_type_store;
+		break;
+	case HIERARCHY_TABLE:
+		pobject_type = &object_type_folder;
+		break;
+	case CONTENT_TABLE:
+		pobject_type = &object_type_message;
+		break;
+	case ATTACHMENT_TABLE:
+		pobject_type = &object_type_attachment;
+		break;
+	}
+	for (i=0; i<prowset->count; i++) {
+		ppropvals = common_util_alloc(
+			sizeof(TAGGED_PROPVAL)*
+			(prowset->pparray[i]->count + 1));
+		if (NULL == ppropvals) {
+			return EC_ERROR;
+		}
+		memcpy(ppropval, prowset->pparray[i]->ppropval,
+			sizeof(TAGGED_PROPVAL)*prowset->pparray[i]->count);
+		ppropval[prowset->pparray[i]->count].proptag = PROP_TAG_OBJECTTYPE;
+		ppropval[prowset->pparray[i]->count].pvalue = pobject_type;
+		prowset->pparray[i]->ppropval = ppropval;
+		prowset->pparray[i]->count ++;
+	}
 	return EC_SUCCESS;
 }
 	
