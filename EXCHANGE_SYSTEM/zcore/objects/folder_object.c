@@ -402,7 +402,7 @@ static BOOL folder_object_get_calculated_property(
 		*ppvalue = common_util_to_folder_entryid(pfolder->pstore,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
-	case PROP_TAG_REMINDERSONLINEENTRYID
+	case PROP_TAG_REMINDERSONLINEENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
 			return FALSE;
 		}
