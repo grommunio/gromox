@@ -654,13 +654,15 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	if (0 == tmp_propvals.count) {
 		return TRUE;
 	}
-	tmp_propvals.count = 0;
 	count = ppropvals->count + 4;
 	tmp_propvals.ppropval = common_util_alloc(
 				sizeof(TAGGED_PROPVAL)*count);
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
+	memcpy(tmp_propvals.ppropval, ppropvals->ppropval,
+			sizeof(TAGGED_PROPVAL)*ppropvals->count);
+	tmp_propvals.count = ppropvals->count;
 	if (FALSE == exmdb_client_allocate_cn(
 		store_object_get_dir(pfolder->pstore),
 		&change_num)) {
