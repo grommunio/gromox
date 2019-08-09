@@ -538,8 +538,8 @@ int main(int argc, char **argv)
 	listener_stop();
 	console_server_stop();
 	exmdb_client_stop();
-	zarafa_server_stop();
 	rpc_parser_stop();
+	zarafa_server_stop();
 	ab_tree_stop();
 	msgchg_grouping_stop();
 	bounce_producer_stop();
