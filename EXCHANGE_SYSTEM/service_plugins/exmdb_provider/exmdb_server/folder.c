@@ -1005,7 +1005,7 @@ BOOL exmdb_server_set_folder_properties(
 	fid_val = rop_util_get_gc_value(folder_id);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (TRUE == exmdb_server_check_private()
-		&& fid_val == PRIVATE_FID_ROOT) {
+		&& PRIVATE_FID_ROOT == fid_val) {
 		for (i=0; i<pproperties->count; i++) {
 			if (PROP_TAG_ADDITIONALRENENTRYIDS ==
 				pproperties->ppropval[i].proptag ||
