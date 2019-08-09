@@ -47,6 +47,6 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		pnode, pproptags, ppropvals)) {
 		return FALSE;	
 	}
-	common_util_replace_address_type(ppropval, TRUE);
+	common_util_replace_address_type(ppropvals, TRUE);
 	return TRUE;
 }
