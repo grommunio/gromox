@@ -3703,9 +3703,12 @@ uint32_t zarafa_server_queryrows(
 		}
 		table_object_seek_current(ptable, TRUE, prowset->count);
 	}
-	if (CONTENT_TABLE == table_type || USER_TABLE == table_type) {
+	if (CONTENT_TABLE == table_type || ||
+		RECIPIENT_TABLE == table_type ||
+		USER_TABLE == table_type) {
 		for (i=0; i<prowset->count; i++) {
-			common_util_replace_address_type(prowset->pparray[i], TRUE);
+			common_util_replace_address_type(
+					prowset->pparray[i], TRUE);
 		}
 	}
 	zarafa_server_put_user_info(pinfo);
