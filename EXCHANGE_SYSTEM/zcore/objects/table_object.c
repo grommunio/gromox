@@ -392,59 +392,45 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				pset->count ++;
 			}
 		}
-		if (common_util_index_proptags(pcolumns,
-			PROP_TAG_ENTRYID) >= 0) {
-			for (i=0; i<pset->count; i++) {
-				if (NULL != common_util_get_propvals(
-					pset->pparray[i], PROP_TAG_ENTRYID)) {
-					continue;
-				}
-				pvalue = common_util_get_propvals(
-					pset->pparray[i], PROP_TAG_ADDRESSTYPE);
-				if (NULL == pvalue || 0 != strcasecmp(pvalue, "EX")) {
-					continue;
-				}
-				pvalue = common_util_get_propvals(
-					pset->pparray[i], PROP_TAG_EMAILADDRESS);
-				if (NULL == pvalue) {
-					continue;
-				}
-				pentryid = common_util_alloc(sizeof(BINARY));
-				if (NULL == pentryid) {
-					return FALSE;
-				}
-				if (FALSE == common_util_essdn_to_entryid(
-					pvalue, pentryid)) {
-					return FALSE;	
-				}
-				pvalue = common_util_alloc(sizeof(
-					TAGGED_PROPVAL)*pset->pparray[i]->count);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				memcpy(pvalue, pset->pparray[i]->ppropval,
-					sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
-				pset->pparray[i] = pvalue;
-				pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag =
-															PROP_TAG_ENTRYID;
-				pset->pparray[i]->ppropval[pset->pparray[i]->count].pvalue =
-																	pentryid;
-				pset->pparray[i]->count;
-			}
+		if (common_util_index_proptags(pcolumns, PROP_TAG_ENTRYID) < 0) {
+			return TRUE;	
 		}
 		for (i=0; i<pset->count; i++) {
-			for (j=0; j<pset->pparray[i]->count; j++) {
-				if (common_util_index_proptags(pcolumns,
-					pset->pparray[i]->ppropval[j].proptag) >= 0) {
-					continue;	
-				}
-				memmove(pset->pparray[i]->ppropval + j,
-					pset->pparray[i]->ppropval + j + 1,
-					(pset->pparray[i]->count - j) *
-					sizeof(TAGGED_PROPVAL));
-				pset->pparray[i]->count --;
-				j --;
+			if (NULL != common_util_get_propvals(
+				pset->pparray[i], PROP_TAG_ENTRYID)) {
+				continue;
 			}
+			pvalue = common_util_get_propvals(
+				pset->pparray[i], PROP_TAG_ADDRESSTYPE);
+			if (NULL == pvalue || 0 != strcasecmp(pvalue, "EX")) {
+				continue;
+			}
+			pvalue = common_util_get_propvals(
+				pset->pparray[i], PROP_TAG_EMAILADDRESS);
+			if (NULL == pvalue) {
+				continue;
+			}
+			pentryid = common_util_alloc(sizeof(BINARY));
+			if (NULL == pentryid) {
+				return FALSE;
+			}
+			if (FALSE == common_util_essdn_to_entryid(
+				pvalue, pentryid)) {
+				return FALSE;	
+			}
+			pvalue = common_util_alloc(sizeof(TAGGED_PROPVAL)
+							*(pset->pparray[i]->count + 1));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			memcpy(pvalue, pset->pparray[i]->ppropval,
+				sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
+			pset->pparray[i] = pvalue;
+			pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag =
+														PROP_TAG_ENTRYID;
+			pset->pparray[i]->ppropval[pset->pparray[i]->count].pvalue =
+																pentryid;
+			pset->pparray[i]->count ++;
 		}
 		return TRUE;
 	} else if (CONTAINER_TABLE == ptable->table_type) {
