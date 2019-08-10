@@ -799,6 +799,12 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
 {
+	/*
+		we replace the address type from "EX" to "ZARAFA"
+		in caller "zarafa_server_queryrows" because we need
+		to keep the addres type information for calculate
+		entryid there!
+	*/
 	return exmdb_client_get_message_instance_rcpts(
 		store_object_get_dir(pmessage->pstore),
 		pmessage->instance_id, row_id, need_count, pset);
