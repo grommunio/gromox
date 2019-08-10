@@ -1607,6 +1607,11 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	static uint8_t fake_false = 0;
 	TAGGED_PROPVAL propval_buff[2];
 	
+	read_flag &= MSG_READ_FLAG_SUPPRESS_RECEIPT|
+				MSG_READ_FLAG_CLEAR_READ_FLAG|
+				MSG_READ_FLAG_GENERATE_RECEIPT_ONLY|
+				MSG_READ_FLAG_CLEAR_NOTIFY_READ|
+				MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD;
 	if (TRUE == store_object_check_private(pmessage->pstore)) {
 		username = NULL;
 	} else {
