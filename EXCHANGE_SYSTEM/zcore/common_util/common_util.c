@@ -1164,7 +1164,31 @@ BINARY* common_util_username_to_addressbook_entryid(
 	return pbin;
 }
 
-static BOOL common_util_username_to_entryid(const char *username,
+BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
+{
+	EXT_PUSH ext_push;
+	ADDRESSBOOK_ENTRYID tmp_entryid;
+	
+	pbin->pb = common_util_alloc(1280);
+	if (NULL == pbin->pb) {
+		return FALSE;
+	}
+	tmp_entryid.flags = 0;
+	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
+							tmp_entryid.provider_uid);
+	tmp_entryid.version = 1;
+	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
+	tmp_entryid.px500dn = essdn;
+	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
+	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
+		&ext_push, &tmp_entryid)) {
+		return FALSE;
+	}
+	pbin->cb = ext_push.offset;
+	return TRUE;
+}
+
+BOOL common_util_username_to_entryid(const char *username,
 	const char *pdisplay_name, BINARY *pbin, int *paddress_type)
 {
 	int status;
@@ -1178,43 +1202,32 @@ static BOOL common_util_username_to_entryid(const char *username,
 	char hex_string[16];
 	char hex_string2[16];
 	ONEOFF_ENTRYID oneoff_entry;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
-	strncpy(tmp_name, username, 256);
-	pdomain = strchr(tmp_name, '@');
-	if (NULL == pdomain) {
-		return FALSE;
-	}
-	*pdomain = '\0';
-	pdomain ++;
-	pbin->pb = common_util_alloc(1280);
-	if (NULL == pbin->pb) {
-		return FALSE;
-	}
 	if (TRUE == system_services_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
-		encode_hex_int(user_id, hex_string);
-		encode_hex_int(domain_id, hex_string2);
-		snprintf(x500dn, 1024, "/o=%s/ou=Exchange Administrative Group "
-				"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-				g_org_name, hex_string2, hex_string, tmp_name);
-		upper_string(x500dn);
-		tmp_entryid.flags = 0;
-		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-								tmp_entryid.provider_uid);
-		tmp_entryid.version = 1;
-		tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
-		tmp_entryid.px500dn = x500dn;
-		ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
-		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-			&ext_push, &tmp_entryid)) {
+		strncpy(tmp_name, username, 256);
+		pdomain = strchr(tmp_name, '@');
+		if (NULL == pdomain) {
 			return FALSE;
 		}
-		pbin->cb = ext_push.offset;
+		*pdomain = '\0';
+		encode_hex_int(user_id, hex_string);
+		encode_hex_int(domain_id, hex_string2);
+		snprintf(x500dn, 1024, "/o=%s/ou=Exchange Administrative "
+				"Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
+				g_org_name, hex_string2, hex_string, tmp_name);
+		upper_string(x500dn);
+		if (FALSE == common_util_essdn_to_entryid(x500dn, pbin)) {
+			return FALSE;
+		}
 		if (NULL != paddress_type) {
 			*paddress_type = address_type;
 		}
 		return TRUE;
+	}
+	pbin->pb = common_util_alloc(1280);
+	if (NULL == pbin->pb) {
+		return FALSE;
 	}
 	oneoff_entry.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF,
