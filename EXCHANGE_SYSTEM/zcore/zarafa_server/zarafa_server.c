@@ -3703,7 +3703,7 @@ uint32_t zarafa_server_queryrows(
 		}
 		table_object_seek_current(ptable, TRUE, prowset->count);
 	}
-	if (CONTENT_TABLE == table_type || ||
+	if (CONTENT_TABLE == table_type ||
 		RECIPIENT_TABLE == table_type ||
 		USER_TABLE == table_type) {
 		for (i=0; i<prowset->count; i++) {
