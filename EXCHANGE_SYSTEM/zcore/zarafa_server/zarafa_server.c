@@ -3699,7 +3699,7 @@ uint32_t zarafa_server_queryrows(
 		if (FALSE == table_object_query_rows(ptable,
 			TRUE, pproptags, count, prowset)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;	
+			return EC_ERROR;
 		}
 		table_object_seek_current(ptable, TRUE, prowset->count);
 	}

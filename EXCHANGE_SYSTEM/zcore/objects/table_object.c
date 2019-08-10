@@ -425,7 +425,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 			}
 			memcpy(pvalue, pset->pparray[i]->ppropval,
 				sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
-			pset->pparray[i] = pvalue;
+			pset->pparray[i]->ppropval = pvalue;
 			pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag =
 														PROP_TAG_ENTRYID;
 			pset->pparray[i]->ppropval[pset->pparray[i]->count].pvalue =
