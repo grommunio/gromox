@@ -799,17 +799,9 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
 {
-	int i;
-	
-	if (FALSE == exmdb_client_get_message_instance_rcpts(
+	return exmdb_client_get_message_instance_rcpts(
 		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, row_id, need_count, pset)) {
-		return FALSE;	
-	}
-	for (i=0; i<pset->count; i++) {
-		common_util_replace_address_type(pset->pparray[i], TRUE);
-	}
-	return TRUE;
+		pmessage->instance_id, row_id, need_count, pset);
 }
 
 BOOL message_object_get_rowid_begin(
