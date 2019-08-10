@@ -303,6 +303,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	const PROPTAG_ARRAY *pcolumns, uint16_t row_count, TARRAY_SET *pset)
 {
 	int i, j;
+	void *pvalue;
 	uint32_t handle;
 	uint32_t end_pos;
 	USER_INFO *pinfo;

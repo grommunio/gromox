@@ -1178,7 +1178,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 							tmp_entryid.provider_uid);
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
-	tmp_entryid.px500dn = essdn;
+	tmp_entryid.px500dn = (void*)essdn;
 	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
