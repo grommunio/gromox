@@ -391,6 +391,20 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 				pset->count ++;
 			}
 		}
+		for (i=0; i<pset->count; i++) {
+			for (j=0; j<pset->pparray[i]->count; j++) {
+				if (common_util_index_proptags(pcolumns,
+					pset->pparray[i]->ppropval[j].proptag) >= 0) {
+					continue;	
+				}
+				memmove(pset->pparray[i]->ppropval + j,
+					pset->pparray[i]->ppropval + j + 1,
+					(pset->pparray[i]->count - j) *
+					sizeof(TAGGED_PROPVAL));
+				pset->pparray[i]->count --;
+				j --;
+			}
+		}
 		return TRUE;
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		if (ptable->table_flags & FLAG_CONVENIENT_DEPTH) {
