@@ -1093,7 +1093,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			if (FALSE == common_util_from_folder_entryid(
 				entryid, &b_private, &account_id, &folder_id)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;	
+				return EC_ERROR;
 			}
 			message_id = 0;
 			break;

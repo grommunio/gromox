@@ -603,6 +603,7 @@ static BOOL store_object_check_readonly_property(
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 	case PROP_TAG_INTERNETARTICLENUMBER:
 	case PROP_TAG_LOCALEID:
+	case PROP_TAG_MAPPINGSIGNATURE:
 	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
 	case PROP_TAG_MAILBOXOWNERENTRYID:
 	case PROP_TAG_MAILBOXOWNERNAME:
@@ -783,6 +784,9 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_STORERECORDKEY;
+	pproptags->count ++;
+	pproptags->pproptag[pproptags->count] =
+				PROP_TAG_MAPPINGSIGNATURE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count] =
 							PROP_TAG_ENTRYID;
@@ -1328,6 +1332,7 @@ static BOOL store_object_get_calculated_property(
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_INSTANCEKEY:
 	case PROP_TAG_STORERECORDKEY:
+	case PROP_TAG_MAPPINGSIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);
 		return TRUE;
 	case PROP_TAG_ENTRYID:
