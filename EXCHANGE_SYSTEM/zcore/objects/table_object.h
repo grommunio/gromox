@@ -49,7 +49,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable);
 void table_object_unload(TABLE_OBJECT *ptable);
 
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
-	const PROPTAG_ARRAY *pcolumns, uint16_t row_count, TARRAY_SET *pset);
+	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset);
 
 BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
 	const RESTRICTION *prestriction);
@@ -79,6 +79,10 @@ BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
 	uint32_t index, BOOL *pb_exist);
 
 void table_object_reset(TABLE_OBJECT *ptable);
+
+BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
+	uint32_t count, const RESTRICTION *pres,
+	const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset);
 
 BOOL table_object_match_row(TABLE_OBJECT *ptable,
 	BOOL b_forward, const RESTRICTION *pres,

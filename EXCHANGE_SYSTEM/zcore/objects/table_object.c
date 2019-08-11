@@ -300,7 +300,7 @@ static uint32_t table_object_get_folder_permission_rights(
 }
 
 BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
-	const PROPTAG_ARRAY *pcolumns, uint16_t row_count, TARRAY_SET *pset)
+	const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset)
 {
 	int i, j;
 	void *pvalue;
@@ -1024,6 +1024,259 @@ void table_object_reset(TABLE_OBJECT *ptable)
 	ptable->position = 0;
 	table_object_set_table_id(ptable, 0);
 	table_object_clear_bookmarks(ptable);
+}
+
+static BOOL table_object_evaluate_restriction(
+	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pres)
+{
+	int i;
+	int len;
+	void *pvalue;
+	void *pvalue1;
+	uint32_t val_size;
+	
+	switch (pres->rt) {
+	case RESTRICTION_TYPE_OR:
+		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
+			if (TRUE == table_object_evaluate_restriction(ppropvals,
+				((RESTRICTION_AND_OR*)pres->pres)->pres + i)) {
+				return TRUE;
+			}
+		}
+		return FALSE;
+	case RESTRICTION_TYPE_AND:
+		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
+			if (FALSE == table_object_evaluate_restriction(ppropvals,
+				((RESTRICTION_AND_OR*)pres->pres)->pres + i)) {
+				return FALSE;
+			}
+		}
+		return TRUE;
+	case RESTRICTION_TYPE_NOT:
+		if (TRUE == table_object_evaluate_restriction(ppropvals,
+			&((RESTRICTION_NOT*)pres->pres)->res)) {
+			return FALSE;
+		}
+		return TRUE;
+	case RESTRICTION_TYPE_CONTENT:
+		if (PROPVAL_TYPE_WSTRING != (((RESTRICTION_CONTENT*)
+			pres->pres)->proptag & 0xFFFF)) {
+			return FALSE;
+		}
+		if ((((RESTRICTION_CONTENT*)pres->pres)->proptag & 0xFFFF) !=
+			(((RESTRICTION_CONTENT*)pres->pres)->propval.proptag & 0xFFFF)) {
+			return FALSE;
+		}
+		pvalue = common_util_get_propvals(ppropvals,
+			(RESTRICTION_CONTENT*)pres->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		switch (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level & 0xFFFF) {
+		case FUZZY_LEVEL_FULLSTRING:
+			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
+				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+				if (0 == strcasecmp(((RESTRICTION_CONTENT*)
+					pres->pres)->propval.pvalue, pvalue)) {
+					return TRUE;
+				}
+				return FALSE;
+			} else {
+				if (0 == strcmp(((RESTRICTION_CONTENT*)
+					pres->pres)->propval.pvalue, pvalue)) {
+					return TRUE;
+				}
+				return FALSE;
+			}
+			return FALSE;
+		case FUZZY_LEVEL_SUBSTRING:
+			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level & 
+				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+				if (NULL != strcasestr(pvalue, ((RESTRICTION_CONTENT*)
+					pres->pres)->propval.pvalue)) {
+					return TRUE;
+				}
+				return FALSE;
+			} else {
+				if (NULL != strstr(pvalue, ((RESTRICTION_CONTENT*)
+					pres->pres)->propval.pvalue)) {
+					return TRUE;
+				}
+			}
+			return FALSE;
+		case FUZZY_LEVEL_PREFIX:
+			len = strlen(((RESTRICTION_CONTENT*)pres->pres)->propval.pvalue);
+			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
+				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+				if (0 == strncasecmp(pvalue, ((RESTRICTION_CONTENT*)
+					pres->pres)->propval.pvalue, len)) {
+					return TRUE;
+				}
+				return FALSE;
+			} else {
+				if (0 == strncmp(pvalue, ((RESTRICTION_CONTENT*)
+					pres->pres)->propval.pvalue, len)) {
+					return TRUE;
+				}
+				return FALSE;
+			}
+			return FALSE;
+		}
+		return FALSE;
+	case RESTRICTION_TYPE_PROPERTY:
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_PROPERTY*)pres->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		if (PROP_TAG_ANR == ((RESTRICTION_PROPERTY*)pres->pres)->proptag) {
+			if ((((RESTRICTION_PROPERTY*)pres->pres)->propval.proptag
+				& 0xFFFF) != PROPVAL_TYPE_WSTRING) {
+				return FALSE;
+			}
+			if (NULL != strcasestr(((RESTRICTION_PROPERTY*)
+				pres->pres)->propval.pvalue, pvalue)) {
+				return TRUE;
+			}
+			return FALSE;
+		}
+		return propval_compare_relop(
+				((RESTRICTION_PROPERTY*)pres->pres)->relop,
+				((RESTRICTION_PROPERTY*)pres->pres)->proptag&0xFFFF,
+				pvalue, ((RESTRICTION_PROPERTY*)pres->pres)->propval.pvalue);
+	case RESTRICTION_TYPE_PROPCOMPARE:
+		if ((((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1&0xFFFF) !=
+			(((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2&0xFFFF)) {
+			return FALSE;
+		}
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		pvalue1 = common_util_get_propvals(ppropvals,
+			((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2);
+		if (NULL == pvalue1) {
+			return FALSE;
+		}
+		return propval_compare_relop(
+				((RESTRICTION_PROPCOMPARE*)pres->pres)->relop,
+				((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1&0xFFFF,
+				pvalue, pvalue1);
+	case RESTRICTION_TYPE_BITMASK:
+		if (PROPVAL_TYPE_LONG != (((RESTRICTION_BITMASK*)
+			pres->pres)->proptag & 0xFFFF)) {
+			return FALSE;
+		}
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_BITMASK*)pres->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		switch (((RESTRICTION_BITMASK*)pres->pres)->bitmask_relop) {
+		case BITMASK_RELOP_EQZ:
+			if (0 == (*(uint32_t*)pvalue &
+				((RESTRICTION_BITMASK*)pres->pres)->mask)) {
+				return TRUE;
+			}
+			break;
+		case BITMASK_RELOP_NEZ:
+			if (*(uint32_t*)pvalue &
+				((RESTRICTION_BITMASK*)pres->pres)->mask) {
+				return TRUE;
+			}
+			break;
+		}	
+		return FALSE;
+	case RESTRICTION_TYPE_SIZE:
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_SIZE*)pres->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		val_size = propval_size(((RESTRICTION_SIZE*)
+					pres->pres)->proptag, pvalue);
+		return propval_compare_relop(((RESTRICTION_SIZE*)
+				pres->pres)->relop, PROPVAL_TYPE_LONG, &val_size,
+				&((RESTRICTION_SIZE*)pres->pres)->size);
+	case RESTRICTION_TYPE_EXIST:
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_EXIST*)pres->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		return TRUE;
+	case RESTRICTION_TYPE_SUBOBJ:
+		return FALSE;
+	case RESTRICTION_TYPE_COMMENT:
+		if (NULL == ((RESTRICTION_COMMENT*)pres->pres)->pres) {
+			return TRUE;
+		}
+		return table_object_evaluate_restriction(ppropvals,
+				((RESTRICTION_COMMENT*)pres->pres)->pres);
+	case RESTRICTION_TYPE_COUNT:
+		return FALSE;
+	}	
+	return FALSE;
+}
+
+BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
+	uint32_t count, const RESTRICTION *pres,
+	const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset)
+{
+	int i;
+	TARRAY_SET tmp_set;
+	uint32_t tmp_proptag;
+	PROPTAG_ARRAY proptags;
+	PROPTAG_ARRAY tmp_proptags;
+	
+	switch (ptable->table_type) {
+	case ATTACHMENT_TABLE:
+		if (FALSE == message_object_get_attachment_table_all_proptags(
+			ptable->pparent_obj, &proptags)) {
+			return FALSE;	
+		}
+		tmp_proptag = PROP_TAG_ATTACHDATABINARY;
+		tmp_proptags.count = 1;
+		tmp_proptags.pproptag = &tmp_proptag;
+		common_util_reduce_proptags(proptags, &tmp_proptags);
+		if (FALSE == message_object_query_attachment_table(
+			ptable->pparent_obj, &proptags, ptable->position,
+			0x7FFFFFFF, &tmp_set)) {
+			return FALSE;	
+		}
+		break;
+	case RECIPIENT_TABLE:
+		if (FALSE == message_object_read_recipients(
+			ptable->pparent_obj, 0, 0xFFFF, &tmp_set)) {
+			return FALSE;	
+		}
+		break;
+	case USER_TABLE:
+		container_object_get_user_table_all_proptags(&proptags);
+		if (FALSE == container_object_query_user_table(
+			ptable->pparent_obj, &proptags, ptable->position,
+			0x7FFFFFFF, &tmp_set)) {
+			return FALSE;	
+		}
+		break;
+	default:
+		return FALSE;	
+	}
+	pset->count = 0;
+	pset->pparray = common_util_alloc(sizeof(void*)*count);
+	if (NULL == pset->pparray) {
+		return FALSE;
+	}
+	for (i=0; i<tmp_set.count&&pset->count>=count; i++) {
+		if (FALSE == table_object_evaluate_restriction(
+			tmp_set.pparray[i], prestriction)) {
+			continue;	
+		}
+		pset->pparray[pset->count] = temp_set.pparray[i];
+		pset->count ++;
+	}
+	return TRUE;
 }
 
 BOOL table_object_match_row(TABLE_OBJECT *ptable,

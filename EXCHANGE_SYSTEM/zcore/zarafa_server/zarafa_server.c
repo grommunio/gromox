@@ -3603,6 +3603,7 @@ uint32_t zarafa_server_queryrows(
 	const PROPTAG_ARRAY *pproptags, TARRAY_SET *prowset)
 {
 	int i;
+	uint32_t row_num;
 	int32_t position;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
@@ -3644,13 +3645,27 @@ uint32_t zarafa_server_queryrows(
 		case CONTENT_TABLE:
 		case RULE_TABLE:
 			break;
+		case ATTACHMENT_TABLE:
+		case RECIPIENT_TABLE:
+		case USER_TABLE:
+			if (FALSE == table_object_filter_rows(
+				ptable, count, pres, pproptags, prowset)) {
+				zarafa_server_put_user_info(pinfo);
+				return EC_ERROR;
+			}
+			zarafa_server_put_user_info(pinfo);
+			return EC_SUCCESS;
 		default:
 			zarafa_server_put_user_info(pinfo);
 			return EC_NOT_SUPPORTED;
 		}
+		row_num = table_object_get_total(ptable);
+		if (row_num > count) {
+			row_num = count;
+		}
 		prowset->count = 0;
 		prowset->pparray = common_util_alloc(
-			sizeof(TPROPVAL_ARRAY*)*prowset->count);
+			sizeof(TPROPVAL_ARRAY*)*row_num);
 		if (NULL == prowset->pparray) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_ERROR;
