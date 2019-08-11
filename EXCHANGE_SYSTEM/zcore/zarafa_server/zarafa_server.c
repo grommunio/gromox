@@ -3648,8 +3648,8 @@ uint32_t zarafa_server_queryrows(
 		case ATTACHMENT_TABLE:
 		case RECIPIENT_TABLE:
 		case USER_TABLE:
-			if (FALSE == table_object_filter_rows(
-				ptable, count, pres, pproptags, prowset)) {
+			if (FALSE == table_object_filter_rows(ptable,
+				count, prestriction, pproptags, prowset)) {
 				zarafa_server_put_user_info(pinfo);
 				return EC_ERROR;
 			}
