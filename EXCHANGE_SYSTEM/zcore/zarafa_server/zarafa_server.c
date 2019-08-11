@@ -1991,6 +1991,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 {
 	BOOL b_fai;
 	void *pvalue;
+	uint32_t hstore;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	int64_t max_quota;
@@ -2028,6 +2029,9 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	}
 	folder_id = folder_object_get_id(pfolder);
 	pstore = folder_object_get_store(pfolder);
+	hstore = object_tree_get_store_handle(pinfo->ptree,
+					store_object_check_private(pstore),
+					store_object_get_account_id(pstore));
 	if (FALSE == store_object_check_owner_mode(pstore)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			store_object_get_dir(pstore),
@@ -2115,8 +2119,11 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_ERROR;
 	}
+	/* add the store handle as the parent object handle
+		because the caller normaly will not keep the
+		handle of folder */
 	*phobject = object_tree_add_object_handle(
-			pinfo->ptree, hfolder, MAPI_MESSAGE,
+			pinfo->ptree, hstore, MAPI_MESSAGE,
 			pmessage);
 	if (INVALID_HANDLE == *phobject) {
 		message_object_free(pmessage);
