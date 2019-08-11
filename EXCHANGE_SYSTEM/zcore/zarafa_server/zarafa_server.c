@@ -1136,7 +1136,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			store_object_get_dir(pstore), folder_id,
 			pinfo->username, &permission)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;	
+			return EC_ERROR;
 		}
 		if (0 == (permission & PERMISSION_READANY) &&
 			0 == (permission & PERMISSION_FOLDERVISIBLE) &&
@@ -3617,6 +3617,9 @@ uint32_t zarafa_server_queryrows(
 	static uint32_t object_type_message = OBJECT_MESSAGE;
 	static uint32_t object_type_attachment = OBJECT_ATTACHMENT;
 	
+	if (count > 0x7FFFFFFF) {
+		count = 0x7FFFFFFF;
+	}
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
 		return EC_ERROR;
