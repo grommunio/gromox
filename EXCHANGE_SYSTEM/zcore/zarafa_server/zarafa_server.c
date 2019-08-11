@@ -3877,7 +3877,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 	}
 	if (CONTENT_TABLE != table_object_get_table_type(ptable)) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_SUPPORTED;
+		return EC_SUCCESS;
 	}
 	b_max = FALSE;
 	b_multi_inst = FALSE;
