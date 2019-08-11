@@ -5264,6 +5264,7 @@ uint32_t zarafa_server_setmessagereadflag(
 uint32_t zarafa_server_openembedded(GUID hsession,
 	uint32_t hattachment, uint32_t flags, uint32_t *phobject)
 {
+	uint32_t hstore;
 	BOOL b_writable;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
@@ -5287,6 +5288,13 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		return EC_NOT_SUPPORTED;
 	}
 	pstore = attachment_object_get_store(pattachment);
+	hstore = object_tree_get_store_handle(pinfo->ptree,
+					store_object_check_private(pstore),
+					store_object_get_account_id(pstore));
+	if (INVALID_HANDLE == hstore) {
+		zarafa_server_put_user_info(pinfo);
+		return EC_NULL_OBJECT;
+	}
 	b_writable = attachment_object_check_writable(pattachment);
 	tag_access = attachment_object_get_tag_access(pattachment);
 	if ((FLAG_CREATE & flags) && FALSE == b_writable) {
@@ -5325,8 +5333,11 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 			return EC_ERROR;
 		}
 	}
+	/* add the store handle as the parent object handle
+		because the caller normaly will not keep the
+		handle of attachment */
 	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hattachment, MAPI_MESSAGE,
+		pinfo->ptree, hstore, MAPI_MESSAGE,
 		pmessage);
 	if (INVALID_HANDLE == *phobject) {
 		message_object_free(pmessage);
