@@ -1068,7 +1068,7 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		}
 		pvalue = common_util_get_propvals(ppropvals,
-			(RESTRICTION_CONTENT*)pres->pres)->proptag);
+			((RESTRICTION_CONTENT*)pres->pres)->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1239,7 +1239,7 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 		tmp_proptag = PROP_TAG_ATTACHDATABINARY;
 		tmp_proptags.count = 1;
 		tmp_proptags.pproptag = &tmp_proptag;
-		common_util_reduce_proptags(proptags, &tmp_proptags);
+		common_util_reduce_proptags(&proptags, &tmp_proptags);
 		if (FALSE == message_object_query_attachment_table(
 			ptable->pparent_obj, &proptags, ptable->position,
 			0x7FFFFFFF, &tmp_set)) {
