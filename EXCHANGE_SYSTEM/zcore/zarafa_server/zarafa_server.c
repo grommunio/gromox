@@ -3644,6 +3644,42 @@ uint32_t zarafa_server_queryrows(
 		case HIERARCHY_TABLE:
 		case CONTENT_TABLE:
 		case RULE_TABLE:
+			row_num = table_object_get_total(ptable);
+			if (row_num > count) {
+				row_num = count;
+			}
+			prowset->count = 0;
+			prowset->pparray = common_util_alloc(
+				sizeof(TPROPVAL_ARRAY*)*row_num);
+			if (NULL == prowset->pparray) {
+				zarafa_server_put_user_info(pinfo);
+				return EC_ERROR;
+			}
+			while (TRUE) {
+				if (FALSE == table_object_match_row(ptable,
+					TRUE, prestriction, &position)) {
+					zarafa_server_put_user_info(pinfo);
+					return EC_ERROR;
+				}
+				if (position < 0) {
+					break;
+				}
+				table_object_set_position(ptable, position);
+				if (FALSE == table_object_query_rows(ptable,
+					TRUE, pproptags, 1, &tmp_set)) {
+					zarafa_server_put_user_info(pinfo);
+					return EC_ERROR;	
+				}
+				if (1 != tmp_set.count) {
+					break;
+				}
+				table_object_seek_current(ptable, TRUE, 1);
+				prowset->pparray[prowset->count] = tmp_set.pparray[0];
+				prowset->count ++;
+				if (count == prowset->count) {
+					break;
+				}
+			}
 			break;
 		case ATTACHMENT_TABLE:
 		case RECIPIENT_TABLE:
@@ -3653,47 +3689,10 @@ uint32_t zarafa_server_queryrows(
 				zarafa_server_put_user_info(pinfo);
 				return EC_ERROR;
 			}
-			zarafa_server_put_user_info(pinfo);
-			return EC_SUCCESS;
+			break;
 		default:
 			zarafa_server_put_user_info(pinfo);
 			return EC_NOT_SUPPORTED;
-		}
-		row_num = table_object_get_total(ptable);
-		if (row_num > count) {
-			row_num = count;
-		}
-		prowset->count = 0;
-		prowset->pparray = common_util_alloc(
-			sizeof(TPROPVAL_ARRAY*)*row_num);
-		if (NULL == prowset->pparray) {
-			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
-		}
-		while (TRUE) {
-			if (FALSE == table_object_match_row(ptable,
-				TRUE, prestriction, &position)) {
-				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;
-			}
-			if (position < 0) {
-				break;
-			}
-			table_object_set_position(ptable, position);
-			if (FALSE == table_object_query_rows(ptable,
-				TRUE, pproptags, 1, &tmp_set)) {
-				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;	
-			}
-			if (1 != tmp_set.count) {
-				break;
-			}
-			table_object_seek_current(ptable, TRUE, 1);
-			prowset->pparray[prowset->count] = tmp_set.pparray[0];
-			prowset->count ++;
-			if (count == prowset->count) {
-				break;
-			}
 		}
 	} else {
 		if (FALSE == table_object_query_rows(ptable,
