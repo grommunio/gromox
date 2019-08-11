@@ -3650,11 +3650,8 @@ uint32_t zarafa_server_queryrows(
 		return EC_ERROR;
 	}
 	table_type = table_object_get_table_type(ptable);
-	if (0xFFFFFFFF == start) {
-		table_object_set_position(ptable, 0);
-	} else {
-		table_object_set_position(ptable,
-			table_object_get_position(ptable) + position);
+	if (0xFFFFFFFF != start) {
+		table_object_set_position(ptable, start);
 	}
 	if (NULL != prestriction) {
 		switch (table_object_get_table_type(ptable)) {
