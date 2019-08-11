@@ -2628,10 +2628,8 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	uint32_t tag_access;
 	uint32_t permission;
 	STORE_OBJECT *pstore;
-	char unicode_name[256];
 	FOLDER_OBJECT *pfolder;
 	FOLDER_OBJECT *pparent;
-	char unicode_comment[1024];
 	TPROPVAL_ARRAY tmp_propvals;
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
@@ -2668,26 +2666,6 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_SUPPORTED;
 	}
-	if (0 == (flags & FLAG_UNICODE)) {
-		if (common_util_convert_string(TRUE, folder_name,
-			unicode_name, sizeof(unicode_name)) < 0) {
-			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
-		}
-		if (common_util_convert_string(TRUE, folder_comment,
-			unicode_comment, sizeof(unicode_comment)) < 0) {
-			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
-		}
-	} else {
-		if (strlen(folder_name) >= sizeof(unicode_name)) {
-			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
-		}
-		strcpy(unicode_name, folder_name);
-		strncpy(unicode_comment, folder_comment,
-						sizeof(unicode_comment));
-	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			store_object_get_dir(pstore),
@@ -2705,7 +2683,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	if (FALSE == exmdb_client_get_folder_by_name(
 		store_object_get_dir(pstore),
 		folder_object_get_id(pparent),
-		unicode_name, &folder_id)) {
+		folder_name, &folder_id)) {
 		zarafa_server_put_user_info(pinfo);
 		return EC_ERROR;
 	}
@@ -2737,9 +2715,9 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[1].proptag = PROP_TAG_FOLDERTYPE;
 		propval_buff[1].pvalue = &tmp_type;
 		propval_buff[2].proptag = PROP_TAG_DISPLAYNAME;
-		propval_buff[2].pvalue = unicode_name;
+		propval_buff[2].pvalue = folder_name;
 		propval_buff[3].proptag = PROP_TAG_COMMENT;
-		propval_buff[3].pvalue = unicode_comment;
+		propval_buff[3].pvalue = folder_comment;
 		propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
 		propval_buff[4].pvalue = &last_time;
 		propval_buff[5].proptag = PROP_TAG_LASTMODIFICATIONTIME;
