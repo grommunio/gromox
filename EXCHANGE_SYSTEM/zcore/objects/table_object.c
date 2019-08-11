@@ -1270,10 +1270,10 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 	}
 	for (i=0; i<tmp_set.count&&pset->count>=count; i++) {
 		if (FALSE == table_object_evaluate_restriction(
-			tmp_set.pparray[i], prestriction)) {
+			tmp_set.pparray[i], pres)) {
 			continue;	
 		}
-		pset->pparray[pset->count] = temp_set.pparray[i];
+		pset->pparray[pset->count] = tmp_set.pparray[i];
 		pset->count ++;
 	}
 	return TRUE;
