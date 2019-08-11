@@ -1264,7 +1264,7 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 		return FALSE;	
 	}
 	pset->count = 0;
-	pset->pparray = common_util_alloc(sizeof(void*)*count);
+	pset->pparray = common_util_alloc(sizeof(void*)*tmp_set.count);
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
