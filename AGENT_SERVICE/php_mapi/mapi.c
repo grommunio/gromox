@@ -2322,7 +2322,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 		pproptags = NULL;
 	}
 	result = zarafa_client_queryrows(ptable->hsession,
-		ptable->hobject, 0, 0xFFFFFFFF, prestriction,
+		ptable->hobject, 0xFFFFFFFF, 0xFFFFFFFF, prestriction,
 		pproptags, &rowset);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;
