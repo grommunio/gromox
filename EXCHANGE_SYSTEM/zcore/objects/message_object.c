@@ -1388,8 +1388,37 @@ static BOOL message_object_set_properties_internal(
 BOOL message_object_set_properties(MESSAGE_OBJECT *pmessage,
 	const TPROPVAL_ARRAY *ppropvals)
 {
+	void *psubject;
+	void *pnormalized_subject;
+	
 	common_util_replace_address_type(
 		(TPROPVAL_ARRAY*)ppropvals, FALSE);
+	/* seems some php-mapi users do not understand well
+		the relationship between PROP_TAG_SUBJECT and
+		PROP_TAG_NORMALIZEDSUBJECT, we try to resolve
+		the conflict when there exist both of them */
+	psubject = common_util_get_propvals(
+			ppropvals, PROP_TAG_SUBJECT);
+	if (NULL == psubject) {
+		psubject = common_util_get_propvals(
+			ppropvals, PROP_TAG_SUBJECT_STRING8);
+	}
+	if (NULL != psubject) {
+		pnormalized_subject = common_util_get_propvals(
+				ppropvals, PROP_TAG_NORMALIZEDSUBJECT);
+		if (NULL == pnormalized_subject) {
+			pnormalized_subject = common_util_get_propvals(
+				ppropvals, PROP_TAG_NORMALIZEDSUBJECT_STRING8);
+		}
+		if (NULL != pnormalized_subject) {
+			if ('\0' == pnormalized_subject[0] && '\0' != psubject[0]) {
+				common_util_remove_propvals((TPROPVAL_ARRAY*)
+					ppropvals, PROP_TAG_NORMALIZEDSUBJECT);
+				common_util_remove_propvals((TPROPVAL_ARRAY*)
+					ppropvals, PROP_TAG_NORMALIZEDSUBJECT_STRING8);
+			}
+		}
+	}
 	return message_object_set_properties_internal(
 						pmessage, TRUE, ppropvals);
 }
