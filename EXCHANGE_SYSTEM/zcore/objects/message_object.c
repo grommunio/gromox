@@ -1388,8 +1388,8 @@ static BOOL message_object_set_properties_internal(
 BOOL message_object_set_properties(MESSAGE_OBJECT *pmessage,
 	const TPROPVAL_ARRAY *ppropvals)
 {
-	void *psubject;
-	void *pnormalized_subject;
+	char *psubject;
+	char *pnormalized_subject;
 	
 	common_util_replace_address_type(
 		(TPROPVAL_ARRAY*)ppropvals, FALSE);
