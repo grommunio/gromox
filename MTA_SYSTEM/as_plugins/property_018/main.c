@@ -96,6 +96,10 @@ static int xmailer_filter(int action, int context_ID,
 				ptr1 = memmem(ptr, ptr1 - ptr, ": ", 2);
 			}
 			ptr1 += 2;
+			/* ignore space or tab */
+			while (' ' == *ptr1 || '\t' == *ptr1) {
+				ptr1 ++;
+			}
 			len -= ptr1 - ptr;
 			ptr = ptr1;
 			if (0 != strncmp(ptr + 34, "\r\n", 2)) {
