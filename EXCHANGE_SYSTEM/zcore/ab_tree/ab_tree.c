@@ -2793,8 +2793,11 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 			}
 		}
 	} else {
-		pnode = simple_tree_node_get_child(pnode);
-		if (NULL == pnode) {
+		pnode = ab_tree_minid_to_node(pbase, container_id);
+		if (NULL == pnode || NULL == (pnode =
+			simple_tree_node_get_child(pnode))) {
+			pminids->count = 0;
+			pminids->pl = NULL;
 			return TRUE;
 		}
 		do {
@@ -2812,9 +2815,13 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 		} while (pnode=simple_tree_node_get_slibling(pnode));
 	}
 	pminids->count = single_list_get_nodes_num(&temp_list);
-	pminids->pl = common_util_alloc(sizeof(uint32_t)*pminids->count);
-	if (NULL == pminids->pl) {
-		return FALSE;
+	if (0 == pminids->count) {
+		pminids->pl = NULL;
+	} else {
+		pminids->pl = common_util_alloc(sizeof(uint32_t)*pminids->count);
+		if (NULL == pminids->pl) {
+			return FALSE;
+		}
 	}
 	count = 0;
 	for (psnode=single_list_get_head(&temp_list); NULL!=psnode;
