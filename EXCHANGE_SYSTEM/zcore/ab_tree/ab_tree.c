@@ -2749,7 +2749,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		return FALSE;
 	case RESTRICTION_TYPE_BITMASK:
 		 if (PROPVAL_TYPE_LONG != (((RESTRICTION_BITMASK*)
-			pres->pres)->proptag & 0xFFFF)) {
+			pfilter->pres)->proptag & 0xFFFF)) {
 			return FALSE;
 		}
 		if (FALSE == ab_tree_fetch_node_property(pnode, codepage,
@@ -2757,16 +2757,16 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 			&pvalue) || NULL == pvalue) {
 			return FALSE;
 		}
-		switch (((RESTRICTION_BITMASK*)pres->pres)->bitmask_relop) {
+		switch (((RESTRICTION_BITMASK*)pfilter->pres)->bitmask_relop) {
 		case BITMASK_RELOP_EQZ:
 			if (0 == (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pres->pres)->mask)) {
+				((RESTRICTION_BITMASK*)pfilter->pres)->mask)) {
 				return TRUE;
 			}
 			break;
 		case BITMASK_RELOP_NEZ:
 			if (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pres->pres)->mask) {
+				((RESTRICTION_BITMASK*)pfilter->pres)->mask) {
 				return TRUE;
 			}
 			break;
