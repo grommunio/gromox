@@ -6430,7 +6430,7 @@ EXPORT_CONTENT_CLASS:
 	propid = propids.ppropid[0];
 	proptag = ((uint32_t)propid) << 16 | PROPVAL_TYPE_WSTRING;
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
-	if (NULL != pvalue) {
+	if (NULL != pvalue && '\0' != *(char*)pvalue) {
 		if (FALSE == mime_set_field(phead,
 			"X-Message-Flag", pvalue)) {
 			return FALSE;
