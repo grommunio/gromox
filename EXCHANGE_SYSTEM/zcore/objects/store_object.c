@@ -1872,7 +1872,6 @@ static BOOL store_object_get_folder_permissions(
 	PERMISSION_SET *pperm_set)
 {
 	int i, j;
-	const char *dir;
 	BINARY *pentryid;
 	uint32_t row_num;
 	uint32_t table_id;
@@ -1892,9 +1891,9 @@ static BOOL store_object_get_folder_permissions(
 	}
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
-	if (FALSE == exmdb_client_query_table(dir, NULL, 0,
-		table_id, &proptags, 0, row_num, &permission_set)) {
-		exmdb_client_unload_table(dir, table_id);
+	if (FALSE == exmdb_client_query_table(pstore->dir, NULL,
+		0, table_id, &proptags, 0, row_num, &permission_set)) {
+		exmdb_client_unload_table(pstore->dir, table_id);
 		return FALSE;
 	}
 	exmdb_client_unload_table(pstore->dir, table_id);
