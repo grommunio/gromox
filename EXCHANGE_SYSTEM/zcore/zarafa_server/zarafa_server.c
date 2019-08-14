@@ -1575,7 +1575,7 @@ uint32_t zarafa_server_getpermissions(GUID hsession,
 	}
 	switch (mapi_type) {
 	case MAPI_STORE:
-		if (FALSE == folder_object_get_permissions(
+		if (FALSE == store_object_get_permissions(
 			pobject, pperm_set)) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_ERROR;	
