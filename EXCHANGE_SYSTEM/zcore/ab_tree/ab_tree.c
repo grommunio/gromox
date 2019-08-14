@@ -2832,7 +2832,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 				if (NULL == psnode1) {
 					return FALSE;
 				}
-				psnode1->pdata = pnode->pdata;
+				psnode1->pdata = pnode;
 				single_list_append_as_tail(&temp_list, psnode1);
 			}
 		} while (pnode=simple_tree_node_get_slibling(pnode));
