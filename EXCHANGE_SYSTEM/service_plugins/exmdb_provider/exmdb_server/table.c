@@ -2872,7 +2872,6 @@ static BOOL table_evaluate_row_restriction(
 	uint32_t val_size;
 	
 	switch (pres->rt) {
-	case RESTRICTION_TYPE_OR:
 	case RESTRICTION_TYPE_AND:
 		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
 			if (FALSE == table_evaluate_row_restriction(
@@ -2882,6 +2881,15 @@ static BOOL table_evaluate_row_restriction(
 			}
 		}
 		return TRUE;
+	case RESTRICTION_TYPE_OR:
+		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
+			if (TRUE == table_evaluate_row_restriction(
+				((RESTRICTION_AND_OR*)pres->pres)->pres + i,
+				pparam, get_property)) {
+				return TRUE;
+			}
+		}
+		return FALSE;
 	case RESTRICTION_TYPE_NOT:
 		if (TRUE == table_evaluate_row_restriction(
 			&((RESTRICTION_NOT*)pres->pres)->res,
