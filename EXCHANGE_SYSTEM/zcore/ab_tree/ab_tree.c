@@ -2626,7 +2626,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	case RESTRICTION_TYPE_OR:
 		for (i=0; i<((RESTRICTION_AND_OR*)pfilter->pres)->count; i++) {
-			if (FALSE == ab_tree_match_node(pnode, codepage,
+			if (TRUE == ab_tree_match_node(pnode, codepage,
 				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
 				return TRUE;
 			}
