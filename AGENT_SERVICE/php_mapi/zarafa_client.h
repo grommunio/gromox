@@ -249,34 +249,6 @@ uint32_t zarafa_client_setsearchcriteria(
 	const BINARY_ARRAY *pfolder_array,
 	const RESTRICTION *prestriction);
 
-uint32_t zarafa_client_openfreebusydata(GUID hsession,
-	uint32_t hsupport, const BINARY_ARRAY *pentryids,
-	LONG_ARRAY *phobject_array);
-
-uint32_t zarafa_client_enumfreebusyblocks(GUID hsession,
-	uint32_t hfbdata, uint64_t nttime_start, uint64_t nttime_end,
-	uint32_t *phobject);
-
-uint32_t zarafa_client_fbenumreset(GUID hsession, uint32_t hfbenum);
-
-uint32_t zarafa_client_fbenumskip(GUID hsession,
-	uint32_t hfbenum, uint32_t num);
-
-uint32_t zarafa_client_fbenumrestrict(GUID hsession,
-	uint32_t hfbenum, uint64_t nttime_start, uint64_t nttime_end);
-
-uint32_t zarafa_client_fbenumexport(GUID hsession,
-	uint32_t hfbenum, uint32_t count, uint64_t nttime_start,
-	uint64_t nttime_end, const char *organizer_name,
-	const char *username, const char *uid_string,
-	BINARY *pbin_ical);
-
-uint32_t zarafa_client_fetchfreebusyblocks(GUID hsession,
-	uint32_t hfbenum, uint32_t celt, FBBLOCK_ARRAY *pblocks);
-
-uint32_t zarafa_client_getfreebusyrange(GUID hsession,
-	uint32_t hfbdata, uint64_t *pnttime_start, uint64_t *pnttime_end);
-	
 uint32_t zarafa_client_messagetorfc822(GUID hsession,
 	uint32_t hmessage, BINARY *peml_bin);
 

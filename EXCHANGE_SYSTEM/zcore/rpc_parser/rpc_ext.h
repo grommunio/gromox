@@ -463,59 +463,6 @@ typedef struct _REQ_SETSEARCHCRITERIA {
 	RESTRICTION *prestriction;
 } REQ_SETSEARCHCRITERIA;
 
-typedef struct _REQ_OPENFREEBUSYDATA {
-	GUID hsession;
-	uint32_t hsupport;
-	BINARY_ARRAY *pentryids;
-} REQ_OPENFREEBUSYDATA;
-
-typedef struct _REQ_ENUMFREEBUSYBLOCKS {
-	GUID hsession;
-	uint32_t hfbdata;
-	uint64_t nttime_start;
-	uint64_t nttime_end;
-} REQ_ENUMFREEBUSYBLOCKS;
-
-typedef struct _REQ_FBENUMRESET {
-	GUID hsession;
-	uint32_t hfbenum;
-} REQ_FBENUMRESET;
-
-typedef struct _REQ_FBENUMSKIP {
-	GUID hsession;
-	uint32_t hfbenum;
-	uint32_t num;
-} REQ_FBENUMSKIP;
-	
-typedef struct _REQ_FBENUMRESTRICT {
-	GUID hsession;
-	uint32_t hfbenum;
-	uint64_t nttime_start;
-	uint64_t nttime_end;
-} REQ_FBENUMRESTRICT;
-
-typedef struct _REQ_FBENUMEXPORT {
-	GUID hsession;
-	uint32_t hfbenum;
-	uint32_t count;
-	uint64_t nttime_start;
-	uint64_t nttime_end;
-	char *organizer_name;
-	char *username;
-	char *uid_string;
-} REQ_FBENUMEXPORT;
-
-typedef struct _REQ_FETCHFREEBUSYBLOCKS {
-	GUID hsession;
-	uint32_t hfbenum;
-	uint32_t celt;
-} REQ_FETCHFREEBUSYBLOCKS;
-	
-typedef struct _REQ_GETFREEBUSYRANGE {
-	GUID hsession;
-	uint32_t hfbdata;
-} REQ_GETFREEBUSYRANGE;
-
 typedef struct _REQ_MESSAGETORFC822 {
 	GUID hsession;
 	uint32_t hmessage;
@@ -626,14 +573,6 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_IMPORTREADSTATES importreadstates;
 	REQ_GETSEARCHCRITERIA getsearchcriteria;
 	REQ_SETSEARCHCRITERIA setsearchcriteria;
-	REQ_OPENFREEBUSYDATA openfreebusydata;
-	REQ_ENUMFREEBUSYBLOCKS enumfreebusyblocks;
-	REQ_FBENUMRESET fbenumreset;
-	REQ_FBENUMSKIP fbenumskip;
-	REQ_FBENUMRESTRICT fbenumrestrict;
-	REQ_FBENUMEXPORT fbenumexport;
-	REQ_FETCHFREEBUSYBLOCKS fetchfreebusyblocks;
-	REQ_GETFREEBUSYRANGE getfreebusyrange;
 	REQ_MESSAGETORFC822 messagetorfc822;
 	REQ_RFC822TOMESSAGE rfc822tomessage;
 	REQ_MESSAGETOICAL messagetoical;
@@ -855,27 +794,6 @@ typedef struct _RESP_GETSEARCHCRITERIA {
 	uint32_t search_stat;
 } RESP_GETSEARCHCRITERIA;
 
-typedef struct _RESP_OPENFREEBUSYDATA {
-	LONG_ARRAY hobject_array;
-} RESP_OPENFREEBUSYDATA;
-
-typedef struct _RESP_ENUMFREEBUSYBLOCKS {
-	uint32_t hobject;
-} RESP_ENUMFREEBUSYBLOCKS;
-
-typedef struct _RESP_FBENUMEXPORT {
-	BINARY bin_ical;
-} RESP_FBENUMEXPORT;
-
-typedef struct _RESP_FETCHFREEBUSYBLOCKS {
-	FBBLOCK_ARRAY blocks;
-} RESP_FETCHFREEBUSYBLOCKS;
-	
-typedef struct _RESP_GETFREEBUSYRANGE {
-	uint64_t nttime_start;
-	uint64_t nttime_end;
-} RESP_GETFREEBUSYRANGE;
-
 typedef struct _RESP_MESSAGETORFC822 {
 	BINARY eml_bin;
 } RESP_MESSAGETORFC822;
@@ -937,11 +855,6 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_STATEIMPORT stateimport;
 	RESP_IMPORTMESSAGE importmessage;
 	RESP_GETSEARCHCRITERIA getsearchcriteria;
-	RESP_OPENFREEBUSYDATA openfreebusydata;
-	RESP_ENUMFREEBUSYBLOCKS enumfreebusyblocks;
-	RESP_FBENUMEXPORT fbenumexport;
-	RESP_FETCHFREEBUSYBLOCKS fetchfreebusyblocks;
-	RESP_GETFREEBUSYRANGE getfreebusyrange;
 	RESP_MESSAGETORFC822 messagetorfc822;
 	RESP_MESSAGETOICAL messagetoical;
 	RESP_MESSAGETOVCF messagetovcf;

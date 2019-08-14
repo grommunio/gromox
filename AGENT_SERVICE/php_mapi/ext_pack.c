@@ -1406,42 +1406,6 @@ zend_bool ext_pack_pull_znotification_array(
 	return 1;
 }
 
-static zend_bool ext_pack_pull_freebusy_block(
-	PULL_CTX *pctx, FREEBUSY_BLOCK *r)
-{
-	if (!ext_pack_pull_uint64(pctx, &r->nttime_start)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint64(pctx, &r->nttime_end)) {
-		return 0;
-	}
-	return ext_pack_pull_uint8(pctx, &r->status);
-}
-
-zend_bool ext_pack_pull_fbblock_array(
-	PULL_CTX *pctx, FBBLOCK_ARRAY *r)
-{
-	int i;
-	
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
-	if (0 == r->count) {
-		r->pblocks = NULL;
-		return 1;
-	}
-	r->pblocks = emalloc(sizeof(FREEBUSY_BLOCK)*r->count);
-	if (NULL == r->pblocks) {
-		return 0;
-	}
-	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_freebusy_block(pctx, &r->pblocks[i])) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
 /*---------------------------------------------------------------------------*/
 
 zend_bool ext_pack_push_init(PUSH_CTX *pctx)
@@ -2492,34 +2456,6 @@ zend_bool ext_pack_push_znotification_array(
 	for (i=0; i<r->count; i++) {
 		if (!ext_pack_push_znotification(
 			pctx, r->ppnotification[i])) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
-static zend_bool ext_pack_push_freebusy_block(
-	PUSH_CTX *pctx, const FREEBUSY_BLOCK *r)
-{
-	if (!ext_pack_push_uint64(pctx, r->nttime_start)) {
-		return 0;
-	}
-	if (!ext_pack_push_uint64(pctx, r->nttime_end)) {
-		return 0;
-	}
-	return ext_pack_push_uint8(pctx, r->status);
-}
-
-zend_bool ext_pack_push_fbblock_array(
-	PUSH_CTX *pctx, const FBBLOCK_ARRAY *r)
-{
-	int i;
-	
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
-	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_freebusy_block(pctx, &r->pblocks[i])) {
 			return 0;
 		}
 	}

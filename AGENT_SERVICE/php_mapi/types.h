@@ -479,22 +479,6 @@ typedef struct _RULE_LIST {
 	RULE_DATA *prule;
 } RULE_LIST;
 
-#define FREEBUSY_STATUS_FREE						0
-#define FREEBUSY_STATUS_TENTATIVE					1
-#define FREEBUSY_STATUS_BUSY						2
-#define FREEBUSY_STATUS_OOF							3
-
-typedef struct _FREEBUSY_BLOCK {
-	uint64_t nttime_start;
-	uint64_t nttime_end;
-	uint8_t status;
-} FREEBUSY_BLOCK;
-
-typedef struct _FBBLOCK_ARRAY {
-	uint32_t count;
-	FREEBUSY_BLOCK *pblocks;
-} FBBLOCK_ARRAY;
-
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01
 

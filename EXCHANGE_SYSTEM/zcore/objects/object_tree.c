@@ -209,15 +209,6 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 		/* do not free TPROPVAL_ARRAY,
 		it's an element of pprof_set */
 		break;
-	case MAPI_FBDATA:
-		//TODO
-		break;
-	case MAPI_FBUPDATE:
-		//TODO
-		break;
-	case MAPI_FBENUMBLOCK:
-		//TODO
-		break;
 	case MAPI_ICSDOWNCTX:
 		icsdownctx_object_free(pobject);
 		break;

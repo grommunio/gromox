@@ -84,22 +84,14 @@
 #define CALL_ID_IMPORTREADSTATES					0x48
 #define CALL_ID_GETSEARCHCRITERIA					0x49
 #define CALL_ID_SETSEARCHCRITERIA					0x4a
-#define CALL_ID_OPENFREEBUSYDATA					0x4b
-#define CALL_ID_ENUMFREEBUSYBLOCKS					0x4c
-#define CALL_ID_FBENUMRESET							0x4d
-#define CALL_ID_FBENUMSKIP							0x4e
-#define CALL_ID_FBENUMRESTRICT						0x4f
-#define CALL_ID_FBENUMEXPORT						0x50
-#define CALL_ID_FETCHFREEBUSYBLOCKS					0x51
-#define CALL_ID_GETFREEBUSYRANGE					0x52
-#define CALL_ID_MESSAGETORFC822						0x53
-#define CALL_ID_RFC822TOMESSAGE						0x54
-#define CALL_ID_MESSAGETOICAL						0x55
-#define CALL_ID_ICALTOMESSAGE						0x56
-#define CALL_ID_MESSAGETOVCF						0x57
-#define CALL_ID_VCFTOMESSAGE						0x58
-#define CALL_ID_UINFO								0x59
-#define CALL_ID_CHECKSESSION						0x60
+#define CALL_ID_MESSAGETORFC822						0x4b
+#define CALL_ID_RFC822TOMESSAGE						0x4c
+#define CALL_ID_MESSAGETOICAL						0x4d
+#define CALL_ID_ICALTOMESSAGE						0x4e
+#define CALL_ID_MESSAGETOVCF						0x4f
+#define CALL_ID_VCFTOMESSAGE						0x50
+#define CALL_ID_UINFO								0x51
+#define CALL_ID_CHECKSESSION						0x52
 
 /* ---------------------- defined by zarafa ---------------------- */
 
@@ -186,11 +178,8 @@ typedef struct _NOTIF_SINK {
 #define MAPI_MAILUSER								10
 #define MAPI_DISTLIST								11
 #define MAPI_PROFPROPERTY							12
-#define MAPI_FBDATA									13
-#define MAPI_FBUPDATE								14
-#define MAPI_FBENUMBLOCK							15
-#define MAPI_ICSDOWNCTX								17
-#define MAPI_ICSUPCTX								18
+#define MAPI_ICSDOWNCTX								13
+#define MAPI_ICSUPCTX								14
 #define MAPI_INVALID								255
 
 typedef struct _NEWMAIL_ZNOTIFICATION {
@@ -243,22 +232,6 @@ typedef struct _RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
 } RULE_LIST;
-
-#define FREEBUSY_STATUS_FREE						0
-#define FREEBUSY_STATUS_TENTATIVE					1
-#define FREEBUSY_STATUS_BUSY						2
-#define FREEBUSY_STATUS_OOF							3
-
-typedef struct _FREEBUSY_BLOCK {
-	uint64_t nttime_start;
-	uint64_t nttime_end;
-	uint8_t status;
-} FREEBUSY_BLOCK;
-
-typedef struct _FBBLOCK_ARRAY {
-	uint32_t count;
-	FREEBUSY_BLOCK *pblocks;
-} FBBLOCK_ARRAY;
 
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01

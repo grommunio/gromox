@@ -135,23 +135,6 @@ ZEND_FUNCTION(mapi_savechanges);
 ZEND_FUNCTION(mapi_zarafa_getpermissionrules);
 ZEND_FUNCTION(mapi_zarafa_setpermissionrules);
 
-ZEND_FUNCTION(mapi_freebusy_openmsg);
-ZEND_FUNCTION(mapi_freebusysupport_open);
-ZEND_FUNCTION(mapi_freebusysupport_close);
-ZEND_FUNCTION(mapi_freebusysupport_loaddata);
-ZEND_FUNCTION(mapi_freebusysupport_loadupdate);
-ZEND_FUNCTION(mapi_freebusydata_enumblocks);
-ZEND_FUNCTION(mapi_freebusydata_getpublishrange);
-ZEND_FUNCTION(mapi_freebusydata_setrange);
-ZEND_FUNCTION(mapi_freebusyenumblock_reset);
-ZEND_FUNCTION(mapi_freebusyenumblock_next);
-ZEND_FUNCTION(mapi_freebusyenumblock_skip);
-ZEND_FUNCTION(mapi_freebusyenumblock_restrict);
-ZEND_FUNCTION(mapi_freebusyenumblock_ical);
-ZEND_FUNCTION(mapi_freebusyupdate_publish);
-ZEND_FUNCTION(mapi_freebusyupdate_reset);
-ZEND_FUNCTION(mapi_freebusyupdate_savechanges);
-
 ZEND_FUNCTION(mapi_exportchanges_config);
 ZEND_FUNCTION(mapi_exportchanges_synchronize);
 ZEND_FUNCTION(mapi_exportchanges_updatestate);

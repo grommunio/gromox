@@ -583,65 +583,6 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.setsearchcriteria.pfolder_array,
 			prequest->payload.setsearchcriteria.prestriction);
 		break;
-	case CALL_ID_OPENFREEBUSYDATA:
-		presponse->result = zarafa_server_openfreebusydata(
-			prequest->payload.openfreebusydata.hsession,
-			prequest->payload.openfreebusydata.hsupport,
-			prequest->payload.openfreebusydata.pentryids,
-			&presponse->payload.openfreebusydata.hobject_array);
-		break;
-	case CALL_ID_ENUMFREEBUSYBLOCKS:
-		presponse->result = zarafa_server_enumfreebusyblocks(
-			prequest->payload.enumfreebusyblocks.hsession,
-			prequest->payload.enumfreebusyblocks.hfbdata,
-			prequest->payload.enumfreebusyblocks.nttime_start,
-			prequest->payload.enumfreebusyblocks.nttime_end,
-			&presponse->payload.enumfreebusyblocks.hobject);
-		break;
-	case CALL_ID_FBENUMRESET:
-		presponse->result = zarafa_server_fbenumreset(
-			prequest->payload.fbenumreset.hsession,
-			prequest->payload.fbenumreset.hfbenum);
-		break;
-	case CALL_ID_FBENUMSKIP:
-		presponse->result = zarafa_server_fbenumskip(
-			prequest->payload.fbenumskip.hsession,
-			prequest->payload.fbenumskip.hfbenum,
-			prequest->payload.fbenumskip.num);
-		break;
-	case CALL_ID_FBENUMRESTRICT:
-		presponse->result = zarafa_server_fbenumrestrict(
-			prequest->payload.fbenumrestrict.hsession,
-			prequest->payload.fbenumrestrict.hfbenum,
-			prequest->payload.fbenumrestrict.nttime_start,
-			prequest->payload.fbenumrestrict.nttime_end);
-		break;
-	case CALL_ID_FBENUMEXPORT:
-		presponse->result = zarafa_server_fbenumexport(
-			prequest->payload.fbenumexport.hsession,
-			prequest->payload.fbenumexport.hfbenum,
-			prequest->payload.fbenumexport.count,
-			prequest->payload.fbenumexport.nttime_start,
-			prequest->payload.fbenumexport.nttime_end,
-			prequest->payload.fbenumexport.organizer_name,
-			prequest->payload.fbenumexport.username,
-			prequest->payload.fbenumexport.uid_string,
-			&presponse->payload.fbenumexport.bin_ical);
-		break;
-	case CALL_ID_FETCHFREEBUSYBLOCKS:
-		presponse->result = zarafa_server_fetchfreebusyblocks(
-			prequest->payload.fetchfreebusyblocks.hsession,
-			prequest->payload.fetchfreebusyblocks.hfbenum,
-			prequest->payload.fetchfreebusyblocks.celt,
-			&presponse->payload.fetchfreebusyblocks.blocks);
-		break;
-	case CALL_ID_GETFREEBUSYRANGE:
-		presponse->result = zarafa_server_getfreebusyrange(
-			prequest->payload.getfreebusyrange.hsession,
-			prequest->payload.getfreebusyrange.hfbdata,
-			&presponse->payload.getfreebusyrange.nttime_start,
-			&presponse->payload.getfreebusyrange.nttime_end);
-		break;
 	case CALL_ID_MESSAGETORFC822:
 		presponse->result = zarafa_server_messagetorfc822(
 			prequest->payload.messagetorfc822.hsession,

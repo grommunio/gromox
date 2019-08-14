@@ -101,9 +101,6 @@ zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r);
 zend_bool ext_pack_pull_znotification_array(
 	PULL_CTX *pctx, ZNOTIFICATION_ARRAY *r);
 
-zend_bool ext_pack_pull_fbblock_array(
-	PULL_CTX *pctx, FBBLOCK_ARRAY *r);
-
 zend_bool ext_pack_push_init(PUSH_CTX *pctx);
 
 void ext_pack_push_free(PUSH_CTX *pctx);
@@ -218,8 +215,5 @@ zend_bool ext_pack_push_state_array(
 
 zend_bool ext_pack_push_znotification_array(
 	PUSH_CTX *pctx, const ZNOTIFICATION_ARRAY *r);
-
-zend_bool ext_pack_push_fbblock_array(
-	PUSH_CTX *pctx, const FBBLOCK_ARRAY *r);
 
 #endif /* _H_EXT_PACK_ */
