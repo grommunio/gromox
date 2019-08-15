@@ -7531,10 +7531,10 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		close(2);
         dup2(pipes_in[0], 0);
         dup2(pipes_in[1], 1);
-        dup2(pipes_in[2], 2);
+        dup2(pipes_err[1], 2);
         close(pipes_in[0]);
-        close(pipes_in[1]);
-        close(pipes_in[2]);
+        close(pipes_out[1]);
+        close(pipes_err[1]);
 		strcpy(tool_path, common_util_get_freebusy_path());
 		ptoken = strrchr(tool_path, '/');
 		*ptoken = '\0';
