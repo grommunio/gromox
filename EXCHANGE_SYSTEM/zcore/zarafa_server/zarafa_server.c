@@ -7526,9 +7526,15 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		close(pipes_in[1]);
 		close(pipes_out[0]);
 		close(pipes_err[0]);
-		move_fd(pipes_in[0], 0);
-		move_fd(pipes_out[1], 1);
-		move_fd(pipes_err[1], 2);
+		close(0);
+		close(1);
+		close(2);
+        dup2(pipes_in[0], 0);
+        dup2(pipes_in[1], 1);
+        dup2(pipes_in[2], 2);
+        close(pipes_in[0]);
+        close(pipes_in[1]);
+        close(pipes_in[2]);
 		strcpy(tool_path, common_util_get_freebusy_path());
 		ptoken = strrchr(tool_path, '/');
 		*ptoken = '\0';
