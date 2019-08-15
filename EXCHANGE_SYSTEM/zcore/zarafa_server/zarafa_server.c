@@ -7484,7 +7484,6 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	char cookie_buff[1024];
 	int pipes_in[2] = {-1, -1};
 	int pipes_out[2] = {-1, -1};
-	int pipes_err[2] = {-1, -1};
 	
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -7514,27 +7513,16 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		close(pipes_in[1]);
 		return EC_ERROR;
 	}
-	if (-1 == pipe(pipes_err)) {
-		close(pipes_in[0]);
-		close(pipes_in[1]);
-		close(pipes_out[0]);
-		close(pipes_out[1]);
-		return EC_ERROR;
-	}
 	pid = fork();
 	if (0 == pid) {
 		close(pipes_in[1]);
 		close(pipes_out[0]);
-		close(pipes_err[0]);
 		close(0);
 		close(1);
-		close(2);
-        dup2(pipes_in[0], 0);
-        dup2(pipes_in[1], 1);
-        dup2(pipes_err[1], 2);
-        close(pipes_in[0]);
-        close(pipes_out[1]);
-        close(pipes_err[1]);
+		dup2(pipes_in[0], 0);
+		dup2(pipes_in[1], 1);
+		close(pipes_in[0]);
+		close(pipes_out[1]);
 		strcpy(tool_path, common_util_get_freebusy_path());
 		ptoken = strrchr(tool_path, '/');
 		*ptoken = '\0';
@@ -7551,28 +7539,29 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		close(pipes_in[1]);
 		close(pipes_out[0]);
 		close(pipes_out[1]);
-		close(pipes_err[0]);
-		close(pipes_err[1]);
 		return EC_ERROR;
 	}
 	close(pipes_in[0]);
 	close(pipes_out[1]);
-	close(pipes_err[1]);
+	write(pipes_in[1]);
+	close(pipes_in[1]);
 	*ppresult_string = common_util_alloc(1024*1024);
 	if (NULL == *ppresult_string) {
 		waitpid(pid, &status, 0);
 		return EC_ERROR;
 	}
 	offset = 0;
-	while ((tmp_len = read(stdin, *ppresult_string
+	while ((tmp_len = read(pipes_out[0], *ppresult_string
 		+ offset, 1024*1024 - offset)) > 0) {
 		offset += tmp_len;
 		if (offset >= 1024*1024) {
 			waitpid(pid, &status, 0);
+			close(pipes_out[0];
 			return EC_ERROR;
 		}
 		(*ppresult_string)[offset] = '\0';
 	}
+	close(pipes_out[0]);
 	waitpid(pid, &status, 0);
 	if (0 != status) {
 		return EC_ERROR;
