@@ -10,6 +10,7 @@
 typedef void (*SPAM_STATISTIC)(int);
 
 static SPAM_STATISTIC spam_statistic;
+static WHITELIST_QUERY domain_whitelist_query;
 
 DECLARE_API;
 
@@ -28,6 +29,13 @@ int AS_LibMain(int reason, void **ppdata)
 	case PLUGIN_INIT:
 		LINK_API(ppdata);
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
+		domain_whitelist_query = (WHITELIST_QUERY)query_service(
+									"domain_whitelist_query");
+		if (NULL == domain_whitelist_query) {
+			printf("[scamming_filter]: fail to get "
+				"\"domain_whitelist_query\" service\n");
+			return FALSE;
+		}
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
@@ -61,6 +69,7 @@ int AS_LibMain(int reason, void **ppdata)
 static int scamming_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
+	char *pdomain;
 	size_t tmp_len;
 	char tmp_buff[1024];
 	EMAIL_ADDR email_addr;
@@ -68,6 +77,11 @@ static int scamming_filter(int context_ID, MAIL_ENTITY *pmail,
 	
 	if (TRUE == pmail->penvelop->is_relay ||
 		TRUE == pmail->penvelop->is_outbound) {
+		return MESSAGE_ACCEPT;
+	}
+	pdomain = strchr(pmail->penvelop->from, '@');
+	pdomain ++;
+	if (TRUE == domain_whitelist_query(pdomain)) {
 		return MESSAGE_ACCEPT;
 	}
 	tmp_len = mem_file_get_total_length(&pmail->phead->f_mime_from);
