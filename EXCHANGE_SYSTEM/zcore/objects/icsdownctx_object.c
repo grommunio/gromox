@@ -28,6 +28,7 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(
 	pctx->pstore = folder_object_get_store(pfolder);
 	pctx->folder_id = folder_object_get_id(pfolder);
 	pctx->sync_type = sync_type;
+	pctx->pgiven_eids = NULL;
 	pctx->pchg_eids = NULL;
 	pctx->pupdated_eids = NULL;
 	pctx->pread_messags = NULL;
@@ -105,15 +106,24 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 		&read_messags, &unread_messags, &pctx->last_readcn)) {
 		return FALSE;
 	}
+	if (NULL != pctx->pgiven_eids) {
+		eid_array_free(pctx->pgiven_eids);
+	}
 	pctx->pgiven_eids = eid_array_dup(&given_messages);
 	if (NULL == pctx->pgiven_eids) {
 		return FALSE;
 	}
 	if ((sync_flags & SYNC_FLAG_FAI) ||
 		(sync_flags & SYNC_FLAG_NORMAL)) {
+		if (NULL != pctx->pchg_eids) {
+			eid_array_free(pctx->pchg_eids);
+		}
 		pctx->pchg_eids = eid_array_dup(&chg_messages);
 		if (NULL == pctx->pchg_eids) {
 			return FALSE;
+		}
+		if (NULL != pctx->pupdated_eids) {
+			eid_array_free(pctx->pupdated_eids);
 		}
 		pctx->pupdated_eids = eid_array_dup(&updated_messages);
 		if (NULL == pctx->pupdated_eids) {
@@ -127,9 +137,15 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 		*pmsg_count = 0;
 	}
 	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
+		if (NULL != pctx->pdeleted_eids) {
+			eid_array_free(pctx->pdeleted_eids);
+		}
 		pctx->pdeleted_eids = eid_array_dup(&deleted_messages);
 		if (NULL == pctx->pdeleted_eids) {
 			return FALSE;
+		}
+		if (NULL != pctx->pnolonger_messages) {
+			eid_array_free(pctx->pnolonger_messages);
 		}
 		pctx->pnolonger_messages = eid_array_dup(&nolonger_messages);
 		if (NULL == pctx->pnolonger_messages) {
@@ -140,9 +156,15 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 		}
 	}
 	if (sync_flags & SYNC_FLAG_READSTATE) {
+		if (NULL != pctx->pread_messags) {
+			eid_array_free(pctx->pread_messags);
+		}
 		pctx->pread_messags = eid_array_dup(&read_messags);
 		if (NULL == pctx->pread_messags) {
 			return FALSE;
+		}
+		if (NULL != pctx->punread_messags) {
+			eid_array_free(pctx->punread_messags);
 		}
 		pctx->punread_messags = eid_array_dup(&unread_messags);
 		if (NULL == pctx->punread_messags) {
@@ -187,11 +209,17 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 		&deleted_folders)) {
 		return FALSE;
 	}
+	if (NULL != pctx->pgiven_eids) {
+		eid_array_free(pctx->pgiven_eids);
+	}
 	pctx->pgiven_eids = eid_array_dup(&given_folders);
 	if (NULL == pctx->pgiven_eids) {
 		return FALSE;
 	}
 	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
+		if (NULL != pctx->pdeleted_eids) {
+			eid_array_free(pctx->pdeleted_eids);
+		}
 		pctx->pdeleted_eids = eid_array_dup(&deleted_folders);
 		if (NULL == pctx->pdeleted_eids) {
 			return FALSE;
