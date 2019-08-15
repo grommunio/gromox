@@ -625,7 +625,7 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.getuseravailability.entryid,
 			prequest->payload.getuseravailability.starttime,
 			prequest->payload.getuseravailability.endtime,
-			&presponse->payload.getuseravailability.presult_string);
+			&presponse->payload.getuseravailability.result_string);
 		break;
 	default:
 		return DISPATCH_FALSE;
