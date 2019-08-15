@@ -539,7 +539,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
-	const char *freebusy_path);
+	const char *freebusy_path)
 {
 	strcpy(g_org_name, org_name);
 	strcpy(g_hostname, hostname);
