@@ -8,6 +8,7 @@
 #define SPAM_STATISTIC_SCAMMING_FILTER          20
 
 typedef void (*SPAM_STATISTIC)(int);
+typedef BOOL (*WHITELIST_QUERY)(char*);
 
 static SPAM_STATISTIC spam_statistic;
 static WHITELIST_QUERY domain_whitelist_query;
