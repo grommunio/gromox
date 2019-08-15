@@ -267,6 +267,9 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 
 void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 {
+	if (NULL != pctx->pgiven_eids) {
+		eid_array_free(pctx->pgiven_eids);
+	}
 	if (NULL != pctx->pchg_eids) {
 		eid_array_free(pctx->pchg_eids);
 	}

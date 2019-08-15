@@ -3632,6 +3632,47 @@ static BOOL rpc_ext_pull_vcftomessage_request(
 	return TRUE;
 }
 
+static BOOL rpc_ext_pull_getuseravailability_request(
+	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
+{
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_guid(
+		pext, &ppayload->getuseravailability.hsession)) {
+		return FALSE;	
+	}
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_binary(
+		pext, &ppayload->getuseravailability.entryid)) {
+		return FALSE;	
+	}
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint64(
+		pext, &ppayload->getuseravailability.starttime)) {
+		return FALSE;	
+	}
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint64(
+		pext, &ppayload->getuseravailability.endtime)) {
+		return FALSE;	
+	}
+	return TRUE;
+}
+
+static BOOL rpc_ext_push_getuseravailability_response(
+	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+{
+	if (NULL == ppayload.getuseravailability.result_string) {
+		if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(pext, 0)) {
+			return FALSE;
+		}
+		return TRUE;
+	}
+	if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(pext, 1)) {
+			return FALSE;
+		}
+	if (EXT_ERR_SUCCESS != ext_buffer_push_string(pext,
+		&ppayload->getuseravailability.result_string)) {
+		return FALSE;	
+	}
+	return TRUE;
+}
+
 BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	RPC_REQUEST *prequest)
 {
@@ -3890,6 +3931,9 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	case CALL_ID_VCFTOMESSAGE:
 		return rpc_ext_pull_vcftomessage_request(
 					&ext_pull, &prequest->payload);
+	case CALL_ID_GETUSERAVAILABILITY:
+		return rpc_ext_pull_getuseravailability_request(
+						&ext_pull, &prequest->payload);
 	default:
 		return FALSE;
 	}
@@ -4213,6 +4257,10 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		break;
 	case CALL_ID_VCFTOMESSAGE:
 		b_result = TRUE;
+		break;
+	case CALL_ID_GETUSERAVAILABILITY:
+		b_result = rpc_ext_push_getuseravailability_response(
+							&ext_push, &presponse->payload);
 		break;
 	default:
 		return FALSE;

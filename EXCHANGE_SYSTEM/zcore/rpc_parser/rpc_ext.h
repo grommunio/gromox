@@ -496,6 +496,13 @@ typedef struct _REQ_VCFTOMESSAGE {
 	BINARY *pvcf_bin;
 } REQ_VCFTOMESSAGE;
 
+typedef struct _REQ_GETUSERAVAILABILITY {
+	GUID hsession;
+	BINARY entryid;
+	uint64_t starttime,
+	uint64_t end_time;
+} REQ_GETUSERAVAILABILITY;
+
 typedef union _REQUEST_PAYLOAD {
 	REQ_LOGON logon;
 	REQ_CHECKSESSION checksession;
@@ -579,6 +586,7 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_ICALTOMESSAGE icaltomessage;
 	REQ_MESSAGETOVCF messagetovcf;
 	REQ_VCFTOMESSAGE vcftomessage;
+	REQ_GETUSERAVAILABILITY getuseravailability;
 } REQUEST_PAYLOAD;
 
 typedef struct _RPC_REQUEST {
@@ -806,6 +814,10 @@ typedef struct _RESP_MESSAGETOVCF {
 	BINARY vcf_bin;
 } RESP_MESSAGETOVCF;
 
+typedef struct _RESP_GETUSERAVAILABILITY {
+	char *result_string;
+} RESP_GETUSERAVAILABILITY;
+
 typedef union _RESPONSE_PAYLOAD {
 	RESP_LOGON logon;
 	RESP_UINFO uinfo;
@@ -858,6 +870,7 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_MESSAGETORFC822 messagetorfc822;
 	RESP_MESSAGETOICAL messagetoical;
 	RESP_MESSAGETOVCF messagetovcf;
+	RESP_GETUSERAVAILABILITY getuseravailability;
 } RESPONSE_PAYLOAD;
 
 typedef struct _RPC_RESPONSE {

@@ -135,6 +135,8 @@ ZEND_FUNCTION(mapi_savechanges);
 ZEND_FUNCTION(mapi_zarafa_getpermissionrules);
 ZEND_FUNCTION(mapi_zarafa_setpermissionrules);
 
+ZEND_FUNCTION(mapi_getuseravailability);
+
 ZEND_FUNCTION(mapi_exportchanges_config);
 ZEND_FUNCTION(mapi_exportchanges_synchronize);
 ZEND_FUNCTION(mapi_exportchanges_updatestate);

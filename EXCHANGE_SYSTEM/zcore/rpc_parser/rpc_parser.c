@@ -619,6 +619,14 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.vcftomessage.hmessage,
 			prequest->payload.vcftomessage.pvcf_bin);
 		break;
+	case CALL_ID_GETUSERAVAILABILITY:
+		presponse->result = zarafa_server_getuseravailability(
+			prequest->payload.getuseravailability.hsession,
+			prequest->payload.getuseravailability.entryid,
+			prequest->payload.getuseravailability.starttime,
+			prequest->payload.getuseravailability.endtime,
+			&presponse->payload.getuseravailability.presult_string);
+		break;
 	default:
 		return DISPATCH_FALSE;
 	}
@@ -730,6 +738,7 @@ NEXT_CLIFD:
 		close(clifd);
 		goto NEXT_CLIFD;
 	case DISPATCH_CONTINUE:
+		common_util_free_environment();
 		/* clifd will be maintained by zarafa_server */
 		goto NEXT_CLIFD;
 	}

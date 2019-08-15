@@ -59,6 +59,7 @@ static MIME_POOL *g_mime_pool;
 static pthread_key_t g_dir_key;
 static pthread_key_t g_env_key;
 static char g_default_zone[64];
+static char g_freebusy_path[256];
 static char g_default_charset[32];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
@@ -537,7 +538,8 @@ BOOL common_util_public_to_essdn(const char *username, char *pessdn)
 void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
-	unsigned int max_rule_len, const char *smtp_ip, int smtp_port)
+	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
+	const char *freebusy_path);
 {
 	strcpy(g_org_name, org_name);
 	strcpy(g_hostname, hostname);
@@ -550,6 +552,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	g_max_rule_len = max_rule_len;
 	strcpy(g_smtp_ip, smtp_ip);
 	g_smtp_port = smtp_port;
+	strcpy(g_freebusy_path, freebusy_path);
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);
 }
@@ -623,6 +626,11 @@ void common_util_set_param(int param, unsigned int value)
 const char* common_util_get_hostname()
 {
 	return g_hostname;
+}
+
+const char* common_util_get_freebusy_path()
+{
+	return g_freebusy_path;
 }
 
 BOOL common_util_build_environment()

@@ -1519,7 +1519,7 @@ static zend_bool rpc_ext_push_vcftomessage_request(
 {
 	if (!ext_pack_push_guid(pctx,
 		&ppayload->vcftomessage.hsession)) {
-		return 0;	
+		return 0;
 	}
 	if (!ext_pack_push_uint32(pctx,
 		ppayload->vcftomessage.hmessage)) {
@@ -1527,6 +1527,41 @@ static zend_bool rpc_ext_push_vcftomessage_request(
 	}
 	return ext_pack_push_binary(pctx,
 		ppayload->vcftomessage.pvcf_bin);
+}
+
+static zend_bool rpc_ext_push_getuseravailability_request(
+	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+{
+	if (!ext_pack_push_guid(pctx,
+		&ppayload->vcftomessage.hsession)) {
+		return 0;
+	}
+	if (!ext_pack_push_binary(pctx,
+		&ppayload->getuseravailability.entryid)) {
+		return 0;
+	}
+	if (!ext_pack_push_uint64(pctx,
+		ppayload->getuseravailability.starttime)) {
+		return 0;	
+	}
+	return ext_pack_push_uint64(pctx,
+		ppayload->getuseravailability.endtime);
+}
+
+static zend_bool rpc_ext_pull_getuseravailability_reponse(
+	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+{
+	uint8_t tmp_byte;
+	
+	if (!ext_pack_pull_uint8(pctx, &tmp_byte)) {
+		return 0;
+	}
+	if (0 == tmp_byte) {
+		ppayload->getuseravailability.result_string = NULL;
+		return 1;
+	}
+	return ext_pack_pull_string(pctx,
+		&ppayload->getuseravailability.result_string);
 }
 
 zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
@@ -1875,6 +1910,10 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 		b_result = rpc_ext_push_vcftomessage_request(
 						&push_ctx, &prequest->payload);
 		break;
+	case CALL_ID_GETUSERAVAILABILITY:
+		b_result = rpc_ext_push_getuseravailability_request(
+							&push_ctx, &prequest->payload);
+		break;
 	default:
 		return 0;
 	}
@@ -2103,6 +2142,9 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 					&pull_ctx, &presponse->payload);
 	case CALL_ID_VCFTOMESSAGE:
 		return 1;
+	case CALL_ID_GETUSERAVAILABILITY:
+		return rpc_ext_pull_getuseravailability_reponse(
+						&pull_ctx, &presponse->payload);
 	default:
 		return 0;
 	}

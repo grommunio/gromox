@@ -1913,9 +1913,9 @@ static BOOL get_freebusy(const char *dir)
 	pidlidtimezonestruct <<= 16;
 	pidlidtimezonestruct |= PROPVAL_TYPE_BINARY;
 	
-	if (FALSE == exmdb_client_check_folder_permission(sockd,
-		dir, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
-		g_username, &permission)) {
+	if (NULL != g_username && FALSE == exmdb_client_check_folder_permission(
+		sockd, dir, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR), g_username,
+		&permission)) {
 		close(sockd);
 		cache_connection(dir, -1);
 		return FALSE;
@@ -2353,14 +2353,21 @@ int main(int argc, char **argv)
 	}
 	pparser = cookie_parser_init(line);
 	g_username = cookie_parser_get(pparser, "username");
-	if (NULL == g_username) {
-		fprintf(stderr, "fail to get \"username\" from stdin\n");
-		exit(3);
-	}
 	pstarttime = cookie_parser_get(pparser, "starttime");
 	if (NULL == pstarttime) {
 		fprintf(stderr, "fail to get \"starttime\" from stdin\n");
 		exit(4);
+	}
+	pendtime = cookie_parser_get(pparser, "endtime");
+	if (NULL == pendtime) {
+		fprintf(stderr, "fail to get \"endtime\" from stdin\n");
+		exit(5);
+	}
+	if (NULL == strchr(pstarttime, 'T') && NULL == strchr(pendtime, 'T')) {
+		g_start_time = atol(pstarttime);
+		g_end_time = atol(pendtime);
+		g_tz_component = NULL;
+		goto GET_FREEBUSY_DATA;
 	}
 	if (6 != sscanf(pstarttime, "%d-%d-%dT%d:%d:%d",
 		&itime_start.year, &itime_start.month, &itime_start.day,
@@ -2368,18 +2375,13 @@ int main(int argc, char **argv)
 		fprintf(stderr, "fail to parse \"starttime\" from stdin\n");
 		exit(4);	
 	}
-	itime_start.leap_second = 0;
-	pendtime = cookie_parser_get(pparser, "endtime");
-	if (NULL == pendtime) {
-		fprintf(stderr, "fail to get \"endtime\" from stdin\n");
-		exit(5);
-	}
 	if (6 != sscanf(pendtime, "%d-%d-%dT%d:%d:%d",
 		&itime_end.year, &itime_end.month, &itime_end.day,
 		&itime_end.hour, &itime_end.minute, &itime_end.second)) {
 		fprintf(stderr, "fail to parse \"endtime\" from stdin\n");
 		exit(5);	
 	}
+	itime_start.leap_second = 0;
 	itime_end.leap_second = 0;
 	pbias = cookie_parser_get(pparser, "bias");
 	if (NULL == pbias) {
@@ -2531,6 +2533,7 @@ int main(int argc, char **argv)
 	}
 	ical_itime_to_utc(g_tz_component, itime_start, &g_start_time);
 	ical_itime_to_utc(g_tz_component, itime_end, &g_end_time);
+GET_FREEBUSY_DATA:
 	pdirs = cookie_parser_get(pparser, "dirs");
 	if (NULL == pdirs) {
 		fprintf(stderr, "fail to get \"dirs\" from stdin\n");

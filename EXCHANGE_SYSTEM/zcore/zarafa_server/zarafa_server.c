@@ -7465,3 +7465,111 @@ uint32_t zarafa_server_vcftomessage(GUID hsession,
 	zarafa_server_put_user_info(pinfo);
 	return EC_SUCCESS;
 }
+
+uint32_t zarafa_server_getuseravailability(GUID hsession,
+	BINARY entryid, uint64_t starttime, uint64_t endtime,
+	char **ppresult_string)
+{
+	pid_t pid;
+	int status;
+	int offset;
+	int tmp_len;
+	char *ptoken;
+	char* argv[3];
+	USER_INFO *pinfo;
+	char maildir[256];
+	char username[256];
+	char tool_path[256];
+	char tool_command[256];
+	char cookie_buff[1024];
+	int pipes_in[2] = {-1, -1};
+	int pipes_out[2] = {-1, -1};
+	int pipes_err[2] = {-1, -1};
+	
+	pinfo = zarafa_server_query_session(hsession);
+	if (NULL == pinfo) {
+		return EC_ERROR;
+	}
+	if (FALSE == common_util_addressbook_entryid_to_username(
+		entryid_bin, username) || FALSE ==
+		system_services_get_maildir(username, maildir)) {
+		*ppresult_string = NULL;
+		return EC_SUCCESS;
+	}
+	if (0 == strcasecmp(pinfo->username, username)) {
+		tmp_len = snprintf(cookie_buff, sizeof(cookie_buff),
+			"starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
+			pinfo->username, starttime, endtime, maildir);
+	} else {
+		tmp_len = snprintf(cookie_buff, sizeof(cookie_buff),
+			"username=%s;starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
+			pinfo->username, starttime, endtime, maildir);
+	}
+	zarafa_server_put_user_info(pinfo);
+	 if (-1 == pipe(pipes_in)) {
+		return EC_ERROR;
+	}
+	if (-1 == pipe(pipes_out)) {
+		close(pipes_in[0]);
+		close(pipes_in[1]);
+		return EC_ERROR;
+	}
+	if (-1 == pipe(pipes_err)) {
+		close(pipes_in[0]);
+		close(pipes_in[1]);
+		close(pipes_out[0]);
+		close(pipes_out[1]);
+		return EC_ERROR;
+	}
+	pid = fork();
+	if (0 == pid) {
+		close(pipes_in[1]);
+		close(pipes_out[0]);
+		close(pipes_err[0]);
+		move_fd(pipes_in[0], 0);
+		move_fd(pipes_out[1], 1);
+		move_fd(pipes_err[1], 2);
+		strcpy(tool_path, common_util_get_freebusy_path());
+		ptoken = strrchr(tool_path, '/');
+		*ptoken = '\0';
+		ptoken ++;
+		sprintf(tool_command, "./%s", ptoken);
+		chdir(tool_path);
+		argv[0] = tool_command;
+		argv[1] = NULL;
+		if (execve(tool_command, argv, NULL) == -1) {
+			exit(-1);
+		}
+	} else if (pid < 0) {
+		close(pipes_in[0]);
+		close(pipes_in[1]);
+		close(pipes_out[0]);
+		close(pipes_out[1]);
+		close(pipes_err[0]);
+		close(pipes_err[1]);
+		return EC_ERROR;
+	}
+	close(pipes_in[0]);
+	close(pipes_out[1]);
+	close(pipes_err[1]);
+	*ppresult_string = common_util_alloc(1024*1024);
+	if (NULL == *ppresult_string) {
+		waitpid(pid, &status, 0);
+		return EC_ERROR;
+	}
+	offset = 0;
+	while ((tmp_len = read(stdin, *ppresult_string
+		+ offset, 1024*1024 - offset)) > 0) {
+		offset += tmp_len;
+		if (offset >= 1024*1024) {
+			waitpid(pid, &status, 0);
+			return EC_ERROR;
+		}
+		(*ppresult_string)[offset] = '\0';
+	}
+	waitpid(pid, &status, 0);
+	if (0 != status) {
+		return EC_ERROR;
+	}
+	return EC_SUCCESS;
+}

@@ -267,4 +267,8 @@ uint32_t zarafa_client_messagetovcf(GUID hsession,
 uint32_t zarafa_client_vcftomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *pvcf_bin);
 
+uint32_t zarafa_client_getuseravailability(GUID hsession,
+	BINARY entryid, uint64_t starttime, uint64_t endtime,
+	char **ppresult_string);
+
 #endif /* _H_ZARAFA_CLIENT_ */

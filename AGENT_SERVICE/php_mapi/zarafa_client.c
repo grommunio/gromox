@@ -1658,3 +1658,24 @@ uint32_t zarafa_client_vcftomessage(GUID hsession,
 	}
 	return response.result;
 }
+
+uint32_t zarafa_client_getuseravailability(GUID hsession,
+	BINARY entryid, uint64_t starttime, uint64_t endtime,
+	char **ppresult_string)
+{
+	RPC_REQUEST request;
+	RPC_RESPONSE response;
+	
+	request.call_id = CALL_ID_GETUSERAVAILABILITY;
+	request.payload.getuseravailability.hsession = hsession;
+	request.payload.getuseravailability.entryid = entryid;
+	request.payload.getuseravailability.starttime = starttime;
+	request.payload.getuseravailability.endtime = endtime;
+	if (!zarafa_client_do_rpc(&request, &response)) {
+		return EC_RPC_FAIL;
+	}
+	if (EC_SUCCESS == response.result) {
+		*ppresult_string = response.payload.getuseravailability.result_string;
+	}
+	return response.result;
+}

@@ -92,6 +92,7 @@
 #define CALL_ID_VCFTOMESSAGE						0x50
 #define CALL_ID_UINFO								0x51
 #define CALL_ID_CHECKSESSION						0x52
+#define CALL_ID_GETUSERAVAILABILITY					0x53
 
 /* ---------------------- defined by zarafa ---------------------- */
 
@@ -321,7 +322,8 @@ enum {
 void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
-	unsigned int max_rule_len, const char *smtp_ip, int smtp_port);
+	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
+	const char *freebusy_path);
 
 int common_util_run();
 
@@ -334,6 +336,8 @@ unsigned int common_util_get_param(int param);
 void common_util_set_param(int param, unsigned int value);
 
 const char* common_util_get_hostname();
+
+const char* common_util_get_freebusy_path();
 
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,

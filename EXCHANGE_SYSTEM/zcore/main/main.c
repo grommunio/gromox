@@ -295,8 +295,13 @@ int main(int argc, char **argv)
 	}
 	printf("[system]: smtp server is %s:%d\n", smtp_ip, smtp_port);
 	
-	common_util_init(org_name, host_name, charset, timezone, mime_num,
-		max_rcpt, max_mail, max_length, max_rule_len, smtp_ip, smtp_port);
+	str_value = config_file_get_value(pconfig, "FREEBUSY_TOOL_PATH");
+	if (NULL == str_value) {
+		str_value = "/var/pandora/tools/freebusy";
+	}
+	common_util_init(org_name, host_name, charset, timezone,
+		mime_num, max_rcpt, max_mail, max_length, max_rule_len,
+		smtp_ip, smtp_port, str_value);
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {

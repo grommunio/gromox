@@ -4795,6 +4795,66 @@ THROW_EXCEPTION:
 	RETVAL_FALSE;
 }
 
+/*
+	This function will get user's freebusy data
+	
+	param session[in]	session object
+	param entryid[in]	user's entryid
+	param starttime		unix time stamp
+	param endtime 		unix time stamp
+	return				json string of user's freebusy data,
+						json string, empty string means not
+						found. fileds:
+						starttime, endtime, busytype, subject(base64),
+						location(base64), rests are all bool(absense
+						means false). ismeeting, isrecurring,
+						isexception, isreminderset, isprivate
+*/
+ZEND_FUNCTION(mapi_getuseravailability)
+{
+	long endtime;
+	long starttime;
+	BINARY entryid;
+	uint32_t result;
+	zval *pzresource;
+	char *presult_string;
+	MAPI_RESOURCE *psession;
+	
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rsll",
+		&pzresource, &entryid.pb, &entryid.cb, &starttime, &endtime)
+		== FAILURE || NULL == pzresource || NULL == entryid.pb ||
+		0 == entryid.cb) {
+		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		goto THROW_EXCEPTION;
+	}
+	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
+		&pzresource, -1, name_mapi_session, le_mapi_session);
+	if (MAPI_SESSION != psession->type) {
+		MAPI_G(hr) = EC_INVALID_OBJECT;
+		goto THROW_EXCEPTION;
+	}
+	result = zarafa_client_getuseravailability(
+		psession->hsession, entryid, starttime,
+		endtime, &presult_string);
+	if (EC_SUCCESS != result) {
+		MAPI_G(hr) = result;
+		goto THROW_EXCEPTION;
+	}
+	if (NULL == presult_string) {
+		RETVAL_NULL();
+		return;
+	}
+	RETVAL_STRING(presult_string, 1);
+	MAPI_G(hr) = EC_SUCCESS;
+	return;
+THROW_EXCEPTION:
+	if (MAPI_G(exceptions_enabled)) {
+		zend_throw_exception(MAPI_G(exception_ce),
+			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
+	}
+	RETVAL_FALSE;
+}
+
 ZEND_FUNCTION(mapi_exportchanges_config)
 {
 	int type;
@@ -5878,7 +5938,7 @@ ZEND_FUNCTION(mapi_mapitoical)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
-	RETVAL_STRING(ical_bin.pb, ical_bin.cb);
+	RETVAL_STRINGL(ical_bin.pb, ical_bin.cb, 1);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
@@ -5961,7 +6021,7 @@ ZEND_FUNCTION(mapi_mapitovcf)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
-	RETVAL_STRING(vcf_bin.pb, vcf_bin.cb);
+	RETVAL_STRINGL(vcf_bin.pb, vcf_bin.cb, 1);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:

@@ -84,6 +84,8 @@
 #define CALL_ID_VCFTOMESSAGE						0x50
 #define CALL_ID_UINFO								0x51
 #define CALL_ID_CHECKSESSION						0x52
+#define CALL_ID_GETUSERAVAILABILITY					0x53
+
 
 typedef struct _REQ_LOGON {
 	char *username;
@@ -579,6 +581,13 @@ typedef struct _REQ_RESTORESESSION {
 	BINARY *pdata_bin;
 } REQ_RESTORESESSION;
 
+typedef struct _REQ_GETUSERAVAILABILITY {
+	GUID hsession;
+	BINARY entryid;
+	uint64_t starttime;
+	uint64_t endtime;
+} REQ_GETUSERAVAILABILITY;
+
 typedef union _REQUEST_PAYLOAD {
 	REQ_LOGON logon;
 	REQ_CHECKSESSION checksession;
@@ -662,6 +671,7 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_ICALTOMESSAGE icaltomessage;
 	REQ_MESSAGETOVCF messagetovcf;
 	REQ_VCFTOMESSAGE vcftomessage;
+	REQ_GETUSERAVAILABILITY getuseravailability;
 } REQUEST_PAYLOAD;
 
 typedef struct _RPC_REQUEST {
@@ -897,6 +907,10 @@ typedef struct _RESP_RESTORESESSION {
 	GUID hsession;
 } RESP_RESTORESESSION;
 
+typedef struct _RESP_GETUSERAVAILABILITY {
+	char *result_string;
+} RESP_GETUSERAVAILABILITY;
+
 typedef union _RESPONSE_PAYLOAD {
 	RESP_LOGON logon;
 	RESP_UINFO uinfo;
@@ -949,6 +963,7 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_MESSAGETORFC822 messagetorfc822;
 	RESP_MESSAGETOICAL messagetoical;
 	RESP_MESSAGETOVCF messagetovcf;
+	RESP_GETUSERAVAILABILITY getuseravailability;
 } RESPONSE_PAYLOAD;
 
 typedef struct _RPC_RESPONSE {
