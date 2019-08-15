@@ -500,7 +500,7 @@ typedef struct _REQ_GETUSERAVAILABILITY {
 	GUID hsession;
 	BINARY entryid;
 	uint64_t starttime;
-	uint64_t end_time;
+	uint64_t endtime;
 } REQ_GETUSERAVAILABILITY;
 
 typedef union _REQUEST_PAYLOAD {
