@@ -7520,7 +7520,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		close(0);
 		close(1);
 		dup2(pipes_in[0], 0);
-		dup2(pipes_in[1], 1);
+		dup2(pipes_out[1], 1);
 		close(pipes_in[0]);
 		close(pipes_out[1]);
 		strcpy(tool_path, common_util_get_freebusy_path());
