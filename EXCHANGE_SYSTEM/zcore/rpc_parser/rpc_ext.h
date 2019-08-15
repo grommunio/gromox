@@ -499,7 +499,7 @@ typedef struct _REQ_VCFTOMESSAGE {
 typedef struct _REQ_GETUSERAVAILABILITY {
 	GUID hsession;
 	BINARY entryid;
-	uint64_t starttime,
+	uint64_t starttime;
 	uint64_t end_time;
 } REQ_GETUSERAVAILABILITY;
 
