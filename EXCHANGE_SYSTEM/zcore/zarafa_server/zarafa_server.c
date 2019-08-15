@@ -7556,7 +7556,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		offset += tmp_len;
 		if (offset >= 1024*1024) {
 			waitpid(pid, &status, 0);
-			close(pipes_out[0];
+			close(pipes_out[0]);
 			return EC_ERROR;
 		}
 		(*ppresult_string)[offset] = '\0';
