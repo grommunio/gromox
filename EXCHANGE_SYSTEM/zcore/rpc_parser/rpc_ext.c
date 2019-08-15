@@ -3667,7 +3667,7 @@ static BOOL rpc_ext_push_getuseravailability_response(
 			return FALSE;
 		}
 	if (EXT_ERR_SUCCESS != ext_buffer_push_string(pext,
-		&ppayload->getuseravailability.result_string)) {
+		ppayload->getuseravailability.result_string)) {
 		return FALSE;	
 	}
 	return TRUE;
