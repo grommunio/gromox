@@ -264,7 +264,8 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 		if (8 == tag_len || 27 == tag_len) {
 			mem_file_read(&pmail->phead->f_others, buff, tag_len);
 			if (0 == strncasecmp("Reply-To", buff, tag_len) ||
-				0 == strncasecmp("Disposition-Notification-To", tag_len)) {
+				0 == strncasecmp("Disposition-Notification-To",
+				buff, tag_len)) {
 				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
 				if (val_len >= 1024) {
 					return MESSAGE_ACCEPT;
@@ -381,7 +382,7 @@ static int paragraph_filter(int action, int context_ID,
 			}
 			g_context_list[context_ID].type = CONTEXT_URI_HAS;
 		}
-		paddress = find_mail_address(ptr, len, &addr_len);
+		paddress = find_mail_address((void*)ptr, len, &addr_len);
 		if (NULL != paddress && addr_len < sizeof(tmp_buff)) {
 			memcpy(tmp_buff, paddress, addr_len);
 			tmp_buff[addr_len] = '\0';
