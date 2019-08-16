@@ -254,7 +254,7 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 					return MESSAGE_ACCEPT;
 				}
 				if (FALSE == domain_filter_query(uri)) {
-					if (TRUE == uri_rbl_judge(uri, reason, length))) {
+					if (TRUE == uri_rbl_judge(uri, reason, length)) {
 						return MESSAGE_ACCEPT;
 					}
 				} else {
@@ -360,7 +360,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 			goto SPAM_FOUND;
 		}
 		if (FALSE == uri_rbl_judge(g_context_list[context_ID].uri,
-			reason, length))) {
+			reason, length)) {
 			goto SPAM_FOUND;
 		}
 	}
