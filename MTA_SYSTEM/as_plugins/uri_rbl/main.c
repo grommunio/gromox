@@ -349,7 +349,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	}
 	if (0 != strcasecmp(pdomain, g_context_list[context_ID].uri) &&
 		0 != strcasecmp(email_addr.domain, g_context_list[context_ID].uri)
-		&& (TRUE == domain_filter_query(uri)
+		&& (TRUE == domain_filter_query(g_context_list[context_ID].uri)
 		|| FALSE == uri_rbl_judge(g_context_list[context_ID].uri,
 		reason, length))) {
 		goto SPAM_FOUND;
