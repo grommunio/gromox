@@ -91,6 +91,9 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
+	if (NULL != pconnection->ssl) {
+		return MESSAGE_ACCEPT;
+	}
 	tmp_len = mem_file_read(&pmail->phead->f_xmailer, tmp_buff, 1024);
 	if (MEM_END_OF_FILE != tmp_len) {
 		if (0 != strncmp(tmp_buff, "NetEase ", 8) &&
