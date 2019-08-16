@@ -250,10 +250,15 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 					return MESSAGE_ACCEPT;
 				}
 				mem_file_read(&pmail->phead->f_others, buff, val_len);
-				if (FALSE == extract_uri(buff, val_len, uri) ||
-					(FALSE == domain_filter_query(uri) &&
-					TRUE == uri_rbl_judge(uri, reason, length))) {
+				if (FALSE == extract_uri(buff, val_len, uri)) {
 					return MESSAGE_ACCEPT;
+				}
+				if (FALSE == domain_filter_query(uri)) {
+					if (TRUE == uri_rbl_judge(uri, reason, length))) {
+						return MESSAGE_ACCEPT;
+					}
+				} else {
+					snprintf(reason, length, "domain %s is forbidden", uri);
 				}
 				if (FALSE == g_immediate_reject) {
 					if (FALSE == check_retrying(pconnection->client_ip,
@@ -348,11 +353,16 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	if (0 != strcasecmp(pdomain, g_context_list[context_ID].uri) &&
-		0 != strcasecmp(email_addr.domain, g_context_list[context_ID].uri)
-		&& (TRUE == domain_filter_query(g_context_list[context_ID].uri)
-		|| FALSE == uri_rbl_judge(g_context_list[context_ID].uri,
-		reason, length))) {
-		goto SPAM_FOUND;
+		0 != strcasecmp(email_addr.domain, g_context_list[context_ID].uri)) {
+		if (TRUE == domain_filter_query(g_context_list[context_ID].uri)) {
+			snprintf(reason, length, "domain %s is forbidden",
+				g_context_list[context_ID].uri);
+			goto SPAM_FOUND;
+		}
+		if (FALSE == uri_rbl_judge(g_context_list[context_ID].uri,
+			reason, length))) {
+			goto SPAM_FOUND;
+		}
 	}
 	g_context_list[context_ID].type = CONTEXT_URI_NONE;
 	memset(g_context_list[context_ID].uri, 0, 256);
