@@ -29,6 +29,9 @@ typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
 static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	CONNECTION *pconnection, char *reason, int length);
 
+static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
+        CONNECTION *pconnection, char *reason, int length);
+
 static int paragraph_filter(int action, int block_ID, MAIL_BLOCK* mail_blk,
 	char* reason, int length);
 
@@ -170,6 +173,9 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		if (FALSE == register_judge(envelop_judge)) {
 			return FALSE;
 		}
+		if (FALSE == register_auditor(head_auditor)) {
+			return FALSE;
+		}
 		if (FALSE == register_filter("text/plain", paragraph_filter) ||
 			FALSE == register_filter("text/html", paragraph_filter)) {
 			return FALSE;
@@ -214,6 +220,60 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	return MESSAGE_ACCEPT;
 }
 
+static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
+	CONNECTION *pconnection,  char *reason, int length)
+{
+	char uri[256];
+	char buff[1024];
+	int tag_len, val_len;
+	
+	if (CONTEXT_URI_IGNORE == g_context_list[context_ID].type) {
+		return MESSAGE_ACCEPT;
+	}
+	while (MEM_END_OF_FILE != mem_file_read(
+		&pmail->phead->f_others, &tag_len, sizeof(int))) {
+		if (16 == tag_len) {
+			mem_file_read(&pmail->phead->f_others, buff, tag_len);
+			if (0 == strncasecmp("List-Unsubscribe", buff, 16)) {
+				mem_file_read(&pmail->phead->f_others,
+					&val_len, sizeof(int));
+				if (val_len > 1024) {
+					return MESSAGE_REJECT;
+				}
+				mem_file_read(&pmail->phead->f_others, buff, val_len);
+				if (FALSE == extract_uri(buff, val_len, uri) ||
+					TRUE == uri_rbl_judge(uri, reason, length)) {
+					return MESSAGE_REJECT;
+				}
+				if (FALSE == g_immediate_reject) {
+					if (FALSE == check_retrying(pconnection->client_ip,
+						pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {	
+						if (NULL!= spam_statistic) {
+							spam_statistic(SPAM_STATISTIC_URI_RBL);
+						}
+						return MESSAGE_RETRYING;
+					} else {
+						return MESSAGE_ACCEPT;
+					}
+				} else {
+					if (NULL!= spam_statistic) {
+						spam_statistic(SPAM_STATISTIC_URI_RBL);
+					}
+					return MESSAGE_REJECT;
+				}
+			}
+		} else {
+			mem_file_seek(&pmail->phead->f_others,
+				MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
+		}
+		mem_file_read(&pmail->phead->f_others,
+			&val_len, sizeof(int));
+		mem_file_seek(&pmail->phead->f_others,
+			MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
+	}
+	return MESSAGE_REJECT;
+}
+
 static int paragraph_filter(int action, int context_ID, MAIL_BLOCK* mail_blk, 
 	char* reason, int length)
 {
@@ -246,7 +306,6 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 		return MESSAGE_ACCEPT;
 	}
 }
-
 
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
     CONNECTION *pconnection, char *reason, int length)
