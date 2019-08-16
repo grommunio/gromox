@@ -134,7 +134,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		if (NULL == str_value) {
 			black_size = 10000;
 			config_file_set_value(pconfig_file,
-				"BLACKLIST_CACHE_SIZE","10000");
+				"BLACKLIST_CACHE_SIZE", "10000");
 		} else {
 			black_size = atoi(str_value);
 		}
@@ -149,8 +149,8 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			black_valid = atoitvl(str_value);
 		}
 		itvltoa(black_valid, temp_buff);
-		printf("[content_filter]: blacklist cache"
-					" interval is %s\n", temp_buff);
+		printf("[content_filter]: blacklist "
+			"cache interval is %s\n", temp_buff);
 		str_value = config_file_get_value(pconfig_file, "IMMEDIATE_REJECT");
 		if (NULL == str_value || 0 == strcasecmp(str_value, "FALSE")) {
 			g_immediate_reject = FALSE;
@@ -162,7 +162,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 					" will be reject immediately\n");
 		}
 		str_value = config_file_get_value(pconfig_file, "SURBL_DNS");
-		if (NULL == str_value || 0 == strcmp(str_value, "null")) {
+		if (NULL == str_value || 0 == strcasecmp(str_value, "NULL")) {
 			surbl_dns[0] = '\0';
 		} else {
 			ltrim_string(surbl_dns);
@@ -171,7 +171,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			surbl_dns[255] = '\0';
 		}
 		str_value = config_file_get_value(pconfig_file, "URIBL_DNS");
-		if (NULL == str_value || 0 == strcmp(str_value, "null")) {
+		if (NULL == str_value || 0 == strcasecmp(str_value, "NULL")) {
 			uribl_dns[0] = '\0';
 		} else {
 			ltrim_string(uribl_dns);
