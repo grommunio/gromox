@@ -281,7 +281,7 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 		mem_file_seek(&pmail->phead->f_others,
 			MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 	}
-	return MESSAGE_REJECT;
+	return MESSAGE_ACCEPT;
 }
 
 static int paragraph_filter(int action, int context_ID, MAIL_BLOCK* mail_blk, 
