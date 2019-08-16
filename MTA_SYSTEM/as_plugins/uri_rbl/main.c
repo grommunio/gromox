@@ -22,6 +22,7 @@ typedef struct _URI_INFORMATION {
 } URI_INFORMATION;
 
 typedef BOOL (*WHITELIST_QUERY)(char*);
+typedef BOOL (*DOMAIN_FILTER_QUERY)(char*);
 typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_RETRYING)(const char*, const char*, MEM_FILE*);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
@@ -46,6 +47,7 @@ DECLARE_API;
 
 static WHITELIST_QUERY ip_whitelist_query;
 static WHITELIST_QUERY domain_whitelist_query;
+static DOMAIN_FILTER_QUERY domain_filter_query;
 static SPAM_STATISTIC spam_statistic;
 static CHECK_RETRYING check_retrying;
 static CHECK_TAGGING check_tagging;
@@ -90,6 +92,13 @@ BOOL AS_LibMain(int reason, void **ppdata)
 				                "domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
 			printf("[uri_rbl]: fail to get \"domain_whitelist_query\" "
+					"service\n");
+			return FALSE;
+		}
+		domain_filter_query = (DOMAIN_FILTER_QUERY)query_service(
+							  "domain_filter_query");
+		if (NULL == domain_filter_query) {
+			printf("[uri_rbl]: fail to get \"domain_filter_query\" "
 					"service\n");
 			return FALSE;
 		}
@@ -238,12 +247,13 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 				mem_file_read(&pmail->phead->f_others,
 					&val_len, sizeof(int));
 				if (val_len > 1024) {
-					return MESSAGE_REJECT;
+					return MESSAGE_ACCEPT;
 				}
 				mem_file_read(&pmail->phead->f_others, buff, val_len);
 				if (FALSE == extract_uri(buff, val_len, uri) ||
-					TRUE == uri_rbl_judge(uri, reason, length)) {
-					return MESSAGE_REJECT;
+					(FALSE == domain_filter_query(uri) &&
+					TRUE == uri_rbl_judge(uri, reason, length))) {
+					return MESSAGE_ACCEPT;
 				}
 				if (FALSE == g_immediate_reject) {
 					if (FALSE == check_retrying(pconnection->client_ip,
@@ -310,37 +320,67 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
+	int tmp_len;
+	chat *pdomain;
+	char tmp_buff[1024];
+	EMAIL_ADDR email_addr;
+	
+	if (CONTEXT_URI_IGNORE == g_context_list[context_ID].type) {
+		return MESSAGE_ACCEPT;
+	}
+	pdomain = strchr(pmail->penvelop->from, '@');
+	pdomain ++;
+	if (0 != strcmp(pmail->penvelop->from, "none@none") &&
+		FALSE == uri_rbl_judge(pdomain, reason, length)) {
+		goto SPAM_FOUND;
+	}
+	memset(&email_addr, 0, sizeof(EMAIL_ADDR));
+	tmp_len = mem_file_read(&pmail->phead->f_mime_from, tmp_buff, 1024);
+	if (MEM_END_OF_FILE != tmp_len) {
+		parse_email_addr(&email_addr, tmp_buff);
+		if ('\0' != email_addr.domain[0] && 0 != strcasecmp(
+			pdomain, email_addr.domain) && FALSE ==
+			uri_rbl_judge(email_addr.domain, reason, length)) {
+			goto SPAM_FOUND;
+		}
+	}
 	if (CONTEXT_URI_HAS != g_context_list[context_ID].type) {
 		return MESSAGE_ACCEPT;
 	}
-	if (FALSE == uri_rbl_judge(g_context_list[context_ID].uri,
-		reason, length)) {
-		if (TRUE == check_tagging(pmail->penvelop->from,
-			&pmail->penvelop->f_rcpt_to)) {
-			mark_context_spam(context_ID);
-			return MESSAGE_ACCEPT;
-		} else {
-			if (FALSE == g_immediate_reject) {
-				if (FALSE == check_retrying(pconnection->client_ip,
-					pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {	
-					if (NULL!= spam_statistic) {
-						spam_statistic(SPAM_STATISTIC_URI_RBL);
-					}
-					return MESSAGE_RETRYING;
-				} else {
-					return MESSAGE_ACCEPT;
-				}
-			} else {
-				if (NULL!= spam_statistic) {
-					spam_statistic(SPAM_STATISTIC_URI_RBL);
-				}
-				return MESSAGE_REJECT;
-			}
-		}
+	if (0 != strcasecmp(pdomain, g_context_list[context_ID].uri) &&
+		0 != strcasecmp(email_addr.domain, g_context_list[context_ID].uri)
+		&& (TRUE == domain_filter_query(uri)
+		|| FALSE == uri_rbl_judge(g_context_list[context_ID].uri,
+		reason, length))) {
+		goto SPAM_FOUND;
 	}
 	g_context_list[context_ID].type = CONTEXT_URI_NONE;
 	memset(g_context_list[context_ID].uri, 0, 256);
 	return MESSAGE_ACCEPT;
+	
+SPAM_FOUND:
+	if (TRUE == check_tagging(pmail->penvelop->from,
+		&pmail->penvelop->f_rcpt_to)) {
+		mark_context_spam(context_ID);
+		return MESSAGE_ACCEPT;
+	} else {
+		if (FALSE == g_immediate_reject) {
+			if (FALSE == check_retrying(pconnection->client_ip,
+				pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {	
+				if (NULL!= spam_statistic) {
+					spam_statistic(SPAM_STATISTIC_URI_RBL);
+				}
+				return MESSAGE_RETRYING;
+			} else {
+				return MESSAGE_ACCEPT;
+			}
+		} else {
+			if (NULL!= spam_statistic) {
+				spam_statistic(SPAM_STATISTIC_URI_RBL);
+			}
+			return MESSAGE_REJECT;
+		}
+	}
 }
 
 
