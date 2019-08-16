@@ -361,7 +361,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 		0 != strcasecmp(email_addr.domain, g_context_list[context_ID].uri)) {
 		if (TRUE == domain_filter_query(g_context_list[context_ID].uri)) {
 			snprintf(reason, length, "000018 domain %s"
-						" in mail header is forbidden",
+						" in mail content is forbidden",
 						g_context_list[context_ID].uri);
 			if (NULL!= spam_statistic) {
 				spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
