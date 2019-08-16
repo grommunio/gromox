@@ -321,7 +321,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
 	int tmp_len;
-	chat *pdomain;
+	char *pdomain;
 	char tmp_buff[1024];
 	EMAIL_ADDR email_addr;
 	
