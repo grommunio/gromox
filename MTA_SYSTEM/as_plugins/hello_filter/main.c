@@ -95,6 +95,9 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	if (TRUE == penvelop->is_outbound || TRUE == penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
+	if (NULL != pconnection->ssl) {
+		return MESSAGE_ACCEPT;
+	}
 	if (TRUE == ip_whitelist_query(pconnection->client_ip)) {
 		return MESSAGE_ACCEPT;
 	}
