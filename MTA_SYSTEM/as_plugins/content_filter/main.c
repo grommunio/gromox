@@ -382,27 +382,30 @@ static int paragraph_filter(int action, int context_ID,
 			}
 			g_context_list[context_ID].type = CONTEXT_URI_HAS;
 		}
-		paddress = find_mail_address((void*)ptr, len, &addr_len);
-		if (NULL != paddress && addr_len < sizeof(tmp_buff)) {
-			memcpy(tmp_buff, paddress, addr_len);
-			tmp_buff[addr_len] = '\0';
-			if (TRUE == from_filter_query(tmp_buff)) {
-				snprintf(reason, length, "000035 address %s "
-					"in mail content is forbidden", tmp_buff);
-				if (NULL!= spam_statistic) {
-					spam_statistic(SPAM_STATISTIC_FROM_FILTER);
+		while (paddress = find_mail_address((void*)ptr, len, &addr_len)) {
+			if (addr_len < sizeof(tmp_buff)) {
+				memcpy(tmp_buff, paddress, addr_len);
+				tmp_buff[addr_len] = '\0';
+				if (TRUE == from_filter_query(tmp_buff)) {
+					snprintf(reason, length, "000035 address %s "
+						"in mail content is forbidden", tmp_buff);
+					if (NULL!= spam_statistic) {
+						spam_statistic(SPAM_STATISTIC_FROM_FILTER);
+					}
+					return MESSAGE_REJECT;
 				}
-				return MESSAGE_REJECT;
-			}
-			pdomain = strchr(tmp_buff, '@');
-			if (NULL != pdomain && TRUE == domain_filter_query(pdomain + 1)) {
-				snprintf(reason, length, "000018 domain %s "
-					"in mail content is forbidden", pdomain);
-				if (NULL!= spam_statistic) {
-					spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
+				pdomain = strchr(tmp_buff, '@');
+				if (NULL != pdomain && TRUE == domain_filter_query(pdomain + 1)) {
+					snprintf(reason, length, "000018 domain %s "
+						"in mail content is forbidden", pdomain);
+					if (NULL!= spam_statistic) {
+						spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
+					}
+					return MESSAGE_REJECT;
 				}
-				return MESSAGE_REJECT;
 			}
+			len = ptr + len - (paddress + addr_len);
+			ptr = paddress + addr_len;
 		}
 		return MESSAGE_ACCEPT;
 	case ACTION_BLOCK_FREE:
@@ -472,8 +475,6 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 			goto SPAM_FOUND;
 		}
 	}
-	g_context_list[context_ID].type = CONTEXT_URI_NONE;
-	memset(g_context_list[context_ID].uri, 0, 256);
 	return MESSAGE_ACCEPT;
 	
 SPAM_FOUND:
