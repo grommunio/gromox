@@ -276,8 +276,8 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 				sprintf(buff, "%s@%s", email_addr.local_part,
 					email_addr.domain);
 				if (TRUE == from_filter_query(buff)) {
-					snprintf(reason, length, "000035 address %s "
-						"in mail header is forbidden", tmp_buff);
+					snprintf(reason, length, "000035 address %s"
+							" in mail header is forbidden", buff);
 					if (NULL!= spam_statistic) {
 						spam_statistic(SPAM_STATISTIC_FROM_FILTER);
 					}
