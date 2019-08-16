@@ -7,7 +7,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#define SPAM_STATISTIC_URI_RBL         26
+#define SPAM_STATISTIC_DOMAIN_FILTER		18
+#define SPAM_STATISTIC_URI_RBL				26
 
 
 enum {
@@ -253,12 +254,16 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 				if (FALSE == extract_uri(buff, val_len, uri)) {
 					return MESSAGE_ACCEPT;
 				}
-				if (FALSE == domain_filter_query(uri)) {
-					if (TRUE == uri_rbl_judge(uri, reason, length)) {
-						return MESSAGE_ACCEPT;
+				if (TRUE == domain_filter_query(uri)) {
+					snprintf(reason, length, "000018 domain %s "
+							"in mail header is forbidden", uri);
+					if (NULL!= spam_statistic) {
+						spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
 					}
-				} else {
-					snprintf(reason, length, "domain %s is forbidden", uri);
+					return MESSAGE_REJECT;
+				}
+				if (TRUE == uri_rbl_judge(uri, reason, length)) {
+					return MESSAGE_ACCEPT;
 				}
 				if (FALSE == g_immediate_reject) {
 					if (FALSE == check_retrying(pconnection->client_ip,
@@ -355,9 +360,12 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	if (0 != strcasecmp(pdomain, g_context_list[context_ID].uri) &&
 		0 != strcasecmp(email_addr.domain, g_context_list[context_ID].uri)) {
 		if (TRUE == domain_filter_query(g_context_list[context_ID].uri)) {
-			snprintf(reason, length, "domain %s is forbidden",
-				g_context_list[context_ID].uri);
-			goto SPAM_FOUND;
+			snprintf(reason, length, "000018 domain %s "
+					"in mail header is forbidden", uri);
+			if (NULL!= spam_statistic) {
+				spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
+			}
+			return MESSAGE_REJECT;
 		}
 		if (FALSE == uri_rbl_judge(g_context_list[context_ID].uri,
 			reason, length)) {
