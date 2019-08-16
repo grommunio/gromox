@@ -1,7 +1,7 @@
 OUTPUT_TYPE=SHA # OBJ, LIB, BIN or SHA
 # modify name here for binary excutable file name, if output type is OBJ, 
 # no need to specify the output name
-OUTPUT_NAME=uri_rbl.pas
+OUTPUT_NAME=content_filter.pas
 C_SOURCE_FILES=$(wildcard *.c)
 CPP_SOURCE_FILES=$(wildcard *.cxx *.cpp *.C)
 INCLUDE_PATHS=../include\

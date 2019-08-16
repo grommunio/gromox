@@ -1,14 +1,15 @@
+#include "util.h"
+#include "uri_rbl.h"
+#include "mail_func.h"
+#include "uri_cache.h"
 #include "as_common.h"
 #include "config_file.h"
-#include "util.h"
-#include "mail_func.h"
-#include "uri_rbl.h"
-#include "uri_cache.h"
 #include <string.h>
 #include <stdio.h>
 
 #define SPAM_STATISTIC_DOMAIN_FILTER		18
 #define SPAM_STATISTIC_URI_RBL				26
+#define SPAM_STATISTIC_FROM_FILTER			35
 
 
 enum {
@@ -23,7 +24,7 @@ typedef struct _URI_INFORMATION {
 } URI_INFORMATION;
 
 typedef BOOL (*WHITELIST_QUERY)(char*);
-typedef BOOL (*DOMAIN_FILTER_QUERY)(char*);
+typedef BOOL (*STRING_FILTER_QUERY)(char*);
 typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_RETRYING)(const char*, const char*, MEM_FILE*);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
@@ -32,13 +33,13 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	CONNECTION *pconnection, char *reason, int length);
 
 static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
-        CONNECTION *pconnection, char *reason, int length);
+		CONNECTION *pconnection, char *reason, int length);
 
-static int paragraph_filter(int action, int block_ID, MAIL_BLOCK* mail_blk,
-	char* reason, int length);
+static int paragraph_filter(int action, int block_ID,
+	MAIL_BLOCK* mail_blk, char* reason, int length);
 
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
-    CONNECTION *pconnection, char *reason, int length);
+	CONNECTION *pconnection, char *reason, int length);
 
 static void console_talk(int argc, char **argv, char *result, int length);
 
@@ -48,7 +49,8 @@ DECLARE_API;
 
 static WHITELIST_QUERY ip_whitelist_query;
 static WHITELIST_QUERY domain_whitelist_query;
-static DOMAIN_FILTER_QUERY domain_filter_query;
+static STRING_FILTER_QUERY from_filter_query;
+static STRING_FILTER_QUERY domain_filter_query;
 static SPAM_STATISTIC spam_statistic;
 static CHECK_RETRYING check_retrying;
 static CHECK_TAGGING check_tagging;
@@ -69,41 +71,52 @@ BOOL AS_LibMain(int reason, void **ppdata)
 	char *str_value, *psearch;
 	int black_size, black_valid;
 	
-    /* path conatins the config files directory */
-    switch (reason) {
-    case PLUGIN_INIT:
+	/* path conatins the config files directory */
+	switch (reason) {
+	case PLUGIN_INIT:
 		LINK_API(ppdata);
 		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
 		if (NULL == check_retrying) {
-			printf("[uri_rbl]: fail to get \"check_retrying\" service\n");
+			printf("[content_filter]: fail to get "
+					"\"check_retrying\" service\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[uri_rbl]: fail to get \"check_tagging\" service\n");
+			printf("[content_filter]: fail to get "
+					"\"check_tagging\" service\n");
 			return FALSE;
 		}
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 							"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[uri_rbl]: fail to get \"ip_whitelist_query\" service\n");
+			printf("[content_filter]: fail to get "
+				"\"ip_whitelist_query\" service\n");
 			return FALSE;
 		}
-		domain_whitelist_query = (WHITELIST_QUERY)query_service(
-				                "domain_whitelist_query");
+		domain_whitelist_query = (WHITELIST_QUERY)
+			query_service("domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[uri_rbl]: fail to get \"domain_whitelist_query\" "
-					"service\n");
+			printf("[content_filter]: fail to get "
+				"\"domain_whitelist_query\" service\n");
 			return FALSE;
 		}
-		domain_filter_query = (DOMAIN_FILTER_QUERY)query_service(
-							  "domain_filter_query");
+		from_filter_query = (STRING_FILTER_QUERY)
+				query_service("from_filter_query");
+		if (NULL == from_filter_query) {
+			printf("[content_filter]: fail to get "
+				"\"from_filter_query\" service\n");
+			return FALSE;
+		}
+		domain_filter_query = (STRING_FILTER_QUERY)
+				query_service("domain_filter_query");
 		if (NULL == domain_filter_query) {
-			printf("[uri_rbl]: fail to get \"domain_filter_query\" "
-					"service\n");
+			printf("[content_filter]: fail to get "
+				"\"domain_filter_query\" service\n");
 			return FALSE;
 		}
-		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
+		spam_statistic = (SPAM_STATISTIC)
+			query_service("spam_statistic");
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
@@ -113,17 +126,19 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		strcpy(g_config_file, temp_path);
 		pconfig_file = config_file_init(temp_path);
 		if (NULL == pconfig_file) {
-			printf("[uri_rbl]: error to open config file!!!\n");
+			printf("[content_filter]: error to open config file!!!\n");
 			return FALSE;
 		}
-		str_value = config_file_get_value(pconfig_file, "BLACKLIST_CACHE_SIZE");
+		str_value = config_file_get_value(
+			pconfig_file, "BLACKLIST_CACHE_SIZE");
 		if (NULL == str_value) {
 			black_size = 10000;
-			config_file_set_value(pconfig_file, "BLACKLIST_CACHE_SIZE","10000");
+			config_file_set_value(pconfig_file,
+				"BLACKLIST_CACHE_SIZE","10000");
 		} else {
 			black_size = atoi(str_value);
 		}
-		printf("[uri_rbl]: blacklist cache size is %d\n", black_size);
+		printf("[content_filter]: blacklist cache size is %d\n", black_size);
 		str_value = config_file_get_value(pconfig_file,
 						"BLACKLIST_VALID_INTERVAL");
 		if (NULL == str_value) {
@@ -134,14 +149,17 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			black_valid = atoitvl(str_value);
 		}
 		itvltoa(black_valid, temp_buff);
-		printf("[uri_rbl]: blacklist cache interval is %s\n", temp_buff);
+		printf("[content_filter]: blacklist cache"
+					" interval is %s\n", temp_buff);
 		str_value = config_file_get_value(pconfig_file, "IMMEDIATE_REJECT");
 		if (NULL == str_value || 0 == strcasecmp(str_value, "FALSE")) {
 			g_immediate_reject = FALSE;
-			printf("[uri_rbl]: message can be resent if uri spam is found\n");
+			printf("[content_filter]: message can "
+				"be resent if uri spam is found\n");
 		} else {
 			g_immediate_reject = TRUE;
-			printf("[uri_rbl]: spam message will be reject immediately\n");
+			printf("[content_filter]: spam message"
+					" will be reject immediately\n");
 		}
 		str_value = config_file_get_value(pconfig_file, "SURBL_DNS");
 		if (NULL == str_value || 0 == strcmp(str_value, "null")) {
@@ -162,17 +180,17 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			uribl_dns[255] = '\0';
 		}
 		if (FALSE == config_file_save(pconfig_file)) {
-			printf("[uri_rbl]: fail to save config file\n");
+			printf("[content_filter]: fail to save config file\n");
 			config_file_free(pconfig_file);
 			return FALSE;
 		}
 		config_file_free(pconfig_file);
 		g_context_list = malloc(sizeof(URI_INFORMATION)*get_context_num());
 		if (NULL == g_context_list) {
-			printf("[uri_rbl]: fail to allocate context list memory\n");
+			printf("[content_filter]: fail to allocate context list memory\n");
 			return FALSE;
 		}
-		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
+		sprintf(temp_path, "%s/cctld.txt", get_data_path());
 		uri_rbl_init(temp_path, surbl_dns, uribl_dns);
 		uri_cache_init(black_size, black_valid);
 		if (0 != uri_rbl_run() || 0 != uri_cache_run()) {
@@ -190,13 +208,13 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			FALSE == register_filter("text/html", paragraph_filter)) {
 			return FALSE;
 		}
-        /* invoke register_statistic for registering statistic of mail */
-        if (FALSE == register_statistic(mail_statistic)) {
-            return FALSE;
-        }
-        register_talk(console_talk);
-        return TRUE;
-    case PLUGIN_FREE:
+		/* invoke register_statistic for registering statistic of mail */
+		if (FALSE == register_statistic(mail_statistic)) {
+			return FALSE;
+		}
+		register_talk(console_talk);
+		return TRUE;
+	case PLUGIN_FREE:
 		uri_cache_stop();
 		uri_rbl_stop();
 		uri_cache_free();
@@ -205,9 +223,9 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			free(g_context_list);
 			g_context_list = NULL;
 		}
-        return TRUE;
-    }
-    return TRUE;
+		return TRUE;
+	}
+	return TRUE;
 }
 
 static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
@@ -236,13 +254,44 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 	char uri[256];
 	char buff[1024];
 	int tag_len, val_len;
+	EMAIL_ADDR email_addr;
 	
 	if (CONTEXT_URI_IGNORE == g_context_list[context_ID].type) {
 		return MESSAGE_ACCEPT;
 	}
 	while (MEM_END_OF_FILE != mem_file_read(
 		&pmail->phead->f_others, &tag_len, sizeof(int))) {
-		if (16 == tag_len) {
+		if (8 == tag_len || 27 == tag_len) {
+			mem_file_read(&pmail->phead->f_others, buff, tag_len);
+			if (0 == strncasecmp("Reply-To", buff, tag_len) ||
+				0 == strncasecmp("Disposition-Notification-To", tag_len)) {
+				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
+				if (val_len >= 1024) {
+					return MESSAGE_ACCEPT;
+				}
+				mem_file_read(&pmail->phead->f_others, buff, val_len);
+				buff[val_len] = '\0';
+				parse_email_addr(&email_addr, buff);
+				sprintf(buff, "%s@%s", email_addr.local_part,
+					email_addr.domain);
+				if (TRUE == from_filter_query(tmp_buff)) {
+					snprintf(reason, length, "000035 address %s "
+						"in mail header is forbidden", tmp_buff);
+					if (NULL!= spam_statistic) {
+						spam_statistic(SPAM_STATISTIC_FROM_FILTER);
+					}
+					return MESSAGE_REJECT;
+				}
+				if (TRUE == domain_filter_query(email_addr.domain)) {
+					snprintf(reason, length, "000018 domain %s in "
+						"mail header is forbidden", email_addr.domain);
+					if (NULL!= spam_statistic) {
+						spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
+					}
+					return MESSAGE_REJECT;
+				}
+			}
+		} else if (16 == tag_len) {
 			mem_file_read(&pmail->phead->f_others, buff, tag_len);
 			if (0 == strncasecmp("List-Unsubscribe", buff, 16)) {
 				mem_file_read(&pmail->phead->f_others,
@@ -294,15 +343,17 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 	return MESSAGE_ACCEPT;
 }
 
-static int paragraph_filter(int action, int context_ID, MAIL_BLOCK* mail_blk, 
-	char* reason, int length)
+static int paragraph_filter(int action, int context_ID,
+	MAIL_BLOCK* mail_blk, char* reason, int length)
 {
+	int len;
+	int addr_len;
+	char *pdomain;
+	char *paddress;
+	const char *ptr;
+	char tmp_buff[256];
 	MAIL_ENTITY mail_entity;
 	CONNECTION *pconnection;
-	char *pdomain;
-	char result_buff[256];
-	const char *ptr;
-	int result, len;
 	
 	switch (action) {
 	case ACTION_BLOCK_NEW:
@@ -319,7 +370,38 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 			len = mail_blk->parsed_length;
 		}
 		if (TRUE == extract_uri(ptr, len, g_context_list[context_ID].uri)) {
+			if (TRUE == domain_filter_query(g_context_list[context_ID].uri)) {
+				snprintf(reason, length, "000018 domain %s"
+							" in mail content is forbidden",
+							g_context_list[context_ID].uri);
+				if (NULL!= spam_statistic) {
+					spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
+				}
+				return MESSAGE_REJECT;
+			}
 			g_context_list[context_ID].type = CONTEXT_URI_HAS;
+		}
+		paddress = find_mail_address(ptr, len, &addr_len);
+		if (NULL != paddress && addr_len < sizeof(tmp_buff)) {
+			memcpy(tmp_buff, paddress, addr_len);
+			tmp_buff[addr_len] = '\0';
+			if (TRUE == from_filter_query(tmp_buff)) {
+				snprintf(reason, length, "000035 address %s "
+					"in mail content is forbidden", tmp_buff);
+				if (NULL!= spam_statistic) {
+					spam_statistic(SPAM_STATISTIC_FROM_FILTER);
+				}
+				return MESSAGE_REJECT;
+			}
+			pdomain = strchr(tmp_buff, '@');
+			if (NULL != pdomain && TRUE == domain_filter_query(pdomain + 1)) {
+				snprintf(reason, length, "000018 domain %s "
+					"in mail content is forbidden", pdomain);
+				if (NULL!= spam_statistic) {
+					spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
+				}
+				return MESSAGE_REJECT;
+			}
 		}
 		return MESSAGE_ACCEPT;
 	case ACTION_BLOCK_FREE:
@@ -328,7 +410,7 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 }
 
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
-    CONNECTION *pconnection, char *reason, int length)
+	CONNECTION *pconnection, char *reason, int length)
 {
 	int tmp_len;
 	char *pdomain;
@@ -348,6 +430,23 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	tmp_len = mem_file_read(&pmail->phead->f_mime_from, tmp_buff, 1024);
 	if (MEM_END_OF_FILE != tmp_len) {
 		parse_email_addr(&email_addr, tmp_buff);
+		sprintf(tmp_buff, "%s@%s", email_addr.local_part, email_addr.domain);
+		if (TRUE == from_filter_query(tmp_buff)) {
+			snprintf(reason, length, "000035 address %s "
+				"in mail header is forbidden", tmp_buff);
+			if (NULL!= spam_statistic) {
+				spam_statistic(SPAM_STATISTIC_FROM_FILTER);
+			}
+			return MESSAGE_REJECT;
+		}
+		if (TRUE == domain_filter_query(email_addr.domain)) {
+			snprintf(reason, length, "000018 domain %s in "
+				"mail header is forbidden", email_addr.domain);
+			if (NULL!= spam_statistic) {
+				spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
+			}
+			return MESSAGE_REJECT;
+		}
 		if ('\0' != email_addr.domain[0] && 0 != strcasecmp(
 			pdomain, email_addr.domain) && FALSE ==
 			uri_rbl_judge(email_addr.domain, reason, length)) {
@@ -360,9 +459,8 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	if (0 != strcasecmp(pdomain, g_context_list[context_ID].uri) &&
 		0 != strcasecmp(email_addr.domain, g_context_list[context_ID].uri)) {
 		if (TRUE == domain_filter_query(g_context_list[context_ID].uri)) {
-			snprintf(reason, length, "000018 domain %s"
-						" in mail content is forbidden",
-						g_context_list[context_ID].uri);
+			snprintf(reason, length, "000018 domain %s in mail "
+				"content is forbidden", g_context_list[context_ID].uri);
 			if (NULL!= spam_statistic) {
 				spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
 			}
@@ -626,4 +724,3 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	snprintf(result, length, "550 invalid argument %s", argv[1]);
 	return;
 }
-
