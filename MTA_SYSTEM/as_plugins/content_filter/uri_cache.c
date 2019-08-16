@@ -1,10 +1,12 @@
 #include "uri_cache.h"
 #include "str_hash.h"
 #include <time.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <stdio.h>
 #include <fcntl.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 
 #define DEF_MODE    S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
