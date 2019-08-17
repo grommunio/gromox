@@ -7543,7 +7543,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	}
 	close(pipes_in[0]);
 	close(pipes_out[1]);
-	write(pipes_in[1]);
+	write(pipes_in[1], cookie_buff, tmp_len);
 	close(pipes_in[1]);
 	*ppresult_string = common_util_alloc(1024*1024);
 	if (NULL == *ppresult_string) {
