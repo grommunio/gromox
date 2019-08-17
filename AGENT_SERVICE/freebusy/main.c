@@ -1669,12 +1669,19 @@ static void output_event(time_t start_time, time_t end_time,
 	ICAL_TIME itime;
 	char tmp_buff[4096];
 	
-	ical_utc_to_datetime(g_tz_component, start_time, &itime);
-	printf("{\"StartTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ", itime.year,
-		itime.month, itime.day, itime.hour, itime.minute, itime.second);
-	ical_utc_to_datetime(g_tz_component, end_time, &itime);
-	printf("\"EndTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ", itime.year,
-		itime.month, itime.day, itime.hour, itime.minute, itime.second);
+	if (NULL == g_tz_component) {
+		printf("{\"StartTime\":%lu, ", start_time);
+		printf("\"EndTime\":%lu, ", end_time);
+	} else {
+		ical_utc_to_datetime(g_tz_component, start_time, &itime);
+		printf("{\"StartTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ",
+					itime.year, itime.month, itime.day, itime.hour,
+					itime.minute, itime.second);
+		ical_utc_to_datetime(g_tz_component, end_time, &itime);
+		printf("\"EndTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ",
+				itime.year, itime.month, itime.day, itime.hour,
+				itime.minute, itime.second);
+	}
 	switch (busy_type) {
 	case 0x00000000:
 		strcpy(tmp_buff, "Free");
