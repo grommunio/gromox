@@ -261,9 +261,10 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 	}
 	while (MEM_END_OF_FILE != mem_file_read(
 		&pmail->phead->f_others, &tag_len, sizeof(int))) {
-		if (8 == tag_len || 27 == tag_len) {
+		if (6 == tag_len || 8 == tag_len || 27 == tag_len) {
 			mem_file_read(&pmail->phead->f_others, buff, tag_len);
-			if (0 == strncasecmp("Reply-To", buff, tag_len) ||
+			if (0 == strncasecmp("Sender", buff, tag_len)) ||
+				0 == strncasecmp("Reply-To", buff, tag_len) ||
 				0 == strncasecmp("Disposition-Notification-To",
 				buff, tag_len)) {
 				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
