@@ -1913,21 +1913,22 @@ static BOOL get_freebusy(const char *dir)
 	pidlidtimezonestruct <<= 16;
 	pidlidtimezonestruct |= PROPVAL_TYPE_BINARY;
 	
-	if (NULL != g_username && FALSE == exmdb_client_check_folder_permission(
-		sockd, dir, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR), g_username,
-		&permission)) {
-		close(sockd);
-		cache_connection(dir, -1);
-		return FALSE;
+	if (NULL != g_username) {
+		if (FALSE == exmdb_client_check_folder_permission(
+			sockd, dir, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
+			g_username, &permission)) {
+			close(sockd);
+			cache_connection(dir, -1);
+			return FALSE;
+		}
+		if (0 == (permission&PERMISSION_FREEBUSYSIMPLE) &&
+			0 == (permission&PERMISSION_FREEBUSYDETAILED)
+			&& 0 == (permission&PERMISSION_READANY)) {
+			printf("{\"dir\":\"%s\", \"permission\":\"none\"}\n", dir);
+			cache_connection(dir, sockd);
+			return TRUE;
+		}
 	}
-	if (0 == (permission&PERMISSION_FREEBUSYSIMPLE) &&
-		0 == (permission&PERMISSION_FREEBUSYDETAILED)
-		&& 0 == (permission&PERMISSION_READANY)) {
-		printf("{\"dir\":\"%s\", \"permission\":\"none\"}\n", dir);
-		cache_connection(dir, sockd);
-		return TRUE;
-	}
-	
 	tmp_true = 1;
 	restriction.rt = RESTRICTION_TYPE_OR;
 	restriction.pres = malloc(sizeof(RESTRICTION_AND_OR));
@@ -2347,6 +2348,7 @@ int main(int argc, char **argv)
 	}
 	list_file_free(plist);
 	
+	line = NULL;
 	if (-1 == getline(&line, &len, stdin)) {
 		fprintf(stderr, "fail to read parameters from stdin\n");
 		exit(2);
