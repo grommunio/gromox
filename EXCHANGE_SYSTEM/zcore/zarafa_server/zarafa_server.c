@@ -7492,6 +7492,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	if (FALSE == common_util_addressbook_entryid_to_username(
 		entryid, username) || FALSE ==
 		system_services_get_maildir(username, maildir)) {
+		zarafa_server_put_user_info(pinfo);
 		*ppresult_string = NULL;
 		return EC_SUCCESS;
 	}
