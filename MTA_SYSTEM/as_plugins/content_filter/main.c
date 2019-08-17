@@ -292,6 +292,7 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 					}
 					return MESSAGE_REJECT;
 				}
+				continue;
 			}
 		} else if (16 == tag_len) {
 			mem_file_read(&pmail->phead->f_others, buff, tag_len);
@@ -332,6 +333,7 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 					}
 					return MESSAGE_REJECT;
 				}
+				continue;
 			}
 		} else {
 			mem_file_seek(&pmail->phead->f_others,
