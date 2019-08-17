@@ -168,6 +168,8 @@ static zend_function_entry mapi_functions[] = {
 	
 	ZEND_FE(mapi_zarafa_getpermissionrules, NULL)
 	ZEND_FE(mapi_zarafa_setpermissionrules, NULL)
+	
+	ZEND_FE(mapi_getuseravailability, NULL)
 
 	ZEND_FE(mapi_exportchanges_config, NULL)
 	ZEND_FE(mapi_exportchanges_synchronize, NULL)

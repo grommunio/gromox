@@ -7498,7 +7498,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	if (0 == strcasecmp(pinfo->username, username)) {
 		tmp_len = snprintf(cookie_buff, sizeof(cookie_buff),
 			"starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
-			pinfo->username, starttime, endtime, maildir);
+			starttime, endtime, maildir);
 	} else {
 		tmp_len = snprintf(cookie_buff, sizeof(cookie_buff),
 			"username=%s;starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
