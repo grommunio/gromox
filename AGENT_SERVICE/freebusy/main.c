@@ -1928,6 +1928,8 @@ static BOOL get_freebusy(const char *dir)
 			cache_connection(dir, sockd);
 			return TRUE;
 		}
+	} else {
+		permission = PERMISSION_FREEBUSYDETAILED | PERMISSION_READANY;
 	}
 	tmp_true = 1;
 	restriction.rt = RESTRICTION_TYPE_OR;
