@@ -28,6 +28,7 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(
 	pctx->pstore = folder_object_get_store(pfolder);
 	pctx->folder_id = folder_object_get_id(pfolder);
 	pctx->sync_type = sync_type;
+	pctx->pgiven_eids = NULL;
 	pctx->pchg_eids = NULL;
 	pctx->pupdated_eids = NULL;
 	pctx->pread_messags = NULL;
@@ -105,27 +106,28 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 		&read_messags, &unread_messags, &pctx->last_readcn)) {
 		return FALSE;
 	}
+	if (NULL != pctx->pgiven_eids) {
+		eid_array_free(pctx->pgiven_eids);
+	}
+	pctx->pgiven_eids = eid_array_dup(&given_messages);
+	if (NULL == pctx->pgiven_eids) {
+		return FALSE;
+	}
 	if ((sync_flags & SYNC_FLAG_FAI) ||
 		(sync_flags & SYNC_FLAG_NORMAL)) {
 		if (NULL != pctx->pchg_eids) {
 			eid_array_free(pctx->pchg_eids);
-			pctx->pchg_eids = NULL;
 		}
-		if (chg_messages.count > 0) {
-			pctx->pchg_eids = eid_array_dup(&chg_messages);
-			if (NULL == pctx->pchg_eids) {
-				return FALSE;
-			}
+		pctx->pchg_eids = eid_array_dup(&chg_messages);
+		if (NULL == pctx->pchg_eids) {
+			return FALSE;
 		}
 		if (NULL != pctx->pupdated_eids) {
 			eid_array_free(pctx->pupdated_eids);
-			pctx->pupdated_eids = NULL;
 		}
-		if (updated_messages.count > 0) {
-			pctx->pupdated_eids = eid_array_dup(&updated_messages);
-			if (NULL == pctx->pupdated_eids) {
-				return FALSE;
-			}
+		pctx->pupdated_eids = eid_array_dup(&updated_messages);
+		if (NULL == pctx->pupdated_eids) {
+			return FALSE;
 		}
 		*pmsg_count = chg_messages.count;
 		if (chg_messages.count > 0) {
@@ -207,7 +209,17 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 		&deleted_folders)) {
 		return FALSE;
 	}
+	if (NULL != pctx->pgiven_eids) {
+		eid_array_free(pctx->pgiven_eids);
+	}
+	pctx->pgiven_eids = eid_array_dup(&given_folders);
+	if (NULL == pctx->pgiven_eids) {
+		return FALSE;
+	}
 	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
+		if (NULL != pctx->pdeleted_eids) {
+			eid_array_free(pctx->pdeleted_eids);
+		}
 		pctx->pdeleted_eids = eid_array_dup(&deleted_folders);
 		if (NULL == pctx->pdeleted_eids) {
 			return FALSE;
@@ -242,31 +254,50 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 {
 	int i;
 	
-	if (SYNC_TYPE_CONTENTS == pctx->sync_type
-		&& NULL == pctx->pchg_eids &&
-		NULL == pctx->pdeleted_eids &&
-		NULL == pctx->pnolonger_messages
-		&& 0 != pctx->last_changenum) {
-		idset_clear(pctx->pstate->pseen);
-		if (FALSE == idset_append_range(
-			pctx->pstate->pseen, 1, 1,
-			rop_util_get_gc_value(
-			pctx->last_changenum))) {
-			return FALSE;
+	if (NULL != pctx->pgiven_eids && NULL != pctx->pchg_eids
+		&& pctx->eid_pos >= pctx->pchg_eids->count && NULL ==
+		pctx->pdeleted_eids && NULL == pctx->pnolonger_messages) {
+		idset_clear(pctx->pstate->pgiven);
+		for (i=0; i<pctx->pgiven_eids->count; i++) {
+			if (FALSE == idset_append(pctx->pstate->pgiven,
+				pctx->pgiven_eids->pids[i])) {
+				return FALSE;	
+			}
 		}
-		idset_clear(pctx->pstate->pseen_fai);
-		if (FALSE == idset_append_range(
-			pctx->pstate->pseen_fai, 1, 1,
-			rop_util_get_gc_value(pctx->last_changenum))) {
-			return FALSE;
+		idset_clear(pctx->pstate->pseen);
+		if (0 != pctx->last_changenum) {
+			if (FALSE == idset_append_range(pctx->pstate->pseen, 1,
+				1, rop_util_get_gc_value(pctx->last_changenum))) {
+				return FALSE;
+			}
+		}
+		if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
+			idset_clear(pctx->pstate->pseen_fai);
+			if (0 != pctx->last_changenum) {
+				if (FALSE == idset_append_range(pctx->pstate->pseen_fai,
+					1, 1, rop_util_get_gc_value(pctx->last_changenum))) {
+					return FALSE;
+				}
+			}
 		}
 		pctx->last_changenum = 0;
+		eid_array_free(pctx->pgiven_eids);
+		pctx->pgiven_eids = NULL;
+		eid_array_free(pctx->pchg_eids);
+		pctx->pchg_eids = NULL;
+		if (NULL != pctx->pupdated_eids) {
+			eid_array_free(pctx->pupdated_eids);
+			pctx->pupdated_eids = NULL;
+		}
 	}
 	return ics_state_serialize(pctx->pstate);
 }
 
 void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 {
+	if (NULL != pctx->pgiven_eids) {
+		eid_array_free(pctx->pgiven_eids);
+	}
 	if (NULL != pctx->pchg_eids) {
 		eid_array_free(pctx->pchg_eids);
 	}
@@ -305,45 +336,27 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
 		return FALSE;
 	}
-	if (NULL == pctx->pchg_eids) {
+	if (NULL == pctx->pchg_eids || NULL == pctx->pupdated_eids) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	while (TRUE) {
+	do {
+		if (pctx->eid_pos >= pctx->pchg_eids->count) {
+			*pb_found = FALSE;
+			return TRUE;
+		}
 		message_id = pctx->pchg_eids->pids[pctx->eid_pos];
+		pctx->eid_pos ++;
 		if (FALSE == exmdb_client_get_message_property(
 			store_object_get_dir(pctx->pstore), NULL, 0,
 			message_id, PROP_TAG_CHANGENUMBER, &pvalue)) {
 			return FALSE;	
 		}
-		if (NULL != pvalue) {
-			break;
-		}
-		/* skip the empty change item */
-		pctx->eid_pos ++;
-	}
-	if (NULL == pctx->pupdated_eids || FALSE ==
-		eid_array_check(pctx->pupdated_eids, message_id)) {
+	} while (NULL == pvalue);
+	if (FALSE == eid_array_check(pctx->pupdated_eids, message_id)) {
 		*pb_new = TRUE;	
 	} else {
 		*pb_new = FALSE;
-	}
-	if (FALSE == idset_append(
-		pctx->pstate->pgiven, message_id)
-		|| FALSE == idset_append(
-		pctx->pstate->pseen, *(uint64_t*)pvalue)
-		|| FALSE == idset_append(
-		pctx->pstate->pseen_fai, *(uint64_t*)pvalue)) {
-		return FALSE;
-	}
-	pctx->eid_pos ++;
-	if (pctx->eid_pos == pctx->pchg_eids->count) {
-		eid_array_free(pctx->pchg_eids);
-		pctx->pchg_eids = NULL;
-		if (NULL != pctx->pupdated_eids) {
-			eid_array_free(pctx->pupdated_eids);
-			pctx->pupdated_eids = NULL;
-		}
 	}
 	pproplist->count = 2;
 	pproplist->ppropval = common_util_alloc(
@@ -366,6 +379,14 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	*pb_found = TRUE;
+	if (FALSE == idset_append(
+		pctx->pstate->pgiven, message_id)
+		|| FALSE == idset_append(
+		pctx->pstate->pseen, *(uint64_t*)pvalue)
+		|| FALSE == idset_append(
+		pctx->pstate->pseen_fai, *(uint64_t*)pvalue)) {
+		return FALSE;
+	}
 	return TRUE;
 }
 
@@ -384,45 +405,13 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
 		return FALSE;
 	}
-	if (NULL == pctx->pchg_eids) {
+	if (NULL == pctx->pchg_eids ||
+		pctx->eid_pos >= pctx->pchg_eids->count) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	while (TRUE) {
-		folder_id = pctx->pchg_eids->pids[pctx->eid_pos];
-		proptags.count = 6;
-		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_PARENTFOLDERID;
-		proptag_buff[1] = PROP_TAG_DISPLAYNAME;
-		proptag_buff[2] = PROP_TAG_CONTAINERCLASS;
-		proptag_buff[3] = PROP_TAG_ATTRIBUTEHIDDEN;
-		proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
-		proptag_buff[5] = PROP_TAG_CHANGENUMBER;
-		if (FALSE == exmdb_client_get_folder_properties(
-			store_object_get_dir(pctx->pstore), 0,
-			folder_id, &proptags, &tmp_propvals)) {
-			return FALSE;
-		}
-		pvalue = common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_CHANGENUMBER);
-		if (NULL != pvalue) {
-			change_num = *(uint64_t*)pvalue;
-			break;
-		}
-		/* skip the empty change item */
-		pctx->eid_pos ++;
-	}
-	if (FALSE == idset_append(
-		pctx->pstate->pgiven, folder_id)
-		|| FALSE == idset_append(
-		pctx->pstate->pseen, *(uint64_t*)pvalue)) {
-		return FALSE;
-	}
+	folder_id = pctx->pchg_eids->pids[pctx->eid_pos];
 	pctx->eid_pos ++;
-	if (pctx->eid_pos == pctx->pchg_eids->count) {
-		eid_array_free(pctx->pchg_eids);
-		pctx->pchg_eids = NULL;
-	}
 	pproplist->count = 0;
 	pproplist->ppropval = common_util_alloc(
 					8*sizeof(TAGGED_PROPVAL));
@@ -431,65 +420,85 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	}
 	pproplist->ppropval[pproplist->count].proptag =
 								PROP_TAG_SOURCEKEY;
-	pproplist->ppropval[pproplist->count].pvalue =
-			common_util_calculate_folder_sourcekey(
-			pctx->pstore, folder_id);
-	if (NULL == pproplist->ppropval[pproplist->count].pvalue) {
+	pvalue = common_util_calculate_folder_sourcekey(
+							pctx->pstore, folder_id);
+	if (NULL == pvalue) {
 		return FALSE;
 	}
+	pproplist->ppropval[pproplist->count].pvalue = pvalue;
 	pproplist->count ++;
 	pproplist->ppropval[pproplist->count].proptag = PROP_TAG_ENTRYID;
-	pproplist->ppropval[pproplist->count].pvalue =
-		common_util_to_folder_entryid(pctx->pstore, folder_id);
-	if (NULL == pproplist->ppropval[pproplist->count].pvalue) {
+	pvalue = common_util_to_folder_entryid(pctx->pstore, folder_id);
+	if (NULL == pvalue) {
 		return FALSE;
 	}
+	pproplist->ppropval[pproplist->count].pvalue = pvalue;
 	pproplist->count ++;
+	proptags.count = 6;
+	proptags.pproptag = proptag_buff;
+	proptag_buff[0] = PROP_TAG_PARENTFOLDERID;
+	proptag_buff[1] = PROP_TAG_DISPLAYNAME;
+	proptag_buff[2] = PROP_TAG_CONTAINERCLASS;
+	proptag_buff[3] = PROP_TAG_ATTRIBUTEHIDDEN;
+	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
+	proptag_buff[5] = PROP_TAG_CHANGENUMBER;
+	if (FALSE == exmdb_client_get_folder_properties(
+		store_object_get_dir(pctx->pstore), 0,
+		folder_id, &proptags, &tmp_propvals)) {
+		return FALSE;
+	}
+	pvalue = common_util_get_propvals(
+		&tmp_propvals, PROP_TAG_CHANGENUMBER);
+	if (NULL == pvalue) {
+		*pb_found = FALSE;
+		return TRUE;
+	}
+	change_num = *(uint64_t*)pvalue;
 	pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_PARENTFOLDERID);
 	if (NULL != pvalue) {
 		parent_fid = *(uint64_t*)pvalue;
 		pproplist->ppropval[pproplist->count].proptag =
 								PROP_TAG_PARENTSOURCEKEY;
-		pproplist->ppropval[pproplist->count].pvalue =
-				common_util_calculate_folder_sourcekey(
-				pctx->pstore, parent_fid);
-		if (NULL == pproplist->ppropval[pproplist->count].pvalue) {
+		pvalue = common_util_calculate_folder_sourcekey(
+								pctx->pstore, parent_fid);
+		if (NULL == pvalue) {
 			return FALSE;
 		}
+		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 		pproplist->ppropval[pproplist->count].proptag =
 								PROP_TAG_PARENTENTRYID;
-		pproplist->ppropval[pproplist->count].pvalue =
-						common_util_to_folder_entryid(
+		pvalue = common_util_to_folder_entryid(
 						pctx->pstore, parent_fid);
-		if (NULL == pproplist->ppropval[pproplist->count].pvalue) {
+		if (NULL == pvalue) {
 			return FALSE;
 		}
+		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag =
 								PROP_TAG_DISPLAYNAME;
-	pproplist->ppropval[pproplist->count].pvalue =
-			common_util_get_propvals(&tmp_propvals,
-			PROP_TAG_DISPLAYNAME);
-	if (NULL != pproplist->ppropval[pproplist->count].pvalue) {
+	pvalue = common_util_get_propvals(
+		&tmp_propvals, PROP_TAG_DISPLAYNAME);
+	if (NULL != pvalue) {
+		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag =
 							PROP_TAG_CONTAINERCLASS;
-	pproplist->ppropval[pproplist->count].pvalue =
-			common_util_get_propvals(&tmp_propvals,
-			PROP_TAG_CONTAINERCLASS);
-	if (NULL != pproplist->ppropval[pproplist->count].pvalue) {
+	pvalue = common_util_get_propvals(
+		&tmp_propvals, PROP_TAG_CONTAINERCLASS);
+	if (NULL != pvalue) {
+		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag =
 							PROP_TAG_ATTRIBUTEHIDDEN;
-	pproplist->ppropval[pproplist->count].pvalue =
-			common_util_get_propvals(&tmp_propvals,
-			PROP_TAG_ATTRIBUTEHIDDEN);
-	if (NULL != pproplist->ppropval[pproplist->count].pvalue) {
+	pvalue = common_util_get_propvals(
+		&tmp_propvals, PROP_TAG_ATTRIBUTEHIDDEN);
+	if (NULL != pvalue) {
+		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	} else {
 		pproplist->ppropval[pproplist->count].pvalue = &fake_false;
@@ -497,13 +506,19 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	}
 	pproplist->ppropval[pproplist->count].proptag =
 						PROP_TAG_EXTENDEDFOLDERFLAGS;
-	pproplist->ppropval[pproplist->count].pvalue =
-			common_util_get_propvals(&tmp_propvals,
-			PROP_TAG_EXTENDEDFOLDERFLAGS);
-	if (NULL != pproplist->ppropval[pproplist->count].pvalue) {
+	pvalue = common_util_get_propvals(
+		&tmp_propvals, PROP_TAG_EXTENDEDFOLDERFLAGS);
+	if (NULL != pvalue) {
+		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
 	*pb_found = TRUE;
+	if (FALSE == idset_append(
+		pctx->pstate->pgiven, folder_id)
+		|| FALSE == idset_append(
+		pctx->pstate->pseen, change_num)) {
+		return FALSE;
+	}
 	return TRUE;
 }
 

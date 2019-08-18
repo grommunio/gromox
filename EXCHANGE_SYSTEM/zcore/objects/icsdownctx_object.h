@@ -14,6 +14,7 @@ typedef struct _ICSDOWNCTX_OBJECT {
 	BOOL b_started;
 	uint64_t last_changenum;
 	uint64_t last_readcn;
+	EID_ARRAY *pgiven_eids;
 	EID_ARRAY *pchg_eids;
 	EID_ARRAY *pupdated_eids;
 	EID_ARRAY *pdeleted_eids;
