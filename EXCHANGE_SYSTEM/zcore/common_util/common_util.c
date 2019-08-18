@@ -1122,11 +1122,13 @@ static BOOL common_util_entryid_to_username_internal(
 			&ext_pull, &oneoff_entry)) {
 			return FALSE;
 		}
-		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
-			return FALSE;
+		if (0 == strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
+			strncpy(username, oneoff_entry.pmail_address, 128);
+			return TRUE;
+		} else if (0 == strcasecmp(oneoff_entry.paddress_type, "SYSTEM")) {
+			strcpy(username, "outlook@system");
+			return TRUE;
 		}
-		strncpy(username, oneoff_entry.pmail_address, 128);
-		return TRUE;
 	}
 	return FALSE;
 }
