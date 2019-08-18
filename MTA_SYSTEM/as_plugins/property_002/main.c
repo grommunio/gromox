@@ -137,6 +137,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	}
 	if (FALSE == check_retrying(pconnection->client_ip,
 		pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {	
+		strncpy(reason, g_return_reason, length);
 		if (NULL!= spam_statistic) {
 			spam_statistic(SPAM_STATISTIC_PROPERTY_002);
 		}
