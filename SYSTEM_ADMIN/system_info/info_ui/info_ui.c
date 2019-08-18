@@ -278,7 +278,10 @@ static void info_ui_main_html(const char *session)
 			language));
 		return;
 	}
-	if (total_space >= 1024) {
+	if (total_space >= 1024*1024) {
+		total_space /= 1024*1024;
+		space_unit = 'T';
+	} else if (total_space >= 1024) {
 		total_space /= 1024;
 		space_unit = 'G';
 	} else {
