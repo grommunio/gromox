@@ -413,7 +413,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 		pctx->eid_pos ++;
 	}
 	if (FALSE == idset_append(
-		pctx->pstate->pgiven, message_id)
+		pctx->pstate->pgiven, folder_id)
 		|| FALSE == idset_append(
 		pctx->pstate->pseen, *(uint64_t*)pvalue)) {
 		return FALSE;
