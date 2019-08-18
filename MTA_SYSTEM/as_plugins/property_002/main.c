@@ -3,15 +3,20 @@
 #include "util.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <netdb.h>
 #include <string.h>
+#include <string.h>
+#include <sys/socket.h> 
 
 
 #define SPAM_STATISTIC_PROPERTY_002		15
 
 typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
+typedef BOOL (*CHECK_RETRYING)(const char*, const char*, MEM_FILE*);
 
 static SPAM_STATISTIC spam_statistic;
+static CHECK_RETRYING check_retrying;
 static CHECK_TAGGING check_tagging;
 
 DECLARE_API;
@@ -34,6 +39,12 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
 			printf("[property_002]: fail to get \"check_tagging\" service\n");
+			return FALSE;
+		}
+		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
+		if (NULL == check_retrying) {
+			printf("[property_002]: fail to get"
+				" \"check_retrying\" service\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
@@ -75,7 +86,10 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 {
 	int tag_len;
 	int val_len;
-	char buff[1024];
+	int h_errnop;
+	in_addr_t addr;
+	char buff[4096];
+	struct hostent hostinfo, *phost;
 	
 	if (TRUE == pmail->penvelop->is_relay ||
 		TRUE == pmail->penvelop->is_outbound) {
@@ -118,6 +132,19 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	if (TRUE == check_tagging(pmail->penvelop->from,
 		&pmail->penvelop->f_rcpt_to)) {
 		mark_context_spam(context_ID);
+		return MESSAGE_ACCEPT;
+	}
+	if (FALSE == check_retrying(pconnection->client_ip,
+		pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {	
+		if (NULL!= spam_statistic) {
+			spam_statistic(SPAM_STATISTIC_PROPERTY_002);
+		}
+		return MESSAGE_RETRYING;
+	}
+	inet_pton(AF_INET, pconnection->client_ip, &addr);
+	if (0 == gethostbyaddr_r((char*)&addr, sizeof(addr),
+		AF_INET, &hostinfo, buff, sizeof(buff), &phost,
+		&h_errnop) && NULL != phost) {
 		return MESSAGE_ACCEPT;
 	}
 	strncpy(reason, g_return_reason, length);
