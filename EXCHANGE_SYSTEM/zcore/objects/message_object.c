@@ -1149,7 +1149,9 @@ BOOL message_object_check_readonly_property(
 
 static BOOL message_object_get_calculated_property(
 	MESSAGE_OBJECT *pmessage, uint32_t proptag, void **ppvalue)
-{	
+{
+	void *pvalue;
+	
 	switch (proptag) {
 	case PROP_TAG_ACCESS:
 		*ppvalue = &pmessage->tag_access;
