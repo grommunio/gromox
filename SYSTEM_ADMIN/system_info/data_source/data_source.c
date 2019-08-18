@@ -1,6 +1,7 @@
 #include "data_source.h"
 #include "system_log.h"
 #include <mysql/mysql.h>
+#include <string.h>
 
 #define RECORD_STATUS_NORMAL                0
 
