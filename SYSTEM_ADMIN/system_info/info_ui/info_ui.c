@@ -260,7 +260,7 @@ static void info_ui_main_html(const char *session)
 	int real_addresses;
 	int alias_addresses;
 	int total_mlists;
-	int total_space;
+	long total_space;
 	
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 

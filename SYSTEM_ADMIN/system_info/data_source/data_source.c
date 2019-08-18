@@ -79,7 +79,7 @@ BOOL data_source_system_info(int *preal_domains, int *pbackup, int *pmonitor,
 	int *punchkusr, int *psubsys, int *psms, int *pextpasswd, int *palias_domains,
 	int *poutofdate, int *pdeleted, int *psuspend, int *pgroups,
 	int *palloc_addresses, int *preal_addresses, int *palias_address,
-	int *pmlists, int *ptotal_space)
+	int *pmlists, long *ptotal_space)
 {
 	int i, j, rows;
 	int temp_type;
