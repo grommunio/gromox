@@ -798,84 +798,16 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 
 BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
-{
-	int i;
-	void *pvalue;
-	TAGGED_PROPVAL *ppropval;
-	
+{	
 	/*
 		we replace the address type from "EX" to "ZARAFA"
 		in caller "zarafa_server_queryrows" because we need
 		to keep the addres type information for calculate
 		entryid there!
 	*/
-	if (FALSE == exmdb_client_get_message_instance_rcpts(
+	return exmdb_client_get_message_instance_rcpts(
 		store_object_get_dir(pmessage->pstore),
-		pmessage->instance_id, row_id, need_count, pset)) {
-		return FALSE;	
-	}
-	for (i=0; i<pset->count; i++) {
-		if (NULL != common_util_get_propvals(
-			pset->pparray[i], PROP_TAG_SMTPADDRESS)) {
-			continue;
-		}
-		ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL)
-							*(pset->pparray[i]->count + 1));
-		if (NULL == ppropval) {
-			return FALSE;
-		}
-		memcpy(ppropval, pset->pparray[i]->ppropval,
-			sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
-		ppropval[pset->pparray[i]->count].proptag = PROP_TAG_SMTPADDRESS;
-		ppropval[pset->pparray[i]->count].pvalue = common_util_alloc(256);
-		if (NULL == ppropval[pset->pparray[i]->count].pvalue) {
-			return FALSE;
-		}
-		pvalue = common_util_get_propvals(
-			pset->pparray[i], PROP_TAG_ENTRYID);
-		if (NULL != pvalue) {
-			if (FALSE == common_util_entryid_to_username(pvalue,
-				ppropval[pset->pparray[i]->count].pvalue)) {
-				ppropval[pset->pparray[i]->count].pvalue = "unkown@system";
-			}
-			pset->pparray[i]->ppropval = ppropval;
-			pset->pparray[i]->count ++;
-			continue;
-		}
-		pvalue = common_util_get_propvals(
-			pset->pparray[i], PROP_TAG_ADDRESSTYPE);
-		if (NULL == pvalue) {
-			ppropval[pset->pparray[i]->count].pvalue = "empty@system";
-			pset->pparray[i]->ppropval = ppropval;
-			pset->pparray[i]->count ++;
-			continue;
-		}
-		if (0 == strcasecmp(pvalue, "SMTP")) {
-			pvalue = common_util_get_propvals(pset->pparray[i],
-						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
-			if (NULL == pvalue) {
-				ppropval[pset->pparray[i]->count].pvalue = "empty@system";
-			} else {
-				ppropval[pset->pparray[i]->count].pvalue = pvalue;
-			}
-			pset->pparray[i]->ppropval = ppropval;
-			pset->pparray[i]->count ++;
-			continue;
-		} else if (0 == strcasecmp(pvalue, "EX")) {
-			pvalue = common_util_get_propvals(pset->pparray[i],
-						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
-			if (NULL != pvalue && TRUE ==
-				common_util_essdn_to_username(pvalue,
-				ppropval[pset->pparray[i]->count].pvalue)) {
-				pset->pparray[i]->ppropval = ppropval;
-				pset->pparray[i]->count ++;
-				continue;
-			}
-		}
-		ppropval[pset->pparray[i]->count].pvalue = "unkown@system";
-		pset->pparray[i]->ppropval = ppropval;
-		pset->pparray[i]->count ++;
-	}
+		pmessage->instance_id, row_id, need_count, pset);
 }
 
 BOOL message_object_get_rowid_begin(
@@ -1150,8 +1082,6 @@ BOOL message_object_check_readonly_property(
 static BOOL message_object_get_calculated_property(
 	MESSAGE_OBJECT *pmessage, uint32_t proptag, void **ppvalue)
 {
-	void *pvalue;
-	
 	switch (proptag) {
 	case PROP_TAG_ACCESS:
 		*ppvalue = &pmessage->tag_access;
@@ -1233,75 +1163,6 @@ static BOOL message_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		return TRUE;
-	case PROP_TAG_SENTREPRESENTINGSMTPADDRESS:
-		/* calculate the PROP_TAG_SENTREPRESENTINGSMTPADDRESS
-			for the caller when not exist */
-		if (FALSE == exmdb_client_get_instance_property(
-			store_object_get_dir(pmessage->pstore),
-			pmessage->instance_id, PROP_TAG_SENTREPRESENTINGSMTPADDRESS,
-			&pvalue)) {
-			return FALSE;	
-		}
-		if (NULL != pvalue) {
-			*ppvalue = pvalue;
-			return TRUE;
-		}
-		*ppvalue = common_util_alloc(256);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		if (FALSE == exmdb_client_get_instance_property(
-			store_object_get_dir(pmessage->pstore),
-			pmessage->instance_id, PROP_TAG_SENTREPRESENTINGENTRYID,
-			&pvalue)) {
-			return FALSE;	
-		}
-		if (NULL != pvalue) {
-			if (FALSE == common_util_entryid_to_username(
-				pvalue, *ppvalue)) {
-				*ppvalue = "unkown@system";	
-			}
-			return TRUE;
-		}
-		if (FALSE == exmdb_client_get_instance_property(
-			store_object_get_dir(pmessage->pstore),
-			pmessage->instance_id,
-			PROP_TAG_SENTREPRESENTINGADDRESSTYPE, &pvalue)) {
-			return FALSE;
-		}
-		if (NULL == pvalue) {
-			*ppvalue = "empty@system";
-			return TRUE;
-		}
-		if (0 == strcasecmp(pvalue, "SMTP")) {
-			if (FALSE == exmdb_client_get_instance_property(
-				store_object_get_dir(pmessage->pstore),
-				pmessage->instance_id,
-				PROP_TAG_SENTREPRESENTINGEMAILADDRESS,
-				&pvalue)) {
-				return FALSE;
-			}
-			if (NULL == pvalue) {
-				*ppvalue = "empty@system";
-				return TRUE;
-			}
-			*ppvalue = pvalue;
-			return TRUE;
-		} else if (0 == strcasecmp(pvalue, "EX")) {
-			if (FALSE == exmdb_client_get_instance_property(
-				store_object_get_dir(pmessage->pstore),
-				pmessage->instance_id,
-				PROP_TAG_SENTREPRESENTINGEMAILADDRESS,
-				&pvalue)) {
-				return FALSE;
-			}
-			if (TRUE == common_util_essdn_to_username(
-				pvalue, *ppvalue)) {
-				return TRUE;
-			}
-		}
-		*ppvalue = "unkown@system";	
 		return TRUE;
 	}
 	return FALSE;
