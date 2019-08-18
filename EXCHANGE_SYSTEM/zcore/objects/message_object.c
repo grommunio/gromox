@@ -1017,12 +1017,6 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 		pproptags->pproptag[pproptags->count] = PROP_TAG_MESSAGECODEPAGE;
 		pproptags->count ++;
 	}
-	if (common_util_index_proptags(pproptags,
-		PROP_TAG_SENTREPRESENTINGSMTPADDRESS) < 0) {
-		pproptags->pproptag[pproptags->count] =
-			PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
-		pproptags->count ++;	
-	}
 	return TRUE;
 }
 
