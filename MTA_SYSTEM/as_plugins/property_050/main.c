@@ -75,7 +75,10 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
 	int i;
+	int up_num;
+	int low_num;
 	int tmp_len;
+	char *ptoken;
 	char buff[1024];
 
 	if (TRUE == pmail->penvelop->is_outbound ||
@@ -83,17 +86,40 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	tmp_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
-	if (7 != tmp_len && 8 != tmp_len) {
+	if (tmp_len < 7 && tmp_len > 12) {
 		return MESSAGE_ACCEPT;
 	}
-	if (' ' != buff[tmp_len - 2] ||
-		0 == isdigit(buff[tmp_len - 1])) {
+	buff[tmp_len] = '\0';
+	ptoken = strrchr(buff, ' ');
+	if (NULL == ptoken) {
 		return MESSAGE_ACCEPT;
 	}
-	for (i=0; i<tmp_len-2; i++) {
-		if (0 == isalpha(buff[i])) {
+	*ptoken = '\0';
+	ptoken ++;
+	tmp_len = strlen(ptoken);
+	if (1 != tmp_len && 2 != tmp_len) {
+		return MESSAGE_ACCEPT;
+	}
+	for (i=0; i<tmp_len; i++) {
+		if (0 == isdigit(ptoken[i])) {
 			return MESSAGE_ACCEPT;
 		}
+	}
+	up_num = 0;
+	low_num = 0;
+	ptoken = buff;
+	while ('\0' != *ptoken) {
+		if (islower(*ptoken)) {
+			low_num ++;
+		} else if (isupper(*ptoken)) {
+			up_num ++;
+		} else {
+			return MESSAGE_ACCEPT;
+		}
+		ptoken ++;
+	}
+	if (low_num < 2 || up_num < 2) {
+		return MESSAGE_ACCEPT;
 	}
 	if (NULL != spam_statistic) {
 		spam_statistic(SPAM_STATISTIC_PROPERTY_050);
@@ -101,4 +127,3 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	strncpy(reason, g_return_reason, length);
 	return MESSAGE_REJECT;
 }
-
