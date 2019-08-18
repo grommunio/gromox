@@ -28,7 +28,6 @@ ICSDOWNCTX_OBJECT* icsdownctx_object_create(
 	pctx->pstore = folder_object_get_store(pfolder);
 	pctx->folder_id = folder_object_get_id(pfolder);
 	pctx->sync_type = sync_type;
-	pctx->pgiven_eids = NULL;
 	pctx->pchg_eids = NULL;
 	pctx->pupdated_eids = NULL;
 	pctx->pread_messags = NULL;
@@ -106,28 +105,27 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 		&read_messags, &unread_messags, &pctx->last_readcn)) {
 		return FALSE;
 	}
-	if (NULL != pctx->pgiven_eids) {
-		eid_array_free(pctx->pgiven_eids);
-	}
-	pctx->pgiven_eids = eid_array_dup(&given_messages);
-	if (NULL == pctx->pgiven_eids) {
-		return FALSE;
-	}
 	if ((sync_flags & SYNC_FLAG_FAI) ||
 		(sync_flags & SYNC_FLAG_NORMAL)) {
 		if (NULL != pctx->pchg_eids) {
 			eid_array_free(pctx->pchg_eids);
+			pctx->pchg_eids = NULL;
 		}
-		pctx->pchg_eids = eid_array_dup(&chg_messages);
-		if (NULL == pctx->pchg_eids) {
-			return FALSE;
+		if (chg_messages.count > 0) {
+			pctx->pchg_eids = eid_array_dup(&chg_messages);
+			if (NULL == pctx->pchg_eids) {
+				return FALSE;
+			}
 		}
 		if (NULL != pctx->pupdated_eids) {
 			eid_array_free(pctx->pupdated_eids);
+			pctx->pupdated_eids = NULL;
 		}
-		pctx->pupdated_eids = eid_array_dup(&updated_messages);
-		if (NULL == pctx->pupdated_eids) {
-			return FALSE;
+		if (updated_messages.count > 0) {
+			pctx->pupdated_eids = eid_array_dup(&updated_messages);
+			if (NULL == pctx->pupdated_eids) {
+				return FALSE;
+			}
 		}
 		*pmsg_count = chg_messages.count;
 		if (chg_messages.count > 0) {
@@ -186,6 +184,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	USER_INFO *pinfo;
 	const char *username;
 	FOLDER_CHANGES fldchgs;
+	uint64_t last_changenum;
 	EID_ARRAY given_folders;
 	EID_ARRAY deleted_folders;
 	
@@ -205,15 +204,8 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	if (FALSE == exmdb_client_get_hierarchy_sync(
 		store_object_get_dir(pctx->pstore), pctx->folder_id,
 		username, pctx->pstate->pgiven, pctx->pstate->pseen,
-		&fldchgs, &pctx->last_changenum, &given_folders,
+		&fldchgs, &last_changenum, &given_folders,
 		&deleted_folders)) {
-		return FALSE;
-	}
-	if (NULL != pctx->pgiven_eids) {
-		eid_array_free(pctx->pgiven_eids);
-	}
-	pctx->pgiven_eids = eid_array_dup(&given_folders);
-	if (NULL == pctx->pgiven_eids) {
 		return FALSE;
 	}
 	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
@@ -228,25 +220,29 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 			*pb_changed = TRUE;
 		}
 	}
-	pctx->pchg_eids = eid_array_init();
-	if (NULL == pctx->pchg_eids) {
-		return FALSE;
-	}
 	for (i=0; i<fldchgs.count; i++) {
 		pvalue = common_util_get_propvals(
 			fldchgs.pfldchgs + i, PROP_TAG_FOLDERID);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (FALSE == eid_array_append(
-			pctx->pchg_eids, *(uint64_t*)pvalue)) {
-			return FALSE;	
-		}
 	}
 	if (fldchgs.count > 0) {
 		*pb_changed = TRUE;
 	}
 	*pfld_count = fldchgs.count;
+	idset_clear(pctx->pstate->pgiven);
+	for (i=0; i<given_folders.count; i++) {
+		if (FALSE == idset_append(pctx->pstate->pgiven,
+			given_folders..pids[i])) {
+			return FALSE;	
+		}
+	}
+	idset_clear(pctx->pstate->pseen);
+	if (FALSE == idset_append_range(pctx->pstate->pseen, 1,
+		1, rop_util_get_gc_value(last_changenum))) {
+		return FALSE;
+	}
 	return TRUE;
 }
 
@@ -254,50 +250,31 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 {
 	int i;
 	
-	if (NULL != pctx->pgiven_eids && NULL != pctx->pchg_eids
-		&& pctx->eid_pos >= pctx->pchg_eids->count && NULL ==
-		pctx->pdeleted_eids && NULL == pctx->pnolonger_messages) {
-		idset_clear(pctx->pstate->pgiven);
-		for (i=0; i<pctx->pgiven_eids->count; i++) {
-			if (FALSE == idset_append(pctx->pstate->pgiven,
-				pctx->pgiven_eids->pids[i])) {
-				return FALSE;	
-			}
-		}
+	if (SYNC_TYPE_CONTENTS == pctx->sync_type
+		&& NULL == pctx->pchg_eids &&
+		NULL == pctx->pdeleted_eids &&
+		NULL == pctx->pnolonger_messages
+		0 != pctx->last_changenum) {
 		idset_clear(pctx->pstate->pseen);
-		if (0 != pctx->last_changenum) {
-			if (FALSE == idset_append_range(pctx->pstate->pseen, 1,
-				1, rop_util_get_gc_value(pctx->last_changenum))) {
-				return FALSE;
-			}
+		if (FALSE == idset_append_range(
+			pctx->pstate->pseen, 1, 1,
+			rop_util_get_gc_value(
+			pctx->last_changenum))) {
+			return FALSE;
 		}
-		if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
-			idset_clear(pctx->pstate->pseen_fai);
-			if (0 != pctx->last_changenum) {
-				if (FALSE == idset_append_range(pctx->pstate->pseen_fai,
-					1, 1, rop_util_get_gc_value(pctx->last_changenum))) {
-					return FALSE;
-				}
-			}
+		idset_clear(pctx->pstate->pseen_fai);
+		if (FALSE == idset_append_range(
+			pctx->pstate->pseen_fai, 1, 1,
+			rop_util_get_gc_value(pctx->last_changenum))) {
+			return FALSE;
 		}
 		pctx->last_changenum = 0;
-		eid_array_free(pctx->pgiven_eids);
-		pctx->pgiven_eids = NULL;
-		eid_array_free(pctx->pchg_eids);
-		pctx->pchg_eids = NULL;
-		if (NULL != pctx->pupdated_eids) {
-			eid_array_free(pctx->pupdated_eids);
-			pctx->pupdated_eids = NULL;
-		}
 	}
 	return ics_state_serialize(pctx->pstate);
 }
 
 void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 {
-	if (NULL != pctx->pgiven_eids) {
-		eid_array_free(pctx->pgiven_eids);
-	}
 	if (NULL != pctx->pchg_eids) {
 		eid_array_free(pctx->pchg_eids);
 	}
@@ -336,27 +313,45 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
 		return FALSE;
 	}
-	if (NULL == pctx->pchg_eids || NULL == pctx->pupdated_eids) {
+	if (NULL == pctx->pchg_eids) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	do {
-		if (pctx->eid_pos >= pctx->pchg_eids->count) {
-			*pb_found = FALSE;
-			return TRUE;
-		}
+	while (TRUE) {
 		message_id = pctx->pchg_eids->pids[pctx->eid_pos];
-		pctx->eid_pos ++;
 		if (FALSE == exmdb_client_get_message_property(
 			store_object_get_dir(pctx->pstore), NULL, 0,
 			message_id, PROP_TAG_CHANGENUMBER, &pvalue)) {
 			return FALSE;	
 		}
-	} while (NULL == pvalue);
-	if (FALSE == eid_array_check(pctx->pupdated_eids, message_id)) {
+		if (NULL == pvalue) {
+			break;
+		}
+		/* skip the empty change item */
+		pctx->eid_pos ++;
+	}
+	if (NULL == pctx->pupdated_eids || FALSE ==
+		eid_array_check(pctx->pupdated_eids, message_id)) {
 		*pb_new = TRUE;	
 	} else {
 		*pb_new = FALSE;
+	}
+	if (FALSE == idset_append(
+		pctx->pstate->pgiven, message_id)
+		|| FALSE == idset_append(
+		pctx->pstate->pseen, *(uint64_t*)pvalue)
+		|| FALSE == idset_append(
+		pctx->pstate->pseen_fai, *(uint64_t*)pvalue)) {
+		return FALSE;
+	}
+	pctx->eid_pos ++;
+	if (pctx->eid_pos == pctx->pchg_eids->count) {
+		eid_array_free(pctx->pchg_eids);
+		pctx->pchg_eids = NULL;
+		if (NULL != pctx->pupdated_eids) {
+			eid_array_free(pctx->pupdated_eids);
+			pctx->pupdated_eids = NULL;
+		}
 	}
 	pproplist->count = 2;
 	pproplist->ppropval = common_util_alloc(
@@ -379,14 +374,6 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	*pb_found = TRUE;
-	if (FALSE == idset_append(
-		pctx->pstate->pgiven, message_id)
-		|| FALSE == idset_append(
-		pctx->pstate->pseen, *(uint64_t*)pvalue)
-		|| FALSE == idset_append(
-		pctx->pstate->pseen_fai, *(uint64_t*)pvalue)) {
-		return FALSE;
-	}
 	return TRUE;
 }
 
