@@ -234,7 +234,7 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 	idset_clear(pctx->pstate->pgiven);
 	for (i=0; i<given_folders.count; i++) {
 		if (FALSE == idset_append(pctx->pstate->pgiven,
-			given_folders..pids[i])) {
+			given_folders.pids[i])) {
 			return FALSE;	
 		}
 	}
@@ -254,7 +254,7 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 		&& NULL == pctx->pchg_eids &&
 		NULL == pctx->pdeleted_eids &&
 		NULL == pctx->pnolonger_messages
-		0 != pctx->last_changenum) {
+		&& 0 != pctx->last_changenum) {
 		idset_clear(pctx->pstate->pseen);
 		if (FALSE == idset_append_range(
 			pctx->pstate->pseen, 1, 1,
