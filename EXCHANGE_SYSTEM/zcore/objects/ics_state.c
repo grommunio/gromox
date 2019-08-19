@@ -81,8 +81,24 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	EXT_PUSH ext_push;
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
+	static BINARY fake_bin = {
+		.cb = 8,
+		.pb = "\0\0\0\0\0\0\0\0"
+	};
 	
-	
+	if (ICS_TYPE_CONTENTS == pstate->type) {
+		if (TRUE == idset_check_empty(pstate->pgiven) &&
+			TRUE == idset_check_empty(pstate->pseen) &&
+			TRUE == idset_check_empty(pstate->pseen_fai) &&
+			TRUE == idset_check_empty(pstate->pread)) {
+			return &fake_bin;
+		}
+	} else {
+		if (TRUE == idset_check_empty(pstate->pgiven) &&
+			TRUE == idset_check_empty(pstate->pseen)) {
+			return &fake_bin;	
+		}
+	}
 	pproplist = tpropval_array_init();
 	if (NULL == pproplist) {
 		return NULL;
@@ -179,8 +195,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 	
 	ics_state_clear(pstate);
 	ics_state_init(pstate);
-	/* 8bytes zero from z-push */
-	if (pbin->cb <= 8) {
+	if (pbin->cb <= 16) {
 		return TRUE;
 	}
 	ext_buffer_pull_init(&ext_pull, pbin->pb,
