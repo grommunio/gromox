@@ -82,30 +82,46 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
 	int out_len;
-	char buff[1024];
+	int h_errnop;
+	in_addr_t addr;
+	char buff[4096];
+	struct hostent hostinfo, *phost;
 
 	if (TRUE == pmail->penvelop->is_relay) {
+		return MESSAGE_ACCEPT;
+	}
+	if (NULL != pconnection->ssl) {
 		return MESSAGE_ACCEPT;
 	}
 	out_len = mem_file_read(&pmail->phead->f_mime_to, buff, 1024);
 	if (25 != out_len) {
 		return MESSAGE_ACCEPT;
 	}
-	if (0 == strncmp(buff, "undisclosed-recipients:;", 24)) {
-		if (TRUE == check_tagging(pmail->penvelop->from,
-			&pmail->penvelop->f_rcpt_to)) {
-			mark_context_spam(context_ID);
-			return MESSAGE_ACCEPT;
-		} else {
-			strncpy(reason, g_return_reason, length);
-			if (NULL != spam_statistic) {
-				spam_statistic(SPAM_STATISTIC_PROPERTY_031);
-			}
-		}
-		return MESSAGE_REJECT;
+	if (0 != strncasecmp(buff, "undisclosed-recipients:;", 24)) {
+		return MESSAGE_ACCEPT;
 	}
-
-	return MESSAGE_ACCEPT;
+	if (TRUE == check_tagging(pmail->penvelop->from,
+		&pmail->penvelop->f_rcpt_to)) {
+		mark_context_spam(context_ID);
+		return MESSAGE_ACCEPT;
+	}
+	if (FALSE == check_retrying(pconnection->client_ip,
+		pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {
+		strncpy(reason, g_return_reason, length);
+		if (NULL!= spam_statistic) {
+			spam_statistic(SPAM_STATISTIC_PROPERTY_031);
+		}
+		return MESSAGE_RETRYING;
+	}
+	inet_pton(AF_INET, pconnection->client_ip, &addr);
+	if (0 == gethostbyaddr_r((char*)&addr, sizeof(addr),
+		AF_INET, &hostinfo, buff, sizeof(buff), &phost,
+		&h_errnop) && NULL != phost) {
+		return MESSAGE_ACCEPT;
+	}
+	strncpy(reason, g_return_reason, length);
+	if (NULL != spam_statistic) {
+		spam_statistic(SPAM_STATISTIC_PROPERTY_031);
+	}
+	return MESSAGE_REJECT;
 }
-
-
