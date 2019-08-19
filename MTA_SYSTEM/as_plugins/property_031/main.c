@@ -14,6 +14,7 @@
 
 typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
+typedef BOOL (*CHECK_RETRYING)(const char*, const char*, MEM_FILE*);
 
 static SPAM_STATISTIC spam_statistic;
 static CHECK_RETRYING check_retrying;
