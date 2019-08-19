@@ -125,7 +125,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	inet_pton(AF_INET, pconnection->client_ip, &addr);
 	if (0 == gethostbyaddr_r((char*)&addr, sizeof(addr),
 		AF_INET, &hostinfo, buff, sizeof(buff), &phost,
-		&h_errnop) && NULL != phost) {
+		&h_errnop) && NULL != phost && NULL == extract_ip(
+		phost->h_name, buff)) {
 		return MESSAGE_ACCEPT;
 	}
 	strncpy(reason, g_return_reason, length);
