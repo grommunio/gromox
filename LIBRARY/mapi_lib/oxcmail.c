@@ -1024,11 +1024,21 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 static BOOL oxcmail_parse_thread_index(
 	char *field,  TPROPVAL_ARRAY *pproplist)
 {
+	int i;
 	size_t len;
 	BINARY tmp_bin;
 	TAGGED_PROPVAL propval;
 	char tmp_buff[MIME_FIELD_LEN];
 	
+	/* remove space(s) produced by mime lib */
+	len = strlen(field);
+	for (i=0; i<len; i++) {
+		if (' ' == field[i]) {
+			memmove(field + i, field + i + 1, len - i);
+			len --;
+			i --;
+		}
+	}
 	len = sizeof(tmp_buff);
 	if (0 != decode64(field, strlen(field), tmp_buff, &len)) {
 		return TRUE;
