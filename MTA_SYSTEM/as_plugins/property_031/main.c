@@ -3,8 +3,10 @@
 #include "util.h"
 #include "mail_func.h"
 #include <ctype.h>
-#include <string.h>
 #include <stdio.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h> 
 
 
 
