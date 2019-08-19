@@ -16,6 +16,7 @@ typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
 
 static SPAM_STATISTIC spam_statistic;
+static CHECK_RETRYING check_retrying;
 static CHECK_TAGGING check_tagging;
 
 DECLARE_API;
@@ -44,6 +45,12 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
 			printf("[property_031]: fail to get \"check_tagging\" service\n");
+			return FALSE;
+		}
+		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
+		if (NULL == check_retrying) {
+			printf("[property_031]: fail to get"
+				" \"check_retrying\" service\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
