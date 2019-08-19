@@ -848,7 +848,7 @@ char* find_mail_address(char *buf, size_t howmuch, int *count)
 				tmp = buf[j];
 				if (('a' <= tmp && 'z' >= tmp) || ('A' <= tmp && 'Z' >= tmp) ||
 					('0' <= tmp && '9' >= tmp) || '_' == tmp || '-' == tmp ||
-					'.' == tmp) {
+					'.' == tmp || '=' == tmp || '/' == tmp || '\\' == tmp) {
 					continue;
 				} else {
 					break;
@@ -860,7 +860,7 @@ char* find_mail_address(char *buf, size_t howmuch, int *count)
 				tmp = buf[j];
 				if (('a' <= tmp && 'z' >= tmp) || ('A' <= tmp && 'Z' >= tmp) ||
 					('0' <= tmp && '9' >= tmp) || '_' == tmp || '-' == tmp ||
-					'.' == tmp) {
+					'.' == tmp || '=' == tmp || '/' == tmp || '\\' == tmp) {
 					continue;
 				} else {
 					break;
