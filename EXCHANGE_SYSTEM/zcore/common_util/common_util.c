@@ -3102,6 +3102,7 @@ uint8_t* common_util_get_muidecsab()
 BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	uint64_t message_id, BINARY *peml_bin)
 {
+	int fd;
 	int size;
 	void *ptr;
 	MAIL imail;
@@ -3111,10 +3112,19 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	size_t mail_len;
 	USER_INFO *pinfo;
 	STREAM tmp_stream;
+	char tmp_path[256];
 	LIB_BUFFER *pallocator;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
+	if (TRUE == exmdb_client_get_message_property(
+		store_object_get_dir(pstore), NULL, 0,
+		message_id, PROP_TAG_MIDSTRING, &pvalue)
+		&& NULL != pvalue) {
+		sprintf(tmp_path, "%s/eml/%s",
+			store_object_get_dir(pstore), pvalue);
+		return common_util_load_file(path, peml_bin);
+	}
 	pinfo = zarafa_server_get_info();
 	if (NULL == pinfo) {
 		cpid = 1252;
