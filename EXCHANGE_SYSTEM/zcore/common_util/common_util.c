@@ -3123,7 +3123,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 		&& NULL != pvalue) {
 		sprintf(tmp_path, "%s/eml/%s",
 			store_object_get_dir(pstore), pvalue);
-		return common_util_load_file(path, peml_bin);
+		return common_util_load_file(tmp_path, peml_bin);
 	}
 	pinfo = zarafa_server_get_info();
 	if (NULL == pinfo) {
