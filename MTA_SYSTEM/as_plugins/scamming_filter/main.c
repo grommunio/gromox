@@ -102,8 +102,7 @@ static int scamming_filter(int context_ID, MAIL_ENTITY *pmail,
 		== strchr(email_addr1.domain, '.')) {
 		return MESSAGE_ACCEPT;	
 	}
-	if (0 == strcasecmp(email_addr.local_part, email_addr1.local_part)
-		&& 0 == strcasecmp(email_addr.domain, email_addr1.domain)) {
+	if (0 == strcasecmp(email_addr.domain, email_addr1.domain)) {
 		return MESSAGE_ACCEPT;	
 	}
 	if (NULL != spam_statistic) {
