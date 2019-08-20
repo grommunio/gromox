@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#define DB_LOCK_TIMEOUT					30
+#define DB_LOCK_TIMEOUT					60
 
 #define MAX_DB_WAITING_THREADS			5
 
