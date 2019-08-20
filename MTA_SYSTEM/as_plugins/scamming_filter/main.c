@@ -91,10 +91,9 @@ static int scamming_filter(int context_ID, MAIL_ENTITY *pmail,
 	}
 	mem_file_read(&pmail->phead->f_mime_from, tmp_buff, 1024);
 	parse_email_addr(&email_addr, tmp_buff);
-	if (NULL == strchr(email_addr.display_name, '<') ||
-		NULL == strchr(email_addr.display_name, '>') ||
-		'\0' == email_addr.local_part[0] ||
-		'\0' == email_addr.domain[0]) {
+	if (NULL == strchr(email_addr.display_name, '@')
+		|| '\0' == email_addr.local_part[0]
+		|| '\0' == email_addr.domain[0]) {
 		return MESSAGE_ACCEPT;
 	}
 	parse_email_addr(&email_addr1, email_addr.display_name);
