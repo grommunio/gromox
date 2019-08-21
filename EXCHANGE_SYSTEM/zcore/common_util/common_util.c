@@ -2524,9 +2524,28 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 	return preply1;
 }
 
+static void common_util_convert_zforwarddelegate(
+	FORWARDDELEGATE_ACTION *paction)
+{
+	int i, j;
+	
+	for (i=0; i<paction->count; i++) {
+		for (j=0; j<paction->pblock[i].count; j++) {
+			if (PROP_TAG_ADDRESSTYPE ==
+				paction->pblock[i].ppropval[j].proptag) {
+				if (0 == strcasecmp("ZARAFA",
+					paction->pblock[i].ppropval[j].pvalue)) {
+					paction->pblock[i].ppropval[j].pvalue = "EX";	
+				}
+				break;
+			}
+		}
+	}
+}
+
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
+	int i, j;
 	RULE_ACTIONS *pactions;
 	
 	pactions = common_util_get_propvals(
@@ -2550,6 +2569,11 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 			if (NULL == pactions->pblock[i].pdata) {
 				return FALSE;
 			}
+			break;
+		case ACTION_TYPE_OP_FORWARD:
+		case ACTION_TYPE_OP_DELEGATE:
+			common_util_convert_zforwarddelegate(
+				pactions->pblock[i].pdata);
 			break;
 		}
 	}
