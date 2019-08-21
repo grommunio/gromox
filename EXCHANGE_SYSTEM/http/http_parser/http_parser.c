@@ -1751,8 +1751,9 @@ CONTEXT_PROCESSING:
 				goto END_PROCESSING;
 			}
 			
-			if (pcontext != pvconnection->pcontext_in ||
-				NULL == pvconnection->pcontext_out) {
+			if ((pcontext != pvconnection->pcontext_in &&
+				pcontext != pvconnection->pcontext_insucc)
+				|| NULL == pvconnection->pcontext_out) {
 				http_parser_put_vconnection(pvconnection);
 				pdu_processor_free_call(pcall);
 				http_parser_log_info(pcontext, 8,
@@ -2499,6 +2500,7 @@ BOOL http_parser_recycle_outchannel(
 BOOL http_parser_activate_inrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie)
 {
+	RPC_IN_CHANNEL *pchannel_in;
 	VIRTUAL_CONNECTION *pvconnection;
 	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
@@ -2509,15 +2511,15 @@ BOOL http_parser_activate_inrecycling(
 		pcontext->pchannel)->connection_cookie);
 	
 	if (NULL != pvconnection) {
-		if (pcontext == pvconnection->pcontext_in &&
-			NULL != pvconnection->pcontext_insucc &&
+		if (pcontext == pvconnection->pcontext_insucc &&
 			0 == strcmp(successor_cookie, ((RPC_IN_CHANNEL*)
 			pvconnection->pcontext_insucc->pchannel)->channel_cookie)) {
+			if (NULL != pvconnection->pcontext_in) {
+				pchannel_in = pvconnection->pcontext_in->pchannel;
+				pchannel_in->channel_stat = CHANNEL_STAT_RECYCLED;
+			}
+			pvconnection->pcontext_in = pcontext;
 			((RPC_IN_CHANNEL*)pcontext->pchannel)->channel_stat =
-											CHANNEL_STAT_RECYCLED;
-			pvconnection->pcontext_in = pvconnection->pcontext_insucc;
-			((RPC_IN_CHANNEL*)
-				pvconnection->pcontext_in->pchannel)->channel_stat =
 												CHANNEL_STAT_OPENED;
 			pvconnection->pcontext_insucc = NULL;
 			http_parser_put_vconnection(pvconnection);
