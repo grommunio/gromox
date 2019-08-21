@@ -885,8 +885,9 @@ TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 			return NULL;
 		}
 		*(uint64_t*)ptable->pparent_obj = *(uint64_t*)pparent_obj;
+	} else {
+		ptable->pparent_obj = pparent_obj;
 	}
-	ptable->pparent_obj = pparent_obj;
 	ptable->table_type = table_type;
 	ptable->table_flags = table_flags;
 	ptable->pcolumns = NULL;
