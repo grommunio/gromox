@@ -1518,8 +1518,10 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 uint32_t zarafa_server_openrules(GUID hsession,
 	uint32_t hfolder, uint32_t *phobject)
 {
+	uint32_t hstore;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
+	STORE_OBJECT *pstore;
 	RULES_OBJECT *prules;
 	FOLDER_OBJECT *pfolder;
 	
@@ -1537,6 +1539,10 @@ uint32_t zarafa_server_openrules(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_SUPPORTED;
 	}
+	pstore = folder_object_get_store(pfolder);
+	hstore = object_tree_get_store_handle(pinfo->ptree,
+					store_object_check_private(pstore),
+					store_object_get_account_id(pstore));
 	prules = rules_object_create(
 		folder_object_get_store(pfolder),
 		folder_object_get_id(pfolder));
@@ -1544,8 +1550,11 @@ uint32_t zarafa_server_openrules(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_ERROR;
 	}
+	/* add the store handle as the parent object handle
+		because the caller normaly will not keep the
+		handle of folder */
 	*phobject = object_tree_add_object_handle(
-		pinfo->ptree, hfolder, MAPI_RULES, prules);
+		pinfo->ptree, hstore, MAPI_RULES, prules);
 	if (INVALID_HANDLE == *phobject) {
 		rules_object_free(prules);
 		zarafa_server_put_user_info(pinfo);
