@@ -3,7 +3,6 @@
 #include "restriction.h"
 #include "exmdb_client.h"
 #include "table_object.h"
-#include "rules_object.h"
 #include "sortorder_set.h"
 #include "folder_object.h"
 #include "sortorder_set.h"
@@ -131,8 +130,8 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	case RULE_TABLE:
 		if (FALSE == exmdb_client_load_rule_table(
 			store_object_get_dir(ptable->pstore),
-			rules_object_get_folder_id(ptable->pparent_obj),
-			0, ptable->prestriction,
+			*(uint64_t*)ptable->pparent_obj, 0,
+			ptable->prestriction,
 			&table_id, &row_num)) {
 			return FALSE;
 		}
@@ -879,6 +878,14 @@ TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 		return NULL;
 	}
 	ptable->pstore = pstore;
+	if (RULE_TABLE == table_type) {
+		ptable->pparent_obj = malloc(sizeof(uint64_t));
+		if (NULL == ptable->pparent_obj) {
+			free(table);
+			return NULL;
+		}
+		*(uint64_t*)ptable->pparent_obj = *(uint64_t*)pparent_obj;
+	}
 	ptable->pparent_obj = pparent_obj;
 	ptable->table_type = table_type;
 	ptable->table_flags = table_flags;
@@ -896,6 +903,9 @@ void table_object_free(TABLE_OBJECT *ptable)
 {
 	table_object_reset(ptable);
 	double_list_free(&ptable->bookmark_list);
+	if (RULE_TABLE == ptable->table_type) {
+		free(ptable->pparent_obj);
+	}
 	free(ptable);
 }
 
