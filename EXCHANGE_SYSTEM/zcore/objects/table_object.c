@@ -881,7 +881,7 @@ TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 	if (RULE_TABLE == table_type) {
 		ptable->pparent_obj = malloc(sizeof(uint64_t));
 		if (NULL == ptable->pparent_obj) {
-			free(table);
+			free(ptable);
 			return NULL;
 		}
 		*(uint64_t*)ptable->pparent_obj = *(uint64_t*)pparent_obj;
