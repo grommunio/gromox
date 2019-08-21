@@ -5145,6 +5145,7 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_SUCCESS;
 	case MAPI_MAILUSER:
+	case MAPI_DISTLIST:
 		if (NULL == pproptags) {
 			container_object_get_user_table_all_proptags(&proptags);
 			pproptags = &proptags;

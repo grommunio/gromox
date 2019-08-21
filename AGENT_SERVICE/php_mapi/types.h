@@ -425,9 +425,6 @@ typedef struct _NEWMAIL_ZNOTIFICATION {
 #define MAPI_MAILUSER								10
 #define MAPI_DISTLIST								11
 #define MAPI_PROFPROPERTY							12
-#define MAPI_FBDATA									13
-#define MAPI_FBUPDATE								14
-#define MAPI_FBENUMBLOCK							15
 #define MAPI_ADVISESINK								16
 #define MAPI_ICSDOWNCTX								17
 #define MAPI_ICSUPCTX								18
