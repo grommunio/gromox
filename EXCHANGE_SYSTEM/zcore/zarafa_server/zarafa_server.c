@@ -1981,7 +1981,7 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 		return EC_NOT_SUPPORTED;
 	}
 	folder_id = rules_object_get_folder_id(prules);
-	pstore = rules_object_get_store(prules));
+	pstore = rules_object_get_store(prules);
 	hstore = object_tree_get_store_handle(pinfo->ptree,
 					store_object_check_private(pstore),
 					store_object_get_account_id(pstore));
