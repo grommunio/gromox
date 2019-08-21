@@ -3183,6 +3183,15 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				continue;
 			}
 			permission = *(uint32_t*)pvalue;
+			if (permission | (PERMISSION_READANY | PERMISSION_FOLDEROWNER) {
+				permission |= PERMISSION_FOLDERVISIBLE;
+			}
+			if (permission | PERMISSION_DELETEANY) {
+				permission |= PERMISSION_DELETEOWNED;
+			}
+			if (permission | PERMISSION_EDITANY) {
+				permission |= PERMISSION_EDITOWNED;
+			}
 			if (FALSE == b_freebusy ||
 				FALSE == exmdb_server_check_private()
 				|| fid_val != PRIVATE_FID_CALENDAR) {
@@ -3314,6 +3323,15 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				continue;
 			}
 			permission = *(uint32_t*)pvalue;
+			if (permission | (PERMISSION_READANY | PERMISSION_FOLDEROWNER) {
+				permission |= PERMISSION_FOLDERVISIBLE;
+			}
+			if (permission | PERMISSION_DELETEANY) {
+				permission |= PERMISSION_DELETEOWNED;
+			}
+			if (permission | PERMISSION_EDITANY) {
+				permission |= PERMISSION_EDITOWNED;
+			}
 			if (FALSE == b_freebusy ||
 				FALSE == exmdb_server_check_private()
 				|| fid_val != PRIVATE_FID_CALENDAR) {
