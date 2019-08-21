@@ -345,8 +345,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		pset->count = 0;
 		return TRUE;
 	}
-	if (row_needed > row_num) {
-		row_needed = row_num;
+	if (row_count > row_num) {
+		row_count = row_num;
 	}
 	if (TRUE == b_forward) {
 		row_needed = row_count;
