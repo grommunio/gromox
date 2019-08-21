@@ -304,6 +304,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 	int i, j;
 	void *pvalue;
 	uint32_t handle;
+	uint32_t row_num;
 	uint32_t end_pos;
 	USER_INFO *pinfo;
 	BINARY *pentryid;
@@ -339,10 +340,13 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		pset->count = 0;
 		return TRUE;
 	}
-	if (ptable->position >= table_object_get_total(
-		ptable) && TRUE == b_forward) {
+	row_num = table_object_get_total(ptable);
+	if (ptable->position >= row_num && TRUE == b_forward) {
 		pset->count = 0;
 		return TRUE;
+	}
+	if (row_needed > row_num) {
+		row_needed = row_num;
 	}
 	if (TRUE == b_forward) {
 		row_needed = row_count;
