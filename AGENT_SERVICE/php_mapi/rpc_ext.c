@@ -140,21 +140,6 @@ static zend_bool rpc_ext_pull_resolvename_response(
 		&ppayload->resolvename.result_set);
 }
 
-static zend_bool rpc_ext_push_openrules_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
-{
-	if (!ext_pack_push_guid(pctx, &ppayload->openrules.hsession)) {
-		return 0;
-	}
-	return ext_pack_push_uint32(pctx, ppayload->openrules.hfolder);
-}
-
-static zend_bool rpc_ext_pull_openrules_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
-{
-	return ext_pack_pull_uint32(pctx, &ppayload->openrules.hobject);
-}
-
 static zend_bool rpc_ext_push_getpermissions_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
@@ -191,7 +176,7 @@ static zend_bool rpc_ext_push_modifyrules_request(
 	if (!ext_pack_push_guid(pctx, &ppayload->modifyrules.hsession)) {
 		return 0;
 	}
-	if (!ext_pack_push_uint32(pctx, ppayload->modifyrules.hrules)) {
+	if (!ext_pack_push_uint32(pctx, ppayload->modifyrules.hfolder)) {
 		return 0;
 	}
 	if (!ext_pack_push_uint32(pctx, ppayload->modifyrules.flags)) {
@@ -325,7 +310,7 @@ static zend_bool rpc_ext_push_loadruletable_request(
 	if (!ext_pack_push_guid(pctx, &ppayload->loadruletable.hsession)) {
 		return 0;
 	}
-	return ext_pack_push_uint32(pctx, ppayload->loadruletable.hrules);
+	return ext_pack_push_uint32(pctx, ppayload->loadruletable.hfolder);
 }
 
 static zend_bool rpc_ext_pull_loadruletable_response(
@@ -1614,10 +1599,6 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 		b_result = rpc_ext_push_resolvename_request(
 					&push_ctx, &prequest->payload);
 		break;
-	case CALL_ID_OPENRULES:
-		b_result = rpc_ext_push_openrules_request(
-					&push_ctx, &prequest->payload);
-		break;
 	case CALL_ID_GETPERMISSIONS:
 		b_result = rpc_ext_push_getpermissions_request(
 						&push_ctx, &prequest->payload);
@@ -1963,9 +1944,6 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	case CALL_ID_RESOLVENAME:
 		return rpc_ext_pull_resolvename_response(
 					&pull_ctx, &presponse->payload);
-	case CALL_ID_OPENRULES:
-		return rpc_ext_pull_openrules_response(
-				&pull_ctx, &presponse->payload);
 	case CALL_ID_GETPERMISSIONS:
 		return rpc_ext_pull_getpermissions_response(
 					&pull_ctx, &presponse->payload);

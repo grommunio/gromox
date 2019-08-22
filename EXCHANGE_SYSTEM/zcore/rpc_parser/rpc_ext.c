@@ -1554,30 +1554,6 @@ static BOOL rpc_ext_push_resolvename_response(
 	return TRUE;
 }
 
-static BOOL rpc_ext_pull_openrules_request(
-	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
-{
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_guid(
-		pext, &ppayload->openrules.hsession)) {
-		return FALSE;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		pext, &ppayload->openrules.hfolder)) {
-		return FALSE;	
-	}
-	return TRUE;
-}
-
-static BOOL rpc_ext_push_openrules_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
-{
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-		pext, ppayload->openrules.hobject)) {
-		return FALSE;	
-	}
-	return TRUE;
-}
-
 static BOOL rpc_ext_pull_getpermissions_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
@@ -1627,7 +1603,7 @@ static BOOL rpc_ext_pull_modifyrules_request(
 		return FALSE;
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		pext, &ppayload->modifyrules.hrules)) {
+		pext, &ppayload->modifyrules.hfolder)) {
 		return FALSE;
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
@@ -1835,7 +1811,7 @@ static BOOL rpc_ext_pull_loadruletable_request(
 		return FALSE;
 	}
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		pext, &ppayload->loadruletable.hrules)) {
+		pext, &ppayload->loadruletable.hfolder)) {
 		return FALSE;
 	}
 	return TRUE;
@@ -3709,9 +3685,6 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	case CALL_ID_RESOLVENAME:
 		return rpc_ext_pull_resolvename_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_OPENRULES:
-		return rpc_ext_pull_openrules_request(
-				&ext_pull, &prequest->payload);
 	case CALL_ID_GETPERMISSIONS:
 		return rpc_ext_pull_getpermissions_request(
 					&ext_pull, &prequest->payload);
@@ -4007,10 +3980,6 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		break;
 	case CALL_ID_RESOLVENAME:
 		b_result = rpc_ext_push_resolvename_response(
-					&ext_push, &presponse->payload);
-		break;
-	case CALL_ID_OPENRULES:
-		b_result = rpc_ext_push_openrules_response(
 					&ext_push, &presponse->payload);
 		break;
 	case CALL_ID_GETPERMISSIONS:

@@ -123,6 +123,7 @@ static zend_function_entry mapi_functions[] = {
 
 	ZEND_FE(mapi_folder_gethierarchytable, NULL)
 	ZEND_FE(mapi_folder_getcontentstable, NULL)
+	ZEND_FE(mapi_folder_getrulestable, NULL)
 	ZEND_FE(mapi_folder_createmessage, NULL)
 	ZEND_FE(mapi_folder_createfolder, NULL)
 	ZEND_FE(mapi_folder_deletemessages, NULL)
@@ -131,9 +132,9 @@ static zend_function_entry mapi_functions[] = {
 	ZEND_FE(mapi_folder_copyfolder, NULL)
 	ZEND_FE(mapi_folder_deletefolder, NULL)
 	ZEND_FE(mapi_folder_setreadflags, NULL)
-	ZEND_FE(mapi_folder_openmodifytable, NULL)
 	ZEND_FE(mapi_folder_setsearchcriteria, NULL)
 	ZEND_FE(mapi_folder_getsearchcriteria, NULL)
+	ZEND_FE(mapi_folder_modifyrules, NULL)
 
 	ZEND_FE(mapi_message_getattachmenttable, NULL)
 	ZEND_FE(mapi_message_getrecipienttable, NULL)
@@ -163,8 +164,6 @@ static zend_function_entry mapi_functions[] = {
 	ZEND_FE(mapi_getnamesfromids, NULL)
 	ZEND_FE(mapi_getidsfromnames, NULL)
 	ZEND_FE(mapi_decompressrtf, NULL)
-	ZEND_FE(mapi_rules_gettable, NULL)
-	ZEND_FE(mapi_rules_modifytable, NULL)
 	
 	ZEND_FE(mapi_zarafa_getpermissionrules, NULL)
 	ZEND_FE(mapi_zarafa_setpermissionrules, NULL)
@@ -251,7 +250,6 @@ static char name_mapi_folder[] = "MAPI Folder";
 static char name_mapi_message[] = "MAPI Message";
 static char name_mapi_attachment[] = "MAPI Attachment";
 static char name_mapi_property[] = "MAPI Property";
-static char name_mapi_rules[] = "MAPI Rules Modify Table";
 static char name_stream[] = "IStream Interface";
 static char name_fb_data[] = "Freebusy Data Interface";
 static char name_fb_update[] = "Freebusy Update Interface";
@@ -264,7 +262,6 @@ static const char name_mapi_importcontentschanges[] =
 						"ICS Import Contents Changes";
 
 static int le_stream;
-static int le_mapi_rules;
 static int le_mapi_table;
 static int le_mapi_abcont;
 static int le_mapi_folder;
@@ -646,8 +643,6 @@ PHP_MINIT_FUNCTION(mapi)
 		mapi_resource_dtor, NULL, name_mapi_attachment, module_number);
 	le_mapi_property = zend_register_list_destructors_ex(
 		mapi_resource_dtor, NULL, name_mapi_property, module_number);
-	le_mapi_rules = zend_register_list_destructors_ex(
-		mapi_resource_dtor, NULL, name_mapi_rules, module_number);
 	le_mapi_advisesink = zend_register_list_destructors_ex(
 		notif_sink_dtor, NULL, name_mapi_advisesink, module_number);
 	le_stream = zend_register_list_destructors_ex(
@@ -4372,7 +4367,7 @@ THROW_EXCEPTION:
 	RETVAL_FALSE;
 }
 
-ZEND_FUNCTION(mapi_folder_openmodifytable)
+ZEND_FUNCTION(mapi_folder_getrulestable)
 {
 	uint32_t result;
 	uint32_t hobject;
@@ -4391,10 +4386,9 @@ ZEND_FUNCTION(mapi_folder_openmodifytable)
 		MAPI_G(hr) = EC_INVALID_OBJECT;
 		goto THROW_EXCEPTION;
 	}
-	result = zarafa_client_openrules(
-					pfolder->hsession,
-					pfolder->hobject,
-					&hobject);
+	result = zarafa_client_loadruletable(
+		pfolder->hsession, pfolder->hobject,
+		&hobject);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
@@ -4404,11 +4398,11 @@ ZEND_FUNCTION(mapi_folder_openmodifytable)
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
 	}
-	presource->type = MAPI_RULES;
+	presource->type = MAPI_TABLE;
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value,
-				presource, le_mapi_rules);
+				presource, le_mapi_table);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
@@ -4539,59 +4533,14 @@ THROW_EXCEPTION:
 	RETVAL_FALSE;
 }
 
-ZEND_FUNCTION(mapi_rules_gettable)
-{
-	uint32_t result;
-	uint32_t hobject;
-	zval *pzresource;
-	MAPI_RESOURCE *prules;
-	MAPI_RESOURCE *presource;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
-		goto THROW_EXCEPTION;
-	}
-	ZEND_FETCH_RESOURCE(prules, MAPI_RESOURCE*,
-		&pzresource, -1, name_mapi_rules, le_mapi_rules);
-	if (MAPI_RULES != prules->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
-		goto THROW_EXCEPTION;
-	}
-	result = zarafa_client_loadruletable(
-		prules->hsession, prules->hobject,
-		&hobject);
-	if (EC_SUCCESS != result) {
-		MAPI_G(hr) = result;
-		goto THROW_EXCEPTION;	
-	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
-	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
-		goto THROW_EXCEPTION;
-	}
-	presource->type = MAPI_TABLE;
-	presource->hsession = prules->hsession;
-	presource->hobject = hobject;
-	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
-	MAPI_G(hr) = EC_SUCCESS;
-	return;
-THROW_EXCEPTION:
-	if (MAPI_G(exceptions_enabled)) {
-		zend_throw_exception(MAPI_G(exception_ce),
-			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
-	}
-	RETVAL_FALSE;
-}
-
-ZEND_FUNCTION(mapi_rules_modifytable)
+ZEND_FUNCTION(mapi_folder_modifyrules)
 {
 	long flags;
 	zval *pzrows;
 	uint32_t result;
 	zval *pzresource;
 	RULE_LIST rule_list;
-	MAPI_RESOURCE *prules;
+	MAPI_RESOURCE *pfolder;
 	
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
@@ -4600,9 +4549,9 @@ ZEND_FUNCTION(mapi_rules_modifytable)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	ZEND_FETCH_RESOURCE(prules, MAPI_RESOURCE*,
-		&pzresource, -1, name_mapi_rules, le_mapi_rules);
-	if (MAPI_RULES != prules->type) {
+	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
+		&pzresource, -1, name_mapi_folder, le_mapi_folder);
+	if (MAPI_FOLDER != pfolder->type) {
 		MAPI_G(hr) = EC_INVALID_OBJECT;
 		goto THROW_EXCEPTION;
 	}
@@ -4610,8 +4559,8 @@ ZEND_FUNCTION(mapi_rules_modifytable)
 		MAPI_G(hr) = EC_ERROR;
 		goto THROW_EXCEPTION;
 	}
-	result = zarafa_client_modifyrules(prules->hsession,
-					prules->hobject, flags, &rule_list);
+	result = zarafa_client_modifyrules(pfolder->hsession,
+					pfolder->hobject, flags, &rule_list);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;

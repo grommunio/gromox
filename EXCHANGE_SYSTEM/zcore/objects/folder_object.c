@@ -1023,3 +1023,120 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	return exmdb_client_update_folder_permission(dir,
 		pfolder->folder_id, b_freebusy, count, pperm_data);
 }
+
+static BOOL folder_object_flush_delegats(int fd,
+	FORWARDDELEGATE_ACTION *paction)
+{
+	int i, j;
+	int tmp_len;
+	char *ptype;
+	char *paddress;
+	BINARY *pentryid;
+	char address_buff[256];
+
+	for (i=0; i<paction->count; i++) {
+		ptype = NULL;
+		paddress = NULL;
+		pentryid = NULL;
+		for (j=0; j<paction->pblock[i].count; j++) {
+			switch (paction->pblock[i].ppropval[j].proptag) {
+			case PROP_TAG_ADDRESSTYPE:
+				ptype = paction->pblock[i].ppropval[j].pvalue;
+				break;
+			case PROP_TAG_ENTRYID:
+				pentryid = paction->pblock[i].ppropval[j].pvalue;
+				break;
+			case PROP_TAG_EMAILADDRESS:
+				paddress = paction->pblock[i].ppropval[j].pvalue;
+				break;
+			}
+		}
+		address_buff[0] = '\0';
+		if (NULL != ptype && NULL != paddress) {
+			if (0 == strcasecmp(ptype, "SMTP")) {
+				strncpy(address_buff, paddress, sizeof(address_buff));
+			} else if (0 == strcasecmp(ptype, "EX")) {
+				common_util_essdn_to_username(paddress, address_buff);
+			}
+		}
+		if ('\0' == address_buff[0] && NULL != pentryid) {
+			if (FALSE == common_util_entryid_to_username(
+				pentryid, address_buff)) {
+				return FALSE;	
+			}
+		}
+		if ('\0' != address_buff[0]) {
+			tmp_len = strlen(address_buff);
+			address_buff[tmp_len] = '\n';
+			tmp_len ++;
+			write(fd, address_buff, tmp_len);
+		}
+	}
+	return TRUE;
+}
+
+
+BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
+	uint32_t flags, const RULE_LIST *plist)
+{
+	int i, fd;
+	BOOL b_exceed;
+	BOOL b_delegate;
+	char *pprovider;
+	char temp_path[256];
+	RULE_ACTIONS *pactions;
+	
+	if (flags & MODIFY_RULES_FLAG_REPLACE) {
+		if (FALSE == exmdb_client_empty_folder_rule(
+			store_object_get_dir(pfolder->pstore),
+			pfolder->folder_id)) {
+			return FALSE;	
+		}
+	}
+	b_delegate = FALSE;
+	for (i=0; i<plist->count; i++) {
+		if (FALSE == common_util_convert_from_zrule(
+			&plist->prule[i].propvals)) {
+			return FALSE;	
+		}
+		pprovider = common_util_get_propvals(
+				&plist->prule[i].propvals,
+				PROP_TAG_RULEPROVIDER);
+		if (NULL == pprovider || 0 != strcasecmp(
+			pprovider, "Schedule+ EMS Interface")) {
+			continue;	
+		}
+		pactions = common_util_get_propvals(
+					&plist->prule[i].propvals,
+					PROP_TAG_RULEACTIONS);
+		if (NULL != pactions) {
+			b_delegate = TRUE;
+		}
+	}
+	if (TRUE == store_object_check_private(pfolder->pstore) &&
+		PRIVATE_FID_INBOX == rop_util_get_gc_value(pfolder->folder_id)
+		&& ((flags & MODIFY_RULES_FLAG_REPLACE) || TRUE == b_delegate)) {
+		sprintf(temp_path, "%s/config/delegates.txt",
+				store_object_get_dir(pfolder->pstore));
+		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		if (-1 != fd) {
+			if (TRUE == b_delegate) {
+				for (i=0; i<pactions->count; i++) {
+					if (ACTION_TYPE_OP_DELEGATE ==
+						pactions->pblock[i].type) {
+						if (FALSE == folder_object_flush_delegats(
+							fd, pactions->pblock[i].pdata)) {
+							close(fd);
+							return FALSE;
+						}
+					}
+				}
+			}
+			close(fd);
+		}
+	}
+	return exmdb_client_update_folder_rule(
+		store_object_get_dir(pfolder->pstore),
+		pfolder->folder_id, plist->count,
+		plist->prule, &b_exceed);
+}

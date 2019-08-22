@@ -123,12 +123,6 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.resolvename.pcond_set,
 			&presponse->payload.resolvename.result_set);
 		break;
-	case CALL_ID_OPENRULES:
-		presponse->result = zarafa_server_openrules(
-			prequest->payload.openrules.hsession,
-			prequest->payload.openrules.hfolder,
-			&presponse->payload.openrules.hobject);
-		break;
 	case CALL_ID_GETPERMISSIONS:
 		presponse->result = zarafa_server_getpermissions(
 			prequest->payload.getpermissions.hsession,
@@ -144,7 +138,7 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 	case CALL_ID_MODIFYRULES:
 		presponse->result = zarafa_server_modifyrules(
 			prequest->payload.modifyrules.hsession,
-			prequest->payload.modifyrules.hrules,
+			prequest->payload.modifyrules.hfolder,
 			prequest->payload.modifyrules.flags,
 			prequest->payload.modifyrules.plist);
 		break;
@@ -193,7 +187,7 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 	case CALL_ID_LOADRULETABLE:
 		presponse->result = zarafa_server_loadruletable(
 			prequest->payload.loadruletable.hsession,
-			prequest->payload.loadruletable.hrules,
+			prequest->payload.loadruletable.hfolder,
 			&presponse->payload.loadruletable.hobject);
 		break;
 	case CALL_ID_CREATEMESSAGE:

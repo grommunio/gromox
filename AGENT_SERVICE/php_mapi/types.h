@@ -418,16 +418,15 @@ typedef struct _NEWMAIL_ZNOTIFICATION {
 #define MAPI_ATTACHMENT								3
 #define MAPI_ABCONT									4
 #define MAPI_FOLDER									5
-#define MAPI_RULES									6
-#define MAPI_SESSION								7
-#define MAPI_ADDRESSBOOK							8
-#define MAPI_STORE									9
-#define MAPI_MAILUSER								10
-#define MAPI_DISTLIST								11
-#define MAPI_PROFPROPERTY							12
-#define MAPI_ADVISESINK								16
-#define MAPI_ICSDOWNCTX								17
-#define MAPI_ICSUPCTX								18
+#define MAPI_SESSION								6
+#define MAPI_ADDRESSBOOK							7
+#define MAPI_STORE									8
+#define MAPI_MAILUSER								9
+#define MAPI_DISTLIST								10
+#define MAPI_PROFPROPERTY							11
+#define MAPI_ADVISESINK								12
+#define MAPI_ICSDOWNCTX								13
+#define MAPI_ICSUPCTX								14
 #define MAPI_INVALID								255
 
 #define ROOT_HANDLE									0

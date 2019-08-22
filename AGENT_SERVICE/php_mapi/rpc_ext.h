@@ -8,7 +8,6 @@
 #define CALL_ID_OPENSTOREENTRY						0x03
 #define CALL_ID_OPENABENTRY							0x04
 #define CALL_ID_RESOLVENAME							0x05
-#define CALL_ID_OPENRULES							0x06
 #define CALL_ID_GETPERMISSIONS						0x07
 #define CALL_ID_MODIFYPERMISSIONS					0x08
 #define CALL_ID_MODIFYRULES							0x09
@@ -129,11 +128,6 @@ typedef struct _REQ_RESOLVENAME {
 	TARRAY_SET *pcond_set;
 } REQ_RESOLVENAME;
 
-typedef struct _REQ_OPENRULES {
-	GUID hsession;
-	uint32_t hfolder;
-} REQ_OPENRULES;
-
 typedef struct _REQ_GETPERMISSIONS {
 	GUID hsession;
 	uint32_t hobject;
@@ -147,7 +141,7 @@ typedef struct _REQ_MODIFYPERMISSIONS {
 
 typedef struct _REQ_MODIFYRULES {
 	GUID hsession;
-	uint32_t hrules;
+	uint32_t hfolder;
 	uint32_t flags;
 	RULE_LIST *plist;
 } REQ_MODIFYRULES;
@@ -189,7 +183,7 @@ typedef struct _REQ_LOADRECIPIENTTABLE {
 
 typedef struct _REQ_LOADRULETABLE {
 	GUID hsession;
-	uint32_t hrules;
+	uint32_t hfolder;
 } REQ_LOADRULETABLE;
 	
 typedef struct _REQ_CREATEMESSAGE {
@@ -597,7 +591,6 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_OPENSTOREENTRY openstoreentry;
 	REQ_OPENABENTRY openabentry;
 	REQ_RESOLVENAME resolvename;
-	REQ_OPENRULES openrules;
 	REQ_GETPERMISSIONS getpermissions;
 	REQ_MODIFYPERMISSIONS modifypermissions;
 	REQ_MODIFYRULES modifyrules;
@@ -707,10 +700,6 @@ typedef struct _RESP_OPENABENTRY {
 typedef struct _RESP_RESOLVENAME {
 	TARRAY_SET result_set;
 } RESP_RESOLVENAME;
-
-typedef struct _RESP_OPENRULES {
-	uint32_t hobject;
-} RESP_OPENRULES;
 
 typedef struct _RESP_GETPERMISSIONS {
 	PERMISSION_SET perm_set;
@@ -918,7 +907,6 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_OPENSTOREENTRY openstoreentry;
 	RESP_OPENABENTRY openabentry;
 	RESP_RESOLVENAME resolvename;
-	RESP_OPENRULES openrules;
 	RESP_GETPERMISSIONS getpermissions;
 	RESP_GETABGAL getabgal;
 	RESP_LOADSTORETABLE loadstoretable;

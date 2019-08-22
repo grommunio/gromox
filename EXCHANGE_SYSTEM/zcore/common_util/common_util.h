@@ -16,7 +16,6 @@
 #define CALL_ID_OPENSTOREENTRY						0x03
 #define CALL_ID_OPENABENTRY							0x04
 #define CALL_ID_RESOLVENAME							0x05
-#define CALL_ID_OPENRULES							0x06
 #define CALL_ID_GETPERMISSIONS						0x07
 #define CALL_ID_MODIFYPERMISSIONS					0x08
 #define CALL_ID_MODIFYRULES							0x09
@@ -173,12 +172,12 @@ typedef struct _NOTIF_SINK {
 #define MAPI_ATTACHMENT								3
 #define MAPI_ABCONT									4
 #define MAPI_FOLDER									5
-#define MAPI_RULES									6
-#define MAPI_SESSION								7
-#define MAPI_STORE									9
-#define MAPI_MAILUSER								10
-#define MAPI_DISTLIST								11
-#define MAPI_PROFPROPERTY							12
+#define MAPI_SESSION								6
+#define MAPI_ADDRESSBOOK							7
+#define MAPI_STORE									8
+#define MAPI_MAILUSER								9
+#define MAPI_DISTLIST								10
+#define MAPI_PROFPROPERTY							11
 #define MAPI_ICSDOWNCTX								13
 #define MAPI_ICSUPCTX								14
 #define MAPI_INVALID								255

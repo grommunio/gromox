@@ -284,24 +284,6 @@ uint32_t zarafa_client_resolvename(GUID hsession,
 	return response.result;
 }
 
-uint32_t zarafa_client_openrules(GUID hsession,
-	uint32_t hfolder, uint32_t *phobject)
-{
-	RPC_REQUEST request;
-	RPC_RESPONSE response;
-	
-	request.call_id = CALL_ID_OPENRULES;
-	request.payload.openrules.hsession = hsession;
-	request.payload.openrules.hfolder = hfolder;
-	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
-	}
-	if (EC_SUCCESS == response.result) {
-		*phobject = response.payload.openrules.hobject;
-	}
-	return response.result;
-}
-
 uint32_t zarafa_client_getpermissions(GUID hsession,
 	uint32_t hobject, PERMISSION_SET *pperm_set)
 {
@@ -337,14 +319,14 @@ uint32_t zarafa_client_modifypermissions(GUID hsession,
 }
 
 uint32_t zarafa_client_modifyrules(GUID hsession,
-	uint32_t hrules, uint32_t flags, const RULE_LIST *plist)
+	uint32_t hfolder, uint32_t flags, const RULE_LIST *plist)
 {
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_MODIFYRULES;
 	request.payload.modifyrules.hsession = hsession;
-	request.payload.modifyrules.hrules = hrules;
+	request.payload.modifyrules.hfolder = hfolder;
 	request.payload.modifyrules.flags = flags;
 	request.payload.modifyrules.plist = (void*)plist;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -479,14 +461,14 @@ uint32_t zarafa_client_loadrecipienttable(GUID hsession,
 }
 
 uint32_t zarafa_client_loadruletable(GUID hsession,
-	uint32_t hrules, uint32_t *phobject)
+	uint32_t hfolder, uint32_t *phobject)
 {
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOADRULETABLE;
 	request.payload.loadruletable.hsession = hsession;
-	request.payload.loadruletable.hrules = hrules;
+	request.payload.loadruletable.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}

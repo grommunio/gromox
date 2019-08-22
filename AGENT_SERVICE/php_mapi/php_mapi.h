@@ -83,6 +83,7 @@ ZEND_FUNCTION(mapi_table_freebookmark);
 
 ZEND_FUNCTION(mapi_folder_gethierarchytable);
 ZEND_FUNCTION(mapi_folder_getcontentstable);
+ZEND_FUNCTION(mapi_folder_getrulestable);
 ZEND_FUNCTION(mapi_folder_createmessage);
 ZEND_FUNCTION(mapi_folder_createfolder);
 ZEND_FUNCTION(mapi_folder_deletefolder);
@@ -93,6 +94,7 @@ ZEND_FUNCTION(mapi_folder_emptyfolder);
 ZEND_FUNCTION(mapi_folder_setreadflags);
 ZEND_FUNCTION(mapi_folder_getsearchcriteria);
 ZEND_FUNCTION(mapi_folder_setsearchcriteria);
+ZEND_FUNCTION(mapi_folder_modifyrules);
 
 ZEND_FUNCTION(mapi_message_getattachmenttable);
 ZEND_FUNCTION(mapi_message_getrecipienttable);
@@ -110,10 +112,6 @@ ZEND_FUNCTION(mapi_getnamesfromids);
 ZEND_FUNCTION(mapi_getidsfromnames);
 
 ZEND_FUNCTION(mapi_decompressrtf);
-
-ZEND_FUNCTION(mapi_folder_openmodifytable);
-ZEND_FUNCTION(mapi_rules_gettable);
-ZEND_FUNCTION(mapi_rules_modifytable);
 
 ZEND_FUNCTION(mapi_stream_write);
 ZEND_FUNCTION(mapi_stream_read);

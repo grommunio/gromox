@@ -23,9 +23,6 @@ uint32_t zarafa_client_openabentry(GUID hsession,
 uint32_t zarafa_client_resolvename(GUID hsession,
 	const TARRAY_SET *pcond_set, TARRAY_SET *presult_set);
 
-uint32_t zarafa_client_openrules(GUID hsession,
-	uint32_t hfolder, uint32_t *phobject);
-
 uint32_t zarafa_client_getpermissions(GUID hsession,
 	uint32_t hobject, PERMISSION_SET *pperm_set);
 
@@ -33,7 +30,7 @@ uint32_t zarafa_client_modifypermissions(GUID hsession,
 	uint32_t hfolder, const PERMISSION_SET *pset);
 
 uint32_t zarafa_client_modifyrules(GUID hsession,
-	uint32_t hrules, uint32_t flags, const RULE_LIST *plist);
+	uint32_t hfolder, uint32_t flags, const RULE_LIST *plist);
 
 uint32_t zarafa_client_getabgal(GUID hsession, BINARY *pentryid);
 
@@ -56,7 +53,7 @@ uint32_t zarafa_client_loadrecipienttable(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject);
 
 uint32_t zarafa_client_loadruletable(GUID hsession,
-	uint32_t hrules, uint32_t *phobject);
+	uint32_t hfolder, uint32_t *phobject);
 
 uint32_t zarafa_client_createmessage(GUID hsession,
 	uint32_t hfolder,  uint32_t flags, uint32_t *phobject);
