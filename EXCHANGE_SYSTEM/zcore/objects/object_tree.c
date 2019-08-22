@@ -194,9 +194,6 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 	case MAPI_FOLDER:
 		folder_object_free(pobject);
 		break;
-	case MAPI_RULES:
-		rules_object_free(pobject);
-		break;
 	case MAPI_STORE:
 		store_object_free(pobject);
 		break;
