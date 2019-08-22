@@ -5,8 +5,11 @@
 #include "ext_buffer.h"
 #include "rop_util.h"
 #include <stdio.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 
 FOLDER_OBJECT* folder_object_create(STORE_OBJECT *pstore,
