@@ -724,6 +724,7 @@ static void* php_to_propval(zval **ppentry, uint16_t proptype)
 					prcpt_block->reserved = 0;
 					prcpt_block->count = tmp_propvals.count;
 					prcpt_block->ppropval = tmp_propvals.ppropval;
+					zend_hash_move_forward(precipient_hash);
 				}
 				break;
 			case ACTION_TYPE_OP_TAG:
@@ -1555,9 +1556,9 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 					for (k=0; k<((FORWARDDELEGATE_ACTION*)
 						prule->pblock[j].pdata)->count; k++) {
 						tmp_propvals.count = ((FORWARDDELEGATE_ACTION*)
-								prule->pblock[j].pdata)->pblock->count;
+								prule->pblock[j].pdata)->pblock[k].count;
 						tmp_propvals.ppropval = ((FORWARDDELEGATE_ACTION*)
-								prule->pblock[j].pdata)->pblock->ppropval;
+								prule->pblock[j].pdata)->pblock[k].ppropval;
 						if (!tpropval_array_to_php(&tmp_propvals,
 							&pzpropval TSRMLS_CC)) {
 							return 0;
