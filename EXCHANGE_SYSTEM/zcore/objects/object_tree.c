@@ -6,7 +6,6 @@
 #include "object_tree.h"
 #include "user_object.h"
 #include "store_object.h"
-#include "rules_object.h"
 #include "table_object.h"
 #include "folder_object.h"
 #include "zarafa_server.h"
