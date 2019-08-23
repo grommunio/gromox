@@ -927,6 +927,44 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	}
 	count = 0;
 	for (i=0; i<pperm_set->count; i++) {
+		if (pperm_set->prows[i].flags & (RIGHT_NEW | RIGHT_MODIFY)) {
+			for (j=0; j<permission_set.count; j++) {
+				pentryid = common_util_get_propvals(
+							permission_set.pparray[j],
+							PROP_TAG_ENTRYID);
+				if (NULL != pentryid && pentryid->cb ==
+					pperm_set->prows[i].entryid.cb && 0 ==
+					memcmp(pperm_set->prows[i].entryid.pb,
+					pentryid->pb, pentryid->cb)) {
+					break;	
+				}
+			}
+			if (j < permission_set.count) {
+				pmember_id = common_util_get_propvals(
+							permission_set.pparray[j],
+							PROP_TAG_MEMBERID);
+				if (NULL == pmember_id) {
+					continue;
+				}
+				pperm_data[count].flags = PERMISSION_DATA_FLAG_MODIFY_ROW;
+				pperm_data[count].propvals.count = 2;
+				pperm_data[count].propvals.ppropval =
+					common_util_alloc(2*sizeof(TAGGED_PROPVAL));
+				if (NULL == pperm_data[i].propvals.ppropval) {
+					return FALSE;
+				}
+				pperm_data[count].propvals.ppropval[0].proptag =
+												PROP_TAG_MEMBERID;
+				pperm_data[count].propvals.ppropval[0].pvalue =
+													pmember_id;
+				pperm_data[count].propvals.ppropval[1].proptag =
+											PROP_TAG_MEMBERRIGHTS;
+				pperm_data[count].propvals.ppropval[1].pvalue =
+							&pperm_set->prows[i].member_rights;
+				count ++;
+				continue;
+			}
+		}
 		if (pperm_set->prows[i].flags & RIGHT_NEW) {
 			pperm_data[count].flags = PERMISSION_DATA_FLAG_ADD_ROW;
 			pperm_data[count].propvals.count = 2;
@@ -939,42 +977,6 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 											PROP_TAG_ENTRYID;
 			pperm_data[count].propvals.ppropval[0].pvalue =
 								&pperm_set->prows[i].entryid;
-			pperm_data[count].propvals.ppropval[1].proptag =
-										PROP_TAG_MEMBERRIGHTS;
-			pperm_data[count].propvals.ppropval[1].pvalue =
-						&pperm_set->prows[i].member_rights;
-		} else if (pperm_set->prows[i].flags & RIGHT_MODIFY) {
-			for (j=0; j<permission_set.count; j++) {
-				pentryid = common_util_get_propvals(
-							permission_set.pparray[j],
-							PROP_TAG_ENTRYID);
-				if (NULL != pentryid && pentryid->cb ==
-					pperm_set->prows[i].entryid.cb && 0 ==
-					memcmp(pperm_set->prows[i].entryid.pb,
-					pentryid->pb, pentryid->cb)) {
-					break;	
-				}
-			}
-			if (j >= permission_set.count) {
-				continue;
-			}
-			pmember_id = common_util_get_propvals(
-						permission_set.pparray[j],
-						PROP_TAG_MEMBERID);
-			if (NULL == pmember_id) {
-				continue;
-			}
-			pperm_data[count].flags = PERMISSION_DATA_FLAG_MODIFY_ROW;
-			pperm_data[count].propvals.count = 2;
-			pperm_data[count].propvals.ppropval =
-				common_util_alloc(2*sizeof(TAGGED_PROPVAL));
-			if (NULL == pperm_data[i].propvals.ppropval) {
-				return FALSE;
-			}
-			pperm_data[count].propvals.ppropval[0].proptag =
-											PROP_TAG_MEMBERID;
-			pperm_data[count].propvals.ppropval[0].pvalue =
-												pmember_id;
 			pperm_data[count].propvals.ppropval[1].proptag =
 										PROP_TAG_MEMBERRIGHTS;
 			pperm_data[count].propvals.ppropval[1].pvalue =
