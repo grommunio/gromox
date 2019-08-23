@@ -3789,12 +3789,12 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		|| strlen(argv[2]) >= 1024) {
 		return 1;
 	}
-	if (argc > 4 && NULL != strchr(argv[4], 'U')) {
+	if (NULL != strchr(argv[4], 'U')) {
 		b_unsent = 1;
 	} else {
 		b_unsent = 0;
 	}
-	if (argc > 4 && NULL != strchr(argv[4], 'S')) {
+	if (NULL != strchr(argv[4], 'S')) {
 		b_read = 1;
 	} else {
 		b_read = 0;
