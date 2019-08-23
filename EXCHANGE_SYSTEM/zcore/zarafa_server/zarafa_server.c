@@ -4282,13 +4282,13 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 		MODRECIP_MODIFY != flags && MODRECIP_REMOVE != flags)) {
 		return EC_INVALID_PARAMETER;
 	}
-	for (i=0; i<prcpt_list->count; i++) {
-		common_util_replace_address_type((TPROPVAL_ARRAY*)
-							prcpt_list->pparray[i], FALSE);
-	}
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
 		return EC_ERROR;
+	}
+	for (i=0; i<prcpt_list->count; i++) {
+		common_util_replace_address_type((TPROPVAL_ARRAY*)
+							prcpt_list->pparray[i], FALSE);
 	}
 	pmessage = object_tree_get_object(
 		pinfo->ptree, hmessage, &mapi_type);
