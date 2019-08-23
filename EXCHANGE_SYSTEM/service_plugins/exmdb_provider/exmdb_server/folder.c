@@ -3183,8 +3183,12 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				continue;
 			}
 			permission = *(uint32_t*)pvalue;
-			if (permission | (PERMISSION_READANY | PERMISSION_FOLDEROWNER)) {
+			if (permission | PERMISSION_READANY) {
 				permission |= PERMISSION_FOLDERVISIBLE;
+			}
+			if (permission | PERMISSION_FOLDEROWNER) {
+				permission |= PERMISSION_FOLDERVISIBLE;
+				permission |= PERMISSION_FOLDERCONTACT;
 			}
 			if (permission | PERMISSION_DELETEANY) {
 				permission |= PERMISSION_DELETEOWNED;
@@ -3323,8 +3327,12 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				continue;
 			}
 			permission = *(uint32_t*)pvalue;
-			if (permission | (PERMISSION_READANY | PERMISSION_FOLDEROWNER)) {
+			if (permission | PERMISSION_READANY) {
 				permission |= PERMISSION_FOLDERVISIBLE;
+			}
+			if (permission | PERMISSION_FOLDEROWNER) {
+				permission |= PERMISSION_FOLDERVISIBLE;
+				permission |= PERMISSION_FOLDERCONTACT;
 			}
 			if (permission | PERMISSION_DELETEANY) {
 				permission |= PERMISSION_DELETEOWNED;
