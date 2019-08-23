@@ -422,6 +422,43 @@ LIST_ERROR:
 	return FALSE;
 }
 
+BOOL midb_client_unload_db(const char *maildir)
+{
+	int len;
+	int sockd;
+	BACK_SVR *pserver;
+	char temp_buff[256];
+	DOUBLE_LIST_NODE *pnode;
+	
+	for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;
+		pnode=double_list_get_after(&g_server_list, pnode)) {
+		pserver = (BACK_SVR*)pnode->pdata;
+		if (0 == strncmp(maildir, pserver->prefix, pserver->prefix_len)) {
+			break;
+		}
+	}
+	if (NULL == pnode) {
+		return FALSE;
+	}
+	sockd = midb_client_connect(pserver->ip_addr, pserver->port);
+	if (-1 == sockd) {
+		return FALSE;
+	}
+	len = snprintf(temp_buff, 256, "M-FREE %s\r\n", maildir);
+	if (len != write(sockd, temp_buff, len)) {
+		close(sockd);
+		return FALSE;
+	}
+
+	if (FALSE == midb_client_readline(sockd, temp_buff, 256)) {
+		close(sockd);
+		return FALSE;
+	}
+	write(sockd, "QUIT\r\n", 6);
+	close(sockd);
+	return TRUE;
+}
+
 void midb_client_free()
 {
 	double_list_free(&g_server_list);

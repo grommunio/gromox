@@ -498,6 +498,34 @@ static BOOL engine_clean_and_calculate_maildir(
 			}
 		}
 	}
+	sprintf(tmp_path, "%s/exmdb/midb.sqlite3", path);
+	if (SQLITE_OK == sqlite3_open_v2(tmp_path,
+		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
+		b_corrupt = FALSE;
+		if (SQLITE_OK == sqlite3_prepare_v2(psqlite,
+			"PRAGMA integrity_check", -1, &pstmt, NULL )) {
+			if (SQLITE_ROW == sqlite3_step(pstmt)) {
+				presult = sqlite3_column_text(pstmt, 0);
+				if (NULL == presult || 0 != strcmp(presult, "ok")) {
+					b_corrupt = TRUE;
+				}
+			}
+			sqlite3_finalize(pstmt);
+		}
+		sqlite3_close(psqlite);	
+		if (TRUE == b_corrupt) {
+			sprintf(tmp_path2, "%s/exmdb/midb.sqlite3", slave_path);
+			if (0 == stat(tmp_path2, &node_stat) &&
+				0 != S_ISREG(node_stat.st_mode) &&
+				TRUE == midb_client_unload_db(path)) {
+				engine_copy_file(tmp_path2, tmp_path, node_stat.st_size);
+			} else {
+				system_log_info("[engine]: "
+					"%s/exmdb/midb.sqlite3 is malformed,"
+					" cannot be fixed, verify it ASAP!", path);
+			}
+		}
+	}
 	engine_clean_eml_and_ext(path);
 	engine_clean_cid(path);
 	engine_cleaning_tmp(path);
