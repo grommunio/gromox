@@ -1922,7 +1922,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)pvalue = simple_tree_node_get_depth(pnode);
+		*(uint32_t*)pvalue = simple_tree_node_get_depth(pnode) + 1;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKISMASTER:
