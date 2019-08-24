@@ -251,7 +251,6 @@ BOOL container_object_fetch_special_property(
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_DEPTH:
-	case PROP_TAG_ADDRESSBOOKCONTAINERID:
 		pvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == pvalue) {
 			return FALSE;
