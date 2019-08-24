@@ -397,7 +397,7 @@ BOOL container_object_query_container_table(
 				return FALSE;
 			}
 			exmdb_client_unload_table(pinfo->maildir, table_id);
-			if (row_count > 0 && tmp_set1.count > 0) {
+			if (row_num > 0 && tmp_set1.count > 0) {
 				memcpy(tmp_set.pparray + tmp_set.count,
 					tmp_set1.pparray, tmp_set1.count);
 				tmp_set.count += tmp_set1.count;
