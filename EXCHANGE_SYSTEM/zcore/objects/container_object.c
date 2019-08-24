@@ -315,7 +315,6 @@ BOOL container_object_query_container_table(
 {
 	int i, end_pos;
 	AB_BASE *pbase;
-	USER_INFO *pinfo;
 	TARRAY_SET tmp_set;
 	DOMAIN_NODE *pdnode;
 	SINGLE_LIST_NODE *psnode;
@@ -360,20 +359,6 @@ BOOL container_object_query_container_table(
 			tmp_set.pparray[tmp_set.count])) {
 			ab_tree_put_base(pbase);
 			return FALSE;
-		}
-		tmp_set.count ++;
-		pinfo = zarafa_server_get_info();
-		tmp_set.pparray[tmp_set.count] =
-			common_util_alloc(sizeof(TPROPVAL_ARRAY));
-		if (NULL == tmp_set.pparray[tmp_set.count]) {
-			ab_tree_put_base(pbase);
-			return FALSE;
-		}
-		if (FALSE == exmdb_client_get_folder_properties(pinfo->maildir,
-			pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-			pproptags, &tmp_set.pparray[tmp_set.count])) {
-			ab_tree_put_base(pbase);
-			return FALSE;	
 		}
 		tmp_set.count ++;
 		for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
