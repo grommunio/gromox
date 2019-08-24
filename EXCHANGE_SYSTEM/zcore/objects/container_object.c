@@ -204,6 +204,8 @@ static BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue)
 {
 	void *pvalue;
+	EXT_PUSH ext_push;
+	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	switch (proptag) {
 	case PROP_TAG_ABPROVIDERID:
