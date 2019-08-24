@@ -534,10 +534,6 @@ int exmdb_client_run()
 			g_notify_stop = TRUE;
 			return 2;
 		}
-		if (TRUE == b_private && FALSE ==
-			common_util_check_local_ip(pitem[i].ip_addr)) {
-			continue;	
-		}
 		pserver = malloc(sizeof(REMOTE_SVR));
 		if (NULL == pserver) {
 			printf("[exmdb_client]: fail to allocate memory for exmdb\n");
