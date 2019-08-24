@@ -474,6 +474,11 @@ static BOOL container_object_query_contacts(uint64_t folder_id,
 		&tmp_proptags, &tmp_propvals)) {
 		return FALSE;
 	}
+	pvalue = common_util_get_propvals(
+		&tmp_propvals, PROP_TAG_ATTRIBUTEHIDDEN);
+	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		continue;
+	}
 	if (FALSE == container_object_fetch_folder_properties(
 		&tmp_propvals, pproptags, pset)) {
 		return FALSE;	
