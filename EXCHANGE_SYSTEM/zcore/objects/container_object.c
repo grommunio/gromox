@@ -374,7 +374,7 @@ BOOL container_object_query_container_table(
 		}
 		if (FALSE == exmdb_client_get_folder_properties(pinfo->maildir,
 			pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-			pproptags, &tmp_set.pparray[tmp_set.count])) {
+			pproptags, tmp_set.pparray[tmp_set.count])) {
 			ab_tree_put_base(pbase);
 			return FALSE;
 		}
