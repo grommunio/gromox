@@ -20,11 +20,6 @@
 
 #define EPOCH_DIFF 							11644473600LL
 
-/* PROP_TAG_CONTAINERFLAGS values */
-#define	AB_RECIPIENTS						0x1
-#define	AB_SUBCONTAINERS					0x2
-#define	AB_UNMODIFIABLE						0x8
-
 #define DTE_FLAG_ACL_CAPABLE				0x40000000
 
 #define ADDRESS_TYPE_NORMAL					0

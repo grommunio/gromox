@@ -8,6 +8,10 @@
 #include <stdint.h>
 #include <time.h>
 
+/* PROP_TAG_CONTAINERFLAGS values */
+#define	AB_RECIPIENTS						0x1
+#define	AB_SUBCONTAINERS					0x2
+#define	AB_UNMODIFIABLE						0x8
 
 #define NODE_TYPE_DOMAIN					0x81
 #define NODE_TYPE_GROUP						0x82
