@@ -496,7 +496,7 @@ static BOOL container_object_query_contacts(uint64_t folder_id,
 		return TRUE;
 	}
 	pvalue = common_util_get_propvals(
-		tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
+		&tmp_propvals, PROP_TAG_CONTAINERCLASS);
 	if (NULL == pvalue || 0 != strcasecmp(
 		pvalue, "IPF.Contact")) {
 		return TRUE;
