@@ -101,8 +101,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
     if (MEM_END_OF_FILE == out_len) {   /* no content type */
         return MESSAGE_ACCEPT;
     }
-	if (NULL == search_string(buff, "boundary=\"b1_", out_len) &&
-		NULL == search_string(buff, "boundary=\"=====001_Dragon", out_len)) {
+	if (NULL == search_string(buff, "boundary=\"=====001_Dragon", out_len)) {
 		return MESSAGE_ACCEPT;
 	}
 	if (TRUE == check_tagging(pmail->penvelop->from,
