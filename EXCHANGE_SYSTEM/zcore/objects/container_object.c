@@ -1,6 +1,7 @@
 #include "container_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"
+#include "ext_buffer.h"
 #include "ab_tree.h"
 
 #define SPECIAL_CONTAINER_GAL					0
