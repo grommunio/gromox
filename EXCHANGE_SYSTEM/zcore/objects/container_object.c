@@ -315,7 +315,11 @@ BOOL container_object_query_container_table(
 {
 	int i, end_pos;
 	AB_BASE *pbase;
+	USER_INFO *pinfo;
+	uint32_t row_num;
+	uint32_t table_id;
 	TARRAY_SET tmp_set;
+	TARRAY_SET tmp_set1;
 	DOMAIN_NODE *pdnode;
 	SINGLE_LIST_NODE *psnode;
 	SIMPLE_TREE_NODE *ptnode;
@@ -361,16 +365,52 @@ BOOL container_object_query_container_table(
 			return FALSE;
 		}
 		tmp_set.count ++;
+		pinfo = zarafa_server_get_info();
+		tmp_set.pparray[tmp_set.count] =
+			common_util_alloc(sizeof(TPROPVAL_ARRAY));
+		if (NULL == tmp_set.pparray[tmp_set.count]) {
+			ab_tree_put_base(pbase);
+			return FALSE;
+		}
+		if (FALSE == exmdb_client_get_folder_properties(pinfo->maildir,
+			pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+			pproptags, &tmp_set.pparray[tmp_set.count])) {
+			ab_tree_put_base(pbase);
+			return FALSE;
+		}
+		tmp_set.count ++;
 		if (TRUE == b_depth) {
-			for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
-				psnode=single_list_get_after(&pbase->list, psnode)) {
-				pdnode = (DOMAIN_NODE*)psnode->pdata;
-				ptnode = simple_tree_get_root(&pdnode->tree);
-				if (FALSE == container_object_get_specialtables_from_node(
-					ptnode, pproptags, b_depth, &tmp_set)) {
-					ab_tree_put_base(pbase);
-					return FALSE;
-				}
+			if (FALSE == exmdb_client_load_hierarchy_table(
+				pinfo->maildir, rop_util_make_eid_ex(1,
+				PRIVATE_FID_CONTACTS), NULL, TABLE_FLAG_DEPTH,
+				NULL, &table_id, &row_num)) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			if (row_num > 50) {
+				row_num = 50;
+			}
+			if (row_num > 0 && FALSE == exmdb_client_query_table(
+				pinfo->maildir, NULL, pinfo->cpid, table_id,
+				pproptags, 0, row_num, &tmp_set1)) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			exmdb_client_unload_table(pinfo->maildir, table_id);
+			if (row_count > 0 && tmp_set1.count > 0) {
+				memcpy(tmp_set.pparray + tmp_set.count,
+					tmp_set1.pparray, tmp_set1.count);
+				tmp_set.count += tmp_set1.count;
+			}
+		}
+		for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
+			psnode=single_list_get_after(&pbase->list, psnode)) {
+			pdnode = (DOMAIN_NODE*)psnode->pdata;
+			ptnode = simple_tree_get_root(&pdnode->tree);
+			if (FALSE == container_object_get_specialtables_from_node(
+				ptnode, pproptags, b_depth, &tmp_set)) {
+				ab_tree_put_base(pbase);
+				return FALSE;
 			}
 		}
 	} else {
