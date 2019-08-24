@@ -466,7 +466,7 @@ static BOOL container_object_query_contacts(uint64_t folder_id,
 					PROP_TAG_PARENTFOLDERID,
 					PROP_TAG_ATTRIBUTEHIDDEN};
 	
-	tmp_proptags.count = 5;
+	tmp_proptags.count = 6;
 	tmp_proptags.pproptag = proptag_buff;
 	pinfo = zarafa_server_get_info();
 	if (FALSE == exmdb_client_get_folder_properties(
