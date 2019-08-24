@@ -438,7 +438,7 @@ BOOL container_object_get_user_table_num(
 		return FALSE;
 	}
 	*pnum = 0;
-	if (0 == pcontainer->minid) {
+	if (0xFFFFFFFF == pcontainer->minid) {
 		*pnum = single_list_get_nodes_num(&pbase->gal_list);
 	} else {
 		pnode = ab_tree_minid_to_node(pbase, pcontainer->minid);
