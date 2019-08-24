@@ -306,7 +306,188 @@ static BOOL container_object_fetch_special_properties(
 	}
 	return TRUE;
 }
+
+static BOOL container_object_fetch_folder_properties(
+	const TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pproptags,
+	TARRAY_SET *pset)
+{
+	int i;
+	BOOL b_sub;
+	void *pvalue;
+	uint32_t count;
+	uint32_t handle;
+	USER_INFO *pinfo;
+	uint8_t mapi_type;
+	uint64_t folder_id;
+	STORE_OBJECT *pstore;
+	TPROPVAL_ARRAY **pparray;
+	TPROPVAL_ARRAY *ptmp_propvals;
 	
+	count = (pset->count / 100 + 1) * 100;
+	if (pset->count + 1 >= count) {
+		count += 100;
+		pparray = common_util_alloc(count*sizeof(TPROPVAL_ARRAY*));
+		if (NULL == pparray) {
+			return FALSE;
+		}
+		memcpy(pparray, pset->pparray,
+			pset->count*sizeof(TPROPVAL_ARRAY*));
+		pset->pparray = pparray;
+	}
+	pset->pparray[pset->count] =
+		common_util_alloc(sizeof(TPROPVAL_ARRAY));
+	if (NULL == pset->pparray[pset->count]) {
+		return FALSE;
+	}
+	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_FOLDERID);
+	if (NULL == pvalue) {
+		return FALSE;
+	}
+	folder_id = *(uint64_t*)pvalue;
+	ptmp_propvals = pset->pparray[pset->count];
+	pset->count ++;
+	ptmp_propvals->count = 0;
+	ptmp_propvals->ppropval = common_util_alloc(
+		pproptags->count*sizeof(TAGGED_PROPVAL));
+	if (NULL == ptmp_propvals->ppropval) {
+		return FALSE;
+	}
+	for (i=0; i<pproptags->count; i++) {
+		switch (pproptags->pproptag[i]) {
+		case PROP_TAG_ABPROVIDERID:
+			pvalue = common_util_alloc(sizeof(BINARY));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			((BINARY*)pvalue)->cb = 16;
+			((BINARY*)pvalue)->pb = common_util_get_muidecsab();
+			ptmp_propvals->ppropval[ptmp_propvals->count].proptag =
+											pproptags->pproptag[i];
+			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
+			ptmp_propvals->count ++;
+			break;
+		case PROP_TAG_ENTRYID:
+			pinfo = zarafa_server_get_info();
+			handle = object_tree_get_store_handle(
+				pinfo->ptree, TRUE, pinfo->user_id);
+			pstore = object_tree_get_object(
+				pinfo->ptree, handle, &mapi_type);
+			if (NULL == pstore || MAPI_STORE != mapi_type) {
+				return FALSE;
+			}
+			pvalue = common_util_to_folder_entryid(pstore, folder_id);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
+			ptmp_propvals->count ++;
+			break;
+		case PROP_TAG_CONTAINERFLAGS:
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_SUBFOLDERS);
+			if (NULL == pvalue || 0 == *(uint32_t*)pvalue) {
+				b_sub = FALSE;
+			} else {
+				b_sub = TRUE;
+			}
+			pvalue = common_util_alloc(sizeof(uint32_t));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			if (TRUE == b_sub) {
+				*(uint32_t*)pvalue = AB_RECIPIENTS | AB_UNMODIFIABLE;
+			} else {
+				*(uint32_t*)pvalue = AB_RECIPIENTS |
+					AB_SUBCONTAINERS | AB_UNMODIFIABLE;
+			}
+			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
+			ptmp_propvals->count ++;
+			break;
+		case PROP_TAG_DEPTH:
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_DEPTH);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
+			ptmp_propvals->count ++;
+			break;
+		case PROP_TAG_DISPLAYNAME:
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_DISPLAYNAME);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
+			ptmp_propvals->count ++;
+			break;
+		case PROP_TAG_ADDRESSBOOKISMASTER:
+			pvalue = common_util_alloc(sizeof(uint8_t));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			*(uint8_t*)pvalue = 0;
+			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
+			ptmp_propvals->count ++;
+			break;
+		}
+	}
+	return TRUE;
+}
+
+static BOOL container_object_query_contacts(uint64_t folder_id,
+	const PROPTAG_ARRAY *pproptags, BOOL b_depth, TARRAY_SET *pset)
+{
+	int i;
+	uint32_t row_num;
+	USER_INFO *pinfo;
+	uint32_t table_id;
+	TARRAY_SET tmp_set;
+	PROPTAG_ARRAY tmp_proptags;
+	TPROPVAL_ARRAY tmp_propvals;
+	static uint32_t proptag_buff[] = {
+					PROP_TAG_FOLDERID,
+					PROP_TAG_DEPTH,
+					PROP_TAG_DISPLAYNAME,
+					PROP_TAG_SUBFOLDERS};
+	
+	tmp_proptags.count = 4;
+	tmp_proptags.pproptag = proptag_buff;
+	pinfo = zarafa_server_get_info();
+	if (FALSE == exmdb_client_get_folder_properties(
+		pinfo->maildir, pinfo->cpid, folder_id,
+		&tmp_proptags, &tmp_propvals)) {
+		return FALSE;
+	}
+	if (FALSE == container_object_fetch_folder_properties(
+		&tmp_propvals, pproptags, pset)) {
+		return FALSE;	
+	}
+	if (TRUE == b_depth) {
+		if (FALSE == exmdb_client_load_hierarchy_table(
+			pinfo->maildir, folder_id, NULL, TABLE_FLAG_DEPTH,
+			NULL, &table_id, &row_num)) {
+			return FALSE;
+		}
+		if (0 == row_num) {
+			tmp_set.count = 0;
+		} else {
+			if (FALSE == exmdb_client_query_table(
+				pinfo->maildir, NULL, pinfo->cpid, table_id,
+				&tmp_proptags, 0, row_num, &tmp_set)) {
+				return FALSE;
+			}
+		}
+		exmdb_client_unload_table(pinfo->maildir, table_id);
+		for (i=0; i<tmp_set.count; i++) {
+			if (FALSE == container_object_fetch_folder_properties(
+				tmp_set.pparray[i], pproptags, pset)) {
+				return FALSE;	
+			}
+		}
+	}
+	return TRUE;
+}
 
 BOOL container_object_query_container_table(
 	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
@@ -361,6 +542,12 @@ BOOL container_object_query_container_table(
 			return FALSE;
 		}
 		tmp_set.count ++;
+		if (FALSE == container_object_query_contacts(
+			rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+			pproptags, b_depth, &tmp_set)) {
+			ab_tree_put_base(pbase);
+			return FALSE;	
+		}
 		for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
 			psnode=single_list_get_after(&pbase->list, psnode)) {
 			pdnode = (DOMAIN_NODE*)psnode->pdata;
