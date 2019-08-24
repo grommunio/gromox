@@ -1891,7 +1891,9 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
-	if (PROP_TAG_ABPROVIDERID == proptag) {
+	node_type = ab_tree_get_node_type(pnode);
+	switch (proptag) {
+	case PROP_TAG_ABPROVIDERID:
 		*ppvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -1899,68 +1901,6 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		((BINARY*)*ppvalue)->cb = 16;
 		((BINARY*)*ppvalue)->pb = common_util_get_muidecsab();
 		return TRUE;
-	}
-	if (NULL == pnode) {
-		switch (proptag) {
-		case PROP_TAG_ENTRYID:
-			pvalue = common_util_alloc(sizeof(BINARY));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			ab_entryid.flags = 0;
-			rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-										ab_entryid.provider_uid);
-			ab_entryid.version = 1;
-			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
-			ab_entryid.px500dn = "/";
-			((BINARY*)pvalue)->pb = common_util_alloc(1280);
-			if (NULL == ((BINARY*)pvalue)->pb) {
-				return FALSE;
-			}
-			ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 1280, 0);
-			if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-				&ext_push, &ab_entryid)) {
-				return FALSE;
-			}
-			((BINARY*)pvalue)->cb = ext_push.offset;
-			*ppvalue = pvalue;
-			return TRUE;
-		case PROP_TAG_CONTAINERFLAGS:
-			pvalue = common_util_alloc(sizeof(uint32_t));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			*(uint32_t*)pvalue = AB_RECIPIENTS |
-				AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-			*ppvalue = pvalue;
-			return TRUE;
-		case PROP_TAG_DEPTH:
-		case PROP_TAG_ADDRESSBOOKCONTAINERID:
-			pvalue = common_util_alloc(sizeof(uint32_t));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			*(uint32_t*)pvalue = 0;
-			*ppvalue = pvalue;
-			return TRUE;
-		case PROP_TAG_DISPLAYNAME:
-			*ppvalue = "Global Address List";
-			return TRUE;
-		case PROP_TAG_ADDRESSBOOKISMASTER:
-			pvalue = common_util_alloc(sizeof(uint8_t));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			*(uint8_t*)pvalue = 0;
-			*ppvalue = pvalue;
-			return TRUE;
-		default:
-			*ppvalue = NULL;
-			return TRUE;
-		}
-	}
-	node_type = ab_tree_get_node_type(pnode);
-	switch (proptag) {
 	case PROP_TAG_CONTAINERFLAGS:
 		if (node_type < 0x80) {
 			*ppvalue = NULL;
