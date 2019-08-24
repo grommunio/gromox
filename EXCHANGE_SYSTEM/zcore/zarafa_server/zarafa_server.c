@@ -1624,17 +1624,8 @@ uint32_t zarafa_server_modifyrules(GUID hsession,
 
 uint32_t zarafa_server_getabgal(GUID hsession, BINARY *pentryid)
 {
-	void *pvalue;
-	
-	if (FALSE == ab_tree_fetch_node_property(
-		NULL, 0, PROP_TAG_ENTRYID, &pvalue)) {
-		return EC_ERROR;	
-	}
-	if (NULL == pvalue) {
-		return EC_NOT_FOUND;
-	}
-	pentryid->cb = ((BINARY*)pvalue)->cb;
-	pentryid->pb = ((BINARY*)pvalue)->pb;
+	pentryid->cb = 0;
+	pentryid->pb = NULL;
 	return EC_SUCCESS;
 }
 
