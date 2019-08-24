@@ -256,7 +256,11 @@ BOOL container_object_fetch_special_property(
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)pvalue = 0;
+		if (SPECIAL_CONTAINER_GAL == special_type) {
+			*(uint32_t*)pvalue = 0;
+		} else {
+			*(uint32_t*)pvalue = 1;
+		}
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_DISPLAYNAME:
