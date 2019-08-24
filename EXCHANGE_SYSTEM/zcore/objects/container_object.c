@@ -417,10 +417,25 @@ static BOOL container_object_fetch_folder_properties(
 			break;
 		case PROP_TAG_DEPTH:
 			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_DEPTH);
+				ppropvals, PROP_TAG_FOLDERPATHNAME);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
+			count = 0;
+			for (; '\0'!=*(char*)pvalue; pvalue++) {
+				if ('\\' == *(char*)pvalue) {
+					count ++;
+				}
+			}
+			if (count < 3) {
+				return FALSE;
+			}
+			count -= 2;
+			pvalue = common_util_alloc(sizeof(uint32_t));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			*(uint32_t*)pvalue = count;
 			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
 			ptmp_propvals->count ++;
 			break;
@@ -459,14 +474,15 @@ static BOOL container_object_query_contacts(uint64_t folder_id,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	static uint32_t proptag_buff[] = {
-					PROP_TAG_DEPTH,
 					PROP_TAG_FOLDERID,
 					PROP_TAG_SUBFOLDERS,
 					PROP_TAG_DISPLAYNAME,
+					PROP_TAG_CONTAINERCLASS,
+					PROP_TAG_FOLDERPATHNAME,
 					PROP_TAG_PARENTFOLDERID,
 					PROP_TAG_ATTRIBUTEHIDDEN};
 	
-	tmp_proptags.count = 6;
+	tmp_proptags.count = 7;
 	tmp_proptags.pproptag = proptag_buff;
 	pinfo = zarafa_server_get_info();
 	if (FALSE == exmdb_client_get_folder_properties(
@@ -477,6 +493,12 @@ static BOOL container_object_query_contacts(uint64_t folder_id,
 	pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_ATTRIBUTEHIDDEN);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		return TRUE;
+	}
+	pvalue = common_util_get_propvals(
+		tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
+	if (NULL == pvalue || 0 != strcasecmp(
+		pvalue, "IPF.Contact")) {
 		return TRUE;
 	}
 	if (FALSE == container_object_fetch_folder_properties(
@@ -503,6 +525,12 @@ static BOOL container_object_query_contacts(uint64_t folder_id,
 			pvalue = common_util_get_propvals(
 				tmp_set.pparray[i], PROP_TAG_ATTRIBUTEHIDDEN);
 			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+				continue;
+			}
+			pvalue = common_util_get_propvals(
+				tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
+			if (NULL == pvalue || 0 != strcasecmp(
+				pvalue, "IPF.Contact")) {
 				continue;
 			}
 			if (FALSE == container_object_fetch_folder_properties(
