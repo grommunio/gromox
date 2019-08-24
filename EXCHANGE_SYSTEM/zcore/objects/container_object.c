@@ -2,6 +2,7 @@
 #include "zarafa_server.h"
 #include "common_util.h"
 #include "ext_buffer.h"
+#include "rop_util.h"
 #include "ab_tree.h"
 
 CONTAINER_OBJECT* container_object_create(int base_id, uint32_t minid)
