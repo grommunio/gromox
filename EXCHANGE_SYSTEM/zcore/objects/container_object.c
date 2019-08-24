@@ -566,7 +566,7 @@ BOOL container_object_query_user_table(
 			pset->count ++;
 		}
 	} else {
-		if (0 == pcontainer->minid) {
+		if (0xFFFFFFFF == pcontainer->minid) {
 			i = 0;
 			for (psnode=single_list_get_head(&pbase->gal_list); NULL!=psnode;
 				psnode=single_list_get_after(&pbase->gal_list, psnode)) {
