@@ -4,9 +4,6 @@
 #include "ext_buffer.h"
 #include "ab_tree.h"
 
-#define SPECIAL_CONTAINER_GAL					0
-#define SPECIAL_CONTAINER_PROVIDER				1
-
 CONTAINER_OBJECT* container_object_create(int base_id, uint32_t minid)
 {
 	CONTAINER_OBJECT *pcontainer;
@@ -201,7 +198,7 @@ static BOOL container_object_get_specialtables_from_node(
 	return TRUE;
 }
 
-static BOOL container_object_fetch_special_property(
+BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue)
 {
 	void *pvalue;
@@ -222,28 +219,27 @@ static BOOL container_object_fetch_special_property(
 		if (NULL == pvalue) {
 			return FALSE;
 		}
+		ab_entryid.flags = 0;
+		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
+									ab_entryid.provider_uid);
+		ab_entryid.version = 1;
+		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 		if (SPECIAL_CONTAINER_GAL == special_type) {
-			((BINARY*)pvalue)->cb = 0;
-			((BINARY*)pvalue)->pb = NULL;
+			ab_entryid.px500dn = "";
 		} else {
-			ab_entryid.flags = 0;
-			rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-										ab_entryid.provider_uid);
-			ab_entryid.version = 1;
-			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 			ab_entryid.px500dn = "/";
-			((BINARY*)pvalue)->pb = common_util_alloc(128);
-			if (NULL == ((BINARY*)pvalue)->pb) {
-				return FALSE;
-			}
-			ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0);
-			if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-				&ext_push, &ab_entryid)) {
-				return FALSE;
-			}
-			((BINARY*)pvalue)->cb = ext_push.offset;
-			*ppvalue = pvalue;
 		}
+		((BINARY*)pvalue)->pb = common_util_alloc(128);
+		if (NULL == ((BINARY*)pvalue)->pb) {
+			return FALSE;
+		}
+		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0);
+		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
+			&ext_push, &ab_entryid)) {
+			return FALSE;
+		}
+		((BINARY*)pvalue)->cb = ext_push.offset;
+		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_CONTAINERFLAGS:
 		pvalue = common_util_alloc(sizeof(uint32_t));

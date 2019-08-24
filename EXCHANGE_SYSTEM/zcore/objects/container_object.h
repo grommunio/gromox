@@ -3,11 +3,17 @@
 #include <stdint.h>
 #include "mapi_types.h"
 
+#define SPECIAL_CONTAINER_GAL					0
+#define SPECIAL_CONTAINER_PROVIDER				1
+
 typedef struct _CONTAINER_OBJECT {
 	int base_id;
 	uint32_t minid;
 	LONG_ARRAY *pminid_array;
 } CONTAINER_OBJECT;
+
+BOOL container_object_fetch_special_property(
+	uint8_t special_type, uint32_t proptag, void **ppvalue);
 
 CONTAINER_OBJECT* container_object_create(int base_id, uint32_t minid);
 

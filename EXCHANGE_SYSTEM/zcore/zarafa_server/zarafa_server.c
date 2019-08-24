@@ -1334,7 +1334,9 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	}
 	if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
 		lower_string(essdn);
-		if (0 == strcmp(essdn, "/")) {
+		if ('\0' == essdn[0]) {
+			minid = 0xFFFFFFFF;
+		} else if (0 == strcmp(essdn, "/")) {
 			minid = 0;
 		} else {
 			if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
@@ -1624,8 +1626,17 @@ uint32_t zarafa_server_modifyrules(GUID hsession,
 
 uint32_t zarafa_server_getabgal(GUID hsession, BINARY *pentryid)
 {
-	pentryid->cb = 0;
-	pentryid->pb = NULL;
+	void *pvalue;
+	
+	if (FALSE == container_object_fetch_special_property(
+		SPECIAL_CONTAINER_GAL, PROP_TAG_ENTRYID, &pvalue)) {
+		return EC_ERROR;	
+	}
+	if (NULL == pvalue) {
+		return EC_NOT_FOUND;
+	}
+	pentryid->cb = ((BINARY*)pvalue)->cb;
+	pentryid->pb = ((BINARY*)pvalue)->pb;
 	return EC_SUCCESS;
 }
 
