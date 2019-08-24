@@ -4,7 +4,7 @@ yum -y install gcc gcc-c++ makedepend mariadb mariadb-server mariadb-devel sqlit
 
 #build php-mapi, caution!!! cannot do this step after libiconv
 cd STEEP_SYSTEM-master/AGENT_SERVICE/php_mapi
-sh -x build.sh
+sh build.sh
 cp modules/mapi.so /usr/lib64/php/modules/
 cp mapi.ini /etc/php.d/
 
@@ -42,7 +42,7 @@ make && make install
 
 #build and install the whole system 
 cd STEEP_SYSTEM-master
-sh -x build && sh -x install
+sh build && sh install
 
 #create database
 systemctl enable mariadb
