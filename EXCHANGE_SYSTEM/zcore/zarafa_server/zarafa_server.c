@@ -1294,16 +1294,11 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	int base_id;
 	int user_id;
 	void *pobject;
-	BOOL b_private;
 	AB_BASE *pbase;
 	uint32_t minid;
-	uint32_t hstore;
 	USER_INFO *pinfo;
 	char essdn[1024];
 	char tmp_buff[16];
-	uint8_t mapi_type;
-	uint64_t folder_id;
-	STORE_OBJECT *pstore;
 	uint32_t address_type;
 	SIMPLE_TREE_NODE *pnode;
 	
@@ -1334,26 +1329,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_SUCCESS;
 	}
-	if (TRUE == common_util_from_folder_entryid(
-		entryid, &b_private, &user_id, &folder_id)
-		&& TRUE == b_private && pinfo->user_id ==
-		user_id) {
-		hstore = object_tree_get_store_handle(
-				pinfo->ptree, TRUE, user_id);
-		if (INVALID_HANDLE == hstore) {
-			zarafa_server_put_user_info(pinfo);
-			return EC_NULL_OBJECT;
-		}
-		pstore = object_tree_get_object(
-			pinfo->ptree, hstore, &mapi_type);
-		pobject = folder_object_create(pstore, folder_id,
-					FOLDER_TYPE_GENERIC, TAG_ACCESS_READ);
-		if (NULL == pobject) {
-			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
-		}
-		*pmapi_type = MAPI_FOLDER;
-	} else if (TRUE == common_util_parse_addressbook_entryid(
+	if (TRUE == common_util_parse_addressbook_entryid(
 		entryid, &address_type, essdn)) {
 		pbase = ab_tree_get_base(base_id);
 		if (NULL == pbase) {
@@ -1460,9 +1436,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		case MAPI_MAILUSER:
 			user_object_free(pobject);
 			break;
-		case MAPI_FOLDER:
-			folder_object_free(pobject);
-			break;	
 		}
 		return EC_ERROR;
 	}
