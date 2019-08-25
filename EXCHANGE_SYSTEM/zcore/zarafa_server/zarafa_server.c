@@ -1033,7 +1033,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		pinfo->ptree, b_private, account_id);
 	zarafa_server_put_user_info(pinfo);
 	if (INVALID_HANDLE == handle) {
-		return EC_INVALID_PARAMETER;
+		return EC_NULL_OBJECT;
 	}
 	return zarafa_server_openstoreentry(hsession,
 		handle, entryid, flags, pmapi_type, phobject);
@@ -1294,11 +1294,13 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	int base_id;
 	int user_id;
 	void *pobject;
+	BOOL b_private;
 	AB_BASE *pbase;
 	uint32_t minid;
 	USER_INFO *pinfo;
 	char essdn[1024];
 	char tmp_buff[16];
+	uint64_t folder_id;
 	uint32_t address_type;
 	SIMPLE_TREE_NODE *pnode;
 	
@@ -1311,126 +1313,155 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	} else {
 		base_id = pinfo->org_id;
 	}
-	pbase = ab_tree_get_base(base_id);
-	if (NULL == pbase) {
-		zarafa_server_put_user_info(pinfo);
-		return EC_ERROR;
-	}
 	if (0 == entryid.cb) {
 		pobject = container_object_create(base_id, 0xFFFFFFFF);
 		if (NULL == pobject) {
-			ab_tree_put_base(pbase);
 			zarafa_server_put_user_info(pinfo);
 			return EC_ERROR;
 		}
 		*pmapi_type = MAPI_ABCONT;
-		goto ADD_HANDLE;
-	}
-	if (FALSE == common_util_parse_addressbook_entryid(
-		entryid, &address_type, essdn)) {
-		ab_tree_put_base(pbase);
+		*phobject = object_tree_add_object_handle(
+						pinfo->ptree, ROOT_HANDLE,
+						*pmapi_type, pobject);
+		if (INVALID_HANDLE == *phobject) {
+			container_object_free(pobject);
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
 		zarafa_server_put_user_info(pinfo);
-		return EC_ERROR;
+		return EC_SUCCESS;
 	}
-	if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
-		lower_string(essdn);
-		if ('\0' == essdn[0]) {
-			minid = 0xFFFFFFFF;
-		} else if (0 == strcmp(essdn, "/")) {
-			minid = 0;
-		} else {
-			if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
+	if (TRUE == common_util_parse_addressbook_entryid(
+		entryid, &address_type, essdn)) {
+		pbase = ab_tree_get_base(base_id);
+		if (NULL == pbase) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
+		if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
+			lower_string(essdn);
+			if ('\0' == essdn[0]) {
+				minid = 0xFFFFFFFF;
+			} else if (0 == strcmp(essdn, "/")) {
+				minid = 0;
+			} else {
+				if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
+					ab_tree_put_base(pbase);
+					zarafa_server_put_user_info(pinfo);
+					return EC_NOT_FOUND;
+				}
+				memcpy(tmp_buff, essdn + 6, 8);
+				tmp_buff[8] = '\0';
+				guid.time_low = strtoll(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 14, 4);
+				tmp_buff[4] = '\0';
+				guid.time_mid = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 18, 4);
+				tmp_buff[4] = '\0';
+				guid.time_hi_and_version = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 22, 2);
+				tmp_buff[2] = '\0';
+				guid.clock_seq[0] = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 24, 2);
+				tmp_buff[2] = '\0';
+				guid.clock_seq[1] = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 26, 2);
+				tmp_buff[2] = '\0';
+				guid.node[0] = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 28, 2);
+				tmp_buff[2] = '\0';
+				guid.node[1] = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 30, 2);
+				tmp_buff[2] = '\0';
+				guid.node[2] = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 32, 2);
+				tmp_buff[2] = '\0';
+				guid.node[3] = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 34, 2);
+				tmp_buff[2] = '\0';
+				guid.node[4] = strtol(tmp_buff, NULL, 16);
+				memcpy(tmp_buff, essdn + 36, 2);
+				tmp_buff[2] = '\0';
+				guid.node[5] = strtol(tmp_buff, NULL, 16);
+				pnode = ab_tree_guid_to_node(pbase, guid);
+				if (NULL == pnode) {
+					ab_tree_put_base(pbase);
+					zarafa_server_put_user_info(pinfo);
+					return EC_NOT_FOUND;
+				}
+				minid = ab_tree_get_node_minid(pnode);
+			}
+			pobject = container_object_create(base_id, minid);
+			if (NULL == pobject) {
+				ab_tree_put_base(pbase);
+				zarafa_server_put_user_info(pinfo);
+				return EC_ERROR;
+			}
+			*pmapi_type = MAPI_ABCONT;
+		} else if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type ||
+			ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER == address_type) {
+			if (FALSE == common_util_essdn_to_uid(essdn, &user_id)) {
 				ab_tree_put_base(pbase);
 				zarafa_server_put_user_info(pinfo);
 				return EC_NOT_FOUND;
 			}
-			memcpy(tmp_buff, essdn + 6, 8);
-			tmp_buff[8] = '\0';
-			guid.time_low = strtoll(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 14, 4);
-			tmp_buff[4] = '\0';
-			guid.time_mid = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 18, 4);
-			tmp_buff[4] = '\0';
-			guid.time_hi_and_version = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 22, 2);
-			tmp_buff[2] = '\0';
-			guid.clock_seq[0] = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 24, 2);
-			tmp_buff[2] = '\0';
-			guid.clock_seq[1] = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 26, 2);
-			tmp_buff[2] = '\0';
-			guid.node[0] = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 28, 2);
-			tmp_buff[2] = '\0';
-			guid.node[1] = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 30, 2);
-			tmp_buff[2] = '\0';
-			guid.node[2] = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 32, 2);
-			tmp_buff[2] = '\0';
-			guid.node[3] = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 34, 2);
-			tmp_buff[2] = '\0';
-			guid.node[4] = strtol(tmp_buff, NULL, 16);
-			memcpy(tmp_buff, essdn + 36, 2);
-			tmp_buff[2] = '\0';
-			guid.node[5] = strtol(tmp_buff, NULL, 16);
-			pnode = ab_tree_guid_to_node(pbase, guid);
-			if (NULL == pnode) {
+			minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
+			pobject = user_object_create(base_id, minid);
+			if (NULL == pobject) {
 				ab_tree_put_base(pbase);
 				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
+				return EC_ERROR;
 			}
-			minid = ab_tree_get_node_minid(pnode);
-		}
-		pobject = container_object_create(base_id, minid);
-		if (NULL == pobject) {
-			ab_tree_put_base(pbase);
-			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
-		}
-		*pmapi_type = MAPI_ABCONT;
-	} else if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type ||
-		ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER == address_type) {
-		if (FALSE == common_util_essdn_to_uid(essdn, &user_id)) {
-			ab_tree_put_base(pbase);
-			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
-		}
-		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
-		pobject = user_object_create(base_id, minid);
-		if (NULL == pobject) {
-			ab_tree_put_base(pbase);
-			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
-		}
-		if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type) {
-			*pmapi_type = MAPI_DISTLIST;
+			if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type) {
+				*pmapi_type = MAPI_DISTLIST;
+			} else {
+				*pmapi_type = MAPI_MAILUSER;
+			}
 		} else {
-			*pmapi_type = MAPI_MAILUSER;
+			ab_tree_put_base(pbase);
+			zarafa_server_put_user_info(pinfo);
+			return EC_INVALID_PARAMETER;
 		}
+	} else if (common_util_from_folder_entryid(&entryid,
+		&b_private, &user_id, &folder_id) && TRUE ==
+		b_private && pinfo->user_id == user_id) {
+		hstore = object_tree_get_store_handle(
+				pinfo->ptree, TRUE, user_id);
+		if (INVALID_HANDLE == hstore) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_NULL_OBJECT;
+		}
+		pstore = object_tree_get_object(
+			pinfo->ptree, hstore, &mapi_type);
+		pobject = folder_object_create(pstore, folder_id,
+					FOLDER_TYPE_GENERIC, TAG_ACCESS_READ);
+		if (NULL == pobject) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
+		*pmapi_type = MAPI_FOLDER;
 	} else {
-		ab_tree_put_base(pbase);
 		zarafa_server_put_user_info(pinfo);
 		return EC_INVALID_PARAMETER;
 	}
-ADD_HANDLE:
 	*phobject = object_tree_add_object_handle(
 					pinfo->ptree, ROOT_HANDLE,
 					*pmapi_type, pobject);
-	ab_tree_put_base(pbase);
+	zarafa_server_put_user_info(pinfo);
 	if (INVALID_HANDLE == *phobject) {
-		if (MAPI_ABCONT == *pmapi_type) {
+		switch (*pmapi_type) {
+		case MAPI_ABCONT:
 			container_object_free(pobject);
-		} else {
+			break;
+		case MAPI_MAILUSER:
 			user_object_free(pobject);
+			break;
+		case MAPI_FOLDER:
+			folder_object_free(pobject);
+			break;	
 		}
-		zarafa_server_put_user_info(pinfo);
 		return EC_ERROR;
 	}
-	zarafa_server_put_user_info(pinfo);
 	return EC_SUCCESS;
 }
 
@@ -1995,6 +2026,10 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	hstore = object_tree_get_store_handle(pinfo->ptree,
 					store_object_check_private(pstore),
 					store_object_get_account_id(pstore));
+	if (INVALID_HANDLE == hstore) {
+		zarafa_server_put_user_info(pinfo);
+		return EC_NULL_OBJECT;
+	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {
 		if (FALSE == exmdb_client_check_folder_permission(
 			store_object_get_dir(pstore),
