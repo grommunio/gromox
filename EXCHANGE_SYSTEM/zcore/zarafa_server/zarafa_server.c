@@ -1297,10 +1297,13 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	BOOL b_private;
 	AB_BASE *pbase;
 	uint32_t minid;
+	uint32_t hstore;
 	USER_INFO *pinfo;
 	char essdn[1024];
 	char tmp_buff[16];
+	uint8_t mapi_type;
 	uint64_t folder_id;
+	STORE_OBJECT *pstore;
 	uint32_t address_type;
 	SIMPLE_TREE_NODE *pnode;
 	
@@ -1422,7 +1425,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			zarafa_server_put_user_info(pinfo);
 			return EC_INVALID_PARAMETER;
 		}
-	} else if (common_util_from_folder_entryid(&entryid,
+	} else if (common_util_from_folder_entryid(entryid,
 		&b_private, &user_id, &folder_id) && TRUE ==
 		b_private && pinfo->user_id == user_id) {
 		hstore = object_tree_get_store_handle(
