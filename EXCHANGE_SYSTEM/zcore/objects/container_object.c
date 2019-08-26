@@ -79,9 +79,8 @@ static BOOL container_object_match_contact_message(
 		}
 		return TRUE;
 	case RESTRICTION_TYPE_CONTENT:
-		if (PROPVAL_TYPE_STRING != (((RESTRICTION_CONTENT*)
-			pfilter->pres)->proptag & 0xFFFF) && PROPVAL_TYPE_WSTRING !=
-			(((RESTRICTION_CONTENT*)pfilter->pres)->proptag & 0xFFFF)) {
+		if (PROPVAL_TYPE_WSTRING != (((RESTRICTION_CONTENT*)
+			pfilter->pres)->proptag & 0xFFFF)) {
 			return FALSE;
 		}
 		if ((((RESTRICTION_CONTENT*)pfilter->pres)->proptag & 0xFFFF)
@@ -533,7 +532,7 @@ BOOL container_object_load_user_table(
 					continue;
 				}
 			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
-				strncpy(username, pvalue, sizeof(username));
+				strncpy(username, paddress, sizeof(username));
 			} else {
 				continue;
 			}
@@ -720,8 +719,8 @@ static BOOL container_object_fetch_folder_properties(
 		case PROP_TAG_PARENTENTRYID:
 			pinfo = zarafa_server_get_info();
 			if (PROP_TAG_PARENTENTRYID == pproptags->pproptag[i]) {
-				if (rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS)
-					== folder_id) {
+				if (folder_id == rop_util_make_eid_ex(
+					1, PRIVATE_FID_CONTACTS)) {
 					if (FALSE == container_object_fetch_special_property(
 						SPECIAL_CONTAINER_PROVIDER, PROP_TAG_ENTRYID,
 						&pvalue)) {
