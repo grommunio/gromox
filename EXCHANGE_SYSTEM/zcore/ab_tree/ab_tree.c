@@ -2548,7 +2548,6 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	char *ptoken;
 	void *pvalue;
 	uint8_t node_type;
-	char temp_buff[1024];
 	
 	switch (pfilter->rt) {
 	case RESTRICTION_TYPE_AND:

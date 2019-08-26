@@ -535,6 +535,57 @@ BOOL common_util_public_to_essdn(const char *username, char *pessdn)
 	return FALSE;
 }
 
+void common_util_exmdb_locinfo_to_string(
+	BOOL b_private, int db_id, uint64_t eid,
+	char *loc_string)
+{
+	if (TRUE == b_private) {
+		sprintf(loc_string, "1:%d:%llx",
+			db_id, rop_util_get_gc_value(eid));
+	} else {
+		sprintf(loc_string, "0:%d:%llx",
+			db_id, rop_util_get_gc_value(eid));
+	}
+}
+
+BOOL common_util_exmdb_locinfo_from_string(
+	const char *loc_string, BOOL *pb_private,
+	int *pdb_id, uint64_t *peid)
+{
+	int tmp_len;
+	char *ptoken;
+	uint64_t tmp_val;
+	char tmp_buff[16];
+	
+	if (0 == strncmp(loc_string, "1:", 2)) {
+		*pb_private = TRUE;
+	} else if (strncmp(loc_string, "2:", 2)) {
+		*pb_private = FALSE;
+	} else {
+		return FALSE;
+	}
+	ptoken = strchr(loc_string + 2, ':');
+	if (NULL == ptoken) {
+		return FALSE;
+	}
+	tmp_len = ptoken - (loc_string + 2);
+	if (tmp > 12) {
+		return FALSE;
+	}
+	memcpy(tmp_buff, loc_string + 2, tmp_len);
+	tmp_buff[tmp_len] = '\0';
+	*pdb_id = atoi(tmp_buff);
+	if (0 == *pdb_id) {
+		return FALSE;
+	}
+	tmp_val = strtoll(ptoken + 1, NULL, 16);
+	if (0 == tmp_val) {
+		return FALSE;
+	}
+	*peid = rop_util_make_eid_ex(1, tmp_val);
+	return TRUE;
+}
+
 void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,

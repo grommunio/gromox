@@ -2,10 +2,13 @@
 #include "zarafa_server.h"
 #include "common_util.h"
 #include "ext_buffer.h"
+#include "tarray_set.h"
+#include "mail_func.h"
 #include "rop_util.h"
 #include "ab_tree.h"
 
-CONTAINER_OBJECT* container_object_create(int base_id, uint32_t minid)
+CONTAINER_OBJECT* container_object_create(
+	uint8_t type, CONTAINER_ID id)
 {
 	CONTAINER_OBJECT *pcontainer;
 	
@@ -13,108 +16,877 @@ CONTAINER_OBJECT* container_object_create(int base_id, uint32_t minid)
 	if (NULL == pcontainer) {
 		return NULL;
 	}
-	pcontainer->base_id = base_id;
-	pcontainer->minid = minid;
-	pcontainer->pminid_array = NULL;
+	memset(pcontainer, 0, sizeof(CONTAINER_OBJECT));
+	pcontainer->type = type;
+	pcontainer->id = id;
 	return pcontainer;
-}
-
-void container_object_free(CONTAINER_OBJECT *pcontainer)
-{
-	if (NULL != pcontainer->pminid_array) {
-		if (NULL != pcontainer->pminid_array->pl) {
-			free(pcontainer->pminid_array->pl);
-		}
-		free(pcontainer->pminid_array);
-	}
-	free(pcontainer);
 }
 
 void container_object_clear_restriction(
 	CONTAINER_OBJECT *pcontainer)
 {
-	if (NULL != pcontainer->pminid_array) {
-		if (NULL != pcontainer->pminid_array->pl) {
-			free(pcontainer->pminid_array->pl);
+	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
+		if (NULL == pcontainer->contents.pminid_array) {
+			return;
 		}
-		free(pcontainer->pminid_array);
-		pcontainer->pminid_array = NULL;
+		if (NULL != pcontainer->contents.pminid_array) {
+			if (NULL != pcontainer->contents.pminid_array->pl) {
+				free(pcontainer->contents.pminid_array->pl);
+			}
+			free(pcontainer->contents.pminid_array);
+			pcontainer->contents.pminid_array = NULL;
+		}
+	} else {
+		if (NULL != pcontainer->contents.prow_set) {
+			tarray_set_free(pcontainer->contents.prow_set);
+			pcontainer->contents.prow_set = NULL;
+		}
 	}
+}
+
+void container_object_free(CONTAINER_OBJECT *pcontainer)
+{
+	container_object_clear_restriction(pcontainer);
+	free(pcontainer);
+}
+
+static BOOL container_object_match_contact_message(
+	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pfilter)
+{
+	int i, len;
+	void *pvalue;
+	
+	switch (pfilter->rt) {
+	case RESTRICTION_TYPE_AND:
+		for (i=0; i<((RESTRICTION_AND_OR*)pfilter->pres)->count; i++) {
+			if (FALSE == container_object_match_contact_message(ppropvals,
+				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
+				return FALSE;
+			}
+		}
+		return TRUE;
+	case RESTRICTION_TYPE_OR:
+		for (i=0; i<((RESTRICTION_AND_OR*)pfilter->pres)->count; i++) {
+			if (TRUE == container_object_match_contact_message(ppropvals,
+				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
+				return TRUE;
+			}
+		}
+		return FALSE;
+	case RESTRICTION_TYPE_NOT:
+		if (TRUE == container_object_match_contact_message(
+			ppropvals, &((RESTRICTION_NOT*)pfilter->pres)->res)) {
+			return FALSE;
+		}
+		return TRUE;
+	case RESTRICTION_TYPE_CONTENT:
+		if (PROPVAL_TYPE_STRING != (((RESTRICTION_CONTENT*)
+			pfilter->pres)->proptag & 0xFFFF) && PROPVAL_TYPE_WSTRING !=
+			(((RESTRICTION_CONTENT*)pfilter->pres)->proptag & 0xFFFF)) {
+			return FALSE;
+		}
+		if ((((RESTRICTION_CONTENT*)pfilter->pres)->proptag & 0xFFFF)
+			!= (((RESTRICTION_CONTENT*)pfilter->pres)->propval.proptag
+			& 0xFFFF)) {
+			return FALSE;
+		}
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_CONTENT*)pfilter->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;	
+		}
+		switch (((RESTRICTION_CONTENT*)
+			pfilter->pres)->fuzzy_level & 0xFFFF) {
+		case FUZZY_LEVEL_FULLSTRING:
+			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
+				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+				if (0 == strcasecmp(((RESTRICTION_CONTENT*)
+					pfilter->pres)->propval.pvalue, pvalue)) {
+					return TRUE;
+				}
+				return FALSE;
+			} else {
+				if (0 == strcmp(((RESTRICTION_CONTENT*)
+					pfilter->pres)->propval.pvalue, pvalue)) {
+					return TRUE;
+				}
+				return FALSE;
+			}
+			return FALSE;
+		case FUZZY_LEVEL_SUBSTRING:
+			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
+				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+				if (NULL != strcasestr(pvalue, ((RESTRICTION_CONTENT*)
+					pfilter->pres)->propval.pvalue)) {
+					return TRUE;
+				}
+				return FALSE;
+			} else {
+				if (NULL != strstr(pvalue, ((RESTRICTION_CONTENT*)
+					pfilter->pres)->propval.pvalue)) {
+					return TRUE;
+				}
+			}
+			return FALSE;
+		case FUZZY_LEVEL_PREFIX:
+			len = strlen(((RESTRICTION_CONTENT*)
+				pfilter->pres)->propval.pvalue);
+			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
+				(FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+				if (0 == strncasecmp(pvalue, ((RESTRICTION_CONTENT*)
+					pfilter->pres)->propval.pvalue, len)) {
+					return TRUE;
+				}
+				return FALSE;
+			} else {
+				if (0 == strncmp(pvalue, ((RESTRICTION_CONTENT*)
+					pfilter->pres)->propval.pvalue, len)) {
+					return TRUE;
+				}
+				return FALSE;
+			}
+			return FALSE;
+		}
+		return FALSE;
+	case RESTRICTION_TYPE_PROPERTY:
+		if (PROP_TAG_ANR == ((RESTRICTION_PROPERTY*)pfilter->pres)->proptag) {
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_SMTPADDRESS);
+			if (NULL != pvalue) {
+				if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
+					pfilter->pres)->propval.pvalue)) {
+					return TRUE;
+				}
+			}
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_DISPLAYNAME);
+			if (NULL != pvalue) {
+				if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
+					pfilter->pres)->propval.pvalue)) {
+					return TRUE;
+				}
+			}
+			return FALSE;
+		}
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		return propval_compare_relop(
+			((RESTRICTION_PROPERTY*)pfilter->pres)->relop,
+			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag&0xFFFF,
+			pvalue, ((RESTRICTION_PROPERTY*)pfilter->pres)->propval.pvalue);
+	case RESTRICTION_TYPE_PROPCOMPARE:
+		return FALSE;
+	case RESTRICTION_TYPE_BITMASK:
+		 if (PROPVAL_TYPE_LONG != (((RESTRICTION_BITMASK*)
+			pfilter->pres)->proptag & 0xFFFF)) {
+			return FALSE;
+		}
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		switch (((RESTRICTION_BITMASK*)pfilter->pres)->bitmask_relop) {
+		case BITMASK_RELOP_EQZ:
+			if (0 == (*(uint32_t*)pvalue &
+				((RESTRICTION_BITMASK*)pfilter->pres)->mask)) {
+				return TRUE;
+			}
+			break;
+		case BITMASK_RELOP_NEZ:
+			if (*(uint32_t*)pvalue &
+				((RESTRICTION_BITMASK*)pfilter->pres)->mask) {
+				return TRUE;
+			}
+			break;
+		}
+		return FALSE;
+	case RESTRICTION_TYPE_SIZE:
+		return FALSE;
+	case RESTRICTION_TYPE_EXIST:
+		pvalue = common_util_get_propvals(ppropvals,
+			((RESTRICTION_EXIST*)pfilter->pres)->proptag);
+		if (NULL != pvalue) {
+			return TRUE;	
+		}
+		return FALSE;
+	case RESTRICTION_TYPE_SUBOBJ:
+		return FALSE;
+	}
+}
+
+static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
+{
+	int i;
+	uint32_t handle;
+	uint32_t lids[9];
+	USER_INFO *pinfo;
+	uint8_t mapi_type;
+	STORE_OBJECT *pstore;
+	PROPID_ARRAY propids;
+	PROPNAME_ARRAY propnames;
+	PROPERTY_NAME propname_buff[9];
+	
+	pinfo = zarafa_server_get_info();
+	handle = object_tree_get_store_handle(
+		pinfo->ptree, TRUE, pinfo->user_id);
+	pstore = object_tree_get_object(
+		pinfo->ptree, handle, &mapi_type);
+	if (NULL == pstore || MAPI_STORE != mapi_type) {
+		return FALSE;
+	}
+	propnames.count = 9;
+	propnames.ppropname = propname_buff;
+	/* PidLidEmail1DisplayName */
+	propname_buff[0].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
+	lids[0] = 0x8080;
+	propname_buff[0].plid = &lids[0];
+	/* PidLidEmail1AddressType */
+	propname_buff[1].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
+	lids[1] = 0x8082;
+	propname_buff[1].plid = &lids[1];
+	/* PidLidEmail1EmailAddress */
+	propname_buff[2].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
+	lids[2] = 0x8083;
+	propname_buff[2].plid = &lids[2];
+	/* PidLidEmail2DisplayName */
+	propname_buff[3].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[3].guid);
+	lids[3] = 0x8090;
+	propname_buff[3].plid = &lids[3];
+	/* PidLidEmail2AddressType */
+	propname_buff[4].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[4].guid);
+	lids[4] = 0x8092;
+	propname_buff[4].plid = &lids[4];
+	/* PidLidEmail2EmailAddress */
+	propname_buff[5].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[5].guid);
+	lids[5] = 0x8093;
+	propname_buff[5].plid = &lids[5];
+	/* PidLidEmail3DisplayName */
+	propname_buff[6].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[6].guid);
+	lids[6] = 0x80A0;
+	propname_buff[6].plid = &lids[6];
+	/* PidLidEmail3AddressType */
+	propname_buff[7].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[7].guid);
+	lids[7] = 0x80A2;
+	propname_buff[7].plid = &lids[7];
+	/* PidLidEmail3EmailAddress */
+	propname_buff[8].kind = KIND_LID;
+	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[8].guid);
+	lids[8] = 0x80A3;
+	propname_buff[8].plid = &lids[8];
+	if (FALSE == store_object_get_named_propids(
+		pstore, FALSE, &propnames, &propids) ||
+		9 != propids.count) {
+		return FALSE;
+	}
+	for (i=0; i<9; i++) {
+		pproptags->proptag[i] = propids.ppropid[i];
+		pproptags->proptag[i] <<= 16;
+		pproptags->proptag[i] |= PROPVAL_TYPE_WSTRING;
+	}
+	pproptags->count = 9;
+	return TRUE;
+}
+
+static BINARY* container_object_contact_to_addressbook_entryid(
+	BOOL b_private, int db_id, uint64_t folder_id)
+{
+	BINARY *pbin;
+	char x500dn[128];
+	EXT_PUSH ext_push;
+	ADDRESSBOOK_ENTRYID tmp_entryid;
+	
+	memcpy(x500dn, "/exmdb=", 7);
+	common_util_exmdb_locinfo_to_string(
+		b_private, db_id, folder_id, x500dn + 7);
+	tmp_entryid.flags = 0;
+	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
+								tmp_entryid.provider_uid);
+	tmp_entryid.version = 1;
+	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
+	tmp_entryid.px500dn = x500dn;
+	pbin = common_util_alloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		return NULL;
+	}
+	pbin->pb = common_util_alloc(256);
+	if (NULL == pbin->pb) {
+		return NULL;
+	}
+	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
+	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
+		&ext_push, &tmp_entryid)) {
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	return pbin;
+}
+
+static BINARY* container_object_contact_to_oneoff_entryid(
+	const char *pdisplayname, const char *username)
+{
+	
+	BINARY *pbin;
+	char x500dn[1024];
+	EXT_PUSH ext_push;
+	EMAIL_ADDR email_addr;
+	ADDRESSBOOK_ENTRYID tmp_entryid;
+	
+	if (NULL == pdisplayname || '\0' == pdisplayname[0]) {
+		parse_email_addr(&email_addr, username);
+		pdisplayname = email_addr.local_part;
+	}
+	snprintf(x500dn, sizeof(x500dn), "\"%s\"<%s>", pdisplayname, username);
+	common_util_exmdb_locinfo_to_string(
+		b_private, db_id, folder_id, x500dn + 7);
+	tmp_entryid.flags = 0;
+	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
+								tmp_entryid.provider_uid);
+	tmp_entryid.version = 1;
+	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_ONE_OFF_USER;
+	tmp_entryid.px500dn = x500dn;
+	pbin = common_util_alloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		return NULL;
+	}
+	pbin->pb = common_util_alloc(256);
+	if (NULL == pbin->pb) {
+		return NULL;
+	}
+	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
+	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
+		&ext_push, &tmp_entryid)) {
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	return pbin;
 }
 
 BOOL container_object_restrict_user_table(
 	CONTAINER_OBJECT *pcontainer,
 	const RESTRICTION *prestriction)
 {
-	AB_BASE *pbase;	
+	int i, j, k;
+	void *pvalue;
+	char *paddress;
+	AB_BASE *pbase;
+	BINARY tmp_bin;
+	uint32_t tmp_int;
+	uint32_t row_num;
 	USER_INFO *pinfo;
-	TARRAY_SET user_set;
+	uint32_t table_id;
+	char username[256];
+	TARRAY_SET tmp_set;
+	char *pdisplayname;
+	char *paddress_type;
+	TAGGED_PROPVAL propval;
+	PROPTAG_ARRAY proptags;
 	LONG_ARRAY minid_array;
+	BINARY *pparent_entryid;
+	LONG_ARRAY *pminid_array;
+	TPROPVAL_ARRAY *ppropvals;
+	uint32_t proptag_buff[25];
+	static uint32_t tmp_proptags[] = {
+			PROP_TAG_NICKNAME,
+			PROP_TAG_TITLE
+			PROP_TAG_PRIMARYTELEPHONENUMBER
+			PROP_TAG_MOBILETELEPHONENUMBER
+			PROP_TAG_HOMEADDRESSSTREET,
+			PROP_TAG_COMMENT,
+			PROP_TAG_COMPANYNAME,
+			PROP_TAG_DEPARTMENTNAME,
+			PROP_TAG_OFFICELOCATION,
+			PROP_TAG_CREATIONTIME
+	};
 	
-	if (NULL == prestriction ||
-		NULL != pcontainer->pminid_array) {
+	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
+		if (NULL == prestriction ||
+			NULL != pcontainer->contents.pminid_array) {
+			return TRUE;
+		}
+		pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
+		if (NULL == pbase) {
+			return FALSE;
+		}
+		pinfo = zarafa_server_get_info();
+		if (FALSE == ab_tree_match_minids(
+			pbase, pcontainer->id.abtree_id.minid,
+			pinfo->cpid, prestriction, &minid_array)) {
+			ab_tree_put_base(pbase);
+			return FALSE;	
+		}
+		ab_tree_put_base(pbase);
+		pminid_array = malloc(sizeof(LONG_ARRAY));
+		if (NULL == pminid_array) {
+			return FALSE;
+		}
+		pcontainer->contents.pminid_array = pminid_array;
+		pminid_array->count = minid_array.count;
+		if (0 == minid_array.count) {
+			pminid_array->pl = NULL;
+			return TRUE;
+		}
+		pminid_array->pl = malloc(sizeof(uint32_t)*minid_array.count);
+		if (NULL == pminid_array->pl) {
+			free(pcontainer->pctntid_array);
+			pcontainer->pctntid_array = NULL;
+			return FALSE;
+		}
+		memcpy(pminid_array->pl, minid_array.pl,
+			sizeof(uint32_t)*minid_array.count);
 		return TRUE;
 	}
-	pbase = ab_tree_get_base(pcontainer->base_id);
-	if (NULL == pbase) {
-		return FALSE;
+	if (NULL != pcontainer->contents.prow_set) {
+		return TRUE;
 	}
 	pinfo = zarafa_server_get_info();
-	if (FALSE == ab_tree_match_minids(pbase,
-		pcontainer->minid, pinfo->cpid,
-		prestriction, &minid_array)) {
-		ab_tree_put_base(pbase);
-		return FALSE;	
-	}
-	ab_tree_put_base(pbase);
-	pcontainer->pminid_array = malloc(sizeof(LONG_ARRAY));
-	if (NULL == pcontainer->pminid_array) {
+	if (FALSE == exmdb_client_load_content_table(pinfo->maildir,
+		pinfo->cpid, pcontainer->id.exmdb_id.folder_id, NULL, 0,
+		NULL, NULL, &table_id, &row_num)) {
 		return FALSE;
 	}
-	pcontainer->pminid_array->count = minid_array.count;
-	if (0 == minid_array.count) {
-		pcontainer->pminid_array->pl = NULL;
-		return TRUE;
+	if (row_num > 0) {
+		proptags.pproptag = proptag_buff;
+		if (FALSE == container_object_get_pidlids(&proptags)) {
+			return FALSE;
+		}
+		proptags.pproptag[proptags.count] =
+						PROP_TAG_DISPLAYNAME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+						PROP_TAG_NICKNAME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+							PROP_TAG_TITLE;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+			PROP_TAG_PRIMARYTELEPHONENUMBER;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+			PROP_TAG_MOBILETELEPHONENUMBER;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+				PROP_TAG_HOMEADDRESSSTREET;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+						PROP_TAG_COMMENT;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+						PROP_TAG_COMPANYNAME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+					PROP_TAG_DEPARTMENTNAME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+					PROP_TAG_OFFICELOCATION;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+					PROP_TAG_CREATIONTIME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+							PROP_TAG_MID;
+		proptags.count ++;
+		if (FALSE == exmdb_client_query_table(
+			pinfo->maildir, NULL, pinfo->cpid,
+			table_id, &proptags, 0, row_num,
+			&tmp_set)) {
+			return FALSE;
+		}
+		pparent_entryid = container_object_contact_to_addressbook_entryid(
+				TRUE, pinfo->user_id, pcontainer->id.exmdb_id.folder_id);
+		if (NULL == pparent_entryid) {
+			return FALSE;
+		}
+	} else {
+		tmp_set.count = 0;
 	}
-	pcontainer->pminid_array->pl = malloc(
-		sizeof(uint32_t)*minid_array.count);
-	if (NULL == pcontainer->pminid_array->pl) {
-		free(pcontainer->pminid_array);
-		pcontainer->pminid_array = NULL;
+	exmdb_client_unload_table(pinfo->maildir, table_id);
+	pcontainer->contents.prow_set = tarray_set_init();
+	if (NULL == pcontainer->contents.prow_set) {
 		return FALSE;
 	}
-	memcpy(pcontainer->pminid_array->pl, minid_array.pl,
-					sizeof(uint32_t)*minid_array.count);
+	for (i=0; i<tmp_set.count; i++) {
+		for (j=0; j<3; j++) {
+			pdisplayname = common_util_get_propvals(
+				tmp_set.pparray[i], proptags.pproptag[3*j]);
+			if (NULL == pdisplayname) {
+				pdisplayname = common_util_get_propvals(
+					tmp_set.pparray[i], PROP_TAG_DISPLAYNAME);
+			}
+			paddress_type = common_util_get_propvals(
+				tmp_set.pparray[i], proptags.pproptag[3*j+1]);
+			paddress = common_util_get_propvals(
+				tmp_set.pparray[i], proptags.pproptag[3*j+2]);
+			if (NULL == paddress || NULL == paddress_type) {
+				continue;
+			}
+			if (0 == strcasecmp(paddress_type, "EX")) {
+				if (FALSE == common_util_essdn_to_username(
+					paddress, username)) {
+					continue;
+				}
+			} else if (0 == strcasecmp(paddress_type, "SMTP")) {
+				strncpy(username, pvalue, sizeof(username));
+			} else {
+				continue;
+			}
+			ppropvals = tpropval_array_init();
+			if (NULL == ppropvals) {
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_SMTPADDRESS;
+			propval.pvalue = username;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_ADDRESSTYPE;
+			propval.pvalue = "SMTP";
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_EMAILADDRESS;
+			propval.pvalue = username;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			if (NULL != pdisplayname) {
+				propval.proptag = PROP_TAG_DISPLAYNAME;
+				propval.pvalue = pdisplayname;
+				if (FALSE == tpropval_array_set_propval(
+					ppropvals, &propval)) {
+					tpropval_array_free(ppropvals);
+					return FALSE;
+				}
+				propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
+				if (FALSE == tpropval_array_set_propval(
+					ppropvals, &propval)) {
+					tpropval_array_free(ppropvals);
+					return FALSE;
+				}
+				propval.proptag = PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
+				if (FALSE == tpropval_array_set_propval(
+					ppropvals, &propval)) {
+					tpropval_array_free(ppropvals);
+					return FALSE;
+				}
+			}
+			for (k=0; k<sizeof(tmp_proptags)/sizeof(uint32_t); k++) {
+				propval.proptag = tmp_proptags[k];
+				propval.pvalue = common_util_get_propvals(
+					tmp_set.pparray[i], propval.proptag);
+				if (NULL != propval.pvalue) {
+					if (FALSE == tpropval_array_set_propval(
+						ppropvals, &propval)) {
+						tpropval_array_free(ppropvals);
+						return FALSE;
+					}
+				}
+			}
+			propval.proptag = PROP_TAG_PARENTENTRYID;
+			propval.pvalue = pparent_entryid;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			pvalue = container_object_contact_to_oneoff_entryid(
+										pdisplayname, username);
+			if (NULL == pvalue) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_ENTRYID;
+			propval.pvalue = pvalue;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_RECORDKEY:
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_TEMPLATEID;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_ORIGINALENTRYID;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_ABPROVIDERID;
+			propval.pvalue = &tmp_bin;
+			tmp_bin.cb = 16;
+			tmp_bin.pb = common_util_get_muidecsab();
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_OBJECTTYPE;
+			propval.pvalue = &tmp_int;
+			tmp_int = OBJECT_USER;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_DISPLAYTYPE;
+			propval.pvalue = &tmp_int;
+			tmp_int = DISPLAY_TYPE_MAILUSER;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			propval.proptag = PROP_TAG_DISPLAYTYPEEX;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+			if (NULL != prestriction && FALSE ==
+				container_object_match_contact_message(
+				ppropvals, prestriction)) {
+				tpropval_array_free(ppropvals);
+				continue;
+			}
+			if (FALSE == tarray_set_append_internal(
+				pcontainer->contents.prow_set, ppropvals)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
+		}
+	}
 	return TRUE;
+}
+
+static BOOL container_object_fetch_folder_properties(
+	const TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pproptags,
+	TPROPVAL_ARRAY *pout_propvals)
+{
+	int i;
+	BOOL b_sub;
+	void *pvalue;
+	uint32_t handle;
+	USER_INFO *pinfo;
+	uint64_t folder_id;
+	
+	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_FOLDERID);
+	if (NULL == pvalue) {
+		return FALSE;
+	}
+	folder_id = *(uint64_t*)pvalue;
+	pout_propvals->count = 0;
+	pout_propvals->ppropval = common_util_alloc(
+		pproptags->count*sizeof(TAGGED_PROPVAL));
+	if (NULL == pout_propvals->ppropval) {
+		return FALSE;
+	}
+	for (i=0; i<pproptags->count; i++) {
+		pout_propvals->ppropval[pout_propvals->count].proptag =
+										pproptags->pproptag[i];
+		switch (pproptags->pproptag[i]) {
+		case PROP_TAG_ABPROVIDERID:
+			pvalue = common_util_alloc(sizeof(BINARY));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			((BINARY*)pvalue)->cb = 16;
+			((BINARY*)pvalue)->pb = common_util_get_muidecsab();
+			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
+			pout_propvals->count ++;
+			break;
+		case PROP_TAG_ENTRYID:
+		case PROP_TAG_PARENTENTRYID:
+			pinfo = zarafa_server_get_info();
+			handle = object_tree_get_store_handle(
+				pinfo->ptree, TRUE, pinfo->user_id);
+			pstore = object_tree_get_object(
+				pinfo->ptree, handle, &mapi_type);
+			if (NULL == pstore || MAPI_STORE != mapi_type) {
+				return FALSE;
+			}
+			if (PROP_TAG_PARENTENTRYID == pproptags->pproptag[i]) {
+				if (rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS)
+					== folder_id) {
+					if (FALSE == container_object_fetch_special_property(
+						SPECIAL_CONTAINER_PROVIDER, PROP_TAG_ENTRYID,
+						&pvalue)) {
+						return FALSE;	
+					}
+				} else {
+					pvalue = common_util_get_propvals(
+						ppropvals, PROP_TAG_PARENTFOLDERID);
+					if (NULL == pvalue) {
+						return FALSE;
+					}
+					pvalue = container_object_contact_to_addressbook_entryid(
+									TRUE, pinfo->user_id, *(uint64_t*)pvalue);
+				}
+			} else {
+				pvalue = container_object_contact_to_addressbook_entryid(
+										TRUE, pinfo->user_id,, folder_id);
+			}
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
+			pout_propvals->count ++;
+			break;
+		case PROP_TAG_CONTAINERFLAGS:
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_SUBFOLDERS);
+			if (NULL == pvalue || 0 == *(uint32_t*)pvalue) {
+				b_sub = FALSE;
+			} else {
+				b_sub = TRUE;
+			}
+			pvalue = common_util_alloc(sizeof(uint32_t));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			if (TRUE == b_sub) {
+				*(uint32_t*)pvalue = AB_RECIPIENTS | AB_UNMODIFIABLE;
+			} else {
+				*(uint32_t*)pvalue = AB_RECIPIENTS |
+					AB_SUBCONTAINERS | AB_UNMODIFIABLE;
+			}
+			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
+			pout_propvals->count ++;
+			break;
+		case PROP_TAG_DEPTH:
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_FOLDERPATHNAME);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			count = 0;
+			for (; '\0'!=*(char*)pvalue; pvalue++) {
+				if ('\\' == *(char*)pvalue) {
+					count ++;
+				}
+			}
+			if (count < 3) {
+				return FALSE;
+			}
+			count -= 2;
+			pvalue = common_util_alloc(sizeof(uint32_t));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			*(uint32_t*)pvalue = count;
+			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
+			pout_propvals->count ++;
+			break;
+		case PROP_TAG_DISPLAYNAME:
+			pvalue = common_util_get_propvals(
+				ppropvals, PROP_TAG_DISPLAYNAME);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
+			pout_propvals->count ++;
+			break;
+		case PROP_TAG_ADDRESSBOOKISMASTER:
+			pvalue = common_util_alloc(sizeof(uint8_t));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			*(uint8_t*)pvalue = 0;
+			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
+			pout_propvals->count ++;
+			break;
+		}
+	}
+	return TRUE;
+}
+
+static const PROPTAG_ARRAY* container_object_get_folder_proptags()
+{
+	static PROPTAG_ARRAY proptags;
+	static uint32_t proptag_buff[] = {
+					PROP_TAG_FOLDERID,
+					PROP_TAG_SUBFOLDERS,
+					PROP_TAG_DISPLAYNAME,
+					PROP_TAG_CONTAINERCLASS,
+					PROP_TAG_FOLDERPATHNAME,
+					PROP_TAG_PARENTFOLDERID,
+					PROP_TAG_ATTRIBUTEHIDDEN};
+	
+	if (0 == proptags.count) {
+		proptags.count = 7;
+		proptags.pproptag = proptag_buff;
+	}
+	return &proptags;
 }
 
 BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	AB_BASE *pbase;	
+	AB_BASE *pbase;
+	USER_INFO *pinfo;
 	SIMPLE_TREE_NODE *pnode;
+	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (0 == pcontainer->minid) {
-		return ab_tree_fetch_node_properties(
-				NULL, pproptags, ppropvals);
-	}
-	pbase = ab_tree_get_base(pcontainer->base_id);
-	if (NULL == pbase) {
-		return FALSE;
-	}
-	pnode = ab_tree_minid_to_node(pbase, pcontainer->minid);
-	if (NULL == pnode) {
-		ppropvals->count = 0;
+	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
+		if (0 == pcontainer->id.abtree_id.minid) {
+			return ab_tree_fetch_node_properties(
+					NULL, pproptags, ppropvals);
+		}
+		pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
+		if (NULL == pbase) {
+			return FALSE;
+		}
+		pnode = ab_tree_minid_to_node(pbase,
+			pcontainer->id.abtree_id.minid);
+		if (NULL == pnode) {
+			ppropvals->count = 0;
+			ab_tree_put_base(pbase);
+			return TRUE;
+		}
+		if (FALSE == ab_tree_fetch_node_properties(
+			pnode, pproptags, ppropvals)) {
+			ab_tree_put_base(pbase);
+			return FALSE;
+		}
 		ab_tree_put_base(pbase);
 		return TRUE;
+	} else {
+		pinfo = zarafa_server_get_info();
+		if (FALSE == exmdb_client_get_folder_properties(
+			pinfo->maildir, pinfo->cpid,
+			pcontainer->id.exmdb_id.folder_id,
+			container_object_get_folder_proptags(),
+			&tmp_propvals)) {
+			return FALSE;
+		}
+		return container_object_fetch_folder_properties(
+					&tmp_propvals, pproptags, ppropvals);
 	}
-	if (FALSE == ab_tree_fetch_node_properties(
-		pnode, pproptags, ppropvals)) {
-		ab_tree_put_base(pbase);
-		return FALSE;
-	}
-	ab_tree_put_base(pbase);
-	return TRUE;
 }
 
 BOOL container_object_get_container_table_num(
@@ -126,7 +898,6 @@ BOOL container_object_get_container_table_num(
 	
 	proptags.count = 0;
 	proptags.pproptag = NULL;
-	
 	if (FALSE == container_object_query_container_table(
 		pcontainer, &proptags, b_depth, 0, 0x7FFFFFFF,
 		&tmp_set)) {
@@ -308,235 +1079,68 @@ static BOOL container_object_fetch_special_properties(
 	return TRUE;
 }
 
-static BOOL container_object_fetch_folder_properties(
-	const TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pproptags,
-	TARRAY_SET *pset)
+static BOOL container_object_query_folder_hierarchy(
+	uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
+	BOOL b_depth, TARRAY_SET *pset)
 {
 	int i;
-	BOOL b_sub;
 	void *pvalue;
 	uint32_t count;
-	uint32_t handle;
-	USER_INFO *pinfo;
-	uint8_t mapi_type;
-	uint64_t folder_id;
-	STORE_OBJECT *pstore;
-	TPROPVAL_ARRAY **pparray;
-	TPROPVAL_ARRAY *ptmp_propvals;
-	
-	count = (pset->count / 100 + 1) * 100;
-	if (pset->count + 1 >= count) {
-		count += 100;
-		pparray = common_util_alloc(count*sizeof(TPROPVAL_ARRAY*));
-		if (NULL == pparray) {
-			return FALSE;
-		}
-		memcpy(pparray, pset->pparray,
-			pset->count*sizeof(TPROPVAL_ARRAY*));
-		pset->pparray = pparray;
-	}
-	pset->pparray[pset->count] =
-		common_util_alloc(sizeof(TPROPVAL_ARRAY));
-	if (NULL == pset->pparray[pset->count]) {
-		return FALSE;
-	}
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_FOLDERID);
-	if (NULL == pvalue) {
-		return FALSE;
-	}
-	folder_id = *(uint64_t*)pvalue;
-	ptmp_propvals = pset->pparray[pset->count];
-	pset->count ++;
-	ptmp_propvals->count = 0;
-	ptmp_propvals->ppropval = common_util_alloc(
-		pproptags->count*sizeof(TAGGED_PROPVAL));
-	if (NULL == ptmp_propvals->ppropval) {
-		return FALSE;
-	}
-	for (i=0; i<pproptags->count; i++) {
-		ptmp_propvals->ppropval[ptmp_propvals->count].proptag =
-										pproptags->pproptag[i];
-		switch (pproptags->pproptag[i]) {
-		case PROP_TAG_ABPROVIDERID:
-			pvalue = common_util_alloc(sizeof(BINARY));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			((BINARY*)pvalue)->cb = 16;
-			((BINARY*)pvalue)->pb = common_util_get_muidecsab();
-			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
-			ptmp_propvals->count ++;
-			break;
-		case PROP_TAG_ENTRYID:
-		case PROP_TAG_PARENTENTRYID:
-			pinfo = zarafa_server_get_info();
-			handle = object_tree_get_store_handle(
-				pinfo->ptree, TRUE, pinfo->user_id);
-			pstore = object_tree_get_object(
-				pinfo->ptree, handle, &mapi_type);
-			if (NULL == pstore || MAPI_STORE != mapi_type) {
-				return FALSE;
-			}
-			if (PROP_TAG_PARENTENTRYID == pproptags->pproptag[i]) {
-				pvalue = common_util_get_propvals(
-					ppropvals, PROP_TAG_PARENTFOLDERID);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				pvalue = common_util_to_folder_entryid(
-							pstore, *(uint64_t*)pvalue);
-			} else {
-				pvalue = common_util_to_folder_entryid(pstore, folder_id);
-			}
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
-			ptmp_propvals->count ++;
-			break;
-		case PROP_TAG_CONTAINERFLAGS:
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_SUBFOLDERS);
-			if (NULL == pvalue || 0 == *(uint32_t*)pvalue) {
-				b_sub = FALSE;
-			} else {
-				b_sub = TRUE;
-			}
-			pvalue = common_util_alloc(sizeof(uint32_t));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			if (TRUE == b_sub) {
-				*(uint32_t*)pvalue = AB_RECIPIENTS | AB_UNMODIFIABLE;
-			} else {
-				*(uint32_t*)pvalue = AB_RECIPIENTS |
-					AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-			}
-			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
-			ptmp_propvals->count ++;
-			break;
-		case PROP_TAG_DEPTH:
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_FOLDERPATHNAME);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			count = 0;
-			for (; '\0'!=*(char*)pvalue; pvalue++) {
-				if ('\\' == *(char*)pvalue) {
-					count ++;
-				}
-			}
-			if (count < 3) {
-				return FALSE;
-			}
-			count -= 2;
-			pvalue = common_util_alloc(sizeof(uint32_t));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			*(uint32_t*)pvalue = count;
-			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
-			ptmp_propvals->count ++;
-			break;
-		case PROP_TAG_DISPLAYNAME:
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_DISPLAYNAME);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
-			ptmp_propvals->count ++;
-			break;
-		case PROP_TAG_ADDRESSBOOKISMASTER:
-			pvalue = common_util_alloc(sizeof(uint8_t));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			*(uint8_t*)pvalue = 0;
-			ptmp_propvals->ppropval[ptmp_propvals->count].pvalue = pvalue;
-			ptmp_propvals->count ++;
-			break;
-		}
-	}
-	return TRUE;
-}
-
-static BOOL container_object_query_contacts(uint64_t folder_id,
-	const PROPTAG_ARRAY *pproptags, BOOL b_depth, TARRAY_SET *pset)
-{
-	int i;
-	void *pvalue;
 	uint32_t row_num;
 	USER_INFO *pinfo;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
-	PROPTAG_ARRAY tmp_proptags;
-	TPROPVAL_ARRAY tmp_propvals;
-	static uint32_t proptag_buff[] = {
-					PROP_TAG_FOLDERID,
-					PROP_TAG_SUBFOLDERS,
-					PROP_TAG_DISPLAYNAME,
-					PROP_TAG_CONTAINERCLASS,
-					PROP_TAG_FOLDERPATHNAME,
-					PROP_TAG_PARENTFOLDERID,
-					PROP_TAG_ATTRIBUTEHIDDEN};
+	TPROPVAL_ARRAY **pparray;
 	
-	tmp_proptags.count = 7;
-	tmp_proptags.pproptag = proptag_buff;
 	pinfo = zarafa_server_get_info();
-	if (FALSE == exmdb_client_get_folder_properties(
-		pinfo->maildir, pinfo->cpid, folder_id,
-		&tmp_proptags, &tmp_propvals)) {
+	if (FALSE == exmdb_client_load_hierarchy_table(
+		pinfo->maildir, folder_id, NULL, TABLE_FLAG_DEPTH,
+		NULL, &table_id, &row_num)) {
 		return FALSE;
 	}
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_ATTRIBUTEHIDDEN);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		return TRUE;
-	}
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_CONTAINERCLASS);
-	if (NULL == pvalue || 0 != strcasecmp(
-		pvalue, "IPF.Contact")) {
-		return TRUE;
-	}
-	if (FALSE == container_object_fetch_folder_properties(
-		&tmp_propvals, pproptags, pset)) {
-		return FALSE;	
-	}
-	if (TRUE == b_depth) {
-		if (FALSE == exmdb_client_load_hierarchy_table(
-			pinfo->maildir, folder_id, NULL, TABLE_FLAG_DEPTH,
-			NULL, &table_id, &row_num)) {
+	if (0 == row_num) {
+		tmp_set.count = 0;
+	} else {
+		if (FALSE == exmdb_client_query_table(
+			pinfo->maildir, NULL, pinfo->cpid, table_id,
+			container_object_get_folder_proptags(), 0,
+			row_num, &tmp_set)) {
 			return FALSE;
 		}
-		if (0 == row_num) {
-			tmp_set.count = 0;
-		} else {
-			if (FALSE == exmdb_client_query_table(
-				pinfo->maildir, NULL, pinfo->cpid, table_id,
-				&tmp_proptags, 0, row_num, &tmp_set)) {
+	}
+	exmdb_client_unload_table(pinfo->maildir, table_id);
+	for (i=0; i<tmp_set.count; i++) {
+		pvalue = common_util_get_propvals(
+			tmp_set.pparray[i], PROP_TAG_ATTRIBUTEHIDDEN);
+		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+			continue;
+		}
+		pvalue = common_util_get_propvals(
+			tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
+		if (NULL == pvalue || 0 != strcasecmp(
+			pvalue, "IPF.Contact")) {
+			continue;
+		}
+		count = (pset->count / 100 + 1) * 100;
+		if (pset->count + 1 >= count) {
+			count += 100;
+			pparray = common_util_alloc(count*sizeof(TPROPVAL_ARRAY*));
+			if (NULL == pparray) {
 				return FALSE;
 			}
+			memcpy(pparray, pset->pparray,
+				pset->count*sizeof(TPROPVAL_ARRAY*));
+			pset->pparray = pparray;
 		}
-		exmdb_client_unload_table(pinfo->maildir, table_id);
-		for (i=0; i<tmp_set.count; i++) {
-			pvalue = common_util_get_propvals(
-				tmp_set.pparray[i], PROP_TAG_ATTRIBUTEHIDDEN);
-			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-				continue;
-			}
-			pvalue = common_util_get_propvals(
-				tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
-			if (NULL == pvalue || 0 != strcasecmp(
-				pvalue, "IPF.Contact")) {
-				continue;
-			}
-			if (FALSE == container_object_fetch_folder_properties(
-				tmp_set.pparray[i], pproptags, pset)) {
-				return FALSE;	
-			}
+		pset->pparray[pset->count] =
+			common_util_alloc(sizeof(TPROPVAL_ARRAY));
+		if (NULL == pset->pparray[pset->count]) {
+			return FALSE;
+		}
+		pset->count ++;
+		if (FALSE == container_object_fetch_folder_properties(
+			tmp_set.pparray[i], pproptags, pset->pparray[pset->count])) {
+			return FALSE;	
 		}
 	}
 	return TRUE;
@@ -549,10 +1153,12 @@ BOOL container_object_query_container_table(
 {
 	int i, end_pos;
 	AB_BASE *pbase;
+	USER_INFO *pinfo;
 	TARRAY_SET tmp_set;
 	DOMAIN_NODE *pdnode;
 	SINGLE_LIST_NODE *psnode;
 	SIMPLE_TREE_NODE *ptnode;
+	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (0 == row_needed) {
 		pset->count = 0;
@@ -564,75 +1170,105 @@ BOOL container_object_query_container_table(
 	if (NULL == tmp_set.pparray) {
 		return FALSE;
 	}
-	pbase = ab_tree_get_base(pcontainer->base_id);
-	if (NULL == pbase) {
-		return FALSE;
-	}
-	if (0xFFFFFFFF == pcontainer->minid) {
-		tmp_set.pparray[tmp_set.count] =
-			common_util_alloc(sizeof(TPROPVAL_ARRAY));
-		if (NULL == tmp_set.pparray[tmp_set.count]) {
-			ab_tree_put_base(pbase);
-			return FALSE;
-		}
-		if (FALSE == container_object_fetch_special_properties(
-			SPECIAL_CONTAINER_GAL, pproptags,
-			tmp_set.pparray[tmp_set.count])) {
-			ab_tree_put_base(pbase);
-			return FALSE;
-		}
-		tmp_set.count ++;
-		tmp_set.pparray[tmp_set.count] =
-			common_util_alloc(sizeof(TPROPVAL_ARRAY));
-		if (NULL == tmp_set.pparray[tmp_set.count]) {
-			ab_tree_put_base(pbase);
-			return FALSE;
-		}
-		if (FALSE == container_object_fetch_special_properties(
-			SPECIAL_CONTAINER_PROVIDER, pproptags,
-			tmp_set.pparray[tmp_set.count])) {
-			ab_tree_put_base(pbase);
-			return FALSE;
-		}
-		tmp_set.count ++;
-		if (FALSE == container_object_query_contacts(
-			rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-			pproptags, b_depth, &tmp_set)) {
-			ab_tree_put_base(pbase);
+	if (CONTAINER_TYPE_FOLDER == pcontainer->type) {
+		if (FALSE == container_object_query_folder_hierarchy(
+			pcontainer->id.exmdb_id.folder_id, pproptags,
+			b_depth, &tmp_set)) {
 			return FALSE;	
 		}
-		for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
-			psnode=single_list_get_after(&pbase->list, psnode)) {
-			pdnode = (DOMAIN_NODE*)psnode->pdata;
-			ptnode = simple_tree_get_root(&pdnode->tree);
-			if (FALSE == container_object_get_specialtables_from_node(
-				ptnode, pproptags, b_depth, &tmp_set)) {
+	} else {
+		pbase = ab_tree_get_base(pcontainer->id.ab_tree.base_id);
+		if (NULL == pbase) {
+			return FALSE;
+		}
+		if (0xFFFFFFFF == pcontainer->id.ab_tree.minid) {
+			tmp_set.pparray[tmp_set.count] =
+				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				ab_tree_put_base(pbase);
 				return FALSE;
 			}
-		}
-	} else {
-		ptnode = ab_tree_minid_to_node(pbase, pcontainer->minid);
-		if (NULL == ptnode) {
-			ab_tree_put_base(pbase);
-			pset->count = 0;
-			pset->pparray = NULL;
-			return TRUE;
-		}
-		if (NULL != (ptnode = simple_tree_node_get_child(ptnode))) {
-			do {
-				if (ab_tree_get_node_type(ptnode) < 0x80) {
-					continue;
-				}
-				if (FALSE == container_object_get_specialtables_from_node(
-					ptnode, pproptags, b_depth, &tmp_set)) {
+			if (FALSE == container_object_fetch_special_properties(
+				SPECIAL_CONTAINER_GAL, pproptags,
+				tmp_set.pparray[tmp_set.count])) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			tmp_set.count ++;
+			tmp_set.pparray[tmp_set.count] =
+				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			if (NULL == tmp_set.pparray[tmp_set.count]) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			if (FALSE == container_object_fetch_special_properties(
+				SPECIAL_CONTAINER_PROVIDER, pproptags,
+				tmp_set.pparray[tmp_set.count])) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			tmp_set.count ++;
+			tmp_set.pparray[tmp_set.count] =
+				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			if (NULL == tmp_set.pparray[tmp_set.count]) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			pinfo = zarafa_server_get_info();
+			if (FALSE == exmdb_client_get_folder_properties(pinfo->maildir,
+				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+				pproptags, &tmp_propvals)) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			if (FALSE == container_object_fetch_folder_properties(
+				&tmp_propvals, pproptags, tmp_set.pparray[tmp_set.count])) {
+				ab_tree_put_base(pbase);
+				return FALSE;
+			}
+			tmp_set.count ++;
+			if (TRUE == b_depth) {
+				if (FALSE == container_object_query_folder_hierarchy(
+					rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
+					pproptags, TRUE, &tmp_set)) {
 					ab_tree_put_base(pbase);
 					return FALSE;	
 				}
-			} while (ptnode=simple_tree_node_get_slibling(ptnode));
+			}
+			for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
+				psnode=single_list_get_after(&pbase->list, psnode)) {
+				pdnode = (DOMAIN_NODE*)psnode->pdata;
+				ptnode = simple_tree_get_root(&pdnode->tree);
+				if (FALSE == container_object_get_specialtables_from_node(
+					ptnode, pproptags, b_depth, &tmp_set)) {
+					ab_tree_put_base(pbase);
+					return FALSE;
+				}
+			}
+		} else {
+			ptnode = ab_tree_minid_to_node(pbase,
+					pcontainer->id.ab_tree.minid);
+			if (NULL == ptnode) {
+				ab_tree_put_base(pbase);
+				pset->count = 0;
+				pset->pparray = NULL;
+				return TRUE;
+			}
+			if (NULL != (ptnode = simple_tree_node_get_child(ptnode))) {
+				do {
+					if (ab_tree_get_node_type(ptnode) < 0x80) {
+						continue;
+					}
+					if (FALSE == container_object_get_specialtables_from_node(
+						ptnode, pproptags, b_depth, &tmp_set)) {
+						ab_tree_put_base(pbase);
+						return FALSE;	
+					}
+				} while (ptnode=simple_tree_node_get_slibling(ptnode));
+			}
 		}
+		ab_tree_put_base(pbase);
 	}
-	ab_tree_put_base(pbase);
 	pset->count = 0;
 	pset->pparray = common_util_alloc(
 		sizeof(TPROPVAL_ARRAY*)*tmp_set.count);
@@ -666,32 +1302,43 @@ BOOL container_object_get_user_table_num(
 	AB_BASE *pbase;
 	SIMPLE_TREE_NODE *pnode;
 	
-	if (NULL != pcontainer->pminid_array) {
-		*pnum = pcontainer->pminid_array->count;
-		return TRUE;
-	}
-	pbase = ab_tree_get_base(pcontainer->base_id);
-	if (NULL == pbase) {
-		return FALSE;
-	}
-	*pnum = 0;
-	if (0xFFFFFFFF == pcontainer->minid) {
-		*pnum = single_list_get_nodes_num(&pbase->gal_list);
-	} else {
-		pnode = ab_tree_minid_to_node(pbase, pcontainer->minid);
-		if (NULL == pnode || NULL == (pnode =
-			simple_tree_node_get_child(pnode))) {
-			ab_tree_put_base(pbase);
+	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
+		if (NULL != pcontainer->contents.pminid_array) {
+			*pnum = pcontainer->contents.pminid_array->count;
 			return TRUE;
 		}
-		do {
-			if (ab_tree_get_node_type(pnode) > 0x80) {
-				continue;
+		pbase = ab_tree_get_base(pcontainer->base_id);
+		if (NULL == pbase) {
+			return FALSE;
+		}
+		*pnum = 0;
+		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
+			*pnum = single_list_get_nodes_num(&pbase->gal_list);
+		} else {
+			pnode = ab_tree_minid_to_node(pbase,
+				pcontainer->id.abtree_id.minid);
+			if (NULL == pnode || NULL == (pnode =
+				simple_tree_node_get_child(pnode))) {
+				ab_tree_put_base(pbase);
+				return TRUE;
 			}
-			(*pnum) ++;
-		} while (pnode=simple_tree_node_get_slibling(pnode));
+			do {
+				if (ab_tree_get_node_type(pnode) > 0x80) {
+					continue;
+				}
+				(*pnum) ++;
+			} while (pnode=simple_tree_node_get_slibling(pnode));
+		}
+		ab_tree_put_base(pbase);
+	} else {
+		if (NULL == pcontainer->contents.prow_set) {
+			if (FALSE == container_object_restrict_user_table(
+				pcontainer, NULL)) {
+				return FALSE;	
+			}
+		}
+		*pnum = pcontainer->contents.prow_set->count;
 	}
-	ab_tree_put_base(pbase);
 	return TRUE;
 }
 
@@ -748,12 +1395,6 @@ BOOL container_object_query_user_table(
 	SIMPLE_TREE_NODE *ptnode;
 	TPROPVAL_ARRAY *ppropvals;
 	
-	if (NULL != pcontainer->pminid_array &&
-		0 == pcontainer->pminid_array->count) {
-		pset->count = 0;
-		pset->pparray = NULL;
-		return TRUE;
-	}
 	if (0 == row_needed) {
 		pset->count = 0;
 		pset->pparray = NULL;
@@ -777,72 +1418,25 @@ BOOL container_object_query_user_table(
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
-	pbase = ab_tree_get_base(pcontainer->base_id);
-	if (NULL == pbase) {
-		return FALSE;
-	}
-	if (NULL != pcontainer->pminid_array) {
-		for (i=first_pos; i<first_pos+row_count&&
-			i<pcontainer->pminid_array->count; i++) {
-			ptnode = ab_tree_minid_to_node(pbase,
-				pcontainer->pminid_array->pl[i]);
-			if (NULL == ptnode) {
-				continue;
-			}
-			pset->pparray[pset->count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
-			if (NULL == pset->pparray[pset->count]) {
-				ab_tree_put_base(pbase);
-				return FALSE;
-			}
-			if (FALSE == ab_tree_fetch_node_properties(
-				ptnode, pproptags, pset->pparray[pset->count])) {
-				ab_tree_put_base(pbase);
-				return FALSE;	
-			}
-			pset->count ++;
+	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
+		if (NULL != pcontainer->contents.pminid_array &&
+			0 == pcontainer->contents.pminid_array->count) {
+			pset->count = 0;
+			pset->pparray = NULL;
+			return TRUE;
 		}
-	} else {
-		if (0xFFFFFFFF == pcontainer->minid) {
-			i = 0;
-			for (psnode=single_list_get_head(&pbase->gal_list); NULL!=psnode;
-				psnode=single_list_get_after(&pbase->gal_list, psnode)) {
-				if (i < first_pos) {
-					break;
-				}
-				i ++;
-				pset->pparray[pset->count] =
-					common_util_alloc(sizeof(TPROPVAL_ARRAY));
-				if (NULL == pset->pparray[pset->count]) {
-					ab_tree_put_base(pbase);
-					return FALSE;
-				}
-				if (FALSE == ab_tree_fetch_node_properties(
-					psnode->pdata, pproptags, pset->pparray[pset->count])) {
-					ab_tree_put_base(pbase);
-					return FALSE;	
-				}
-				pset->count ++;
-				if (pset->count == row_count) {
-					break;
-				}
-			}
-		} else {
-			ptnode = ab_tree_minid_to_node(pbase, pcontainer->minid);
-			if (NULL == ptnode || NULL == (ptnode =
-				simple_tree_node_get_child(ptnode))) {
-				ab_tree_put_base(pbase);
-				return TRUE;
-			}
-			i = 0;
-			do {
-				if (ab_tree_get_node_type(ptnode) > 0x80) {
+		pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
+		if (NULL == pbase) {
+			return FALSE;
+		}
+		if (NULL != pcontainer->contents.pminid_array) {
+			for (i=first_pos; i<first_pos+row_count&&
+				i<pcontainer->contents.pminid_array->count; i++) {
+				ptnode = ab_tree_minid_to_node(pbase,
+					pcontainer->contents.pminid_array->pl[i]);
+				if (NULL == ptnode) {
 					continue;
 				}
-				if (i < first_pos) {
-					continue;
-				}
-				i ++;
 				pset->pparray[pset->count] =
 					common_util_alloc(sizeof(TPROPVAL_ARRAY));
 				if (NULL == pset->pparray[pset->count]) {
@@ -855,13 +1449,82 @@ BOOL container_object_query_user_table(
 					return FALSE;	
 				}
 				pset->count ++;
-				if (pset->count == row_count) {
-					break;
+			}
+		} else {
+			if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
+				i = 0;
+				for (psnode=single_list_get_head(&pbase->gal_list); NULL!=psnode;
+					psnode=single_list_get_after(&pbase->gal_list, psnode)) {
+					if (i < first_pos) {
+						break;
+					}
+					i ++;
+					pset->pparray[pset->count] =
+						common_util_alloc(sizeof(TPROPVAL_ARRAY));
+					if (NULL == pset->pparray[pset->count]) {
+						ab_tree_put_base(pbase);
+						return FALSE;
+					}
+					if (FALSE == ab_tree_fetch_node_properties(
+						psnode->pdata, pproptags, pset->pparray[pset->count])) {
+						ab_tree_put_base(pbase);
+						return FALSE;	
+					}
+					pset->count ++;
+					if (pset->count == row_count) {
+						break;
+					}
 				}
-			} while (ptnode=simple_tree_node_get_slibling(ptnode));
+			} else {
+				ptnode = ab_tree_minid_to_node(pbase,
+					pcontainer->id.abtree_id.minid);
+				if (NULL == ptnode || NULL == (ptnode =
+					simple_tree_node_get_child(ptnode))) {
+					ab_tree_put_base(pbase);
+					return TRUE;
+				}
+				i = 0;
+				do {
+					if (ab_tree_get_node_type(ptnode) > 0x80) {
+						continue;
+					}
+					if (i < first_pos) {
+						continue;
+					}
+					i ++;
+					pset->pparray[pset->count] =
+						common_util_alloc(sizeof(TPROPVAL_ARRAY));
+					if (NULL == pset->pparray[pset->count]) {
+						ab_tree_put_base(pbase);
+						return FALSE;
+					}
+					if (FALSE == ab_tree_fetch_node_properties(
+						ptnode, pproptags, pset->pparray[pset->count])) {
+						ab_tree_put_base(pbase);
+						return FALSE;	
+					}
+					pset->count ++;
+					if (pset->count == row_count) {
+						break;
+					}
+				} while (ptnode=simple_tree_node_get_slibling(ptnode));
+			}
+		}
+		ab_tree_put_base(pbase);
+	} else {
+		if (NULL == pcontainer->contents.prow_set) {
+			if (FALSE == container_object_restrict_user_table(
+				pcontainer, NULL)) {
+				return FALSE;	
+			}
+		}
+		for (i=first_pos; i<pcontainer->contents.prow_set->count
+			&& i<first_pos+row_count; i++) {
+			pset->pparray[pset->count] =
+				pcontainer->contents.prow_set->pparray[i];
+			pset->count ++;
 		}
 	}
-	ab_tree_put_base(pbase);
 	if (FALSE == b_forward) {
 		for (i=0; i<pset->count/2; i++) {
 			ppropvals = pset->pparray[i];

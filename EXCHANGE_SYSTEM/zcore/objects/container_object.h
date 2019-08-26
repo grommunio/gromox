@@ -6,16 +6,34 @@
 #define SPECIAL_CONTAINER_GAL					0
 #define SPECIAL_CONTAINER_PROVIDER				1
 
+#define CONTAINER_TYPE_FOLDER					1
+#define CONTAINER_TYPE_ABTREE					2
+
+typedef union _CONTAINER_ID {
+	struct {
+		BOOL b_private;
+		uint64_t folder_id;
+	} exmdb_id;
+	struct {
+		int base_id;
+		uint32_t minid;
+	} abtree_id;
+} CONTAINER_ID;
+
 typedef struct _CONTAINER_OBJECT {
-	int base_id;
-	uint32_t minid;
-	LONG_ARRAY *pminid_array;
+	uint8_t type;
+	CONTAINER_ID id;
+	union {
+		TARRAY_SET *prow_set;
+		LONG_ARRAY *pminid_array;
+	} contents;
 } CONTAINER_OBJECT;
 
 BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue);
 
-CONTAINER_OBJECT* container_object_create(int base_id, uint32_t minid);
+CONTAINER_OBJECT* container_object_create(
+	uint8_t type, CONTAINER_ID id);
 
 void container_object_free(CONTAINER_OBJECT *pcontainer);
 

@@ -397,6 +397,14 @@ BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 
 BOOL common_util_public_to_essdn(const char *username, char *pessdn);
 
+void common_util_exmdb_locinfo_to_string(
+	BOOL b_private, int db_id, uint64_t eid,
+	char *loc_string);
+
+BOOL common_util_exmdb_locinfo_from_string(
+	const char *loc_string, BOOL *pb_private,
+	int *pdb_id, uint64_t *peid);
+
 BOOL common_util_build_environment();
 
 void common_util_free_environment();
