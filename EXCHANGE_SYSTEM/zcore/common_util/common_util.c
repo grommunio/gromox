@@ -569,7 +569,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 		return FALSE;
 	}
 	tmp_len = ptoken - (loc_string + 2);
-	if (tmp > 12) {
+	if (tmp_len > 12) {
 		return FALSE;
 	}
 	memcpy(tmp_buff, loc_string + 2, tmp_len);
