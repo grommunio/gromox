@@ -1205,7 +1205,7 @@ BOOL container_object_query_container_table(
 			pinfo = zarafa_server_get_info();
 			if (FALSE == exmdb_client_get_folder_properties(pinfo->maildir,
 				pinfo->cpid, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
-				pproptags, &tmp_propvals)) {
+				container_object_get_folder_proptags(), &tmp_propvals)) {
 				ab_tree_put_base(pbase);
 				return FALSE;
 			}
