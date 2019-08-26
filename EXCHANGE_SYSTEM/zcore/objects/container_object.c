@@ -687,6 +687,7 @@ static BOOL container_object_fetch_folder_properties(
 	TPROPVAL_ARRAY *pout_propvals)
 {
 	int i;
+	int count;
 	BOOL b_sub;
 	void *pvalue;
 	USER_INFO *pinfo;
@@ -1167,11 +1168,11 @@ BOOL container_object_query_container_table(
 			return FALSE;	
 		}
 	} else {
-		pbase = ab_tree_get_base(pcontainer->id.ab_tree.base_id);
+		pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (NULL == pbase) {
 			return FALSE;
 		}
-		if (0xFFFFFFFF == pcontainer->id.ab_tree.minid) {
+		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
 			tmp_set.pparray[tmp_set.count] =
 				common_util_alloc(sizeof(TPROPVAL_ARRAY));
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
@@ -1237,7 +1238,7 @@ BOOL container_object_query_container_table(
 			}
 		} else {
 			ptnode = ab_tree_minid_to_node(pbase,
-					pcontainer->id.ab_tree.minid);
+				pcontainer->id.abtree_id.minid);
 			if (NULL == ptnode) {
 				ab_tree_put_base(pbase);
 				pset->count = 0;
@@ -1297,7 +1298,7 @@ BOOL container_object_get_user_table_num(
 			*pnum = pcontainer->contents.pminid_array->count;
 			return TRUE;
 		}
-		pbase = ab_tree_get_base(pcontainer->base_id);
+		pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (NULL == pbase) {
 			return FALSE;
 		}
