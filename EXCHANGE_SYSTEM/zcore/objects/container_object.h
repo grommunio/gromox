@@ -37,13 +37,12 @@ CONTAINER_OBJECT* container_object_create(
 
 void container_object_free(CONTAINER_OBJECT *pcontainer);
 
-void container_object_clear_restriction(
-	CONTAINER_OBJECT *pcontainer);
+void container_object_clear(CONTAINER_OBJECT *pcontainer);
 
 BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
 	
-BOOL container_object_restrict_user_table(
+BOOL container_object_load_user_table(
 	CONTAINER_OBJECT *pcontainer,
 	const RESTRICTION *prestriction);
 

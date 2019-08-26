@@ -64,7 +64,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		STORE_TABLE == ptable->table_type) {
 		return TRUE;
 	} else if (USER_TABLE == ptable->table_type) {
-		return container_object_restrict_user_table(
+		return container_object_load_user_table(
 			ptable->pparent_obj, ptable->prestriction);
 	}
 	if (0 != ptable->table_id) {
@@ -144,8 +144,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 void table_object_unload(TABLE_OBJECT *ptable)
 {
 	if (USER_TABLE == ptable->table_type) {
-		container_object_clear_restriction(
-						ptable->pparent_obj);
+		container_object_clear(ptable->pparent_obj);
 	} else {
 		table_object_set_table_id(ptable, 0);
 	}

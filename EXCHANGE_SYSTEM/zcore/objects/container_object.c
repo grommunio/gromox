@@ -23,20 +23,18 @@ CONTAINER_OBJECT* container_object_create(
 	return pcontainer;
 }
 
-void container_object_clear_restriction(
+void container_object_clear(
 	CONTAINER_OBJECT *pcontainer)
 {
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
 		if (NULL == pcontainer->contents.pminid_array) {
 			return;
 		}
-		if (NULL != pcontainer->contents.pminid_array) {
-			if (NULL != pcontainer->contents.pminid_array->pl) {
-				free(pcontainer->contents.pminid_array->pl);
-			}
-			free(pcontainer->contents.pminid_array);
-			pcontainer->contents.pminid_array = NULL;
+		if (NULL != pcontainer->contents.pminid_array->pl) {
+			free(pcontainer->contents.pminid_array->pl);
 		}
+		free(pcontainer->contents.pminid_array);
+		pcontainer->contents.pminid_array = NULL;
 	} else {
 		if (NULL != pcontainer->contents.prow_set) {
 			tarray_set_free(pcontainer->contents.prow_set);
@@ -47,7 +45,7 @@ void container_object_clear_restriction(
 
 void container_object_free(CONTAINER_OBJECT *pcontainer)
 {
-	container_object_clear_restriction(pcontainer);
+	container_object_clear(pcontainer);
 	free(pcontainer);
 }
 
@@ -371,7 +369,7 @@ static BINARY* container_object_contact_to_oneoff_entryid(
 	return pbin;
 }
 
-BOOL container_object_restrict_user_table(
+BOOL container_object_load_user_table(
 	CONTAINER_OBJECT *pcontainer,
 	const RESTRICTION *prestriction)
 {
@@ -1323,7 +1321,7 @@ BOOL container_object_get_user_table_num(
 		ab_tree_put_base(pbase);
 	} else {
 		if (NULL == pcontainer->contents.prow_set) {
-			if (FALSE == container_object_restrict_user_table(
+			if (FALSE == container_object_load_user_table(
 				pcontainer, NULL)) {
 				return FALSE;	
 			}
@@ -1504,7 +1502,7 @@ BOOL container_object_query_user_table(
 		ab_tree_put_base(pbase);
 	} else {
 		if (NULL == pcontainer->contents.prow_set) {
-			if (FALSE == container_object_restrict_user_table(
+			if (FALSE == container_object_load_user_table(
 				pcontainer, NULL)) {
 				return FALSE;	
 			}
