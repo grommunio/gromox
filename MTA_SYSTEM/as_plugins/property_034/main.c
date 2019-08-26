@@ -106,7 +106,7 @@ static int xmailer_filter(int action, int context_ID,
 		}
 		if (0 != strncmp(mail_blk->parsed_buff, "[cid:", 5)
 			&& NULL == memmem(mail_blk->parsed_buff,
-			mail_blk->parsed_length, "\r\n\r\n[cid:000", 300)) {
+			mail_blk->parsed_length, "\r\n\r\n[cid:", 9)) {
 			return MESSAGE_ACCEPT;	
 		}
 		if (NULL != spam_statistic) {
