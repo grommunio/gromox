@@ -1125,11 +1125,11 @@ static BOOL container_object_query_folder_hierarchy(
 		if (NULL == pset->pparray[pset->count]) {
 			return FALSE;
 		}
-		pset->count ++;
 		if (FALSE == container_object_fetch_folder_properties(
 			tmp_set.pparray[i], pproptags, pset->pparray[pset->count])) {
 			return FALSE;	
 		}
+		pset->count ++;
 	}
 	return TRUE;
 }
