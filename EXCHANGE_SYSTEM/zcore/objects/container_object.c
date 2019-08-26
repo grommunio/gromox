@@ -6,6 +6,7 @@
 #include "mail_func.h"
 #include "rop_util.h"
 #include "ab_tree.h"
+#include <stdio.h>
 
 CONTAINER_OBJECT* container_object_create(
 	uint8_t type, CONTAINER_ID id)
@@ -291,9 +292,9 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	}
 	for (i=0; i<9; i++) {
-		pproptags->proptag[i] = propids.ppropid[i];
-		pproptags->proptag[i] <<= 16;
-		pproptags->proptag[i] |= PROPVAL_TYPE_WSTRING;
+		pproptags->pproptag[i] = propids.ppropid[i];
+		pproptags->pproptag[i] <<= 16;
+		pproptags->pproptag[i] |= PROPVAL_TYPE_WSTRING;
 	}
 	pproptags->count = 9;
 	return TRUE;
@@ -336,7 +337,6 @@ static BINARY* container_object_contact_to_addressbook_entryid(
 static BINARY* container_object_contact_to_oneoff_entryid(
 	const char *pdisplayname, const char *username)
 {
-	
 	BINARY *pbin;
 	char x500dn[1024];
 	EXT_PUSH ext_push;
@@ -348,8 +348,6 @@ static BINARY* container_object_contact_to_oneoff_entryid(
 		pdisplayname = email_addr.local_part;
 	}
 	snprintf(x500dn, sizeof(x500dn), "\"%s\"<%s>", pdisplayname, username);
-	common_util_exmdb_locinfo_to_string(
-		b_private, db_id, folder_id, x500dn + 7);
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 								tmp_entryid.provider_uid);
@@ -399,9 +397,9 @@ BOOL container_object_restrict_user_table(
 	uint32_t proptag_buff[25];
 	static uint32_t tmp_proptags[] = {
 			PROP_TAG_NICKNAME,
-			PROP_TAG_TITLE
-			PROP_TAG_PRIMARYTELEPHONENUMBER
-			PROP_TAG_MOBILETELEPHONENUMBER
+			PROP_TAG_TITLE,
+			PROP_TAG_PRIMARYTELEPHONENUMBER,
+			PROP_TAG_MOBILETELEPHONENUMBER,
 			PROP_TAG_HOMEADDRESSSTREET,
 			PROP_TAG_COMMENT,
 			PROP_TAG_COMPANYNAME,
@@ -439,8 +437,8 @@ BOOL container_object_restrict_user_table(
 		}
 		pminid_array->pl = malloc(sizeof(uint32_t)*minid_array.count);
 		if (NULL == pminid_array->pl) {
-			free(pcontainer->pctntid_array);
-			pcontainer->pctntid_array = NULL;
+			free(pcontainer->contents.pminid_array);
+			pcontainer->contents.pminid_array = NULL;
 			return FALSE;
 		}
 		memcpy(pminid_array->pl, minid_array.pl,
@@ -619,7 +617,7 @@ BOOL container_object_restrict_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG_RECORDKEY:
+			propval.proptag = PROP_TAG_RECORDKEY;
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -691,7 +689,6 @@ static BOOL container_object_fetch_folder_properties(
 	int i;
 	BOOL b_sub;
 	void *pvalue;
-	uint32_t handle;
 	USER_INFO *pinfo;
 	uint64_t folder_id;
 	
@@ -723,13 +720,6 @@ static BOOL container_object_fetch_folder_properties(
 		case PROP_TAG_ENTRYID:
 		case PROP_TAG_PARENTENTRYID:
 			pinfo = zarafa_server_get_info();
-			handle = object_tree_get_store_handle(
-				pinfo->ptree, TRUE, pinfo->user_id);
-			pstore = object_tree_get_object(
-				pinfo->ptree, handle, &mapi_type);
-			if (NULL == pstore || MAPI_STORE != mapi_type) {
-				return FALSE;
-			}
 			if (PROP_TAG_PARENTENTRYID == pproptags->pproptag[i]) {
 				if (rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS)
 					== folder_id) {
@@ -749,7 +739,7 @@ static BOOL container_object_fetch_folder_properties(
 				}
 			} else {
 				pvalue = container_object_contact_to_addressbook_entryid(
-										TRUE, pinfo->user_id,, folder_id);
+										TRUE, pinfo->user_id, folder_id);
 			}
 			if (NULL == pvalue) {
 				return FALSE;
