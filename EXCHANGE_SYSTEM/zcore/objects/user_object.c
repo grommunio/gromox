@@ -2,6 +2,7 @@
 #include "user_object.h"
 #include "common_util.h"
 #include "ab_tree.h"
+#include <stdio.h>
 
 USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 {

@@ -1315,7 +1315,10 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		base_id = pinfo->org_id;
 	}
 	if (0 == entryid.cb) {
-		pobject = container_object_create(base_id, 0xFFFFFFFF);
+		container_id.ab_tree.base_id = base_id;
+		container_id.ab_tree.minid = 0xFFFFFFFF;
+		pobject = container_object_create(
+			CONTAINER_TYPE_ABTREE, container_id);
 		if (NULL == pobject) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_ERROR;
