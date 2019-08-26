@@ -104,7 +104,7 @@ static int xmailer_filter(int action, int context_ID,
 			&out_len) || (3 != out_len && 4 != out_len)) {
 			return MESSAGE_ACCEPT;	
 		}
-		if (0 != strncmp(mail_blk->parsed_buff, "[cid:000", 8)
+		if (0 != strncmp(mail_blk->parsed_buff, "[cid:", 5)
 			&& NULL == memmem(mail_blk->parsed_buff,
 			mail_blk->parsed_length, "\r\n\r\n[cid:000", 200)) {
 			return MESSAGE_ACCEPT;	
