@@ -1324,6 +1324,8 @@ BOOL container_object_get_user_table_num(
 		*pnum = 0;
 		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
 			*pnum = single_list_get_nodes_num(&pbase->gal_list);
+		} else if (0 == pcontainer->id.abtree_id.minid) {
+			*pnum = 0;
 		} else {
 			pnode = ab_tree_minid_to_node(pbase,
 				pcontainer->id.abtree_id.minid);
@@ -1488,6 +1490,9 @@ BOOL container_object_query_user_table(
 						break;
 					}
 				}
+			} else if (0 == pcontainer->id.abtree_id.minid) {
+				ab_tree_put_base(pbase);
+				return TRUE;
 			} else {
 				ptnode = ab_tree_minid_to_node(pbase,
 					pcontainer->id.abtree_id.minid);
