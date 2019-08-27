@@ -864,8 +864,8 @@ BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
 		if (0 == pcontainer->id.abtree_id.minid) {
-			return ab_tree_fetch_node_properties(
-					NULL, pproptags, ppropvals);
+			return container_object_fetch_special_properties(
+				SPECIAL_CONTAINER_PROVIDER, pproptags, ppropvals);
 		}
 		pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (NULL == pbase) {
