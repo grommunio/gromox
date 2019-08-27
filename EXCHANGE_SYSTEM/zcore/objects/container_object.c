@@ -331,6 +331,43 @@ static BINARY* container_object_contact_to_addressbook_entryid(
 	return pbin;
 }
 
+static BINARY* container_object_message_to_addressbook_entryid(
+	BOOL b_private, int db_id, uint64_t message_id, int num)
+{
+	int len;
+	BINARY *pbin;
+	char x500dn[128];
+	EXT_PUSH ext_push;
+	ADDRESSBOOK_ENTRYID tmp_entryid;
+	
+	memcpy(x500dn, "/exmdb=", 7);
+	common_util_exmdb_locinfo_to_string(
+		b_private, db_id, folder_id, x500dn + 7);
+	len = strlen(x500dn);
+	sprintf(x500dn + len, ":%d", num);
+	tmp_entryid.flags = 0;
+	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
+								tmp_entryid.provider_uid);
+	tmp_entryid.version = 1;
+	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER;
+	tmp_entryid.px500dn = x500dn;
+	pbin = common_util_alloc(sizeof(BINARY));
+	if (NULL == pbin) {
+		return NULL;
+	}
+	pbin->pb = common_util_alloc(256);
+	if (NULL == pbin->pb) {
+		return NULL;
+	}
+	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
+	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
+		&ext_push, &tmp_entryid)) {
+		return NULL;
+	}
+	pbin->cb = ext_push.offset;
+	return pbin;
+}
+
 BOOL container_object_load_user_table(
 	CONTAINER_OBJECT *pcontainer,
 	const RESTRICTION *prestriction)
@@ -592,12 +629,13 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			/* fake one entryid for the item, and this entryid
-				cannot be opened by zarafa_server_openabentry */
 			propval.proptag = PROP_TAG_ENTRYID;
-			propval.pvalue = &tmp_bin;
-			tmp_bin.cb = strlen(username) + 1;
-			tmp_bin.pb = username;
+			propval.pvalue = container_object_message_to_addressbook_entryid(
+								TRUE, pinfo->user_id, *(uint64_t*)pvalue, j);
+			if (NULL == propval.pvalue) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
