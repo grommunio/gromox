@@ -1033,52 +1033,55 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		}
 		break;
 	default:
-		if (TRUE == common_util_parse_addressbook_entryid(
+		if (0 == strncmp(entryid.pb, "/exmdb=", 7)) {
+			stncpy(essdn, entryid.pb, sizeof(essdn));
+		} else if (TRUE == common_util_parse_addressbook_entryid(
 			entryid, &address_type, essdn) &&
 			0 == strncmp(essdn, "/exmdb=", 7) &&
-			ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == 
-			address_type) {
-			if (FALSE == common_util_exmdb_locinfo_from_string(
-				essdn + 7, &b_private, &user_id, &message_id)) {
-				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
-			}
-			handle = object_tree_get_store_handle(
-				pinfo->ptree, b_private, user_id);
-			pstore = object_tree_get_object(
-				pinfo->ptree, handle, &mapi_type);
-			if (NULL == pstore || MAPI_STORE != mapi_type) {
-				zarafa_server_put_user_info(pinfo);
-				return EC_NULL_OBJECT;
-			}
-			if (FALSE == exmdb_client_get_message_property(
-				store_object_get_dir(pstore), NULL, 0,
-				message_id, PROP_TAG_PARENTFOLDERID,
-				&pvalue || NULL == pvalue)) {
-				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;	
-			}
-			pmessage = message_object_create(pstore,
-				FALSE, pinfo->cpid, message_id, pvalue,
-				TAG_ACCESS_READ|TAG_ACCESS_MODIFY, TRUE,
-				NULL);
-			if (NULL == pmessage) {
-				zarafa_server_put_user_info(pinfo);
-				return EC_NULL_OBJECT;
-			}
-			*pmapi_type = MAPI_MESSAGE;
-			*phobject = object_tree_add_object_handle(
-			pinfo->ptree, handle, MAPI_MESSAGE, pmessage);
-			if (INVALID_HANDLE == *phobject) {
-				message_object_free(pmessage);
-				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;
-			}
+			ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
+			/* do nothing */	
+		} else {
 			zarafa_server_put_user_info(pinfo);
-			return EC_SUCCESS;
+			return EC_INVALID_PARAMETER;
+		}
+		if (FALSE == common_util_exmdb_locinfo_from_string(
+			essdn + 7, &b_private, &user_id, &message_id)) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_NOT_FOUND;
+		}
+		handle = object_tree_get_store_handle(
+			pinfo->ptree, b_private, user_id);
+		pstore = object_tree_get_object(
+			pinfo->ptree, handle, &mapi_type);
+		if (NULL == pstore || MAPI_STORE != mapi_type) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_NULL_OBJECT;
+		}
+		if (FALSE == exmdb_client_get_message_property(
+			store_object_get_dir(pstore), NULL, 0,
+			message_id, PROP_TAG_PARENTFOLDERID,
+			&pvalue || NULL == pvalue)) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;	
+		}
+		pmessage = message_object_create(pstore,
+			FALSE, pinfo->cpid, message_id, pvalue,
+			TAG_ACCESS_READ|TAG_ACCESS_MODIFY, TRUE,
+			NULL);
+		if (NULL == pmessage) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_NULL_OBJECT;
+		}
+		*pmapi_type = MAPI_MESSAGE;
+		*phobject = object_tree_add_object_handle(
+		pinfo->ptree, handle, MAPI_MESSAGE, pmessage);
+		if (INVALID_HANDLE == *phobject) {
+			message_object_free(pmessage);
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
 		}
 		zarafa_server_put_user_info(pinfo);
-		return EC_INVALID_PARAMETER;
+		return EC_SUCCESS;
 	}
 	handle = object_tree_get_store_handle(
 		pinfo->ptree, b_private, account_id);
