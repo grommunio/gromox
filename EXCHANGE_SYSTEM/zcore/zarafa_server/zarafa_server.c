@@ -1066,7 +1066,8 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		}
 		pmessage = message_object_create(pstore,
 			FALSE, pinfo->cpid, message_id, pvalue,
-			TAG_ACCESS_READ|TAG_ACCESS_MODIFY, TRUE,
+			TAG_ACCESS_READ|TAG_ACCESS_MODIFY|
+			TAG_ACCESS_DELETE, TRUE,
 			NULL);
 		if (NULL == pmessage) {
 			zarafa_server_put_user_info(pinfo);
