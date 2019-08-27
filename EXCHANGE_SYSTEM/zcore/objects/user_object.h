@@ -5,14 +5,11 @@
 #include "mapi_types.h"
 
 typedef struct _USER_OBJECT {
-	EMAIL_ADDR *pemail_addr;
 	int base_id;
 	uint32_t minid;
 } USER_OBJECT;
 
 USER_OBJECT* user_object_create(int base_id, uint32_t minid);
-
-BOOL user_object_set_oneoff(USER_OBJECT *puser, const char *oneoff_string);
 
 void user_object_free(USER_OBJECT *puser);
 

@@ -1435,18 +1435,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			} else {
 				*pmapi_type = MAPI_MAILUSER;
 			}
-		} else if (ADDRESSBOOK_ENTRYID_TYPE_ONE_OFF_USER == address_type) {
-			pobject = user_object_create(0, 0);
-			if (NULL == pobject) {
-				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;
-			}
-			if (FALSE == user_object_set_oneoff(pobject, essdn)) {
-				user_object_free(pobject);
-				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;
-			}
-			*pmapi_type = MAPI_MAILUSER;
 		} else {
 			zarafa_server_put_user_info(pinfo);
 			return EC_INVALID_PARAMETER;
