@@ -394,6 +394,9 @@ BOOL container_object_load_user_table(
 	uint32_t proptag_buff[25];
 	static uint32_t tmp_proptags[] = {
 			PROP_TAG_NICKNAME,
+			PROP_TAG_SURNAME,
+			PROP_TAG_GIVENNAME,
+			PROP_TAG_MIDDLENAME,
 			PROP_TAG_TITLE,
 			PROP_TAG_PRIMARYTELEPHONENUMBER,
 			PROP_TAG_MOBILETELEPHONENUMBER,
