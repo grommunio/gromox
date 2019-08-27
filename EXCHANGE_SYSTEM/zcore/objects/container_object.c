@@ -1339,6 +1339,9 @@ void container_object_get_user_table_all_proptags(
 	static uint32_t proptag_buff[] = {
 		PROP_TAG_DISPLAYNAME,
 		PROP_TAG_NICKNAME,
+		PROP_TAG_SURNAME,
+		PROP_TAG_GIVENNAME,
+		PROP_TAG_MIDDLENAME,
 		PROP_TAG_TITLE,
 		PROP_TAG_PRIMARYTELEPHONENUMBER,
 		PROP_TAG_MOBILETELEPHONENUMBER,
@@ -1369,7 +1372,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_CREATIONTIME,
 		PROP_TAG_THUMBNAILPHOTO
 	};
-	pproptags->count = 31;
+	pproptags->count = 34;
 	pproptags->pproptag = proptag_buff;
 }
 
