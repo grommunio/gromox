@@ -469,6 +469,15 @@ BOOL container_object_load_user_table(
 							PROP_TAG_TITLE;
 		proptags.count ++;
 		proptags.pproptag[proptags.count] =
+						PROP_TAG_SURNAME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+						PROP_TAG_GIVENNAME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
+						PROP_TAG_MIDDLENAME;
+		proptags.count ++;
+		proptags.pproptag[proptags.count] =
 			PROP_TAG_PRIMARYTELEPHONENUMBER;
 		proptags.count ++;
 		proptags.pproptag[proptags.count] =
