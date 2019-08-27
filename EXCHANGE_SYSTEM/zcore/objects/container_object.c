@@ -596,7 +596,7 @@ BOOL container_object_load_user_table(
 			propval.pvalue = common_util_to_message_entryid(
 					pstore, pcontainer->id.exmdb_id.folder_id,
 					*(uint64_t*)pvalue);
-			if (NULL == ppropval.pvalue) {
+			if (NULL == propval.pvalue) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
