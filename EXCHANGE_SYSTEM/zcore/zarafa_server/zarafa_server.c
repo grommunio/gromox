@@ -1005,6 +1005,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	uint8_t mapi_type;
 	uint64_t folder_id;
 	uint64_t message_id;
+	STORE_OBJECT *pstore;
 	uint32_t address_type;
 	MESSAGE_OBJECT *pmessage;
 	
