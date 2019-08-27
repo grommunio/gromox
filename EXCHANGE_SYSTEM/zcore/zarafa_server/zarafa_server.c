@@ -1344,7 +1344,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		entryid, &b_private, &user_id, &folder_id,
 		&message_id)) {
 		handle = object_tree_get_store_handle(
-			pinfo->ptree, TRUE, pinfo->user_id);
+			pinfo->ptree, b_private, user_id);
 		pstore = object_tree_get_object(
 			pinfo->ptree, handle, &mapi_type);
 		if (NULL == pstore || MAPI_STORE != mapi_type) {
@@ -1477,7 +1477,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 					return EC_NOT_FOUND;
 				}
 				handle = object_tree_get_store_handle(
-					pinfo->ptree, TRUE, pinfo->user_id);
+					pinfo->ptree, b_private, user_id);
 				pstore = object_tree_get_object(
 					pinfo->ptree, handle, &mapi_type);
 				if (NULL == pstore || MAPI_STORE != mapi_type) {
