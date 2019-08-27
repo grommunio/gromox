@@ -102,13 +102,11 @@ static BOOL container_object_match_contact_message(
 					pfilter->pres)->propval.pvalue, pvalue)) {
 					return TRUE;
 				}
-				return FALSE;
 			} else {
 				if (0 == strcmp(((RESTRICTION_CONTENT*)
 					pfilter->pres)->propval.pvalue, pvalue)) {
 					return TRUE;
 				}
-				return FALSE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
@@ -118,7 +116,6 @@ static BOOL container_object_match_contact_message(
 					pfilter->pres)->propval.pvalue)) {
 					return TRUE;
 				}
-				return FALSE;
 			} else {
 				if (NULL != strstr(pvalue, ((RESTRICTION_CONTENT*)
 					pfilter->pres)->propval.pvalue)) {
@@ -135,13 +132,11 @@ static BOOL container_object_match_contact_message(
 					pfilter->pres)->propval.pvalue, len)) {
 					return TRUE;
 				}
-				return FALSE;
 			} else {
 				if (0 == strncmp(pvalue, ((RESTRICTION_CONTENT*)
 					pfilter->pres)->propval.pvalue, len)) {
 					return TRUE;
 				}
-				return FALSE;
 			}
 			return FALSE;
 		}
@@ -297,7 +292,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BINARY* container_object_contact_to_addressbook_entryid(
+static BINARY* container_object_folder_to_addressbook_entryid(
 	BOOL b_private, int db_id, uint64_t folder_id)
 {
 	BINARY *pbin;
@@ -513,7 +508,7 @@ BOOL container_object_load_user_table(
 			&tmp_set)) {
 			return FALSE;
 		}
-		pparent_entryid = container_object_contact_to_addressbook_entryid(
+		pparent_entryid = container_object_folder_to_addressbook_entryid(
 				TRUE, pinfo->user_id, pcontainer->id.exmdb_id.folder_id);
 		if (NULL == pparent_entryid) {
 			return FALSE;
@@ -759,11 +754,11 @@ static BOOL container_object_fetch_folder_properties(
 					if (NULL == pvalue) {
 						return FALSE;
 					}
-					pvalue = container_object_contact_to_addressbook_entryid(
+					pvalue = container_object_folder_to_addressbook_entryid(
 									TRUE, pinfo->user_id, *(uint64_t*)pvalue);
 				}
 			} else {
-				pvalue = container_object_contact_to_addressbook_entryid(
+				pvalue = container_object_folder_to_addressbook_entryid(
 										TRUE, pinfo->user_id, folder_id);
 			}
 			if (NULL == pvalue) {
