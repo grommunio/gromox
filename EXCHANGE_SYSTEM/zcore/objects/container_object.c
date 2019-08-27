@@ -342,7 +342,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	
 	memcpy(x500dn, "/exmdb=", 7);
 	common_util_exmdb_locinfo_to_string(
-		b_private, db_id, folder_id, x500dn + 7);
+		b_private, db_id, message_id, x500dn + 7);
 	len = strlen(x500dn);
 	sprintf(x500dn + len, ":%d", num);
 	tmp_entryid.flags = 0;
