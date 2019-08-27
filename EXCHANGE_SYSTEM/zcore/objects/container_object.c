@@ -701,6 +701,115 @@ BOOL container_object_load_user_table(
 	return TRUE;
 }
 
+BOOL container_object_fetch_special_property(
+	uint8_t special_type, uint32_t proptag, void **ppvalue)
+{
+	void *pvalue;
+	EXT_PUSH ext_push;
+	ADDRESSBOOK_ENTRYID ab_entryid;
+	
+	switch (proptag) {
+	case PROP_TAG_ABPROVIDERID:
+		*ppvalue = common_util_alloc(sizeof(BINARY));
+		if (NULL == *ppvalue) {
+			return FALSE;
+		}
+		((BINARY*)*ppvalue)->cb = 16;
+		((BINARY*)*ppvalue)->pb = common_util_get_muidecsab();
+		return TRUE;
+	case PROP_TAG_ENTRYID:
+		pvalue = common_util_alloc(sizeof(BINARY));
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		ab_entryid.flags = 0;
+		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
+									ab_entryid.provider_uid);
+		ab_entryid.version = 1;
+		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
+		if (SPECIAL_CONTAINER_GAL == special_type) {
+			ab_entryid.px500dn = "";
+		} else {
+			ab_entryid.px500dn = "/";
+		}
+		((BINARY*)pvalue)->pb = common_util_alloc(128);
+		if (NULL == ((BINARY*)pvalue)->pb) {
+			return FALSE;
+		}
+		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0);
+		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
+			&ext_push, &ab_entryid)) {
+			return FALSE;
+		}
+		((BINARY*)pvalue)->cb = ext_push.offset;
+		*ppvalue = pvalue;
+		return TRUE;
+	case PROP_TAG_CONTAINERFLAGS:
+		pvalue = common_util_alloc(sizeof(uint32_t));
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		*(uint32_t*)pvalue = AB_RECIPIENTS |
+			AB_SUBCONTAINERS | AB_UNMODIFIABLE;
+		*ppvalue = pvalue;
+		return TRUE;
+	case PROP_TAG_DEPTH:
+		pvalue = common_util_alloc(sizeof(uint32_t));
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		*(uint32_t*)pvalue = 0;
+		*ppvalue = pvalue;
+		return TRUE;
+	case PROP_TAG_DISPLAYNAME:
+		if (SPECIAL_CONTAINER_GAL == special_type) {
+			*ppvalue = "Global Address List";
+		} else {
+			*ppvalue = "Steep Contact Folders";
+		}
+		return TRUE;
+	case PROP_TAG_ADDRESSBOOKISMASTER:
+		pvalue = common_util_alloc(sizeof(uint8_t));
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		*(uint8_t*)pvalue = 0;
+		*ppvalue = pvalue;
+		return TRUE;
+	}
+	*ppvalue = NULL;
+	return TRUE;
+}
+
+static BOOL container_object_fetch_special_properties(
+	uint8_t special_type, const PROPTAG_ARRAY *pproptags,
+	TPROPVAL_ARRAY *ppropvals)
+{
+	int i;
+	void *pvalue;
+	
+	ppropvals->ppropval = common_util_alloc(
+		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	if (NULL == ppropvals->ppropval) {
+		return FALSE;
+	}
+	ppropvals->count = 0;
+	for (i=0; i<pproptags->count; i++) {
+		if (FALSE == container_object_fetch_special_property(
+			special_type, pproptags->pproptag[i], &pvalue)) {
+			return FALSE;	
+		}
+		if (NULL == pvalue) {
+			continue;
+		}
+		ppropvals->ppropval[ppropvals->count].proptag =
+									pproptags->pproptag[i];
+		ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
+		ppropvals->count ++;
+	}
+	return TRUE;
+}
+
 static BOOL container_object_fetch_folder_properties(
 	const TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *pout_propvals)
@@ -976,115 +1085,6 @@ static BOOL container_object_get_specialtables_from_node(
 				return FALSE;	
 			}
 		} while (pnode=simple_tree_node_get_slibling(pnode));
-	}
-	return TRUE;
-}
-
-BOOL container_object_fetch_special_property(
-	uint8_t special_type, uint32_t proptag, void **ppvalue)
-{
-	void *pvalue;
-	EXT_PUSH ext_push;
-	ADDRESSBOOK_ENTRYID ab_entryid;
-	
-	switch (proptag) {
-	case PROP_TAG_ABPROVIDERID:
-		*ppvalue = common_util_alloc(sizeof(BINARY));
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		((BINARY*)*ppvalue)->cb = 16;
-		((BINARY*)*ppvalue)->pb = common_util_get_muidecsab();
-		return TRUE;
-	case PROP_TAG_ENTRYID:
-		pvalue = common_util_alloc(sizeof(BINARY));
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		ab_entryid.flags = 0;
-		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-									ab_entryid.provider_uid);
-		ab_entryid.version = 1;
-		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
-		if (SPECIAL_CONTAINER_GAL == special_type) {
-			ab_entryid.px500dn = "";
-		} else {
-			ab_entryid.px500dn = "/";
-		}
-		((BINARY*)pvalue)->pb = common_util_alloc(128);
-		if (NULL == ((BINARY*)pvalue)->pb) {
-			return FALSE;
-		}
-		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0);
-		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-			&ext_push, &ab_entryid)) {
-			return FALSE;
-		}
-		((BINARY*)pvalue)->cb = ext_push.offset;
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_CONTAINERFLAGS:
-		pvalue = common_util_alloc(sizeof(uint32_t));
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		*(uint32_t*)pvalue = AB_RECIPIENTS |
-			AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_DEPTH:
-		pvalue = common_util_alloc(sizeof(uint32_t));
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		*(uint32_t*)pvalue = 0;
-		*ppvalue = pvalue;
-		return TRUE;
-	case PROP_TAG_DISPLAYNAME:
-		if (SPECIAL_CONTAINER_GAL == special_type) {
-			*ppvalue = "Global Address List";
-		} else {
-			*ppvalue = "Steep Contact Folders";
-		}
-		return TRUE;
-	case PROP_TAG_ADDRESSBOOKISMASTER:
-		pvalue = common_util_alloc(sizeof(uint8_t));
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		*(uint8_t*)pvalue = 0;
-		*ppvalue = pvalue;
-		return TRUE;
-	}
-	*ppvalue = NULL;
-	return TRUE;
-}
-
-static BOOL container_object_fetch_special_properties(
-	uint8_t special_type, const PROPTAG_ARRAY *pproptags,
-	TPROPVAL_ARRAY *ppropvals)
-{
-	int i;
-	void *pvalue;
-	
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
-	if (NULL == ppropvals->ppropval) {
-		return FALSE;
-	}
-	ppropvals->count = 0;
-	for (i=0; i<pproptags->count; i++) {
-		if (FALSE == container_object_fetch_special_property(
-			special_type, pproptags->pproptag[i], &pvalue)) {
-			return FALSE;	
-		}
-		if (NULL == pvalue) {
-			continue;
-		}
-		ppropvals->ppropval[ppropvals->count].proptag =
-									pproptags->pproptag[i];
-		ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
-		ppropvals->count ++;
 	}
 	return TRUE;
 }
