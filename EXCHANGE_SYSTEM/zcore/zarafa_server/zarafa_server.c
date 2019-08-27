@@ -1060,7 +1060,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		if (FALSE == exmdb_client_get_message_property(
 			store_object_get_dir(pstore), NULL, 0,
 			message_id, PROP_TAG_PARENTFOLDERID,
-			&pvalue || NULL == pvalue)) {
+			&pvalue) || NULL == pvalue) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_ERROR;	
 		}
