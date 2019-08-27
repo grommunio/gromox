@@ -98,8 +98,9 @@ static int scamming_filter(int context_ID, MAIL_ENTITY *pmail,
 	}
 	parse_email_addr(&email_addr1, email_addr.display_name);
 	if ('\0' == email_addr1.local_part[0] ||
-		'\0' == email_addr1.domain[0] || NULL
-		== strchr(email_addr1.domain, '.')) {
+		'\0' == email_addr1.domain[0] ||
+		NULL == strchr(email_addr1.domain, '.') ||
+		NULL != strchr(email_addr1.domain, ')')) {
 		return MESSAGE_ACCEPT;	
 	}
 	if (0 == strcasecmp(email_addr.domain, email_addr1.domain)) {
