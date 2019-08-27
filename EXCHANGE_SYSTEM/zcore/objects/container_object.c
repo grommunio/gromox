@@ -346,8 +346,8 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	len = strlen(x500dn);
 	sprintf(x500dn + len, ":%d", num);
 	tmp_entryid.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-								tmp_entryid.provider_uid);
+	memcpy(tmp_entryid.provider_uid,
+		common_util_get_muidzcsab(), 16);
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER;
 	tmp_entryid.px500dn = x500dn;
@@ -662,7 +662,7 @@ BOOL container_object_load_user_table(
 			propval.proptag = PROP_TAG_ABPROVIDERID;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 16;
-			tmp_bin.pb = common_util_get_muidecsab();
+			tmp_bin.pb = common_util_get_muidzcsab();
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -738,7 +738,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			((BINARY*)pvalue)->cb = 16;
-			((BINARY*)pvalue)->pb = common_util_get_muidecsab();
+			((BINARY*)pvalue)->pb = common_util_get_muidzcsab();
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;

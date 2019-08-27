@@ -3174,6 +3174,14 @@ uint8_t* common_util_get_muidecsab()
 	return MUIDECSAB;
 }
 
+uint8_t* common_util_get_muidzcsab()
+{
+	static uint8_t MUIDZCSAB[] = {
+		0x72, 0x7F, 0x04, 0x30, 0xE3, 0x92, 0x4F, 0xDA,
+		0xB8, 0x6A, 0xE5, 0x2A, 0x7F, 0xE4, 0x65, 0x71};
+	return MUIDZCSAB;
+}
+
 BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	uint64_t message_id, BINARY *peml_bin)
 {

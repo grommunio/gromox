@@ -500,6 +500,8 @@ BOOL common_util_remote_copy_folder(
 	
 uint8_t* common_util_get_muidecsab();
 
+uint8_t* common_util_get_muidzcsab();
+
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);
 
 BOOL common_util_send_message(STORE_OBJECT *pstore,
