@@ -1340,8 +1340,10 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
 			lower_string(essdn);
 			if ('\0' == essdn[0]) {
+				type = CONTAINER_TYPE_ABTREE;
 				minid = 0xFFFFFFFF;
 			} else if (0 == strcmp(essdn, "/")) {
+				type = CONTAINER_TYPE_ABTREE;
 				minid = 0;
 			} else {
 				if (0 == strncmp(essdn, "/exmdb=", 7)) {
