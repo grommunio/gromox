@@ -1068,7 +1068,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 			}
 			*pmapi_type = MAPI_MESSAGE;
 			*phobject = object_tree_add_object_handle(
-			pinfo->ptree, hobject, MAPI_MESSAGE, pmessage);
+			pinfo->ptree, handle, MAPI_MESSAGE, pmessage);
 			if (INVALID_HANDLE == *phobject) {
 				message_object_free(pmessage);
 				zarafa_server_put_user_info(pinfo);
