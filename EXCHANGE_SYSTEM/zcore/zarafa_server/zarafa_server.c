@@ -1407,10 +1407,10 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 					}
 					minid = ab_tree_get_node_minid(pnode);
 					ab_tree_put_base(pbase);
+					type = CONTAINER_TYPE_ABTREE;
+					container_id.abtree_id.base_id = base_id;
+					container_id.abtree_id.minid = minid;
 				}
-				type = CONTAINER_TYPE_ABTREE;
-				container_id.abtree_id.base_id = base_id;
-				container_id.abtree_id.minid = minid;
 			}
 			pobject = container_object_create(type, container_id);
 			if (NULL == pobject) {
