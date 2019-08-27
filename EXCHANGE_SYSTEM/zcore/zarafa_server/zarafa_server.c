@@ -1353,7 +1353,8 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		}
 		pobject = message_object_create(pstore, TRUE,
 				pinfo->cpid, message_id, &folder_id,
-				TAG_ACCESS_READ, FALSE, NULL);
+				TAG_ACCESS_READ|TAG_ACCESS_MODIFY,
+				TRUE, NULL);
 		if (NULL == pobject) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_NULL_OBJECT;

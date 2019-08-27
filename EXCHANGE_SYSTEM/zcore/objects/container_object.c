@@ -592,14 +592,12 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
+			/* fake one entryid for the item, and this entryid
+				cannot be opened by zarafa_server_openabentry */
 			propval.proptag = PROP_TAG_ENTRYID;
-			propval.pvalue = common_util_to_message_entryid(
-					pstore, pcontainer->id.exmdb_id.folder_id,
-					*(uint64_t*)pvalue);
-			if (NULL == propval.pvalue) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
+			propval.pvalue = &tmp_bin;
+			tmp_bin.cb = strlen(username) + 1;
+			tmp_bin.pb = username;
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
