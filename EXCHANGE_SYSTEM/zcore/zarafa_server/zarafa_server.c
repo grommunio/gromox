@@ -1034,7 +1034,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		break;
 	default:
 		if (0 == strncmp(entryid.pb, "/exmdb=", 7)) {
-			stncpy(essdn, entryid.pb, sizeof(essdn));
+			strncpy(essdn, entryid.pb, sizeof(essdn));
 		} else if (TRUE == common_util_parse_addressbook_entryid(
 			entryid, &address_type, essdn) &&
 			0 == strncmp(essdn, "/exmdb=", 7) &&
