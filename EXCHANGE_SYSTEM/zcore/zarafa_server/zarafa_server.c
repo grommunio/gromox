@@ -1036,7 +1036,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 			entryid, &address_type, essdn) &&
 			0 == strncmp(essdn, "/exmdb=", 7) &&
 			ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == 
-			ddress_type) {
+			address_type) {
 			if (FALSE == common_util_exmdb_locinfo_from_string(
 				essdn + 7, &b_private, &user_id, &message_id)) {
 				zarafa_server_put_user_info(pinfo);
