@@ -331,43 +331,6 @@ static BINARY* container_object_contact_to_addressbook_entryid(
 	return pbin;
 }
 
-static BINARY* container_object_contact_to_oneoff_entryid(
-	const char *pdisplayname, const char *username)
-{
-	BINARY *pbin;
-	char x500dn[1024];
-	EXT_PUSH ext_push;
-	EMAIL_ADDR email_addr;
-	ADDRESSBOOK_ENTRYID tmp_entryid;
-	
-	if (NULL == pdisplayname || '\0' == pdisplayname[0]) {
-		parse_email_addr(&email_addr, username);
-		pdisplayname = email_addr.local_part;
-	}
-	snprintf(x500dn, sizeof(x500dn), "\"%s\"<%s>", pdisplayname, username);
-	tmp_entryid.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-								tmp_entryid.provider_uid);
-	tmp_entryid.version = 1;
-	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_ONE_OFF_USER;
-	tmp_entryid.px500dn = x500dn;
-	pbin = common_util_alloc(sizeof(BINARY));
-	if (NULL == pbin) {
-		return NULL;
-	}
-	pbin->pb = common_util_alloc(256);
-	if (NULL == pbin->pb) {
-		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
-	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
-		&ext_push, &tmp_entryid)) {
-		return NULL;
-	}
-	pbin->cb = ext_push.offset;
-	return pbin;
-}
-
 BOOL container_object_load_user_table(
 	CONTAINER_OBJECT *pcontainer,
 	const RESTRICTION *prestriction)
@@ -377,14 +340,17 @@ BOOL container_object_load_user_table(
 	char *paddress;
 	AB_BASE *pbase;
 	BINARY tmp_bin;
+	uint32_t handle;
 	uint32_t tmp_int;
 	uint32_t row_num;
 	USER_INFO *pinfo;
 	uint32_t table_id;
+	uint8_t mapi_type;
 	char username[256];
 	TARRAY_SET tmp_set;
 	char *pdisplayname;
 	char *paddress_type;
+	STORE_OBJECT *pstore;
 	TAGGED_PROPVAL propval;
 	PROPTAG_ARRAY proptags;
 	LONG_ARRAY minid_array;
@@ -515,6 +481,13 @@ BOOL container_object_load_user_table(
 		if (NULL == pparent_entryid) {
 			return FALSE;
 		}
+		handle = object_tree_get_store_handle(
+			pinfo->ptree, TRUE, pinfo->user_id);
+		pstore = object_tree_get_object(
+			pinfo->ptree, handle, &mapi_type);
+		if (NULL == pstore || MAPI_STORE != mapi_type) {
+			return FALSE;
+		}
 	} else {
 		tmp_set.count = 0;
 	}
@@ -613,14 +586,20 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			pvalue = container_object_contact_to_oneoff_entryid(
-										pdisplayname, username);
+			pvalue = common_util_get_propvals(
+				tmp_set.pparray[i], PROP_TAG_MID);
 			if (NULL == pvalue) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ENTRYID;
-			propval.pvalue = pvalue;
+			propval.pvalue = common_util_to_message_entryid(
+					pstore, pcontainer->id.exmdb_id.folder_id,
+					*(uint64_t*)pvalue);
+			if (NULL == ppropval.pvalue) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);

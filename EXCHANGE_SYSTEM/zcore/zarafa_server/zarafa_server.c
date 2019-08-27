@@ -1298,9 +1298,14 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	AB_BASE *pbase;
 	uint32_t minid;
 	BOOL b_private;
+	uint32_t handle;
 	USER_INFO *pinfo;
 	char essdn[1024];
 	char tmp_buff[16];
+	uint8_t mapi_type;
+	uint64_t folder_id;
+	uint64_t message_id;
+	STORE_OBJECT *pstore;
 	uint32_t address_type;
 	SIMPLE_TREE_NODE *pnode;
 	CONTAINER_ID container_id;
@@ -1333,6 +1338,34 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			return EC_ERROR;
 		}
 		zarafa_server_put_user_info(pinfo);
+		return EC_SUCCESS;
+	}
+	if (TRUE == common_util_from_message_entryid(
+		entryid, &b_private, &user_id, &folder_id,
+		&message_id)) {
+		handle = object_tree_get_store_handle(
+			pinfo->ptree, TRUE, pinfo->user_id);
+		pstore = object_tree_get_object(
+			pinfo->ptree, handle, &mapi_type);
+		if (NULL == pstore) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_NULL_OBJECT;
+		}
+		pobject = message_object_create(pstore, TRUE,
+				pinfo->cpid, message_id, &folder_id,
+				TAG_ACCESS_READ, FALSE, NULL);
+		if (NULL == pobject) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_NULL_OBJECT;
+		}
+		*pmapi_type = MAPI_MESSAGE;
+		*phobject = object_tree_add_object_handle(
+			pinfo->ptree, handle, *pmapi_type, pobject);
+		zarafa_server_put_user_info(pinfo);
+		if (INVALID_HANDLE == *phobject) {
+			message_object_free(pobject);
+			return EC_ERROR;
+		}
 		return EC_SUCCESS;
 	}
 	if (TRUE == common_util_parse_addressbook_entryid(
