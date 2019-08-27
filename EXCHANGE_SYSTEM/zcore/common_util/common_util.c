@@ -559,7 +559,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 	
 	if (0 == strncmp(loc_string, "1:", 2)) {
 		*pb_private = TRUE;
-	} else if (strncmp(loc_string, "2:", 2)) {
+	} else if (strncmp(loc_string, "0:", 2)) {
 		*pb_private = FALSE;
 	} else {
 		return FALSE;
