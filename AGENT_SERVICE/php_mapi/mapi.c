@@ -1189,9 +1189,6 @@ ZEND_FUNCTION(mapi_ab_openentry)
 	case MAPI_ABCONT:
 		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_abcont);
 		break;
-	case MAPI_MESSAGE:
-		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
-		break;
 	default:
 		efree(presource);
 		MAPI_G(hr) = EC_INVALID_OBJECT;
