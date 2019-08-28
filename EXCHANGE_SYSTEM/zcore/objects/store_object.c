@@ -1523,16 +1523,16 @@ static BOOL store_object_get_calculated_property(
 			pstore->account, temp_buff)) {
 			return FALSE;	
 		}
-		*ppvalue = common_util_lang_to_i18n(temp_buff);
+		*ppvalue = (void*)common_util_lang_to_i18n(temp_buff);
 		return TRUE;
 	case PROP_TAG_ECUSERTIMEZONE:
 		if (FALSE == store_object_check_private(pstore)) {
 			return FALSE;
 		}
 		if (FALSE == system_services_get_timezone(
-			pstore->username, temp_buff || '\0' ==
-			temp_buff[0])) {
-			*ppvalue = common_util_get_default_timezone();
+			pstore->account, temp_buff) || '\0' ==
+			temp_buff[0]) {
+			*ppvalue = (void*)common_util_get_default_timezone();
 		} else {
 			*ppvalue = common_util_dup(temp_buff);
 			if (NULL == *ppvalue) {
