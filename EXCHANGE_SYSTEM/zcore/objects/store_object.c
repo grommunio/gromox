@@ -1913,10 +1913,10 @@ static BOOL store_object_write_setting_json(
 	STORE_OBJECT *pstore, const char *setting_string)
 {
 	int fd;
-	char *pstring;
 	char lang[64];
 	char timezone[128];
 	char temp_path[256];
+	const char *pstring;
 	struct json_object *pval_obj;
 	struct json_object *pval_obj1;
 	struct json_object *proot_obj;
