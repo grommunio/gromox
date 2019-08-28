@@ -410,7 +410,8 @@ static int paragraph_filter(int action, int context_ID,
 					return MESSAGE_REJECT;
 				}
 				pdomain = strchr(tmp_buff, '@');
-				if (NULL != pdomain && TRUE == domain_filter_query(pdomain + 1)) {
+				if (NULL != pdomain && TRUE ==
+					domain_filter_query(pdomain + 1)) {
 					snprintf(reason, length, "000018 domain %s "
 						"in mail content is forbidden", pdomain + 1);
 					if (NULL!= spam_statistic) {
