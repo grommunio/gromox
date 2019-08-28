@@ -87,22 +87,31 @@ static int xmailer_filter(int action, int context_ID,
 			return MESSAGE_ACCEPT;
 		}
 		parse_mime_encode_string(tmp_buff, out_len, &encode_string);
-		if (0 != strcasecmp(encode_string.charset, "utf-8")) {
+		if (0 == strcasecmp(encode_string.charset, "utf-8")) {
+			decode_mime_string(tmp_buff, out_len,
+					tmp_buff1, sizeof(tmp_buff1));
+			parse_email_addr(&email_address, tmp_buff1);
+			if (0 != strcasecmp(email_address.domain, "outlook.com")) {
+				return MESSAGE_ACCEPT;
+			}
+			out_len = strlen(email_address.display_name);
+			if (7 != out_len && 10 != out_len) {
+				return MESSAGE_ACCEPT;
+			}
+			if (' ' != email_address.display_name[3] ||
+				FALSE == utf8_len(email_address.display_name,
+				&out_len) || (3 != out_len && 4 != out_len)) {
+				return MESSAGE_ACCEPT;	
+			}
+		} else if (0 == strcasecmp(encode_string.charset "gb2312")) {
+			decode_mime_string(tmp_buff, out_len,
+					tmp_buff1, sizeof(tmp_buff1));
+			parse_email_addr(&email_address, tmp_buff1);
+			if (0 != strcasecmp(email_address.domain, "outlook.com")) {
+				return MESSAGE_ACCEPT;
+			}
+		} else {
 			return MESSAGE_ACCEPT;
-		}
-		decode_mime_string(tmp_buff, out_len, tmp_buff1, sizeof(tmp_buff1));
-		parse_email_addr(&email_address, tmp_buff1);
-		if (0 != strcasecmp(email_address.domain, "outlook.com")) {
-			return MESSAGE_ACCEPT;
-		}
-		out_len = strlen(email_address.display_name);
-		if (7 != out_len && 10 != out_len) {
-			return MESSAGE_ACCEPT;
-		}
-		if (' ' != email_address.display_name[3] ||
-			FALSE == utf8_len(email_address.display_name,
-			&out_len) || (3 != out_len && 4 != out_len)) {
-			return MESSAGE_ACCEPT;	
 		}
 		if (0 != strncmp(mail_blk->parsed_buff, "[cid:", 5)
 			&& NULL == memmem(mail_blk->parsed_buff,
