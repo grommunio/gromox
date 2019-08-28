@@ -1932,7 +1932,7 @@ static BOOL store_object_write_setting_json(
 		if (json_object_object_get_ex(pval_obj, "language", &pval_obj1)) {
 			strcpy(lang, common_util_i18n_to_lang(
 				json_object_to_json_string(pval_obj1)));
-			system_services_set_lang(pstore->account, lang);
+			system_services_set_user_lang(pstore->account, lang);
 			json_object_object_del(pval_obj, "language");
 		}
 		if (json_object_object_get_ex(pval_obj, "timezone", &pval_obj1)) {
