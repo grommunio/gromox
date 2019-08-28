@@ -103,7 +103,7 @@ static int xmailer_filter(int action, int context_ID,
 				&out_len) || (3 != out_len && 4 != out_len)) {
 				return MESSAGE_ACCEPT;	
 			}
-		} else if (0 == strcasecmp(encode_string.charset "gb2312")) {
+		} else if (0 == strcasecmp(encode_string.charset, "gb2312")) {
 			decode_mime_string(tmp_buff, out_len,
 					tmp_buff1, sizeof(tmp_buff1));
 			parse_email_addr(&email_address, tmp_buff1);
