@@ -34,13 +34,6 @@ build/autogen.sh
 ./configure --prefix=/usr --libdir=/usr/lib64
 make && make install
 
-#download json-c from https://github.com/json-c/json-c
-unzip json-c-master.zip
-cd json-c-master
-./autogen.sh
-./configure --prefix=/usr --libdir=/usr/lib64
-make && make install
-
 #download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ caution!!! please download libxls-1.1.0.zip
 unzip libxls-1.1.0.zip
 cd libxls
