@@ -374,7 +374,7 @@ static int paragraph_filter(int action, int context_ID,
 			ptr = mail_blk->parsed_buff;
 			len = mail_blk->parsed_length;
 		}
-		while (NULL != (ptr1 = extract_uri(ptr, len, tmp_buff))) {
+		while (ptr1 = extract_uri(ptr, len, tmp_buff)) {
 			if (TRUE == domain_filter_query(tmp_buff)) {
 				snprintf(reason, length, "000018 domain %s "
 					"in mail content is forbidden", tmp_buff);
@@ -389,6 +389,13 @@ static int paragraph_filter(int action, int context_ID,
 			}
 			len -= ptr1 - ptr;
 			ptr = ptr1;
+		}
+		if (FALSE == mail_blk->is_parsed) {
+			ptr = mail_blk->original_buff;
+			len = mail_blk->original_length;
+		} else {
+			ptr = mail_blk->parsed_buff;
+			len = mail_blk->parsed_length;
 		}
 		while (paddress = find_mail_address((void*)ptr, len, &addr_len)) {
 			if (addr_len < sizeof(tmp_buff)) {
