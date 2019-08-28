@@ -322,7 +322,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
-	const char *freebusy_path);
+	const char *freebusy_path, const char *langmap_path);
 
 int common_util_run();
 
@@ -531,5 +531,11 @@ BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm);
 
 void common_util_replace_address_type(
 	TPROPVAL_ARRAY *ppropvals, BOOL b_zarafa);
+
+const char* common_util_lang_to_i18n(const char *lang);
+
+const char* common_util_i18n_to_lang(const char *i18n);
+
+const char* common_util_get_default_timezone();
 
 #endif /* _H_COMMON_UTIL_ */

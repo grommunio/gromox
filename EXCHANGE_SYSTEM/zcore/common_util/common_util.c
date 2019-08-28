@@ -48,6 +48,11 @@ typedef struct _ENVIRONMENT_CONTEXT {
 	int clifd;
 } ENVIRONMENT_CONTEXT;
 
+typedef struct _LANGMAP_ITEM {
+	char lang[32];
+	char i18n[32];
+} LANGMAP_ITEM;
+
 static int g_max_rcpt;
 static int g_mime_num;
 static int g_smtp_port;
@@ -59,7 +64,9 @@ static MIME_POOL *g_mime_pool;
 static pthread_key_t g_dir_key;
 static pthread_key_t g_env_key;
 static char g_default_zone[64];
+static char g_langmap_path[256];
 static char g_freebusy_path[256];
+static LIST_FILE *g_langmap_list;
 static char g_default_charset[32];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
@@ -590,7 +597,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
-	const char *freebusy_path)
+	const char *freebusy_path, const char *langmap_path)
 {
 	strcpy(g_org_name, org_name);
 	strcpy(g_hostname, hostname);
@@ -604,6 +611,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	strcpy(g_smtp_ip, smtp_ip);
 	g_smtp_port = smtp_port;
 	strcpy(g_freebusy_path, freebusy_path);
+	strcpy(g_langmap_path, langmap_path);
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);
 }
@@ -627,11 +635,21 @@ int common_util_run()
 		printf("[common_util]: fail to init oxcmail library\n");
 		return -2;
 	}
+	g_langmap_list = list_file_init(g_langmap_list, "%s:32%s:32");
+	if (NULL == g_langmap_list ||
+		0 == list_file_get_item_num(g_langmap_list)) {
+		printf("[common_util]: fail to init langmap %s\n", g_langmap_path);
+		return -3;
+	}
 	return 0;
 }
 
 int common_util_stop()
 {
+	if (NULL != g_langmap_list) {
+		list_file_free(g_langmap_list);
+		g_langmap_list = NULL;
+	}
 	return 0;
 }
 
@@ -3551,4 +3569,39 @@ void common_util_replace_address_type(
 			break;
 		}
 	}
+}
+
+const char* common_util_lang_to_i18n(const char *lang)
+{
+	int i, num;
+	LANGMAP_ITEM *pitem;
+	
+	pitem = list_file_get_list(g_langmap_list);
+	num = list_file_get_item_num(g_langmap_list);
+	for (i=0; i<num; i++) {
+		if (0 == strcasecmp(pitem[i].lang, lang)) {
+			return pitem[i].i18n;
+		}
+	}
+	return pitem[0].i18n;
+}
+
+const char* common_util_i18n_to_lang(const char *i18n)
+{
+	int i, num;
+	LANGMAP_ITEM *pitem;
+	
+	pitem = list_file_get_list(g_langmap_list);
+	num = list_file_get_item_num(g_langmap_list);
+	for (i=0; i<num; i++) {
+		if (0 == strcasecmp(pitem[i].i18n, i18n)) {
+			return pitem[i].i18n;
+		}
+	}
+	return pitem[0].lang;
+}
+
+const char* common_util_get_default_timezone()
+{
+	return g_default_zone;
 }

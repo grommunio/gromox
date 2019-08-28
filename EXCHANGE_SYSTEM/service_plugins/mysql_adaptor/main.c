@@ -181,11 +181,23 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 						" \"get_user_lang\" service\n");
 			return FALSE;	
 		}
+		if (FALSE == register_service("set_user_lang",
+			mysql_adaptor_set_user_lang)) {
+			printf("[mysql_adaptor]: fail to register"
+						" \"set_user_lang\" service\n");
+			return FALSE;	
+		}
 		if (FALSE == register_service("get_timezone",
 			mysql_adaptor_get_timezone)) {
 			printf("[mysql_adaptor]: fail to register"
 						" \"get_timezone\" service\n");
-			return FALSE;	
+			return FALSE;
+		}
+		if (FALSE == register_service("set_timezone",
+			mysql_adaptor_set_timezone)) {
+			printf("[mysql_adaptor]: fail to register"
+						" \"set_timezone\" service\n");
+			return FALSE;
 		}
 		if (FALSE == register_service("get_maildir",
 			mysql_adaptor_get_maildir)) {

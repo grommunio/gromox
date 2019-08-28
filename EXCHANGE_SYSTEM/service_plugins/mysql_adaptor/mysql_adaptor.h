@@ -31,8 +31,12 @@ BOOL mysql_adaptor_get_user_displayname(
 	const char *username, char *pdisplayname);
 
 BOOL mysql_adaptor_get_user_lang(const char *username, char *lang);
+
+BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
 	
 BOOL mysql_adaptor_get_timezone(const char *username, char *timezone);
+
+BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);
 
 BOOL mysql_adaptor_get_maildir(const char *username, char *maildir);
 

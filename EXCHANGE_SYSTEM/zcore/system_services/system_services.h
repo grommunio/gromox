@@ -12,9 +12,11 @@ int system_services_stop();
 void system_services_free();
 
 extern BOOL (*system_services_get_user_lang)(const char*, char*);
+extern BOOL (*system_services_set_user_lang)(const char*, const char*);
 extern BOOL (*system_services_get_maildir)(const char*, char*);
 extern BOOL (*system_services_get_homedir)(const char*, char*);
 extern BOOL (*system_services_get_timezone)(const char*, char *);
+extern BOOL (*system_services_set_timezone)(const char*, const char *);
 extern BOOL (*system_services_get_username_from_id)(int, char*);
 extern BOOL (*system_services_get_id_from_username)(const char*, int*);
 extern BOOL (*system_services_get_domain_ids)(const char *, int*, int*);

@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 	char exmdb_path[256];
 	CONFIG_FILE *pconfig;
 	char config_path[256];
+	char langmap_path[256];
 	char service_path[256];
 	char resource_path[256];
 	char grouping_path[256];
@@ -149,6 +150,7 @@ int main(int argc, char **argv)
 	printf("[system]: exmdb file path is %s\n", exmdb_path);
 	sprintf(resource_path, "%s/notify_bounce", data_path);
 	sprintf(grouping_path, "%s/msgchg_grouping", data_path);
+	sprintf(langmap_path, "%s/langmap.txt", data_path);
 	
 	msgchg_grouping_init(grouping_path);
 	service_init(threads_num, service_path, config_path, data_path);
@@ -301,7 +303,7 @@ int main(int argc, char **argv)
 	}
 	common_util_init(org_name, host_name, charset, timezone,
 		mime_num, max_rcpt, max_mail, max_length, max_rule_len,
-		smtp_ip, smtp_port, str_value);
+		smtp_ip, smtp_port, str_value, langmap_path);
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {

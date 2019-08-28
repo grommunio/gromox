@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <json-c/json.h>
 
 #define HGROWING_SIZE									0x500
 
@@ -34,6 +35,8 @@
 #define PROP_TAG_OOFEXTERNALAUDIENCE					0x6766000B
 #define PROP_TAG_OOFEXTERNALREPLY						0x6767001F
 #define PROP_TAG_OOFEXTERNALSUBJECT						0x6768001F
+
+#define PROP_TAG_ECWEBACCESSSETTINGSJSON				0x6772001F
 
 #define OOF_STATE_DISABLED								0x00000000
 #define OOF_STATE_ENABLED								0x00000001
@@ -1057,6 +1060,113 @@ static void* store_object_get_oof_property(
 	return pvalue;
 }
 
+static char* store_object_read_setting_json(STORE_OBJECT *pstore)
+{
+	int fd;
+	char *pstring;
+	char lang[64];
+	const char *i18n;
+	char timezone[128];
+	char temp_path[256];
+	struct stat node_stat;
+	struct json_object *pval_obj;
+	struct json_object *pval_obj1;
+	struct json_object *proot_obj;
+	
+	sprintf(temp_path, "%s/config/setting.json",
+				store_object_get_dir(pstore));
+	if (0 == stat(temp_path, &node_stat)) {
+		fd = open(temp_path, O_RDONLY);
+		if (-1 == fd) {
+			return NULL;
+		}
+		pstring = common_util_alloc(node_stat.st_size + 1);
+		if (NULL == pstring) {
+			close(fd);
+			return NULL;
+		}
+		if (node_stat.st_size != read(fd,
+			pstring, node_stat.st_size)) {
+			close(fd);
+			return NULL;
+		}
+		close(fd);
+		pstring[node_stat.st_size] = '\0';
+		proot_obj = json_tokener_parse(pstring);
+		if (NULL == proot_obj) {
+			return NULL;
+		}
+	} else {
+		proot_obj = json_object_new_object();
+		if (NULL == proot_obj) {
+			return NULL;
+		}
+	}
+	if (0 == json_object_object_get_ex(
+		proot_obj, "settings", &pval_obj)) {
+		pval_obj = json_object_new_object();
+		if (NULL == pval_obj) {
+			json_object_put(proot_obj);
+			return NULL;
+		}
+		json_object_object_add(proot_obj, "settings", pval_obj);
+	}
+	if (0 == json_object_object_get_ex(
+		pval_obj, "zarafa", &pval_obj1)) {
+		pval_obj1 = json_object_new_object();
+		if (NULL == pval_obj1) {
+			json_object_put(proot_obj);
+			return NULL;
+		}
+		json_object_object_add(pval_obj, "zarafa", pval_obj1);
+	}
+	pval_obj = pval_obj1;
+	if (0 == json_object_object_get_ex(
+		pval_obj, "v1", &pval_obj1)) {
+		pval_obj1 = json_object_new_object();
+		if (NULL == pval_obj1) {
+			json_object_put(proot_obj);
+			return NULL;
+		}
+		json_object_object_add(pval_obj, "v1", pval_obj1);
+	}
+	pval_obj = pval_obj1;
+	if (0 == json_object_object_get_ex(
+		pval_obj, "main", &pval_obj1)) {
+		pval_obj1 = json_object_new_object();
+		if (NULL == pval_obj1) {
+			json_object_put(proot_obj);
+			return NULL;
+		}
+		json_object_object_add(pval_obj, "main", pval_obj1);
+	}
+	pval_obj = pval_obj1;
+	if (TRUE == system_services_get_user_lang(pstore->account, lang)) {
+		i18n = common_util_lang_to_i18n(lang);
+	} else {
+		i18n = common_util_lang_to_i18n("en");
+	}
+	if (FALSE == system_services_get_timezone(pstore->account,
+		timezone) || '\0' == timezone[0]) {
+		strcpy(timezone, common_util_get_default_timezone());
+	}
+	pval_obj1 = json_object_new_string(i18n);
+	if (NULL == pval_obj1) {
+		json_object_put(proot_obj);
+		return NULL;
+	}
+	json_object_object_add(pval_obj, "language", pval_obj1);
+	pval_obj1 = json_object_new_string(timezone);
+	if (NULL == pval_obj1) {
+		json_object_put(proot_obj);
+		return NULL;
+	}
+	json_object_object_add(pval_obj, "timezone", pval_obj1);
+	pstring = common_util_dup(json_object_to_json_string(proot_obj));
+	json_object_put(proot_obj);
+	return pstring;
+}
+
 static BOOL store_object_get_calculated_property(
 	STORE_OBJECT *pstore, uint32_t proptag, void **ppvalue)
 {
@@ -1480,6 +1590,15 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		return TRUE;
+	case PROP_TAG_ECWEBACCESSSETTINGSJSON:
+		if (FALSE == store_object_check_private(pstore)) {
+			return FALSE;
+		}
+		*ppvalue = store_object_read_setting_json(pstore);
+		if (NULL == *ppvalue) {
+			return FALSE;
+		}
+		return TRUE;
 	}
 	return FALSE;
 }
@@ -1790,6 +1909,52 @@ static BOOL store_object_set_oof_schedule(const char *maildir,
 	return TRUE;
 }
 
+static BOOL store_object_write_setting_json(
+	STORE_OBJECT *pstore, const char *setting_string)
+{
+	int fd;
+	char *pstring;
+	char lang[64];
+	char timezone[128];
+	char temp_path[256];
+	struct json_object *pval_obj;
+	struct json_object *pval_obj1;
+	struct json_object *proot_obj;
+	
+	proot_obj = json_tokener_parse(setting_string);
+	if (NULL == proot_obj) {
+		return FALSE;
+	}
+	if (json_object_object_get_ex(proot_obj, "settings", &pval_obj) &&
+		json_object_object_get_ex(pval_obj, "zarafa", &pval_obj) &&
+		json_object_object_get_ex(pval_obj, "v1", &pval_obj) &&
+		json_object_object_get_ex(pval_obj, "main", &pval_obj)) {
+		if (json_object_object_get_ex(pval_obj, "language", &pval_obj1)) {
+			strcpy(lang, common_util_i18n_to_lang(
+				json_object_to_json_string(pval_obj1)));
+			system_services_set_lang(pstore->account, lang);
+			json_object_object_del(pval_obj, "language");
+		}
+		if (json_object_object_get_ex(pval_obj, "timezone", &pval_obj1)) {
+			system_services_set_timezone(pstore->account,
+				json_object_to_json_string(pval_obj1));
+			json_object_object_del(pval_obj, "timezone");
+		}
+	}
+	sprintf(temp_path, "%s/config/setting.json",
+				store_object_get_dir(pstore));
+	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+	if (-1 == fd) {
+		json_object_put(proot_obj);
+		return FALSE;
+	}
+	pstring = json_object_to_json_string(proot_obj);
+	write(fd, pstring, strlen(pstring));
+	close(fd);
+	json_object_put(proot_obj);
+	return TRUE;
+}
+
 BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	const TPROPVAL_ARRAY *ppropvals)
 {
@@ -1831,6 +1996,12 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 				store_object_get_dir(pstore),
 				ppropvals->ppropval[i].proptag,
 				ppropvals->ppropval[i].pvalue)) {
+				return FALSE;	
+			}
+			break;
+		case PROP_TAG_ECWEBACCESSSETTINGSJSON:
+			if (FALSE == store_object_write_setting_json(
+				pstore, ppropvals->ppropval[i].pvalue)) {
 				return FALSE;	
 			}
 			break;
