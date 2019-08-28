@@ -43,7 +43,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 
 static void console_talk(int argc, char **argv, char *result, int length);
 
-static BOOL extract_uri(const char *in_buff, int length, char *uri);
+static const char* extract_uri(const char *in_buff, int length, char *uri);
 
 DECLARE_API;
 
@@ -303,7 +303,7 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 					return MESSAGE_ACCEPT;
 				}
 				mem_file_read(&pmail->phead->f_others, buff, val_len);
-				if (FALSE == extract_uri(buff, val_len, uri)) {
+				if (NULL == extract_uri(buff, val_len, uri)) {
 					return MESSAGE_ACCEPT;
 				}
 				if (TRUE == domain_filter_query(uri)) {
@@ -355,6 +355,7 @@ static int paragraph_filter(int action, int context_ID,
 	char *pdomain;
 	char *paddress;
 	const char *ptr;
+	const char *ptr1;
 	char tmp_buff[256];
 	MAIL_ENTITY mail_entity;
 	CONNECTION *pconnection;
@@ -373,17 +374,21 @@ static int paragraph_filter(int action, int context_ID,
 			ptr = mail_blk->parsed_buff;
 			len = mail_blk->parsed_length;
 		}
-		if (TRUE == extract_uri(ptr, len, g_context_list[context_ID].uri)) {
-			if (TRUE == domain_filter_query(g_context_list[context_ID].uri)) {
-				snprintf(reason, length, "000018 domain %s"
-							" in mail content is forbidden",
-							g_context_list[context_ID].uri);
+		if (NULL != (ptr1 = extract_uri(ptr, len, tmp_buff))) {
+			if (TRUE == domain_filter_query(tmp_buff)) {
+				snprintf(reason, length, "000018 domain %s "
+					"in mail content is forbidden", tmp_buff);
 				if (NULL!= spam_statistic) {
 					spam_statistic(SPAM_STATISTIC_DOMAIN_FILTER);
 				}
 				return MESSAGE_REJECT;
 			}
-			g_context_list[context_ID].type = CONTEXT_URI_HAS;
+			if (CONTEXT_URI_NONE == g_context_list[context_ID].type) {
+				strcpy(g_context_list[context_ID].uri, tmp_buff);
+				g_context_list[context_ID].type = CONTEXT_URI_HAS;
+			}
+			len -= ptr1 - ptr;
+			ptr = ptr1;
 		}
 		while (paddress = find_mail_address((void*)ptr, len, &addr_len)) {
 			if (addr_len < sizeof(tmp_buff)) {
@@ -505,8 +510,49 @@ SPAM_FOUND:
 	}
 }
 
+static int htoi(char *s)
+{
+	int c;
+	int value;
 
-static BOOL extract_uri(const char *in_buff, int length, char *uri)
+	c = ((unsigned char *)s)[0];
+	if (isupper(c)) {
+		c = tolower(c);
+	}
+	value = (c >= '0' && c <= '9' ? c - '0' : c - 'a' + 10) * 16;
+	c = ((unsigned char *)s)[1];
+	if (isupper(c)) {
+		c = tolower(c);
+	}
+	value += c >= '0' && c <= '9' ? c - '0' : c - 'a' + 10;
+	return value;
+}
+
+static int url_decode(char *str, int len)
+{
+	char *dest = str;
+	char *data = str;
+
+	while (len--) {
+		if ('+' == *data) {
+			*dest = ' ';
+		} else if ('%' == *data && len >= 2
+			&& isxdigit((int)*(data + 1)) &&
+			isxdigit((int)*(data + 2))) {
+			*dest = (char)htoi(data + 1);
+			data += 2;
+			len -= 2;
+		} else {
+			*dest = *data;
+		}
+		data++;
+		dest++;
+	}
+	*dest = '\0';
+	return dest - str;
+}
+
+static const char* extract_uri(const char *in_buff, int length, char *uri)
 {
 	char url[256];
 	char *d1, *d2, *d3;
@@ -517,11 +563,10 @@ static BOOL extract_uri(const char *in_buff, int length, char *uri)
 
 	ptr = (char*)in_buff;
 	buff_len = length;
-	
 	while (TRUE) {
 		presult = find_url(ptr, buff_len, &url_len);
 		if (NULL == presult) {
-			return FALSE;
+			return NULL;
 		}
 		if (url_len > 255) {
 			url_len = 255;
@@ -541,6 +586,7 @@ static BOOL extract_uri(const char *in_buff, int length, char *uri)
 		}
 		memcpy(url, presult, url_len);
 		url[url_len] = '\0';
+		url_decode(url, url_len);
 		if (0 == strncasecmp(url, "w3.org", 6) ||
 			0 == strncasecmp(url, "w3c.org", 7) ||
 			0 == strncasecmp(url, "internet.e-mail", 15) ||
@@ -554,7 +600,7 @@ static BOOL extract_uri(const char *in_buff, int length, char *uri)
 			len = strlen(uri);
 			if ('\0' == url[len] || '/' == url[len] ||
 				':' == url[len] || '?' == url[len]) {
-				return TRUE;
+				return presult + url_len;
 			}
 		}
 		pslash = strchr(url, '/');
@@ -594,9 +640,9 @@ static BOOL extract_uri(const char *in_buff, int length, char *uri)
 			}
 		}
 		uri[255] = '\0';
-		return TRUE;	
+		return presult + url_len;;	
 	}
-	return FALSE;
+	return NULL;
 }
 
 static void console_talk(int argc, char **argv, char *result, int length)
