@@ -37,7 +37,6 @@
 
 #define PROP_TAG_ECUSERLANGUAGE							0x6770001F
 #define PROP_TAG_ECUSERTIMEZONE							0x6771001F
-#define PROP_TAG_ECWEBACCESSSETTINGSJSON				0x6772001F
 
 #define OOF_STATE_DISABLED								0x00000000
 #define OOF_STATE_ENABLED								0x00000001
@@ -1061,37 +1060,6 @@ static void* store_object_get_oof_property(
 	return pvalue;
 }
 
-static char* store_object_read_setting_json(STORE_OBJECT *pstore)
-{
-	int fd;
-	char *pstring;
-	char temp_path[256];
-	struct stat node_stat;
-	
-	sprintf(temp_path, "%s/config/setting.json",
-				store_object_get_dir(pstore));
-	if (0 != stat(temp_path, &node_stat)) {
-		return NULL;
-	}
-	fd = open(temp_path, O_RDONLY);
-	if (-1 == fd) {
-		return NULL;
-	}
-	pstring = common_util_alloc(node_stat.st_size + 1);
-	if (NULL == pstring) {
-		close(fd);
-		return NULL;
-	}
-	if (node_stat.st_size != read(fd,
-		pstring, node_stat.st_size)) {
-		close(fd);
-		return NULL;
-	}
-	close(fd);
-	pstring[node_stat.st_size] = '\0';
-	return pstring;
-}
-
 static BOOL store_object_get_calculated_property(
 	STORE_OBJECT *pstore, uint32_t proptag, void **ppvalue)
 {
@@ -1540,15 +1508,6 @@ static BOOL store_object_get_calculated_property(
 			}
 		}
 		return TRUE;
-	case PROP_TAG_ECWEBACCESSSETTINGSJSON:
-		if (FALSE == store_object_check_private(pstore)) {
-			return FALSE;
-		}
-		*ppvalue = store_object_read_setting_json(pstore);
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		return TRUE;
 	}
 	return FALSE;
 }
@@ -1859,24 +1818,6 @@ static BOOL store_object_set_oof_schedule(const char *maildir,
 	return TRUE;
 }
 
-static BOOL store_object_write_setting_json(
-	STORE_OBJECT *pstore, const char *setting_string)
-{
-	int fd;
-	char temp_path[256];
-	const char *pstring;
-	
-	sprintf(temp_path, "%s/config/setting.json",
-				store_object_get_dir(pstore));
-	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-	if (-1 == fd) {
-		return FALSE;
-	}
-	write(fd, setting_string, strlen(setting_string));
-	close(fd);
-	return TRUE;
-}
-
 BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	const TPROPVAL_ARRAY *ppropvals)
 {
@@ -1931,12 +1872,6 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 			if (TRUE == pstore->b_private) {
 				system_services_set_timezone(pstore->account,
 							ppropvals->ppropval[i].pvalue);
-			}
-			break;
-		case PROP_TAG_ECWEBACCESSSETTINGSJSON:
-			if (FALSE == store_object_write_setting_json(
-				pstore, ppropvals->ppropval[i].pvalue)) {
-				return FALSE;	
 			}
 			break;
 		default:
