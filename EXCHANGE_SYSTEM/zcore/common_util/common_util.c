@@ -3612,7 +3612,7 @@ const char* common_util_i18n_to_lang(const char *i18n)
 	num = list_file_get_item_num(g_langmap_list);
 	for (i=0; i<num; i++) {
 		if (0 == strcasecmp(pitem[i].i18n, i18n)) {
-			return pitem[i].i18n;
+			return pitem[i].lang;
 		}
 	}
 	return pitem[0].lang;
