@@ -1839,7 +1839,6 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	tmp_propvals.count = 5;
 	tmp_propvals.ppropval[0].proptag = PROP_TAG_DISPLAYNAME;
 	tmp_propvals.ppropval[0].pvalue = (void*)pdisplayname;
-	tmp_propvals.count ++;
 	if (FALSE == exmdb_client_allocate_cn(pstore->dir, &change_num)) {
 		return FALSE;
 	}
