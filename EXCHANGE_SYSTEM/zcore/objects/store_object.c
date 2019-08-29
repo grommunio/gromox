@@ -1823,6 +1823,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 {
 	XID tmp_xid;
 	BINARY *pbin_pcl;
+	uint64_t folder_id;
 	uint64_t last_time;
 	uint64_t change_num;
 	BINARY *pbin_changekey;
@@ -1833,6 +1834,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	if (FALSE == pstore->b_private) {
 		return FALSE;
 	}
+	folder_id = rop_util_make_eid_ex(1, fid_val);
 	tmp_propvals.ppropval = propval_buff;
 	tmp_propvals.count = 5;
 	tmp_propvals.ppropval[0].proptag = PROP_TAG_DISPLAYNAME;
@@ -1843,9 +1845,8 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	}
 	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
-	if (FALSE == exmdb_client_get_folder_property(
-		pstore->dir, 0, rop_util_make_eid_ex(1,
-		fid_val), PROP_TAG_PREDECESSORCHANGELIST,
+	if (FALSE == exmdb_client_get_folder_property(pstore->dir,
+		0, folder_id, PROP_TAG_PREDECESSORCHANGELIST,
 		(void**)&pbin_pcl) || NULL == pbin_pcl) {
 		return FALSE;
 	}
