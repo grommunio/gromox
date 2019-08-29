@@ -134,17 +134,17 @@ int listener_run()
  */
 int listerner_trigger_accept()
 {
-	pthread_t       thr_id;
 	pthread_attr_t  attr;
 
 	pthread_attr_init(&attr);
-	if(0 != pthread_create(&thr_id, &attr, thread_work_func, NULL)){
+	if(0 != pthread_create(&g_thr_id, &attr, thread_work_func, NULL)) {
 		printf("[listener]: fail to create listener thread\n");
 		pthread_attr_destroy(&attr);
 		return -1;
 	}
 	if (g_listener_ssl_port > 0) {
-		if(0 != pthread_create(&thr_id, &attr, thread_work_ssl_func, NULL)){
+		if(0 != pthread_create(&g_ssl_thr_id,
+			&attr, thread_work_ssl_func, NULL)) {
 			printf("[listener]: fail to create listener thread\n");
 			pthread_attr_destroy(&attr);
 			return -2;

@@ -25,17 +25,21 @@ static int  attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 
 static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name);
 
-static char g_return_reason[1024];
-
 static BOOL *g_context_list;
 
+static int g_attachment_num;
 
-static char *g_attachment_list[] ={
-	"exe", "com", "bat", "ps1", "scr", "cab",
-	"js", "jse", "vbs", "vbe", "wsf", "jar"};
+static char **g_attachment_list;
+
+static char g_return_reason[1024];
+
+
 
 int AS_LibMain(int reason, void **ppdata, char *path)
 {
+	int len;
+	char *ptoken;
+	char tmp_buff[32];
 	char file_name[256];
 	char temp_path[256];
 	char *str_value, *psearch;
@@ -76,6 +80,32 @@ int AS_LibMain(int reason, void **ppdata, char *path)
 			strcpy(g_return_reason, str_value);
 		}
 		printf("[attach_filter]: return string is %s\n", g_return_reason);
+		str_value = config_file_get_value(pconfig_file, "FILE_EXTENSIONS");
+		if (NULL == str_value) {
+			printf("[attach_filter]: fail to get FILE_EXTENSIONS in config file\n");
+			return FALSE;
+		}
+		ptoken = str_value;
+		g_attachment_num = 0;
+		g_attachment_list = malloc(strlen(str_value)*sizeof(char*));
+		while (psearch = strchr(ptoken, ',')) {
+			len = psearch - ptoken;
+			if (len >= 32) {
+				ptoken = psearch + 1;
+				continue;
+			}
+			memcpy(tmp_buff, ptoken, len);
+			tmp_buff[len] = '\0';
+			ltrim_string(tmp_buff);
+			rtrim_string(tmp_buff);
+			if ('\0' != tmp_buff[0]) {
+				g_attachment_list[g_attachment_num] = strdup(tmp_buff);
+				if (NULL != g_attachment_list[g_attachment_num]) {
+					g_attachment_num ++;
+				}
+			}
+			ptoken = psearch + 1;
+		}
 		config_file_free(pconfig_file);
 		g_context_list = malloc(get_context_num()*sizeof(BOOL));
 		if (NULL == g_context_list) {
@@ -94,6 +124,13 @@ int AS_LibMain(int reason, void **ppdata, char *path)
 		if (NULL != g_context_list) {
 			free(g_context_list);
 			g_context_list = NULL;
+		}
+		if (NULL != g_attachment_list) {
+			while (g_attachment_num > 0) {
+				g_attachment_num --;
+				free(g_attachment_list[g_attachment_num]);
+			}
+			free(g_attachment_list);
 		}
         return TRUE;
 	}
@@ -147,7 +184,7 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 			return MESSAGE_ACCEPT;
 		}
 		
-		for (i=0; i<sizeof(g_attachment_list)/sizeof(char*); i++) {
+		for (i=0; i<g_attachment_num; i++) {
 			if (0 == strcasecmp(pdot + 1, g_attachment_list[i])) {
 				if (TRUE == check_tagging(mail_entity.penvelop->from,
 					&mail_entity.penvelop->f_rcpt_to)) {
@@ -169,19 +206,24 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 				return MESSAGE_ACCEPT;
 			}
 			for (j=0; j<mail_blk->parsed_length; j++) {
-				if (*(int*)(mail_blk->parsed_buff + j) == CENTRALFILEHEADERSIGNATURE) {
-					name_length = *(unsigned short*)(mail_blk->parsed_buff + j + 28);
+				if (*(int*)(mail_blk->parsed_buff + j)
+					== CENTRALFILEHEADERSIGNATURE) {
+					name_length = *(unsigned short*)
+						(mail_blk->parsed_buff + j + 28);
 					if (name_length > 255) {
 						name_length = 255;
 					}
-					memcpy(file_name, mail_blk->parsed_buff + j + 46, name_length);
+					memcpy(file_name, mail_blk->parsed_buff
+									+ j + 46, name_length);
 					file_name[name_length] = '\0';
 					pdot = strrchr(file_name, '.');
 					if (NULL != pdot) {
-						for (i=0; i<sizeof(g_attachment_list)/sizeof(char*); i++) {
-							if (0 == strcasecmp(pdot + 1, g_attachment_list[i])) {
+						for (i=0; i<g_attachment_num; i++) {
+							if (0 == strcasecmp(pdot + 1,
+								g_attachment_list[i])) {
 								if (TRUE == check_tagging(
-									mail_entity.penvelop->from, &mail_entity.penvelop->f_rcpt_to)) {
+									mail_entity.penvelop->from,
+									&mail_entity.penvelop->f_rcpt_to)) {
 									mark_context_spam(context_ID);
 									g_context_list[context_ID] = TRUE;
 									return MESSAGE_ACCEPT;
@@ -189,7 +231,8 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 									if (NULL!= spam_statistic) {
 										spam_statistic(SPAM_STATISTIC_ATTACH_FILTER);
 									}
-									snprintf(reason, length, g_return_reason, g_attachment_list[i]);
+									snprintf(reason, length,
+										g_return_reason, g_attachment_list[i]);
 									return MESSAGE_REJECT;
 								}
 							}
@@ -242,7 +285,7 @@ static int attach_name_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 					archive_read_data_skip(a);
 					continue;
 				}
-				for (i=0; i<sizeof(g_attachment_list)/sizeof(char*); i++) {
+				for (i=0; i<g_attachment_num; i++) {
 					if (0 == strcasecmp(pdot + 1,
 						g_attachment_list[i])) {
 						archive_read_free(a);
