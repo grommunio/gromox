@@ -3626,8 +3626,9 @@ const char* common_util_get_default_timezone()
 
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 {
+	int i, j;
 	char *pline;
-	int i, line_num;
+	int line_num;
 	
 	line_num = list_file_get_item_num(pfile);
 	pline = list_file_get_list(pfile);
