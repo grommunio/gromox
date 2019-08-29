@@ -3637,7 +3637,7 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 			continue;
 		}
 		for (j=0; j<RES_TOTAL_NUM; j++) {
-			ppfolder_lang[j] = pline + 1088*i + 64*(j + 1));
+			ppfolder_lang[j] = pline + 1088*i + 64*(j + 1);
 		}
 		break;
 	}
