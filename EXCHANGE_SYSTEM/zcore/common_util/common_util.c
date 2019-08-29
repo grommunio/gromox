@@ -68,8 +68,10 @@ static char g_langmap_path[256];
 static char g_freebusy_path[256];
 static LIST_FILE *g_langmap_list;
 static char g_default_charset[32];
+static char g_folderlang_path[256];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
+static LIST_FILE *g_folderlang_list;
 
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
@@ -597,7 +599,8 @@ void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
-	const char *freebusy_path, const char *langmap_path)
+	const char *freebusy_path, const char *langmap_path,
+	const char *folderlang_path)
 {
 	strcpy(g_org_name, org_name);
 	strcpy(g_hostname, hostname);
@@ -612,6 +615,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	g_smtp_port = smtp_port;
 	strcpy(g_freebusy_path, freebusy_path);
 	strcpy(g_langmap_path, langmap_path);
+	strcpy(g_folderlang_path, folderlang_path);
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);
 }
@@ -641,6 +645,15 @@ int common_util_run()
 		printf("[common_util]: fail to init langmap %s\n", g_langmap_path);
 		return -3;
 	}
+	
+	g_folderlang_list = list_file_init(g_folderlang_path,
+		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
+		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
+	if (NULL == g_folderlang_list) {
+		printf("[common_util]: fail to init "
+			"folderlang %s\n", g_folderlang_path);
+		return -4;
+	}
 	return 0;
 }
 
@@ -649,6 +662,10 @@ int common_util_stop()
 	if (NULL != g_langmap_list) {
 		list_file_free(g_langmap_list);
 		g_langmap_list = NULL;
+	}
+	if (NULL != g_folderlang_list) {
+		list_file_free(g_folderlang_list);
+		g_folderlang_list = NULL;
 	}
 	return 0;
 }
@@ -3604,4 +3621,42 @@ const char* common_util_i18n_to_lang(const char *i18n)
 const char* common_util_get_default_timezone()
 {
 	return g_default_zone;
+}
+
+
+void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
+{
+	char *pline;
+	int i, line_num;
+	
+	line_num = list_file_get_item_num(pfile);
+	pline = list_file_get_list(pfile);
+	for (i=0; i<line_num; i++) {
+		if (0 != strcasecmp(pline + 1088*i, lang)) {
+			continue;
+		}
+		for (j=0; j<RES_TOTAL_NUM; j++) {
+			ppfolder_lang[j] = pline + 1088*i + 64*(j + 1));
+		}
+		break;
+	}
+	list_file_free(pfile);
+	if (i >= line_num) {
+		ppfolder_lang[RES_ID_IPM] = "Top of Information Store";
+		ppfolder_lang[RES_ID_INBOX]  = "Inbox";
+		ppfolder_lang[RES_ID_DRAFT] = "Drafts";
+		ppfolder_lang[RES_ID_OUTBOX] = "Outbox";
+		ppfolder_lang[RES_ID_SENT] = "Sent Items";
+		ppfolder_lang[RES_ID_DELETED] = "Deleted Items";
+		ppfolder_lang[RES_ID_CONTACTS] = "Contacts";
+		ppfolder_lang[RES_ID_CALENDAR] = "Calendar";
+		ppfolder_lang[RES_ID_JOURNAL] = "Journal";
+		ppfolder_lang[RES_ID_NOTES] = "Notes";
+		ppfolder_lang[RES_ID_TASKS] = "Tasks";
+		ppfolder_lang[RES_ID_JUNK] = "Junk E-mail";
+		ppfolder_lang[RES_ID_SYNC] = "Sync Issues";
+		ppfolder_lang[RES_ID_CONFLICT] = "Conflicts";
+		ppfolder_lang[RES_ID_LOCAL] = "Local Failures";
+		ppfolder_lang[RES_ID_SERVER] = "Server Failures";
+	}
 }

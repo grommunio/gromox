@@ -318,11 +318,32 @@ enum {
 	COMMON_UTIL_MAX_EXTRULE_LENGTH
 };
 
+enum {
+	RES_ID_IPM,
+	RES_ID_INBOX,
+	RES_ID_DRAFT,
+	RES_ID_OUTBOX,
+	RES_ID_SENT,
+	RES_ID_DELETED,
+	RES_ID_CONTACTS,
+	RES_ID_CALENDAR,
+	RES_ID_JOURNAL,
+	RES_ID_NOTES,
+	RES_ID_TASKS,
+	RES_ID_JUNK,
+	RES_ID_SYNC,
+	RES_ID_CONFLICT,
+	RES_ID_LOCAL,
+	RES_ID_SERVER,
+	RES_TOTAL_NUM
+};
+
 void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
-	const char *freebusy_path, const char *langmap_path);
+	const char *freebusy_path, const char *langmap_path,
+	const char *folderlang_path);
 
 int common_util_run();
 
@@ -537,5 +558,7 @@ const char* common_util_lang_to_i18n(const char *lang);
 const char* common_util_i18n_to_lang(const char *i18n);
 
 const char* common_util_get_default_timezone();
+
+void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 
 #endif /* _H_COMMON_UTIL_ */

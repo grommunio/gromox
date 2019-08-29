@@ -62,6 +62,7 @@ int main(int argc, char **argv)
 	char service_path[256];
 	char resource_path[256];
 	char grouping_path[256];
+	char folderlang_path[256];
 	
 	
 	if (2 != argc) {
@@ -151,6 +152,7 @@ int main(int argc, char **argv)
 	sprintf(resource_path, "%s/notify_bounce", data_path);
 	sprintf(grouping_path, "%s/msgchg_grouping", data_path);
 	sprintf(langmap_path, "%s/langmap.txt", data_path);
+	sprintf(folderlang_path, "%s/folder_lang.txt", data_path);
 	
 	msgchg_grouping_init(grouping_path);
 	service_init(threads_num, service_path, config_path, data_path);

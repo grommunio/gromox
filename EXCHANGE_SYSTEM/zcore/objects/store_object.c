@@ -1818,13 +1818,67 @@ static BOOL store_object_set_oof_schedule(const char *maildir,
 	return TRUE;
 }
 
+static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
+	uint64_t folder_id, const char *pdisplayname)
+{
+	XID tmp_xid;
+	BINARY *pbin_pcl;
+	uint64_t last_time;
+	uint64_t change_num;
+	BINARY *pbin_changekey;
+	PROBLEM_ARRAY tmp_problems;
+	TPROPVAL_ARRAY tmp_propvals;
+	TAGGED_PROPVAL propval_buff[5];
+	
+	if (FALSE == pstore->b_private) {
+		return FALSE;
+	}
+	tmp_propvals.ppropval = propval_buff;
+	tmp_propvals.count = 5;
+	tmp_propvals.ppropval[0].proptag = PROP_TAG_DISPLAYNAME;
+	tmp_propvals.ppropval[0].pvalue = pdisplayname;
+	tmp_propvals.count ++;
+	if (FALSE == exmdb_client_allocate_cn(pstore->dir, &change_num)) {
+		return FALSE;
+	}
+	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGENUMBER;
+	tmp_propvals.ppropval[1].pvalue = &change_num;
+	if (FALSE == exmdb_client_get_folder_property(pstore->dir,
+		0, folder_id, PROP_TAG_PREDECESSORCHANGELIST,
+		(void**)&pbin_pcl) || NULL == pbin_pcl) {
+		return FALSE;
+	}
+	tmp_xid.guid = rop_util_make_user_guid(pstore->account_id);
+	rop_util_get_gc_array(change_num, tmp_xid.local_id);
+	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
+	if (NULL == pbin_changekey) {
+		return FALSE;
+	}
+	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
+	if (NULL == pbin_pcl) {
+		return FALSE;
+	}
+	last_time = rop_util_current_nttime();
+	tmp_propvals.ppropval[2].proptag = PROP_TAG_CHANGEKEY;
+	tmp_propvals.ppropval[2].pvalue = pbin_changekey;
+	tmp_propvals.ppropval[3].proptag = PROP_TAG_PREDECESSORCHANGELIST;
+	tmp_propvals.ppropval[3].pvalue = pbin_pcl;
+	tmp_propvals.ppropval[4].proptag = PROP_TAG_LASTMODIFICATIONTIME;
+	tmp_propvals.ppropval[4].pvalue = &last_time;
+	return exmdb_client_set_folder_properties(
+		pstore->dir, 0, folder_id, &tmp_propvals,
+		&tmp_problems);
+}
+
 BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	const TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	USER_INFO *pinfo;
+	const char *plang;
 	uint64_t *poof_until;
 	uint64_t *poof_begin;
+	char *folder_lang[RES_TOTAL_NUM];
 	
 	pinfo = zarafa_server_get_info();
 	if (FALSE == pstore->b_private ||
@@ -1864,8 +1918,59 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 			break;
 		case PROP_TAG_ECUSERLANGUAGE:
 			if (TRUE == pstore->b_private) {
-				system_services_set_user_lang(pstore->account,
-								ppropvals->ppropval[i].pvalue);
+				plang = common_util_i18n_to_lang(
+					ppropvals->ppropval[i].pvalue);
+				common_util_get_folder_lang(plang, folder_lang);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_IPMSUBTREE,
+					folder_lang[RES_ID_IPM]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_INBOX,
+					folder_lang[RES_ID_INBOX]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_DRAFT,
+					folder_lang[RES_ID_DRAFT]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_OUTBOX,
+					folder_lang[RES_ID_OUTBOX]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_SENT_ITEMS,
+					folder_lang[RES_ID_SENT]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_DELETED_ITEMS,
+					folder_lang[RES_ID_DELETED]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_CONTACTS,
+					folder_lang[RES_ID_CONTACTS]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_CALENDAR,
+					folder_lang[RES_ID_CALENDAR]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_JOURNAL,
+					folder_lang[RES_ID_JOURNAL]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_NOTES,
+					folder_lang[RES_ID_NOTES]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_TASKS,
+					folder_lang[RES_ID_TASKS]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_JUNK,
+					folder_lang[RES_ID_JUNK]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_SYNC_ISSUES,
+					folder_lang[RES_ID_SYNC]};
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_CONFLICTS,
+					folder_lang[RES_ID_CONFLICT]);
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_LOCAL_FAILURES,
+					folder_lang[RES_ID_LOCAL],
+				store_object_set_folder_name(
+					pstore, PRIVATE_FID_SERVER_FAILURES,
+					folder_lang[RES_ID_SERVER]);
+				system_services_set_user_lang(
+						pstore->account, plang);
 			}
 			break;
 		case PROP_TAG_ECUSERTIMEZONE:
