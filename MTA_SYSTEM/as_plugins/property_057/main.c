@@ -27,9 +27,7 @@ int AS_LibMain(int reason, void **ppdata)
 	
 	switch (reason) {
 	case PLUGIN_INIT:
-
 		LINK_API(ppdata);
-
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
 			printf("[property_057]: fail to get \"check_tagging\" service\n");
@@ -71,18 +69,20 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 {
 	int tag_len;
 	int val_len;
+	int out_len;
 	char buff[1024];
 
-	
 	if (TRUE == pmail->penvelop->is_relay ||
 		TRUE == pmail->penvelop->is_outbound) {
 		return MESSAGE_ACCEPT;
 	}
-
 	if (0 != mem_file_get_total_length(&pmail->phead->f_xmailer)) {
-		return MESSAGE_ACCEPT;
+		out_len = mem_file_read(&pmail->phead->f_xmailer, buff, 256);
+		buff[out_len] = '\0';
+		if (0 != strncasecmp(buff, "Foxmail", 7)) {
+			return MESSAGE_ACCEPT;
+		}
 	}
-
 	while (MEM_END_OF_FILE != mem_file_read(&pmail->phead->f_others,
 		&tag_len, sizeof(int))) {
 		if (8 == tag_len) {
