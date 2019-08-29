@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 	}
 	common_util_init(org_name, host_name, charset, timezone,
 		mime_num, max_rcpt, max_mail, max_length, max_rule_len,
-		smtp_ip, smtp_port, str_value, langmap_path);
+		smtp_ip, smtp_port, str_value, langmap_path, folderlang_path);
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {
