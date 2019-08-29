@@ -1965,7 +1965,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 					folder_lang[RES_ID_CONFLICT]);
 				store_object_set_folder_name(
 					pstore, PRIVATE_FID_LOCAL_FAILURES,
-					folder_lang[RES_ID_LOCAL],
+					folder_lang[RES_ID_LOCAL]);
 				store_object_set_folder_name(
 					pstore, PRIVATE_FID_SERVER_FAILURES,
 					folder_lang[RES_ID_SERVER]);
