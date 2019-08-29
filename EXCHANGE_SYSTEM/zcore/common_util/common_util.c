@@ -3630,8 +3630,8 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 	char *pline;
 	int line_num;
 	
-	line_num = list_file_get_item_num(pfile);
-	pline = list_file_get_list(pfile);
+	line_num = list_file_get_item_num(g_folderlang_list);
+	pline = list_file_get_list(g_folderlang_list);
 	for (i=0; i<line_num; i++) {
 		if (0 != strcasecmp(pline + 1088*i, lang)) {
 			continue;
@@ -3641,7 +3641,6 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 		}
 		break;
 	}
-	list_file_free(pfile);
 	if (i >= line_num) {
 		ppfolder_lang[RES_ID_IPM] = "Top of Information Store";
 		ppfolder_lang[RES_ID_INBOX]  = "Inbox";
