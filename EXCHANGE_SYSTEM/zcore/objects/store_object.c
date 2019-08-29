@@ -1819,7 +1819,7 @@ static BOOL store_object_set_oof_schedule(const char *maildir,
 }
 
 static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
-	uint64_t folder_id, const char *pdisplayname)
+	uint64_t fid_val, const char *pdisplayname)
 {
 	XID tmp_xid;
 	BINARY *pbin_pcl;
@@ -1843,8 +1843,9 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 	}
 	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
-	if (FALSE == exmdb_client_get_folder_property(pstore->dir,
-		0, folder_id, PROP_TAG_PREDECESSORCHANGELIST,
+	if (FALSE == exmdb_client_get_folder_property(
+		pstore->dir, 0, rop_util_make_eid_ex(1,
+		fid_val), PROP_TAG_PREDECESSORCHANGELIST,
 		(void**)&pbin_pcl) || NULL == pbin_pcl) {
 		return FALSE;
 	}
