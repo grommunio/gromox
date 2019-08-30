@@ -171,13 +171,9 @@ BOOL mysql_adaptor_login(const char *username, const char *password,
 	MYSQL_RES *pmyres, *pmyres1;
 	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return TRUE immediately!!!
-	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		snprintf(reason, length, "these's no database connection alive, "
-			"please contact system administrator!");
+		snprintf(reason, length, "these's no database connection"
+				" alive, please contact system administrator!");
 		return FALSE;
 	}
 
@@ -187,9 +183,8 @@ BOOL mysql_adaptor_login(const char *username, const char *password,
 	
 RETRYING:
 	if (i > 3) {
-		/* database may break down, so return TRUE to avoid auth problem */
-		snprintf(reason, length, "system too busy, no free database "
-			"connection available");
+		snprintf(reason, length, "system too busy, "
+			"no free database connection available");
 		return FALSE;
 	}
 	pthread_mutex_lock(&g_list_lock);

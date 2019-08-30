@@ -207,14 +207,11 @@ BOOL mysql_adaptor_login(const char *username, const char *password,
 		TRUE == cdner_agent_login(username, password)) {
 		return TRUE;
 	}
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return TRUE immediately!!!
-	 */
+	
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		snprintf(reason, length, "these's no database connection alive, "
-			"please contact system administrator!");
-		return TRUE;
+		snprintf(reason, length, "these's no database connection"
+				" alive, please contact system administrator!");
+		return FALSE;
 	}
 
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -223,8 +220,7 @@ BOOL mysql_adaptor_login(const char *username, const char *password,
 	
 RETRYING:
 	if (i > 3) {
-		/* database may break down, so return TRUE to avoid auth problem */
-		return TRUE;
+		return FALSE;
 	}
 	pthread_mutex_lock(&g_list_lock);
 	pnode = double_list_get_from_head(&g_connection_list);
@@ -282,8 +278,8 @@ RETRYING:
 
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
-		snprintf(reason, length, "user \"%s\" not exists, please check if "
-			"it is right composed", username);
+		snprintf(reason, length, "user \"%s\" not exists, "
+			"please check if it is right composed", username);
 		return FALSE;
 	}
 	
@@ -428,8 +424,8 @@ RETRYING:
 			return TRUE;
 		} else {
 			pthread_mutex_unlock(&g_crypt_lock);
-			snprintf(reason, length, "password error, please check it "
-				"and retry");
+			snprintf(reason, length, "password "
+				"error, please check it and retry");
 			return FALSE;
 		}
 	}
