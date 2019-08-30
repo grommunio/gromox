@@ -216,8 +216,16 @@ BOOL SVC_LibMain(int reason, void** ppdata)
             printf("[mysql_adaptor]: fail to register auth services\n");
             return FALSE;
         }
-		if (FALSE == register_service("check_user", mysql_adaptor_check_user)) {
-			printf("[mysql_adaptor]: fail to register \"check_user\" service\n");
+		if (FALSE == register_service("disable_smtp",
+			mysql_adaptor_disable_smtp)) {
+			printf("[mysql_adaptor]: fail to register"
+				" \"disable_smtp\" service\n");
+			return FALSE;	
+		}
+		if (FALSE == register_service("check_user",
+			mysql_adaptor_check_user)) {
+			printf("[mysql_adaptor]: fail to register"
+				" \"check_user\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_user_lang",

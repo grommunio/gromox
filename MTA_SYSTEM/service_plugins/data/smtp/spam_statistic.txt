@@ -7,7 +7,7 @@ system\ user\ sends\ too\ many\ mails
 need\ authentification
 illegal\ xmailer
 boundary\ string\ filtered
-foxmail\ 3.11
+trojan\ detector
 forbidden\ rcpt
 subject\ audited
 dynamic\ domain\ filtered

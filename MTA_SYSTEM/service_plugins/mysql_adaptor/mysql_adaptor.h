@@ -18,10 +18,12 @@ int mysql_adaptor_stop();
 
 void mysql_adaptor_free();
 
-BOOL mysql_adaptor_login(const char *username, const char *password,
-	char *reason, int length);
+BOOL mysql_adaptor_login(const char *username,
+	const char *password, char *reason, int length);
 
 BOOL mysql_adaptor_check_user(const char *username, char *path);
+
+void mysql_adaptor_disable_smtp(const char *username);
 
 BOOL mysql_adaptor_get_user_info(const char *username,
 	char *maildir, char *lang, char *timezone);
