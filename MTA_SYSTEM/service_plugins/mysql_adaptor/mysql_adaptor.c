@@ -252,7 +252,7 @@ RETRYING:
 			goto RETRYING;
 		}
 		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, "
+			mysql_options(pconnection->pmysql,
 				MYSQL_OPT_READ_TIMEOUT, &g_timeout);
 			mysql_options(pconnection->pmysql,
 				MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
