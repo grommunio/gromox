@@ -3743,14 +3743,6 @@ uint32_t zarafa_server_queryrows(
 		}
 		table_object_seek_current(ptable, TRUE, prowset->count);
 	}
-	if (CONTENT_TABLE == table_type ||
-		RECIPIENT_TABLE == table_type ||
-		USER_TABLE == table_type) {
-		for (i=0; i<prowset->count; i++) {
-			common_util_replace_address_type(
-					prowset->pparray[i], TRUE);
-		}
-	}
 	zarafa_server_put_user_info(pinfo);
 	if ((STORE_TABLE != table_type &&
 		HIERARCHY_TABLE != table_type &&
@@ -4362,10 +4354,6 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
 		return EC_ERROR;
-	}
-	for (i=0; i<prcpt_list->count; i++) {
-		common_util_replace_address_type((TPROPVAL_ARRAY*)
-							prcpt_list->pparray[i], FALSE);
 	}
 	pmessage = object_tree_get_object(
 		pinfo->ptree, hmessage, &mapi_type);

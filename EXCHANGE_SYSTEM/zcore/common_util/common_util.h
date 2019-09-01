@@ -550,9 +550,6 @@ uint64_t common_util_tm_to_nttime(struct tm unix_tm);
 
 BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm);
 
-void common_util_replace_address_type(
-	TPROPVAL_ARRAY *ppropvals, BOOL b_zarafa);
-
 const char* common_util_lang_to_i18n(const char *lang);
 
 const char* common_util_i18n_to_lang(const char *i18n);

@@ -798,13 +798,7 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 
 BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
 	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
-{	
-	/*
-		we replace the address type from "EX" to "ZARAFA"
-		in caller "zarafa_server_queryrows" because we need
-		to keep the addres type information for calculate
-		entryid there!
-	*/
+{
 	return exmdb_client_get_message_instance_rcpts(
 		store_object_get_dir(pmessage->pstore),
 		pmessage->instance_id, row_id, need_count, pset);
@@ -863,9 +857,6 @@ BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage,
 {
 	int i;
 	
-	for (i=0; i<pset->count; i++) {
-		common_util_replace_address_type(pset->pparray[i], FALSE);
-	}
 	if (FALSE == exmdb_client_update_message_instance_rcpts(
 		store_object_get_dir(pmessage->pstore),
 		pmessage->instance_id, pset)) {
@@ -1234,7 +1225,6 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 										&pmessage->cpid;
 		ppropvals->count ++;
 	}
-	common_util_replace_address_type(ppropvals, TRUE);
 	return TRUE;	
 }
 
@@ -1391,8 +1381,6 @@ BOOL message_object_set_properties(MESSAGE_OBJECT *pmessage,
 	char *psubject;
 	char *pnormalized_subject;
 	
-	common_util_replace_address_type(
-		(TPROPVAL_ARRAY*)ppropvals, FALSE);
 	/* seems some php-mapi users do not understand well
 		the relationship between PROP_TAG_SUBJECT and
 		PROP_TAG_NORMALIZEDSUBJECT, we try to resolve

@@ -54,6 +54,5 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		return FALSE;	
 	}
 	ab_tree_put_base(pbase);
-	common_util_replace_address_type(ppropvals, TRUE);
 	return TRUE;
 }
