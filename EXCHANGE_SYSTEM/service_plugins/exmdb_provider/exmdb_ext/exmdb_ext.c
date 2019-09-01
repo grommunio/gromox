@@ -7704,14 +7704,14 @@ static int exmdb_ext_push_check_contact_address_response(
 static int exmdb_ext_pull_get_public_folder_unread_count_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_uint64(pext,
+	return ext_buffer_pull_uint32(pext,
 		&ppayload->get_public_folder_unread_count.count);
 }
 
 static int exmdb_ext_push_get_public_folder_unread_count_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_uint64(pext,
+	return ext_buffer_push_uint32(pext,
 		ppayload->get_public_folder_unread_count.count);
 }
 
