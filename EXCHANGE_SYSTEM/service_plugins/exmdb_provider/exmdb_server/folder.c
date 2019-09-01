@@ -3825,7 +3825,7 @@ BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 		return FALSE;
 	}
 	exmdb_server_set_public_username(username);
-	*pcount = common_util_get_folder_unread_count(psqlite, folder_id);
+	*pcount = common_util_get_folder_unread_count(pdb->psqlite, folder_id);
 	db_engine_put_db(pdb);
 	return TRUE;
 	
