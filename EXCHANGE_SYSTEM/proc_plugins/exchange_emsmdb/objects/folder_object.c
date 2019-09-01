@@ -229,7 +229,8 @@ static BOOL folder_object_get_calculated_property(
 			rpc_info = get_rpc_info();
 			return exmdb_client_get_public_folder_unread_count(
 						logon_object_get_dir(pfolder->plogon),
-						rpc_info.username, *ppvalue);
+						rpc_info.username, pfolder->folder_id,
+						*ppvalue);
 		}
 		return FALSE;
 	case PROP_TAG_MESSAGESIZE:

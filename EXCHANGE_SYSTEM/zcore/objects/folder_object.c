@@ -252,7 +252,8 @@ static BOOL folder_object_get_calculated_property(
 			pinfo = zarafa_server_get_info();
 			return exmdb_client_get_public_folder_unread_count(
 						store_object_get_dir(pfolder->pstore),
-						pinfo->username, *ppvalue);
+						pinfo->username, pfolder->folder_id,
+						*ppvalue);
 		}
 		return FALSE;
 	case PROP_TAG_FOLDERID:
