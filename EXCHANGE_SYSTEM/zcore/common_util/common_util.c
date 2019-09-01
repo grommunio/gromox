@@ -2377,7 +2377,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 		*/
 		pnode->pdata = common_util_get_propvals(
 			prcpts->pparray[i], PROP_TAG_SMTPADDRESS);
-		if (NULL != pnode->pdata) {
+		if (NULL != pnode->pdata && '\0' != ((char*)pnode->pdata)[0]) {
 			double_list_append_as_tail(&temp_list, pnode);
 			continue;
 		}
