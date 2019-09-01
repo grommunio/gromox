@@ -243,6 +243,18 @@ static BOOL folder_object_get_calculated_property(
 	case PROP_TAG_ACCESS:
 		*ppvalue = &pfolder->tag_access;
 		return TRUE;
+	case PROP_TAG_CONTENTUNREADCOUNT:
+		if (FALSE == store_object_check_private(pfolder->pstore)) {
+			*ppvalue = common_util_alloc(sizeof(uint32_t));
+			if (NULL == *ppvalue) {
+				return FALSE;
+			}
+			pinfo = zarafa_server_get_info();
+			return exmdb_client_get_public_folder_unread_count(
+						store_object_get_dir(pfolder->pstore),
+						pinfo->username, *ppvalue);
+		}
+		return FALSE;
 	case PROP_TAG_FOLDERID:
 		*ppvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == *ppvalue) {

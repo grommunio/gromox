@@ -159,6 +159,7 @@ typedef struct _LOCAL_SVR {
 #define CALL_ID_COPY_INSTANCE_RCPTS										0x77
 #define CALL_ID_COPY_INSTANCE_ATTACHMENTS								0x78
 #define CALL_ID_CHECK_CONTACT_ADDRESS									0x79
+#define CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT							0x7a
 #define CALL_ID_UNLOAD_STORE											0x80
 
 #define ID_TAG_BODY 												0x00010014
@@ -832,6 +833,11 @@ typedef struct _REQ_CHECK_CONTACT_ADDRESS {
 	char *paddress;
 } REQ_CHECK_CONTACT_ADDRESS;
 
+typedef struct _REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+	char *username;
+	uint64_t folder_id;
+} REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT;
+
 typedef union _REQUEST_PAYLOAD {
 	REQ_CONNECT connect;
 	REQ_GET_NAMED_PROPIDS get_named_propids;
@@ -950,6 +956,7 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_UNSUBSCRIBE_NOTIFICATION unsubscribe_notification;
 	REQ_CHECK_CONTACT_ADDRESS check_contact_address;
 	REQ_TRANSPORT_NEW_MAIL transport_new_mail;
+	REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
 } REQUEST_PAYLOAD;
 
 typedef struct _EXMDB_REQUEST {
@@ -1375,6 +1382,10 @@ typedef struct _RESP_CHECK_CONTACT_ADDRESS {
 	BOOL b_found;
 } RESP_CHECK_CONTACT_ADDRESS;
 
+typedef struct _RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+	uint32_t count;
+} RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT;
+
 typedef union _RESPONSE_PAYLOAD {
 	RESP_GET_ALL_NAMED_PROPIDS get_all_named_propids;
 	RESP_GET_NAMED_PROPIDS get_named_propids;
@@ -1471,6 +1482,7 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_ALLOCATE_IDS allocate_ids;
 	RESP_SUBSCRIBE_NOTIFICATION subscribe_notification;
 	RESP_CHECK_CONTACT_ADDRESS check_contact_address;
+	RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
 } RESPONSE_PAYLOAD;
 
 typedef struct _EXMDB_RESPONSE {
@@ -1632,6 +1644,9 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite);
 
 BOOL common_util_check_msgsize_overflow(sqlite3 *psqlite);
+
+uint32_t common_util_get_folder_unread_count(
+	sqlite3 *psqlite, uint64_t folder_id);
 
 BOOL common_util_get_folder_type(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t *pfolder_type);

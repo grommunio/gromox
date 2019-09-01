@@ -220,6 +220,18 @@ static BOOL folder_object_get_calculated_property(
 	static BINARY fake_bin = {22, bin_buff};
 	
 	switch (proptag) {
+	case PROP_TAG_CONTENTUNREADCOUNT:
+		if (FALSE == logon_object_check_private(pfolder->plogon)) {
+			*ppvalue = common_util_alloc(sizeof(uint32_t));
+			if (NULL == *ppvalue) {
+				return FALSE;
+			}
+			rpc_info = get_rpc_info();
+			return exmdb_client_get_public_folder_unread_count(
+						logon_object_get_dir(pfolder->plogon),
+						rpc_info.username, *ppvalue);
+		}
+		return FALSE;
 	case PROP_TAG_MESSAGESIZE:
 		*ppvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == *ppvalue) {

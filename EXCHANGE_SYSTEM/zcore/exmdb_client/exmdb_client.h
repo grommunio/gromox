@@ -490,6 +490,9 @@ BOOL exmdb_client_transport_new_mail(const char *dir,
 BOOL exmdb_client_check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found);
 
+BOOL exmdb_client_get_public_folder_unread_count(const char *dir,
+	const char *username, uint64_t folder_id, uint32_t *pcount);
+
 BOOL exmdb_client_unload_store(const char *dir);
 
 void exmdb_client_register_proc(void *pproc);

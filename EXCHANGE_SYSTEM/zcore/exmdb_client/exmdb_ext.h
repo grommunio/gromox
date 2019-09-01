@@ -142,6 +142,7 @@ typedef struct _EXMDB_ITEM {
 #define CALL_ID_COPY_INSTANCE_RCPTS										0x77
 #define CALL_ID_COPY_INSTANCE_ATTACHMENTS								0x78
 #define CALL_ID_CHECK_CONTACT_ADDRESS									0x79
+#define CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT							0x7a
 #define CALL_ID_UNLOAD_STORE											0x80
 
 
@@ -795,6 +796,11 @@ typedef struct _REQ_CHECK_CONTACT_ADDRESS {
 	char *paddress;
 } REQ_CHECK_CONTACT_ADDRESS;
 
+typedef struct _REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+	char *username;
+	uint64_t folder_id;
+} REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT;
+
 typedef union _REQUEST_PAYLOAD {
 	REQ_CONNECT connect;
 	REQ_GET_NAMED_PROPIDS get_named_propids;
@@ -912,6 +918,7 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_UNSUBSCRIBE_NOTIFICATION unsubscribe_notification;
 	REQ_CHECK_CONTACT_ADDRESS check_contact_address;
 	REQ_TRANSPORT_NEW_MAIL transport_new_mail;
+	REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
 } REQUEST_PAYLOAD;
 
 typedef struct _EXMDB_REQUEST {
@@ -1333,6 +1340,10 @@ typedef struct _RESP_CHECK_CONTACT_ADDRESS {
 	BOOL b_found;
 } RESP_CHECK_CONTACT_ADDRESS;
 
+typedef struct _RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+	uint32_t count;
+} RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT;
+
 typedef union _RESPONSE_PAYLOAD {
 	RESP_GET_ALL_NAMED_PROPIDS get_all_named_propids;
 	RESP_GET_NAMED_PROPIDS get_named_propids;
@@ -1428,6 +1439,7 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_ALLOCATE_IDS allocate_ids;
 	RESP_SUBSCRIBE_NOTIFICATION subscribe_notification;
 	RESP_CHECK_CONTACT_ADDRESS check_contact_address;
+	RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
 } RESPONSE_PAYLOAD;
 
 typedef struct _EXMDB_RESPONSE {

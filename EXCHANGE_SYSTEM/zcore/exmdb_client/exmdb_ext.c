@@ -2273,6 +2273,20 @@ static int exmdb_ext_push_check_contact_address_request(
 		ppayload->check_contact_address.paddress);
 }
 
+static int exmdb_ext_push_get_public_folder_unread_count_request(
+	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
+{
+	int status;
+	
+	status = ext_buffer_push_string(pext,
+		ppayload->get_public_folder_unread_count.username);
+	if (EXT_ERR_SUCCESS != status) {
+		return status;
+	}
+	return ext_buffer_push_uint64(pext,
+		ppayload->get_public_folder_unread_count.folder_id);
+}
+
 int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	BINARY *pbin_out)
 {
@@ -2778,6 +2792,10 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	case CALL_ID_CHECK_CONTACT_ADDRESS:
 		status = exmdb_ext_push_check_contact_address_request(
 								&ext_push, &prequest->payload);
+		break;
+	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+		status = exmdb_ext_push_get_public_folder_unread_count_request(
+										&ext_push, &prequest->payload);
 		break;
 	case CALL_ID_UNLOAD_STORE:
 		status = EXT_ERR_SUCCESS;
@@ -3818,6 +3836,14 @@ static int exmdb_ext_pull_check_contact_address_response(
 		&ppayload->check_contact_address.b_found);
 }
 
+static int exmdb_ext_pull_get_public_folder_unread_count_response(
+	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+{
+	return ext_buffer_pull_uint64(pext,
+		&ppayload->get_public_folder_unread_count.count);
+}
+}
+
 /* CALL_ID_CONNECT, CALL_ID_LISTEN_NOTIFICATION not included */
 int exmdb_ext_pull_response(const BINARY *pbin_in,
 	EXMDB_RESPONSE *presponse)
@@ -4160,6 +4186,9 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	case CALL_ID_CHECK_CONTACT_ADDRESS:
 		return exmdb_ext_pull_check_contact_address_response(
 							&ext_pull, &presponse->payload);
+	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+		return exmdb_ext_pull_get_public_folder_unread_count_response(
+										&ext_pull, &presponse->payload);
 	case CALL_ID_UNLOAD_STORE:
 		return EXT_ERR_SUCCESS;
 	default:

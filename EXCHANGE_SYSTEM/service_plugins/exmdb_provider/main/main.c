@@ -615,6 +615,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			exmdb_client_copy_instance_attachments);
 		register_service("exmdb_client_check_contact_address",
 			exmdb_client_check_contact_address);
+		register_service("exmdb_client_get_public_folder_unread_count",
+			exmdb_client_get_public_folder_unread_count);
 		register_service("exmdb_client_register_proc",
 			exmdb_server_register_proc);
 		register_service("pass_service", common_util_pass_service);

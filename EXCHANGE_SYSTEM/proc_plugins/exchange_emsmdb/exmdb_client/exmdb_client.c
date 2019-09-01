@@ -465,6 +465,9 @@ BOOL (*exmdb_client_transport_new_mail)(const char *dir,
 BOOL (*exmdb_client_check_contact_address)(const char *dir,
 	const char *paddress, BOOL *pb_found);
 
+BOOL (*exmdb_client_get_public_folder_unread_count)(const char *dir,
+	const char *username, uint64_t folder_id, uint32_t *pcount);
+
 void exmdb_client_init()
 {
 	/* do nothing */
@@ -1306,6 +1309,13 @@ int exmdb_client_run()
 	if (NULL == exmdb_client_check_contact_address) {
 		printf("[exchange_emsmdb]: fail to query "
 			"\"exmdb_client_check_contact_address\" service\n");
+		return -2;
+	}
+	exmdb_client_get_public_folder_unread_count =
+		query_service("exmdb_client_get_public_folder_unread_count");
+	if (NULL == exmdb_client_get_public_folder_unread_count) {
+		printf("[exchange_emsmdb]: fail to query "
+			"\"exmdb_client_get_public_folder_unread_count\" service\n");
 		return -2;
 	}
 	register_proc = query_service("exmdb_client_register_proc");

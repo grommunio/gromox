@@ -1283,7 +1283,7 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 	return count;
 }
 
-static uint32_t common_util_get_folder_unread_count(
+uint32_t common_util_get_folder_unread_count(
 	sqlite3 *psqlite, uint64_t folder_id)
 {
 	int sql_len;

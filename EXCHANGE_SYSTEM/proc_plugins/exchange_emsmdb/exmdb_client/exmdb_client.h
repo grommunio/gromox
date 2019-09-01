@@ -510,4 +510,7 @@ extern BOOL (*exmdb_client_transport_new_mail)(const char *dir,
 extern BOOL (*exmdb_client_check_contact_address)(
 	const char *dir, const char *paddress, BOOL *pb_found);
 
+extern BOOL (*exmdb_client_get_public_folder_unread_count)(const char *dir,
+	const char *username, uint64_t folder_id, uint32_t *pcount);
+
 #endif /* _H_EXMDB_CLIENT_ */

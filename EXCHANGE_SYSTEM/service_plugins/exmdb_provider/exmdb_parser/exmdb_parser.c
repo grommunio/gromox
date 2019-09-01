@@ -795,6 +795,11 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 		return exmdb_server_check_contact_address(prequest->dir,
 			prequest->payload.check_contact_address.paddress,
 			&presponse->payload.check_contact_address.b_found);
+	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+		return exmdb_server_get_public_folder_unread_count(prequest->dir,
+				prequest->payload.get_public_folder_unread_count.username,
+				prequest->payload.get_public_folder_unread_count.folder_id,
+				&presponse->payload.get_public_folder_unread_count.count);
 	case CALL_ID_UNLOAD_STORE:
 		return exmdb_server_unload_store(prequest->dir);
 	default:

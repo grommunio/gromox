@@ -4062,6 +4062,34 @@ BOOL exmdb_client_check_contact_address(const char *dir,
 	return TRUE;
 }
 
+BOOL exmdb_client_get_public_folder_unread_count(const char *dir,
+	const char *username, uint64_t folder_id, uint32_t *pcount)
+{
+	BOOL b_result;
+	BOOL b_private;
+	EXMDB_REQUEST request;
+	EXMDB_RESPONSE response;
+	
+	if (TRUE == exmdb_client_check_local(dir, &b_private)) {
+		exmdb_server_build_environment(TRUE, b_private, dir);
+		b_result = exmdb_server_get_public_folder_unread_count(
+							dir, username, folder_id, pcount);
+		exmdb_server_free_environment();
+		return b_result;
+	}
+	request.call_id = CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT;
+	request.dir = (void*)dir;
+	request.payload.get_public_folder_unread_count.username =
+											(void*)username;
+	request.payload.get_public_folder_unread_count.folder_id =
+													folder_id;
+	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
+		return FALSE;
+	}
+	*pcount = response.payload.get_public_folder_unread_count.count;
+	return TRUE;
+}
+
 BOOL exmdb_client_unload_store(const char *dir)
 {
 	BOOL b_result;
