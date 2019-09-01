@@ -3842,7 +3842,6 @@ static int exmdb_ext_pull_get_public_folder_unread_count_response(
 	return ext_buffer_pull_uint32(pext,
 		&ppayload->get_public_folder_unread_count.count);
 }
-}
 
 /* CALL_ID_CONNECT, CALL_ID_LISTEN_NOTIFICATION not included */
 int exmdb_ext_pull_response(const BINARY *pbin_in,
