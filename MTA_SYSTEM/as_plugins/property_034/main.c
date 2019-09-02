@@ -213,7 +213,9 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 		if (0 == strcasecmp("text/html", content_type)) {
 			html_num ++;
 		} else if (0 == strcasecmp("text/plain", content_type)) {
-			return MESSAGE_ACCEPT;
+			if (val_len > 100) {
+				return MESSAGE_ACCEPT;
+			}
 		} else if (0 == strcasecmp("image/gif", content_type) ||
 			0 == strcasecmp("image/jpeg", content_type) ||
 			0 == strcasecmp("image/jpg", content_type) ||
