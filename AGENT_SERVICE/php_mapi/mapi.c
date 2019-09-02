@@ -1240,13 +1240,6 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	if (result_set.count < cond_set.count) {
-		MAPI_G(hr) = EC_NOT_FOUND;
-		goto THROW_EXCEPTION;
-	} else if (result_set.count > cond_set.count) {
-		MAPI_G(hr) = EC_AMBIGUOUS_RECIP;
-		goto THROW_EXCEPTION;
-	}
 	if (!tarray_set_to_php(&result_set, &pzrowset TSRMLS_CC)) {
 		MAPI_G(hr) = EC_ERROR;
 		goto THROW_EXCEPTION;

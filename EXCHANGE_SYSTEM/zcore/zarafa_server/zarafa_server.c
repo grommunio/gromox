@@ -1550,6 +1550,18 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 			zarafa_server_put_user_info(pinfo);
 			return EC_ERROR;
 		}
+		switch (single_list_get_nodes_num(&temp_list)) {
+		case 0:
+			ab_tree_put_base(pbase);
+			zarafa_server_put_user_info(pinfo);
+			return EC_NOT_FOUND;
+		case 1:
+			break;
+		default:
+			ab_tree_put_base(pbase);
+			zarafa_server_put_user_info(pinfo);
+			return EC_AMBIGUOUS_RECIP;
+		}
 		while (pnode=single_list_get_from_head(&temp_list)) {
 			single_list_append_as_tail(&result_list, pnode);
 		}
