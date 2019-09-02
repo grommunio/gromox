@@ -41,7 +41,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		str_value = config_file_get_value(pfile, "NORMAL_CACHE_SIZE");
 		if (NULL == str_value) {
 			normal_size = 10000;
-			config_file_set_value(file, "NORMAL_CACHE_SIZE", "10000");
+			config_file_set_value(pfile, "NORMAL_CACHE_SIZE", "10000");
 		} else {
 			normal_size = atoi(str_value);
 		}
@@ -91,13 +91,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		if (0 != rbl_cache_run()) {
 			printf("[dns_rbl]: fail to rbl_cache\n");
 			return FALSE;
-		}
-		if (FALSE == register_service("dns_query_A",
-			dns_adaptor_query_A)) {
-			printf("[dns_rbl]: fail to register \"dns_query_A\""
-					"service\n");
-			return FALSE;
-
 		}
 		if (FALSE == register_service("dns_rbl_judge", dns_rbl_judge)) {
 			printf("[dns_rbl]: fail to register"
