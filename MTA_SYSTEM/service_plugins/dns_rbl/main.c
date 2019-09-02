@@ -1,211 +1,128 @@
-#include "as_common.h"
+#include "service_common.h"
 #include "config_file.h"
-#include "util.h"
-#include "dns_rbl.h"
 #include "rbl_cache.h"
+#include "dns_rbl.h"
+#include "util.h"
 #include <stdio.h>
-
-#define SPAM_STATISTIC_DNS_RBL         37
-
-typedef BOOL (*WHITELIST_QUERY)(char*);
-typedef void (*SPAM_STATISTIC)(int);
-typedef BOOL (*CHECK_RETRYING)(const char*, const char*, MEM_FILE*);
-typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
-
-static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
-    CONNECTION *pconnection, char *reason, int length);
-
-static void console_talk(int argc, char **argv, char *result, int length);
 
 DECLARE_API;
 
-static WHITELIST_QUERY ip_whitelist_query;
-static WHITELIST_QUERY domain_whitelist_query;
-static SPAM_STATISTIC spam_statistic;
-static CHECK_RETRYING check_retrying;
-static CHECK_TAGGING check_tagging;
-
 static char g_config_file[256];
-static char g_return_string[1024];
 
-BOOL AS_LibMain(int reason, void **ppdata)
+BOOL SVC_LibMain(int reason, void **ppdata)
 {
-	CONFIG_FILE *pconfig_file;
-	char file_name[256], temp_path[256];
+	char tmp_path[256];
 	char temp_buff[64];
+	CONFIG_FILE *pfile;
+	char file_name[256];
 	char *str_value, *psearch;
 	int normal_size, black_size;
 	int normal_valid, black_valid;
 	
-    /* path conatins the config files directory */
-    switch (reason) {
-    case PLUGIN_INIT:
+	switch(reason) {
+	case PLUGIN_INIT:
 		LINK_API(ppdata);
-		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
-		if (NULL == check_retrying) {
-			printf("[dns_rbl]: fail to get \"check_retrying\" service\n");
-			return FALSE;
-		}
-		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
-		if (NULL == check_tagging) {
-			printf("[dns_rbl]: fail to get \"check_tagging\" service\n");
-			return FALSE;
-		}
-		ip_whitelist_query = (WHITELIST_QUERY)query_service(
-							"ip_whitelist_query");
-		if (NULL == ip_whitelist_query) {
-			printf("[dns_rbl]: fail to get \"ip_whitelist_query\" service\n");
-			return FALSE;
-		}
-		domain_whitelist_query = (WHITELIST_QUERY)query_service(
-				                "domain_whitelist_query");
-		if (NULL == domain_whitelist_query) {
-			printf("[dns_rbl]: fail to get \"domain_whitelist_query\" "
-					"service\n");
-			return FALSE;
-		}
-		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
+	   
+		/* get the plugin name from system api */
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
-		strcpy(g_config_file, temp_path);
-		pconfig_file = config_file_init(temp_path);
-		if (NULL == pconfig_file) {
+		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
+		pfile = config_file_init(tmp_path);
+		if (NULL == pfile) {
 			printf("[dns_rbl]: error to open config file!!!\n");
 			return FALSE;
 		}
-		str_value = config_file_get_value(pconfig_file, "NORMAL_CACHE_SIZE");
+		str_value = config_file_get_value(pfile, "NORMAL_CACHE_SIZE");
 		if (NULL == str_value) {
 			normal_size = 10000;
-			config_file_set_value(pconfig_file, "NORMAL_CACHE_SIZE", "10000");
+			config_file_set_value(file, "NORMAL_CACHE_SIZE", "10000");
 		} else {
 			normal_size = atoi(str_value);
 		}
 		printf("[dns_rbl]: normal cache size is %d\n", normal_size);
-		str_value = config_file_get_value(pconfig_file,"NORMAL_VALID_INTERVAL");
+		str_value = config_file_get_value(pfile,"NORMAL_VALID_INTERVAL");
 		if (NULL == str_value) {
 			normal_valid = 3600;
-			config_file_set_value(pconfig_file,
+			config_file_set_value(pfile,
 				"NORMAL_VALID_INTERVAL", "1hour");
 		} else {
 			normal_valid = atoitvl(str_value);
 		}
 		itvltoa(normal_valid, temp_buff);
 		printf("[dns_rbl]: normal cache interval is %s\n", temp_buff);
-		str_value = config_file_get_value(pconfig_file, "BLACKLIST_CACHE_SIZE");
+		str_value = config_file_get_value(pfile, "BLACKLIST_CACHE_SIZE");
 		if (NULL == str_value) {
 			black_size = 10000;
-			config_file_set_value(pconfig_file, "BLACKLIST_CACHE_SIZE","10000");
+			config_file_set_value(pfile, "BLACKLIST_CACHE_SIZE","10000");
 		} else {
 			black_size = atoi(str_value);
 		}
 		printf("[dns_rbl]: blacklist cache size is %d\n", black_size);
-		str_value = config_file_get_value(pconfig_file,
+		str_value = config_file_get_value(pfile,
 						"BLACKLIST_VALID_INTERVAL");
 		if (NULL == str_value) {
 			black_valid = 24*60*60;
-			config_file_set_value(pconfig_file,
+			config_file_set_value(pfile,
 					"BLACKLIST_VALID_INTERVAL", "1day");
 		} else {
 			black_valid = atoitvl(str_value);
 		}
 		itvltoa(black_valid, temp_buff);
 		printf("[dns_rbl]: blacklist cache interval is %s\n", temp_buff);
-		if (FALSE == config_file_save(pconfig_file)) {
+		if (FALSE == config_file_save(pfile)) {
 			printf("[dns_rbl]: fail to save config file\n");
-			config_file_free(pconfig_file);
+			config_file_free(pfile);
 			return FALSE;
 		}
-		config_file_free(pconfig_file);
+		config_file_free(pfile);
 		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
 		dns_rbl_init(temp_path);
 		rbl_cache_init(normal_size, normal_valid, black_size, black_valid);
-		if (0 != dns_rbl_run() || 0 != rbl_cache_run()) {
+		if (0 != dns_rbl_run()) {
+			printf("[dns_rbl]: fail to dns_rbl\n");
 			return FALSE;
 		}
-        /* invoke register_statistic for registering statistic of mail */
-        if (FALSE == register_statistic(mail_statistic)) {
-            return FALSE;
-        }
-        register_talk(console_talk);
-        return TRUE;
-    case PLUGIN_FREE:
+		if (0 != rbl_cache_run()) {
+			printf("[dns_rbl]: fail to rbl_cache\n");
+			return FALSE;
+		}
+		if (FALSE == register_service("dns_query_A",
+			dns_adaptor_query_A)) {
+			printf("[dns_rbl]: fail to register \"dns_query_A\""
+					"service\n");
+			return FALSE;
+
+		}
+		if (FALSE == register_service("dns_rbl_judge",
+			dns_adaptor_query_MX)) {
+			printf("[dns_rbl]: fail to register"
+				" \"dns_rbl_judge\" service\n");
+			return FALSE;
+		}
+		if (FALSE == register_service("rbl_cache_query",
+			inbound_ips_check_local)) {
+			printf("[dns_rbl]: fail to register"
+				" \"rbl_cache_query\" service\n");
+			return FALSE;
+		}
+		if (FALSE == register_service("rbl_cache_add",
+			inbound_ips_check_local)) {
+			printf("[dns_rbl]: fail to register"
+				" \"rbl_cache_add\" service\n");
+			return FALSE;
+		}
+		register_talk(console_talk);
+		return TRUE;
+	case PLUGIN_FREE:
 		rbl_cache_stop();
 		dns_rbl_stop();
 		rbl_cache_free();
 		dns_rbl_free();
-        return TRUE;
-    }
-    return TRUE;
-}
-
-
-static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
-    CONNECTION *pconnection, char *reason, int length)
-{
-	char *pdomain;
-	int result;
-	
-	if (TRUE == pmail->penvelop->is_outbound ||
-		TRUE == pmail->penvelop->is_relay) {
-		return MESSAGE_ACCEPT;
+		return TRUE;
 	}
-	if (TRUE == ip_whitelist_query(pconnection->client_ip)) {
-		return MESSAGE_ACCEPT;
-	}
-	pdomain = strchr(pmail->penvelop->from, '@');
-	pdomain ++;
-	if (TRUE == domain_whitelist_query(pdomain)) {
-		return MESSAGE_ACCEPT;
-	}
-	/* ignore system messages */
-	if (0 == strncasecmp(pmail->penvelop->from, "system-", 7) &&
-		0 == strcasecmp(pdomain, "system.mail")) {
-		return MESSAGE_ACCEPT;
-	}
-	result = rbl_cache_query(pconnection->client_ip, reason, length);
-	if (RBL_CACHE_NORMAL == result) {
-		return MESSAGE_ACCEPT;
-	} else if (RBL_CACHE_BLACK == result) {
-		if (TRUE == check_tagging(pmail->penvelop->from,
-			&pmail->penvelop->f_rcpt_to)) {
-			mark_context_spam(context_ID);
-			return MESSAGE_ACCEPT;
-		} else {
-			if (FALSE == check_retrying(pconnection->client_ip,
-				pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {
-				if (NULL!= spam_statistic) {
-					spam_statistic(SPAM_STATISTIC_DNS_RBL);
-				}
-				return MESSAGE_RETRYING;
-			} else {
-				return MESSAGE_ACCEPT;
-			}
-		}
-	}
-	if (FALSE == dns_rbl_judge(pconnection->client_ip, reason, length)) {
-		rbl_cache_add(pconnection->client_ip, RBL_CACHE_BLACK, reason);
-		if (TRUE == check_tagging(pmail->penvelop->from,
-			&pmail->penvelop->f_rcpt_to)) {
-			mark_context_spam(context_ID);
-			return MESSAGE_ACCEPT;
-		} else {
-			if (FALSE == check_retrying(pconnection->client_ip,
-				pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {	
-				if (NULL!= spam_statistic) {
-					spam_statistic(SPAM_STATISTIC_DNS_RBL);
-				}
-				return MESSAGE_RETRYING;
-			} else {
-				return MESSAGE_ACCEPT;
-			}
-		}
-	}
-	rbl_cache_add(pconnection->client_ip, RBL_CACHE_NORMAL, NULL);
-	return MESSAGE_ACCEPT;
 }
 
 static void console_talk(int argc, char **argv, char *result, int length)
@@ -335,4 +252,3 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	snprintf(result, length, "550 invalid argument %s", argv[1]);
 	return;
 }
-

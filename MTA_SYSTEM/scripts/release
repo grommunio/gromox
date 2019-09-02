@@ -117,6 +117,7 @@ cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_f
 cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_domain.svc
 cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_rcpt.svc
 cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/boundary_list.svc
+cp $SERVICE_DIR/dns_rbl/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/dns_rbl.svc
 cp $SERVICE_DIR/log_plugin/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/log_plugin.svc
 cp $SERVICE_DIR/midb_agent/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/midb_agent.svc
 cp $SERVICE_DIR/mysql_adaptor/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/mysql_adaptor.svc

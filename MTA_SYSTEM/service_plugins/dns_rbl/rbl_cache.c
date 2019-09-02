@@ -27,8 +27,8 @@ static void rbl_cache_collect_normal(time_t cur_time);
 
 static void rbl_cache_collect_black(time_t cur_time);
 
-void rbl_cache_init(int normal_size, int normal_interval, int black_size,
-	int black_interval)
+void rbl_cache_init(int normal_size, int normal_interval,
+	int black_size, int black_interval)
 {
 	g_normal_hash = NULL;
 	g_black_hash = NULL;
@@ -286,4 +286,3 @@ int rbl_cache_get_param(int type)
 	}
 	return 0;
 }
-
