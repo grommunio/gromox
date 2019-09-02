@@ -564,6 +564,12 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
+			propval.proptag = PROP_TAG_ACCOUNT;
+			if (FALSE == tpropval_array_set_propval(
+				ppropvals, &propval)) {
+				tpropval_array_free(ppropvals);
+				return FALSE;
+			}
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
 			propval.pvalue = "SMTP";
 			if (FALSE == tpropval_array_set_propval(
