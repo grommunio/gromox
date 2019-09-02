@@ -399,6 +399,9 @@ BOOL common_util_essdn_to_username(const char *pessdn, char *username);
 
 BOOL common_util_essdn_to_uid(const char *pessdn, int *puid);
 
+BOOL common_util_essdn_to_ids(const char *pessdn,
+	int *pdomain_id, int *puser_id);
+
 BOOL common_util_entryid_to_username(
 	const BINARY *pbin, char *username);
 

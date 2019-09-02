@@ -52,7 +52,6 @@ typedef struct _AB_BASE {
 	int base_id;
 	SINGLE_LIST list;
 	SINGLE_LIST gal_list;
-	SINGLE_LIST remote_list;
 	INT_HASH_TABLE *phash;
 } AB_BASE;
 
@@ -73,8 +72,6 @@ void ab_tree_put_base(AB_BASE *pbase);
 uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode);
 
 BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length);
-
-SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn);
 
 uint32_t ab_tree_make_minid(uint8_t type, int value);
 

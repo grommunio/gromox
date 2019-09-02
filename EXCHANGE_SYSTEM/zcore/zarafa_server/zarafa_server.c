@@ -1342,6 +1342,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	int user_id;
 	uint8_t type;
 	void *pobject;
+	int domain_id;
 	AB_BASE *pbase;
 	uint32_t minid;
 	USER_INFO *pinfo;
@@ -1465,9 +1466,15 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			*pmapi_type = MAPI_ABCONT;
 		} else if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type ||
 			ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER == address_type) {
-			if (FALSE == common_util_essdn_to_uid(essdn, &user_id)) {
+			if (FALSE == common_util_essdn_to_ids(
+				essdn, &domain_id, &user_id)) {
 				zarafa_server_put_user_info(pinfo);
 				return EC_NOT_FOUND;
+			}
+			if (domain_id != pinfo->domain_id && FALSE ==
+				system_services_check_same_org(domain_id,
+				pinfo->domain_id)) {
+				base_id = domain_id * (-1);
 			}
 			minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
 			pobject = user_object_create(base_id, minid);

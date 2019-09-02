@@ -502,6 +502,27 @@ BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 	return TRUE;
 }
 
+BOOL common_util_essdn_to_ids(const char *pessdn,
+	int *pdomain_id, int *puser_id)
+{
+	int tmp_len;
+	char tmp_essdn[1024];
+	
+	tmp_len = sprintf(tmp_essdn,
+			"/o=%s/ou=Exchange Administrative Group "
+			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
+			g_org_name);
+	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
+		return FALSE;
+	}
+	if ('-' != pessdn[tmp_len + 16]) {
+		return FALSE;
+	}
+	*pdomain_id = decode_hex_int(pessdn + tmp_len);
+	*puser_id = decode_hex_int(pessdn + tmp_len + 8);
+	return TRUE;	
+}
+
 BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 {
 	int user_id;
