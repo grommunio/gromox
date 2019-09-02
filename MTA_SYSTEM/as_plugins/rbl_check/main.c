@@ -30,7 +30,7 @@ static BOOL (*dns_rbl_judge)(const char*, char*, int);
 
 static int (*rbl_cache_query)(const char*, char *, int);
 
-static void (*rbl_cache_add)(const char*, int, char*)
+static void (*rbl_cache_add)(const char*, int, char*);
 
 DECLARE_API;
 
