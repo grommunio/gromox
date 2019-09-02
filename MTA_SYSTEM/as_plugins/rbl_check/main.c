@@ -26,8 +26,6 @@ typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	CONNECTION *pconnection, char *reason, int length);
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 static BOOL (*dns_rbl_judge)(const char*, char*, int);
 
 static int (*rbl_cache_query)(const char*, char *, int);

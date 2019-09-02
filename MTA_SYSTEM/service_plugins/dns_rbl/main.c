@@ -4,10 +4,13 @@
 #include "dns_rbl.h"
 #include "util.h"
 #include <stdio.h>
+#include <string.h>
 
 DECLARE_API;
 
 static char g_config_file[256];
+
+static void console_talk(int argc, char **argv, char *result, int length);
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
@@ -78,8 +81,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		config_file_free(pfile);
-		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
-		dns_rbl_init(temp_path);
+		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
+		dns_rbl_init(tmp_path);
 		rbl_cache_init(normal_size, normal_valid, black_size, black_valid);
 		if (0 != dns_rbl_run()) {
 			printf("[dns_rbl]: fail to dns_rbl\n");
@@ -96,20 +99,17 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 
 		}
-		if (FALSE == register_service("dns_rbl_judge",
-			dns_adaptor_query_MX)) {
+		if (FALSE == register_service("dns_rbl_judge", dns_rbl_judge)) {
 			printf("[dns_rbl]: fail to register"
 				" \"dns_rbl_judge\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("rbl_cache_query",
-			inbound_ips_check_local)) {
+		if (FALSE == register_service("rbl_cache_query", rbl_cache_query)) {
 			printf("[dns_rbl]: fail to register"
 				" \"rbl_cache_query\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("rbl_cache_add",
-			inbound_ips_check_local)) {
+		if (FALSE == register_service("rbl_cache_add", rbl_cache_add)) {
 			printf("[dns_rbl]: fail to register"
 				" \"rbl_cache_add\" service\n");
 			return FALSE;
