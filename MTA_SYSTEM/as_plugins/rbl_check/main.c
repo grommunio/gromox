@@ -11,13 +11,6 @@ enum {
 	RBL_CACHE_NONE
 };
 
-enum {
-	RBL_CACHE_NORMAL_SIZE,
-	RBL_CACHE_NORMAL_INTERVAL,
-	RBL_CACHE_BLACK_SIZE,
-	RBL_CACHE_BLACK_INTERVAL
-};
-
 typedef BOOL (*WHITELIST_QUERY)(char*);
 typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_RETRYING)(const char*, const char*, MEM_FILE*);
