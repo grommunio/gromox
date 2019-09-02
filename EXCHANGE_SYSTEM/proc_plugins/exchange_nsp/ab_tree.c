@@ -1472,6 +1472,15 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (NULL != ppnode) {
 		return *ppnode;
 	}
+	pthread_mutex_lock(&g_remote_lock);
+	for (psnode=single_list_get_head(&pbase->remote_list); NULL!=psnode;
+		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
+		if (minid == ((AB_NODE*)psnode->pdata)->minid) {
+			pthread_mutex_unlock(&g_remote_lock);
+			return psnode->pdata;
+		}
+	}
+	pthread_mutex_unlock(&g_remote_lock);
 	for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
 		psnode=single_list_get_after(&pbase->list, psnode)) {
 		if (((DOMAIN_NODE*)psnode->pdata)->domain_id == domain_id) {
