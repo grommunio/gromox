@@ -171,18 +171,18 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
 	int result;
-	int tag_len;
-	int val_len;
 	int pic_num;
 	int html_num;
 	int type_len;
+	int body_len;
 	char *pdomain;
-	char buff[1024];
 	char content_type[128];
-	char x_originating_ip[16];
 	
 	if (TRUE == pmail->penvelop->is_outbound ||
 		TRUE == pmail->penvelop->is_relay) {
+		return MESSAGE_ACCEPT;
+	}
+	if ('\0' == pmail->phead->x_original_ip[0]) {
 		return MESSAGE_ACCEPT;
 	}
 	if (pmail->pbody->parts_num < 2) {
@@ -209,11 +209,11 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 			content_type, type_len);
 		content_type[type_len] = '\0';
 		mem_file_read(&pmail->pbody->f_mail_parts,
-			&val_len, sizeof(size_t));
+			&body_len, sizeof(size_t));
 		if (0 == strcasecmp("text/html", content_type)) {
 			html_num ++;
 		} else if (0 == strcasecmp("text/plain", content_type)) {
-			if (val_len > 100) {
+			if (body_len > 100) {
 				return MESSAGE_ACCEPT;
 			}
 		} else if (0 == strcasecmp("image/gif", content_type) ||
@@ -226,35 +226,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	if (1 != html_num || 1 != pic_num) {
 		return MESSAGE_ACCEPT;
 	}
-	x_originating_ip[0] = '\0';
-	while (MEM_END_OF_FILE != mem_file_read(
-		&pmail->phead->f_others, &tag_len, sizeof(int))) {
-		if (16 == tag_len) {
-			mem_file_read(&pmail->phead->f_others, buff, tag_len);
-			if (0 == strncasecmp("X-Originating-IP", buff, 16)) {
-				mem_file_read(&pmail->phead->f_others,
-					&val_len, sizeof(int));
-				if (val_len >= 16) {
-					return MESSAGE_ACCEPT;
-				}
-				mem_file_read(&pmail->phead->f_others,
-					x_originating_ip, val_len);
-				x_originating_ip[val_len] = '\0';
-				break;
-			}
-		} else {
-			mem_file_seek(&pmail->phead->f_others,
-				MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
-		}
-		mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
-		mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR,
-			val_len, MEM_FILE_SEEK_CUR);
-	}
-	if ('\0' == x_originating_ip[0] ||
-		NULL == extract_ip(x_originating_ip, buff)) {
-		return MESSAGE_ACCEPT;
-	}
-	result = rbl_cache_query(buff, reason, length);
+	result = rbl_cache_query(pmail->phead->x_original_ip, reason, length);
 	if (RBL_CACHE_NORMAL == result) {
 		return MESSAGE_ACCEPT;
 	} else if (RBL_CACHE_BLACK == result) {
@@ -264,8 +236,8 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 		strncpy(reason, g_return_reason, length);
 		return MESSAGE_REJECT;
 	}
-	if (FALSE == dns_rbl_judge(buff, reason, length)) {
-		rbl_cache_add(buff, RBL_CACHE_BLACK, reason);
+	if (FALSE == dns_rbl_judge(pmail->phead->x_original_ip, reason, length)) {
+		rbl_cache_add(pmail->phead->x_original_ip, RBL_CACHE_BLACK, reason);
 		if (NULL != spam_statistic) {
 			spam_statistic(SPAM_STATISTIC_PROPERTY_034);
 		}
