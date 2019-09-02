@@ -175,6 +175,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	int val_len;
 	int pic_num;
 	int html_num;
+	int type_len;
 	char *pdomain;
 	char buff[1024];
 	char content_type[128];
