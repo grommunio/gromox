@@ -5523,6 +5523,11 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u ORDER BY idx"
 				" DESC", folder_id, first);
+		} else if (last == first) {
+			sql_len = sprintf(sql_string, "SELECT idx, mid_string, uid, "
+				"replied, unsent, flagged, deleted, read, recent, forwarded "
+				"FROM messages WHERE folder_id=%llu AND uid=%u",
+				folder_id, first);
 		} else {
 			sql_len = sprintf(sql_string, "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
