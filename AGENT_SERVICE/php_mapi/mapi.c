@@ -12,7 +12,7 @@
 
 #define TOOLS_PATH									"/var/pandora/tools"
 
-#define LOGON_FLAG_ZARAFA_ADDRESS					0x00000001
+#define LOGON_FLAG_ZARAFA							0x00000001
 
 #define PR_ATTACH_DATA_OBJ                          0x3701000D
 #define PR_CONTENTS_SYNCHRONIZER					0x662D000D
@@ -923,7 +923,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 		password = NULL;	
 	}
 	result = zarafa_client_logon(username, password,
-		LOGON_FLAG_ZARAFA_ADDRESS, &presource->hsession);
+			LOGON_FLAG_ZARAFA, &presource->hsession);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;

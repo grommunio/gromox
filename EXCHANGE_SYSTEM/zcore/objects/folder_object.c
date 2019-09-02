@@ -233,7 +233,10 @@ static BOOL folder_object_get_calculated_property(
 	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
+	uint32_t tmp_proptag;
 	PERSISTDATA *ppersistdata;
+	PROPTAG_ARRAY tmp_proptags;
+	TPROPVAL_ARRAY tmp_propvals;
 	static uint8_t bin_buff[22];
 	static uint32_t fake_del = 0;
 	PERSISTDATA_ARRAY persistdatas;
@@ -254,6 +257,26 @@ static BOOL folder_object_get_calculated_property(
 						store_object_get_dir(pfolder->pstore),
 						pinfo->username, pfolder->folder_id,
 						*ppvalue);
+		}
+	case PROP_TAG_CONTENTCOUNT:
+	case PROP_TAG_MESSAGESIZEEXTENDED:
+	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
+	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+		if (TRUE == store_object_check_private(pfolder->pstore)
+			&& pfolder->folder_id == rop_util_make_eid_ex(1,
+			PRIVATE_FID_IPMSUBTREE)) {
+			pinfo = zarafa_server_get_info();
+			if (pinfo->flags & LOGON_FLAG_ZARAFA) {
+				tmp_proptags.count = 1;
+				tmp_proptags.pproptag = &tmp_proptag;
+				tmp_proptag = proptag;
+				if (TRUE == store_object_get_properties(
+					pfolder->pstore, &tmp_proptags, &tmp_propvals)
+					&& 1 == tmp_propvals.count) {
+					*ppvalue = tmp_propvals.ppropval[0].pvalue;
+					return TRUE;
+				}
+			}
 		}
 		return FALSE;
 	case PROP_TAG_FOLDERID:

@@ -8,7 +8,7 @@
 
 #define SOCKET_TIMEOUT								60
 
-#define LOGON_FLAG_ZARAFA_ADDRESS					0x00000001
+#define LOGON_FLAG_ZARAFA							0x00000001
 
 #define CALL_ID_LOGON								0x00
 #define CALL_ID_UNLOADOBJECT						0x01
