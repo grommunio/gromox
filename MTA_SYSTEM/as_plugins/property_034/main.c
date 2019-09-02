@@ -209,7 +209,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 			content_type, type_len);
 		content_type[type_len] = '\0';
 		mem_file_read(&pmail->pbody->f_mail_parts,
-			&body_len, sizeof(size_t));
+			&val_len, sizeof(size_t));
 		if (0 == strcasecmp("text/html", content_type)) {
 			html_num ++;
 		} else if (0 == strcasecmp("text/plain", content_type)) {
