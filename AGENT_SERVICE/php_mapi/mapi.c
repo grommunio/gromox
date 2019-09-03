@@ -4271,6 +4271,7 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_decompressrtf)
 {
 	pid_t pid;
+	int status;
 	int offset;
 	int rtflen;
 	int bufflen;
@@ -4348,6 +4349,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 			}
 		}
 	}
+	waitpid(pid, &status, 0);
 	close(pipes_out[0]);
 	RETVAL_STRINGL(pbuff, bufflen, 0);
 	MAPI_G(hr) = EC_SUCCESS;
