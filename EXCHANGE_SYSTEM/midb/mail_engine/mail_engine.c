@@ -5817,6 +5817,10 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 			sql_len = sprintf(sql_string, "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid>=%u"
 					" ORDER BY idx", folder_id, first);
+		} else if (last == first) {
+			sql_len = sprintf(sql_string, "SELECT idx, mid_string "
+					"FROM messages WHERE folder_id=%llu AND uid=%u",
+					folder_id, first);
 		} else {
 			sql_len = sprintf(sql_string, "SELECT idx, mid_string "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u AND"
@@ -5849,6 +5853,10 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 			sql_len = sprintf(sql_string, "SELECT idx, mid_string "
 					"FROM messages WHERE folder_id=%llu AND uid>=%u"
 					" ORDER BY idx", folder_id, first);
+		} else if (last == first) {
+			sql_len = sprintf(sql_string, "SELECT idx, mid_string "
+					"FROM messages WHERE folder_id=%llu AND uid=%u",
+					folder_id, first);
 		} else {
 			sql_len = sprintf(sql_string, "SELECT idx, mid_string "
 				"FROM messages WHERE folder_id=%llu AND uid>=%u AND "
