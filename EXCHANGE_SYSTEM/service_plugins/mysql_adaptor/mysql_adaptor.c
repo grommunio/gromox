@@ -473,8 +473,8 @@ RETRYING:
 				MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
 		}
 
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
+		if (NULL == mysql_real_connect(pconnection->pmysql, g_host,
+			g_user, g_password, g_db_name, g_port, NULL, 0) ||
 			0 != mysql_query(pconnection->pmysql, sql_string) ||
 			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
 			mysql_close(pconnection->pmysql);
@@ -519,8 +519,8 @@ RETRYING:
 	mysql_free_result(pmyres);
 	
 	pthread_mutex_lock(&g_crypt_lock);
-	if ('\0' != encrypt_passwd[0] && 0 != strcmp(
-		crypt(password, encrypt_passwd), encrypt_passwd)) {
+	if ('\0' != encrypt_passwd[0] && 0 != strcmp(crypt(
+		password, encrypt_passwd), encrypt_passwd)) {
 		pthread_mutex_unlock(&g_crypt_lock);
 		return FALSE;
 	}
@@ -607,7 +607,6 @@ RETRYING:
 			snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 					" WHERE username='%s'", encrypt_passwd, temp_name);
 			mysql_query(pmysql, sql_string);
-
 		}
 	}
 	mysql_free_result(pmyres1);
