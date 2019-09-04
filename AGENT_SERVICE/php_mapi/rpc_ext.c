@@ -1555,10 +1555,10 @@ static zend_bool rpc_ext_push_setpasswd_request(
 	if (!ext_pack_push_string(pctx, ppayload->setpasswd.username)) {
 		return 0;	
 	}
-	if (!ext_pack_push_string(pcxt, ppayload->setpasswd.passwd)) {
+	if (!ext_pack_push_string(pctx, ppayload->setpasswd.passwd)) {
 		return 0;	
 	}
-	return ext_pack_push_string(pcxt, ppayload->setpasswd.new_passwd);
+	return ext_pack_push_string(pctx, ppayload->setpasswd.new_passwd);
 }
 
 zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
