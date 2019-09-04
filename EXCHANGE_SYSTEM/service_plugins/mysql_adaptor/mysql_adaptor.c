@@ -514,10 +514,6 @@ RETRYING:
 	}
 
 	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
-	strcpy(maildir, myrow[4]);
-	if (NULL != lang) {
-		strcpy(lang, myrow[5]);
-	}
 	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
 	mysql_free_result(pmyres);
 	
