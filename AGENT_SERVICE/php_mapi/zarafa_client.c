@@ -1669,9 +1669,9 @@ uint32_t zarafa_client_setpasswd(const char *username,
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_SETPASSWD;
-	request.payload.setpasswd.username = username;
-	request.payload.setpasswd.passwd = passwd;
-	request.payload.setpasswd.new_passwd = new_passwd;
+	request.payload.setpasswd.username = (void*)username;
+	request.payload.setpasswd.passwd = (void*)passwd;
+	request.payload.setpasswd.new_passwd = (void*)new_passwd;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
