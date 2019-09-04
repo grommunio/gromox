@@ -898,8 +898,8 @@ uint32_t zarafa_server_checksession(GUID hsession)
 	return EC_SUCCESS;
 }
 
-uint32_t zarafa_server_uinfo(const char *username,
-	BINARY *pentryid, char **ppdisplay_name, char **ppx500dn)
+uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
+	char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits)
 {
 	char x500dn[1024];
 	EXT_PUSH ext_push;
@@ -908,8 +908,9 @@ uint32_t zarafa_server_uinfo(const char *username,
 	
 	if (FALSE == system_services_get_user_displayname(
 		username, display_name) ||
-		FALSE == common_util_username_to_essdn(
-		username, x500dn)) {
+		FALSE == system_services_get_user_privilege_bits(
+		user, pprivilege_bits) || FALSE ==
+		common_util_username_to_essdn(username, x500dn)) {
 		return EC_NOT_FOUND;
 	}
 	tmp_entryid.flags = 0;

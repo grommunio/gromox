@@ -6062,14 +6062,15 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	uint32_t result;
 	int username_len;
 	char *pdisplay_name;
+	uint32_t privilege_bits;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"s", &username, &username_len) == FAILURE) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;	
 	}
-	result = zarafa_client_uinfo(username,
-		&entryid, &pdisplay_name, &px500dn);
+	result = zarafa_client_uinfo(username, &entryid,
+		&pdisplay_name, &px500dn, &privilege_bits);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;

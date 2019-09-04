@@ -48,7 +48,10 @@ static zend_bool rpc_ext_pull_uinfo_response(
 	if (!ext_pack_pull_string(pctx, &ppayload->uinfo.pdisplay_name)) {
 		return 0;
 	}
-	return ext_pack_pull_string(pctx, &ppayload->uinfo.px500dn);
+	if (!ext_pack_pull_string(pctx, &ppayload->uinfo.px500dn)) {
+		return 0;
+	}
+	return ext_pack_pull_uint32(pctx, &ppayload->uinfo.privilege_bits);
 }
 
 static zend_bool rpc_ext_push_unloadobject_request(

@@ -182,6 +182,12 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 				" \"get_user_displayname\" service\n");
 			return FALSE;
 		}
+		if (FALSE == register_service("get_user_privilege_bits",
+			mysql_adaptor_get_user_privilege_bits)) {
+			printf("[mysql_adaptor]: fail to register "
+				"\"get_user_privilege_bits\" service\n");
+			return FALSE;
+		}
 		if (FALSE == register_service("get_user_lang",
 			mysql_adaptor_get_user_lang)) {
 			printf("[mysql_adaptor]: fail to register"

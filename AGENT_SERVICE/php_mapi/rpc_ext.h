@@ -688,6 +688,7 @@ typedef struct _RESP_UINFO {
 	BINARY entryid;
 	char *pdisplay_name;
 	char *px500dn;
+	uint32_t privilege_bits;
 } RESP_UINFO;
 
 typedef struct _RESP_OPENENTRY {

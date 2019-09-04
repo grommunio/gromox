@@ -173,8 +173,8 @@ uint32_t zarafa_client_checksession(GUID hsession)
 	return response.result;
 }
 
-uint32_t zarafa_client_uinfo(const char *username,
-	BINARY *pentryid, char **ppdisplay_name, char **ppx500dn)
+uint32_t zarafa_client_uinfo(const char *username, BINARY *pentryid,
+	char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits)
 {
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
@@ -188,6 +188,7 @@ uint32_t zarafa_client_uinfo(const char *username,
 		*pentryid = response.payload.uinfo.entryid;
 		*ppdisplay_name = response.payload.uinfo.pdisplay_name;
 		*ppx500dn = response.payload.uinfo.px500dn;
+		*pprivilege_bits = response.payload.uinfo.privilege_bits;
 	}
 	return response.result;
 }

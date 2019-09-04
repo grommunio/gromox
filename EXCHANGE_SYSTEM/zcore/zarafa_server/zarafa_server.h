@@ -47,8 +47,8 @@ uint32_t zarafa_server_logon(const char *username,
 
 uint32_t zarafa_server_checksession(GUID hsession);
 	
-uint32_t zarafa_server_uinfo(const char *username,
-	BINARY *pentryid, char **ppdisplay_name, char **ppx500dn);
+uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
+	char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits);
 
 uint32_t zarafa_server_unloadobject(GUID hsession, uint32_t hobject);
 

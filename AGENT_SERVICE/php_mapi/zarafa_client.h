@@ -6,8 +6,8 @@
 uint32_t zarafa_client_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession);
 
-uint32_t zarafa_client_uinfo(const char *username,
-	BINARY *pentryid, char **ppdisplay_name, char **ppx500dn);
+uint32_t zarafa_client_uinfo(const char *username, BINARY *pentryid,
+	char **ppdisplay_name, char **ppx500dn, uint32_t *pprivilege_bits);
 
 uint32_t zarafa_client_unloadobject(GUID hsession, uint32_t hobject);
 

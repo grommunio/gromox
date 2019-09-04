@@ -86,7 +86,8 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.uinfo.username,
 			&presponse->payload.uinfo.entryid,
 			&presponse->payload.uinfo.pdisplay_name,
-			&presponse->payload.uinfo.px500dn);
+			&presponse->payload.uinfo.px500dn,
+			&presponse->payload.uinfo.privilege_bits);
 		break;
 	case CALL_ID_UNLOADOBJECT:
 		presponse->result = zarafa_server_unloadobject(

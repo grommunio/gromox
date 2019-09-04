@@ -24,6 +24,7 @@ BOOL (*system_services_auth_login)(const char*,
 BOOL (*system_service_set_password)(
 	const char*, const char*, const char*);
 BOOL (*system_services_get_user_displayname)(const char*, char*);
+BOOL (*system_services_get_user_privilege_bits)(const char*, uint32_t*);
 BOOL (*system_services_get_org_domains)(int, MEM_FILE*);
 BOOL (*system_services_get_domain_info)(int, char*, char*, char*);
 BOOL (*system_services_get_domain_groups)(int, MEM_FILE*);
@@ -276,7 +277,14 @@ int system_services_run()
 		printf("[system_service]: fail to get"
 				" \"set_password\" service\n");
 		return -32;
-	}	
+	}
+	system_services_get_user_privilege_bits =
+		service_query("get_user_privilege_bits", "system");
+	if (NULL == system_services_get_user_privilege_bits) {
+		printf("[system_service]: fail to get "
+			"\"get_user_privilege_bits\" service\n");
+		return -33;
+	}
 	return 0;
 }
 

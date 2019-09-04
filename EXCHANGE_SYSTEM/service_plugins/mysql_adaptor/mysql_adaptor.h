@@ -33,6 +33,9 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id);
 BOOL mysql_adaptor_get_user_displayname(
 	const char *username, char *pdisplayname);
 
+BOOL mysql_adaptor_get_user_privilege_bits(
+	const char *username, uint32_t *pprivilege_bits);
+
 BOOL mysql_adaptor_get_user_lang(const char *username, char *lang);
 
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
