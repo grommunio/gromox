@@ -34,7 +34,7 @@ static int xmailer_filter(int action, int context_ID,
 	MAIL_BLOCK* mail_blk,  char* reason, int length);
 	
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
-    CONNECTION *pconnection, char *reason, int length);
+	CONNECTION *pconnection, char *reason, int length);
 
 int AS_LibMain(int reason, void **ppdata)
 {	
@@ -86,9 +86,11 @@ int AS_LibMain(int reason, void **ppdata)
 		if (FALSE == register_filter("text/plain" , xmailer_filter)) {
 			return FALSE;
 		}
-        if (FALSE == register_statistic(mail_statistic)) {
-            return FALSE;
-        }
+		/*
+		if (FALSE == register_statistic(mail_statistic)) {
+			return FALSE;
+		}
+		*/
 		return TRUE;
 	case PLUGIN_FREE:
 		return TRUE;
@@ -168,7 +170,7 @@ static int xmailer_filter(int action, int context_ID,
 }
 
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
-    CONNECTION *pconnection, char *reason, int length)
+	CONNECTION *pconnection, char *reason, int length)
 {
 	int result;
 	int pic_num;
