@@ -408,7 +408,8 @@ RETRYING:
 	}
 }
 
-BOOL mysql_adaptor_setpasswd(const char *username, const char *password)
+BOOL mysql_adaptor_setpasswd(const char *username,
+	const char *password, const char *new_password)
 {
 	int i, j, k;
 	int temp_type;
@@ -518,7 +519,7 @@ RETRYING:
 	mysql_free_result(pmyres);
 	
 	pthread_mutex_lock(&g_crypt_lock);
-	if ('\0' == encrypt_passwd[0] && 0 != strcmp(
+	if ('\0' != encrypt_passwd[0] && 0 != strcmp(
 		crypt(password, encrypt_passwd), encrypt_passwd)) {
 		pthread_mutex_unlock(&g_crypt_lock);
 		return FALSE;
@@ -532,7 +533,7 @@ RETRYING:
 	pdomain ++;
 	
 	pthread_mutex_lock(&g_crypt_lock);
-	strcpy(encrypt_passwd, md5_crypt_wrapper(password));
+	strcpy(encrypt_passwd, md5_crypt_wrapper(new_password));
 	pthread_mutex_unlock(&g_crypt_lock);
 
 	pmysql = mysql_init(NULL);

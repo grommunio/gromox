@@ -21,7 +21,8 @@ void mysql_adaptor_free();
 BOOL mysql_adaptor_login(const char *username, const char *password,
 	char *maildir, char *lang, char *reason, int length);
 	
-BOOL mysql_adaptor_setpasswd(const char *username, const char *password);
+BOOL mysql_adaptor_setpasswd(const char *username,
+	const char *password, const char *new_password);
 
 BOOL mysql_adaptor_get_username_from_id(int user_id, char *username);
 
