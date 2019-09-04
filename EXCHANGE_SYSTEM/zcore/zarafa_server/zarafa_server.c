@@ -170,9 +170,6 @@ static void* scan_work_func(void *param)
 				common_util_build_environment();
 				object_tree_free(pinfo->ptree);
 				common_util_free_environment();
-				if (NULL != pinfo->password) {
-					free(pinfo->password);
-				}
 				double_list_free(&pinfo->sink_list);
 				pthread_mutex_destroy(&pinfo->lock);
 				str_hash_remove(g_user_table, pinfo->username);
@@ -751,9 +748,6 @@ int zarafa_server_stop()
 		common_util_build_environment();
 		object_tree_free(pinfo->ptree);
 		common_util_free_environment();
-		if (NULL != pinfo->password) {
-			free(pinfo->password);
-		}
 	}
 	int_hash_iter_free(iter);
 	int_hash_free(g_session_table);
@@ -803,6 +797,13 @@ uint32_t zarafa_server_logon(const char *username,
 		return EC_UNKNOWN_USER;
 	}
 	pdomain ++;
+	if (NULL != password) {
+		if (FALSE == system_services_auth_login(
+			username, password, maildir, lang,
+			reason, 256)) {
+			return EC_LOGIN_FAILURE;
+		}
+	}
 	strncpy(tmp_name, username, sizeof(tmp_name));
 	lower_string(tmp_name);
 	pthread_mutex_lock(&g_table_lock);
@@ -811,25 +812,6 @@ uint32_t zarafa_server_logon(const char *username,
 		user_id = *puser_id;
 		pinfo = int_hash_query(g_session_table, user_id);
 		if (NULL != pinfo) {
-			if (NULL != password && (NULL == pinfo->password
-				|| 0 != strcmp(password, pinfo->password))) {
-				pthread_mutex_unlock(&g_table_lock);
-				if (FALSE == system_services_auth_login(
-					username, password, maildir, lang,
-					reason, 256)) {
-					return EC_LOGIN_FAILURE;
-				}
-				pthread_mutex_lock(&g_table_lock);
-				pinfo = int_hash_query(g_session_table, user_id);
-				if (NULL == pinfo) {
-					pthread_mutex_unlock(&g_table_lock);
-					return EC_LOGIN_FAILURE;
-				}
-				if (NULL != pinfo->password) {
-					free(pinfo->password);
-				}
-				pinfo->password = strdup(password);
-			}
 			time(&pinfo->last_time);
 			*phsession = pinfo->hsession;
 			pthread_mutex_unlock(&g_table_lock);
@@ -838,20 +820,6 @@ uint32_t zarafa_server_logon(const char *username,
 		str_hash_remove(g_user_table, tmp_name);
 	}
 	pthread_mutex_unlock(&g_table_lock);
-	if (NULL != password) {
-		if (FALSE == system_services_auth_login(
-			username, password, maildir, lang,
-			reason, 256)) {
-			return EC_LOGIN_FAILURE;
-		}
-	} else {
-		if (FALSE == system_services_get_maildir(
-			username, maildir) ||
-			FALSE == system_services_get_user_lang(
-			username, lang)) {
-			return EC_ERROR;	
-		}
-	}
 	if (FALSE == system_services_get_id_from_username(
 		username, &user_id) ||
 		FALSE == system_services_get_homedir(
@@ -859,6 +827,14 @@ uint32_t zarafa_server_logon(const char *username,
 		FALSE == system_services_get_domain_ids(
 		pdomain, &domain_id, &org_id)) {
 		return EC_ERROR;
+	}
+	if (NULL == password) {
+		if (FALSE == system_services_get_maildir(
+			username, maildir) ||
+			FALSE == system_services_get_user_lang(
+			username, lang)) {
+			return EC_ERROR;
+		}
 	}
 	tmp_info.reference = 0;
 	tmp_info.hsession = guid_random_new();
@@ -877,19 +853,11 @@ uint32_t zarafa_server_logon(const char *username,
 	}
 	strcpy(tmp_info.maildir, maildir);
 	strcpy(tmp_info.homedir, homedir);
-	if (NULL == password) {
-		tmp_info.password = NULL;
-	} else {
-		tmp_info.password = strdup(password);
-	}
 	tmp_info.flags = flags;
 	time(&tmp_info.last_time);
 	double_list_init(&tmp_info.sink_list);
 	tmp_info.ptree = object_tree_create(maildir);
 	if (NULL == tmp_info.ptree) {
-		if (NULL != tmp_info.password) {
-			free(tmp_info.password);
-		}
 		return EC_ERROR;
 	}
 	pthread_mutex_lock(&g_table_lock);
@@ -898,26 +866,17 @@ uint32_t zarafa_server_logon(const char *username,
 		*phsession = pinfo->hsession;
 		pthread_mutex_unlock(&g_table_lock);
 		object_tree_free(tmp_info.ptree);
-		if (NULL != tmp_info.password) {
-			free(tmp_info.password);
-		}
 		return EC_SUCCESS;
 	}
 	if (1 != int_hash_add(g_session_table, user_id, &tmp_info)) {
 		pthread_mutex_unlock(&g_table_lock);
 		object_tree_free(tmp_info.ptree);
-		if (NULL != tmp_info.password) {
-			free(tmp_info.password);
-		}
 		return EC_ERROR;
 	}
 	if (1 != str_hash_add(g_user_table, tmp_name, &user_id)) {
 		int_hash_remove(g_session_table, user_id);
 		pthread_mutex_unlock(&g_table_lock);
 		object_tree_free(tmp_info.ptree);
-		if (NULL != tmp_info.password) {
-			free(tmp_info.password);
-		}
 		return EC_ERROR;
 	}
 	pinfo = int_hash_query(g_session_table, user_id);

@@ -22,7 +22,6 @@ typedef struct _USER_INFO {
 	uint32_t cpid;
 	char maildir[256];
 	char homedir[256];
-	char *password;
 	uint32_t flags;
 	time_t last_time;
 	OBJECT_TREE *ptree;
