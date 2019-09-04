@@ -909,7 +909,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	if (FALSE == system_services_get_user_displayname(
 		username, display_name) ||
 		FALSE == system_services_get_user_privilege_bits(
-		user, pprivilege_bits) || FALSE ==
+		username, pprivilege_bits) || FALSE ==
 		common_util_username_to_essdn(username, x500dn)) {
 		return EC_NOT_FOUND;
 	}

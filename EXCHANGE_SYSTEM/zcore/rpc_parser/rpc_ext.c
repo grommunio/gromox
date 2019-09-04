@@ -1412,8 +1412,8 @@ static BOOL rpc_ext_push_uinfo_response(
 		pext, ppayload->uinfo.px500dn)) {
 		return FALSE;
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_uint32(
-		pext, &ppayload->uinfo.privilege_bits)) {
+	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
+		pext, ppayload->uinfo.privilege_bits)) {
 		return FALSE;	
 	}
 	return TRUE;
