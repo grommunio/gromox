@@ -1549,6 +1549,18 @@ static zend_bool rpc_ext_pull_getuseravailability_reponse(
 		&ppayload->getuseravailability.result_string);
 }
 
+static zend_bool rpc_ext_push_setpasswd_request(
+	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+{
+	if (!ext_pack_push_string(pctx, ppayload->setpasswd.username)) {
+		return 0;	
+	}
+	if (!ext_pack_push_string(pcxt, ppayload->setpasswd.passwd)) {
+		return 0;	
+	}
+	return ext_pack_push_string(pcxt, ppayload->setpasswd.new_passwd);
+}
+
 zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	BINARY *pbin_out)
 {
@@ -1895,6 +1907,10 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 		b_result = rpc_ext_push_getuseravailability_request(
 							&push_ctx, &prequest->payload);
 		break;
+	case CALL_ID_SETPASSWD:
+		b_result = rpc_ext_push_setpasswd_request(
+					&push_ctx, &prequest->payload);
+		break;
 	default:
 		return 0;
 	}
@@ -2123,6 +2139,8 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	case CALL_ID_GETUSERAVAILABILITY:
 		return rpc_ext_pull_getuseravailability_reponse(
 						&pull_ctx, &presponse->payload);
+	case CALL_ID_SETPASSWD:
+		return 1;
 	default:
 		return 0;
 	}

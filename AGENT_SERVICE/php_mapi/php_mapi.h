@@ -47,7 +47,6 @@ ZEND_FUNCTION(mapi_parseoneoff);
 
 ZEND_FUNCTION(mapi_logon_zarafa);
 ZEND_FUNCTION(mapi_logon_ex);
-ZEND_FUNCTION(mapi_zarafa_getuser_by_name);
 ZEND_FUNCTION(mapi_getmsgstorestable);
 ZEND_FUNCTION(mapi_openmsgstore);
 ZEND_FUNCTION(mapi_openprofilesection);
@@ -169,6 +168,9 @@ ZEND_FUNCTION(mapi_feature);
 
 ZEND_FUNCTION(kc_session_save);
 ZEND_FUNCTION(kc_session_restore);
+
+ZEND_FUNCTION(nsp_getuserinfo);
+ZEND_FUNCTION(nsp_setuserpasswd);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry

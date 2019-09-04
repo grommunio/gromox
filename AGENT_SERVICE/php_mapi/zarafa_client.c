@@ -1661,3 +1661,19 @@ uint32_t zarafa_client_getuseravailability(GUID hsession,
 	}
 	return response.result;
 }
+
+uint32_t zarafa_client_setpasswd(const char *username,
+	const char *passwd, const char *new_passwd)
+{
+	RPC_REQUEST request;
+	RPC_RESPONSE response;
+	
+	request.call_id = CALL_ID_SETPASSWD;
+	request.payload.setpasswd.username = username;
+	request.payload.setpasswd.passwd = passwd;
+	request.payload.setpasswd.new_passwd = new_passwd;
+	if (!zarafa_client_do_rpc(&request, &response)) {
+		return EC_RPC_FAIL;
+	}
+	return response.result;
+}

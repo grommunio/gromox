@@ -30,6 +30,8 @@ extern const char* (*system_services_mime_to_extension)(const char*);
 extern const char* (*system_services_extension_to_mime)(const char*);
 extern BOOL (*system_services_auth_login)(const char*,
 	const char*, char*, char*, char*, int);
+extern BOOL (*system_service_set_password)(
+	const char*, const char*, const char*);
 extern BOOL (*system_services_get_user_displayname)(const char*, char*);
 extern BOOL (*system_services_get_org_domains)(int, MEM_FILE*);
 extern BOOL (*system_services_get_domain_info)(int, char*, char*, char*);

@@ -87,7 +87,6 @@ static zend_function_entry mapi_functions[] = {
 	ZEND_FE(mapi_parseoneoff, NULL)
 	ZEND_FE(mapi_logon_zarafa, NULL)
 	ZEND_FE(mapi_logon_ex, NULL)
-	ZEND_FE(mapi_zarafa_getuser_by_name, NULL)
 	ZEND_FE(mapi_getmsgstorestable, NULL)
 	ZEND_FE(mapi_openmsgstore, NULL)
 	ZEND_FE(mapi_openprofilesection, NULL)
@@ -212,6 +211,9 @@ static zend_function_entry mapi_functions[] = {
 
 	ZEND_FE(kc_session_save, second_arg_force_ref)
 	ZEND_FE(kc_session_restore, second_arg_force_ref)
+	
+	ZEND_FE(nsp_getuserinfo, NULL)
+	ZEND_FE(nsp_setuserpasswd, NULL)
 	{NULL, NULL, NULL}
 };
 
@@ -995,52 +997,6 @@ THROW_EXCEPTION:
 	}
 	RETVAL_FALSE;
 }
-
-ZEND_FUNCTION(mapi_zarafa_getuser_by_name)
-{
-	char *px500dn;
-	BINARY entryid;
-	char *username;
-	uint32_t result;
-	int username_len;
-	zval *pzresource;
-	char *pdisplay_name;
-	
-	if (1 == ZEND_NUM_ARGS()) {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-			"s", &username, &username_len) == FAILURE) {
-			MAPI_G(hr) = EC_INVALID_PARAMETER;
-			goto THROW_EXCEPTION;	
-		}
-	} else {
-		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs",
-			&pzresource, &username, &username_len) == FAILURE) {
-			MAPI_G(hr) = EC_INVALID_PARAMETER;
-			goto THROW_EXCEPTION;	
-		}
-	}
-	result = zarafa_client_uinfo(username,
-		&entryid, &pdisplay_name, &px500dn);
-	if (EC_SUCCESS != result) {
-		MAPI_G(hr) = result;
-		goto THROW_EXCEPTION;
-	}
-	array_init(return_value);
-	add_assoc_stringl(return_value, "userid", entryid.pb, entryid.cb, 1);
-	add_assoc_string(return_value, "username", username, 1);
-	add_assoc_string(return_value, "fullname", pdisplay_name, 1);
-	add_assoc_string(return_value, "emailaddress", px500dn, 1);
-	add_assoc_long(return_value, "admin", 0);
-	MAPI_G(hr) = EC_SUCCESS;
-	return;
-THROW_EXCEPTION:
-	if (MAPI_G(exceptions_enabled)) {
-		zend_throw_exception(MAPI_G(exception_ce),
-			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
-	}
-	RETVAL_FALSE;
-}
-
 
 ZEND_FUNCTION(mapi_openentry)
 {
@@ -4351,7 +4307,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	}
 	waitpid(pid, &status, 0);
 	close(pipes_out[0]);
-	RETVAL_STRINGL(pbuff, bufflen, 0);
+	RETVAL_STRINGL(pbuff, offset, 0);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
@@ -6023,6 +5979,11 @@ ZEND_FUNCTION(mapi_feature)
 	}
 }
 
+ZEND_FUNCTION(mapi_msgstore_abortsubmit)
+{
+	RETVAL_TRUE;
+}
+
 ZEND_FUNCTION(kc_session_save)
 {
 	zval *pzres;
@@ -6092,7 +6053,70 @@ ZEND_FUNCTION(kc_session_restore)
 	RETVAL_LONG(EC_SUCCESS);
 }
 
-ZEND_FUNCTION(mapi_msgstore_abortsubmit)
+
+ZEND_FUNCTION(nsp_getuserinfo)
 {
+	char *px500dn;
+	BINARY entryid;
+	char *username;
+	uint32_t result;
+	int username_len;
+	char *pdisplay_name;
+	
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+		"s", &username, &username_len) == FAILURE) {
+		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		goto THROW_EXCEPTION;	
+	}
+	result = zarafa_client_uinfo(username,
+		&entryid, &pdisplay_name, &px500dn);
+	if (EC_SUCCESS != result) {
+		MAPI_G(hr) = result;
+		goto THROW_EXCEPTION;
+	}
+	array_init(return_value);
+	add_assoc_stringl(return_value, "userid", entryid.pb, entryid.cb, 1);
+	add_assoc_string(return_value, "username", username, 1);
+	add_assoc_string(return_value, "fullname", pdisplay_name, 1);
+	add_assoc_string(return_value, "essdn", px500dn, 1);
+	MAPI_G(hr) = EC_SUCCESS;
+	return;
+THROW_EXCEPTION:
+	if (MAPI_G(exceptions_enabled)) {
+		zend_throw_exception(MAPI_G(exception_ce),
+			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
+	}
+	RETVAL_FALSE;
+}
+
+ZEND_FUNCTION(nsp_setuserpasswd)
+{
+	char *username;
+	uint32_t result;
+	int username_len;
+	char *old_passwd;
+	char *new_passwd;
+	int old_passwd_len;
+	int new_passwd_len;
+	
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+		"sss", &username, &username_len, &old_passwd,
+		&old_passwd_len, &new_passwd, &new_passwd_len)
+		== FAILURE) {
+		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		goto THROW_EXCEPTION;	
+	}
+	result = zarafa_client_setpasswd(username, old_passwd, new_passwd);
+	if (EC_SUCCESS != result) {
+		MAPI_G(hr) = result;
+		goto THROW_EXCEPTION;
+	}
 	RETVAL_TRUE;
+	return;
+THROW_EXCEPTION:
+	if (MAPI_G(exceptions_enabled)) {
+		zend_throw_exception(MAPI_G(exception_ce),
+			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
+	}
+	RETVAL_FALSE;
 }

@@ -498,6 +498,12 @@ typedef struct _REQ_GETUSERAVAILABILITY {
 	uint64_t endtime;
 } REQ_GETUSERAVAILABILITY;
 
+typedef struct _REQ_SETPASSWD {
+	char *username;
+	char *passwd;
+	char *new_passwd;
+} REQ_SETPASSWD;
+
 typedef union _REQUEST_PAYLOAD {
 	REQ_LOGON logon;
 	REQ_CHECKSESSION checksession;
@@ -581,6 +587,7 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_MESSAGETOVCF messagetovcf;
 	REQ_VCFTOMESSAGE vcftomessage;
 	REQ_GETUSERAVAILABILITY getuseravailability;
+	REQ_SETPASSWD setpasswd;
 } REQUEST_PAYLOAD;
 
 typedef struct _RPC_REQUEST {

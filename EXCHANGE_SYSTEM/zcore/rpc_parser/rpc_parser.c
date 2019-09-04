@@ -621,6 +621,12 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.getuseravailability.endtime,
 			&presponse->payload.getuseravailability.result_string);
 		break;
+	case CALL_ID_SETPASSWD:
+		presponse->result = zarafa_server_setpasswd(
+			prequest->payload.setpasswd.username,
+			prequest->payload.setpasswd.passwd,
+			prequest->payload.setpasswd.new_passwd);
+		break;
 	default:
 		return DISPATCH_FALSE;
 	}

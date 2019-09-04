@@ -3649,6 +3649,24 @@ static BOOL rpc_ext_push_getuseravailability_response(
 	return TRUE;
 }
 
+static BOOL rpc_ext_pull_setpasswd_request(
+	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
+{
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_string(
+		pext, &ppayload->setpasswd.username)) {
+		return FALSE;	
+	}
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_string(
+		pext, &ppayload->setpasswd.passwd)) {
+		return FALSE;	
+	}
+	if (EXT_ERR_SUCCESS != ext_buffer_pull_string(
+		pext, &ppayload->setpasswd.new_passwd)) {
+		return FALSE;	
+	}
+	return TRUE;
+}
+
 BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	RPC_REQUEST *prequest)
 {
@@ -3907,6 +3925,9 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	case CALL_ID_GETUSERAVAILABILITY:
 		return rpc_ext_pull_getuseravailability_request(
 						&ext_pull, &prequest->payload);
+	case CALL_ID_SETPASSWD:
+		return rpc_ext_pull_setpasswd_request(
+				&ext_pull, &prequest->payload);
 	default:
 		return FALSE;
 	}
@@ -4230,6 +4251,9 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	case CALL_ID_GETUSERAVAILABILITY:
 		b_result = rpc_ext_push_getuseravailability_response(
 							&ext_push, &presponse->payload);
+		break;
+	case CALL_ID_SETPASSWD:
+		b_result = TRUE;
 		break;
 	default:
 		return FALSE;

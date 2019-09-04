@@ -7619,3 +7619,13 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	}
 	return EC_SUCCESS;
 }
+
+uint32_t zarafa_server_setpasswd(const char *username,
+	const char *passwd, const char *new_passwd)
+{
+	if (FALSE == system_service_set_password(
+		username, passwd, new_passwd)) {
+		return EC_ACCESS_DENIED;	
+	}
+	return EC_SUCCESS;
+}

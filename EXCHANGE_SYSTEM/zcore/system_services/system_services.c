@@ -21,6 +21,8 @@ const char* (*system_services_mime_to_extension)(const char*);
 const char* (*system_services_extension_to_mime)(const char*);
 BOOL (*system_services_auth_login)(const char*,
 	const char*, char*, char*, char*, int);
+BOOL (*system_service_set_password)(
+	const char*, const char*, const char*);
 BOOL (*system_services_get_user_displayname)(const char*, char*);
 BOOL (*system_services_get_org_domains)(int, MEM_FILE*);
 BOOL (*system_services_get_domain_info)(int, char*, char*, char*);
@@ -268,6 +270,13 @@ int system_services_run()
 			" get \"log_info\" service\n");
 		return -31;
 	}
+	system_service_set_password = service_query(
+						"set_password", "system");
+	if (NULL == system_service_set_password) {
+		printf("[system_service]: fail to get"
+				" \"set_password\" service\n");
+		return -32;
+	}	
 	return 0;
 }
 

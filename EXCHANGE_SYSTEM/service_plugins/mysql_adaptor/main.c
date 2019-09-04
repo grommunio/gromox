@@ -136,8 +136,8 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 				timeout);
 		}
 		
-		mysql_adaptor_init(conn_num, scan_interval, mysql_host, mysql_port,
-			mysql_user, mysql_passwd, db_name, timeout);
+		mysql_adaptor_init(conn_num, scan_interval, mysql_host,
+			mysql_port, mysql_user, mysql_passwd, db_name, timeout);
 
 		config_file_save(pfile);
 		config_file_free(pfile);
@@ -146,10 +146,17 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			printf("[mysql_adaptor]: fail to run mysql adaptor\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("auth_login", mysql_adaptor_login)) {
+		if (FALSE == register_service("auth_login",
+			mysql_adaptor_login)) {
 			printf("[mysql_adaptor]: fail to register "
 							"\"auth_login\" service\n");
 			return FALSE;
+		}
+		if (FALSE == register_service("set_password",
+			mysql_adaptor_setpasswd)) {
+			printf("[mysql_adaptor]: fail to register"
+						" \"set_password\" service\n");
+			return FALSE;	
 		}
 		if (FALSE == register_service("get_username_from_id",
 			mysql_adaptor_get_username_from_id)) {
