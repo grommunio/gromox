@@ -172,10 +172,13 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 {
 	int result;
 	int pic_num;
+	int tag_len;
+	int val_len;
 	int html_num;
 	int type_len;
 	int body_len;
 	char *pdomain;
+	char buff[1024];
 	char content_type[128];
 	
 	if (TRUE == pmail->penvelop->is_outbound ||
@@ -225,6 +228,38 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	}
 	if (1 != html_num || 1 != pic_num) {
 		return MESSAGE_ACCEPT;
+	}
+	while (MEM_END_OF_FILE != mem_file_read(
+		&pmail->phead->f_others, &tag_len, sizeof(int))) {
+		if (8 == tag_len) {
+			mem_file_read(&pmail->phead->f_others, buff, tag_len);
+			if (0 == strncasecmp("Received", buff, 8)) {
+				mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
+				if (val_len >= 1024) {
+					return MESSAGE_ACCEPT;
+				}
+				mem_file_read(&pmail->phead->f_others, buff, val_len);
+				if (NULL != search_string(buff, ".info (unknown ", val_len)) {
+					if (NULL != spam_statistic) {
+						spam_statistic(SPAM_STATISTIC_PROPERTY_034);
+					}
+					strncpy(reason, g_return_reason, length);
+					return MESSAGE_REJECT;
+				}
+				break;
+			}
+		} else if (14 == tag_len) {
+			mem_file_read(&pmail->phead->f_others, buff, tag_len);
+			if (0 == strncasecmp("DKIM-Signature", buff, 14)) {
+				return MESSAGE_ACCEPT;
+			}
+		} else {
+			mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR,
+				tag_len, MEM_FILE_SEEK_CUR);
+		}
+		mem_file_read(&pmail->phead->f_others, &val_len, sizeof(int));
+		mem_file_seek(&pmail->phead->f_others, MEM_FILE_READ_PTR,
+			val_len, MEM_FILE_SEEK_CUR);
 	}
 	result = rbl_cache_query(pmail->phead->x_original_ip, reason, length);
 	if (RBL_CACHE_NORMAL == result) {
