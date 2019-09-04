@@ -6080,6 +6080,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	add_assoc_string(return_value, "username", username, 1);
 	add_assoc_string(return_value, "fullname", pdisplay_name, 1);
 	add_assoc_string(return_value, "essdn", px500dn, 1);
+	add_assoc_long(return_value, "privilege", privilege_bits);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
