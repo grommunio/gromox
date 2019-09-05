@@ -1,4 +1,4 @@
 zh	信息存储顶部	收件箱	草稿	发件箱	已发送邮件	已删除邮件	联系人	日历	日记	便签	任务	垃圾邮件	同步问题	冲突	本地故障	服务器故障
-cn	資訊存儲頂部	收件箱	草稿	發件箱	已發送郵件	已刪除郵件	聯繫人	日曆	日記	便箋	任務	垃圾郵件	同步問題	衝突	本地故障	伺服器故障
+cn	資訊存儲頂部	收件箱	草稿	發件箱	已發送郵件	已刪除郵件	聯絡人	日曆	日記	便箋	任務	垃圾郵件	同步問題	衝突	本地故障	伺服器故障
 en	Top\ of\ Information\ Store		Inbox	Drafts	Outbox		Sent\ Items		Deleted\ Items	Contacts	Calendar	Journal		Notes	Tasks	Junk\ E-mail	Sync\ Issues	Conflicts	Local\ Failures		Server\ Failures
 jp	インフォメーションストアのトップ	受信トレイ	下書き	送信トレイ		送信済みアイテム	削除済みアイテム	連絡先	カレンダー	日記	ノート		タスク		迷惑メール	同期の問題	衝突	ローカル障害	サーバー障害
