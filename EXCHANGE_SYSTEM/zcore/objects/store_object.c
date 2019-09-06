@@ -1539,7 +1539,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (NULL == pconfig) {
 			return FALSE;
 		}
-		sprintf(temp_buff, "%lu", *(uint64_t*)pvalue);
+		sprintf(temp_buff, "%lu", rop_util_nttime_to_unix(*(uint64_t*)pvalue));
 		if (PROP_TAG_OOFBEGIN == proptag) {
 			config_file_set_value(pconfig, "START_TIME", temp_buff);
 		} else {
