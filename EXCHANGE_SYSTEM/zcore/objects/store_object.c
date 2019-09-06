@@ -934,7 +934,7 @@ static void* store_object_get_oof_property(
 			config_file_free(pconfig);
 			return NULL;
 		}
-		*(uint64_t*)pvalue = atoll(str_value);
+		*(uint64_t*)pvalue = rop_util_unix_to_nttime(atoll(str_value));
 		config_file_free(pconfig);
 		return pvalue;
 	case PROP_TAG_OOFALLOWEXTERNAL:
@@ -1497,7 +1497,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	char *pbuff;
 	int buff_len;
 	char *ptoken;
-	char *str_value;
+	char temp_buff[64];
 	char temp_path[256];
 	CONFIG_FILE *pconfig;
 	struct stat node_stat;
@@ -1526,6 +1526,24 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		default:
 			config_file_set_value(pconfig, "OOF_STATE", "0");
 			break;
+		}
+		if (FALSE == config_file_save(pconfig)) {
+			config_file_free(pconfig);
+			return FALSE;
+		}
+		config_file_free(pconfig);
+		return TRUE;
+	case PROP_TAG_OOFBEGIN:
+	case PROP_TAG_OOFUNTIL:
+		pconfig = config_file_init(temp_path);
+		if (NULL == pconfig) {
+			return FALSE;
+		}
+		sprintf(temp_buff, "%lu", *(uint64_t*)pvalue);
+		if (PROP_TAG_OOFBEGIN == proptag) {
+			config_file_set_value(pconfig, "START_TIME", temp_buff);
+		} else {
+			config_file_set_value(pconfig, "END_TIME", temp_buff);
 		}
 		if (FALSE == config_file_save(pconfig)) {
 			config_file_free(pconfig);
@@ -1637,30 +1655,23 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		close(fd);
 		return TRUE;
 	case PROP_TAG_OOFALLOWEXTERNAL:
-		pconfig = config_file_init(temp_path);
-		if (NULL == pconfig) {
-			return FALSE;
-		}
-		if (0 == *(uint8_t*)pvalue) {
-			config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "0");
-		} else {
-			config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "1");
-		}
-		if (FALSE == config_file_save(pconfig)) {
-			config_file_free(pconfig);
-			return FALSE;
-		}
-		config_file_free(pconfig);
-		return TRUE;
 	case PROP_TAG_OOFEXTERNALAUDIENCE:
 		pconfig = config_file_init(temp_path);
 		if (NULL == pconfig) {
 			return FALSE;
 		}
 		if (0 == *(uint8_t*)pvalue) {
-			config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "0");
+			if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
+				config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "0");
+			} else {
+				config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "0");
+			}
 		} else {
-			config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "1");
+			if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
+				config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "1");
+			} else {
+				config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "1");
+			}
 		}
 		if (FALSE == config_file_save(pconfig)) {
 			config_file_free(pconfig);
@@ -1670,50 +1681,6 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return TRUE;
 	}
 	return FALSE;
-}
-
-static BOOL store_object_set_oof_schedule(const char *maildir,
-	uint64_t begin_time, uint64_t until_time)
-{
-	int fd;
-	struct tm begin_tm;
-	struct tm until_tm;
-	char temp_path[256];
-	char temp_buff[256];
-	CONFIG_FILE *pconfig;
-	struct stat node_stat;
-	
-	if (FALSE == common_util_nttime_to_tm(begin_time, &begin_tm) ||
-		FALSE == common_util_nttime_to_tm(until_time, &until_tm)) {
-		return FALSE;	
-	}
-	sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-	if (0 != stat(temp_path, &node_stat)) {
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 == fd) {
-			return FALSE;
-		}
-		close(fd);
-	}
-	pconfig = config_file_init(temp_path);
-	if (NULL == pconfig) {
-		return FALSE;
-	}
-	sprintf(temp_buff, "%d-%d-%d~%d-%d-%d",
-		begin_tm.tm_year + 1900, begin_tm.tm_mon + 1,
-		begin_tm.tm_mday, until_tm.tm_year + 1900,
-		until_tm.tm_mon + 1, until_tm.tm_mday);
-	config_file_set_value(pconfig, "DURATION_DATE", temp_buff);
-	sprintf(temp_buff, "%02d:%02d~%02d:%02d",
-			begin_tm.tm_hour, begin_tm.tm_min,
-			until_tm.tm_hour, until_tm.tm_min);
-	config_file_set_value(pconfig, "DURATION_TIME", temp_buff);
-	if (FALSE == config_file_save(pconfig)) {
-		config_file_free(pconfig);
-		return FALSE;
-	}
-	config_file_free(pconfig);
-	return TRUE;
 }
 
 static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
@@ -1775,8 +1742,6 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	int i;
 	USER_INFO *pinfo;
 	const char *plang;
-	uint64_t *poof_until;
-	uint64_t *poof_begin;
 	char *folder_lang[RES_TOTAL_NUM];
 	
 	pinfo = zarafa_server_get_info();
@@ -1784,25 +1749,15 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 		pinfo->user_id != pstore->account_id) {
 		return TRUE;
 	}
-	poof_begin = common_util_get_propvals(ppropvals, PROP_TAG_OOFBEGIN);
-	poof_until = common_util_get_propvals(ppropvals, PROP_TAG_OOFUNTIL);
-	if (NULL != poof_begin && NULL != poof_until) {
-		if (FALSE == store_object_set_oof_schedule(
-			store_object_get_dir(pstore), *poof_begin,
-			*poof_until)) {
-			return FALSE;	
-		}
-	}
 	for (i=0; i<ppropvals->count; i++) {
 		if (TRUE == store_object_check_readonly_property(
 			pstore, ppropvals->ppropval[i].proptag)) {
 			continue;
 		}
 		switch (ppropvals->ppropval[i].proptag) {
+		case PROP_TAG_OOFSTATE:
 		case PROP_TAG_OOFBEGIN:
 		case PROP_TAG_OOFUNTIL:
-			continue;
-		case PROP_TAG_OOFSTATE:
 		case PROP_TAG_OOFINTERNALREPLY:
 		case PROP_TAG_OOFINTERNALSUBJECT:
 		case PROP_TAG_OOFALLOWEXTERNAL:
