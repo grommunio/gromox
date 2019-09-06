@@ -5,7 +5,6 @@
 #include "config_file.h"
 #include "hook_common.h"
 #include "mail_func.h"
-#include "timezone.h"
 #include "str_hash.h"
 #include "util.h"
 #include <pthread.h>
@@ -22,30 +21,22 @@ void auto_response_reply(const char *user_home,
 	const char *from, const char *rcpt)
 {
 	MIME *pmime;
-	BOOL b_check;
 	BOOL b_found;
 	char *ptoken;
 	char *ptoken1;
 	char *pdomain;
 	char *pcontent;
-	BOOL b_duration;
 	BOOL b_internal;
 	time_t cur_time;
-	time_t end_time;
 	char *str_value;
 	char charset[32];
-	struct tm tm_end;
 	struct tm tm_buff;
-	time_t start_time;
 	int i, j, fd, len;
 	int parsed_length;
-	char time_zone[64];
-	char time_buff[64];
 	char subject[1024];
 	char buff[64*1024];
-	struct tm tm_start;
 	char temp_path[256];
-	char date_buff[128];
+	uint8_t reply_state;
 	char audit_buff[256];
 	CONFIG_FILE *pconfig;
 	MIME_FIELD mime_field;
@@ -83,99 +74,52 @@ void auto_response_reply(const char *user_home,
 	if (NULL == pconfig) {
 		return;
 	}
-	str_value = config_file_get_value(pconfig, "REPLY_SWITCH");
-	if (NULL == str_value || 0 == atoi(str_value)) {
+	str_value = config_file_get_value(pconfig, "OOF_STATE");
+	if (NULL == str_value) {
+		config_file_free(pconfig);
+		return;
+	}
+	reply_state = atoi(str_value);
+	if (1 != reply_state && 2 != reply_state) {
 		config_file_free(pconfig);
 		return;
 	}
 	time(&cur_time);
+	if (2 == reply_state) {
+		str_value = config_file_get_value(pconfig, "START_TIME");
+		if (NULL != str_value && atoll(str_value) > cur_time) {
+			config_file_free(pconfig);
+			return;
+		}
+		str_value = config_file_get_value(pconfig, "END_TIME");
+		if (NULL != str_value && cur_time > atoll(str_value)) {
+			config_file_free(pconfig);
+			return;
+		}
+	}
 	if (TRUE == b_internal) {
 		snprintf(template_path, 256, "%s/config/internal-reply", user_home);
 	} else {
-		str_value = config_file_get_value(pconfig, "EXTERNAL_SWITCH");
+		str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
 		if (NULL == str_value || 0 == atoi(str_value)) {
 			config_file_free(pconfig);
 			return;
 		}
-		str_value = config_file_get_value(pconfig, "EXTERNAL_CHECK");
-		if (NULL == str_value || 0 == atoi(str_value)) {
-			b_check = FALSE;
-		} else {
-			b_check = TRUE;
+		str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
+		if (NULL != str_value && 0 != atoi(str_value)) {
+			if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
+				user_home, rcpt, &b_found) || FALSE == b_found) {
+				config_file_free(pconfig);
+				return;	
+			}
 		}
 		snprintf(template_path, 256, "%s/config/external-reply", user_home);
 	}
-	str_value = config_file_get_value(pconfig, "DURATION_SWITCH");
-	if (NULL == str_value || 0 == atoi(str_value)) {
-		b_duration = FALSE;
-	} else {
-		b_duration = TRUE;
-	}
-	str_value = config_file_get_value(pconfig, "DURATION_DATE");
-	if (NULL != str_value) {
-		strncpy(date_buff, str_value, 64);
-	} else {
-		date_buff[0] = '\0';
-	}
-	str_value = config_file_get_value(pconfig, "DURATION_TIME");
-	if (NULL != str_value) {
-		strncpy(time_buff, str_value, 64);
-	} else {
-		time_buff[0] = '\0';
-	}
 	config_file_free(pconfig);
-
-	if (TRUE == b_duration) {
-		if ('\0' == date_buff[0] || '\0' == time_buff[0]) {
-			return;
-		}
-		ptoken = strchr(date_buff, '~');
-		if (NULL == ptoken) {
-			return;
-		}
-		*ptoken = '\0';
-		ptoken1 = strchr(time_buff, '~');
-		if (NULL == ptoken1) {
-			return;
-		}
-		*ptoken1 = '\0';
-		memset(&tm_start, 0, sizeof(tm_start));
-		sprintf(buff, "%s %s", date_buff, time_buff);
-		if (NULL == strptime(buff, "%Y-%m-%d %H:%M", &tm_start)) {
-			return;
-		}
-		memset(&tm_end, 0, sizeof(tm_end));
-		sprintf(buff, "%s %s", ptoken + 1, ptoken1 + 1);
-		if (NULL == strptime(buff, "%Y-%m-%d %H:%M", &tm_end)) {
-			return;
-		}
-		if (FALSE == exmdb_local_get_timezone(from, time_zone)) {
-			time_zone[0] = '\0';
-		}
-		if ('\0' == time_zone[0]) {
-			start_time = mktime(&tm_start);
-			end_time = mktime(&tm_end);
-		} else {
-			sp = tz_alloc(time_zone);
-			start_time = tz_mktime(sp, &tm_start);
-			end_time = tz_mktime(sp, &tm_end);
-			tz_free(sp);
-		}
-		if (start_time > cur_time || end_time < cur_time) {
-			return;
-		}
-	}
-	if (FALSE == b_internal && TRUE == b_check) {
-		if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
-			user_home, rcpt, &b_found) || FALSE == b_found) {
-			return;	
-		}
-	}
 	snprintf(audit_buff, 256, "%s:%s", from, rcpt);
 	if (FALSE == bounce_audit_check(audit_buff)) {
 		return;
 	}
-
 	if (0 != stat(template_path, &node_stat)) {
 		return;
 	}

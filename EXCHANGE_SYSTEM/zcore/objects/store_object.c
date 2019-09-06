@@ -38,10 +38,6 @@
 #define PROP_TAG_ECUSERLANGUAGE							0x6770001F
 #define PROP_TAG_ECUSERTIMEZONE							0x6771001F
 
-#define OOF_STATE_DISABLED								0x00000000
-#define OOF_STATE_ENABLED								0x00000001
-#define OOF_STATE_SCHEDULED								0x00000002
-
 static BOOL store_object_enlarge_propid_hash(STORE_OBJECT *pstore)
 {
 	int tmp_id;
@@ -815,49 +811,39 @@ static void* store_object_get_oof_property(
 	char *ptoken;
 	int buff_len;
 	void *pvalue;
-	struct tm dtm;
-	struct tm ttm;
 	char *str_value;
-	struct tm unix_tm;
 	int parsed_length;
-	char time_buff[64];
-	char date_buff[64];
 	char subject[1024];
 	char temp_path[256];
 	CONFIG_FILE *pconfig;
 	MIME_FIELD mime_field;
 	struct stat node_stat;
+	static uint8_t fake_true = 1;
+	static uint8_t fake_false = 0;
 	
-	pvalue = NULL;
-	sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-	pconfig = config_file_init(temp_path);
 	switch (proptag) {
 	case PROP_TAG_OOFSTATE:
 		pvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == pvalue) {
-			break;
+			return NULL;
 		}
+		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
+		pconfig = config_file_init(temp_path);
 		if (NULL == pconfig) {
-			*(uint32_t*)pvalue = OOF_STATE_DISABLED;
+			*(uint32_t*)pvalue = 0;
 		} else {
-			str_value = config_file_get_value(pconfig, "REPLY_SWITCH");
+			str_value = config_file_get_value(pconfig, "OOF_STATE");
 			if (NULL == str_value) {
-				*(uint32_t*)pvalue = OOF_STATE_DISABLED;
+				*(uint32_t*)pvalue = 0;
 			} else {
-				if (0 == atoi(str_value)) {
-					*(uint32_t*)pvalue = OOF_STATE_DISABLED;
-				} else {
-					str_value = config_file_get_value(
-							pconfig, "DURATION_SWITCH");
-					if (NULL == str_value || 0 == atoi(str_value)) {
-						*(uint32_t*)pvalue = OOF_STATE_ENABLED;
-					} else {
-						*(uint32_t*)pvalue = OOF_STATE_SCHEDULED;
-					}
+				*(uint32_t*)pvalue = atoi(str_value);
+				if (*(uint32_t*)pvalue > 2) {
+					*(uint32_t*)pvalue = 0;
 				}
 			}
+			config_file_free(pconfig);
 		}
-		break;
+		return pvalue;
 	case PROP_TAG_OOFINTERNALREPLY:
 	case PROP_TAG_OOFEXTERNALREPLY:
 		if (PROP_TAG_OOFINTERNALREPLY == proptag) {
@@ -866,26 +852,25 @@ static void* store_object_get_oof_property(
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
 		if (0 != stat(temp_path, &node_stat)) {
-			break;
+			return NULL;
 		}
 		buff_len = node_stat.st_size;
 		fd = open(temp_path, O_RDONLY);
 		if (-1 == fd) {
-			break;
+			return NULL;
 		}
 		pbuff = common_util_alloc(buff_len + 1);
 		if (NULL == pbuff) {
 			close(fd);
-			break;
+			return NULL;
 		}
 		if (buff_len != read(fd, pbuff, buff_len)) {
 			close(fd);
-			break;
+			return NULL;
 		}
 		close(fd);
 		pbuff[buff_len] = '\0';
-		pvalue = strstr(pbuff, "\r\n\r\n");
-		break;
+		return strstr(pbuff, "\r\n\r\n");
 	case PROP_TAG_OOFINTERNALSUBJECT:
 	case PROP_TAG_OOFEXTERNALSUBJECT:
 		if (PROP_TAG_OOFINTERNALSUBJECT == proptag) {
@@ -894,21 +879,21 @@ static void* store_object_get_oof_property(
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
 		if (0 != stat(temp_path, &node_stat)) {
-			break;
+			return NULL;
 		}
 		buff_len = node_stat.st_size;
 		fd = open(temp_path, O_RDONLY);
 		if (-1 == fd) {
-			break;
+			return NULL;
 		}
 		pbuff = common_util_alloc(buff_len);
 		if (NULL == pbuff) {
 			close(fd);
-			break;
+			return NULL;
 		}
 		if (buff_len != read(fd, pbuff, buff_len)) {
 			close(fd);
-			break;
+			return NULL;
 		}
 		close(fd);
 		offset = 0;
@@ -920,144 +905,59 @@ static void* store_object_get_oof_property(
 				mime_field.field_value[mime_field.field_value_len] = '\0';
 				if (TRUE == mime_string_to_utf8("utf-8",
 					mime_field.field_value, subject)) {
-					pvalue = common_util_dup(subject);
-					break;
+					return common_util_dup(subject);
 				}
 			}
 			if ('\r' == pbuff[offset] && '\n' == pbuff[offset + 1]) {
-				break;
+				return NULL;
 			}
 		}
-		break;
+		return NULL;
 	case PROP_TAG_OOFBEGIN:
-		if (NULL == pconfig) {
-			break;
-		}
-		str_value = config_file_get_value(pconfig, "DURATION_DATE");
-		if (NULL == str_value) {
-			break;
-		}
-		strncpy(date_buff, str_value, 64);
-		str_value = config_file_get_value(pconfig, "DURATION_TIME");
-		if (NULL == str_value) {
-			break;
-		}
-		strncpy(time_buff, str_value, 64);
-		ptoken = strchr(date_buff, '~');
-		if (NULL == ptoken) {
-			break;
-		}
-		*ptoken = '\0';
-		memset(&dtm, 0, sizeof(dtm));
-		if (NULL == strptime(date_buff, "%Y-%m-%d", &dtm)) {
-			break;
-		}
-		ptoken = strchr(time_buff, '~');
-		if (NULL == ptoken) {
-			break;
-		}
-		*ptoken = '\0';
-		memset(&ttm, 0, sizeof(ttm));
-		if (NULL == strptime(time_buff, "%H:%M", &ttm)) {
-			break;
-		}
-		pvalue = common_util_alloc(sizeof(uint64_t));
-		if (NULL == pvalue) {
-			break;
-		}
-		memset(&unix_tm, 0, sizeof(struct tm));
-		unix_tm.tm_sec = ttm.tm_sec;
-		unix_tm.tm_min = ttm.tm_min;
-		unix_tm.tm_hour = ttm.tm_hour;
-		unix_tm.tm_mday = dtm.tm_mday;
-		unix_tm.tm_mon = dtm.tm_mon;
-		unix_tm.tm_year = dtm.tm_year;
-		unix_tm.tm_wday = dtm.tm_wday;
-		unix_tm.tm_yday = dtm.tm_yday;
-		*(uint64_t*)pvalue = common_util_tm_to_nttime(unix_tm);
-		break;
 	case PROP_TAG_OOFUNTIL:
+		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
+		pconfig = config_file_init(temp_path);
 		if (NULL == pconfig) {
-			break;
+			return NULL;
 		}
-		str_value = config_file_get_value(pconfig, "DURATION_DATE");
-		if (NULL == str_value) {
-			break;
-		}
-		strncpy(date_buff, str_value, 64);
-		str_value = config_file_get_value(pconfig, "DURATION_TIME");
-		if (NULL == str_value) {
-			break;
-		}
-		strncpy(time_buff, str_value, 64);
-		ptoken = strchr(date_buff, '~');
-		if (NULL == ptoken) {
-			break;
-		}
-		memset(&dtm, 0, sizeof(dtm));
-		if (NULL == strptime(ptoken + 1, "%Y-%m-%d", &dtm)) {
-			break;
-		}
-		ptoken = strchr(time_buff, '~');
-		if (NULL == ptoken) {
-			break;
-		}
-		memset(&ttm, 0, sizeof(ttm));
-		if (NULL == strptime(ptoken + 1, "%H:%M", &ttm)) {
-			break;
-		}
-		pvalue = common_util_alloc(sizeof(uint64_t));
+		pvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == pvalue) {
-			break;
+			config_file_free(pconfig);
+			return NULL;
 		}
-		memset(&unix_tm, 0, sizeof(struct tm));
-		unix_tm.tm_sec = ttm.tm_sec;
-		unix_tm.tm_min = ttm.tm_min;
-		unix_tm.tm_hour = ttm.tm_hour;
-		unix_tm.tm_mday = dtm.tm_mday;
-		unix_tm.tm_mon = dtm.tm_mon;
-		unix_tm.tm_year = dtm.tm_year;
-		unix_tm.tm_wday = dtm.tm_wday;
-		unix_tm.tm_yday = dtm.tm_yday;
-		*(uint64_t*)pvalue = common_util_tm_to_nttime(unix_tm);
-		break;
-	case PROP_TAG_OOFALLOWEXTERNAL:
-		pvalue = common_util_alloc(sizeof(uint8_t));
-		if (NULL == pvalue) {
-			break;
-		}
-		if (NULL == pconfig) {
-			*(uint8_t*)pvalue = 0;
-			break;
-		}
-		str_value = config_file_get_value(pconfig, "EXTERNAL_SWITCH");
-		if (NULL == str_value || 0 == atoi(str_value)) {
-			*(uint8_t*)pvalue = 0;
+		if (PROP_TAG_OOFBEGIN == proptag) {
+			str_value = config_file_get_value(pconfig, "START_TIME");
 		} else {
-			*(uint8_t*)pvalue = 1;
+			str_value = config_file_get_value(pconfig, "END_TIME");
 		}
-		break;
-	case PROP_TAG_OOFEXTERNALAUDIENCE:
-		pvalue = common_util_alloc(sizeof(uint8_t));
-		if (NULL == pvalue) {
-			break;
+		if (NULL == str_value) {
+			config_file_free(pconfig);
+			return NULL;
 		}
-		if (NULL == pconfig) {
-			*(uint8_t*)pvalue = 0;
-			break;
-		}
-		str_value = config_file_get_value(pconfig, "EXTERNAL_CHECK");
-		if (NULL == str_value || 0 == atoi(str_value)) {
-			*(uint8_t*)pvalue = 0;
-		} else {
-			*(uint8_t*)pvalue = 1;
-		}
-		break;
-	}
-	if (NULL != pconfig) {
+		*(uint64_t*)pvalue = atoll(str_value);
 		config_file_free(pconfig);
+		return pvalue;
+	case PROP_TAG_OOFALLOWEXTERNAL:
+	case PROP_TAG_OOFEXTERNALAUDIENCE:
+		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
+		pconfig = config_file_init(temp_path);
+		if (NULL == pconfig) {
+			return &fake_false;
+		}
+		if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
+			str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
+		} else {
+			str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
+		}
+		if (NULL == str_value || 0 == atoi(str_value)) {
+			pvalue = &fake_false;
+		} else {
+			pvalue = &fake_true
+		}
+		config_file_free(pconfig);
+		return pvalue;
 	}
-	return pvalue;
+	return NULL;
 }
 
 static BOOL store_object_get_calculated_property(
@@ -1617,16 +1517,14 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return FALSE;
 		}
 		switch (*(uint32_t*)pvalue) {
-		case OOF_STATE_DISABLED:
-			config_file_set_value(pconfig, "REPLY_SWITCH", "0");
+		case 1:
+			config_file_set_value(pconfig, "OOF_STATE", "1");
 			break;
-		case OOF_STATE_ENABLED:
-			config_file_set_value(pconfig, "REPLY_SWITCH", "1");
-			config_file_set_value(pconfig, "DURATION_SWITCH", "0");
+		case 2:
+			config_file_set_value(pconfig, "OOF_STATE", "2");
 			break;
-		case OOF_STATE_SCHEDULED:
-			config_file_set_value(pconfig, "REPLY_SWITCH", "1");
-			config_file_set_value(pconfig, "DURATION_SWITCH", "1");
+		default:
+			config_file_set_value(pconfig, "OOF_STATE", "0");
 			break;
 		}
 		if (FALSE == config_file_save(pconfig)) {
@@ -1744,9 +1642,9 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return FALSE;
 		}
 		if (0 == *(uint8_t*)pvalue) {
-			config_file_set_value(pconfig, "EXTERNAL_SWITCH", "0");
+			config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "0");
 		} else {
-			config_file_set_value(pconfig, "EXTERNAL_SWITCH", "1");
+			config_file_set_value(pconfig, "ALLOW_EXTERNAL_OOF", "1");
 		}
 		if (FALSE == config_file_save(pconfig)) {
 			config_file_free(pconfig);
@@ -1760,9 +1658,9 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return FALSE;
 		}
 		if (0 == *(uint8_t*)pvalue) {
-			config_file_set_value(pconfig, "EXTERNAL_CHECK", "0");
+			config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "0");
 		} else {
-			config_file_set_value(pconfig, "EXTERNAL_CHECK", "1");
+			config_file_set_value(pconfig, "EXTERNAL_AUDIENCE", "1");
 		}
 		if (FALSE == config_file_save(pconfig)) {
 			config_file_free(pconfig);
