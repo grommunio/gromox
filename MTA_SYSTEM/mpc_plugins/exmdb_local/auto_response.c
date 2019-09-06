@@ -31,20 +31,19 @@ void auto_response_reply(const char *user_home,
 	BOOL b_duration;
 	BOOL b_internal;
 	time_t cur_time;
+	time_t end_time;
 	char *str_value;
 	char charset[32];
+	struct tm tm_end;
 	struct tm tm_buff;
-	struct tm tm_user;
-	struct tm dtm_end;
-	struct tm ttm_end;
+	time_t start_time;
 	int i, j, fd, len;
 	int parsed_length;
 	char time_zone[64];
 	char time_buff[64];
 	char subject[1024];
 	char buff[64*1024];
-	struct tm dtm_start;
-	struct tm ttm_start;
+	struct tm tm_start;
 	char temp_path[256];
 	char date_buff[128];
 	char audit_buff[256];
@@ -134,119 +133,38 @@ void auto_response_reply(const char *user_home,
 		if (NULL == ptoken) {
 			return;
 		}
-
 		*ptoken = '\0';
-		memset(&dtm_start, 0, sizeof(dtm_start));
-		memset(&dtm_end, 0, sizeof(dtm_end));
-		if (NULL == strptime(date_buff, "%Y-%m-%d", &dtm_start) ||
-			NULL == strptime(ptoken + 1, "%Y-%m-%d", &dtm_end)) {
+		ptoken1 = strchr(time_buff, '~');
+		if (NULL == ptoken1) {
 			return;
 		}
-
-		ptoken = strchr(time_buff, '~');
-		if (NULL == ptoken) {
+		*ptoken1 = '\0';
+		memset(&tm_start, 0, sizeof(tm_start));
+		sprintf(buff, "%s %s", date_buff, time_buff);
+		if (NULL == strptime(buff, "%Y-%m-%d %H:%M", &tm_start)) {
 			return;
 		}
-
-		*ptoken = '\0';
-		memset(&ttm_start, 0, sizeof(ttm_start));
-		memset(&ttm_end, 0, sizeof(ttm_end));
-		if (NULL == strptime(time_buff, "%H:%M", &ttm_start) ||
-			NULL == strptime(ptoken + 1, "%H:%M", &ttm_end)) {
+		memset(&tm_end, 0, sizeof(tm_end));
+		sprintf(buff, "%s %s", ptoken + 1, ptoken1 + 1);
+		if (NULL == strptime(buff, "%Y-%m-%d %H:%M", &tm_end)) {
 			return;
 		}
-
 		if (FALSE == exmdb_local_get_timezone(from, time_zone)) {
 			time_zone[0] = '\0';
 		}
-
 		if ('\0' == time_zone[0]) {
-			localtime_r(&cur_time, &tm_user);
+			start_time = mktime(&tm_start);
+			end_time = mktime(&tm_end);
 		} else {
 			sp = tz_alloc(time_zone);
-			tz_localtime_r(sp, &cur_time, &tm_user);
+			start_time = tz_mktime(sp, &tm_start);
+			end_time = tz_mktime(sp, &tm_end);
 			tz_free(sp);
 		}
-		
-		if (tm_user.tm_year < dtm_start.tm_year ||
-			tm_user.tm_year > dtm_end.tm_year) {
+		if (start_time > cur_time || end_time < cur_time) {
 			return;
 		}
-
-		if (tm_user.tm_year == dtm_start.tm_year) {
-			if (tm_user.tm_mon < dtm_start.tm_mon) {
-				return;
-			} else if (tm_user.tm_mon == dtm_start.tm_mon) {
-				if (tm_user.tm_mday < dtm_start.tm_mday) {
-					return;
-				}
-			}
-		}
-
-		if (tm_user.tm_year == dtm_end.tm_year) {
-			if (tm_user.tm_mon > dtm_end.tm_mon) {
-				return;
-			} else if (tm_user.tm_mon == dtm_end.tm_mon) {
-				if (tm_user.tm_mday > dtm_end.tm_mday) {
-					return;
-				}
-			}
-		}
-
-		if (ttm_start.tm_hour > ttm_end.tm_hour) {
-			if (tm_user.tm_hour > ttm_end.tm_hour &&
-				tm_user.tm_hour < ttm_start.tm_hour) {
-				return;
-			}
-			
-			if (tm_user.tm_hour == ttm_end.tm_hour) {
-				if (tm_user.tm_min > ttm_end.tm_min) {
-					return;
-				}
-			}
-
-			if (tm_user.tm_hour == ttm_start.tm_hour) {
-				if (tm_user.tm_min < ttm_start.tm_min) {
-					return;
-				}
-			}
-
-		} else if (ttm_start.tm_hour < ttm_end.tm_hour) {
-			if (tm_user.tm_hour < ttm_start.tm_hour ||
-				tm_user.tm_hour > ttm_end.tm_hour) {
-				return;
-			}
-
-			if (tm_user.tm_hour == ttm_start.tm_hour) {
-				if (tm_user.tm_min < ttm_start.tm_min) {
-					return;
-				}
-			}
-
-			if (tm_user.tm_hour == ttm_end.tm_hour) {
-				if (tm_user.tm_min > ttm_end.tm_min) {
-					return;
-				}
-			}
-
-		} else {
-			if (ttm_start.tm_min > ttm_end.tm_min) {
-				if (tm_user.tm_hour ==  ttm_start.tm_hour &&
-					tm_user.tm_min > ttm_end.tm_min &&
-					tm_user.tm_min < ttm_start.tm_min) {
-					return;
-				}
-			} else {
-				if (tm_user.tm_hour != ttm_start.tm_hour ||
-					(tm_user.tm_min < ttm_start.tm_min ||
-					tm_user.tm_min > ttm_end.tm_min)) {
-					return;
-				}
-			}
-
-		}
 	}
-	
 	if (FALSE == b_internal && TRUE == b_check) {
 		if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
 			user_home, rcpt, &b_found) || FALSE == b_found) {
