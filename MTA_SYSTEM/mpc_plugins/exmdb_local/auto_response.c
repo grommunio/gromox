@@ -35,6 +35,7 @@ void auto_response_reply(const char *user_home,
 	int parsed_length;
 	char subject[1024];
 	char buff[64*1024];
+	char date_buff[128];
 	char temp_path[256];
 	uint8_t reply_state;
 	char audit_buff[256];
