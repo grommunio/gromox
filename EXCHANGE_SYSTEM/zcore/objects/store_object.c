@@ -920,7 +920,7 @@ static void* store_object_get_oof_property(
 		if (NULL == pconfig) {
 			return NULL;
 		}
-		pvalue = common_util_alloc(sizeof(uint32_t));
+		pvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == pvalue) {
 			config_file_free(pconfig);
 			return NULL;
