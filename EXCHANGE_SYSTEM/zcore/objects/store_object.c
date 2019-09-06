@@ -952,7 +952,7 @@ static void* store_object_get_oof_property(
 		if (NULL == str_value || 0 == atoi(str_value)) {
 			pvalue = &fake_false;
 		} else {
-			pvalue = &fake_true
+			pvalue = &fake_true;
 		}
 		config_file_free(pconfig);
 		return pvalue;
