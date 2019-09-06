@@ -35,7 +35,6 @@ class ExchangeWebServices {
 		date_default_timezone_set('UTC');
 		if (!$oofconf) {
 			$setting['state'] = 'Disabled';
-			$setting['allow_external'] = 'None';
 			$setting['external_audience'] = 'None';
 			$setting['start_time'] = date("Y-m-dTH:i:s");
 			$setting['end_time'] = date("Y-m-dTH:i:s");
@@ -52,7 +51,6 @@ class ExchangeWebServices {
 				break;
 			}
 			if (!$oofconf['ALLOW_EXTERNAL_OOF']) {
-				$setting['allow_external'] = 'None';
 				if (!$oofconf['EXTERNAL_AUDIENCE']) {
 					$setting['external_audience'] = 'All';
 				} else {
@@ -60,10 +58,8 @@ class ExchangeWebServices {
 				}
 			} else {
 				if (!$oofconf['EXTERNAL_AUDIENCE']) {
-					$setting['allow_external'] = 'All';
 					$setting['external_audience'] = 'All';
 				} else {
-					$setting['allow_external'] = 'Known';
 					$setting['external_audience'] = 'Known';
 				}
 			}
@@ -125,7 +121,7 @@ class ExchangeWebServices {
 			$ExternalReply = $OofSettings->addChild('ExternalReply');
 			$ExternalReply->addChild('Message', $setting['external_reply']);
 		}
-		$GetUserOofSettingsResponse->addChild('AllowExternalOof', $setting['allow_external']);
+		$GetUserOofSettingsResponse->addChild('AllowExternalOof', "All");
 		$soap_out = $xml->asXML();
 	}
 	
@@ -165,23 +161,19 @@ class ExchangeWebServices {
 		} else {
 			die("unrecognized OofState " . $UserOofSettings->OofState);
 		}
-		if (0 == strcasecmp($UserOofSettings->AllowExternalOof, "None")) {
+		if (0 == strcasecmp($UserOofSettings->ExternalAudience, "None")) {
 			$cfgcontent .= "ALLOW_EXTERNAL_OOF = 0\n";
-			if (0 == strcasecmp($UserOofSettings->ExternalAudience, "All")) {
-				$cfgcontent .= "EXTERNAL_AUDIENCE = 0\n";
-			} else if (0 == strcasecmp($UserOofSettings->ExternalAudience, "Known")) {
-				$cfgcontent .= "EXTERNAL_AUDIENCE = 1\n";
-			}
 		} else if (0 == strcasecmp($UserOofSettings->ExternalAudience, "All")) {
 			$cfgcontent .= "ALLOW_EXTERNAL_OOF = 1\nEXTERNAL_AUDIENCE = 0\n";
 		} else if (0 == strcasecmp($UserOofSettings->ExternalAudience, "Known")) {
 			$cfgcontent .= "ALLOW_EXTERNAL_OOF = 1\nEXTERNAL_AUDIENCE = 1\n";
 		}
 		if ($UserOofSettings->Duration) {
-			$cfgcontent .= "START_TIME = " . strtotime($UserOofSettings->Duration->StartTime);
-			$cfgcontent .= "END_TIME = " . strtotime($UserOofSettings->Duration->EndTime);
+			$cfgcontent .= "START_TIME = " . strtotime($UserOofSettings->Duration->StartTime) . "\n";
+			$cfgcontent .= "END_TIME = " . strtotime($UserOofSettings->Duration->EndTime) . "\n";
 		}
 		file_put_contents($uinfo['maildir']  . "/config/autoreply.cfg", $cfgcontent);
+		chmod($uinfo['maildir']  . "/config/autoreply.cfg", 0666);
 		if ($UserOofSettings->InternalReply) {
 			$mime_content = "Content-Type: text/html;\r\n\tcharset=\"utf-8\""."\r\n\r\n";
 			$mime_content .= $UserOofSettings->InternalReply->Message;

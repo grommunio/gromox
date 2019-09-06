@@ -1541,6 +1541,13 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
 		if (0 != stat(temp_path, &node_stat)) {
+			pbuff = common_util_alloc(buff_len + 256);
+			if (NULL == pbuff) {
+				return FALSE;
+			}
+			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
+							"\tcharset=\"utf-8\"\r\n\r\n%s", pvalue);
+		} else {
 			buff_len = node_stat.st_size;
 			fd = open(temp_path, O_RDONLY);
 			if (-1 == fd) {
@@ -1565,13 +1572,6 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
 								"\tcharset=\"utf-8\"\r\n\r\n%s", pvalue);
 			}
-		} else {
-			pbuff = common_util_alloc(buff_len + 256);
-			if (NULL == pbuff) {
-				return FALSE;
-			}
-			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
-							"\tcharset=\"utf-8\"\r\n\r\n%s", pvalue);
 		}
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 == fd) {
