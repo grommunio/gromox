@@ -15,8 +15,8 @@ enum {
 	RBL_CACHE_BLACK_INTERVAL
 };
 
-void rbl_cache_init(int normal_size, int normal_interval,
-	int black_size, int black_interval);
+void rbl_cache_init(int normal_size, int normal_interval, int black_size,
+	int black_interval);
 
 int rbl_cache_run();
 

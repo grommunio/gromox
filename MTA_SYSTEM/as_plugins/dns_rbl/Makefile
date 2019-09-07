@@ -1,7 +1,7 @@
 OUTPUT_TYPE=SHA # OBJ, LIB, BIN or SHA
 # modify name here for binary excutable file name, if output type is OBJ, 
 # no need to specify the output name
-OUTPUT_NAME=dns_rbl.svc
+OUTPUT_NAME=dns_rbl.pas
 C_SOURCE_FILES=$(wildcard *.c)
 CPP_SOURCE_FILES=$(wildcard *.cxx *.cpp *.C)
 INCLUDE_PATHS=../include\
@@ -9,7 +9,7 @@ INCLUDE_PATHS=../include\
 LIBRARY_PATHS=# add library paths here
 LIBRARY_FILES=resolv# add library files here
 COMPILING_FLAGS=-D_GNU_SOURCE#add here c or c++ flags for compiling
-LINK_FLAGS=$(patsubst %,-L%,$(LIBRARY_PATHS)) $(patsubst %,-l%,$(LIBRARY_FILES))
+LINK_FLAGS=$(patsubst %,-L%,$(LIBRARY_PATHS)) $(patsubst %,-l%,$(LIBRARY_FILES)) 
 INCLUDE_PATHS:=$(patsubst %,-I%,$(INCLUDE_PATHS))
 MAKE_PATH = ../../make_include#indicate location of the make_common.mk
 

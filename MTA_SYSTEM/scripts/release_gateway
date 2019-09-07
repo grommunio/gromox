@@ -107,7 +107,6 @@ cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_f
 cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_domain.svc
 cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/forbidden_rcpt.svc
 cp $SERVICE_DIR/str_table/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/boundary_list.svc
-cp $SERVICE_DIR/dns_rbl/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/dns_rbl.svc
 cp $SERVICE_DIR/log_plugin/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/log_plugin.svc
 cp $SERVICE_DIR/invalid_user/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/invalid_user.svc
 cp $SERVICE_DIR/esmtp_auth/*.svc $RELEASE_HOME/$SERVICE_DIR/$SMTP_DIR/esmtp_auth.svc
