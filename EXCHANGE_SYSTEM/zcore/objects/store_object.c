@@ -1762,6 +1762,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 		case PROP_TAG_OOFINTERNALSUBJECT:
 		case PROP_TAG_OOFALLOWEXTERNAL:
 		case PROP_TAG_OOFEXTERNALAUDIENCE:
+		case PROP_TAG_OOFEXTERNALSUBJECT:
 		case PROP_TAG_OOFEXTERNALREPLY:
 			if (FALSE == store_object_set_oof_property(
 				store_object_get_dir(pstore),
