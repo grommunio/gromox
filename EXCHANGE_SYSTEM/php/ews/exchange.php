@@ -1,5 +1,11 @@
 <?php
 
+// Do not log errors into stdout
+ini_set("display_errors", false);
+
+ini_set("log_errors", true);
+error_reporting(E_ERROR);
+
 require_once "../lib/db.php";
 require_once "../lib/util.php";
 
@@ -148,7 +154,7 @@ class ExchangeWebServices {
 		} else {
 			die("unrecognized RoutingType " . $Mailbox->RoutingType);
 		}
-		date_default_timezone_set($uinfo['timezone']);
+		date_default_timezone_set('UTC');
 		if (!$UserOofSettings->OofState) {
 			die("parameter error in SetUserOofSettingsRequest");
 		}
