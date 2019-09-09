@@ -194,7 +194,7 @@ DomainKW.keyword_type.value + '&mailbox=' + DomainKW.approving_mailbox.value + \
 return false;\"/></TD></TR></TBODY></TABLE></FORM></TD></TR>\n"
 
 #define HTML_MAIN_18	\
-"<TR class=ItemOdd><TD>%s &nbsp;&nbsp;<A href=../data/script/theme.zip>%s</A></TD></TR>\n\
+"<TR class=ItemOdd><TD>%s&nbsp;&nbsp;<A href=../data/script/theme.zip>%s</A></TD></TR>\n\
 <TR class=ItemEven><TD><FORM name=PostURL method=post action=%s\n\
 enctype=\"multipart/form-data\" target=dummy_window>\n\
 <TABLE><TBODY><TR><TD width=180><B>%s</B></TD><TD>\n\
@@ -1111,9 +1111,9 @@ static void setup_ui_main_html(const char *domain, const char *session)
 		url_buff, domain, session);
 	
 	printf(HTML_MAIN_18, lang_resource_get(g_lang_resource,"TIP_UPLOADTHEME", language),
-		lang_resource_get(g_lang_resource,"TIP_DOWNLOADTHEME", language),
+		lang_resource_get(g_lang_resource,"TIP_DOWNLOADTHEME", language), url_buff,
 		lang_resource_get(g_lang_resource,"MAIN_UPLOADTHEME", language),
-		url_buff, domain, session, str_submit);
+		domain, session, str_submit);
 
 	printf(HTML_MAIN_19, lang_resource_get(g_lang_resource,"TIP_SET_PASSWORD", language),
 		lang_resource_get(g_lang_resource,"MAIN_SET_PASSWORD", language),
