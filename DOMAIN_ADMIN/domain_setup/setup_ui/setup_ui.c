@@ -1683,7 +1683,7 @@ static BOOL setup_ui_unzip(const char *domain)
 	char *args[] = {"unzip", NULL, NULL, NULL, NULL};
 	
 	snprintf(tmp_path, 255, "%s/%s/kopano-webapp/tmp", g_app_path, domain);
-	snprintf(tmp_path1, 255, "%s/tmp_theme.zip", tmp_path);
+	snprintf(tmp_path1, 255, "%s/%s/kopano-webapp/tmp_theme.zip", g_app_path, domain);
 	pid = fork();
 	if (0 == pid) {
 		args[1] = tmp_path1;
