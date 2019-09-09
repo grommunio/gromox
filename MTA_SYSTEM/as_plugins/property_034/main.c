@@ -144,6 +144,7 @@ static int plain_filter(int action, int context_ID,
 static int html_filter(int action, int context_ID,
 	MAIL_BLOCK* mail_blk, char* reason, int length)
 {
+	const char *pdomain;
 	MAIL_ENTITY mail_entity;
 	
 	switch (action) {
