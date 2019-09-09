@@ -53,4 +53,6 @@ MSGERR_PASSDIFF			new\ passwords\ differ
 MSGERR_PASSERR			old\ password\ error
 MSGERR_SAVED			new\ value\ has\ been\ saved
 MSGERR_UNSAVED			fail\ to\ save\ new\ value
+MSGERR_THEMEERR			theme\ directory\ not\ exists\ in\ zip\ file
+MSGERR_CSSERR			file\ "theme/css/theme.css"\ not\ exists\ in\ zip\ file
 MSGERR_DELETED			theme\ has\ been\ cleared

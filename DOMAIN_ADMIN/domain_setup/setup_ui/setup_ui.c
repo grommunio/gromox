@@ -1682,7 +1682,7 @@ static BOOL setup_ui_unzip(const char *domain)
 	char tmp_path1[256];
 	char *args[] = {"unzip", NULL, NULL, NULL, NULL};
 	
-	snprintf(tmp_path, 255, "%s/%s/kopano-webapp", g_app_path, domain);
+	snprintf(tmp_path, 255, "%s/%s/kopano-webapp/tmp", g_app_path, domain);
 	snprintf(tmp_path1, 255, "%s/tmp_theme.zip", tmp_path);
 	pid = fork();
 	if (0 == pid) {
@@ -1739,8 +1739,27 @@ static void setup_ui_set_theme(const char *domain)
 			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
 		return;
 	}
-	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp_theme", g_app_path, domain);
+	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp/theme", g_app_path, domain);
+	if (0 != stat(temp_path1, &node_stat) || 0 == S_ISDIR(node_stat.st_mode)) {
+		sprintf(temp_path, "%s/%s/kopano-webapp/tmp", g_app_path, domain);
+		setup_ui_remove_inode(temp_path);
+		printf("Content-Type:text/html;charset=%s\n\n", charset);
+		printf(HTML_ACTIVE_FAIL, charset,
+			lang_resource_get(g_lang_resource,"MSGERR_FORMATERR", language));
+	}
+	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp/theme/css/theme.css", g_app_path, domain);
+	if (0 != stat(temp_path1, &node_stat) || 0 == S_ISREG(node_stat.st_mode)) {
+		sprintf(temp_path, "%s/%s/kopano-webapp/tmp", g_app_path, domain);
+		setup_ui_remove_inode(temp_path);
+		printf("Content-Type:text/html;charset=%s\n\n", charset);
+		printf(HTML_ACTIVE_FAIL, charset,
+			lang_resource_get(g_lang_resource,"MSGERR_FORMATERR", language));
+	}
+	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp/theme", g_app_path, domain);
+	sprintf(temp_path, "%s/%s/kopano-webapp/theme", g_app_path, domain);
 	if (0 == rename(temp_path1, temp_path)) {
+		sprintf(temp_path, "%s/%s/kopano-webapp/tmp", g_app_path, domain);
+		setup_ui_remove_inode(temp_path);
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_OK, charset,
 		lang_resource_get(g_lang_resource,"MSGERR_SAVED", language));
