@@ -155,7 +155,7 @@ static int html_filter(int action, int context_ID,
 			TRUE == mail_entity.penvelop->is_relay) {
 			return MESSAGE_ACCEPT;
 		}
-		pdomain = strchr(mail_blk.penvelop->from, '@');
+		pdomain = strchr(mail_entity.penvelop->from, '@');
 		if (NULL == pdomain) {
 			return MESSAGE_ACCEPT;
 		}
@@ -173,7 +173,6 @@ static int html_filter(int action, int context_ID,
 		}
 		strncpy(reason, g_return_reason, length);
 		return MESSAGE_REJECT;
-		
 	case ACTION_BLOCK_FREE:
 		return MESSAGE_ACCEPT;
 	}
