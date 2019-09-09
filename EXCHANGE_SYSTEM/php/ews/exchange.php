@@ -184,6 +184,7 @@ class ExchangeWebServices {
 			$mime_content = "Content-Type: text/html;\r\n\tcharset=\"utf-8\""."\r\n\r\n";
 			$mime_content .= $UserOofSettings->InternalReply->Message;
 			file_put_contents($uinfo['maildir'] . "/config/internal-reply", $mime_content);
+			chmod($uinfo['maildir'] . "/config/internal-reply", 0666);
 		} else {
 			unlink($uinfo['maildir'] . "/config/internal-reply");
 		}
@@ -191,6 +192,7 @@ class ExchangeWebServices {
 			$mime_content = "Content-Type: text/html;\r\n\tcharset=\"utf-8\""."\r\n\r\n";
 			$mime_content .= $UserOofSettings->ExternalReply->Message;
 			file_put_contents($uinfo['maildir'] . "/config/external-reply", $mime_content);
+			chmod($uinfo['maildir'] . "/config/external-reply", 0666);
 		} else {
 			unlink($uinfo['maildir'] . "/config/external-reply");
 		}
