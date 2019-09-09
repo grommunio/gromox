@@ -713,17 +713,16 @@ int setup_ui_run()
 		offset = 0;
 		while (len = fread(post_buff + offset, 1, 1024 - offset, stdin)) {
 			offset += len;
+			if ('\r' == post_buff[0] && '\r' == post_buff[1] &&
+				0 == strncmp(post_buff + 2, boundary, bnd_len)) {
+				break;
+			}
 			if (offset >= bnd_len + 2) {
 				write(fd, post_buff, offset - bnd_len - 2);
 				memmove(post_buff, post_buff + offset - bnd_len - 2, bnd_len + 2);
 				offset = bnd_len + 2;
 			} else {
 				continue;
-			}
-			
-			if ('\r' == post_buff[0] && '\r' == post_buff[1] &&
-				0 == strncmp(post_buff + 2, boundary, bnd_len)) {
-				break;
 			}
 		}
 		close(fd);
