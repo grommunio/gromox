@@ -673,7 +673,7 @@ int setup_ui_run()
 		}
 
 		if (FALSE == session_client_check(domain, session)) {
-			upload_ui_error_html(lang_resource_get(
+			setup_ui_error_html(lang_resource_get(
 				g_lang_resource, "ERROR_SESSION", language));
 			return 0;
 		}
@@ -700,7 +700,7 @@ int setup_ui_run()
 		if (-1 == fd) {
 			system_log_info("[upload_ui]: fail to "
 				"create zip file for %s\n", temp_path);
-			upload_ui_error_html(lang_resource_get(
+			setup_ui_error_html(lang_resource_get(
 				g_lang_resource, "ERROR_INTERNAL", language));
 			return 0;
 		}
@@ -743,7 +743,7 @@ GET_ERROR:
 	return 0;
 POST_ERROR:
 	system_log_info("[upload_ui]: query string of POST format error");
-	upload_ui_error_html(lang_resource_get(
+	setup_ui_error_html(lang_resource_get(
 		g_lang_resource, "ERROR_REQUEST", language));
 	return 0;
 }
