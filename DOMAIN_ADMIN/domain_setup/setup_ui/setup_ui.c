@@ -1669,7 +1669,7 @@ static void setup_ui_remove_inode(const char *path)
 			continue;
 		}
 		snprintf(temp_path, 256, "%s/%s", path, direntp->d_name);
-		upload_ui_remove_inode(temp_path);
+		setup_ui_remove_inode(temp_path);
 	}
 	closedir(dirp);
 	remove(path);
