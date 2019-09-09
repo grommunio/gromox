@@ -23,7 +23,10 @@ DECLARE_API;
 
 static char g_return_reason[1024];
 
-static int xmailer_filter(int action, int context_ID,
+static int plain_filter(int action, int context_ID,
+	MAIL_BLOCK* mail_blk,  char* reason, int length);
+	
+static int html_filter(int action, int context_ID,
 	MAIL_BLOCK* mail_blk,  char* reason, int length);
 
 int AS_LibMain(int reason, void **ppdata)
@@ -55,7 +58,8 @@ int AS_LibMain(int reason, void **ppdata)
 		}
 		printf("[property_034]: return string is %s\n", g_return_reason);
 		config_file_free(pconfig_file);
-		if (FALSE == register_filter("text/plain" , xmailer_filter)) {
+		if (FALSE == register_filter("text/plain" , plain_filter) ||
+			FALSE == register_filter("text/html" , html_filter)) {
 			return FALSE;
 		}
 		return TRUE;
@@ -65,7 +69,7 @@ int AS_LibMain(int reason, void **ppdata)
 	return TRUE;
 }
 
-static int xmailer_filter(int action, int context_ID,
+static int plain_filter(int action, int context_ID,
 	MAIL_BLOCK* mail_blk, char* reason, int length)
 {
 	int out_len;
@@ -122,6 +126,46 @@ static int xmailer_filter(int action, int context_ID,
 		if (0 != strncmp(mail_blk->parsed_buff, "[cid:", 5)
 			&& NULL == memmem(mail_blk->parsed_buff,
 			mail_blk->parsed_length, "\r\n\r\n[cid:", 9)) {
+			return MESSAGE_ACCEPT;	
+		}
+		if (NULL != spam_statistic) {
+			spam_statistic(SPAM_STATISTIC_PROPERTY_034);
+		}
+		strncpy(reason, g_return_reason, length);
+		return MESSAGE_REJECT;
+		
+	case ACTION_BLOCK_FREE:
+		return MESSAGE_ACCEPT;
+	}
+	return MESSAGE_ACCEPT;
+}
+
+
+static int html_filter(int action, int context_ID,
+	MAIL_BLOCK* mail_blk, char* reason, int length)
+{
+	MAIL_ENTITY mail_entity;
+	
+	switch (action) {
+	case ACTION_BLOCK_NEW:
+		return MESSAGE_ACCEPT;
+	case ACTION_BLOCK_PROCESSING:
+		mail_entity	= get_mail_entity(context_ID);
+		if (TRUE == mail_entity.penvelop->is_outbound ||
+			TRUE == mail_entity.penvelop->is_relay) {
+			return MESSAGE_ACCEPT;
+		}
+		pdomain = strchr(mail_blk.penvelop->from, '@');
+		if (NULL == pdomain) {
+			return MESSAGE_ACCEPT;
+		}
+		pdomain ++;
+		if (0 != strcasecmp(pdomain, "126.com") &&
+			0 != strcasecmp(pdomain, "163.com")) {
+			return MESSAGE_ACCEPT;	
+		}
+		if (NULL == memmem(mail_blk->parsed_buff,
+			mail_blk->parsed_length, "src=\"data:image/", 16)) {
 			return MESSAGE_ACCEPT;	
 		}
 		if (NULL != spam_statistic) {
