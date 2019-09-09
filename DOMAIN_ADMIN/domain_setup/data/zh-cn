@@ -42,8 +42,9 @@ LIMIT_TYPE_ALLOW		允许名单
 LIMIT_TYPE_DENY			禁止名单
 TIP_SUBSYSTEM			邮件子系统是域用户自己搭建的邮件服务器，系统将自动将接收到的转发一份至该系统
 MAIN_SUBSYSTEM			邮件子系统
-TIP_EXITURL				当用户退出管理界面或者webmail后，浏览器将自动跳转到您所设置的URL
-MAIN_EXITURL			界面退出URL跳转
+TIP_UPLOADTHEME			上传定制的WebApp界面主题，可以指定网站图标、logo、背景图及配色方案等。请按照模板格式打包成zip文件上传，上传空文件将删除当前模板
+TIP_DOWNLOADTHEME		点击此处下载主题模板
+MAIN_UPLOADTHEME		上传WebApp界面主题
 MSGERR_MAILBOXFORMATERR	邮箱地址格式错误
 MSGERR_IPADDRESS		IP地址格式错误
 MSGERR_PORT				端口错误
@@ -52,3 +53,4 @@ MSGERR_PASSDIFF			两次输入的密码不同
 MSGERR_PASSERR			原密码错误
 MSGERR_SAVED			保存成功
 MSGERR_UNSAVED			保存失败
+MSGERR_DELETED			主题已被清除成功

@@ -194,14 +194,15 @@ DomainKW.keyword_type.value + '&mailbox=' + DomainKW.approving_mailbox.value + \
 return false;\"/></TD></TR></TBODY></TABLE></FORM></TD></TR>\n"
 
 #define HTML_MAIN_18	\
-"<TR class=ItemOdd><TD>%s</TD></TR>\n\
-<TR class=ItemEven><TD><FORM name=ExitURL onSubmit=\"return false;\">\n\
+"<TR class=ItemOdd><TD>%s &nbsp;&nbsp;<A href=../data/script/theme.zip>%s</A></TD></TR>\n\
+<TR class=ItemEven><TD><FORM name=PostURL method=post action=%s\n\
+enctype=\"multipart/form-data\" target=dummy_window>\n\
 <TABLE><TBODY><TR><TD width=180><B>%s</B></TD><TD>\n\
-<INPUT type=text size=36 value=\"%s\" name=exit_url /></TD>\n\
-<TD><INPUT type=submit value=\"  %s  \" onclick=\
-\"dummy_window.location.href='%s?domain=%s&session=%s&action=exit-url&value=' +\
-ExitURL.exit_url.value;\n\
-return false\" /></TD></TR></TBODY></TBODY></TABLE></FORM></TD></TR>\n"
+<INPUT type=hidden name=\"domain\" value=\"%s\" />\n\
+<INPUT type=hidden name=\"session\" value=\"%s\" />\n\
+<INPUT type=file size=36 name=\"theme\" /></TD>\n\
+<TD><INPUT type=submit value=\"  %s  \" /></TD></TR>\n\
+</TBODY></TBODY></TABLE></FORM></TD></TR>\n"
 
 #define HTML_MAIN_19	\
 "<TR class=ItemOdd><TD>%s</TD></TR>\n\
@@ -272,8 +273,6 @@ static void setup_ui_set_keyword(const char *domain, int type,
 
 static void setup_ui_set_collector(const char *domain, const char *mailbox);
 
-static void setup_ui_set_exit_url(const char *domain, const char *url_path);
-
 static void setup_ui_set_subsystem(const char *domain, const char *address);
 
 static void setup_ui_set_limit_type(const char *domain, int type);
@@ -289,23 +288,46 @@ static void setup_ui_broadcast_limit(const char *list_path, const char *domain,
 static void setup_ui_broadcast_keyword(const char *list_path, const char *domain,
 	int keyword_type);
 
+static void setup_ui_set_theme(const char *domain);
+
 static BOOL setup_ui_get_self(char *url_buff, int length);
 
 static void setup_ui_decode_url(char *src, char *dest);
 
 static void setup_ui_encode_line(const char *in, char *out);
 
+static char g_app_path[256];
 static char g_mount_path[256];
-static char g_daemon_path[256];
 static char g_logo_link[1024];
 static char g_resource_path[256];
 static LANG_RESOURCE *g_lang_resource;
 
-void setup_ui_init(const char *mount_path, const char *daemon_path,
+static void setup_ui_unencode(char *src, char *last, char *dest)
+{
+	int code;
+	
+	for (; src != last; src++, dest++) {
+		if (*src == '+') {
+			*dest = ' ';
+		} else if (*src == '%') {
+			if (sscanf(src+1, "%2x", &code) != 1) {
+				code = '?';
+			}
+			*dest = code;
+			src +=2;
+		} else {
+			*dest = *src;
+		}
+	}
+	*dest = '\n';
+	*++dest = '\0';
+}
+
+void setup_ui_init(const char *mount_path, const char *app_path,
 	const char *url_link, const char *resource_path)
 {
 	strcpy(g_mount_path, mount_path);
-	strcpy(g_daemon_path, daemon_path);
+	strcpy(g_app_path, app_path);
 	strcpy(g_logo_link, url_link);
 	strcpy(g_resource_path, resource_path);
 }
@@ -313,9 +335,12 @@ void setup_ui_init(const char *mount_path, const char *daemon_path,
 int setup_ui_run()
 {
 	int type;
+	int i, fd;
+	int offset;
 	int len, num;
 	int interval;
 	char *query;
+	int bnd_len;
 	char *request;
 	char *language;
 	char *ptr1, *ptr2;
@@ -323,8 +348,14 @@ int setup_ui_run()
 	char value[1024];
 	char domain[256];
 	char session[256];
+	char boundary[128];
+	char temp_path[256];
+	char temp_buff[1024];
+	char post_buff[1024];
 	char old_passwd[256];
 	char new_passwd[256];
+	struct stat node_stat;
+	char search_buff[4096];
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
@@ -509,17 +540,6 @@ int setup_ui_run()
 				memcpy(value, ptr1, query + len - ptr1);
 				value[query + len - ptr1] = '\0';
 				setup_ui_set_subsystem(domain, value);
-			} else if (0 == strcasecmp(action, "exit-url")) {
-				if (0 != strncasecmp(ptr2, "&value=", 7)) {
-					goto GET_ERROR;
-				}
-				ptr1 = ptr2 + 7;
-				if (query + len - ptr1 > 1000) {
-					goto GET_ERROR;
-				}
-				memcpy(value, ptr1, query + len - ptr1);
-				value[query + len - ptr1] = '\0';
-				setup_ui_set_exit_url(domain, value);
 			} else if (0 == strcasecmp(action, "set-password")) {
 				if (0 != strncasecmp(ptr2, "&value=", 7)) {
 					goto GET_ERROR;	
@@ -545,6 +565,170 @@ int setup_ui_run()
 				goto GET_ERROR;
 			}
 		}
+	} else if (0 == strcmp(request, "POST")) {
+		if (NULL == fgets(post_buff, 1024, stdin)) {
+			goto POST_ERROR;
+		}
+		len = strlen(post_buff);
+		if (len > 127) {
+			goto POST_ERROR;
+		}
+		strcpy(boundary, post_buff);
+		bnd_len = strlen(boundary);
+		if ('\n' == boundary[bnd_len - 1]) {
+			bnd_len --;
+		}
+		if ('\r' == boundary[bnd_len - 1]) {
+			bnd_len --;
+		}
+		if (NULL == fgets(post_buff, 1024, stdin)) {
+			goto POST_ERROR;
+		}
+		len = strlen(post_buff);
+		setup_ui_unencode(post_buff, post_buff + len, search_buff);
+		len = strlen(search_buff);
+		ptr1 = search_string(search_buff, "name=\"", len);
+		if (NULL == ptr1) {
+			goto POST_ERROR;
+		}
+		ptr1 += 6;
+		ptr2 = strchr(ptr1, '"');
+		if (NULL == ptr2 || ptr2 - ptr1 > 32) {
+			goto POST_ERROR;
+		}
+		memcpy(temp_buff, ptr1, ptr2 - ptr1);
+		temp_buff[ptr2 - ptr1] = '\0';
+		if (0 != strcasecmp(temp_buff, "domain")) {
+			goto POST_ERROR;
+		}
+		while (NULL != fgets(post_buff, 1024, stdin)) {
+			if ('\n' == post_buff[0] || '\r' == post_buff[0]) {
+				break;
+			}
+		}
+		if (NULL == fgets(post_buff, 1024, stdin)) {
+			goto POST_ERROR;
+		}
+		len = strlen(post_buff);
+		if (len >= 128) {
+			goto POST_ERROR;
+		}
+		memset(domain, 0, 128);
+		for (i=0; i<len; i++) {
+			if ('\r' == post_buff[i] || '\n' == post_buff[i]) {
+				domain[i] = '\0';
+				break;
+			} else {
+				domain[i] = post_buff[i];
+			}
+		}
+		lower_string(domain);
+
+		while (NULL != fgets(post_buff, 1024, stdin)) {
+			if (0 == strcmp(post_buff, boundary)) {
+				break;
+			}
+		}
+			
+		if (NULL == fgets(post_buff, 1024, stdin)) {
+			goto POST_ERROR;
+		}
+		len = strlen(post_buff);
+		setup_ui_unencode(post_buff, post_buff + len, search_buff);
+		len = strlen(search_buff);
+		ptr1 = search_string(search_buff, "name=\"", len);
+		if (NULL == ptr1) {
+			goto POST_ERROR;
+		}
+		ptr1 += 6;
+		ptr2 = strchr(ptr1, '"');
+		if (NULL == ptr2 || ptr2 - ptr1 > 32) {
+			goto POST_ERROR;
+		}
+		memcpy(temp_buff, ptr1, ptr2 - ptr1);
+		temp_buff[ptr2 - ptr1] = '\0';
+		if (0 != strcasecmp(temp_buff, "session")) {
+			goto POST_ERROR;
+		}
+		while (NULL != fgets(post_buff, 1024, stdin)) {
+			if ('\n' == post_buff[0] || '\r' == post_buff[0]) {
+				break;
+			}
+		}
+		if (NULL == fgets(post_buff, 1024, stdin)) {
+			goto POST_ERROR;
+		}
+		len = strlen(post_buff);
+		if (len >= 128) {
+			goto POST_ERROR;
+		}
+		memset(session, 0, 128);
+		for (i=0; i<len; i++) {
+			if ('\r' == post_buff[i] || '\n' == post_buff[i]) {
+				session[i] = '\0';
+				break;
+			} else {
+				session[i] = post_buff[i];
+			}
+		}
+
+		if (FALSE == session_client_check(domain, session)) {
+			upload_ui_error_html(lang_resource_get(
+				g_lang_resource, "ERROR_SESSION", language));
+			return 0;
+		}
+		
+		
+		while (NULL != fgets(post_buff, 1024, stdin)) {
+			if (0 == strcmp(post_buff, boundary)) {
+				break;
+			}
+		}
+		if (NULL == fgets(post_buff, 1024, stdin)) {
+			goto POST_ERROR;
+		}
+		snprintf(temp_path, 255, "%s/%s", g_app_path, domain);
+		if (0 != stat(temp_path, &node_stat)) {
+			mkdir(temp_path, 0777);
+		}
+		snprintf(temp_path, 255, "%s/%s/kopano-webapp", g_app_path, domain);
+		if (0 != stat(temp_path, &node_stat)) {
+			mkdir(temp_path, 0777);
+		}
+		snprintf(temp_path, 255, "%s/%s/kopano-webapp/tmp_theme.zip", g_app_path, domain);
+		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);	
+		if (-1 == fd) {
+			system_log_info("[upload_ui]: fail to "
+				"create zip file for %s\n", temp_path);
+			upload_ui_error_html(lang_resource_get(
+				g_lang_resource, "ERROR_INTERNAL", language));
+			return 0;
+		}
+		
+		while (NULL != fgets(post_buff, 1024, stdin)) {
+			if ('\n' == post_buff[0] || '\r' == post_buff[0]) {
+				break;
+			}
+		}
+		offset = 0;
+		while (len = fread(post_buff + offset, 1, 1024 - offset, stdin)) {
+			offset += len;
+			if (offset >= bnd_len + 2) {
+				write(fd, post_buff, offset - bnd_len - 2);
+				memmove(post_buff, post_buff + offset - bnd_len - 2, bnd_len + 2);
+				offset = bnd_len + 2;
+			} else {
+				continue;
+			}
+			
+			if ('\r' == post_buff[0] && '\r' == post_buff[1] &&
+				0 == strncmp(post_buff + 2, boundary, bnd_len)) {
+				break;
+			}
+		}
+		close(fd);
+		setup_ui_set_theme(domain);
+		return 0;
 	} else {
 		system_log_info("[setup_ui]: unrecognized REQUEST_METHOD \"%s\"!",
 			request);
@@ -556,7 +740,12 @@ GET_ERROR:
 	system_log_info("[setup_ui]: query string of GET format error");
 	setup_ui_error_html(lang_resource_get(
 		g_lang_resource, "ERROR_REQUEST", language));
-	return 0;		
+	return 0;
+POST_ERROR:
+	system_log_info("[upload_ui]: query string of POST format error");
+	upload_ui_error_html(lang_resource_get(
+		g_lang_resource, "ERROR_REQUEST", language));
+	return 0;
 }
 
 int setup_ui_stop()
@@ -921,22 +1110,17 @@ static void setup_ui_main_html(const char *domain, const char *session)
 	printf(HTML_MAIN_17, str_submit, lang_resource_get(g_lang_resource,"MSGERR_MAILBOXFORMATERR", language),
 		url_buff, domain, session);
 	
-	
-	str_value = config_file_get_value(pconfig, "EXIT_URL");
-	if (NULL == str_value) {
-		str_value = "";
-	}
-	printf(HTML_MAIN_18, lang_resource_get(g_lang_resource,"TIP_EXITURL", language),
-		lang_resource_get(g_lang_resource,"MAIN_EXITURL", language), str_value, str_submit,
-		url_buff, domain, session);
+	printf(HTML_MAIN_18, lang_resource_get(g_lang_resource,"TIP_UPLOADTHEME", language),
+		lang_resource_get(g_lang_resource,"TIP_DOWNLOADTHEME", language),
+		lang_resource_get(g_lang_resource,"MAIN_UPLOADTHEME", language),
+		url_buff, domain, session, str_submit);
 
 	printf(HTML_MAIN_19, lang_resource_get(g_lang_resource,"TIP_SET_PASSWORD", language),
 		lang_resource_get(g_lang_resource,"MAIN_SET_PASSWORD", language),
 		lang_resource_get(g_lang_resource,"MAIN_OLD_PASSWORD", language),
 		lang_resource_get(g_lang_resource,"MAIN_NEW_PASSWORD", language),
 		lang_resource_get(g_lang_resource,"MAIN_RETYPE_PASSWORD", language),
-		str_submit,
-		lang_resource_get(g_lang_resource,"MSGERR_PASSEMPTY", language),
+		str_submit, lang_resource_get(g_lang_resource,"MSGERR_PASSEMPTY", language),
 		lang_resource_get(g_lang_resource,"MSGERR_PASSDIFF", language),
 		url_buff, domain, session);
 
@@ -1214,54 +1398,6 @@ static void setup_ui_set_collector(const char *domain, const char *mailbox)
 		lang_resource_get(g_lang_resource,"MSGERR_SAVED", language));
 }
 
-static void setup_ui_set_exit_url(const char *domain, const char *url_path)
-{
-	int len;
-	char *language;
-	const char *charset;
-	char temp_path[256];
-	char domain_path[256];
-	char temp_url[1024];
-	CONFIG_FILE *pconfig;
-
-	language = getenv("HTTP_ACCEPT_LANGUAGE");
-	charset = lang_resource_get(g_lang_resource,"CHARSET", language);
-
-	if (FALSE == data_source_get_homedir(domain, domain_path) ||
-		'\0' == domain_path[0]) {
-		printf("Content-Type:text/html;charset=%s\n\n", charset);
-		printf(HTML_ACTIVE_FAIL, charset,
-			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
-		return;
-	}
-	snprintf(temp_path, 256, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
-	if (NULL == pconfig) {
-		printf("Content-Type:text/html;charset=%s\n\n", charset);
-		printf(HTML_ACTIVE_FAIL, charset,
-			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
-		return;
-	}
-	len = strlen(url_path);
-	if (len > 0 && 0 != strncasecmp(url_path, "http://", 7)) {
-		snprintf(temp_url, 1024, "http://%s", url_path);
-	} else {
-		strncpy(temp_url, url_path, 1024);
-	}
-	config_file_set_value(pconfig, "EXIT_URL", temp_url);
-	if (FALSE == config_file_save(pconfig)) {
-		config_file_free(pconfig);
-		printf("Content-Type:text/html;charset=%s\n\n", charset);
-		printf(HTML_ACTIVE_FAIL, charset,
-			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
-		return;
-	}
-	config_file_free(pconfig);
-	printf("Content-Type:text/html;charset=%s\n\n", charset);
-	printf(HTML_ACTIVE_OK, charset,
-		lang_resource_get(g_lang_resource,"MSGERR_SAVED", language));
-}
-
 static void setup_ui_set_subsystem(const char *domain, const char *address)
 {
 	int privilege_bits;
@@ -1507,6 +1643,116 @@ static void setup_ui_broadcast_limit(const char *list_path, const char *domain,
 		snprintf(command_line, 1024, "domain_limit.pas add deny %s", domain);
 		gateway_control_notify(command_line, NOTIFY_SMTP);
 	}
+}
+
+static void setup_ui_remove_inode(const char *path)
+{
+	DIR *dirp;
+	char temp_path[256];
+	struct dirent *direntp;
+	struct stat node_stat;
+
+	if (0 != lstat(path, &node_stat)) {
+		return;
+	}
+	if (0 == S_ISDIR(node_stat.st_mode)) {
+		remove(path);
+		return;
+	}
+	dirp = opendir(path);
+	if (NULL == dirp) {
+		return;
+	}
+	while ((direntp = readdir(dirp)) != NULL) {
+		if (0 == strcmp(direntp->d_name, ".") ||
+			0 == strcmp(direntp->d_name, "..")) {
+			continue;
+		}
+		snprintf(temp_path, 256, "%s/%s", path, direntp->d_name);
+		upload_ui_remove_inode(temp_path);
+	}
+	closedir(dirp);
+	remove(path);
+}
+
+static BOOL setup_ui_unzip(const char *domain)
+{
+	pid_t pid;
+	int status;
+	char tmp_path[256];
+	char tmp_path1[256];
+	char *args[] = {"unzip", NULL, NULL, NULL, NULL};
+	
+	snprintf(tmp_path, 255, "%s/%s/kopano-webapp", g_app_path, domain);
+	snprintf(tmp_path1, 255, "%s/tmp_theme.zip", tmp_path);
+	pid = fork();
+	if (0 == pid) {
+		args[1] = tmp_path1;
+		args[2] = "-d";
+		args[3] = tmp_path;
+		if (-1 == execvp("unzip", args)) {
+			exit(EXIT_FAILURE);
+		}
+	} else if (pid > 0) {
+		waitpid(pid, &status, 0);
+		remove(tmp_path1);
+		if (0 == WEXITSTATUS(status)) {
+			return TRUE;
+		} else {
+			return FALSE;
+		}
+	} else {
+		return FALSE;
+	}
+}
+
+static void setup_ui_set_theme(const char *domain)
+{
+	char *language;
+	const char *charset;
+	char temp_path[256];
+	char temp_path1[256];
+	struct stat node_stat;
+	
+	language = getenv("HTTP_ACCEPT_LANGUAGE");
+	charset = lang_resource_get(g_lang_resource,"CHARSET", language);
+	snprintf(temp_path, 255, "%s/%s/kopano-webapp/tmp_theme.zip", g_app_path, domain);
+	if (0 != stat(temp_path, &node_stat)) {
+		system_log_info("[upload_ui]: fail to stat "
+				"uploaded zip file %s\n", temp_path);
+		printf("Content-Type:text/html;charset=%s\n\n", charset);
+		printf(HTML_ACTIVE_FAIL, charset,
+			lang_resource_get(g_lang_resource,"ERROR_INTERNAL", language));
+		return;
+	}
+	if (0 == node_stat.st_size) {
+		remove(temp_path);
+		sprintf(temp_path, "%s/%s/kopano-webapp/theme", g_app_path, domain);
+		setup_ui_remove_inode(temp_path);
+		printf("Content-Type:text/html;charset=%s\n\n", charset);
+		printf(HTML_ACTIVE_OK, charset,
+		lang_resource_get(g_lang_resource, "MSGERR_DELETED", language));
+		return;
+	}
+	if (FALSE == setup_ui_unzip(domain)) {
+		printf("Content-Type:text/html;charset=%s\n\n", charset);
+		printf(HTML_ACTIVE_FAIL, charset,
+			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
+		return;
+	}
+	sprintf(temp_path, "%s/%s/kopano-webapp/theme", g_app_path, domain);
+	setup_ui_remove_inode(temp_path);
+	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp_theme", g_app_path, domain);
+	if (0 == rename(temp_path1, temp_path)) {
+		printf("Content-Type:text/html;charset=%s\n\n", charset);
+		printf(HTML_ACTIVE_OK, charset,
+		lang_resource_get(g_lang_resource,"MSGERR_SAVED", language));
+	} else {
+		printf("Content-Type:text/html;charset=%s\n\n", charset);
+		printf(HTML_ACTIVE_FAIL, charset,
+			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
+	}
+	return;
 }
 
 static void setup_ui_decode_url(char *src, char *dest)

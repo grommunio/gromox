@@ -178,6 +178,7 @@ mkdir /u-data/s1
 mkdir /d-data
 mkdir /d-data/m1
 mkdir /d-data/s1
+mkdir /app-data
 cd /var/athena/tools/
 ./format_area.sh /u-data/m1
 ./format_area.sh /d-data/m1

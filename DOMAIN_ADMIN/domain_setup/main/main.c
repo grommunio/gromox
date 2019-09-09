@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	char data_path[256];
 	char temp_path[256];
 	char lang_path[256];
-	char daemon_path[256];
+	char app_path[256];
 	char *password;
 	char *mount_path;
 	char session_ip[16];
@@ -54,6 +54,13 @@ int main(int argc, char **argv)
 	system_log_init(temp_path);
 	sprintf(temp_path, "%s/%s/console_table.txt", work_path, data_path);
 	gateway_control_init(temp_path);
+	
+	str_value = config_file_get_value(pconfig, "APP_DATA_PATH");
+	if (NULL == str_value) {
+		strcpy(app_path, "/app-data");
+	} else {
+		strcpy(app_path, str_value);
+	}
 
 	str_value = config_file_get_value(pconfig, "SESSION_LISTEN_IP");
 	if (NULL == str_value) {
@@ -116,9 +123,8 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		str_value = "http://www.gridware.com.cn";
 	}
-	sprintf(daemon_path, "%s/%s/daemon", work_path, data_path);
 	sprintf(lang_path, "%s/%s/domain_setup", work_path, data_path);
-	setup_ui_init(mount_path, daemon_path, str_value, lang_path);
+	setup_ui_init(mount_path, app_path, str_value, lang_path);
 	config_file_free(pconfig);
 	if (0 != system_log_run()) {
 		exit(-2);
