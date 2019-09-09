@@ -1715,6 +1715,8 @@ static void setup_ui_set_theme(const char *domain)
 	
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	charset = lang_resource_get(g_lang_resource,"CHARSET", language);
+	sprintf(temp_path, "%s/%s/kopano-webapp/theme", g_app_path, domain);
+	setup_ui_remove_inode(temp_path);
 	snprintf(temp_path, 255, "%s/%s/kopano-webapp/tmp_theme.zip", g_app_path, domain);
 	if (0 != stat(temp_path, &node_stat)) {
 		system_log_info("[upload_ui]: fail to stat "
@@ -1726,8 +1728,6 @@ static void setup_ui_set_theme(const char *domain)
 	}
 	if (0 == node_stat.st_size) {
 		remove(temp_path);
-		sprintf(temp_path, "%s/%s/kopano-webapp/theme", g_app_path, domain);
-		setup_ui_remove_inode(temp_path);
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_OK, charset,
 		lang_resource_get(g_lang_resource, "MSGERR_DELETED", language));
@@ -1739,8 +1739,6 @@ static void setup_ui_set_theme(const char *domain)
 			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
 		return;
 	}
-	sprintf(temp_path, "%s/%s/kopano-webapp/theme", g_app_path, domain);
-	setup_ui_remove_inode(temp_path);
 	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp_theme", g_app_path, domain);
 	if (0 == rename(temp_path1, temp_path)) {
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
