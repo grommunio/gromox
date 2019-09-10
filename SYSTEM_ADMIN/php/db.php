@@ -8,7 +8,7 @@ function get_db_connection()
 		return $dbconn;
 	}
 	require_once "conf.php";
-	$config = get_app_config();
+	$config = get_athena_config();
 	$db_config = $config['MYSQL_HOST'];
 	if (!isset($db_config)) {
 		die("cannot find MYSQL_HOST in config file");
