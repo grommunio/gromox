@@ -4779,6 +4779,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 			store_object_get_dir(pstore),
 			message_object_get_id(pmessage), timer_id);
 		message_object_reload(pmessage);
+		zarafa_server_put_user_info(pinfo);
 		return EC_SUCCESS;
 	}
 	
