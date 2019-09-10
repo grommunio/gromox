@@ -300,10 +300,10 @@ int main(int argc, char **argv)
 	}
 	printf("[system]: smtp server is %s:%d\n", smtp_ip, smtp_port);
 	
-	str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
+	str_value = config_file_get_value(pconfig, "SUBMIT_COMMAND");
 	if (NULL == str_value) {
 		printf("[system]: fail to get SUBMIT_COMMAND in config file!!!");
-		config_file_free(pfile);
+		config_file_free(pconfig);
 		return -2;
 	}
 	strcpy(submit_command, str_value);
