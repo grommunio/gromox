@@ -344,7 +344,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *freebusy_path, const char *langmap_path,
-	const char *folderlang_path);
+	const char *folderlang_path, const char *submit_command);
 
 int common_util_run();
 
@@ -559,6 +559,8 @@ const char* common_util_lang_to_i18n(const char *lang);
 const char* common_util_i18n_to_lang(const char *i18n);
 
 const char* common_util_get_default_timezone();
+
+const char* common_util_get_submit_command();
 
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 

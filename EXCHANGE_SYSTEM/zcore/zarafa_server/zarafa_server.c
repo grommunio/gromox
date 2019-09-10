@@ -4762,7 +4762,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	
 	if (deferred_time > 0) {
-		snprintf(command_buff, 1024, "notifysend %s %llu",
+		snprintf(command_buff, 1024, "%s %s %llu",
+			common_util_get_submit_command(),
 			store_object_get_account(pstore),
 			message_object_get_id(pmessage));
 		timer_id = system_services_add_timer(

@@ -47,6 +47,7 @@ static int g_average_blocks;
 static MIME_POOL *g_mime_pool;
 static pthread_key_t g_dir_key;
 static pthread_mutex_t g_id_lock;
+static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
 static LIB_BUFFER *g_file_allocator;
@@ -2652,7 +2653,8 @@ LIB_BUFFER* common_util_get_allocator()
 
 void common_util_init(const char *org_name, int average_blocks,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
-	unsigned int max_rule_len, const char *smtp_ip, int smtp_port)
+	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
+	const char *submit_command)
 {
 	strcpy(g_org_name, org_name);
 	g_average_blocks = average_blocks;
@@ -2662,6 +2664,7 @@ void common_util_init(const char *org_name, int average_blocks,
 	g_max_rule_len = max_rule_len;
 	strcpy(g_smtp_ip, smtp_ip);
 	g_smtp_port = smtp_port;
+	strcpy(g_submit_command, submit_command);
 	g_faststream_id = 0;
 	pthread_mutex_init(&g_id_lock, NULL);
 	pthread_key_create(&g_dir_key, NULL);
@@ -2901,6 +2904,11 @@ void common_util_set_param(int param, unsigned int value)
 		g_max_rule_len = value;
 		break;
 	}
+}
+
+const char* common_util_get_submit_command()
+{
+	return g_submit_command;
 }
 
 uint32_t common_util_get_ftstream_id()

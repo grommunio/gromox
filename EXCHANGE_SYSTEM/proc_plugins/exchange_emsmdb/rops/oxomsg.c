@@ -436,7 +436,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	}
 	
 	if (deferred_time > 0) {
-		snprintf(command_buff, 1024, "notifysend %s %llu",
+		snprintf(command_buff, 1024, "%s %s %llu",
+			common_util_get_submit_command(),
 			logon_object_get_account(plogon),
 			message_object_get_id(pmessage));
 		timer_id = common_util_add_timer(

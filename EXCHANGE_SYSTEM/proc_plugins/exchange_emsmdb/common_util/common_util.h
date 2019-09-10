@@ -231,7 +231,8 @@ LIB_BUFFER* common_util_get_allocator();
 
 void common_util_init(const char *org_name, int average_blocks,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
-	unsigned int max_rule_len, const char *smtp_ip, int smtp_port);
+	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
+	const char *submit_command);
 
 int common_util_run();
 
@@ -242,6 +243,8 @@ void common_util_free();
 unsigned int common_util_get_param(int param);
 
 void common_util_set_param(int param, unsigned int value);
+
+const char* common_util_get_submit_command();
 	
 uint32_t common_util_get_ftstream_id();
 

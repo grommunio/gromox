@@ -63,6 +63,7 @@ int main(int argc, char **argv)
 	char resource_path[256];
 	char grouping_path[256];
 	char folderlang_path[256];
+	char submit_command[1024];
 	
 	
 	if (2 != argc) {
@@ -299,13 +300,21 @@ int main(int argc, char **argv)
 	}
 	printf("[system]: smtp server is %s:%d\n", smtp_ip, smtp_port);
 	
+	str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
+	if (NULL == str_value) {
+		printf("[system]: fail to get SUBMIT_COMMAND in config file!!!");
+		config_file_free(pfile);
+		return -2;
+	}
+	strcpy(submit_command, str_value);
+	
 	str_value = config_file_get_value(pconfig, "FREEBUSY_TOOL_PATH");
 	if (NULL == str_value) {
 		str_value = "/var/pandora/tools/freebusy";
 	}
-	common_util_init(org_name, host_name, charset, timezone,
-		mime_num, max_rcpt, max_mail, max_length, max_rule_len,
-		smtp_ip, smtp_port, str_value, langmap_path, folderlang_path);
+	common_util_init(org_name, host_name, charset, timezone, mime_num,
+		max_rcpt, max_mail, max_length, max_rule_len, smtp_ip, smtp_port,
+		str_value, langmap_path, folderlang_path, submit_command);
 	
 	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {

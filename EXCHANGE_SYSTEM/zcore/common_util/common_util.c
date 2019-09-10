@@ -69,6 +69,7 @@ static char g_freebusy_path[256];
 static LIST_FILE *g_langmap_list;
 static char g_default_charset[32];
 static char g_folderlang_path[256];
+static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
 static LIST_FILE *g_folderlang_list;
@@ -621,7 +622,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *freebusy_path, const char *langmap_path,
-	const char *folderlang_path)
+	const char *folderlang_path, const char *submit_command)
 {
 	strcpy(g_org_name, org_name);
 	strcpy(g_hostname, hostname);
@@ -637,6 +638,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	strcpy(g_freebusy_path, freebusy_path);
 	strcpy(g_langmap_path, langmap_path);
 	strcpy(g_folderlang_path, folderlang_path);
+	strcpy(g_submit_command, submit_command);
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);
 }
@@ -3578,6 +3580,10 @@ const char* common_util_get_default_timezone()
 	return g_default_zone;
 }
 
+const char* common_util_get_submit_command()
+{
+	return g_submit_command;
+}
 
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 {

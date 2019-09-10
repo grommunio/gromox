@@ -62,6 +62,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	char temp_path[256];
 	char data_path[256];
 	char resource_path[256];
+	char submit_command[1024];
 	char *str_value, *psearch;
 	DCERPC_INTERFACE interface_emsmdb;
 	DCERPC_INTERFACE interface_async_emsmdb;
@@ -211,6 +212,13 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[exchange_emsmdb]: smtp server is %s:%d\n", smtp_ip, smtp_port);
+		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
+		if (NULL == str_value) {
+			printf("[exchange_emsmdb]: fail to get SUBMIT_COMMAND in config file!!!");
+			config_file_free(pfile);
+			return FALSE;
+		}
+		strcpy(submit_command, str_value);
 		str_value = config_file_get_value(pfile, "ASYNC_THREADS_NUM");
 		if (NULL == str_value) {
 			async_num = 4;
@@ -257,8 +265,8 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		bounce_producer_init(resource_path, separator);
-		common_util_init(org_name, average_blocks, max_rcpt,
-			max_mail, max_length, max_rule_len, smtp_ip, smtp_port);
+		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
+			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
 		exmdb_client_init();
 		msgchg_grouping_init(data_path);
 		emsmdb_interface_init();
