@@ -286,7 +286,7 @@ int system_services_run()
 			"\"get_user_privilege_bits\" service\n");
 		return -33;
 	}
-	system_services_add_timer = query_service("add_timer");
+	system_services_add_timer = service_query("add_timer");
 	if (NULL == system_services_add_timer) {
 		printf("[system_service]: fail to "
 			"get \"add_timer\" service\n");
