@@ -1636,7 +1636,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 			if (FALSE == get_lang(codepage, "mlist0", lang_string, 256)) {
 				strcpy(lang_string, "custom address list");
 			}
-			snprintf(str_name, 256, "%s(%s)", title, lang_string);
+			snprintf(str_dname, 256, "%s(%s)", title, lang_string);
 			break;
 		case MLIST_TYPE_GROUP:
 			mem_file_read(&fake_file, &temp_len, sizeof(int));
