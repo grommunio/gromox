@@ -958,8 +958,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl",
 		&username, &username_len, &password, &password_len, &flags)
-		== FAILURE || NULL == username || '\0' == username[0] ||
-		NULL == password) {
+		== FAILURE || NULL == username || '\0' == username[0]) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
@@ -967,17 +966,6 @@ ZEND_FUNCTION(mapi_logon_ex)
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
-	}
-	if (PG(auto_globals_jit)) {
-		zend_is_auto_global(ZEND_STRL("_SERVER") TSRMLS_CC);
-	}
-	if (zend_hash_find(&EG(symbol_table), "_SERVER", sizeof("_SERVER"),
-		(void**)&ppzserver_vars) == SUCCESS && Z_TYPE_PP(ppzserver_vars)
-		== IS_ARRAY && zend_hash_find(Z_ARRVAL_PP(ppzserver_vars),
-		"REMOTE_USER", sizeof("REMOTE_USER"), (void**)&ppzusername)
-		== SUCCESS && Z_TYPE_PP(ppzusername) == IS_STRING &&
-		Z_STRLEN_PP(ppzusername) > 0) {
-		password = NULL;	
 	}
 	result = zarafa_client_logon(username,
 		password, flags, &presource->hsession);

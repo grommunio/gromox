@@ -11,7 +11,7 @@
 	}
 	require_once "db.php";
 	$user_id = get_user_id($argv[1]);
-	if ($user_id) {
+	if (empty($user_id)) {
 		die("cannot find " . $argv[1] . "'s information from database"); 
 	}
 	$loc_string = "/exmdb=1:" . $user_id . ":" . $argv[2];
