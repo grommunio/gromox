@@ -21,7 +21,7 @@ const char* (*system_services_mime_to_extension)(const char*);
 const char* (*system_services_extension_to_mime)(const char*);
 BOOL (*system_services_auth_login)(const char*,
 	const char*, char*, char*, char*, int);
-BOOL (*system_service_set_password)(
+BOOL (*system_services_set_password)(
 	const char*, const char*, const char*);
 BOOL (*system_services_get_user_displayname)(const char*, char*);
 BOOL (*system_services_get_user_privilege_bits)(const char*, uint32_t*);
@@ -36,6 +36,7 @@ int (*system_services_get_domain_users)(int, MEM_FILE*);
 BOOL (*system_services_get_mlist_ids)(int, int*, int*);
 BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 BOOL (*system_services_check_same_org)(int, int);
+int (*system_services_add_timer)(const char *, int);
 void (*system_services_log_info)(int, char*, ...);
 
 /*
@@ -271,9 +272,9 @@ int system_services_run()
 			" get \"log_info\" service\n");
 		return -31;
 	}
-	system_service_set_password = service_query(
+	system_services_set_password = service_query(
 						"set_password", "system");
-	if (NULL == system_service_set_password) {
+	if (NULL == system_services_set_password) {
 		printf("[system_service]: fail to get"
 				" \"set_password\" service\n");
 		return -32;
@@ -284,6 +285,12 @@ int system_services_run()
 		printf("[system_service]: fail to get "
 			"\"get_user_privilege_bits\" service\n");
 		return -33;
+	}
+	system_services_add_timer = query_service("add_timer");
+	if (NULL == system_services_add_timer) {
+		printf("[system_service]: fail to "
+			"get \"add_timer\" service\n");
+		return -34;
 	}
 	return 0;
 }
@@ -296,23 +303,6 @@ int system_services_run()
  */
 int system_services_stop()
 {
-	service_release("get_user_lang", "system");
-	service_release("get_maildir", "system");
-	service_release("get_homedir", "system");
-	service_release("get_timezone", "system");
-	service_release("get_username_from_id", "system");
-	service_release("get_id_from_username", "system");
-	service_release("get_domain_ids", "system");
-	service_release("get_user_ids", "system");
-	service_release("lang_to_charset", "system");
-	service_release("cpid_to_charset", "system");
-	service_release("charset_to_cpid", "system");
-	service_release("lcid_to_ltag", "system");
-	service_release("ltag_to_lcid", "system");
-	service_release("mime_to_extension", "system");
-	service_release("extension_to_mime", "system");
-	service_release("auth_login", "system");
-	service_release("get_user_displayname", "system");
 	return 0;
 }
 

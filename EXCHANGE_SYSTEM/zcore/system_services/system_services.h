@@ -30,7 +30,7 @@ extern const char* (*system_services_mime_to_extension)(const char*);
 extern const char* (*system_services_extension_to_mime)(const char*);
 extern BOOL (*system_services_auth_login)(const char*,
 	const char*, char*, char*, char*, int);
-extern BOOL (*system_service_set_password)(
+extern BOOL (*system_services_set_password)(
 	const char*, const char*, const char*);
 extern BOOL (*system_services_get_user_displayname)(const char*, char*);
 extern BOOL (*system_services_get_user_privilege_bits)(const char*, uint32_t*);
@@ -45,5 +45,6 @@ extern int (*system_services_get_domain_users)(int, MEM_FILE*);
 extern BOOL (*system_services_get_mlist_ids)(int, int*, int*);
 extern BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 extern BOOL (*system_services_check_same_org)(int, int);
+extern int (*system_services_add_timer)(const char *, int);
 extern void (*system_services_log_info)(int, char*, ...);
 #endif /* _H_SYSTEM_SERVICES_ */

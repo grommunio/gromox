@@ -40,80 +40,6 @@ static int exchange_async_emsmdb_ndr_push(int opnum,
 
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
-static BOOL send_message(const char *username, uint64_t message_id)
-{
-	int user_id;
-	void *pvalue;
-	BOOL b_ressult;
-	char maildir[256];
-	GUID mailbox_guid;
-	LOGON_OBJECT *plogon;
-	
-	if (FALSE == common_util_get_id_from_username(username, &user_id)) {
-		return FALSE;
-	}
-	if (FALSE == common_util_get_maildir(username, maildir)) {
-		return FALSE;
-	}
-	rpc_new_environment();
-	if (FALSE == exmdb_client_get_store_property(maildir, 0,
-		PROP_TAG_STORERECORDKEY, &pvalue) || NULL == pvalue) {
-		rpc_free_environment();
-		return FALSE;	
-	}
-	mailbox_guid = rop_util_binary_to_guid(pvalue);
-	plogon = logon_object_create(LOGON_FLAG_PRIVATE,
-			0, LOGON_MODE_OWNER, user_id, username,
-			maildir, mailbox_guid);
-	if (NULL == plogon) {
-		rpc_free_environment();
-		FALSE;
-	}
-	b_ressult = common_util_send_message(plogon, message_id, TRUE);
-	logon_object_free(plogon);
-	rpc_free_environment();
-	return b_ressult;
-}
-
-/*
- *	console talk for exchange_emsmdb plugin
- *	@param
- *		argc					arguments number
- *		argv [in]				arguments array
- *		result [out]			buffer for retrieving result
- *		length					result buffer length
- */
-void console_talk(int argc, char **argv, char *result, int length)
-{
-	int user_id;
-	char maildir[256];
-	GUID mailbox_guid;
-	LOGON_OBJECT *plogon;
-	char help_string[] = "250 exchange emsmdb help information:\r\n"
-						 "\t%s send username message_id\r\n"
-						 "\t    --send message within user's mailbox";
-
-	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
-		return;
-	}
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0]);
-		result[length - 1] = '\0';
-		return;
-	}
-	if (4 == argc && 0 == strcmp("send", argv[1])) {
-		if (TRUE == send_message(argv[2], atoll(argv[3]))) {
-			strncpy(result, "250 send message OK", length);
-		} else {
-			strncpy(result, "550 fail to send message", length);
-		}
-		return;
-	}
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-    return;
-}
-
 BOOL PROC_LibMain(int reason, void **ppdata)
 {
 	int max_mail;
@@ -364,10 +290,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		if (0 != rop_processor_run()) {
 			printf("[exchange_emsmdb]: fail to run rop processor\n");
-			return FALSE;
-		}
-		if (FALSE == register_talk(console_talk)) {
-			printf("[exchange_emsmdb]: fail to register console talk\n");
 			return FALSE;
 		}
 		printf("[exchange_emsmdb]: plugin is loaded into system\n");
@@ -630,5 +552,3 @@ static void exchange_async_emsmdb_reclaim(uint32_t async_id)
 {
 	asyncemsmdb_interface_reclaim(async_id);
 }
-
-

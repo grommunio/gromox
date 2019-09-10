@@ -4545,10 +4545,13 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 
 uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 {
+	int timer_id;
 	void *pvalue;
 	BOOL b_marked;
 	BOOL b_unsent;
 	BOOL b_delete;
+	time_t cur_time;
+	uint32_t tmp_num;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	uint16_t rcpt_num;
@@ -4558,9 +4561,12 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	uint32_t permission;
 	uint32_t mail_length;
 	STORE_OBJECT *pstore;
+	uint64_t submit_time;
+	uint32_t deferred_time;
 	uint32_t message_flags;
+	char command_buff[1024];
 	MESSAGE_OBJECT *pmessage;
-	uint32_t proptag_buff[2];
+	uint32_t proptag_buff[6];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -4660,10 +4666,14 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (NULL != pvalue) {
 		max_length = *(int32_t*)pvalue;
 	}
-	tmp_proptags.count = 2;
+	tmp_proptags.count = 6;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_MESSAGESIZE;
 	proptag_buff[1] = PROP_TAG_MESSAGEFLAGS;
+	proptag_buff[2] = PROP_TAG_DEFERREDSENDTIME;
+	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
+	proptag_buff[4] = PROP_TAG_DEFERREDSENDUNITS;
+	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
 	if (FALSE == message_object_get_properties(
 		pmessage, &tmp_proptags, &tmp_propvals)) {
 		zarafa_server_put_user_info(pinfo);
@@ -4702,6 +4712,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;
 	}
+	
 	if (FALSE == exmdb_client_try_mark_submit(
 		store_object_get_dir(pstore),
 		message_object_get_id(pmessage),
@@ -4713,6 +4724,64 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		zarafa_server_put_user_info(pinfo);
 		return EC_ACCESS_DENIED;
 	}
+	
+	deferred_time = 0;
+	time(&cur_time);
+	submit_time = rop_util_unix_to_nttime(cur_time);
+	pvalue = common_util_get_propvals(&tmp_propvals,
+							PROP_TAG_DEFERREDSENDTIME);
+	if (NULL != pvalue) {
+		if (submit_time < *(uint64_t*)pvalue) {
+			deferred_time = rop_util_nttime_to_unix(
+						*(uint64_t*)pvalue) - cur_time;
+		}
+	} else {
+		pvalue = common_util_get_propvals(&tmp_propvals,
+							PROP_TAG_DEFERREDSENDNUMBER);
+		if (NULL != pvalue) {
+			tmp_num = *(uint32_t*)pvalue;
+			pvalue = common_util_get_propvals(&tmp_propvals,
+								PROP_TAG_DEFERREDSENDUNITS);
+			if (NULL != pvalue) {
+				switch (*(uint32_t*)pvalue) {
+				case 0:
+					deferred_time = tmp_num*60;
+					break;
+				case 1:
+					deferred_time = tmp_num*60*60;
+					break;
+				case 2:
+					deferred_time = tmp_num*60*60*24;
+					break;
+				case 3:
+					deferred_time = tmp_num*60*60*24*7;
+					break;
+				}
+			}
+		}
+	}
+	
+	if (deferred_time > 0) {
+		snprintf(command_buff, 1024, "notifysend %s %llu",
+			store_object_get_account(pstore),
+			message_object_get_id(pmessage));
+		timer_id = system_services_add_timer(
+				command_buff, deferred_time);
+		if (0 == timer_id) {
+			exmdb_client_clear_submit(
+			store_object_get_dir(pstore),
+				message_object_get_id(pmessage),
+				b_unsent);
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
+		exmdb_client_set_message_timer(
+			store_object_get_dir(pstore),
+			message_object_get_id(pmessage), timer_id);
+		message_object_reload(pmessage);
+		return EC_SUCCESS;
+	}
+	
 	if (FALSE == common_util_send_message(pstore,
 		message_object_get_id(pmessage), TRUE)) {
 		exmdb_client_clear_submit(
@@ -7583,7 +7652,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 uint32_t zarafa_server_setpasswd(const char *username,
 	const char *passwd, const char *new_passwd)
 {
-	if (FALSE == system_service_set_password(
+	if (FALSE == system_services_set_password(
 		username, passwd, new_passwd)) {
 		return EC_ACCESS_DENIED;	
 	}

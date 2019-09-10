@@ -42,7 +42,7 @@ LIMIT_TYPE_ALLOW		allow\ list\ type
 LIMIT_TYPE_DENY			deny\ list\ type
 TIP_SUBSYSTEM			mail\ sub-system\ is\ created\ by\ domain\ user,\ mails\ will\ be\ copied\ to\ that\ system
 MAIN_SUBSYSTEM			mail\ sub-system
-TIP_UPLOADTHEME			upload\ custom\ WebApp\ theme,\ you\ can\ custom\ own\ favico,\ logo,\ background\ css...\ please\ package\ them\ in\ zip\ file\ exactly\ same\ as\ template\ file.\ upload\ an\ empty\ file\ will\ remove\ current\ theme
+TIP_UPLOADTHEME			upload\ custom\ WebApp\ theme,\ you\ can\ custom\ own\ favico,\ logo,\ background\ css...\ please\ package\ them\ in\ zip\ file\ exactly\ same\ as\ template\ file.\ upload\ without\ file\ will\ remove\ current\ theme
 TIP_DOWNLOADTHEME		click\ here\ to\ download\ theme\ template
 MAIN_UPLOADTHEME		upload\ custom\ WebApp\ theme
 MSGERR_MAILBOXFORMATERR	mailbox\ format\ error
