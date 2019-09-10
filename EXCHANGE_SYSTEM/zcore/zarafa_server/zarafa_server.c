@@ -4727,23 +4727,22 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;
 	}
-	
-	if (FALSE == exmdb_client_try_mark_submit(
-		store_object_get_dir(pstore),
-		message_object_get_id(pmessage),
-		&b_marked)) {
-		zarafa_server_put_user_info(pinfo);
-		return EC_ERROR;	
-	}
-	if (FALSE == b_marked) {
-		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
-	}
-	
-	deferred_time = 0;
-	time(&cur_time);
-	submit_time = rop_util_unix_to_nttime(cur_time);
 	if (0 == (MESSAGE_FLAG_SUBMITTED & message_flags)) {
+		if (FALSE == exmdb_client_try_mark_submit(
+			store_object_get_dir(pstore),
+			message_object_get_id(pmessage),
+			&b_marked)) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;	
+		}
+		if (FALSE == b_marked) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ACCESS_DENIED;
+		}
+		
+		deferred_time = 0;
+		time(&cur_time);
+		submit_time = rop_util_unix_to_nttime(cur_time);
 		pvalue = common_util_get_propvals(&tmp_propvals,
 								PROP_TAG_DEFERREDSENDTIME);
 		if (NULL != pvalue) {
