@@ -14,7 +14,9 @@
 	if (empty($user_id)) {
 		die("cannot find " . $argv[1] . "'s information from database"); 
 	}
-	$loc_string = "/exmdb=1:" . $user_id . ":" . $argv[2];
+	$loc_string = sprintf("/exmdb=1:%d:%x", $user_id, $argv[2]);
+	// append a null terminate character for C
+	$loc_string .= hex2bin('00');
 	$_SERVER['REMOTE_USER'] = $argv[1];
 	try {
 		$session = mapi_logon_ex($argv[1], null, 0);
@@ -30,11 +32,9 @@
 	if (empty($props[PR_MESSAGE_FLAGS])) {
 		die("cannot get PR_MESSAGE_FLAGS from message object");
 	}
-	if (MSGFLAG_SUBMIT & $props[PR_MESSAGE_FLAGS]) {
+	if (0 == (MSGFLAG_SUBMIT & $props[PR_MESSAGE_FLAGS])) {
 		die("message " . $argv[2] . " was not submitted");
 	}
-	mapi_setprops($message, array(PR_MESSAGE_FLAGS => $props[PR_MESSAGE_FLAGS] & (~MSGFLAG_SUBMIT)));
-	mapi_deleteprops($message, array(PR_DEFERRED_DELIVERY_TIME, PR_DEFERRED_SEND_TIME, PR_DEFERRED_SEND_UNIT));
 	mapi_message_submitmessage($message);
 	exit("message " . $argv[2] . " has been submitted successfully");
 ?>

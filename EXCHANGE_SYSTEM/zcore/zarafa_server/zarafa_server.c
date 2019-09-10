@@ -4698,8 +4698,23 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	message_flags = *(uint32_t*)pvalue;
 	if (MESSAGE_FLAG_SUBMITTED & message_flags) {
-		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		/* here we handle the submit request differently
+			from exchange_emsmdb. we allow a submitted
+			message	to be resubmitted if deferred time
+			information is found in the message object
+		*/
+		if (NULL != common_util_get_propvals(
+			&tmp_propvals, PROP_TAG_DEFERREDSENDTIME)) {
+			/* do nothing, allow to be resubmitted */
+		} else if (NULL != common_util_get_propvals(
+			&tmp_propvals, PROP_TAG_DEFERREDSENDNUMBER)
+			&& NULL != common_util_get_propvals(
+			&tmp_propvals, PROP_TAG_DEFERREDSENDUNITS)) {
+			/* do nothing, allow to be resubmitted */
+		} else {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ACCESS_DENIED;
+		}
 	}
 	if (message_flags & MESSAGE_FLAG_UNSENT) {
 		b_unsent = TRUE;
@@ -4728,63 +4743,64 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	deferred_time = 0;
 	time(&cur_time);
 	submit_time = rop_util_unix_to_nttime(cur_time);
-	pvalue = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_DEFERREDSENDTIME);
-	if (NULL != pvalue) {
-		if (submit_time < *(uint64_t*)pvalue) {
-			deferred_time = rop_util_nttime_to_unix(
-						*(uint64_t*)pvalue) - cur_time;
-		}
-	} else {
+	if (0 == (MESSAGE_FLAG_SUBMITTED & message_flags)) {
 		pvalue = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_DEFERREDSENDNUMBER);
+								PROP_TAG_DEFERREDSENDTIME);
 		if (NULL != pvalue) {
-			tmp_num = *(uint32_t*)pvalue;
+			if (submit_time < *(uint64_t*)pvalue) {
+				deferred_time = rop_util_nttime_to_unix(
+							*(uint64_t*)pvalue) - cur_time;
+			}
+		} else {
 			pvalue = common_util_get_propvals(&tmp_propvals,
-								PROP_TAG_DEFERREDSENDUNITS);
+								PROP_TAG_DEFERREDSENDNUMBER);
 			if (NULL != pvalue) {
-				switch (*(uint32_t*)pvalue) {
-				case 0:
-					deferred_time = tmp_num*60;
-					break;
-				case 1:
-					deferred_time = tmp_num*60*60;
-					break;
-				case 2:
-					deferred_time = tmp_num*60*60*24;
-					break;
-				case 3:
-					deferred_time = tmp_num*60*60*24*7;
-					break;
+				tmp_num = *(uint32_t*)pvalue;
+				pvalue = common_util_get_propvals(&tmp_propvals,
+									PROP_TAG_DEFERREDSENDUNITS);
+				if (NULL != pvalue) {
+					switch (*(uint32_t*)pvalue) {
+					case 0:
+						deferred_time = tmp_num*60;
+						break;
+					case 1:
+						deferred_time = tmp_num*60*60;
+						break;
+					case 2:
+						deferred_time = tmp_num*60*60*24;
+						break;
+					case 3:
+						deferred_time = tmp_num*60*60*24*7;
+						break;
+					}
 				}
 			}
 		}
-	}
 	
-	if (deferred_time > 0) {
-		snprintf(command_buff, 1024, "%s %s %llu",
-			common_util_get_submit_command(),
-			store_object_get_account(pstore),
-			rop_util_get_gc_value(
-				message_object_get_id(pmessage)));
-		timer_id = system_services_add_timer(
-				command_buff, deferred_time);
-		if (0 == timer_id) {
-			exmdb_client_clear_submit(
-			store_object_get_dir(pstore),
-				message_object_get_id(pmessage),
-				b_unsent);
+		if (deferred_time > 0) {
+			snprintf(command_buff, 1024, "%s %s %llu",
+				common_util_get_submit_command(),
+				store_object_get_account(pstore),
+				rop_util_get_gc_value(
+					message_object_get_id(pmessage)));
+			timer_id = system_services_add_timer(
+					command_buff, deferred_time);
+			if (0 == timer_id) {
+				exmdb_client_clear_submit(
+				store_object_get_dir(pstore),
+					message_object_get_id(pmessage),
+					b_unsent);
+				zarafa_server_put_user_info(pinfo);
+				return EC_ERROR;
+			}
+			exmdb_client_set_message_timer(
+				store_object_get_dir(pstore),
+				message_object_get_id(pmessage), timer_id);
+			message_object_reload(pmessage);
 			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
+			return EC_SUCCESS;
 		}
-		exmdb_client_set_message_timer(
-			store_object_get_dir(pstore),
-			message_object_get_id(pmessage), timer_id);
-		message_object_reload(pmessage);
-		zarafa_server_put_user_info(pinfo);
-		return EC_SUCCESS;
 	}
-	
 	if (FALSE == common_util_send_message(pstore,
 		message_object_get_id(pmessage), TRUE)) {
 		exmdb_client_clear_submit(
