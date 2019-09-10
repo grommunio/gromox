@@ -9,20 +9,19 @@ function get_db_connection()
 	}
 	require_once "conf.php";
 	$config = get_athena_config();
-	$db_config = $config['MYSQL_HOST'];
-	if (!isset($db_config)) {
+	if (empty($config['MYSQL_HOST'])) {
 		die("cannot find MYSQL_HOST in config file");
 	}
-	if (!isset($db_config['MYSQL_PORT'])) {
+	if (empty($config['MYSQL_PORT'])) {
 		die("cannot find MYSQL_PORT in config file");
 	}
-	if (!isset($db_config['MYSQL_USERNAME'])) {
+	if (empty($config['MYSQL_USERNAME'])) {
 		die("cannot find MYSQL_USERNAME in config file");
 	}
-	if (!isset($db_config['MYSQL_PASSWORD'])) {
+	if (empty($config['MYSQL_PASSWORD'])) {
 		die("cannot find MYSQL_PASSWORD in config file");
 	}
-	if (!isset($db_config['MYSQL_DBNAME'])) {
+	if (empty($config['MYSQL_DBNAME'])) {
 		die("cannot find MYSQL_DBNAME in config file");
 	}
 	$dbconn = mysql_connect($db_config['MYSQL_HOST'] . ':' . $db_config['MYSQL_PORT'],
