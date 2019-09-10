@@ -39,7 +39,6 @@ mkmidb \
 mkprivate \
 mkpublic \
 monitor \
-notifysend \
 org_list \
 pad \
 pop_porting \
