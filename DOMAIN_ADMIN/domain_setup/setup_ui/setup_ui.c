@@ -1745,7 +1745,7 @@ static void setup_ui_set_theme(const char *domain)
 		setup_ui_remove_inode(temp_path);
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
-			lang_resource_get(g_lang_resource,"MSGERR_FORMATERR", language));
+			lang_resource_get(g_lang_resource,"MSGERR_THEMEERR", language));
 	}
 	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp/theme/css/theme.css", g_app_path, domain);
 	if (0 != stat(temp_path1, &node_stat) || 0 == S_ISREG(node_stat.st_mode)) {
@@ -1753,7 +1753,7 @@ static void setup_ui_set_theme(const char *domain)
 		setup_ui_remove_inode(temp_path);
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
-			lang_resource_get(g_lang_resource,"MSGERR_FORMATERR", language));
+			lang_resource_get(g_lang_resource,"MSGERR_CSSERR", language));
 	}
 	sprintf(temp_path1, "%s/%s/kopano-webapp/tmp/theme", g_app_path, domain);
 	sprintf(temp_path, "%s/%s/kopano-webapp/theme", g_app_path, domain);
