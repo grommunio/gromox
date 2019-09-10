@@ -52,11 +52,10 @@ typedef struct _OBJECT_NODE {
 	void *pobject;
 } OBJECT_NODE;
 
-
-static BOOL g_notify_stop;
 static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
+static BOOL g_notify_stop = TRUE;
 static pthread_mutex_t g_hash_lock;
 static STR_HASH_TABLE *g_logon_hash;
 static LIB_BUFFER *g_logmap_allocator;
@@ -432,7 +431,6 @@ static void *scan_work_func(void *param)
 
 void rop_processor_init(int average_handles, int scan_interval)
 {
-	g_notify_stop = TRUE;
 	g_average_handles = average_handles;
 	g_scan_interval = scan_interval;
 	pthread_mutex_init(&g_hash_lock, NULL);

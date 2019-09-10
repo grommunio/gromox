@@ -61,10 +61,10 @@ typedef struct _NOTIFY_ITEM {
 	GUID guid;
 } NOTIFY_ITEM;
 
-static BOOL g_notify_stop;
 static time_t g_start_time;
 static pthread_t g_scan_id;
 static pthread_mutex_t g_lock;
+static BOOL g_notify_stop = TRUE;
 static pthread_key_t g_handle_key;
 static STR_HASH_TABLE *g_user_hash;
 static STR_HASH_TABLE *g_handle_hash;
@@ -373,7 +373,6 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 
 void emsmdb_interface_init()
 {
-	g_notify_stop = TRUE;
 	time(&g_start_time);
 	pthread_mutex_init(&g_lock, NULL);
 	pthread_mutex_init(&g_notify_lock, NULL);

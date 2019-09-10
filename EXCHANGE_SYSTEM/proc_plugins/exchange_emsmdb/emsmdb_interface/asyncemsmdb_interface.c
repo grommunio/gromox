@@ -28,9 +28,9 @@ typedef struct _ASYNC_WAIT {
 } ASYNC_WAIT;
 
 static int g_threads_num;
-static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static pthread_t *g_thread_ids;
+static BOOL g_notify_stop = TRUE;
 static DOUBLE_LIST g_wakeup_list;
 static STR_HASH_TABLE *g_tag_hash;
 static pthread_mutex_t g_list_lock;
@@ -55,7 +55,6 @@ void asyncemsmdb_interface_register_active(void *pproc)
 
 void asyncemsmdb_interface_init(int threads_num)
 {
-	g_notify_stop = TRUE;
 	g_thread_ids = NULL;
 	g_threads_num = threads_num;
 	pthread_mutex_init(&g_async_lock, NULL);

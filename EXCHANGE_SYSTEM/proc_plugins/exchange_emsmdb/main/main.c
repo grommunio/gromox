@@ -214,7 +214,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		printf("[exchange_emsmdb]: smtp server is %s:%d\n", smtp_ip, smtp_port);
 		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
 		if (NULL == str_value) {
-			printf("[exchange_emsmdb]: fail to get SUBMIT_COMMAND in config file!!!");
+			printf("[exchange_emsmdb]: fail to get SUBMIT_COMMAND in config file!!!\n");
 			config_file_free(pfile);
 			return FALSE;
 		}

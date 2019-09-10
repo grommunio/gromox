@@ -302,7 +302,7 @@ int main(int argc, char **argv)
 	
 	str_value = config_file_get_value(pconfig, "SUBMIT_COMMAND");
 	if (NULL == str_value) {
-		printf("[system]: fail to get SUBMIT_COMMAND in config file!!!");
+		printf("[system]: fail to get SUBMIT_COMMAND in config file!!!\n");
 		config_file_free(pconfig);
 		return -2;
 	}
