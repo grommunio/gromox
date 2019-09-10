@@ -958,9 +958,13 @@ ZEND_FUNCTION(mapi_logon_ex)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl",
 		&username, &username_len, &password, &password_len, &flags)
-		== FAILURE || NULL == username || '\0' == username[0]) {
+		== FAILURE || NULL == username || '\0' == username[0] ||
+		NULL == password) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
+	}
+	if ('\0' == password[0]) {
+		password = NULL;
 	}
 	presource = emalloc(sizeof(MAPI_RESOURCE));
 	if (NULL == presource) {

@@ -17,7 +17,7 @@
 	$loc_string = "/exmdb=1:" . $user_id . ":" . $argv[2];
 	$_SERVER['REMOTE_USER'] = $argv[1];
 	try {
-		$session = mapi_logon_ex($argv[1], "password");
+		$session = mapi_logon_ex($argv[1], null, 0);
 	} catch (Exception  $e) {
 		die("fail to log on the " . $argv[1] . "'s store");
 	}
