@@ -24,12 +24,12 @@ function get_db_connection()
 	if (empty($config['MYSQL_DBNAME'])) {
 		die("cannot find MYSQL_DBNAME in config file");
 	}
-	$dbconn = mysql_connect($db_config['MYSQL_HOST'] . ':' . $db_config['MYSQL_PORT'],
-						$db_config['MYSQL_USERNAME'], $db_config['MYSQL_PASSWORD']);
+	$dbconn = mysql_connect($config['MYSQL_HOST'] . ':' . $config['MYSQL_PORT'],
+							$config['MYSQL_USERNAME'], $config['MYSQL_PASSWORD']);
 	if (!$dbconn) {
 		die("fail to connect to database server: " . mysql_error());
 	}
-	if (mysql_select_db($db_config['MYSQL_DBNAME'], $dbconn) == false) {
+	if (mysql_select_db($config['MYSQL_DBNAME'], $dbconn) == false) {
 		die("fail to select database");
 	}
 	return $dbconn;
