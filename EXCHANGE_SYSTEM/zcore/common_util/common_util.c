@@ -586,11 +586,11 @@ BOOL common_util_exmdb_locinfo_from_string(
 	
 	if (0 == strncmp(loc_string, "1:", 2)) {
 		*ptype = LOC_TYPE_PRIVATE_FOLDER;
-	} else if (strncmp(loc_string, "2:", 2)) {
+	} else if (0 == strncmp(loc_string, "2:", 2)) {
 		*ptype = LOC_TYPE_PUBLIC_FOLDER;
-	} else if (strncmp(loc_string, "3:", 2)) {
+	} else if (0 == strncmp(loc_string, "3:", 2)) {
 		*ptype = LOC_TYPE_PRIVATE_MESSAGE;
-	} else if (strncmp(loc_string, "4:", 2)) {
+	} else if (0 == strncmp(loc_string, "4:", 2)) {
 		*ptype = LOC_TYPE_PUBLIC_MESSAGE;
 	} else {
 		return FALSE;
