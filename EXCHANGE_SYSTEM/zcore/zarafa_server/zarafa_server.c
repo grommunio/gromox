@@ -955,12 +955,14 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	uint32_t flags, uint8_t *pmapi_type, uint32_t *phobject)
 {
 	int user_id;
+	uint64_t eid;
 	uint16_t type;
 	BOOL b_private;
 	int account_id;
 	uint32_t handle;
 	USER_INFO *pinfo;
 	char essdn[1024];
+	uint8_t loc_type;
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t address_type;
@@ -1013,10 +1015,24 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		return EC_INVALID_PARAMETER;
 	}
 	if (FALSE == common_util_exmdb_locinfo_from_string(
-		essdn + 7, &b_private, &user_id, &message_id)) {
+		essdn + 7, &loc_type, &user_id, &eid)) {
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_FOUND;
 	}
+	switch (loc_type) {
+	case LOC_TYPE_PRIVATE_FOLDER:
+	case LOC_TYPE_PRIVATE_MESSAGE:
+		b_private = TRUE;
+		break;
+	case LOC_TYPE_PUBLIC_FOLDER:
+	case LOC_TYPE_PUBLIC_MESSAGE:
+		b_private = FALSE;
+		break;
+	default:
+		zarafa_server_put_user_info(pinfo);
+		return EC_NOT_FOUND;
+	}
+	
 	handle = object_tree_get_store_handle(
 		pinfo->ptree, b_private, user_id);
 	zarafa_server_put_user_info(pinfo);
@@ -1032,6 +1048,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	BOOL b_owner;
 	BOOL b_exist;
 	void *pvalue;
+	uint64_t eid;
 	uint16_t type;
 	BOOL b_private;
 	int account_id;
@@ -1039,6 +1056,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	char essdn[1024];
 	USER_INFO *pinfo;
 	uint64_t fid_val;
+	uint8_t loc_type;
 	uint8_t mapi_type;
 	uint64_t folder_id;
 	uint64_t message_id;
@@ -1103,18 +1121,44 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			return EC_INVALID_PARAMETER;
 		}
 		if (FALSE == common_util_exmdb_locinfo_from_string(
-			essdn + 7, &b_private, &account_id, &message_id)) {
+			essdn + 7, &loc_type, &account_id, &eid)) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_NOT_FOUND;
 		}
-		if (FALSE == exmdb_client_get_message_property(
-			store_object_get_dir(pstore), NULL, 0,
-			message_id, PROP_TAG_PARENTFOLDERID,
-			&pvalue) || NULL == pvalue) {
+		switch (loc_type) {
+		case LOC_TYPE_PRIVATE_FOLDER:
+			b_private = TRUE;
+			folder_id = eid;
+			message_id = 0;
+			break;
+		case LOC_TYPE_PRIVATE_MESSAGE:
+			b_private = TRUE;
+			message_id = eid;
+			break;
+		case LOC_TYPE_PUBLIC_FOLDER:
+			b_private = FALSE;
+			folder_id = eid;
+			message_id = 0;
+			break;
+		case LOC_TYPE_PUBLIC_MESSAGE:
+			b_private = FALSE;
+			message_id = eid;
+			break;
+		default:
 			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;	
+			return EC_NOT_FOUND;
 		}
-		folder_id = *(uint64_t*)pvalue;
+		if (LOC_TYPE_PRIVATE_MESSAGE == loc_type ||
+			LOC_TYPE_PUBLIC_MESSAGE == loc_type) {
+			if (FALSE == exmdb_client_get_message_property(
+				store_object_get_dir(pstore), NULL, 0,
+				message_id, PROP_TAG_PARENTFOLDERID,
+				&pvalue) || NULL == pvalue) {
+				zarafa_server_put_user_info(pinfo);
+				return EC_ERROR;	
+			}
+			folder_id = *(uint64_t*)pvalue;
+		}
 CHECK_LOC:
 		if (b_private != store_object_check_private(pstore) ||
 			account_id != store_object_get_account_id(pstore)) {
@@ -1305,6 +1349,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	int domain_id;
 	AB_BASE *pbase;
 	uint32_t minid;
+	uint8_t loc_type;
 	USER_INFO *pinfo;
 	char essdn[1024];
 	char tmp_buff[16];
@@ -1356,11 +1401,13 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			} else {
 				if (0 == strncmp(essdn, "/exmdb=", 7)) {
 					if (FALSE == common_util_exmdb_locinfo_from_string(
-						essdn + 7, &container_id.exmdb_id.b_private,
-						&user_id, &container_id.exmdb_id.folder_id)) {
+						essdn + 7, &loc_type, &user_id,
+						&container_id.exmdb_id.folder_id) ||
+						LOC_TYPE_PRIVATE_FOLDER != loc_type) {
 						zarafa_server_put_user_info(pinfo);
 						return EC_NOT_FOUND;
 					}
+					container_id.exmdb_id.b_private = TRUE;
 					type = CONTAINER_TYPE_FOLDER;
 				} else {
 					if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {

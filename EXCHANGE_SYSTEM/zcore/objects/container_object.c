@@ -295,14 +295,20 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 static BINARY* container_object_folder_to_addressbook_entryid(
 	BOOL b_private, int db_id, uint64_t folder_id)
 {
+	uint8_t type;
 	BINARY *pbin;
 	char x500dn[128];
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
+	if (TRUE == b_private) {
+		type = LOC_TYPE_PRIVATE_FOLDER;
+	} else {
+		type = LOC_TYPE_PUBLIC_FOLDER;
+	}
 	memcpy(x500dn, "/exmdb=", 7);
 	common_util_exmdb_locinfo_to_string(
-		b_private, db_id, folder_id, x500dn + 7);
+		type, db_id, folder_id, x500dn + 7);
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 								tmp_entryid.provider_uid);
@@ -330,14 +336,20 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	BOOL b_private, int db_id, uint64_t message_id, int num)
 {
 	int len;
+	uint8_t type;
 	BINARY *pbin;
 	char x500dn[128];
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
+	if (TRUE == b_private) {
+		type = LOC_TYPE_PRIVATE_MESSAGE;
+	} else {
+		type = LOC_TYPE_PUBLIC_MESSAGE;
+	}
 	memcpy(x500dn, "/exmdb=", 7);
 	common_util_exmdb_locinfo_to_string(
-		b_private, db_id, message_id, x500dn + 7);
+		type, db_id, message_id, x500dn + 7);
 	len = strlen(x500dn);
 	sprintf(x500dn + len, ":%d", num);
 	tmp_entryid.flags = 0;

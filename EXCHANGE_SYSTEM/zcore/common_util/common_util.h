@@ -312,6 +312,11 @@ typedef struct _STATE_ARRAY {
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 
+#define LOC_TYPE_PRIVATE_FOLDER						1
+#define LOC_TYPE_PUBLIC_FOLDER						2
+#define LOC_TYPE_PRIVATE_MESSAGE					3
+#define LOC_TYPE_PUBLIC_MESSAGE						4
+
 enum {
 	COMMON_UTIL_MAX_RCPT,
 	COMMON_UTIL_MAX_MESSAGE,
@@ -423,11 +428,11 @@ BOOL common_util_essdn_to_public(const char *pessdn, char *domainname);
 BOOL common_util_public_to_essdn(const char *username, char *pessdn);
 
 void common_util_exmdb_locinfo_to_string(
-	BOOL b_private, int db_id, uint64_t eid,
+	uint8_t type, int db_id, uint64_t eid,
 	char *loc_string);
 
 BOOL common_util_exmdb_locinfo_from_string(
-	const char *loc_string, BOOL *pb_private,
+	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid);
 
 BOOL common_util_build_environment();

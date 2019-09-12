@@ -567,20 +567,16 @@ BOOL common_util_public_to_essdn(const char *username, char *pessdn)
 }
 
 void common_util_exmdb_locinfo_to_string(
-	BOOL b_private, int db_id, uint64_t eid,
+	uint8_t type, int db_id, uint64_t eid,
 	char *loc_string)
 {
-	if (TRUE == b_private) {
-		sprintf(loc_string, "1:%d:%llx",
+	
+	sprintf(loc_string, "%d:%d:%llx", (int)type,
 			db_id, rop_util_get_gc_value(eid));
-	} else {
-		sprintf(loc_string, "0:%d:%llx",
-			db_id, rop_util_get_gc_value(eid));
-	}
 }
 
 BOOL common_util_exmdb_locinfo_from_string(
-	const char *loc_string, BOOL *pb_private,
+	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid)
 {
 	int tmp_len;
@@ -589,9 +585,13 @@ BOOL common_util_exmdb_locinfo_from_string(
 	char tmp_buff[16];
 	
 	if (0 == strncmp(loc_string, "1:", 2)) {
-		*pb_private = TRUE;
-	} else if (strncmp(loc_string, "0:", 2)) {
-		*pb_private = FALSE;
+		*ptype = LOC_TYPE_PRIVATE_FOLDER;
+	} else if (strncmp(loc_string, "2:", 2)) {
+		*ptype = LOC_TYPE_PUBLIC_FOLDER;
+	} else if (strncmp(loc_string, "3:", 2)) {
+		*ptype = LOC_TYPE_PRIVATE_MESSAGE;
+	} else if (strncmp(loc_string, "4:", 2)) {
+		*ptype = LOC_TYPE_PUBLIC_MESSAGE;
 	} else {
 		return FALSE;
 	}
