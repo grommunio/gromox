@@ -12,8 +12,6 @@
 
 #define TOOLS_PATH									"/var/pandora/tools"
 
-#define LOGON_FLAG_ZARAFA							0x00000001
-
 #define PR_ATTACH_DATA_OBJ                          0x3701000D
 #define PR_CONTENTS_SYNCHRONIZER					0x662D000D
 #define PR_HIERARCHY_SYNCHRONIZER					0x662C000D
@@ -924,8 +922,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 		Z_STRLEN_PP(ppzusername) > 0) {
 		password = NULL;	
 	}
-	result = zarafa_client_logon(username, password,
-			LOGON_FLAG_ZARAFA, &presource->hsession);
+	result = zarafa_client_logon(username, password, 0, &presource->hsession);
 	if (EC_SUCCESS != result) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
