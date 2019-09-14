@@ -2686,6 +2686,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 {
 	XID tmp_xid;
 	void *pvalue;
+	uint32_t hstore;
 	uint64_t tmp_id;
 	uint32_t result;
 	BINARY *pentryid;
@@ -2860,9 +2861,24 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_ERROR;
 	}
-	*phobject = object_tree_add_object_handle(
-				pinfo->ptree, hparent_folder,
-				MAPI_FOLDER, pfolder);
+	if (FOLDER_TYPE_SEARCH == folder_type) {
+		/* add the store handle as the parent object handle
+			because the caller normaly will not keep the
+			handle of parent folder */
+		hstore = object_tree_get_store_handle(pinfo->ptree,
+				TRUE, store_object_get_account_id(pstore));
+		if (INVALID_HANDLE == hstore) {
+			folder_object_free(pfolder);
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
+		*phobject = object_tree_add_object_handle(
+			pinfo->ptree, hstore, MAPI_FOLDER, pfolder);
+	} else {
+		*phobject = object_tree_add_object_handle(
+					pinfo->ptree, hparent_folder,
+					MAPI_FOLDER, pfolder);
+	}
 	if (INVALID_HANDLE == *phobject) {
 		folder_object_free(pfolder);
 		zarafa_server_put_user_info(pinfo);
