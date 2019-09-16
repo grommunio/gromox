@@ -6117,6 +6117,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_linkmessage)
 {
+	uint32_t result;
 	zval *pzresource;
 	BINARY search_entryid;
 	BINARY message_entryid;
