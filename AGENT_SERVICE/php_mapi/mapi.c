@@ -6120,6 +6120,7 @@ ZEND_FUNCTION(mapi_linkmessage)
 	zval *pzresource;
 	BINARY search_entryid;
 	BINARY message_entryid;
+	MAPI_RESOURCE *psession;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rss",
 		&pzresource, &search_entryid.pb, &search_entryid.cb,
