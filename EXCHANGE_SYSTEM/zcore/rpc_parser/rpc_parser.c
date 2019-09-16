@@ -628,6 +628,12 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.setpasswd.passwd,
 			prequest->payload.setpasswd.new_passwd);
 		break;
+	case CALL_ID_LINKMESSAGE:
+		presponse->result = zarafa_server_linkmessage(
+			prequest->payload.linkmessage.hsession,
+			prequest->payload.linkmessage.search_entryid,
+			prequest->payload.linkmessage.message_entryid);
+		break;
 	default:
 		return DISPATCH_FALSE;
 	}

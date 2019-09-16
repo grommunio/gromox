@@ -91,6 +91,7 @@
 #define CALL_ID_CHECKSESSION						0x52
 #define CALL_ID_GETUSERAVAILABILITY					0x53
 #define CALL_ID_SETPASSWD							0x54
+#define CALL_ID_LINKMESSAGE							0x55
 
 /* ---------------------- defined by zarafa ---------------------- */
 

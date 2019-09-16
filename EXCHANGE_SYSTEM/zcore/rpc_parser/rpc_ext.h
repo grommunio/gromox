@@ -504,6 +504,12 @@ typedef struct _REQ_SETPASSWD {
 	char *new_passwd;
 } REQ_SETPASSWD;
 
+typedef struct _REQ_LINKMESSAGE {
+	GUID hsession;
+	BINARY search_entryid;
+	BINARY message_entryid;
+} REQ_LINKMESSAGE;
+
 typedef union _REQUEST_PAYLOAD {
 	REQ_LOGON logon;
 	REQ_CHECKSESSION checksession;
@@ -588,6 +594,7 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_VCFTOMESSAGE vcftomessage;
 	REQ_GETUSERAVAILABILITY getuseravailability;
 	REQ_SETPASSWD setpasswd;
+	REQ_LINKMESSAGE linkmessage;
 } REQUEST_PAYLOAD;
 
 typedef struct _RPC_REQUEST {

@@ -212,6 +212,9 @@ static zend_function_entry mapi_functions[] = {
 	
 	ZEND_FE(nsp_getuserinfo, NULL)
 	ZEND_FE(nsp_setuserpasswd, NULL)
+	
+	ZEND_FE(mapi_linkmessage, NULL)
+	
 	{NULL, NULL, NULL}
 };
 
@@ -6103,6 +6106,42 @@ ZEND_FUNCTION(nsp_setuserpasswd)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
+	return;
+THROW_EXCEPTION:
+	if (MAPI_G(exceptions_enabled)) {
+		zend_throw_exception(MAPI_G(exception_ce),
+			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
+	}
+	RETVAL_FALSE;
+}
+
+ZEND_FUNCTION(mapi_linkmessage)
+{
+	zval *pzresource;
+	BINARY search_entryid;
+	BINARY message_entryid;
+	
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rss",
+		&pzresource, &search_entryid.pb, &search_entryid.cb, ||
+		&message_entryid.pb, &message_entryid.cb) == FAILURE ||
+		NULL == pzresource || NULL == search_entryid.pb ||
+		NULL == message_entryid.pb) {
+		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		goto THROW_EXCEPTION;
+	}
+	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
+		&pzresource, -1, name_mapi_session, le_mapi_session);
+	if (MAPI_SESSION != psession->type) {
+		MAPI_G(hr) = EC_INVALID_OBJECT;
+		goto THROW_EXCEPTION;
+	}
+	result = zarafa_client_linkmessage(psession->hsession,
+						search_entryid, message_entryid);
+	if (EC_SUCCESS != result) {
+		MAPI_G(hr) = result;
+		goto THROW_EXCEPTION;
+	}
+	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {

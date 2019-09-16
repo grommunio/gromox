@@ -172,6 +172,8 @@ ZEND_FUNCTION(kc_session_restore);
 ZEND_FUNCTION(nsp_getuserinfo);
 ZEND_FUNCTION(nsp_setuserpasswd);
 
+ZEND_FUNCTION(mapi_linkmessage);
+
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry
 

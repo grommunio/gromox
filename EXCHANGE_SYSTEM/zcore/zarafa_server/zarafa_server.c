@@ -7739,3 +7739,62 @@ uint32_t zarafa_server_setpasswd(const char *username,
 	}
 	return EC_SUCCESS;
 }
+
+uint32_t zarafa_server_linkmessage(GUID hsession,
+	BINARY search_entryid, BINARY message_entryid)
+{
+	BOOL b_result;
+	BOOL b_private;
+	BOOL b_private1;
+	uint32_t handle;
+	USER_INFO *pinfo;
+	char maildir[256];
+	uint8_t mapi_type;
+	uint64_t folder_id;
+	uint64_t message_id;
+	uint32_t account_id;
+	uint32_t account_id1;
+	STORE_OBJECT *pstore;
+	
+	if (EITLT_PRIVATE_FOLDER != common_util_get_messaging_entryid_type(
+		search_entryid) || FALSE == common_util_from_folder_entryid(
+		search_entryid, &b_private, &account_id, &folder_id) ||
+		TRUE != b_private) {
+		return EC_INVALID_PARAMETER;
+	}
+	if (EITLT_PRIVATE_MESSAGE != common_util_get_messaging_entryid_type(
+		message_entryid) || FALSE == common_util_from_folder_entryid(
+		message_entryid, &b_private1, &account_id1, &message_id) ||
+		TRUE != b_private) {
+		return EC_INVALID_PARAMETER;	
+	}
+	if ((b_private != b_private1) || (account_id != account_id1)) {
+		return EC_INVALID_PARAMETER;
+	}
+	pinfo = zarafa_server_query_session(hsession);
+	if (NULL == pinfo) {
+		return EC_ERROR;
+	}
+	handle = object_tree_get_store_handle(
+		pinfo->ptree, b_private, account_id);
+	if (INVALID_HANDLE == handle) {
+		zarafa_server_put_user_info(pinfo);
+		return EC_NULL_OBJECT;
+	}
+	if (account_id != pinfo->user_id) {
+		zarafa_server_put_user_info(pinfo);
+		return EC_ACCESS_DENIED;
+	}
+	pstore = object_tree_get_object(pinfo->ptree, handle, &mapi_type);
+	if (NULL == pstore || MAPI_STORE != mapi_type) {
+		zarafa_server_put_user_info(pinfo);
+		return EC_ERROR;
+	}
+	strcpy(maildir, store_object_get_dir(pstore));
+	zarafa_server_put_user_info(pinfo);
+	if (FALSE == exmdb_client_link_message(maildir, pinfo->cpid,
+		folder_id, message_id, &b_result) || FALSE == b_result) {
+		return EC_ERROR;	
+	}
+	return EC_SUCCESS;
+}

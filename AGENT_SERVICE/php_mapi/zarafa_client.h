@@ -271,4 +271,7 @@ uint32_t zarafa_client_getuseravailability(GUID hsession,
 uint32_t zarafa_client_setpasswd(const char *username,
 	const char *passwd, const char *new_passwd);
 
+uint32_t zarafa_client_linkmessage(GUID hsession,
+	BINARY search_entryid, BINARY message_entryid);
+
 #endif /* _H_ZARAFA_CLIENT_ */

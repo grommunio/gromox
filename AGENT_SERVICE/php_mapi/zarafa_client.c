@@ -1678,3 +1678,19 @@ uint32_t zarafa_client_setpasswd(const char *username,
 	}
 	return response.result;
 }
+
+uint32_t zarafa_client_linkmessage(GUID hsession,
+	BINARY search_entryid, BINARY message_entryid)
+{
+	RPC_REQUEST request;
+	RPC_RESPONSE response;
+	
+	request.call_id = CALL_ID_LINKMESSAGE;
+	request.payload.linkmessage.hsession = hsession;
+	request.payload.linkmessage.search_entryid = search_entryid;
+	request.payload.linkmessage.message_entryid = message_entryid;
+	if (!zarafa_client_do_rpc(&request, &response)) {
+		return EC_RPC_FAIL;
+	}
+	return response.result;
+}

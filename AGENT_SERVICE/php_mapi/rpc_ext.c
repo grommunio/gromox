@@ -1564,6 +1564,18 @@ static zend_bool rpc_ext_push_setpasswd_request(
 	return ext_pack_push_string(pctx, ppayload->setpasswd.new_passwd);
 }
 
+static zend_bool rpc_ext_push_linkmessage_request(
+	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+{
+	if (!ext_pack_push_guid(pctx, ppayload->linkmessage.hsession)) {
+		return 0;
+	}
+	if (!ext_pack_push_binary(pctx, ppayload->linkmessage.search_entryid)) {
+		return 0;
+	}
+	return ext_pack_push_binary(pctx, ppayload->linkmessage.message_entryid);
+}
+
 zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	BINARY *pbin_out)
 {
@@ -1914,6 +1926,10 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 		b_result = rpc_ext_push_setpasswd_request(
 					&push_ctx, &prequest->payload);
 		break;
+	case CALL_ID_LINKMESSAGE:
+		b_result = rpc_ext_push_linkmessage_request(
+					&push_ctx, &prequest->payload);
+		break;
 	default:
 		return 0;
 	}
@@ -2143,6 +2159,8 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 		return rpc_ext_pull_getuseravailability_reponse(
 						&pull_ctx, &presponse->payload);
 	case CALL_ID_SETPASSWD:
+		return 1;
+	case CALL_ID_LINKMESSAGE:
 		return 1;
 	default:
 		return 0;
