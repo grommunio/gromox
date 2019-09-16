@@ -7751,6 +7751,7 @@ uint32_t zarafa_server_linkmessage(GUID hsession,
 	char maildir[256];
 	uint8_t mapi_type;
 	uint64_t folder_id;
+	uint64_t folder_id1;
 	uint64_t message_id;
 	uint32_t account_id;
 	uint32_t account_id1;
@@ -7763,13 +7764,10 @@ uint32_t zarafa_server_linkmessage(GUID hsession,
 		return EC_INVALID_PARAMETER;
 	}
 	if (EITLT_PRIVATE_MESSAGE != common_util_get_messaging_entryid_type(
-		message_entryid) || FALSE == common_util_from_folder_entryid(
-		message_entryid, &b_private1, &account_id1, &message_id) ||
-		TRUE != b_private) {
+		message_entryid) || FALSE == common_util_from_message_entryid(
+		message_entryid, &b_private1, &account_id1, &folder_id1,
+		&message_id) || TRUE != b_private1 || account_id != account_id1) {
 		return EC_INVALID_PARAMETER;	
-	}
-	if ((b_private != b_private1) || (account_id != account_id1)) {
-		return EC_INVALID_PARAMETER;
 	}
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
