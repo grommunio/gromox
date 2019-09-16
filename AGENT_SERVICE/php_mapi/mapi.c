@@ -6122,9 +6122,9 @@ ZEND_FUNCTION(mapi_linkmessage)
 	BINARY message_entryid;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rss",
-		&pzresource, &search_entryid.pb, &search_entryid.cb, ||
-		&message_entryid.pb, &message_entryid.cb) == FAILURE ||
-		NULL == pzresource || NULL == search_entryid.pb ||
+		&pzresource, &search_entryid.pb, &search_entryid.cb,
+		&message_entryid.pb, &message_entryid.cb) == FAILURE
+		|| NULL == pzresource || NULL == search_entryid.pb ||
 		NULL == message_entryid.pb) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
