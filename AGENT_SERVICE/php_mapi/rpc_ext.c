@@ -1567,13 +1567,13 @@ static zend_bool rpc_ext_push_setpasswd_request(
 static zend_bool rpc_ext_push_linkmessage_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	if (!ext_pack_push_guid(pctx, ppayload->linkmessage.hsession)) {
+	if (!ext_pack_push_guid(pctx, &ppayload->linkmessage.hsession)) {
 		return 0;
 	}
-	if (!ext_pack_push_binary(pctx, ppayload->linkmessage.search_entryid)) {
+	if (!ext_pack_push_binary(pctx, &ppayload->linkmessage.search_entryid)) {
 		return 0;
 	}
-	return ext_pack_push_binary(pctx, ppayload->linkmessage.message_entryid);
+	return ext_pack_push_binary(pctx, &ppayload->linkmessage.message_entryid);
 }
 
 zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
