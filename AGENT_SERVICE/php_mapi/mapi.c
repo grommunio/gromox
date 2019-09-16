@@ -6123,7 +6123,7 @@ ZEND_FUNCTION(mapi_linkmessage)
 	BINARY message_entryid;
 	MAPI_RESOURCE *psession;
 	
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rss",
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|ss",
 		&pzresource, &search_entryid.pb, &search_entryid.cb,
 		&message_entryid.pb, &message_entryid.cb) == FAILURE
 		|| NULL == pzresource || NULL == search_entryid.pb ||
