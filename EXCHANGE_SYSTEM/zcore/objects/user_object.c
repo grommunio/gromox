@@ -30,6 +30,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	AB_BASE *pbase;
 	USER_INFO *pinfo;
 	SIMPLE_TREE_NODE *pnode;
+	static uint32_t fake_type = OBJECT_USER;
 	
 	pbase = ab_tree_get_base(puser->base_id);
 	if (NULL == pbase) {
@@ -38,7 +39,19 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	pnode = ab_tree_minid_to_node(pbase, puser->minid);
 	if (NULL == pnode) {
 		ab_tree_put_base(pbase);
-		ppropvals->count = 0;
+		if (common_util_index_proptags(pproptags,
+			PROP_TAG_OBJECTTYPE) >= 0) {
+			ppropvals->count = 1;
+			ppropvals->ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL));
+			if (NULL == ppropvals->ppropval) {
+				return FALSE;
+			}
+			ppropvals->ppropval->proptag = PROP_TAG_OBJECTTYPE;
+			ppropvals->ppropval->pvalue = &fake_type;
+		} else {
+			ppropvals->count = 0;
+			ppropvals->ppropval = NULL;
+		}
 		return TRUE;
 	}
 	ppropvals->ppropval = common_util_alloc(
