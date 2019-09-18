@@ -68,22 +68,24 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				ab_tree_get_minid_value(puser->minid, username))) {
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_SMTPADDRESS) >= 0) {
-					ppropvals->ppropval[count].proptag =
-									PROP_TAG_SMTPADDRESS;
-					ppropvals->ppropval[count].pvalue =
-								common_util_dup(username);
-					if (NULL == ppropvals->ppropval[count].pvalue) {
+					ppropvals->ppropval[ppropvals->count].proptag =
+												PROP_TAG_SMTPADDRESS;
+					ppropvals->ppropval[ppropvals->count].pvalue =
+										common_util_dup(username);
+					if (NULL == ppropvals->ppropval[
+						ppropvals->count].pvalue) {
 						return FALSE;
 					}
 					ppropvals->count = ++;
 				}
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_ACCOUNT) >= 0) {
-					ppropvals->ppropval[count].proptag =
-										PROP_TAG_ACCOUNT;
-					ppropvals->ppropval[count].pvalue =
-								common_util_dup(username);
-					if (NULL == ppropvals->ppropval[count].pvalue) {
+					ppropvals->ppropval[ppropvals->count].proptag =
+													PROP_TAG_ACCOUNT;
+					ppropvals->ppropval[ppropvals->count].pvalue =
+										common_util_dup(username);
+					if (NULL == ppropvals->ppropval[
+						ppropvals->count].pvalue) {
 						return FALSE;
 					}
 					ppropvals->count = ++;
