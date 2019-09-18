@@ -112,7 +112,7 @@ MAIN_PRIVILEGE			user\ privilege
 OPTION_POP3_IMAP		allow\ pop3\ or\ imap\ downloading
 OPTION_SMTP			allow\ smtp\ sending
 OPTION_CHGPASSWD		allow\ change\ password
-OPTION_PUBADDR			public\ user\ information(if\ you\ hide\ user\ information,\ user\ will\ not\ be\ able\ to\ setup\ outlook\ anywhere\ account)
+OPTION_PUBADDR			public\ user\ information(to\ hide\ information,\ user\ will\ not\ be\ able\ to\ setup\ outlook\ anywhere\ account)
 OPTION_NETDISK			net\ disk
 MSGERR_NULL_PASSWORD	password\ cannot\ be\ null,\ please\ input\ password
 MSGERR_PASSWORD_LEN		please\ make\ the\ password\ string\ length\ less\ than\ 32

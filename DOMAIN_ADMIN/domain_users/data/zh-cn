@@ -107,7 +107,7 @@ MAIN_PRIVILEGE			用户权限
 OPTION_POP3_IMAP		允许POP3或IMAP下载
 OPTION_SMTP			允许SMTP外发
 OPTION_CHGPASSWD		允许更改密码
-OPTION_PUBADDR			用户信息公开(如选择不公开信息，可能会影响outlook\ anywhere账户设置)
+OPTION_PUBADDR			用户信息公开\ (隐藏信息，将会影响outlook\ anywhere账户设置)
 OPTION_NETDISK			网络硬盘
 MSGERR_NULL_PASSWORD	密码不能为空，请输入密码
 MSGERR_PASSWORD_LEN		请将密码控制在32个字符以内
