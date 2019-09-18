@@ -59,7 +59,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 											PROP_TAG_OBJECTTYPE;
 				ppropvals->ppropval[ppropvals->count].pvalue =
 													&fake_type;
-				ppropvals->count = ++;
+				ppropvals->count ++;
 			}
 			if ((common_util_index_proptags(pproptags,
 				PROP_TAG_SMTPADDRESS) >= 0 ||
@@ -78,7 +78,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 						ppropvals->count].pvalue) {
 						return FALSE;
 					}
-					ppropvals->count = ++;
+					ppropvals->count ++;
 				}
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_ACCOUNT) >= 0) {
@@ -90,7 +90,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 						ppropvals->count].pvalue) {
 						return FALSE;
 					}
-					ppropvals->count = ++;
+					ppropvals->count ++;
 				}
 			}
 		} else {
