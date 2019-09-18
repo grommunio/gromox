@@ -8,8 +8,8 @@
 typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
 
-static int paragraph_filter(int action, int context_ID,
-	MAIL_BLOCK* mail_blk, char* reason, int length);
+static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
+    CONNECTION *pconnection, char *reason, int length);
 
 DECLARE_API;
 
@@ -53,11 +53,10 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		printf("[property_011]: return string is %s\n", g_return_string);
 		config_file_free(pconfig_file);
-        if (FALSE == register_filter("application/vnd.ms-excel",
-			paragraph_filter) || FALSE == register_filter(
-			"application/msword", paragraph_filter)) {
-			return FALSE;
-		}
+         /* invoke register_auditor for registering auditor of mail */
+        if (FALSE == register_auditor(mail_boundary)) {
+            return FALSE;
+        }
         return TRUE;
     case PLUGIN_FREE:
         return TRUE;
@@ -65,69 +64,45 @@ BOOL AS_LibMain(int reason, void **ppdata)
     return TRUE;
 }
 
-static int paragraph_filter(int action, int context_ID,
-	MAIL_BLOCK* mail_blk, char* reason, int length)
+static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
+    CONNECTION *pconnection, char *reason, int length)
 {
-	int tag_len;
-	int val_len;
+	int i;
+	char *ptr;
 	int tmp_len;
-	char tmp_buff[1024];
-	MAIL_ENTITY mail_entity;
+	char buff[1024];
 	
-	switch (action) {
-	case ACTION_BLOCK_NEW:
-		return MESSAGE_ACCEPT;
-	case ACTION_BLOCK_PROCESSING:
-		mail_entity	= get_mail_entity(context_ID);
-		if (MULTI_PARTS_MAIL != mail_entity.phead->mail_part) {
-			return MESSAGE_ACCEPT;
-		}
-		if (TRUE == mail_entity.penvelop->is_outbound ||
-			TRUE == mail_entity.penvelop->is_relay) {
-			return MESSAGE_ACCEPT;
-		}
-		if (0 != mem_file_get_total_length(
-			&mail_entity.phead->f_xmailer)) {
-			return MESSAGE_ACCEPT;
-		}
-		while (MEM_END_OF_FILE != mem_file_read(
-			&mail_entity.phead->f_others, &tag_len,
-			sizeof(int))) {
-			if (8 == tag_len) {
-				mem_file_read(&mail_entity.phead->f_others,
-										tmp_buff, tag_len);
-				if (0 == strncasecmp("Received", tmp_buff, 8)) {
-					return MESSAGE_ACCEPT;
-				}
-			} else {
-				mem_file_seek(&mail_entity.phead->f_others,
-					MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
-			}
-			mem_file_read(&mail_entity.phead->f_others,
-				&val_len, sizeof(int));
-			mem_file_seek(&mail_entity.phead->f_others,
-				MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
-		}
-		tmp_len = mem_file_read(&mail_entity.phead->f_content_type,
-													tmp_buff, 1024);
-		if (MEM_END_OF_FILE == tmp_len || NULL == search_string(
-			tmp_buff, "boundary=\"----=_NextPart_000_", tmp_len)) {
-			return MESSAGE_ACCEPT;
-		}
-		if (TRUE == check_tagging(mail_entity.penvelop->from,
-			&mail_entity.penvelop->f_rcpt_to)) {
-			mark_context_spam(context_ID);
-			return MESSAGE_ACCEPT;
-		} else {
-			if (NULL != spam_statistic) {
-				spam_statistic(SPAM_STATISTIC_PROPERTY_011);
-			}
-			strncpy(reason, g_return_string, length);
-			return MESSAGE_REJECT;
-		}
-		return MESSAGE_ACCEPT;
-	case ACTION_BLOCK_FREE:
+	if (TRUE == pmail->penvelop->is_outbound ||
+		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
-	return MESSAGE_ACCEPT;	
+	if (mem_file_get_total_length(&pmail->phead->f_xmailer) > 0) {
+		return MESSAGE_ACCEPT;
+	}
+	tmp_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
+	if (MEM_END_OF_FILE == tmp_len) {   /* no content type */
+		return MESSAGE_ACCEPT;
+	}
+	ptr = search_string(buff, "boundary=\"------------", tmp_len);
+	if (NULL == ptr || '"' != ptr[46]) {
+		return MESSAGE_ACCEPT;
+	}
+	ptr += 22;
+	for (i=0; i<24; i++) {
+		if ('0' <= ptr[i] && ptr[i] <= '9') {
+			continue;
+		}
+		return MESSAGE_ACCEPT;
+	}
+	if (TRUE == check_tagging(pmail->penvelop->from,
+		&pmail->penvelop->f_rcpt_to)) {
+		mark_context_spam(context_ID);
+		return MESSAGE_ACCEPT;
+	} else {
+		if (NULL != spam_statistic) {
+			spam_statistic(SPAM_STATISTIC_PROPERTY_011);
+		}
+		strncpy(reason, g_return_string, length);
+		return MESSAGE_REJECT;
+	}
 }
