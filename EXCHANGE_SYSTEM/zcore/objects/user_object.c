@@ -1,3 +1,4 @@
+#include "system_services.h"
 #include "zarafa_server.h"
 #include "user_object.h"
 #include "common_util.h"
@@ -29,6 +30,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	void *pvalue;
 	AB_BASE *pbase;
 	USER_INFO *pinfo;
+	char username[256];
 	SIMPLE_TREE_NODE *pnode;
 	static uint32_t fake_type = OBJECT_USER;
 	
@@ -40,14 +42,53 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	if (NULL == pnode) {
 		ab_tree_put_base(pbase);
 		if (common_util_index_proptags(pproptags,
-			PROP_TAG_OBJECTTYPE) >= 0) {
-			ppropvals->count = 1;
-			ppropvals->ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL));
+			PROP_TAG_OBJECTTYPE) >= 0 ||
+			common_util_index_proptags(pproptags,
+			PROP_TAG_SMTPADDRESS) >= 0 ||
+			common_util_index_proptags(pproptags,
+			PROP_TAG_ACCOUNT) >= 0) {
+			ppropvals->count = 0;
+			ppropvals->ppropval = common_util_alloc(
+							3*sizeof(TAGGED_PROPVAL));
 			if (NULL == ppropvals->ppropval) {
 				return FALSE;
 			}
-			ppropvals->ppropval->proptag = PROP_TAG_OBJECTTYPE;
-			ppropvals->ppropval->pvalue = &fake_type;
+			if (common_util_index_proptags(pproptags,
+				PROP_TAG_OBJECTTYPE) >= 0) {
+				ppropvals->ppropval[count].proptag = PROP_TAG_OBJECTTYPE;
+				ppropvals->ppropval[count].pvalue = &fake_type;
+				ppropvals->count = ++;
+			}
+			if ((common_util_index_proptags(pproptags,
+				PROP_TAG_SMTPADDRESS) >= 0 ||
+				common_util_index_proptags(pproptags,
+				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
+				== ab_tree_get_minid_type(puser->minid) &&
+				TRUE == system_services_get_username_from_id(
+				ab_tree_get_minid_value(puser->minid, username))) {
+				if (common_util_index_proptags(pproptags,
+					PROP_TAG_SMTPADDRESS) >= 0) {
+					ppropvals->ppropval[count].proptag =
+									PROP_TAG_SMTPADDRESS;
+					ppropvals->ppropval[count].pvalue =
+								common_util_dup(username);
+					if (NULL == ppropvals->ppropval[count].pvalue) {
+						return FALSE;
+					}
+					ppropvals->count = ++;
+				}
+				if (common_util_index_proptags(pproptags,
+					PROP_TAG_ACCOUNT) >= 0) {
+					ppropvals->ppropval[count].proptag =
+										PROP_TAG_ACCOUNT;
+					ppropvals->ppropval[count].pvalue =
+								common_util_dup(username);
+					if (NULL == ppropvals->ppropval[count].pvalue) {
+						return FALSE;
+					}
+					ppropvals->count = ++;
+				}
+			}
 		} else {
 			ppropvals->count = 0;
 			ppropvals->ppropval = NULL;

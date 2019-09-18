@@ -75,6 +75,10 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length);
 
 uint32_t ab_tree_make_minid(uint8_t type, int value);
 
+uint8_t ab_tree_get_minid_type(uint32_t minid);
+
+int ab_tree_get_minid_value(uint32_t minid);
+
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid);
 
 SIMPLE_TREE_NODE* ab_tree_guid_to_node(

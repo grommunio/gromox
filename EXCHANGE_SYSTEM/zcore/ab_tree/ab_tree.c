@@ -113,7 +113,7 @@ uint32_t ab_tree_make_minid(uint8_t type, int value)
 	return minid;
 }
 
-static uint8_t ab_tree_get_minid_type(uint32_t minid)
+uint8_t ab_tree_get_minid_type(uint32_t minid)
 {
 	uint8_t type;
 	
@@ -127,7 +127,7 @@ static uint8_t ab_tree_get_minid_type(uint32_t minid)
 	return type;
 }
 
-static int ab_tree_get_minid_value(uint32_t minid)
+int ab_tree_get_minid_value(uint32_t minid)
 {
 	if (0 == (minid & 0x80000000)) {
 		return minid;
