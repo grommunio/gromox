@@ -1,4 +1,5 @@
 #include "as_common.h"
+#include "/mail_func.h"
 #include "config_file.h"
 #include "util.h"
 #include <time.h>
