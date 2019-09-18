@@ -41,6 +41,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	pnode = ab_tree_minid_to_node(pbase, puser->minid);
 	if (NULL == pnode) {
 		ab_tree_put_base(pbase);
+		/* if user is hidden from addressbook tree, we simply
+			return the necessary information to the caller */
 		if (common_util_index_proptags(pproptags,
 			PROP_TAG_OBJECTTYPE) >= 0 ||
 			common_util_index_proptags(pproptags,
