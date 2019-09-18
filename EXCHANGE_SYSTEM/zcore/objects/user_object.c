@@ -55,8 +55,10 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			}
 			if (common_util_index_proptags(pproptags,
 				PROP_TAG_OBJECTTYPE) >= 0) {
-				ppropvals->ppropval[count].proptag = PROP_TAG_OBJECTTYPE;
-				ppropvals->ppropval[count].pvalue = &fake_type;
+				ppropvals->ppropval[ppropvals->count].proptag =
+											PROP_TAG_OBJECTTYPE;
+				ppropvals->ppropval[ppropvals->count].pvalue =
+													&fake_type;
 				ppropvals->count = ++;
 			}
 			if ((common_util_index_proptags(pproptags,
@@ -65,7 +67,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
 				== ab_tree_get_minid_type(puser->minid) &&
 				TRUE == system_services_get_username_from_id(
-				ab_tree_get_minid_value(puser->minid, username))) {
+				ab_tree_get_minid_value(puser->minid), username)) {
 				if (common_util_index_proptags(pproptags,
 					PROP_TAG_SMTPADDRESS) >= 0) {
 					ppropvals->ppropval[ppropvals->count].proptag =
