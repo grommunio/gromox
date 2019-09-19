@@ -4,8 +4,8 @@
 		if (!isset($_SESSION['USER_HOME'])) {
 			die("illegal post method!");
 		}
-		$n_width = 200;
-		$n_height = 200;
+		$n_width = 144;
+		$n_height = 144;
 		$tsrc = $_SESSION['USER_HOME'] . "/config/portrait.jpg";
 		if ($_FILES['userfile']['type'] == "image/gif") {
 			$im = imagecreatefromgif($_FILES['userfile']['tmp_name']);
