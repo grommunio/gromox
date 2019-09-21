@@ -1837,7 +1837,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 			break;
 		case PROP_TAG_THUMBNAILPHOTO:
 			if (TRUE == pstore->b_private) {
-				sprintf(temp_path, "%s/config/portrait.jpg");
+				sprintf(temp_path, "%s/config/portrait.jpg", pstore->dir);
 				fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 				if (-1 != fd) {
 					write(fd, ((BINARY*)ppropvals->ppropval[i].pvalue)->pb,
