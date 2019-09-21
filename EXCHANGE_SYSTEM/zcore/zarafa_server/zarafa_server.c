@@ -7743,6 +7743,7 @@ uint32_t zarafa_server_setpasswd(const char *username,
 uint32_t zarafa_server_linkmessage(GUID hsession,
 	BINARY search_entryid, BINARY message_entryid)
 {
+	uint32_t cpid;
 	BOOL b_result;
 	BOOL b_private;
 	BOOL b_private1;
@@ -7789,8 +7790,9 @@ uint32_t zarafa_server_linkmessage(GUID hsession,
 		return EC_ERROR;
 	}
 	strcpy(maildir, store_object_get_dir(pstore));
+	cpid = pinfo->cpid;
 	zarafa_server_put_user_info(pinfo);
-	if (FALSE == exmdb_client_link_message(maildir, pinfo->cpid,
+	if (FALSE == exmdb_client_link_message(maildir, cpid,
 		folder_id, message_id, &b_result) || FALSE == b_result) {
 		return EC_ERROR;	
 	}

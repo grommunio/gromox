@@ -1739,9 +1739,10 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 BOOL store_object_set_properties(STORE_OBJECT *pstore,
 	const TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
+	int i, fd;
 	USER_INFO *pinfo;
 	const char *plang;
+	char temp_path[256];
 	char *folder_lang[RES_TOTAL_NUM];
 	
 	pinfo = zarafa_server_get_info();
@@ -1832,6 +1833,17 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 			if (TRUE == pstore->b_private) {
 				system_services_set_timezone(pstore->account,
 							ppropvals->ppropval[i].pvalue);
+			}
+			break;
+		case PROP_TAG_THUMBNAILPHOTO:
+			if (TRUE == pstore->b_private) {
+				sprintf(temp_path, "%s/config/portrait.jpg");
+				fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+				if (-1 != fd) {
+					write(fd, ((BINARY*)ppropvals->ppropval[i].pvalue)->pb,
+						((BINARY*)ppropvals->ppropval[i].pvalue)->cb);
+					close(fd);
+				}
 			}
 			break;
 		default:
