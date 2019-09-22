@@ -2573,7 +2573,7 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 		sprintf(temp_path, "%s/config", path_buff);
 		mkdir(temp_path, 0777);
 		sprintf(temp_path, "%s/config/portrait.jpg", path_buff);
-		sprintf(temp_path1, "%s/%d.jpg", g_thumbnail_path, srand(time(NULL)%100 + 1));
+		sprintf(temp_path1, "%s/%d.jpg", g_thumbnail_path, srand(time(NULL))%100 + 1);
 		upload_ui_copy_file(temp_path1, temp_path);
 		strcpy(temp_buff, "{\"size\":0,\"files\":0}");
 		memset(temp_buff + 20, ' ', 512 - 20);
