@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 		str_value = "http://www.gridware.com.cn";
 	}
 	sprintf(lang_path, "%s/%s/group_users", work_path, data_path);
-	sprintf(thumbnail_path, "%s/%s/thumbnail");
+	sprintf(thumbnail_path, "%s/%s/thumbnail", work_path, data_path);
 	list_ui_init(list_path, max_file, str_value, lang_path, thumbnail_path);
 	config_file_free(pconfig);
 	

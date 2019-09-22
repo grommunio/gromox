@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 		str_value = "http://www.gridware.com.cn";
 	}
 	sprintf(lang_path, "%s/%s/domain_binput", work_path, data_path);
-	sprintf(thumbnail_path, "%s/%s/thumbnail");
+	sprintf(thumbnail_path, "%s/%s/thumbnail", work_path, data_path);
 	upload_ui_init(list_path, max_file, str_value, mysql_host, mysql_port,
 		mysql_user, mysql_passwd, db_name, lang_path, thumbnail_path);
 	config_file_free(pconfig);
