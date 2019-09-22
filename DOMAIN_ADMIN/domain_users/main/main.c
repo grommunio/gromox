@@ -27,6 +27,7 @@ int main(int argc, char **argv)
 	char list_path[256];
 	char lang_path[256];
 	char session_ip[16];
+	char thumbnail_path[256];
 	int locker_port;
 	int session_port, max_file;
 	int max_interval;
@@ -164,7 +165,8 @@ int main(int argc, char **argv)
 		str_value = "http://www.gridware.com.cn";
 	}
 	sprintf(lang_path, "%s/%s/domain_users", work_path, data_path);
-	list_ui_init(list_path, max_file, str_value, lang_path);
+	sprintf(thumbnail_path, "%s/%s/thumbnail");
+	list_ui_init(list_path, max_file, str_value, lang_path, thumbnail_path);
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {

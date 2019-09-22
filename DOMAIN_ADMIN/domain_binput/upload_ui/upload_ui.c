@@ -289,11 +289,12 @@ static char *g_password;
 static char g_password_buff[256];
 static char g_db_name[256];
 static char g_resource_path[256];
+static char g_thumbnail_path[256];
 static LANG_RESOURCE *g_lang_resource;
 
 void upload_ui_init(const char *list_path, int max_file, const char *url_link,
 	const char *host, int port, const char *user, const char *password,
-	const char *db_name, const char *resource_path)
+	const char *db_name, const char *resource_path, const char *thumbnail_path)
 {
 	g_max_file = max_file;
 	strcpy(g_list_path, list_path);
@@ -309,6 +310,7 @@ void upload_ui_init(const char *list_path, int max_file, const char *url_link,
 	}
 	strcpy(g_db_name, db_name);
 	strcpy(g_resource_path, resource_path);
+	strcpy(g_thumbnail_path, thumbnail_path);
 }
 
 
@@ -2285,6 +2287,40 @@ static void upload_ui_unencode(char *src, char *last, char *dest)
 	*++dest = '\0';
 }
 
+static void upload_ui_copy_file(const char *src_file, const char *dst_file)
+{
+	int fd;
+	char *pbuff;
+	struct stat node_stat;
+
+	if (0 != stat(src_file, &node_stat)) {
+		return;
+	}
+	pbuff = malloc(node_stat.st_size);
+	if (NULL == pbuff) {
+		return;
+	}
+	fd = open(src_file, O_RDONLY);
+	if (-1 == fd) {
+		free(pbuff);
+		return;
+	}
+	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
+		free(pbuff);
+		close(fd);
+		return;
+	}
+	close(fd);
+	fd = open(dst_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
+	if (-1 == fd) {
+		free(pbuff);
+		return;
+	}
+	write(fd, pbuff, node_stat.st_size);
+	free(pbuff);
+	close(fd);
+}
+
 static BOOL upload_ui_allocate_dir(const char *media_area,
 	char *path_buff, int max_size, int max_file)
 {
@@ -2536,6 +2572,9 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 		mkdir(temp_path, 0777);
 		sprintf(temp_path, "%s/config", path_buff);
 		mkdir(temp_path, 0777);
+		sprintf(temp_path, "%s/config/portrait.jpg", path_buff);
+		sprintf(temp_path1, "%s/%d.jpg", g_thumbnail_path, srand(time(NULL)%100 + 1);
+		upload_ui_copy_file(temp_path1, temp_path);
 		strcpy(temp_buff, "{\"size\":0,\"files\":0}");
 		memset(temp_buff + 20, ' ', 512 - 20);
 		sprintf(temp_path, "%s/disk/index", path_buff);

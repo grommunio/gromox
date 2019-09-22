@@ -26,6 +26,7 @@ int main(int argc, char **argv)
 	char lang_path[256];
 	char list_path[256];
 	char session_ip[16];
+	char thumbnail_path[256];
 	int locker_port;
 	int session_port, max_file;
 	int max_interval;
@@ -162,8 +163,9 @@ int main(int argc, char **argv)
 		str_value = "http://www.gridware.com.cn";
 	}
 	sprintf(lang_path, "%s/%s/domain_binput", work_path, data_path);
+	sprintf(thumbnail_path, "%s/%s/thumbnail");
 	upload_ui_init(list_path, max_file, str_value, mysql_host, mysql_port,
-		mysql_user, mysql_passwd, db_name, lang_path);
+		mysql_user, mysql_passwd, db_name, lang_path, thumbnail_path);
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {
