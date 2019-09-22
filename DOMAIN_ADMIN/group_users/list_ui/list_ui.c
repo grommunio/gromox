@@ -3381,7 +3381,7 @@ static BOOL list_ui_allocate_dir(const char *media_area, char *path_buff)
 		}
 	}
 	
-	if (0 != mkdir(temp_path, 0777)) {
+	if (0 == mkdir(temp_path, 0777)) {
 		strcpy(path_buff, temp_path);
 		sprintf(temp_path, "%s/exmdb", path_buff);
 		if ('\0' != pleast_area->database[0]) {
