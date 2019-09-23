@@ -2647,7 +2647,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	SINGLE_LIST_NODE *psnode1;
 	
 	single_list_init(&temp_list);
-	if (0 == container_id) {
+	if (0xFFFFFFFF == container_id) {
 		pgal_list = &pbase->gal_list;
 		for (psnode=single_list_get_head(pgal_list); NULL!=psnode;
 			psnode=single_list_get_after(pgal_list, psnode)) {
