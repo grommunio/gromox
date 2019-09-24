@@ -152,7 +152,6 @@ static void* scan_work_func(void *param)
 			}
 			if (cur_time - pinfo->reload_time >= g_cache_interval) {
 				common_util_build_environment();
-				object_tree_free(pinfo->ptree);
 				ptree = object_tree_create(pinfo->maildir);
 				if (NULL != ptree) {
 					object_tree_free(pinfo->ptree);
