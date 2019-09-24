@@ -101,6 +101,7 @@ static void* scan_work_func(void *param)
 	time_t cur_time;
 	USER_INFO *pinfo;
 	uint8_t tmp_byte;
+	OBJECT_TREE *ptree;
 	NOTIFY_ITEM *pnitem;
 	INT_HASH_ITER *iter;
 	STR_HASH_ITER *iter1;
@@ -148,6 +149,18 @@ static void* scan_work_func(void *param)
 				if (pnode == ptail) {
 					break;
 				}
+			}
+			if (cur_time - pinfo->reload_time >= g_cache_interval) {
+				common_util_build_environment();
+				object_tree_free(pinfo->ptree);
+				ptree = object_tree_create(pinfo->maildir);
+				if (NULL != ptree) {
+					object_tree_free(pinfo->ptree);
+					pinfo->ptree = ptree;
+					pinfo->reload_time = cur_time;
+				}
+				common_util_free_environment();
+				continue;
 			}
 			if (cur_time - pinfo->last_time < g_cache_interval) {
 				if (0 != count) {
@@ -855,6 +868,7 @@ uint32_t zarafa_server_logon(const char *username,
 	strcpy(tmp_info.homedir, homedir);
 	tmp_info.flags = flags;
 	time(&tmp_info.last_time);
+	tmp_info.reload_time = tmp_info.last_time;
 	double_list_init(&tmp_info.sink_list);
 	tmp_info.ptree = object_tree_create(maildir);
 	if (NULL == tmp_info.ptree) {
@@ -4370,6 +4384,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	uint32_t hmessage, uint32_t flags, const TARRAY_SET *prcpt_list)
 {
 	int i, j;
+	BOOL b_found;
 	BINARY *pbin;
 	USER_INFO *pinfo;
 	uint32_t *prowid;
@@ -4412,14 +4427,16 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	} else if (MODRECIP_REMOVE == flags) {
 		for (i=0; i<prcpt_list->count; i++) {
 			prcpt = prcpt_list->pparray[i];
+			b_found = FALSE;
 			for (j=0; j<prcpt->count; j++) {
 				if (PROP_TAG_ROWID == prcpt->ppropval[j].proptag) {
 					prcpt->count = 1;
 					prcpt->ppropval = prcpt->ppropval + j;
+					b_found = TRUE;
 					break;
 				}
 			}
-			if (j >= prcpt->count) {
+			if (FALSE == b_found) {
 				zarafa_server_put_user_info(pinfo);
 				return EC_INVALID_PARAMETER;
 			}

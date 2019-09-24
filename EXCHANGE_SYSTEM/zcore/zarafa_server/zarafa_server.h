@@ -24,6 +24,7 @@ typedef struct _USER_INFO {
 	char homedir[256];
 	uint32_t flags;
 	time_t last_time;
+	time_t reload_time;
 	OBJECT_TREE *ptree;
 	pthread_mutex_t lock;
 	DOUBLE_LIST sink_list;
