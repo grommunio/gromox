@@ -5780,7 +5780,8 @@ EXPORT_VEVENT:
 			&ext_pull, &globalobjectid)) {
 			return FALSE;
 		}
-		if (0 == memcmp(globalobjectid.data.pb,
+		if (NULL != globalobjectid.data.pb &&
+			0 == memcmp(globalobjectid.data.pb,
 			"\x76\x43\x61\x6c\x2d\x55\x69\x64\x01\x00\x00\x00", 12)) {
 			if (globalobjectid.data.cb - 12 > sizeof(tmp_buff) - 1) {
 				memcpy(tmp_buff, globalobjectid.data.pb + 12,
