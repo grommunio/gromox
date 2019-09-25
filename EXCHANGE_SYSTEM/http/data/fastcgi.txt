@@ -1,7 +1,7 @@
 #domain(asterisk supported)	uri_path	directory	suffix(asterisk supported)	index	extra_headers	domain_socket
 *	/ews	/var/medusa/php/ews	php	index.php	X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle	/var/run/php5-fpm.sock
 *	/z-push	/usr/share/z-push	php	index.php	|	/var/run/php5-fpm.sock
-#*	/webapp	/var/kopano-webapp	php	index.php	|	/var/run/php5-fpm.sock
+#*	/webapp	/var/steep-webapp	php	index.php	|	/var/run/php5-fpm.sock
 *	/	/var/webmail/public	php	index.php	|	/var/run/php5-fpm.sock
 #*	/	/var/webapp-assist/public	php	index.php	|	/var/run/php5-fpm.sock
 *	/cgi-bin	/var/posidon/cgi-bin	*	index	|	/var/run/posidon-cgi.sock
