@@ -960,11 +960,8 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 	for (i=0; i<tmp_proptags.count; i++) {
 		switch (tmp_proptags.pproptag[i]) {
 		case PROP_TAG_MID:
-		case PROP_TAG_SUBJECT:
 		case PROP_TAG_ASSOCIATED:
 		case PROP_TAG_CHANGENUMBER:
-		case PROP_TAG_SUBJECTPREFIX:
-		case PROP_TAG_NORMALIZEDSUBJECT:
 			continue;
 		default:
 			pproptags->pproptag[pproptags->count] =
