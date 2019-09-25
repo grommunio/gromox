@@ -3,4 +3,5 @@
 *								/data/script		/var/posidon/data/script
 *								/data/picture		/var/posidon/data/picture
 *								/html				/var/posidon/html
+*								/webapp				/var/kopano-webapp
 *								/					/var/webmail/public
