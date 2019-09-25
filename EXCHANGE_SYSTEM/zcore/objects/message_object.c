@@ -809,7 +809,7 @@ BOOL message_object_get_rowid_begin(
 {
 	int i;
 	int last_rowid;
-	uint32_t *prow_id;
+	int32_t *prow_id;
 	TARRAY_SET tmp_set;
 	
 	if (FALSE == exmdb_client_get_message_instance_rcpts(
