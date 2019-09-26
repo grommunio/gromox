@@ -127,8 +127,6 @@ typedef struct _RPC_OUT_CHANNEL {
 	int					channel_stat;
 } RPC_OUT_CHANNEL;
 
-BOOL http_parser_parse_uri(const char *uri_buff, char *parsed_uri);
-
 void http_parser_init(int context_num, unsigned int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,

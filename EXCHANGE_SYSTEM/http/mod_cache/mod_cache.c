@@ -701,7 +701,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	mem_file_read(&phttp->request.f_request_uri, tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
-	if (FALSE == http_parser_parse_uri(tmp_buff, request_uri)) {
+	if (FALSE == parse_uri(tmp_buff, request_uri)) {
 		http_parser_log_info(phttp, 8, "request"
 				" uri format error for mod_cache");
 		return FALSE;

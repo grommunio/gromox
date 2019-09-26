@@ -9,6 +9,16 @@
 #include <ctype.h>
 
 
+enum {
+	SW_USUAL = 0,
+	SW_SLASH,
+	SW_DOT,
+	SW_DOT_DOT,
+	SW_QUOTED,
+	SW_QUOTED_SECOND
+};
+
+
 /*
  *	extract ip address from buff
  *	@param
@@ -262,6 +272,214 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 	e_addr->domain[j] = '\0';
 	ltrim_string(e_addr->domain);
 	rtrim_string(e_addr->domain);
+}
+
+BOOL parse_uri(const char *uri_buff, char *parsed_uri)
+{
+	int tmp_len;
+	const char *p;
+	const char *uri_end;
+	const char *args_start;
+	int state, quoted_state;
+    char c, ch, decoded, *u;
+    
+	decoded = '\0';
+	quoted_state = SW_USUAL;
+	state = SW_USUAL;
+	p = uri_buff;
+	uri_end = uri_buff + strlen(uri_buff);
+	u = parsed_uri;
+	args_start = NULL;
+	ch = *p ++;
+	while (p <= uri_end) {
+		switch (state) {
+		case SW_USUAL:
+			if (g_uri_usual[ch >> 5] & (1U << (ch & 0x1f))) {
+				*u++ = ch;
+				ch = *p++;
+				break;
+			}
+			switch (ch) {
+			case '/':
+				state = SW_SLASH;
+				*u ++ = ch;
+				break;
+			case '%':
+				quoted_state = state;
+				state = SW_QUOTED;
+				break;
+			case '?':
+				args_start = p;
+				goto PARSE_ARGS;
+			case '#':
+				goto PARSE_DONE;
+			default:
+				*u ++ = ch;
+				break;
+			}
+			ch = *p ++;
+			break;
+		case SW_SLASH:
+			if (g_uri_usual[ch >> 5] & (1U << (ch & 0x1f))) {
+				state = SW_USUAL;
+				*u ++ = ch;
+				ch = *p ++;
+				break;
+			}
+			switch (ch) {
+			case '/':
+				/* merge slash */
+				break;
+			case '.':
+				state = SW_DOT;
+				*u ++ = ch;
+				break;
+			case '%':
+				quoted_state = state;
+				state = SW_QUOTED;
+				break;
+			case '?':
+				args_start = p;
+				goto PARSE_ARGS;
+			case '#':
+				goto PARSE_DONE;
+			default:
+				state = SW_USUAL;
+				*u ++ = ch;
+				break;
+			}
+			ch = *p ++;
+			break;
+		case SW_DOT:
+			if (g_uri_usual[ch >> 5] & (1U << (ch & 0x1f))) {
+				state = SW_USUAL;
+				*u ++ = ch;
+				ch = *p ++;
+				break;
+			}
+			switch (ch) {
+			case '/':
+				state = SW_SLASH;
+				u --;
+				break;
+			case '.':
+				state = SW_DOT_DOT;
+				*u ++ = ch;
+				break;
+			case '%':
+				quoted_state = state;
+				state = SW_QUOTED;
+				break;
+			case '?':
+				args_start = p;
+				goto PARSE_ARGS;
+			case '#':
+				goto PARSE_DONE;
+			default:
+				state = SW_USUAL;
+				*u ++ = ch;
+				break;
+			}
+			ch = *p ++;
+			break;
+		case SW_DOT_DOT:
+			if (g_uri_usual[ch >> 5] & (1U << (ch & 0x1f))) {
+				state = SW_USUAL;
+				*u ++ = ch;
+				ch = *p ++;
+				break;
+			}
+			switch (ch) {
+			case '/':
+				state = SW_SLASH;
+				u -= 5;
+				for ( ;; ) {
+					if (u < parsed_uri) {
+						return FALSE;
+					}
+					if ('/' == *u) {
+						u ++;
+						break;
+					}
+					u --;
+				}
+				break;
+			case '%':
+				quoted_state = state;
+				state = SW_QUOTED;
+				break;
+			case '?':
+				args_start = p;
+				goto PARSE_ARGS;
+			case '#':
+				goto PARSE_DONE;
+			default:
+				state = SW_USUAL;
+				*u ++ = ch;
+				break;
+			}
+			ch = *p ++;
+			break;
+		case SW_QUOTED:
+			if (ch >= '0' && ch <= '9') {
+				decoded = (uint8_t)(ch - '0');
+				state = SW_QUOTED_SECOND;
+				ch = *p ++;
+				break;
+			}
+			c = (uint8_t)(ch | 0x20);
+			if (c >= 'a' && c <= 'f') {
+				decoded = (uint8_t)(c - 'a' + 10);
+				state = SW_QUOTED_SECOND;
+				ch = *p ++;
+				break;
+			}
+			return FALSE;
+		case SW_QUOTED_SECOND:
+			if (ch >= '0' && ch <= '9') {
+				ch = (uint8_t)((decoded << 4) + (ch - '0'));
+				if ('%' == ch || '#' == ch) {
+					state = SW_USUAL;
+					*u ++ = ch;
+					ch = *p ++;
+					break;
+
+				} else if ('\0' == ch) {
+					return FALSE;
+				}
+				state = quoted_state;
+				break;
+			}
+
+			c = (uint8_t)(ch | 0x20);
+			if (c >= 'a' && c <= 'f') {
+				ch = (uint8_t) ((decoded << 4) + (c - 'a') + 10);
+				if ('?' == ch) {
+					state = SW_USUAL;
+					*u ++ = ch;
+					ch = *p ++;
+					break;
+
+				}
+				state = quoted_state;
+				break;
+			}
+			return FALSE;
+		}
+	}
+PARSE_ARGS:
+    while (p < uri_end) {
+        if (*p ++ != '#') {
+            continue;
+        }
+		tmp_len = p - args_start;
+		memcpy(u, args_start, tmp_len);
+		u += tmp_len;
+        break;
+    }
+PARSE_DONE:
+	*u = '\0';
+    return TRUE;
 }
 
 /*
