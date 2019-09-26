@@ -363,17 +363,17 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable, BOOL b_forward,
 		}
 		if (TRUE == b_forward) {
 			if (ptable->position + row_needed > rcpt_set.count) {
-				end_pos = rcpt_set.count - 1;
+				end_pos = rcpt_set.count;
 			} else {
-				end_pos = ptable->position + row_needed - 1;
+				end_pos = ptable->position + row_needed;
 			}
 			pset->count = 0;
 			pset->pparray = common_util_alloc(sizeof(void*)
-						*(end_pos - ptable->position + 1));
+							*(end_pos - ptable->position));
 			if (NULL == pset->pparray) {
 				return FALSE;
 			}
-			for (i=ptable->position; i<=end_pos; i++) {
+			for (i=ptable->position; i<end_pos; i++) {
 				pset->pparray[pset->count] = rcpt_set.pparray[i];
 				pset->count ++;
 			}
