@@ -7,15 +7,37 @@
 
 USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 {
+	AB_BASE *pbase;
 	USER_OBJECT *puser;
 	
 	puser = malloc(sizeof(USER_OBJECT));
 	if (NULL == puser) {
 		return NULL;
 	}
+	pbase = ab_tree_get_base(puser->base_id);
+	if (NULL == pbase) {
+		puser->base_id = 0;
+		puser->minid = 0;
+		return puser;
+	}
+	if (NULL == ab_tree_minid_to_node(pbase, minid)) {
+		ab_tree_put_base(pbase);
+		puser->base_id = 0;
+		puser->minid = 0;
+		return puser;
+	}
+	ab_tree_put_base(pbase);
 	puser->base_id = base_id;
 	puser->minid = minid;
 	return puser;
+}
+
+BOOL user_object_check_valid(USER_OBJECT *puser)
+{
+	if (0 == puser->base_id || 0 == puser->minid) {
+		return FALSE;
+	}
+	return TRUE;
 }
 
 void user_object_free(USER_OBJECT *puser)

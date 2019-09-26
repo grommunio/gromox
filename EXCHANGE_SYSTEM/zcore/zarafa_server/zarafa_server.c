@@ -1502,6 +1502,11 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 				zarafa_server_put_user_info(pinfo);
 				return EC_ERROR;
 			}
+			if (FALSE == user_object_check_valid(pobject)) {
+				zarafa_server_put_user_info(pinfo);
+				user_object_free(pobject);
+				return EC_NOT_FOUND;
+			}
 			if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type) {
 				*pmapi_type = MAPI_DISTLIST;
 			} else {
