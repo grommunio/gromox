@@ -42,25 +42,6 @@ typedef struct _VIRTUAL_CONNECTION {
 	HTTP_CONTEXT  *pcontext_outsucc;
 } VIRTUAL_CONNECTION;
 
-static uint32_t  g_uri_usual[] = {
-    0xffffdbfe, /* 1111 1111 1111 1111  1101 1011 1111 1110 */
-
-                /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-    0x7fff37d6, /* 0111 1111 1111 1111  0011 0111 1101 0110 */
-
-                /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-
-    0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
-
-                /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
-    0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
-
-    0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
-    0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
-    0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
-    0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
-};
-
 static int g_context_num;
 static BOOL g_async_stop;
 static BOOL g_support_ssl;
