@@ -7,26 +7,12 @@
 
 USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 {
-	AB_BASE *pbase;
 	USER_OBJECT *puser;
 	
 	puser = malloc(sizeof(USER_OBJECT));
 	if (NULL == puser) {
 		return NULL;
 	}
-	pbase = ab_tree_get_base(puser->base_id);
-	if (NULL == pbase) {
-		puser->base_id = 0;
-		puser->minid = 0;
-		return puser;
-	}
-	if (NULL == ab_tree_minid_to_node(pbase, minid)) {
-		ab_tree_put_base(pbase);
-		puser->base_id = 0;
-		puser->minid = 0;
-		return puser;
-	}
-	ab_tree_put_base(pbase);
 	puser->base_id = base_id;
 	puser->minid = minid;
 	return puser;
@@ -34,7 +20,16 @@ USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 
 BOOL user_object_check_valid(USER_OBJECT *puser)
 {
-	if (0 == puser->base_id || 0 == puser->minid) {
+	AB_BASE *pbase;
+	SIMPLE_TREE_NODE *pnode;
+	
+	pbase = ab_tree_get_base(puser->base_id);
+	if (NULL == pbase) {
+		return FALSE;
+	}
+	pnode = ab_tree_minid_to_node(pbase, puser->minid);
+	ab_tree_put_base(pbase);
+	if (NULL == pnode) {
 		return FALSE;
 	}
 	return TRUE;
@@ -51,7 +46,6 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	int i;
 	void *pvalue;
 	AB_BASE *pbase;
-	USER_INFO *pinfo;
 	char username[256];
 	SIMPLE_TREE_NODE *pnode;
 	static uint32_t fake_type = OBJECT_USER;
@@ -129,7 +123,6 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		ab_tree_put_base(pbase);
 		return FALSE;
 	}
-	pinfo = zarafa_server_get_info();
 	if (FALSE == ab_tree_fetch_node_properties(
 		pnode, pproptags, ppropvals)) {
 		ab_tree_put_base(pbase);
