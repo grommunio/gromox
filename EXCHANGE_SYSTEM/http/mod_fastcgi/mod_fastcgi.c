@@ -101,7 +101,8 @@ static FASTCGI_NODE* mod_fastcgi_find_backend(
 			continue;
 		}
 		tmp_len = strlen(pfnode->path);
-		if (0 != strncasecmp(uri_path, pfnode->path, tmp_len)) {
+		if (0 != strncasecmp(uri_path, pfnode->path,
+			tmp_len) || '/' != uri_path[tmp_len]) {
 			continue;
 		}
 		if ('\0' == file_name[0] && '\0' == suffix[0]) {
