@@ -42,7 +42,7 @@ make && make install
 
 #build and install the whole system 
 cd STEEP_SYSTEM-master
-sh build && sh install
+sh build.sh && sh install.sh
 
 #create database
 systemctl enable mariadb
