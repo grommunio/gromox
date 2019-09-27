@@ -949,6 +949,8 @@ CONTEXT_PROCESSING:
 					goto INERTNAL_SERVER_ERROR;
 				case HPM_RETRIEVE_WRITE:
 					break;
+				case HPM_RETRIEVE_NONE:
+					return PROCESS_CONTINUE;
 				case HPM_RETRIEVE_WAIT:
 					pcontext->sched_stat = SCHED_STAT_WAIT;
 					return PROCESS_IDLE;

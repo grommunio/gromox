@@ -12,8 +12,9 @@
 
 #define HPM_RETRIEVE_ERROR			0
 #define HPM_RETRIEVE_WRITE			1
-#define HPM_RETRIEVE_WAIT			2
-#define HPM_RETRIEVE_DONE			3
+#define HPM_RETRIEVE_NONE			2
+#define HPM_RETRIEVE_WAIT			3
+#define HPM_RETRIEVE_DONE			4
 
 typedef struct _HPM_INTERFACE {
 	BOOL (*preproc)(int);
