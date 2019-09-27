@@ -71,6 +71,52 @@ ScriptAlias /cgi-bin/ "/var/www/cgi-bin/"
 ...
 </Directory>
 
+
+#add paragraph below
+
+Alias /html "/var/athena/html"
+
+<Directory "/var/athena/html">
+	Options Indexes MultiViews
+    AllowOverride None
+    Require all granted
+</Directory>
+
+Alias /data/css "/var/athena/data/css"
+
+<Directory "/var/athena/data/css">
+	Options Indexes MultiViews
+	AllowOverride None
+	Require all granted
+</Directory>
+
+
+Alias /data/script "/var/athena/data/script"
+
+<Directory "/var/athena/data/script">
+	Options Indexes MultiViews
+	AllowOverride None
+	Require all granted
+</Directory>
+
+Alias /data/picture "/var/athena/data/picture"
+
+<Directory "/var/athena/data/picture">
+	Options Indexes MultiViews
+	AllowOverride None
+	Require all granted
+</Directory>
+
+
+ScriptAlias /cgi-bin/ "/var/athena/cgi-bin/"
+
+<Directory "/var/athena/cgi-bin">
+	AllowOverride None
+	Options None
+	Require all granted
+</Directory>
+
+
 #start apache
 systemctl enable httpd
 systemctl start httpd
