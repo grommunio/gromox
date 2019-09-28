@@ -78,9 +78,6 @@ static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
 		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
-	if (mem_file_get_total_length(&pmail->phead->f_xmailer) > 0) {
-		return MESSAGE_ACCEPT;
-	}
 	tmp_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
 	if (MEM_END_OF_FILE == tmp_len) {   /* no content type */
 		return MESSAGE_ACCEPT;
