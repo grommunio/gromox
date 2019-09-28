@@ -30,7 +30,6 @@ typedef struct _PROXY_CONTEXT {
 	PROXY_NODE *pxnode;
 	int sockd;
 	time_t last_time;
-	int local_port;
 } PROXY_CONTEXT;
 
 DECLARE_API;
@@ -56,7 +55,6 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 	int item_num;
 	char *ptoken;
 	char *ptoken1;
-	char *psearch;
 	char tmp_ip[16];
 	int context_num;
 	LIST_FILE *pfile;
@@ -234,7 +232,6 @@ static BOOL proxy_preproc(int context_id)
 {
 	int tmp_len;
 	char *ptoken;
-	int local_port;
 	char domain[256];
 	PROXY_NODE *pxnode;
 	char tmp_buff[8192];
@@ -259,9 +256,6 @@ static BOOL proxy_preproc(int context_id)
 	ptoken = strchr(domain, ':');
 	if (NULL != ptoken) {
 		*ptoken = '\0';
-		local_port = atoi(ptoken + 1);
-	} else {
-		local_port = 0;
 	}
 	if (MEM_END_OF_FILE == (tmp_len = mem_file_read(
 		&prequest->f_request_uri, tmp_buff, sizeof(tmp_buff)))) {
@@ -309,7 +303,6 @@ static BOOL proxy_preproc(int context_id)
 	}
 	mem_file_write(&prequest->f_request_uri, tmp_buff, tmp_len);
 	g_context_list[context_id].pxnode = pxnode;
-	g_context_list[context_id].local_port = local_port;
 	return TRUE;
 }
 
