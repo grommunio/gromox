@@ -504,17 +504,19 @@ void upload_ui_free()
 
 static BOOL upload_ui_get_self(char *url_buff, int length)
 {
-	char *host;
-	char *script;
-	
 	host = getenv("HTTP_HOST");
 	script = getenv("SCRIPT_NAME");
+	https = getenv("HTTPS");
 	if (NULL == host || NULL == script) {
-		system_log_info("[upload_ui]: fail to get HTTP_HOST or "
-			"SCRIPT_NAME environment!");
+		system_log_info("[upload_ui]: fail to get"
+			" HTTP_HOST or SCRIPT_NAME environment!");
 		return FALSE;
 	}
-	snprintf(url_buff, length, "http://%s%s", host, script);
+	if (NULL == https || 0 != strcasecmp(https, "ON")) {
+		snprintf(url_buff, length, "http://%s%s", host, script);
+	} else {
+		snprintf(url_buff, length, "https://%s%s", host, script);
+	}
 	return TRUE;
 }
 
