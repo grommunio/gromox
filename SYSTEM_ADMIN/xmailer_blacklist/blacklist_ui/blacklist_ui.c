@@ -415,6 +415,10 @@ void blacklist_ui_free()
 
 static BOOL blacklist_ui_get_self(char *url_buff, int length)
 {
+	char *host;
+	char *https;
+	char *script;
+	
 	host = getenv("HTTP_HOST");
 	script = getenv("SCRIPT_NAME");
 	https = getenv("HTTPS");

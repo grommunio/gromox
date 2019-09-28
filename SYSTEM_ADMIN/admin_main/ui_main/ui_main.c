@@ -359,6 +359,10 @@ void ui_main_free()
 
 static BOOL ui_main_get_self(char *url_buff, int length)
 {
+	char *host;
+	char *https;
+	char *script;
+	
 	host = getenv("HTTP_HOST");
 	script = getenv("SCRIPT_NAME");
 	https = getenv("HTTPS");
