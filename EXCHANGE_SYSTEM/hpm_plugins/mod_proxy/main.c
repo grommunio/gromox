@@ -313,7 +313,7 @@ static BOOL proxy_preproc(int context_id)
 	return TRUE;
 }
 
-static int read_status(PROXY_CONTEXT *pcontext,
+static int read_header(PROXY_CONTEXT *pcontext,
 	uint8_t *pbuff, int length)
 {
 	int offset;
@@ -335,7 +335,7 @@ static int read_status(PROXY_CONTEXT *pcontext,
 			return 0;
 		}
 		offset += read_len;
-		if (NULL != memmem(pbuff, offset, "\r\n", 2)) {
+		if (NULL != memmem(pbuff, offset, "\r\n\r\n", 4)) {
 			time(&pcontext->last_time);
 			return offset;
 		}
@@ -575,7 +575,7 @@ static BOOL proxy_proc(int context_id,
 		return FALSE;
 	}
 	time(&pcontext->last_time);
-	offset = read_status(pcontext, tmp_buff, 8192);
+	offset = read_header(pcontext, tmp_buff, sizeof(tmp_buff));
 	if (0 == offset) {
 		close(pcontext->sockd);
 		pcontext->sockd = -1;
@@ -588,61 +588,31 @@ static BOOL proxy_proc(int context_id,
 		return FALSE;
 	}
 	ptoken ++;
-	ptoken1 = memmem(tmp_buff, offset, "\r\n", 2);
 	if (0 == strncmp(ptoken, "301", 3) ||
 		0 == strncmp(ptoken, "302", 3) ||
 		0 == strncmp(ptoken, "303", 3) ||
 		0 == strncmp(ptoken, "304", 3) ||
 		0 == strncmp(ptoken, "305", 3) ||
 		0 == strncmp(ptoken, "307", 3)) {
-		if (80 != pcontext->pxnode->remote_port) {
-			tmp_len = sprintf(tmp_uri, "http://%s:%d/",
-						pcontext->pxnode->remote_host,
-						pcontext->pxnode->remote_port);
-		} else {
-			tmp_len = sprintf(tmp_uri, "http://%s/",
-					pcontext->pxnode->remote_host);
-		}
-		if (0 != strncasecmp(ptoken + 4, tmp_uri, tmp_len)) {
+		ptoken = search_string(tmp_buff, "\r\nLocation:", offset);
+		if (NULL == ptoken) {
 			write_response(context_id, tmp_buff, offset);
 			return TRUE;
 		}
-		if (NULL != pcontext->pxnode->remote_path) {
-			tag_len = strlen(pcontext->pxnode->remote_path);
-			if (0 != strncmp(ptoken + 4 + tmp_len,
-				pcontext->pxnode->remote_path, tag_len) ||
-				'/' != ptoken[4 + tmp_len + tag_len]) {
-				write_response(context_id, tmp_buff, offset);
-				return TRUE;
-			}
-			memcpy(tmp_uri, ptoken, 4);
-			tmp_len = 4;
-			if (NULL == pconnection->ssl) {
-				memcpy(tmp_uri + tmp_len, "http://", 7);
-				tmp_len += 7;
-			} else {
-				memcpy(tmp_uri + tmp_len, "https://", 8);
-				tmp_len += 8;
-			}
-			if (0 == pcontext->local_port) {
-				tmp_len += sprintf(tmp_uri + tmp_len, "%s/%s%s",
-							tmp_host, pcontext->pxnode->path,
-							ptoken + 4 + tmp_len + tag_len);
-			} else {
-				tmp_len += sprintf(tmp_uri + tmp_len, "%s:%d/%s%s",
-								tmp_host, pcontext->local_port,
-								pcontext->pxnode->path,
-								ptoken + 4 + tmp_len + tag_len);
-			}
-			write_response(context_id, tmp_uri, tmp_len);
-			write_response(context_id, ptoken1,
-				tmp_buff + offset - ptoken1);
+		do {
+			ptoken ++;
+		} while (' ' == *ptoken);
+		ptoken1 = memmem(ptoken, offset - (ptoken - tmp_buff), "\r\n", 2);
+		if (NULL == ptoken1 || ptoken1 - ptoken >= sizeof(tmp_uri)) {
+			write_response(context_id, tmp_buff, offset);
 			return TRUE;
 		}
-	} else {
-		write_response(context_id, tmp_buff, offset);
-		return TRUE;
+		memcpy(tmp_uri, ptoken, ptoken1 - ptoken);
+		tmp_uri[ptoken1 - ptoken] = '\0';
+		//TODO replace redirect location with the revser proxy service
 	}
+	write_response(context_id, tmp_buff, offset);
+	return TRUE;
 }
 
 static int proxy_retr(int context_id)
