@@ -69,6 +69,10 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			common_util_index_proptags(pproptags,
 			PROP_TAG_SMTPADDRESS) >= 0 ||
 			common_util_index_proptags(pproptags,
+			PROP_TAG_ADDRESSTYPE) >= 0 ||
+			common_util_index_proptags(pproptags,
+			PROP_TAG_EMAILADDRESS) >= 0 ||
+			common_util_index_proptags(pproptags,
 			PROP_TAG_ACCOUNT) >= 0) {
 			ppropvals->count = 0;
 			ppropvals->ppropval = common_util_alloc(
@@ -84,8 +88,17 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 													&fake_type;
 				ppropvals->count ++;
 			}
+			if (common_util_index_proptags(pproptags,
+				PROP_TAG_ADDRESSTYPE) >= 0) {
+				ppropvals->ppropval[ppropvals->count].proptag =
+											PROP_TAG_ADDRESSTYPE;
+				ppropvals->ppropval[ppropvals->count].pvalue = "SMTP";
+				ppropvals->count ++;
+			}
 			if ((common_util_index_proptags(pproptags,
 				PROP_TAG_SMTPADDRESS) >= 0 ||
+				common_util_index_proptags(pproptags,
+				PROP_TAG_EMAILADDRESS) >= 0 ||
 				common_util_index_proptags(pproptags,
 				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
 				== ab_tree_get_minid_type(puser->minid) &&
@@ -107,6 +120,18 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 					PROP_TAG_ACCOUNT) >= 0) {
 					ppropvals->ppropval[ppropvals->count].proptag =
 													PROP_TAG_ACCOUNT;
+					ppropvals->ppropval[ppropvals->count].pvalue =
+										common_util_dup(username);
+					if (NULL == ppropvals->ppropval[
+						ppropvals->count].pvalue) {
+						return FALSE;
+					}
+					ppropvals->count ++;
+				}
+				if (common_util_index_proptags(pproptags,
+					PROP_TAG_EMAILADDRESS) >= 0) {
+					ppropvals->ppropval[ppropvals->count].proptag =
+											PROP_TAG_EMAILADDRESS;
 					ppropvals->ppropval[ppropvals->count].pvalue =
 										common_util_dup(username);
 					if (NULL == ppropvals->ppropval[
