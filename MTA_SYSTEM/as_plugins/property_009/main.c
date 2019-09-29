@@ -87,9 +87,7 @@ static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	ptr += 10;
-	if ('"' == ptr[28]) {
-		tmp_len = 28;
-	} else if ('"' == ptr[32]) {
+	if ('"' == ptr[32]) {
 		tmp_len = 32;
 	} else {
 		return MESSAGE_ACCEPT;
