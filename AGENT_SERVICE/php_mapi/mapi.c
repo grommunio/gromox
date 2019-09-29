@@ -813,8 +813,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"sss|l", &pdisplayname, &name_len, &ptype, &type_len,
 		&paddress, &address_len, &flags) == FAILURE ||
-		NULL == ptype || '\0' == ptype[0] || NULL == paddress
-		|| '\0' == paddress[0]) {
+		NULL == ptype || '\0' == ptype[0] || NULL == paddress) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
