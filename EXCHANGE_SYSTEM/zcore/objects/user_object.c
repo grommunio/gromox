@@ -52,6 +52,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	void *pvalue;
 	AB_BASE *pbase;
 	char username[256];
+	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
 	static uint32_t fake_type = OBJECT_USER;
 	
@@ -73,6 +74,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			common_util_index_proptags(pproptags,
 			PROP_TAG_EMAILADDRESS) >= 0 ||
 			common_util_index_proptags(pproptags,
+			PROP_TAG_DISPLAYNAME) >= 0 ||
+			common_util_index_proptags(pproptags,
 			PROP_TAG_ACCOUNT) >= 0) {
 			ppropvals->count = 0;
 			ppropvals->ppropval = common_util_alloc(
@@ -92,13 +95,15 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				PROP_TAG_ADDRESSTYPE) >= 0) {
 				ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_ADDRESSTYPE;
-				ppropvals->ppropval[ppropvals->count].pvalue = "SMTP";
+				ppropvals->ppropval[ppropvals->count].pvalue = "EX";
 				ppropvals->count ++;
 			}
 			if ((common_util_index_proptags(pproptags,
 				PROP_TAG_SMTPADDRESS) >= 0 ||
 				common_util_index_proptags(pproptags,
 				PROP_TAG_EMAILADDRESS) >= 0 ||
+				common_util_index_proptags(pproptags,
+				PROP_TAG_DISPLAYNAME) >= 0 ||
 				common_util_index_proptags(pproptags,
 				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
 				== ab_tree_get_minid_type(puser->minid) &&
@@ -129,16 +134,32 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 					ppropvals->count ++;
 				}
 				if (common_util_index_proptags(pproptags,
-					PROP_TAG_EMAILADDRESS) >= 0) {
+					PROP_TAG_EMAILADDRESS) >= 0 && TRUE ==
+					common_util_username_to_essdn(username,
+					tmp_buff)) {
 					ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_EMAILADDRESS;
 					ppropvals->ppropval[ppropvals->count].pvalue =
-										common_util_dup(username);
+										common_util_dup(tmp_buff);
 					if (NULL == ppropvals->ppropval[
 						ppropvals->count].pvalue) {
 						return FALSE;
 					}
 					ppropvals->count ++;
+				}
+				if (common_util_index_proptags(pproptags,
+					PROP_TAG_DISPLAYNAME) >= 0 && TRUE ==
+					system_services_get_user_displayname(
+					username, tmp_buff)) {
+					ppropvals->ppropval[ppropvals->count].proptag =
+											PROP_TAG_DISPLAYNAME;
+					ppropvals->ppropval[ppropvals->count].pvalue =
+										common_util_dup(tmp_buff);
+					if (NULL == ppropvals->ppropval[
+						ppropvals->count].pvalue) {
+						return FALSE;
+					}
+					ppropvals->count ++;	
 				}
 			}
 		} else {
