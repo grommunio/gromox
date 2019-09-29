@@ -4781,25 +4781,10 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return EC_ERROR;
 	}
 	message_flags = *(uint32_t*)pvalue;
-	if (MESSAGE_FLAG_SUBMITTED & message_flags) {
-		/* here we handle the submit request differently
-			from exchange_emsmdb. we allow a submitted
-			message	to be resubmitted if deferred time
-			information is found in the message object
-		*/
-		if (NULL != common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_DEFERREDSENDTIME)) {
-			/* do nothing, allow to be resubmitted */
-		} else if (NULL != common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_DEFERREDSENDNUMBER)
-			&& NULL != common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_DEFERREDSENDUNITS)) {
-			/* do nothing, allow to be resubmitted */
-		} else {
-			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
-		}
-	}
+	/* here we handle the submit request
+		differently from exchange_emsmdb.
+		we always allow a submitted message
+		to be resubmitted */
 	if (message_flags & MESSAGE_FLAG_UNSENT) {
 		b_unsent = TRUE;
 	} else {
