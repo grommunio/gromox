@@ -21,6 +21,7 @@ USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 BOOL user_object_check_valid(USER_OBJECT *puser)
 {
 	AB_BASE *pbase;
+	char username[256];
 	SIMPLE_TREE_NODE *pnode;
 	
 	pbase = ab_tree_get_base(puser->base_id);
@@ -30,7 +31,11 @@ BOOL user_object_check_valid(USER_OBJECT *puser)
 	pnode = ab_tree_minid_to_node(pbase, puser->minid);
 	ab_tree_put_base(pbase);
 	if (NULL == pnode) {
-		return FALSE;
+		if (MINID_TYPE_ADDRESS != ab_tree_get_minid_type(puser->minid)
+			|| FALSE == system_services_get_username_from_id(
+			ab_tree_get_minid_value(puser->minid), username)) {
+			return FALSE;
+		}
 	}
 	return TRUE;
 }
