@@ -151,6 +151,9 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 					PROP_TAG_DISPLAYNAME) >= 0 && TRUE ==
 					system_services_get_user_displayname(
 					username, tmp_buff)) {
+					if ('\0' == tmp_buff[0]) {
+						strcpy(tmp_buff, username);
+					}
 					ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_DISPLAYNAME;
 					ppropvals->ppropval[ppropvals->count].pvalue =
