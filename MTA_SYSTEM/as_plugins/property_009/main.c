@@ -7,7 +7,9 @@
 #define SPAM_STATISTIC_PROPERTY_009        33
 
 typedef void (*SPAM_STATISTIC)(int);
+typedef BOOL (*WHITELIST_QUERY)(char*);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
+
 
 static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
     CONNECTION *pconnection, char *reason, int length);
@@ -16,6 +18,7 @@ DECLARE_API;
 
 static SPAM_STATISTIC spam_statistic;
 static CHECK_TAGGING check_tagging;
+static WHITELIST_QUERY domain_whitelist_query;
 
 static char g_return_string[1024];
 
@@ -32,6 +35,13 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
 			printf("[property_009]: fail to get \"check_tagging\" service\n");
+			return FALSE;
+		}
+		domain_whitelist_query = (WHITELIST_QUERY)
+			query_service("domain_whitelist_query");
+		if (NULL == domain_whitelist_query) {
+			printf("[property_009]: fail to get "
+				"\"domain_whitelist_query\" service\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
@@ -72,10 +82,16 @@ static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
 	int i;
 	char *ptr;
 	int tmp_len;
+	char *pdomain;
 	char buff[1024];
 	
 	if (TRUE == pmail->penvelop->is_outbound ||
 		TRUE == pmail->penvelop->is_relay) {
+		return MESSAGE_ACCEPT;
+	}
+	pdomain = strchr(pmail->penvelop->from, '@');
+	pdomain ++;
+	if (TRUE == domain_whitelist_query(pdomain)) {
 		return MESSAGE_ACCEPT;
 	}
 	tmp_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
