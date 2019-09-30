@@ -103,22 +103,32 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			}
 			ptoken = strchr(ptoken1, '/');
 			if (NULL == ptoken) {
-				pxnode->remote_host = strdup(ptoken1);
-				if (NULL == pxnode->remote_host) {
-					break;
-				}
+				ptoken = ptoken1 + strlen(ptoken1);
+			}
+			tmp_len = ptoken - ptoken1;
+			pxnode->remote_host = malloc(tmp_len + 1);
+			if (NULL == pxnode->remote_host) {
+				break;
+			}
+			memcpy(pxnode->remote_host, ptoken1, tmp_len);
+			pxnode->remote_host[tmp_len] = '\0';
+			if ('\0' == ptoken[0] || '\0' == ptoken[1]) {
 				pxnode->remote_path = NULL;
 			} else {
-				tmp_len = ptoken - ptoken1;
-				pxnode->remote_host = malloc(tmp_len + 1);
-				if (NULL == pxnode->remote_host) {
-					break;
+				ptoken ++;
+				tmp_len = strlen(ptoken);
+				if ('/' == ptoken[tmp_len - 1]) {
+					tmp_len --;
 				}
-				memcpy(pxnode->remote_host, ptoken1, tmp_len);
-				pxnode->remote_host[tmp_len] = '\0';
-				pxnode->remote_path = strdup(ptoken + 1);
-				if (NULL == pxnode->remote_path) {
-					break;
+				if (0 == tmp_len) {
+					pxnode->remote_path = NULL;
+				} else {
+					pxnode->remote_path = malloc(tmp_len + 1);
+					if (NULL == pxnode->remote_path) {
+						break;
+					}
+					memcpy(pxnode->remote_path, ptoken, tmp_len);
+					pxnode->remote_path[tmp_len] = '\0';
 				}
 			}
 			ptoken = strchr(pxnode->remote_host, ':');
