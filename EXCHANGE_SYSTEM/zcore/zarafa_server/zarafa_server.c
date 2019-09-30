@@ -2655,7 +2655,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		if (tmp_set.count > 0) {
 			tmp_bins.count = 0;
 			tmp_bins.pbin = common_util_alloc(
-				sizeof(tmp_set.count)*sizeof(BINARY));
+				tmp_set.count*sizeof(BINARY));
 			if (NULL == tmp_bins.pbin) {
 				zarafa_server_put_user_info(pinfo);
 				return EC_ERROR;
