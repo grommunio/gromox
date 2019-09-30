@@ -2580,16 +2580,24 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	uint64_t read_cn;
 	uint8_t tmp_byte;
 	USER_INFO *pinfo;
+	uint32_t table_id;
 	uint8_t mapi_type;
+	uint32_t row_count;
 	uint64_t folder_id;
+	TARRAY_SET tmp_set;
 	uint64_t message_id;
+	uint32_t tmp_proptag;
 	STORE_OBJECT *pstore;
 	const char *username;
 	BOOL b_notify = TRUE; /* TODO!!! read from config or USER_INFO */
+	BINARY_ARRAY tmp_bins;
+	PROPTAG_ARRAY proptags;
 	FOLDER_OBJECT *pfolder;
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
+	RESTRICTION restriction;
+	RESTRICTION_PROPERTY res_prop;
 	static uint8_t fake_false = 0;
 	TAGGED_PROPVAL propval_buff[2];
 	
@@ -2608,10 +2616,60 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		return EC_NOT_SUPPORTED;
 	}
 	pstore = folder_object_get_store(pfolder);
-	if (TRUE == store_object_check_private(pstore)) {
+	if (TRUE == store_object_check_owner_mode(pstore)) {
 		username = NULL;
 	} else {
 		username = pinfo->username;
+	}
+	if (0 == pentryids->count) {
+		restriction.rt = RESTRICTION_TYPE_PROPERTY;
+		restriction.pres = &res_prop;
+		res_prop.relop = RELOP_EQ;
+		res_prop.proptag = PROP_TAG_READ;
+		res_prop.propval.proptag = PROP_TAG_READ;
+		res_prop.propval.pvalue = &fake_false;
+		if (FALSE == exmdb_client_load_content_table(
+			store_object_get_dir(pstore), 0,
+			folder_object_get_id(pfolder), username,
+			TABLE_FLAG_NONOTIFICATIONS, &restriction,
+			NULL, &table_id, &row_count)) {
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
+		proptags.count = 1;
+		proptags.pproptag = &tmp_proptag;
+		tmp_proptag = PROP_TAG_ENTRYID;
+		if (FALSE == exmdb_client_query_table(
+			store_object_get_dir(pstore), username,
+			0, table_id, &proptags, 0, row_count,
+			&tmp_set)) {
+			exmdb_client_unload_table(
+				store_object_get_dir(
+				pstore), table_id);
+			zarafa_server_put_user_info(pinfo);
+			return EC_ERROR;
+		}
+		exmdb_client_unload_table(
+			store_object_get_dir(
+			pstore), table_id);
+		if (tmp_set.count > 0) {
+			tmp_bins.count = 0;
+			tmp_bins.pbin = common_util_alloc(
+				sizeof(tmp_set.count)*sizeof(BINARY));
+			if (NULL == tmp_bins.pbin) {
+				zarafa_server_put_user_info(pinfo);
+				return EC_ERROR;
+			}
+			for (i=0; i<tmp_set.count; i++) {
+				if (1 != tmp_set.pparray[i]->count) {
+					continue;
+				}
+				tmp_bins.pbin[tmp_bins.count] =
+					*(BINARY*)tmp_set.pparray[i]->ppropval[0].pvalue;
+				tmp_bins.count ++;
+			}
+			pentryids = &tmp_bins;
+		}
 	}
 	for (i=0; i<pentryids->count; i++) {
 		if (FALSE == common_util_from_message_entryid(
