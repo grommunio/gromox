@@ -4527,14 +4527,14 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						b_del = TRUE;
 						common_util_log_info(0, "user: %s, IP: unknown"
 							"  message %llu under folder %llu is going"
-							" to be moved to %llu under folde %llu by "
-							"rule", account, message_id, folder_id,
+							" to be moved to %llu under folder %llu by"
+							" rule", account, message_id, folder_id,
 							dst_mid, dst_fid);
 					} else {
 						common_util_log_info(0, "user: %s, IP: unknown"
 							"  message %llu under folder %llu is going"
-							" to be copied to %llu under folde %llu by "
-							"rule", account, message_id, folder_id,
+							" to be copied to %llu under folder %llu by"
+							" rule", account, message_id, folder_id,
 							dst_mid, dst_fid);
 					}
 				} else {
