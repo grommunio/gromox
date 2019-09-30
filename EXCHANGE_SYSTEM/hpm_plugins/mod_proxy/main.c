@@ -357,6 +357,7 @@ static BOOL proxy_proc(int context_id,
 	char *ptoken;
 	char *ptoken1;
 	char **p_addr;
+	BOOL b_connection;
 	char tmp_tag[256];
 	char tmp_uri[8192];
 	BOOL b_forward_for;
@@ -417,8 +418,7 @@ static BOOL proxy_proc(int context_id,
 		}
 	}
 	offset += sprintf(tmp_buff + offset,
-		"Content-Length: %llu\r\n"
-		"Connection: close\r\n", length);
+		"Content-Length: %llu\r\n", length);
 	if (offset >= sizeof(tmp_buff)) {
 		close(pcontext->sockd);
 		pcontext->sockd = -1;
@@ -512,6 +512,7 @@ static BOOL proxy_proc(int context_id,
 		offset += 2;
 	}
 	b_forward_for = FALSE;
+	b_connection = FALSE;
 	while (MEM_END_OF_FILE != mem_file_read(
 		&prequest->f_others, &tag_len, sizeof(int))) {
 		if (tag_len >= sizeof(tmp_tag)) {
@@ -522,8 +523,7 @@ static BOOL proxy_proc(int context_id,
 		mem_file_read(&prequest->f_others, tmp_tag, tag_len);
 		tmp_tag[tag_len] = '\0';
 		if (0 == strcasecmp(tmp_tag, "X-Forwarded-Proto") ||
-			0 == strcasecmp(tmp_tag, "X-Real-IP") ||
-			0 == strcasecmp(tmp_tag, "Connection")) {
+			0 == strcasecmp(tmp_tag, "X-Real-IP")) {
 			mem_file_read(&prequest->f_others, &val_len, sizeof(int));
 			mem_file_seek(&prequest->f_others, MEM_FILE_READ_PTR,
 									val_len, MEM_FILE_SEEK_CUR);
@@ -542,6 +542,15 @@ static BOOL proxy_proc(int context_id,
 			return FALSE;
 		}
 		mem_file_read(&prequest->f_others, tmp_buff + offset, val_len);
+		if (0 == strcasecmp("Connection", tmp_tag)) {
+			b_connection = TRUE;
+			if (7 != val_len || 0 != strncasecmp(
+				"Upgrade", tmp_buff + offset, 7)) {
+				memcpy(tmp_buff + offset, "Close\r\n", 7);
+				offset += 7;
+				continue;
+			}
+		}
 		offset += val_len;
 		if (0 == strcasecmp("X-Forwarded-For", tmp_tag)) {
 			offset += sprintf(tmp_buff + offset,
@@ -551,11 +560,15 @@ static BOOL proxy_proc(int context_id,
 		memcpy(tmp_buff + offset, "\r\n", 2);
 		offset += 2;
 	}
+	if (FALSE == b_connection) {
+		offset += sprintf(tmp_buff + offset, "Connection: close\r\n");
+	}
 	if (FALSE == b_forward_for) {
 		offset += sprintf(tmp_buff + offset,
 					"X-Forwarded-For: %s\r\n",
 					pconnection->server_ip);
 	}
+	
 	memcpy(tmp_buff + offset, "\r\n", 2);
 	offset += 2;
 	if (offset != write(pcontext->sockd, tmp_buff, offset)
