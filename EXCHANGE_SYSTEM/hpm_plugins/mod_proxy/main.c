@@ -405,28 +405,16 @@ static BOOL proxy_proc(int context_id,
 		tmp_buff + offset, sizeof(tmp_buff) - offset);
 	offset += sprintf(tmp_buff + offset,
 		" HTTP/%s\r\n", prequest->version);
-	if (FALSE == pcontext->pxnode->remote_ipaddr ||
-		0 == mem_file_get_total_length(&prequest->f_host)) {
-		strcpy(tmp_host, pcontext->pxnode->remote_host);
-	} else {
+	if (0 != mem_file_get_total_length(&prequest->f_host)) {
 		tmp_len = mem_file_read(&prequest->f_host,
 					tmp_host, sizeof(tmp_host) - 1);
 		tmp_host[tmp_len] = '\0';
-		ptoken = strchr(tmp_host, ':');
-		if (NULL != ptoken) {
-			*ptoken = '\0';
-		}
-	}
-	if (80 == pcontext->pxnode->remote_port) {
 		offset += sprintf(tmp_buff + offset, "Host: %s\r\n", tmp_host);
-	} else {
-		offset += sprintf(tmp_buff + offset, "Host: %s:%d\r\n",
-					tmp_host, pcontext->pxnode->remote_port);
-	}
-	if (offset >= sizeof(tmp_buff)) {
-		close(pcontext->sockd);
-		pcontext->sockd = -1;
-		return FALSE;
+		if (offset >= sizeof(tmp_buff)) {
+			close(pcontext->sockd);
+			pcontext->sockd = -1;
+			return FALSE;
+		}
 	}
 	offset += sprintf(tmp_buff + offset,
 		"Content-Length: %llu\r\n"
