@@ -2624,7 +2624,11 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	if (0 == pentryids->count) {
 		restriction.rt = RESTRICTION_TYPE_PROPERTY;
 		restriction.pres = &res_prop;
-		res_prop.relop = RELOP_EQ;
+		if (FLAG_CLEAR_READ == flags) {
+			res_prop.relop = RELOP_NE;
+		} else {
+			res_prop.relop = RELOP_EQ;
+		}
 		res_prop.proptag = PROP_TAG_READ;
 		res_prop.propval.proptag = PROP_TAG_READ;
 		res_prop.propval.pvalue = &fake_false;
