@@ -656,35 +656,8 @@ NEXT_LOOP:
 			pspace ++;
 			pspace1 = strchr(pspace, ' ');
 			if (NULL == pspace1) {
-				pthread_mutex_lock(&g_user_lock);
-				puser = str_hash_query(g_user_table, pconnection->line + 4);
-				if (NULL == puser) {
-					if (1 != str_hash_add(g_user_table,
-						pconnection->line + 4, &tmp_item)) {
-						time(&cur_time);
-						iter = str_hash_iter_init(g_user_table);
-						for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-							str_hash_iter_forward(iter)) {
-							puser = str_hash_iter_get_value(iter, NULL);
-							if (cur_time - puser->time_stamp > g_max_interval) {
-								str_hash_iter_remove(iter);
-							}
-						}
-						str_hash_iter_free(iter);
-						if (1 != str_hash_add(g_user_table,
-							pconnection->line + 4, &tmp_item)) {
-							pthread_mutex_unlock(&g_user_lock);
-							write(pconnection->sockd, "FALSE\r\n", 7);
-							continue;							
-						}
-					}
-					puser = str_hash_query(g_user_table, pconnection->line + 4);
-				}
-				time(&puser->time_stamp);
-				strncpy(puser->field, pspace, USER_FIELD_LENGTH);
-				pthread_mutex_unlock(&g_user_lock);
-				write(pconnection->sockd, "TRUE\r\n", 6);
-				continue;
+				write(pconnection->sockd, "FALSE\r\n", 7);
+				continue;							
 			}
 			*pspace1 = '\0';
 			pspace1 ++;
@@ -770,25 +743,7 @@ NEXT_LOOP:
 			lower_string(pconnection->line + 6);
 			pspace = strchr(pconnection->line + 6, ' ');
 			if (NULL == pspace) {
-				pthread_mutex_lock(&g_user_lock);
-				puser = str_hash_query(g_user_table, pconnection->line + 6);
-				if (NULL == puser) {
-					pthread_mutex_unlock(&g_user_lock);
-					write(pconnection->sockd, "FALSE\r\n", 7);
-					continue;
-				}
-				time(&cur_time);
-				if (cur_time - puser->time_stamp > g_max_interval) {
-					str_hash_remove(g_user_table, pconnection->line + 6);
-					pthread_mutex_unlock(&g_user_lock);
-					write(pconnection->sockd, "FALSE\r\n", 7);
-				} else {
-					temp_len = snprintf(temp_line, sizeof(temp_line),
-										"TRUE %s\r\n", puser->field);
-					time(&puser->time_stamp);
-					pthread_mutex_unlock(&g_user_lock);
-					write(pconnection->sockd, temp_line, temp_len);
-				}
+				write(pconnection->sockd, "FALSE\r\n", 7);
 				continue;
 			}
 			*pspace = '\0';
@@ -828,6 +783,64 @@ NEXT_LOOP:
 			} else {
 				pthread_mutex_unlock(&g_session_lock);
 				write(pconnection->sockd, "FALSE\r\n", 7);
+			}
+		} else if (0 == strcasecmp(pconnection->line, "PUT ")) {
+			pspace = strchr(pconnection->line + 4, ' ');
+			if (NULL == pspace) {
+				write(pconnection->sockd, "FALSE\r\n", 7);
+				continue;
+			}
+			*pspace = '\0';
+			lower_string(pconnection->line + 4);
+			pspace ++;
+			pthread_mutex_lock(&g_user_lock);
+			puser = str_hash_query(g_user_table, pconnection->line + 4);
+			if (NULL == puser) {
+				if (1 != str_hash_add(g_user_table,
+					pconnection->line + 4, &tmp_item)) {
+					time(&cur_time);
+					iter = str_hash_iter_init(g_user_table);
+					for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
+						str_hash_iter_forward(iter)) {
+						puser = str_hash_iter_get_value(iter, NULL);
+						if (cur_time - puser->time_stamp > g_max_interval) {
+							str_hash_iter_remove(iter);
+						}
+					}
+					str_hash_iter_free(iter);
+					if (1 != str_hash_add(g_user_table,
+						pconnection->line + 4, &tmp_item)) {
+						pthread_mutex_unlock(&g_user_lock);
+						write(pconnection->sockd, "FALSE\r\n", 7);
+						continue;							
+					}
+				}
+				puser = str_hash_query(g_user_table, pconnection->line + 4);
+			}
+			time(&puser->time_stamp);
+			strncpy(puser->field, pspace, USER_FIELD_LENGTH);
+			pthread_mutex_unlock(&g_user_lock);
+			write(pconnection->sockd, "TRUE\r\n", 6);
+		} else if (0 == strcasecmp(pconnection->line, "GET ")) {
+			lower_string(pconnection->line + 4);
+			pthread_mutex_lock(&g_user_lock);
+			puser = str_hash_query(g_user_table, pconnection->line + 4);
+			if (NULL == puser) {
+				pthread_mutex_unlock(&g_user_lock);
+				write(pconnection->sockd, "FALSE\r\n", 7);
+				continue;
+			}
+			time(&cur_time);
+			if (cur_time - puser->time_stamp > g_max_interval) {
+				str_hash_remove(g_user_table, pconnection->line + 4);
+				pthread_mutex_unlock(&g_user_lock);
+				write(pconnection->sockd, "FALSE\r\n", 7);
+			} else {
+				temp_len = snprintf(temp_line, sizeof(temp_line),
+									"TRUE %s\r\n", puser->field);
+				time(&puser->time_stamp);
+				pthread_mutex_unlock(&g_user_lock);
+				write(pconnection->sockd, temp_line, temp_len);
 			}
 		} else if (0 == strcasecmp(pconnection->line, "QUIT")) {
 			write(pconnection->sockd, "BYE\r\n", 5);
