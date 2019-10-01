@@ -784,7 +784,7 @@ NEXT_LOOP:
 				pthread_mutex_unlock(&g_session_lock);
 				write(pconnection->sockd, "FALSE\r\n", 7);
 			}
-		} else if (0 == strcasecmp(pconnection->line, "PUT ")) {
+		} else if (0 == strncasecmp(pconnection->line, "PUT ", 4)) {
 			pspace = strchr(pconnection->line + 4, ' ');
 			if (NULL == pspace) {
 				write(pconnection->sockd, "FALSE\r\n", 7);
@@ -821,7 +821,7 @@ NEXT_LOOP:
 			strncpy(puser->field, pspace, USER_FIELD_LENGTH);
 			pthread_mutex_unlock(&g_user_lock);
 			write(pconnection->sockd, "TRUE\r\n", 6);
-		} else if (0 == strcasecmp(pconnection->line, "GET ")) {
+		} else if (0 == strncasecmp(pconnection->line, "GET ", 4)) {
 			lower_string(pconnection->line + 4);
 			pthread_mutex_lock(&g_user_lock);
 			puser = str_hash_query(g_user_table, pconnection->line + 4);
