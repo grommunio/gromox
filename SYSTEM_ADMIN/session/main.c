@@ -652,16 +652,10 @@ NEXT_LOOP:
 				continue;
 			}
 			*pspace = '\0';
+			lower_string(pconnection->line + 4);
 			pspace ++;
 			pspace1 = strchr(pspace, ' ');
 			if (NULL == pspace1) {
-				write(pconnection->sockd, "FALSE\r\n", 7);
-				continue;
-			}
-			*pspace1 = '\0';
-			pspace1 ++;
-			lower_string(pconnection->line + 4);
-			if (NULL != strchr(pconnection->line + 4, '@')) {
 				pthread_mutex_lock(&g_user_lock);
 				puser = str_hash_query(g_user_table, pconnection->line + 4);
 				if (NULL == puser) {
@@ -687,45 +681,47 @@ NEXT_LOOP:
 					puser = str_hash_query(g_user_table, pconnection->line + 4);
 				}
 				time(&puser->time_stamp);
-				strncpy(puser->field, pspace1, USER_FIELD_LENGTH);
+				strncpy(puser->field, pspace, USER_FIELD_LENGTH);
 				pthread_mutex_unlock(&g_user_lock);
 				write(pconnection->sockd, "TRUE\r\n", 6);
-			} else {
-				pthread_mutex_lock(&g_session_lock);
-				plist = str_hash_query(g_session_table, pconnection->line + 4);
-				if (NULL == plist) {
+				continue;
+			}
+			*pspace1 = '\0';
+			pspace1 ++;
+			pthread_mutex_lock(&g_session_lock);
+			plist = str_hash_query(g_session_table, pconnection->line + 4);
+			if (NULL == plist) {
+				pthread_mutex_unlock(&g_session_lock);
+				write(pconnection->sockd, "FALSE\r\n", 7);
+				continue;
+			}
+			for (pnode1=double_list_get_head(plist); NULL!=pnode1;
+				pnode1=double_list_get_after(plist, pnode1)) {
+				psession = (SESSION*)pnode1->pdata;
+				if (0 == strncmp(psession->name, pspace, 32)) {
+					break;
+				}
+			}
+			if (NULL != pnode1) {
+				time(&cur_time);
+				if (cur_time - psession->time_stamp <= g_max_interval) {
+					time(&psession->time_stamp);
+					strncpy(psession->field, pspace1, SESSION_FIELD_LENGTH);
 					pthread_mutex_unlock(&g_session_lock);
-					write(pconnection->sockd, "FALSE\r\n", 7);
-					continue;
-				}
-				for (pnode1=double_list_get_head(plist); NULL!=pnode1;
-					pnode1=double_list_get_after(plist, pnode1)) {
-					psession = (SESSION*)pnode1->pdata;
-					if (0 == strncmp(psession->name, pspace, 32)) {
-						break;
-					}
-				}
-				if (NULL != pnode1) {
-					time(&cur_time);
-					if (cur_time - psession->time_stamp <= g_max_interval) {
-						time(&psession->time_stamp);
-						strncpy(psession->field, pspace1, SESSION_FIELD_LENGTH);
-						pthread_mutex_unlock(&g_session_lock);
-						write(pconnection->sockd, "TRUE\r\n", 6);
-					} else {
-						double_list_remove(plist, pnode1);
-						if (0 == double_list_get_nodes_num(plist)) {
-							double_list_free(plist);
-							str_hash_remove(g_session_table, pconnection->line + 4);
-						}
-						pthread_mutex_unlock(&g_session_lock);
-						free(pnode1->pdata);
-						write(pconnection->sockd, "FALSE\r\n", 7);
-					}
+					write(pconnection->sockd, "TRUE\r\n", 6);
 				} else {
+					double_list_remove(plist, pnode1);
+					if (0 == double_list_get_nodes_num(plist)) {
+						double_list_free(plist);
+						str_hash_remove(g_session_table, pconnection->line + 4);
+					}
 					pthread_mutex_unlock(&g_session_lock);
+					free(pnode1->pdata);
 					write(pconnection->sockd, "FALSE\r\n", 7);
 				}
+			} else {
+				pthread_mutex_unlock(&g_session_lock);
+				write(pconnection->sockd, "FALSE\r\n", 7);
 			}
 		} else if (0 == strncasecmp(pconnection->line, "CHECK ", 6)) {
 			lower_string(pconnection->line + 6);
@@ -774,12 +770,6 @@ NEXT_LOOP:
 			lower_string(pconnection->line + 6);
 			pspace = strchr(pconnection->line + 6, ' ');
 			if (NULL == pspace) {
-				write(pconnection->sockd, "FALSE\r\n", 7);
-				continue;
-			}
-			*pspace = '\0';
-			pspace ++;
-			if (NULL != strchr(pconnection->line + 6, '@')) {
 				pthread_mutex_lock(&g_user_lock);
 				puser = str_hash_query(g_user_table, pconnection->line + 6);
 				time(&cur_time);
@@ -794,43 +784,45 @@ NEXT_LOOP:
 					pthread_mutex_unlock(&g_user_lock);
 					write(pconnection->sockd, temp_line, temp_len);
 				}
-			} else {
-				pthread_mutex_lock(&g_session_lock);
-				plist = str_hash_query(g_session_table, pconnection->line + 6);
-				if (NULL == plist) {
+				continue;
+			}
+			*pspace = '\0';
+			pspace ++;
+			pthread_mutex_lock(&g_session_lock);
+			plist = str_hash_query(g_session_table, pconnection->line + 6);
+			if (NULL == plist) {
+				pthread_mutex_unlock(&g_session_lock);
+				write(pconnection->sockd, "FALSE\r\n", 7);
+				continue;
+			}
+			for (pnode1=double_list_get_head(plist); NULL!=pnode1;
+				pnode1=double_list_get_after(plist, pnode1)) {
+				psession = (SESSION*)pnode1->pdata;
+				if (0 == strncmp(psession->name, pspace, 32)) {
+					break;
+				}
+			}
+			if (NULL != pnode1) {
+				time(&cur_time);
+				if (cur_time - psession->time_stamp <= g_max_interval) {
+					time(&psession->time_stamp);
+					temp_len = snprintf(temp_line, sizeof(temp_line),
+									"TRUE %s\r\n", psession->field);	
 					pthread_mutex_unlock(&g_session_lock);
-					write(pconnection->sockd, "FALSE\r\n", 7);
-					continue;
-				}
-				for (pnode1=double_list_get_head(plist); NULL!=pnode1;
-					pnode1=double_list_get_after(plist, pnode1)) {
-					psession = (SESSION*)pnode1->pdata;
-					if (0 == strncmp(psession->name, pspace, 32)) {
-						break;
-					}
-				}
-				if (NULL != pnode1) {
-					time(&cur_time);
-					if (cur_time - psession->time_stamp <= g_max_interval) {
-						time(&psession->time_stamp);
-						temp_len = snprintf(temp_line, sizeof(temp_line),
-										"TRUE %s\r\n", psession->field);	
-						pthread_mutex_unlock(&g_session_lock);
-						write(pconnection->sockd, temp_line, temp_len);
-					} else {
-						double_list_remove(plist, pnode1);
-						if (0 == double_list_get_nodes_num(plist)) {
-							double_list_free(plist);
-							str_hash_remove(g_session_table, pconnection->line + 6);
-						}
-						pthread_mutex_unlock(&g_session_lock);
-						free(pnode1->pdata);
-						write(pconnection->sockd, "FALSE\r\n", 7);
-					}
+					write(pconnection->sockd, temp_line, temp_len);
 				} else {
+					double_list_remove(plist, pnode1);
+					if (0 == double_list_get_nodes_num(plist)) {
+						double_list_free(plist);
+						str_hash_remove(g_session_table, pconnection->line + 6);
+					}
 					pthread_mutex_unlock(&g_session_lock);
+					free(pnode1->pdata);
 					write(pconnection->sockd, "FALSE\r\n", 7);
 				}
+			} else {
+				pthread_mutex_unlock(&g_session_lock);
+				write(pconnection->sockd, "FALSE\r\n", 7);
 			}
 		} else if (0 == strcasecmp(pconnection->line, "QUIT")) {
 			write(pconnection->sockd, "BYE\r\n", 5);
