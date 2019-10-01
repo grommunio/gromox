@@ -772,6 +772,11 @@ NEXT_LOOP:
 			if (NULL == pspace) {
 				pthread_mutex_lock(&g_user_lock);
 				puser = str_hash_query(g_user_table, pconnection->line + 6);
+				if (NULL == puser) {
+					pthread_mutex_unlock(&g_user_lock);
+					write(pconnection->sockd, "FALSE\r\n", 7);
+					continue;
+				}
 				time(&cur_time);
 				if (cur_time - puser->time_stamp > g_max_interval) {
 					str_hash_remove(g_user_table, pconnection->line + 6);
