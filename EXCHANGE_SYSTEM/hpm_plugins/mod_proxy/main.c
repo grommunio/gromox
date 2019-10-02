@@ -708,10 +708,10 @@ static int proxy_retr(int context_id)
 {
 	int tv_msec;
 	int read_len;
-	epoll_event tmp_ev;
 	char buff[64*1024];
 	struct pollfd pfd_read;
 	PROXY_CONTEXT *pcontext;
+	struct epoll_event tmp_ev;
 	
 	pcontext = &g_context_list[context_id];
 	if (-1 == pcontext->sockd) {
