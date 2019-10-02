@@ -718,7 +718,7 @@ static int proxy_retr(int context_id)
 		return HPM_RETRIEVE_DONE;
 	}
 	if (TRUE == pcontext->b_upgrated) {
-		tmp_ev.events = EPOLLIN | EPOLLLT;
+		tmp_ev.events = EPOLLIN;
 		tmp_ev.data.ptr = pcontext;
 		if (-1 == epoll_ctl(g_epoll_fd, EPOLL_CTL_ADD,
 			pcontext->sockd, &tmp_ev)) {
@@ -775,8 +775,8 @@ static int proxy_receive(int context_id, void *pbuff, int max_length)
 			tmp_len = max_length;
 		}
 		memcpy(pbuff, pcontext->pmore_buff + pcontext->buff_offset, tmp_len);
-		pcontext->offset += tmp_len;
-		if (pcontext->offset == pcontext->buff_length) {
+		pcontext->buff_offset += tmp_len;
+		if (pcontext->buff_offset == pcontext->buff_length) {
 			free(pcontext->pmore_buff);
 			pcontext->buff_length = 0;
 			pcontext->buff_offset = 0;
