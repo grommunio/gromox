@@ -431,7 +431,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 	char dstring[128];
 	DCERPC_CALL *pcall;
 	char field_name[64];
-	char tmp_buff[1024];
+	char tmp_buff[2048];
 	char tmp_buff1[1024];
 	uint16_t frag_length;
 	int size, line_length;
@@ -626,6 +626,8 @@ CONTEXT_PROCESSING:
 					} else {
 						if (0 == strcasecmp(field_name, "Connection") &&
 							0 == strncasecmp(ptoken, "keep-alive", tmp_len)) {
+							/* for "Connection: Upgrade",
+								we treat it as "close" */
 							pcontext->b_close = FALSE;
 						}
 						tmp_len1 = strlen(field_name);
@@ -957,20 +959,42 @@ CONTEXT_PROCESSING:
 				case HPM_RETRIEVE_DONE:
 					if (TRUE == pcontext->b_close) {
 						goto END_PROCESSING;
-					} else {
-						http_parser_request_clear(&pcontext->request);
-						hpm_processor_put_context(pcontext);
-						pcontext->sched_stat = SCHED_STAT_RDHEAD;
-						stream_clear(&pcontext->stream_out);
-						return PROCESS_CONTINUE;
 					}
+					http_parser_request_clear(&pcontext->request);
+					hpm_processor_put_context(pcontext);
+					pcontext->sched_stat = SCHED_STAT_RDHEAD;
+					stream_clear(&pcontext->stream_out);
+					return PROCESS_CONTINUE;
+				case HPM_RETRIEVE_SCOKET:
+					size = STREAM_BLOCK_SIZE;
+					pbuff = stream_getbuffer_for_reading(
+							&pcontext->stream_in, &size);
+					if (NULL != pbuff) {
+						if (FALSE == hpm_processor_send(
+							pcontext, pbuff, size)) {
+							http_parser_log_info(pcontext, 8,
+								"connection closed by hpm");
+							goto END_PROCESSING;	
+						}
+					}
+					stream_clear(&pcontext->stream_in);
+					stream_clear(&pcontext->stream_out);
+					http_parser_request_clear(&pcontext->request);
+					tmp_len = STREAM_BLOCK_SIZE;
+					pcontext->write_buff = stream_getbuffer_for_writing(
+										&pcontext->stream_out, &tmp_len);
+					pcontext->write_length = 0;
+					pcontext->write_offset = 0;
+					pcontext->sched_stat = SCHED_STAT_SOCKET;
+					return PROCESS_POLLING_RDWR;
 				}
 			} else if (NULL != pcontext->pfast_context) {
 				switch (mod_fastcgi_check_response(pcontext)) {
 				case RESPONSE_WAITING:
 					return PROCESS_CONTINUE;
 				case RESPONSE_TIMEOUT:
-					http_parser_log_info(pcontext, 8, "fastcgi excution time out");
+					http_parser_log_info(pcontext, 8,
+						"fastcgi excution time out");
 					goto INERTNAL_SERVER_ERROR;
 				}
 				if (TRUE == mod_fastcgi_check_responded(pcontext)) {
@@ -1663,6 +1687,89 @@ CONTEXT_PROCESSING:
 		}
 		
 		return PROCESS_IDLE;
+	} else if (SCHED_STAT_SOCKET == pcontext->sched_stat) {
+		if (0 == pcontext->write_length) {
+			tmp_len = hpm_processor_receive(pcontext,
+				pcontext->write_buff, STREAM_BLOCK_SIZE);
+			if (0 == tmp_len) {
+				http_parser_log_info(pcontext, 8,
+					"connection closed by hpm");
+				goto END_PROCESSING;
+			} else if (tmp_len > 0) {
+				pcontext->write_length = tmp_len;
+				pcontext->write_offset = 0;
+			}
+		}
+		if (pcontext->write_length > pcontext->write_offset) {
+			written_len = pcontext->write_length - pcontext->write_offset;
+			if (NULL != pcontext->connection.ssl) {
+				written_len = SSL_write(pcontext->connection.ssl,
+					pcontext->write_buff + pcontext->write_offset,
+					written_len);
+			} else {
+				written_len = write(pcontext->connection.sockd,
+					pcontext->write_buff + pcontext->write_offset,
+					written_len);
+			}
+			
+			gettimeofday(&current_time, NULL);
+			
+			if (0 == written_len) {
+				http_parser_log_info(pcontext, 8, "connection lost");
+				goto END_PROCESSING;
+			} else if (written_len > 0) {
+				pcontext->connection.last_timestamp = current_time;
+				pcontext->write_offset += written_len;
+				if (pcontext->write_offset >= pcontext->write_length) {
+					pcontext->write_offset = 0;
+					pcontext->write_length = 0;
+				}
+			} else {
+				if (EAGAIN != errno) {
+					http_parser_log_info(pcontext, 8, "connection lost");
+					goto END_PROCESSING;
+				}
+				/* check if context is timed out */
+				if (CALCULATE_INTERVAL(current_time,
+					pcontext->connection.last_timestamp) >= g_timeout) {
+					http_parser_log_info(pcontext, 8, "time out");
+					goto END_PROCESSING;
+				}
+				return PROCESS_POLLING_WRONLY;
+			}
+		}
+		if (NULL == pcontext->connection.ssl) {
+			actual_read = read(pcontext->connection.sockd,
+							tmp_buff, sizeof(tmp_buff));
+		} else {
+			actual_read = SSL_read(pcontext->connection.ssl,
+								tmp_buff, sizeof(tmp_buff));
+		}
+		gettimeofday(&current_time, NULL);
+		if (0 == actual_read) {
+			http_parser_log_info(pcontext, 8, "connection lost");
+			goto END_PROCESSING;
+		} else if (actual_read > 0) {
+			pcontext->connection.last_timestamp = current_time;
+			if (FALSE == hpm_processor_send(
+				pcontext, tmp_buff, actual_read)) {
+				http_parser_log_info(pcontext, 8,
+					"connection closed by hpm");
+				goto END_PROCESSING;	
+			}
+		} else {
+			if (EAGAIN != errno) {
+				http_parser_log_info(pcontext, 8, "connection lost");
+				goto END_PROCESSING;
+			}
+			/* check if context is timed out */
+			if (CALCULATE_INTERVAL(current_time,
+				pcontext->connection.last_timestamp) >= g_timeout) {
+				http_parser_log_info(pcontext, 8, "time out");
+				goto END_PROCESSING;
+			}
+		}
+		return PROCESS_POLLING_RDONLY;
 	}
 	
 BAD_HTTP_REQUEST:

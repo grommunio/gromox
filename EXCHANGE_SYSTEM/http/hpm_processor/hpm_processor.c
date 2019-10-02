@@ -251,6 +251,14 @@ static void hpm_processor_wakeup_context(int context_id)
 	contexts_pool_signal((SCHEDULE_CONTEXT*)phttp);
 }
 
+static void hpm_processor_activate_context(int context_id)
+{
+	HTTP_CONTEXT *phttp;
+	
+	phttp = http_parser_get_contexts_list() + context_id;
+	context_pool_activate_context((SCHEDULE_CONTEXT*)phttp);
+}
+
 static int hpm_processor_getversion()
 {
 	return SERVICE_VERSION;
@@ -306,6 +314,9 @@ static void* hpm_processor_queryservice(char *service)
 	}
 	if (strcmp(service, "wakeup_context") == 0) {
 		return hpm_processor_wakeup_context;
+	}
+	if (strcmp(service, "activate_context") == 0) {
+		return hpm_processor_activate_context;
 	}
 	if (strcmp(service, "set_context") == 0) {
 		return http_parser_set_context;
@@ -827,6 +838,29 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 		free(pcontent);
 	}
 	return b_result;
+}
+
+BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
+	const void *pbuff, int length)
+{
+	int context_id;
+	HPM_CONTEXT *phpm_ctx;
+	
+	context_id = phttp - http_parser_get_contexts_list();
+	phpm_ctx = g_context_list + context_id;
+	return phpm_ctx->pinterface->send(context_id, pbuff, length);
+	
+}
+
+int hpm_processor_receive(HTTP_CONTEXT *phttp,
+	char *pbuff, int length)
+{
+	int context_id;
+	HPM_CONTEXT *phpm_ctx;
+	
+	context_id = phttp - http_parser_get_contexts_list();
+	phpm_ctx = g_context_list + context_id;
+	return phpm_ctx->pinterface->receive(context_id, pbuff, length);
 }
 
 int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp)

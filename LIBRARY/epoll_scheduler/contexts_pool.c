@@ -83,7 +83,8 @@ static void* thread_work_func(void *pparam)
 			pcontext = g_events[i].data.ptr;
 			pthread_mutex_lock(&g_context_locks[CONTEXT_POLLING]);
 			if (CONTEXT_POLLING != pcontext->type) {
-				/* context may be waked up and modified by scan_work_func */
+				/* context may be waked up and modified by
+				scan_work_func or context_pool_activate_context */
 				pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
 				continue;
 			}
@@ -419,7 +420,7 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
 	if (NULL == pcontext) {
 		return FALSE;
 	}
-	if (CONTEXT_POLLING!= type &&
+	if (CONTEXT_POLLING != type &&
 		CONTEXT_IDLING != type &&
 		CONTEXT_TURNING != type) {
 		return FALSE;
@@ -438,4 +439,30 @@ BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type)
 		threads_pool_wakeup_thread();
 	}
 	return TRUE;
+}
+
+/*
+ *	try to activate a context from polling queue
+ *	@param
+ *		pcontext [in]	indicate the context object
+ *		type			can only be CONTEXT_POLLING,
+ */
+void context_pool_activate_context(SCHEDULE_CONTEXT *pcontext)
+{
+	pthread_mutex_lock(&g_context_locks[CONTEXT_POLLING]);
+	if (CONTEXT_POLLING != pcontext->type) {
+		pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
+		return;
+	}
+	double_list_remove(&g_context_lists[CONTEXT_POLLING], &pcontext->node);
+	pcontext->b_waiting = FALSE;
+	pcontext->type = CONTEXT_SWITCHING;
+	pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
+	pthread_mutex_lock(&g_context_locks[CONTEXT_TURNING]);
+	pcontext->type = CONTEXT_TURNING;
+	double_list_append_as_tail(
+		&g_context_lists[CONTEXT_TURNING],
+		&pcontext->node);
+	pthread_mutex_unlock(&g_context_locks[CONTEXT_TURNING]);
+	threads_pool_wakeup_thread();
 }

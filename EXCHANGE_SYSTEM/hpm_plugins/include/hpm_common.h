@@ -70,6 +70,7 @@ typedef HTTP_REQUEST* (*GET_REQUEST)(int);
 typedef HTTP_AUTH_INFO (*GET_AUTH_INFO)(int);
 typedef BOOL (*WRITE_RESPONSE)(int, const void*, int);
 typedef void (*WAKEUP_CONTEXT)(int);
+typedef void (*ACTIVATE_CONTEXT)(int);
 typedef void (*SET_EP_INFO)(int, const char*, int);
 typedef void* (*NDR_STACK_ALLOC)(int, size_t);
 typedef BOOL (*NEW_ENVIRONMENT)();
@@ -85,6 +86,7 @@ extern GET_REQUEST get_request;
 extern GET_AUTH_INFO get_auth_info;
 extern WRITE_RESPONSE write_response;
 extern WAKEUP_CONTEXT wakeup_context;
+extern ACTIVATE_CONTEXT activate_context;
 extern LOG_INFO log_info;
 extern GET_ENVIRONMENT get_host_ID;
 extern GET_ENVIRONMENT get_default_domain;
@@ -108,6 +110,7 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	GET_AUTH_INFO get_auth_info; \
 	WRITE_RESPONSE write_response; \
 	WAKEUP_CONTEXT wakeup_context; \
+	ACTIVATE_CONTEXT activate_context; \
 	LOG_INFO log_info; \
 	GET_ENVIRONMENT get_host_ID; \
 	GET_ENVIRONMENT get_default_domain; \
@@ -132,6 +135,7 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	get_auth_info = (GET_AUTH_INFO)query_service("get_auth_info"); \
 	write_response = (WRITE_RESPONSE)query_service("write_response"); \
 	wakeup_context = (WAKEUP_CONTEXT)query_service("wakeup_context"); \
+	activate_context = (ACTIVATE_CONTEXT)query_service("activate_context"); \
 	log_info = (LOG_INFO)query_service("log_info"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	get_default_domain = (GET_ENVIRONMENT)query_service("get_default_domain"); \

@@ -9,6 +9,7 @@
 #define HPM_RETRIEVE_NONE					2
 #define HPM_RETRIEVE_WAIT					3
 #define HPM_RETRIEVE_DONE					4
+#define HPM_RETRIEVE_SCOKET					5
 
 struct _HTTP_CONTEXT;
 
@@ -18,6 +19,8 @@ typedef struct _HPM_INTERFACE {
 	BOOL (*preproc)(int);
 	BOOL (*proc)(int, const void*, uint64_t);
 	int (*retr)(int);
+	BOOL (*send)(int, const void*, int);
+	int (*receive)(int, void*, int length);
 	void (*term)(int);
 } HPM_INTERFACE;
 
@@ -53,6 +56,12 @@ BOOL hpm_processor_check_end_of_request(HTTP_CONTEXT *phttp);
 BOOL hpm_processor_proc(HTTP_CONTEXT *phttp);
 
 int hpm_processor_retrieve_response(HTTP_CONTEXT *phttp);
+
+BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
+	const void *pbuff, int length);
+
+int hpm_processor_receive(HTTP_CONTEXT *phttp,
+	char *pbuff, int length);
 
 void hpm_processor_enum_plugins(ENUM_PLUGINS enum_func);
 
