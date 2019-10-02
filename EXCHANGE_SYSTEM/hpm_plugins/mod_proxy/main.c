@@ -7,6 +7,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/epoll.h>
 #include <sys/time.h>
 #include <string.h>
 #include <unistd.h>
@@ -30,11 +31,19 @@ typedef struct _PROXY_CONTEXT {
 	PROXY_NODE *pxnode;
 	int sockd;
 	time_t last_time;
+	BOOL b_upgrated;
+	char *pmore_buff;
+	int buff_offset;
+	int buff_length;
 } PROXY_CONTEXT;
 
 DECLARE_API;
 
+static int g_epoll_fd = -1;
+static pthread_t g_thread_id;
 static DOUBLE_LIST g_proxy_list;
+static BOOL g_notify_stop = TRUE;
+static struct epoll_event *g_events;
 static PROXY_CONTEXT *g_context_list;
 
 static BOOL proxy_preproc(int context_id);
@@ -44,7 +53,13 @@ static BOOL proxy_proc(int context_id,
 
 static int proxy_retr(int context_id);
 
+static BOOL proxy_send(int context_id, const void *pbuff, int length);
+
+static int proxy_receive(int context_id, void *pbuff, int max_length);
+
 static void proxy_term(int context_id);
+
+static void* thread_work_func(void *pparam);
 
 
 BOOL HPM_LibMain(int reason, void **ppdata)
@@ -177,9 +192,27 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		for (i=0; i<context_num; i++) {
 			g_context_list[i].sockd = -1;
 		}
+		g_epoll_fd = epoll_create(context_num);
+		if (-1 == g_epoll_fd) {
+			printf("[mod_proxy]: fail to create epoll instance\n");
+			return FALSE;
+		}
+		g_events = malloc(sizeof(struct epoll_event)*context_num);
+		if (NULL == g_events) {
+			printf("[mod_proxy]: fail to allocate memory for events\n");
+			return FALSE;
+		}
+		g_notify_stop = FALSE;
+		if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
+			printf("[mod_proxy]: fail to create epoll thread\n");
+			g_notify_stop = TRUE;
+			return FALSE;
+		}
 		interface.preproc = proxy_preproc;
 		interface.proc = proxy_proc;
 		interface.retr = proxy_retr;
+		interface.send = proxy_send;
+		interface.receive = proxy_receive;
 		interface.term = proxy_term;
 		if (FALSE == register_interface(&interface)) {
 			return FALSE;
@@ -187,6 +220,18 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		printf("[mod_proxy]: plugin is loaded into system\n");
 		return TRUE;
 	case PLUGIN_FREE:
+		if (FALSE == g_notify_stop) {
+			g_notify_stop = TRUE;
+			pthread_join(g_thread_id, NULL);
+		}
+		if (-1 != g_epoll_fd) {
+			close(g_epoll_fd);
+			g_epoll_fd = -1;
+		}
+		if (NULL != g_events) {
+			free(g_events);
+			g_events = NULL;
+		}
 		if (NULL != g_context_list) {
 			context_num = get_context_num();
 			for (i=0; i<context_num; i++) {
@@ -210,6 +255,26 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		double_list_free(&g_proxy_list);
 		return TRUE;
 	}
+}
+
+static void* thread_work_func(void *pparam)
+{
+	int i, num;
+	int context_num;
+	PROXY_CONTEXT *pcontext;
+	
+	context_num = get_context_num();
+	while (FALSE == g_notify_stop) {
+		num = epoll_wait(g_epoll_fd, g_events, context_num, 1000);
+		if (num <= 0) {
+			continue;
+		}
+		for (i=0; i<num; i++) {
+			pcontext = g_events[i].data.ptr;
+			activate_context(pcontext - g_context_list);
+		}
+	}
+	pthread_exit(0);
 }
 
 static PROXY_NODE* find_proxy_node(
@@ -398,6 +463,10 @@ static BOOL proxy_proc(int context_id,
 		pcontext->sockd = -1;
 		return FALSE;
 	}
+	pcontext->b_upgrated = FALSE;
+	pcontext->pmore_buff = NULL;
+	pcontext->buff_length = 0;
+	pcontext->buff_offset = 0;
 	offset = strlen(prequest->method);
 	memcpy(tmp_buff, prequest->method, offset);
 	tmp_buff[offset] = ' ';
@@ -592,7 +661,23 @@ static BOOL proxy_proc(int context_id,
 		return FALSE;
 	}
 	ptoken ++;
-	if (0 == strncmp(ptoken, "301", 3) ||
+	if (0 == strncmp(ptoken, "101", 3)) {
+		pcontext->b_upgrated = TRUE;
+		ptoken = memmem(tmp_buff, "\r\n\r\n", 4);
+		if (offset > ptoken + 4) {
+			tmp_len = tmp_buff + offset - (ptoken + 4);
+			pcontext->pmore_buff = malloc(tmp_len);
+			if (NULL == pcontext->pmore_buff) {
+				close(pcontext->sockd);
+				pcontext->sockd = -1;
+				return FALSE;
+			}
+			memcpy(pcontext->pmore_buff, ptoken + 4, tmp_len);
+			pcontext->buff_length = tmp_len;
+		}
+		write_response(context_id, tmp_buff, ptoken + 4 - tmp_buff);
+		return TRUE;
+	} else 	if (0 == strncmp(ptoken, "301", 3) ||
 		0 == strncmp(ptoken, "302", 3) ||
 		0 == strncmp(ptoken, "303", 3) ||
 		0 == strncmp(ptoken, "304", 3) ||
@@ -623,6 +708,7 @@ static int proxy_retr(int context_id)
 {
 	int tv_msec;
 	int read_len;
+	epoll_event tmp_ev;
 	char buff[64*1024];
 	struct pollfd pfd_read;
 	PROXY_CONTEXT *pcontext;
@@ -630,6 +716,17 @@ static int proxy_retr(int context_id)
 	pcontext = &g_context_list[context_id];
 	if (-1 == pcontext->sockd) {
 		return HPM_RETRIEVE_DONE;
+	}
+	if (TRUE == pcontext->b_upgrated) {
+		tmp_ev.events = EPOLLIN | EPOLLLT;
+		tmp_ev.data.ptr = pcontext;
+		if (-1 == epoll_ctl(g_epoll_fd, EPOLL_CTL_ADD,
+			pcontext->sockd, &tmp_ev)) {
+			close(pcontext->sockd);
+			pcontext->sockd = -1;
+			return HPM_RETRIEVE_ERROR;
+		}
+		return HPM_RETRIEVE_SCOKET;
 	}
 	tv_msec = 500;
 	pfd_read.fd = pcontext->sockd;
@@ -652,9 +749,55 @@ static int proxy_retr(int context_id)
 	return HPM_RETRIEVE_WRITE;
 }
 
+static BOOL proxy_send(int context_id, const void *pbuff, int length)
+{
+	PROXY_CONTEXT *pcontext;
+	
+	pcontext = &g_context_list[context_id];
+	if (length != write(pcontext->sockd, pbuff, length)) {
+		epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, pcontext->sockd, NULL);
+		close(pcontext->sockd);
+		pcontext->sockd = -1;
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static int proxy_receive(int context_id, void *pbuff, int max_length)
+{
+	int tmp_len;
+	PROXY_CONTEXT *pcontext;
+	
+	pcontext = &g_context_list[context_id];
+	if (NULL != pcontext->pmore_buff) {
+		tmp_len = pcontext->buff_length - pcontext->buff_offset;
+		if (max_length < tmp_len) {
+			tmp_len = max_length;
+		}
+		memcpy(pbuff, pcontext->pmore_buff + pcontext->buff_offset, tmp_len);
+		pcontext->offset += tmp_len;
+		if (pcontext->offset == pcontext->buff_length) {
+			free(pcontext->pmore_buff);
+			pcontext->buff_length = 0;
+			pcontext->buff_offset = 0;
+		}
+		return tmp_len;
+	}
+	tmp_len = read(pcontext->sockd, pbuff, max_length);
+	if (0 == tmp_len) {
+		epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, pcontext->sockd, NULL);
+		close(pcontext->sockd);
+		pcontext->sockd = -1;
+	}
+	return tmp_len;
+}
+
 static void proxy_term(int context_id)
 {
 	if (-1 != g_context_list[context_id].sockd) {
+		if (TRUE == pcontext->b_upgrated) {
+			epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, pcontext->sockd, NULL);
+		}
 		close(g_context_list[context_id].sockd);
 		g_context_list[context_id].sockd = -1;
 	}

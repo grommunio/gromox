@@ -22,6 +22,8 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		interface.preproc = preproc;
 		interface.proc = proc;
 		interface.retr = retr;
+		interface.send = NULL;
+		interface.receive = NULL;
 		interface.term = term;  /* can be null if we don't want use it */
 		if (FALSE == register_interface(&interface)) {
 			return FALSE;

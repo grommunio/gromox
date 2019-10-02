@@ -15,11 +15,14 @@
 #define HPM_RETRIEVE_NONE			2
 #define HPM_RETRIEVE_WAIT			3
 #define HPM_RETRIEVE_DONE			4
+#define HPM_RETRIEVE_SCOKET			5
 
 typedef struct _HPM_INTERFACE {
 	BOOL (*preproc)(int);
 	BOOL (*proc)(int, const void*, uint64_t);
 	int (*retr)(int);
+	BOOL (*send)(int, const void*, int);
+	int (*receive)(int, void*, int length);
 	void (*term)(int);
 } HPM_INTERFACE;
 
