@@ -778,6 +778,7 @@ static int proxy_receive(int context_id, void *pbuff, int max_length)
 		pcontext->buff_offset += tmp_len;
 		if (pcontext->buff_offset == pcontext->buff_length) {
 			free(pcontext->pmore_buff);
+			pcontext->pmore_buff = NULL;
 			pcontext->buff_length = 0;
 			pcontext->buff_offset = 0;
 		}
