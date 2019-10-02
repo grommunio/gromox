@@ -794,11 +794,14 @@ static int proxy_receive(int context_id, void *pbuff, int max_length)
 
 static void proxy_term(int context_id)
 {
-	if (-1 != g_context_list[context_id].sockd) {
+	PROXY_CONTEXT *pcontext;
+	
+	pcontext = &g_context_list[context_id];
+	if (-1 != pcontext->sockd) {
 		if (TRUE == pcontext->b_upgrated) {
 			epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, pcontext->sockd, NULL);
 		}
-		close(g_context_list[context_id].sockd);
-		g_context_list[context_id].sockd = -1;
+		close(pcontext->sockd);
+		pcontext->sockd = -1;
 	}
 }
