@@ -455,7 +455,6 @@ void context_pool_activate_context(SCHEDULE_CONTEXT *pcontext)
 		return;
 	}
 	double_list_remove(&g_context_lists[CONTEXT_POLLING], &pcontext->node);
-	pcontext->b_waiting = FALSE;
 	pcontext->type = CONTEXT_SWITCHING;
 	pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
 	pthread_mutex_lock(&g_context_locks[CONTEXT_TURNING]);
