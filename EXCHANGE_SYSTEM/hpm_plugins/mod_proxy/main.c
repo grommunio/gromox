@@ -663,8 +663,8 @@ static BOOL proxy_proc(int context_id,
 	ptoken ++;
 	if (0 == strncmp(ptoken, "101", 3)) {
 		pcontext->b_upgrated = TRUE;
-		ptoken = memmem(tmp_buff, "\r\n\r\n", 4);
-		if (offset > ptoken + 4) {
+		ptoken = memmem(tmp_buff, offset, "\r\n\r\n", 4);
+		if (offset > ptoken + 4 - tmp_buff) {
 			tmp_len = tmp_buff + offset - (ptoken + 4);
 			pcontext->pmore_buff = malloc(tmp_len);
 			if (NULL == pcontext->pmore_buff) {
