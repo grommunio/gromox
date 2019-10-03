@@ -38,7 +38,7 @@ typedef struct _CONNECTION_NODE {
 typedef struct _SESSION {
 	DOUBLE_LIST_NODE node;
 	char name[32];
-	char field[SESSION_FIELD_LENGTH + 1];
+	char *pfield;
 	time_t time_stamp;
 } SESSION;
 
@@ -535,8 +535,8 @@ NEXT_LOOP:
 			plist = (DOUBLE_LIST*)str_hash_query(g_session_table,
 						pconnection->line + 6);
 			if (NULL == plist) {
-				if (1 != str_hash_add(g_session_table, pconnection->line + 6,
-					&temp_list)) {
+				if (1 != str_hash_add(g_session_table,
+					pconnection->line + 6, &temp_list)) {
 					time(&cur_time);
 					iter = str_hash_iter_init(g_session_table);
 					for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
@@ -545,8 +545,11 @@ NEXT_LOOP:
 						pnode_last1 = double_list_get_tail(plist);
 						while (pnode1=double_list_get_from_head(plist)) {
 							psession = (SESSION*)pnode1->pdata;
-							if (cur_time - psession->time_stamp >
-								g_max_interval) {
+							if (cur_time - psession->time_stamp
+								> g_max_interval) {
+								if (NULL != psession->pfield) {
+									psession->pfield = NULL;
+								}
 								free(psession);
 							} else {
 								double_list_append_as_tail(plist, pnode1);
@@ -561,8 +564,8 @@ NEXT_LOOP:
 						}
 					}
 					str_hash_iter_free(iter);
-					if (1 != str_hash_add(g_session_table, pconnection->line + 6,
-						&temp_list)) {
+					if (1 != str_hash_add(g_session_table,
+						pconnection->line + 6, &temp_list)) {
 						pthread_mutex_unlock(&g_session_lock);
 						write(pconnection->sockd, "FALSE 1\r\n", 9);	
 						continue;
@@ -578,6 +581,9 @@ NEXT_LOOP:
 				while (pnode1=double_list_get_from_head(plist)) {
 					psession = (SESSION*)pnode1->pdata;
 					if (cur_time - psession->time_stamp > g_max_interval) {
+						if (NULL != psession->pfield) {
+							psession->pfield = NULL;
+						}
 						free(psession);
 					} else {
 						double_list_append_as_tail(plist, pnode1);
@@ -604,8 +610,8 @@ NEXT_LOOP:
 				continue;
 			}
 			psession->node.pdata = psession;
+			psession->pfield = NULL;
 			produce_session(pconnection->line + 6, psession->name);
-			psession->field[0] = '\0';
 			double_list_append_as_tail(plist, &psession->node);
 			time(&psession->time_stamp);
 			memcpy(temp_line, "TRUE ", 5);
@@ -635,7 +641,10 @@ NEXT_LOOP:
 				psession = (SESSION*)pnode1->pdata;
 				if (0 == strncmp(psession->name, pspace, 32)) {
 					double_list_remove(plist, pnode1);
-					free(pnode1->pdata);
+					if (NULL != psession->pfield) {
+						free(psession->pfield);
+					}
+					free(psession);
 					break;
 				}
 			}
@@ -679,6 +688,15 @@ NEXT_LOOP:
 				time(&cur_time);
 				if (cur_time - psession->time_stamp <= g_max_interval) {
 					time(&psession->time_stamp);
+					if (NULL == psession->pfield) {
+						psession->pfield = malloc(sizeof(
+								SESSION_FIELD_LENGTH + 1));
+						if (NULL == psession->pfield) {
+							pthread_mutex_unlock(&g_session_lock);
+							write(pconnection->sockd, "FALSE\r\n", 7);
+							continue;
+						}
+					}
 					strncpy(psession->field, pspace1, SESSION_FIELD_LENGTH);
 					pthread_mutex_unlock(&g_session_lock);
 					write(pconnection->sockd, "TRUE\r\n", 6);
@@ -689,7 +707,10 @@ NEXT_LOOP:
 						str_hash_remove(g_session_table, pconnection->line + 4);
 					}
 					pthread_mutex_unlock(&g_session_lock);
-					free(pnode1->pdata);
+					if (NULL != psession->pfield) {
+						free(psession->pfield);
+					}
+					free(psession);
 					write(pconnection->sockd, "FALSE\r\n", 7);
 				}
 			} else {
@@ -732,7 +753,10 @@ NEXT_LOOP:
 						str_hash_remove(g_session_table, pconnection->line + 6);
 					}
 					pthread_mutex_unlock(&g_session_lock);
-					free(pnode1->pdata);
+					if (NULL != psession->pfield) {
+						free(psession->pfield);
+					}
+					free(psession);
 					write(pconnection->sockd, "FALSE\r\n", 7);
 				}
 			} else {
@@ -766,8 +790,13 @@ NEXT_LOOP:
 				time(&cur_time);
 				if (cur_time - psession->time_stamp <= g_max_interval) {
 					time(&psession->time_stamp);
-					temp_len = snprintf(temp_line, sizeof(temp_line),
-									"TRUE %s\r\n", psession->field);	
+					if (NULL == psession->pfield) {
+						memcpy(temp_buff, "TRUE \r\n", 7);
+						tmp_len = 7;
+					} else {
+						temp_len = snprintf(temp_line, sizeof(temp_line),
+										"TRUE %s\r\n", psession->pfield);
+					}
 					pthread_mutex_unlock(&g_session_lock);
 					write(pconnection->sockd, temp_line, temp_len);
 				} else {
@@ -777,7 +806,10 @@ NEXT_LOOP:
 						str_hash_remove(g_session_table, pconnection->line + 6);
 					}
 					pthread_mutex_unlock(&g_session_lock);
-					free(pnode1->pdata);
+					if (NULL != psession->pfield) {
+						free(psession->pfield);
+					}
+					free(psession);
 					write(pconnection->sockd, "FALSE\r\n", 7);
 				}
 			} else {
