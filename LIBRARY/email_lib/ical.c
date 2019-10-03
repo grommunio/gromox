@@ -651,7 +651,8 @@ static size_t ical_serialize_value_string(char *pbuff,
 			if (line_offset >= 0) {
 				line_offset ++;
 			}
-		} else if ('\r' == string[i] && '\n' == string[i + 1]) {
+		} else if ('\n' == string[i] || ('\r' ==
+			string[i] && '\n' == string[i + 1])) {
 			if (offset + 1 >= max_length) {
 				return max_length;
 			}
@@ -659,7 +660,9 @@ static size_t ical_serialize_value_string(char *pbuff,
 			offset ++;
 			pbuff[offset] = 'n';
 			offset ++;
-			i ++;
+			if ('\r' == string[i]) {
+				i ++;
+			}
 			if (line_offset >= 0) {
 				line_offset += 2;
 			}
