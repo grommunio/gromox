@@ -57,7 +57,7 @@ width=\"60%\" border=0><TBODY><TR><TD align=right>\n"
 /* fill username label here */
 
 #define HTML_LOGIN_7    \
-": <INPUT class=FormInput type=text name=username value='administrator' tabindex=1 />\n\
+": <INPUT class=FormInput type=text name=username tabindex=1 />\n\
 </TD></TR><TR><TD align=right>\n"
 
 /* fill password label here */
