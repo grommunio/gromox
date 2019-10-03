@@ -343,7 +343,8 @@ int main(int argc, char **argv)
 
 	}
 	
-	if (0 != pthread_create(&thr_id, NULL, accept_work_func, (void*)(long)sockd)) {
+	if (0 != pthread_create(&thr_id, NULL,
+		accept_work_func, (void*)(long)sockd)) {
 		printf("[system]: fail to create accept thread\n");
 
 		for (i=g_threads_num-1; i>=0; i--) {
@@ -539,7 +540,8 @@ NEXT_LOOP:
 					pconnection->line + 6, &temp_list)) {
 					time(&cur_time);
 					iter = str_hash_iter_init(g_session_table);
-					for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
+					for (str_hash_iter_begin(iter);
+						!str_hash_iter_done(iter);
 						str_hash_iter_forward(iter)) {
 						plist = str_hash_iter_get_value(iter, NULL);
 						pnode_last1 = double_list_get_tail(plist);
@@ -548,7 +550,7 @@ NEXT_LOOP:
 							if (cur_time - psession->time_stamp
 								> g_max_interval) {
 								if (NULL != psession->pfield) {
-									psession->pfield = NULL;
+									free(psession->pfield);
 								}
 								free(psession);
 							} else {
@@ -571,7 +573,8 @@ NEXT_LOOP:
 						continue;
 					}
 				}
-				plist = str_hash_query(g_session_table, pconnection->line + 6);
+				plist = str_hash_query(g_session_table,
+								pconnection->line + 6);
 				double_list_init(plist);
 			}
 
@@ -582,7 +585,7 @@ NEXT_LOOP:
 					psession = (SESSION*)pnode1->pdata;
 					if (cur_time - psession->time_stamp > g_max_interval) {
 						if (NULL != psession->pfield) {
-							psession->pfield = NULL;
+							free(psession->pfield);
 						}
 						free(psession);
 					} else {
