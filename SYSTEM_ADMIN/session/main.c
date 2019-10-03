@@ -697,7 +697,7 @@ NEXT_LOOP:
 							continue;
 						}
 					}
-					strncpy(psession->field, pspace1, SESSION_FIELD_LENGTH);
+					strncpy(psession->pfield, pspace1, SESSION_FIELD_LENGTH);
 					pthread_mutex_unlock(&g_session_lock);
 					write(pconnection->sockd, "TRUE\r\n", 6);
 				} else {
@@ -791,8 +791,8 @@ NEXT_LOOP:
 				if (cur_time - psession->time_stamp <= g_max_interval) {
 					time(&psession->time_stamp);
 					if (NULL == psession->pfield) {
-						memcpy(temp_buff, "TRUE \r\n", 7);
-						tmp_len = 7;
+						memcpy(temp_line, "TRUE \r\n", 7);
+						temp_len = 7;
 					} else {
 						temp_len = snprintf(temp_line, sizeof(temp_line),
 										"TRUE %s\r\n", psession->pfield);
