@@ -3388,7 +3388,7 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 		return FALSE;	
 	}
 	ical_free(&ical);
-	pical_bin->cb = strlen(tmp_buff) + 1;
+	pical_bin->cb = strlen(tmp_buff);
 	pical_bin->pb = common_util_dup(tmp_buff);
 	if (NULL == pical_bin->pb) {
 		return FALSE;
@@ -3464,7 +3464,7 @@ BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
 		return FALSE;	
 	}
 	vcard_free(&vcard);
-	pvcf_bin->cb = strlen(pvcf_bin->pb) + 1;
+	pvcf_bin->cb = strlen(pvcf_bin->pb);
 	return TRUE;
 }
 	
