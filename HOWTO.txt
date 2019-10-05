@@ -254,10 +254,13 @@ maximum files: maximum files number kept in the area (e.g. 100000000)
 
 #for reference of system administration and domain administration, please see the sys-admin.pdf
 
-#install webmail, download webmail from https://github.com/steep-system/webmail and extract it into /var/webmail
-#edit /var/webmail/config/config.ini
-#under section [path]
-#modify host and vhost to your hostname of webmail
+#install webapp, download webmail from https://github.com/steep-system/STEEP_WEBAPP
+#steep webapp comes from kopano webapp, for more information, please visit https://kopano.io/
+cd STEEP_WEBAPP-master
+make
+cp -R deploy /var/steep-webapp
+cd /var/steep-webapp
+mv config.php.dist config.php
 
 #install z-push
 #download z-push from https://github.com/Z-Hub/Z-Push and extract it
