@@ -3138,9 +3138,6 @@ RETRYING:
 		case ADDRESS_TYPE_ALIAS:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
-			if ((atoi(myrow[1])&USER_PRIVILEGE_PUBADDR) == 0) {
-				continue;
-			}
 			mem_file_write(pfile, &address_type, sizeof(int));
 			temp_id = atoi(myrow[0]);
 			mem_file_write(pfile, &temp_id, sizeof(int));
@@ -3326,9 +3323,6 @@ RETRYING:
 		case ADDRESS_TYPE_ALIAS:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
-			if ((atoi(myrow[1])&USER_PRIVILEGE_PUBADDR) == 0) {
-				continue;
-			}
 			mem_file_write(pfile, &address_type, sizeof(int));
 			temp_id = atoi(myrow[0]);
 			mem_file_write(pfile, &temp_id, sizeof(int));
@@ -3513,9 +3507,6 @@ RETRYING:
 		case ADDRESS_TYPE_ALIAS:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
-			if ((atoi(myrow[1])&USER_PRIVILEGE_PUBADDR) == 0) {
-				continue;
-			}
 			mem_file_write(pfile, &address_type, sizeof(int));
 			temp_id = atoi(myrow[0]);
 			mem_file_write(pfile, &temp_id, sizeof(int));
