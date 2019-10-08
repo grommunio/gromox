@@ -950,7 +950,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 	uint32_t result;
 	int username_len;
 	int password_len;
-	zval **ppzusername;
+	zval **ppzmethod;
 	zval **ppzserver_vars;
 	MAPI_RESOURCE *presource;
 	
@@ -963,6 +963,19 @@ ZEND_FUNCTION(mapi_logon_ex)
 		goto THROW_EXCEPTION;
 	}
 	if ('\0' == password[0]) {
+		/* enable empty password only when php is running under cli mode */
+		if (PG(auto_globals_jit)) {
+			zend_is_auto_global(ZEND_STRL("_SERVER") TSRMLS_CC);
+		}
+		if (zend_hash_find(&EG(symbol_table), "_SERVER", sizeof("_SERVER"),
+			(void**)&ppzserver_vars) == SUCCESS && Z_TYPE_PP(ppzserver_vars)
+			== IS_ARRAY && zend_hash_find(Z_ARRVAL_PP(ppzserver_vars),
+			"REQUEST_METHOD", sizeof("REQUEST_METHOD"), (void**)&ppzmethod)
+			== SUCCESS && Z_TYPE_PP(ppzmethod) == IS_STRING &&
+			Z_STRLEN_PP(ppzmethod) > 0) {
+			MAPI_G(hr) = EC_ACCESS_DENIED;
+			goto THROW_EXCEPTION;
+		}
 		password = NULL;
 	}
 	presource = emalloc(sizeof(MAPI_RESOURCE));
