@@ -219,8 +219,6 @@ DB_ITEM* db_engine_get_db(const char *path)
 		} else {
 			sqlite3_exec(pdb->psqlite, "PRAGMA foreign_keys=ON",
 				NULL, NULL, NULL);
-			sqlite3_exec(pdb->psqlite, "PRAGMA journal_mode=OFF",
-				NULL, NULL, NULL);
 			if (FALSE == g_async) {
 				sqlite3_exec(pdb->psqlite, "PRAGMA synchronous=OFF",
 					NULL, NULL, NULL);

@@ -2897,8 +2897,6 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 		}
 		sqlite3_exec(pidb->psqlite, "PRAGMA foreign_keys=ON",
 			NULL, NULL, NULL);
-		sqlite3_exec(pidb->psqlite, "PRAGMA journal_mode=OFF",
-			NULL, NULL, NULL);
 		if (FALSE == g_async) {
 			sqlite3_exec(pidb->psqlite, "PRAGMA synchronous=OFF",
 				NULL, NULL, NULL);
