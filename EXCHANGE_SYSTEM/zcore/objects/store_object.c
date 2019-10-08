@@ -1388,7 +1388,8 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		if (FALSE == system_services_get_user_lang(
-			pstore->account, temp_buff)) {
+			pstore->account, temp_buff) ||
+			'\0' == temp_buff[0]) {
 			return FALSE;	
 		}
 		*ppvalue = (void*)common_util_lang_to_i18n(temp_buff);
