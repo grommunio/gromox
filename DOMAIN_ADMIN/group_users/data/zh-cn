@@ -18,7 +18,7 @@ MAIN_CELL				移动电话
 MAIN_HOMEADDRESS		家庭住址
 MAIN_MEMO				备注
 MAIN_MAX_SIZE			最大容量
-MAIN_LANGUAGE			exchange语言
+MAIN_LANGUAGE			语言
 LANGUAGE_ITEMS			zh:简体中文|en:英语|jp:日语|cn:繁体中文
 MAIN_TYPE				类型
 USER_TYPE_NORMAL		普通用户

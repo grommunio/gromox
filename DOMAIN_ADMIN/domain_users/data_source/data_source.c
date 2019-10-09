@@ -357,10 +357,11 @@ RETRYING:
 }
 
 BOOL data_source_add_user(const char *username, const char *password,
-	const char *title, const char *real_name, const char *nickname,
-	const char *tel, const char *cell, const char *homeaddress,
-	const char *memo, int group_id, const char *maildir, int max_size,
-	int max_file, int privilege_bits, int address_status, int sub_type,
+	const char *lang, const char *title, const char *real_name,
+	const char *nickname, const char *tel, const char *cell,
+	const char *homeaddress, const char *memo, int group_id,
+	const char *maildir, int max_size, int max_file,
+	int privilege_bits, int address_status, int sub_type,
 	int *presult, int *puser_id)
 {
 	LOCKD lockd;
@@ -588,14 +589,14 @@ RETRYING:
 	data_source_encode_squote(cell, temp_cell);
 	data_source_encode_squote(homeaddress, temp_home);
 	data_source_encode_squote(memo, temp_memo);
-	snprintf(sql_string, 4096, "INSERT INTO users (username, password,"
-		"title, real_name, nickname, tel, cell, homeaddress, memo, domain_id, "
-		"group_id, maildir, max_size, max_file, create_day, privilege_bits, "
-		"address_status, address_type, sub_type) VALUES ('%s', '%s', '%s', '%s', "
-		"'%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, '%s', %d, %d, 0, %d)",
-		temp_user, password, temp_title, temp_real, temp_nick, temp_tel, temp_cell,
-		temp_home, temp_memo, domain_id, group_id, maildir, max_size, max_file,
-		str_create, temp_privilege, temp_status, sub_type);
+	snprintf(sql_string, 4096, "INSERT INTO users (username, password, lang, "
+		"title, real_name, nickname, tel, cell, homeaddress, memo, domain_id,"
+		" group_id, maildir, max_size, max_file, create_day, privilege_bits, "
+		"address_status, address_type, sub_type) VALUES ('%s', '%s', '%s', '%s',"
+		"'%s', '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, '%s', %d, %d,"
+		"0, %d)", temp_user, password, lang, temp_title, temp_real, temp_nick,
+		temp_tel, temp_cell, temp_home, temp_memo, domain_id, group_id, maildir,
+		max_size, max_file, str_create, temp_privilege, temp_status, sub_type);
 	
 	if (0 != mysql_query(pmysql, sql_string)) {
 		system_log_info("[data_source]: fail to query mysql server, "
@@ -629,11 +630,11 @@ RETRYING:
 		data_source_encode_squote(virtual_address, temp_address);
 		lower_string(temp_address);
 		snprintf(sql_string, 4096, "INSERT INTO users (username, password, "
-			"title, real_name, nickname, tel, cell, homeaddress, memo, "
-			"domain_id, group_id, maildir, max_size, max_file, create_day, "
-			"privilege_bits, address_status, address_type) VALUES "
-			"('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, "
-			"'%s', %d, %d, '%s', %d, %d, 3)", temp_address, password, temp_title,
+			"lang, title, real_name, nickname, tel, cell, homeaddress, memo,"
+			" domain_id, group_id, maildir, max_size, max_file, create_day, "
+			"privilege_bits, address_status, address_type) VALUES ('%s', '%s',"
+			" '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', "
+			"%d, %d, '%s', %d, %d, 3)", temp_address, password, lang, temp_title,
 			temp_real, temp_nick, temp_tel, temp_cell, temp_home, temp_memo,
 			domain_id, group_id, maildir, max_size, max_file, str_create,
 			temp_privilege, temp_status);

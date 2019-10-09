@@ -1235,13 +1235,13 @@ static BOOL upload_ui_batch_input(const char *groupname,
 			} else {
 				temp_password[0] = '\0';
 			}
-			snprintf(sql_string, 1024, "INSERT INTO users (username, "
-				"password, title, real_name, nickname, tel, cell, homeaddress,"
+			snprintf(sql_string, 1024, "INSERT INTO users (username, password,"
+				" lang, title, real_name, nickname, tel, cell, homeaddress,"
 				" memo, domain_id, group_id, maildir, max_size, max_file, "
-				"privilege_bits, create_day) VALUES ('%s', '%s', '%s', '%s', "
-				"'%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, %d, "
-				"'%s')", temp_buff, temp_password, temp_title, temp_real,
-				temp_nick, temp_tel, temp_cell, temp_home, temp_memo,
+				"privilege_bits, create_day) VALUES ('%s', '%s', '%s', '%s',"
+				"'%s', '%s', '%s', '%s', '%s', '%s', %d, %d, '%s', %d, %d, %d,"
+				" '%s')", temp_buff, temp_password, pitem_user->lang, temp_title,
+				temp_real, temp_nick, temp_tel, temp_cell, temp_home, temp_memo,
 				domain_id, group_id, maildir, pitem_user->size, g_max_file,
 				privilege_bits, str_create);
 	
@@ -1807,7 +1807,13 @@ static BOOL upload_ui_xls_input(const char *domainname,
 				strcpy(pitem->lang, row->cells.cell[11].str);
 			}
 		}
-
+		if (0 != strcasecmp(pitem->lang, "en") &&
+			0 != strcasecmp(pitem->lang, "jp") &&
+			0 != strcasecmp(pitem->lang, "zh") &&
+			0 != strcasecmp(pitem->lang, "cn")) {
+			strcpy(pitem->lang, "en");	
+		}
+		
 		if (NULL == row->cells.cell[3].str) {
 			pitem->result = ITEM_XLS_SIZE;
 			b_touched = TRUE;

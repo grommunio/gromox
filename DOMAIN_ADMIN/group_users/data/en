@@ -18,7 +18,7 @@ MAIN_CELL				mobile\ phone
 MAIN_HOMEADDRESS		family\ address
 MAIN_MEMO				memo
 MAIN_MAX_SIZE			maximum\ space
-MAIN_LANGUAGE			exchange\ language
+MAIN_LANGUAGE			language
 LANGUAGE_ITEMS			en:English|zh:Simplified\ Chinese|jp:Japanese|cn:Triditional\ Chinese
 MAIN_TYPE				type
 USER_TYPE_NORMAL		normal

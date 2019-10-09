@@ -1027,6 +1027,12 @@ int list_ui_run()
 			if (0 == strcasecmp(type, "add") && NULL == lang) {
 				goto POST_ERROR;
 			}
+			if (0 != strcasecmp(lang, "en") &&
+				0 != strcasecmp(lang, "jp") &&
+				0 != strcasecmp(lang, "zh") &&
+				0 != strcasecmp(lang, "cn")) {
+				goto POST_ERROR;
+			}
 			pvalue = request_parser_get(pparser, "group_id");
 			if (NULL == pvalue) {
 				goto POST_ERROR;
@@ -1130,10 +1136,10 @@ int list_ui_run()
 				list_ui_to_utf8(cell, new_cell,64);
 				list_ui_to_utf8(homeaddress, new_home, 128);
 				list_ui_to_utf8(memo, new_memo, 128);
-				if (FALSE == data_source_add_user(username, encrypt_pw, new_title,
-					new_name, new_nick, new_tel, new_cell, new_home, new_memo,
-					group_id, maildir, max_size, g_max_file, privilege_bits,
-					address_status, sub_type, &result, &user_id)) {
+				if (FALSE == data_source_add_user(username, encrypt_pw,
+					lang, new_title, new_name, new_nick, new_tel, new_cell,
+					new_home, new_memo, group_id, maildir, max_size, g_max_file,
+					privilege_bits, address_status, sub_type, &result, &user_id)) {
 					list_ui_free_dir(FALSE, maildir);
 					if ('\0' != media_area[0]) {
 						list_ui_free_dir(TRUE, mediadir);

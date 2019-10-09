@@ -147,11 +147,11 @@ BOOL data_source_query(const char *groupname, const char *username,
 	DATA_COLLECT *pcollect);
 
 BOOL data_source_add_user(const char *groupname, const char *username,
-	const char *password, const char *title, const char *real_name,
-	const char *nickname, const char *tel, const char *cell,
-	const char *homeaddress, const char *memo, const char *maildir,
-	int max_size, int max_file, int privilege_bits, int address_status,
-	int sub_type, int *presult, int *puser_id);
+	const char *password, const char *lang, const char *title,
+	const char *real_name, const char *nickname, const char *tel,
+	const char *cell, const char *homeaddress, const char *memo,
+	const char *maildir, int max_size, int max_file, int privilege_bits,
+	int address_status, int sub_type, int *presult, int *puser_id);
 
 BOOL data_source_add_alias(const char *groupname, const char *username,
 	const char *alias, int *presult);
