@@ -1024,14 +1024,14 @@ int list_ui_run()
 			}
 			address_status = atoi(pvalue);
 			lang = request_parser_get(pparser, "lang");
-			if (0 == strcasecmp(type, "add") && NULL == lang) {
-				goto POST_ERROR;
-			}
-			if (0 != strcasecmp(lang, "en") &&
-				0 != strcasecmp(lang, "jp") &&
-				0 != strcasecmp(lang, "zh") &&
-				0 != strcasecmp(lang, "cn")) {
-				goto POST_ERROR;
+			if (0 == strcasecmp(type, "add")) {
+				if (NULL == lang ||
+					(0 != strcasecmp(lang, "en") &&
+					0 != strcasecmp(lang, "jp") &&
+					0 != strcasecmp(lang, "zh") &&
+					0 != strcasecmp(lang, "cn"))) {
+					goto POST_ERROR;
+				}
 			}
 			pvalue = request_parser_get(pparser, "group_id");
 			if (NULL == pvalue) {
