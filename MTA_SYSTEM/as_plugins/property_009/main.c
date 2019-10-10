@@ -104,15 +104,22 @@ static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
 	}
 	ptr += 10;
 	if ('"' == ptr[32]) {
-		tmp_len = 32;
-	} else {
-		return MESSAGE_ACCEPT;
-	}
-	for (i=0; i<tmp_len; i++) {
-		if (('0' <= ptr[i] && ptr[i] <= '9') ||
-			('a' <= ptr[i] && ptr[i] <= 'f')) {
-			continue;
+		for (i=0; i<32; i++) {
+			if (('0' <= ptr[i] && ptr[i] <= '9') ||
+				('a' <= ptr[i] && ptr[i] <= 'f')) {
+				continue;
+			}
+			return MESSAGE_ACCEPT;
 		}
+	} else if (0 == strncmp(ptr, "--", 2) && '"' == ptr[36]) {
+		ptr += 2;
+		for (i=0; i<34; i++) {
+			if ('0' <= ptr[i] && ptr[i] <= '9')) {
+				continue;
+			}
+			return MESSAGE_ACCEPT;
+		}
+	} else {
 		return MESSAGE_ACCEPT;
 	}
 	if (TRUE == check_tagging(pmail->penvelop->from,
