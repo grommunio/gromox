@@ -114,7 +114,7 @@ static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
 	} else if (0 == strncmp(ptr, "--", 2) && '"' == ptr[36]) {
 		ptr += 2;
 		for (i=0; i<34; i++) {
-			if ('0' <= ptr[i] && ptr[i] <= '9')) {
+			if ('0' <= ptr[i] && ptr[i] <= '9') {
 				continue;
 			}
 			return MESSAGE_ACCEPT;
