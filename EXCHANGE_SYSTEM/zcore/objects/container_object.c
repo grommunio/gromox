@@ -1485,13 +1485,11 @@ BOOL container_object_query_user_table(
 			}
 		} else {
 			if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
-				i = 0;
-				for (psnode=single_list_get_head(&pbase->gal_list); NULL!=psnode;
-					psnode=single_list_get_after(&pbase->gal_list, psnode)) {
+				for (i=0,psnode=single_list_get_head(&pbase->gal_list); NULL!=psnode;
+					psnode=single_list_get_after(&pbase->gal_list, psnode),i++) {
 					if (i < first_pos) {
-						break;
+						continue;
 					}
-					i ++;
 					pset->pparray[pset->count] =
 						common_util_alloc(sizeof(TPROPVAL_ARRAY));
 					if (NULL == pset->pparray[pset->count]) {
