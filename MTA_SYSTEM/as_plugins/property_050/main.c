@@ -118,7 +118,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		}
 		ptoken ++;
 	}
-	if (low_num < 2 || 1 == up_num) {
+	if (low_num < 1 || 1 == up_num) {
 		return MESSAGE_ACCEPT;
 	}
 	if (NULL != spam_statistic) {
