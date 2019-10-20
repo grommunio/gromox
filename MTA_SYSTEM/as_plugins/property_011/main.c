@@ -1,7 +1,12 @@
-#include "as_common.h"
 #include "config_file.h"
+#include "as_common.h"
+#include "mail_func.h"
 #include "util.h"
+#include <ctype.h>
 #include <stdio.h>
+#include <netdb.h>
+#include <string.h>
+#include <sys/socket.h> 
 
 #define SPAM_STATISTIC_PROPERTY_011        40
 
@@ -67,42 +72,53 @@ BOOL AS_LibMain(int reason, void **ppdata)
 static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
-	int i;
-	char *ptr;
 	int tmp_len;
+	int h_errnop;
+	in_addr_t addr;
 	char buff[1024];
+	struct hostent hostinfo, *phost;
 	
 	if (TRUE == pmail->penvelop->is_outbound ||
 		TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;
 	}
-	if (mem_file_get_total_length(&pmail->phead->f_xmailer) > 0) {
+	tmp_len = mem_file_read(&pmail->phead->f_xmailer, buff, 1024);
+    if (MEM_END_OF_FILE == tmp_len) {
+        return MESSAGE_ACCEPT;
+    }
+	if (0 != strncasecmp(buff, "Foxmail 7, 0, 1, 91[cn]", 23)) {
 		return MESSAGE_ACCEPT;
 	}
-	tmp_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
-	if (MEM_END_OF_FILE == tmp_len) {   /* no content type */
-		return MESSAGE_ACCEPT;
-	}
-	ptr = search_string(buff, "boundary=\"------------", tmp_len);
-	if (NULL == ptr || '"' != ptr[46]) {
-		return MESSAGE_ACCEPT;
-	}
-	ptr += 22;
-	for (i=0; i<24; i++) {
-		if ('0' <= ptr[i] && ptr[i] <= '9') {
-			continue;
+	if (MULTI_PARTS_MAIL == pmail->phead->mail_part) {
+		tmp_len = mem_file_read(&pmail->phead->f_content_type, buff, 1024);
+		if (MEM_END_OF_FILE == tmp_len) {   /* no content type */
+			return MESSAGE_ACCEPT;
 		}
-		return MESSAGE_ACCEPT;
+		if (NULL != search_string(buff,
+			"boundary=\"----=_001_NextPart", tmp_len)) {
+			return MESSAGE_ACCEPT;	
+		}
+		strncpy(reason, g_return_string, length);
+		if (NULL != spam_statistic) {
+			spam_statistic(SPAM_STATISTIC_PROPERTY_011);
+		}
+		return MESSAGE_REJECT;
 	}
 	if (TRUE == check_tagging(pmail->penvelop->from,
 		&pmail->penvelop->f_rcpt_to)) {
 		mark_context_spam(context_ID);
 		return MESSAGE_ACCEPT;
-	} else {
-		if (NULL != spam_statistic) {
-			spam_statistic(SPAM_STATISTIC_PROPERTY_011);
-		}
-		strncpy(reason, g_return_string, length);
-		return MESSAGE_REJECT;
 	}
+	inet_pton(AF_INET, pconnection->client_ip, &addr);
+	if (0 == gethostbyaddr_r((char*)&addr, sizeof(addr),
+		AF_INET, &hostinfo, buff, sizeof(buff), &phost,
+		&h_errnop) && NULL != phost && NULL == extract_ip(
+		phost->h_name, buff)) {
+		return MESSAGE_ACCEPT;
+	}
+	strncpy(reason, g_return_string, length);
+	if (NULL != spam_statistic) {
+		spam_statistic(SPAM_STATISTIC_PROPERTY_011);
+	}
+	return MESSAGE_REJECT;
 }
