@@ -119,12 +119,6 @@ static int mail_boundary(int context_ID, MAIL_ENTITY *pmail,
 			}
 			return MESSAGE_ACCEPT;
 		}
-	} else if (0 == strncmp(ptr, "----=_NextPart_", 15 &&
-		'_' == ptr[14] && '_' == ptr[23] && '_' == ptr[28] &&
-		'_' == ptr[33] && '_' == ptr[38] && '"' == ptr[51])) {
-		if (0 != mem_file_get_total_length(&pmail->phead->f_xmailer)) {
-			return MESSAGE_ACCEPT;
-		}
 	} else {
 		return MESSAGE_ACCEPT;
 	}
