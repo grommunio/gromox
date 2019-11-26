@@ -1,4 +1,4 @@
-#include "flusher_common.h"
+#include <gromox/flusher_common.h>
 #include "message_enqueue.h"
 #include "config_file.h"
 #include "util.h"

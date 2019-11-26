@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <unistd.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>

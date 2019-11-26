@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "gateway_dispatch.h"
 #include "config_file.h"
 #include "util.h"

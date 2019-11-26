@@ -1,8 +1,9 @@
 #ifndef _H_CACHE_QUEUE_
 #define _H_CACHE_QUEUE_
-#include "hook_common.h"
+
 #include "bounce_producer.h"
 #include <time.h>
+#include <gromox/hook_common.h>
 
 enum{
 	CACHE_QUEUE_SCAN_INTERVAL,

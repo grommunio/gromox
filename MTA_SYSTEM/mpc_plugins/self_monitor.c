@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "config_file.h"
 #include <sys/socket.h>
 #include <sys/types.h>

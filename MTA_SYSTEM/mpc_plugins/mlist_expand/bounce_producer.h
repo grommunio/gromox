@@ -1,6 +1,7 @@
 #ifndef _H_BOUNCE_PRODUCER_
 #define _H_BOUNCE_PRODUCER_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 enum{
 	BOUNCE_MLIST_SPECIFIED,

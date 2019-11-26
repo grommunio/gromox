@@ -1,6 +1,7 @@
 #ifndef _H_SMTP_CLONE_
 #define _H_SMTP_CLONE_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 enum{
 	SMTP_CLONE_OK,

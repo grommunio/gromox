@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "domain_keyword.h"
 #include "bounce_producer.h"
 #include "config_file.h"

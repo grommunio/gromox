@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include <stdio.h>
 
 DECLARE_API;

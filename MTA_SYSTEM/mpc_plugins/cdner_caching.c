@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "double_list.h"
 #include "config_file.h"
 #include "util.h"

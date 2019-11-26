@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <unistd.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "mail_func.h"
 #include "util.h"
 #include <fcntl.h>

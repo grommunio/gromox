@@ -1,5 +1,5 @@
 #include "mail_func.h"
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "spam_complain.h"
 #include <stdio.h>
 

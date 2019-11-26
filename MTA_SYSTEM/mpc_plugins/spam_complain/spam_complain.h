@@ -1,6 +1,7 @@
 #ifndef _H_SPAM_COMPLAIN_
 #define _H_SPAM_COMPLAIN__
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 extern void spam_complain_init(void);
 extern int spam_complain_run(void);

@@ -1,5 +1,5 @@
 #include "bounce_audit.h"
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "mail_func.h"
 #include "str_hash.h"
 #include "util.h"

@@ -1,5 +1,5 @@
 #include "net_failure.h"
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "util.h"
 #include <stdio.h>
 #include <time.h>

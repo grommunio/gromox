@@ -1,9 +1,7 @@
 #ifndef _H_DOMAIN_SUBSYSTEM_
 #define _H_DOMAIN_SUBSYSTEM_
 
-#include "hook_common.h"
-
-
+#include <gromox/hook_common.h>
 
 void domain_subsystem_init(const char *config_path, const char *list_path,
 	const char *queue_path, int times, int interval, int max_thr);

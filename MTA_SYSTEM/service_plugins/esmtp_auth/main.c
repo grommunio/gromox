@@ -1,4 +1,4 @@
-#include "service_common.h"
+#include <gromox/mtasvc_common.h>
 #include "lib_buffer.h"
 #include "config_file.h"
 #include "service_auth.h"

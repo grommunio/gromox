@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "config_file.h"
 #include "exmdb_local.h"
 #include "cache_queue.h"

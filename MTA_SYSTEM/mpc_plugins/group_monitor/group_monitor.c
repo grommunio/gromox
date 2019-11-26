@@ -1,5 +1,5 @@
 #include "group_monitor.h"
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "mail_func.h"
 #include "list_file.h"
 #include "str_hash.h"

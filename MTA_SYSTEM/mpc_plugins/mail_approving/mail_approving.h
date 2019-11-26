@@ -1,6 +1,7 @@
 #ifndef _H_MAIL_APPROVING_
 #define _H_MAIL_APPROVING_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 void mail_approving_init(const char *root_path, int growing_num,
 	const char *dm_host);

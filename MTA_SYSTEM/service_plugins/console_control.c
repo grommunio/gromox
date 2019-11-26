@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "service_common.h"
+#include <gromox/mtasvc_common.h>
 #include "util.h"
 #include "mail_func.h"
 #include "config_file.h"

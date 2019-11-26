@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <arpa/inet.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "list_file.h"
 #include "config_file.h"
 #include "util.h"

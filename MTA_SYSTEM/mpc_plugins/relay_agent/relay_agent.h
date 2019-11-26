@@ -1,6 +1,7 @@
 #ifndef _H_RELAY_AGENT_
 #define _H_RELAY_AGENT_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 #define RESPONSE_CONNECT_ACCEPT     1
 

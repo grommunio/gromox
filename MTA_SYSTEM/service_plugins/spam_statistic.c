@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "service_common.h"
+#include <gromox/mtasvc_common.h>
 #include "list_file.h"
 #include <time.h>
 #include <stdio.h>

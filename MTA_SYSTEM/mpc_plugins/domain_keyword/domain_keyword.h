@@ -1,6 +1,7 @@
 #ifndef _H_DOMAIN_KEYWORD_
 #define _H_DOMAIN_KEYWORD_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 void domain_keyword_init(const char *root_path, int growing_num,
 	const char *dm_host);

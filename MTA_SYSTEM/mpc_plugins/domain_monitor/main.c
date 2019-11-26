@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "domain_monitor.h"
 #include "config_file.h"
 #include <stdio.h>

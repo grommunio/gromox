@@ -1,7 +1,7 @@
 #ifndef _H_REMOTE_POSTMAN_
 #define _H_REMOTE_POSTMAN_
 
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 
 void remote_postman_init(int max_thr, int files_num,
 	int times, int interval, int alarm_interval, BOOL ssl_switch,

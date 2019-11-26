@@ -1,7 +1,7 @@
 #ifndef _H_DOMAIN_MAILBOX_
 #define _H_DOMAIN_MAILBOX_
-#include "hook_common.h"
 
+#include <gromox/hook_common.h>
 
 void domain_mailbox_init(const char *path);
 extern int domain_mailbox_run(void);

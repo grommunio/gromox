@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <unistd.h>
-#include "service_common.h"
+#include <gromox/mtasvc_common.h>
 #include "tagging_table.h"
 #include "config_file.h"
 #include <sys/stat.h>

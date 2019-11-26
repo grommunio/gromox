@@ -1,8 +1,8 @@
 #ifndef _H_BOUNCE_PRODUCER_
 #define _H_BOUNCE_PRODUCER_
-#include "hook_common.h"
-#include <time.h>
 
+#include <time.h>
+#include <gromox/hook_common.h>
 
 void bounce_producer_init(const char *path, const char* separator);
 extern int bounce_producer_run(void);

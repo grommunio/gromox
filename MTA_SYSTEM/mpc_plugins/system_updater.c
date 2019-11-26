@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <string.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "stream.h"
 #include "util.h"
 #include "config_file.h"

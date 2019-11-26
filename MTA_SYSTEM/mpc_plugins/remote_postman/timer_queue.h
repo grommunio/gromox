@@ -1,8 +1,9 @@
 #ifndef _H_TIMER_QUEUE_
 #define _H_TIMER_QUEUE_
-#include "hook_common.h"
+
 #include "bounce_producer.h"
 #include <time.h>
+#include <gromox/hook_common.h>
 
 enum{
 	TIMER_QUEUE_UNTRIED = -1,

@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "remote_postman.h"
 #include "util.h"
 #include "config_file.h"

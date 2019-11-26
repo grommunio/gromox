@@ -1,6 +1,7 @@
 #ifndef _H_INSULATION_QUEUE_
 #define _H_INSULATION_QUEUE_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 void message_insulation_init(const char* config_path, const char *queue_path,
 	int scan_interval, int on_valid_interval, int anon_valid_interval);

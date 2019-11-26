@@ -1,6 +1,6 @@
 #ifndef _H_GROUP_MONITOR_
 #define _H_GROUP_MONITOR_
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 
 void group_monitor_init(const char *root_path, const char *subject,
 	int growing_num);

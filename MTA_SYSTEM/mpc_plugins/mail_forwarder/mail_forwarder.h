@@ -1,6 +1,7 @@
 #ifndef _H_MAIL_FORWARDER_
 #define _H_MAIL_FORWARDER_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 void mail_forwarder_init(const char *path, const char *subject,
 	const char *domain, int growing_num);

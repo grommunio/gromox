@@ -1,5 +1,5 @@
 #include "bounce_producer.h"
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "single_list.h"
 #include "mail_func.h"
 #include "timezone.h"

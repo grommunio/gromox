@@ -1,7 +1,7 @@
 #ifndef _H_MESSAGE_ENQUEUE_
 #define _H_MESSAGE_ENQUEUE_
 
-#include "flusher_common.h"
+#include <gromox/flusher_common.h>
 
 enum{
 	MESSAGE_TAPE = 1,

@@ -3,7 +3,7 @@
 #include "exmdb_client.h"
 #include "exmdb_local.h"
 #include "config_file.h"
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "mail_func.h"
 #include "str_hash.h"
 #include "util.h"

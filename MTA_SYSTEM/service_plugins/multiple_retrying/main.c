@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "service_common.h"
+#include <gromox/mtasvc_common.h>
 #include "multiple_retrying.h"
 #include "proxy_retrying.h"
 #include "config_file.h"

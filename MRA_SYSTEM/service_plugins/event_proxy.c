@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "service_common.h"
+#include <gromox/mrasvc_common.h>
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>

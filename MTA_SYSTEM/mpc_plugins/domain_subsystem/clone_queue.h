@@ -1,7 +1,8 @@
 #ifndef _H_CLONE_QUEUE_
 #define _H_CLONE_QUEUE_
-#include "hook_common.h"
+
 #include <time.h>
+#include <gromox/hook_common.h>
 
 enum{
 	CLONE_QUEUE_SCAN_INTERVAL,

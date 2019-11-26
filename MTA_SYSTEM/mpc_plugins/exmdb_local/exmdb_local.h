@@ -1,6 +1,7 @@
 #ifndef _H_EXMDB_LOCAL_
 #define _H_EXMDB_LOCAL_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 enum {
 	DELIVERY_NO_USER,

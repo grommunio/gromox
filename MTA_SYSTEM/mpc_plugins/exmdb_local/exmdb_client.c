@@ -1,7 +1,7 @@
 #include "endian_macro.h"
 #include "exmdb_client.h"
 #include "double_list.h"
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 #include "ext_buffer.h"
 #include "list_file.h"
 #include <sys/socket.h>

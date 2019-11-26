@@ -1,7 +1,7 @@
 #ifndef _H_GATEWAY_DISPATCH_
 #define _H_GATEWAY_DISPATCH_
 
-#include "hook_common.h"
+#include <gromox/hook_common.h>
 
 enum {
     BOUNCE_POLICY_NONE = 0,

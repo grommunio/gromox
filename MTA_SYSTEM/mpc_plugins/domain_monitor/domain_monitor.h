@@ -1,6 +1,7 @@
 #ifndef _H_DOMAIN_MONITOR_
 #define _H_DOMAIN_MONITOR_
-#include "hook_common.h"
+
+#include <gromox/hook_common.h>
 
 void domain_monitor_init(const char *root_path, const char *subject,
 	int growing_num);
