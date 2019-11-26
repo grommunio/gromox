@@ -1,0 +1,11 @@
+*.bak
+*.flh
+*.hook
+*.o
+*.pas
+*.so
+*.svc
+lib/
+release/
+depend.mk
+temp.mk
