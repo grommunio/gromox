@@ -253,7 +253,7 @@ int main(int argc, const char **argv)
 	printf("[system]: mime number is %d\n", mime_num);
 	
 	str_value = config_file_get_value(pconfig, "MAX_RCPT_NUM");
-	if (NULL == str_value) {
+	if (str_value != NULL) {
 		max_rcpt = atoi(str_value);
 		if (max_rcpt <= 0) {
 			max_rcpt = 256;
