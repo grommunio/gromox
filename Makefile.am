@@ -250,7 +250,7 @@ libmtapas_property_025_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/MTA_SYSTEM/a
 libmtapas_property_025_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtapas_property_025_la_LIBADD = libgromox_common.la
 libmtapas_property_026_la_SOURCES = MTA_SYSTEM/as_plugins/property_026.c
-libmtapas_property_026_la_CPPFLAGS = ${AM_CPPFLAGS} -D_ZOPEN_SOURCE -I${top_srcdir}/MTA_SYSTEM/as_plugins/include
+libmtapas_property_026_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/MTA_SYSTEM/as_plugins/include
 libmtapas_property_026_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtapas_property_026_la_LIBADD = libgromox_common.la
 libmtapas_property_027_la_SOURCES = MTA_SYSTEM/as_plugins/property_027.c
@@ -258,7 +258,7 @@ libmtapas_property_027_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/MTA_SYSTEM/a
 libmtapas_property_027_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtapas_property_027_la_LIBADD = libgromox_common.la
 libmtapas_property_028_la_SOURCES = MTA_SYSTEM/as_plugins/property_028.c
-libmtapas_property_028_la_CPPFLAGS = ${AM_CPPFLAGS} -D_ZOPEN_SOURCE -I${top_srcdir}/MTA_SYSTEM/as_plugins/include
+libmtapas_property_028_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/MTA_SYSTEM/as_plugins/include
 libmtapas_property_028_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtapas_property_028_la_LIBADD = libgromox_common.la
 libmtapas_property_029_la_SOURCES = MTA_SYSTEM/as_plugins/property_029.c
@@ -800,7 +800,6 @@ libexhpm_sample_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/EXCHANGE_SYSTEM/hpm
 libexhpm_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 
 # AGENT_SERVICE
-amidb_CPPFLAGS = ${AM_CPPFLAGS} -D_ZOPEN_SOURCE
 amidb_SOURCES = AGENT_SERVICE/amidb.c
 amidb_LDADD = -lpthread libgromox_common.la
 amysql_SOURCES = AGENT_SERVICE/amysql.c
