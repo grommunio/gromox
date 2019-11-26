@@ -65,7 +65,7 @@ static void vcard_free_param(VCARD_PARAM *pvparam)
 		free(pvparam);
 		return;
 	}
-	while (pnode=double_list_get_from_head(pvparam->pparamval_list)) {
+	while ((pnode = double_list_get_from_head(pvparam->pparamval_list)) != NULL) {
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -78,7 +78,7 @@ static void vcard_free_value(VCARD_VALUE *pvvalue)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&pvvalue->subval_list)) {
+	while ((pnode = double_list_get_from_head(&pvvalue->subval_list)) != NULL) {
 		if (NULL != pnode->pdata) {
 			free(pnode->pdata);
 		}
@@ -92,13 +92,11 @@ static void vcard_free_line(VCARD_LINE *pvline)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&pvline->param_list)) {
+	while ((pnode = double_list_get_from_head(&pvline->param_list)) != NULL)
 		vcard_free_param(pnode->pdata);
-	}
 	double_list_free(&pvline->param_list);
-	while (pnode=double_list_get_from_head(&pvline->value_list)) {
+	while ((pnode = double_list_get_from_head(&pvline->value_list)) != NULL)
 		vcard_free_value(pnode->pdata);
-	}
 	double_list_free(&pvline->value_list);
 	free(pvline);
 }
@@ -107,9 +105,8 @@ void vcard_free(VCARD *pvcard)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(pvcard)) {
+	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
 		vcard_free_line(pnode->pdata);
-	}
 	double_list_free(pvcard);
 }
 
@@ -305,7 +302,7 @@ static VCARD_PARAM* vcard_retrieve_param(char *ptag)
 			vcard_free_param(pvparam);
 			return FALSE;
 		}
-	} while (ptr = pnext);
+	} while ((ptr = pnext) != NULL);
 	return pvparam;
 }
 
@@ -335,7 +332,7 @@ static VCARD_LINE* vcard_retrieve_tag(char *ptag)
 			return FALSE;
 		}
 		vcard_append_param(pvline, pvparam);
-	} while (ptr = pnext);
+	} while ((ptr = pnext) != NULL);
 	return pvline;
 }
 
@@ -367,8 +364,8 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 					return FALSE;
 				}
 			}
-		} while (ptr1 = pnext1);
-	} while (ptr = pnext);
+		} while ((ptr1 = pnext1) != NULL);
+	} while ((ptr = pnext) != NULL);
 	return TRUE;
 }
 
@@ -403,9 +400,8 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 	VCARD_VALUE *pvvalue;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(pvcard)) {
+	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
 		vcard_free_line(pnode->pdata);
-	}
 	b_begin = FALSE;
 	pline = in_buff;
 	length = strlen(in_buff);
@@ -467,10 +463,9 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 			}
 		}
 		
-	} while (pline = pnext);
-	while (pnode=double_list_get_from_head(pvcard)) {
+	} while ((pline = pnext) != NULL);
+	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
 		vcard_free_line(pnode->pdata);
-	}
 	return FALSE;
 }
 

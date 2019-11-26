@@ -41,7 +41,7 @@ static void codepage_lang_unload_langlist(SINGLE_LIST *plist)
 	LANG_NODE *plang;
 	SINGLE_LIST_NODE *pnode;
 	
-	while (pnode=single_list_get_from_head(plist)) {
+	while ((pnode = single_list_get_from_head(plist)) != NULL) {
 		plang = (LANG_NODE*)pnode->pdata;
 		free(plang->tag);
 		free(plang->value);
@@ -239,7 +239,7 @@ static void codepage_lang_unload_cplist(SINGLE_LIST *plist)
 	SINGLE_LIST_NODE *pnode;
 	CODEPAGE_NODE *pcodepage;
 	
-	while (pnode=single_list_get_from_head(plist)) {
+	while ((pnode = single_list_get_from_head(plist)) != NULL) {
 		pcodepage = (CODEPAGE_NODE*)pnode->pdata;
 		codepage_lang_unload_langlist(&pcodepage->lang_list);
 		free(pcodepage);

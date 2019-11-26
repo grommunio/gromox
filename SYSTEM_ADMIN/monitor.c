@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}
-	while (pnode=single_list_get_from_head(&console_list)) {
+	while ((pnode = single_list_get_from_head(&console_list)) != NULL) {
 		pconsole = (CONSOLE_PORT*)pnode->pdata;
 		pconsole->notify_stop = TRUE;
 		pthread_join(pconsole->tid, NULL);

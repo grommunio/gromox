@@ -365,7 +365,7 @@ static void precise_interception_free_table(INT_HASH_TABLE *phash)
 	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
 		plist = int_hash_iter_get_value(iter, NULL);
-		while (pnode = double_list_get_from_head(plist)) {
+		while ((pnode = double_list_get_from_head(plist)) != NULL) {
 			free(((ATTACHMENT_DATA*)(pnode->pdata))->ptr);
 			free(pnode->pdata);
 		}

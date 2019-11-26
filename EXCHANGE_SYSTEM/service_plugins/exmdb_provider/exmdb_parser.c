@@ -1171,8 +1171,7 @@ int exmdb_parser_stop()
 		free(pthr_ids);
 		pthr_ids = NULL;
 	}
-	while (pnode=double_list_get_from_head(&g_local_list)) {
+	while ((pnode = double_list_get_from_head(&g_local_list)) != NULL)
 		free(pnode->pdata);
-	}
 	return 0;
 }

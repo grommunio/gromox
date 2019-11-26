@@ -354,10 +354,8 @@ int main(int argc, char **argv)
 		close(sockd);
 		str_hash_free(g_session_table);
 		str_hash_free(g_user_table);
-
-		while (pnode=double_list_get_from_head(&g_acl_list)) {
+		while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&g_acl_list);
 
 		double_list_free(&g_connection_list);
@@ -388,14 +386,11 @@ int main(int argc, char **argv)
 
 	str_hash_free(g_session_table);
 	str_hash_free(g_user_table);
-
-	while (pnode=double_list_get_from_head(&g_acl_list)) {
+	while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 		free(pnode->pdata);
-	}
-
 	double_list_free(&g_acl_list);
 
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
@@ -403,7 +398,7 @@ int main(int argc, char **argv)
 
 	double_list_free(&g_connection_list);
 
-	while (pnode=double_list_get_from_head(&g_connection_list1)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list1)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
@@ -545,7 +540,7 @@ NEXT_LOOP:
 						str_hash_iter_forward(iter)) {
 						plist = str_hash_iter_get_value(iter, NULL);
 						pnode_last1 = double_list_get_tail(plist);
-						while (pnode1=double_list_get_from_head(plist)) {
+						while ((pnode1 = double_list_get_from_head(plist)) != NULL) {
 							psession = (SESSION*)pnode1->pdata;
 							if (cur_time - psession->time_stamp
 								> g_max_interval) {
@@ -581,7 +576,7 @@ NEXT_LOOP:
 			if (double_list_get_nodes_num(plist) >= g_item_num) {
 				time(&cur_time);
 				pnode_last1 = double_list_get_tail(plist);
-				while (pnode1=double_list_get_from_head(plist)) {
+				while ((pnode1 = double_list_get_from_head(plist)) != NULL) {
 					psession = (SESSION*)pnode1->pdata;
 					if (cur_time - psession->time_stamp > g_max_interval) {
 						if (NULL != psession->pfield) {

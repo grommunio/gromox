@@ -3304,8 +3304,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 
 	peml_bin->cb = 0;
 	size = STREAM_BLOCK_SIZE;
-	while (ptr = stream_getbuffer_for_reading(
-		&tmp_stream, &size)) {
+	while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size)) != NULL) {
 		memcpy(peml_bin->pb + peml_bin->cb, ptr, size);
 		peml_bin->cb += size;
 		size = STREAM_BLOCK_SIZE;

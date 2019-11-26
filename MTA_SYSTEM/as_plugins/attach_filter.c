@@ -88,7 +88,7 @@ int AS_LibMain(int reason, void **ppdata, char *path)
 		ptoken = str_value;
 		g_attachment_num = 0;
 		g_attachment_list = malloc(strlen(str_value)*sizeof(char*));
-		while (psearch = strchr(ptoken, ',')) {
+		while ((psearch = strchr(ptoken, ',')) != NULL) {
 			len = psearch - ptoken;
 			if (len >= 32) {
 				ptoken = psearch + 1;

@@ -1105,7 +1105,7 @@ static BOOL container_object_get_specialtables_from_node(
 				pnode, pproptags, TRUE, pset)) {
 				return FALSE;	
 			}
-		} while (pnode=simple_tree_node_get_slibling(pnode));
+		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 	}
 	return TRUE;
 }
@@ -1295,7 +1295,7 @@ BOOL container_object_query_container_table(
 						ab_tree_put_base(pbase);
 						return FALSE;	
 					}
-				} while (ptnode=simple_tree_node_get_slibling(ptnode));
+				} while ((ptnode = simple_tree_node_get_slibling(ptnode)) != NULL);
 			}
 		}
 		ab_tree_put_base(pbase);
@@ -1360,7 +1360,7 @@ BOOL container_object_get_user_table_num(
 					continue;
 				}
 				(*pnum) ++;
-			} while (pnode=simple_tree_node_get_slibling(pnode));
+			} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 		}
 		ab_tree_put_base(pbase);
 	} else {
@@ -1544,7 +1544,7 @@ BOOL container_object_query_user_table(
 					if (pset->count == row_count) {
 						break;
 					}
-				} while (ptnode=simple_tree_node_get_slibling(ptnode));
+				} while ((ptnode = simple_tree_node_get_slibling(ptnode)) != NULL);
 			}
 		}
 		ab_tree_put_base(pbase);

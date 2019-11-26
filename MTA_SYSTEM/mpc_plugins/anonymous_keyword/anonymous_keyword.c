@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "anonymous_keyword.h"
 #include "single_list.h"
 #include "list_file.h"
@@ -305,9 +306,8 @@ BOOL anonymous_keyword_refresh()
 					ptr += sizeof(int);
 				}
 				*(int*)ptr = 0;
-				while (pnode=single_list_get_from_head(temp_table[j])) {
+				while ((pnode = single_list_get_from_head(temp_table[j])) != NULL)
 					free(pnode->pdata);
-				}
 				single_list_free(temp_table[j]);
 				free(temp_table[j]);
 				temp_table[j] = NULL;
@@ -351,7 +351,7 @@ static void anonymous_keyword_destroy_engine(SINGLE_LIST *pengine)
 	SINGLE_LIST_NODE *pnode;
 	CHARSET_ITEM *pcharset;
 
-	while (pnode=single_list_get_from_head(pengine)) {
+	while ((pnode = single_list_get_from_head(pengine)) != NULL) {
 		pcharset = (CHARSET_ITEM*)pnode->pdata;
 		for (i=0; i<256*256; i++) {
 			if (NULL != pcharset->match_table[i]) {
@@ -412,7 +412,7 @@ BOOL anonymous_keyword_match(const char *charset, const char *buff,
 		if (NULL == pkeywords_list) {
 			continue;
 		}
-		while (offset = *(int*)pkeywords_list) {
+		while ((offset = *reinterpret_cast(const int *, pkeywords_list)) != 0) {
 			if (0 == strncasecmp(pkeywords_list + sizeof(int) + 2,
 				buff + i + 2, offset - 1)) {
 				g_group_array[*(int*)(pkeywords_list + sizeof(int) + 2 + 

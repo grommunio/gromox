@@ -504,7 +504,7 @@ void console_server_notify_main_stop()
 	b_console = FALSE;
 	pthread_join(g_listening_tid, NULL);
 	pthread_mutex_lock(&g_list_lock);
-	while (pnode = double_list_get_from_head(&g_console_list)) {
+	while ((pnode = double_list_get_from_head(&g_console_list)) != NULL) {
 		pconsole = (CONSOLE_NODE*)pnode->pdata;
 		if (0 == pthread_equal(pthread_self(), pconsole->tid)) {
 			pthread_cancel(pconsole->tid);
@@ -514,9 +514,8 @@ void console_server_notify_main_stop()
 		write(pconsole->client_fd, STOP_STRING, sizeof(STOP_STRING) - 1);
 		close(pconsole->client_fd);
 	}
-	while (pnode = double_list_get_from_head(&g_free_list)) {
-		/* do nothing */
-	}
+	while ((pnode = double_list_get_from_head(&g_free_list)) != NULL)
+		/* do nothing */;
 	pthread_mutex_unlock(&g_list_lock);
 	g_notify_stop = TRUE;
 	if (TRUE == b_console) {

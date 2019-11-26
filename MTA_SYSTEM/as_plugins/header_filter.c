@@ -111,7 +111,7 @@ int AS_LibMain(int reason, void **ppdata)
         }
         return TRUE;
     case PLUGIN_FREE:
-		while (pnode=double_list_get_from_head(&g_field_list)) {
+		while ((pnode = double_list_get_from_head(&g_field_list)) != NULL) {
 			pfnode = (FIELD_NODE*)pnode->pdata;
 			free(pfnode->tag);
 			if (NULL != pfnode->value) {

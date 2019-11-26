@@ -141,8 +141,7 @@ static void* scan_work_func(void *param)
 				continue;
 			}
 			ptail = double_list_get_tail(&pinfo->sink_list);
-			while (pnode=double_list_get_from_head(
-				&pinfo->sink_list)) {
+			while ((pnode = double_list_get_from_head(&pinfo->sink_list)) != NULL) {
 				psink_node = (SINK_NODE*)pnode->pdata;
 				if (cur_time >= psink_node->until_time) {
 					double_list_append_as_tail(&temp_list1, pnode);
@@ -194,14 +193,14 @@ static void* scan_work_func(void *param)
 		}
 		int_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_table_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			common_util_build_environment();
 			exmdb_client_ping_store(pnode->pdata);
 			common_util_free_environment();
 			free(pnode->pdata);
 			free(pnode);
 		}
-		while (pnode=double_list_get_from_head(&temp_list1)) {
+		while ((pnode = double_list_get_from_head(&temp_list1)) != NULL) {
 			psink_node = (SINK_NODE*)pnode->pdata;
 			if (TRUE == rpc_ext_push_response(
 				&response, &tmp_bin)) {
@@ -230,8 +229,7 @@ static void* scan_work_func(void *param)
 			str_hash_iter_forward(iter1)) {
 			pnitem = str_hash_iter_get_value(iter1, NULL);
 			if (cur_time - pnitem->last_time >= g_cache_interval) {
-				while (pnode=double_list_get_from_head(
-					&pnitem->notify_list)) {
+				while ((pnode = double_list_get_from_head(&pnitem->notify_list)) != NULL) {
 					common_util_free_znotification(pnode->pdata);
 					free(pnode);
 				}
@@ -753,8 +751,7 @@ int zarafa_server_stop()
 		FALSE == int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
 		pinfo = int_hash_iter_get_value(iter, NULL);
-		while (pnode=double_list_get_from_head(
-			&pinfo->sink_list)) {
+		while ((pnode = double_list_get_from_head(&pinfo->sink_list)) != NULL) {
 			psink_node = (SINK_NODE*)pnode->pdata;
 			close(psink_node->clifd);
 			free(psink_node->sink.padvise);
@@ -1597,9 +1594,8 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 			zarafa_server_put_user_info(pinfo);
 			return EC_AMBIGUOUS_RECIP;
 		}
-		while (pnode=single_list_get_from_head(&temp_list)) {
+		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 			single_list_append_as_tail(&result_list, pnode);
-		}
 	}
 	presult_set->count = 0;
 	if (0 == single_list_get_nodes_num(&result_list)) {
@@ -3654,8 +3650,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 	pthread_mutex_lock(&g_notify_lock);
 	pnitem = str_hash_query(g_notify_table, tmp_buff);
 	if (NULL != pnitem) {
-		while (pnode=double_list_get_from_head(
-			&pnitem->notify_list)) {
+		while ((pnode = double_list_get_from_head(&pnitem->notify_list)) != NULL) {
 			common_util_free_znotification(pnode->pdata);
 			free(pnode);
 		}
@@ -3701,7 +3696,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 			continue;
 		}
 		time(&pnitem->last_time);
-		while (pnode=double_list_get_from_head(&pnitem->notify_list)) {
+		while ((pnode = double_list_get_from_head(&pnitem->notify_list)) != NULL) {
 			ppnotifications[count] = common_util_dup_znotification(
 												pnode->pdata, TRUE);
 			common_util_free_znotification(pnode->pdata);

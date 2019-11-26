@@ -588,8 +588,8 @@ static BOOL mail_engine_ct_search_head(const char *charset,
 	}
 	offset = 0;
 	tag_len = strlen(tag);
-	while (len = parse_mime_field(head_buff + offset,
-		head_offset - offset, &mime_field)) {
+	while ((len = parse_mime_field(head_buff + offset,
+	       head_offset - offset, &mime_field)) != 0) {
 		offset += len;
 		if (tag_len == mime_field.field_name_len &&
 			0 == strncasecmp(tag, mime_field.field_name, tag_len)) {
@@ -1287,7 +1287,7 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE *pnode;
 	CONDITION_TREE_NODE *ptree_node;
 	
-	while (pnode=double_list_get_from_head(plist)) {
+	while ((pnode = double_list_get_from_head(plist)) != NULL) {
 		ptree_node = (CONDITION_TREE_NODE*)pnode->pdata;
 		if (NULL != ptree_node->pbranch) {
 			mail_engine_ct_destroy_internal(ptree_node->pbranch);
@@ -1715,9 +1715,8 @@ static void mail_engine_ct_free_squence(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(plist)) {
+	while ((pnode = double_list_get_from_head(plist)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(plist);
 	free(plist);
 }
@@ -1860,9 +1859,8 @@ static void mail_engine_ct_free_result(CONDITION_RESULT *presult)
 {
 	SINGLE_LIST_NODE *pnode;
 	
-	while (pnode=single_list_get_from_head(&presult->list)) {
+	while ((pnode = single_list_get_from_head(&presult->list)) != NULL)
 		free(pnode);
-	}
 	free(presult);
 }
 
@@ -2420,7 +2418,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			sqlite3_close(psqlite);
 			return FALSE;
 		}
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, *(uint64_t*)pnode->pdata);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
@@ -2793,7 +2791,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			sql_string, sql_len, &pstmt, NULL)) {
 			goto SYNC_FAILURE;
 		}
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, *(uint64_t*)pnode->pdata);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
@@ -3032,7 +3030,7 @@ static void *scan_work_func(void *param)
 		}
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_hash_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			psub = (SUB_NODE*)pnode->pdata;
 			if (TRUE == common_util_build_environment(psub->maildir)) {
 				exmdb_client_unsubscribe_notification(
@@ -3688,7 +3686,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	}
 	offset = sprintf(list_buff, "TRUE %d\r\n",
 		double_list_get_nodes_num(&tmp_list));
-	while (pnode=double_list_get_from_head(&tmp_list)) {
+	while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
 		pinode = (IDL_NODE*)pnode->pdata;
 		temp_len = snprintf(temp_line, 512, "%s %u\r\n",
 						pinode->mid_string, pinode->size);
@@ -4595,7 +4593,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	ptoken = decoded_name;
 	folder_id1 = PRIVATE_FID_IPMSUBTREE;
-	while (ptoken1 = strchr(ptoken, '/')) {
+	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
 		if (ptoken1 - ptoken >= sizeof(temp_name)) {
 			mail_engine_put_idb(pidb);
 			return 1;
@@ -4727,7 +4725,7 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	}
 	ptoken = decoded_name;
 	folder_id1 = PRIVATE_FID_IPMSUBTREE;
-	while (ptoken1 = strchr(ptoken, '/')) {
+	while ((ptoken1 = strchr(ptoken, '/')) != NULL) {
 		if (ptoken1 - ptoken >= sizeof(temp_name)) {
 			mail_engine_put_idb(pidb);
 			return 1;

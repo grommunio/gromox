@@ -924,7 +924,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 					"FOLDER-TOUCH %s inbox", pcontext->username);
 				system_services_broadcast_event(temp_buff);
 
-				while (pnode=single_list_get_from_head(&pcontext->list)) {
+				while ((pnode = single_list_get_from_head(&pcontext->list)) != NULL) {
 					punit = (MSG_UNIT*)pnode->pdata;
 					snprintf(temp_path, 255, "%s/%s/inbox/%s",
 						pop3_parser_cdn_path(), pcontext->username,
@@ -979,7 +979,7 @@ NORMAL_DELETE:
 				"FOLDER-TOUCH %s inbox", pcontext->username);
 			system_services_broadcast_event(temp_buff);
 
-			while (pnode=single_list_get_from_head(&pcontext->list)) {
+			while ((pnode = single_list_get_from_head(&pcontext->list)) != NULL) {
 				punit = (MSG_UNIT*)pnode->pdata;
 				snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir,
 					punit->file_name);
@@ -1025,7 +1025,7 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 	}
 
 	if (TRUE == pcontext->is_login) {
-		while (pnode=single_list_get_from_head(&pcontext->list)) {
+		while ((pnode = single_list_get_from_head(&pcontext->list)) != NULL) {
 			punit = (MSG_UNIT*)pnode->pdata;
 			punit->b_deleted = FALSE;
 		}

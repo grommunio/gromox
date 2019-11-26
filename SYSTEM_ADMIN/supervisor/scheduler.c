@@ -201,12 +201,10 @@ void scheduler_stop(void)
 			pthread_cancel(ppop3_unit->tid);
 		}
 	}
-	while (pnode=double_list_get_from_head(&g_smtp_list)) {
+	while ((pnode = double_list_get_from_head(&g_smtp_list)) != NULL)
 		free(pnode->pdata);
-	}
-	while (pnode=double_list_get_from_head(&g_pop3_list)) {
+	while ((pnode = double_list_get_from_head(&g_pop3_list)) != NULL)
 		free(pnode->pdata);
-	}
 }
 
 void scheduler_free()

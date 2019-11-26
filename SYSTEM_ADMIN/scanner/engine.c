@@ -900,7 +900,7 @@ int engine_stop()
 		pthread_cancel(g_backup_id);
 		g_created = FALSE;
 	}
-	while (pnode=double_list_get_from_head(&g_partition_list)) {
+	while ((pnode = double_list_get_from_head(&g_partition_list)) != NULL) {
 		ppartition = (PARTITION_ITEM*)pnode->pdata;
 		if (TRUE == g_parellel_scanning) {
 			pthread_cancel(ppartition->thr_id);

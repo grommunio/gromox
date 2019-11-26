@@ -212,7 +212,7 @@ void store_object_free(STORE_OBJECT *pstore)
 	if (NULL != pstore->pgpinfo) {
 		property_groupinfo_free(pstore->pgpinfo);
 	}
-	while (pnode = double_list_get_from_head(&pstore->group_list)) {
+	while ((pnode = double_list_get_from_head(&pstore->group_list)) != NULL) {
 		property_groupinfo_free(pnode->pdata);
 		free(pnode);
 	}
@@ -896,8 +896,7 @@ static void* store_object_get_oof_property(
 		}
 		close(fd);
 		offset = 0;
-		while (parsed_length = parse_mime_field(pbuff +
-			offset, buff_len - offset, &mime_field)) {
+		while ((parsed_length = parse_mime_field(pbuff + offset, buff_len - offset, &mime_field)) != 0) {
 			offset += parsed_length;
 			if (0 == strncasecmp("Subject", mime_field.field_name, 7)
 				&& mime_field.field_value_len < sizeof(subject)) {

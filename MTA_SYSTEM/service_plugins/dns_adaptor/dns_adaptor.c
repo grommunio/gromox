@@ -157,9 +157,8 @@ static BOOL dns_adaptor_refresh()
 		if (0 != pentry->created_time) {
 			continue;
 		}
-		while (pnode = single_list_get_from_head(&pentry->ip_list)) {
+		while ((pnode = single_list_get_from_head(&pentry->ip_list)) != NULL)
 			lib_buffer_put(g_ip_pool, pnode->pdata);
-		}
 		single_list_free(&pentry->ip_list);
 		str_hash_iter_remove(iter);
 	}
@@ -176,9 +175,8 @@ static BOOL dns_adaptor_refresh()
 		if (0 != pentry->created_time) {
 			continue;
 		}
-		while (pnode = single_list_get_from_head(&pentry->ip_list)) {
+		while ((pnode = single_list_get_from_head(&pentry->ip_list)) != NULL)
 			lib_buffer_put(g_ip_pool, pnode->pdata);
-		}
 		single_list_free(&pentry->ip_list);
 		str_hash_iter_remove(iter);
 	}
@@ -231,9 +229,8 @@ static BOOL dns_adaptor_refresh()
 				p_ip = (IP_NODE*)lib_buffer_get(g_ip_pool);
 			}
 			if (NULL == p_ip) {
-				while (pnode = single_list_get_from_head(&temp_entry.ip_list)) {
+				while ((pnode = single_list_get_from_head(&temp_entry.ip_list)) != NULL)
 					lib_buffer_put(g_ip_pool, pnode->pdata);
-				}
 				break;
 			}
 			p_ip->node.pdata = p_ip;
@@ -261,9 +258,8 @@ static BOOL dns_adaptor_refresh()
 		}
 		pthread_mutex_unlock(plock);
 		if (TRUE == normal_exist) {
-			while (pnode = single_list_get_from_head(&removed_entry.ip_list)) {
+			while ((pnode = single_list_get_from_head(&removed_entry.ip_list)) != NULL)
 				lib_buffer_put(g_ip_pool, pnode->pdata);
-			}
 			single_list_free(&removed_entry.ip_list);
 		}
 	}
@@ -322,9 +318,8 @@ BOOL dns_adaptor_query_MX(char* mx_name, VSTACK* pstack)
 	temp_entry.access_times = 0;
 
 	if (FALSE == dns_adaptor_get_MX_into_list(tmp_name, &temp_entry.ip_list)) {
-		while (pnode = single_list_get_from_head(&temp_entry.ip_list)) {
+		while ((pnode = single_list_get_from_head(&temp_entry.ip_list)) != NULL)
 			lib_buffer_put(g_ip_pool, pnode->pdata);
-		}
 		single_list_free(&temp_entry.ip_list);
 		return FALSE;
 	}
@@ -335,9 +330,8 @@ BOOL dns_adaptor_query_MX(char* mx_name, VSTACK* pstack)
 	}
 	result = dns_adaptor_add_table(tmp_name, &temp_entry, g_MX_table,&g_MX_lock);
 	if (DNS_ENTRY_ADD_FAIL == result || DNS_ENTRY_ADD_EXIST == result) {
-		while (pnode = single_list_get_from_head(&temp_entry.ip_list)) {
+		while ((pnode = single_list_get_from_head(&temp_entry.ip_list)) != NULL)
 			lib_buffer_put(g_ip_pool, pnode->pdata);
-		}
 		single_list_free(&temp_entry.ip_list);
 	}
 	return TRUE;
@@ -370,9 +364,8 @@ BOOL dns_adaptor_query_A(char* a_name, VSTACK* pstack)
 	temp_entry.access_times = 0;
 
 	if (FALSE == dns_adaptor_get_A_into_list(tmp_name, &temp_entry.ip_list)) {
-		while (pnode = single_list_get_from_head(&temp_entry.ip_list)) {
+		while ((pnode = single_list_get_from_head(&temp_entry.ip_list)) != NULL)
 			lib_buffer_put(g_ip_pool, pnode->pdata);
-		}
 		single_list_free(&temp_entry.ip_list);
 		return FALSE;
 	}
@@ -383,9 +376,8 @@ BOOL dns_adaptor_query_A(char* a_name, VSTACK* pstack)
 	}
 	result = dns_adaptor_add_table(tmp_name, &temp_entry, g_A_table, &g_A_lock);
 	if (DNS_ENTRY_ADD_FAIL == result || DNS_ENTRY_ADD_EXIST == result) {
-		while (pnode = single_list_get_from_head(&temp_entry.ip_list)) {
+		while ((pnode = single_list_get_from_head(&temp_entry.ip_list)) != NULL)
 			lib_buffer_put(g_ip_pool, pnode->pdata);
-		}
 		single_list_free(&temp_entry.ip_list);
 	}
 	return TRUE;
@@ -408,9 +400,8 @@ static BOOL dns_adaptor_query_table(char *name, VSTACK *pstack,
 				temp_entry = *pentry;
 				str_hash_remove(ptable, name);
 				pthread_mutex_unlock(plock);
-				while (pnode = single_list_get_from_head(&temp_entry.ip_list)) {
+				while ((pnode = single_list_get_from_head(&temp_entry.ip_list)) != NULL)
 					lib_buffer_put(g_ip_pool, pnode->pdata);
-				}
 				single_list_free(&temp_entry.ip_list);
 				return FALSE;
 			}
@@ -443,9 +434,8 @@ static BOOL dns_adaptor_query_A_table_into_list(char *name, SINGLE_LIST *plist)
 				temp_entry = *pentry;
 				str_hash_remove(g_A_table, name);
 				pthread_mutex_unlock(&g_A_lock);
-				while (pnode = single_list_get_from_head(&temp_entry.ip_list)) {
+				while ((pnode = single_list_get_from_head(&temp_entry.ip_list)) != NULL)
 					lib_buffer_put(g_ip_pool, pnode->pdata);
-				}
 				single_list_free(&temp_entry.ip_list);
 				return FALSE;
 			}
@@ -592,9 +582,8 @@ static void dns_adaptor_collect_garbage(STR_HASH_TABLE *ptable)
 			continue;
 		}
 		if (current_time - pentry->created_time >= g_valid_interval) {
-			while (pnode = single_list_get_from_head(&pentry->ip_list)) {
+			while ((pnode = single_list_get_from_head(&pentry->ip_list)) != NULL)
 				lib_buffer_put(g_ip_pool, pnode->pdata);
-			}
 			single_list_free(&pentry->ip_list);
 			str_hash_iter_remove(iter);
 			collected_num++;
@@ -612,9 +601,8 @@ static void dns_adaptor_collect_garbage(STR_HASH_TABLE *ptable)
 		}
 		if (1 == pentry->access_times &&
 			current_time - pentry->created_time >= g_valid_interval/10) {
-			while (pnode = single_list_get_from_head(&pentry->ip_list)) {
+			while ((pnode = single_list_get_from_head(&pentry->ip_list)) != NULL)
 				lib_buffer_put(g_ip_pool, pnode->pdata);
-			}
 			single_list_free(&pentry->ip_list);
 			str_hash_iter_remove(iter);
 		}

@@ -70,12 +70,10 @@ int host_list_stop()
 		g_notify_stop = TRUE;
 		pthread_join(g_thread_id, NULL);
 	}
-	while (pnode=double_list_get_from_head(&g_units_list)) {
+	while ((pnode = double_list_get_from_head(&g_units_list)) != NULL)
 		free(pnode->pdata);
-	}
-	while (pnode=double_list_get_from_head(&g_invalid_list)) {
+	while ((pnode = double_list_get_from_head(&g_invalid_list)) != NULL)
 		free(pnode->pdata);
-	}
 	return 0;
 }
 
@@ -136,15 +134,12 @@ BOOL host_list_refresh()
 	}
 	list_file_free(pfile);
 	pthread_mutex_lock(&g_list_lock);
-	while (pnode=double_list_get_from_head(&g_invalid_list)) {
+	while ((pnode = double_list_get_from_head(&g_invalid_list)) != NULL)
 		free(pnode->pdata);
-	}
-	while (pnode=double_list_get_from_head(&g_units_list)) {
+	while ((pnode = double_list_get_from_head(&g_units_list)) != NULL)
 		free(pnode->pdata);
-	}
-	while (pnode=double_list_get_from_head(&temp_list)) {
+	while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 		double_list_append_as_tail(&g_units_list, pnode);
-	}
 	pthread_mutex_unlock(&g_list_lock);
 	double_list_free(&temp_list);
 	return TRUE;
@@ -254,7 +249,7 @@ static void* thread_work_func(void *arg)
 			}
 		}
 		pthread_mutex_lock(&g_list_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			punit = (HOST_UNIT*)pnode->pdata;
 			double_list_remove(&g_invalid_list, &punit->node);
 			double_list_append_as_tail(&g_units_list, &punit->node);

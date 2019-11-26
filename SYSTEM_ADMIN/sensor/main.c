@@ -343,19 +343,18 @@ int main(int argc, char **argv)
 	free(thr_ids);
 	str_hash_free(g_hash_table);
 
-	while (pnode=double_list_get_from_head(&g_acl_list)) {
+	while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&g_acl_list);
 	
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
 	}
 	double_list_free(&g_connection_list);
 
-	while (pnode=double_list_get_from_head(&g_connection_list1)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list1)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
@@ -492,14 +491,14 @@ static void *scan_work_func(void *param)
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_hash_lock);
 		
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			psub = (SUB_NODE*)pnode->pdata;
 			exmdb_client_unsubscribe_notification(
 				psub->maildir, psub->sub_id);
 			free(pnode->pdata);
 		}
 		
-		while (pnode=double_list_get_from_head(&temp_list1)) {
+		while ((pnode = double_list_get_from_head(&temp_list1)) != NULL) {
 			exmdb_client_ping_store(pnode->pdata);
 			free(pnode->pdata);
 			free(pnode);

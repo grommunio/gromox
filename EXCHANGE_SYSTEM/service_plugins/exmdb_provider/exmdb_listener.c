@@ -217,9 +217,8 @@ int exmdb_listener_stop()
 		close(g_listen_sockd);
 		g_listen_sockd = -1;
 	}
-	while (pnode=double_list_get_from_head(&g_acl_list)) {
+	while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 		free(pnode->pdata);
-	}
 	return 0;
 }
 

@@ -163,7 +163,7 @@ int relay_bridge_stop()
 		g_listen_sockd = -1;
 	}
 	
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_THR*)pnode->pdata;
 		pthread_cancel(pconnection->tid);
 		close(pconnection->sockd);
@@ -171,9 +171,8 @@ int relay_bridge_stop()
 	}
 	double_list_free(&g_connection_list);
 
-	while (pnode=double_list_get_from_head(&g_allow_list)) {
+	while ((pnode = double_list_get_from_head(&g_allow_list)) != NULL)
 		free(pnode->pdata);
-	}
 	return 0;
 }
 
@@ -209,9 +208,8 @@ BOOL relay_bridge_refresh_table()
 
 	pthread_rwlock_wrlock(&g_allow_lock);
 
-	while (pnode=double_list_get_from_head(&g_allow_list)) {
+	while ((pnode = double_list_get_from_head(&g_allow_list)) != NULL)
 		free(pnode->pdata);
-	}
 	
 	for (i=0; i<list_len; i++) {
 		pallow = (ALLOW_UNIT*)malloc(sizeof(ALLOW_UNIT));

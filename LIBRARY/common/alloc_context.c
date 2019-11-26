@@ -64,9 +64,8 @@ void alloc_context_free(ALLOC_CONTEXT *pcontext)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&pcontext->list)) {
+	while ((pnode = double_list_get_from_head(&pcontext->list)) != NULL)
 		free(pnode);
-	}
 	double_list_free(&pcontext->list);
 }
 

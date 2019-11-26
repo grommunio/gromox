@@ -467,19 +467,17 @@ int main(int argc, char **argv)
 	if (0 != pthread_create(&scan_thrid, NULL, scan_work_func, NULL)) {
 		close(sockd);
 		str_hash_free(g_user_hash);
-		while (pnode = double_list_get_from_head(&g_midb_list)) {
+		while ((pnode = double_list_get_from_head(&g_midb_list)) != NULL) {
 			pmidb = (MIDB_SVR*)pnode->pdata;
 			double_list_free(&pmidb->conn_list);
 			free(pmidb);
 		}
 		double_list_free(&g_midb_list);
-		while (pnode = double_list_get_from_head(&g_midb_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_midb_lost_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&g_midb_lost_list);
-		while (pnode = double_list_get_from_head(&g_mysql_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_mysql_lost_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&g_mysql_lost_list);
 		double_list_free(&g_mysql_list);
 		double_list_free(&g_connection_list);
@@ -497,9 +495,9 @@ int main(int argc, char **argv)
 		g_notify_stop = TRUE;
 		close(sockd);
 		pthread_join(scan_thrid, NULL);
-		while (pnode = double_list_get_from_head(&g_midb_list)) {
+		while ((pnode = double_list_get_from_head(&g_midb_list)) != NULL) {
 			pmidb = (MIDB_SVR*)pnode->pdata;
-			while (pnode1 = double_list_get_from_head(&pmidb->conn_list)) {
+			while ((pnode1 = double_list_get_from_head(&pmidb->conn_list)) != NULL) {
 				pmidbconn = (MIDB_CONN*)pnode1->pdata;
 				close(pmidbconn->sockd);
 				free(pmidbconn);
@@ -508,19 +506,17 @@ int main(int argc, char **argv)
 			free(pmidb);
 		}
 		double_list_free(&g_midb_list);
-		while (pnode = double_list_get_from_head(&g_mysql_list)) {
+		while ((pnode = double_list_get_from_head(&g_mysql_list)) != NULL) {
 			pmyconn = (MYSQL_CONN*)pnode->pdata;
 			mysql_close(pmyconn->pmysql);
 			free(pmyconn);
 		}
 		double_list_free(&g_mysql_list);
-		while (pnode = double_list_get_from_head(&g_midb_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_midb_lost_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&g_midb_lost_list);
-		while (pnode = double_list_get_from_head(&g_mysql_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_mysql_lost_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&g_mysql_lost_list);
 		str_hash_free(g_user_hash);
 		double_list_free(&g_connection_list);
@@ -557,7 +553,7 @@ int main(int argc, char **argv)
 	pthread_cancel(accept_thrid);
 	pthread_join(scan_thrid, NULL);
 	
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		pthread_cancel(pconnection->thr_id);
 		close(pconnection->sockd);
@@ -565,15 +561,15 @@ int main(int argc, char **argv)
 	}
 	double_list_free(&g_connection_list);
 	
-	while (pnode=double_list_get_from_head(&g_sync_list)) {
+	while ((pnode = double_list_get_from_head(&g_sync_list)) != NULL) {
 		psync = (SYNC_NODE*)pnode->pdata;
 		pthread_cancel(psync->thr_id);
 		free(psync);
 	}
 	
-	while (pnode = double_list_get_from_head(&g_midb_list)) {
+	while ((pnode = double_list_get_from_head(&g_midb_list)) != NULL) {
 		pmidb = (MIDB_SVR*)pnode->pdata;
-		while (pnode1 = double_list_get_from_head(&pmidb->conn_list)) {
+		while ((pnode1 = double_list_get_from_head(&pmidb->conn_list)) != NULL) {
 			pmidbconn = (MIDB_CONN*)pnode1->pdata;
 			close(pmidbconn->sockd);
 			free(pmidbconn);
@@ -582,19 +578,17 @@ int main(int argc, char **argv)
 		free(pmidb);
 	}
 	double_list_free(&g_midb_list);
-	while (pnode = double_list_get_from_head(&g_mysql_list)) {
+	while ((pnode = double_list_get_from_head(&g_mysql_list)) != NULL) {
 		pmyconn = (MYSQL_CONN*)pnode->pdata;
 		mysql_close(pmyconn->pmysql);
 		free(pmyconn);
 	}
 	double_list_free(&g_mysql_list);
-	while (pnode = double_list_get_from_head(&g_midb_lost_list)) {
+	while ((pnode = double_list_get_from_head(&g_midb_lost_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&g_midb_lost_list);
-	while (pnode = double_list_get_from_head(&g_mysql_lost_list)) {
+	while ((pnode = double_list_get_from_head(&g_mysql_lost_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&g_mysql_lost_list);	
 	double_list_free(&g_user_list);
 	str_hash_free(g_user_hash);
@@ -1312,7 +1306,7 @@ static void *scan_work_func(void *param)
 			}
 		}
 		pthread_mutex_lock(&g_mysql_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pmyconn = (MYSQL_CONN*)pnode->pdata;
 			double_list_remove(&g_mysql_lost_list, &pmyconn->node);
 			double_list_append_as_tail(&g_mysql_list, &pmyconn->node);
@@ -1325,7 +1319,7 @@ static void *scan_work_func(void *param)
 			pnode=double_list_get_after(&g_midb_list, pnode)) {
 			pmidb = (MIDB_SVR*)pnode->pdata;
 			ptail = double_list_get_tail(&pmidb->conn_list);
-			while (pnode1=double_list_get_from_head(&pmidb->conn_list)) {
+			while ((pnode1 = double_list_get_from_head(&pmidb->conn_list)) != NULL) {
 				pmidbconn = (MIDB_CONN*)pnode1->pdata;
 				if (now_time - pmidbconn->last_time >= SOCKET_TIMEOUT - 3) {
 					double_list_append_as_tail(&temp_list, &pmidbconn->node);
@@ -1341,8 +1335,7 @@ static void *scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_midb_lock);
 
-
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pmidbconn = (MIDB_CONN*)pnode->pdata;
 			write(pmidbconn->sockd, "PING\r\n", 6);
 			tv.tv_usec = 0;
@@ -1361,12 +1354,11 @@ static void *scan_work_func(void *param)
 		}
 
 		pthread_mutex_lock(&g_midb_lock);
-		while (pnode=double_list_get_from_head(&g_midb_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_midb_lost_list)) != NULL)
 			double_list_append_as_tail(&temp_list, pnode);
-		}
 		pthread_mutex_unlock(&g_midb_lock);
 
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pmidbconn = (MIDB_CONN*)pnode->pdata;
 			pmidbconn->sockd = connect_midb(pmidbconn->psvr->ip_addr,
 								pmidbconn->psvr->port);
@@ -1488,8 +1480,8 @@ static BOOL md5_msg_file(const char *path, char *digest)
 	close(fd);
 
 	offset = 0;
-	while (len = parse_mime_field(pbuff + offset,
-		node_stat.st_size - offset, &mime_field)) {
+	while ((len = parse_mime_field(pbuff + offset,
+	       node_stat.st_size - offset, &mime_field)) != 0) {
 		if ((8 == mime_field.field_name_len &&
 			0 == strncasecmp("Received", mime_field.field_name, 8)) ||
 			(9 == mime_field.field_name_len &&

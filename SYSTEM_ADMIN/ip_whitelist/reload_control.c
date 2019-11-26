@@ -91,9 +91,8 @@ int reload_control_stop()
 {
 	SINGLE_LIST_NODE *pnode;
 
-	while (pnode=single_list_get_from_head(&g_console_list)) {
+	while ((pnode = single_list_get_from_head(&g_console_list)) != NULL)
 		free(pnode->pdata);
-	}
 	return 0;
 }
 

@@ -237,7 +237,7 @@ static void message_sign_free_list(SINGLE_LIST *plist)
 	SINGLE_LIST_NODE *pnode;
 	SIGN_NODE *pitem;
 	
-	while (pnode = single_list_get_from_head(plist)) {
+	while ((pnode = single_list_get_from_head(plist)) != NULL) {
 		pitem = (SIGN_NODE*)pnode->pdata;
 		free(pitem->sign_content);
 		free(pitem);

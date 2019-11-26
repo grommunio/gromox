@@ -252,9 +252,8 @@ int resource_stop()
     }
 	
 	if (NULL != g_lang_list) {
-		while (pnode=single_list_get_from_head(g_lang_list)) {
+		while ((pnode = single_list_get_from_head(g_lang_list)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(g_lang_list);
 		free(g_lang_list);
 		g_lang_list = NULL;
@@ -735,9 +734,8 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			printf("[resource]: line %d format error in %s\n", total + 1,
                 filename);
 			fclose(file_ptr);
-			while (pnode=single_list_get_from_head(&temp_list)) {
+			while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 				free(pnode->pdata);
-			}
 			single_list_free(&temp_list);
 			return -1;
 		}
@@ -748,9 +746,8 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			printf("[resource]: out of memory while loading file %s\n",
                 filename);
 			fclose(file_ptr);
-			while (pnode=single_list_get_from_head(&temp_list)) {
+			while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 				free(pnode->pdata);
-			}
 			single_list_free(&temp_list);
 			return -1;
 		}
@@ -781,9 +778,8 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 			printf("[resource]: line %d format error in %s\n", total + 1, filename);
 			free(plang);
 			fclose(file_ptr);
-			while (pnode=single_list_get_from_head(&temp_list)) {
+			while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 				free(pnode->pdata);
-			}
 			single_list_free(&temp_list);
 			return -1;
 		}
@@ -802,18 +798,16 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	
 	if (NULL == pnode) {
 		printf("[resource]: cannot find default lang in %s\n", filename);
-		while (pnode=single_list_get_from_head(&temp_list)) {
+		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(&temp_list);
 		return -1;
 	}
 	
 	if (single_list_get_nodes_num(&temp_list) > 127) {
 		printf("[resource]: too many langs in %s\n", filename);
-		while (pnode=single_list_get_from_head(&temp_list)) {
+		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(&temp_list);
 		return -1;
 	}

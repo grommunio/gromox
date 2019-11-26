@@ -520,7 +520,7 @@ int item_sorter_run()
 	if (NULL == dirp1) {
 		return 0;
 	}
-	while (direntp1 = readdir(dirp1)) {
+	while ((direntp1 = readdir(dirp1)) != NULL) {
 		if (0 == strcmp(direntp1->d_name, ".") ||
 			0 == strcmp(direntp1->d_name, "..")) {
 			continue;
@@ -530,7 +530,7 @@ int item_sorter_run()
 		if (NULL == dirp2) {
 			continue;
 		}
-		while (direntp2 = readdir(dirp2)) {
+		while ((direntp2 = readdir(dirp2)) != NULL) {
 			if (0 == strcmp(direntp2->d_name, ".") ||
 				0 == strcmp(direntp2->d_name, "..")) {
 				continue;

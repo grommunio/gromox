@@ -160,7 +160,7 @@ static int classify_engine_asrch(int argc, char **argv, int sockd)
 
     offset = sprintf(list_buff, "TRUE %d\r\n",
 				double_list_get_nodes_num(presult));
-    while (pnode=double_list_get_from_head(presult)) {
+	while ((pnode = double_list_get_from_head(presult)) != NULL) {
 		presnode = (RESULT_NODE*)pnode->pdata;
         offset += snprintf(list_buff + offset, 256*1024 - offset,
 					"%lld\r\n", presnode->mail_id);
@@ -549,7 +549,7 @@ int classify_engine_run()
 		return -2;
 	}
 	
-	while (direntp = readdir(dirp)) {
+	while ((direntp = readdir(dirp)) != NULL) {
 		if (0 == strcmp(direntp->d_name, ".") ||
 			0 == strcmp(direntp->d_name, "..")) {
 			continue;	
@@ -568,7 +568,7 @@ int classify_engine_run()
 	closedir(dirp);
 	if (0 == double_list_get_nodes_num(&g_dir_list)) {
 		printf("[classify_engine]: can not find sub-dir under %s\n", g_storage_path);
-		while (pnode=double_list_get_from_head(&g_dir_list)) {
+		while ((pnode = double_list_get_from_head(&g_dir_list)) != NULL) {
 			free(pnode->pdata);
 			free(pnode);
 		}
@@ -596,7 +596,7 @@ int classify_engine_stop()
 		g_alloc_mjson = NULL;
 	}
 	
-	while (pnode = double_list_get_from_head(&g_dir_list)) {
+	while ((pnode = double_list_get_from_head(&g_dir_list)) != NULL) {
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -879,7 +879,7 @@ static void classify_engine_cl_destroy(DOUBLE_LIST *pclist)
 	CONDITION_NODE *pconnode;
 
 	
-	while (pnode=double_list_get_from_head(pclist)) {
+	while ((pnode = double_list_get_from_head(pclist)) != NULL) {
 		pconnode = (CONDITION_NODE*)pnode->pdata;
 		if (CONDITION_UNIT == pconnode->condition ||
 			CONDITION_SENDER == pconnode->condition ||
@@ -951,7 +951,7 @@ static BOOL classify_engine_cl_search_head(const char *charset, const char *file
 	
 	offset = 0;
 	tag_len = strlen(tag);
-	while (len = parse_mime_field(head_buff + offset, head_offset - offset, &mime_field)) {
+	while ((len = parse_mime_field(head_buff + offset, head_offset - offset, &mime_field)) != 0) {
 		offset += len;
 		if (tag_len == mime_field.field_name_len &&
 			0 == strncasecmp(tag, mime_field.field_name, tag_len)) {
@@ -1620,9 +1620,8 @@ static DOUBLE_LIST* classify_engine_cl_match(const char *charset,
 	mysql_free_result(pmyres);
 	
 	if (NULL != plist1) {
-		while (pnode1=double_list_get_from_head(plist1)) {
+		while ((pnode1 = double_list_get_from_head(plist1)) != NULL)
 			free(pnode1->pdata);
-		}
 		double_list_free(plist1);
 		free(plist1);
 		plist1 = NULL;
@@ -1631,7 +1630,7 @@ static DOUBLE_LIST* classify_engine_cl_match(const char *charset,
 HEADER_MATCH:
 	if (NULL != header[0] && NULL != header[1]) {
 		ptail = double_list_get_tail(plist);
-		while (pnode=double_list_get_from_head(plist)) {
+		while ((pnode = double_list_get_from_head(plist)) != NULL) {
 			presnode = (RESULT_NODE*)pnode->pdata;
 			pconnection = mysql_pool_get_connection();
 			if (NULL == pconnection) {

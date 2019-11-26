@@ -535,9 +535,8 @@ static BOOL media_migrator_allocate_mediadir(const char *media_area,
 		system_log_info("[media_migrator]: seems allocation information of data area "
 			"%s or it's vdir information error, please check it!",
 			pleast_area->master);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		locker_client_unlock(lockd);
 		return FALSE;
@@ -553,9 +552,8 @@ static BOOL media_migrator_allocate_mediadir(const char *media_area,
 		system_log_info("[media_migrator]: seems allocation information of vdir %d "
 			"under data area %s error, please check it!", mini_vdir,
 			pleast_area->master);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		locker_client_unlock(lockd);
 		return FALSE;	
@@ -586,10 +584,8 @@ static BOOL media_migrator_allocate_mediadir(const char *media_area,
 	}
 	
 	sprintf(temp_path, "%s/v%d/%d", pleast_area->master, mini_vdir, v_index);
-	
-	while (pnode=double_list_get_from_head(&temp_list)) {
+	while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&temp_list);
 	
 	if (0 == mkdir(temp_path, 0777)) {

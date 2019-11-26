@@ -289,7 +289,7 @@ static int remote_list(CONNECTION conn, DOUBLE_LIST *plist)
         FD_ZERO(&myset);
         FD_SET(conn.sockd, &myset);
         if (select(conn.sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
-			while (pnode=double_list_get_from_head(plist)) {
+			while ((pnode = double_list_get_from_head(plist)) != NULL) {
 				pdirent = (DIRENT_NODE*)pnode->pdata;
 				free(pdirent);
 			}
@@ -297,7 +297,7 @@ static int remote_list(CONNECTION conn, DOUBLE_LIST *plist)
         }
         read_len = SSL_read(conn.ssl, buff + offset, sizeof(buff) - offset);
         if (read_len <= 0) {
-			while (pnode=double_list_get_from_head(plist)) {
+			while ((pnode = double_list_get_from_head(plist)) != NULL) {
 				pdirent = (DIRENT_NODE*)pnode->pdata;
 				free(pdirent);
 			}
@@ -343,7 +343,7 @@ static int remote_list(CONNECTION conn, DOUBLE_LIST *plist)
 					pdirent->d_type = D_TYPE_LNK;
 				} else {
 					free(pdirent);
-					while (pnode=double_list_get_from_head(plist)) {
+					while ((pnode = double_list_get_from_head(plist)) != NULL) {
 						pdirent = (DIRENT_NODE*)pnode->pdata;
 						free(pdirent);
 					}
@@ -794,10 +794,8 @@ static CONNECTION backup_subdir(CONNECTION conn, char *path)
 		}
 	}
 	closedir(dirp);
-
-	while (pnode=double_list_get_from_head(&dir_list)) {
+	while ((pnode = double_list_get_from_head(&dir_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&dir_list);
 	return conn2;
 }
@@ -986,10 +984,8 @@ BEGIN_BACKUP:
 		}
 	}
 	closedir(dirp);
-
-	while (pnode=double_list_get_from_head(&dir_list)) {
+	while ((pnode = double_list_get_from_head(&dir_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&dir_list);
 }
 
@@ -1228,7 +1224,7 @@ int main(int argc, char **argv)
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}
-	while (pnode=double_list_get_from_head(&g_thread_list)) {
+	while ((pnode = double_list_get_from_head(&g_thread_list)) != NULL) {
 		pthread = (THREAD_NODE*)pnode->pdata;
 		pthread_cancel(pthread->thr_id);
 		free(pthread);

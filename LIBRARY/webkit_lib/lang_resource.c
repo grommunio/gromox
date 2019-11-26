@@ -111,7 +111,7 @@ void lang_resource_free(LANG_RESOURCE *presource)
 	LANG_NODE *plang;
 	SINGLE_LIST_NODE *pnode;
 
-	while (pnode=single_list_get_from_head(&presource->resource_list)) {
+	while ((pnode = single_list_get_from_head(&presource->resource_list)) != NULL) {
 		plang = (LANG_NODE*)(pnode->pdata);
 		if (NULL != plang->parray) {
 			assoc_array_foreach(plang->parray,
@@ -212,10 +212,8 @@ const char* lang_resource_get(LANG_RESOURCE *presource, const char *tag,
 	}
 
 DEFAULT_FOUND:
-
-	while (pdnode=double_list_get_from_head(&accept_list)) {
+	while ((pdnode = double_list_get_from_head(&accept_list)) != NULL)
 		free(pdnode->pdata);
-	}
 	double_list_free(&accept_list);
 
 	if (FALSE == found_lang) {

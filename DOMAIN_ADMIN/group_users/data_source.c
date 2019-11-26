@@ -39,10 +39,8 @@ void data_source_collect_free(DATA_COLLECT *pcollect)
 	if (NULL == pcollect) {
 		return;
 	}
-
-	while (pnode = double_list_get_from_head(&pcollect->list)) {
+	while ((pnode = double_list_get_from_head(&pcollect->list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&pcollect->list);
 	free(pcollect);
 }

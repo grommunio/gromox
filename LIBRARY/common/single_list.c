@@ -183,7 +183,7 @@ SINGLE_LIST_NODE* single_list_get_from_tail(SINGLE_LIST* plist)
 		plist->list_tail = NULL;
 	} else {
 		iter = plist->list_head->next;
-		while (iter = iter->next) {
+		while ((iter = iter->next) != NULL) {
 			if (node == iter->next) {
 				break;
 			}

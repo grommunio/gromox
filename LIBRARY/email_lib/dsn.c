@@ -21,7 +21,7 @@ static void dsn_clear_fields(DSN_FIELDS *pfields)
 	DSN_FIELD *pfield;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(pfields)) {
+	while ((pnode = double_list_get_from_head(pfields)) != NULL) {
 		pfield = (DSN_FIELD*)pnode->pdata;
 		free(pfield->tag);
 		free(pfield->value);
@@ -223,7 +223,7 @@ void dsn_clear(DSN *pdsn)
 	DOUBLE_LIST_NODE *pnode;
 	
 	dsn_clear_fields(&pdsn->message_fields);
-	while (pnode=double_list_get_from_head(&pdsn->rcpts_fields)) {
+	while ((pnode = double_list_get_from_head(&pdsn->rcpts_fields)) != NULL) {
 		dsn_clear_fields(&((RCPT_DSN_FIELDS*)pnode->pdata)->fields);
 		double_list_free(&((RCPT_DSN_FIELDS*)pnode->pdata)->fields);
 		free(pnode->pdata);

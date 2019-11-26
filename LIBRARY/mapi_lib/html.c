@@ -445,7 +445,7 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 		&pwriter->ext_push, "{\\fonttbl", 9)) {
 		return FALSE;	
 	}
-	while (pnode=double_list_get_from_head(&pwriter->font_table)) {
+	while ((pnode = double_list_get_from_head(&pwriter->font_table)) != NULL) {
 		pfnode = (FONT_NODE*)pnode->pdata;
 		if (0 == strcasecmp(pfnode->font_name, "symbol")) {
 			length = sprintf(tmp_string,
@@ -470,7 +470,7 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 		&pwriter->ext_push, "}{\\colortbl", 11)) {
 		return FALSE;
 	}
-	while (pnode=double_list_get_from_head(&pwriter->color_table)) {
+	while ((pnode = double_list_get_from_head(&pwriter->color_table)) != NULL) {
 		pcnode = (COLOR_NODE*)pnode->pdata;
 		length = sprintf(tmp_string, "\\red%d\\green%d\\blue%d;",
 							(pcnode->color & 0xFF0000) >> 16,

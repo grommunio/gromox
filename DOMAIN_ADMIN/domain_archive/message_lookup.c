@@ -64,12 +64,9 @@ void message_lookup_collect_free(LOOKUP_COLLECT *pcollect)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&pcollect->message_list)) {
+	while ((pnode = double_list_get_from_head(&pcollect->message_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&pcollect->message_list);
-	
-	
 	free(pcollect);
 }
 

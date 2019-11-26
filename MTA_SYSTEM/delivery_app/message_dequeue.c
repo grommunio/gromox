@@ -692,7 +692,7 @@ void message_dequeue_save(MESSAGE *pmessage)
 		len = strlen(pmessage->envelop_from);
 		write(fd, pmessage->envelop_from, len + 1);
 		ptr = pmessage->envelop_rcpt;
-		while (len = strlen(ptr)) {
+		while ((len = strlen(ptr)) != 0) {
 			len ++;
 			write(fd, ptr, len);
 			ptr += len;

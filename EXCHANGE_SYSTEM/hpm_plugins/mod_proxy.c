@@ -243,7 +243,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			free(g_context_list);
 			g_context_list = NULL;
 		}
-		while (pnode=double_list_get_from_head(&g_proxy_list)) {
+		while ((pnode = double_list_get_from_head(&g_proxy_list)) != NULL) {
 			pxnode = (PROXY_NODE*)pnode->pdata;
 			free(pxnode->domain);
 			free(pxnode->path);

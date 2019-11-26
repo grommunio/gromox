@@ -83,7 +83,7 @@ int midb_client_stop()
 	BACK_SVR *pserver;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&g_server_list)) {
+	while ((pnode = double_list_get_from_head(&g_server_list)) != NULL) {
 		pserver = (BACK_SVR*)pnode->pdata;
 		free(pserver);
 	}
@@ -316,7 +316,7 @@ static BOOL midb_client_enum_folders(int sockd,
 	}
 	
 RDWR_ERROR:
-	while (pnode=single_list_get_from_head(plist)) {
+	while ((pnode = single_list_get_from_head(plist)) != NULL) {
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -395,7 +395,7 @@ BOOL midb_client_all_mid_strings(const char *maildir, sqlite3_stmt *pstmt)
 		FALSE == midb_client_list_mail(sockd, maildir, "junk", pstmt)) {
 		goto LIST_ERROR;
 	}
-	while (psnode=single_list_get_from_head(&folders_list)) {
+	while ((psnode = single_list_get_from_head(&folders_list)) != NULL) {
 		if (FALSE == midb_client_list_mail(sockd,
 			maildir, psnode->pdata, pstmt)) {
 			free(psnode->pdata);
@@ -411,7 +411,7 @@ BOOL midb_client_all_mid_strings(const char *maildir, sqlite3_stmt *pstmt)
 	return TRUE;
 
 LIST_ERROR:
-	while (psnode=single_list_get_from_head(&folders_list)) {
+	while ((psnode = single_list_get_from_head(&folders_list)) != NULL) {
 		free(psnode->pdata);
 		free(psnode);
 	}

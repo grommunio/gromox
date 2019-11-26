@@ -991,8 +991,8 @@ static BOOL table_ui_load_sender(const char *path, char *sender)
 	}
 
 	offset = 0;
-	while (tmp_len = parse_mime_field(head_buff + offset, len - offset,
-			&mime_field)) {
+	while ((tmp_len = parse_mime_field(head_buff + offset, len - offset,
+	       &mime_field)) != 0) {
 		offset += tmp_len;
 		if (14 == mime_field.field_name_len &&
 			0 == strncasecmp("X-Envelop-From", mime_field.field_name, 14)) {

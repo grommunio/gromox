@@ -155,7 +155,7 @@ int cmd_parser_stop()
 		pthread_join(g_thread_ids[i], NULL);
 	}
 
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION*)pnode->pdata;
 		if (-1 != pconnection->sockd) {
 			close(pconnection->sockd);
@@ -163,7 +163,7 @@ int cmd_parser_stop()
 		free(pconnection);
 	}
 
-	while (pnode=double_list_get_from_head(&g_connection_list1)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list1)) != NULL) {
 		pconnection = (CONNECTION*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);

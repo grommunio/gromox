@@ -143,7 +143,7 @@ int mysql_adaptor_stop()
 		pthread_join(g_thread_id, NULL);
 	}
 	
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		if (NULL != pconnection->pmysql) {
 			mysql_close(pconnection->pmysql);
@@ -152,7 +152,7 @@ int mysql_adaptor_stop()
 		free(pconnection);
 	}
 	
-	while (pnode=double_list_get_from_head(&g_invalid_list)) {
+	while ((pnode = double_list_get_from_head(&g_invalid_list)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		free(pconnection);
 	}
@@ -3884,7 +3884,7 @@ static void* thread_work_func(void *arg)
 			}
 		}
 		pthread_mutex_lock(&g_list_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pconnection = (CONNECTION_NODE*)pnode->pdata;
 			double_list_remove(&g_invalid_list, &pconnection->node);
 			double_list_append_as_tail(&g_connection_list, &pconnection->node);

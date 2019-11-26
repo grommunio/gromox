@@ -53,11 +53,10 @@ void data_source_collect_free(DATA_COLLECT *pcollect)
 		return;
 	}
 
-	while (pnode = double_list_get_from_head(&pcollect->list)) {
+	while ((pnode = double_list_get_from_head(&pcollect->list)) != NULL) {
 		porg = (ORG_ITEM*)pnode->pdata;
-		while (pnode1 = double_list_get_from_head(&porg->collect.list)) {
+		while ((pnode1 = double_list_get_from_head(&porg->collect.list)) != NULL)
 			free(pnode1->pdata);
-		}
 		double_list_free(&porg->collect.list);
 		free(pnode->pdata);
 	}

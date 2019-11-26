@@ -285,8 +285,8 @@ BOOL config_file_save(CONFIG_FILE* cfg_file)
 			continue;
 		}
 		psearch = pbuff - 1;
-		while (psearch = search_string(psearch + 1,
-			cfg_file->config_table[i].keyname, size)) {
+		while ((psearch = search_string(psearch + 1,
+		       cfg_file->config_table[i].keyname, size)) != NULL) {
 			plf = (char*)memrchr(pbuff, '\n', psearch - pbuff);
 			psharp = (char*)memrchr(pbuff, '#', psearch - pbuff);
 			if (NULL == psharp || psharp < plf) {

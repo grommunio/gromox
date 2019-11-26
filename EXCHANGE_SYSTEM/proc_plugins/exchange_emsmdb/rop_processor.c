@@ -419,7 +419,7 @@ static void *scan_work_func(void *param)
 		}
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_hash_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			exmdb_client_ping_store(pnode->pdata);
 			free(pnode->pdata);
 			free(pnode);

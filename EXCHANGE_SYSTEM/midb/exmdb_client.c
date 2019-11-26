@@ -275,7 +275,7 @@ static void *scan_work_func(void *pparam)
 			pnode=double_list_get_after(&g_server_list, pnode)) {
 			pserver = (REMOTE_SVR*)pnode->pdata;
 			ptail = double_list_get_tail(&pserver->conn_list);
-			while (pnode1=double_list_get_from_head(&pserver->conn_list)) {
+			while ((pnode1 = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 				pconn = (REMOTE_CONN*)pnode1->pdata;
 				if (now_time - pconn->last_time >= SOCKET_TIMEOUT - 3) {
 					double_list_append_as_tail(&temp_list, &pconn->node);
@@ -291,7 +291,7 @@ static void *scan_work_func(void *pparam)
 		}
 		pthread_mutex_unlock(&g_server_lock);
 
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pconn = (REMOTE_CONN*)pnode->pdata;
 			if (TRUE == g_notify_stop) {
 				close(pconn->sockd);
@@ -328,12 +328,11 @@ static void *scan_work_func(void *pparam)
 		}
 
 		pthread_mutex_lock(&g_server_lock);
-		while (pnode=double_list_get_from_head(&g_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 			double_list_append_as_tail(&temp_list, pnode);
-		}
 		pthread_mutex_unlock(&g_server_lock);
 
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pconn = (REMOTE_CONN*)pnode->pdata;
 			if (TRUE == g_notify_stop) {
 				close(pconn->sockd);
@@ -603,7 +602,7 @@ int exmdb_client_stop()
 		}
 	}
 	g_notify_stop = TRUE;
-	while (pnode=double_list_get_from_head(&g_agent_list)) {
+	while ((pnode = double_list_get_from_head(&g_agent_list)) != NULL) {
 		pagent = (AGENT_THREAD*)pnode->pdata;
 		pthread_cancel(pagent->thr_id);
 		if (-1 != pagent->sockd) {
@@ -611,12 +610,11 @@ int exmdb_client_stop()
 		}
 		free(pagent);
 	}
-	while (pnode=double_list_get_from_head(&g_lost_list)) {
+	while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 		free(pnode->pdata);
-	}
-	while (pnode=double_list_get_from_head(&g_server_list)) {
+	while ((pnode = double_list_get_from_head(&g_server_list)) != NULL) {
 		pserver = (REMOTE_SVR*)pnode->pdata;
-		while (pnode=double_list_get_from_head(&pserver->conn_list)) {
+		while ((pnode = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 			pconn = (REMOTE_CONN*)pnode->pdata;
 			close(pconn->sockd);
 			free(pconn);

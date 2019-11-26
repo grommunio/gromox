@@ -289,9 +289,8 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	} else if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_base->pnode_child;
 		pnode_last = pnode_temp;
-		while (pnode_temp = pnode_temp->pnode_slibling) {
+		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
 			pnode_last = pnode_temp;
-		}
 		pnode->pnode_child		   = NULL;
 		pnode->node_depth		   = pnode_base->node_depth + 1;
 		pnode->node_children	   = 0;
@@ -696,7 +695,7 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 		if (pnode_temp == pnode_src) {
 			return FALSE;
 		}
-	} while (pnode_temp = pnode_temp->pnode_parent);
+	} while ((pnode_temp = pnode_temp->pnode_parent) != NULL);
 	/* first cut the relationship of source tree */
 	pnode_child = pnode_src->pnode_child;
 	if (NULL != pnode_child) {
@@ -746,9 +745,8 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 		pnode_src->pnode_slibling = pnode_temp;
 	} else if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while (pnode_temp = pnode_temp->pnode_slibling) {
+		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
 			pnode_last = pnode_temp;
-		}
 		pnode_src->pnode_slibling = NULL;
 		pnode_last->pnode_slibling = pnode_src;
 		/* add the relationship to the destination */
@@ -800,7 +798,7 @@ BOOL simple_tree_move_node_to_slibling(SIMPLE_TREE *ptree_dst,
 		return TRUE;
 	}
 	pnode_temp = pnode_dst;
-	while (pnode_temp = pnode_temp->pnode_parent) {
+	while ((pnode_temp = pnode_temp->pnode_parent) != NULL) {
 		if (pnode_temp == pnode_src) {
 			return FALSE;
 		}
@@ -902,7 +900,7 @@ BOOL simple_tree_move_children_to_child(SIMPLE_TREE *ptree_dst,
 		return TRUE;
 	}
 	pnode_temp = pnode_dst;
-	while (pnode_temp = pnode_temp->pnode_parent) {
+	while ((pnode_temp = pnode_temp->pnode_parent) != NULL) {
 		if (pnode_temp == pnode_src) {
 			return FALSE;
 		}
@@ -921,7 +919,7 @@ BOOL simple_tree_move_children_to_child(SIMPLE_TREE *ptree_dst,
 	pnode_temp = pnode_child;
 	do {
 		pnode_temp->pnode_parent = pnode_dst;
-	} while (pnode_temp = pnode_temp->pnode_slibling);
+	} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
 	if (NULL == pnode_dst->pnode_child) {
 		pnode_dst->pnode_child = pnode_child;
 		simple_tree_cohere_group(ptree_dst, pnode_child);
@@ -929,16 +927,14 @@ BOOL simple_tree_move_children_to_child(SIMPLE_TREE *ptree_dst,
 	}
 	if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while (pnode_temp = pnode_temp->pnode_slibling) {
+		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
 			pnode_last = pnode_temp;
-		}
 		pnode_last->pnode_slibling = pnode_child;
 		simple_tree_cohere_group(ptree_dst, pnode_child);
 	} else if (SIMPLE_TREE_ADD_FIRST == opt) {
 		pnode_temp = pnode_child;
-		while (pnode_temp = pnode_temp->pnode_slibling) {
+		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
 			pnode_last = pnode_temp;
-		}
 		simple_tree_cohere_group(ptree_dst, pnode_child);
 		pnode_last->pnode_slibling = pnode_dst->pnode_child;
 		pnode_dst->pnode_child = pnode_child;
@@ -989,7 +985,7 @@ BOOL simple_tree_move_children_to_slibling(SIMPLE_TREE *ptree_dst,
 	 * of source node
 	 */
 	pnode_temp = pnode_dst;
-	while (pnode_temp = pnode_temp->pnode_parent) {
+	while ((pnode_temp = pnode_temp->pnode_parent) != NULL) {
 		if (pnode_temp == pnode_src) {
 			return FALSE;
 		}
@@ -1009,7 +1005,7 @@ BOOL simple_tree_move_children_to_slibling(SIMPLE_TREE *ptree_dst,
 	do {
 		pnode_final = pnode_temp;
 		pnode_temp->pnode_parent = pnode_dst->pnode_parent;
-	} while (pnode_temp = pnode_temp->pnode_slibling);
+	} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
 	simple_tree_cohere_group(ptree_dst, pnode_child);
 	if (SIMPLE_TREE_INSERT_BEFORE == opt) {
 		pnode_temp = pnode_dst->pnode_parent->pnode_child;
@@ -1137,7 +1133,7 @@ BOOL simple_tree_copy_node_to_child(SIMPLE_TREE *ptree_dst,
 		pnode_temp = pnode_child;
 		do {
 			pnode_temp->pnode_parent = pnode_parent;
-		} while (pnode_temp = pnode_temp->pnode_slibling);
+		} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
 	}
 	ptree_dst->nodes_num ++;
 	pnode_dst->node_children ++;
@@ -1155,9 +1151,8 @@ BOOL simple_tree_copy_node_to_child(SIMPLE_TREE *ptree_dst,
 		pnode_dst->pnode_child = pnode_parent;
 	} else if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while (pnode_temp = pnode_temp->pnode_slibling) {
+		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
 			pnode_last = pnode_temp;
-		}
 		pnode_last->pnode_slibling = pnode_parent;
 		pnode_parent->pnode_slibling = NULL;
 	}
@@ -1222,7 +1217,7 @@ BOOL simple_tree_copy_node_to_slibling(SIMPLE_TREE *ptree_dst,
 		pnode_temp = pnode_child;
 		do {
 			pnode_temp->pnode_parent = pnode_parent;
-		} while (pnode_temp = pnode_temp->pnode_slibling);
+		} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
 	}
 	ptree_dst->nodes_num ++;
 	/* add the relationship to the destination */
@@ -1300,15 +1295,13 @@ BOOL simple_tree_copy_children_to_child(SIMPLE_TREE *ptree_dst,
 	}
 	if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while (pnode_temp = pnode_temp->pnode_slibling) {
+		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
 			pnode_last = pnode_temp;
-		}
 		pnode_last->pnode_slibling = pnode_child;
 	} else if (SIMPLE_TREE_ADD_FIRST == opt) {
 		pnode_temp = pnode_child;
-		while (pnode_temp = pnode_temp->pnode_slibling) {
+		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
 			pnode_last = pnode_temp;
-		}
 		pnode_last->pnode_slibling = pnode_dst->pnode_child;
 		pnode_dst->pnode_child = pnode_child;
 	}
@@ -1366,7 +1359,7 @@ BOOL simple_tree_copy_children_to_slibling(SIMPLE_TREE *ptree_dst,
 	pnode_temp = pnode_child;
 	pnode_final = pnode_child;
 	children_num = 1;
-	while (pnode_temp = pnode_temp->pnode_slibling) {
+	while ((pnode_temp = pnode_temp->pnode_slibling) != NULL) {
 		children_num ++;
 		pnode_final = pnode_temp;
 	};
@@ -1438,7 +1431,7 @@ BOOL simple_tree_dup(SIMPLE_TREE *ptree_src, SIMPLE_TREE *ptree_dst,
 		pnode_temp = pnode_child;
 		do{
 			children_num ++;
-		} while (pnode_temp = pnode_temp->pnode_slibling);
+		} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
 	}
 	pnode_root->pnode_child	 = pnode_child;
 	pnode_root->node_children= children_num;

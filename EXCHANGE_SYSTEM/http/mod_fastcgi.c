@@ -232,7 +232,7 @@ void mod_fastcgi_stop(void)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
-	while (pnode=double_list_get_from_head(&g_fastcgi_list)) {
+	while ((pnode = double_list_get_from_head(&g_fastcgi_list)) != NULL) {
 		pfnode = (FASTCGI_NODE*)pnode->pdata;
 		free(pfnode->domain);
 		free(pfnode->path);
@@ -240,8 +240,7 @@ void mod_fastcgi_stop(void)
 		free(pfnode->suffix);
 		free(pfnode->index);
 		free(pfnode->sock_path);
-		while (pnode1=double_list_get_from_head(
-			&pfnode->header_list)) {
+		while ((pnode1 = double_list_get_from_head(&pfnode->header_list)) != NULL) {
 			free(pnode1->pdata);
 			free(pnode1);
 		}
@@ -1168,8 +1167,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			goto END_OF_STDIN;
 		}
 		tmp_len = sizeof(tmp_buff);
-		while (pbuff = stream_getbuffer_for_reading(
-			&phttp->stream_in, &tmp_len)) {
+		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in, &tmp_len)) != NULL) {
 			if (tmp_len > phttp->pfast_context->content_length) {
 				stream_backward_reading_ptr(&phttp->stream_in,
 					tmp_len - phttp->pfast_context->content_length);

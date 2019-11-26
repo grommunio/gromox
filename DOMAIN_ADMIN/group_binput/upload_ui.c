@@ -525,7 +525,7 @@ int upload_ui_run()
 			}
 		}
 		offset = 0;
-		while (len = fread(post_buff + offset, 1, 1024 - offset, stdin)) {
+		while ((len = fread(post_buff + offset, 1, 1024 - offset, stdin)) != 0) {
 			offset += len;
 			if (offset >= bnd_len + 2) {
 				write(fd, post_buff, offset - bnd_len - 2);
@@ -1365,9 +1365,8 @@ static BOOL upload_ui_batch_input(const char *groupname,
 	
 	locker_client_unlock(lockd);
 	mysql_close(pmysql);
-	while (pnode=double_list_get_from_head(&class_list)) {
+	while ((pnode = double_list_get_from_head(&class_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&class_list);
 	*presult = INPUT_RESULT_OK;
 	return TRUE;
@@ -1982,11 +1981,10 @@ static void upload_ui_free_ulist(DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE *pnode1;
 	USER_ITEM *pitem;
 
-	while (pnode = double_list_get_from_head(plist)) {
+	while ((pnode = double_list_get_from_head(plist)) != NULL) {
 		pitem = (USER_ITEM*)pnode->pdata;
-		while (pnode1 = double_list_get_from_head(&pitem->class_list)) {
+		while ((pnode1 = double_list_get_from_head(&pitem->class_list)) != NULL)
 			free(pnode1->pdata);
-		}
 		double_list_free(&pitem->class_list);
 		free(pitem);
 	}
@@ -2576,9 +2574,8 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 		system_log_info("[list_ui]: seems allocation information of data"
 			" area %s or it's vdir information error, please check it!",
 			pleast_area->master);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		locker_client_unlock(lockd);
 		return FALSE;
@@ -2594,9 +2591,8 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 		system_log_info("[list_ui]: seems allocation information of vdir"
 			" %d under data area %s error, please check it!", mini_vdir,
 			pleast_area->master);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		locker_client_unlock(lockd);
 		return FALSE;	
@@ -2632,9 +2628,8 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 		sprintf(temp_path1, "%s/v%d/%d", pleast_area->database, mini_vdir, v_index);
 		if (0 == mkdir(temp_path1, 0777)) {
 			locker_client_unlock(lockd);
-			while (pnode=double_list_get_from_head(&temp_list)) {
+			while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 				free(pnode->pdata);
-			}
 			double_list_free(&temp_list);
 			system_log_info("[list_ui]: fail to make directory "
 				"under %s/v%d", pleast_area->database, mini_vdir);
@@ -2679,9 +2674,8 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 			close(fd);
 		}
 		locker_client_unlock(lockd);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		return TRUE;
 	} else {
@@ -2689,9 +2683,8 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 		if ('\0' != pleast_area->database[0]) {
 			remove(temp_path1);
 		}
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		system_log_info("[list_ui]: fail to make directory "
 			"under %s/v%d", pleast_area->master, mini_vdir);

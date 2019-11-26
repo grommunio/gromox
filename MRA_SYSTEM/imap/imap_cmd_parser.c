@@ -517,8 +517,8 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	close(fd);
 	len1 = 0;
 	buff_len = 0;
-	while (len = parse_mime_field(buff + buff_len,
-		length - buff_len, &mime_field)) {
+	while ((len = parse_mime_field(buff + buff_len, length - buff_len,
+	       &mime_field)) != 0) {
 		b_hit = FALSE;
 		for (i=0; i<tmp_argc; i++) {
 			tag_len = strlen(tmp_argv[i]);

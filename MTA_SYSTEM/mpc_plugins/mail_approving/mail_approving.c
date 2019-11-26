@@ -498,9 +498,8 @@ static BOOL mail_approving_free_table(STR_HASH_TABLE *ptable)
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		plist = (DOUBLE_LIST*)str_hash_iter_get_value(iter, NULL);
-		while (pnode = double_list_get_from_head(plist)) {
+		while ((pnode = double_list_get_from_head(plist)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(plist);
 	}
 	str_hash_iter_free(iter);

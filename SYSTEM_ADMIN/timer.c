@@ -480,14 +480,11 @@ int main(int argc, char **argv)
 
 	close(sockd);
 	close(g_list_fd);
-
-	while (pnode=double_list_get_from_head(&g_acl_list)) {
+	while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 		free(pnode->pdata);
-	}
-
 	double_list_free(&g_acl_list);
 
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);
@@ -495,7 +492,7 @@ int main(int argc, char **argv)
 
 	double_list_free(&g_connection_list);
 
-	while (pnode=double_list_get_from_head(&g_connection_list1)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list1)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		close(pconnection->sockd);
 		free(pconnection);

@@ -65,10 +65,8 @@ void match_engine_collect_free(MATCH_COLLECT *pcollect)
 	if (NULL == pcollect) {
 		return;
 	}
-
-	while (pnode = single_list_get_from_head(&pcollect->list)) {
+	while ((pnode = single_list_get_from_head(&pcollect->list)) != NULL)
 		free(pnode->pdata);
-	}
 	single_list_free(&pcollect->list);
 	free(pcollect);
 }

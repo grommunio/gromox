@@ -75,9 +75,8 @@ static void sender_routing_free_hash(STR_HASH_TABLE *phash)
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		plist = (SINGLE_LIST*)str_hash_iter_get_value(iter, NULL);
-		while (pnode = single_list_get_from_head(plist)) {
+		while ((pnode = single_list_get_from_head(plist)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(plist);
 	}
 	str_hash_iter_free(iter);
@@ -131,9 +130,8 @@ static STR_HASH_TABLE* sender_routing_load_hash()
 			}
 			p_ip = (IP_NODE*)malloc(sizeof(IP_NODE));
 			if (NULL == p_ip) {
-				while (pnode = single_list_get_from_head(&temp_list)) {
+				while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 					free(pnode->pdata);
-				}
 				break;
 			}
 			p_ip->node.pdata = p_ip;
@@ -146,9 +144,8 @@ static STR_HASH_TABLE* sender_routing_load_hash()
 			continue;
 		}
 		if (1 != str_hash_add(phash, sender_name, &temp_list)) {
-			while (pnode = single_list_get_from_head(&temp_list)) {
+			while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 				free(pnode->pdata);
-			}
 			single_list_free(&temp_list);
 			printf("[sender_routing]: fail to add item %d into hash table\n", i);
 		}

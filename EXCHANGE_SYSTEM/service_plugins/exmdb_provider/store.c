@@ -636,7 +636,7 @@ static BOOL table_check_address_in_contact_folder(
 			sqlite3_column_int64(pstmt_subfolder, 0);
 		double_list_append_as_tail(&folder_list, pnode);
 	}
-	while (pnode=double_list_get_from_head(&folder_list)) {
+	while ((pnode = double_list_get_from_head(&folder_list)) != NULL) {
 		if (FALSE == table_check_address_in_contact_folder(pstmt_subfolder,
 			pstmt_search, *(uint64_t*)pnode->pdata, paddress, pb_found)) {
 			return FALSE;	

@@ -275,9 +275,7 @@ int main(int argc, char **argv)
 	}
 
 	close(sockd);
-
-
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_NODE*)pnode->pdata;
 		pthread_cancel(pconnection->thr_id);
 		close(pconnection->sockd);
@@ -430,7 +428,7 @@ static void *thread_work_func(void *param)
 			}	
 			SSL_write(pconnection->ssl, "TRUE\r\n", 6);
 			offset = 0;
-			while (direntp = readdir(dirp)) {
+			while ((direntp = readdir(dirp)) != NULL) {
 				if (0 == strcmp(direntp->d_name, ".") ||
 					0 == strcmp(direntp->d_name, "..")) {
 					continue;
@@ -716,8 +714,8 @@ static BOOL md5_file(const char *path, BOOL b_msg, char *digest)
 
 	if (TRUE == b_msg) {
 		offset = 0;
-		while (len = parse_mime_field(pbuff + offset,
-			node_stat.st_size - offset, &mime_field)) {
+		while ((len = parse_mime_field(pbuff + offset,
+		       node_stat.st_size - offset, &mime_field)) != 0) {
 			if ((8 == mime_field.field_name_len &&
 				0 == strncasecmp("Received", mime_field.field_name, 8)) ||
 				(9 == mime_field.field_name_len &&

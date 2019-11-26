@@ -1628,11 +1628,9 @@ CONTEXT_PROCESSING:
 					pchannel_out->client_keepalive =
 						pchannel_in->client_keepalive;
 					pchannel_out->channel_stat = CHANNEL_STAT_OPENED;
-					while (pnode=double_list_get_from_head(
-						&pchannel_in->pdu_list)) {
+					while ((pnode = double_list_get_from_head(&pchannel_in->pdu_list)) != NULL)
 						double_list_append_as_tail(
 							&pchannel_out->pdu_list, pnode);
-					}
 					if (0 == double_list_get_nodes_num(
 						&pchannel_out->pdu_list)) {
 						pcontext->sched_stat = SCHED_STAT_WAIT;
@@ -1860,7 +1858,7 @@ END_PROCESSING:
 				}
 				http_parser_put_vconnection(pvconnection);
 			}
-			while (pnode=double_list_get_from_head(&pchannel_in->pdu_list)) {
+			while ((pnode = double_list_get_from_head(&pchannel_in->pdu_list)) != NULL) {
 				free(((BLOB_NODE*)pnode->pdata)->blob.data);
 				pdu_processor_free_blob(pnode->pdata);
 			}
@@ -1880,7 +1878,7 @@ END_PROCESSING:
 				pdu_processor_free_call(pchannel_out->pcall);
 				pchannel_out->pcall = NULL;
 			}
-			while (pnode=double_list_get_from_head(&pchannel_out->pdu_list)) {
+			while ((pnode = double_list_get_from_head(&pchannel_out->pdu_list)) != NULL) {
 				free(((BLOB_NODE*)pnode->pdata)->blob.data);
 				pdu_processor_free_blob(pnode->pdata);
 			}

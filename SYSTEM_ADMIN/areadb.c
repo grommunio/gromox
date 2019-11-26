@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 	}
 	list_file_free(pfile);
 	
-	while (pnode=double_list_get_from_head(&partition_list)) {
+	while ((pnode = double_list_get_from_head(&partition_list)) != NULL) {
 		ppartition = (PARTITION_ITEM*)pnode->pdata;
 		pthread_join(ppartition->thr_id, NULL);	
 		free(ppartition);

@@ -443,9 +443,8 @@ int exmdb_client_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&g_server_list)) {
+	while ((pnode = double_list_get_from_head(&g_server_list)) != NULL)
 		free(pnode->pdata);
-	}
 	return 0;
 }
 

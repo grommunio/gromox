@@ -4298,7 +4298,7 @@ static BOOL message_make_deferred_action_messages(
 	provider = NULL;
 	double_list_init(&tmp_list);
 	ptail = double_list_get_tail(pdam_list);
-	while (pnode=double_list_get_from_head(pdam_list)) {
+	while ((pnode = double_list_get_from_head(pdam_list)) != NULL) {
 		pdnode = (DAM_NODE*)pnode->pdata;
 		if (NULL != provider) {
 			if (0 == strcasecmp(provider, pdnode->provider)) {

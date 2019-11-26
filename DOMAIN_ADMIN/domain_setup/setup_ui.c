@@ -712,7 +712,7 @@ int setup_ui_run()
 			}
 		}
 		offset = 0;
-		while (len = fread(post_buff + offset, 1, 1024 - offset, stdin)) {
+		while ((len = fread(post_buff + offset, 1, 1024 - offset, stdin)) != 0) {
 			offset += len;
 			if ('\r' == post_buff[0] && '\n' == post_buff[1] &&
 				0 == strncmp(post_buff + 2, boundary, bnd_len)) {

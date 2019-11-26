@@ -178,11 +178,10 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			pthread_join(g_scan_id, NULL);
 		}
 
-		while (pnode=double_list_get_from_head(&g_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 			free(pnode->pdata);
-		}
 
-		while (pnode=double_list_get_from_head(&g_back_list)) {
+		while ((pnode = double_list_get_from_head(&g_back_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			write(pback->sockd, "QUIT\r\n", 6);
 			close(pback->sockd);
@@ -431,7 +430,7 @@ static void *scan_work_func(void *param)
 		pthread_mutex_lock(&g_back_lock);
 		time(&now_time);
 		ptail = double_list_get_tail(&g_back_list);
-		while (pnode=double_list_get_from_head(&g_back_list)) {
+		while ((pnode = double_list_get_from_head(&g_back_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
 				double_list_append_as_tail(&temp_list, &pback->node);
@@ -445,8 +444,7 @@ static void *scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_back_lock);
 
-
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			write(pback->sockd, "PING\r\n", 6);
 			tv.tv_usec = 0;
@@ -470,12 +468,11 @@ static void *scan_work_func(void *param)
 		}
 
 		pthread_mutex_lock(&g_back_lock);
-		while (pnode=double_list_get_from_head(&g_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 			double_list_append_as_tail(&temp_list, pnode);
-		}
 		pthread_mutex_unlock(&g_back_lock);
 
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			pback->sockd = connect_cdner(g_host_ip, g_host_port);
 			if (-1 != pback->sockd) {

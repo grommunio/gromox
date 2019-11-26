@@ -78,16 +78,15 @@ void idset_clear(IDSET *pset)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
-	while (pnode=double_list_get_from_head(&pset->repl_list)) {
+	while ((pnode = double_list_get_from_head(&pset->repl_list)) != NULL) {
 		if (FALSE == pset->b_serialize &&
 			REPL_TYPE_GUID == pset->repl_type) {
 			plist = &((REPLGUID_NODE*)pnode->pdata)->range_list;
 		} else {
 			plist = &((REPLID_NODE*)pnode->pdata)->range_list;
 		}
-		while (pnode1=double_list_get_from_head(plist)) {
+		while ((pnode1 = double_list_get_from_head(plist)) != NULL)
 			free(pnode1->pdata);
-		}
 		double_list_free(plist);
 		free(pnode->pdata);
 	}
@@ -576,7 +575,7 @@ static void idset_statck_free(DOUBLE_LIST *pstack)
 	STACK_NODE *pstack_node;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(pstack)) {
+	while ((pnode = double_list_get_from_head(pstack)) != NULL) {
 		pstack_node = (STACK_NODE*)pnode->pdata;
 		free(pstack_node->pcommon_bytes);
 		free(pstack_node);
@@ -1081,9 +1080,8 @@ BOOL idset_convert(IDSET *pset)
 			prepl_node->range_list = preplguid_node->range_list;
 			double_list_append_as_tail(&temp_list, &prepl_node->node);
 		}
-		while (pnode=double_list_get_from_head(&pset->repl_list)) {
+		while ((pnode = double_list_get_from_head(&pset->repl_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&pset->repl_list);
 		pset->repl_list = temp_list;
 	}
@@ -1091,9 +1089,8 @@ BOOL idset_convert(IDSET *pset)
 	return TRUE;
 	
 CLEAN_TEMP_LIST:
-	while (pnode=double_list_get_from_head(&temp_list)) {
+	while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&temp_list);
 	return FALSE;
 }

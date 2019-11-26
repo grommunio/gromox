@@ -92,7 +92,7 @@ static int xmailer_filter(int action, int context_ID,
 		}
 		ptr = mail_blk->parsed_buff;
 		len = mail_blk->parsed_length;
-		while (ptr1 = memmem(ptr, len, "\r\n", 2)) {
+		while ((ptr1 = memmem(ptr, len, "\r\n", 2)) != NULL) {
 			if (NULL != memmem(ptr, ptr1 - ptr, ": ", 2)) {
 				ptr1 = memmem(ptr, ptr1 - ptr, ": ", 2);
 			}

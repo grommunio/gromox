@@ -80,7 +80,7 @@ void translator_stop(void)
 	SINGLE_LIST_NODE *pnode;
 	LANGUAGE_NODE *plang;
 
-	while (pnode=single_list_get_from_head(&g_translator_list)) {
+	while ((pnode = single_list_get_from_head(&g_translator_list)) != NULL) {
 		plang = (LANGUAGE_NODE*)(pnode->pdata);
 		list_file_free(plang->pfile);
 		free(plang);
@@ -181,10 +181,8 @@ void translator_do(STATISTIC_ITEM *psmtp_item, int smtp_num,
 	}
 
 DEFAULT_FOUND:
-
-	while (pdnode=double_list_get_from_head(&accept_list)) {
+	while ((pdnode = double_list_get_from_head(&accept_list)) != NULL)
 		free(pdnode->pdata);
-	}
 	double_list_free(&accept_list);
 	
 	if (FALSE == found_lang) {

@@ -987,7 +987,7 @@ static void nsp_interface_position_in_table(STAT *pstat,
 						}
 						row ++;
 					}
-				} while (pnode = simple_tree_node_get_slibling(pnode));
+				} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 				
 			}
 			if (FALSE == b_found) {
@@ -1018,7 +1018,7 @@ static uint32_t nsp_interface_minid_in_table(
 		if (ab_tree_get_node_type(pnode) < 0x80) {
 			count ++;
 		}
-	} while (pnode=simple_tree_node_get_slibling(pnode));
+	} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 	return 0;
 }
 
@@ -1292,7 +1292,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 					}
 				}
 				i ++;
-			} while (pnode1=simple_tree_node_get_slibling(pnode1));
+			} while ((pnode1 = simple_tree_node_get_slibling(pnode1)) != NULL);
 		}
 
 		if (start_pos + tmp_count == last_row + 1) {
@@ -1558,7 +1558,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					break;
 				}
 				row ++;
-			} while (pnode1=simple_tree_node_get_slibling(pnode1));
+			} while ((pnode1 = simple_tree_node_get_slibling(pnode1)) != NULL);
 			if (NULL == pnode1) {
 				result = MAPI_E_NOT_FOUND;
 				goto EXIT_SEEK_ENTRIES;
@@ -2047,7 +2047,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 					*pproptag = ab_tree_get_node_minid(pnode);
 				}
 				i ++;
-			} while (pnode=simple_tree_node_get_slibling(pnode));
+			} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 		}
 	} else {
 		pnode = ab_tree_minid_to_node(pbase, pstat->cur_rec);
@@ -2562,7 +2562,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 					if (i == row) {
 						break;
 					}
-				} while (pnode1=simple_tree_node_get_slibling(pnode1));
+				} while ((pnode1 = simple_tree_node_get_slibling(pnode1)) != NULL);
 			}
 		}
 	} else {
@@ -2710,7 +2710,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 				pos2 = i;
 			}
 			i ++;
-		} while (pnode=simple_tree_node_get_slibling(pnode));
+		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 	}
 	
 	if (-1 == pos1 || -1 == pos2) {
@@ -2852,7 +2852,7 @@ static BOOL nsp_interface_has_child(SIMPLE_TREE_NODE *pnode)
 		if (ab_tree_get_node_type(pnode) > 0x80) {
 			return TRUE;
 		}
-	} while (pnode=simple_tree_node_get_slibling(pnode));
+	} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 	return FALSE;
 }
 
@@ -2905,7 +2905,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 					return result;
 				}
 			}
-		} while (pnode1=simple_tree_node_get_slibling(pnode1));
+		} while ((pnode1 = simple_tree_node_get_slibling(pnode1)) != NULL);
 	}
 	return MAPI_E_SUCCESS;
 }
@@ -3177,7 +3177,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	
 EXIT_MOD_LINKATT:
 	ab_tree_put_base(pbase);
-	while (pnode=double_list_get_from_head(&tmp_list)) {
+	while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
 		free(pnode->pdata);
 		free(pnode);
 	}

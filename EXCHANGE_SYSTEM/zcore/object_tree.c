@@ -508,7 +508,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 				pobjnode->pobject)) {
 				return pobjnode->handle;	
 			}
-		} while (pnode = simple_tree_node_get_slibling(pnode));
+		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 	}
 	pinfo = zarafa_server_get_info();
 	if (TRUE == b_private) {

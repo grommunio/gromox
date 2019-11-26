@@ -1134,7 +1134,7 @@ void stream_split_eom(STREAM *pstream, STREAM *pstream_second)
 		fake_stream.pnode_rd = pnode;
 		stream_clear(pstream_second);
 		size = STREAM_BLOCK_SIZE;
-		while (pbuff = stream_getbuffer_for_reading(&fake_stream, &size)) {
+		while ((pbuff = stream_getbuffer_for_reading(&fake_stream, &size)) != NULL) {
 			stream_write(pstream_second, pbuff, size);
 			size = STREAM_BLOCK_SIZE;
 		}

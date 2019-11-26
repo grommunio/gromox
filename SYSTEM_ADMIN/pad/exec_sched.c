@@ -119,7 +119,7 @@ int exec_sched_stop()
 	free(g_thread_tids);
 	g_thread_tids = NULL;
 
-	while (pnode=double_list_get_from_head(&g_execute_list)) {
+	while ((pnode = double_list_get_from_head(&g_execute_list)) != NULL) {
 		free(pnode->pdata);
 		free(pnode);
 	}

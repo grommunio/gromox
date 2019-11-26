@@ -64,9 +64,8 @@ void pcl_free(PCL *ppcl)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(ppcl)) {
+	while ((pnode = double_list_get_from_head(ppcl)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(ppcl);
 	free(ppcl);
 }
@@ -185,7 +184,7 @@ BOOL pcl_deserialize(PCL *ppcl, const BINARY *pbin)
 	uint16_t offset1;
 	
 	offset = 0;
-	while (offset1 = pcl_pull_sized_xid(pbin, offset, &xid)) {
+	while ((offset1 = pcl_pull_sized_xid(pbin, offset, &xid)) != 0) {
 		if (FALSE == pcl_append(ppcl, &xid)) {
 			return FALSE;
 		}

@@ -149,7 +149,7 @@ static void bounce_producer_unload_list(SINGLE_LIST *plist)
 	SINGLE_LIST_NODE *pnode;
 	RESOURCE_NODE *presource;
 
-	while (pnode = single_list_get_from_head(plist)) {
+	while ((pnode = single_list_get_from_head(plist)) != NULL) {
 		presource = (RESOURCE_NODE*)pnode->pdata;
         free(presource->content);
 		free(presource);

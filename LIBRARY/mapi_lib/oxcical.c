@@ -3710,11 +3710,10 @@ static void oxcical_clear_event_uid_list(DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
-	while (pnode=double_list_get_from_head(plist)) {
+	while ((pnode = double_list_get_from_head(plist)) != NULL) {
 		puid_events = pnode->pdata;
-		while (pnode1=double_list_get_from_head(&puid_events->list)) {
+		while ((pnode1 = double_list_get_from_head(&puid_events->list)) != NULL)
 			free(pnode1);
-		}
 		double_list_free(&puid_events->list);
 		free(puid_events);
 	}

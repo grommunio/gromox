@@ -225,7 +225,7 @@ static BOOL pop3_read_list(int sockd, char *response, int response_len)
 		if (offset > 3 && 0 != strncmp(response, "+OK", 3)) {
 			return FALSE;
 		}
-		if (pend = strstr(response, "\r\n.\r\n")) {
+		if ((pend = strstr(response, "\r\n.\r\n")) != NULL) {
 			pend += 2;
 			pbegin = strstr(response, "\r\n");
 			pbegin += 2;

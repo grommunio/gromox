@@ -170,7 +170,7 @@ static void *scanning_work_func(void *param)
 			}
 			pthread_mutex_unlock(&g_unit_list[i].lock);
 			
-			while (pnode=double_list_get_from_head(&temp_list)) {
+			while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 				pchannel = (UNIT_CHANNEL*)pnode->pdata;
 				if (FALSE == multiple_retrying_writeline_timeout(
 					pchannel->sockd, "PING", 1) ||
@@ -196,14 +196,13 @@ static void *scanning_work_func(void *param)
 			}
 			
 			pthread_mutex_lock(&g_unit_list[i].lock);
-			while (pnode=double_list_get_from_head(
-					&g_unit_list[i].invalid_list)) {
+			while ((pnode = double_list_get_from_head(&g_unit_list[i].invalid_list)) != NULL) {
 				pchannel = (UNIT_CHANNEL*)pnode->pdata;
 				double_list_append_as_tail(&temp_list, &pchannel->node_temp);
 			}
 			pthread_mutex_unlock(&g_unit_list[i].lock);
 			
-			while (pnode=double_list_get_from_head(&temp_list)) {
+			while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 				pchannel = (UNIT_CHANNEL*)pnode->pdata;
 				pchannel->sockd = proxy_retrying_connect_unit(
 									g_unit_list[i].ip_addr);
@@ -239,12 +238,12 @@ int proxy_retrying_stop()
 		return 0;
 	}
 	for (i=0; i<g_unit_num; i++) {
-		while (pnode=double_list_get_from_head(&g_unit_list[i].valid_list)) {
+		while ((pnode = double_list_get_from_head(&g_unit_list[i].valid_list)) != NULL) {
 			pchannel = (UNIT_CHANNEL*)pnode->pdata;
 			close(pchannel->sockd);
 			free(pchannel);
 		}
-		while (pnode=double_list_get_from_head(&g_unit_list[i].invalid_list)) {
+		while ((pnode = double_list_get_from_head(&g_unit_list[i].invalid_list)) != NULL) {
 			pchannel = (UNIT_CHANNEL*)pnode->pdata;
 			free(pchannel);
 		}

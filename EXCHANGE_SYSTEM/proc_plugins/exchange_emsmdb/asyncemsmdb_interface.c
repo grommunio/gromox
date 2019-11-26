@@ -363,9 +363,8 @@ static void *scan_work_func(void *param)
 		}
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_async_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			asyncemsmdb_interface_activate(pnode->pdata, FALSE);
-		}
 	}
 	double_list_free(&temp_list);
 	pthread_exit(0);

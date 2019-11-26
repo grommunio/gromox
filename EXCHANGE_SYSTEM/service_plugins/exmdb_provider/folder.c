@@ -61,7 +61,7 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 			return TRUE;
 		}
 		sqlite3_reset(pstmt);
-	} while (pdot = strrchr(tmp_class, '.'));
+	} while ((pdot = strrchr(tmp_class, '.')) != NULL);
 	sqlite3_finalize(pstmt);
 	sql_len = sprintf(sql_string, "SELECT folder_id "
 				"FROM receive_table WHERE class=''");

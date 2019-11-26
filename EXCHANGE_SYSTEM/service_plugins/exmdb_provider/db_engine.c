@@ -286,7 +286,7 @@ static void db_engine_free_db(DB_ITEM *pdb)
 	DOUBLE_LIST_NODE *pnode;
 	INSTANCE_NODE *pinstance;
 	
-	while (pnode=double_list_get_from_head(&pdb->instance_list)) {
+	while ((pnode = double_list_get_from_head(&pdb->instance_list)) != NULL) {
 		pinstance = (INSTANCE_NODE*)pnode->pdata;
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
@@ -299,18 +299,17 @@ static void db_engine_free_db(DB_ITEM *pdb)
 		free(pinstance);
 	}
 	double_list_free(&pdb->instance_list);
-	while (pnode=double_list_get_from_head(&pdb->nsub_list)) {
+	while ((pnode = double_list_get_from_head(&pdb->nsub_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&pdb->nsub_list);
-	while (pnode=double_list_get_from_head(&pdb->dynamic_list)) {
+	while ((pnode = double_list_get_from_head(&pdb->dynamic_list)) != NULL) {
 		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
 		restriction_free(pdynamic->prestriction);
 		free(pdynamic->folder_ids.pll);
 		free(pdynamic);
 	}
 	double_list_free(&pdb->dynamic_list);
-	while (pnode=double_list_get_from_head(&pdb->tables.table_list)) {
+	while ((pnode = double_list_get_from_head(&pdb->tables.table_list)) != NULL) {
 		ptable = (TABLE_NODE*)pnode->pdata;
 		if (NULL != ptable->remote_id) {
 			free(ptable->remote_id);
@@ -546,7 +545,7 @@ static ID_ARRAYS* db_engine_classify_id_array(DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE *pnode1;
 	
 	double_list_init(&tmp_list);
-	while (pnode=double_list_get_from_head(plist)) {
+	while ((pnode = double_list_get_from_head(plist)) != NULL) {
 		pidnode = (ID_NODE*)pnode->pdata;
 		for (pnode1=double_list_get_head(&tmp_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&tmp_list, pnode1)) {
@@ -868,7 +867,7 @@ int db_engine_stop()
 		str_hash_free(g_hash_table);
 		g_hash_table = NULL;
 	}
-	while (pnode=double_list_get_from_head(&g_populating_list)) {
+	while ((pnode = double_list_get_from_head(&g_populating_list)) != NULL) {
 		psearch = (POPULATING_NODE*)pnode->pdata;
 		restriction_free(psearch->prestriction);
 		free(psearch->folder_ids.pll);
@@ -2436,7 +2435,7 @@ MATCH_SUB_HEADER:
 					pstmt3 = NULL;
 					continue;
 				}
-				while (pnode1=double_list_get_from_head(&notify_list)) {
+				while ((pnode1 = double_list_get_from_head(&notify_list)) != NULL) {
 					row_id = ((ROWINFO_NODE*)pnode1->pdata)->row_id;
 					sqlite3_bind_int64(pstmt3, 1, row_id);
 					if (SQLITE_ROW != sqlite3_step(pstmt3)) {
@@ -3729,7 +3728,7 @@ static void db_engine_notify_content_table_delete_row(
 				sqlite3_finalize(pstmt);
 				continue;
 			}
-			while (pnode1=double_list_get_from_head(&notify_list)) {
+			while ((pnode1 = double_list_get_from_head(&notify_list)) != NULL) {
 				row_id = ((ROWINFO_NODE*)pnode1->pdata)->row_id;
 				sqlite3_bind_int64(pstmt1, 1, row_id);
 				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
@@ -4774,7 +4773,7 @@ static void db_engine_notify_content_table_modify_row(
 				sqlite3_finalize(pstmt);
 				continue;
 			}
-			while (pnode1=double_list_get_from_head(&notify_list)) {
+			while ((pnode1 = double_list_get_from_head(&notify_list)) != NULL) {
 				row_id = ((ROWINFO_NODE*)pnode1->pdata)->row_id;
 				sqlite3_bind_int64(pstmt1, 1, row_id);
 				if (SQLITE_ROW != sqlite3_step(pstmt1)) {

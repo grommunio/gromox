@@ -4083,7 +4083,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 			mime_get_content_type(pmime))) {
 			break;
 		}
-	} while (pmime = mime_get_slibling(pmime));
+	} while ((pmime = mime_get_slibling(pmime)) != NULL);
 	if (NULL == pmime) {
 		return NULL;
 	}
@@ -4278,7 +4278,7 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 				mime_get_content_type(pmime))) {
 				break;
 			}
-		} while (pmime = mime_get_slibling(pmime));
+		} while ((pmime = mime_get_slibling(pmime)) != NULL);
 	}
 	if (NULL == pmime) {
 		return NULL;
@@ -7214,8 +7214,7 @@ static BOOL oxcmail_export_attachment(
 				
 		offset = 0;
 		size = STREAM_BLOCK_SIZE;
-		while (ptr = stream_getbuffer_for_reading(
-			&tmp_stream, &size)) {
+		while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size)) != NULL) {
 			memcpy(pbuff + offset, ptr, size);
 			offset += size;
 			size = STREAM_BLOCK_SIZE;

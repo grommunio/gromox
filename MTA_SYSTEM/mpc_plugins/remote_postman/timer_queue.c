@@ -424,7 +424,7 @@ static void* scan_work_func(void* arg)
 	}
     closedir(dirp);
 	pthread_mutex_lock(&g_scan_lock);
-	while (pnode = double_list_get_from_head(&g_scan_list)) {
+	while ((pnode = double_list_get_from_head(&g_scan_list)) != NULL) {
 		pitem = (TIMER_ITEM*)pnode->pdata;
 		pthread_cancel(pitem->thr_id);
 	}
@@ -507,7 +507,7 @@ static void* thread_work_func(void* arg)
 	strcpy(pcontext->pcontrol->from, ptr);
 	ptr += strlen(pcontext->pcontrol->from) + 1;
 	mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
-	while (len = strlen(ptr)) {
+	while ((len = strlen(ptr)) != 0) {
 		mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
 		ptr += len + 1;
 	}

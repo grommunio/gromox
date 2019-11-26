@@ -36,10 +36,8 @@ void idx_array_free(IDX_ARRAY* parray)
     if (NULL == parray) {
         return;
     }
-
-	while (pnode=single_list_get_from_head(&parray->mlist)) {
+	while ((pnode = single_list_get_from_head(&parray->mlist)) != NULL)
 		free(pnode);
-	}
 	single_list_free(&parray->mlist);
 	free(parray->cache_ptrs);
 	free(parray);

@@ -164,9 +164,8 @@ int communicator_run()
 	if (0 != pthread_create(&g_listen_tid, NULL,
 		accept_work_func, NULL)) {
 		close(g_listen_sockd);
-		while (pnode=double_list_get_from_head(&g_acl_list)) {
+		while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 			free(pnode->pdata);
-		}
 		printf("[communicator]: fail to create accept thread\n");
 		return -5;
 	}
@@ -200,11 +199,8 @@ int communicator_stop()
 	g_thr_ids = NULL;
 
 	close(g_listen_sockd);
-
-	while (pnode=double_list_get_from_head(&g_acl_list)) {
+	while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 		free(pnode->pdata);
-	}
-
 	return 0;
 }
 

@@ -290,14 +290,12 @@ int main(int argc, char **argv)
 	for (i=0; i<thread_num; i++) {
 		pthread_cancel(pthr_ids[i]);
 	}
-
-	while (pnode=double_list_get_from_head(&g_conn_list1)) {
+	while ((pnode = double_list_get_from_head(&g_conn_list1)) != NULL) {
 		pconn = (CONNECTION*)pnode->pdata;
 		close(pconn->sockd);
 		free(pconn);
 	}
-
-	while (pnode=double_list_get_from_head(&g_conn_list)) {
+	while ((pnode = double_list_get_from_head(&g_conn_list)) != NULL) {
 		pconn = (CONNECTION*)pnode->pdata;
 		close(pconn->sockd);
 		free(pconn);

@@ -181,13 +181,13 @@ int stub_retrying_stop()
 		g_listen_sockd = -1;
 	}
 	pthread_mutex_lock(&g_connection_lock);
-	while (pnode=double_list_get_from_head(&g_connection_list)) {
+	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
 		pconnection = (CONNECTION_THR*)pnode->pdata;
 		pthread_cancel(pconnection->tid);
 		close(pconnection->sockd);
 		free(pconnection);
 	}
-	while (pnode=double_list_get_from_head(&g_unit_list)) {
+	while ((pnode = double_list_get_from_head(&g_unit_list)) != NULL) {
 		punit = (UNIT_ADDR*)pnode->pdata;
 		free(punit);
 	}

@@ -345,9 +345,8 @@ int domain_limit_stop()
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			plist = str_hash_iter_get_value(iter, NULL);
-			while (pnode = single_list_get_from_head(plist)) { 
+			while ((pnode = single_list_get_from_head(plist)) != NULL)
 				free(pnode->pdata);
-			}
 			single_list_free(plist);
 		}
 		str_hash_iter_free(iter);
@@ -359,9 +358,8 @@ int domain_limit_stop()
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			plist = str_hash_iter_get_value(iter, NULL);
-			while (pnode = single_list_get_from_head(plist)) { 
+			while ((pnode = single_list_get_from_head(plist)) != NULL)
 				free(pnode->pdata);
-			}
 			single_list_free(plist);
 		}
 		str_hash_iter_free(iter);
@@ -391,9 +389,8 @@ static void domain_limit_remove_deny(const char *domain)
 	pthread_rwlock_wrlock(&g_deny_lock);
 	plist = str_hash_query(g_deny_hash, temp_domain);
 	if (NULL != plist) {
-		while (pnode = single_list_get_from_head(plist)) {
+		while ((pnode = single_list_get_from_head(plist)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(plist);
 		str_hash_remove(g_deny_hash, temp_domain);
 	}
@@ -415,9 +412,8 @@ static void domain_limit_remove_allow(const char *domain)
 	pthread_rwlock_wrlock(&g_allow_lock);
 	plist = str_hash_query(g_allow_hash, temp_domain);
 	if (NULL != plist) {
-		while (pnode = single_list_get_from_head(plist)) {
+		while ((pnode = single_list_get_from_head(plist)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(plist);
 		str_hash_remove(g_allow_hash, temp_domain);
 	}
@@ -467,9 +463,8 @@ static int domain_limit_add_deny(const char *domain)
 	pthread_rwlock_wrlock(&g_deny_lock);
 	plist = str_hash_query(g_deny_hash, temp_domain);
 	if (NULL != plist) {
-		while (pnode = single_list_get_from_head(plist)) {
+		while ((pnode = single_list_get_from_head(plist)) != NULL)
 			free(pnode->pdata);
-		}
 		str_hash_remove(g_deny_hash, temp_domain);
 	}
 	if (str_hash_add(g_deny_hash, temp_domain, &temp_list) > 0) {
@@ -479,9 +474,8 @@ static int domain_limit_add_deny(const char *domain)
 	phash = str_hash_init(g_deny_cap + g_growing_num, sizeof(SINGLE_LIST), NULL);
 	if (NULL == phash) {
 		pthread_rwlock_unlock(&g_deny_lock);
-		while (pnode = single_list_get_from_head(&temp_list)) {
+		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(&temp_list);
 		return DOMAIN_LIST_HASH_FAIL;
 	}
@@ -548,9 +542,8 @@ static int domain_limit_add_allow(const char *domain)
 	pthread_rwlock_wrlock(&g_allow_lock);
 	plist = str_hash_query(g_allow_hash, temp_domain);
 	if (NULL != plist) {
-		while (pnode = single_list_get_from_head(plist)) {
+		while ((pnode = single_list_get_from_head(plist)) != NULL)
 			free(pnode->pdata);
-		}
 		str_hash_remove(g_allow_hash, temp_domain);
 	}
 	if (str_hash_add(g_allow_hash, temp_domain, &temp_list) > 0) {
@@ -560,9 +553,8 @@ static int domain_limit_add_allow(const char *domain)
 	phash = str_hash_init(g_allow_cap + g_growing_num, sizeof(SINGLE_LIST), NULL);
 	if (NULL == phash) {
 		pthread_rwlock_unlock(&g_allow_lock);
-		while (pnode = single_list_get_from_head(&temp_list)) {
+		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		single_list_free(&temp_list);
 		return DOMAIN_LIST_HASH_FAIL;
 	}

@@ -56,7 +56,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 			temp_path[len] = '\0';
 		}
 		ptr1 = temp_path;
-		while (ptr2 = strchr(ptr1, '/')) {
+		while ((ptr2 = strchr(ptr1, '/')) != NULL) {
 			*ptr2 = '\0';
 			pnode_parent = pnode;
 			pnode = simple_tree_node_get_child(pnode);
@@ -66,7 +66,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 					if (0 == strcmp(pdir->name, ptr1)) {
 						break;
 					}
-				} while (pnode=simple_tree_node_get_slibling(pnode));
+				} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 			}
 
 			if (NULL == pnode) {
@@ -129,7 +129,7 @@ DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path)
 	temp_path[len] = '\0';
 	
 	ptr1 = temp_path;
-	while (ptr2 = strchr(ptr1, '/')) {
+	while ((ptr2 = strchr(ptr1, '/')) != NULL) {
 		*ptr2 = '\0';
 		pnode = simple_tree_node_get_child(pnode);
 		if (NULL == pnode) {
@@ -140,7 +140,7 @@ DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path)
 			if (0 == strcmp(pdir->name, ptr1)) {
 				break;
 			}
-		} while (pnode=simple_tree_node_get_slibling(pnode));
+		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 
 		if (NULL == pnode) {
 			return NULL;
@@ -278,7 +278,7 @@ void dir_tree_add_path(DIR_TREE *ptree, const char *path)
 	}
 	temp_path[len] = '\0';
 	ptr1 = temp_path;
-	while (ptr2 = strchr(ptr1, '/')) {
+	while ((ptr2 = strchr(ptr1, '/')) != NULL) {
 		*ptr2 = '\0';
 		pnode_parent = pnode;
 		pnode = simple_tree_node_get_child(pnode);
@@ -288,7 +288,7 @@ void dir_tree_add_path(DIR_TREE *ptree, const char *path)
 				if (0 == strcmp(pdir->name, ptr1)) {
 					break;
 				}
-			} while (pnode=simple_tree_node_get_slibling(pnode));
+			} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
 		}
 
 		if (NULL == pnode) {

@@ -133,7 +133,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		if (i < conn_num) {
 			g_notify_stop = TRUE;
-			while (pnode=double_list_get_from_head(&g_back_list)) {
+			while ((pnode = double_list_get_from_head(&g_back_list)) != NULL) {
 				pback = (BACK_CONN*)pnode->pdata;
 				if (-1 != pback->sockd) {
 					close(pback->sockd);

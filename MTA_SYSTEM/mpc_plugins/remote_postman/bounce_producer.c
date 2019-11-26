@@ -163,7 +163,7 @@ static void bounce_producer_unload_list(SINGLE_LIST *plist)
 	SINGLE_LIST_NODE *pnode;
 	RESOURCE_NODE *presource;
 
-	while (pnode = single_list_get_from_head(plist)) {
+	while ((pnode = single_list_get_from_head(plist)) != NULL) {
 		presource = (RESOURCE_NODE*)pnode->pdata;
 		for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
         	free(presource->content[i]);
@@ -677,7 +677,7 @@ void bounce_producer_make(MESSAGE_CONTEXT *pcontext, time_t original_time,
 		if (NULL != reason_buff) {
 			len = snprintf(tmp_buff, 1024, "smtp;%s", reason_buff);
 			ptr = tmp_buff;
-			while (ptr = strstr(ptr, "\r\n")) {
+			while ((ptr = strstr(ptr, "\r\n")) != NULL) {
 				ptr += 2;
 				len ++;
 				memmove(ptr + 1, ptr, tmp_buff + len - ptr);

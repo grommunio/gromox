@@ -188,13 +188,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			pthread_join(g_scan_id, NULL);
 		}
 
-		while (pnode=double_list_get_from_head(&g_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 			free(pnode->pdata);
-		}
 
-		while (pnode=double_list_get_from_head(&g_server_list)) {
+		while ((pnode = double_list_get_from_head(&g_server_list)) != NULL) {
 			pserver = (BACK_SVR*)pnode->pdata;
-			while (pnode=double_list_get_from_head(&pserver->conn_list)) {
+			while ((pnode = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 				pback = (BACK_CONN*)pnode->pdata;
 				write(pback->sockd, "QUIT\r\n", 6);
 				close(pback->sockd);
@@ -237,7 +236,7 @@ static void *scan_work_func(void *param)
 			pnode=double_list_get_after(&g_server_list, pnode)) {
 			pserver = (BACK_SVR*)pnode->pdata;
 			ptail = double_list_get_tail(&pserver->conn_list);
-			while (pnode1=double_list_get_from_head(&pserver->conn_list)) {
+			while ((pnode1 = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 				pback = (BACK_CONN*)pnode1->pdata;
 				if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
 					double_list_append_as_tail(&temp_list, &pback->node);
@@ -253,8 +252,7 @@ static void *scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_server_lock);
 
-
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			write(pback->sockd, "PING\r\n", 6);
 			tv.tv_usec = 0;
@@ -278,12 +276,11 @@ static void *scan_work_func(void *param)
 		}
 
 		pthread_mutex_lock(&g_server_lock);
-		while (pnode=double_list_get_from_head(&g_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 			double_list_append_as_tail(&temp_list, pnode);
-		}
 		pthread_mutex_unlock(&g_server_lock);
 
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			pback->sockd = connect_midb(pback->psvr->ip_addr,
 							pback->psvr->port);

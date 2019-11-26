@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "keyword_engine.h"
 #include "single_list.h"
 #include "list_file.h"
@@ -198,9 +199,8 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 					ptr += pkeyword->length;
 				}
 				*(int*)ptr = 0;
-				while (pnode=single_list_get_from_head(temp_table[j])) {
+				while ((pnode = single_list_get_from_head(temp_table[j])) != NULL)
 					free(pnode->pdata);
-				}
 				single_list_free(temp_table[j]);
 				free(temp_table[j]);
 				temp_table[j] = NULL;
@@ -220,7 +220,7 @@ void keyword_engine_free(KEYWORD_ENGINE *pengine)
 	SINGLE_LIST_NODE *pnode;
 	CHARSET_ITEM *pcharset;
 
-	while (pnode = single_list_get_from_head(pengine)) {
+	while ((pnode = single_list_get_from_head(pengine)) != NULL) {
 		pcharset = (CHARSET_ITEM*)pnode->pdata;
 		for (i=0; i<256*256; i++) {
 			if (NULL != pcharset->match_table[i]) {
@@ -280,7 +280,7 @@ const char *keyword_engine_match(KEYWORD_ENGINE *pengine, const char *charset,
 		if (NULL == pkeywords_list) {
 			continue;
 		}
-		while (offset = *(int*)pkeywords_list) {
+		while ((offset = *reinterpret_cast(const int *, pkeywords_list)) != 0) {
 			if (0 == strncasecmp(pkeywords_list + sizeof(int) + 2,
 				buff + i + 2, offset - 1)) {
 				return pkeywords_list + sizeof(int);

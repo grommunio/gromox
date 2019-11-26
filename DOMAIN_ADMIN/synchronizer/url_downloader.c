@@ -69,7 +69,7 @@ int url_downloader_stop()
 	CHILD_NODE *pchild;
 
 	pthread_mutex_lock(&g_list_lock);
-	while (pnode=double_list_get_from_head(&g_children_list)) {
+	while ((pnode = double_list_get_from_head(&g_children_list)) != NULL) {
 		pchild = (CHILD_NODE*)pnode->pdata;
 		kill(pchild->pid, SIGKILL);
 	}

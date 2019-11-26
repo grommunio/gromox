@@ -463,9 +463,8 @@ void table_object_clear_bookmarks(TABLE_OBJECT *ptable)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&ptable->bookmark_list)) {
+	while ((pnode = double_list_get_from_head(&ptable->bookmark_list)) != NULL)
 		free(pnode->pdata);
-	}
 }
 
 void table_object_reset(TABLE_OBJECT *ptable)

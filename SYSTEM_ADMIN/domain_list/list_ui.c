@@ -2785,7 +2785,7 @@ static unsigned int list_ui_cache_result(const char *session,
 	time(&cur_time);
 	dirp = opendir("/tmp");
 	if (NULL != dirp) {
-		while (direntp = readdir(dirp)) {
+		while ((direntp = readdir(dirp)) != NULL) {
 			if (0 == strcmp(direntp->d_name, ".") ||
 				0 == strcmp(direntp->d_name, "..")) {
 				continue;
@@ -3200,9 +3200,8 @@ static BOOL list_ui_allocate_dir(const char *media_area, char *path_buff)
 		system_log_info("[list_ui]: seems allocation information of data area "
 			"%s or it's vdir information error, please check it!",
 			pleast_area->master);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		locker_client_unlock(lockd);
 		return FALSE;
@@ -3218,9 +3217,8 @@ static BOOL list_ui_allocate_dir(const char *media_area, char *path_buff)
 		system_log_info("[list_ui]: seems allocation information of vdir %d "
 			"under data area %s error, please check it!", mini_vdir,
 			pleast_area->master);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		locker_client_unlock(lockd);
 		return FALSE;	
@@ -3256,9 +3254,8 @@ static BOOL list_ui_allocate_dir(const char *media_area, char *path_buff)
 		sprintf(temp_path1, "%s/v%d/%d", pleast_area->database, mini_vdir, v_index);
 		if (0 != mkdir(temp_path1, 0777)) {
 			locker_client_unlock(lockd);
-			while (pnode=double_list_get_from_head(&temp_list)) {
+			while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 				free(pnode->pdata);
-			}
 			double_list_free(&temp_list);
 			system_log_info("[list_ui]: fail to make directory "
 				"under %s/v%d", pleast_area->database, mini_vdir);
@@ -3280,9 +3277,8 @@ static BOOL list_ui_allocate_dir(const char *media_area, char *path_buff)
 		sprintf(temp_path, "%s/tmp", path_buff);
 		mkdir(temp_path, 0777);
 		locker_client_unlock(lockd);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		return TRUE;
 	} else {
@@ -3290,9 +3286,8 @@ static BOOL list_ui_allocate_dir(const char *media_area, char *path_buff)
 		if ('\0' != pleast_area->database[0]) {
 			remove(temp_path1);
 		}
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
-		}
 		double_list_free(&temp_list);
 		system_log_info("[list_ui]: fail to make directory "
 			"under %s/v%d", pleast_area->master, mini_vdir);

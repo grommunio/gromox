@@ -202,9 +202,9 @@ int relay_agent_stop()
 		pthread_join(g_thr_id, NULL);
 	}
 	
-	while (pnode=double_list_get_from_head(&g_host_list)) {
+	while ((pnode = double_list_get_from_head(&g_host_list)) != NULL) {
 		punit = (HOST_UNIT*)pnode->pdata;
-		while (pnode1=double_list_get_from_head(&punit->list)) {
+		while ((pnode1 = double_list_get_from_head(&punit->list)) != NULL) {
 			pconnect = (CONNECTION_UNIT*)pnode1->pdata;
 			relay_agent_close(pconnect->sockd);
 			free(pconnect);
@@ -316,7 +316,7 @@ BOOL relay_agent_refresh_table()
 			punit->alive = FALSE;
 		}
 	}
-	while (pnode=double_list_get_from_head(&temp_list)) {
+	while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 		punit = (HOST_UNIT*)pnode->pdata;
 		if (TRUE == punit->alive) {
 			double_list_append_as_tail(&g_host_list, &punit->node);
@@ -383,7 +383,7 @@ static void *thread_work_func(void *param)
 		
 		pthread_mutex_lock(&g_tree_lock);
 		ptail = double_list_get_tail(&g_host_list);
-		while (pnode=double_list_get_from_head(&g_host_list)) {
+		while ((pnode = double_list_get_from_head(&g_host_list)) != NULL) {
 			punit = (HOST_UNIT*)pnode->pdata;
 			if (FALSE == punit->alive &&
 				0 == double_list_get_nodes_num(&punit->list)) {
@@ -405,7 +405,7 @@ static void *thread_work_func(void *param)
 			punit = (HOST_UNIT*)pnode->pdata;
 			if (FALSE == punit->alive) {
 				ptail1 = double_list_get_tail(&punit->list);
-				while (pnode1=double_list_get_from_head(&punit->list)) {
+				while ((pnode1 = double_list_get_from_head(&punit->list)) != NULL) {
 					pconnect = (CONNECTION_UNIT*)pnode1->pdata;
 					switch (pconnect->stat) {
 					case STAT_USING:

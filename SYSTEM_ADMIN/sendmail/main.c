@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 		goto EXIT_PROGRAM;
 	}
 
-	while (pnode = single_list_get_from_head(&temp_list)) {
+	while ((pnode = single_list_get_from_head(&temp_list)) != NULL) {
 		pitem = (RCPT_ITEM*)pnode->pdata;
 		command_len = sprintf(last_command, "rcpt to:<%s>\r\n", pitem->address);
 		if (FALSE == send_command(sockd, last_command, command_len)) {

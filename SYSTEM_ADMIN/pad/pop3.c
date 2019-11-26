@@ -272,14 +272,11 @@ void pop3_free(POP3_SESSION *psession)
 		close(psession->sockd);
 		psession->sockd = -1;
 	}
-	while (pnode=double_list_get_from_head(&psession->uid_list)) {
+	while ((pnode = double_list_get_from_head(&psession->uid_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&psession->uid_list);
-
-	while (pnode=double_list_get_from_head(&psession->del_list)) {
+	while ((pnode = double_list_get_from_head(&psession->del_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&psession->del_list);
 
 
@@ -340,7 +337,7 @@ static BOOL pop3_read_save(int sockd, const char *path)
 			}
 		}
 
-		if (pend = strstr(buff, "\r\n.\r\n")) {
+		if ((pend = strstr(buff, "\r\n.\r\n")) != NULL) {
 			pend += 2;
 			if (TRUE == b_first) {
 				pbegin = strstr(buff, "\r\n");
@@ -403,7 +400,7 @@ static BOOL pop3_read_list(int sockd, char *response, int response_len)
 		if (offset > 3 && 0 != strncmp(response, "+OK", 3)) {
 			return FALSE;
 		}
-		if (pend = strstr(response, "\r\n.\r\n")) {
+		if ((pend = strstr(response, "\r\n.\r\n")) != NULL) {
 			pend += 2;
 			pbegin = strstr(response, "\r\n");
 			pbegin += 2;

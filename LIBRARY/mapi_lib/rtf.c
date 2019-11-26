@@ -592,7 +592,7 @@ static void rtf_free_collection(DOUBLE_LIST *plist)
 	DOUBLE_LIST_NODE *pnode;
 	COLLECTION_NODE *pcollection;
 
-	while (pnode=double_list_get_from_head(plist)) {
+	while ((pnode = double_list_get_from_head(plist)) != NULL) {
 		pcollection = (COLLECTION_NODE*)pnode->pdata;
 		free(pcollection->text);
 		free(pcollection);
@@ -654,8 +654,7 @@ static void rtf_free_reader(RTF_READER *preader)
 	ATTRSTACK_NODE *pattrstack;
 	
 	int_hash_free(preader->pfont_hash);
-	while (pnode=double_list_get_from_head(
-		&preader->attr_stack_list)) {
+	while ((pnode = double_list_get_from_head(&preader->attr_stack_list)) != NULL) {
 		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
 		free(pattrstack);
 	}
@@ -976,8 +975,7 @@ static int* rtf_stack_list_find_attr(RTF_READER *preader, int attr)
 			return &pattrstack->attr_params[i];
 		}
 	}
-	while (pnode=double_list_get_before(
-		&preader->attr_stack_list, pnode)) {
+	while ((pnode = double_list_get_before(&preader->attr_stack_list, pnode)) != NULL) {
 		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
 		for (i=pattrstack->tos; i>=0; i--) {
 			if (attr == pattrstack->attr_stack[i]) {
@@ -1616,7 +1614,7 @@ static BOOL rtf_load_element_tree(RTF_READER *preader)
 	
 	plast_group = NULL;
 	plast_node = NULL;
-	while (input_word = rtf_read_element(preader)) {
+	while ((input_word = rtf_read_element(preader)) != NULL) {
 		if (input_word[0] == '{') {
 			free(input_word);
 			pgroup = malloc(sizeof(GROUP_NODE));
@@ -1924,7 +1922,7 @@ static BOOL rtf_build_font_table(
 				&& 0 == strcmp(tmp_name, "f")) {
 				break;
 			}
-		} while (pword2 = simple_tree_node_get_slibling(pword2));
+		} while ((pword2 = simple_tree_node_get_slibling(pword2)) != NULL);
 		if (NULL == pword2) {
 			continue;
 		}
@@ -1936,7 +1934,7 @@ static BOOL rtf_build_font_table(
 		cpid = -1;
 		fcharsetcp = -1;
 		tmp_offset = 0;
-		while (pword2 = simple_tree_node_get_slibling(pword2)) {
+		while ((pword2 = simple_tree_node_get_slibling(pword2)) != NULL) {
 			if (NULL == pword2->pdata) {
 				continue;
 			}
@@ -2028,7 +2026,7 @@ static BOOL rtf_build_font_table(
 		}
 		strncpy(tmp_entry.name, name, MAX_FINTNAME_LEN);
 		int_hash_add(preader->pfont_hash, num, &tmp_entry);
-    } while (pword = simple_tree_node_get_slibling(pword));
+	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
 	if ('\0' == preader->default_encoding[0]) {
 		strcpy(preader->default_encoding, "windows-1252");
 	}
@@ -2084,7 +2082,7 @@ static BOOL rtf_word_output_date(
 				hour = atoi(string + 2);
 			}
 		}
-	} while (pword = simple_tree_node_get_slibling(pword));
+	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
 	tmp_len = sprintf(tmp_buff, "%04d-%02d-%02d ", year, month, day);
 	if (hour >= 0 && minute >= 0) {
 		tmp_len += sprintf(tmp_buff + tmp_len, "%02d:%02d ", hour, minute);
@@ -2313,7 +2311,7 @@ static void rtf_process_color_table(
 				b = 0;
 			}
 		}
-	} while (pword=simple_tree_node_get_slibling(pword));
+	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
 }
 
 /*------------------------begin of cmd functions-----------------------------*/
@@ -2468,7 +2466,7 @@ static int rtf_cmd_field(RTF_READER *preader,
 			}
 			pword2 = simple_tree_node_get_slibling(pword2);
 		}
-	} while (pword = simple_tree_node_get_slibling(pword));
+	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
 	return TRUE;
 }
 
@@ -3872,8 +3870,8 @@ static BOOL rtf_convert_group_node(
 							b_hyberlinked = TRUE;
 							break;
 						case CMD_RESULT_IGNORE_REST:
-							while (pnode = simple_tree_node_get_slibling(
-								pnode));
+							while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL)
+								/* nothing */;
 							break;
 						}
 					}

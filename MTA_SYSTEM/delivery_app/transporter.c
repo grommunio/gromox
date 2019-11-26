@@ -445,9 +445,8 @@ static void transporter_collect_hooks()
         vstack_pop(&stack);
     }
 	transporter_clean_up_unloading();
-	while (pnode = double_list_get_from_head(&g_hook_list)) {
+	while ((pnode = double_list_get_from_head(&g_hook_list)) != NULL)
 		free(pnode->pdata);
-	}
     vstack_free(&stack);
     vstack_allocator_free(pallocator);
 
@@ -494,7 +493,7 @@ int transporter_stop()
 
 	g_notify_stop = TRUE;
 	pthread_mutex_lock(&g_threads_list_mutex);
-	while (pnode = double_list_get_from_head(&g_threads_list)) {
+	while ((pnode = double_list_get_from_head(&g_threads_list)) != NULL) {
 		pthr = (THREAD_DATA*)pnode->pdata;
 		pthread_cond_broadcast(&g_waken_cond);
         pthread_cancel(pthr->id);
@@ -709,7 +708,7 @@ static void* thread_work_func(void* arg)
 			pcontext->pcontrol->need_bounce = TRUE;
 			strcpy(pcontext->pcontrol->from, pmessage->envelop_from);
 			ptr = pmessage->envelop_rcpt;
-			while (len = strlen(ptr)) {
+			while ((len = strlen(ptr)) != 0) {
 				len ++;
 				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
 				ptr += len;

@@ -1327,7 +1327,7 @@ static BOOL admin_ui_cache_result(const char *session, const char *charset,
 	time(&cur_time);
 	dirp = opendir("/tmp");
 	if (NULL != dirp) {
-		while (direntp = readdir(dirp)) {
+		while ((direntp = readdir(dirp)) != NULL) {
 			if (0 == strcmp(direntp->d_name, ".") ||
 				0 == strcmp(direntp->d_name, "..")) {
 				continue;

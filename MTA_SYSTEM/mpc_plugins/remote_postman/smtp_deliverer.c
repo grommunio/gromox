@@ -267,7 +267,7 @@ static BOOL smtp_deliverer_get_response(CONNECTION *pconnection,
 			break;
 		}
 		pline = response;
-		while (pline = strstr(pline, "\r\n")) {
+		while ((pline = strstr(pline, "\r\n")) != NULL) {
 			pline += 2;
 			if (' ' == pline[3]) {
 				break;

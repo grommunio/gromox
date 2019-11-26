@@ -50,7 +50,7 @@ void smtp_dispatch_init(const char *mask_string)
 		memset(g_mask_string, 0, 1024);
 		strcpy(g_mask_string, mask_string);
 		ptr = g_mask_string;
-		while (ptr = strchr(ptr, '|')) {
+		while ((ptr = strchr(ptr, '|')) != NULL) {
 			*ptr = '\0';
 			ptr ++;
 		}

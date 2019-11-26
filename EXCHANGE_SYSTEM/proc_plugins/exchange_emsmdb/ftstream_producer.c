@@ -1418,9 +1418,8 @@ void ftstream_producer_free(FTSTREAM_PRODUCER *pstream)
 		close(pstream->fd);
 		remove(pstream->path);
 	}
-	while (pnode=double_list_get_from_head(&pstream->bp_list)) {
+	while ((pnode = double_list_get_from_head(&pstream->bp_list)) != NULL)
 		free(pnode->pdata);
-	}
 	double_list_free(&pstream->bp_list);
 	free(pstream);
 }
@@ -1495,7 +1494,7 @@ BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 				}
 			}
 		}
-		while (pnode=double_list_get_from_head(&pstream->bp_list)) {
+		while ((pnode = double_list_get_from_head(&pstream->bp_list)) != NULL) {
 			if (pnode->pdata == ppoint) {
 				double_list_insert_as_head(&pstream->bp_list, pnode);
 				break;
@@ -1522,9 +1521,8 @@ BOOL ftstream_producer_read_buffer(FTSTREAM_PRODUCER *pstream,
 		return FALSE;
 	}
 	*plen = ppoint->offset - cur_offset;
-	while (pnode=double_list_get_from_head(&pstream->bp_list)) {
+	while ((pnode = double_list_get_from_head(&pstream->bp_list)) != NULL)
 		free(pnode->pdata);
-	}
 	if (-1 != pstream->fd) {
 		if (*plen != read(pstream->fd, pbuff, *plen)) {
 			return FALSE;

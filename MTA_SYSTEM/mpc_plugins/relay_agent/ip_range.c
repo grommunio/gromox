@@ -133,10 +133,8 @@ int ip_range_stop()
 		pthread_join(g_thr_id, NULL);
 	}
 	
-	while (pnode=double_list_get_from_head(&g_range_list)) {
+	while ((pnode = double_list_get_from_head(&g_range_list)) != NULL)
 		free(pnode->pdata);
-	}
-
 	return 0;
 }
 
@@ -345,9 +343,8 @@ static void *thread_work_func(void *param)
 			pitem = list_file_get_list(pfile);
 			item_num = list_file_get_item_num(pfile);
 			pthread_rwlock_wrlock(&g_list_lock);
-			while (pnode=double_list_get_from_head(&g_range_list)) {
+			while ((pnode = double_list_get_from_head(&g_range_list)) != NULL)
 				free(pnode->pdata);
-			}
 			memset(g_range_table, 0, 256*sizeof(BOOL));
 			for (j=0; j<item_num; j++) {
 				prange = (RANGE_NODE*)malloc(sizeof(RANGE_NODE));

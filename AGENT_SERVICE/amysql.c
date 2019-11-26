@@ -315,14 +315,13 @@ int main(int argc, char **argv)
 
 	pthread_join(scan_id, NULL);
 
-
-	while (pnode=double_list_get_from_head(&g_front_list1)) {
+	while ((pnode = double_list_get_from_head(&g_front_list1)) != NULL) {
 		pfront = (FRONT_CONN*)pnode->pdata;
 		close(pfront->sockd);
 		free(pfront);
 	}
 
-	while (pnode=double_list_get_from_head(&g_front_list)) {
+	while ((pnode = double_list_get_from_head(&g_front_list)) != NULL) {
 		pfront = (FRONT_CONN*)pnode->pdata;
 		close(pfront->sockd);
 		if (NULL != pfront->pconn) {
@@ -332,11 +331,10 @@ int main(int argc, char **argv)
 		free(pfront);
 	}
 
-	while (pnode=double_list_get_from_head(&g_lost_list)) {
+	while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 		free(pnode->pdata);
-	}
 
-	while (pnode=double_list_get_from_head(&g_back_list)) {
+	while ((pnode = double_list_get_from_head(&g_back_list)) != NULL) {
 		pconn = (MYSQL_CONN*)pnode->pdata;
 		mysql_close(pconn->pmysql);
 		free(pconn);
@@ -441,7 +439,7 @@ static void *scan_work_func(void *param)
 			}
 		}
 		pthread_mutex_lock(&g_back_lock);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pconn = (MYSQL_CONN*)pnode->pdata;
 			double_list_remove(&g_lost_list, &pconn->node);
 			double_list_append_as_tail(&g_back_list, &pconn->node);

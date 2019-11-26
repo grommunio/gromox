@@ -928,7 +928,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 	offset = 0;
 	ptr = in_buff;
 	prev_section = NULL;
-	while (ptr=memchr(ptr, ';', buff_len - (ptr - in_buff))) {
+	while ((ptr = memchr(ptr, ';', buff_len - (ptr - in_buff))) != NULL) {
 		if (NULL == prev_section) {
 			distance = ptr - in_buff;
 			paratag_len = (val_len - 1 > distance)?distance:(val_len - 1);

@@ -153,7 +153,7 @@ static void ical_free_param(ICAL_PARAM *piparam)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&piparam->paramval_list)) {
+	while ((pnode = double_list_get_from_head(&piparam->paramval_list)) != NULL) {
 		free(pnode->pdata);
 		free(pnode);
 	}
@@ -165,7 +165,7 @@ static void ical_free_value(ICAL_VALUE *pivalue)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&pivalue->subval_list)) {
+	while ((pnode = double_list_get_from_head(&pivalue->subval_list)) != NULL) {
 		if (NULL != pnode->pdata) {
 			free(pnode->pdata);
 		}
@@ -179,13 +179,11 @@ static void ical_free_line(ICAL_LINE *piline)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&piline->param_list)) {
+	while ((pnode = double_list_get_from_head(&piline->param_list)) != NULL)
 		ical_free_param(pnode->pdata);
-	}
 	double_list_free(&piline->param_list);
-	while (pnode=double_list_get_from_head(&piline->value_list)) {
+	while ((pnode = double_list_get_from_head(&piline->value_list)) != NULL)
 		ical_free_value(pnode->pdata);
-	}
 	double_list_free(&piline->value_list);
 	free(piline);
 }
@@ -194,10 +192,9 @@ static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while (pnode=double_list_get_from_head(&pcomponent->line_list)) {
+	while ((pnode = double_list_get_from_head(&pcomponent->line_list)) != NULL)
 		ical_free_line(pnode->pdata);
-	}
-	while (pnode=double_list_get_from_head(&pcomponent->component_list)) {
+	while ((pnode = double_list_get_from_head(&pcomponent->component_list)) != NULL) {
 		ical_free_component(pnode->pdata);
 		free(pnode->pdata);
 	}
@@ -347,7 +344,7 @@ static ICAL_PARAM* ical_retrieve_param(char *ptag)
 			ical_free_param(piparam);
 			return NULL;
 		}
-	} while (ptr = pnext);
+	} while ((ptr = pnext) != NULL);
 	return piparam;
 }
 
@@ -377,7 +374,7 @@ static ICAL_LINE* ical_retrieve_tag(char *ptag)
 			return FALSE;
 		}
 		ical_append_param(piline, piparam);
-	} while (ptr = pnext);
+	} while ((ptr = pnext) != NULL);
 	return piline;
 }
 
@@ -437,8 +434,8 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 					return FALSE;
 				}
 			}
-		} while (ptr1 = pnext1);
-	} while (ptr = pnext);
+		} while ((ptr1 = pnext1) != NULL);
+	} while ((ptr = pnext) != NULL);
 	return TRUE;
 }
 
@@ -547,7 +544,7 @@ static BOOL ical_retrieve_component(
 				}
 			}
 		}
-	} while (pline = pnext);
+	} while ((pline = pnext) != NULL);
 	ical_clear_component(pcomponent);
 	return FALSE;
 }

@@ -730,7 +730,7 @@ void service_enum_dependency(const char *plugin, ENUM_PLUGINS enum_func)
 		pdep = (REFERENCE_NODE*)(pnode->pdata);
 		enum_func(pdep->module_name);
 	}
-	while (pnode = double_list_get_from_head(&dep_list)) {
+	while ((pnode = double_list_get_from_head(&dep_list)) != NULL) {
 		free(pnode->pdata);
 		pnode = NULL;
 	}
@@ -789,7 +789,7 @@ void service_enum_reference(const char *module, ENUM_PLUGINS enum_func)
 		pref = (REFERENCE_NODE*)(pnode->pdata);
 		enum_func(pref->module_name);
 	}
-	while (pnode = double_list_get_from_head(&ref_list)) {
+	while ((pnode = double_list_get_from_head(&ref_list)) != NULL) {
 		free(pnode->pdata);
 		pnode = NULL;
 	}

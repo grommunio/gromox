@@ -160,13 +160,12 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			pthread_join(g_scan_id, NULL);
 		}
 		
-		while (pnode=double_list_get_from_head(&g_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL)
 			free(pnode->pdata);
-		}
 		
-		while (pnode=double_list_get_from_head(&g_server_list)) {
+		while ((pnode = double_list_get_from_head(&g_server_list)) != NULL) {
 			pserver = (BACK_SVR*)pnode->pdata;
-			while (pnode=double_list_get_from_head(&pserver->conn_list)) {
+			while ((pnode = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 				pback = (BACK_CONN*)pnode->pdata;
 				write(pback->sockd, "QUIT\r\n", 6);
 				close(pback->sockd);
@@ -175,9 +174,9 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			free(pserver);
 		}
 
-		while (pnode=double_list_get_from_head(&g_server_list1)) {
+		while ((pnode = double_list_get_from_head(&g_server_list1)) != NULL) {
 			pserver = (BACK_SVR*)pnode->pdata;
-			while (pnode=double_list_get_from_head(&pserver->conn_list)) {
+			while ((pnode = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 				pback = (BACK_CONN*)pnode->pdata;
 				if (-1 != pback->sockd) {
 					write(pback->sockd, "QUIT\r\n", 6);
@@ -487,7 +486,7 @@ static void *scan_work_func(void *param)
 			pnode=double_list_get_after(&g_server_list, pnode)) {
 			pserver = (BACK_SVR*)pnode->pdata;
 			ptail = double_list_get_tail(&pserver->conn_list);
-			while (pnode1=double_list_get_from_head(&pserver->conn_list)) {
+			while ((pnode1 = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 				pback = (BACK_CONN*)pnode1->pdata;
 				if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
 					double_list_append_as_tail(&temp_list, &pback->node);
@@ -503,8 +502,7 @@ static void *scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_server_lock);
 
-
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			write(pback->sockd, "PING\r\n", 6);
 			tv.tv_usec = 0;
@@ -528,7 +526,7 @@ static void *scan_work_func(void *param)
 		}
 
 		pthread_mutex_lock(&g_server_lock);
-		while (pnode=double_list_get_from_head(&g_lost_list)) {
+		while ((pnode = double_list_get_from_head(&g_lost_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			/* check if cidb server is still available in list */
 			for (pnode1=double_list_get_head(&g_server_list); NULL!=pnode1;
@@ -545,7 +543,7 @@ static void *scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_server_lock);
 
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			pback = (BACK_CONN*)pnode->pdata;
 			pback->sockd = connect_cidb(pback->psvr->ip_addr,
 							pback->psvr->port);
@@ -565,10 +563,10 @@ static void *scan_work_func(void *param)
 		pthread_mutex_lock(&g_server_lock);
 		if (0 != double_list_get_nodes_num(&g_server_list1)) {
 			ptail = double_list_get_tail(&g_server_list1);
-			while (pnode=double_list_get_from_head(&g_server_list1)) {
+			while ((pnode = double_list_get_from_head(&g_server_list1)) != NULL) {
 				pserver = (BACK_SVR*)pnode->pdata;
 				if (pserver->conn_num == double_list_get_nodes_num(&pserver->conn_list)) {
-					while (pnode1=double_list_get_from_head(&pserver->conn_list)) {
+					while ((pnode1 = double_list_get_from_head(&pserver->conn_list)) != NULL) {
 						pback = (BACK_CONN*)pnode1->pdata;
 						if (-1 != pback->sockd) {
 							write(pback->sockd, "QUIT\r\n", 6);
@@ -719,15 +717,12 @@ static void console_talk(int argc, char **argv, char *result, int length)
 			return;
 		}
 		
-		while (pnode=double_list_get_from_head(&g_server_list)) {
+		while ((pnode = double_list_get_from_head(&g_server_list)) != NULL)
 			double_list_append_as_tail(&g_server_list1, pnode);
-		}
-		
 		
 		if (FALSE == load_list()) {
-			while (pnode=double_list_get_from_head(&g_server_list1)) {
+			while ((pnode = double_list_get_from_head(&g_server_list1)) != NULL)
 				double_list_append_as_tail(&g_server_list, pnode);
-			}
 			pthread_mutex_unlock(&g_server_lock);
 			strncpy(result, "550 reload cidb list fail", length);
 			return;

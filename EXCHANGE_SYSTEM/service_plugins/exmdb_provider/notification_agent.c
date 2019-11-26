@@ -120,7 +120,7 @@ EXIT_THREAD:
 	pthread_mutex_destroy(&prouter->lock);
 	pthread_mutex_destroy(&prouter->cond_mutex);
 	pthread_cond_destroy(&prouter->waken_cond);
-	while (pnode=double_list_get_from_head(&prouter->datagram_list)) {
+	while ((pnode = double_list_get_from_head(&prouter->datagram_list)) != NULL) {
 		pdnode = (DATAGRAM_NODE*)pnode->pdata;
 		free(pdnode->data_bin.pb);
 		free(pdnode);

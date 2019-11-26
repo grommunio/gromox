@@ -921,7 +921,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 			return FALSE;
 		}
 	}
-	while (pnode=double_list_get_from_head(&tmp_list)) {
+	while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
 		if (FALSE == ics_load_folder_changes(psqlite,
 			*(uint64_t*)pnode->pdata, username, pgiven,
 			pseen, pstmt, pstmt1, pstmt2, plast_cn)) {

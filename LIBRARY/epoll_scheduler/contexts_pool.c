@@ -125,8 +125,7 @@ static void *scan_work_func(void *pparam)
 		gettimeofday(&current_time, NULL);
 		ptail = double_list_get_tail(
 			&g_context_lists[CONTEXT_POLLING]);
-		while (pnode=double_list_get_from_head(
-			&g_context_lists[CONTEXT_POLLING])) {
+		while ((pnode = double_list_get_from_head(&g_context_lists[CONTEXT_POLLING])) != NULL) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
 			if (FALSE == pcontext->b_waiting) {
 				pcontext->type = CONTEXT_SWITCHING;
@@ -156,8 +155,7 @@ CHECK_TAIL:
 		}
 		pthread_mutex_unlock(&g_context_locks[CONTEXT_POLLING]);
 		pthread_mutex_lock(&g_context_locks[CONTEXT_IDLING]);
-		while (pnode=double_list_get_from_head(
-			&g_context_lists[CONTEXT_IDLING])) {
+		while ((pnode = double_list_get_from_head(&g_context_lists[CONTEXT_IDLING])) != NULL) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
 			pcontext->type = CONTEXT_SWITCHING;
 			double_list_append_as_tail(&temp_list, pnode);
@@ -165,7 +163,7 @@ CHECK_TAIL:
 		pthread_mutex_unlock(&g_context_locks[CONTEXT_IDLING]);
 		num = 0;
 		pthread_mutex_lock(&g_context_locks[CONTEXT_TURNING]);
-		while (pnode=double_list_get_from_head(&temp_list)) {
+		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
 			((SCHEDULE_CONTEXT*)pnode->pdata)->type = CONTEXT_TURNING;
 			double_list_append_as_tail(
 				&g_context_lists[CONTEXT_TURNING], pnode);
