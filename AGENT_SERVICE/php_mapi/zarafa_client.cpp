@@ -1,3 +1,5 @@
+#include "php.h"
+#include <libHX/string.h>
 #include "ext.hpp"
 #include "zarafa_client.h"
 #include "rpc_ext.h"
@@ -14,8 +16,6 @@
 
 #define RESPONSE_CODE_SUCCESS      			0x00
 
-#define CS_PATH								"/var/medusa/token/zarafa"
-
 static int zarafa_client_connect()
 {
 	int sockd, len;
@@ -27,7 +27,9 @@ static int zarafa_client_connect()
 	}
 	memset(&un, 0, sizeof(un));
 	un.sun_family = AF_UNIX;
-	strcpy(un.sun_path, CS_PATH);
+	zstrplus str_server(zend_string_init(ZEND_STRL("zcore_socket"), 0));
+	auto sockpath = zend_ini_string(const_cast<char *>("mapi.zcore_socket"), sizeof("mapi.zcore_socket") - 1, 0);
+	HX_strlcpy(un.sun_path, sockpath != nullptr ? sockpath : "/run/gromox/zcore", sizeof(un.sun_path));
 	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr*)&un, len) < 0) {
 		close(sockd);
