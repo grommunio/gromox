@@ -38,7 +38,7 @@ static BOOL domain_mailbox_refresh_table()
 	LIST_FILE *plist;
 	STR_HASH_TABLE *phash, *phash_temp;
 
-	plist = list_file_init(g_list_path, "%s:256%s:256");
+	plist = list_file_init3(g_list_path, "%s:256%s:256", false);
 	if (NULL == plist) {
 		printf("[domain_mailbox]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));

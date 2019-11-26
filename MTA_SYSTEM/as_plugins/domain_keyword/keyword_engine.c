@@ -45,14 +45,14 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 		return NULL;
 	}
 	single_list_init(charset_list);
-	pfile1 = list_file_init(charset_path, "%s:32");
+	pfile1 = list_file_init3(charset_path, "%s:32", false);
 	if (NULL == pfile1) {
 		printf("[keyword_engine]: Failed to read charset list from %s: %s\n",
 			charset_path, strerror(errno));
 		free(charset_list);
 		return NULL;
 	}
-	pfile2 = list_file_init(list_path, "%s:256");
+	pfile2 = list_file_init3(list_path, "%s:256", false);
 	if (NULL == pfile2) {
 		printf("[keyword_engine]: failed to read keyword list file from %s: %s\n",
 			list_path, strerror(errno));

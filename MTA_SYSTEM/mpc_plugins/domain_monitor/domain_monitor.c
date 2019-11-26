@@ -79,24 +79,25 @@ void domain_monitor_init(const char *root_path, const char *subject,
 int domain_monitor_run()
 {
 	DIR *dirp;
-	int domain_num;
+	int domain_num = 0;
 	int i, temp_len;
 	char temp_domain[256];
 	struct dirent *direntp;
 
+	errno = 0;
 	dirp = opendir(g_root_path);
-	if (NULL == dirp) {
+	if (dirp != NULL) {
+		while ((direntp = readdir(dirp)) != NULL) {
+			if (strcmp(direntp->d_name, ".") == 0 ||
+			    strcmp(direntp->d_name, "..") == 0)
+				continue;
+			++domain_num;
+		}
+		closedir(dirp);
+	} else if (errno != ENOENT) {
 		printf("[domain_monitor]: failed to open directory %s: %s\n",
 			g_root_path, strerror(errno));
-		return -1;
-	}
-	domain_num = 0;
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (0 == strcmp(direntp->d_name, ".") ||
-			0 == strcmp(direntp->d_name, "..")) {
-			continue;
-		}
-		domain_num ++;
+		return -2;
 	}
 	g_hash_cap = domain_num + g_growing_num;
 	g_domain_hash = str_hash_init(g_hash_cap, sizeof(STR_HASH_TABLE), NULL);
@@ -105,7 +106,9 @@ int domain_monitor_run()
 		printf("[domain_monitor]: fail to init domain hash table\n");
 		return -2;
 	}
-	seekdir(dirp, 0);
+	dirp = opendir(g_root_path);
+	if (dirp == NULL)
+		return 0;
 	while ((direntp = readdir(dirp)) != NULL) {
 		if (0 == strcmp(direntp->d_name, ".") ||
 			0 == strcmp(direntp->d_name, "..")) {

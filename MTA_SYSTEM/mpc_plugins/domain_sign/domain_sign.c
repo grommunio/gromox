@@ -65,24 +65,25 @@ void domain_sign_init(const char *path)
 int domain_sign_run()
 {
 	DIR *dirp;
-	int domain_num;
+	int domain_num = 0;
 	int i, temp_len;
 	char temp_domain[256];
 	struct dirent *direntp;
 
+	errno = 0;
 	dirp = opendir(g_root_path);
-	if (NULL == dirp) {
+	if (dirp != NULL) {
+		while ((direntp = readdir(dirp)) != NULL) {
+			if (strcmp(direntp->d_name, ".") == 0||
+			    strcmp(direntp->d_name, "..") == 0)
+				continue;
+			++domain_num;
+		}
+		closedir(dirp);
+	} else if (errno != ENOENT) {
 		printf("[domain_sign]: failed to open directory %s: %s\n",
 			g_root_path, strerror(errno));
 		return -1;
-	}
-	domain_num = 0;
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (0 == strcmp(direntp->d_name, ".") ||
-			0 == strcmp(direntp->d_name, "..")) {
-			continue;
-		}
-		domain_num ++;
 	}
 	g_hash_cap = domain_num + GROWING_NUM;
 	g_sign_hash = str_hash_init(g_hash_cap, sizeof(SINGLE_LIST*), NULL);
@@ -90,7 +91,9 @@ int domain_sign_run()
 		printf("[domain_monitor]: fail to init domain hash table\n");
 		return -2;
 	}
-	seekdir(dirp, 0);
+	dirp = opendir(g_root_path);
+	if (dirp == NULL)
+		return 0;
 	while ((direntp = readdir(dirp)) != NULL) {
 		if (0 == strcmp(direntp->d_name, ".") ||
 			0 == strcmp(direntp->d_name, "..")) {

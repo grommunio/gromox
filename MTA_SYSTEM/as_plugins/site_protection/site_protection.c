@@ -102,9 +102,8 @@ static int site_protection_list_refresh()
 	PROTECTION_ITEM *pprotection, temp_protection;
 	char *pitem, *pbegin, *pcomma;
 	int i, list_num, sect_len, type;
-	LIST_FILE *plist_file;
 
-	plist_file = list_file_init(g_list_path, "%s:16%s:256%s:1024");
+	LIST_FILE *plist_file = list_file_init3(g_list_path, "%s:16%s:256%s:1024", false);
 	if (NULL == plist_file) {
 		printf("[site_protection]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));

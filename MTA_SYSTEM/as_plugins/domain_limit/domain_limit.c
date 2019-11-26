@@ -54,7 +54,7 @@ static int domain_limit_run_deny(void)
 	DIR *dirp;
 	char *pitem;
 	int temp_len;
-	int domain_num;
+	int domain_num = 0;
 	int i, item_num;
 	SINGLE_LIST temp_list;
 	LIST_FILE *plist;
@@ -64,27 +64,30 @@ static int domain_limit_run_deny(void)
 	struct dirent *direntp;
 
 	sprintf(temp_path, "%s/deny", g_root_path);
+	errno = 0;
 	dirp = opendir(temp_path);
-	if (NULL == dirp) {
+	if (dirp != NULL) {
+		while ((direntp = readdir(dirp)) != NULL) {
+			if (strcmp(direntp->d_name, ".") == 0 ||
+			    strcmp(direntp->d_name, "..") == 0)
+				continue;
+			++domain_num;
+		}
+		closedir(dirp);
+	} else if (errno != ENOENT) {
 		printf("[domain_limit]: failed to open directory %s: %s\n",
 			temp_path, strerror(errno));
 		return -1;
 	}
-	domain_num = 0;
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (0 == strcmp(direntp->d_name, ".") ||
-			0 == strcmp(direntp->d_name, "..")) {
-			continue;
-		}
-		domain_num ++;
-	}
 	g_deny_cap = domain_num + g_growing_num;
 	g_deny_hash = str_hash_init(g_deny_cap, sizeof(SINGLE_LIST), NULL);
 	if (NULL == g_deny_hash) {
-		closedir(dirp);
 		printf("[domain_limit]: fail to init deny hash table\n");
 		return -2;
 	}
+	dirp = opendir(temp_path);
+	if (dirp == NULL)
+		return 0;
 	seekdir(dirp, 0);
 	while ((direntp = readdir(dirp)) != NULL) {
 		if (0 == strcmp(direntp->d_name, ".") ||
@@ -139,7 +142,7 @@ static int domain_limit_run_allow(void)
 	DIR *dirp;
 	char *pitem;
 	int temp_len;
-	int domain_num;
+	int domain_num = 0;
 	int i, item_num;
 	SINGLE_LIST temp_list;
 	LIST_FILE *plist;
@@ -149,28 +152,30 @@ static int domain_limit_run_allow(void)
 	struct dirent *direntp;
 
 	sprintf(temp_path, "%s/allow", g_root_path);
+	errno = 0;
 	dirp = opendir(temp_path);
-	if (NULL == dirp) {
+	if (dirp != NULL) {
+		while ((direntp = readdir(dirp)) != NULL) {
+			if (strcmp(direntp->d_name, ".") == 0 ||
+			    strcmp(direntp->d_name, "..") == 0)
+				continue;
+			++domain_num;
+		}
+		closedir(dirp);
+	} else if (errno != ENOENT) {
 		printf("[domain_limit]: failed to open directory %s: %s\n",
 			temp_path, strerror(errno));
-		return -3;
-	}
-	domain_num = 0;
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (0 == strcmp(direntp->d_name, ".") ||
-			0 == strcmp(direntp->d_name, "..")) {
-			continue;
-		}
-		domain_num ++;
+		return -1;
 	}
 	g_allow_cap = domain_num + g_growing_num;
 	g_allow_hash = str_hash_init(g_allow_cap, sizeof(SINGLE_LIST), NULL);
 	if (NULL == g_allow_hash) {
-		closedir(dirp);
 		printf("[domain_limit]: fail to init allow hash table\n");
 		return -4;
 	}
-	seekdir(dirp, 0);
+	dirp = opendir(temp_path);
+	if (dirp == NULL)
+		return 0;
 	while ((direntp = readdir(dirp)) != NULL) {
 		if (0 == strcmp(direntp->d_name, ".") ||
 			0 == strcmp(direntp->d_name, "..")) {

@@ -38,7 +38,7 @@ void domain_keyword_init(int growing_num, const char *root_path)
 int domain_keyword_run()
 {
 	DIR *dirp;
-	int domain_num;
+	int domain_num = 0;
 	int i, temp_len;
 	char charset_path[256];
 	char keyword_path[256];
@@ -46,29 +46,31 @@ int domain_keyword_run()
 	struct dirent *direntp;
 	KEYWORD_ENGINE *pengine;
 
+	errno = 0;
 	dirp = opendir(g_root_path);
-	if (NULL == dirp) {
+	if (dirp != NULL) {
+		while ((direntp = readdir(dirp)) != NULL) {
+			if (strcmp(direntp->d_name, ".") == 0 ||
+			    strcmp(direntp->d_name, "..") == 0 ||
+			    strcmp(direntp->d_name, "charset.txt") == 0)
+				continue;
+			++domain_num;
+		}
+		closedir(dirp);
+	} else if (errno != ENOENT) {
 		printf("[domain_keyword]: failed to open directory %s: %s\n",
 			g_root_path, strerror(errno));
 		return -1;
 	}
-	domain_num = 0;
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (0 == strcmp(direntp->d_name, ".") ||
-			0 == strcmp(direntp->d_name, "..") ||
-			0 == strcmp(direntp->d_name, "charset.txt")) {
-			continue;
-		}
-		domain_num ++;
-	}
 	g_hash_cap = domain_num + g_growing_num;
 	g_hash_table = str_hash_init(g_hash_cap, sizeof(void*), NULL);
 	if (NULL == g_hash_table) {
-		closedir(dirp);
 		printf("[domain_keyword]: fail to init hash table\n");
 		return -2;
 	}
-	seekdir(dirp, 0);
+	dirp = opendir(g_root_path);
+	if (dirp == NULL)
+		return 0;
 	while ((direntp = readdir(dirp)) != NULL) {
 		if (0 == strcmp(direntp->d_name, ".") ||
 			0 == strcmp(direntp->d_name, "..") ||

@@ -29,7 +29,8 @@ int AS_LibMain(int reason, void **ppdata)
 {
 	CONFIG_FILE *pconfig_file;
 	char file_name[256], temp_path[256];
-	char *str_value, *psearch;
+	const char *str_value;
+	char *psearch;
 
     switch (reason) {
     case PLUGIN_INIT:
@@ -59,10 +60,9 @@ int AS_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		str_value = config_file_get_value(pconfig_file, "PATTERN_STRING");
-		if (NULL == str_value) {
-			printf("[subject_dots]: fail to get pattern string\n");
-			config_file_free(pconfig_file);
-			return FALSE;
+		if (str_value == NULL) {
+			str_value = "~@$%^&*-_+=?,./\\";
+			config_file_set_value(pconfig_file, "PATTERN_STRING", str_value);
 		}
 		g_pattern_len = strlen(str_value);
 		if (0 == g_pattern_len) {

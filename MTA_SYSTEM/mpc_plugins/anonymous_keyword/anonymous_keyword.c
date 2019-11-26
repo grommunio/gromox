@@ -106,14 +106,14 @@ BOOL anonymous_keyword_refresh()
 		return FALSE;
 	}
 	single_list_init(charset_list);
-	pfile1 = list_file_init(g_charset_path, "%s:32");
+	pfile1 = list_file_init3(g_charset_path, "%s:32", false);
 	if (NULL == pfile1) {
 		printf("[anonymous_keyword]: Failed to read charset list from %s: %s\n",
 			g_charset_path, strerror(errno));
 		free(charset_list);
 		return FALSE;
 	}
-	pfile2 = list_file_init(g_list_path, "%s:256");
+	pfile2 = list_file_init3(g_list_path, "%s:256", false);
 	if (NULL == pfile2) {
 		printf("[anonymous_keyword]: Failed to read keyword list from %s: %s\n",
 			g_list_path, strerror(errno));

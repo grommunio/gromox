@@ -28,7 +28,7 @@ int address_list_refresh()
 	LIST_FILE *plist;
 	STR_HASH_TABLE *phash, *phash_temp;
 
-	plist = list_file_init(g_list_path, "%s:256%s:32");
+	plist = list_file_init3(g_list_path, "%s:256%s:32", false);
 	if (NULL == plist) {
 		printf("[domain_subsystem]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));

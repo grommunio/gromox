@@ -70,7 +70,7 @@ int AS_LibMain(int reason, void **ppdata)
 		printf("[header_filter]: return string is \"%s\"\n", g_return_string);
 		config_file_free(pconfig_file);
 		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
-		plist_file = list_file_init(temp_path, "%s:128%s:128");
+		plist_file = list_file_init3(temp_path, "%s:128%s:128", false);
 		if (NULL == plist_file) {
 			printf("[header_filter]: list_file_init %s: %s\n",
 				temp_path, strerror(errno));

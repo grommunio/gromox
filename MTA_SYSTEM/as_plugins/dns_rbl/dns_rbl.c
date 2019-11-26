@@ -399,7 +399,7 @@ BOOL dns_rbl_refresh()
 	const char *pitem;
 	LIST_FILE *plist_file;
 
-	plist_file = list_file_init(g_path, "%s:256");
+	plist_file = list_file_init3(g_path, "%s:256", false);
 	if (NULL == plist_file) {
 		printf("[dns_rbl]: list_file_init %s: %s\n", g_path, strerror(errno));
 		return FALSE;

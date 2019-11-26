@@ -1,3 +1,6 @@
+#include <errno.h>
+#include <stdbool.h>
+#include <string.h>
 #include "precise_interception.h"
 #include "int_hash.h"
 #include "double_list.h"
@@ -281,24 +284,28 @@ static BOOL precise_interception_refresh()
 	struct stat node_stat;
 	struct dirent *direntp;
 
-	if (0 != stat(g_path, &node_stat) || 0 == S_ISDIR(node_stat.st_mode)) {
-		printf("[precise_interception]: %s is not a directory\n", g_path);
-		return FALSE;
-	}
 	count = 0;
+	errno = 0;
 	dirp = opendir(g_path);
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (0 == strcmp(direntp->d_name, ".") ||
-			0 == strcmp(direntp->d_name, "..")) {
-			continue;
+	if (dirp != NULL) {
+		while ((direntp = readdir(dirp)) != NULL) {
+			if (strcmp(direntp->d_name, ".") == 0 ||
+			    strcmp(direntp->d_name, "..") == 0)
+				continue;
+			++count;
 		}
-		count ++;
+		closedir(dirp);
+	} else if (errno != ENOENT) {
+		printf("[precise_interception]: could not open directory %s: %s\n",
+			g_path, strerror(errno));
+		return false;
 	}
 	hash_cap = count + TABLE_GROWING_NUM;
 	phash = int_hash_init(hash_cap, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
 		return FALSE;
 	}
+	if (dirp != NULL) {
 	seekdir(dirp, 0);
 	while ((direntp = readdir(dirp)) != NULL) {
 		if (0 == strcmp(direntp->d_name, ".") ||
@@ -344,6 +351,7 @@ static BOOL precise_interception_refresh()
 		double_list_append_as_tail(plist, &pdata->node);
 	}
 	closedir(dirp);
+	}
 	pthread_rwlock_wrlock(&g_table_lock);
 	phash_temp = g_hash_table;
 	g_hash_table = phash;

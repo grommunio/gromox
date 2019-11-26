@@ -635,15 +635,13 @@ static BOOL load_list()
 	int i, j;
 	int list_num;
 	CIDB_ITEM *pitem;
-	LIST_FILE *plist;
 	BACK_CONN *pback;
 	BACK_SVR *pserver;
 	
-	plist = list_file_init(g_list_path, "%s:128%s:16%d");
+	LIST_FILE *plist = list_file_init3(g_list_path, "%s:128%s:16%d", false);
 	if (NULL == plist) {
 		return FALSE;
 	}
-
 
 	list_num = list_file_get_item_num(plist);
 	pitem = (CIDB_ITEM*)list_file_get_list(plist);
