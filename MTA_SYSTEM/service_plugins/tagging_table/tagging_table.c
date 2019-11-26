@@ -4,7 +4,6 @@
 #include "util.h"
 #include "list_file.h"
 #include <pthread.h>
-#include <stdarg.h>
 
 enum{
 	TAGGING_TABLE_REFRESH_OK,

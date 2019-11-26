@@ -10,7 +10,6 @@
 #include "vstack.h"
 #include "util.h"
 #include <time.h>
-#include <stdarg.h>
 #include <pthread.h>
 #include <stdio.h>
 

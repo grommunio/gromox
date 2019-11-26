@@ -2,8 +2,6 @@
 #include "hook_common.h"
 #include "spam_complain.h"
 #include <stdio.h>
-#include <stdarg.h>
-
 
 void spam_complain_init()
 {

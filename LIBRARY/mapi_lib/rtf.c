@@ -11,7 +11,6 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <iconv.h>
-#include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 
