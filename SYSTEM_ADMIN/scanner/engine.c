@@ -1263,7 +1263,7 @@ static void engine_compress(const char *src_path, const char *dst_file)
 {
 	pid_t pid;
 	int status;
-	const char *args[] = {"tar", "czf", NULL, "-C", NULL, ".", NULL};
+	const char *args[] = {"tar", "-czf", NULL, "-C", NULL, ".", NULL};
 
 	pid = fork();
 	if (0 == pid) {

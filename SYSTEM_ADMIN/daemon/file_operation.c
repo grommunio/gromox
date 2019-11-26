@@ -28,7 +28,7 @@ void file_operation_compress(const char *src_path, const char *dst_file)
 {
 	pid_t pid;
 	int status;
-	const char *args[] = {"tar", "czf", NULL, "-C", NULL, ".", NULL};
+	const char *args[] = {"tar", "-czf", NULL, "-C", NULL, ".", NULL};
 
 	pid = fork();
 	if (0 == pid) {
@@ -45,7 +45,7 @@ void file_operation_decompress(const char *src_file, const char *dst_dir)
 {
 	pid_t pid;
 	int status;
-	const char *args[] = {"tar", "zxf", NULL, "-C", NULL, NULL};
+	const char *args[] = {"tar", "-zxf", NULL, "-C", NULL, NULL};
 
 	pid = fork();
 	if (0 == pid) {
