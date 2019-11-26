@@ -730,16 +730,21 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		single_list_append_as_tail(&temp_list, &plang->node);
 	}
 	fclose(file_ptr);
-	
+
+	const char *dfl_lang = resource_get_string("DEFAULT_LANG");
+	if (dfl_lang == NULL) {
+		dfl_lang = "en";
+		resource_set_string("DEFAULT_LANG", dfl_lang);
+	}
 	for (pnode=single_list_get_head(&temp_list); NULL!=pnode;
 		pnode=single_list_get_after(&temp_list, pnode)) {
 		plang = (LANG_FOLDER*)pnode->pdata;
-		if (strcasecmp(plang->lang, resource_get_string("DEFAULT_LANG")) == 0)
+		if (strcasecmp(plang->lang, dfl_lang) == 0)
 			break;
 	}
 	
 	if (NULL == pnode) {
-		printf("[resource]: cannot find default lang in %s\n", filename);
+		printf("[resource]: cannot find default lang (%s) in %s\n", dfl_lang, filename);
 		while ((pnode = single_list_get_from_head(&temp_list)) != NULL)
 			free(pnode->pdata);
 		single_list_free(&temp_list);
