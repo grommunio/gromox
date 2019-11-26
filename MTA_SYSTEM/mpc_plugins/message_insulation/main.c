@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "config_file.h"
 #include "bounce_producer.h"
@@ -33,7 +35,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(config_path);
 		if (NULL == pfile) {
-			printf("[message_insulation]: error to open config file!!!\n");
+			printf("[message_insulation]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
 		}
 		str_val = config_file_get_value(pfile, "SCAN_INTERVAL");

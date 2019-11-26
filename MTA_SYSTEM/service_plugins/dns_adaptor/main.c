@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/mtasvc_common.h>
 #include "dns_adaptor.h"
 #include "inbound_ips.h"
@@ -42,7 +44,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(tmp_path);
 		if (NULL == pfile) {
-			printf("[dns_adaptor]: error to open config file!!!\n");
+			printf("[dns_adaptor]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "CACHE_CAPACITY");

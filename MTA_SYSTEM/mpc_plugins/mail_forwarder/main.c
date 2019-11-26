@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "mail_forwarder.h"
 #include "config_file.h"
@@ -26,7 +28,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(tmp_path);
 		if (NULL == pfile) {
-			printf("[mail_forwarder]: error to open config file!!!\n");
+			printf("[mail_forwarder]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return FALSE;
 		}
 		str_val = config_file_get_value(pfile, "GROWING_NUM");

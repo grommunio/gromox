@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "remote_postman.h"
 #include "util.h"
@@ -40,7 +42,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(tmp_path);
 		if (NULL == pfile) {
-			printf("[remote_postman]: error to open config file!!!\n");
+			printf("[remote_postman]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return FALSE;
 		}
 		files_num = 256 * get_threads_num();

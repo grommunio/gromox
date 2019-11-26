@@ -37,7 +37,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(tmp_path);
 		if (NULL == pfile) {
-			printf("[%s]: error to open config file!!!\n", file_name);
+			printf("[%s]: config_file_init %s: %s\n", file_name, tmp_path, strerror(errno));
 			return FALSE;
 		}
 		query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");

@@ -42,7 +42,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(config_path);
 		if (NULL == pfile) {
-			printf("[%s]: error to open config file!!!\n", file_name);
+			printf("[%s]: config_file_init %s: %s\n", file_name, config_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");

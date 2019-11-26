@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
@@ -47,7 +48,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pconfig_file = config_file_init(temp_path);
 		if (NULL == pconfig_file) {
-			printf("[property_021]: error to open config file!!!\n");
+			printf("[property_021]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pconfig_file, "RETURN_STRING");

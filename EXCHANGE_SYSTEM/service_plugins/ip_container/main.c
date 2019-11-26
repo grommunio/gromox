@@ -34,7 +34,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(tmp_path);
 		if (NULL == pfile) {
-			printf("[ip_container]: error to open config file!!!\n");
+			printf("[ip_container]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "CONNECTION_MAX_NUM");

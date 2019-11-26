@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <gromox/mtasvc_common.h>
 #include "service_auth.h"
 #include "mysql_adaptor.h"
@@ -45,7 +46,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_data_path());
 		pfile = config_file_init(config_path);
 		if (NULL == pfile) {
-			printf("[mysql_adaptor]: error to open config file!!!\n");
+			printf("[mysql_adaptor]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "CONNECTION_NUM");

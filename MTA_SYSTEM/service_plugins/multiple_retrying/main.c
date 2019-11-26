@@ -37,7 +37,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(list_path, "%s/%s.txt", get_data_path(), file_name);
 		pfile = config_file_init(config_path);
 		if (NULL == pfile) {
-			printf("[multiple_retrying]: error to open config file!!!\n");
+			printf("[multiple_retrying]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "TABLE_MAX_NUM");

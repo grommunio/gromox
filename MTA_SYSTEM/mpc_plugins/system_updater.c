@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 #include <libHX/string.h>
@@ -76,7 +77,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		/* get the plugin name from system api */
 		pfile = config_file_init("../config/smtp.cfg");
 		if (NULL == pfile) {
-			printf("[system_updater]: error to open config file!!!\n");
+			printf("[system_updater]: config_file_init ../config/smtp.cfg: %s\n", strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_IP");

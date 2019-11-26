@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "config_file.h"
 #include "relay_agent.h"
@@ -101,7 +103,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(g_config_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(g_config_path);
 		if (NULL == pfile) {
-			printf("[relay_agent]: error to open config file!!!\n");
+			printf("[relay_agent]: config_file_init %s: %s\n", g_config_path, strerror(errno));
 			return FALSE;
 		}
 

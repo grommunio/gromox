@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "gateway_dispatch.h"
 #include "config_file.h"
@@ -35,7 +37,8 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
         sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
         pfile = config_file_init(tmp_path);
         if (NULL == pfile) {
-            printf("[gateway_dispatch]: error to open config file!!!\n");
+			printf("[gateway_dispatch]: config_file_init %s: %s\n",
+				tmp_path, strerror(errno));
             return FALSE;
         }
 		files_num = 256 * get_threads_num();

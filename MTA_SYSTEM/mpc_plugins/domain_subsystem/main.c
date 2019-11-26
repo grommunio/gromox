@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "domain_subsystem.h"
 #include "config_file.h"
@@ -32,7 +34,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
         sprintf(list_path, "%s/%s.txt", get_data_path(), file_name);
         pfile = config_file_init(tmp_path);
         if (NULL == pfile) {
-            printf("[domain_subsystem]: error to open config file!!!\n");
+			printf("[domain_subsystem]: config_file_init %s: %s\n", tmp_path, strerror(errno));
             return FALSE;
         }
 		

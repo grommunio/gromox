@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include <stdio.h>
@@ -56,7 +58,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		strcpy(g_config_file, temp_path);
 		pconfig_file = config_file_init(temp_path);
 		if (NULL == pconfig_file) {
-			printf("[anti_enum]: error to open config file!!!\n");
+			printf("[anti_enum]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pconfig_file, "MIN_RCPT_NUM");

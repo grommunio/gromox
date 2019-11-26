@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "mail_func.h"
@@ -63,7 +65,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		pconfig_file = config_file_init(temp_path);
 		
 		if (NULL == pconfig_file) {
-			printf("[site_protection]: error to open config file!!!\n");
+			printf("[site_protection]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pconfig_file, "RETURN_STRING");

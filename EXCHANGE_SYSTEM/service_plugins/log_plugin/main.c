@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <gromox/exsvc_common.h>
@@ -34,7 +35,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(tmp_path);
 		if (NULL == pfile) {
-			printf("[log_plugin]: error to open config file!!!\n");
+			printf("[log_plugin]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "LOG_LEVEL");

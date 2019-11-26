@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "util.h"
@@ -127,7 +128,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		strcpy(g_config_file, temp_path);
 		pconfig_file = config_file_init(temp_path);
 		if (NULL == pconfig_file) {
-			printf("[content_filter]: error to open config file!!!\n");
+			printf("[content_filter]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(

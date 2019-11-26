@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <gromox/flusher_common.h>
 #include "message_enqueue.h"
 #include "config_file.h"
@@ -27,8 +29,8 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(temp_path);
 		if (NULL == pfile) {
-			printf("[message_enqueue]: error to open config file %s!!!\n",
-					temp_path);
+			printf("[message_enqueue]: config_file_init %s: %s\n",
+				temp_path, strerror(errno));
 			return FALSE;
 		}
         queue_path = config_file_get_value(pfile, "ENQUEUE_PATH");

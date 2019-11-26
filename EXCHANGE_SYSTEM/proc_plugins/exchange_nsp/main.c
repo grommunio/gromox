@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include "guid.h"
 #include "util.h"
@@ -52,7 +53,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(temp_path);
 		if (NULL == pfile) {
-			printf("[exchange_nsp]: error to open config file!!!\n");
+			printf("[exchange_nsp]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
 		}
 		org_name = config_file_get_value(pfile, "X500_ORG_NAME");

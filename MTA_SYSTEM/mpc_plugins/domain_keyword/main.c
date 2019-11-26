@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "domain_keyword.h"
 #include "bounce_producer.h"
@@ -29,7 +31,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
 		pfile = config_file_init(tmp_path);
 		if (NULL == pfile) {
-			printf("[domain_keyword]: error to open config file!!!\n");
+			printf("[domain_keyword]: config_file_init %s: %s\n", tmp_path, strerror(errno));
 			return FALSE;
 		}
 
