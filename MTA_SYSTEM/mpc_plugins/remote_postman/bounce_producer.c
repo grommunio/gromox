@@ -375,7 +375,11 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
                         mime_field.field_value, mime_field.field_value_len);
                     presource->subject[i][mime_field.field_value_len] = 0;
 				}
-				if ('\r' == presource->content[i][j]) {
+				if (presource->content[i][j] == '\n') {
+					++j;
+					break;
+				} else if (presource->content[i][j] == '\r' &&
+				    presource->content[i][j+1] == '\n') {
 					j += 2;
 					break;
 				}
@@ -689,8 +693,11 @@ void bounce_producer_make(MESSAGE_CONTEXT *pcontext, time_t original_time,
 		if (NULL != reason_buff) {
 			len = snprintf(tmp_buff, 1024, "smtp;%s", reason_buff);
 			ptr = tmp_buff;
-			while ((ptr = strstr(ptr, "\r\n")) != NULL) {
-				ptr += 2;
+			while ((ptr = strpbrk(ptr, "\r\n")) != NULL) {
+				if (*ptr == '\r')
+					++ptr;
+				if (*ptr == '\n')
+					++ptr;
 				len ++;
 				memmove(ptr + 1, ptr, tmp_buff + len - ptr);
 				*ptr = '\t';

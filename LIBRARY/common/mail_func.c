@@ -709,8 +709,10 @@ int parse_mime_field(char *in_buff, long buff_len, MIME_FIELD *pmime_field)
 				return 0;
 			}
 		}
-		tmp_ptr ++;
-		i ++;
+		if (*tmp_ptr == '\r') {
+			++tmp_ptr;
+			++i;
+		}
 		if (i == buff_len) {
 			if ('\n' == *tmp_ptr) {
 				pmime_field->field_value_len = value_length;

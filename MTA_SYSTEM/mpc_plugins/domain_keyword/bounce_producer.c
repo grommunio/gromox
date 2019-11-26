@@ -278,7 +278,11 @@ static void bounce_producer_load_template(const char *temp_name, SINGLE_LIST *pl
 					mime_field.field_value_len);
 				presource->subject[mime_field.field_value_len] = 0;
 			}
-			if ('\r' == presource->content[i]) {
+			if (presource->content[i] == '\n') {
+				++i;
+				break;
+			} else if (presource->content[i] == '\r' &&
+			    presource->content[i+1] == '\n') {
 				i += 2;
 				break;
 			}

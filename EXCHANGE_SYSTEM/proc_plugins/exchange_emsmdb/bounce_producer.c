@@ -296,7 +296,11 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 						mime_field.field_value, mime_field.field_value_len);
 					presource->subject[i][mime_field.field_value_len] = 0;
 				}
-				if ('\r' == presource->content[i][j]) {
+				if (presource->content[i][j] == '\n') {
+					++j;
+					break;
+				} else if (presource->content[i][j] == '\r' &&
+				    presource->content[i][j+1] == '\n') {
 					j += 2;
 					break;
 				}
