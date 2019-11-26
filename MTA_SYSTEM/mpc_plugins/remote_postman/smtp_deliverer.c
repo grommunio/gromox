@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <string.h>
 #include "files_allocator.h"
 #include "sender_routing.h"
 #include "smtp_deliverer.h"
@@ -343,7 +344,7 @@ static int smtp_deliverer_send_mail(
 	opt |= O_NONBLOCK;
 	fcntl(connection.sockd, F_SETFL, opt);
 	/* end of set mode */
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(25);
 	inet_pton(AF_INET, destination_ip, &servaddr.sin_addr);

@@ -187,7 +187,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	struct sockaddr_in servaddr;
 	
     sockd = socket(AF_INET, SOCK_STREAM, 0);
-    bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(pserver->port);
     inet_pton(AF_INET, pserver->ip_addr, &servaddr.sin_addr);

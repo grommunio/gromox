@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <string.h>
 #include "smtp_dispatch.h"
 #include "files_allocator.h"
 #include "backend_list.h"
@@ -122,7 +123,7 @@ int smtp_dispatch_process(MESSAGE_CONTEXT *pcontext,
 	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 			MEM_FILE_SEEK_BEGIN);
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(port);
 	inet_pton(AF_INET, dest_ip, &servaddr.sin_addr);

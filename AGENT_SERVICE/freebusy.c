@@ -16,7 +16,6 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
-#include <strings.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -669,7 +668,7 @@ static int connect_exmdb(const char *dir)
 		}
 	}
     sockd = socket(AF_INET, SOCK_STREAM, 0);
-    bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(pexnode->exmdb_info.port);
     inet_pton(AF_INET, pexnode->exmdb_info.ip_addr, &servaddr.sin_addr);

@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <string.h>
 #include "hook_common.h"
 #include "stream.h"
 #include "util.h"
@@ -610,7 +611,7 @@ static BOOL console_control(char *ip, int port, char *cmdline, char *result,
 	struct timeval tv;
 
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(port);
 	inet_pton(AF_INET, ip, &servaddr.sin_addr);

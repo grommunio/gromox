@@ -19,7 +19,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include <strings.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>

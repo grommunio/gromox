@@ -1,3 +1,4 @@
+#include <string.h>
 #include <libHX/misc.h>
 #include <gromox/resolv.h>
 #include "smtp.h"
@@ -130,7 +131,7 @@ SENDING_RETRY:
 	opt = fcntl(sockd, F_GETFL, 0);
 	opt |= O_NONBLOCK;
 	fcntl(sockd, F_SETFL, opt);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(port);
 	inet_pton(AF_INET, ip, &servaddr.sin_addr);

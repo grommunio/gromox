@@ -581,7 +581,7 @@ static int connect_session()
 
 
     sockd = socket(AF_INET, SOCK_STREAM, 0);
-    bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(g_session_port);
     inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);

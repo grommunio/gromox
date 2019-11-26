@@ -1,3 +1,4 @@
+#include <string.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "retrying_table.h"
@@ -330,7 +331,7 @@ static int proxy_retrying_connect_unit(const char *ip)
 	
 	/* try to connect to the destination UNIT */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_port);
 	inet_pton(AF_INET, ip, &servaddr.sin_addr);

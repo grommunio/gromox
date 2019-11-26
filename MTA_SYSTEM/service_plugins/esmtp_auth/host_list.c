@@ -1,3 +1,4 @@
+#include <string.h>
 #include <unistd.h>
 #include "host_list.h"
 #include "double_list.h"
@@ -214,7 +215,7 @@ static void* thread_work_func(void *arg)
 			opt |= O_NONBLOCK;
 			fcntl(sockd, F_SETFL, opt);
 			/* end of set mode */
-			bzero(&servaddr, sizeof(servaddr));
+			memset(&servaddr, 0, sizeof(servaddr));
 			servaddr.sin_family = AF_INET;
 			servaddr.sin_port = htons(punit->port);
 			inet_pton(AF_INET, punit->ip, &servaddr.sin_addr);

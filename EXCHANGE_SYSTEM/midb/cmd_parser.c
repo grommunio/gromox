@@ -9,7 +9,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-#include <strings.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/types.h>

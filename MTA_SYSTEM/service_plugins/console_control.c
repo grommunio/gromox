@@ -130,7 +130,7 @@ static BOOL console_server_control(const char *cmdline, char *result,
 	}
 	pthread_mutex_lock(&g_control_lock);
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_console_port);
 	inet_pton(AF_INET, g_console_ip, &servaddr.sin_addr);

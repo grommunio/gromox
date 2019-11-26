@@ -64,7 +64,7 @@ BOOL pop3_login(POP3_SESSION *psession)
 	opt = fcntl(sockd, F_GETFL, 0);
 	opt |= O_NONBLOCK;
 	fcntl(sockd, F_SETFL, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(psession->port);
 	inet_pton(AF_INET, psession->server_ip, &servaddr.sin_addr);

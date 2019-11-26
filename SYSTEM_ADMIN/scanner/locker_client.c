@@ -46,7 +46,7 @@ LOCKD locker_client_lock(const char *resource)
 	
 	
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_locker_port);
 	inet_pton(AF_INET, g_locker_ip, &servaddr.sin_addr);

@@ -427,7 +427,7 @@ static int connect_timer()
 
 
     sockd = socket(AF_INET, SOCK_STREAM, 0);
-    bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(g_timer_port);
     inet_pton(AF_INET, g_timer_ip, &servaddr.sin_addr);

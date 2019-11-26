@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include "hook_common.h"
 #include "config_file.h"
@@ -167,7 +168,7 @@ BOOL send_message()
 	
 	/* try to connect to the destination MTA */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_smtp_port);
 	inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);

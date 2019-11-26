@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <string.h>
 #include "smtp_clone.h"
 #include "util.h"
 #include <sys/time.h>
@@ -75,7 +76,7 @@ int smtp_clone_process(MESSAGE_CONTEXT *pcontext, const char *ip, int port)
 	opt |= O_NONBLOCK;
 	fcntl(sockd, F_SETFL, opt);
 	/* end of set mode */
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(port);
 	inet_pton(AF_INET, ip, &servaddr.sin_addr);

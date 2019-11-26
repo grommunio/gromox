@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -207,7 +206,7 @@ int main(int argc, char **argv)
 	opt = fcntl(sockd, F_GETFL, 0);
 	opt |= O_NONBLOCK;
 	fcntl(sockd, F_SETFL, opt);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(smtp_port);
 	inet_pton(AF_INET, smtp_ip, &servaddr.sin_addr);

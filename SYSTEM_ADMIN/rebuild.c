@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <strings.h>
 #include <sqlite3.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -244,7 +243,7 @@ static int connect_exmdb(const char *dir)
 		return -1;
 	}
     sockd = socket(AF_INET, SOCK_STREAM, 0);
-    bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(pexnode->exmdb_info.port);
     inet_pton(AF_INET, pexnode->exmdb_info.ip_addr, &servaddr.sin_addr);

@@ -45,7 +45,7 @@ BOOL session_client_check(const char *domainname, const char *session)
 	
 	
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_session_port);
 	inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);
@@ -83,7 +83,7 @@ BOOL session_client_produce(const char *domainname, char *session)
 	struct sockaddr_in servaddr;
 	
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_session_port);
 	inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);
@@ -124,7 +124,7 @@ BOOL session_client_remove(const char *domainname, const char *session)
 	struct sockaddr_in servaddr;
 	
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_session_port);
 	inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);

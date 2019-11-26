@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <string.h>
 #include "esmtp_auth.h"
 #include "util.h"
 #include "mail_func.h"
@@ -94,7 +95,7 @@ RECONNECT:
 	opt = fcntl(sockd, F_GETFL, 0);
 	opt |= O_NONBLOCK;
 	fcntl(sockd, F_SETFL, opt);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(port);
 	inet_pton(AF_INET, host_ip, &servaddr.sin_addr);

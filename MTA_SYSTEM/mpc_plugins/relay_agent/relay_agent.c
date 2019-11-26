@@ -1,3 +1,4 @@
+#include <string.h>
 #include "relay_agent.h"
 #include "util.h"
 #include "double_list.h"
@@ -522,7 +523,7 @@ static int relay_agent_connect(const char *ip, int port)
 	opt |= O_NONBLOCK;
 	fcntl(sockd, F_SETFL, opt);
 	/* end of set mode */
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(port);
 	inet_pton(AF_INET, ip, &servaddr.sin_addr);

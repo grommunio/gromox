@@ -2160,7 +2160,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	struct sockaddr_in servaddr;
 	
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(g_smtp_port);
 	inet_pton(AF_INET, g_smtp_ip, &servaddr.sin_addr);

@@ -168,7 +168,7 @@ static CONNECTION connect_rsyncd(const char *ip_addr, int port)
 	timeout_val.tv_usec = 0;
 	setsockopt(conn.sockd, SOL_SOCKET, SO_RCVTIMEO, &timeout_val,
 		sizeof(struct timeval));
-    bzero(&servaddr, sizeof(servaddr));
+	memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(port);
     inet_pton(AF_INET, ip_addr, &servaddr.sin_addr);
