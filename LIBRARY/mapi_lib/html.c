@@ -1612,7 +1612,7 @@ static void html_enum_tables(RTF_WRITER *pwriter, GumboNode *pnode)
 	if (GUMBO_NODE_ELEMENT != pnode->type) {
 		return;
 	}
-	if (GUMBO_TAG_FONT == pnode->type) {
+	if (pnode->v.element.tag == GUMBO_TAG_FONT) {
 		pattribute = gumbo_get_attribute(
 			&pnode->v.element.attributes, "face");
 		if (NULL != pattribute) {
