@@ -1,7 +1,6 @@
 #ifndef _H_IP_TABLE_
 #define _H_IP_TABLE_
 #include "common_types.h"
-#include <stdio.h>
 #include <fcntl.h>
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
