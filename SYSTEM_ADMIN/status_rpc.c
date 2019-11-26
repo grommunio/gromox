@@ -77,13 +77,13 @@ int main(int argc, const char **argv)
 	shm_id = shmget(k_shm, SHARE_MEMORY_SIZE, 0666);
 	if (-1 == shm_id) {
 		printf("Content-Type:text/html\n\n");
-		printf("Cannot open share memory\n");
+		printf("Cannot open shared memory\n");
 		exit(0);
 	}
 	shm_begin = shmat(shm_id, NULL, 0);
 	if (NULL == shm_begin) {
 		printf("Content-Type:text/html\n\n");
-		printf("Fail to attach share memory\n");
+		printf("Failed to attach shared memory\n");
 		exit(0);
 	}
 	total_num = *shm_begin;

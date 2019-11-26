@@ -116,7 +116,7 @@ int main(int argc, const char **argv)
 	sprintf(temp_path, "%s/monitor.shm", token_path);
 	k_shm = ftok(temp_path, 1);
 	if (-1 == k_shm) {
-		printf("[system]: cannot get key for share memory from %s\n",
+		printf("[system]: cannot get key for shared memory from %s\n",
 			temp_path);
 		return 3;
 	}
@@ -125,12 +125,12 @@ int main(int argc, const char **argv)
 		shm_id = shmget(k_shm, SHARE_MEMORY_SIZE, 0666|IPC_CREAT);
 	}
 	if (-1 == shm_id) {
-		printf("[system]: fail to get or create share memory\n");
+		printf("[system]: failed to get or create shared memory\n");
 		return 4;
 	}
 	g_shm_begin = shmat(shm_id, NULL, 0);
 	if (NULL == g_shm_begin) {
-		printf("[system]: fail to attach share memory\n");
+		printf("[system]: failed to attach shared memory\n");
 		return 5;
 	}
 	memset(g_shm_begin, 0, SHARE_MEMORY_SIZE);

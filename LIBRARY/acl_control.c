@@ -47,7 +47,7 @@ int acl_control_run()
 	k_shm = ftok(g_token_path, TOKEN_SESSION);
 
 	if (-1 == k_shm) {
-		system_log_info("[acl_control]: fail to get share memory token %s",
+		system_log_info("[acl_control]: failed to get shared memory token %s",
 			g_token_path);
 		list_file_free(g_acl_list);
 		g_acl_list = NULL;
@@ -61,7 +61,7 @@ int acl_control_run()
 					0666|IPC_CREAT);
 	}
 	if (-1 == shm_id) {
-	    system_log_info("[acl_control]: fail to get share memory %s for "
+	    system_log_info("[acl_control]: failed to get shared memory %s for "
 			"caching sessions", g_token_path);
 		list_file_free(g_acl_list);
 		g_acl_list = NULL;
@@ -70,7 +70,7 @@ int acl_control_run()
 
 	g_shm_begin = shmat(shm_id, NULL, 0);
 	if (NULL == g_shm_begin) {
-		system_log_info("[acl_control]: fail to attach share memory");
+		system_log_info("[acl_control]: failed to attach shared memory");
 		list_file_free(g_acl_list);
 		g_acl_list = NULL;
 		return -4;

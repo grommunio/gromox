@@ -102,20 +102,20 @@ int message_enqueue_run()
     }
     k_shm = ftok(name, TOKEN_SHARE_MEMORY);
     if (-1 == k_shm) {
-        printf("[message_enqueue]: cannot open key for share memory\n");
+		printf("[message_enqueue]: cannot open key for shared memory\n");
         return -3;
     }
 	if (TRUE == g_with_tape) {
     	size = g_tape_units*BLOCK_SIZE;
-    	/* open or create share memory for tape */
+		/* open or create shared memory for tape */
 		g_shm_id = shmget(k_shm, size, 0666|IPC_CREAT);
 		if (-1 == g_shm_id) {
-			printf("[message_enqueue]: fail to get or create share memory\n");
+			printf("[message_enqueue]: failed to get or create shared memory\n");
 			return -4;
 		}
     	g_tape_begin = shmat(g_shm_id, NULL, 0);
     	if ((void*)-1 == g_tape_begin) {
-        	printf("[message_enqueue]: fail to attach share memory\n");
+			printf("[message_enqueue]: failed to attach shared memory\n");
         	g_tape_begin = NULL;
         	return -5;
 		}

@@ -36,10 +36,10 @@ typedef struct _MSG_BUFF {
 } MSG_BUFF;
 
 static char				g_path[256];    /* directory name for message queue */
-static int				g_shm_id;       /* share memory id */
+static int g_shm_id; /* shared memory id */
 static int				g_msg_id;	    /* message queue id */
 static BOOL         	g_with_tape;    /* with tape to accelerate */
-static void				*g_tape_begin;  /* share memory begin address */
+static void *g_tape_begin; /* shared memory start address */
 static int   			g_tape_units;   /* units in tape file */
 static size_t			g_message_units;/* allocated message units number */
 static size_t			g_max_memory;   /* maximum allocated memory for mess*/
@@ -213,20 +213,20 @@ int message_dequeue_run()
     }
     k_shm = ftok(name, TOKEN_SHARE_MEMORY);
     if (-1 == k_shm) {
-        printf("[message_dequeue]: cannot open key for share memory\n");
+		printf("[message_dequeue]: cannot open key for shared memory\n");
         return -3;
     }
 	if (TRUE == g_with_tape) {
     	size = g_tape_units*BLOCK_SIZE;
-		/* open or create share memory for tape */
+		/* open or create shared memory for tape */
         g_shm_id = shmget(k_shm, size, 0666|IPC_CREAT);
         if (-1 == g_shm_id) {
-            printf("[message_enqueue]: fail to get or create share memory\n");
+			printf("[message_enqueue]: failed to get or create shared memory\n");
             return -4;
         }
 		g_tape_begin = shmat(g_shm_id, NULL, 0);
         if ((void*)-1 == g_tape_begin) {
-            printf("[message_enqueue]: fail to attach share memory\n");
+			printf("[message_enqueue]: failed to attach shared memory\n");
             g_tape_begin = NULL;
             return -5;
         }
