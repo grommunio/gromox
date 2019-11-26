@@ -10,6 +10,12 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CXX
 
+saved_CPPFLAGS="$CPPFLAGS"
+saved_CFLAGS="$CFLAGS"
+saved_CXXFLAGS="$CXXFLAGS"
+saved_LDFLAGS="$LDFLAGS"
+saved_LIBS="$LIBS"
+
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
@@ -77,6 +83,11 @@ AS_IF([test "$with_php" != "no"], [
 		[5.*], [AC_MSG_ERROR([php5 is not supported])],
 		[7.*], [with_php=7]
 	)
+	CPPFLAGS="$saved_CPPFLAGS"
+	CFLAGS="$saved_CFLAGS"
+	CXXFLAGS="$saved_CXXFLAGS"
+	LDFLAGS="$saved_LDFLAGS"
+	LIBS="$saved_LIBS"
 ])
 
 AC_SUBST([my_CXXFLAGS])
