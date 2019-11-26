@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "lang_resource.h"
 #include "list_file.h"
@@ -44,6 +45,7 @@ LANG_RESOURCE* lang_resource_init(const char *path)
 
 	dirp = opendir(path);
 	if (NULL == dirp){
+		fprintf(stderr, "[lang_resource]: opendir %s: %s\n", path, strerror(errno));
 		return NULL;
 	}
 	presource = (LANG_RESOURCE*)malloc(sizeof(LANG_RESOURCE));
