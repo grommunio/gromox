@@ -269,8 +269,8 @@ int limit_ui_run()
 				}
 				memcpy(temp_object, ptr1, search_buff + len - ptr1 - 1);
 				temp_object[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(temp_object);
-				rtrim_string(temp_object);
+				HX_strrtrim(temp_object);
+				HX_strltrim(temp_object);
 				if (FALSE == session_client_check(domain, session)) {
 					limit_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_SESSION",
 						language));
@@ -295,8 +295,8 @@ int limit_ui_run()
 			}
 			memcpy(temp_object, ptr1, ptr2 - ptr1);
 			temp_object[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_object);
-			rtrim_string(temp_object);
+			HX_strrtrim(temp_object);
+			HX_strltrim(temp_object);
 			ptr1 = ptr2 + 6;
 			if (search_buff + len - ptr1 - 1 > 256) {
 				system_log_info("[limit_ui]: query string of GET "
@@ -307,8 +307,8 @@ int limit_ui_run()
 			}
 			memcpy(memo, ptr1, search_buff + len - ptr1 - 1);
 			memo[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(memo);
-			rtrim_string(memo);
+			HX_strrtrim(memo);
+			HX_strltrim(memo);
 			if ('\0' == memo[0]) {
 				strcpy(memo, "none");
 			}

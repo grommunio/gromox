@@ -312,8 +312,8 @@ int list_ui_run()
 				}
 				memcpy(temp_keyword, ptr1, search_buff + len - ptr1 - 1);
 				temp_keyword[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(temp_keyword);
-				rtrim_string(temp_keyword);
+				HX_strrtrim(temp_keyword);
+				HX_strltrim(temp_keyword);
 				if (FALSE == session_client_check(domain, session)) {
 					list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_SESSION",
 						language));
@@ -338,8 +338,8 @@ int list_ui_run()
 			}
 			memcpy(temp_keyword, ptr1, ptr2 - ptr1);
 			temp_keyword[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_keyword);
-			rtrim_string(temp_keyword);
+			HX_strrtrim(temp_keyword);
+			HX_strltrim(temp_keyword);
 			ptr1 = ptr2 + 6;
 			if (search_buff + len - ptr1 - 1 > 256) {
 				system_log_info("[list_ui]: query string of GET "
@@ -350,8 +350,8 @@ int list_ui_run()
 			}
 			memcpy(memo, ptr1, search_buff + len - ptr1 - 1);
 			memo[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(memo);
-			rtrim_string(memo);
+			HX_strrtrim(memo);
+			HX_strltrim(memo);
 			if ('\0' == memo[0]) {
 				strcpy(memo, "none");
 			}

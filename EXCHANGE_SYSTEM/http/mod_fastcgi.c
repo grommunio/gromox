@@ -160,8 +160,8 @@ static void mod_fastcgi_load_extra_headers(
 		}
 		memcpy(tmp_buff, plast_token, ptoken - plast_token);
 		tmp_buff[ptoken - plast_token] = '\0';
-		ltrim_string(tmp_buff);
-		rtrim_string(tmp_buff);
+		HX_strrtrim(tmp_buff);
+		HX_strltrim(tmp_buff);
 		if ('\0' == tmp_buff[0]) {
 			continue;
 		}
@@ -1639,7 +1639,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				}
 				memcpy(status_line, ptoken, tmp_len);
 				status_line[tmp_len] = '\0';
-				ltrim_string(status_line);
+				HX_strltrim(status_line);
 			}
 			pbody[2] = '\0';
 			pbody += 4;

@@ -452,8 +452,8 @@ int setup_ui_run()
 				}
 				memcpy(value, ptr1, query + len - ptr1);
 				value[query + len - ptr1] = '\0';
-				ltrim_string(value);
-				rtrim_string(value);
+				HX_strrtrim(value);
+				HX_strltrim(value);
 				if (NULL == (ptr1 = strstr(value, "&language="))) {
 					goto GET_ERROR;
 				}
@@ -475,8 +475,8 @@ int setup_ui_run()
 				}
 				memcpy(value, ptr1, query + len - ptr1);
 				value[query + len - ptr1] = '\0';
-				ltrim_string(value);
-				rtrim_string(value);
+				HX_strrtrim(value);
+				HX_strltrim(value);
 				if ('0' == value[0]) {
 					num = 0;
 				} else if ('1' == value[0]) { 

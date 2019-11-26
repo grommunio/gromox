@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "mod_rewrite.h"
 #include "double_list.h"
 #include "util.h"
@@ -112,8 +113,8 @@ int mod_rewrite_run()
 		} else if ('\n' == line[tmp_len - 1] || '\r' == line[tmp_len - 1]) {
 			line[tmp_len - 1] = '\0';
 		}
-		ltrim_string(line);
-		rtrim_string(line);
+		HX_strrtrim(line);
+		HX_strltrim(line);
 		ptoken = strstr(line, "=>");
 		if (NULL == ptoken) {
 			printf("[mod_rewrite]: invalid line %d, cannot "
@@ -121,9 +122,9 @@ int mod_rewrite_run()
 			continue;
 		}
 		*ptoken = '\0';
-		rtrim_string(line);
+		HX_strrtrim(line);
 		ptoken += 2;
-		ltrim_string(ptoken);
+		HX_strltrim(ptoken);
 		if ('\\' != ptoken[0] || ptoken[1] < '0' || ptoken[1] > '9') {
 			printf("[mod_rewrite]: invalid line %d, cannot"
 				" find replace sequence number\n", line_no);

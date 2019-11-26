@@ -1,4 +1,5 @@
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "mail_func.h"
 #include <gromox/system_log.h>
@@ -381,8 +382,8 @@ static int classify_engine_ainst(int argc, char **argv, int sockd)
 				' ' == reference_buff[i]) {
 				reference_buff[i] = '\0';
 				strncpy(tmp_msgid, reference_buff + last_pos, 128);
-				ltrim_string(tmp_msgid);
-				rtrim_string(tmp_msgid);
+				HX_strrtrim(tmp_msgid);
+				HX_strltrim(tmp_msgid);
 				if ('\0' == tmp_msgid[0] || 0 == strcmp(tmp_msgid, "<>")) {
 					last_pos = i + 1;
 					continue;

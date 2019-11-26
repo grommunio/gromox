@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <string.h>
+#include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "stream.h"
 #include "util.h"
@@ -391,8 +392,8 @@ static BOOL do_update(MAIL *pmail)
 			break;
 		}
 		line[blk_length] = '\0';
-		ltrim_string(line);
-		rtrim_string(line);
+		HX_strrtrim(line);
+		HX_strltrim(line);
 		if ('\0' == line[0] || '#' == line[0]) {
 			continue;
 		}
@@ -564,13 +565,13 @@ static BOOL execve_command(char* cmdline)
 		argv[0] = cmdline;
 		cmdline[12] = '\0';
 		argv[1] = cmdline + 13;
-		ltrim_string(argv[1]);
+		HX_strltrim(argv[1]);
 	} else if (0 == strncmp("delivery-control ", cmdline, 17)) {
 		argc = 2;
 		argv[0] = cmdline;
 		cmdline[16] = '\0';
 		argv[1] = cmdline + 17;
-		ltrim_string(argv[1]);
+		HX_strltrim(argv[1]);
 	} else {
 		argc = parse_line(cmdline, argv);
 	}

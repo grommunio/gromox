@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "util.h"
 #include <gromox/as_common.h>
 #include "mail_func.h"
@@ -96,8 +97,8 @@ int AS_LibMain(int reason, void **ppdata, char *path)
 			}
 			memcpy(tmp_buff, ptoken, len);
 			tmp_buff[len] = '\0';
-			ltrim_string(tmp_buff);
-			rtrim_string(tmp_buff);
+			HX_strrtrim(tmp_buff);
+			HX_strltrim(tmp_buff);
 			if ('\0' != tmp_buff[0]) {
 				g_attachment_list[g_attachment_num] = strdup(tmp_buff);
 				if (NULL != g_attachment_list[g_attachment_num]) {
@@ -365,8 +366,8 @@ static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name)
 					temp_len --;
 					file_name[temp_len] = '\0';
 				}
-				ltrim_string(file_name);
-				rtrim_string(file_name);
+				HX_strrtrim(file_name);
+				HX_strltrim(file_name);
 				temp_len = strlen(file_name);
 				if (0 == strncasecmp(value, "application/zip", 15) &&
 					0 != strcasecmp(file_name + temp_len - 4, ".zip")) {

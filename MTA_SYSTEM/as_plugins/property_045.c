@@ -1,4 +1,5 @@
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
@@ -92,8 +93,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	buff1[tmp_len] = '\0';
-	ltrim_string(buff1);
-	rtrim_string(buff1);
+	HX_strrtrim(buff1);
+	HX_strltrim(buff1);
 	if (0 != strcmp(buff, buff1)) {
 		return MESSAGE_ACCEPT;
 	}

@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "mail.h"
 #include "util.h"
 #include "mail_func.h"
@@ -826,8 +827,8 @@ static void mail_enum_text_mime_charset(
 				email_charset[i] = ' ';
 			}
 		}
-		ltrim_string(email_charset);
-		rtrim_string(email_charset);
+		HX_strrtrim(email_charset);
+		HX_strltrim(email_charset);
 	}
 }
 

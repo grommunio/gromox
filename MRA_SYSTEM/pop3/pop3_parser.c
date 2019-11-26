@@ -3,6 +3,7 @@
  */ 
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "pop3_parser.h"
 #include "pop3_cmd_handler.h"
 #include "blocks_allocator.h"
@@ -461,8 +462,8 @@ LOST_READ:
 			'\n' == pcontext->read_buffer[i + 1]) {
 			memcpy(temp_command, pcontext->read_buffer, i);
 			temp_command[i] = '\0';
-			ltrim_string(temp_command);
-			rtrim_string(temp_command);
+			HX_strrtrim(temp_command);
+			HX_strltrim(temp_command);
 			pcontext->read_offset -= i + 2;
 			memmove(pcontext->read_buffer, pcontext->read_buffer + i + 2,
 				pcontext->read_offset);

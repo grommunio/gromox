@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "auto_response.h"
 #include "bounce_audit.h"
 #include "exmdb_client.h"
@@ -184,8 +185,8 @@ void auto_response_reply(const char *user_home,
 						if (NULL != ptoken) {
 							*ptoken = '\0';
 						}
-						ltrim_string(charset);
-						rtrim_string(charset);
+						HX_strrtrim(charset);
+						HX_strltrim(charset);
 						len = strlen(charset);
 						if ('"' == charset[len - 1]) {
 							len --;

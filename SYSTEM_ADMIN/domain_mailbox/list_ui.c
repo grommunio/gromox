@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "list_ui.h"
 #include <gromox/system_log.h>
 #include "lang_resource.h"
@@ -264,8 +265,8 @@ int list_ui_run()
 				}
 				memcpy(temp_dmn_name, ptr1, search_buff + len - ptr1 - 1);
 				temp_dmn_name[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(temp_dmn_name);
-				rtrim_string(temp_dmn_name);
+				HX_strrtrim(temp_dmn_name);
+				HX_strltrim(temp_dmn_name);
 
 				switch (acl_control_check(session, remote_ip,
 					ACL_PRIVILEGE_MISC)) {
@@ -298,8 +299,8 @@ int list_ui_run()
 			}
 			memcpy(temp_dmn_name, ptr1, ptr2 - ptr1);
 			temp_dmn_name[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_dmn_name);
-			rtrim_string(temp_dmn_name);
+			HX_strrtrim(temp_dmn_name);
+			HX_strltrim(temp_dmn_name);
 			ptr1 = ptr2 + 11;
 			ptr2 = search_string(search_buff, "&memo=", len);
 			if (ptr2 <= ptr1 || ptr2 - ptr1 > 256) {
@@ -311,8 +312,8 @@ int list_ui_run()
 			}
 			memcpy(temp_destinate, ptr1, ptr2 - ptr1);
 			temp_destinate[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_destinate);
-			rtrim_string(temp_destinate);
+			HX_strrtrim(temp_destinate);
+			HX_strltrim(temp_destinate);
 			ptr1 = ptr2 + 6;
 			if (search_buff + len - ptr1 - 1 > 256) {
 				system_log_info("[list_ui]: query string of GET "
@@ -323,8 +324,8 @@ int list_ui_run()
 			}
 			memcpy(memo, ptr1, search_buff + len - ptr1 - 1);
 			memo[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(memo);
-			rtrim_string(memo);
+			HX_strrtrim(memo);
+			HX_strltrim(memo);
 			if ('\0' == memo[0]) {
 				strcpy(memo, "none");
 			}

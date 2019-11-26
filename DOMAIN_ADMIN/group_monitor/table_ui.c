@@ -307,8 +307,8 @@ int table_ui_run()
 				}
 				memcpy(temp_passive, ptr1, ptr2 - ptr1);
 				temp_passive[ptr2 - ptr1] = '\0';
-				ltrim_string(temp_passive);
-				rtrim_string(temp_passive);
+				HX_strrtrim(temp_passive);
+				HX_strltrim(temp_passive);
 				ptr1 = ptr2 + 6;
 				if (search_buff + len - ptr1 - 1 > 256 ||
 					search_buff + len - ptr1 - 1 == 0) {
@@ -320,8 +320,8 @@ int table_ui_run()
 				}
 				memcpy(dest, ptr1, search_buff + len - ptr1 - 1);
 				dest[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(dest);
-				rtrim_string(dest);
+				HX_strrtrim(dest);
+				HX_strltrim(dest);
 				if (FALSE == session_client_check(group, session)) {
 					table_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_SESSION",
 						language));
@@ -367,8 +367,8 @@ int table_ui_run()
 			}
 			memcpy(temp_passive, ptr1, ptr2 - ptr1);
 			temp_passive[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_passive);
-			rtrim_string(temp_passive);
+			HX_strrtrim(temp_passive);
+			HX_strltrim(temp_passive);
 			ptr1 = ptr2 + 6;
 			ptr2 = search_string(search_buff, "&dest=", len);
 			if (NULL == ptr2) {

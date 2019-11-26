@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "blacklist_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -259,8 +260,8 @@ int blacklist_ui_run()
 				}
 				memcpy(temp_rcpt, ptr1, search_buff + len - ptr1 - 1);
 				temp_rcpt[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(temp_rcpt);
-				rtrim_string(temp_rcpt);
+				HX_strrtrim(temp_rcpt);
+				HX_strltrim(temp_rcpt);
 
 				switch (acl_control_check(session, remote_ip,
 					ACL_PRIVILEGE_ANTI_SPAM)) {
@@ -293,8 +294,8 @@ int blacklist_ui_run()
 			}
 			memcpy(temp_rcpt, ptr1, ptr2 - ptr1);
 			temp_rcpt[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_rcpt);
-			rtrim_string(temp_rcpt);
+			HX_strrtrim(temp_rcpt);
+			HX_strltrim(temp_rcpt);
 			ptr1 = ptr2 + 6;
 			if (search_buff + len - ptr1 - 1 > 256) {
 				system_log_info("[blacklist_ui]: query string of GET "
@@ -305,8 +306,8 @@ int blacklist_ui_run()
 			}
 			memcpy(memo, ptr1, search_buff + len - ptr1 - 1);
 			memo[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(memo);
-			rtrim_string(memo);
+			HX_strrtrim(memo);
+			HX_strltrim(memo);
 			if ('\0' == memo[0]) {
 				strcpy(memo, "none");
 			}

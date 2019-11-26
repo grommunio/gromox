@@ -1,4 +1,5 @@
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "mail.h"
 #include "mjson.h"
@@ -405,7 +406,7 @@ static char* mail_engine_ct_decode_mime(
 			if (i > last_pos) {
 				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
 				temp_buff[begin_pos - last_pos] = '\0';
-				ltrim_string(temp_buff);
+				HX_strltrim(temp_buff);
 				tmp_string = mail_engine_ct_to_utf8(charset, temp_buff);
 				if (NULL == tmp_string) {
 					free(ret_string);
@@ -2009,7 +2010,7 @@ static void mail_engine_extract_digest_fields(const char *digest,
 					break;
 				}
 			}
-			rtrim_string(temp_buff1);
+			HX_strrtrim(temp_buff1);
 			memset(&temp_address, 0, sizeof(temp_address));
 			parse_email_addr(&temp_address, temp_buff1);
 			snprintf(rcpt, 256, "%s@%s",

@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "util.h"
 #include "list_ui.h"
 #include "list_file.h"
@@ -936,8 +937,8 @@ int list_ui_run()
 		}
 		memcpy(type, ptr1, ptr2 - ptr1);
 		type[ptr2 - ptr1] = '\0';
-		ltrim_string(type);
-		rtrim_string(type);
+		HX_strrtrim(type);
+		HX_strltrim(type);
 		if (0 == strcasecmp(type, "password")) {
 			ptr1 = ptr2 + 12;
 			ptr2 = search_string(search_buff, "&new_password=", len);
@@ -946,8 +947,8 @@ int list_ui_run()
 			}
 			memcpy(domainname, ptr1, ptr2 - ptr1);
 			domainname[ptr2 - ptr1] = '\0';
-			ltrim_string(domainname);
-			rtrim_string(domainname);
+			HX_strrtrim(domainname);
+			HX_strltrim(domainname);
 
 			ptr1 = ptr2 + 14;
 			ptr2 = search_string(search_buff, "&retype_password=", len);
@@ -990,8 +991,8 @@ int list_ui_run()
 			}
 			memcpy(domainname, ptr1, ptr2 - ptr1);
 			domainname[ptr2 - ptr1] = '\0';
-			ltrim_string(domainname);
-			rtrim_string(domainname);
+			HX_strrtrim(domainname);
+			HX_strltrim(domainname);
 
 			ptr1 = ptr2 + 15;
 			ptr2 = search_string(search_buff, "&domain_type=", len);
@@ -1054,8 +1055,8 @@ int list_ui_run()
 			}
 			memcpy(title, ptr1, ptr2 - ptr1);
 			title[ptr2 - ptr1] = '\0';
-			ltrim_string(title);
-			rtrim_string(title);
+			HX_strrtrim(title);
+			HX_strltrim(title);
 			
 			ptr1 = ptr2 + 9;
 			ptr2 = search_string(search_buff, "&admin_name=", len);
@@ -1064,8 +1065,8 @@ int list_ui_run()
 			}
 			memcpy(address, ptr1, ptr2 - ptr1);
 			address[ptr2 - ptr1] = '\0';
-			ltrim_string(address);
-			rtrim_string(address);
+			HX_strrtrim(address);
+			HX_strltrim(address);
 
 			ptr1 = ptr2 + 12;
 			ptr2 = search_string(search_buff, "&tel=", len);
@@ -1074,8 +1075,8 @@ int list_ui_run()
 			}
 			memcpy(admin_name, ptr1, ptr2 - ptr1);
 			admin_name[ptr2 - ptr1] = '\0';
-			ltrim_string(admin_name);
-			rtrim_string(admin_name);
+			HX_strrtrim(admin_name);
+			HX_strltrim(admin_name);
 			
 			ptr1 = ptr2 + 5;
 			ptr2 = search_string(search_buff, "&create_min=", len);
@@ -1084,8 +1085,8 @@ int list_ui_run()
 			}
 			memcpy(tel, ptr1, ptr2 - ptr1);
 			tel[ptr2 - ptr1] = '\0';
-			ltrim_string(tel);
-			rtrim_string(tel);
+			HX_strrtrim(tel);
+			HX_strltrim(tel);
 
 			ptr1 = ptr2 + 12;
 			ptr2 = search_string(search_buff, "&create_max=", len);
@@ -1173,8 +1174,8 @@ int list_ui_run()
 			}
 			memcpy(domainname, ptr1, ptr2 - ptr1);
 			domainname[ptr2 - ptr1] = '\0';
-			ltrim_string(domainname);
-			rtrim_string(domainname);
+			HX_strrtrim(domainname);
+			HX_strltrim(domainname);
 			
 			ptr1 = ptr2 + 7;
 			ptr2 = search_string(search_buff, "&domain_status=", len);
@@ -1183,8 +1184,8 @@ int list_ui_run()
 			}
 			memcpy(media_area, ptr1, ptr2 - ptr1);
 			media_area[ptr2 - ptr1] = '\0';
-			ltrim_string(media_area);
-			rtrim_string(media_area);
+			HX_strrtrim(media_area);
+			HX_strltrim(media_area);
 
 			ptr1 = ptr2 + 15;
 			ptr2 = search_string(search_buff, "&max_size=", len);
@@ -1220,8 +1221,8 @@ int list_ui_run()
 			}
 			memcpy(title, ptr1, ptr2 - ptr1);
 			title[ptr2 - ptr1] = '\0';
-			ltrim_string(title);
-			rtrim_string(title);
+			HX_strrtrim(title);
+			HX_strltrim(title);
 
 			ptr1 = ptr2 + 9;
 
@@ -1231,8 +1232,8 @@ int list_ui_run()
 			}
 			memcpy(address, ptr1, ptr2 - ptr1);
 			address[ptr2 - ptr1] = '\0';
-			ltrim_string(address);
-			rtrim_string(address);
+			HX_strrtrim(address);
+			HX_strltrim(address);
 
 			ptr1 = ptr2 + 12;
 			ptr2 = search_string(search_buff, "&tel=", len);
@@ -1241,8 +1242,8 @@ int list_ui_run()
 			}
 			memcpy(admin_name, ptr1, ptr2 - ptr1);
 			admin_name[ptr2 - ptr1] = '\0';
-			ltrim_string(admin_name);
-			rtrim_string(admin_name);
+			HX_strrtrim(admin_name);
+			HX_strltrim(admin_name);
 			
 			ptr1 = ptr2 + 5;
 			ptr2 = search_string(search_buff, "&create_day=", len);
@@ -1251,8 +1252,8 @@ int list_ui_run()
 			}
 			memcpy(tel, ptr1, ptr2 - ptr1);
 			tel[ptr2 - ptr1] = '\0';
-			ltrim_string(tel);
-			rtrim_string(tel);
+			HX_strrtrim(tel);
+			HX_strltrim(tel);
 
 			ptr1 = ptr2 + 12;
 			ptr2 = search_string(search_buff, "&end_day=", len);
@@ -1418,8 +1419,8 @@ int list_ui_run()
 			}
 			memcpy(domainname, ptr1, ptr2 - ptr1);
 			domainname[ptr2 - ptr1] = '\0';
-			ltrim_string(domainname);
-			rtrim_string(domainname);
+			HX_strrtrim(domainname);
+			HX_strltrim(domainname);
 			
 			ptr1 = ptr2 + 11;
 			if (search_buff + len - ptr1 - 1>= 64 ||
@@ -1428,8 +1429,8 @@ int list_ui_run()
 			}
 			memcpy(aliasname, ptr1, search_buff + len - ptr1 - 1);
 			aliasname[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(aliasname);
-			rtrim_string(aliasname);
+			HX_strrtrim(aliasname);
+			HX_strltrim(aliasname);
 			if (FALSE == data_source_add_alias(domainname,
 				aliasname, &result)) {
 				list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL", language));

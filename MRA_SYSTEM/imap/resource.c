@@ -4,6 +4,7 @@
  *
  */
 #include <errno.h>
+#include <libHX/string.h>
 #include "resource.h"
 #include "config_file.h"
 #include "single_list.h"
@@ -752,8 +753,8 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		
 		plang->node.pdata = plang;
 		strncpy(plang->lang, line, 32);
-		ltrim_string(plang->lang);
-		rtrim_string(plang->lang);
+		HX_strrtrim(plang->lang);
+		HX_strltrim(plang->lang);
 		plang->folders[0] = plang->draft;
 		plang->folders[1] = plang->sent;
 		plang->folders[2] = plang->trash;

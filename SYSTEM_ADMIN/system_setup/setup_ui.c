@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "setup_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -814,8 +815,8 @@ int setup_ui_run()
 				}
 				memcpy(value, ptr1, query + len - ptr1);
 				value[query + len - ptr1] = '\0';
-				ltrim_string(value);
-				rtrim_string(value);
+				HX_strrtrim(value);
+				HX_strltrim(value);
 				setup_ui_set_domain(value);
 				return 0;
 			} else if (0 == strcasecmp(action, "admin-mailbox")) {
@@ -828,8 +829,8 @@ int setup_ui_run()
 				}
 				memcpy(value, ptr1, query + len - ptr1);
 				value[query + len - ptr1] = '\0';
-				ltrim_string(value);
-				rtrim_string(value);
+				HX_strrtrim(value);
+				HX_strltrim(value);
 				setup_ui_set_mailbox(value);
 				return 0;
 			} else if (0 == strcasecmp(action, "mysql-path")) {
@@ -842,8 +843,8 @@ int setup_ui_run()
 				}
 				memcpy(value, ptr1, query + len - ptr1);
 				value[query + len - ptr1] = '\0';
-				ltrim_string(value);
-				rtrim_string(value);
+				HX_strrtrim(value);
+				HX_strltrim(value);
 				setup_ui_set_mysql(value);
 				return 0;
 			} else if (0 == strcasecmp(action, "urirbl-policy") ||

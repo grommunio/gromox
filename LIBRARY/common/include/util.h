@@ -41,10 +41,6 @@ void swap_string(char *dest, const char *src);
 
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
-void ltrim_string(char *string);
-
-void rtrim_string(char *string);
-
 char* itoa(int value, char *string, int radix);
 
 char* ltoa(long value, char *string, long radix);

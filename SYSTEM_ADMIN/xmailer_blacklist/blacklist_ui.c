@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "blacklist_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -358,8 +359,8 @@ int blacklist_ui_run()
 			}
 			memcpy(memo, ptr1, search_buff + len - ptr1 - 1);
 			memo[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(memo);
-			rtrim_string(memo);
+			HX_strrtrim(memo);
+			HX_strltrim(memo);
 			if ('\0' == memo[0]) {
 				strcpy(memo, "none");
 			}

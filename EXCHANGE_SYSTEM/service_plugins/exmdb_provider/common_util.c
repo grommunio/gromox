@@ -6839,8 +6839,8 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			continue;
 		} else if (0 == strncasecmp(ptoken, "NAME=", 5)) {
 			ppropnames->ppropname[i].kind = KIND_NAME;
-			ltrim_string(ptoken + 5);
-			rtrim_string(ptoken + 5);
+			HX_strrtrim(ptoken + 5);
+			HX_strltrim(ptoken + 5);
 			if ('\0' == ptoken[5]) {
 				goto NOT_FOUND_PROPNAME;
 			}

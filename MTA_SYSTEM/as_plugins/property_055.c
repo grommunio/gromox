@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include <gromox/as_common.h>
 #include "util.h"
 #include "config_file.h"
@@ -99,8 +100,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 
 	tmp_len = mem_file_readline(&pmail->phead->f_mime_to, buff, 1024);
 	if (MEM_END_OF_FILE != tmp_len) {
-		ltrim_string(buff);
-		rtrim_string(buff);
+		HX_strrtrim(buff);
+		HX_strltrim(buff);
 		if ('<' != buff[0] && '\0' != buff[0] &&
 			0 != strcasecmp(buff, rcpt_to)) {
 			return MESSAGE_ACCEPT;

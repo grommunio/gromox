@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <unistd.h>
+#include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "util.h"
 #include <stdio.h>
@@ -341,7 +342,7 @@ static int buffer_extractor(char *buff_in, STATISTIC_ITEM *pitem)
 			if (j > last_crlf) {
 				memcpy(pitem->tag, buff_in + last_crlf + 1, j - last_crlf);
 				pitem->tag[j - last_crlf - 1] = '\0';
-				rtrim_string(pitem->tag);
+				HX_strrtrim(pitem->tag);
 				if (i - j - 1 >= 64) {
 					return 0;
 				}

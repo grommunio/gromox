@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "list_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -327,8 +328,8 @@ int list_ui_run()
 				}
 				memcpy(temp_ip, ptr1, ptr2 - ptr1);
 				temp_ip[ptr2 - ptr1] = '\0';
-				ltrim_string(temp_ip);
-				rtrim_string(temp_ip);
+				HX_strrtrim(temp_ip);
+				HX_strltrim(temp_ip);
 				if (NULL == extract_ip(temp_ip, ip_addr)) {
 					system_log_info("[list_ui]: ip address in GET query "
 						"string error");
@@ -389,8 +390,8 @@ int list_ui_run()
 			}
 			memcpy(temp_ip, ptr1, ptr2 - ptr1);
 			temp_ip[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_ip);
-			rtrim_string(temp_ip);
+			HX_strrtrim(temp_ip);
+			HX_strltrim(temp_ip);
 			if (NULL == extract_ip(temp_ip, ip_addr)) {
 				system_log_info("[list_ui]: ip address in GET query "
 					"string error");
@@ -468,8 +469,8 @@ int list_ui_run()
 			}
 			memcpy(mailbox, ptr1, ptr2 - ptr1);
 			mailbox[ptr2 - ptr1] = '\0';
-			ltrim_string(mailbox);
-			rtrim_string(mailbox);
+			HX_strrtrim(mailbox);
+			HX_strltrim(mailbox);
 
 			ptr1 = ptr2 + 10;
 			ptr2 = search_string(search_buff, "&password=", len);
@@ -489,8 +490,8 @@ int list_ui_run()
 			}
 			memcpy(username, ptr1, ptr2 - ptr1);
 			username[ptr2 - ptr1] = '\0';
-			ltrim_string(username);
-			rtrim_string(username);
+			HX_strrtrim(username);
+			HX_strltrim(username);
 			
 			ptr1 = ptr2 + 10;
 			if (search_buff + len - ptr1 - 1 > 256) {

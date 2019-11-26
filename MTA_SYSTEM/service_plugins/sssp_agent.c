@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/mtasvc_common.h>
 #include "util.h"
 #include "config_file.h"
@@ -389,7 +390,7 @@ static BOOL check_virus(int buflen, void *pbuff, char *virusname)
 			}
 			memcpy(virusname, buff + 6, length);
 			virusname[length] = '\0';
-			rtrim_string(virusname);
+			HX_strrtrim(virusname);
 		} else {
 			strcpy(virusname, "unknown virus");
 		}

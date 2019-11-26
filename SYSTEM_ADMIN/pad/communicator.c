@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/string.h>
 #include "exec_sched.h"
 #include "util.h"
 #include "double_list.h"
@@ -315,16 +316,16 @@ NEXT_LOOP:
 		}
 
 		if (0 == strncasecmp(pconnection->line, "REMOVE ", 7)) {
-			ltrim_string(pconnection->line + 7);
-			rtrim_string(pconnection->line + 7);
+			HX_strrtrim(pconnection->line + 7);
+			HX_strltrim(pconnection->line + 7);
 			if (TRUE == exec_sched_remove(pconnection->line + 7)) {
 				write(pconnection->sockd, "TRUE\r\n", 6);	
 			} else {
 				write(pconnection->sockd, "FALSE\r\n", 7);
 			}
 		} else if (0 == strncasecmp(pconnection->line, "ADD ", 4)) {
-			ltrim_string(pconnection->line + 4);
-			rtrim_string(pconnection->line + 4);
+			HX_strrtrim(pconnection->line + 4);
+			HX_strltrim(pconnection->line + 4);
 			if (TRUE == exec_sched_add(pconnection->line + 4)) {
 				write(pconnection->sockd, "TRUE\r\n", 6);	
 			} else {

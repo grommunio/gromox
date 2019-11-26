@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "group_ui.h"
 #include <gromox/system_log.h>
 #include <gromox/acl_control.h>
@@ -293,8 +294,8 @@ int group_ui_run()
 				}
 				memcpy(group, ptr1, search_buff + len - ptr1 - 1);
 				group[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(group);
-				rtrim_string(group);
+				HX_strrtrim(group);
+				HX_strltrim(group);
 				group_ui_add_group(group);
 			} else if (0 == strcasecmp(action, "remove-group")) {
 				if (0 != strncasecmp(ptr2, "&group=", 7)) {

@@ -2,6 +2,7 @@
  *	  Addr_kids, for parse the email addr
  */
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include "common_types.h"
 #include "mail_func.h"
 #include "timezone.h"
@@ -221,8 +222,8 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 			e_addr->display_name[j] = email[i];
 		}
 		e_addr->display_name[j] = '\0';
-		ltrim_string(e_addr->display_name);
-		rtrim_string(e_addr->display_name);
+		HX_strrtrim(e_addr->display_name);
+		HX_strltrim(e_addr->display_name);
 	}
 	/* get the first < token */
 	loc_ptr = tmp_ptr;
@@ -267,8 +268,8 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 			e_addr->local_part[j] = email[i];
 		}
 		e_addr->local_part[j] = '\0';
-		ltrim_string(e_addr->local_part);
-		rtrim_string(e_addr->local_part);
+		HX_strrtrim(e_addr->local_part);
+		HX_strltrim(e_addr->local_part);
 	}
 
 	/* get the domain */
@@ -285,8 +286,8 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 		e_addr->domain[j] = tmp_ptr[j];
 	}
 	e_addr->domain[j] = '\0';
-	ltrim_string(e_addr->domain);
-	rtrim_string(e_addr->domain);
+	HX_strrtrim(e_addr->domain);
+	HX_strltrim(e_addr->domain);
 }
 
 BOOL parse_uri(const char *uri_buff, char *parsed_uri)
@@ -541,8 +542,8 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 	} else {
 		memcpy(e_addr->display_name, email, tokenloc);
 		e_addr->display_name[tokenloc] = '\0';
-		ltrim_string(e_addr->display_name);
-		rtrim_string(e_addr->display_name);
+		HX_strrtrim(e_addr->display_name);
+		HX_strltrim(e_addr->display_name);
 		tmp_len = strlen(e_addr->display_name);
 		if (tmp_len > 1 && '"' == e_addr->display_name[0]
 			&& '"' == e_addr->display_name[tmp_len - 1]) {
@@ -615,8 +616,8 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 			e_addr->local_part[j] = email[i];
 		}
 		e_addr->local_part[j] = '\0';
-		ltrim_string(e_addr->local_part);
-		rtrim_string(e_addr->local_part);
+		HX_strrtrim(e_addr->local_part);
+		HX_strltrim(e_addr->local_part);
 	}
 
 	/* get the domain */
@@ -633,8 +634,8 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 		e_addr->domain[j] = tmp_ptr[j];
 	}
 	e_addr->domain[j] = '\0';
-	ltrim_string(e_addr->domain);
-	rtrim_string(e_addr->domain);
+	HX_strrtrim(e_addr->domain);
+	HX_strltrim(e_addr->domain);
 }
 
 /*
@@ -927,8 +928,8 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 			paratag_len = (val_len - 1 > distance)?distance:(val_len - 1);
 			memcpy(value, in_buff, paratag_len);
 			value[paratag_len] = '\0';
-			ltrim_string(value);
-			rtrim_string(value);
+			HX_strrtrim(value);
+			HX_strltrim(value);
 		} else {
 			ptr_equal = memchr(prev_section, '=', (ptr - prev_section));
 			if (NULL == ptr_equal) {
@@ -944,10 +945,10 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 			}
 			param_tag[paratag_len] = '\0';
 			param_value[paraval_len] = '\0';
-			ltrim_string(param_tag);
-			rtrim_string(param_tag);
-			ltrim_string(param_value);
-			rtrim_string(param_value);
+			HX_strrtrim(param_tag);
+			HX_strltrim(param_tag);
+			HX_strrtrim(param_value);
+			HX_strltrim(param_value);
 			paratag_len = strlen(param_tag);
 			paraval_len = strlen(param_value);
 			if (0 != paratag_len || 0 != paraval_len) {
@@ -966,8 +967,8 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 		paratag_len = (val_len - 1 > distance)?distance:(val_len - 1);
 		memcpy(value, in_buff, paratag_len);
 		value[paratag_len] = '\0';
-		ltrim_string(value);
-		rtrim_string(value);
+		HX_strrtrim(value);
+		HX_strltrim(value);
 	} else {
 		ptr_equal = memchr(prev_section, '=', (ptr - prev_section));
 		if (NULL == ptr_equal) {
@@ -983,10 +984,10 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 		}
 		param_tag[paratag_len] = '\0';
 		param_value[paraval_len] = '\0';
-		ltrim_string(param_tag);
-		rtrim_string(param_tag);
-		ltrim_string(param_value);
-		rtrim_string(param_value);
+		HX_strrtrim(param_tag);
+		HX_strltrim(param_tag);
+		HX_strrtrim(param_value);
+		HX_strltrim(param_value);
 		paratag_len = strlen(param_tag);
 		paraval_len = strlen(param_value);
 		if (0 != paratag_len || 0 != paraval_len) {
@@ -1640,7 +1641,7 @@ BOOL mime_string_to_utf8(const char *charset,
 			if (i > last_pos) {
 				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
 				temp_buff[begin_pos - last_pos] = '\0';
-				ltrim_string(temp_buff);
+				HX_strltrim(temp_buff);
 				if (FALSE == string_to_utf8(charset, temp_buff,
 					out_buff + offset)) {
 					return FALSE;

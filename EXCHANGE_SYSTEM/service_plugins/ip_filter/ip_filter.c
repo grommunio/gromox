@@ -5,6 +5,7 @@
  *  within the specified interval
  *
  */
+#include <libHX/string.h>
 #include "common_types.h"
 #include "config_file.h"
 #include "ip_filter.h"
@@ -328,8 +329,8 @@ void ip_filter_console_talk(int argc, char **argv, char *result, int length)
 			return;
 		}
 		if (4 == argc && 0 == strcmp("set", argv[2])) {
-			ltrim_string(argv[3]);
-			rtrim_string(argv[3]);
+			HX_strrtrim(argv[3]);
+			HX_strltrim(argv[3]);
 			if (NULL == (pslash = strchr(argv[3], '/'))) {
 				snprintf(result, length, "550 invalid argument %s should be "
 						"times/interval", argv[3]);
@@ -406,8 +407,8 @@ void ip_filter_console_talk(int argc, char **argv, char *result, int length)
 				snprintf(result, length, "550 %s is not ip address", argv[3]);
 				return;
 			}
-			ltrim_string(argv[4]);
-			rtrim_string(argv[4]);
+			HX_strrtrim(argv[4]);
+			HX_strltrim(argv[4]);
 			if (NULL == (pslash = strchr(argv[4], '/'))) {
 				snprintf(result, length, "550 invalid argument %s should be "
 						"times/interval", argv[4]);

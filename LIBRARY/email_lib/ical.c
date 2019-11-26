@@ -1,4 +1,5 @@
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include "mail_func.h"
 #include "timezone.h"
 #include "ical.h"
@@ -1054,8 +1055,8 @@ BOOL ical_parse_utc_offset(const char *str_offset,
 	char str_zone[16];
 	
 	strncpy(str_zone, str_offset, 16);
-	ltrim_string(str_zone);
-	rtrim_string(str_zone);
+	HX_strrtrim(str_zone);
+	HX_strltrim(str_zone);
 	if ('-' == str_zone[0]) {
 		factor = 1;
 	} else if ('+' == str_zone[0]) {
@@ -1092,9 +1093,8 @@ BOOL ical_parse_date(const char *str_date,
 	char tmp_buff[128];
 	
 	strncpy(tmp_buff, str_date, 128);
-	ltrim_string(tmp_buff);
-	rtrim_string(tmp_buff);
-	
+	HX_strrtrim(tmp_buff);
+	HX_strltrim(tmp_buff);
 	if (sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) < 3) {
 		return FALSE;
 	}
@@ -1109,8 +1109,8 @@ BOOL ical_parse_datetime(const char *str_datetime,
 	char tmp_buff[128];
 	
 	strncpy(tmp_buff, str_datetime, 128);
-	ltrim_string(tmp_buff);
-	rtrim_string(tmp_buff);
+	HX_strrtrim(tmp_buff);
+	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
 	if ('Z' == tmp_buff[len - 1]) {
 		*pb_utc = TRUE;
@@ -1585,8 +1585,8 @@ BOOL ical_parse_byday(const char *str_byday,
 	char tmp_buff[16];
 	
 	strncpy(tmp_buff, str_byday, 16);
-	ltrim_string(tmp_buff);
-	rtrim_string(tmp_buff);
+	HX_strrtrim(tmp_buff);
+	HX_strltrim(tmp_buff);
 	if ('-' == tmp_buff[0]) {
 		b_negative = TRUE;
 		pbegin = tmp_buff + 1;
@@ -1651,8 +1651,8 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 	char tmp_buff[128];
 	
 	strncpy(tmp_buff, str_duration, 128);
-	ltrim_string(tmp_buff);
-	rtrim_string(tmp_buff);
+	HX_strrtrim(tmp_buff);
+	HX_strltrim(tmp_buff);
 	ptoken = tmp_buff;
 	if ('+' == *ptoken) {
 		factor = 1;
@@ -2142,8 +2142,8 @@ BOOL ical_date_to_utc(const char *str_date,
 	const struct state *sp;
 	
 	strncpy(tmp_buff, str_date, 16);
-	ltrim_string(tmp_buff);
-	rtrim_string(tmp_buff);
+	HX_strrtrim(tmp_buff);
+	HX_strltrim(tmp_buff);
 	if (8 != strlen(tmp_buff)) {
 		return FALSE;
 	}

@@ -1,4 +1,5 @@
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "uri_rbl.h"
 #include "mail_func.h"
@@ -165,8 +166,8 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		if (NULL == str_value || 0 == strcasecmp(str_value, "NULL")) {
 			surbl_dns[0] = '\0';
 		} else {
-			ltrim_string(surbl_dns);
-			rtrim_string(surbl_dns);
+			HX_strrtrim(surbl_dns);
+			HX_strltrim(surbl_dns);
 			strncpy(surbl_dns, str_value, 255);
 			surbl_dns[255] = '\0';
 		}
@@ -174,8 +175,8 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		if (NULL == str_value || 0 == strcasecmp(str_value, "NULL")) {
 			uribl_dns[0] = '\0';
 		} else {
-			ltrim_string(uribl_dns);
-			rtrim_string(uribl_dns);
+			HX_strrtrim(uribl_dns);
+			HX_strltrim(uribl_dns);
 			strncpy(uribl_dns, str_value, 255);
 			uribl_dns[255] = '\0';
 		}

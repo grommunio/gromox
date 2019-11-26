@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "whitelist_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -258,8 +259,8 @@ int whitelist_ui_run()
 				}
 				memcpy(temp_address, ptr1, search_buff + len - ptr1 - 1);
 				temp_address[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(temp_address);
-				rtrim_string(temp_address);
+				HX_strrtrim(temp_address);
+				HX_strltrim(temp_address);
 
 				switch (acl_control_check(session, remote_ip,
 					ACL_PRIVILEGE_ANTI_SPAM)) {
@@ -292,8 +293,8 @@ int whitelist_ui_run()
 			}
 			memcpy(temp_address, ptr1, ptr2 - ptr1);
 			temp_address[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_address);
-			rtrim_string(temp_address);
+			HX_strrtrim(temp_address);
+			HX_strltrim(temp_address);
 			ptr1 = ptr2 + 6;
 			if (search_buff + len - ptr1 - 1 > 256) {
 				system_log_info("[whitelist_ui]: query string of GET "
@@ -304,8 +305,8 @@ int whitelist_ui_run()
 			}
 			memcpy(memo, ptr1, search_buff + len - ptr1 - 1);
 			memo[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(memo);
-			rtrim_string(memo);
+			HX_strrtrim(memo);
+			HX_strltrim(memo);
 			if ('\0' == memo[0]) {
 				strcpy(memo, "none");
 			}

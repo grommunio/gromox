@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "util.h"
 #include "str_hash.h"
 #include "resource.h"
@@ -546,18 +547,18 @@ static BOOL mod_cache_parse_range_value(char *value,
 	RANGE ranges[1024];
 	
 	count = 0;
-	ltrim_string(value);
-	rtrim_string(value);
+	HX_strrtrim(value);
+	HX_strltrim(value);
 	if (0 != strncasecmp(value, "bytes", 5)) {
 		return FALSE;
 	}
 	value += 5;
-	ltrim_string(value);
+	HX_strltrim(value);
 	if ('=' != value[0]) {
 		return FALSE;
 	}
 	value ++;
-	ltrim_string(value);
+	HX_strltrim(value);
 	val_len = strlen(value);
 	if (',' != value[val_len - 1]) {
 		value[val_len] = ',';

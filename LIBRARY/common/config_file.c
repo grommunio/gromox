@@ -187,8 +187,8 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	if (NULL != lf_ptr) {
 		*lf_ptr = '\0';
 	}
-	ltrim_string(temp_buf);
-	rtrim_string(temp_buf);
+	HX_strrtrim(temp_buf);
+	HX_strltrim(temp_buf);
 	equal_ptr = strchr(temp_buf, '=');
 	sharp_ptr = strchr(temp_buf, '#');
 	if (NULL == equal_ptr) {
@@ -205,8 +205,8 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	}
 	*equal_ptr = '\0';
 	equal_ptr ++;
-	rtrim_string(temp_buf);
-	ltrim_string(equal_ptr);
+	HX_strrtrim(temp_buf);
+	HX_strltrim(equal_ptr);
 	if (0 == strlen(temp_buf) || 0 == strlen(equal_ptr)) {
 		return;
 	}

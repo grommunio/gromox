@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "table_ui.h"
 #include <gromox/system_log.h>
 #include <gromox/acl_control.h>
@@ -307,8 +308,8 @@ int table_ui_run()
 				}
 				memcpy(temp_domain, ptr1, search_buff + len - ptr1 - 1);
 				temp_domain[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(temp_domain);
-				rtrim_string(temp_domain);
+				HX_strrtrim(temp_domain);
+				HX_strltrim(temp_domain);
 				
 				switch (acl_control_check(session, remote_ip,
 					ACL_PRIVILEGE_MISC)) {
@@ -341,8 +342,8 @@ int table_ui_run()
 			}
 			memcpy(temp_domain, ptr1, ptr2 - ptr1);
 			temp_domain[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_domain);
-			rtrim_string(temp_domain);
+			HX_strrtrim(temp_domain);
+			HX_strltrim(temp_domain);
 			ptr1 = ptr2 + 6;
 			ptr2 = search_string(search_buff, "&part=", len);
 			if (NULL == ptr2) {

@@ -1,6 +1,7 @@
 /* collection of functions for handling the smtp command
  */ 
 #include <unistd.h>
+#include <libHX/string.h>
 #include "smtp_cmd_handler.h"
 #include "system_services.h"
 #include "anti_spamming.h"
@@ -258,7 +259,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
     }
     memcpy(buff, cmd_line + 10    , line_length - 10);
     buff[line_length - 10] = '\0';
-	ltrim_string(buff);
+	HX_strltrim(buff);
 	/* rfc require MTA support empty from address */
 	if (0 == strncmp(buff, "<>", 2)) {
 		strcpy(buff, "<none@none>");

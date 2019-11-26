@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "admin_ui.h"
 #include <gromox/system_log.h>
 #include <gromox/acl_control.h>
@@ -337,8 +338,8 @@ int admin_ui_run()
 		} else {
 			memcpy(tmp_ip, ptr1, ptr2 - ptr1);
 			tmp_ip[ptr2 - ptr1] = '\0';
-			ltrim_string(tmp_ip);
-			rtrim_string(tmp_ip);
+			HX_strrtrim(tmp_ip);
+			HX_strltrim(tmp_ip);
 			pip = tmp_ip;
 		}
 		ptr1 = ptr2 + 6;
@@ -358,8 +359,8 @@ int admin_ui_run()
 		} else {
 			memcpy(tmp_from, ptr1, ptr2 - ptr1);
 			tmp_from[ptr2 - ptr1] = '\0';
-			ltrim_string(tmp_from);
-			rtrim_string(tmp_from);
+			HX_strrtrim(tmp_from);
+			HX_strltrim(tmp_from);
 			pfrom = tmp_from;
 		}
 		ptr1 = ptr2 + 4;
@@ -379,8 +380,8 @@ int admin_ui_run()
 		} else {
 			memcpy(tmp_to, ptr1, ptr2 - ptr1);
 			tmp_to[ptr2 - ptr1] = '\0';
-			ltrim_string(tmp_to);
-			rtrim_string(tmp_to);
+			HX_strrtrim(tmp_to);
+			HX_strltrim(tmp_to);
 			pto = tmp_to;
 		}
 		ptr1 = ptr2 + 11;

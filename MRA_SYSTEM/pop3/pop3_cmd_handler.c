@@ -2,6 +2,7 @@
  * collection of functions for handling the pop3 command
  */ 
 #include <unistd.h>
+#include <libHX/string.h>
 #include "pop3_cmd_handler.h"
 #include "system_services.h"
 #include "resource.h"
@@ -140,7 +141,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 		}
         memcpy(pcontext->username, cmd_line + 5, line_length - 5);
         pcontext->username[line_length - 5] = '\0';
-		ltrim_string(pcontext->username);
+		HX_strltrim(pcontext->username);
 		if (FALSE == system_services_judge_user(pcontext->username)) {
 			string_length = sprintf(buff, "%s%s%s", resource_get_pop3_code(
 								POP3_CODE_2170017, 1, &string_length),
@@ -225,7 +226,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	
     memcpy(temp_password, cmd_line + 5, line_length - 5);
     temp_password[line_length - 5] = '\0';
-	ltrim_string(temp_password);
+	HX_strltrim(temp_password);
 
 	b_cdn_create = FALSE;
 	/* cdn service is installed */ 
@@ -410,8 +411,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
-	rtrim_string(temp_command);
-	
+	HX_strrtrim(temp_command);
 	
 	if (4 == strlen(temp_command)) {
 		
@@ -515,7 +515,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
-	rtrim_string(temp_command);
+	HX_strrtrim(temp_command);
 	
 	if (4 == strlen(temp_command)) {
 		
@@ -619,7 +619,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
-	rtrim_string(temp_command);
+	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 5) {
 		pop3_reply_str = resource_get_pop3_code(
@@ -719,7 +719,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
-	rtrim_string(temp_command);
+	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 5) {
 		pop3_reply_str = resource_get_pop3_code(
@@ -797,7 +797,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	
 	memcpy(temp_command, cmd_line, line_length);
 	temp_command[line_length] = '\0';
-	rtrim_string(temp_command);
+	HX_strrtrim(temp_command);
 	
 	if (strlen(temp_command) <= 4) {
 		pop3_reply_str = resource_get_pop3_code(
@@ -834,7 +834,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	
 
 	strcpy(temp_buff, temp_command + 4);
-	ltrim_string(temp_buff);
+	HX_strltrim(temp_buff);
 	ptoken = strchr(temp_buff, ' ');
 	if (NULL == ptoken) {
 		n = atoi(temp_buff);

@@ -445,8 +445,8 @@ int list_ui_run()
 		}
 		memcpy(type, ptr1, ptr2 - ptr1);
 		type[ptr2 - ptr1] = '\0';
-		ltrim_string(type);
-		rtrim_string(type);
+		HX_strrtrim(type);
+		HX_strltrim(type);
 		if (0 != strcasecmp(type, "add") &&
 			0 != strcasecmp(type, "edit")) {
 			goto POST_ERROR;
@@ -458,8 +458,8 @@ int list_ui_run()
 		}
 		memcpy(title, ptr1, ptr2 - ptr1);
 		title[ptr2 - ptr1] = '\0';
-		ltrim_string(title);
-		rtrim_string(title);
+		HX_strrtrim(title);
+		HX_strltrim(title);
 
 		ptr1 = ptr2 + 11;
 		ptr2 = search_string(search_buff, "&new_password=", len);
@@ -469,8 +469,8 @@ int list_ui_run()
 		
 		memcpy(groupname, ptr1, ptr2 - ptr1);
 		groupname[ptr2 - ptr1] = '\0';
-		ltrim_string(groupname);
-		rtrim_string(groupname);
+		HX_strrtrim(groupname);
+		HX_strltrim(groupname);
 		HX_strlower(groupname);
 		
 		pat = strchr(groupname, '@');

@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "backup_ui.h"
 #include "lang_resource.h"
 #include "request_parser.h"
@@ -687,7 +688,7 @@ static BOOL backup_ui_insert_mail(int seq_id, int server_id,
 	decode_len = 1024;
 	decode64(temp_rcv, strlen(temp_rcv), temp_rcv1, &decode_len);
 	temp_rcv1[decode_len] = '\0';
-	ltrim_string(temp_rcv1);
+	HX_strltrim(temp_rcv1);
 	if (FALSE == parse_rfc822_timestamp(temp_rcv1, &rcv_time)) {
 		rcv_time = 0;
 	}

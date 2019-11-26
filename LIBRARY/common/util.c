@@ -4,6 +4,7 @@
  */
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "util.h"
 #include <time.h>
 #include <stdio.h>
@@ -592,50 +593,6 @@ void remove_digest(char *src, const char *tag)
 	memmove(ptr1, ptr2, src + temp_len - ptr2);
 }
 
-void ltrim_string(char *string)
-{
-	char*	pstr;
-	size_t string_len;
-
-	pstr = string;
-	while (*pstr) {
-		if (*pstr != ' ' && *pstr != '\t') {
-			break;
-		} else {
-			pstr++; 
-		}
-	}
-	
-	if (pstr != string) {
-		string_len = strlen(string);
-		memmove(string, pstr, string_len - (pstr - string) + 1);
-	}
-}
-
-void rtrim_string(char *string)
-{
-	char*	pstr;
-	size_t	str_len;
-
-	if (NULL == string) {
-		return;
-	}
-	str_len = strlen(string);
-
-	pstr = string + str_len - 1;
-
-	while (str_len > 0) {
-		if (' ' == *pstr || '\t' == *pstr) {
-			pstr --;
-			str_len --;
-		} else {
-			break;
-		}
-	}
-
-	*(pstr + 1) = '\0';
-}
-
 /*
  *	swap a string from src and fill it into dest
  *	@param
@@ -1023,7 +980,7 @@ char* bytetoa(uint64_t byte, char *string)
 	} else {
 		sprintf(string, "%1.1lfT", (double)byte/0x10000000000LL);
 	}
-	ltrim_string(string);
+	HX_strltrim(string);
 	return string;
 }
 
@@ -1038,8 +995,8 @@ uint64_t atobyte(const char *string)
 		return 0;
 	}
 	strcpy(temp_buff, string);
-	ltrim_string(temp_buff);
-	rtrim_string(temp_buff);
+	HX_strrtrim(temp_buff);
+	HX_strltrim(temp_buff);
 	last_pos = strlen(temp_buff) - 1;
 	unit = temp_buff[last_pos];
 	if ('B' == unit) {

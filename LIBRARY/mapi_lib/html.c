@@ -599,7 +599,7 @@ static void html_trim_style_value(char *value)
 	if (NULL != ptr) {
 		*ptr = '\0';
 	}
-	rtrim_string(value);
+	HX_strrtrim(value);
 	tmp_len = strlen(value);
 	if ('"' == value[0] || '\'' == value[0]) {
 		memmove(value, value + 1, tmp_len);
@@ -709,8 +709,8 @@ static BOOL html_match_style(const char *style_string,
 	}
 	memcpy(value, ptr, tmp_len);
 	value[tmp_len] = '\0';
-	ltrim_string(value);
-	rtrim_string(value);
+	HX_strrtrim(value);
+	HX_strltrim(value);
 	return TRUE;
 }
 

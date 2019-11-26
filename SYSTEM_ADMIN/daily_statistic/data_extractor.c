@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "data_extractor.h"
 #include "single_list.h"
 #include "util.h"
@@ -237,7 +238,7 @@ static int data_extractor_parse_buffer(char *buff_in, STATISTIC_ITEM *pitem)
 			if (j > last_crlf) {
 				memcpy(pitem->tag, buff_in + last_crlf + 1, j - last_crlf);
 				pitem->tag[j - last_crlf - 1] = '\0';
-				rtrim_string(pitem->tag);
+				HX_strrtrim(pitem->tag);
 				if (i - j - 1 >= 64) {
 					return 0;
 				}

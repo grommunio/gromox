@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include <gromox/as_common.h>
 #include "util.h"
 #include "list_file.h"
@@ -250,8 +251,8 @@ static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name)
 					temp_len --;
 					file_name[temp_len] = '\0';
 				}
-				ltrim_string(file_name);
-				rtrim_string(file_name);
+				HX_strrtrim(file_name);
+				HX_strltrim(file_name);
 				temp_len = strlen(file_name);
 				if (0 == strncasecmp(value, "application/zip", 15) &&
 					0 != strcasecmp(file_name + temp_len - 4, ".zip")) {

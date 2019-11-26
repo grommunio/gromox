@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "double_list.h"
 #include "config_file.h"
 #include "list_file.h"
@@ -489,8 +490,8 @@ static char* parse_prefix(const char *cmd_line, char *buff)
 
 	memcpy(buff, cmd_line + 7, pspace - cmd_line - 7);
 	buff[pspace - cmd_line - 7] = '\0';
-	ltrim_string(buff);
-	rtrim_string(buff);
+	HX_strrtrim(buff);
+	HX_strltrim(buff);
 	return buff;
 }
 

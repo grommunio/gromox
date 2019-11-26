@@ -5,6 +5,7 @@
  * its own buffer
  */
 #include <stdbool.h>
+#include <libHX/string.h>
 #include "mail.h"
 #include "mime.h"
 #include "util.h"
@@ -1520,8 +1521,8 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		encoding, 256)) {
 		encoding_type = MIME_ENCODING_NONE;
 	} else {
-		ltrim_string(encoding);
-		rtrim_string(encoding);
+		HX_strrtrim(encoding);
+		HX_strltrim(encoding);
 		if (0 == strcasecmp(encoding, "base64")) {
 			encoding_type = MIME_ENCODING_BASE64;
 		} else if (0 == strcasecmp(encoding, "quoted-printable")) {
@@ -2310,8 +2311,8 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
 	return FALSE;
 	
 FIND_FILENAME:
-	ltrim_string(file_name);
-	rtrim_string(file_name);
+	HX_strrtrim(file_name);
+	HX_strltrim(file_name);
 	tmp_len = strlen(file_name);
 	if (('"' == file_name[0] && '"' == file_name[tmp_len - 1]) ||
 		('\'' == file_name[0] && '\'' == file_name[tmp_len - 1])) {
@@ -2429,8 +2430,8 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 				content_type[i] = ' ';
 			}
 		}
-		ltrim_string(content_type);
-		rtrim_string(content_type);
+		HX_strrtrim(content_type);
+		HX_strltrim(content_type);
 		
 		if (FALSE == mime_get_field(pmime, "Content-Transfer-Encoding",
 			encoding_buff, 128) || FALSE == mime_check_ascii_printable(
@@ -2446,8 +2447,8 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 					encoding_buff[i] = ' ';
 				}
 			}
-			ltrim_string(encoding_buff);
-			rtrim_string(encoding_buff);
+			HX_strrtrim(encoding_buff);
+			HX_strltrim(encoding_buff);
 			buff_len += snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\","
 						"\"encoding\":\"%s\",\"head\":%d,\"begin\":%d,",
@@ -2495,8 +2496,8 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 					charset_buff[i] = ' ';
 				}
 			}
-			ltrim_string(charset_buff);
-			rtrim_string(charset_buff);
+			HX_strrtrim(charset_buff);
+			HX_strltrim(charset_buff);
 			buff_len += snprintf(pbuff + buff_len, length - buff_len,
 						",\"charset\":\"%s\"", charset_buff);
 			if (buff_len >= length - 1) {
@@ -2515,8 +2516,8 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 			if (NULL != ptoken) {
 				*ptoken = '\0';
 			}
-			ltrim_string(content_disposition);
-			rtrim_string(content_disposition);
+			HX_strrtrim(content_disposition);
+			HX_strltrim(content_disposition);
 			if ('\0' != content_disposition[0] &&
 				TRUE == mime_check_ascii_printable(content_disposition)) {
 				tmp_len = strlen(content_disposition);
@@ -2714,8 +2715,8 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 				content_type[i] = ' ';
 			}
 		}
-		ltrim_string(content_type);
-		rtrim_string(content_type);
+		HX_strrtrim(content_type);
+		HX_strltrim(content_type);
 		buff_len += snprintf(pbuff + buff_len, length - buff_len, 
 						"{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%d,"
 						"\"begin\":%d, \"length\":%d}", id_string,

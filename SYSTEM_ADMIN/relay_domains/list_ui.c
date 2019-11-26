@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "list_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -253,8 +254,8 @@ int list_ui_run()
 				}
 				memcpy(temp_domain, ptr1, search_buff + len - ptr1 - 1);
 				temp_domain[search_buff + len - ptr1 - 1] = '\0';
-				ltrim_string(temp_domain);
-				rtrim_string(temp_domain);
+				HX_strrtrim(temp_domain);
+				HX_strltrim(temp_domain);
 
 				switch (acl_control_check(session, remote_ip,
 					ACL_PRIVILEGE_MISC)) {
@@ -287,8 +288,8 @@ int list_ui_run()
 			}
 			memcpy(temp_domain, ptr1, ptr2 - ptr1);
 			temp_domain[ptr2 - ptr1] = '\0';
-			ltrim_string(temp_domain);
-			rtrim_string(temp_domain);
+			HX_strrtrim(temp_domain);
+			HX_strltrim(temp_domain);
 			ptr1 = ptr2 + 6;
 			if (search_buff + len - ptr1 - 1 > 256) {
 				system_log_info("[list_ui]: query string of GET "
@@ -299,8 +300,8 @@ int list_ui_run()
 			}
 			memcpy(memo, ptr1, search_buff + len - ptr1 - 1);
 			memo[search_buff + len - ptr1 - 1] = '\0';
-			ltrim_string(memo);
-			rtrim_string(memo);
+			HX_strrtrim(memo);
+			HX_strltrim(memo);
 			if ('\0' == memo[0]) {
 				strcpy(memo, "none");
 			}

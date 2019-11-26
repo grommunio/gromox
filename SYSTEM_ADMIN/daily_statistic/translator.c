@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "translator.h"
 #include "single_list.h"
 #include "double_list.h"
@@ -133,8 +134,8 @@ void translator_do(STATISTIC_ITEM *psmtp_item, int smtp_num,
 					paccept->weight = strtof(ptr + 2, NULL);
 				}
 			}
-			ltrim_string(paccept->language);
-			rtrim_string(paccept->language);
+			HX_strrtrim(paccept->language);
+			HX_strltrim(paccept->language);
 			for (pdnode=double_list_get_head(&accept_list); NULL!=pdnode;
 				pdnode=double_list_get_after(&accept_list, pdnode)) {
 				if (((LANGUAGE_ACCEPT*)pdnode->pdata)->weight <

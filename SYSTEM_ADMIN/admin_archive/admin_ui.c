@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "admin_ui.h"
 #include "data_source.h"
 #include "lang_resource.h"
@@ -1448,7 +1449,7 @@ static char* admin_ui_decode_mime(const char *charset, const char *mime_string)
 			if (i > last_pos) {
 				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
 				temp_buff[begin_pos - last_pos] = '\0';
-				ltrim_string(temp_buff);
+				HX_strltrim(temp_buff);
 				tmp_string = admin_ui_to_utf8(charset, temp_buff);
 				if (NULL == tmp_string) {
 					free(ret_string);
@@ -1525,7 +1526,7 @@ static void admin_ui_parse_digest(char *charset, char *digest,
 	*ptime = 0;
 	if (TRUE == get_digest(digest, "received", temp_buff, sizeof(temp_buff)) &&
 		0 == decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len)) {
-		ltrim_string(temp_buff1);
+		HX_strltrim(temp_buff1);
 		memset(&tmp_tm, 0, sizeof(tmp_tm));
 		parse_rfc822_timestamp(temp_buff1, ptime);
 	}
@@ -1833,7 +1834,7 @@ static BOOL admin_ui_insert_mail(int seq_id, int server_id,
 	decode_len = 1024;
 	decode64(temp_rcv, strlen(temp_rcv), temp_rcv1, &decode_len);
 	temp_rcv1[decode_len] = '\0';
-	ltrim_string(temp_rcv1);
+	HX_strltrim(temp_rcv1);
 	if (FALSE == parse_rfc822_timestamp(temp_rcv1, &rcv_time)) {
 		rcv_time = 0;
 	}

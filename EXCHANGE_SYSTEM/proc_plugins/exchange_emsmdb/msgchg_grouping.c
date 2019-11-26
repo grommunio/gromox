@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "msgchg_grouping.h"
 #include "proptag_array.h"
 #include "double_list.h"
@@ -338,8 +339,8 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 					&pgp_node->tag_list, &ptag_node->node);
 			} else if (0 == strncasecmp(ptoken, "NAME=", 5)) {
 				ptag_node->ppropname->kind = KIND_NAME;
-				ltrim_string(ptoken + 5);
-				rtrim_string(ptoken + 5);
+				HX_strrtrim(ptoken + 5);
+				HX_strltrim(ptoken + 5);
 				if ('\0' == ptoken[5]) {
 					free(ptag_node->ppropname);
 					free(ptag_node);

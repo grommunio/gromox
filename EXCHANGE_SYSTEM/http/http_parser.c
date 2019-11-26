@@ -589,8 +589,8 @@ CONTEXT_PROCESSING:
 					tmp_len = ptoken - line;
 					memcpy(field_name, line, tmp_len);
 					field_name[tmp_len] = '\0';
-					ltrim_string(field_name);
-					rtrim_string(field_name);
+					HX_strrtrim(field_name);
+					HX_strltrim(field_name);
 					
 					ptoken ++;
 					while (ptoken - line < line_length) {

@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "data_source.h"
 #include "ui_center.h"
 #include "lang_resource.h"
@@ -333,8 +334,8 @@ int ui_center_run()
 		}
 		memcpy(tmp_ip, ptr1, ptr2 - ptr1);
 		tmp_ip[ptr2 - ptr1] = '\0';
-		ltrim_string(tmp_ip);
-		rtrim_string(tmp_ip);
+		HX_strrtrim(tmp_ip);
+		HX_strltrim(tmp_ip);
 
 		ptr1 = ptr2 + 6;
 		ptr2 = search_string(search_buff, "&rcpt=", len);
@@ -350,8 +351,8 @@ int ui_center_run()
 		}
 		memcpy(tmp_from, ptr1, ptr2 - ptr1);
 		tmp_from[ptr2 - ptr1] = '\0';
-		ltrim_string(tmp_from);
-		rtrim_string(tmp_from);
+		HX_strrtrim(tmp_from);
+		HX_strltrim(tmp_from);
 
 		ptr1 = ptr2 + 6;
 		ptr2 = search_string(search_buff, "&start=", len);

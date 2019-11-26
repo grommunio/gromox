@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "lang_resource.h"
 #include "list_file.h"
 #include "util.h"
@@ -160,8 +161,8 @@ const char* lang_resource_get(LANG_RESOURCE *presource, const char *tag,
 					temp_weight = strtof(ptr + 2, NULL);
 				}
 			}
-			ltrim_string(temp_lang);
-			rtrim_string(temp_lang);
+			HX_strrtrim(temp_lang);
+			HX_strltrim(temp_lang);
 			replang = lang_resource_replace(temp_lang);
 			paccept = malloc(sizeof(LANG_ACCEPT));
 			if (NULL == paccept) {

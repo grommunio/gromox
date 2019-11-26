@@ -1166,7 +1166,7 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 			if (0 != decode64(value, length, pjson->received, &temp_len)) {
 				pjson->received[0] = '\0';
 			} else {
-				ltrim_string(pjson->received);
+				HX_strltrim(pjson->received);
 			}
 		}
 	} else if (0 == strcasecmp(tag, "date")) {

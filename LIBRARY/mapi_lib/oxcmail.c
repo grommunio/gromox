@@ -393,8 +393,8 @@ static BOOL oxcmail_get_field_param(char *field,
 	}
 	memmove(value, pbegin, tmp_len);
 	value[tmp_len] = '\0';
-	ltrim_string(value);
-	rtrim_string(value);
+	HX_strrtrim(value);
+	HX_strltrim(value);
 	tmp_len = strlen(value);
 	if (('"' == value[0] && '"' == value[tmp_len - 1]) ||
 		('\'' == value[0] && '\'' == value[tmp_len - 1])) {
@@ -430,7 +430,7 @@ static void oxcmail_split_filename(char *file_name, char *extension)
 		}
 		break;
 	}
-	ltrim_string(file_name);
+	HX_strltrim(file_name);
 	tmp_len = strlen(file_name);
 	for (i=tmp_len-1; i>=0; i--) {
 		if ('.' == file_name[i]) {
@@ -439,7 +439,7 @@ static void oxcmail_split_filename(char *file_name, char *extension)
 		}
 		break;
 	}
-	rtrim_string(file_name);
+	HX_strrtrim(file_name);
 	ptoken = strrchr(file_name, '.');
 	if (NULL == ptoken || strlen(ptoken) >= 16) {
 		extension[0] = '\0';
@@ -3645,8 +3645,8 @@ static BOOL oxcmail_enum_dsn_rcpt_field(
 	if (0 == strcasecmp(tag, "Final-Recipient") &&
 		0 == strncasecmp(value, "rfc822;", 7)) {
 		strncpy(pinfo->final_recipient, value + 7, 256);
-		ltrim_string(pinfo->final_recipient);
-		rtrim_string(pinfo->final_recipient);
+		HX_strrtrim(pinfo->final_recipient);
+		HX_strltrim(pinfo->final_recipient);
 	} else if (0 == strcasecmp(tag, "Action")) {
 		if (0 == strcasecmp("delivered", value)) {
 			pinfo->action_severity = 0;
@@ -4197,7 +4197,7 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 		}
 		ptoken ++;
 		strncpy(tmp_buff, ptoken, 1024);
-		ltrim_string(tmp_buff);
+		HX_strltrim(tmp_buff);
 		ptoken = strchr(tmp_buff, '/');
 		if (NULL != ptoken) {
 			*ptoken = '\0';

@@ -3,6 +3,7 @@
  */ 
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
 #include "mail_func.h"
@@ -1598,7 +1599,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	ltrim_string(pcontext->username);
+	HX_strltrim(pcontext->username);
 	if (FALSE == system_services_judge_user(pcontext->username)) {
 		/* IMAP_CODE_2190001: NO access deny by user filter */
 		imap_reply_str = resource_get_imap_code(
@@ -1700,7 +1701,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	strcpy(pcontext->username, argv[2]);
-	ltrim_string(pcontext->username);
+	HX_strltrim(pcontext->username);
 	if (FALSE == system_services_judge_user(pcontext->username)) {
 		/* IMAP_CODE_2190001: NO access deny by user filter */
 		imap_reply_str = resource_get_imap_code(
@@ -1713,7 +1714,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_SHOULD_CLOSE;
     }
 	strcpy(temp_password, argv[3]);
-	ltrim_string(temp_password);
+	HX_strltrim(temp_password);
 	if (TRUE == system_services_auth_login(pcontext->username,
 		temp_password, pcontext->maildir, pcontext->lang, reason, 256)) {
 		if ('\0' == pcontext->maildir[0]) {
