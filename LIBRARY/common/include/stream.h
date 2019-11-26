@@ -94,9 +94,7 @@ int stream_copyline(STREAM *pstream, char *pbuff, unsigned int *size);
 unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size);
 
 int stream_dump(STREAM *pstream, int fd);
-
-int stream_write(STREAM *pstream, char *pbuff, size_t size);
-
+extern int stream_write(STREAM *pstream, const void *pbuff, size_t size);
 void stream_truncate(STREAM *pstream);
 
 #endif

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <libHX/defs.h>
 #include "setup_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -787,7 +788,7 @@ static BOOL setup_ui_get_self(char *url_buff, int length)
 
 static void setup_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";
@@ -821,7 +822,7 @@ static void setup_ui_main_html(const char *domain, const char *session)
 	BOOL b_privilege;
 	char *pcolon;
 	char *language;
-	char *str_value;
+	const char *str_value;
 	char subsys_ip[16];
 	char url_buff[1024];
 	char str_submit[64];
@@ -1670,7 +1671,7 @@ static BOOL setup_ui_unzip(const char *domain)
 	int status;
 	char tmp_path[256];
 	char tmp_path1[256];
-	char *args[] = {"unzip", NULL, NULL, NULL, NULL};
+	const char *args[] = {"unzip", NULL, NULL, NULL, NULL};
 	
 	snprintf(tmp_path, 255, "%s/%s/steep-webapp/tmp", g_app_path, domain);
 	snprintf(tmp_path1, 255, "%s/%s/steep-webapp/tmp_theme.zip", g_app_path, domain);
@@ -1679,7 +1680,7 @@ static BOOL setup_ui_unzip(const char *domain)
 		args[1] = tmp_path1;
 		args[2] = "-d";
 		args[3] = tmp_path;
-		if (-1 == execvp("unzip", args)) {
+		if (execvp("unzip", const_cast(char **, args)) == -1) {
 			exit(EXIT_FAILURE);
 		}
 	} else if (pid > 0) {

@@ -160,7 +160,7 @@ int log_plugin_stop()
  *		level			log level
  *		format [in]		format string
  */
-void log_plugin_log_info(int level, char *format, ...)
+void log_plugin_log_info(int level, const char *format, ...)
 {
 	char log_buf[LOG_LEN];
 	time_t time_now;

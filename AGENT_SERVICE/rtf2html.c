@@ -26,7 +26,7 @@ static const char* cpid_to_charset_to(uint32_t cpid)
 	return "us-ascii";
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int offset;
 	char *pbuff;

@@ -227,8 +227,7 @@ extern SMTP_CONTEXT *smtp_parser_get_contexts_list(void);
 int smtp_parser_threads_event_proc(int action);
 
 void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext);
-
-void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, char *format, ...);
+extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
 #endif
 

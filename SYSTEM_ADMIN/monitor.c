@@ -53,7 +53,7 @@ static void flush_data(int index, int cpu, int network, int connection,
 	int ham, int spam);
 static int connect_console(const char *ip, int port);
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i;
 	int shm_id;

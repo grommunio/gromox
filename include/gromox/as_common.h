@@ -90,7 +90,7 @@ typedef int (*AUDITOR_FUNCTION)(int, MAIL_ENTITY*, CONNECTION*, char*, int);
 typedef int (*FILTER_FUNCTION)(int, int, MAIL_BLOCK*, char*, int);
 typedef int (*STATISTIC_FUNCTION)(int, MAIL_WHOLE*, CONNECTION*, char*, int);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef void* (*QUERY_SERVICE)(char*);
+typedef void *(*QUERY_SERVICE)(const char *);
 typedef int (*QUERY_VERSION)(void);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
@@ -99,13 +99,13 @@ typedef BOOL(*JUDGE_REGISTRATION)(JUDGE_FUNCTION);
 /* represent function type of register_auditor and unregister_auditor */
 typedef BOOL(*AUDITOR_REGISTRATION)(AUDITOR_FUNCTION);
 /* represent function type of register_filter and  unregister_filter */
-typedef BOOL(*FILTER_REGISTRATION)(char*, FILTER_FUNCTION);
+typedef BOOL (*FILTER_REGISTRATION)(const char *, FILTER_FUNCTION);
 /* represent function type of register_statistic and unregister_statistic */
 typedef BOOL(*STATISTIC_REGISTRATION)(STATISTIC_FUNCTION);
 /* represent function type of register_talk and unregister_talk */
 typedef BOOL(*TALK_REGISTRATION)(TALK_MAIN);
 /* represent function type of log_info */
-typedef void (*LOG_INFO)(int, char *, ...);
+typedef void (*LOG_INFO)(int, const char *, ...);
 /* temporary black list */
 typedef BOOL (*TMP_BLACKLIST)(char*, long);
 /* set the extra data used by other plugins */

@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/defs.h>
 #include "ip_range.h"
 #include "double_list.h"
 #include "list_file.h"
@@ -201,7 +202,7 @@ static void *thread_work_func(void *param)
 	char temp_line[128];
 	char temp_path[256];
 	char option_buff[512];
-	char *args[] = {"wget", NULL, NULL, NULL, NULL};
+	const char *args[] = {"wget", NULL, NULL, NULL, NULL};
 	DOUBLE_LIST_NODE *pnode;
 	LIST_FILE *pfile;
 	RANGE_NODE *prange;
@@ -227,7 +228,7 @@ static void *thread_work_func(void *param)
 			args[1] = "-q";
 			args[2] = g_url_path;
 			args[3] = option_buff;
-			if (-1 == execvp("wget", args)) {
+			if (execvp("wget", const_cast(char **, args)) == -1) {
 				exit(EXIT_FAILURE);
 			}
 		} else if (pid > 0) {

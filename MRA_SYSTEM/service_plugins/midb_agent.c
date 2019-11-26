@@ -91,17 +91,10 @@ static void* scan_work_func(void *param);
 static BOOL read_line(int sockd, char *buff, int length);
 
 static int connect_midb(const char *ip_addr, int port);
-
-static BOOL get_digest_string(char *src, int length, char *tag, char *buff,
-	int buff_len);
-	
-static BOOL get_digest_integer(char *src, int length, char *tag, int *pinteger);
-
-static int list_mail(char *path, char *folder, ARRAY *parray,
-	int *pnum, uint64_t *psize);
-
-static int delete_mail(char *path, char *folder, SINGLE_LIST *plist);
-
+static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
+static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
+static int list_mail(const char *path, const char *folder, ARRAY *parray, int *pnum, uint64_t *psize);
+static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist);
 static int get_mail_id(char *path, char *folder, char *mid_string,
 	unsigned int *pid);
 
@@ -509,7 +502,7 @@ static BACK_CONN *get_connection(const char *prefix)
 	return (BACK_CONN*)pnode->pdata;
 }
 
-static int list_mail(char *path, char *folder, ARRAY *parray,
+static int list_mail(const char *path, const char *folder, ARRAY *parray,
 	int *pnum, uint64_t *psize)
 {
 	int i;
@@ -665,7 +658,7 @@ RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
-static int delete_mail(char *path, char *folder, SINGLE_LIST *plist)
+static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 {
 	int length;
 	int cmd_len;
@@ -3615,8 +3608,8 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	return;
 }
 
-static BOOL get_digest_string(char *src, int length, char *tag, char *buff,
-	int buff_len)
+static BOOL get_digest_string(const char *src, int length, const char *tag,
+    char *buff, int buff_len)
 {
 	int len;
 	char *ptr1, *ptr2;
@@ -3674,7 +3667,7 @@ static BOOL get_digest_string(char *src, int length, char *tag, char *buff,
 	return TRUE;
 }
 
-static BOOL get_digest_integer(char *src, int length, char *tag, int *pinteger)
+static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger)
 {
 	char num_buff[32];
 	

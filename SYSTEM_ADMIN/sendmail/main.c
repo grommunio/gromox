@@ -60,7 +60,7 @@ static BOOL move_to_sent(const char *maildir,
 	return b_result;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	MAIL imail;
 	char *pbuff;

@@ -2533,7 +2533,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	int i;
 	BOOL b_new;
 	int sql_len;
-	void *pvalue;
+	const void *pvalue;
 	const char *dir;
 	TARRAY_SET rows;
 	sqlite3 *psqlite;

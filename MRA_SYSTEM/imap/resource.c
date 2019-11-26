@@ -178,8 +178,7 @@ static int resource_parse_imap_line(char* dest, char* src_str, int len);
 
 static BOOL resource_load_imap_lang_list();
 
-
-void resource_init(char* cfg_filename)
+void resource_init(const char *cfg_filename)
 {
 	g_lang_list = NULL;
     strcpy(g_cfg_filename, cfg_filename);
@@ -348,7 +347,7 @@ BOOL resource_set_integer(int key, int value)
  *      TRUE        success
  *      FALSE       fail
  */
-BOOL resource_set_string(int key, char* value)
+BOOL resource_set_string(int key, const char *value)
 {
 
     if (key < 0 || key > MAX_RES_CONFG_VAR_NUM || NULL == value) {
@@ -585,7 +584,7 @@ static int resource_parse_imap_line(char* dest, char* src_str, int len)
 
 }
 
-char* resource_get_imap_code(int code_type, int n, int *len)
+const char *resource_get_imap_code(int code_type, int n, int *len)
 {
     IMAP_RETURN_CODE *pitem = NULL;
     char *ret_ptr = NULL;
@@ -668,7 +667,7 @@ static int resource_find_imap_code_index(int native_code)
     return -1;
 }
 
-BOOL resource_get_digest_integer(char *src, char *tag, long *pinteger)
+BOOL resource_get_digest_integer(const char *src, const char *tag, long *pinteger)
 {
 	char num_buff[32];
 
@@ -679,7 +678,7 @@ BOOL resource_get_digest_integer(char *src, char *tag, long *pinteger)
 	return FALSE;
 }
 
-void resource_set_digest_string(char *src, int length, const char *tag, char *value)
+void resource_set_digest_string(char *src, int length, const char *tag, const char *value)
 {
     char temp_value[256];
 	
@@ -864,7 +863,7 @@ char** resource_get_folder_strings(const char*lang)
 	return NULL;
 }
 
-char* resource_get_error_string(int errno)
+const char *resource_get_error_string(int errno)
 {
 	int temp_len;
 	

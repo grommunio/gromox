@@ -2294,7 +2294,7 @@ static BOOL get_freebusy(const char *dir)
 	return TRUE;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i;
 	char *line;

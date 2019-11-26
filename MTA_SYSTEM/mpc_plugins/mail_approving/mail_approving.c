@@ -54,9 +54,7 @@ static BOOL mail_approving_serialize(MESSAGE_CONTEXT *pcontext,
 	char *homedir, char *mess_id);
 
 static BOOL mail_approving_activate(const char *file_name);
-
-static void mail_approving_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...);
+static void mail_approving_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 
 void mail_approving_init(const char *root_path, int growing_num,
 	const char *dm_host)
@@ -894,7 +892,7 @@ static int mail_approving_sequence_ID()
 
 
 static void mail_approving_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...)
+    const char *format, ...)
 {
     char log_buf[2048], rcpt_buff[256];
     va_list ap;

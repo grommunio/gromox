@@ -159,7 +159,7 @@ static BOOL md5_msg_file(const char *path, char *digest);
 
 static BOOL midb_remove(char *path, char *mids);
 
-static STR_HASH_TABLE* list_mail(char *path);
+static STR_HASH_TABLE *list_mail(const char *path);
 static void save_hash(const char *maildir, int version,
 	STR_HASH_TABLE *phash);
 
@@ -169,7 +169,7 @@ static USER_ITEM* lock_mailbox(const char *username);
 
 void unlock_mailbox(USER_ITEM *puser);
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int optval;
 	int thr_num;
@@ -1677,8 +1677,7 @@ RDWR_ERROR:
 	return FALSE;
 }
 
-
-static STR_HASH_TABLE* list_mail(char *path)
+static STR_HASH_TABLE *list_mail(const char *path)
 {
 	int i;
 	int lines;

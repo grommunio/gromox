@@ -27,7 +27,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file);
  *		<>NULL					object pointer
  *
  */
-LIST_FILE* list_file_init(char* filename, const char* format)
+LIST_FILE *list_file_init(const char *filename, const char *format)
 {
 	LIST_FILE *list_file;
 	FILE *file_ptr;

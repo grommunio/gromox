@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
@@ -89,7 +90,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		break;
 	case PROP_TAG_ADDRESSTYPE:
 	case PROP_TAG_ADDRESSTYPE_STRING8:
-		pprop->value.pstr = "EX";
+		pprop->value.pstr = const_cast(char *, "EX");
 		break;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
@@ -3384,7 +3385,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	switch (proptag) {
 	case PROP_TAG_ADDRESSTYPE:
 	case PROP_TAG_ADDRESSTYPE_STRING8:
-		pprop->value.pstr = "SMTP";
+		pprop->value.pstr = const_cast(char *, "SMTP");
 		break;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:

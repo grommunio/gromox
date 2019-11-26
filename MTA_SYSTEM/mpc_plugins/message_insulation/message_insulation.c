@@ -21,10 +21,7 @@ static BOOL g_notify_stop = TRUE;
 static pthread_t g_thread_id;
 
 static void* thread_work_func(void* arg);
-
-static void message_insulation_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...);
-
+static void message_insulation_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 
 void message_insulation_init(const char* config_path, const char *queue_path,
 	int scan_interval, int on_valid_interval, int anon_valid_interval)
@@ -429,7 +426,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
 }
 
 static void message_insulation_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...)
+    const char *format, ...)
 {
 	char log_buf[2048], rcpt_buff[256];
 	va_list ap;

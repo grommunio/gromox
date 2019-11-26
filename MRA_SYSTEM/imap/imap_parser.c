@@ -410,9 +410,7 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 	int written_len;
 	size_t total_len;
 	int string_length;
-	const char *host_ID;
-    char *imap_reply_str;
-    char *imap_reply_str2;
+	const char *host_ID, *imap_reply_str, *imap_reply_str2;
 	char* argv[128];
 	char temp_buff[4096];
 	char reply_buff[1024];
@@ -1506,7 +1504,7 @@ int imap_parser_set_param(int param, int value)
 static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int string_length;
-	char *imap_reply_str;
+	const char *imap_reply_str;
 	char reply_buff[1024];
 	
 	
@@ -1778,7 +1776,7 @@ static void* thread_work_func(void *argp)
 
 }
 
-void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, char *format, ...)
+void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...)
 {
 	char log_buf[2048];
 	va_list ap;

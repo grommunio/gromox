@@ -129,7 +129,7 @@ enum {
     SMTP_CODE_COUNT
 };
 
-void resource_init(char* cfg_filename);
+extern void resource_init(const char *cfg_filename);
 extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
@@ -139,9 +139,7 @@ BOOL resource_get_integer(int key, int* value);
 const char* resource_get_string(int key);
 
 BOOL resource_set_integer(int key, int value);
-
-BOOL resource_set_string(int key, char* value);
-
+extern BOOL resource_set_string(int key, const char *value);
 char* resource_get_smtp_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_smtp_code_table(void);
 

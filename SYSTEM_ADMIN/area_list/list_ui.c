@@ -364,7 +364,7 @@ static BOOL list_ui_get_self(char *url_buff, int length)
 
 static void list_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";
@@ -486,9 +486,7 @@ static void list_ui_main_html(const char *session)
 			continue;
 		}
 		pdb_storage = strchr(pitem[i].master, ':');
-		if (NULL == pdb_storage) {
-			pdb_storage = "N/A";
-		} else {
+		if (pdb_storage != NULL) {
 			*pdb_storage = '\0';
 			pdb_storage ++;
 		}
@@ -530,13 +528,15 @@ static void list_ui_main_html(const char *session)
 		}
 
 		if (-1 == files || -1 == space || -1 == homes) {
-			printf(HTML_TBITEM_ERROR, pitem[i].master, pdb_storage, pitem[i].slave,
+			printf(HTML_TBITEM_ERROR, pitem[i].master,
+				pdb_storage != NULL ? pdb_storage : "N/A", pitem[i].slave,
 				pitem[i].space, pitem[i].files, lang_resource_get(g_lang_resource,"NUM_ERROR",
 				language), lang_resource_get(g_lang_resource,"NUM_ERROR", language),
 				lang_resource_get(g_lang_resource,"NUM_ERROR", language), 
 				pitem[i].master, lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 		} else {
-			printf(HTML_TBITEM_NORMAL, pitem[i].master, pdb_storage, pitem[i].slave,
+			printf(HTML_TBITEM_NORMAL, pitem[i].master,
+				pdb_storage != NULL ? pdb_storage : "N/A", pitem[i].slave,
 				pitem[i].space, pitem[i].files, space, files, homes,
 				pitem[i].master, lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 		}
@@ -557,9 +557,7 @@ static void list_ui_main_html(const char *session)
 			continue;
 		}
 		pdb_storage = strchr(pitem[i].master, ':');
-		if (NULL == pdb_storage) {
-			pdb_storage = "N/A";
-		} else {
+		if (pdb_storage != NULL) {
 			*pdb_storage = '\0';
 			pdb_storage ++;
 		}
@@ -601,13 +599,15 @@ static void list_ui_main_html(const char *session)
 		}
 
 		if (-1 == files || -1 == space || -1 == homes) {
-			printf(HTML_TBITEM_ERROR, pitem[i].master, pdb_storage, pitem[i].slave,
+			printf(HTML_TBITEM_ERROR, pitem[i].master,
+				pdb_storage != NULL ? pdb_storage : "N/A", pitem[i].slave,
 				pitem[i].space, pitem[i].files, lang_resource_get(g_lang_resource,"NUM_ERROR",
 				language), lang_resource_get(g_lang_resource,"NUM_ERROR", language),
 				lang_resource_get(g_lang_resource,"NUM_ERROR", language), 
 				pitem[i].master, lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 		} else {
-			printf(HTML_TBITEM_NORMAL, pitem[i].master, pdb_storage, pitem[i].slave,
+			printf(HTML_TBITEM_NORMAL, pitem[i].master,
+				pdb_storage != NULL ? pdb_storage : "N/A", pitem[i].slave,
 				pitem[i].space, pitem[i].files, space, files, homes,
 				pitem[i].master, lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 		}
@@ -628,9 +628,7 @@ static void list_ui_main_html(const char *session)
 			continue;
 		}
 		pdb_storage = strchr(pitem[i].master, ':');
-		if (NULL == pdb_storage) {
-			pdb_storage = "N/A";
-		} else {
+		if (pdb_storage != NULL) {
 			*pdb_storage = '\0';
 			pdb_storage ++;
 		}
@@ -672,13 +670,15 @@ static void list_ui_main_html(const char *session)
 		}
 
 		if (-1 == files || -1 == space || -1 == homes) {
-			printf(HTML_TBITEM_ERROR, pitem[i].master, pdb_storage, pitem[i].slave,
+			printf(HTML_TBITEM_ERROR, pitem[i].master,
+				pdb_storage != NULL ? pdb_storage : "N/A", pitem[i].slave,
 				pitem[i].space, pitem[i].files, lang_resource_get(g_lang_resource,"NUM_ERROR",
 				language), lang_resource_get(g_lang_resource,"NUM_ERROR", language),
 				lang_resource_get(g_lang_resource,"NUM_ERROR", language), 
 				pitem[i].master, lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 		} else {
-			printf(HTML_TBITEM_NORMAL, pitem[i].master, pdb_storage, pitem[i].slave,
+			printf(HTML_TBITEM_NORMAL, pitem[i].master,
+				pdb_storage != NULL ? pdb_storage : "N/A", pitem[i].slave,
 				pitem[i].space, pitem[i].files, space, files, homes,
 				pitem[i].master, lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 		}

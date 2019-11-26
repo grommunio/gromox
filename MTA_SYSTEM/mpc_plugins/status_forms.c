@@ -68,7 +68,7 @@ typedef struct _NETWORK_INFO {
 	double out;
 } NETWORK_INFO;
 
-typedef BOOL (*CONSOLE_CONTROL)(char*, char*, int);
+typedef BOOL (*CONSOLE_CONTROL)(const char *, char *, int);
 
 DECLARE_API;
 

@@ -38,8 +38,7 @@ typedef struct _ENCODE_STRING{
 extern "C" {
 #endif 
 
-char* extract_ip(char *buff_in, char *buff_out);
-
+extern const char *extract_ip(const char *in, char *out);
 void parse_email_addr(EMAIL_ADDR *e_addr, const char *email);
 
 void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email);

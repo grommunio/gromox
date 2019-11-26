@@ -52,7 +52,7 @@ typedef struct _DCERPC_INTERFACE {
 
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
-typedef void* (*QUERY_SERVICE)(char*);
+typedef void *(*QUERY_SERVICE)(const char *);
 typedef int (*QUERY_VERSION)(void);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
@@ -69,9 +69,7 @@ typedef BOOL (*NEW_ENVIRONMENT)(void);
 typedef void (*FREE_ENVIRONMENT)(void);
 typedef void (*ASYNC_REPLY)(int, void*);
 /* represent function type of log_info */
-typedef void (*LOG_INFO)(int, char*, ...);
-
-
+typedef void (*LOG_INFO)(int, const char *, ...);
 
 extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;

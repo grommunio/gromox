@@ -4595,7 +4595,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
 				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
-				tmp_propval.pvalue = "EX";
+				tmp_propval.pvalue  = const_cast(char *, "EX");
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PROP_TAG_EMAILADDRESS;
 				tmp_propval.pvalue = common_util_dup(ab_entryid.px500dn);
@@ -4647,7 +4647,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
 				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
-				tmp_propval.pvalue = "SMTP";
+				tmp_propval.pvalue  = const_cast(char *, "SMTP");
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PROP_TAG_EMAILADDRESS;
 				tmp_propval.pvalue = common_util_dup(

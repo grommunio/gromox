@@ -1,4 +1,5 @@
 #include <time.h>
+#include <libHX/defs.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -76,7 +77,7 @@ void start_cidb()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./cidb", "../config/titan.cfg", NULL};
+	const char *args[] = {"./cidb", "../config/titan.cfg", NULL};
 
 	sprintf(temp_path, "%s/cidb", TITAN_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -94,7 +95,7 @@ void start_cidb()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(TITAN_MAIN_DIR);
-				if (execve("./cidb", args, NULL) == -1) {
+				if (execve("./cidb", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -293,7 +294,7 @@ void restart_service()
 	start_service();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);

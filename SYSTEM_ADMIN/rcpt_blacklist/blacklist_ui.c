@@ -381,7 +381,7 @@ static BOOL blacklist_ui_get_self(char *url_buff, int length)
 
 static void blacklist_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";

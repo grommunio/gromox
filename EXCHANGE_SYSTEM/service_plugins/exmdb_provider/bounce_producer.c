@@ -58,7 +58,7 @@ static char g_separator[16];
 static SINGLE_LIST g_resource_list;
 static RESOURCE_NODE *g_default_resource;
 static pthread_rwlock_t g_list_lock;
-static char* g_resource_table[] = {
+static const char *g_resource_table[] = {
 	"BOUNCE_AUTO_RESPONSE",
 	"BOUNCE_MAIL_TOO_LARGE",
 	"BOUNCE_CANNOT_DISPLAY",

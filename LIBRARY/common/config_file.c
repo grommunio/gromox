@@ -28,7 +28,7 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line);
  *		a pointer point to the config file object, NULL if
  *		some error occurs
  */
-CONFIG_FILE* config_file_init(char* filename)
+CONFIG_FILE *config_file_init(const char *filename)
 {
 	CONFIG_FILE* cfg = NULL;	/* the config object pointer	*/
 	char line[MAX_LINE_LEN];	/* current line being processed */

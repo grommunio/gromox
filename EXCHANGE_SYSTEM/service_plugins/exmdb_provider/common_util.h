@@ -1537,7 +1537,7 @@ extern BOOL (*common_util_get_id_from_homedir)(
 extern BOOL (*common_util_send_mail)(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list);
 extern MIME_POOL *(*common_util_get_mime_pool)(void);
-extern void (*common_util_log_info)(int level, char *format, ...);
+extern void (*common_util_log_info)(int level, const char *format, ...);
 extern const GUID *(*common_util_get_handle)(void);
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,

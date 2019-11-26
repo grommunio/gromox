@@ -16,10 +16,9 @@
 #include <stdio.h>
 #include <time.h>
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
-	char *str_value;
+	const char *str_value;
 	char locker_ip[16];
 	char work_path[256];
 	char temp_path[256];

@@ -73,7 +73,7 @@ static BOOL read_mark(CONNECTION_NODE *pconnection);
 
 static void unlock_resource(char *resource);
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, num;
 	int optval;

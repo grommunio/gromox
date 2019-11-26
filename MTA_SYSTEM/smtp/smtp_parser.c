@@ -2195,7 +2195,8 @@ static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext)
 	stream_forward_reading_ptr(&pcontext->stream, pcontext->pre_rstlen);
 }
 
-void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, char *format, ...)
+void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
+    const char *format, ...)
 {
 	char log_buf[2048], rcpt_buff[2048];
 	size_t size_read = 0, rcpt_len = 0, i;

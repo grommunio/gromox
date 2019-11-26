@@ -24,7 +24,7 @@ static void term_handler(int signo)
 	g_notify_stop = TRUE;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 
 	int listen_port;

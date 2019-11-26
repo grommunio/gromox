@@ -525,7 +525,7 @@ size_t mem_file_tell(MEM_FILE *pfile, int type)
  *	  @return
  *		  indicate actual size that has been written
  */
-size_t	mem_file_write(MEM_FILE *pfile, void* pbuff, size_t size)
+size_t mem_file_write(MEM_FILE *pfile, const void *pbuff, size_t size)
 {
 	size_t bytes_need, cur_end, remains; 
 	size_t blocks, actual_written, i;
@@ -606,7 +606,7 @@ size_t	mem_file_write(MEM_FILE *pfile, void* pbuff, size_t size)
  *	  @return
  *		  return actual size written into mem file
  */
-size_t	mem_file_writeline(MEM_FILE *pfile, char* pbuff)
+size_t mem_file_writeline(MEM_FILE *pfile, const char *pbuff)
 {
 	size_t length, written;
 #ifdef _DEBUG_UMTA

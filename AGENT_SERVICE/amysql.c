@@ -87,9 +87,7 @@ static DOUBLE_LIST g_front_list1;
 static DOUBLE_LIST g_back_list;
 static DOUBLE_LIST g_lost_list;
 
-
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
     int listenfd;
 	char *str_value;

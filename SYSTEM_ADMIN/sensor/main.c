@@ -89,7 +89,7 @@ static void event_proc(const char *dir, BOOL b_table,
 	pthread_mutex_unlock(&g_hash_lock);
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int optval;
 	int i, num;

@@ -57,7 +57,7 @@ cellPadding=2 width=\"100%\" border=0><TBODY>"
 #define SPAM_TAG_LEN        40
 #define SPAM_TABLE_SIZE     4096
 
-typedef BOOL (*CONSOLE_CONTROL)(char*, char*, int);
+typedef BOOL (*CONSOLE_CONTROL)(const char *, char *, int);
 
 typedef struct _STATISTIC_ITEM {
 	char	tag[SPAM_TAG_LEN];

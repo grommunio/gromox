@@ -589,7 +589,7 @@ BOOL container_object_load_user_table(
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
-			propval.pvalue = "SMTP";
+			propval.pvalue  = const_cast(char *, "SMTP");
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -752,9 +752,9 @@ BOOL container_object_fetch_special_property(
 		ab_entryid.version = 1;
 		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 		if (SPECIAL_CONTAINER_GAL == special_type) {
-			ab_entryid.px500dn = "";
+			ab_entryid.px500dn = const_cast(char *, "");
 		} else {
-			ab_entryid.px500dn = "/";
+			ab_entryid.px500dn = const_cast(char *, "/");
 		}
 		((BINARY*)pvalue)->pb = common_util_alloc(128);
 		if (NULL == ((BINARY*)pvalue)->pb) {
@@ -787,9 +787,9 @@ BOOL container_object_fetch_special_property(
 		return TRUE;
 	case PROP_TAG_DISPLAYNAME:
 		if (SPECIAL_CONTAINER_GAL == special_type) {
-			*ppvalue = "Global Address List";
+			*ppvalue = const_cast(char *, "Global Address List");
 		} else {
-			*ppvalue = "Steep Contact Folders";
+			*ppvalue = const_cast(char *, "Steep Contact Folders");
 		}
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKISMASTER:

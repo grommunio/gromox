@@ -41,7 +41,7 @@ void (*system_services_install_event_stub)(void *);
 void (*system_services_broadcast_event)(const char*);
 void (*system_services_broadcast_select)(const char*, const char*);
 void (*system_services_broadcast_unselect)(const char*, const char*);
-void (*system_services_log_info)(int, char*, ...);
+void (*system_services_log_info)(int, const char *, ...);
 
 /*
  *	module's construct function

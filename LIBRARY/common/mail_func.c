@@ -45,7 +45,7 @@ static uint32_t  g_uri_usual[] = {
  *	@return
  *		begin address of IP in original buffer
  */
-char* extract_ip(char *buff_in, char *buff_out)
+const char *extract_ip(const char *buff_in, char *buff_out)
 {
 	long i, j, k;
 	long len, end;
@@ -1394,7 +1394,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 				argv[argc] = last_space;
 				*ptr = '\0';
 				if (FALSE == is_quoted && 0 == strcasecmp(argv[argc], "NIL")) {
-					argv[argc] = "";
+					*argv[argc] = '\0';
 				}
 				last_space = ptr + 1;
 				argc ++;

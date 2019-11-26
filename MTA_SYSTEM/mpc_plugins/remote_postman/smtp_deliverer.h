@@ -34,10 +34,7 @@ int smtp_deliverer_process(MESSAGE_CONTEXT *pcontext,
 int smtp_deliverer_get_param(int param);
 
 void smtp_deliverer_set_param(int param, int val);
-
-void smtp_deliverer_log_info(MESSAGE_CONTEXT *pcontext,
-	int level, char *format, ...);
-
+extern void smtp_deliverer_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 
 #endif /* _H_SMTP_DELIVERER_ */
 

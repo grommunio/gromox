@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "alloc_context.h"
 #include "exmdb_client.h"
 #include "common_util.h"
@@ -292,7 +293,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	propval_buff[2].proptag = PROP_TAG_DISPLAYNAME;
 	propval_buff[2].pvalue = (void*)folder_name;
 	propval_buff[3].proptag = PROP_TAG_CONTAINERCLASS;
-	propval_buff[3].pvalue = "IPF.Note";
+	propval_buff[3].pvalue  = const_cast(char *, "IPF.Note");
 	propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
 	propval_buff[4].pvalue = &last_time;
 	propval_buff[5].proptag = PROP_TAG_LASTMODIFICATIONTIME;

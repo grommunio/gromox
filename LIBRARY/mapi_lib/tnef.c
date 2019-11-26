@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <libHX/defs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "tarray_set.h"
@@ -174,12 +175,12 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 	if (NULL != pdisplay_name) {
-		tmp_entry.pdisplay_name = (char*)pdisplay_name;
+		tmp_entry.pdisplay_name = const_cast(char *, pdisplay_name);
 	} else {
-		tmp_entry.pdisplay_name = "";
+		tmp_entry.pdisplay_name = const_cast(char *, "");
 	}
-	tmp_entry.paddress_type = "SMTP";
-	tmp_entry.pmail_address = (char*)username;
+	tmp_entry.paddress_type = const_cast(char *, "SMTP");
+	tmp_entry.pmail_address = const_cast(char *, username);
 	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_oneoff_entryid(
 		&ext_push, &tmp_entry)) {

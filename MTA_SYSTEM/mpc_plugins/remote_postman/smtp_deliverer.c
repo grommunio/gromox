@@ -841,7 +841,7 @@ int smtp_deliverer_process(MESSAGE_CONTEXT *pcontext,
  *		...
  */
 void smtp_deliverer_log_info(MESSAGE_CONTEXT *pcontext,
-	int level, char *format, ...)
+    int level, const char *format, ...)
 {
 	char log_buf[2048], rcpt_buff[2048];
 	size_t size_read = 0, rcpt_len = 0, i;

@@ -3428,7 +3428,7 @@ static BOOL message_make_deferred_error_message(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
-	propval.pvalue = "IPC.Microsoft Exchange 4.0.Deferred Error";
+	propval.pvalue  = const_cast(char *, "IPC.Microsoft Exchange 4.0.Deferred Error");
 	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
@@ -3777,12 +3777,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	}
 	mime_set_field(pmime, "X-Auto-Response-Suppress", "All");
 	pvalue = strchr(from_address, '@');
-	if (NULL == pvalue) {
-		pvalue = "system.mail";
-	} else {
-		pvalue ++;
-	}
-	sprintf(tmp_buff, "auto-reply@%s", pvalue);
+	sprintf(tmp_buff, "auto-reply@%s", pvalue == NULL ? "system.mail" : ++pvalue);
 	double_list_init(&tmp_list);
 	if (FALSE == common_util_recipients_to_list(
 		pmsgctnt->children.prcpts, &tmp_list)) {
@@ -3916,7 +3911,7 @@ static BOOL message_forward_message(const char *from_address,
 	MIME *pmime;
 	void *pvalue;
 	int body_type;
-	char *pdomain;
+	const char *pdomain;
 	time_t cur_time;
 	char tmp_path[256];
 	struct tm time_buff;
@@ -4142,7 +4137,7 @@ static BOOL message_make_deferred_action_message(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
-	propval.pvalue = "IPC.Microsoft Exchange 4.0.Deferred Action";
+	propval.pvalue  = const_cast(char *, "IPC.Microsoft Exchange 4.0.Deferred Action");
 	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
@@ -4701,7 +4696,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					propval.pvalue = pvalue;
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
-					propval.pvalue = "EX";
+					propval.pvalue  = const_cast(char *, "EX");
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag =
 						PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
@@ -5154,7 +5149,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					propval.pvalue = pvalue;
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
-					propval.pvalue = "EX";
+					propval.pvalue  = const_cast(char *, "EX");
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag =
 						PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
@@ -5421,7 +5416,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		propval.pvalue = pentryid;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		propval.proptag = PROP_TAG_RECEIVEDBYADDRESSTYPE;
-		propval.pvalue = "EX";
+		propval.pvalue  = const_cast(char *, "EX");
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		propval.proptag = PROP_TAG_RECEIVEDBYEMAILADDRESS;
 		propval.pvalue = essdn_buff + 3;
@@ -5445,7 +5440,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			propval.pvalue = pentryid;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);	
 			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
-			propval.pvalue = "EX";
+			propval.pvalue  = const_cast(char *, "EX");
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
 			propval.pvalue = essdn_buff + 3;

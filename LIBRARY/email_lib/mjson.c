@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "mail.h"
 #include "util.h"
 #include "mjson.h"
@@ -1604,7 +1605,7 @@ FETCH_STRUCTURE_LOOP:
 	
 	psubtype = strchr(ctype, '/');
 	if (NULL == psubtype) {
-		psubtype = "NIL";
+		psubtype = const_cast(char *, "NIL");
 	} else {
 		*psubtype = '\0';
 		psubtype ++;

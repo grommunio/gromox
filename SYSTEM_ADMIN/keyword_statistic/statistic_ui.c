@@ -315,7 +315,7 @@ static BOOL statistic_ui_get_self(char *url_buff, int length)
 
 static void statistic_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	char url_buff[1024];
 	
 	if (NULL == error_string) {

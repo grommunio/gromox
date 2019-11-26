@@ -637,7 +637,7 @@ static void ui_main_left_html(const char *session, BOOL b_ext)
 
 static void ui_main_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	char url_buff[1024];
 	
 	if (NULL ==error_string) {

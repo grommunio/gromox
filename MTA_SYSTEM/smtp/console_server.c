@@ -62,7 +62,7 @@ static pthread_mutex_t g_excute_lock;
 static pthread_key_t g_client_fd_key;
 static COMMAND_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
 
-static BOOL console_server_register_command(char* cmd, COMMAND_HANDLER handler);
+static BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler);
 static void console_server_execve_command(char* cmdline);
 static void console_server_install_command();
 static int	console_server_parse_line(const char* cmdline, char** argv);
@@ -354,7 +354,7 @@ static void* console_work_func(void *argp)
 *	   TRUE		   register successfully
 *	   FALSE	   fail
 */
-static BOOL console_server_register_command(char* cmd, COMMAND_HANDLER handler)
+static BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler)
 {
 	if (g_cmd_num >= MAX_CMD_NUMBER + 1) {
 		return FALSE;

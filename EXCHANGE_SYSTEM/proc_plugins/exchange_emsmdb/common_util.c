@@ -1440,7 +1440,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 		if (0 == strcasecmp(pvalue, "EX")) {
 			prow->flags |= RECIPIENT_ROW_TYPE_X500DN;
 			/* point to a byte and the value is 0, not a real string! */
-			prow->pprefix_used = "";
+			prow->pprefix_used = const_cast(char *, "");
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_DISPLAYTYPE);
 			if (NULL == pvalue) {
@@ -1564,14 +1564,14 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		if (NULL == prow->px500dn) {
 			return FALSE;
 		}
-		propval.pvalue = "EX";
+		propval.pvalue = const_cast(char *, "EX");
 		common_util_set_propvals(ppropvals, &propval);
 		propval.proptag = PROP_TAG_EMAILADDRESS;
 		propval.pvalue = prow->px500dn;
 		common_util_set_propvals(ppropvals, &propval);
 		break;
 	case RECIPIENT_ROW_TYPE_SMTP:
-		propval.pvalue = "SMTP";
+		propval.pvalue = const_cast(char *, "SMTP");
 		common_util_set_propvals(ppropvals, &propval);
 		break;
 	default:
@@ -1595,7 +1595,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 					ppropvals, PROP_TAG_SMTPADDRESS);
 		}
 		if (NULL == propval.pvalue) {
-			propval.pvalue = "Undisclosed-Recipients";
+			propval.pvalue = const_cast(char *, "Undisclosed-Recipients");
 		}
 		common_util_set_propvals(ppropvals, &propval);
 	}
@@ -2926,7 +2926,7 @@ MIME_POOL* common_util_get_mime_pool()
 	return g_mime_pool;
 }
 
-void common_util_log_info(int level, char *format, ...)
+void common_util_log_info(int level, const char *format, ...)
 {
 	va_list ap;
 	char log_buf[2048];

@@ -90,7 +90,7 @@ int midb_client_stop()
 }
 
 static BOOL midb_client_list_mail(int sockd,
-	const char *maildir, char *folder, sqlite3_stmt *pstmt)
+    const char *maildir, const char *folder, sqlite3_stmt *pstmt)
 {
 	int i;
 	int lines;

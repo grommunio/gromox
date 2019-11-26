@@ -12,16 +12,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
-	char *str_value;
+	const char *str_value, *mount_path;
 	char work_path[256];
 	char data_path[256];
 	char temp_path[256];
 	char lang_path[256];
 	char app_path[256];
-	char *mount_path;
 	char session_ip[16];
 	int session_port;
 	char mysql_host[256];

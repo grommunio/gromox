@@ -13,11 +13,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int valid_days;
-	char *str_value;
+	const char *str_value;
 	char work_path[256];
 	char temp_path[256];
 	char lang_path[256];

@@ -25,7 +25,7 @@ typedef void (*STOP_FUNC)();
 
 static void term_handler(int signo);
 
-int main(int argc, char* argv[]) 
+int main(int argc, const char **argv)
 { 
  
 	int listen_port, listen_ssl_port;

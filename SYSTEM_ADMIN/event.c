@@ -102,8 +102,7 @@ static BOOL read_mark(ENQUEUE_NODE *penqueue);
 
 static void term_handler(int signo);
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, num;
 	int optval;

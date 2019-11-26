@@ -890,7 +890,7 @@ unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset)
 		return offset;
 }
 
-int stream_write(STREAM *pstream, char *pbuff, size_t size)
+int stream_write(STREAM *pstream, const void *pbuff, size_t size)
 {
 	char *pstream_buff;
 	unsigned int buff_size, actual_size;

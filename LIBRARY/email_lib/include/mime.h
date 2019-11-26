@@ -57,8 +57,7 @@ BOOL mime_retrieve(MIME *pmime_parent,
 void mime_clear(MIME *pmime);
 
 BOOL mime_clear_content(MIME *pmime);
-
-BOOL mime_write_content(MIME *pmime, char *pcontent, size_t length,
+extern BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 	int encoding_type);
 
 BOOL mime_write_mail(MIME *pmime, struct _MAIL *pmail);

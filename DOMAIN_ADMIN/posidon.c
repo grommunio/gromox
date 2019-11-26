@@ -1,4 +1,5 @@
 #include <time.h>
+#include <libHX/defs.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -75,7 +76,7 @@ void start_analyzer()
 	int len, status;
 	char temp_str[32];
 	char temp_path[256];
-	char *args[] = {"./daemon", "../config/posidon.cfg", NULL};
+	const char *args[] = {"./daemon", "../config/posidon.cfg", NULL};
 	struct stat node_stat;
 	
 	sprintf(temp_path, "%s/daemon", POSIDON_MAIN_DIR);
@@ -85,7 +86,7 @@ void start_analyzer()
 	pid = fork();
 	if (0 == pid) {
 		chdir(POSIDON_MAIN_DIR);
-		if (execve("./daemon", args, NULL) == -1) {
+		if (execve("./daemon", const_cast(char **, args), NULL) == -1) {
 			exit(EXIT_FAILURE);
 		}
 	} else if (pid > 0) {
@@ -108,7 +109,7 @@ void start_synchronizer()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./synchronizer", "../config/posidon.cfg", NULL};
+	const char *args[] = {"./synchronizer", "../config/posidon.cfg", NULL};
 
 	sprintf(temp_path, "%s/synchronizer", POSIDON_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -126,7 +127,7 @@ void start_synchronizer()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(POSIDON_MAIN_DIR);
-				if (execve("./synchronizer", args, NULL) == -1) {
+				if (execve("./synchronizer", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -146,7 +147,7 @@ void start_fcgicgi()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./fcgi_cgi", "../config/posidon.cfg", NULL};
+	const char *args[] = {"./fcgi_cgi", "../config/posidon.cfg", NULL};
 
 	sprintf(temp_path, "%s/fcgi_cgi", POSIDON_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -164,7 +165,7 @@ void start_fcgicgi()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(POSIDON_MAIN_DIR);
-				if (execve("./fcgi_cgi", args, NULL) == -1) {
+				if (execve("./fcgi_cgi", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -357,7 +358,7 @@ void restart_service()
 	start_service();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);

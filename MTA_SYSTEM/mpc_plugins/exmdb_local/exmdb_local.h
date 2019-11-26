@@ -43,10 +43,7 @@ extern void exmdb_local_free(void);
 BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext);
 
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);
-
-void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
-	int level, char *format, ...);
-
+extern void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext, const char *rcpt_to, int level, const char *format, ...);
 void exmdb_local_console_talk(int argc, char **argv, char *result, int length);
 
 #endif

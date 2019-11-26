@@ -372,7 +372,7 @@ static BOOL list_ui_get_self(char *url_buff, int length)
 
 static void list_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";
@@ -396,7 +396,7 @@ static void list_ui_error_html(const char *error_string)
 static void list_ui_main_html(const char *domain, const char *session)
 {
 	int i;
-	char *language;
+	const char *language;
 	time_t tmp_time;
 	uint64_t folder_id;
 	char temp_buff[256];

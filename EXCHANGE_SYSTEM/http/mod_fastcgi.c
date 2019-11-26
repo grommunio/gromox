@@ -256,7 +256,7 @@ void mod_fastcgi_free()
 }
 
 static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
-	uint8_t *pname, uint8_t *pvalue)
+    const uint8_t *pname, const uint8_t *pvalue)
 {
 	int status;
 	uint32_t tmp_len;
@@ -841,13 +841,8 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		return FALSE;
 	}
 	ptoken = strchr(tmp_buff, '?');
-	if (NULL == ptoken) {
-		ptoken = "";
-	} else {
-		ptoken ++;
-	}
 	status = mod_fastcgi_push_name_value(
-		&ndr_push, "QUERY_STRING", ptoken);
+		&ndr_push, "QUERY_STRING", ptoken == NULL ? "" : ++ptoken);
 	if (NDR_ERR_SUCCESS != status) {
 		return FALSE;
 	}

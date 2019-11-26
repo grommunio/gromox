@@ -137,7 +137,7 @@ enum {
 	IMAP_CODE_2200010
 };
 
-void resource_init(char* cfg_filename);
+extern void resource_init(const char *cfg_filename);
 extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
@@ -147,24 +147,16 @@ BOOL resource_get_integer(int key, int* value);
 const char* resource_get_string(int key);
 
 BOOL resource_set_integer(int key, int value);
-
-BOOL resource_set_string(int key, char* value);
-
-char* resource_get_imap_code(int code_type, int n, int *len);
+extern BOOL resource_set_string(int key, const char *value);
+extern const char *resource_get_imap_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_imap_code_table(void);
 char** resource_get_folder_strings(const char*lang);
 
 const char* resource_get_default_charset(const char *lang);
-
-BOOL resource_get_digest_string(char *src, char *tag, char *buff, int buff_len);
-
-BOOL resource_get_digest_integer(char *src, char *tag, long *pinteger);
-
-void resource_set_digest_string(char *src, int length, const char *tag, char *value);
-
-void resource_set_digest_integer(char *src, int length, const char *tag, long value);
-
-char* resource_get_error_string(int errno);
-
+extern BOOL resource_get_digest_string(const char *src, const char *tag, char *buff, int buff_len);
+extern BOOL resource_get_digest_integer(const char *src, const char *tag, long *pinteger);
+extern void resource_set_digest_string(char *src, int length, const char *tag, const char *value);
+extern void resource_set_digest_integer(char *src, int length, const char *tag, long value);
+extern const char *resource_get_error_string(int errno);
 
 #endif /* _H_RESOURCE_ */

@@ -87,8 +87,7 @@ extern POP3_CONTEXT *pop3_parser_get_contexts_list(void);
 int pop3_parser_threads_event_proc(int action);
 
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);
-
-void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, char *format, ...);
+extern void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *format, ...);
 extern char *pop3_parser_cdn_path(void);
 
 #endif

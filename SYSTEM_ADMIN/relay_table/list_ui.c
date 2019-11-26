@@ -467,7 +467,7 @@ static BOOL list_ui_get_self(char *url_buff, int length)
 
 static void list_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";
@@ -499,8 +499,7 @@ static void list_ui_main_html(const char *session)
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	LIST_ITEM *pitem;
-	char* str_table[] = {"32bit", "64bit"}; 
-	
+	const char *str_table[] = {"32bit", "64bit"};
 	
 	if (FALSE == list_ui_get_self(url_buff, 1024)) {
 		list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",

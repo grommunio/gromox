@@ -17,8 +17,7 @@ typedef struct _LIST_FILE {
     void*       pfile;
 } LIST_FILE;
 
-LIST_FILE* list_file_init(char* filename, const char* format);
-
+extern LIST_FILE *list_file_init(const char *filename, const char *format);
 void list_file_free(LIST_FILE* list_file);
 
 void* list_file_get_list(LIST_FILE* list_file);

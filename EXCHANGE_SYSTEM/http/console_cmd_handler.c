@@ -350,7 +350,7 @@ BOOL cmd_handler_http_control(int argc, char** argv)
 static void cmd_handler_dump_interfaces(DCERPC_INTERFACE *pinterface)
 {
 	uint32_t version;
-	char *format_string;
+	const char *format_string;
 	char uuid_string[64];
 	
 	if (g_plugname_buffer_size < PLUG_BUFFER_SIZE) {

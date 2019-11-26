@@ -37,7 +37,7 @@ BOOL (*system_services_get_mlist_ids)(int, int*, int*);
 BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 BOOL (*system_services_check_same_org)(int, int);
 int (*system_services_add_timer)(const char *, int);
-void (*system_services_log_info)(int, char*, ...);
+void (*system_services_log_info)(int, const char *, ...);
 
 /*
  *	module's construct function

@@ -2125,8 +2125,8 @@ static void http_parser_context_free(HTTP_CONTEXT *pcontext)
 	}
 }
 
-
-void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, char *format, ...)
+void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
+    const char *format, ...)
 {
 	va_list ap;
 	int context_id;

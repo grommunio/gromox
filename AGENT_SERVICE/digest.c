@@ -8,12 +8,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	MAIL imail;
 	char *pbuff;
 	char *pbuff1;
-	char *pslash;
 	size_t offset;
 	int fd, tmp_len;
 	MIME_POOL *ppool;
@@ -96,7 +95,7 @@ int main(int argc, char **argv)
 		return 8;
 	}
 
-	pslash = strrchr(argv[1], '/');
+	const char *pslash = strrchr(argv[1], '/');
 	if (NULL == pslash) {
 		pslash = argv[1];
 	} else {

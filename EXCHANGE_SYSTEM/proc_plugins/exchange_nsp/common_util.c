@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include "guid.h"
@@ -161,7 +162,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 	ppermeid->pdn = NULL;
 	if (DT_CONTAINER == display_type) {
 		if (NULL == pobj_guid) {
-			ppermeid->pdn = "/";
+			ppermeid->pdn = const_cast(char *, "/");
 		} else {
 			len = snprintf(buff, 128,
 				"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",

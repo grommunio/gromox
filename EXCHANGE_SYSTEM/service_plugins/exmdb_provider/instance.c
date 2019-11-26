@@ -955,8 +955,7 @@ static BOOL instance_read_message(
 	BINARY *pbin;
 	uint64_t cid;
 	uint32_t length;
-	char *psubject_prefix;
-	char *pnormalized_subject;
+	const char *psubject_prefix, *pnormalized_subject;
 	TPROPVAL_ARRAY *pproplist;
 	TPROPVAL_ARRAY *pproplist1;
 	ATTACHMENT_CONTENT *pattachment;
@@ -1071,14 +1070,14 @@ static BOOL instance_read_message(
 					pmsgctnt->proplist.ppropval[i].proptag =
 									PROP_TAG_SUBJECT_STRING8;
 					pmsgctnt->proplist.ppropval[i].pvalue =
-											psubject_prefix;
+						const_cast(char *, psubject_prefix);
 					pmsgctnt->proplist.count ++;
 				}
 			} else {
 				pmsgctnt->proplist.ppropval[i].proptag =
 										PROP_TAG_SUBJECT;
 				pmsgctnt->proplist.ppropval[i].pvalue =
-										psubject_prefix;
+					const_cast(char *, psubject_prefix);
 				pmsgctnt->proplist.count ++;
 			}
 		}
@@ -2351,8 +2350,7 @@ static BOOL instance_get_message_subject(
 	uint32_t proptag, void **ppvalue)
 {
 	char *pvalue;
-	char *psubject_prefix;
-	char *pnormalized_subject;
+	const char *psubject_prefix, *pnormalized_subject;
 	
 	psubject_prefix = NULL;
 	pnormalized_subject = NULL;

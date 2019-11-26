@@ -1,4 +1,5 @@
 #include <time.h>
+#include <libHX/defs.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -95,7 +96,7 @@ void start_amysql()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./amysql", "../config/pandora.cfg", NULL};
+	const char *args[] = {"./amysql", "../config/pandora.cfg", NULL};
 
 	sprintf(temp_path, "%s/amysql", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -113,7 +114,7 @@ void start_amysql()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./amysql", args, NULL) == -1) {
+				if (execve("./amysql", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -134,7 +135,7 @@ void start_asession()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./asession", "../config/pandora.cfg", NULL};
+	const char *args[] = {"./asession", "../config/pandora.cfg", NULL};
 
 	sprintf(temp_path, "%s/asession", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -152,7 +153,7 @@ void start_asession()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./asession", args, NULL) == -1) {
+				if (execve("./asession", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -172,7 +173,7 @@ void start_alock()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./alock", "../config/pandora.cfg", NULL};
+	const char *args[] = {"./alock", "../config/pandora.cfg", NULL};
 
 	sprintf(temp_path, "%s/alock", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -190,7 +191,7 @@ void start_alock()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./alock", args, NULL) == -1) {
+				if (execve("./alock", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -210,7 +211,7 @@ void start_asensor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./asensor", "../config/pandora.cfg", NULL};
+	const char *args[] = {"./asensor", "../config/pandora.cfg", NULL};
 
 	sprintf(temp_path, "%s/asensor", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -228,7 +229,7 @@ void start_asensor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./asensor", args, NULL) == -1) {
+				if (execve("./asensor", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -248,7 +249,7 @@ void start_amidb()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./amidb", "../config/pandora.cfg", NULL};
+	const char *args[] = {"./amidb", "../config/pandora.cfg", NULL};
 
 	sprintf(temp_path, "%s/amidb", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -266,7 +267,7 @@ void start_amidb()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./amidb", args, NULL) == -1) {
+				if (execve("./amidb", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -490,7 +491,7 @@ void restart_service()
 	start_service();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);

@@ -391,7 +391,7 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 {
 	size_t len;
 	size_t length;
-	char *ptr1, *ptr2;
+	const char *ptr1, *ptr2;
 	char temp_tag[256];
 
 	length = strlen(src);
@@ -447,8 +447,7 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 	return TRUE;
 }
 
-
-BOOL set_digest(char *src, size_t length, const char *tag, char *value)
+BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 {
 	size_t len;
 	size_t temp_len;
@@ -510,7 +509,7 @@ BOOL set_digest(char *src, size_t length, const char *tag, char *value)
 	return TRUE;
 }
 
-BOOL add_digest(char *src, size_t length, const char *tag, char *value)
+BOOL add_digest(char *src, size_t length, const char *tag, const char *value)
 {
 	size_t i, len;
 	size_t temp_len;
@@ -1278,7 +1277,7 @@ void randstring(char *buff, int length)
 	int i, key;
 	int string_len;
 	static int myseed = 25011984;
-	char *string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
+	const char string[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-#'?!";
 	
 	if (length <= 0) {
 		length = 1;
@@ -1718,7 +1717,7 @@ int qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
 	return outpos;
 }
 
-void debug_info(char *format, ...)
+void debug_info(const char *format, ...)
 {
 #ifdef _DEBUG_UMTA
 	char msg[256];

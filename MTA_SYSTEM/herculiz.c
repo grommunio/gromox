@@ -19,6 +19,7 @@
  *         +++++++++++++   +++++++++++++
  */
 #include <time.h>
+#include <libHX/defs.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -105,7 +106,7 @@ void start_smtp()
 {
 	int fd, status;
 	struct stat node_stat;
-	char *args[] = {"./smtp", "../config/smtp.cfg", NULL};
+	const char *args[] = {"./smtp", "../config/smtp.cfg", NULL};
 
 	if (0 != stat(SMTP_LOG_FILE, &node_stat) 
 		|| node_stat.st_size > 128*1024*1024) {
@@ -127,7 +128,7 @@ void start_smtp()
 				dup2(fd, STDOUT_FILENO);
 				close(fd);
 				chdir(HERCULIZ_MAIN_DIR);
-				if (execve("./smtp", args, NULL) == -1) {
+				if (execve("./smtp", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -151,7 +152,7 @@ void start_delivery()
 	struct stat node_stat;
 	time_t start_points[3];
 	int fd, status, start_times;
-	char *args[] = {"./delivery", "../config/delivery.cfg", NULL};
+	const char *args[] = {"./delivery", "../config/delivery.cfg", NULL};
 
 	if (0 != stat(DELIVERY_LOG_FILE, &node_stat)
 		|| node_stat.st_size > 128*1024*1024) {
@@ -174,7 +175,7 @@ void start_delivery()
 				dup2(fd, STDOUT_FILENO);
 				close(fd);
 				chdir(HERCULIZ_MAIN_DIR);
-				if (execve("./delivery", args, NULL) == -1) {
+				if (execve("./delivery", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -407,7 +408,7 @@ void restart_service()
 	start_service();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);

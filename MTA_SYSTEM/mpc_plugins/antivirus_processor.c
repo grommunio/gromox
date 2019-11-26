@@ -27,10 +27,7 @@ static pthread_mutex_t g_id_lock;
 static SPAM_STATISTIC spam_statistic;
 
 static void enum_attachment(MIME *pmime, ANTIVIRUS_RESULT *presult);
-
-static void antivirus_log(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...);
-
+static void antivirus_log(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 static BOOL message_insulate(MESSAGE_CONTEXT *pcontext,
 	ANTIVIRUS_RESULT *presult, int id);
 
@@ -234,7 +231,7 @@ static int increase_id()
 
 
 static void antivirus_log(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...)
+    const char *format, ...)
 {
 	char log_buf[2048], rcpt_buff[2048];
 	size_t size_read = 0, rcpt_len = 0, i;

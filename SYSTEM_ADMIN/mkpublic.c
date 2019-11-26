@@ -219,7 +219,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i;
 	int fd;
@@ -477,9 +477,9 @@ int main(int argc, char **argv)
 	line_num = list_file_get_item_num(pfile);
 	pline = list_file_get_list(pfile);
 	
-	sql_string = "INSERT INTO named_properties VALUES (?, ?)";
+	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, strlen(sql_string), &pstmt, NULL)) {
+		csql_string, strlen(csql_string), &pstmt, NULL)) {
 		printf("fail to prepare sql statement\n");
 		list_file_free(pfile);
 		sqlite3_close(psqlite);
@@ -504,17 +504,17 @@ int main(int argc, char **argv)
 	list_file_free(pfile);
 	sqlite3_finalize(pstmt);
 	
-	sql_string = "INSERT INTO store_properties VALUES (?, ?)";
+	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, strlen(sql_string), &pstmt, NULL)) {
+		csql_string, strlen(csql_string), &pstmt, NULL)) {
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO store_properties VALUES (?, ?)";
+	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, strlen(sql_string), &pstmt, NULL)) {
+		csql_string, strlen(csql_string), &pstmt, NULL)) {
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
@@ -621,9 +621,9 @@ int main(int argc, char **argv)
 		return 10;
 	}
 	
-	sql_string = "INSERT INTO configurations VALUES (?, ?)";
+	csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, strlen(sql_string), &pstmt, NULL)) {
+		csql_string, strlen(csql_string), &pstmt, NULL)) {
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();

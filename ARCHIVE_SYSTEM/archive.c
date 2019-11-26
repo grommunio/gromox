@@ -33,7 +33,7 @@ static int64_t insert_cidb(MAIL *pmail, char *path);
 
 static int connect_cidb(const char *ip_addr, int port);
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	char *ptoken;
 	struct stat node_stat;

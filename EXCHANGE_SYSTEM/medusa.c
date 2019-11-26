@@ -1,4 +1,5 @@
 #include <time.h>
+#include <libHX/defs.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -81,7 +82,7 @@ void start_http()
 {
 	int fd, status;
 	struct stat node_stat;
-	char *args[] = {"./http", "../config/http.cfg", NULL};
+	const char *args[] = {"./http", "../config/http.cfg", NULL};
 	
 	if (0 != stat(HTTP_LOG_FILE, &node_stat) 
 		|| node_stat.st_size > 128*1024*1024) {
@@ -103,7 +104,7 @@ void start_http()
 				dup2(fd, STDOUT_FILENO);
 				close(fd);
 				chdir(MEDUSA_MAIN_DIR);
-				if (execve("./http", args, NULL) == -1) {
+				if (execve("./http", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -121,7 +122,7 @@ void start_http()
 void start_midb()
 {
 	int status;
-	char *args[] = {"./midb", "../config/midb.cfg", NULL};
+	const char *args[] = {"./midb", "../config/midb.cfg", NULL};
 
 	g_midb_pid = fork();
 	if (g_midb_pid < 0) {
@@ -134,7 +135,7 @@ void start_midb()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(MEDUSA_MAIN_DIR);
-				if (execve("./midb", args, NULL) == -1) {
+				if (execve("./midb", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -152,7 +153,7 @@ void start_midb()
 void start_zcore()
 {
 	int status;
-	char *args[] = {"./zcore", "../config/zcore.cfg", NULL};
+	const char *args[] = {"./zcore", "../config/zcore.cfg", NULL};
 
 	g_zcore_pid = fork();
 	if (g_zcore_pid < 0) {
@@ -165,7 +166,7 @@ void start_zcore()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(MEDUSA_MAIN_DIR);
-				if (execve("./zcore", args, NULL) == -1) {
+				if (execve("./zcore", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -346,7 +347,7 @@ void restart_service()
 	start_service();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);

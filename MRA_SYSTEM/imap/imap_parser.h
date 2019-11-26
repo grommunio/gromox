@@ -163,7 +163,7 @@ extern LIB_BUFFER *imap_parser_get_jpool(void);
 extern LIB_BUFFER *imap_parser_get_xpool(void);
 extern LIB_BUFFER *imap_parser_get_dpool(void);
 extern int imap_parser_get_squence_ID(void);
-void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, char *format, ...);
+extern void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...);
 
 #endif
 

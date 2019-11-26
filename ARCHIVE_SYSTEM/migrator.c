@@ -87,7 +87,7 @@ static void do_migration(const char *src_path, const char *dst_path)
 
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	struct stat node_stat;
 

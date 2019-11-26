@@ -207,7 +207,7 @@ static void *thread_work_func(void *param)
 	pthread_exit(0);
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, item_num;
 	AREA_ITEM *pitem;

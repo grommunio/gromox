@@ -1593,7 +1593,7 @@ static BOOL list_ui_get_self(char *url_buff, int length)
 
 static void list_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL ==error_string) {
 		error_string = "fatal error!!!";
@@ -2033,7 +2033,7 @@ static void list_ui_edit_html(const char *domainname,
 	char option_netdisk[16];
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	char* options_extpass[6] = {"","","","","",""};
+	const char *options_extpass[] = {"", "", "", "", "", ""};
 	const char *str_default;
 	struct tm temp_tm;
 	int extpasswd_type;

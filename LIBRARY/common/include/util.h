@@ -32,13 +32,9 @@ int utf8_to_utf16le(const char *src, char *dst, size_t len);
 
 BOOL utf16le_to_utf8(const char *src,
 	size_t src_len, char *dst, size_t len);
-
-BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len);
-
-BOOL set_digest(char *src, size_t length, const char *tag, char *value);
-
-BOOL add_digest(char *src, size_t length, const char *tag, char *value);
-
+extern BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len);
+extern BOOL set_digest(char *src, size_t length, const char *tag, const char *value);
+extern BOOL add_digest(char *src, size_t length, const char *tag, const char *value);
 void remove_digest(char *src, const char *tag);
 
 void swap_string(char *dest, const char *src);
@@ -95,8 +91,7 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 
 int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
-
-void debug_info(char *format, ...);
+extern void debug_info(const char *format, ...);
 
 #ifdef __cplusplus
 }

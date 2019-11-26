@@ -260,7 +260,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	} else {
 		tmp_entry.pdisplay_name = (char*)username;
 	}
-	tmp_entry.paddress_type = "SMTP";
+	tmp_entry.paddress_type = const_cast(char *, "SMTP");
 	tmp_entry.pmail_address = (char*)username;
 	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
 	status = ext_buffer_push_oneoff_entryid(&ext_push, &tmp_entry);
@@ -539,7 +539,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s", username) + 1;
 			upper_string(tmp_buff);
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
-			propval.pvalue = "SMTP";
+			propval.pvalue  = const_cast(char *, "SMTP");
 			if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 				return FALSE;
 			}
@@ -551,7 +551,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		} else {
 			tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
-			propval.pvalue = "EX";
+			propval.pvalue  = const_cast(char *, "EX");
 			if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 				return FALSE;
 			}
@@ -739,7 +739,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		TRUE == oxcmail_check_ascii(paddr->domain)) {
 		sprintf(username, "%s@%s", paddr->local_part, paddr->domain);
 		propval.proptag = proptag2;
-		propval.pvalue = "SMTP";
+		propval.pvalue  = const_cast(char *, "SMTP");
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 			return FALSE;
 		}
@@ -836,7 +836,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 							tmp_entry.provider_uid);
 	tmp_entry.version = 0;
 	tmp_entry.pdisplay_name = utf8_field;
-	tmp_entry.paddress_type = "SMTP";
+	tmp_entry.paddress_type = const_cast(char *, "SMTP");
 	tmp_entry.pmail_address = tmp_buff;
 	b_quote = FALSE;
 	for (i=0; i<len; i++) {
@@ -1204,9 +1204,9 @@ static BOOL oxcmail_parse_content_class(
 			mime_get_content_type(pmime))) {
 			return TRUE;
 		}
-		propval.pvalue = "IPM.Note.Microsoft.Fax";
+		propval.pvalue = const_cast(char *, "IPM.Note.Microsoft.Fax");
 	} else if (0 == strcasecmp(field, "fax-ca")) {
-		propval.pvalue = "IPM.Note.Microsoft.Fax.CA";
+		propval.pvalue = const_cast(char *, "IPM.Note.Microsoft.Fax.CA");
 	} else if (0 == strcasecmp(field, "missedcall")) {
 		pmime = mail_get_head(pmail);
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
@@ -1215,7 +1215,7 @@ static BOOL oxcmail_parse_content_class(
 			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
 			return TRUE;
 		}
-		propval.pvalue = "IPM.Note.Microsoft.Missed.Voice";
+		propval.pvalue = const_cast(char *, "IPM.Note.Microsoft.Missed.Voice");
 	} else if (0 == strcasecmp(field, "voice-uc")) {
 		pmime = mail_get_head(pmail);
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
@@ -1224,7 +1224,7 @@ static BOOL oxcmail_parse_content_class(
 			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
 			return TRUE;
 		}
-		propval.pvalue = "IPM.Note.Microsoft.Conversation.Voice";
+		propval.pvalue = const_cast(char *, "IPM.Note.Microsoft.Conversation.Voice");
 	} else if (0 == strcasecmp(field, "voice-ca")) {
 		pmime = mail_get_head(pmail);
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
@@ -1233,7 +1233,7 @@ static BOOL oxcmail_parse_content_class(
 			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
 			return TRUE;
 		}
-		propval.pvalue = "IPM.Note.Microsoft.Voicemail.UM.CA";
+		propval.pvalue = const_cast(char *, "IPM.Note.Microsoft.Voicemail.UM.CA");
 	} else if (0 == strcasecmp(field, "voice")) {
 		pmime = mail_get_head(pmail);
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
@@ -1242,7 +1242,7 @@ static BOOL oxcmail_parse_content_class(
 			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
 			return TRUE;
 		}
-		propval.pvalue = "IPM.Note.Microsoft.Voicemail.UM";
+		propval.pvalue = const_cast(char *, "IPM.Note.Microsoft.Voicemail.UM");
 	} if (0 == strncasecmp(field, "urn:content-class:custom.", 25)) {
 		sprintf(tmp_class, "IPM.Note.Custom.%s", field + 25);
 		propval.pvalue = tmp_class;
@@ -1279,7 +1279,7 @@ static BOOL oxcmail_parse_content_class(
 		/* PidNameContentClass */
 		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
-		propname.pname = "Content-Class";
+		propname.pname = const_cast(char *, "Content-Class");
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
@@ -1864,7 +1864,7 @@ static BOOL oxcmail_enum_mail_head(
 		0 == strcasecmp(tag, "X-Accept-Language")) {
 		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
-		propname.pname = "Accept-Language";
+		propname.pname = const_cast(char *, "Accept-Language");
 		if (1 != int_hash_add(penum_param->phash,
 			penum_param->last_propid, &propname)) {
 			return FALSE;
@@ -1885,7 +1885,7 @@ static BOOL oxcmail_enum_mail_head(
 		/* PidNameKeywords */
 		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
-		propname.pname = "Keywords";
+		propname.pname = const_cast(char *, "Keywords");
 		if (1 != int_hash_add(penum_param->phash,
 			penum_param->last_propid, &propname)) {
 			return FALSE;
@@ -2145,7 +2145,7 @@ static BOOL oxcmail_enum_mail_head(
 	} else if (0 == strcasecmp(tag, "Content-Base")) {
 		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
-		propname.pname = "Content-Base";
+		propname.pname = const_cast(char *, "Content-Base");
 		if (1 != int_hash_add(penum_param->phash,
 			penum_param->last_propid, &propname)) {
 			return FALSE;
@@ -2436,7 +2436,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 	/* PidNameAttachmentMacInfo */
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
-	propname.pname = "AttachmentMacInfo";
+	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		rop_util_free_binary(pbin);
 		binhex_clear(&binhex);
@@ -2529,7 +2529,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	/* PidNameAttachmentMacContentType */
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
-	propname.pname = "AttachmentMacContentType";
+	propname.pname = const_cast(char *, "AttachmentMacContentType");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -2553,7 +2553,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	/* PidNameAttachmentMacInfo */
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
-	propname.pname = "AttachmentMacInfo";
+	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		free(pcontent);
 		return FALSE;
@@ -2696,7 +2696,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	/* PidNameAttachmentMacInfo */
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
-	propname.pname = "AttachmentMacInfo";
+	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		rop_util_free_binary(pbin);
 		free(pcontent);
@@ -2779,7 +2779,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	/* PidNameAttachmentMacInfo */
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
-	propname.pname = "AttachmentMacInfo";
+	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		free(pcontent);
 		return FALSE;
@@ -2929,7 +2929,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	propval.proptag = PROP_TAG_ATTACHMIMETAG;
 	if (0 == strcasecmp("application/ms-tnef",
 		mime_get_content_type(pmime))) {
-		propval.pvalue = "application/octet-stream";
+		propval.pvalue = const_cast(char *, "application/octet-stream");
 	} else {
 		propval.pvalue = (void*)mime_get_content_type(pmime);
 	}
@@ -3785,7 +3785,7 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 					f_info.final_recipient) + 1;
 		upper_string(tmp_buff);
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
-		propval.pvalue = "SMTP";
+		propval.pvalue  = const_cast(char *, "SMTP");
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 			return FALSE;
 		}
@@ -3797,7 +3797,7 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	} else {
 		tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
-		propval.pvalue = "EX";
+		propval.pvalue  = const_cast(char *, "EX");
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 			return FALSE;
 		}
@@ -4341,7 +4341,7 @@ static BOOL oxcmail_parse_encrypted(MIME *phead,
 	}
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
-	propname.pname = "Content-Type";
+	propname.pname = const_cast(char *, "Content-Type");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -4439,13 +4439,13 @@ static BOOL oxcmail_parse_smime_message(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_ATTACHEXTENSION;
-	propval.pvalue = ".p7m";
+	propval.pvalue  = const_cast(char *, ".p7m");
 	if (FALSE == tpropval_array_set_propval(
 		&pattachment->proplist, &propval)) {
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_ATTACHFILENAME;
-	propval.pvalue = "SMIME.p7m";
+	propval.pvalue  = const_cast(char *, "SMIME.p7m");
 	if (FALSE == tpropval_array_set_propval(
 		&pattachment->proplist, &propval)) {
 		return FALSE;
@@ -4527,7 +4527,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	}
 	/* set default message class */
 	propval.proptag = PROP_TAG_MESSAGECLASS;
-	propval.pvalue = "IPM.Note";
+	propval.pvalue  = const_cast(char *, "IPM.Note");
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -4800,7 +4800,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	} else if (0 == strcasecmp("multipart/signed",
 		mime_get_content_type(phead))) {
 		propval.proptag = PROP_TAG_MESSAGECLASS;
-		propval.pvalue = "IPM.Note.SMIME.MultipartSigned";
+		propval.pvalue  = const_cast(char *, "IPM.Note.SMIME.MultipartSigned");
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
@@ -4813,7 +4813,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		0 == strcasecmp("application/x-pkcs7-mime",
 		mime_get_content_type(phead))) {
 		propval.proptag = PROP_TAG_MESSAGECLASS;
-		propval.pvalue = "IPM.Note.SMIME";
+		propval.pvalue  = const_cast(char *, "IPM.Note.SMIME");
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
@@ -6104,7 +6104,7 @@ EXPORT_CONTENT_CLASS:
 	/* PidNameKeywords */
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
-	propname.pname = "Keywords";
+	propname.pname = const_cast(char *, "Keywords");
 	propnames.count = 1;
 	propnames.ppropname = &propname;
 	if (FALSE == get_propids(&propnames, &propids)) {
@@ -6817,7 +6817,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 {
 	int tmp_len;
 	BINARY *pbin;
-	void *pvalue;
+	const void *pvalue;
 	MIME *pmime1;
 	MIME *pmime2;
 	MACBINARY macbin;
@@ -6846,12 +6846,12 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	propname_buff[0].kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT,
 		&propname_buff[0].guid);
-	propname_buff[0].pname = "AttachmentMacInfo";
+	propname_buff[0].pname = const_cast(char *, "AttachmentMacInfo");
 	/* PidNameAttachmentMacContentType */
 	propname_buff[1].kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT,
 		&propname_buff[1].guid);
-	propname_buff[1].pname = "AttachmentMacContentType";
+	propname_buff[1].pname = const_cast(char *, "AttachmentMacContentType");
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}

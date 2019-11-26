@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "file_operation.h"
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -109,13 +110,13 @@ void file_operation_compress(const char *src_path, const char *dst_file)
 {
 	pid_t pid;
 	int status;
-	char *args[] = {"tar", "czf", NULL, "-C", NULL, ".", NULL};
+	const char *args[] = {"tar", "czf", NULL, "-C", NULL, ".", NULL};
 
 	pid = fork();
 	if (0 == pid) {
-		args[2] = (char*)dst_file;
-		args[4] = (char*)src_path;
-		execvp("tar", args);
+		args[2] = dst_file;
+		args[4] = src_path;
+		execvp("tar", const_cast(char **, args));
 	} else if (pid > 0) {
 		waitpid(pid, &status, 0);
 	}
@@ -125,13 +126,13 @@ void file_operation_decompress(const char *src_file, const char *dst_dir)
 {
 	pid_t pid;
 	int status;
-	char *args[] = {"tar", "zxf", NULL, "-C", NULL, NULL};
+	const char *args[] = {"tar", "zxf", NULL, "-C", NULL, NULL};
 
 	pid = fork();
 	if (0 == pid) {
-		args[2] = (char*)src_file;
-		args[4] = (char*)dst_dir;
-		execvp("tar", args);
+		args[2] = src_file;
+		args[4] = dst_dir;
+		execvp("tar", const_cast(char **, args));
 	} else if (pid > 0) {
 		waitpid(pid, &status, 0);
 	}

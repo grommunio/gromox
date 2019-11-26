@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "midb_client.h"
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 
 

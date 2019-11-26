@@ -1,4 +1,5 @@
 #include <time.h>
+#include <libHX/defs.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -74,7 +75,7 @@ void daemon_sigstop(int sig)
 void start_pop3()
 {
 	int status;
-	char *args[] = {"./pop3", "../config/pop3.cfg", NULL};
+	const char *args[] = {"./pop3", "../config/pop3.cfg", NULL};
 
 	g_pop3_pid = fork();
 	if (g_pop3_pid < 0) {
@@ -87,7 +88,7 @@ void start_pop3()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(APOLLO_MAIN_DIR);
-				if (execve("./pop3", args, NULL) == -1) {
+				if (execve("./pop3", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -106,7 +107,7 @@ void start_pop3()
 void start_imap()
 {
 	int status;
-	char *args[] = {"./imap", "../config/imap.cfg", NULL};
+	const char *args[] = {"./imap", "../config/imap.cfg", NULL};
 
 	g_imap_pid = fork();
 	if (g_imap_pid < 0) {
@@ -119,7 +120,7 @@ void start_imap()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(APOLLO_MAIN_DIR);
-				if (execve("./imap", args, NULL) == -1) {
+				if (execve("./imap", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -302,7 +303,7 @@ void restart_service()
 	start_service();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);

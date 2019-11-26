@@ -230,7 +230,7 @@ typedef struct _RTF_READER {
 	int picture_bits_per_pixel;
 	int picture_type;
 	int picture_wmf_type;
-	char *picture_wmf_str;
+	const char *picture_wmf_str;
 	BOOL have_printed_body;
 	BOOL is_within_header;
 	int color_table[MAX_COLORS];

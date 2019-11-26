@@ -670,7 +670,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 }
 
 void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext,
-	const char *rcpt_to, int level, char *format, ...)
+    const char *rcpt_to, int level, const char *format, ...)
 {
 	char log_buf[256];
 	va_list ap;

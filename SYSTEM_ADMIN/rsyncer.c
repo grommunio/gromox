@@ -1016,7 +1016,7 @@ static void* thread_work_func(void *param)
 	return NULL;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, num;
 	char *str_value;

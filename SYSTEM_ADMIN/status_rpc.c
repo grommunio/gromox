@@ -28,7 +28,7 @@ typedef struct _CONSOLE_ITEM {
 	int delivery_port;
 } CONSOLE_ITEM;
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	key_t k_shm;
 	int len;
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	char *ptr;
 	char *query;
 	char *request;
-	char *str_value;
+	const char *str_value;
 	char console[16];
 	char temp_path[256];
 	char data_path[256];

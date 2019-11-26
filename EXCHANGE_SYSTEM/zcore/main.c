@@ -31,7 +31,7 @@ static void term_handler(int signo)
 	g_notify_stop = TRUE;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int max_mail;
 	int stub_num;
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 	int max_length;
 	int table_size;
 	int threads_num;
-	char *str_value;
+	const char *str_value;
 	char smtp_ip[16];
 	int max_item_num;
 	int max_rule_len;

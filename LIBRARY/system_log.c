@@ -37,7 +37,7 @@ int system_log_run()
 	return 0;
 }
 
-void system_log_info(char *format, ...)
+void system_log_info(const char *format, ...)
 {
 	va_list ap;
 	int len;

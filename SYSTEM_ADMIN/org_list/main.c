@@ -12,11 +12,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int timeout;
-	char *str_value;
+	const char *str_value;
 	char temp_path[256];
 	char data_path[256];
 	char acl_path[256];

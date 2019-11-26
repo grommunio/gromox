@@ -86,8 +86,7 @@ static int increase_tid();
 
 static void put_timer(TIMER *ptimer);
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int num;
 	int i, j;

@@ -118,7 +118,7 @@ static void term_handler(int signo)
     g_notify_stop = 1;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, len;
 	int listenfd;

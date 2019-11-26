@@ -1296,7 +1296,7 @@ static BOOL setup_ui_get_self(char *url_buff, int length)
 
 static void setup_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";
@@ -1335,9 +1335,7 @@ static void setup_ui_main_html(const char *session)
 {
 	int i, option;
 	char *language;
-	char *str_value;
-	char *str_times;
-	char *str_intvl;
+	const char *str_value, *str_times, *str_intvl;
 	char url_buff[1024];
 	char str_submit[64];
 	

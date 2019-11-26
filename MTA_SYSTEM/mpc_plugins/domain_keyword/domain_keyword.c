@@ -66,9 +66,7 @@ static void domain_keyword_enum_attachment(MIME *pmime,
 
 static BOOL domain_keyword_get_fwdinfo(const char *domain,
 	char *forward_to, char *lang);
-
-static void domain_keyword_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...);
+static void domain_keyword_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 
 void domain_keyword_init(const char *root_path, int growing_num,
 	const char *dm_host)
@@ -441,7 +439,7 @@ static int domain_keyword_sequence_ID()
 
 
 static void domain_keyword_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...)
+    const char *format, ...)
 {
     char log_buf[2048], rcpt_buff[256];
     va_list ap;

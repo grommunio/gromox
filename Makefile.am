@@ -2,7 +2,7 @@
 
 ACLOCAL_AMFLAGS = -I build-aux
 AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include -I${top_srcdir}/LIBRARY/common/include -I${top_srcdir}/LIBRARY/epoll_scheduler/include -I${top_srcdir}/LIBRARY/mapi_lib/include -I${top_srcdir}/LIBRARY/webkit_lib/include -I${top_srcdir}/LIBRARY/rpc_lib/include -I${top_srcdir}/LIBRARY/email_lib/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${archive_CFLAGS} ${crypto_CFLAGS} ${ssl_CFLAGS} ${mysql_CFLAGS} ${spf2_CFLAGS} ${sqlite_CFLAGS} ${xls_CFLAGS} ${zlib_CFLAGS}
-AM_CFLAGS = -Wall
+AM_CFLAGS = -Wall -Wwrite-strings
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_resolv.la libgromox_rpc.la libgromox_webkit.la

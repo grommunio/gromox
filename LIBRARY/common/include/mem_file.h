@@ -56,11 +56,8 @@ size_t mem_file_get_total_length(MEM_FILE *pfile);
 void mem_file_clear(MEM_FILE *pfile);
 
 void mem_file_free(MEM_FILE *pfile);
-
-size_t mem_file_write(MEM_FILE *pfile, void* pbuff, size_t size);
-
-size_t mem_file_writeline(MEM_FILE *pfile, char* pbuff);
-
+extern size_t mem_file_write(MEM_FILE *pfile, const void *buf, size_t size);
+extern size_t mem_file_writeline(MEM_FILE *pfile, const char *buf);
 size_t mem_file_copy(MEM_FILE *pfile_src, MEM_FILE *pfile_dst);
 
 #ifdef __cplusplus

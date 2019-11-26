@@ -235,7 +235,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_MESSAGECLASS;
-	propvals.ppropval[propvals.count].pvalue = "IPM.Note";
+	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "IPM.Note");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
@@ -250,17 +250,17 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYBCC;
-	propvals.ppropval[propvals.count].pvalue = "";
+	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYCC;
-	propvals.ppropval[propvals.count].pvalue = "";
+	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYTO;
-	propvals.ppropval[propvals.count].pvalue = "";
+	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =

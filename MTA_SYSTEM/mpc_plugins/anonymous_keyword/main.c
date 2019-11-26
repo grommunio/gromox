@@ -36,10 +36,7 @@ static void enum_text(MIME *pmime, KEYWORD_RESULT *presult);
 static void enum_attachment(MIME *pmime, KEYWORD_RESULT *presult);
 
 static void enum_group(const char *name, int times);
-
-static void keyword_log(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...);
-
+static void keyword_log(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 static BOOL message_insulate(MESSAGE_CONTEXT *pcontext,
 	KEYWORD_RESULT *presult, int id);
 
@@ -347,7 +344,7 @@ static int increase_id()
 
 
 static void keyword_log(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...)
+    const char *format, ...)
 {
 	char log_buf[2048], rcpt_buff[2048];
 	size_t size_read = 0, rcpt_len = 0, i;

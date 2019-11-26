@@ -12,7 +12,7 @@ BOOL (*system_services_check_relay)(const char*);
 BOOL (*system_services_check_domain)(const char*);
 BOOL (*system_services_check_user)(const char*, char*);
 BOOL (*system_services_check_full)(const char*);
-void (*system_services_log_info)(int, char*, ...);
+void (*system_services_log_info)(int, const char *, ...);
 const char* (*system_services_auth_ehlo)();
 int (*system_services_auth_process)(int,const char*, int, char*, int);
 BOOL (*system_services_auth_retrieve)(int, char*, int);

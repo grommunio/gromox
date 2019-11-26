@@ -218,7 +218,7 @@ void statistic_ui_free()
 
 static void statistic_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";

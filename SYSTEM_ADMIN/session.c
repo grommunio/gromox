@@ -75,8 +75,7 @@ static BOOL read_mark(CONNECTION_NODE *pconnection);
 
 static void term_handler(int signo);
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, num;
 	int optval;

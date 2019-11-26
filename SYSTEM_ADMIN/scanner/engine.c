@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <libHX/defs.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <string.h>
@@ -429,7 +430,7 @@ static BOOL engine_rebuild_exmdb(const char *path)
 {
 	pid_t pid;
 	int status;
-	char* argv[3];
+	const char *argv[3];
 	
 	pid = fork();
 	if (0 == pid) {
@@ -437,7 +438,7 @@ static BOOL engine_rebuild_exmdb(const char *path)
 		argv[0] = "./rebuild";
 		argv[1] = (void*)path;
 		argv[2] = NULL;
-		if (execve("./rebuild", argv, NULL) == -1) {
+		if (execve("./rebuild", const_cast(char *const *, argv), NULL) == -1) {
 			exit(-1);
 		}
 	} else if (pid < 0) {
@@ -1263,13 +1264,13 @@ static void engine_compress(const char *src_path, const char *dst_file)
 {
 	pid_t pid;
 	int status;
-	char *args[] = {"tar", "czf", NULL, "-C", NULL, ".", NULL};
+	const char *args[] = {"tar", "czf", NULL, "-C", NULL, ".", NULL};
 
 	pid = fork();
 	if (0 == pid) {
-		args[2] = (char*)dst_file;
-		args[4] = (char*)src_path;
-		execvp("tar", args);
+		args[2] = dst_file;
+		args[4] = src_path;
+		execvp("tar", const_cast(char **, args));
 	} else if (pid > 0) {
 		waitpid(pid, &status, 0);
 	}

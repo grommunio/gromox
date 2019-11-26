@@ -42,7 +42,7 @@ const struct da_resource_string g_string_table[MAX_RES_CONFG_VAR_NUM] = {
 static char g_cfg_filename[MAX_FILE_NAME_LEN];
 static CONFIG_FILE *g_config_file;
 
-void resource_init(char* cfg_filename)
+void resource_init(const char *cfg_filename)
 {
     strcpy(g_cfg_filename, cfg_filename);
 }
@@ -166,7 +166,7 @@ BOOL resource_set_integer(int key, int value)
  *      TRUE        success
  *      FALSE       fail
  */
-BOOL resource_set_string(int key, char* value)
+BOOL resource_set_string(int key, const char *value)
 {
 
     if (key < 0 || key > MAX_RES_CONFG_VAR_NUM || NULL == value) {

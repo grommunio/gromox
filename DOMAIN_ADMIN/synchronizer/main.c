@@ -15,7 +15,7 @@ static BOOL g_notify_stop = FALSE;
 
 static void term_handler(int signo);
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	char *str_value;
 	char data_path[256];

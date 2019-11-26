@@ -11,10 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
-	char *str_value;
+	const char *str_value;
 	char config_path[256];
 	char work_path[256];
 	char mount_path[256];

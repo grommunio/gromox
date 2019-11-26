@@ -1885,7 +1885,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		*ppvalue = "EX";
+		*ppvalue = const_cast(char *, "EX");
 		return TRUE;
 	case PROP_TAG_EMAILADDRESS:
 		if (node_type > 0x80) {

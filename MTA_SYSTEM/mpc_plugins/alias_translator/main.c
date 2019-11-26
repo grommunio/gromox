@@ -36,10 +36,7 @@ static BOOL domain_table_query(const char *aliasname, char *mainname);
 static BOOL address_table_query(const char *aliasname, char *mainname);
 
 static void console_talk(int argc, char **argv, char *result, int length);
-
-static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...);
-	
+static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext);
 
 BOOL HOOK_LibMain(int reason, void **ppdata)
@@ -153,7 +150,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 }
 
 static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...)
+    const char *format, ...)
 {
 	char log_buf[2048], rcpt_buff[2048];
 	size_t size_read = 0, rcpt_len = 0, i;

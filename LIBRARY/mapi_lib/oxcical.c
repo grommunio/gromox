@@ -962,7 +962,7 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 			return FALSE;
 		}
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
-		propval.pvalue = "SMTP";
+		propval.pvalue  = const_cast(char *, "SMTP");
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 			return FALSE;
 		}
@@ -1127,7 +1127,7 @@ static BOOL oxcical_parse_categoris(ICAL_LINE *piline,
 		/* PidNameKeywords */
 		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
-		propname.pname = "Keywords";
+		propname.pname = const_cast(char *, "Keywords");
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
@@ -1683,7 +1683,7 @@ static BOOL oxcical_parse_location(
 	/* PidNameLocationUrl */
 	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
-	propname.pname = "urn:schemas:calendar:locationurl";
+	propname.pname = const_cast(char *, "urn:schemas:calendar:locationurl");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -1767,7 +1767,7 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
-	propval.pvalue = "SMTP";
+	propval.pvalue  = const_cast(char *, "SMTP");
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
 		return FALSE;
@@ -1791,7 +1791,7 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_SENDERADDRESSTYPE;
-	propval.pvalue = "SMTP";
+	propval.pvalue  = const_cast(char *, "SMTP");
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
 		return FALSE;
@@ -2557,7 +2557,7 @@ static BOOL oxcical_parse_attachment(
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ATTACHEXTENSION;
-			propval.pvalue = ".URL";
+			propval.pvalue  = const_cast(char *, ".URL");
 			if (FALSE == tpropval_array_set_propval(
 				&pattachment->proplist, &propval)) {
 				return FALSE;
@@ -3479,7 +3479,7 @@ static BOOL oxcical_import_internal(
 			}
 			attachment_content_set_embeded_internal(pattachment, pembedded);
 			propval.proptag = PROP_TAG_MESSAGECLASS;
-			propval.pvalue = "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}";
+			propval.pvalue  = const_cast(char *, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}");
 			if (FALSE == tpropval_array_set_propval(
 				&pembedded->proplist, &propval)) {
 				int_hash_free(phash);
@@ -3683,7 +3683,7 @@ static BOOL oxcical_import_events(
 		}
 		attachment_content_set_embeded_internal(pattachment, pembedded);
 		propval.proptag = PROP_TAG_MESSAGECLASS;
-		propval.pvalue = "IPM.Appointment";
+		propval.pvalue  = const_cast(char *, "IPM.Appointment");
 		if (FALSE == tpropval_array_set_propval(
 			&pembedded->proplist, &propval)) {
 			return FALSE;
@@ -3878,7 +3878,7 @@ MESSAGE_CONTENT* oxcical_import(
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	piline = ical_get_line((ICAL_COMPONENT*)pical, "METHOD");
-	propval.pvalue = "IPM.Appointment";
+	propval.pvalue = const_cast(char *, "IPM.Appointment");
 	if (NULL != piline) {
 		pvalue = ical_get_first_subvalue(piline);
 		if (NULL != pvalue) {
@@ -3893,12 +3893,12 @@ MESSAGE_CONTENT* oxcical_import(
 					double_list_free(&events_list);
 					return pmsg;
 				}
-				propval.pvalue = "IPM.Appointment";
+				propval.pvalue = const_cast(char *, "IPM.Appointment");
 			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
 				if (1 != double_list_get_nodes_num(&events_list)) {
 					goto IMPORT_FAILURE;
 				}
-				propval.pvalue = "IPM.Schedule.Meeting.Request";
+				propval.pvalue = const_cast(char *, "IPM.Schedule.Meeting.Request");
 			} else if (0 == strcasecmp(pvalue, "REPLY")) {
 				if (1 != double_list_get_nodes_num(&events_list)) {
 					goto IMPORT_FAILURE;
@@ -3906,11 +3906,11 @@ MESSAGE_CONTENT* oxcical_import(
 				pvalue1 = oxcical_get_partstat(&events_list);
 				if (NULL != pvalue1) {
 					if (0 == strcasecmp(pvalue1, "ACCEPTED")) {
-						propval.pvalue = "IPM.Schedule.Meeting.Resp.Pos";
+						propval.pvalue = const_cast(char *, "IPM.Schedule.Meeting.Resp.Pos");
 					} else if (0 == strcasecmp(pvalue1, "TENTATIVE")) {
-						propval.pvalue = "IPM.Schedule.Meeting.Resp.Tent";
+						propval.pvalue = const_cast(char *, "IPM.Schedule.Meeting.Resp.Tent");
 					} else if (0 == strcasecmp(pvalue1, "DECLINED")) {
-						propval.pvalue = "IPM.Schedule.Meeting.Resp.Neg";
+						propval.pvalue = const_cast(char *, "IPM.Schedule.Meeting.Resp.Neg");
 					}
 				}
 			} else if (0 == strcasecmp(pvalue, "COUNTER")) {
@@ -3919,11 +3919,11 @@ MESSAGE_CONTENT* oxcical_import(
 				}
 				pvalue1 = oxcical_get_partstat(&events_list);
 				if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
-					propval.pvalue = "IPM.Schedule.Meeting.Resp.Tent";
+					propval.pvalue = const_cast(char *, "IPM.Schedule.Meeting.Resp.Tent");
 					b_proposal = TRUE;
 				}
 			} else if (0 == strcasecmp(pvalue, "CANCEL")) {
-				propval.pvalue = "IPM.Schedule.Meeting.Canceled";
+				propval.pvalue = const_cast(char *, "IPM.Schedule.Meeting.Canceled");
 			}
 		}
 	} else {
@@ -6057,7 +6057,7 @@ EXPORT_VEVENT:
 	
 	/* PidNameKeywords */
 	propname.kind = KIND_NAME;
-	propname.pname = "Keywords";
+	propname.pname = const_cast(char *, "Keywords");
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
@@ -6238,7 +6238,7 @@ EXPORT_VEVENT:
 		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
 		/* PidNameLocationUrl */
-		propname.pname = "urn:schemas:calendar:locationurl";
+		propname.pname = const_cast(char *, "urn:schemas:calendar:locationurl");
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}

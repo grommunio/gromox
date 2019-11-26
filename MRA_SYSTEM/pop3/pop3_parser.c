@@ -855,7 +855,7 @@ static void pop3_parser_context_free(POP3_CONTEXT *pcontext)
 	}
 }
 
-void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, char *format, ...)
+void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *format, ...)
 {
 	char log_buf[2048];
 	va_list ap;

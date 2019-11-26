@@ -96,8 +96,7 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable);
 
 static int resource_parse_pop3_line(char* dest, char* src_str, int len);
 
-
-void resource_init(char* cfg_filename)
+void resource_init(const char *cfg_filename)
 {
     strcpy(g_cfg_filename, cfg_filename);
     pthread_rwlock_init(&g_error_table_lock, NULL);
@@ -249,7 +248,7 @@ BOOL resource_set_integer(int key, int value)
  *      TRUE        success
  *      FALSE       fail
  */
-BOOL resource_set_string(int key, char* value)
+BOOL resource_set_string(int key, const char *value)
 {
 
     if (key < 0 || key > MAX_RES_CONFG_VAR_NUM || NULL == value) {

@@ -1188,7 +1188,7 @@ static BOOL store_object_get_calculated_property(
 		*(uint32_t*)(*ppvalue) = OBJECT_STORE;
 		return TRUE;
 	case PROP_TAG_PROVIDERDISPLAY:
-		*ppvalue = "Exchange Message Store";
+		*ppvalue = const_cast(char *, "Exchange Message Store");
 		return TRUE;
 	case PROP_TAG_RESOURCEFLAGS:
 		*ppvalue = common_util_alloc(sizeof(uint32_t));
@@ -1360,7 +1360,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ECSERVERVERSION:
-		*ppvalue = PROJECT_VERSION;
+		*ppvalue = const_cast(char *, PROJECT_VERSION);
 		return TRUE;
 	case PROP_TAG_OOFSTATE:
 	case PROP_TAG_OOFINTERNALREPLY:

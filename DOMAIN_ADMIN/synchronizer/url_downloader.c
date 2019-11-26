@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include "url_downloader.h"
 #include "double_list.h"
 #include <stdio.h>
@@ -35,15 +36,15 @@ BOOL url_downloader_get(const char *url, const char *save_path)
 	int status;
 	CHILD_NODE temp_node;
 	char option_buff[512];
-	char *args[] = {"wget", NULL, NULL, NULL, NULL};	
+	const char *args[] = {"wget", NULL, NULL, NULL, NULL};
 
 	pid = fork();
 	if (0 == pid) {
 		snprintf(option_buff, sizeof(option_buff), "-O%s", save_path);
 		args[1] = "-q";
-		args[2] = (char*)url;
+		args[2] = url;
 		args[3] = option_buff;
-		if (-1 == execvp("wget", args)) {
+		if (execvp("wget", const_cast(char **, args)) != 0) {
 			exit(EXIT_FAILURE);
 		}
 	} else if (pid > 0) {

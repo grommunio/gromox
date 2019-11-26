@@ -355,7 +355,7 @@ static BOOL exmdb_client_unload_store(const char *dir)
 	return TRUE;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, fd;
 	int list_num;
@@ -490,163 +490,163 @@ int main(int argc, char **argv)
 	}
 	
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	sql_string = "INSERT INTO configurations "
+	const char *csql_string = "INSERT INTO configurations "
 		"SELECT * FROM source_db.configurations";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO allocated_eids "
+	csql_string = "INSERT INTO allocated_eids "
 		"SELECT * FROM source_db.allocated_eids";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO named_properties "
+	csql_string = "INSERT INTO named_properties "
 		"SELECT * FROM source_db.named_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO store_properties "
+	csql_string = "INSERT INTO store_properties "
 		"SELECT * FROM source_db.store_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO permissions "
+	csql_string = "INSERT INTO permissions "
 		"SELECT * FROM source_db.permissions";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO rules "
+	csql_string = "INSERT INTO rules "
 		"SELECT * FROM source_db.rules";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO folders "
+	csql_string = "INSERT INTO folders "
 		"SELECT * FROM source_db.folders";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO folder_properties "
+	csql_string = "INSERT INTO folder_properties "
 		"SELECT * FROM source_db.folder_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO receive_table "
+	csql_string = "INSERT INTO receive_table "
 		"SELECT * FROM source_db.receive_table";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO messages "
+	csql_string = "INSERT INTO messages "
 		"SELECT * FROM source_db.messages";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO message_properties "
+	csql_string = "INSERT INTO message_properties "
 		"SELECT * FROM source_db.message_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO message_changes "
+	csql_string = "INSERT INTO message_changes "
 		"SELECT * FROM source_db.message_changes";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO recipients "
+	csql_string = "INSERT INTO recipients "
 		"SELECT * FROM source_db.recipients";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO recipients_properties "
+	csql_string = "INSERT INTO recipients_properties "
 		"SELECT * FROM source_db.recipients_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO attachments "
+	csql_string = "INSERT INTO attachments "
 		"SELECT * FROM source_db.attachments";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO attachment_properties "
+	csql_string = "INSERT INTO attachment_properties "
 		"SELECT * FROM source_db.attachment_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO search_scopes "
+	csql_string = "INSERT INTO search_scopes "
 		"SELECT * FROM source_db.search_scopes";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "INSERT INTO search_result "
+	csql_string = "INSERT INTO search_result "
 		"SELECT * FROM source_db.search_result";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
@@ -655,17 +655,17 @@ int main(int argc, char **argv)
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sqlite3_exec(psqlite, "DETACH DATABASE source_db", NULL, NULL, NULL);
-	sql_string = "REINDEX";
+	csql_string = "REINDEX";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, &err_msg)) {
+		csql_string, NULL, NULL, &err_msg)) {
 		printf("fail to excute reindex sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
-	sql_string = "PRAGMA integrity_check";
+	csql_string = "PRAGMA integrity_check";
 	if (SQLITE_OK == sqlite3_prepare_v2(
-		psqlite, sql_string, -1, &pstmt, NULL )) {
+		psqlite, csql_string, -1, &pstmt, NULL )) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			presult = sqlite3_column_text(pstmt, 0);
 			if (NULL == presult || 0 != strcmp(presult, "ok")) {

@@ -78,10 +78,7 @@ static void relay_agent_close(int sockd);
 static BOOL relay_agent_ping(int sockd);
 
 static BOOL relay_agent_send(int sockd, BOOL b_64bit, const char *path);
-
-static void relay_agent_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...);
-
+static void relay_agent_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 static void *thread_work_func(void *param);
 
 void relay_agent_init(const char *list_path, const char *save_path,
@@ -1012,7 +1009,7 @@ void relay_agent_set_param(int param, int value)
 }
 
 static void relay_agent_log_info(MESSAGE_CONTEXT *pcontext, int level,
-	char *format, ...)
+    const char *format, ...)
 {
 	char log_buf[2048], rcpt_buff[2048];
 	size_t size_read = 0, rcpt_len = 0, i;

@@ -588,7 +588,7 @@ static BOOL execve_command(char* cmdline)
 	return FALSE;	
 }
 
-static BOOL register_command(char* cmd, COMMAND_HANDLER handler)
+static BOOL register_command(const char *cmd, COMMAND_HANDLER handler)
 {
 	if (g_cmd_num >= MAX_CMD_NUMBER || NULL == cmd ||
 		0 == strlen(cmd) || NULL == handler) {
@@ -600,8 +600,8 @@ static BOOL register_command(char* cmd, COMMAND_HANDLER handler)
 	return TRUE;
 }
 
-static BOOL console_control(char *ip, int port, char *cmdline, char *result,
-	int length) 
+static BOOL console_control(const char *ip, int port, const char *cmdline,
+    char *result, int length)
 {
 	int sockd, cmd_len;
 	int read_len;

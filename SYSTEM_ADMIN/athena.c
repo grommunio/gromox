@@ -1,4 +1,5 @@
 #include <time.h>
+#include <libHX/defs.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -133,7 +134,7 @@ void start_analyzer()
 	int len, status;
 	char temp_str[32];
 	char temp_path[256];
-	char *args[] = {"./daemon", "../config/athena.cfg", NULL};
+	const char *args[] = {"./daemon", "../config/athena.cfg", NULL};
 	struct stat node_stat;
 	
 	sprintf(temp_path, "%s/daemon", ATHENA_MAIN_DIR);
@@ -143,7 +144,7 @@ void start_analyzer()
 	pid = fork();
 	if (0 == pid) {
 		chdir(ATHENA_MAIN_DIR);
-		if (execve("./daemon", args, NULL) == -1) {
+		if (execve("./daemon", const_cast(char **, args), NULL) == -1) {
 			exit(EXIT_FAILURE);
 		}
 	} else if (pid > 0) {
@@ -166,7 +167,7 @@ void start_monitor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./monitor", "../config/athena.cfg", NULL};
+	const char *args[] = {"./monitor", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/monitor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -184,7 +185,7 @@ void start_monitor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./monitor", args, NULL) == -1) {
+				if (execve("./monitor", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -205,7 +206,7 @@ void start_supervisor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./supervisor", "../config/athena.cfg", NULL};
+	const char *args[] = {"./supervisor", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/supervisor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -223,7 +224,7 @@ void start_supervisor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./supervisor", args, NULL) == -1) {
+				if (execve("./supervisor", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -243,7 +244,7 @@ void start_adaptor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./adaptor", "../config/athena.cfg", NULL};
+	const char *args[] = {"./adaptor", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/adaptor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -261,7 +262,7 @@ void start_adaptor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./adaptor", args, NULL) == -1) {
+				if (execve("./adaptor", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -281,7 +282,7 @@ void start_scanner()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./scanner", "../config/athena.cfg", NULL};
+	const char *args[] = {"./scanner", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/scanner", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -299,7 +300,7 @@ void start_scanner()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./scanner", args, NULL) == -1) {
+				if (execve("./scanner", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -319,7 +320,7 @@ void start_locker()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./locker", "../config/athena.cfg", NULL};
+	const char *args[] = {"./locker", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/locker", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -337,7 +338,7 @@ void start_locker()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./locker", args, NULL) == -1) {
+				if (execve("./locker", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -357,7 +358,7 @@ void start_event()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./event", "../config/athena.cfg", NULL};
+	const char *args[] = {"./event", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/event", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -375,7 +376,7 @@ void start_event()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./event", args, NULL) == -1) {
+				if (execve("./event", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -395,7 +396,7 @@ void start_sensor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./sensor", "../config/athena.cfg", NULL};
+	const char *args[] = {"./sensor", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/sensor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -413,7 +414,7 @@ void start_sensor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./sensor", args, NULL) == -1) {
+				if (execve("./sensor", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -433,7 +434,7 @@ void start_rsync()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./rsync", "../config/athena.cfg", NULL};
+	const char *args[] = {"./rsync", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/rsync", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -451,7 +452,7 @@ void start_rsync()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./rsync", args, NULL) == -1) {
+				if (execve("./rsync", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -471,7 +472,7 @@ void start_cdnd()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./cdnd", "../config/athena.cfg", NULL};
+	const char *args[] = {"./cdnd", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/cdnd", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -489,7 +490,7 @@ void start_cdnd()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./cdnd", args, NULL) == -1) {
+				if (execve("./cdnd", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -509,7 +510,7 @@ void start_timer()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./timer", "../config/athena.cfg", NULL};
+	const char *args[] = {"./timer", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/timer", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -527,7 +528,7 @@ void start_timer()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./timer", args, NULL) == -1) {
+				if (execve("./timer", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -547,7 +548,7 @@ void start_pad()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./pad", "../config/athena.cfg", NULL};
+	const char *args[] = {"./pad", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/pad", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -565,7 +566,7 @@ void start_pad()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./pad", args, NULL) == -1) {
+				if (execve("./pad", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -585,7 +586,7 @@ void start_session()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	char *args[] = {"./session", "../config/athena.cfg", NULL};
+	const char *args[] = {"./session", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/session", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -603,7 +604,7 @@ void start_session()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./session", args, NULL) == -1) {
+				if (execve("./session", const_cast(char **, args), NULL) == -1) {
 					exit(EXIT_FAILURE);
 				}
 			} else if (g_supervised_process > 0) {
@@ -901,7 +902,7 @@ void restart_service()
 	start_service();
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);

@@ -96,9 +96,7 @@ BOOL (*common_util_send_mail)(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list);
 
 MIME_POOL* (*common_util_get_mime_pool)();
-
-void (*common_util_log_info)(int level, char *format, ...);
-
+void (*common_util_log_info)(int level, const char *format, ...);
 const GUID* (*common_util_get_handle)();
 
 static BOOL common_util_evaluate_subobject_restriction(
@@ -2006,8 +2004,7 @@ static BOOL common_util_get_message_subject(
 	BOOL b_optimize;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
-	char *psubject_prefix;
-	char *pnormalized_subject;
+	const char *psubject_prefix, *pnormalized_subject;
 	
 	psubject_prefix = NULL;
 	pnormalized_subject = NULL;
@@ -4946,10 +4943,10 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		break;
 	case PROP_TAG_MEMBERNAME:
 		if (0 == member_id) {
-			*ppvalue = "default";
+			*ppvalue = const_cast(char *, "default");
 			return TRUE;
 		} else if (-1 == (int64_t)member_id) {
-			*ppvalue = "anonymous";
+			*ppvalue = const_cast(char *, "anonymous");
 			return TRUE;
 		}
 		sql_len = sprintf(sql_string, "SELECT username FROM"
@@ -5034,11 +5031,11 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	case PROP_TAG_MEMBERNAME:
 		pusername = sqlite3_column_text(pstmt, 0);
 		if ('\0' == pusername[0]) {
-			*ppvalue = "default";
+			*ppvalue = const_cast(char *, "default");
 			sqlite3_finalize(pstmt);
 			return TRUE;
 		} else if (0 == strcasecmp(pusername, "default")) {
-			*ppvalue = "anonymous";
+			*ppvalue = const_cast(char *, "anonymous");
 			sqlite3_finalize(pstmt);
 			return TRUE;
 		}

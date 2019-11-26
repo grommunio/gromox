@@ -353,7 +353,7 @@ BOOL mime_clear_content(MIME *pmime)
  *		length				length of the object
  *		encoding_type		
  */
-BOOL mime_write_content(MIME *pmime, char *pcontent, size_t length,
+BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 	int encoding_type)
 {
 	size_t i, j;

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include "pcl.h"
 #include "ical.h"
 #include "util.h"
@@ -261,7 +262,7 @@ BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = (void*)account;
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
-	propval_buff[5].pvalue = "EX";
+	propval_buff[5].pvalue  = const_cast(char *, "EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
 		return FALSE;
 	}
@@ -306,7 +307,7 @@ BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
-	propval_buff[11].pvalue = "EX";
+	propval_buff[11].pvalue  = const_cast(char *, "EX");
 	propval_buff[12].proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	propval_buff[12].pvalue = essdn_buff1;
 	propval_buff[13].proptag = PROP_TAG_SENTREPRESENTINGNAME;
@@ -1358,7 +1359,7 @@ BOOL common_util_username_to_entryid(const char *username,
 	} else {
 		oneoff_entry.pdisplay_name = (char*)username;
 	}
-	oneoff_entry.paddress_type = "SMTP";
+	oneoff_entry.paddress_type = const_cast(char *, "SMTP");
 	oneoff_entry.pmail_address = (char*)username;
 	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
 	status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
@@ -2053,7 +2054,7 @@ static int common_util_get_response(int sockd,
 	}
 }
 
-static void common_util_log_info(int level, char *format, ...)
+static void common_util_log_info(int level, const char *format, ...)
 {
 	va_list ap;
 	USER_INFO *pinfo;
@@ -3595,21 +3596,21 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 		break;
 	}
 	if (i >= line_num) {
-		ppfolder_lang[RES_ID_IPM] = "Top of Information Store";
-		ppfolder_lang[RES_ID_INBOX]  = "Inbox";
-		ppfolder_lang[RES_ID_DRAFT] = "Drafts";
-		ppfolder_lang[RES_ID_OUTBOX] = "Outbox";
-		ppfolder_lang[RES_ID_SENT] = "Sent Items";
-		ppfolder_lang[RES_ID_DELETED] = "Deleted Items";
-		ppfolder_lang[RES_ID_CONTACTS] = "Contacts";
-		ppfolder_lang[RES_ID_CALENDAR] = "Calendar";
-		ppfolder_lang[RES_ID_JOURNAL] = "Journal";
-		ppfolder_lang[RES_ID_NOTES] = "Notes";
-		ppfolder_lang[RES_ID_TASKS] = "Tasks";
-		ppfolder_lang[RES_ID_JUNK] = "Junk E-mail";
-		ppfolder_lang[RES_ID_SYNC] = "Sync Issues";
-		ppfolder_lang[RES_ID_CONFLICT] = "Conflicts";
-		ppfolder_lang[RES_ID_LOCAL] = "Local Failures";
-		ppfolder_lang[RES_ID_SERVER] = "Server Failures";
+		ppfolder_lang[RES_ID_IPM]      = const_cast(char *, "Top of Information Store");
+		ppfolder_lang[RES_ID_INBOX]    = const_cast(char *, "Inbox");
+		ppfolder_lang[RES_ID_DRAFT]    = const_cast(char *, "Drafts");
+		ppfolder_lang[RES_ID_OUTBOX]   = const_cast(char *, "Outbox");
+		ppfolder_lang[RES_ID_SENT]     = const_cast(char *, "Sent Items");
+		ppfolder_lang[RES_ID_DELETED]  = const_cast(char *, "Deleted Items");
+		ppfolder_lang[RES_ID_CONTACTS] = const_cast(char *, "Contacts");
+		ppfolder_lang[RES_ID_CALENDAR] = const_cast(char *, "Calendar");
+		ppfolder_lang[RES_ID_JOURNAL]  = const_cast(char *, "Journal");
+		ppfolder_lang[RES_ID_NOTES]    = const_cast(char *, "Notes");
+		ppfolder_lang[RES_ID_TASKS]    = const_cast(char *, "Tasks");
+		ppfolder_lang[RES_ID_JUNK]     = const_cast(char *, "Junk E-mail");
+		ppfolder_lang[RES_ID_SYNC]     = const_cast(char *, "Sync Issues");
+		ppfolder_lang[RES_ID_CONFLICT] = const_cast(char *, "Conflicts");
+		ppfolder_lang[RES_ID_LOCAL]    = const_cast(char *, "Local Failures");
+		ppfolder_lang[RES_ID_SERVER]   = const_cast(char *, "Server Failures");
 	}
 }

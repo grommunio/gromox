@@ -2,6 +2,7 @@
  * collection of functions for handling the imap command
  */ 
 #include <ctype.h>
+#include <libHX/defs.h>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
 #include "mail_func.h"
@@ -32,8 +33,8 @@ enum {
 	TYPE_WILDP
 };
 
-static char* g_folder_list[] = {"draft", "sent", "trash", "junk"};
-static char* g_xproperty_list[] = {"Drafts", "Sent", "Trash", "Spam"};
+static const char *g_folder_list[] = {"draft", "sent", "trash", "junk"};
+static const char *g_xproperty_list[] = {"Drafts", "Sent", "Trash", "Spam"};
 
 static BOOL imap_cmd_parser_hint_squence(DOUBLE_LIST *plist,
 	unsigned int num, unsigned int max_uid)
@@ -357,24 +358,24 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 			0 == strcasecmp((char*)pnode->pdata, "FAST") ||
 			0 == strcasecmp((char*)pnode->pdata, "FULL")) {
 			i ++;
-			nodes[i].pdata = "INTERNALDATE";
+			nodes[i].pdata = const_cast(char *, "INTERNALDATE");
 			double_list_append_as_tail(plist, &nodes[i]);
 			i ++;
-			nodes[i].pdata = "RFC822.SIZE";
+			nodes[i].pdata = const_cast(char *, "RFC822.SIZE");
 			double_list_append_as_tail(plist, &nodes[i]);
 			if (0 == strcasecmp((char*)pnode->pdata, "ALL") ||
 				0 == strcasecmp((char*)pnode->pdata, "FULL")) {
 				i ++;
-				nodes[i].pdata = "ENVELOPE";
+				nodes[i].pdata = const_cast(char *, "ENVELOPE");
 				double_list_append_as_tail(plist, &nodes[i]);
 				if(0 == strcasecmp((char*)pnode->pdata, "FULL")) {
 					i ++;
-					nodes[i].pdata = "BODY";
+					nodes[i].pdata = const_cast(char *, "BODY");
 					double_list_append_as_tail(plist, &nodes[i]);
 				}
 			}
 			*pb_detail = TRUE;
-			pnode->pdata = "FLAGS";
+			pnode->pdata = const_cast(char *, "FLAGS");
 		} else if (0 == strcasecmp((char*)pnode->pdata, "RFC822") ||
 			0 == strcasecmp((char*)pnode->pdata, "RFC822.HEADER") ||
 			0 == strcasecmp((char*)pnode->pdata, "RFC822.TEXT")) {
@@ -770,7 +771,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	MJSON mjson;
 	BOOL b_first;
 	int buff_len;
-	char *temp_id;
+	const char *temp_id;
 	size_t offset;
 	size_t length;
 	time_t tmp_time;
@@ -1455,8 +1456,7 @@ int imap_cmd_parser_logout(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char buff[1024];
     int string_length;
-	char *imap_reply_str;
-	char *imap_reply_str2;
+	const char *imap_reply_str, *imap_reply_str2;
 	
 	/* IMAP_CODE_2160001: BYE logging out */
 	imap_reply_str = resource_get_imap_code(
@@ -1812,8 +1812,8 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int firstunseen;
 	int string_length;
 	char temp_name[1024];
-	char *estring, buff[1024];
-    const char* imap_reply_str;
+	char buff[1024];
+	const char *estring, *imap_reply_str;
     
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -1913,8 +1913,8 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int firstunseen;
 	int string_length;
 	char temp_name[1024];
-	char *estring, buff[1024];
-    const char* imap_reply_str;
+	char buff[1024];
+	const char *estring, *imap_reply_str;
     
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot
@@ -2009,7 +2009,6 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errno;
 	int i, len;
 	BOOL b_found;
-	char *estring;
 	char buff[1024];
 	int string_length;
 	MEM_FILE temp_file;
@@ -2017,7 +2016,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_name1[1024];
 	char temp_folder[1024];
 	char converted_name[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2178,11 +2177,10 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errno;
-	char *estring;
 	char buff[1024];
 	int string_length;
 	char encoded_name[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2262,12 +2260,11 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errno;
-	char *estring;
 	char buff[1024];
 	int string_length;
 	char encoded_name[1024];
 	char encoded_name1[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2364,11 +2361,10 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errno;
-	char *estring;
 	char buff[1024];
 	int string_length;
 	char temp_name[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2436,11 +2432,10 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errno;
-	char *estring;
 	char buff[1024];
 	int string_length;
 	char temp_name[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2509,7 +2504,6 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int len;
 	int errno;
-	char *estring;
 	DIR_NODE *pdir;
 	int string_length;
 	MEM_FILE temp_file;
@@ -2517,7 +2511,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2696,7 +2690,6 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errno;
 	int i, len;
-	char *estring;
 	DIR_NODE *pdir;
 	int string_length;
 	MEM_FILE temp_file;
@@ -2704,7 +2697,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2733,10 +2726,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if ('\0' == argv[3][0]) {
-		argv[3] = "*";
-	}
-	snprintf(search_pattern, 1024, "%s%s", argv[2], argv[3]);
+	snprintf(search_pattern, 1024, "%s%s", argv[2], *argv[3] == '\0' ? "*" : argv[3]);
 	mem_file_init(&temp_file, imap_parser_get_allocator());
 	switch (system_services_enum_folders(
 		pcontext->maildir, &temp_file, &errno)) {
@@ -2842,7 +2832,6 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int len;
 	int errno;
-	char *estring;
 	DIR_NODE *pdir;
 	int string_length;
 	MEM_FILE temp_file;
@@ -2851,7 +2840,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot process in not authenticated state */
@@ -2985,12 +2974,11 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_first;
 	long uidvalid;
 	int temp_argc;
-	char *estring;
 	char buff[1024];
 	int string_length;
 	char *temp_argv[16];
 	char temp_name[1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
     
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
 		/* IMAP_CODE_2180004: BAD cannot
@@ -3128,8 +3116,8 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char file_name[128];
 	char temp_path[256];
 	char temp_name[1024];
-	char *estring, buff[1024];
-	const char* imap_reply_str;
+	char buff[1024];
+	const char *estring, *imap_reply_str;
 	const char* imap_reply_str1;
 	
 	if (pcontext->proto_stat < PROTO_STAT_AUTH) {
@@ -3464,8 +3452,8 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char temp_path[256];
 	char temp_name[1024];
 	struct stat node_stat;
-	char *estring, buff[1024];
-	const char *imap_reply_str;
+	char buff[1024];
+	const char *estring, *imap_reply_str;
 	const char *imap_reply_str1;
 	
 	b_answered = FALSE;
@@ -3710,13 +3698,12 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int del_num;
 	MITEM *pitem;
 	XARRAY xarray;
-	char *estring;
 	BOOL b_deleted;
 	int string_length;
 	char buff[1024];
 	char temp_file[256];
 	SINGLE_LIST temp_list;
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -3888,10 +3875,9 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errno;
 	int result;
 	int buff_len;
-	char *estring;
 	int string_length;
 	char buff[256*1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -3974,14 +3960,13 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_data;
 	MITEM *pitem;
 	BOOL b_detail;
-	char *estring;
 	XARRAY xarray;
 	char buff[1024];
 	int string_length;
 	char* tmp_argv[128];
 	DOUBLE_LIST list_seq;
 	DOUBLE_LIST list_data;
-	const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	DOUBLE_LIST_NODE nodes[1024];
 	SQUENCE_NODE squence_nodes[1024];
 	
@@ -4091,12 +4076,11 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	int flag_bits;
 	int temp_argc;
-	char *estring;
 	char buff[1024];
 	int string_length;
 	char *temp_argv[8];
 	DOUBLE_LIST list_seq;
-	const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	SQUENCE_NODE squence_nodes[1024];
 
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
@@ -4231,7 +4215,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	MITEM *pitem;
 	BOOL b_first;
 	BOOL b_copied;
-	char *estring;
 	XARRAY xarray;
 	int i, j, num;
 	long uidvalidity;
@@ -4243,7 +4226,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	SINGLE_LIST temp_list;
 	char uid_string[64*1024];
 	char uid_string1[64*1024];
-	const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	const char* imap_reply_str1;
 	SQUENCE_NODE squence_nodes[1024];
     
@@ -4396,10 +4379,9 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errno;
 	int result;
 	int buff_len;
-	char *estring;
 	int string_length;
 	char buff[256*1024];
-    const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -4486,7 +4468,6 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_data;
 	MITEM *pitem;
 	XARRAY xarray;
-	char *estring;
 	BOOL b_detail;
 	char buff[1024];
 	int string_length;
@@ -4494,7 +4475,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	DOUBLE_LIST list_seq;
 	DOUBLE_LIST list_data;
 	DOUBLE_LIST_NODE *pnode;
-	const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	DOUBLE_LIST_NODE nodes[1024];
 	SQUENCE_NODE squence_nodes[1024];
 	
@@ -4522,7 +4503,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	}
 	if (NULL == pnode) {
-		nodes[1023].pdata = "UID";
+		nodes[1023].pdata = const_cast(char *, "UID");
 		double_list_insert_as_head(&list_data, &nodes[1023]);
 	}
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
@@ -4615,12 +4596,11 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	XARRAY xarray;
 	int flag_bits;
 	int temp_argc;
-	char* estring;
 	char buff[1024];
 	char *temp_argv[8];
 	int string_length;
 	DOUBLE_LIST list_seq;
-	const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	SQUENCE_NODE squence_nodes[1024];
 
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
@@ -4756,7 +4736,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	MITEM *pitem;
 	BOOL b_copied;
 	XARRAY xarray;
-	char *estring;
 	int i, j, num;
 	long uidvalidity;
 	int string_length;
@@ -4766,7 +4745,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	DOUBLE_LIST list_seq;
 	SINGLE_LIST temp_list;
 	char uid_string[64*1024];
-	const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	const char* imap_reply_str1;
 	SQUENCE_NODE squence_nodes[1024];
 	
@@ -4918,14 +4897,13 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int max_uid;
 	MITEM *pitem;
 	XARRAY xarray;
-	char *estring;
 	BOOL b_deleted;
 	char buff[1024];
 	int string_length;
 	char temp_path[256];
     DOUBLE_LIST list_seq;
 	SINGLE_LIST temp_list;
-	const char* imap_reply_str;
+	const char *estring, *imap_reply_str;
 	SQUENCE_NODE squence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
@@ -5097,7 +5075,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	int result;
 	int i, num;
 	MITEM *pitem;
-	char *estring;
 	XARRAY xarray;
 	BOOL b_deleted;
 	char buff[1024];
@@ -5106,7 +5083,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	char prev_selected[128];
 	int string_length;
 	SINGLE_LIST temp_list;
-	const char *imap_reply_str;
+	const char *estring, *imap_reply_str;
 	
 	if ('\0' == pcontext->selected_folder[0]) {
 		return;

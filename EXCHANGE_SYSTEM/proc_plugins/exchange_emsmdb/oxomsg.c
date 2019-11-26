@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "emsmdb_interface.h"
 #include "message_object.h"
 #include "rop_processor.h"
@@ -50,7 +51,7 @@ static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = (void*)account;
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
-	propval_buff[5].pvalue = "EX";
+	propval_buff[5].pvalue  = const_cast(char *, "EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
 		return FALSE;
 	}
@@ -94,7 +95,7 @@ static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
-	propval_buff[11].pvalue = "EX";
+	propval_buff[11].pvalue  = const_cast(char *, "EX");
 	propval_buff[12].proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	propval_buff[12].pvalue = essdn_buff1;
 	propval_buff[13].proptag = PROP_TAG_SENTREPRESENTINGNAME;
@@ -558,7 +559,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
 		return EC_NOT_SUPPORTED;
 	}
 	paddress_types->count = 2;
-	paddress_types->ppstr = address_types;
+	paddress_types->ppstr = const_cast(char **, address_types);
 	return EC_SUCCESS;
 }
 

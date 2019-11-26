@@ -86,9 +86,7 @@ static DOUBLE_LIST g_front_list1;
 static DOUBLE_LIST g_server_list;
 static DOUBLE_LIST g_lost_list;
 
-
-
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i, j;
 	int list_num;

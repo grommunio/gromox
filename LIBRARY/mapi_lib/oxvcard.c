@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "tpropval_array.h"
 #include "rop_util.h"
 #include "oxvcard.h"
@@ -275,7 +276,7 @@ MESSAGE_CONTENT* oxvcard_import(
 		return NULL;
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
-	propval.pvalue = "IPM.Contact";
+	propval.pvalue  = const_cast(char *, "IPM.Contact");
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
 		goto IMPORT_FAILURE;
@@ -1028,7 +1029,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 {
 	int i;
 	BINARY *pbin;
-	void *pvalue;
+	const void *pvalue;
 	size_t out_len;
 	uint16_t propid;
 	uint32_t proptag;

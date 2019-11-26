@@ -10,7 +10,8 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 {
 	CONFIG_FILE  *pfile;
 	char file_name[256], tmp_path[256];
-	char *str_subject, *psearch, *str_val;
+	char *psearch, *str_val;
+	const char *str_subject;
 	int growing_num;
     /* path conatins the config files directory */
     switch (reason) {

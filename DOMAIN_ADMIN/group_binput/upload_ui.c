@@ -1590,7 +1590,7 @@ static BOOL upload_ui_xls_input(const char *domainname,
 	char *pat;
 	char *ptr1;
 	char *ptr2;
-	char *language;
+	const char *language;
 	BOOL b_touched;
 	xlsWorkBook *pWB;
 	xlsWorkSheet *pWS;
@@ -1868,7 +1868,7 @@ static BOOL upload_ui_xls_delete(const char *domainname,
 {
 	int i;
 	char *pat;
-	char *language;
+	const char *language;
 	BOOL b_touched;
 	xlsWorkBook *pWB;
 	xlsWorkSheet *pWS;
@@ -2040,7 +2040,7 @@ static BOOL upload_ui_get_self(char *url_buff, int length)
 
 static void upload_ui_error_html(const char *error_string)
 {
-	char *language;
+	const char *language;
 	
 	if (NULL == error_string) {
 		error_string = "fatal error!!!";

@@ -569,7 +569,7 @@ BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue =
-								"Exchange Directory Service";
+				const_cast(char *, "Exchange Directory Service");
 			ppropvals->count ++;
 			break;
 		case PROP_TAG_RESOURCETYPE:

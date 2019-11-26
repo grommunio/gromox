@@ -43,5 +43,6 @@ extern BOOL (*system_services_get_mlist_ids)(int, int*, int*);
 extern BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 extern BOOL (*system_services_check_same_org)(int, int);
 extern int (*system_services_add_timer)(const char *, int);
-extern void (*system_services_log_info)(int, char*, ...);
+extern void (*system_services_log_info)(int, const char *, ...);
+
 #endif /* _H_SYSTEM_SERVICES_ */

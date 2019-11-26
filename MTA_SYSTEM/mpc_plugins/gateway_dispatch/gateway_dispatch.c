@@ -28,8 +28,7 @@ typedef BOOL (*DNS_QUERY)(char*, VSTACK*);
 typedef BOOL (*CHECK_LOCAL)(const char*);
 typedef BOOL (*GATEWAY_NOUSER_AUDIT)(char*);
 typedef BOOL (*GATEWAY_NORCPT_AUDIT)(char*);
-typedef BOOL (*CONSOLE_CONTROL)(char *, char*, int);
-
+typedef BOOL (*CONSOLE_CONTROL)(const char *, char *, int);
 
 static STOP_FUNC g_running_modules[7];
 

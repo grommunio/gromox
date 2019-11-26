@@ -241,6 +241,6 @@ void common_util_set_param(int param, unsigned int value);
 extern const char *common_util_get_submit_command(void);
 extern uint32_t common_util_get_ftstream_id(void);
 extern MIME_POOL *common_util_get_mime_pool(void);
-void common_util_log_info(int level, char *format, ...);
+extern void common_util_log_info(int level, const char *format, ...);
 
 #endif /* _H_COMMON_UTIL_ */

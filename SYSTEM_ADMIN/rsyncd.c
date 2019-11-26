@@ -71,7 +71,7 @@ static unsigned long ssl_id()
 }
 #endif
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	int i;
 	int optval;

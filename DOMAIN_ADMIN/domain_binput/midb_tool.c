@@ -95,9 +95,9 @@ BOOL midb_tool_create(const char *dir, const char *username)
 	}
 	free(sql_string);
 	
-	sql_string = "INSERT INTO configurations VALUES (?, ?)";
+	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, strlen(sql_string), &pstmt, NULL)) {
+		csql_string, strlen(csql_string), &pstmt, NULL)) {
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();

@@ -25,7 +25,7 @@ extern BOOL (*system_services_check_relay)(const char*);
 extern BOOL (*system_services_check_domain)(const char*);
 extern BOOL (*system_services_check_user)(const char*, char*);
 extern BOOL (*system_services_check_full)(const char*);
-extern void (*system_services_log_info)(int, char*, ...);
+extern void (*system_services_log_info)(int, const char *, ...);
 extern const char *(*system_services_auth_ehlo)(void);
 extern int (*system_services_auth_process)(int, const char*, int, char*, int);
 extern BOOL (*system_services_auth_retrieve)(int, char*, int);

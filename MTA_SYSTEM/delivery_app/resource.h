@@ -3,7 +3,7 @@
 #include "common_types.h"
 #include "string_table.h"
 
-void resource_init(char* cfg_filename);
+extern void resource_init(const char *cfg_filename);
 extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
@@ -13,8 +13,6 @@ BOOL resource_get_integer(int key, int* value);
 const char* resource_get_string(int key);
 
 BOOL resource_set_integer(int key, int value);
-
-BOOL resource_set_string(int key, char* value);
-
+extern BOOL resource_set_string(int key, const char *value);
 
 #endif /* _H_RESOURCE_ */

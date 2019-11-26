@@ -62,7 +62,7 @@ typedef int (*QUERY_VERSION)(void);
 typedef int (*GET_QUEUE_LENGTH)(void);
 typedef BOOL (*FEEDBACK_ENTITY)(FLUSH_ENTITY*);
 typedef FLUSH_ENTITY *(*QUEUE_OPERATION)(void);
-typedef void (*LOG_INFO)(int, char*, ...);
+typedef void (*LOG_INFO)(int, const char *, ...);
 typedef const char* (*GET_EXTRA_TAGVAL)(int, int);
 typedef int (*GET_EXTRA_NUM)(int);
 typedef const char *(*GET_ENVIRONMENT)(void);

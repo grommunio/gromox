@@ -172,9 +172,7 @@ void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
 
 void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive);
-
-void http_parser_log_info(HTTP_CONTEXT *pcontext,
-	int level, char *format, ...);
+extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...);
 
 #endif
 
