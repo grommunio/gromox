@@ -107,6 +107,19 @@ BOOL acl_control_auth(const char *username, const char *password)
 	return FALSE;
 }
 
+void acl_control_clear(const char *name)
+{
+	int i;
+	char *pitem;
+	
+	for (i=0; i<ACL_CAPACITY; i++) {
+		pitem = g_shm_begin + i * (32 + sizeof(time_t) + 16 + 256);
+		if (0 == strcasecmp(pitem + 32 + sizeof(time_t) + 16, name)) {
+			*pitem = '\0';
+		}
+	}
+}
+
 BOOL acl_control_produce(const char *username, const char *ip, char *session)
 {
 	int ip_num;
