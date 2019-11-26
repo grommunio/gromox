@@ -42,9 +42,8 @@ static void alarm_message(const char *content);
 
 static BOOL g_notify_stop = TRUE;
 static pthread_t g_thread_id;
-static time_t g_fs_alarm_time = 0;
+static time_t g_fs_alarm_time, g_mem_alarm_time;
 static int g_fs_alarm_percentage;
-static time_t g_mem_alarm_time = 0;
 static int g_mem_alarm_percentage;
 static int g_alarm_interval;
 

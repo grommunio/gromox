@@ -50,7 +50,7 @@ typedef struct _CONSOLE_NODE {
 extern BOOL g_notify_stop;
 /* declare private global variables */
 static BOOL g_terminate;
-static size_t g_cmd_num = 0;
+static size_t g_cmd_num;
 static char g_listen_ip[16];
 static int g_listen_port;
 static pthread_t g_listening_tid;

@@ -15,7 +15,7 @@ static int tagging_table_refresh();
 
 static BOOL tagging_table_add(const char* str);
 
-static STR_HASH_TABLE* g_tagging_table = NULL;
+static STR_HASH_TABLE *g_tagging_table;
 static pthread_rwlock_t g_refresh_lock;
 static char g_list_path[256];
 static int g_growing_num;

@@ -1414,7 +1414,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 
 time_t make_gmtime(struct tm *ptm)
 {
-	static const struct state *sp = NULL;
+	static const struct state *sp;
 	
 	if (NULL == sp) {
 		sp = tz_alloc("UTC");
@@ -1427,7 +1427,7 @@ time_t make_gmtime(struct tm *ptm)
 
 void make_gmtm(time_t gm_time, struct tm *ptm)
 {
-	static const struct state *sp = NULL;
+	static const struct state *sp;
 	
 	if (NULL == sp) {
 		sp = tz_alloc("UTC");

@@ -86,10 +86,8 @@ static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
 
 /* private global variables */
 static char g_cfg_filename[MAX_FILE_NAME_LEN];
-static CONFIG_FILE* g_config_file = NULL;
-
-static POP3_ERROR_CODE* g_error_code_table  = NULL;
-static POP3_ERROR_CODE* g_def_code_table    = NULL;
+static CONFIG_FILE *g_config_file;
+static POP3_ERROR_CODE *g_error_code_table, *g_def_code_table;
 static pthread_rwlock_t g_error_table_lock;
 
 static int resource_find_pop3_code_index(int native_code);

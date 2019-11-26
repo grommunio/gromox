@@ -163,10 +163,8 @@ static IMAP_RETURN_CODE g_default_code_table[] = {
 
 /* private global variables */
 static char g_cfg_filename[MAX_FILE_NAME_LEN];
-static CONFIG_FILE* g_config_file = NULL;
-
-static IMAP_RETURN_CODE* g_return_code_table  = NULL;
-static IMAP_RETURN_CODE* g_def_code_table    = NULL;
+static CONFIG_FILE *g_config_file;
+static IMAP_RETURN_CODE *g_return_code_table, *g_def_code_table;
 static pthread_rwlock_t g_return_table_lock;
 static SINGLE_LIST* g_lang_list;
 

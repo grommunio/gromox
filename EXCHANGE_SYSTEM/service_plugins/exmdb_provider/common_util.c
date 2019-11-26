@@ -2107,7 +2107,7 @@ static BOOL common_util_get_message_display_recipients(
 	char sql_string[256];
 	char tmp_buff[64*1024];
 	uint32_t recipient_type;
-	static uint8_t fake_empty = 0;
+	static uint8_t fake_empty;
 	
 	switch (proptag) {
 	case PROP_TAG_DISPLAYTO:
@@ -4931,7 +4931,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	char sql_string[128];
 	const char *pusername;
 	char display_name[256];
-	static BINARY fake_bin = {0, NULL};
+	static BINARY fake_bin;
 	
 	switch (proptag) {
 	case PROP_TAG_ENTRYID:

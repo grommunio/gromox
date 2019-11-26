@@ -46,9 +46,7 @@ typedef struct _RTF_WRITER {
 } RTF_WRITER;
 
 static iconv_t g_conv_id;
-
-static STR_HASH_TABLE *g_color_hash = NULL;
-
+static STR_HASH_TABLE *g_color_hash;
 static CPID_TO_CHARSET html_cpid_to_charset;
 
 static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);

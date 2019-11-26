@@ -22,7 +22,7 @@ typedef struct _LIST_ITEM {
 	char    interval[32];
 } LIST_ITEM;
 
-static STR_HASH_TABLE    *g_grey_table = NULL;
+static STR_HASH_TABLE *g_grey_table;
 static pthread_rwlock_t  g_refresh_lock;
 static char g_list_path[256]; 
 static BOOL g_case_sensitive;

@@ -821,7 +821,7 @@ static void* store_object_get_oof_property(
 	MIME_FIELD mime_field;
 	struct stat node_stat;
 	static uint8_t fake_true = 1;
-	static uint8_t fake_false = 0;
+	static uint8_t fake_false;
 	
 	switch (proptag) {
 	case PROP_TAG_OOFSTATE:

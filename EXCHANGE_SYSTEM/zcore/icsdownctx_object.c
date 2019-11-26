@@ -398,7 +398,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	PROPTAG_ARRAY proptags;
 	uint32_t proptag_buff[6];
 	TPROPVAL_ARRAY tmp_propvals;
-	static uint8_t fake_false = 0;
+	static uint8_t fake_false;
 	
 	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
 		return FALSE;

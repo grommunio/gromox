@@ -365,7 +365,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	PERSISTDATA *ppersistdata;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_proplist;
-	static uint8_t fake_byte = 0;
+	static uint8_t fake_byte;
 	PERSISTDATA_ARRAY persistdatas;
 	TPROPVAL_ARRAY *pproplist_state;
 	TPROPVAL_ARRAY *pproplist_deletions;
@@ -994,7 +994,7 @@ static BOOL icsdownctx_object_get_changepartial(
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY *pchangetags;
 	PROPERTY_GROUPINFO *pgpinfo;
-	static BINARY fake_bin = {0, NULL};
+	static BINARY fake_bin;
 	
 	pgpinfo = logon_object_get_property_groupinfo(
 				pctx->pstream->plogon, group_id);
@@ -1197,7 +1197,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	MSGCHG_PARTIAL msg_partial;
 	TAGGED_PROPVAL tmp_propval;
 	static uint8_t fake_true = 1;
-	static uint8_t fake_false = 0;
+	static uint8_t fake_false;
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (TRUE == logon_object_check_private(pctx->pstream->plogon)) {

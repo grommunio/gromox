@@ -866,7 +866,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 {
 	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
-	static uint8_t zeros[4] = {0, 0, 0, 0};
+	static uint8_t zeros[4];
 	
 	/* setup a bind_ack */
 	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);

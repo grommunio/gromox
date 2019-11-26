@@ -1249,8 +1249,7 @@ static BOOL ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	HMACMD5_CTX hmac_ctx;
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[32];
-	static const uint8_t zeros[24] = {0, };
-	
+	static const uint8_t zeros[24];
 
 	plm_key = &pauth->lm_session_key;
 	puser_key = &pauth->user_session_key;

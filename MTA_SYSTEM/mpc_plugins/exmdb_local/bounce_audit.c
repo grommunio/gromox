@@ -16,7 +16,7 @@
 static int g_audit_num;
 static int g_audit_interval;
 static pthread_mutex_t g_audit_mutex_lock;
-static STR_HASH_TABLE  *g_audit_hash = NULL;
+static STR_HASH_TABLE *g_audit_hash;
 
 static int bounce_audit_collect_entry(time_t current_time);
 

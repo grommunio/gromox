@@ -246,7 +246,7 @@ void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
 BOOL rop_util_get_common_pset(int pset_type, GUID *pguid)
 {
 	static GUID guids[17];
-	static BOOL b_pasred = FALSE;
+	static BOOL b_pasred;
 	
 	if (FALSE == b_pasred) {
 		guid_from_string(&guids[0], "00020329-0000-0000-c000-000000000046");

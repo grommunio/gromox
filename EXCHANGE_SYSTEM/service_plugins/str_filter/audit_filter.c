@@ -25,7 +25,7 @@ typedef struct _STR_AUDIT {
 } STR_AUDIT;
 
 /* private global variable */
-static STR_HASH_TABLE  *g_audit_hash = NULL;
+static STR_HASH_TABLE *g_audit_hash;
 
 static int g_audit_num;
 static int g_audit_interval;         /*  connecting times  per interval */ 

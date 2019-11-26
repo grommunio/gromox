@@ -236,7 +236,7 @@ static BOOL folder_object_get_calculated_property(
 	char temp_buff[1024];
 	PERSISTDATA *ppersistdata;
 	static uint8_t bin_buff[22];
-	static uint32_t fake_del = 0;
+	static uint32_t fake_del;
 	PERSISTDATA_ARRAY persistdatas;
 	static BINARY fake_bin = {22, bin_buff};
 	

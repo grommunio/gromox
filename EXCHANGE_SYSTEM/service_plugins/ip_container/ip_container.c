@@ -12,7 +12,7 @@
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
-static IP4_HASH_TABLE* g_container_table = NULL;
+static IP4_HASH_TABLE *g_container_table;
 static pthread_mutex_t g_container_lock;
 static int g_table_size;
 static int g_max_num;

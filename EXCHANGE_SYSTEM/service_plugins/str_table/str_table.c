@@ -14,7 +14,7 @@ enum{
 
 static int str_table_refresh();
 
-static STR_HASH_TABLE* g_string_list_table = NULL;
+static STR_HASH_TABLE *g_string_list_table;
 static pthread_rwlock_t g_refresh_lock;
 static char g_list_path[256];
 static BOOL g_case_sensitive;

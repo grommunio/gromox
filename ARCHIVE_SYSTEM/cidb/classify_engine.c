@@ -79,11 +79,8 @@ static int g_valid_days;
 static LIB_BUFFER *g_alloc_mjson;      /* mjson allocator */
 
 static DOUBLE_LIST g_dir_list;
-
-static DOUBLE_LIST_NODE *g_list_tail = NULL;
-
-static uint64_t g_turn_num = 0;
-
+static DOUBLE_LIST_NODE *g_list_tail;
+static uint64_t g_turn_num;
 static pthread_mutex_t g_list_lock;
 
 static DOUBLE_LIST* classify_engine_cl_build(int argc, char **argv);

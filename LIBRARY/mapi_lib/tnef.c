@@ -150,8 +150,7 @@ static uint8_t MACBINARY_ENCODING[] = {
 	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B,
 	0x01};
 
-static const uint8_t g_pad_bytes[3] = {0, 0, 0};
-
+static const uint8_t g_pad_bytes[3];
 static const char* (*tnef_cpid_to_charset)(uint32_t cpid);
 
 static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
@@ -2589,7 +2588,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	struct tm tmp_tm;
     uint16_t checksum;
 	TRP_HEADER header;
-	static uint8_t empty_bytes[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	static uint8_t empty_bytes[8];
 
     status = ext_buffer_push_uint8(pext, r->lvl);
 	if (EXT_ERR_SUCCESS != status) {

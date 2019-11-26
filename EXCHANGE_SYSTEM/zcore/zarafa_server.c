@@ -2597,7 +2597,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	TPROPVAL_ARRAY propvals;
 	RESTRICTION restriction;
 	RESTRICTION_PROPERTY res_prop;
-	static uint8_t fake_false = 0;
+	static uint8_t fake_false;
 	TAGGED_PROPVAL propval_buff[2];
 	
 	pinfo = zarafa_server_query_session(hsession);

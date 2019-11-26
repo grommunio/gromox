@@ -94,7 +94,7 @@ static void extract_network(char *buff, NETWORK_INFO *pinfo);
 
 static void console_talk(int argc, char **argv, char *result, int length);
 	
-static void *g_shm_begin = NULL;
+static void *g_shm_begin;
 static double *g_cpu_status;
 static double *g_network_status;
 static int *g_connection_status;
@@ -552,7 +552,7 @@ static int collect_cpu_information_ex()
 {
 	FILE *fp;
 	int i, cpu_num;	
-	static time_t last_time = 0;
+	static time_t last_time;
 	time_t current_time;
 	CPU_INFO cpu_status;
 	CPU_INFO cpu_info[MAX_UNIT_NUM];
@@ -632,7 +632,7 @@ static int collect_network_information_ex()
 {
 	FILE *fp;
 	int i, network_num;	
-	static time_t last_time = 0;
+	static time_t last_time;
 	time_t current_time;
 	NETWORK_INFO network_status;
 	NETWORK_INFO network_info[MAX_UNIT_NUM];

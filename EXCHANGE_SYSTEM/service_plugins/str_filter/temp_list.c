@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 /* private global variable */
-static STR_HASH_TABLE*	g_string_hash	= NULL;
+static STR_HASH_TABLE *g_string_hash;
 static pthread_mutex_t	g_string_mutex_lock;
 static int				g_size;
 static BOOL				g_case_sensitive;

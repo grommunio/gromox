@@ -1899,7 +1899,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
-	static uint8_t fake_false = 0;
+	static uint8_t fake_false;
 	TAGGED_PROPVAL propval_buff[2];
 	
 	rpc_info = get_rpc_info();

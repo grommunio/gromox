@@ -275,8 +275,7 @@ typedef struct _MAP_ITEM {
 	CMD_PROC_FUNC func;
 } MAP_ITEM;
 
-static STR_HASH_TABLE *g_cmd_hash = NULL;
-
+static STR_HASH_TABLE *g_cmd_hash;
 static const char* (*rtf_cpid_to_charset)(uint32_t cpid);
 
 static BOOL rtf_starting_body(RTF_READER *preader);

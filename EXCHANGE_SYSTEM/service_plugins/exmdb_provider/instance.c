@@ -2222,7 +2222,7 @@ static BOOL instance_get_message_display_recipients(
 	BOOL b_unicode;
 	char tmp_buff[64*1024];
 	uint32_t recipient_type;
-	static uint8_t fake_empty = 0;
+	static uint8_t fake_empty;
 	
 	switch (proptag) {
 	case PROP_TAG_DISPLAYTO:

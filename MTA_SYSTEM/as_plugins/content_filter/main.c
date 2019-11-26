@@ -58,7 +58,7 @@ static CHECK_TAGGING check_tagging;
 
 static BOOL g_immediate_reject;
 static char g_config_file[256];
-static URI_INFORMATION *g_context_list = NULL;
+static URI_INFORMATION *g_context_list;
 
 BOOL AS_LibMain(int reason, void **ppdata)
 {

@@ -5,8 +5,7 @@
 #include <pthread.h>
 #include <stdio.h>
 
-
-static STR_HASH_TABLE* g_domain_table = NULL;
+static STR_HASH_TABLE *g_domain_table;
 static pthread_rwlock_t g_domain_lock;
 static char g_list_path[256];
 

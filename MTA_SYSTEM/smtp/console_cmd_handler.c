@@ -21,7 +21,7 @@
 #define TALK_BUFFER_LEN         65536
 
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
-static size_t g_plugname_buffer_size = 0;
+static size_t g_plugname_buffer_size;
 
 static char g_server_help[] =
 	"250 SMTP DAEMON server help information:\r\n"

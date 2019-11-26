@@ -16,7 +16,7 @@ enum{
 static int ip_table_refresh();
 
 static char g_module_name[256];
-static IP4_HASH_TABLE* g_ip_list_table = NULL;
+static IP4_HASH_TABLE *g_ip_list_table;
 static pthread_rwlock_t g_refresh_lock;
 static char g_list_path[256];
 static int g_growing_num;

@@ -811,7 +811,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	ONEOFF_ENTRYID tmp_entry;
 	uint8_t bin_buff[256*1024];
 	char str_buff[MIME_FIELD_LEN];
-	static uint8_t pad_bytes[3] = {0, 0, 0};
+	static uint8_t pad_bytes[3];
 	
 	len = strlen(field);
 	field[len] = ';';

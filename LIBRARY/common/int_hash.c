@@ -11,8 +11,8 @@
 #include "util.h"
 #include <string.h>
 
+static size_t g_num_of_collision;
 
-static size_t g_num_of_collision = 0;
 static size_t default_int_hash_function(int);
 
 

@@ -14,9 +14,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>	 /* for inet_addr only */
 
+static size_t g_num_of_collision;
 
-
-static size_t g_num_of_collision = 0;
 static size_t default_string_hash_function(const char *string);
 
 

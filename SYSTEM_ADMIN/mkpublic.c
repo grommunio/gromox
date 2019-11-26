@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <mysql/mysql.h>
 
-static uint32_t g_last_art = 0;
+static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
 

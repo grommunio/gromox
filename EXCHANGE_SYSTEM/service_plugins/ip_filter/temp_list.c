@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 /* private global variable */
-static IP4_HASH_TABLE*	g_ip4_hash	= NULL;
+static IP4_HASH_TABLE *g_ip4_hash;
 static pthread_mutex_t	g_ip_mutex_lock;
 static int				g_size;
 

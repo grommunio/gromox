@@ -2280,8 +2280,8 @@ static BOOL message_rectify_message(const char *account,
 	char cid_string[256];
 	MESSAGE_CONTENT *pembedded;
 	static uint8_t fake_true = 1;
-	static uint8_t fake_false = 0;
-	static uint32_t fake_int32 = 0;
+	static uint8_t fake_false;
+	static uint32_t fake_int32;
 	static uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED;
 	
 	pmsgctnt1->proplist.count = 0;

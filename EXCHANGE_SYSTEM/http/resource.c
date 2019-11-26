@@ -63,8 +63,7 @@ static struct {
 
 /* private global variables */
 static char g_cfg_filename[MAX_FILE_NAME_LEN];
-static CONFIG_FILE* g_config_file = NULL;
-
+static CONFIG_FILE *g_config_file;
 
 void resource_init(char* cfg_filename)
 {

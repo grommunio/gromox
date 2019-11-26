@@ -18,12 +18,12 @@ typedef struct _USER_INFO {
 	BOOL b_working;
 } USER_INFO;
 
-static STR_HASH_TABLE *g_hash_table = NULL;
+static STR_HASH_TABLE *g_hash_table;
 static pthread_rwlock_t g_table_lock;
 static DOUBLE_LIST g_execute_list;
 static pthread_t g_scan_tid;
 static char g_list_path[256];
-static int g_hash_cap = 0;
+static int g_hash_cap;
 static int g_pop_interval;
 static int g_threads_num;
 static pthread_t *g_thread_tids;

@@ -24,7 +24,7 @@ typedef struct _IP_AUDIT {
 } IP_AUDIT;
 
 /* private global variable */
-static IP4_HASH_TABLE  *g_audit_hash = NULL;
+static IP4_HASH_TABLE *g_audit_hash;
 
 static long g_audit_num;
 static long g_audit_interval;           /*  connecting times  per interval */ 

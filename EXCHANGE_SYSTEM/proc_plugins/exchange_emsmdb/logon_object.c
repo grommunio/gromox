@@ -693,7 +693,7 @@ static BOOL logon_object_get_calculated_property(
 	EMSMDB_INFO *pinfo;
 	char temp_buff[1024];
 	DCERPC_INFO rpc_info;
-	static uint64_t tmp_ll = 0;
+	static uint64_t tmp_ll;
 	static uint8_t test_buff[256];
 	static BINARY test_bin = {256, test_buff};
 	

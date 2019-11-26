@@ -86,10 +86,10 @@ static int flusher_increase_max_ID();
 
 static BOOL flusher_set_flush_ID(int ID);
 	
-static PLUG_ENTITY     *g_flusher_plug = NULL;
-static LIB_BUFFER      *g_allocator    = NULL;
-static BOOL            g_can_register  = FALSE;
-static size_t          g_max_queue_len = 0;
+static PLUG_ENTITY *g_flusher_plug;
+static LIB_BUFFER *g_allocator;
+static BOOL g_can_register;
+static size_t g_max_queue_len;
 static pthread_mutex_t g_flush_mutex;
 static pthread_mutex_t g_flush_id_mutex;
 static SINGLE_LIST            g_flush_queue;

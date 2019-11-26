@@ -184,8 +184,8 @@ static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;
 static pthread_mutex_t g_server_lock;
-static LIB_BUFFER* g_file_allocator = NULL;
-static int g_file_ratio = 0;
+static LIB_BUFFER *g_file_allocator;
+static int g_file_ratio;
 
 DECLARE_API;
 

@@ -22,7 +22,7 @@ static BOOL table_query(const char* str, char *charset);
 
 static void console_talk(int argc, char **argv, char *result, int length);
 
-static STR_HASH_TABLE* g_hash_table = NULL;
+static STR_HASH_TABLE *g_hash_table;
 static pthread_rwlock_t g_refresh_lock;
 static char g_list_path[256];
 

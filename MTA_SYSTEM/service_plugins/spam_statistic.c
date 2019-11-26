@@ -17,7 +17,7 @@ static void spam_statistic(int ID);
 
 DECLARE_API;
 
-static void *g_shm_begin = NULL;
+static void *g_shm_begin;
 static time_t *g_status_time;
 static time_t *g_report_time;
 static LIST_FILE *g_list;
