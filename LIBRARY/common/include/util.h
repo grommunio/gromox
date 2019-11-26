@@ -1,6 +1,11 @@
 #ifndef _H_UTIL_
 #define _H_UTIL_
 
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
 
 #ifdef __cplusplus
@@ -14,9 +19,7 @@ BOOL utf8_len(const char *str, int *plen);
 BOOL utf8_truncate(char *str, int length);
 
 void utf8_filter(char *string);
-
-void wchar_to_utf8(uint16_t wchar, uint8_t *string);
-
+extern void wchar_to_utf8(uint32_t wchar, uint8_t *string);
 const char* replace_iconv_charset(const char *charset);
 
 BOOL string_to_utf8(const char *charset,

@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdint.h>
 #include "html.h"
 #include "util.h"
 #include "int_hash.h"
@@ -353,11 +354,11 @@ static int html_utf8_byte_num(unsigned char ch)
 	return byte_num;
 }
 
-static uint16_t html_utf8_to_wchar(const char *src, int length)
+static uint32_t html_utf8_to_wchar(const char *src, int length)
 {
 	size_t len;
 	size_t in_len;
-	uint16_t wchar;
+	uint32_t wchar;
 	char *pin, *pout;
 	
 	pin = (char*)src;

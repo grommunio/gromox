@@ -203,7 +203,7 @@ void utf8_filter(char *string)
 	}
 }
 
-void wchar_to_utf8(uint16_t wchar, uint8_t *string)
+void wchar_to_utf8(uint32_t wchar, uint8_t *string)
 {
 	if (wchar < 0x7f) {
 		string[0] = wchar;
