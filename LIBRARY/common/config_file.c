@@ -4,6 +4,7 @@
  *
  */
 #include <errno.h>
+#include <libHX/string.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>
@@ -18,6 +19,23 @@
 #define EXT_ENTRY_NUM		64
 
 static void config_file_parse_line(CONFIG_FILE *cfg, char* line);
+
+char *config_default_path(const char *filename)
+{
+	if (strchr(filename, '/') != NULL)
+		return strdup(filename);
+	const char *ed = getenv("GROMOX_CONFIG_PATH");
+	if (ed == NULL || *ed == '\0')
+		ed = "/etc/gromox";
+	size_t bs = strlen(ed) + strlen(filename) + 2;
+	char *ret = malloc(bs);
+	if (ret == NULL)
+		return NULL;
+	HX_strlcpy(ret, ed, bs);
+	HX_strlcat(ret, "/", bs);
+	HX_strlcat(ret, filename, bs);
+	return ret;
+}
 
 /*
  *	init a config file object with the specified filename

@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/option.h>
+#include "config_file.h"
 #include "listener.h" 
 #include "resource.h" 
 #include "pop3_parser.h" 
@@ -61,12 +62,9 @@ int main(int argc, const char **argv)
 
 	allocator = vstack_allocator_init(sizeof(STOP_FUNC), 50, FALSE);    
 	vstack_init(&stop_stack, allocator, sizeof(STOP_FUNC), 50);
+	opt_config_file = config_default_path("pop3.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
-	if (opt_config_file == NULL) {
-		printf("You need to specify the -c option.\n");
-		return 1;
-	}
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, term_handler);
 	resource_init(opt_config_file);

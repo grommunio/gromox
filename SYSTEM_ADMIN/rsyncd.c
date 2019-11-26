@@ -98,15 +98,12 @@ int main(int argc, const char **argv)
 	char certificate_passwd[1024];
 	CONNECTION_NODE *pconnection;
 
+	opt_config_file = config_default_path("rsyncd.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s role: server\n", PROJECT_VERSION);
 		return 0;
-	}
-	if (opt_config_file == NULL) {
-		printf("You need to specify the -c option.\n");
-		return EXIT_FAILURE;
 	}
 	signal(SIGPIPE, SIG_IGN);
 	pconfig = config_file_init(opt_config_file);

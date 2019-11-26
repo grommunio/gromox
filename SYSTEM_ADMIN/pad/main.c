@@ -58,15 +58,12 @@ int main(int argc, const char **argv)
 	char db_name[256];
 	CONFIG_FILE *pconfig;
 
+	opt_config_file = config_default_path("pad.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
-	}
-	if (opt_config_file == NULL) {
-		printf("You need to specify the -c option.\n");
-		return EXIT_FAILURE;
 	}
 	umask(0);	
 	signal(SIGPIPE, SIG_IGN);

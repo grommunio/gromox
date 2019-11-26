@@ -93,15 +93,12 @@ int main(int argc, const char **argv)
     DOUBLE_LIST_NODE *pnode;
 	CONFIG_FILE *pconfig;
 
+	opt_config_file = config_default_path("asensor.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
-	}
-	if (opt_config_file == NULL) {
-		printf("You need to specify the -c option.\n");
-		return EXIT_FAILURE;
 	}
 	pconfig = config_file_init(opt_config_file);
 	if (NULL == pconfig) {

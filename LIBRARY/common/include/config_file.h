@@ -21,6 +21,7 @@ typedef struct _CONFIG_FILE {
 extern "C" {
 #endif
 
+extern char *config_default_path(const char *filename);
 extern CONFIG_FILE *config_file_init(const char *filename);
 void config_file_free(CONFIG_FILE* cfg_file);
 extern char *config_file_get_value(CONFIG_FILE *, const char *key);

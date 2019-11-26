@@ -133,16 +133,13 @@ int main(int argc, const char **argv)
 	char *str_value, *pitem;
 	pthread_attr_t thr_attr;
 	struct sockaddr_in my_name;
-	
+
+	opt_config_file = config_default_path("event.cfg");	
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
-	}
-	if (opt_config_file == NULL) {
-		printf("You need to specify the -c option.\n");
-		return EXIT_FAILURE;
 	}
 	signal(SIGPIPE, SIG_IGN);
 	pconfig = config_file_init(opt_config_file);
