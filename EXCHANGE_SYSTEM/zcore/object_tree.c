@@ -440,7 +440,7 @@ TPROPVAL_ARRAY* object_tree_get_profile_sec(
 	
 	proot = simple_tree_get_root(&pobjtree->tree);
 	if (NULL == proot) {
-		return;
+		return NULL;
 	}
 	prootobj = ((OBJECT_NODE*)proot->pdata)->pobject;
 	for (i=0; i<prootobj->pprof_set->count; i++) {

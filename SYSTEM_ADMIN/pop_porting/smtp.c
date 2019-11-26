@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "smtp.h"
 #include "util.h"
 #include <sys/time.h>
@@ -280,7 +281,7 @@ SENDING_RETRY:
 		close(sockd);
 		times ++;
 		if (3 == times) {
-			return;
+			return false;
 		} else {
 			goto SENDING_RETRY;
 		}

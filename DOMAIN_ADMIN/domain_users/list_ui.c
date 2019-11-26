@@ -1105,7 +1105,7 @@ int list_ui_run()
 					&b_migrating, media_area) && TRUE == b_migrating) {
 					list_ui_error_html(lang_resource_get(
 						g_lang_resource, "ERROR_MIGRATING", language));
-					return;
+					return 0;
 				}
 				if (FALSE == list_ui_allocate_dir(NULL, maildir)) {
 					data_source_remove_user(username, NULL, NULL);
@@ -1457,7 +1457,7 @@ int list_ui_run()
 					&b_migrating, NULL) && TRUE == b_migrating) {
 					list_ui_error_html(lang_resource_get(
 						g_lang_resource, "ERROR_MIGRATING", language));
-					return;
+					return 0;
 				}
 				pcollection = data_source_collect_init();
 				if (NULL == pcollection) {
