@@ -57,11 +57,11 @@ typedef struct _MITEM {
 	MEM_FILE f_digest;
 } MITEM;
 
-typedef struct _SQUENCE_NODE {
+typedef struct _SEQUENCE_NODE {
 	DOUBLE_LIST_NODE node;
 	int min;
 	int max;
-} SQUENCE_NODE;
+} SEQUENCE_NODE;
 
 typedef struct _BACK_SVR {
 	DOUBLE_LIST_NODE node;
@@ -2380,7 +2380,7 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SQUENCE_NODE *pseq = pnode->pdata;
+		SEQUENCE_NODE *pseq = pnode->pdata;
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = snprintf(buff, 1024, "P-SIML %s %s UID ASC -1 1\r\n",
@@ -2586,7 +2586,7 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SQUENCE_NODE *pseq = pnode->pdata;
+		SEQUENCE_NODE *pseq = pnode->pdata;
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = snprintf(buff, 1024, "M-LIST %s %s UID ASC -1 1\r\n",
@@ -2809,7 +2809,7 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SQUENCE_NODE *pseq = pnode->pdata;
+		SEQUENCE_NODE *pseq = pnode->pdata;
 		length = snprintf(buff, 1024, "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
@@ -3013,7 +3013,7 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SQUENCE_NODE *pseq = pnode->pdata;
+		SEQUENCE_NODE *pseq = pnode->pdata;
 		length = snprintf(buff, 1024, "P-DTLU %s %s UID ASC %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {

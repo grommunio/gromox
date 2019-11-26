@@ -61,7 +61,7 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
 static void imap_parser_context_free(IMAP_CONTEXT *pcontext);
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
-static int g_squence_ID;
+static int g_sequence_ID;
 static int g_context_num;
 static int g_average_num;
 static size_t g_cache_size;
@@ -83,7 +83,7 @@ static STR_HASH_TABLE *g_select_hash;
 static pthread_mutex_t g_hash_lock;
 static DOUBLE_LIST g_sleeping_list;
 static pthread_mutex_t g_list_lock;
-static pthread_mutex_t g_squence_lock;
+static pthread_mutex_t g_sequence_lock;
 static BOOL g_support_starttls;
 static BOOL g_force_starttls;
 static char g_certificate_path[256];
@@ -121,8 +121,8 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	pthread_mutex_init(&g_hash_lock, NULL);
 	double_list_init(&g_sleeping_list);
 	pthread_mutex_init(&g_list_lock, NULL);
-	g_squence_ID = 0;
-	pthread_mutex_init(&g_squence_lock, NULL);
+	g_sequence_ID = 0;
+	pthread_mutex_init(&g_sequence_lock, NULL);
 	if (TRUE == support_starttls) {
 		g_force_starttls = force_starttls;
 		strcpy(g_certificate_path, certificate_path);
@@ -374,7 +374,7 @@ void imap_parser_free()
     pthread_mutex_destroy(&g_hash_lock);
 	double_list_free(&g_sleeping_list);
 	pthread_mutex_destroy(&g_list_lock);
-	pthread_mutex_destroy(&g_squence_lock);
+	pthread_mutex_destroy(&g_sequence_lock);
     g_context_num		= 0;
 	g_cache_size	    = 0;
 	g_autologout_time   = 0;
@@ -1951,13 +1951,13 @@ LIB_BUFFER* imap_parser_get_jpool()
 	return g_alloc_mjson;
 }
 
-int imap_parser_get_squence_ID()
+int imap_parser_get_sequence_ID()
 {
-	pthread_mutex_lock(&g_squence_lock);
-	int temp_id = g_squence_ID++;
-	if (g_squence_ID == INT_MAX)
-		g_squence_ID = 0;
-	pthread_mutex_unlock(&g_squence_lock);
+	pthread_mutex_lock(&g_sequence_lock);
+	int temp_id = g_sequence_ID++;
+	if (g_sequence_ID == INT_MAX)
+		g_sequence_ID = 0;
+	pthread_mutex_unlock(&g_sequence_lock);
 	return temp_id;
 }
 

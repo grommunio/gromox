@@ -1818,7 +1818,7 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_squence(ICAL_LINE *piline,
+static BOOL oxcical_parse_sequence(ICAL_LINE *piline,
 	INT_HASH_TABLE *phash, uint16_t *plast_propid,
 	MESSAGE_CONTENT *pmsg)
 {
@@ -3306,8 +3306,7 @@ static BOOL oxcical_import_internal(
 		piline = ical_get_line(pmain_event, "SEQUENCE");
 	}
 	if (NULL != piline) {
-		if (FALSE == oxcical_parse_squence(
-			piline, phash, &last_propid, pmsg)) {
+		if (!oxcical_parse_sequence(piline, phash, &last_propid, pmsg)) {
 			int_hash_free(phash);
 			return FALSE;
 		}

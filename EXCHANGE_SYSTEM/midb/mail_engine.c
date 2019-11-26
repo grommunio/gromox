@@ -104,11 +104,11 @@ typedef struct _CONDITION_TREE_NODE {
 	void *pstatment;
 } CONDITION_TREE_NODE;
 
-typedef struct _SQUENCE_NODE {
+typedef struct _SEQUENCE_NODE {
 	DOUBLE_LIST_NODE node;
 	unsigned int min;
 	unsigned int max;
-} SQUENCE_NODE;
+} SEQUENCE_NODE;
 
 typedef struct _KEYWORD_ENUM {
 	MJSON *pjson;
@@ -171,7 +171,7 @@ static BOOL g_wal;
 static BOOL g_async;
 static int g_mime_num;
 static int g_table_size;              /* hash table size */
-static int g_squence_id;
+static int g_sequence_id;
 static BOOL g_notify_stop;            /* stop signal for scaning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
@@ -183,27 +183,23 @@ static char g_default_charset[32];
 static char g_default_timezone[64];
 static pthread_mutex_t g_hash_lock;
 static STR_HASH_TABLE *g_hash_table;
-static pthread_mutex_t g_squence_lock;
+static pthread_mutex_t g_sequence_lock;
 
-static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string);
+static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string);
+static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist, unsigned int num, unsigned int max_uid);
+static void mail_engine_ct_free_sequence(DOUBLE_LIST *plist);
 
-static BOOL mail_engine_ct_hint_squence(DOUBLE_LIST *plist,
-	unsigned int num, unsigned int max_uid);
-	
-static void mail_engine_ct_free_squence(DOUBLE_LIST *plist);
-
-static int mail_engine_get_squence_id()
+static int mail_engine_get_sequence_id()
 {
-	int squence_id;
+	int sequence_id;
 	
-	pthread_mutex_lock(&g_squence_lock);
-	if (0xFFFFFFF == g_squence_id) {
-		g_squence_id = 0;
-	}
-	g_squence_id ++;
-	squence_id = g_squence_id;
-	pthread_mutex_unlock(&g_squence_lock);
-	return squence_id;
+	pthread_mutex_lock(&g_sequence_lock);
+	if (g_sequence_id == 0xFFFFFFF)
+		g_sequence_id = 0;
+	++g_sequence_id;
+	sequence_id = g_sequence_id;
+	pthread_mutex_unlock(&g_sequence_lock);
+	return sequence_id;
 }
 
 static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
@@ -805,7 +801,7 @@ PROC_BEGIN:
 					((char**)ptree_node->pstatment)[1]);
 				break;
 			case CONDITION_ID:
-				b_result1 = mail_engine_ct_hint_squence(
+				b_result1 = mail_engine_ct_hint_sequence(
 					(DOUBLE_LIST*)ptree_node->pstatment,
 					id, total_mail);
 				break;
@@ -1100,7 +1096,7 @@ PROC_BEGIN:
 				if (SQLITE_ROW != sqlite3_step(pstmt_message)) {
 					break;
 				}
-				b_result1 = mail_engine_ct_hint_squence(
+				b_result1 = mail_engine_ct_hint_sequence(
 					(DOUBLE_LIST*)ptree_node->pstatment,
 					sqlite3_column_int64(pstmt_message, 2),
 					uidnext);
@@ -1277,7 +1273,7 @@ static int mail_engine_ct_compile_criteria(int argc,
 		}
 		return tmp_argc + 1;
 	} else {
-		/* <squence set> or () as default*/
+		/* <sequence set> or () as default */
 		return 1;
 	}
 }
@@ -1295,7 +1291,7 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 		} else {
 			if (CONDITION_ID == ptree_node->condition ||
 				CONDITION_UID == ptree_node->condition) {
-				mail_engine_ct_free_squence(
+				mail_engine_ct_free_sequence(
 					(DOUBLE_LIST*)ptree_node->pstatment);
 				ptree_node->pstatment = NULL;
 			} else if (CONDITION_BCC == ptree_node->condition ||
@@ -1571,7 +1567,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			plist1 = mail_engine_ct_parse_squence(argv[i]);
+			plist1 = mail_engine_ct_parse_sequence(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
@@ -1579,7 +1575,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 			}
 			ptree_node->pstatment = plist1;
 		} else {
-			plist1 = mail_engine_ct_parse_squence(argv[i]);
+			plist1 = mail_engine_ct_parse_sequence(argv[i]);
 			if (NULL == plist1) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
@@ -1611,13 +1607,13 @@ static void mail_engine_ct_destroy(CONDITION_TREE *ptree)
 	mail_engine_ct_destroy_internal(ptree);
 }
 
-static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
+static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 {
 	int i, len, temp;
 	char *last_colon;
 	char *last_break;
 	DOUBLE_LIST *plist;
-	SQUENCE_NODE *pseq;
+	SEQUENCE_NODE *pseq;
 	
 	len = strlen(string);
 	if (',' == string[len - 1]) {
@@ -1635,12 +1631,12 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 	for (i=0; i<=len; i++) {
 		if (!HX_isdigit(string[i]) && string[i] != '*'
 			&& ',' != string[i] && ':' != string[i]) {
-			mail_engine_ct_free_squence(plist);
+			mail_engine_ct_free_sequence(plist);
 			return NULL;
 		}
 		if (':' == string[i]) {
 			if (NULL != last_colon) {
-				mail_engine_ct_free_squence(plist);
+				mail_engine_ct_free_sequence(plist);
 				return NULL;
 			} else {
 				last_colon = string + i;
@@ -1648,13 +1644,13 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 			}
 		} else if (',' == string[i]) {
 			if (0 == string + i - last_break) {
-				mail_engine_ct_free_squence(plist);
+				mail_engine_ct_free_sequence(plist);
 				return NULL;
 			}
 			string[i] = '\0';
-			pseq = (SQUENCE_NODE*)malloc(sizeof(SQUENCE_NODE));
+			pseq = malloc(sizeof(SEQUENCE_NODE));
 			if (NULL == pseq) {
-				mail_engine_ct_free_squence(plist);
+				mail_engine_ct_free_sequence(plist);
 				return NULL;
 			}
 			pseq->node.pdata = pseq;
@@ -1667,7 +1663,7 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 						pseq->min = atoi(last_colon + 1);
 						if (pseq->min <= 0) {
 							free(pseq);
-							mail_engine_ct_free_squence(plist);
+							mail_engine_ct_free_sequence(plist);
 							return NULL;
 						}
 					}
@@ -1675,7 +1671,7 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 					pseq->min = atoi(last_break);
 					if (pseq->min <= 0) {
 						free(pseq);
-						mail_engine_ct_free_squence(plist);
+						mail_engine_ct_free_sequence(plist);
 						return NULL;
 					}
 					if (0 == strcmp(last_colon + 1, "*")) {
@@ -1684,7 +1680,7 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 						pseq->max = atoi(last_colon + 1);
 						if (pseq->max <= 0) {
 							free(pseq);
-							mail_engine_ct_free_squence(plist);
+							mail_engine_ct_free_sequence(plist);
 							return NULL;
 						}
 					}
@@ -1694,7 +1690,7 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 				if ('*' == *last_break ||
 					(pseq->min = atoi(last_break)) <= 0) {
 					free(pseq);
-					mail_engine_ct_free_squence(plist);
+					mail_engine_ct_free_sequence(plist);
 					return NULL;
 				}
 				pseq->max = pseq->min;
@@ -1711,7 +1707,7 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 	return plist;
 }
 
-static void mail_engine_ct_free_squence(DOUBLE_LIST *plist)
+static void mail_engine_ct_free_sequence(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -1721,15 +1717,14 @@ static void mail_engine_ct_free_squence(DOUBLE_LIST *plist)
 	free(plist);
 }
 
-static BOOL mail_engine_ct_hint_squence(DOUBLE_LIST *plist,
+static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist,
 	unsigned int num, unsigned int max_uid)
 {
-	SQUENCE_NODE *pseq;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pseq = (SQUENCE_NODE*)pnode->pdata;
+		SEQUENCE_NODE *pseq = pnode->pdata;
 		if (-1 == pseq->max) {
 			if (-1 == pseq->min) {
 				if (num == max_uid) {
@@ -2094,7 +2089,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		memcpy(temp_buff + tmp_len, "}", 2);
 		tmp_len ++;
 		sprintf(mid_string1, "%ld.%d.midb", time(NULL),
-			mail_engine_get_squence_id());
+			mail_engine_get_sequence_id());
 		mid_string = mid_string1;
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
@@ -4440,7 +4435,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return 4;
 	}
 	sprintf(mid_string, "%ld.%d.midb", time(NULL),
-					mail_engine_get_squence_id());
+		mail_engine_get_sequence_id());
 	sprintf(temp_path, "%s/eml/%s", argv[1], argv[3]);
 	sprintf(temp_path1, "%s/eml/%s", argv[1], mid_string);
 	link(temp_path, temp_path1);
@@ -7076,7 +7071,7 @@ void mail_engine_init(const char *default_charset,
 	int table_size, BOOL b_async, BOOL b_wal,
 	uint64_t mmap_size, int cache_interval, int mime_num)
 {
-	g_squence_id = 0;
+	g_sequence_id = 0;
 	strcpy(g_default_charset, default_charset);
 	strcpy(g_default_timezone, default_timezone);
 	strcpy(g_org_name, org_name);
@@ -7087,7 +7082,7 @@ void mail_engine_init(const char *default_charset,
 	g_mime_num = mime_num;
 	g_cache_interval = cache_interval;
 	pthread_mutex_init(&g_hash_lock, NULL);
-	pthread_mutex_init(&g_squence_lock, NULL);
+	pthread_mutex_init(&g_sequence_lock, NULL);
 }
 
 int mail_engine_run()
@@ -7185,7 +7180,7 @@ int mail_engine_stop()
 void mail_engine_free()
 {
 	pthread_mutex_destroy(&g_hash_lock);
-	pthread_mutex_destroy(&g_squence_lock);
+	pthread_mutex_destroy(&g_sequence_lock);
 }
 
 int mail_engine_get_param(int param)

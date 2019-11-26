@@ -23,11 +23,11 @@
 
 #define MAX_DIGLEN		256*1024
 
-typedef struct _SQUENCE_NODE {
+typedef struct _SEQUENCE_NODE {
 	DOUBLE_LIST_NODE node;
 	int min;
 	int max;
-} SQUENCE_NODE;
+} SEQUENCE_NODE;
 
 enum {
 	TYPE_WILDS = 1,
@@ -37,15 +37,14 @@ enum {
 static const char *g_folder_list[] = {"draft", "sent", "trash", "junk"};
 static const char *g_xproperty_list[] = {"Drafts", "Sent", "Trash", "Spam"};
 
-static BOOL imap_cmd_parser_hint_squence(DOUBLE_LIST *plist,
+static BOOL imap_cmd_parser_hint_sequence(DOUBLE_LIST *plist,
 	unsigned int num, unsigned int max_uid)
 {
 	DOUBLE_LIST_NODE *pnode;
-	SQUENCE_NODE *pseq;
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		pseq = (SQUENCE_NODE*)pnode->pdata;
+		SEQUENCE_NODE *pseq = pnode->pdata;
 		if (-1 == pseq->max) {
 			if (-1 == pseq->min) {
 				if (num == max_uid) {
@@ -65,8 +64,8 @@ static BOOL imap_cmd_parser_hint_squence(DOUBLE_LIST *plist,
 	return FALSE;
 }
 
-static BOOL imap_cmd_parser_parse_squence(DOUBLE_LIST *plist,
-	SQUENCE_NODE *nodes, char *string)
+static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
+    SEQUENCE_NODE *nodes, char *string)
 {
 	int i, j;
 	int len, temp;
@@ -3220,7 +3219,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		time(&tmp_time);
 	}
 	snprintf(file_name, 127, "%ld.%d.%s", tmp_time,
-		imap_parser_get_squence_ID(), resource_get_string("HOST_ID"));
+		imap_parser_get_sequence_ID(), resource_get_string("HOST_ID"));
 	snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir, file_name);
 	fd = open(temp_path, O_CREAT|O_RDWR|O_TRUNC, 0666);
 	if (-1 == fd || FALSE == mail_to_file(&imail, fd)) {
@@ -3388,7 +3387,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	}
 	snprintf(pcontext->mid, 127, "%ld.%d.%s", time(NULL),
-		imap_parser_get_squence_ID(), resource_get_string("HOST_ID"));
+		imap_parser_get_sequence_ID(), resource_get_string("HOST_ID"));
 	snprintf(pcontext->file_path, 255, "%s/tmp/%s",
 				pcontext->maildir, pcontext->mid);
 	fd = open(pcontext->file_path, O_CREAT|O_RDWR|O_TRUNC, 0666);
@@ -3965,8 +3964,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	DOUBLE_LIST list_data;
 	const char *estring, *imap_reply_str;
 	DOUBLE_LIST_NODE nodes[1024];
-	SQUENCE_NODE squence_nodes[1024];
-	
+	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -3977,10 +3975,9 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (argc < 4 || FALSE == imap_cmd_parser_parse_squence(
-		&list_seq, squence_nodes, argv[2])) {
+	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
+	    sequence_nodes, argv[2]))
 		goto FETCH_PARAM_ERR;
-	}
 	if (FALSE == imap_cmd_parser_parse_fetch_args(
 		&list_data, nodes, &b_detail, &b_data, argv[3],
 		tmp_argv, sizeof(tmp_argv)/sizeof(char*))) {
@@ -4078,7 +4075,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char *temp_argv[8];
 	DOUBLE_LIST list_seq;
 	const char *estring, *imap_reply_str;
-	SQUENCE_NODE squence_nodes[1024];
+	SEQUENCE_NODE sequence_nodes[1024];
 
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -4089,8 +4086,8 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (argc < 5 || FALSE == imap_cmd_parser_parse_squence(&list_seq,
-		squence_nodes, argv[2]) || (0 != strcasecmp(argv[3],
+	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
+	    sequence_nodes, argv[2]) || (0 != strcasecmp(argv[3],
 		"FLAGS") && 0 != strcasecmp(argv[3], "FLAGS.SILENT") &&
 		0 != strcasecmp(argv[3], "+FLAGS") && 0 != strcasecmp(argv[3],
 		"+FLAGS.SILENT") && 0 != strcasecmp(argv[3], "-FLAGS") &&
@@ -4225,7 +4222,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char uid_string1[64*1024];
 	const char *estring, *imap_reply_str;
 	const char* imap_reply_str1;
-	SQUENCE_NODE squence_nodes[1024];
+	SEQUENCE_NODE sequence_nodes[1024];
     
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -4236,8 +4233,8 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (argc < 4 || FALSE == imap_cmd_parser_parse_squence(&list_seq,
-		squence_nodes, argv[2]) || 0 == strlen(argv[3]) || strlen(argv[3])
+	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
+	    sequence_nodes, argv[2]) || strlen(argv[3]) == 0 || strlen(argv[3])
 		>= 1024 || FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[3], temp_name)) {
 		/* IMAP_CODE_2180000: BAD command not support or parameter error */
@@ -4474,7 +4471,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	DOUBLE_LIST_NODE *pnode;
 	const char *estring, *imap_reply_str;
 	DOUBLE_LIST_NODE nodes[1024];
-	SQUENCE_NODE squence_nodes[1024];
+	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -4484,10 +4481,9 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (argc < 5 || FALSE == imap_cmd_parser_parse_squence(
-		&list_seq, squence_nodes, argv[3])) {
+	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
+	    sequence_nodes, argv[3]))
 		goto UID_FETCH_PARAM_ERR;
-	}
 	if (FALSE == imap_cmd_parser_parse_fetch_args(
 		&list_data, nodes, &b_detail, &b_data, argv[4],
 		tmp_argv, sizeof(tmp_argv)/sizeof(char*))) {
@@ -4598,7 +4594,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int string_length;
 	DOUBLE_LIST list_seq;
 	const char *estring, *imap_reply_str;
-	SQUENCE_NODE squence_nodes[1024];
+	SEQUENCE_NODE sequence_nodes[1024];
 
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -4609,8 +4605,8 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (argc < 6 || FALSE == imap_cmd_parser_parse_squence(&list_seq,
-		squence_nodes, argv[3]) || (0 != strcasecmp(argv[4],
+	if (argc < 6 || !imap_cmd_parser_parse_sequence(&list_seq,
+	    sequence_nodes, argv[3]) || (0 != strcasecmp(argv[4],
 		"FLAGS") && 0 != strcasecmp(argv[4], "FLAGS.SILENT") &&
 		0 != strcasecmp(argv[4], "+FLAGS") && 0 != strcasecmp(argv[4],
 		"+FLAGS.SILENT") && 0 != strcasecmp(argv[4], "-FLAGS") &&
@@ -4744,7 +4740,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char uid_string[64*1024];
 	const char *estring, *imap_reply_str;
 	const char* imap_reply_str1;
-	SQUENCE_NODE squence_nodes[1024];
+	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -4755,8 +4751,8 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (argc < 5 || FALSE == imap_cmd_parser_parse_squence(&list_seq,
-		squence_nodes, argv[3]) || 0 == strlen(argv[4]) || strlen(argv[4])
+	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
+	    sequence_nodes, argv[3]) || 0 == strlen(argv[4]) || strlen(argv[4])
 		>= 1024 || FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[4], temp_name)) {
 		/* IMAP_CODE_2180000: BAD command not support or parameter error */
@@ -4901,7 +4897,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
     DOUBLE_LIST list_seq;
 	SINGLE_LIST temp_list;
 	const char *estring, *imap_reply_str;
-	SQUENCE_NODE squence_nodes[1024];
+	SEQUENCE_NODE sequence_nodes[1024];
 	
 	if (PROTO_STAT_SELECT != pcontext->proto_stat) {
 		/* IMAP_CODE_2180005: BAD can only process in select state */
@@ -4921,8 +4917,8 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (argc < 4 || FALSE == imap_cmd_parser_parse_squence(
-		&list_seq, squence_nodes, argv[3])) {
+	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
+	    sequence_nodes, argv[3])) {
 		/* IMAP_CODE_2180000: BAD command
 		not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
@@ -4988,7 +4984,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	for (i=0; i<num; i++) {
 		pitem = xarray_get_item(&xarray, i);
 		if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED) ||
-			FALSE == imap_cmd_parser_hint_squence(&list_seq, pitem->uid,
+		    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
 			max_uid)) {
 			continue;
 		}
@@ -5005,7 +5001,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		for (i=0; i<xarray_get_capacity(&xarray); i++) {
 			pitem = xarray_get_item(&xarray, i);
 			if (0 == pitem->uid || 0 == (pitem->flag_bits & FLAG_DELETED) ||
-				FALSE == imap_cmd_parser_hint_squence(&list_seq, pitem->uid,
+			    !imap_cmd_parser_hint_sequence(&list_seq, pitem->uid,
 				max_uid)) {
 				continue;
 			}
