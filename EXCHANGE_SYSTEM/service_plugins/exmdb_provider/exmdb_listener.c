@@ -42,11 +42,6 @@ static void *thread_work_func(void *param)
 	
 	while (NULL == common_util_lang_to_charset ||
 		NULL == common_util_cpid_to_charset ||
-		NULL == common_util_set_propvals ||
-		NULL == common_util_remove_propvals ||
-		NULL == common_util_get_propvals ||
-		NULL == common_util_essdn_to_username ||
-		NULL == common_util_username_to_essdn ||
 		NULL == common_util_get_user_displayname ||
 		NULL == common_util_check_mlist_include ||
 		NULL == common_util_get_user_lang ||
