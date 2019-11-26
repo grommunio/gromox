@@ -185,15 +185,15 @@ int group_ui_run()
 	char temp_buff[8];
 	int kwd_index, grp_index, len;
 
+	g_lang_resource = lang_resource_init(g_resource_path);
+	if (g_lang_resource == nullptr) {
+		system_log_info("[group_ui]: failed to init language resource");
+		return -1;
+	}
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
 		group_ui_error_html(NULL);
 		return 0;
-	}
-	g_lang_resource = lang_resource_init(g_resource_path);
-	if (NULL == g_lang_resource) {
-		system_log_info("[group_ui]: fail to init language resource");
-		return -1;
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {

@@ -560,16 +560,15 @@ int admin_ui_run()
 	uint64_t *preference, tmp_ref;
 	HEADER_VAL *pheader, tmp_header;
 
-
+	g_lang_resource = lang_resource_init(g_resource_path);
+	if (g_lang_resource == nullptr) {
+		system_log_info("[admin_ui]: failed to init language resource");
+		return -1;
+	}
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
 		admin_ui_error_html(NULL);
 		return 0;
-	}
-	g_lang_resource = lang_resource_init(g_resource_path);
-	if (NULL == g_lang_resource) {
-		system_log_info("[admin_ui]: fail to init language resource");
-		return -1;
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {

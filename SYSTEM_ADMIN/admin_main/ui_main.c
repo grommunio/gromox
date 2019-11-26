@@ -190,17 +190,15 @@ int ui_main_run()
 	REQUEST_PARSER *pparser;
 	COOKIE_PARSER *pcookier;
 
-
+	g_lang_resource = lang_resource_init(g_resource_path);
+	if (g_lang_resource == nullptr) {
+		system_log_info("[ui_main]: failed to init language resource");
+		return -1;
+	}
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
 		ui_main_error_html(NULL);
 		return 0;
-	}
-
-	g_lang_resource = lang_resource_init(g_resource_path);
-	if (NULL == g_lang_resource) {
-		system_log_info("[ui_main]: fail to init language resource");
-		return -1;
 	}
 
 	request = getenv("REQUEST_METHOD");

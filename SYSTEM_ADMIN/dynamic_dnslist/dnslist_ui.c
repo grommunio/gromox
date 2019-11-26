@@ -148,15 +148,15 @@ int dnslist_ui_run()
 	char search_buff[1024];
 	int len;
 
+	g_lang_resource = lang_resource_init(g_resource_path);
+	if (g_lang_resource == nullptr) {
+		system_log_info("[dnslist_ui]: failed to init language resource");
+		return -1;
+	}
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
 		dnslist_ui_error_html(NULL);
 		return 0;
-	}
-	g_lang_resource = lang_resource_init(g_resource_path);
-	if (NULL == g_lang_resource) {
-		system_log_info("[dnslist_ui]: fail to init language resource");
-		return -1;
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {
