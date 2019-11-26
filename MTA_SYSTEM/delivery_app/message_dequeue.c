@@ -52,7 +52,7 @@ static pthread_mutex_t	g_used_mutex;
 static pthread_mutex_t	g_free_mutex;
 static pthread_mutex_t	g_mess_mutex;
 static pthread_t		g_thread_id;
-BOOL					g_notify_stop;
+static BOOL g_notify_stop;
 static int				g_dequeued_num;
 
 extern void transporter_wakeup_one_thread();
