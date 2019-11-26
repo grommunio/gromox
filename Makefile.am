@@ -3,6 +3,7 @@
 ACLOCAL_AMFLAGS = -I build-aux
 AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/LIBRARY/common/include -I${top_srcdir}/LIBRARY/epoll_scheduler/include -I${top_srcdir}/LIBRARY/mapi_lib/include -I${top_srcdir}/LIBRARY/webkit_lib/include -I${top_srcdir}/LIBRARY/rpc_lib/include -I${top_srcdir}/LIBRARY/email_lib/include ${gumbo_CFLAGS} ${archive_CFLAGS} ${crypto_CFLAGS} ${ssl_CFLAGS} ${mysql_CFLAGS} ${spf2_CFLAGS} ${sqlite_CFLAGS} ${xls_CFLAGS} ${zlib_CFLAGS}
 AM_CFLAGS = -Wall
+AM_CXXFLAGS = ${my_CXXFLAGS}
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la libgromox_webkit.la
 pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${domain_admin_progs} ${system_admin_progs} ${archiver_system_progs}
@@ -1104,5 +1105,5 @@ titan_SOURCES = ARCHIVE_SYSTEM/titan/main.c
 
 # php_mapi
 mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES} -I
-mapi_la_SOURCES = AGENT_SERVICE/php_mapi/ext_pack.c AGENT_SERVICE/php_mapi/mapi.c AGENT_SERVICE/php_mapi/rpc_ext.c AGENT_SERVICE/php_mapi/type_conversion.c AGENT_SERVICE/php_mapi/zarafa_client.c
+mapi_la_SOURCES = AGENT_SERVICE/php_mapi/ext_pack.c AGENT_SERVICE/php_mapi/mapi.cpp AGENT_SERVICE/php_mapi/rpc_ext.c AGENT_SERVICE/php_mapi/type_conversion.cpp AGENT_SERVICE/php_mapi/zarafa_client.c
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}

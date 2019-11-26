@@ -7,6 +7,22 @@ m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AC_PROG_CC
 AM_PROG_CC_C_O
+AC_PROG_CXX
+
+my_CXXFLAGS="-Wall -Wmissing-declarations"
+AC_MSG_CHECKING([available C++ standard])
+cxxmode=""
+for i in "c++17" "c++14"; do
+	CXXFLAGS="$CXXFLAGS_system -std=$i"
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([])], [cxxmode="$i"])
+	AS_IF([test -n "$cxxmode"], [break])
+done
+CXXFLAGS="$CXXFLAGS_system"
+AS_IF([test -n "$cxxmode"], [
+	my_CXXFLAGS="$my_CXXFLAGS -std=$cxxmode"
+	AC_MSG_RESULT([$cxxmode])
+])
+
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([archive], [libarchive])
 PKG_CHECK_MODULES([crypto], [libcrypto])
@@ -52,5 +68,6 @@ AS_IF([test "$with_php" != "no"], [
 	)
 ])
 
+AC_SUBST([my_CXXFLAGS])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
