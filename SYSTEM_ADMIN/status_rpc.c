@@ -1,3 +1,5 @@
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "list_file.h"
 #include "util.h"
@@ -43,16 +45,11 @@ int main(int argc, const char **argv)
 	char console[16];
 	char temp_path[256];
 	char data_path[256];
-	char work_path[256];
 	LIST_FILE *plist;
 	CONFIG_FILE *pconfig;
 	CONSOLE_ITEM *pconsole;
 	
-
-	if (NULL == getcwd(work_path, 256)) {
-		return 1;
-	}
-	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/athena.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html\n\n");
@@ -61,15 +58,15 @@ int main(int argc, const char **argv)
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
+		HX_strlcpy(data_path, PKGDATASADIR, sizeof(data_path));
 	} else {
 		strcpy(data_path, str_value);
 	}
 	str_value = config_file_get_value(pconfig, "TOKEN_FILE_PATH");
 	if (NULL == str_value) {
-		str_value = "../token";
+		str_value = PKGRUNSADIR;
 	}
-	sprintf(temp_path, "%s/%s/monitor.shm", work_path, str_value);
+	snprintf(temp_path, sizeof(temp_path), "%s/monitor.shm", str_value);
 	config_file_free(pconfig);
 	k_shm = ftok(temp_path, 1);
 	if (-1 == k_shm) {
@@ -129,7 +126,7 @@ int main(int argc, const char **argv)
 	}
 	memcpy(console, ptr, query + len - ptr);
 	console[query + len - ptr] = '\0';
-	sprintf(temp_path, "%s/%s/console_table.txt", work_path, data_path);
+	snprintf(temp_path, sizeof(temp_path), "%s/console_table.txt", data_path);
 	plist = list_file_init(temp_path, "%s:16%d%s:16%d");
 	pconsole = (CONSOLE_ITEM*)list_file_get_list(plist);
 	len = list_file_get_item_num(plist);

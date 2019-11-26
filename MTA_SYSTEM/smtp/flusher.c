@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <gromox/paths.h>
 #include "flusher.h"
 #include "service.h"
 #include "single_list.h"
@@ -549,7 +550,7 @@ static const char* flusher_get_config_path()
 {
 	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
 	if (NULL == ret_value) {
-		    ret_value = "../config";
+		ret_value = PKGSYSCONFDIR;
 	}
 	return ret_value;
 
@@ -559,7 +560,7 @@ static const char* flusher_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
 	if (NULL == ret_value) {
-		    ret_value ="../data";
+		ret_value = PKGDATASMTPDIR;
 	}
 	return ret_value;
 }

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <gromox/paths.h>
 #include "pdu_processor.h"
 #include "hpm_processor.h"
 #include "alloc_context.h"
@@ -3636,7 +3637,7 @@ static const char* pdu_processor_get_config_path()
 {
 	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
     if (NULL == ret_value) {
-        ret_value = "../config";
+		ret_value = PKGSYSCONFDIR;
     }
     return ret_value;
 }
@@ -3645,7 +3646,7 @@ static const char* pdu_processor_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
     if (NULL == ret_value) {
-        ret_value = "../data";
+		ret_value = PKGDATAHTTPDIR;
     }
     return ret_value;
 }

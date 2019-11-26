@@ -3,6 +3,8 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "log_flusher.h"
 #include "domain_classifier.h"
 #include "data_source.h"
@@ -57,16 +59,16 @@ int main(int argc, const char **argv)
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
-		config_file_set_value(pconfig, "DATA_FILE_PATH", "../data");
+		HX_strlcpy(data_path, PKGDATADADIR, sizeof(data_path));
+		config_file_set_value(pconfig, "DATA_FILE_PATH", data_path);
 	} else {
 		strcpy(data_path, str_value);
 	}
 	printf("[system]: data path is %s\n", data_path);
 	str_value = config_file_get_value(pconfig, "GATEWAY_MOUNT_PATH");
 	if (NULL == str_value) {
-		strcpy(mount_path, "../gateway");
-		config_file_set_value(pconfig, "GATEWAY_MOUNT_PATH", "../gateway");
+		HX_strlcpy(mount_path, PKGSTATEGATEWAYDIR, sizeof(mount_path));
+		config_file_set_value(pconfig, "GATEWAY_MOUNT_PATH", mount_path);
 	} else {
 		strcpy(mount_path, str_value);
 	}
@@ -85,9 +87,8 @@ int main(int argc, const char **argv)
 	printf("[system]: file cache size is %d\n", cache_size);
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(log_path, "../logs/posidon_log.txt");
-		config_file_set_value(pconfig, "LOG_FILE_PATH",
-				"../logs/posidon_log.txt");
+		HX_strlcpy(log_path, PKGLOGDIR "/posidon_log.txt", sizeof(log_path));
+		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
 		strcpy(log_path, str_value);
 	}

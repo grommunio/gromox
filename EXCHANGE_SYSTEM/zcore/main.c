@@ -6,6 +6,7 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "service.h"
 #include "ab_tree.h"
@@ -143,9 +144,8 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
 	if (NULL == str_value) {
-		strcpy(service_path, "../service_plugins/zcore");
-		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH",
-			"../service_plugins/zcore");
+		strcpy(service_path, PKGLIBDIR);
+		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH", service_path);
 	} else {
 		strcpy(service_path, str_value);
 	}
@@ -162,7 +162,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "CONFIG_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(config_path, "../config/zcore");	
+		strcpy(config_path, PKGSYSCONFZCOREDIR);
 	} else {
 		strcpy(config_path, str_value);
 	}
@@ -170,7 +170,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data/zcore");	
+		strcpy(data_path, PKGDATAZCOREDIR);
 	} else {
 		strcpy(data_path, str_value);
 	}

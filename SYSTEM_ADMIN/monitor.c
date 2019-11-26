@@ -3,6 +3,8 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "single_list.h"
 #include "util.h"
 #include "list_file.h"
@@ -95,16 +97,16 @@ int main(int argc, const char **argv)
 	}
 	str_value = config_file_get_value(pconfig_file, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
-		config_file_set_value(pconfig_file, "DATA_FILE_PATH", "../data");
+		HX_strlcpy(data_path, PKGDATASADIR, sizeof(data_path));
+		config_file_set_value(pconfig_file, "DATA_FILE_PATH", data_path);
 	} else {
 		strcpy(data_path, str_value);
 	}
 	printf("[system]: data path is %s\n", data_path);
 	str_value = config_file_get_value(pconfig_file, "TOKEN_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(token_path, "../token");
-		config_file_set_value(pconfig_file, "TOKEN_FILE_PATH", "../token");
+		HX_strlcpy(token_path, PKGRUNSADIR, sizeof(token_path));
+		config_file_set_value(pconfig_file, "TOKEN_FILE_PATH", token_path);
 	} else {
 		strcpy(token_path, str_value);
 	}

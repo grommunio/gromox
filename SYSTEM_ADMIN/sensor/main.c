@@ -5,6 +5,7 @@
 #include <string.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -138,8 +139,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(g_list_path, "../data/sensor_acl.txt");
-		strcpy(list_path, "../data/exmdb_list.txt");
+		HX_strlcpy(g_list_path, PKGDATASADIR "/sensor_acl.txt", sizeof(g_list_path));
+		HX_strlcpy(list_path, PKGDATASADIR "/exmdb_list.txt", sizeof(list_path));
 	} else {
 		snprintf(g_list_path, 255, "%s/sensor_acl.txt", str_value);
 		snprintf(list_path, 255, "%s/exmdb_list.txt", str_value);

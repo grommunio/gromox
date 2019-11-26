@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
+#include <gromox/paths.h>
 #include "pdu_processor.h"
 #include "double_list.h"
 #include "resource.h"
@@ -376,7 +377,7 @@ static const char* service_get_config_path()
 {
 	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
 	if (NULL == ret_value) {
-		ret_value = "../config";
+		ret_value = PKGSYSCONFDIR;
 	}
 	return ret_value;
 }

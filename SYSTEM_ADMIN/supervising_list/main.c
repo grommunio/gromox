@@ -1,3 +1,5 @@
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include <gromox/system_log.h>
 #include "list_ui.h"
 #include <gromox/acl_control.h>
@@ -12,7 +14,6 @@
 int main(int argc, const char **argv)
 {
 	const char *str_value;
-	char work_path[256];
 	char temp_path[256];
 	char data_path[256];
 	char token_path[256];
@@ -22,34 +23,30 @@ int main(int argc, const char **argv)
 	int timeout;
 	CONFIG_FILE *pconfig;
 
-	if (NULL == getcwd(work_path, 256)) {
-		return 1;
-	}
-	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/athena.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
+		HX_strlcpy(data_path, PKGDATASADIR, sizeof(data_path));
 	} else {
 		strcpy(data_path, str_value);
 	}
 	str_value = config_file_get_value(pconfig, "TOKEN_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(token_path, "../token");
+		HX_strlcpy(token_path, PKGRUNSADIR, sizeof(token_path));
 	} else {
 		strcpy(token_path, str_value);
 	}
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		str_value = "../logs/athena_log.txt";
+		str_value = PKGLOGDIR "/athena_log.txt";
 	}
-	sprintf(temp_path, "%s/%s", work_path, str_value);
-	system_log_init(temp_path);
-	sprintf(temp_path, "%s/%s/session.shm", work_path, token_path);
-	sprintf(acl_path, "%s/%s/system_users.txt", work_path, data_path);
+	system_log_init(str_value);
+	snprintf(temp_path, sizeof(temp_path), "%s/session.shm", token_path);
+	snprintf(acl_path, sizeof(acl_path), "%s/system_users.txt", data_path);
 	str_value = config_file_get_value(pconfig, "UI_TIMEOUT");
 	if (NULL == str_value) {
 		timeout = 600;
@@ -60,13 +57,13 @@ int main(int argc, const char **argv)
 		}
 	}
 	acl_control_init(temp_path, acl_path, timeout);
-	sprintf(file_path, "%s/%s/control.msg", work_path, token_path);
+	snprintf(file_path, sizeof(file_path), "%s/control.msg", token_path);
 	str_value = config_file_get_value(pconfig, "LOGO_LINK");
 	if (NULL == str_value) {
 		str_value = "http://www.gridware.com.cn";
 	}
-	sprintf(temp_path, "%s/%s/supervising_list.txt", work_path, data_path);
-	sprintf(lang_path, "%s/%s/supervising_list", work_path, data_path);
+	snprintf(temp_path, sizeof(temp_path), "%s/supervising_list.txt", data_path);
+	snprintf(lang_path, sizeof(lang_path), "%s/supervising_list", data_path);
 	list_ui_init(temp_path, file_path, str_value, lang_path);
 	str_value = config_file_get_value(pconfig, "HTTP_ACCEPT_LANGUAGE");
 	if (str_value != NULL && *str_value != '\0')

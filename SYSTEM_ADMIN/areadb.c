@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "list_file.h"
 #include "double_list.h"
@@ -219,7 +221,7 @@ int main(int argc, const char **argv)
 	PARTITION_ITEM *ppartition;
 	
 	umask(0);
-	sprintf(list_path, "../data/area_list.txt");
+	HX_strlcpy(list_path, PKGDATASADIR "/area_list.txt", sizeof(list_path));
 	pfile = list_file_init(list_path, "%s:12%s:256%s:256%d%d");
 	if (NULL == pfile) {
 		printf("[engine]: list_file_init %s: %s\n",

@@ -7,7 +7,7 @@ function get_athena_config()
 	if ($sysconf) {
 		return $sysconf;
 	}
-	$sysconf = parse_ini_file("../config/athena.cfg", false, INI_SCANNER_RAW);
+	$sysconf = parse_ini_file("/etc/gromox/athena.cfg", false, INI_SCANNER_RAW);
 	if (!isset($sysconf)) {
 		die("cannot find config.ini file");
 	}

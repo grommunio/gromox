@@ -1,4 +1,5 @@
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "tpropval_array.h"
 #include "cookie_parser.h"
 #include "endian_macro.h"
@@ -2331,10 +2332,10 @@ int main(int argc, const char **argv)
 	const char *pdtldayofweek;
 	
 	double_list_init(&g_exmdb_list);
-	plist = list_file_init("../data/exmdb_list.txt", "%s:256%s:16%s:16%d");
+	plist = list_file_init(PKGDATAAGENTDIR "/exmdb_list.txt", "%s:256%s:16%s:16%d");
 	if (NULL == plist) {
 		fprintf(stderr, "Failed to read exmdb list from %s: %s\n",
-			"../data/exmdb_list.txt", strerror(errno));
+			PKGDATAAGENTDIR "/exmdb_list.txt", strerror(errno));
 		exit(1);
 	}
 	list_num = list_file_get_item_num(plist);

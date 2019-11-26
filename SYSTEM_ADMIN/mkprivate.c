@@ -3,6 +3,7 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "ext_buffer.h"
 #include "mapi_types.h"
@@ -475,9 +476,9 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	umask(0);
-	pconfig = config_file_init2(NULL, "../config/athena.cfg");
+	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/athena.cfg");
 	if (NULL == pconfig) {
-		printf("config_file_init ../config/athena.cfg: %s\n", strerror(errno));
+		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/athena.cfg", strerror(errno));
 		return 2;
 	}
 
@@ -570,12 +571,12 @@ int main(int argc, const char **argv)
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	
-	pfile = list_file_init("../doc/folder_lang.txt",
+	pfile = list_file_init(PKGDATASADIR "/folder_lang.txt",
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == pfile) {
-		printf("Failed to read ../doc/folder_lang.txt: %s\n",
-			strerror(errno));
+		printf("Failed to read %s: %s\n",
+			PKGDATASADIR "/folder_lang.txt", strerror(errno));
 		return 7;
 	}
 	line_num = list_file_get_item_num(pfile);
@@ -703,7 +704,7 @@ int main(int argc, const char **argv)
 	}
 	free(sql_string);
 	
-	pfile = list_file_init("../doc/propnames.txt", "%s:256");
+	pfile = list_file_init(PKGDATASADIR "/propnames.txt", "%s:256");
 	if (NULL == pfile) {
 		printf("fail to read \"propnames.txt\"\n");
 		sqlite3_close(psqlite);

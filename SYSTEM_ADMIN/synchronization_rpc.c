@@ -1,3 +1,5 @@
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>
@@ -18,23 +20,18 @@ int main(int argc, const char **argv)
 	char *str_value;
 	char temp_path[256];
 	char data_path[256];
-	char work_path[256];
 	char temp_buff[4096];
 	struct stat node_stat;
 	CONFIG_FILE *pconfig;
 	
-
-	if (NULL == getcwd(work_path, 256)) {
-		return 1;
-	}
-	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/athena.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
+		HX_strlcpy(data_path, PKGDATASADIR, sizeof(data_path));
 	} else {
 		strcpy(data_path, str_value);
 	}

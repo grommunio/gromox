@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <gromox/hook_common.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -65,7 +66,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     case PLUGIN_INIT:
 		LINK_API(ppdata);
 		
-		pconfig = config_file_init2(NULL, "../config/smtp.cfg");
+		pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/smtp.cfg");
 		if (NULL == pconfig) {
 			g_smtp_port = 25;
 		} else {

@@ -7,6 +7,7 @@
  */
 #include <stdbool.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "anti_spamming.h"
 #include "double_list.h"
 #include "lib_buffer.h"
@@ -1465,7 +1466,7 @@ static const char* anti_spamming_get_config_path()
 {
 	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
 	if (NULL == ret_value) {
-		ret_value = "../config";
+		ret_value = PKGSYSCONFDIR;
 	}
 	return ret_value;
 }
@@ -1474,7 +1475,7 @@ static const char *anti_spamming_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
 	if (NULL == ret_value) {
-		ret_value = "../data";
+		ret_value = PKGDATASMTPDIR;
 	}
 	return ret_value;
 }

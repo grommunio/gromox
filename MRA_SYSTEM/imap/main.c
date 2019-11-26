@@ -3,6 +3,7 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "listener.h" 
 #include "resource.h" 
@@ -318,7 +319,7 @@ int main(int argc, const char **argv)
 
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {
-		service_plugin_path = "../service_plugins/imap";
+		service_plugin_path = PKGLIBDIR;
 		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
@@ -334,14 +335,14 @@ int main(int argc, const char **argv)
 
 	str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = "../config/imap";
+		str_val = PKGSYSCONFIMAPDIR;
 		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
 	str_val = resource_get_string("DATA_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = "../data/imap";
+		str_val = PKGDATAIMAPDIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	printf("[system]: data files path is %s\n", str_val);

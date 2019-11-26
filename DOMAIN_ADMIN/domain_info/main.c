@@ -1,3 +1,5 @@
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include <gromox/system_log.h>
 #include <gromox/session_client.h>
 #include "info_ui.h"
@@ -13,7 +15,6 @@
 int main(int argc, const char **argv)
 {
 	const char *str_value;
-	char work_path[256];
 	char data_path[256];
 	char temp_path[256];
 	char lang_path[256];
@@ -26,26 +27,22 @@ int main(int argc, const char **argv)
 	char *mysql_passwd;
 	char db_name[256];
 
-	if (NULL == getcwd(work_path, 256)) {
-		return 1;
-	}
-	sprintf(temp_path, "%s/../config/posidon.cfg", work_path);
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/posidon.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
+		HX_strlcpy(data_path, PKGDATADADIR, sizeof(data_path));
 	} else {
 		strcpy(data_path, str_value);
 	}
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		str_value = "../logs/posidon_log.txt";
+		str_value = PKGLOGDIR "/posidon_log.txt";
 	}
-	sprintf(temp_path, "%s/%s", work_path, str_value);
-	system_log_init(temp_path);
+	system_log_init(str_value);
 	
 	str_value = config_file_get_value(pconfig, "SESSION_LISTEN_IP");
 	if (NULL == str_value) {
@@ -105,10 +102,8 @@ int main(int argc, const char **argv)
 		str_value = "http://www.gridware.com.cn";
 	}
 
-	sprintf(lang_path, "%s/%s/domain_info", work_path, data_path);
-
+	snprintf(lang_path, sizeof(lang_path), "%s/domain_info", data_path);
 	info_ui_init(str_value, lang_path);
-	
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {

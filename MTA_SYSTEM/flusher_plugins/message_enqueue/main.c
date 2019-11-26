@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <gromox/flusher_common.h>
+#include <gromox/paths.h>
 #include "message_enqueue.h"
 #include "config_file.h"
 #include "util.h"
@@ -35,8 +36,8 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 		}
         queue_path = config_file_get_value(pfile, "ENQUEUE_PATH");
         if (NULL == queue_path) {
-			queue_path = "../queue";
-			config_file_set_value(pfile, "ENQUEUE_PATH", "../queue");
+			queue_path = PKGSTATEQUEUEDIR;
+			config_file_set_value(pfile, "ENQUEUE_PATH", queue_path);
         }
 		printf("[message_enqueue]: enqueue path is %s\n", queue_path);
         str_value = config_file_get_value(pfile, "ENQUEUE_TAPE_SIZE");

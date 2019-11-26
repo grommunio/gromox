@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <unistd.h>
+#include <gromox/paths.h>
 #include "hpm_processor.h"
 #include "pdu_processor.h"
 #include "http_parser.h"
@@ -147,7 +148,7 @@ static const char* hpm_processor_get_config_path()
 {
 	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
     if (NULL == ret_value) {
-        ret_value = "../config";
+		ret_value = PKGSYSCONFDIR;
     }
     return ret_value;
 }
@@ -156,7 +157,7 @@ static const char* hpm_processor_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
     if (NULL == ret_value) {
-        ret_value = "../data";
+		ret_value = PKGDATAHTTPDIR;
     }
     return ret_value;
 }

@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "processing_engine.h"
 #include "file_operation.h"
 #include "url_downloader.h"
@@ -47,8 +49,8 @@ int main(int argc, const char **argv)
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
-		config_file_set_value(pconfig, "DATA_FILE_PATH", "../data");
+		HX_strlcpy(data_path, PKGDATADADIR, sizeof(data_path));
+		config_file_set_value(pconfig, "DATA_FILE_PATH", data_path);
 	} else {
 		strcpy(data_path, str_value);
 	}

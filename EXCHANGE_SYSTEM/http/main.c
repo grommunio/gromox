@@ -3,6 +3,7 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "util.h"
 #include "vstack.h"
@@ -322,7 +323,7 @@ int main(int argc, const char **argv)
 
 	proc_plugin_path = resource_get_string("PROC_PLUGIN_PATH");
 	if (proc_plugin_path == NULL) {
-		proc_plugin_path = "../proc_plugins";
+		proc_plugin_path = PKGLIBDIR;
 		resource_set_string("PROC_PLUGIN_PATH", proc_plugin_path);
 	}
 	printf("[pdu_processor]: proc plugins path is %s\n", proc_plugin_path);
@@ -338,7 +339,7 @@ int main(int argc, const char **argv)
 	
 	hpm_plugin_path = resource_get_string("HPM_PLUGIN_PATH");
 	if (hpm_plugin_path == NULL) {
-		hpm_plugin_path = "../hpm_plugins";
+		hpm_plugin_path = PKGLIBDIR;
 		resource_set_string("HPM_PLUGIN_PATH", hpm_plugin_path);
 	}
 	printf("[hpm_processor]: hpm plugins path is %s\n", hpm_plugin_path);
@@ -382,7 +383,7 @@ int main(int argc, const char **argv)
 
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {
-		service_plugin_path = "../service_plugins/http";
+		service_plugin_path = PKGLIBDIR;
 		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
@@ -398,14 +399,14 @@ int main(int argc, const char **argv)
 
 	str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = "../config/http";
+		str_val = PKGSYSCONFHTTPDIR;
 		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
 	str_val = resource_get_string("DATA_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = "../data/http";
+		str_val = PKGDATAHTTPDIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	sprintf(fastcgi_list_path, "%s/fastcgi.txt", str_val);

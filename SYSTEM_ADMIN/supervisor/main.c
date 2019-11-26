@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "smtp.h"
 #include "pop3.h"
@@ -53,8 +55,8 @@ int main(int argc, const char **argv)
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
-		config_file_set_value(pconfig, "DATA_FILE_PATH", "../data");
+		HX_strlcpy(data_path, PKGDATASADIR, sizeof(data_path));
+		config_file_set_value(pconfig, "DATA_FILE_PATH", data_path);
 	} else {
 		strcpy(data_path, str_value);
 	}

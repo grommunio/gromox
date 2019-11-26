@@ -3,6 +3,7 @@
 #endif
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "double_list.h"
 #include "config_file.h"
 #include "list_file.h"
@@ -130,8 +131,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
-		config_file_set_value(pconfig, "DATA_FILE_PATH", "../data");
+		HX_strlcpy(data_path, PKGDATAAGENTDIR, sizeof(data_path));
+		config_file_set_value(pconfig, "DATA_FILE_PATH", data_path);
 	} else {
 		strcpy(data_path, str_value);
 	}

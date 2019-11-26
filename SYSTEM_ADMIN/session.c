@@ -6,6 +6,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "double_list.h"
 #include "str_hash.h"
@@ -121,7 +122,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(g_list_path, "../data/session_acl.txt");
+		HX_strlcpy(g_list_path, PKGDATASADIR "/session_acl.txt", sizeof(g_list_path));
 	} else {
 		snprintf(g_list_path, 255, "%s/session_acl.txt", str_value);
 	}

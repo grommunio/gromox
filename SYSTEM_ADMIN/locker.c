@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "str_hash.h"
 #include "double_list.h"
@@ -120,7 +122,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(g_list_path, "../data/locker_acl.txt");
+		HX_strlcpy(g_list_path, PKGDATASADIR "/locker_acl.txt", sizeof(g_list_path));
 	} else {
 		snprintf(g_list_path, 255, "%s/locker_acl.txt", str_value);
 	}

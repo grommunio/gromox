@@ -1,3 +1,5 @@
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "list_ui.h"
 #include "midb_tool.h"
@@ -20,7 +22,6 @@ int main(int argc, const char **argv)
 {
 	const char *str_value;
 	char locker_ip[16];
-	char work_path[256];
 	char temp_path[256];
 	char data_path[256];
 	char list_path[256];
@@ -38,21 +39,18 @@ int main(int argc, const char **argv)
 	CONFIG_FILE *pconfig;
 
 	umask(0);
-	if (NULL == getcwd(work_path, 256)) {
-		return 1;
-	}
-	sprintf(temp_path, "%s/../config/posidon.cfg", work_path);
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/posidon.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
+		HX_strlcpy(data_path, PKGDATADADIR, sizeof(data_path));
 	} else {
 		strcpy(data_path, str_value);
 	}
-	sprintf(temp_path, "%s/%s/exmdb_list.txt", work_path, data_path);
+	snprintf(temp_path, sizeof(temp_path), "%s/exmdb_list.txt", data_path);
 	exmdb_client_init(temp_path);
 	
 	exmdb_tool_init(data_path);
@@ -60,11 +58,10 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		str_value = "../logs/posidon_log.txt";
+		str_value = PKGLOGDIR "/posidon_log.txt";
 	}
-	sprintf(temp_path, "%s/%s", work_path, str_value);
-	system_log_init(temp_path);
-	sprintf(list_path, "%s/%s/area_list.txt", work_path, data_path);
+	system_log_init(str_value);
+	snprintf(list_path, sizeof(list_path), "%s/area_list.txt", data_path);
 
 	str_value = config_file_get_value(pconfig, "SESSION_LISTEN_IP");
 	if (NULL == str_value) {
@@ -163,8 +160,8 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		str_value = "http://www.gridware.com.cn";
 	}
-	sprintf(lang_path, "%s/%s/domain_users", work_path, data_path);
-	sprintf(thumbnail_path, "%s/%s/thumbnail", work_path, data_path);
+	snprintf(lang_path, sizeof(lang_path), "%s/domain_users", data_path);
+	snprintf(thumbnail_path, sizeof(thumbnail_path), "%s/thumbnail", data_path);
 	list_ui_init(list_path, max_file, str_value, lang_path, thumbnail_path);
 	config_file_free(pconfig);
 	

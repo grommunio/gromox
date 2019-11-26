@@ -3,6 +3,7 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "listener.h" 
 #include "resource.h" 
@@ -544,7 +545,7 @@ int main(int argc, const char **argv)
 	
 	anti_spam_path = resource_get_string("ANTI_SPAMMING_INIT_PATH");
 	if (anti_spam_path == NULL) {
-		anti_spam_path = "/usr/libexec/gromox";
+		anti_spam_path = PKGLIBDIR;
 		resource_set_string("ANTI_SPAMMING_INIT_PATH", anti_spam_path);
 	}
 	printf("[anti_spamming]: anti-spamming plugin path %s\n", anti_spam_path);
@@ -560,7 +561,7 @@ int main(int argc, const char **argv)
  
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {
-		service_plugin_path = "/usr/libexec/gromox";
+		service_plugin_path = PKGLIBDIR;
 		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
@@ -583,14 +584,14 @@ int main(int argc, const char **argv)
 
 	str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = "../config/smtp";
+		str_val = PKGSYSCONFSMTPDIR;
 		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
 	str_val = resource_get_string("DATA_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = "../data/smtp";
+		str_val = PKGDATASMTPDIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	printf("[system]: data files path is %s\n", str_val);

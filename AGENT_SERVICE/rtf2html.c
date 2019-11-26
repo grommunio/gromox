@@ -3,6 +3,7 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <gromox/paths.h>
 #include "rtf.h"
 #include "rtfcp.h"
 #include "list_file.h"
@@ -81,10 +82,10 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to uncompress rtf\n");
 		return 2;
 	}
-	g_list_file = list_file_init("../data/cpid.txt", "%d%s:64");
+	g_list_file = list_file_init(PKGDATAAGENTDIR "/cpid.txt", "%d%s:64");
 	if (NULL == g_list_file) {
 		fprintf(stderr, "list_file_init %s: %s\n",
-			"../data/cpid.txt", strerror(errno));
+			PKGDATAAGENTDIR "/cpid.txt", strerror(errno));
 		return 3;
 	}
 	pattachments = attachment_list_init();

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "config_file.h"
 #include "communicator.h"
@@ -74,9 +76,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(log_path, "../logs/athena_log.txt");
-		config_file_set_value(pconfig, "LOG_FILE_PATH",
-			"../logs/athena_log.txt");
+		HX_strlcpy(log_path, PKGLOGDIR "/athena_log.txt", sizeof(log_path));
+		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
 		strcpy(log_path, str_value);
 	}
@@ -84,9 +85,9 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(acl_path, "../data/pad_acl.txt");
-		strcpy(list_path, "../data/pad.txt");
-		strcpy(midb_path, "../data/midb_list.txt");
+		HX_strlcpy(acl_path, PKGDATASADIR "/pad_acl.txt", sizeof(acl_path));
+		HX_strlcpy(list_path, PKGDATASADIR "/pad.txt", sizeof(list_path));
+		HX_strlcpy(midb_path, PKGDATASADIR "/midb_list.txt", sizeof(midb_path));
 	} else {
 		snprintf(acl_path, 255, "%s/pad_acl.txt", str_value);
 		snprintf(list_path, 255, "%s/pad.txt", str_value);

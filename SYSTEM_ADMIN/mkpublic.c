@@ -3,6 +3,7 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "ext_buffer.h"
 #include "mapi_types.h"
@@ -275,9 +276,9 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	umask(0);
-	pconfig = config_file_init2(NULL, "../config/athena.cfg");
+	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/athena.cfg");
 	if (NULL == pconfig) {
-		printf("config_file_init ../config/athena.cfg: %s\n", strerror(errno));
+		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/athena.cfg", strerror(errno));
 		return 2;
 	}
 	str_value = config_file_get_value(pconfig, "PUBLIC_STORE_RATIO");

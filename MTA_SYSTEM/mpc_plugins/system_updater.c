@@ -3,6 +3,7 @@
 #include <string.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
+#include <gromox/paths.h>
 #include "stream.h"
 #include "util.h"
 #include "config_file.h"
@@ -75,9 +76,10 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     case PLUGIN_INIT:
 		LINK_API(ppdata);
 		/* get the plugin name from system api */
-		pfile = config_file_init2(NULL, "../config/smtp.cfg");
+		pfile = config_file_init2(NULL, PKGSYSCONFDIR "/smtp.cfg");
 		if (NULL == pfile) {
-			printf("[system_updater]: config_file_init ../config/smtp.cfg: %s\n", strerror(errno));
+			printf("[system_updater]: config_file_init %s: %s\n",
+				PKGSYSCONFDIR "/smtp.cfg", strerror(errno));
 			return FALSE;
 		}
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_IP");
@@ -98,7 +100,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		printf("[system_updater]: smtp console port is %d\n", g_smtp_port);
 		config_file_free(pfile);
-		pfile = config_file_init2(NULL, "../config/delivery.cfg");
+		pfile = config_file_init2(NULL, PKGSYSCONFDIR "/delivery.cfg");
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_IP");
 		if (NULL == str_value) {
 			strcpy(g_delivery_ip, "127.0.0.1");

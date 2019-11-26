@@ -3,6 +3,8 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "double_list.h"
 #include "list_file.h"
@@ -138,8 +140,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(g_acl_path, "../data/timer_acl.txt");
-		strcpy(g_list_path, "../data/timer.txt");
+		HX_strlcpy(g_acl_path, PKGDATASADIR "/timer_acl.txt", sizeof(g_acl_path));
+		HX_strlcpy(g_list_path, PKGDATASADIR "/timer.txt", sizeof(g_list_path));
 	} else {
 		snprintf(g_acl_path, 255, "%s/timer_acl.txt", str_value);
 		snprintf(g_list_path, 255, "%s/timer.txt", str_value);

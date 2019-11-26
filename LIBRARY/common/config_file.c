@@ -5,6 +5,7 @@
  */
 #include <errno.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>
@@ -26,7 +27,7 @@ char *config_default_path(const char *filename)
 		return strdup(filename);
 	const char *ed = getenv("GROMOX_CONFIG_PATH");
 	if (ed == NULL || *ed == '\0')
-		ed = "/etc/gromox";
+		ed = PKGSYSCONFDIR;
 	size_t bs = strlen(ed) + strlen(filename) + 2;
 	char *ret = malloc(bs);
 	if (ret == NULL)

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <gromox/paths.h>
 #include "transporter.h"
 #include "system_services.h"
 #include "resource.h"
@@ -1431,7 +1432,7 @@ static const char* transporter_get_config_path()
 {
 	const char *ret_value  = resource_get_string("CONFIG_FILE_PATH");
     if (NULL == ret_value) {
-        ret_value = "../config";
+		ret_value = PKGSYSCONFDELIVERYDIR;
     }
     return ret_value;
 }
@@ -1445,7 +1446,7 @@ static const char* transporter_get_data_path()
 {
 	const char *ret_value = resource_get_string("DATA_FILE_PATH");
     if (NULL == ret_value) {
-        ret_value = "../data";
+		ret_value = PKGDATADELIVERYDIR;
     }
     return ret_value;
 }

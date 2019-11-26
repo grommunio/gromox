@@ -5,6 +5,7 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "service.h"
 #include "listener.h"
@@ -94,9 +95,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
 	if (NULL == str_value) {
-		strcpy(service_path, "../service_plugins/midb");
-		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH",
-			"../service_plugins/midb");
+		strcpy(service_path, PKGLIBDIR);
+		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH", service_path);
 	} else {
 		strcpy(service_path, str_value);
 	}
@@ -113,7 +113,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "CONFIG_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(config_path, "../config/midb");	
+		strcpy(config_path, PKGSYSCONFMIDBDIR);
 	} else {
 		strcpy(config_path, str_value);
 	}
@@ -121,7 +121,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data/midb");	
+		strcpy(data_path, PKGDATAMIDBDIR);
 	} else {
 		strcpy(data_path, str_value);
 	}

@@ -1,3 +1,4 @@
+#include <gromox/paths.h>
 #include "config_file.h"
 #include "ext_buffer.h"
 #include "mapi_types.h"
@@ -304,7 +305,7 @@ BOOL exmdb_tool_create(const char *dir, int domain_id, uint64_t max_size)
 	}
 	free(sql_string);
 	
-	pfile = list_file_init("../doc/propnames.txt", "%s:256");
+	pfile = list_file_init(PKGDATASADIR "/propnames.txt", "%s:256");
 	if (NULL == pfile) {
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();

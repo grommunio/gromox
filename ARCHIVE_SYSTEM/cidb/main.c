@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "util.h"
 #include "listener.h"
 #include "mysql_pool.h"
@@ -79,9 +81,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(log_path, "../logs/titan_log.txt");
-		config_file_set_value(pconfig, "LOG_FILE_PATH",
-			"../logs/titan_log.txt");
+		HX_strlcpy(log_path, PKGLOGDIR "/titan_log.txt", sizeof(log_path));
+		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
 		strcpy(log_path, str_value);
 	}
@@ -89,7 +90,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(list_path, "../data/cidb_acl.txt");
+		HX_strlcpy(list_path, PKGDATAARCHIVEDIR "/cidb_acl.txt", sizeof(list_path));
 	} else {
 		snprintf(list_path, 255, "%s/cidb_acl.txt", str_value);
 	}

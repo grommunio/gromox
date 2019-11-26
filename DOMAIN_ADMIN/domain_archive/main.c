@@ -1,4 +1,6 @@
 #include <sys/stat.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include <gromox/system_log.h>
 #include "midb_client.h"
 #include "message_lookup.h"
@@ -17,7 +19,6 @@ int main(int argc, const char **argv)
 {
 	int valid_days;
 	const char *str_value;
-	char work_path[256];
 	char temp_path[256];
 	char lang_path[256];
 	char cidb_path[256];
@@ -32,34 +33,27 @@ int main(int argc, const char **argv)
 	CONFIG_FILE *pconfig;
 
 	umask(0);
-	if (NULL == getcwd(work_path, 256)) {
-		return 1;
-	}
-	sprintf(temp_path, "%s/../config/posidon.cfg", work_path);
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/posidon.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
-		strcpy(data_path, "../data");
+		HX_strlcpy(data_path, PKGDATADADIR, sizeof(data_path));
 	} else {
 		strcpy(data_path, str_value);
 	}
-	sprintf(temp_path, "%s/%s/midb_list.txt", work_path, data_path);
+	snprintf(temp_path, sizeof(temp_path), "%s/midb_list.txt", data_path);
 	midb_client_init(temp_path);
-
-	sprintf(cidb_path, "%s/%s/cidb_list.txt", work_path, data_path);
-	message_lookup_init(cidb_path);
+	snprintf(cidb_path, sizeof(cidb_path), "%s/cidb_list.txt", data_path);
 	message_lookup_init(cidb_path);
 	
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		str_value = "../logs/posidon_log.txt";
+		str_value = PKGLOGDIR "/posidon_log.txt";
 	}
-	sprintf(temp_path, "%s/%s", work_path, str_value);
-	system_log_init(temp_path);
-
+	system_log_init(str_value);
 	
 	str_value = config_file_get_value(pconfig, "SESSION_LISTEN_IP");
 	if (NULL == str_value) {
@@ -129,7 +123,7 @@ int main(int argc, const char **argv)
 		str_value = "http://www.gridware.com.cn";
 	}
 
-	sprintf(lang_path, "%s/%s/domain_archive", work_path, data_path);
+	snprintf(lang_path, sizeof(lang_path), "%s/domain_archive", data_path);
 	backup_ui_init(valid_days, str_value, lang_path);
 
 	config_file_free(pconfig);
