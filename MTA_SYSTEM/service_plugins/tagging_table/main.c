@@ -53,7 +53,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		if (0 != stat(tmp_path, &node_stat)) {
 			fd = open(tmp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-			close(fd);
+			if (fd >= 0)
+				close(fd);
 			printf("[tagging_table]: warning! cannot find data file!!!\n");
 		}
 		tagging_table_init(tmp_path, growing_num);

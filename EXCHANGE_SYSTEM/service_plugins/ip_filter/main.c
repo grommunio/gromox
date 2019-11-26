@@ -113,7 +113,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(list_path, "%s/%s.txt", get_data_path(), file_name);
 		if (0 != stat(list_path, &node_stat)) {
 			fd = open(list_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-			close(fd);
+			if (fd >= 0)
+				close(fd);
 			printf("[%s]: warning! cannot find data file!!!\n", file_name);
 		}
 		ip_filter_init(file_name, config_path, audit_max, audit_interval, 
