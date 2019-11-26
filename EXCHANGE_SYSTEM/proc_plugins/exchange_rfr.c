@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "util.h"
 #include "guid.h"
 #include <string.h>

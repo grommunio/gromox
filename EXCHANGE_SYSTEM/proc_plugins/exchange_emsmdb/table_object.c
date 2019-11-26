@@ -1,5 +1,5 @@
 #include "restriction.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "exmdb_client.h"
 #include "table_object.h"
 #include "sortorder_set.h"

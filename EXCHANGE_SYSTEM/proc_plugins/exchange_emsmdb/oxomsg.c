@@ -3,7 +3,7 @@
 #include "rop_processor.h"
 #include "logon_object.h"
 #include "exmdb_client.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "list_file.h"
 #include "rop_util.h"

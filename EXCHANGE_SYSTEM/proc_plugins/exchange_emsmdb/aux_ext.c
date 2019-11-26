@@ -1,5 +1,5 @@
 #include "lzxpress.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "aux_ext.h"
 #include <string.h>

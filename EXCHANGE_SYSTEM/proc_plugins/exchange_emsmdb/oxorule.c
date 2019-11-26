@@ -2,7 +2,7 @@
 #include "rop_util.h"
 #include "ext_buffer.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "exmdb_client.h"
 #include "logon_object.h"
 #include "table_object.h"

@@ -1,5 +1,5 @@
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "guid.h"
 #include <sys/types.h>
 #include <sys/stat.h>

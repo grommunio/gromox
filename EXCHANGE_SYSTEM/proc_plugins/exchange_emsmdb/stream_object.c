@@ -1,5 +1,5 @@
 #include "util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "rop_processor.h"
 #include "stream_object.h"

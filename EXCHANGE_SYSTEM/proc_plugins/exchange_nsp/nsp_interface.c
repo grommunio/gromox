@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include "nsp_interface.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "list_file.h"
 #include "ab_tree.h"
 #include "guid.h"

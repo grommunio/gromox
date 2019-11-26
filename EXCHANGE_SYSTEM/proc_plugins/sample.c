@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include "guid.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include <string.h>
 
 DECLARE_API;

@@ -1,7 +1,7 @@
 #include "ftstream_parser.h"
 #include "rop_processor.h"
 #include "endian_macro.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "util.h"
 #include <sys/types.h>

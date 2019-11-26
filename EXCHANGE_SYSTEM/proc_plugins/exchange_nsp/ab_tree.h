@@ -8,7 +8,7 @@
 #	include <stdint.h>
 #	include <time.h>
 #endif
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "simple_tree.h"
 #include "single_list.h"
 #include "int_hash.h"

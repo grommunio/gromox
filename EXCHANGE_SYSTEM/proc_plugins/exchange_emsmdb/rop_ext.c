@@ -3,7 +3,7 @@
 #include "logon_object.h"
 #include "endian_macro.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "ext_buffer.h"
 #include "lzxpress.h"
 #include "rop_ext.h"

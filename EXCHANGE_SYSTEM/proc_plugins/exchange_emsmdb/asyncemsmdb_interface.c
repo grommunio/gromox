@@ -1,6 +1,6 @@
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "double_list.h"
 #include "lib_buffer.h"

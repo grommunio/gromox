@@ -1,7 +1,7 @@
 #include "rops.h"
 #include "rop_util.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "exmdb_client.h"
 #include "logon_object.h"
 #include "rop_processor.h"

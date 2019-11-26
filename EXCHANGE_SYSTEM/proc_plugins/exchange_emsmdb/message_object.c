@@ -8,7 +8,7 @@
 #include "logon_object.h"
 #include "exmdb_client.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "ext_buffer.h"
 #include "rop_util.h"
 #include "idset.h"

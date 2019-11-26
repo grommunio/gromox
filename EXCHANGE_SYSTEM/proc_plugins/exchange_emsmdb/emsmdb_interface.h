@@ -1,7 +1,7 @@
 #ifndef _H_EMSMDB_INTERFACE_
 #define _H_EMSMDB_INTERFACE_
 #include "common_types.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "mapi_types.h"
 
 typedef struct _EMSMDB_INFO {

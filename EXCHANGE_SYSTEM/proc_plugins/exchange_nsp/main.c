@@ -4,7 +4,7 @@
 #include "nsp_ndr.h"
 #include "ab_tree.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "config_file.h"
 #include "nsp_interface.h"
 #include <string.h>

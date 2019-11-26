@@ -2,7 +2,7 @@
 #include "emsmdb_interface.h"
 #include "notify_response.h"
 #include "rop_processor.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "rop_util.h"
 #include "int_hash.h"

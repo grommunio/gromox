@@ -3,7 +3,7 @@
 #include "tpropval_array.h"
 #include "exmdb_client.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "eid_array.h"
 #include <stdlib.h>
 #include <string.h>

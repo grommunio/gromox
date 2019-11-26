@@ -1,8 +1,7 @@
 #ifndef _H_ASYNCEMSMDB_NDR_
 #define _H_ASYNCEMSMDB_NDR_
 #include "emsmdb_interface.h"
-#include "proc_common.h"
-
+#include <gromox/proc_common.h>
 
 typedef struct _ECDOASYNCWAITEX_IN {
 	ACXH acxh;

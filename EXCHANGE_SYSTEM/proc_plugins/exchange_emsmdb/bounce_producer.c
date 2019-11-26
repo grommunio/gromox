@@ -1,5 +1,5 @@
 #include "bounce_producer.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "single_list.h"
 #include "mail_func.h"

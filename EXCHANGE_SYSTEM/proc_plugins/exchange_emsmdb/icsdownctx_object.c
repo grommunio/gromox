@@ -5,7 +5,7 @@
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "exmdb_client.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "restriction.h"
 #include "ext_buffer.h"

@@ -4,7 +4,7 @@
 #include "rop_util.h"
 #include "mail_func.h"
 #include "emsmdb_ndr.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "config_file.h"
 #include "logon_object.h"

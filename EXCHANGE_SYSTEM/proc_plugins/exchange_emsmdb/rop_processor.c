@@ -15,7 +15,7 @@
 #include "rop_dispatch.h"
 #include "exmdb_client.h"
 #include "common_util.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "simple_tree.h"
 #include "lib_buffer.h"
 #include "aux_types.h"

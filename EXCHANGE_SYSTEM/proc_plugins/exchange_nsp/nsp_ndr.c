@@ -1,4 +1,4 @@
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "nsp_ndr.h"
 #include <iconv.h>
 #include <string.h>

@@ -6,7 +6,7 @@
 #include "oxcmail.h"
 #include "rop_util.h"
 #include "ext_buffer.h"
-#include "proc_common.h"
+#include <gromox/proc_common.h>
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "element_data.h"
