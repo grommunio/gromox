@@ -2678,7 +2678,7 @@ static int ext_buffer_pull_tzrule(EXT_PULL *pext, TZRULE *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_buffer_pull_int16(pext, &r->flags);
+	status = ext_buffer_pull_int16(pext, &r->year);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
