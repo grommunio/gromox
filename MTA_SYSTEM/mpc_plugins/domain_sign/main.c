@@ -9,8 +9,6 @@ DECLARE_API;
 
 static BOOL sign_hook(MESSAGE_CONTEXT *pcontext);
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 BOOL HOOK_LibMain(int reason, void **ppdata)
 {
 	char *psearch;

@@ -5403,30 +5403,6 @@ BINARY* common_util_username_to_addressbook_entryid(
 	return pbin;
 }
 
-static BOOL common_util_get_folder_id_from_entryid(
-	const BINARY *pbin, uint64_t *pfolder_id)
-{
-	EXT_PULL ext_pull;
-	FOLDER_ENTRYID tmp_entryid;
-	
-	ext_buffer_pull_init(&ext_pull, pbin->pb,
-		pbin->cb, common_util_alloc, 0);
-	if (EXT_ERR_SUCCESS != ext_buffer_pull_folder_entryid(
-		&ext_pull, &tmp_entryid)) {
-		ext_buffer_pull_free(&ext_pull);
-		return FALSE;
-	}
-	ext_buffer_pull_free(&ext_pull);
-	if (EITLT_PRIVATE_FOLDER == tmp_entryid.folder_type ||
-		EITLT_PUBLIC_FOLDER == tmp_entryid.folder_type) {
-		*pfolder_id = rop_util_gc_to_value(
-				tmp_entryid.global_counter);
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-}
-
 BOOL common_util_check_decendant(sqlite3 *psqlite,
 	uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included)
 {

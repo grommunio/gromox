@@ -123,8 +123,6 @@ static void status_ui_main_html(const char *session, const char *console);
 
 static BOOL status_ui_get_self(char *url_buff, int length);
 
-static void status_ui_unencode(char *src, char *last, char *dest);
-
 static char g_list_path[1024];
 static char g_logo_link[1024];
 static char g_resource_path[256];
@@ -483,25 +481,3 @@ static void status_ui_main_html(const char *session, const char *console)
 	}
 	printf(HTML_MAIN_10);
 }
-
-static void status_ui_unencode(char *src, char *last, char *dest)
-{
-	int code;
-	
-	for (; src != last; src++, dest++) {
-		if (*src == '+') {
-			*dest = ' ';
-		} else if (*src == '%') {
-			if (sscanf(src+1, "%2x", &code) != 1) {
-				code = '?';
-			}
-			*dest = code;
-			src +=2;
-		} else {
-			*dest = *src;
-		}
-	}
-	*dest = '\n';
-	*++dest = '\0';
-}
-

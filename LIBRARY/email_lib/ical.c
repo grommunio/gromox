@@ -1299,42 +1299,6 @@ void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime)
 	}
 }
 
-static int ical_get_dayofyear_by_week_day(
-	int year, int order, int dayofweek)
-{
-	int yearday;
-	int tmp_dow;
-	int yeardays;
-	BOOL is_leap;
-	
-	if (0 == order || order > 53 || order < -53) {
-		return FALSE;
-	}
-	if (TRUE == ical_check_leap_year(year)) {
-		is_leap = TRUE;
-		yeardays = 366;
-	} else {
-		is_leap = FALSE;
-		yeardays = 365;
-	}
-	if (order > 0) {
-		tmp_dow = ical_get_dayofweek(year, 1, 1);
-		if (dayofweek >= tmp_dow) {
-			yearday = 7*(order - 1) + 1 + dayofweek - tmp_dow;
-		} else {
-			yearday = 7*order + 1 + dayofweek - tmp_dow;
-		}
-	} else {
-		tmp_dow = ical_get_dayofweek(year, 12, 31);
-		if (tmp_dow >= dayofweek) {
-			yearday = yeardays - tmp_dow + 7*(order + 1) + dayofweek;
-		} else {
-			yearday = yeardays - tmp_dow + 7*order + dayofweek;
-		}
-	}
-	return yearday;
-}
-
 static unsigned int ical_get_yearweeks(int year)
 {
 	unsigned int dayofweek = ical_get_dayofweek(year, 1, 1);

@@ -123,20 +123,6 @@ static uint32_t fastupctx_object_get_last_message_instance(
 	return message_object_get_instance_id(pctx->pobject);
 }
 
-static MESSAGE_CONTENT* fastupctx_object_get_last_message_element(
-	FASTUPCTX_OBJECT *pctx)
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_tail(&pctx->marker_stack); NULL!=pnode;
-		pnode=double_list_get_before(&pctx->marker_stack, pnode)) {
-		if (STARTEMBED == ((MARKER_NODE*)pnode->pdata)->marker) {
-			return ((MARKER_NODE*)pnode->pdata)->data.pelement;
-		}
-	}
-	return pctx->pmsgctnt;
-}
-
 static BOOL fastupctx_object_create_folder(
 	FASTUPCTX_OBJECT *pctx, uint64_t parent_id,
 	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)

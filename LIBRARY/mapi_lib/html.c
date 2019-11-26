@@ -501,45 +501,6 @@ static BOOL html_write_tail(RTF_WRITER*pwriter)
 	return TRUE;
 }
 
-static BOOL html_write_style_bold(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = sprintf(tmp_buff, "\\b ");
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&pwriter->ext_push, tmp_buff, length)) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static BOOL html_write_style_italic(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = sprintf(tmp_buff, "\\i ");
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&pwriter->ext_push, tmp_buff, length)) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static BOOL html_write_style_underline(RTF_WRITER *pwriter)
-{
-	int length;
-	char tmp_buff[256];
-	
-	length = sprintf(tmp_buff, "\\ul ");
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&pwriter->ext_push, tmp_buff, length)) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
 static BOOL html_write_style_color(RTF_WRITER *pwriter, int color)
 {
 	int index;
@@ -553,35 +514,6 @@ static BOOL html_write_style_color(RTF_WRITER *pwriter, int color)
 			&pwriter->ext_push, tmp_buff, length)) {
 			return FALSE;
 		}
-	}
-	return TRUE;
-}
-
-static BOOL html_write_style_align(RTF_WRITER *pwriter, int align)
-{
-	int length;
-	char tmp_buff[256];
-	
-	switch (align) { 
-	case RTF_PARAGRAPHALIGN_LEFT: 
-		length = sprintf(tmp_buff, "\\ql "); 
-		break; 
-	case RTF_PARAGRAPHALIGN_CENTER: 
-		length = sprintf(tmp_buff, "\\qc "); 
-		break; 
-	case RTF_PARAGRAPHALIGN_RIGHT: 
-		length = sprintf(tmp_buff, "\\qr "); 
-		break; 
-	case RTF_PARAGRAPHALIGN_JUSTIFY: 
-		length = sprintf(tmp_buff, "\\qj " ); 
-		break; 
-	}
-	if (0 == length) {
-		return TRUE;
-	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
-		&pwriter->ext_push, tmp_buff, length)) {
-		return FALSE;	
 	}
 	return TRUE;
 }

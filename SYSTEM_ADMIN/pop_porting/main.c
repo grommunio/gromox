@@ -8,8 +8,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-static void term_handler(int signo);
-
 int main(int argc, char **argv)
 {
 	LIST_FILE *plist;

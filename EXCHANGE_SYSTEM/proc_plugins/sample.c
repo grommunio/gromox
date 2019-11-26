@@ -13,8 +13,6 @@ static int dispatch(int opnum, const GUID *pobject,
 
 static int ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 BOOL PROC_LibMain(int reason, void **ppdata)
 {
 	void *pendpoint;
@@ -66,9 +64,3 @@ static int ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 	/* TODO add marshaling code for method result here */
 	return NDR_ERR_FAILURE;
 }
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-	/* TODO add code here for read command from console talk */
-}
-

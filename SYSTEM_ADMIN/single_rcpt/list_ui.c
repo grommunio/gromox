@@ -119,10 +119,6 @@ static BOOL list_ui_get_self(char *url_buff, int length);
 
 static void list_ui_unencode(char *src, char *last, char *dest);
 
-static BOOL list_ui_check_session(const char *session);
-
-static void list_ui_produce_session(char *session);
-
 static char g_list_path[256];
 static char g_mount_path[256];
 static char g_logo_link[1024];

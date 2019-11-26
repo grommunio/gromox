@@ -2194,20 +2194,6 @@ int mjson_fetch_envelope(MJSON *pjson, const char *charset,
 	return offset;
 }
 
-static void mjson_enum_charset(MJSON_MIME *pmime, char *charset)
-{
-	if ('\0' != charset[0]) {
-		return;
-	}
-	
-	if ((0 == strcasecmp(pmime->ctype, "text/plain") ||
-		0 == strcasecmp(pmime->ctype, "text/html")) &&
-		'\0' != pmime->charset[0]) {
-		strcpy(charset, pmime->charset);
-	}
-}
-
-
 static BOOL mjson_check_ascii_printable(const char *astring)
 {
 	int i, len;

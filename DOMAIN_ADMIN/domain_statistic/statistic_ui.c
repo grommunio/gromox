@@ -134,8 +134,6 @@ static void statistic_ui_main_html(const char *domain, const char *session,
 
 static BOOL statistic_ui_get_self(char *url_buff, int length);
 
-static void statistic_ui_unencode(char *src, char *last, char *dest);
-
 static char g_logo_link[1024];
 static char g_resource_path[256];
 static LANG_RESOURCE *g_lang_resource;
@@ -558,40 +556,4 @@ static void statistic_ui_main_html(const char *domain, const char *session,
 		list_file_free(pfile);
 	}
 	printf(HTML_MAIN_11);
-}
-
-static void statistic_ui_unencode(char *src, char *last, char *dest)
-{
-	int code;
-	
-	for (; src != last; src++, dest++) {
-		if (*src == '+') {
-			*dest = ' ';
-		} else if (*src == '%') {
-			if (sscanf(src+1, "%2x", &code) != 1) {
-				code = '?';
-			}
-			*dest = code;
-			src +=2;
-		} else {
-			*dest = *src;
-		}
-	}
-	*dest = '\n';
-	*++dest = '\0';
-}
-
-static unsigned int statistic_ui_hash_domain(const char *domain_name)
-{
-	unsigned int sum;
-	int len;
-	
-	len = strlen(domain_name);
-	sum = 0;
-	if (len >= sizeof(int)) {
-		memcpy(&sum, domain_name, sizeof(int));
-	} else {
-		memcpy(&sum, domain_name, len);
-	}
-	return sum;
 }

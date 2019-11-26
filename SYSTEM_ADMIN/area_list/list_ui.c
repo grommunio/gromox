@@ -166,9 +166,6 @@ static void list_ui_remove_item(const char *master);
 static void list_ui_error_html(const char *error_string);
 
 static void list_ui_main_html(const char *session);
-
-static void list_ui_broadcast_list();
-
 static BOOL list_ui_get_self(char *url_buff, int length);
 
 

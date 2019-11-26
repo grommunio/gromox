@@ -3145,48 +3145,6 @@ int rop_ext_push_buffertoosmall_response(EXT_PUSH *pext,
 	return ext_buffer_push_sbinary(pext, &r->buffer);
 }
 	
-static int rop_ext_push_backoff_rop(EXT_PUSH *pext, const BACKOFF_ROP *r)
-{
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, r->rop_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	return ext_buffer_push_uint32(pext, r->duration);
-}
-
-static int rop_ext_push_backoff_response(EXT_PUSH *pext,
-	const BACKOFF_RESPONSE *r)
-{
-	int i;
-	int status;
-	
-	status = ext_buffer_push_uint8(pext, ROP_ID_BACKOFF);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->logon_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->duration);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->rop_count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->rop_count; i++) {
-		status = rop_ext_push_backoff_rop(pext, r->prop_data + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	return ext_buffer_push_sbinary(pext, &r->additional_data);
-}
-
 static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 {
 	int status;

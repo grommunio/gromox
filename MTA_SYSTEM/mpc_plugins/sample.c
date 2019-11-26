@@ -5,8 +5,6 @@ DECLARE_API;
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext);
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 BOOL HOOK_LibMain(int reason, void **ppdata)
 {
     /* path conatins the config files directory */
@@ -32,10 +30,3 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
     /* TODO add code here for statisticing the mail */
 	return false;
 }
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-    /* TODO add code here for read command from console talk */
-}
-
-

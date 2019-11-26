@@ -165,8 +165,6 @@ static void ui_main_left_html(const char *session, BOOL b_ext);
 
 static BOOL ui_main_get_self(char *url_buff, int length);
 
-static void ui_main_unencode(char *src, char *last, char *dest);
-
 static char g_logo_link[1024];
 
 static char g_resource_path[256];
@@ -700,26 +698,3 @@ static void ui_main_login_html()
 	printf(lang_resource_get(g_lang_resource,"COMPANY_INFORMATION", language));
 	printf(HTML_LOGIN_11);
 }
-
-
-static void ui_main_unencode(char *src, char *last, char *dest)
-{
-	int code;
-	
-	for (; src != last; src++, dest++) {
-		if (*src == '+') {
-			*dest = ' ';
-		} else if (*src == '%') {
-			if (sscanf(src+1, "%2x", &code) != 1) {
-				code = '?';
-			}
-			*dest = code;
-			src +=2;
-		} else {
-			*dest = *src;
-		}
-	}
-	*dest = '\n';
-	*++dest = '\0';
-}
-

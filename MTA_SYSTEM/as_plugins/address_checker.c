@@ -27,8 +27,6 @@ DECLARE_API;
 static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	CONNECTION *pconnection, char *reason, int length);
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 int AS_LibMain(int reason, void **ppdata)
 {
     CONFIG_FILE *pconfig_file;

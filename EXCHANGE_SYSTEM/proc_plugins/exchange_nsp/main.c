@@ -16,13 +16,7 @@ static int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin);
 
 static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 	uint64_t handle, void *pin, void **ppout);
-	
-static void exchange_nsp_pull_free(int opnum, void *pin);
-
 static int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
-
-static void exchange_nsp_push_free(int opnum, void *pout);
-
 static void exchange_nsp_unbind(uint64_t handle);
 
 #define MAPI_E_SUCCESS 0x00000000

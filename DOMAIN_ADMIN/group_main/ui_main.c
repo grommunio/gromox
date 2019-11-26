@@ -196,9 +196,6 @@ static void ui_main_left_html(const char *group, const char *session);
 
 static BOOL ui_main_get_self(char *url_buff, int length);
 
-static void ui_main_unencode(char *src, char *last, char *dest);
-
-
 static char g_exit_url[1024];
 static char g_logo_link[1024];
 static char g_resource_path[256];
@@ -630,25 +627,3 @@ static void ui_main_exit_html(const char *group, const char *session)
 
 	printf(HTML_EXIT_1, exit_url);
 }
-
-static void ui_main_unencode(char *src, char *last, char *dest)
-{
-	int code;
-	
-	for (; src != last; src++, dest++) {
-		if (*src == '+') {
-			*dest = ' ';
-		} else if (*src == '%') {
-			if (sscanf(src+1, "%2x", &code) != 1) {
-				code = '?';
-			}
-			*dest = code;
-			src +=2;
-		} else {
-			*dest = *src;
-		}
-	}
-	*dest = '\n';
-	*++dest = '\0';
-}
-

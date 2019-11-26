@@ -220,9 +220,6 @@ static void list_ui_main_html(const char *domainname, const char *session,
 static BOOL list_ui_get_self(char *url_buff, int length);
 
 static void list_ui_unencode(char *src, char *last, char *dest);
-
-static void list_ui_encode_squote(const char *in, char *out);
-
 static void list_ui_from_utf8(char *src, char *dst, size_t len);
 
 static void list_ui_to_utf8(char *src, char *dst, size_t len);
@@ -934,22 +931,6 @@ static void list_ui_unencode(char *src, char *last, char *dest)
 	}
 	*dest = '\n';
 	*++dest = '\0';
-}
-
-
-static void list_ui_encode_squote(const char *in, char *out)
-{
-	int len, i, j;
-
-	len = strlen(in);
-	for (i=0, j=0; i<len; i++, j++) {
-		if ('\'' == in[i] || '\\' == in[i]) {
-			out[j] = '\\';
-			j ++;
-		}
-		out[j] = in[i];
-	}
-	out[j] = '\0';
 }
 
 static void list_ui_from_utf8(char *src, char *dst, size_t len)

@@ -301,44 +301,6 @@ static int nsp_ndr_pull_property_name(NDR_PULL *pndr, int flag, PROPERTY_NAME *r
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_property_name(NDR_PUSH *pndr, int flag, const PROPERTY_NAME *r)
-{
-	int status;
-	
-	if (flag & FLAG_HEADER) {
-		status = ndr_push_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_unique_ptr(pndr, r->pguid);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_uint32(pndr, r->reserved);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_uint32(pndr, r->id);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_trailer_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	
-	if (flag & FLAG_CONTENT) {
-		if (NULL != r->pguid) {
-			status = nsp_ndr_push_flatuid(pndr, r->pguid);
-			if (NDR_ERR_SUCCESS != status) {
-				return status;
-			}
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
 static int nsp_ndr_pull_string_array(NDR_PULL *pndr, int flag, STRING_ARRAY *r)
 {
 	int status;
@@ -578,60 +540,6 @@ static int nsp_ndr_pull_strings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *r
 					return NDR_ERR_ALLOC;
 				}
 				status = ndr_pull_string(pndr, r->ppstrings[cnt], length1);
-				if (NDR_ERR_SUCCESS != status) {
-					return status;
-				}
-			}
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static int nsp_ndr_push_strings_array(NDR_PUSH *pndr, int flag, const STRINGS_ARRAY *r)
-{
-	int status;
-	int length;
-	uint32_t cnt;
-	
-	if (flag & FLAG_HEADER) {
-		status = ndr_push_ulong(pndr, r->count);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_uint32(pndr, r->count);
-		for (cnt=0; cnt<r->count; cnt++) {
-			status = ndr_push_unique_ptr(pndr, r->ppstrings[cnt]);
-			if (NDR_ERR_SUCCESS != status) {
-				return status;
-			}
-		}
-		status = ndr_push_trailer_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	
-	if (flag & FLAG_CONTENT) {
-		for (cnt=0; cnt<r->count; cnt++) {
-			if (NULL != r->ppstrings[cnt]) {
-				length = strlen(r->ppstrings[cnt]) + 1;
-				status = ndr_push_ulong(pndr, length);
-				if (NDR_ERR_SUCCESS != status) {
-					return status;
-				}
-				status = ndr_push_ulong(pndr, 0);
-				if (NDR_ERR_SUCCESS != status) {
-					return status;
-				}
-				status = ndr_push_ulong(pndr, length);
-				if (NDR_ERR_SUCCESS != status) {
-					return status;
-				}
-				status = ndr_push_string(pndr, r->ppstrings[cnt], length);
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
@@ -920,74 +828,6 @@ static int nsp_ndr_pull_wstrings_array(NDR_PULL *pndr, int flag, STRINGS_ARRAY *
 					return NDR_ERR_CHARCNV;
 				}
 				free(pwstring);
-			}
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static int nsp_ndr_push_wstrings_array(NDR_PUSH *pndr, int flag, const STRINGS_ARRAY *r)
-{
-	int status;
-	int length;
-	uint32_t cnt;
-	char *pwstring;
-	
-	if (flag & FLAG_HEADER) {
-		status = ndr_push_ulong(pndr, r->count);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_push_uint32(pndr, r->count);
-		for (cnt=0; cnt<r->count; cnt++) {
-			status = ndr_push_unique_ptr(pndr, r->ppstrings[cnt]);
-			if (NDR_ERR_SUCCESS != status) {
-				return status;
-			}
-		}
-		status = ndr_push_trailer_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	
-	if (flag & FLAG_CONTENT) {
-		for (cnt=0; cnt<r->count; cnt++) {
-			if (NULL != r->ppstrings[cnt]) {
-				length = 2*strlen(r->ppstrings[cnt]) + 2;
-				pwstring = malloc(length);
-				if (NULL == pwstring) {
-					return NDR_ERR_ALLOC;
-				}
-				length = nsp_ndr_to_utf16(pndr->flags, r->ppstrings[cnt], pwstring, length);
-				if (-1 == length) {
-					free(pwstring);
-					return NDR_ERR_CHARCNV;
-				}
-				status = ndr_push_ulong(pndr, length/sizeof(uint16_t));
-				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
-					return status;
-				}
-				status = ndr_push_ulong(pndr, 0);
-				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
-					return status;
-				}
-				status = ndr_push_ulong(pndr, length/sizeof(uint16_t));
-				if (NDR_ERR_SUCCESS != status) {
-					free(pwstring);
-					return status;
-				}
-				status = ndr_push_string(pndr, pwstring, length);
-				free(pwstring);
-				if (NDR_ERR_SUCCESS != status) {
-					return status;
-				}
 			}
 		}
 	}
@@ -2280,58 +2120,6 @@ static int nsp_ndr_push_property_row(NDR_PUSH *pndr, int flag, const PROPERTY_RO
 				if (NDR_ERR_SUCCESS != status) {
 					return status;
 				}
-			}
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static int nsp_ndr_pull_proprow_set(NDR_PULL *pndr, int flag, PROPROW_SET *r)
-{
-	int status;
-	uint32_t cnt;
-	uint32_t size;
-	
-	if (flag & FLAG_HEADER) {
-		status = ndr_pull_ulong(pndr, &size);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_pull_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ndr_pull_uint32(pndr, &r->crows);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		if (r->crows > 100000) {
-			return NDR_ERR_RANGE;
-		}
-		if (size != r->crows) {
-			return NDR_ERR_ARRAY_SIZE;
-		}
-		r->prows = ndr_stack_alloc(NDR_STACK_IN, size*sizeof(PROPERTY_ROW));
-		if (NULL == r->prows) {
-			return NDR_ERR_ALLOC;
-		}
-		for (cnt=0; cnt<size; cnt++) {
-			status = nsp_ndr_pull_property_row(pndr, FLAG_HEADER, &r->prows[cnt]);
-			if (NDR_ERR_SUCCESS != status) {
-				return status;
-			}
-		}
-		status = ndr_pull_trailer_align(pndr, 5);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	
-	if (flag & FLAG_CONTENT) {
-		for (cnt=0; cnt<r->crows; cnt++) {
-			status = nsp_ndr_pull_property_row(pndr, FLAG_CONTENT, &r->prows[cnt]);
-			if (NDR_ERR_SUCCESS != status) {
-				return status;
 			}
 		}
 	}

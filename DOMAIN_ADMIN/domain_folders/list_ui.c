@@ -154,9 +154,6 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
 "<TR class=ItemRow><TD>&nbsp;%s&nbsp;</TD><TD>&nbsp;\
 <A href=\"javascript:DeleteItem(%llu)\">%s</A>&nbsp;</TD></TR>\n"
 
-
-static void list_ui_encode_line(const char *in, char *out);
-	
 static BOOL list_ui_add_folder(const char *domain,
 	const char *folder_name, const char *container,
 	const char *comment);

@@ -180,17 +180,6 @@ static BOOL ftstream_producer_write_internal(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_uint8(
-	FTSTREAM_PRODUCER *pstream, uint8_t v)
-{
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &v, sizeof(uint8_t))) {
-		return FALSE;	
-	}
-	ftstream_producer_try_recode_nbp(pstream);
-	return TRUE;
-}
-
 static BOOL ftstream_producer_write_uint16(
 	FTSTREAM_PRODUCER *pstream, uint16_t v)
 {
@@ -354,51 +343,6 @@ static BOOL ftstream_producer_write_binary(
 		ftstream_producer_record_lvp(pstream, position, pbin->cb);
 	} else {
 		ftstream_producer_try_recode_nbp(pstream);
-	}
-	return TRUE;
-}
-
-static BOOL ftstream_producer_write_svreid(
-	FTSTREAM_PRODUCER *pstream, const SVREID *psvreid)
-{
-	uint8_t ours;
-	
-	if (NULL != psvreid->pbin) {
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, psvreid->pbin->cb + 1)) {
-			return FALSE;	
-		}
-		ours = 0;
-		if (FALSE == ftstream_producer_write_internal(
-			pstream, &ours, sizeof(uint8_t))) {
-			return FALSE;
-		}
-		if (0 != psvreid->pbin->cb && FALSE ==
-			ftstream_producer_write_internal(
-			pstream, psvreid->pbin->pb, psvreid->pbin->cb)) {
-			return FALSE;
-		}
-	} else {
-		if (FALSE == ftstream_producer_write_uint32(pstream, 21)) {
-			return FALSE;	
-		}
-		ours = 1;
-		if (FALSE == ftstream_producer_write_internal(
-			pstream, &ours, sizeof(uint8_t))) {
-			return FALSE;
-		}
-		if (FALSE == ftstream_producer_write_uint64(
-			pstream, psvreid->folder_id)) {
-			return FALSE;
-		}
-		if (FALSE == ftstream_producer_write_uint64(
-			pstream, psvreid->message_id)) {
-			return FALSE;
-		}
-		if (FALSE == ftstream_producer_write_uint32(
-			pstream, psvreid->instance)) {
-			return FALSE;
-		}
 	}
 	return TRUE;
 }

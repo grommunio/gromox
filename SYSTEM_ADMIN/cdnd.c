@@ -160,9 +160,6 @@ static BOOL md5_msg_file(const char *path, char *digest);
 static BOOL midb_remove(char *path, char *mids);
 
 static STR_HASH_TABLE* list_mail(char *path);
-
-static STR_HASH_TABLE* load_hash(const char *maildir, int *pversion);
-
 static void save_hash(const char *maildir, int version,
 	STR_HASH_TABLE *phash);
 
@@ -1820,34 +1817,6 @@ RDWR_ERROR:
 		str_hash_free(phash);
 	}
 	return NULL;
-}
-
-static STR_HASH_TABLE* load_hash(const char *maildir, int *pversion)
-{
-	int i, num;
-	MSG_UNIT *pmsg;
-	LIST_FILE *plist;
-	char temp_path[256];
-	STR_HASH_TABLE *phash;
-	
-
-	snprintf(temp_path, 256, "%s/tmp/inbox.list", maildir);
-	plist = list_file_init(temp_path, "%s:128%d");
-	if (NULL == plist) {
-		return NULL;
-	}
-	pmsg = list_file_get_list(plist);
-	num = list_file_get_item_num(plist);
-	phash = str_hash_init(num, sizeof(MSG_UNIT), NULL);
-	*pversion = atoi(pmsg[0].mid);
-	for (i=1; i<num; i++) {
-		if (NULL != phash) {
-			str_hash_add(phash, pmsg[i].mid, &pmsg[i].size); 
-		}
-	}
-
-	list_file_free(plist);
-	return phash;
 }
 
 static void save_hash(const char *maildir, int version,

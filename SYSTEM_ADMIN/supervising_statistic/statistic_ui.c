@@ -93,10 +93,6 @@ static void statistic_ui_error_html(const char *error_string);
 
 static void statistic_ui_main_html(const char *session);
 
-static BOOL statistic_ui_get_self(char *url_buff, int length);
-
-static void statistic_ui_unencode(char *src, char *last, char *dest);
-
 static char g_list_path[1024];
 static char g_logo_link[1024];
 static char g_resource_path[256];
@@ -218,28 +214,6 @@ int statistic_ui_stop()
 void statistic_ui_free()
 {
 	/* do nothing */
-}
-
-static BOOL statistic_ui_get_self(char *url_buff, int length)
-{
-	char *host;
-	char *https;
-	char *script;
-	
-	host = getenv("HTTP_HOST");
-	script = getenv("SCRIPT_NAME");
-	https = getenv("HTTPS");
-	if (NULL == host || NULL == script) {
-		system_log_info("[statistic_ui]: fail to get "
-			"HTTP_HOST or SCRIPT_NAME environment!");
-		return FALSE;
-	}
-	if (NULL == https || 0 != strcasecmp(https, "ON")) {
-		snprintf(url_buff, length, "http://%s%s", host, script);
-	} else {
-		snprintf(url_buff, length, "https://%s%s", host, script);
-	}
-	return TRUE;
 }
 
 static void statistic_ui_error_html(const char *error_string)
@@ -377,25 +351,3 @@ static void statistic_ui_main_html(const char *session)
 	list_file_free(pfile);
 	printf(HTML_MAIN_6);
 }
-
-static void statistic_ui_unencode(char *src, char *last, char *dest)
-{
-	int code;
-	
-	for (; src != last; src++, dest++) {
-		if (*src == '+') {
-			*dest = ' ';
-		} else if (*src == '%') {
-			if (sscanf(src+1, "%2x", &code) != 1) {
-				code = '?';
-			}
-			*dest = code;
-			src +=2;
-		} else {
-			*dest = *src;
-		}
-	}
-	*dest = '\n';
-	*++dest = '\0';
-}
-

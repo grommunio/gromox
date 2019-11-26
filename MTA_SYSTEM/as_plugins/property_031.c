@@ -29,12 +29,6 @@ static char g_return_reason[1024];
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length);
 
-static int text_filter(int action, int context_ID, MAIL_BLOCK *pblock,
-    char *reason, int length);
-
-static int html_filter(int action, int context_ID, MAIL_BLOCK *pblock,
-    char *reason, int length);
-
 BOOL AS_LibMain(int reason, void **ppdata)
 {
 	CONFIG_FILE *pconfig_file;

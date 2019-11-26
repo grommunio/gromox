@@ -24,9 +24,6 @@ static char g_list_path[256];
 static SINGLE_LIST g_console_list;
 
 static BOOL data_extractor_send(const char *ip, int port, char *buff, int len);
-
-static void data_extractor_get_time(char *buff_in, time_t *time_out);
-
 static int data_extractor_parse_buffer(char *buff_in, STATUS_ITEM *pitem);
 
 void data_extractor_init(const char *path)

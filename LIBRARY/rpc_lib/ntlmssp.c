@@ -130,25 +130,6 @@ static void ntlmssp_md4hash(const char *passwd, uint8_t p16[16])
 	MD4_Final(p16, &md4_ctx);
 }
 
-/**
- * Creates the MD5 Hash of a combination of 16 byte salt and 16 byte NT hash.
- * @param 16 byte salt.
- * @param 16 byte NT hash.
- * @param 16 byte return hashed with md5, caller allocated 16 byte buffer
- */
-
-static void ntlmssp_md5hash(const uint8_t salt[16],
-	const uint8_t nthash[16], uint8_t hash_out[16])
-{
-	MD5_CTX ctx;
-	
-	MD5_Init(&ctx);
-	MD5_Update(&ctx, salt, 16);
-	MD5_Update(&ctx, nthash, 16);
-	MD5_Final(hash_out, &ctx);
-}
-
-
 static void ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 {
 	int len;

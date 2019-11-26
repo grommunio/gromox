@@ -524,21 +524,6 @@ static BOOL idset_encoding_pop_command(BINARY *pbin)
 }
 
 
-static BOOL idset_encode_bitmask_command(BINARY *pbin,
-	uint8_t start_value, uint8_t bitmask)
-{
-	uint8_t command;
-	
-	command = 0x42;
-	if (FALSE == idset_write_to_binary(pbin, &command, sizeof(uint8_t))) {
-		return FALSE;
-	}
-	if (FALSE == idset_write_to_binary(pbin, &start_value, sizeof(uint8_t))) {
-		return FALSE;
-	}
-	return idset_write_to_binary(pbin, &bitmask, sizeof(uint8_t));
-}
-
 static BOOL idset_encode_range_command(BINARY *pbin,
 	uint8_t length, uint8_t *plow_bytes, uint8_t *phigh_bytes)
 {
@@ -632,11 +617,6 @@ static uint8_t idset_statck_get_common_bytes(
 		common_length += pstack_node->common_length;
 	}
 	return common_length;
-}
-
-static uint8_t idset_statck_get_times(DOUBLE_LIST *pstack)
-{
-	return double_list_get_nodes_num(pstack);
 }
 
 static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)

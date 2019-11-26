@@ -15,8 +15,6 @@ static char g_statistic_path[256];
 static char g_original_path[256];
 static time_t g_now_time;
 
-static unsigned int log_analyzer_hash_domain(const char *domain_name);
-
 void log_analyzer_init(time_t now_time, const char *statistic_path,
 	const char *orignal_path)
 {

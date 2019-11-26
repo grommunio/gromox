@@ -97,22 +97,6 @@ static int exmdb_client_push_connect_request(
 	return ext_buffer_push_bool(pext, r->b_private);
 }
 
-static int exmdb_client_push_get_store_properties_request(
-	EXT_PUSH *pext, const GET_STORE_PROPERTIES_REQUEST *r)
-{
-	int status;
-	
-	status = ext_buffer_push_string(pext, r->dir);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	return ext_buffer_push_proptag_array(pext, r->pproptags);
-}
-
 static int exmdb_client_push_set_store_properties_request(
 	EXT_PUSH *pext, const SET_STORE_PROPERTIES_REQUEST *r)
 {

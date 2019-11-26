@@ -66,7 +66,6 @@ static BOOL console_server_register_command(char* cmd, COMMAND_HANDLER handler);
 static void console_server_execve_command(char* cmdline);
 static void console_server_install_command();
 static int	console_server_parse_line(const char* cmdline, char** argv);
-static int	console_server_open_listenfd(const char *bind_ip, int port);
 static void* thread_work_func(void *argp);
 static void* console_work_func(void *argp);
 
