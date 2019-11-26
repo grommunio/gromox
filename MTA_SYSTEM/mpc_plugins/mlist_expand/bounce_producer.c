@@ -228,8 +228,8 @@ BOOL bounce_producer_refresh()
 		}
 	}
 	if (NULL == pdefault) {
-		printf("[mlist_expand]: there's no \"ascii\" bounce mail "
-			"templates\n");
+		printf("[mlist_expand]: there are no \"ascii\" bounce mail "
+			"templates in %s\n", g_path);
 		bounce_producer_unload_list(&resource_list);
 		single_list_free(&resource_list);
 		return FALSE;

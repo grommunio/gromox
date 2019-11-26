@@ -173,20 +173,20 @@ BOOL bounce_producer_refresh()
 	RESOURCE_NODE *pdefault;
 
 	single_list_init(&resource_list);
+	errno = 0;
 	dirp = opendir(g_path);
-	if (NULL == dirp) {
+	if (dirp != NULL) {
+		while ((direntp = readdir(dirp)) != NULL) {
+			if (!bounce_producer_check_subdir(direntp->d_name))
+				continue;
+			bounce_producer_load_subdir(direntp->d_name, &resource_list);
+		}
+		closedir(dirp);
+	} else if (errno != ENOENT) {
 		printf("[exmdb_local]: failed to open directory %s: %s\n",
 			g_path, strerror(errno));
 		return FALSE;
 	}
-	while ((direntp = readdir(dirp)) != NULL) {
-		if (FALSE == bounce_producer_check_subdir(direntp->d_name)) {
-			continue;
-		} else {
-			bounce_producer_load_subdir(direntp->d_name, &resource_list);
-		}
-    }
-	closedir(dirp);
 
 	pdefault = NULL;
 	/* check "ascii" charset */
@@ -199,8 +199,8 @@ BOOL bounce_producer_refresh()
 		}
 	}
 	if (NULL == pdefault) {
-		printf("[exmdb_local]: there's no \"ascii\" bounce mail "
-			"templates\n");
+		printf("[exmdb_local]: there are no \"ascii\" bounce mail "
+			"templates in %s\n", g_path);
 		bounce_producer_unload_list(&resource_list);
 		single_list_free(&resource_list);
 		return FALSE;
