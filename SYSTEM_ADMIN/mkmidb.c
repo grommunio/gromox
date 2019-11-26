@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("fail to initialize sqlite engine\n");
 		free(sql_string);
-		return (-9);
+		return 9;
 	}
 	if (SQLITE_OK != sqlite3_open_v2(temp_path, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
