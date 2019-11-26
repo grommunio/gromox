@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <netdb.h>
+#include <string.h>
 #include <unistd.h>
 #include "cache_queue.h"
 #include "exmdb_local.h"
@@ -259,7 +261,8 @@ static void* thread_work_func(void* arg)
 	}
 	dirp = opendir(g_path);
 	if (NULL == dirp) {
-		printf("[exmdb_local]: fail to open cache directory for scanning\n");
+		printf("[exmdb_local]: failed to open cache directory %s: %s\n",
+			g_path, strerror(errno));
 		pthread_exit(0);
 	}
 	i = 0;

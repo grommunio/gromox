@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "cache_queue.h"
 #include "gateway_dispatch.h"
 #include "smtp_dispatch.h"
@@ -264,7 +266,8 @@ static void* thread_work_func(void* arg)
 	}
 	dirp = opendir(g_path);
 	if (NULL == dirp) {
-		printf("[gateway_dispatch]: fail to open cache directory for scanning\n");
+		printf("[gateway_dispatch]: failed to open cache directory %s: %s\n",
+			g_path, strerror(errno));
 		pthread_exit(0);
 	}
 	i = 0;

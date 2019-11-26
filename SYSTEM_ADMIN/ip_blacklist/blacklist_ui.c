@@ -693,8 +693,8 @@ static void blacklist_ui_broadcast_list()
 	pwhite = (WHITELIST_ITEM*)list_file_get_list(pfile_white);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[blacklist_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[blacklist_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*

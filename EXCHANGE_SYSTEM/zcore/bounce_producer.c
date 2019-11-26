@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "bounce_producer.h"
 #include "system_services.h"
 #include "common_util.h"
@@ -130,7 +132,8 @@ BOOL bounce_producer_refresh()
 	single_list_init(&resource_list);
 	dirp = opendir(g_path);
 	if (NULL == dirp) {
-		printf("[exmdb_provider]: fail to open directory %s\n", g_path);
+		printf("[exmdb_provider]: failed to open directory %s: %s\n",
+			g_path, strerror(errno));
 		return FALSE;
 	}
 	while ((direntp = readdir(dirp)) != NULL) {

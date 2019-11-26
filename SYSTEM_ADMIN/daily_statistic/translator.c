@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "translator.h"
 #include "single_list.h"
@@ -44,7 +45,8 @@ int translator_run()
 
 	dirp = opendir(g_translator_path);
 	if (NULL == dirp){
-		printf("[translator]: fail to open directory %s\n", g_translator_path);
+		printf("[translator]: failed to open directory %s: %s\n",
+			g_translator_path, strerror(errno));
 		return -1;
 	}
 	while ((direntp = readdir(dirp)) != NULL) {

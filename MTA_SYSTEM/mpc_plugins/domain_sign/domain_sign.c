@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
@@ -70,7 +72,8 @@ int domain_sign_run()
 
 	dirp = opendir(g_root_path);
 	if (NULL == dirp) {
-		printf("[domain_sign]: fail to open %s\n", g_root_path);
+		printf("[domain_sign]: failed to open directory %s: %s\n",
+			g_root_path, strerror(errno));
 		return -1;
 	}
 	domain_num = 0;

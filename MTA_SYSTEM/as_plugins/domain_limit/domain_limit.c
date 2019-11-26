@@ -66,7 +66,8 @@ int domain_limit_run()
 	sprintf(temp_path, "%s/deny", g_root_path);
 	dirp = opendir(temp_path);
 	if (NULL == dirp) {
-		printf("[domain_limit]: fail to open %s\n", temp_path);
+		printf("[domain_limit]: failed to open directory %s: %s\n",
+			temp_path, strerror(errno));
 		return -1;
 	}
 	domain_num = 0;
@@ -134,7 +135,8 @@ int domain_limit_run()
 	sprintf(temp_path, "%s/allow", g_root_path);
 	dirp = opendir(temp_path);
 	if (NULL == dirp) {
-		printf("[domain_limit]: fail to open %s\n", temp_path);
+		printf("[domain_limit]: failed to open directory %s: %s\n",
+			temp_path, strerror(errno));
 		return -3;
 	}
 	domain_num = 0;

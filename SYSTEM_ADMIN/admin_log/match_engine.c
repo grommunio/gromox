@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "match_engine.h"
 #include <gromox/system_log.h>
 #include "util.h"
@@ -166,8 +167,8 @@ BOOL match_engine_match(time_t start_time, time_t end_time, const char *ip,
 
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[match_engine]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[match_engine]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return FALSE;
 	}
 	/* 
@@ -188,8 +189,8 @@ BOOL match_engine_match(time_t start_time, time_t end_time, const char *ip,
 		}
 		dirp1 = opendir(temp_path);
 		if (NULL == dirp1) {
-			system_log_info("[match_engine]: fail to open directory %s\n",
-				temp_path);
+			system_log_info("[match_engine]: failed to open directory %s: %s",
+				temp_path, strerror(errno));
 			continue;
 		}
 		while ((direntp1 = readdir(dirp1)) != NULL) {
@@ -363,8 +364,8 @@ MATCH_SMTP:
 		}
 		dirp1 = opendir(temp_path);
 		if (NULL == dirp1) {
-			system_log_info("[match_engine]: fail to open directory %s\n",
-				temp_path);
+			system_log_info("[match_engine]: failed to open directory %s: %s",
+				temp_path, strerror(errno));
 			continue;
 		}
 		while ((direntp1 = readdir(dirp1)) != NULL) {

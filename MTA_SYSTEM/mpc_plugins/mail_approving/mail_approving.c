@@ -96,7 +96,8 @@ int mail_approving_run()
 
 	dirp = opendir(g_root_path);
 	if (NULL == dirp) {
-		printf("[mail_approving]: fail to open %s\n", g_root_path);
+		printf("[mail_approving]: failed to open directory %s: %s\n",
+			g_root_path, strerror(errno));
 		return -2;
 	}
 	domain_num = 0;

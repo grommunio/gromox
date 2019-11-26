@@ -396,8 +396,8 @@ int msgchg_grouping_run()
 	
 	dirp = opendir(g_folder_path);
 	if (NULL == dirp) {
-		printf("[exchange_emsmdb]: fail to open %s for "
-			"loading \"property group info\"\n", g_folder_path);
+		printf("[exchange_emsmdb]: failed to open directory %s for "
+			"loading \"property group info\": %s\n", g_folder_path, strerror(errno));
 		return -1;
 	}
 	while ((direntp = readdir(dirp)) != NULL) {

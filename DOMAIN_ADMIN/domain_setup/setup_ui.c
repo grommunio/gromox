@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -1521,8 +1522,8 @@ static void setup_ui_broadcast_keyword(const char *list_path, const char *domain
 	pitem = (char*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[setup_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[setup_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*
@@ -1590,8 +1591,8 @@ static void setup_ui_broadcast_limit(const char *list_path, const char *domain,
 	pitem = (char*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[setup_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[setup_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*

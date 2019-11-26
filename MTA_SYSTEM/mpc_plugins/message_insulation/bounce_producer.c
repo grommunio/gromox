@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "bounce_producer.h"
 #include "single_list.h"
 #include "mail_func.h"
@@ -174,7 +176,8 @@ BOOL bounce_producer_refresh()
 	single_list_init(&resource_list);
 	dirp = opendir(g_path);
 	if (NULL == dirp) {
-		printf("[message_insulation]: fail to open directory %s\n", g_path);
+		printf("[message_insulation]: failed to open directory %s: %s\n",
+			g_path, strerror(errno));
 		return FALSE;
 	}
 	while ((direntp = readdir(dirp)) != NULL) {

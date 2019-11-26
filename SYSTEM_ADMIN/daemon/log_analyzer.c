@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "log_analyzer.h"
 #include "util.h"
 #include <sys/time.h>
@@ -47,8 +48,8 @@ int log_analyzer_run()
 	
 	dirp = opendir(g_original_path);
 	if (NULL == dirp){
-		printf("[log_analyzer]: fail to open directory %s\n",
-			g_original_path);
+		printf("[log_analyzer]: failed to open directory %s: %s\n",
+			g_original_path, strerror(errno));
 		return -1;
 	}
 	/* 

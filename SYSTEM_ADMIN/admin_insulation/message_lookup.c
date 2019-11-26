@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "message_lookup.h"
 #include <gromox/system_log.h>
 #include "mail_func.h"
@@ -140,8 +142,8 @@ BOOL message_lookup_match(char *from, char *to, const char *reason,
 
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp) {
-		system_log_info("[message_lookup]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[message_lookup]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return FALSE;
 	}
 	

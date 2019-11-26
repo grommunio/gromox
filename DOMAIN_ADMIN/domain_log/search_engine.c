@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "search_engine.h"
 #include <gromox/system_log.h>
@@ -200,8 +201,8 @@ BOOL search_engine_search(const char *domain, const char *ip, const char *from,
 	}
 	dirp = opendir(temp_path);
 	if (NULL == dirp) {
-		system_log_info("[search_engine]: fail to open %s for enumerating",
-			temp_path);
+		system_log_info("[search_engine]: failed to open directory %s: %s",
+			temp_path, strerror(errno));
 		return FALSE;
 	}
 	while ((direntp = readdir(dirp)) != NULL) {

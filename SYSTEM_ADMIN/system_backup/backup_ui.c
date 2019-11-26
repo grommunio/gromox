@@ -459,10 +459,10 @@ static void backup_ui_main_html(const char *session)
 	
 	dirp = opendir(g_backup_path);
 	if (NULL == dirp){
+		system_log_info("[backup_ui]: failed to open directory %s: %s",
+			g_backup_path, strerror(errno));
 		backup_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
-		system_log_info("[backup_ui]: fail to open directory %s\n",
-			g_backup_path);
 		return;
 	}
 	language = getenv("HTTP_ACCEPT_LANGUAGE");

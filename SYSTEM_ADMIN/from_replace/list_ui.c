@@ -674,8 +674,8 @@ static void list_ui_broadcast_list()
 	pitem = (LIST_ITEM*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[list_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[list_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*

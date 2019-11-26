@@ -703,8 +703,8 @@ static void limit_ui_broadcast_list(const char *domain)
 	pitem = (BLACKLIST_ITEM*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[limit_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[limit_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*

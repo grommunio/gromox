@@ -86,7 +86,8 @@ int domain_monitor_run()
 
 	dirp = opendir(g_root_path);
 	if (NULL == dirp) {
-		printf("[domain_monitor]: fail to open %s\n", g_root_path);
+		printf("[domain_monitor]: failed to open directory %s: %s\n",
+			g_root_path, strerror(errno));
 		return -1;
 	}
 	domain_num = 0;

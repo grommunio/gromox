@@ -655,8 +655,8 @@ static void upload_ui_broadcast_charset()
 	pitem = (char*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[upload_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[upload_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*
@@ -719,8 +719,8 @@ static void upload_ui_broadcast_keyword(const char *list)
 	pitem = (char*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[upload_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[upload_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*

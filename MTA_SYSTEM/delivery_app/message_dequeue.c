@@ -6,6 +6,8 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
+#include <errno.h>
+#include <string.h>
 #include "message_dequeue.h"
 #include "system_services.h"
 #include "util.h"
@@ -568,7 +570,8 @@ static void* thread_work_func(void* arg)
 
     sprintf(dir_name, "%s/mess", g_path);
     while (NULL == (dirp = opendir(dir_name))) {
-        printf("[message_dequeue]: unable to open directory %s\n", dir_name);
+		printf("[message_dequeue]: failed to open directory %s: %s\n",
+			dir_name, strerror(errno));
         sleep(1);
     }
 

@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "domain_keyword.h"
@@ -103,7 +105,8 @@ int domain_keyword_run()
 
 	dirp = opendir(g_root_path);
 	if (NULL == dirp) {
-		printf("[domain_keyword]: fail to open %s\n", g_root_path);
+		printf("[domain_keyword]: failed to open directory %s: %s\n",
+			g_root_path, strerror(errno));
 		return -2;
 	}
 	domain_num = 0;

@@ -637,8 +637,8 @@ static void whitelist_ui_broadcast_list()
 	pitem = (WHITELIST_ITEM*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[whitelist_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[whitelist_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*

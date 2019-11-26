@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "list_ui.h"
 #include "lang_resource.h"
@@ -792,7 +793,8 @@ static void list_ui_main_html(const char *domainname, const char *session)
 
 	dirp = opendir(g_sign_path);
 	if (NULL == dirp) {
-		system_log_info("[list_ui]: fail to open directory %s", g_sign_path);
+		system_log_info("[list_ui]: failed to open directory %s: %s",
+			g_sign_path, strerror(errno));
 		list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL", language));
 		return;
 	}
@@ -866,8 +868,8 @@ static void list_ui_broadcast_dir(const char *domainname)
 
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[list_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[list_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*

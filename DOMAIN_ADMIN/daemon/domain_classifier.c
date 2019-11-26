@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "domain_classifier.h"
 #include "util.h"
@@ -82,8 +83,8 @@ int domain_classifier_run()
 	
 	dirp = opendir(g_original_path);
 	if (NULL == dirp){
-		printf("[domain_classifier]: fail to open directory %s\n",
-			g_original_path);
+		printf("[domain_classifier]: failed to open directory %s: %s\n",
+			g_original_path, strerror(errno));
 		str_hash_free(g_hash_table);
 		g_hash_table = NULL;
 		return -6;

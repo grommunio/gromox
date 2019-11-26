@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "address_list.h"
 #include "clone_queue.h"
 #include "smtp_clone.h"
@@ -261,7 +263,8 @@ static void* thread_work_func(void* arg)
 	}
 	dirp = opendir(g_path);
 	if (NULL == dirp) {
-		printf("[domain_subsystem]: fail to open clone directory for scanning\n");
+		printf("[domain_subsystem]: failed to open clone directory %s: %s\n",
+			g_path, strerror(errno));
 		pthread_exit(0);
 	}
 	i = 0;

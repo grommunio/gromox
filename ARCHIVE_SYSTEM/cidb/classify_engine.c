@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "util.h"
@@ -541,9 +542,10 @@ int classify_engine_run()
 	
 	dirp = opendir(g_storage_path);
 	if (NULL == dirp) {
+		printf("[classify_engine]: failed to open directory %s: %s\n",
+			g_storage_path, strerror(errno));
 		lib_buffer_free(g_alloc_mjson);
 		g_alloc_mjson = NULL;
-		printf("[classify_engine]: fail to open directory %s\n", g_storage_path);
 		return -2;
 	}
 	

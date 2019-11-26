@@ -123,7 +123,8 @@ int group_monitor_run()
 	
 	dirp = opendir(g_root_path);
 	if (NULL == dirp) {
-		printf("[group_monitor]: fail to open %s\n", g_root_path);
+		printf("[group_monitor]: failed to open directory %s: %s\n",
+			g_root_path, strerror(errno));
 		return -5;
 	}
 	group_num = 0;

@@ -714,8 +714,8 @@ static void list_ui_broadcast_list(const char *domain)
 	pitem = (BLACKLIST_ITEM*)list_file_get_list(pfile);
 	dirp = opendir(g_mount_path);
 	if (NULL == dirp){
-		system_log_info("[list_ui]: fail to open directory %s\n",
-			g_mount_path);
+		system_log_info("[list_ui]: failed to open directory %s: %s",
+			g_mount_path, strerror(errno));
 		return;
 	}
 	/*
@@ -813,8 +813,8 @@ static void list_ui_approve_html(const char *domain, const char *session,
 		str_msg = lang_resource_get(g_lang_resource,"ERROR_MISSING", language);
 		dirp = opendir(g_mount_path);
 		if (NULL == dirp){
-			system_log_info("[list_ui]: fail to open directory %s\n",
-				g_mount_path);
+			system_log_info("[list_ui]: failed to open directory %s",
+				g_mount_path, strerror(errno));
 			str_msg = lang_resource_get(g_lang_resource,"ERROR_OPERATION_FAIL", language);
 			goto ECHO_MESSAGE;
 		}
