@@ -58,8 +58,7 @@ static pthread_rwlock_t g_allow_lock;
 static pthread_mutex_t g_id_lock;
 static pthread_mutex_t g_connection_lock;
 
-static int relay_bridge_retrieve_min_ID();
-
+static int relay_bridge_retrieve_min_ID(void);
 static void relay_bridge_notify(int mess_id);
 
 static void *accept_work_func(void *param);

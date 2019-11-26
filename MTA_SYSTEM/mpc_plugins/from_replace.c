@@ -21,9 +21,7 @@ static STR_HASH_TABLE* g_hash_table;
 static pthread_rwlock_t g_refresh_lock;
 static char g_list_path[256];
 
-
-static int table_refresh();
-
+static int table_refresh(void);
 static BOOL table_query(const char* str, char *buff);
 
 static void console_talk(int argc, char **argv, char *result, int length);

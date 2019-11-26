@@ -92,9 +92,7 @@ static void encode_line(const char *in, char *out);
 static BOOL read_mark(CONNECTION_NODE *pconnection);
 
 static void term_handler(int signo);
-
-static int increase_tid();
-
+static int increase_tid(void);
 static void put_timer(TIMER *ptimer);
 
 int main(int argc, const char **argv)

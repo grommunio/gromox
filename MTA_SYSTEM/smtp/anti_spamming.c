@@ -110,9 +110,7 @@ static BOOL anti_spamming_unregister_judge(JUDGE_FUNCTION func);
 static BOOL anti_spamming_register_talk(TALK_MAIN talk);
 
 static BOOL anti_spamming_unregister_talk(TALK_MAIN talk);
-
-static int anti_spamming_getversion();
-
+static int anti_spamming_getversion(void);
 static void* anti_spamming_queryservice(char *service);
 
 static void anti_spamming_reset_envelop_files(ENVELOP_INFO *penvelop);
@@ -128,20 +126,13 @@ static MAIL_ENTITY get_mail_entity_by_id(int context_ID);
 static BOOL anti_spamming_set_extra_value(int context_ID, char* tag,char* pval);
 
 static void anti_spamming_mark_context_spam(int context_ID);
-
-static BOOL anti_spamming_is_need_auth();
-
-static BOOL anti_spamming_is_domainlist_valid();
-
-static const char* anti_spamming_get_default_domain();
-
-static const char* anti_spamming_get_plugin_name();
-
-static const char* anti_spamming_get_config_path();
-
-static const char *anti_spamming_get_data_path();
-
-static int anti_spamming_get_context_num();
+static BOOL anti_spamming_is_need_auth(void);
+static BOOL anti_spamming_is_domainlist_valid(void);
+static const char *anti_spamming_get_default_domain(void);
+static const char *anti_spamming_get_plugin_name(void);
+static const char *anti_spamming_get_config_path(void);
+static const char *anti_spamming_get_data_path(void);
+static int anti_spamming_get_context_num(void);
 
 static char g_init_path[256];
 static const char *const *g_plugin_names;

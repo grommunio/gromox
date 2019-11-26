@@ -48,17 +48,12 @@ typedef struct _PLUG_ENTITY {
 } PLUG_ENTITY;
 
 static BOOL flusher_load_plugin(char* path);
-
-static BOOL flusher_unload_plugin();
-
+static BOOL flusher_unload_plugin(void);
 static void* flusher_queryservice(const char *service);
-
-static int flusher_get_queue_length();
+static int flusher_get_queue_length(void);
 static const char *flusher_get_host_ID(void);
-static int flusher_get_version();
-
-static FLUSH_ENTITY* flusher_get_from_queue();
-
+static int flusher_get_version(void);
+static FLUSH_ENTITY *flusher_get_from_queue(void);
 static BOOL flusher_feedback_entity(FLUSH_ENTITY *pentity);
 
 static int flusher_get_extra_num(int context_ID);
@@ -74,17 +69,11 @@ static BOOL flusher_unregister_cancel(CANCEL_FUNCTION cancel_func);
 static BOOL flusher_register_talk(TALK_MAIN talk_main);
 
 static BOOL flusher_unregister_talk(TALK_MAIN talk_main);
-
-static const char* flusher_get_plugin_name();
-
-static const char* flusher_get_config_path();
-
-static const char* flusher_get_data_path();
-
-static BOOL flusher_is_domainlist_valid();
-
-static int flusher_increase_max_ID();
-
+static const char *flusher_get_plugin_name(void);
+static const char *flusher_get_config_path(void);
+static const char *flusher_get_data_path(void);
+static BOOL flusher_is_domainlist_valid(void);
+static int flusher_increase_max_ID(void);
 static BOOL flusher_set_flush_ID(int ID);
 	
 static PLUG_ENTITY *g_flusher_plug;

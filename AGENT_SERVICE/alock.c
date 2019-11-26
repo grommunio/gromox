@@ -59,9 +59,7 @@ static void* thread_work_func(void *param);
 static int read_line(int sockd, FRONT_CONN *pconnection);
 
 static void read_backend(FRONT_CONN *pconnection, int relay);
-
-static int connect_locker();
-
+static int connect_locker(void);
 static void term_handler(int signo);
 
 static int g_conn_num;

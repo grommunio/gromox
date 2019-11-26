@@ -13,6 +13,7 @@
 #include <stdio.h>
 
 typedef BOOL (*SINGLE_RCPT_QUERY)(char*);
+typedef void (*STOP_FUNC)(void);
 
 static SINGLE_RCPT_QUERY single_rcpt_query;
 
@@ -21,13 +22,9 @@ static int g_max_thr;
 static int g_concurrent_thr;
 static char g_config_path[256];
 static pthread_mutex_t g_concurrent_mutex;
-
-typedef void (*STOP_FUNC)();
-
 static STOP_FUNC g_running_modules[7];
 
-static void remote_postman_clean_up();
-
+static void remote_postman_clean_up(void);
 static BOOL remote_postman_get_rcpt(MEM_FILE *psrc, MEM_FILE *pdst);
 
 static BOOL remote_postman_check_address(MEM_FILE *psrc, MEM_FILE *presult);

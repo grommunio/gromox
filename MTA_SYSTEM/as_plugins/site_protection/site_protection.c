@@ -30,8 +30,7 @@ typedef struct _IP_SECT {
 	char sect[8];
 } IP_SECT;
 
-static int site_protection_list_refresh();
-
+static int site_protection_list_refresh(void);
 static void site_protection_list_free(STR_HASH_TABLE *phash);
 
 static char g_list_path[256];

@@ -43,9 +43,7 @@ static pthread_mutex_t g_back_lock;
 
 
 static void* scan_work_func(void *param);
-
-static BACK_CONN *get_connection();
-
+static BACK_CONN *get_connection(void);
 static BOOL read_line(int sockd, char *buff, int length);
 
 static int connect_cdner(const char *ip_addr, int port);

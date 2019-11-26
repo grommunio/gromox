@@ -14,8 +14,7 @@ enum{
 	TAGGING_TABLE_REFRESH_HASH_FAIL
 };
 
-static int tagging_table_refresh();
-
+static int tagging_table_refresh(void);
 static BOOL tagging_table_add(const char* str);
 
 static STR_HASH_TABLE *g_tagging_table;

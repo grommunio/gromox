@@ -240,9 +240,7 @@ href=\"domain_main?domain=%s&exit=%s\" target=_parent>%s</A></TD></TR>\n"
 #define DEF_MODE        S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 static void ui_main_error_html(const char *error_string);
-
-static void ui_main_login_html();
-
+static void ui_main_login_html(void);
 static void ui_main_exit_html(const char *domain, const char *session);
 
 static void ui_main_main_html(const char *domain, const char *session);

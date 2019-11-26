@@ -126,9 +126,7 @@ static void list_ui_remove_item(const char *dmn_name);
 static void list_ui_error_html(const char *error_string);
 
 static void list_ui_main_html(const char *session);
-
-static void list_ui_broadcast_list();
-
+static void list_ui_broadcast_list(void);
 static BOOL list_ui_get_self(char *url_buff, int length);
 
 static void list_ui_unencode(char *src, char *last, char *dest);

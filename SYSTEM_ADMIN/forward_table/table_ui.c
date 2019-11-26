@@ -134,9 +134,7 @@ static void table_ui_remove_item(const char *passive);
 static void table_ui_error_html(const char *error_string);
 
 static void table_ui_main_html(const char *session);
-
-static void table_ui_broadcast_list();
-
+static void table_ui_broadcast_list(void);
 static BOOL table_ui_get_self(char *url_buff, int length);
 
 static void table_ui_unencode(char *src, char *last, char *dest);

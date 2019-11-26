@@ -150,9 +150,7 @@ static void whitelist_ui_remove_item(const char *ip);
 static void whitelist_ui_error_html(const char *error_string);
 
 static void whitelist_ui_main_html(const char *session);
-
-static void whitelist_ui_broadcast_list();
-
+static void whitelist_ui_broadcast_list(void);
 static BOOL whitelist_ui_get_self(char *url_buff, int length);
 
 static void whitelist_ui_unencode(char *src, char *last, char *dest);

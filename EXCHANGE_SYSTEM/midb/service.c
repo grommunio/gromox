@@ -38,8 +38,7 @@ typedef struct _SERVICE_ENTRY{
 	DOUBLE_LIST			list_reference;
 } SERVICE_ENTRY;
 
-static int service_get_version();
-
+static int service_get_version(void);
 static void* service_query_service(const char *service);
 
 static BOOL service_register_service(char* func_name, void* addr);
@@ -47,16 +46,11 @@ static BOOL service_register_service(char* func_name, void* addr);
 static BOOL service_register_talk(TALK_MAIN talk);
 
 static BOOL service_unregister_talk(TALK_MAIN talk);
-
-static const char* service_get_plugin_name();
-
-static const char* service_get_config_path();
-
-static const char* service_get_data_path();
-
-static int service_get_context_num();
-
-static const char* service_get_host_ID();
+static const char *service_get_plugin_name(void);
+static const char *service_get_config_path(void);
+static const char *service_get_data_path(void);
+static int service_get_context_num(void);
+static const char *service_get_host_ID(void);
 
 static char             g_init_path[256];
 static char             g_data_path[256];

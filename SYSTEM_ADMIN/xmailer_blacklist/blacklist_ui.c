@@ -152,9 +152,7 @@ static void blacklist_ui_remove_item(const char *xmailer);
 static void blacklist_ui_error_html(const char *error_string);
 
 static void blacklist_ui_main_html(const char *session);
-
-static void blacklist_ui_broadcast_list();
-
+static void blacklist_ui_broadcast_list(void);
 static BOOL blacklist_ui_get_self(char *url_buff, int length);
 
 static void blacklist_ui_unencode(char *src, char *last, char *dest);

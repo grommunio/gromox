@@ -150,9 +150,7 @@ static void group_ui_remove_group(int group_index);
 static void group_ui_error_html(const char *error_string);
 
 static void group_ui_main_html(const char *session);
-
-static void group_ui_broadcast_list();
-
+static void group_ui_broadcast_list(void);
 static BOOL group_ui_get_self(char *url_buff, int length);
 
 static void group_ui_unencode(char *src, char *last, char *dest);

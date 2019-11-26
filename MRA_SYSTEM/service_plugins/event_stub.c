@@ -41,9 +41,7 @@ static EVENT_STUB_FUNC g_event_stub_func;
 static void* thread_work_func(void *param);
 
 static int read_line(int sockd, char *buff, int length);
-
-static int connect_event();
-
+static int connect_event(void);
 static void install_event_stub(EVENT_STUB_FUNC event_stub_func);
 
 DECLARE_API;

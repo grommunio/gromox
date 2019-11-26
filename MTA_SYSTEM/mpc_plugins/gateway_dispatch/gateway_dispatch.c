@@ -45,9 +45,7 @@ static GATEWAY_NORCPT_AUDIT gateway_norcpt_audit;
 SPAM_STATISTIC gateway_dispatch_spam_statistic;
 
 static CONSOLE_CONTROL smtp_console_control;
-
-static void gateway_dispatch_clean_up();
-
+static void gateway_dispatch_clean_up(void);
 static void gateway_dispatch_dump_invalid(const char* ip, int port);
 
 /*

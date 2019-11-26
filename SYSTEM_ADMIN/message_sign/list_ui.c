@@ -108,9 +108,7 @@ static void list_ui_main_html(const char *session);
 static void list_ui_remove_item(char *filename);
 
 static void list_ui_item_html(char *filename);
-
-static void list_ui_broadcast_dir();
-
+static void list_ui_broadcast_dir(void);
 static void list_ui_unencode(char *src, char *last, char *dest);
 
 static BOOL list_ui_get_self(char *url_buff, int length);

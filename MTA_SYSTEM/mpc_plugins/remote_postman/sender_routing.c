@@ -19,10 +19,8 @@ static char g_path[256];
 static STR_HASH_TABLE *g_hash_table;
 static pthread_mutex_t g_hash_lock;
 
-static STR_HASH_TABLE* sender_routing_load_hash();
-
+static STR_HASH_TABLE *sender_routing_load_hash(void);
 static void sender_routing_free_hash(STR_HASH_TABLE *phash);
-
 
 void sender_routing_init(const char *path)
 {

@@ -17,9 +17,7 @@ enum{
 	REFRESH_HASH_FAIL
 };
 
-
-static int table_refresh();
-
+static int table_refresh(void);
 static BOOL table_query(const char* str, char *charset);
 
 static void console_talk(int argc, char **argv, char *result, int length);

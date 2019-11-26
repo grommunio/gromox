@@ -32,7 +32,7 @@ static BOOL g_case_sensitive;
 static int g_growing_num;
 static int g_hash_cap;
 
-static void grey_list_flush();
+static void grey_list_flush(void);
 
 /*
  *	grey list's construct function

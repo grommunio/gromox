@@ -127,17 +127,11 @@ static void backup_ui_restore_html(const char *file_name);
 static void backup_ui_restore_error(const char *error_string);
 
 static void backup_ui_delete_file(const char *file_name);
-
-static void backup_ui_backup_file();
-
-static void backup_ui_restart_supervisor();
-
-static void backup_ui_restart_adaptor();
-
-static void backup_ui_restart_scanner();
-
-static void backup_ui_restart_locker();
-
+static void backup_ui_backup_file(void);
+static void backup_ui_restart_supervisor(void);
+static void backup_ui_restart_adaptor(void);
+static void backup_ui_restart_scanner(void);
+static void backup_ui_restart_locker(void);
 static BOOL backup_ui_get_self(char *url_buff, int length);
 
 static void backup_ui_encode_line(const char *in, char *out);

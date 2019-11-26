@@ -65,7 +65,7 @@ static COMMAND_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
 
 static BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler);
 static void console_server_execve_command(char* cmdline);
-static void console_server_install_command();
+static void console_server_install_command(void);
 static int  console_server_parse_line(const char* cmdline, char** argv);
 static void* thread_work_func(void *argp);
 static void* console_work_func(void *argp);

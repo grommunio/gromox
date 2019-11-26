@@ -11,8 +11,7 @@ static char g_list_path[256];
 static STR_HASH_TABLE *g_hash_table;
 static pthread_rwlock_t g_table_lock;
 
-static BOOL domain_mailbox_refresh_table();
-
+static BOOL domain_mailbox_refresh_table(void);
 static BOOL domain_mailbox_query(const char *domain, char *fwd_mailbox);
 
 void domain_mailbox_init(const char *path)

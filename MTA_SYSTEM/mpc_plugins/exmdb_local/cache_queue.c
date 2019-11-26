@@ -27,10 +27,8 @@ static pthread_t g_thread_id;
 static pthread_mutex_t g_id_lock;
 static BOOL g_notify_stop = TRUE;
 
-static int cache_queue_retrieve_mess_ID();
-
-static int cache_queue_increase_mess_ID();
-
+static int cache_queue_retrieve_mess_ID(void);
+static int cache_queue_increase_mess_ID(void);
 static void* thread_work_func(void* arg);
 
 /*

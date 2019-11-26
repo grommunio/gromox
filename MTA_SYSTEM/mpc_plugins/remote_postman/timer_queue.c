@@ -38,10 +38,8 @@ static DOUBLE_LIST g_free_list;
 static DOUBLE_LIST g_scan_list;
 static BOOL g_notify_stop = TRUE;
 
-static int timer_queue_retrieve_mess_ID();
-
-static int timer_queue_increase_mess_ID();
-
+static int timer_queue_retrieve_mess_ID(void);
+static int timer_queue_increase_mess_ID(void);
 static void timer_queue_feedback_item(TIMER_ITEM *pitem);
 
 static void* scan_work_func(void* arg);

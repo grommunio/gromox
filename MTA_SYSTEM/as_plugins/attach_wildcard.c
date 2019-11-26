@@ -26,9 +26,7 @@ static int  attach_name_filter(int action, int context_ID,
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name);
-
-static BOOL reload_list();
-
+static BOOL reload_list(void);
 static char g_return_reason[1024];
 
 static char g_list_path[256];

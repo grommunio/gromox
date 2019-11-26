@@ -37,10 +37,8 @@ typedef struct _COMMAND_ENTRY {
 
 DECLARE_API;
 
-static void singnal_restart();
-
-static void install_command();
-
+static void singnal_restart(void);
+static void install_command(void);
 static void update_log(const char *format, ...);
 
 static BOOL do_update(MAIL *pmail);

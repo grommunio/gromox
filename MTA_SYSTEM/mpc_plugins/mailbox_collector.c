@@ -23,9 +23,7 @@ static pthread_rwlock_t g_table_lock;
 
 
 static CHECK_USER check_user;
-
-static int collector_refresh();
-
+static int collector_refresh(void);
 static BOOL collector_query(const char *domain, char *fwd_mailbox);
 
 static BOOL collector_hook(MESSAGE_CONTEXT *pcontext);

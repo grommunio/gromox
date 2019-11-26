@@ -48,9 +48,7 @@ static void mail_approving_free_table(STR_HASH_TABLE *);
 static int mail_approving_add_domain(const char *domain);
 
 static void mail_approving_remove_domain(const char *domain);
-
-static int mail_approving_sequence_ID();
-
+static int mail_approving_sequence_ID(void);
 static void mail_approving_produce_session(const char *tag, char *session);
 
 static BOOL mail_approving_serialize(MESSAGE_CONTEXT *pcontext,

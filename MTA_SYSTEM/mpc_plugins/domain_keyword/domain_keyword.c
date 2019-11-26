@@ -50,9 +50,7 @@ static BOOL (*domain_keyword_get_homedir)(const char*, char*);
 static int domain_keyword_add(const char *domain);
 
 static void domain_keyword_remove(const char *domain);
-
-static int domain_keyword_sequence_ID();
-
+static int domain_keyword_sequence_ID(void);
 static BOOL domain_keyword_insulate(MESSAGE_CONTEXT *pcontext, char *msgid);
 
 static BOOL domain_keyword_match(MESSAGE_CONTEXT *pcontext,

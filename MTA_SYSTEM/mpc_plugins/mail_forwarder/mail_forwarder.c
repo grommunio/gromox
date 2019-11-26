@@ -50,14 +50,11 @@ static int				g_hash_cap;
 static STR_HASH_TABLE	*g_hash_table;
 static pthread_rwlock_t g_refresh_lock;
 
-
-static int mail_forwarder_refresh();
-
+static int mail_forwarder_refresh(void);
 static BOOL mail_forwarder_add_table(STR_HASH_TABLE *ptable, int type,
 	const char *tag, const char *address);
 static void mail_forwarder_free_table(STR_HASH_TABLE *);
-static BOOL mail_forwarder_flush();
-
+static BOOL mail_forwarder_flush(void);
 static int mail_forwarder_add(int type, const char *tag, const char *address);
 
 static BOOL mail_forwarder_remove(const char *tag, const char *address);

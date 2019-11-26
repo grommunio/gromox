@@ -30,9 +30,7 @@ static pthread_rwlock_t g_table_lock;
 static BOOL precise_interception_add(const char *file_name);
 
 static BOOL precise_interception_remove(const char *file_name);
-
-static BOOL precise_interception_refresh();
-
+static BOOL precise_interception_refresh(void);
 static void precise_interception_free_table(INT_HASH_TABLE *ptable);
 
 /*

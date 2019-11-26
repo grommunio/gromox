@@ -39,9 +39,7 @@ static void enum_group(const char *name, int times);
 static void keyword_log(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 static BOOL message_insulate(MESSAGE_CONTEXT *pcontext,
 	KEYWORD_RESULT *presult, int id);
-
-static int increase_id();
-
+static int increase_id(void);
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static BOOL keyword_hook(MESSAGE_CONTEXT *pcontext);

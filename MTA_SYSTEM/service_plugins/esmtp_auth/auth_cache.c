@@ -15,8 +15,7 @@ static STR_HASH_TABLE  *g_cache_hash;
 static int g_cache_size;
 static pthread_mutex_t g_hash_lock;
 
-
-static void auth_cache_collect_entry();
+static void auth_cache_collect_entry(void);
 
 void auth_cache_init(int size) 
 {

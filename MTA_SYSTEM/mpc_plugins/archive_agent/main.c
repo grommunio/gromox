@@ -70,9 +70,7 @@ static int connect_cidb(const char *ip_addr, int port);
 static BACK_CONN* get_connection(const char *pdomain);
 
 static void* scan_work_func(void *param);
-
-static BOOL load_list();
-
+static BOOL load_list(void);
 static void console_talk(int argc, char **argv, char *result, int length);
 
 DECLARE_API;

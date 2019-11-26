@@ -15,7 +15,7 @@ enum{
 	STR_TABLE_REFRESH_HASH_FAIL
 };
 
-static int str_table_refresh();
+static int str_table_refresh(void);
 
 static STR_HASH_TABLE *g_string_list_table;
 static pthread_rwlock_t g_refresh_lock;

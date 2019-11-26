@@ -30,7 +30,7 @@ static char g_list_path[256];
 static int g_growing_num;
 static int g_hash_cap;
 
-static void grey_list_flush();
+static void grey_list_flush(void);
 	
 /*
  *	grey list's construct function

@@ -61,9 +61,7 @@ static BOOL smtp_parser_pass_auditor_filter(SMTP_CONTEXT *pcontext,
 
 static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext,
 	char *reason, int length);
-
-static int smtp_parser_get_block_ID();
-
+static int smtp_parser_get_block_ID(void);
 static void smtp_parser_record_mime_field(SMTP_CONTEXT *pcontext,
 	MIME_FIELD *pfield);
 

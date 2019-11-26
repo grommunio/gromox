@@ -30,9 +30,7 @@ static void enum_attachment(MIME *pmime, ANTIVIRUS_RESULT *presult);
 static void antivirus_log(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 static BOOL message_insulate(MESSAGE_CONTEXT *pcontext,
 	ANTIVIRUS_RESULT *presult, int id);
-
-static int increase_id();
-
+static int increase_id(void);
 static BOOL antivirus_hook(MESSAGE_CONTEXT *pcontext);
 
 static BOOL (*check_virus)(int buflen, void *pbuff, char *virusname);

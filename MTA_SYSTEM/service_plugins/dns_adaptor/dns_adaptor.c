@@ -68,8 +68,7 @@ static int dns_adaptor_add_table(char *name, DNS_ENTRY *pentry,
 	STR_HASH_TABLE *ptable, pthread_mutex_t *plock);
 
 static void dns_adaptor_collect_garbage(STR_HASH_TABLE *ptable);
-
-static BOOL dns_adaptor_refresh();
+static BOOL dns_adaptor_refresh(void);
 
 /*
  *	dns adaptor's construct function

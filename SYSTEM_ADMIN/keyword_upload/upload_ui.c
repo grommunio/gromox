@@ -117,9 +117,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
 static void upload_ui_error_html(const char *error_string);
 
 static void upload_ui_main_html(const char *session);
-
-static void upload_ui_broadcast_charset();
-
+static void upload_ui_broadcast_charset(void);
 static void upload_ui_broadcast_keyword(const char *list);
 
 static BOOL upload_ui_get_self(char *url_buff, int length);

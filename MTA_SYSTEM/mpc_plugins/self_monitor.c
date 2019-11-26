@@ -41,8 +41,7 @@ static int g_monitor_id;
 static BOOL g_notify_stop;
 static pthread_t g_thread_id;
 
-static BOOL send_message();
-
+static BOOL send_message(void);
 static void* thread_work_func(void* arg);
 
 static BOOL monitor_hook(MESSAGE_CONTEXT *pcontext);

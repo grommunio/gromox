@@ -4,8 +4,7 @@
 #include <string.h>
 
 static void console_talk(int argc, char **argv, char *result, int length);
-
-static void foo();
+static void foo(void);
 
 DECLARE_API;
 

@@ -37,11 +37,8 @@ typedef struct _MSG_BUFF {
 SPAM_STATISTIC spam_statistic;
 
 static void* thread_work_func(void* arg);
-
-static BOOL message_enqueue_check();
-
-static int message_enqueue_retrieve_max_ID();
-
+static BOOL message_enqueue_check(void);
+static int message_enqueue_retrieve_max_ID(void);
 BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity);
 
 int message_enqueue_try_save_tape(FLUSH_ENTITY *pentity);

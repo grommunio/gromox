@@ -43,9 +43,7 @@ static DOUBLE_LIST g_lost_list;
 static void* scan_work_func(void *param);
 
 static int read_line(int sockd, char *buff, int length);
-
-static int connect_event();
-
+static int connect_event(void);
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static void broadcast_event(const char *event);

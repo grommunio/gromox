@@ -69,7 +69,7 @@ DECLARE_API;
 
 static CONSOLE_CONTROL smtp_console_control;
 static CONSOLE_CONTROL delivery_console_control;
-static void do_statistic();
+static void do_statistic(void);
 static void* thread_work_func(void *arg);
 static int buffer_extractor(char *buff_in, STATISTIC_ITEM *pitem);
 static int time_extractor(char *buff_in, char *buff_out);

@@ -73,21 +73,15 @@ typedef BOOL (*CONSOLE_CONTROL)(const char *, char *, int);
 DECLARE_API;
 
 static CONSOLE_CONTROL smtp_console_control;
-
-static void do_statistic();
-
+static void do_statistic(void);
 static void* thread_work_func(void *arg);
 
 static void collect_service_information(int second_index, int hour_index);
 
 static void collect_cpu_information(int time_index);
-
-static int collect_cpu_information_ex();
-
+static int collect_cpu_information_ex(void);
 static void collect_network_information(int time_index);
-
-static int collect_network_information_ex();
-
+static int collect_network_information_ex(void);
 static void extract_cpu(char *buff, CPU_INFO *pinfo);
 
 static void extract_network(char *buff, NETWORK_INFO *pinfo);

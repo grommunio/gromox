@@ -57,10 +57,8 @@ static pthread_t		g_thread_id;
 static BOOL g_notify_stop;
 static int				g_dequeued_num;
 
-extern void transporter_wakeup_one_thread();
-
-static BOOL message_dequeue_check();
-
+extern void transporter_wakeup_one_thread(void);
+static BOOL message_dequeue_check(void);
 static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size);
 
 static void message_dequeue_put_to_free(MESSAGE *pmessage);

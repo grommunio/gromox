@@ -15,7 +15,7 @@ enum{
 	IP_TABLE_REFRESH_HASH_FAIL
 };
 
-static int ip_table_refresh();
+static int ip_table_refresh(void);
 
 static char g_module_name[256];
 static IP4_HASH_TABLE *g_ip_list_table;

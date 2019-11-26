@@ -155,9 +155,7 @@ target=_parent>%s</A></TD></TR>\n"
 
 
 static void ui_main_error_html(const char *error_string);
-
-static void ui_main_login_html();
-
+static void ui_main_login_html(void);
 static void ui_main_main_html(const char *session, BOOL b_ext);
 
 static void ui_main_left_html(const char *session, BOOL b_ext);

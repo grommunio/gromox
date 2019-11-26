@@ -29,11 +29,8 @@ static pthread_rwlock_t g_address_lock;
 static char g_domain_path[256];
 static char g_address_path[256];
 
-
-static int domain_table_refresh();
-
-static int address_table_refresh();
-
+static int domain_table_refresh(void);
+static int address_table_refresh(void);
 static BOOL domain_table_query(const char *aliasname, char *mainname);
 
 static BOOL address_table_query(const char *aliasname, char *mainname);

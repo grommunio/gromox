@@ -142,8 +142,7 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static MYSQL_CONN* get_mysql_connection();
-
+static MYSQL_CONN *get_mysql_connection(void);
 static void put_mysql_connection(MYSQL_CONN *pmyconn);
 
 static MIDB_CONN *get_midb_connection(const char *prefix);

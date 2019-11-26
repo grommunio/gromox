@@ -27,9 +27,7 @@ static int invalid_user_collect_entry(time_t current_time, int *pvalid_num);
 static BOOL invalid_user_add(const char *rcpt_address);
 
 static void invalid_user_remove(const char *rcpt_address);
-
-static void invalid_user_clear();
-
+static void invalid_user_clear(void);
 static BOOL invalid_user_dump(const char *path);
 
 /*
