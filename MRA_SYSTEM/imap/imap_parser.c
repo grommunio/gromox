@@ -1958,17 +1958,12 @@ LIB_BUFFER* imap_parser_get_jpool()
 
 int imap_parser_get_squence_ID()
 {
-	int temp_id;
-	
 	pthread_mutex_lock(&g_squence_lock);
-	if (g_squence_ID > 0x7FFFFFFF) {
+	int temp_id = g_squence_ID++;
+	if (g_squence_ID == INT_MAX)
 		g_squence_ID = 0;
-	}
-	g_squence_ID ++;
-	temp_id = g_squence_ID;
 	pthread_mutex_unlock(&g_squence_lock);
-
-	return g_squence_ID;
+	return temp_id;
 }
 
 void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t count)
