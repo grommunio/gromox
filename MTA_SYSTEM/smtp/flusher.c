@@ -108,7 +108,7 @@ void flusher_init(const char* path, size_t queue_len)
 	g_flusher_plug->console_talk = NULL;
 	strcpy(g_flusher_plug->path, path);
 	pname = strrchr(path, '/');
-	strcpy(g_flusher_plug->file_name, pname + 1);
+	strcpy(g_flusher_plug->file_name, pname != NULL ? pname + 1 : path);
 	single_list_init(&g_flusher_plug->list_reference);
 	g_max_queue_len = queue_len;
 }
