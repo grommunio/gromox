@@ -1335,16 +1335,28 @@ static int ical_get_dayofyear_by_week_day(
 	return yearday;
 }
 
-static int ical_get_yearweeks(int year)
+static unsigned int ical_get_yearweeks(int year)
 {
-	int dayofweek;
-    
-    dayofweek = ical_get_dayofweek(year, 1, 1);
-    if ((5 == dayofweek || (4 == dayofweek &&
-		(0 == year%4 && 0 != year%100) || (0 == year%400)))) {
-		return 53;
-	}
-    return 52;
+	unsigned int dayofweek = ical_get_dayofweek(year, 1, 1);
+	/*
+	 * DOW    CW     YEARTYPE        DOW    CW     #WKS
+	 * JAN01  JAN01  (EXAMPLE)       DEC31  DEC31  INYEAR
+	 * mo     01     regular (2001)  mo     53/01  52
+	 * mo     01     leap    (2024)  tu     53/01  52
+	 * tu     01     regular (2002)  tu     53/01  52
+	 * tu     01     leap    (2008)  we     53/01  52
+	 * we     01     regular (2003)  we     53/01  52
+	 * we     01     leap    (2020)  th     53/00  53
+	 * th     01     regular (2009)  th     53/00  53
+	 * th     01     leap    (2004)  fr     53/00  53
+	 * fr     00     regular (2010)  fr     52/00  52
+	 * fr     00     leap    (2016)  sa     52/00  52
+	 * sa     00     regular (2005)  sa     52/00  52
+	 * sa     00     leap    (2028)  su     52     52
+	 * su     00     regular (2006)  su     52     52
+	 * su     00     leap    (2012)  mo     53/01  52
+	 */
+	return dayofweek == 4 || (dayofweek == 3 && ical_check_leap_year(year)) ? 53 : 52;
 }
 
 static int ical_get_weekofyear(int year, int month,
