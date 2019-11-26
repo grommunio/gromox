@@ -11,6 +11,7 @@ int main(void)
 		perror("gx_getmxbyname");
 	for (int i = 0; i < hosts; ++i)
 		printf("%s\n", vec[i]);
-	HX_zvecfree(vec);
+	if (vec != NULL)
+		HX_zvecfree(vec);
 	return EXIT_SUCCESS;
 }

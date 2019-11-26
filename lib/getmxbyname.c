@@ -101,11 +101,9 @@ int gx_getmxbyname(const char *domain, char ***vec)
 	}
 	ret = getmx_extract_rr(answer, answ_size, vec);
 	free(answer);
-	if (ret < 0 && *vec != NULL) {
+	if (ret < 0 && *vec != NULL)
 		HX_zvecfree(*vec);
-		free(*vec);
-	} else if (ret > 0) {
+	else if (ret > 0)
 		qsort(*vec, ret, sizeof(**vec), getmx_sort);
-	}
 	return ret;
 }

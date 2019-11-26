@@ -94,7 +94,8 @@ void smtp_send_message(const char *from, const char *rcpt, const char *message)
 	size = strlen(message);
 	num = gx_getmxbyname(pdomain, &mx_buff);
 	if (num <= 0) {
-		HX_zvecfree(mx_buff);
+		if (mx_buff != NULL)
+			HX_zvecfree(mx_buff);
 		return;
 	}
 	memset(ip, 0, 16);
@@ -116,7 +117,8 @@ void smtp_send_message(const char *from, const char *rcpt, const char *message)
 			break;
 		}
 	}
-	HX_zvecfree(mx_buff);
+	if (mx_buff != NULL)
+		HX_zvecfree(mx_buff);
 	if ('\0' == ip[0]) {
 		return;
 	}

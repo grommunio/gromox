@@ -93,7 +93,8 @@ void smtp_sender_send(const char *sender, const char *address,
 	pdomain ++;
 	num = gx_getmxbyname(pdomain, &mx_buff);
 	if (num <= 0) {
-		HX_zvecfree(mx_buff);
+		if (mx_buff != NULL)
+			HX_zvecfree(mx_buff);
 		return;
 	}
 	memset(ip, 0, 16);
@@ -115,7 +116,8 @@ void smtp_sender_send(const char *sender, const char *address,
 			break;
 		}
 	}
-	HX_zvecfree(mx_buff);
+	if (mx_buff != NULL)
+		HX_zvecfree(mx_buff);
 	if ('\0' == ip[0]) {
 		system_log_info("can not find mx record for %s", address);
 		return;

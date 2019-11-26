@@ -529,7 +529,8 @@ static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 	
 	num = gx_getmxbyname(mx_name, &mxhosts);
 	if (num <= 0) {
-		HX_zvecfree(mxhosts);
+		if (mxhosts != NULL)
+			HX_zvecfree(mxhosts);
 	    return FALSE;
 	}
 	ret_val = FALSE;
@@ -550,7 +551,8 @@ static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 				p_ip = (IP_NODE*)lib_buffer_get(g_ip_pool);
 			}
 			if (NULL == p_ip) {
-				HX_zvecfree(mxhosts);
+				if (mxhosts != NULL)
+					HX_zvecfree(mxhosts);
 				return FALSE;
 			}
 			p_ip->node.pdata = p_ip;
@@ -559,7 +561,8 @@ static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 			ret_val = TRUE;
 		}
 	}
-	HX_zvecfree(mxhosts);
+	if (mxhosts != NULL)
+		HX_zvecfree(mxhosts);
 	return ret_val;
 }
 
