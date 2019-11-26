@@ -224,15 +224,27 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		if (0 != relay_agent_run()) {
 			printf("[relay_agent]: fail to run relay agent module\n");
+			ip_range_stop();
+			ip_range_free();
             return FALSE;
 		}
 		if (0 != relay_bridge_run()) {
 			printf("[relay_agent]: fail to run relay bridge module\n");
+			relay_agent_stop();
+			relay_agent_free();
+			ip_range_stop();
+			ip_range_free();
 			return FALSE;
 		}
 		register_talk(console_talk);
         if (FALSE == register_hook(mail_hook)) {
 			printf("[relay_agent]: fail to register the hook function\n");
+			relay_agent_stop();
+			relay_agent_free();
+			relay_bridge_stop();
+			relay_bridge_free();
+			ip_range_stop();
+			ip_range_free();
             return FALSE;
         }
         return TRUE;
