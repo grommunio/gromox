@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include <gromox/system_log.h>
 #include <sys/types.h>
@@ -21,7 +22,11 @@ void system_log_init(const char *path)
 int system_log_run()
 {
 	struct stat node_stat;
-	
+
+	if (strcmp(g_log_path, "-") == 0) {
+		g_log_fd = STDERR_FILENO;
+		return 0;
+	}
 	if (0 != stat(g_log_path, &node_stat)) {
 		g_log_fd = open(g_log_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	} else {
@@ -32,7 +37,8 @@ int system_log_run()
 		}
 	}
 	if (-1 == g_log_fd) {
-		return -1;
+		g_log_fd = STDERR_FILENO;
+		system_log_info("Unable to open logfile %s: %s. Logging to stderr.", g_log_path, strerror(errno));
 	}
 	return 0;
 }
@@ -55,9 +61,8 @@ void system_log_info(const char *format, ...)
 
 int system_log_stop()
 {
-	if (-1 != g_log_fd) {
+	if (g_log_fd != -1 && g_log_fd != STDERR_FILENO)
 		close(g_log_fd);
-	}
 	return 0;
 }
 
