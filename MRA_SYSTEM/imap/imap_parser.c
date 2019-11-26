@@ -1706,9 +1706,8 @@ static void imap_parser_context_free(IMAP_CONTEXT *pcontext)
 	if (-1 != pcontext->message_fd) {
 		close(pcontext->message_fd);
 	}
-	if ('\0' != pcontext->file_path) {
+	if (pcontext->file_path != NULL)
 		remove(pcontext->file_path);
-	}
 }
 
 static void* thread_work_func(void *argp)

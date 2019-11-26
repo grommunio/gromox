@@ -90,9 +90,8 @@ int main(int argc, char **argv)
 	upload_ui_init(charset_path, subject_path, from_path, to_path, cc_path,
 		content_path, attachment_path, mount_path, str_value, temp_path);
 	str_value = config_file_get_value(pconfig, "HTTP_ACCEPT_LANGUAGE");
-	if (NULL != str_value && '\0' != str_value) {
+	if (str_value != NULL && *str_value != '\0')
 		setenv("HTTP_ACCEPT_LANGUAGE", str_value, 1);
-	}
 	config_file_free(pconfig);
 	if (0 != system_log_run()) {
 		return 2;

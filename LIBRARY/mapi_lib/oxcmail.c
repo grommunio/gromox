@@ -2951,7 +2951,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		if ('\0' == extension[0]) {
 			pext = oxcmail_mime_to_extension(
 					mime_get_content_type(pmime));
-			if ('\0' != pext) {
+			if (pext != NULL) {
 				sprintf(extension, ".%s", pext);
 				strncat(file_name, extension, sizeof(file_name));
 			}

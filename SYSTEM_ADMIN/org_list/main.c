@@ -111,9 +111,8 @@ int main(int argc, char **argv)
 	sprintf(temp_path, "%s/%s/org_list", work_path, data_path);
 	list_ui_init(str_value, temp_path);
 	str_value = config_file_get_value(pconfig, "HTTP_ACCEPT_LANGUAGE");
-	if (NULL != str_value && '\0' != str_value) {
+	if (str_value != NULL && *str_value != '\0')
 		setenv("HTTP_ACCEPT_LANGUAGE", str_value, 1);
-	}
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {
