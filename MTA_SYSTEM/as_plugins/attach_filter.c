@@ -82,7 +82,7 @@ int AS_LibMain(int reason, void **ppdata, char *path)
 		} else {
 			strcpy(g_return_reason, str_value);
 		}
-		printf("[attach_filter]: return string is %s\n", g_return_reason);
+		printf("[attach_filter]: return string is \"%s\"\n", g_return_reason);
 		str_value = config_file_get_value(pconfig_file, "FILE_EXTENSIONS");
 		if (NULL == str_value) {
 			printf("[attach_filter]: fail to get FILE_EXTENSIONS in config file\n");

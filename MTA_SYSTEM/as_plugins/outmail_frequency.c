@@ -92,7 +92,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_string_1, str_value);
 		}
-		printf("[outmail_frequency]: return string 1 is %s\n",
+		printf("[outmail_frequency]: return string 1 is \"%s\"\n",
 				g_return_string_1);
 		str_value = config_file_get_value(pconfig_file, "RETURN_STRING_2");
 		if (NULL == str_value) {
@@ -101,7 +101,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_string_2, str_value);
 		}
-		printf("[outmail_frequency]: return string 2 is %s\n",
+		printf("[outmail_frequency]: return string 2 is \"%s\"\n",
 				g_return_string_2);
 		config_file_free(pconfig_file);
         /* invoke register_statistic for registering statistic of mail */

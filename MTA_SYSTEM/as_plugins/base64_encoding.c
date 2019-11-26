@@ -62,7 +62,7 @@ int AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_reason, str_value);
 		}
-		printf("[base64_encoding]: return string is %s\n", g_return_reason);
+		printf("[base64_encoding]: return string is \"%s\"\n", g_return_reason);
 		config_file_free(pconfig_file);
 		/* invoke register_filter for registering all type of mime paragraph*/
 		if (FALSE == register_filter(NULL, paragraph_filter)) {

@@ -82,7 +82,7 @@ int AS_LibMain(int reason, void **ppdata, char *path)
 		} else {
 			strcpy(g_return_reason, str_value);
 		}
-		printf("[attach_wildcard]: return string is %s\n", g_return_reason);
+		printf("[attach_wildcard]: return string is \"%s\"\n", g_return_reason);
 		config_file_free(pconfig_file);
 		pthread_rwlock_init(&g_list_lock, NULL);
 		g_context_list = malloc(get_context_num()*sizeof(BOOL));

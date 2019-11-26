@@ -71,7 +71,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_string, str_value);
 		}
-		printf("[spf_filter]: return string is %s\n", g_return_string);
+		printf("[spf_filter]: return string is \"%s\"\n", g_return_string);
 		config_file_free(pconfig_file);
         g_spf_server = SPF_server_new(SPF_DNS_CACHE, 0);
 		if (NULL == g_spf_server) {

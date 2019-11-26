@@ -77,7 +77,7 @@ int AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_string, str_value);
 		}
-		printf("[address_checker]: return string is %s\n", g_return_string);
+		printf("[address_checker]: return string is \"%s\"\n", g_return_string);
         config_file_free(pconfig_file);
         /* invoke register_judge for registering judge of mail envelop */
         if (FALSE == register_judge(envelop_judge)) {

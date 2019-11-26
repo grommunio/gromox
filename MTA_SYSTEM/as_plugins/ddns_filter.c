@@ -85,7 +85,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_reason, str_value);
 		}
-		printf("[ddns_filter]: return string is %s\n", g_return_reason);
+		printf("[ddns_filter]: return strings is \"%s\"\n", g_return_reason);
 		config_file_free(pconfig_file);
 		sprintf(g_listfile_name, "%s/%s.txt", get_data_path(), file_name);
 		g_ddns_list = list_file_init(g_listfile_name, "%s:256");

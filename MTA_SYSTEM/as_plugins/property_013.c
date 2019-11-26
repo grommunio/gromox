@@ -85,7 +85,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_string, str_value);
 		}
-		printf("[property_013]: return string is %s\n", g_return_string);
+		printf("[property_013]: return string is \"%s\"\n", g_return_string);
 		config_file_free(pconfig_file);
 		g_context_list = malloc(get_context_num()*sizeof(int));
 		if (NULL == g_context_list) {

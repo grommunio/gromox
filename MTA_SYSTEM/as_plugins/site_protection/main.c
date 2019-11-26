@@ -75,7 +75,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_reason, str_value);
 		}
-		printf("[site_protection]: return string is %s\n", g_return_reason);
+		printf("[site_protection]: return string is \"%s\"\n", g_return_reason);
 		config_file_free(pconfig_file);
 		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
 		site_protection_init(temp_path);

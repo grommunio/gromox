@@ -51,7 +51,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_reason, str_value);
 		}
-		printf("[property_048]: return string is %s\n", g_return_reason);
+		printf("[property_048]: return string is \"%s\"\n", g_return_reason);
 		config_file_free(pconfig_file);
 		if (FALSE == register_auditor(head_filter)) {
 			return FALSE;

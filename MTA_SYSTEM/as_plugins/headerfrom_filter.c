@@ -64,7 +64,7 @@ int AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_reason, str_value);
 		}
-		printf("[headerfrom_filter]: return string is %s\n", g_return_reason);
+		printf("[headerfrom_filter]: return string is \"%s\"\n", g_return_reason);
 		config_file_free(pconfig_file);
 		/* invoke register_filter for registering all type of mime paragraph*/
 		if (FALSE == register_auditor(headerfrom_filter)) {

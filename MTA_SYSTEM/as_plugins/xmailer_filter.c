@@ -101,7 +101,7 @@ int AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_return_string, str_value);
 		}
-		printf("[xmailer_filter]: return string is %s\n", g_return_string);
+		printf("[xmailer_filter]: return string is \"%s\"\n", g_return_string);
 		config_file_free(pconfig_file);
 		sprintf(g_listfile_name, "%s/%s.txt", get_data_path(), file_name);
         g_xmailer_list = list_file_init(g_listfile_name, "%s:16%s:256");

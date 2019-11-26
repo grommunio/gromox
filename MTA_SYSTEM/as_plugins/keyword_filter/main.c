@@ -103,7 +103,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_subject_return, str_value);
 		}
-		printf("[keyword_filter]: subject return string is %s\n",
+		printf("[keyword_filter]: subject return string is \"%s\"\n",
 			g_subject_return);
 		str_value = config_file_get_value(pconfig_file, "FROM_RETURN_STRING");
 		if (NULL == str_value) {
@@ -112,7 +112,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_from_return, str_value);
 		}
-		printf("[keyword_filter]: from return string is %s\n", g_from_return);
+		printf("[keyword_filter]: from return string is \"%s\"\n", g_from_return);
 		str_value = config_file_get_value(pconfig_file, "TO_RETURN_STRING");
 		if (NULL == str_value) {
 			strcpy(g_to_return, "000054 mail head \"To\" contains illegal "
@@ -120,7 +120,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_to_return, str_value);
 		}
-		printf("[keyword_filter]: to return string is %s\n", g_to_return);
+		printf("[keyword_filter]: to return string is \"%s\"\n", g_to_return);
 		str_value = config_file_get_value(pconfig_file, "CC_RETURN_STRING");
 		if (NULL == str_value) {
 			strcpy(g_cc_return, "000055 mail head \"Cc\" contains illegal "
@@ -136,7 +136,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_content_return, str_value);
 		}
-		printf("[keyword_filter]: content return string is %s\n",
+		printf("[keyword_filter]: content return string is \"%s\"\n",
 				g_content_return);
 		str_value = config_file_get_value(pconfig_file,
 			"ATTACHMENT_RETURN_STRING");
@@ -146,7 +146,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_attachment_return, str_value);
 		}
-		printf("[keyword_filter]: attachment return string is %s\n",
+		printf("[keyword_filter]: attachment return string is \"%s\"\n",
 				g_attachment_return);
 		config_file_free(pconfig_file);
 		
