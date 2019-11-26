@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
@@ -208,13 +208,13 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: cannot find STORAGE_PATH in config file!\n");
 		config_file_free(pconfig);
-		return -2;
+		return 2;
 	}
 	strcpy(storage_path, str_value);
 	if ('\0' == storage_path[0]) {
 		printf("[system]: STORAGE_PATH empty in config file!\n");
 		config_file_free(pconfig);
-		return -2;
+		return 2;
 	}
 	printf("[system]: storage path of archived mails is %s\n", storage_path);
 	
@@ -270,26 +270,26 @@ int main(int argc, char **argv)
 
 	if (0 != system_log_run()) {
 		printf("[system]: fail to run system log\n");
-		return -3;
+		return 3;
 	}
 	
 
 	if (0 != listener_run()) {
 		printf("[system]: fail to run listener\n");
-		return -4;
+		return 4;
 	}
 
 	if (0 != cmd_parser_run()) {
 		listener_stop();
 		printf("[system]: fail to run command parser\n");
-		return -5;
+		return 5;
 	}
 	
 	if (0 != mysql_pool_run()) {
 		cmd_parser_stop();
 		listener_stop();
 		printf("[system]: fail to run mysql pool\n");
-		return -6;
+		return 6;
 	}
 
 	if (0 != classify_engine_run()) {
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 		cmd_parser_stop();
 		listener_stop();
 		printf("[system]: fail to run classify engine\n");
-		return -7;
+		return 7;
 	}
 
 	if (0 != listener_trigger_accept()) {
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
 		cmd_parser_stop();
 		listener_stop();
 		printf("[system]: fail to trigger listener\n");
-		return -8;
+		return 8;
 	}
 	
 	g_notify_stop = FALSE;

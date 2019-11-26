@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "RSYNC_LISTEN_PORT");
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: missing CA_PATH in config file\n");
 		config_file_free(pconfig);
-		return -2;
+		return 2;
 	}
 	strncpy(ca_path, str_value, 256);
 
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: missing CERTIFICATE_PATH in config file\n");
 		config_file_free(pconfig);
-		return -2;
+		return 2;
 	}
 	strncpy(certificate_path, str_value, 256);
 
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: missing PRIVATE_KEY_PATH in config file\n");
 		config_file_free(pconfig);
-		return -2;
+		return 2;
 	}
 	strncpy(private_key_path, str_value, 256);
 
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
         printf("[system]: fail to create socket for listening\n");
-		return -3;
+		return 3;
 	}
 	optval = -1;
 	/* eliminates "Address already in use" error from bind */
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 	if (-1 == status) {
 		printf("[system]: fail to bind socket\n");
         close(sockd);
-		return -4;
+		return 4;
     }
 	
 	status = listen(sockd, 5);
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 	if (-1 == status) {
 		printf("[system]: fail to listen socket\n");
 		close(sockd);
-		return -5;
+		return 5;
 	}
 
 	SSL_library_init();
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 	if (NULL == g_ssl_ctx) {
 		printf("[system]: fail to init ssl context\n");
 		close(sockd);
-		return -6;
+		return 6;
 	}
 
 	SSL_CTX_set_verify(g_ssl_ctx, SSL_VERIFY_PEER, NULL);
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 		ERR_print_errors_fp(stdout);
 		SSL_CTX_free(g_ssl_ctx);
 		close(sockd);
-		return -6;
+		return 6;
 	}
 
 	if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, private_key_path,
@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 		ERR_print_errors_fp(stdout);
 		SSL_CTX_free(g_ssl_ctx);
 		close(sockd);
-		return -6;
+		return 6;
 	}
 
 	if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 		ERR_print_errors_fp(stdout);
 		SSL_CTX_free(g_ssl_ctx);
 		close(sockd);
-		return -6;
+		return 6;
 	}
 	
 	g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
 		printf("[system]: fail to allocate ssl locking buffer\n");
 		SSL_CTX_free(g_ssl_ctx);
 		close(sockd);
-		return -6;
+		return 6;
 	}
 
 	for (i=0; i<CRYPTO_num_locks(); i++) {
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 		pthread_mutex_destroy(&g_connection_lock);
 		SSL_CTX_free(g_ssl_ctx);
 		close(sockd);
-		return -7;
+		return 7;
 	}
 	
 	g_notify_stop = FALSE;

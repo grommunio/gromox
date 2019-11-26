@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -234,21 +234,21 @@ int main(int argc, char **argv)
 	exmdb_client_init(EXMDB_CONN_NUM, EVENT_THREAD_NUM, list_path);
 	if (0 != exmdb_client_run()) {
 		printf("[system]: fail to run exmdb_client\n");
-		return -3;
+		return 3;
 	}
 	exmdb_client_register_proc(event_proc);
 	
 	g_hash_table = str_hash_init(table_size, sizeof(SENSOR_ITEM), NULL);
 	if (NULL == g_hash_table) {
 		printf("[system]: fail to init hash table\n");
-		return -4;
+		return 4;
 	}
 	
 	/* create a socket */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (-1 == sockd) {
         printf("[system]: fail to create socket for listening\n");
-		return -5;
+		return 5;
 	}
 	optval = -1;
 	/* eliminates "Address already in use" error from bind */
@@ -268,13 +268,13 @@ int main(int argc, char **argv)
 	status = bind(sockd, (struct sockaddr*)&my_name, sizeof(my_name));
 	if (-1 == status) {
 		printf("[system]: fail to bind socket\n");
-		return -6;
+		return 6;
     }
 	
 	status = listen(sockd, 5);
 	if (-1 == status) {
 		printf("[system]: fail to listen socket\n");
-		return -7;
+		return 7;
 	}
 
 	pthread_mutex_init(&g_hash_lock, NULL);
@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 		if (0 != pthread_create(&thr_ids[i],
 			NULL, thread_work_func, NULL)) {
 			printf("[system]: fail to create pool thread\n");
-			return -8;
+			return 8;
 		}
 	}
 	
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 		plist = list_file_init(g_list_path, "%s:16");
 		if (NULL == plist) {
 			printf("[system]: fail to load acl from %s\n", g_list_path);
-			return -9;
+			return 9;
 		}
 		num = list_file_get_item_num(plist);
 		pitem = list_file_get_list(plist);
@@ -320,12 +320,12 @@ int main(int argc, char **argv)
 	if (0 != pthread_create(&accept_id, NULL,
 		accept_work_func, (void*)(long)sockd)) {
 		printf("[system]: fail to create accept thread\n");
-		return -10;
+		return 10;
 	}
 	
 	if (0 != pthread_create(&scan_id, NULL, scan_work_func, NULL)) {
 		printf("[system]: fail to create event stub pool thread\n");
-		return -11;
+		return 11;
 	}
 	
 	g_notify_stop = FALSE;

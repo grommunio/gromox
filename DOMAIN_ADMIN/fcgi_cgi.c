@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -149,13 +149,13 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -1;
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "FCGI_UNIX_PATH");
 	if (NULL == str_value) {
 		printf("[system]: fail to get FCGI_UNIX_PATH in config file");
 		config_file_free(pconfig);
-		return -2;
+		return 2;
 	}
 	strncpy(cs_path, str_value, sizeof(cs_path));
 	str_value = config_file_get_value(pconfig, "FCGI_THREAD_NUM");
@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 	listenfd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (-1 == listenfd) {
 		printf("[system]: fail to create listen socket\n");
-		return -4;
+		return 4;
 	}
 
 	unlink(cs_path);
@@ -210,35 +210,35 @@ int main(int argc, char **argv)
 	if (bind(listenfd, (struct sockaddr*)&unix_addr, len) < 0) {
 		close(listenfd);
 		printf("[system]: fail to bind listen socket\n");
-		return -5;
+		return 5;
 	}
 
 	if (chmod(cs_path, 0666) < 0) {
 		close(listenfd);
 		printf("[system]: fail to change access mode of %s\n", cs_path);
-		return -6;
+		return 6;
 	}
 
 	if (listen(listenfd, 5) < 0) {
 		printf("[system]: fail to listen!\n");
 		close(listenfd);
-		return -7;
+		return 7;
 	}
 	
 	if ('\0' != username[0]) {
 		puser_pass = getpwnam(username);
 		if (NULL == puser_pass) {
 			printf("[system]: no such user %s\n", username);
-			return -3;
+			return 3;
 		}
 
 		if (0 != setgid(puser_pass->pw_gid)) {
 			printf("[system]: can not run group of %s\n", username);
-			return -3;
+			return 3;
 		}
 		if (0 != setuid(puser_pass->pw_uid)) {
 			printf("[system]: can not run as %s\n", username);
-			return -3;
+			return 3;
 		}
 	}
 
@@ -253,13 +253,13 @@ int main(int argc, char **argv)
 		accept_work_func, (void*)(long)listenfd)) {
 		printf("[system]: fail to create accept thread\n");
 		close(listenfd);
-		return -8;
+		return 8;
 	}
 	pthr_ids = malloc(sizeof(pthread_t)*thread_num);
 	if (NULL == pthr_ids) {
 		pthread_cancel(accept_id);
 		close(listenfd);
-		return -9;
+		return 9;
 	}
 	for (i=0; i<thread_num; i++) {
 		if (0 != pthread_create(&pthr_ids[i], NULL, thread_work_func, NULL)) {
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
         }
 		pthread_cancel(accept_id);
         close(listenfd);
-        return -10;
+		return 10;
     }
 
 	g_notify_stop = 0;

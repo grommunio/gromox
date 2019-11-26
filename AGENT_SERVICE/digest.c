@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("%s msg-path\n", argv[0]);
-		return -1;
+		return 1;
 	}
 
 	if (0 == strcmp(argv[1], "--help")) {
@@ -39,33 +39,33 @@ int main(int argc, char **argv)
     
 	if (0 != stat(argv[1], &node_stat)) {
 		printf("fail to find %s\n", argv[1]);
-		return -1;
+		return 1;
 	}
 	
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("%s is not regular file\n", argv[1]);
-		return -2;
+		return 2;
 	}
 	
 	pbuff = malloc(node_stat.st_size);
 
 	if (NULL == pbuff) {
 		printf("fail to allocate memory\n");
-		return -3;
+		return 3;
 	}
 	
 	fd = open(argv[1], O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open file %s\n", argv[1]);
 		free(pbuff);
-		return -4;
+		return 4;
 	}
 
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
 		printf("fail to read file %s\n", argv[1]);
 		free(pbuff);
 		close(fd);
-		return -5;
+		return 5;
 	}
 
 	close(fd);
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 	if (NULL == ppool) {
 		free(pbuff);
 		printf("fail to init mime pool\n");
-		return -6;
+		return 6;
 	}
 
 	
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 		free(pbuff);
 		mime_pool_free(ppool);
 		printf("fail to retrieve file into mail object\n");
-		return -7;
+		return 7;
 	}
 
 	pbuff1 = malloc(1024*1024);
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 		printf("fail to allocate digest memory\n");
 		free(pbuff);
 		mime_pool_free(ppool);
-		return -8;
+		return 8;
 	}
 
 	pslash = strrchr(argv[1], '/');
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 		printf("fail to digest message\n");
 		free(pbuff);
 		mime_pool_free(ppool);
-		return -8;
+		return 8;
 	}
 
 	tmp_len = strlen(pbuff1);

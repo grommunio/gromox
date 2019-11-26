@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -10;
+		return 10;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -1;
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -77,15 +77,15 @@ int main(int argc, char **argv)
 	
 	if (0 != url_downloader_run()) {
 		printf("[system]: fail to run url downloader\n");
-		return -1;
+		return 1;
 	}
 	if (0 != file_operation_run()) {
 		printf("[system]: fail to run file operation\n");
-		return -2;
+		return 2;
 	}
 	if (0 != processing_engine_run()) {
 		printf("[system]: fail to processing engine\n");
-		return -3;
+		return 3;
 	}
 	printf("[system]: SYNCHRONIZER run OK\n");
 	

@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
 
 	if (NULL == pfile) {
 		printf("[system]: fail to init timer from list file\n");
-		return -3;
+		return 3;
 	}
 
 	double_list_init(&g_exec_list);
@@ -252,7 +252,7 @@ int main(int argc, char **argv)
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
         printf("[system]: fail to create socket for listening\n");
-		return -4;
+		return 4;
 	}
 	optval = -1;
 	/* eliminates "Address already in use" error from bind */
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
 	if (-1 == status) {
 		printf("[system]: fail to bind socket\n");
         close(sockd);
-		return -5;
+		return 5;
     }
 	
 	status = listen(sockd, 5);
@@ -281,14 +281,14 @@ int main(int argc, char **argv)
 	if (-1 == status) {
 		printf("[system]: fail to listen socket\n");
 		close(sockd);
-		return -6;
+		return 6;
 	}
 
 	g_list_fd = open(g_list_path, O_APPEND|O_WRONLY);
 	if (-1 == g_list_fd) {
 		printf("[system]: fail to open list file with append mode\n");
 		close(sockd);
-		return -7;
+		return 7;
 	}
 
 	pthread_mutex_init(&g_tid_lock, NULL);
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 		pthread_mutex_destroy(&g_tid_lock);
 		pthread_mutex_destroy(&g_cond_mutex);
 		pthread_cond_destroy(&g_waken_cond);
-		return -8;
+		return 8;
 	}
 
 
@@ -351,7 +351,7 @@ int main(int argc, char **argv)
 			pthread_mutex_destroy(&g_cond_mutex);
 			pthread_cond_destroy(&g_waken_cond);
 			printf("[system]: fail to load acl from %s\n", g_acl_path);
-			return -9;
+			return 9;
 		}
 
 		parray = list_file_get_list(plist);
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
 		pthread_mutex_destroy(&g_tid_lock);
 		pthread_mutex_destroy(&g_cond_mutex);
 		pthread_cond_destroy(&g_waken_cond);
-		return -10;
+		return 10;
 	}
 	
 	time(&last_cltime);

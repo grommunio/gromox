@@ -103,28 +103,27 @@ int main(int argc, char **argv)
 
 	if (3 != argc) {
 		printf("usage: %s src-path dst-path\n", argv[0]);
-		return -1;
-
+		return 1;
 	}
 
 	if (0 != stat(argv[1], &node_stat)) {
 		printf("fail to find source path %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 	
 	if (0 == S_ISDIR(node_stat.st_mode)) {
 		printf("%s is not directory\n", argv[1]);
-		return -3;
+		return 3;
 	}
 
 	if (0 != stat(argv[2], &node_stat)) {
 		printf("fail to find destination path %s\n", argv[2]);
-		return -2;
+		return 2;
 	}
 	
 	if (0 == S_ISDIR(node_stat.st_mode)) {
 		printf("%s is not directory\n", argv[2]);
-		return -3;
+		return 3;
 	}
 
 	do_migration(argv[1], argv[2]);

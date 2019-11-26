@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -10;
+		return 10;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -1;
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -164,27 +164,27 @@ int main(int argc, char **argv)
 	
 	if (0 != system_log_run()) {
 		printf("[system]: fail to run system log\n");
-		return -1;
+		return 1;
 	}
 	if (0 != log_flusher_run()) {
 		printf("[system]: fail to run log flusher\n");
-		return -2;
+		return 2;
 	}
 	if (0 != smtp_sender_run()) {
 		printf("[system]: fail to run smtp sender\n");
-		return -3;
+		return 3;
 	}
 	if (0 != data_source_run()) {
 		printf("[system]: fail to run data source\n");
-		return -4;
+		return 4;
 	}
 	if (0 != domain_classifier_run()) {
 		printf("[system]: fail to run domain classifier\n");
-		return -5;
+		return 5;
 	}
 	if (0 != item_sorter_run()) {
 		printf("[system]: fail to run item sorter\n");
-		return -6;
+		return 6;
 	}
 	item_sorter_stop();
 	domain_classifier_stop();

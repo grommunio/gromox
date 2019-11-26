@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 	umask(0);
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -339,7 +339,7 @@ int main(int argc, char **argv)
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
         printf("[system]: fail to create socket for listening\n");
-		return -3;
+		return 3;
 	}
 	optval = -1;
 	/* eliminates "Address already in use" error from bind */
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
 	if (-1 == status) {
 		printf("[system]: fail to bind socket\n");
         close(sockd);
-		return -4;
+		return 4;
     }
 	
 	status = listen(sockd, 5);
@@ -364,14 +364,14 @@ int main(int argc, char **argv)
 	if (-1 == status) {
 		printf("[system]: fail to listen socket\n");
 		close(sockd);
-		return -5;
+		return 5;
 	}
 
 	plist = list_file_init(acl_path, "%s:16");
     if (NULL == plist) {
 		printf("[system]: fail to open acl file %s\n", acl_path);
 		close(sockd);
-		return -6;
+		return 6;
 	}
 
     num = list_file_get_item_num(plist);
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 		printf("[system]: fail to init user hash table\n");
 		close(sockd);
 		list_file_free(plist);
-		return -7;
+		return 7;
 	}
 
 	plist = list_file_init(midb_path, "%s:256%s:16%d");
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
 		printf("[system]: fail to open list file %s\n", midb_path);
 		close(sockd);
 		str_hash_free(g_user_hash);
-		return -8;
+		return 8;
 	}
 
 	double_list_init(&g_midb_list);
@@ -416,7 +416,7 @@ int main(int argc, char **argv)
 			list_file_free(plist);
 			close(sockd);
 			str_hash_free(g_user_hash);
-			return -9;
+			return 9;
 		}
 		pmidb->node.pdata = pmidb;
 		strcpy(pmidb->prefix, pmidb_item[i].prefix);
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 		pthread_mutex_destroy(&g_hash_lock);
 		pthread_mutex_destroy(&g_user_lock);
 		printf("[system]: fail to create accept thread\n");
-		return -10;
+		return 10;
 	}
 	
 	if (0 != pthread_create(&accept_thrid, NULL, accept_work_func, (void*)(long)sockd)) {
@@ -526,7 +526,7 @@ int main(int argc, char **argv)
 		pthread_mutex_destroy(&g_hash_lock);
 		pthread_mutex_destroy(&g_user_lock);
 		printf("[system]: fail to create accept thread\n");
-		return -11;
+		return 11;
 	}
 	
 	for (i=0; i<thr_num; i++) {

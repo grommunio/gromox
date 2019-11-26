@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	pconfig_file = config_file_init(argv[1]);
 	if (NULL == pconfig_file) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 	str_value = config_file_get_value(pconfig_file, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	if (-1 == k_shm) {
 		printf("[system]: cannot get key for share memory from %s\n",
 			temp_path);
-		return -3;
+		return 3;
 	}
 	shm_id = shmget(k_shm, SHARE_MEMORY_SIZE, 0666);
 	if (-1 == shm_id) {
@@ -120,19 +120,19 @@ int main(int argc, char **argv)
 	}
 	if (-1 == shm_id) {
 		printf("[system]: fail to get or create share memory\n");
-		return -4;
+		return 4;
 	}
 	g_shm_begin = shmat(shm_id, NULL, 0);
 	if (NULL == g_shm_begin) {
 		printf("[system]: fail to attach share memory\n");
-		return -5;
+		return 5;
 	}
 	memset(g_shm_begin, 0, SHARE_MEMORY_SIZE);
 	sprintf(temp_path, "%s/console_table.txt", data_path);
 	plist_file = list_file_init(temp_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
 		printf("[system]: fail to open console list file %s\n", temp_path);
-		return -6;
+		return 6;
 	}
 	single_list_init(&console_list);
 	pitem = (char*)list_file_get_list(plist_file);
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 	if (list_len > (SHARE_MEMORY_SIZE - sizeof(int))/(5*sizeof(int))) {
 		list_file_free(plist_file);
 		printf("[system]: too many console unit!\n");
-		return -7;
+		return 7;
 	}
 	for (i=0; i<list_len; i++) {
 		pconsole = (CONSOLE_PORT*)malloc(sizeof(CONSOLE_PORT));

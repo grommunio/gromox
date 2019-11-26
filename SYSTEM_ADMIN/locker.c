@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	g_hash_table = str_hash_init(table_size, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == g_hash_table) {
 		printf("[system]: fail to init hash table\n");
-		return -3;
+		return 3;
 	}
 	
 	/* create a socket */
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
 	if (sockd == -1) {
         printf("[system]: fail to create socket for listening\n");
 		str_hash_free(g_hash_table);
-		return -4;
+		return 4;
 	}
 	optval = -1;
 	/* eliminates "Address already in use" error from bind */
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 		printf("[system]: fail to bind socket\n");
         close(sockd);
 		str_hash_free(g_hash_table);
-		return -5;
+		return 5;
     }
 	
 	status = listen(sockd, 5);
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 		printf("[system]: fail to listen socket\n");
 		close(sockd);
 		str_hash_free(g_hash_table);
-		return -6;
+		return 6;
 	}
 
 	pthread_mutex_init(&g_hash_lock, NULL);
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 		pthread_mutex_destroy(&g_hash_lock);
 		pthread_mutex_destroy(&g_cond_mutex);
 		pthread_cond_destroy(&g_waken_cond);
-		return -7;
+		return 7;
 
 	}
 	
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
 			pthread_mutex_destroy(&g_cond_mutex);
 			pthread_cond_destroy(&g_waken_cond);
 			printf("[system]: fail to load acl from %s\n", g_list_path);
-			return -8;
+			return 8;
 		}
 		num = list_file_get_item_num(plist);
 		pitem = list_file_get_list(plist);
@@ -361,7 +361,7 @@ int main(int argc, char **argv)
 		pthread_mutex_destroy(&g_hash_lock);
 		pthread_mutex_destroy(&g_cond_mutex);
 		pthread_cond_destroy(&g_waken_cond);
-		return -9;
+		return 9;
 	}
 	
 	g_notify_stop = FALSE;

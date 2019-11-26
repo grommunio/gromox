@@ -50,28 +50,28 @@ int main(int argc, char **argv)
 
 	if (4 != argc) {
 		printf("%s src-dir dst-path cidb-host:port\n", argv[0]);
-		return -1;
+		return 1;
 	}
 
     
 	if (0 != stat(argv[1], &node_stat)) {
 		printf("fail to find %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 	
 	if (0 == S_ISDIR(node_stat.st_mode)) {
 		printf("%s is not directory\n", argv[1]);
-		return -2;
+		return 2;
 	}
 	
 	if (0 != stat(argv[2], &node_stat)) {
 		printf("fail to find %s\n", argv[2]);
-		return -2;
+		return 2;
 	}
 	
 	if (0 == S_ISDIR(node_stat.st_mode)) {
 		printf("%s is not directory\n", argv[2]);
-		return -2;
+		return 2;
 	}
 	
 	strncpy(g_area_path, argv[2], 128);
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	
 	if (NULL == extract_ip(argv[3], g_cidb_host)) {
 		printf("cannot find ip address in %s\n", argv[3]);
-		return -3;
+		return 3;
 	}
 	
 	ptoken = strchr(argv[3], ':');
@@ -89,14 +89,14 @@ int main(int argc, char **argv)
 		g_cidb_port = atoi(ptoken + 1);
 		if (g_cidb_port <= 0) {
 			printf("port error in %s\n", argv[3]);
-			return -3;
+			return 3;
 		}
 	}
 	
 	g_mime_pool = mime_pool_init(1024, 32, FALSE);
 	if (NULL == g_mime_pool) {
 		printf("fail to init mime pool\n");
-		return -4;
+		return 4;
 	}
 	
 	insert_directory(argv[1]);

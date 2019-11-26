@@ -1033,7 +1033,7 @@ int main(int argc, char **argv)
 	umask(0);
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -1048,7 +1048,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 	
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -1063,7 +1063,7 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: value empty of \"MYSQL_BACKUP_PATH\"\n");
 		config_file_free(pconfig);
-		return -3;
+		return 3;
 	}
 	strncpy(mysql_path, str_value, 256);
 
@@ -1071,7 +1071,7 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: value empty of \"RSYNC_HOST_IP\"!\n");
 		config_file_free(pconfig);
-		return -4;
+		return 4;
 	}
 	strncpy(g_host_ip, str_value, 16);
 	printf("[system]: remote synchronization server host is %s\n", g_host_ip);
@@ -1080,20 +1080,20 @@ int main(int argc, char **argv)
     if (NULL == str_value) {
 		printf("[system]: value empty of \"RSYNC_HOST_PORT\"!\n");
 		config_file_free(pconfig);
-		return -5;
+		return 5;
     }
 	g_host_port = atoi(str_value);
 	if (g_host_port <= 0) {
 		printf("[system]: value of \"RSYNCER_HOST_PORT\" error!\n");
 		config_file_free(pconfig);
-		return -5;
+		return 5;
 	}
 
 	str_value = config_file_get_value(pconfig, "CA_PATH");
 	if (NULL == str_value) {
 		printf("[system]: missing CA_PATH in config file\n");
 		config_file_free(pconfig);
-		return -5;
+		return 5;
 	}
 	strncpy(ca_path, str_value, 256);
 	
@@ -1101,7 +1101,7 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: missing CERTIFICATE_PATH in config file\n");
 		config_file_free(pconfig);
-		return -5;
+		return 5;
 	}
 	strncpy(certificate_path, str_value, 256);
 
@@ -1116,7 +1116,7 @@ int main(int argc, char **argv)
 	if (NULL == str_value) {
 		printf("[system]: missing PRIVATE_KEY_PATH in config file\n");
 		config_file_free(pconfig);
-		return -5;
+		return 5;
 	}
 	strncpy(private_key_path, str_value, 256);
 	
@@ -1125,7 +1125,7 @@ int main(int argc, char **argv)
 	pfile = list_file_init(list_path, "%s:12%s:256%s:256%d%d");
 	if (NULL == pfile) {
 		printf("[system]: fail to init area list file %s\n", list_path);
-		return -5;
+		return 5;
 	}
 	
 	SSL_library_init();
@@ -1135,7 +1135,7 @@ int main(int argc, char **argv)
     g_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
     if (NULL == g_ssl_ctx) {
         printf("[system]: fail to init ssl context\n");
-        return -6;
+		return 6;
     }
 
     SSL_CTX_set_verify(g_ssl_ctx, SSL_VERIFY_PEER, NULL);
@@ -1150,7 +1150,7 @@ int main(int argc, char **argv)
         printf("[system]: fail to use certificate file:");
         ERR_print_errors_fp(stdout);
 		SSL_CTX_free(g_ssl_ctx);
-        return -6;
+		return 6;
     }
 
     if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, private_key_path,
@@ -1158,21 +1158,21 @@ int main(int argc, char **argv)
         printf("[system]: fail to use private key file:");
         ERR_print_errors_fp(stdout);
 		SSL_CTX_free(g_ssl_ctx);
-        return -6;
+		return 6;
     }
 
     if (1 != SSL_CTX_check_private_key(g_ssl_ctx)) {
         printf("[system]: private key does not match certificate:");
         ERR_print_errors_fp(stdout);
 		SSL_CTX_free(g_ssl_ctx);
-        return -6;
+		return 6;
     }
 
     g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
     if (NULL == g_ssl_mutex_buf) {
         printf("[system]: fail to allocate ssl locking buffer\n");
 		SSL_CTX_free(g_ssl_ctx);
-        return -6;
+		return 6;
     }
 
     for (i=0; i<CRYPTO_num_locks(); i++) {

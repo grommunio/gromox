@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -10;
+		return 10;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -1;
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -98,19 +98,19 @@ int main(int argc, char **argv)
 	
 	if (0 != message_run()) {
 		printf("[system]: fail to run message\n");
-		return -2;
+		return 2;
 	}
 	if (0 != smtp_run()) {
 		printf("[system]: fail to run smtp\n");
-		return -3;
+		return 3;
 	}
 	if (0 != pop3_run()) {
 		printf("[system]: fail to run pop3\n");
-		return -4;
+		return 4;
 	}
 	if (0 != scheduler_run()) {
 		printf("[system]: fail to scheduler\n");
-		return -5;
+		return 5;
 	}
 	printf("[system]: SUPERVISOR is now running\n");
 	signal(SIGTERM, term_handler);

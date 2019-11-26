@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
 	if (NULL == g_fifo_alloc) {
 		printf("[system]: fail to init queue allocator\n");
-		return -3;
+		return 3;
 	}
 	
 	g_file_alloc = lib_buffer_init(FILE_ALLOC_SIZE,
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
 	if (NULL == g_file_alloc) {
 		fifo_allocator_free(g_fifo_alloc);
 		printf("[system]: fail to init file allocator\n");
-		return -4;
+		return 4;
 	}
 	
 	
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
         printf("[system]: fail to create socket for listening\n");
-		return -5;
+		return 5;
 	}
 	optval = -1;
 	/* eliminates "Address already in use" error from bind */
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
 		printf("[system]: fail to bind socket\n");
-		return -6;
+		return 6;
     }
 	
 	status = listen(sockd, 5);
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
 		printf("[system]: fail to listen socket\n");
-		return -7;
+		return 7;
 	}
 	
 	pthread_mutex_init(&g_enqueue_lock, NULL);
@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 		pthread_cond_destroy(&g_enqueue_waken_cond);
 		pthread_mutex_destroy(&g_dequeue_cond_mutex);
 		pthread_cond_destroy(&g_dequeue_waken_cond);
-		return -8;
+		return 8;
 	}
 	
 	de_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
 		pthread_cond_destroy(&g_enqueue_waken_cond);
 		pthread_mutex_destroy(&g_dequeue_cond_mutex);
 		pthread_cond_destroy(&g_dequeue_waken_cond);
-		return -9;
+		return 9;
 	}
 	
 	pthread_attr_destroy(&thr_attr);
@@ -404,7 +404,7 @@ int main(int argc, char **argv)
 			pthread_mutex_destroy(&g_dequeue_cond_mutex);
 			pthread_cond_destroy(&g_dequeue_waken_cond);
 			printf("[system]: fail to load acl from %s\n", g_list_path);
-			return -10;
+			return 10;
 		}
 		num = list_file_get_item_num(plist);
 		pitem = list_file_get_list(plist);
@@ -455,7 +455,7 @@ int main(int argc, char **argv)
 		pthread_cond_destroy(&g_enqueue_waken_cond);
 		pthread_mutex_destroy(&g_dequeue_cond_mutex);
 		pthread_cond_destroy(&g_dequeue_waken_cond);
-		return -11;
+		return 11;
 	}
 	
 	g_notify_stop = FALSE;

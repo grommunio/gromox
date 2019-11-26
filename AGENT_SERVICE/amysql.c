@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -1;
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
 	if (NULL == str_value) {
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
     listenfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (-1 == listenfd) {
         printf("[system]: fail to create listen socket\n");
-        return -2;
+		return 2;
     }
 
     unlink(CS_PATH);
@@ -221,20 +221,20 @@ int main(int argc, char **argv)
     if (bind(listenfd, (struct sockaddr*)&unix_addr, len) < 0) {
         close(listenfd);
         printf("[system]: fail to bind listen socket\n");
-        return -3;
+		return 3;
     }
 
 
     if (chmod(CS_PATH, 0666) < 0) {
         close(listenfd);
         printf("[system]: fail to change access mode of %s\n", CS_PATH);
-        return -4;
+		return 4;
     }
 
     if (listen(listenfd, 5) < 0) {
         printf("[system]: fail to listen!\n");
         close(listenfd);
-        return -5;
+		return 5;
     }
 
 	pthread_mutex_init(&g_crypt_lock, NULL);
@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 			pthread_cancel(thr_ids[i]);
 		}
 		close(listenfd);
-		return -6;
+		return 6;
 	}
 
 
@@ -283,7 +283,7 @@ int main(int argc, char **argv)
 		for (i=0; i<g_conn_num; i++) {
 			pthread_cancel(thr_ids[i]);
 		}
-		return -7;
+		return 7;
 	}
 
 	if (0 != pthread_create(&scan_id, NULL, scan_work_func, NULL)) {
@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 		for (i=0; i<g_conn_num; i++) {
 			pthread_cancel(thr_ids[i]);
 		}
-		return -8;
+		return 8;
 	}
 
 

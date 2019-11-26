@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -2;
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
@@ -348,19 +348,19 @@ int main(int argc, char **argv)
 
 	if (0 != service_run()) {
 		printf("[system]: fail to run service\n");
-		return -3;
+		return 3;
 	}
 	
 	if (0 != system_services_run()) {
 		printf("[system]: fail to run system services\n");
-		return -4;
+		return 4;
 	}
 	
 	if (0 != common_util_run()) {
 		system_services_stop();
 		service_stop();
 		printf("[system]: fail to run common util\n");
-		return -5;
+		return 5;
 	}
 	
 	if (0 != listener_run()) {
@@ -368,7 +368,7 @@ int main(int argc, char **argv)
 		system_services_stop();
 		service_stop();
 		printf("[system]: fail to run tcp listener\n");
-		return -6;
+		return 6;
 	}
 
 	if (0 != cmd_parser_run()) {
@@ -377,7 +377,7 @@ int main(int argc, char **argv)
 		system_services_stop();
 		service_stop();
 		printf("[system]: fail to run command parser\n");
-		return -7;
+		return 7;
 	}
 
 	if (0 != mail_engine_run()) {
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
 		system_services_stop();
 		service_stop();
 		printf("[system]: fail to run mail engine\n");
-		return -8;
+		return 8;
 	}
 	
 	if (0 != exmdb_client_run()) {
@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 		system_services_stop();
 		service_stop();
 		printf("[system]: fail to run exmdb client\n");
-		return -9;
+		return 9;
 	}
 
 	
@@ -411,7 +411,7 @@ int main(int argc, char **argv)
 		system_services_stop();
 		service_stop();
 		printf("[system]: fail to run console server\n");
-		return -10;
+		return 10;
 	}
 
 	if (0 != listener_trigger_accept()) {
@@ -424,7 +424,7 @@ int main(int argc, char **argv)
 		system_services_stop();
 		service_stop();
 		printf("[system]: fail to trigger tcp listener\n");
-		return -11;
+		return 11;
 	}
 	
 	signal(SIGTERM, term_handler);

@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("%s <cfg file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <cfg file>\n", argv[0]);
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
 		printf("[system]: fail to open config file %s\n", argv[1]);
-		return -1;
+		return 1;
 	}
 
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
 	plist = list_file_init(list_path, "%s:256%s:16%d");
 	if (NULL == plist) {
 		printf("[system]: fail to open list file %s\n", list_path);
-		return -2;
+		return 2;
 	}
 
 	pthread_mutex_init(&g_front_lock, NULL);
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 		if (NULL == pserver) {
 			printf("[system]: fail to allocate memory for back server\n");
 			list_file_free(plist);
-			return -3;
+			return 3;
 		}
 		pserver->node.pdata = pserver;
 		strcpy(pserver->prefix, pitem[i].prefix);
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     listenfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (-1 == listenfd) {
         printf("[system]: fail to create listen socket\n");
-        return -4;
+		return 4;
     }
 
     unlink(CS_PATH);
@@ -223,20 +223,20 @@ int main(int argc, char **argv)
     if (bind(listenfd, (struct sockaddr*)&unix_addr, len) < 0) {
         close(listenfd);
         printf("[system]: fail to bind listen socket\n");
-        return -5;
+		return 5;
     }
 
 
     if (chmod(CS_PATH, 0666) < 0) {
         close(listenfd);
         printf("[system]: fail to change access mode of %s\n", CS_PATH);
-        return -6;
+		return 6;
     }
 
     if (listen(listenfd, 5) < 0) {
         printf("[system]: fail to listen!\n");
         close(listenfd);
-        return -7;
+		return 7;
     }
 
 	thr_ids = malloc(g_conn_num*sizeof(pthread_t));
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
 			pthread_cancel(thr_ids[i]);
 		}
 		close(listenfd);
-		return -8;
+		return 8;
 	}
 
 
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
 		for (i=0; i<g_conn_num; i++) {
 			pthread_cancel(thr_ids[i]);
 		}
-		return -9;
+		return 9;
 	}
 
 	if (0 != pthread_create(&scan_id, NULL, scan_work_func, NULL)) {
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
 		for (i=0; i<g_conn_num; i++) {
 			pthread_cancel(thr_ids[i]);
 		}
-		return -10;
+		return 10;
 	}
 
     g_notify_stop = 0;

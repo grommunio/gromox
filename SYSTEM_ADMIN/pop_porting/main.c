@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 
 	if (4 != argc) {
 		printf("%s pop_addr:port smtp_addr:port <list file>\n", argv[0]);
-		return -1;
+		return 1;
 	}
 	if (4 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("%s <list file>\n", argv[0]);
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
 	if (NULL == extract_ip(argv[1], pop_address)) {
 		printf("pop server address format error!\n");
-		return -2;
+		return 2;
 	}
 
 	pcolon = strchr(argv[2], ':');
@@ -61,8 +61,7 @@ int main(int argc, char **argv)
 
 	if (NULL == extract_ip(argv[2], smtp_address)) {
 		printf("smtp server address format error!\n");
-		return -3;
-
+		return 3;
 	}
 
 	smtp_init(&smtp_session, smtp_address, smtp_port);
@@ -70,13 +69,13 @@ int main(int argc, char **argv)
 	plist = list_file_init(argv[3], "%s:256%s:256");
 	if (NULL == plist) {
 		printf("fail to init list file %s\n", argv[3]);
-		return -4;
+		return 4;
 	}
 
 	pbuff = malloc(128*1024*1024);
 	if (NULL == pbuff) {
 		printf("fail to allocate memory for retrieving email\n");
-		return -5;
+		return 5;
 	}
 
 	pitem = list_file_get_list(plist);
