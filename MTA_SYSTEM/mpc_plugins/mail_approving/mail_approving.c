@@ -41,9 +41,7 @@ static BOOL (*mail_approving_get_homedir)(const char*, char*);
 
 static BOOL mail_approving_add_table(STR_HASH_TABLE *ptable,
 	const char *obj, const char *dst, const char *lang);
-
-static BOOL mail_approving_free_table(STR_HASH_TABLE *ptable);
-
+static void mail_approving_free_table(STR_HASH_TABLE *);
 static int mail_approving_add_domain(const char *domain);
 
 static void mail_approving_remove_domain(const char *domain);
@@ -488,7 +486,7 @@ static BOOL mail_approving_add_table(STR_HASH_TABLE *ptable,
  *		TRUE					OK
  *		FALSE					fail
  */
-static BOOL mail_approving_free_table(STR_HASH_TABLE *ptable)
+static void mail_approving_free_table(STR_HASH_TABLE *ptable)
 {
 	STR_HASH_ITER *iter;
 	DOUBLE_LIST *plist;
@@ -504,7 +502,6 @@ static BOOL mail_approving_free_table(STR_HASH_TABLE *ptable)
 	}
 	str_hash_iter_free(iter);
 	str_hash_free(ptable);
-	return NULL;
 }
 
 

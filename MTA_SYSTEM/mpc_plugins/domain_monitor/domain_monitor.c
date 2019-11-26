@@ -41,9 +41,7 @@ static pthread_rwlock_t g_table_lock;
 
 static BOOL domain_monitor_add_table(STR_HASH_TABLE *ptable, int type,
 	const char *tag, const char *address);
-
-static BOOL domain_monitor_free_table(STR_HASH_TABLE *ptable);
-
+static void domain_monitor_free_table(STR_HASH_TABLE *);
 static int domain_monitor_add_domain(const char *domain);
 
 static void domain_monitor_remove_domain(const char *domain);
@@ -555,7 +553,7 @@ static BOOL domain_monitor_add_table(STR_HASH_TABLE *ptable, int type,
  *		TRUE					OK
  *		FALSE					fail
  */
-static BOOL domain_monitor_free_table(STR_HASH_TABLE *ptable)
+static void domain_monitor_free_table(STR_HASH_TABLE *ptable)
 {
 	STR_HASH_ITER *iter;
 	DOUBLE_LIST *plist;
@@ -571,7 +569,6 @@ static BOOL domain_monitor_free_table(STR_HASH_TABLE *ptable)
 	}
 	str_hash_iter_free(iter);
 	str_hash_free(ptable);
-	return NULL;
 }
 
 

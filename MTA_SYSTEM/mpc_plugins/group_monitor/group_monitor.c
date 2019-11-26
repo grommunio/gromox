@@ -51,9 +51,7 @@ static BOOL (*get_group_name)(const char *address, char *group);
 
 static BOOL group_monitor_add_table(STR_HASH_TABLE *ptable, int type,
 	const char *tag, const char *address);
-
-static BOOL group_monitor_free_table(STR_HASH_TABLE *ptable);
-
+static void group_monitor_free_table(STR_HASH_TABLE *);
 static int group_monitor_add_group(const char *group);
 
 static void group_monitor_remove_group(const char *group);
@@ -660,7 +658,7 @@ static BOOL group_monitor_add_table(STR_HASH_TABLE *ptable, int type,
  *		TRUE					OK
  *		FALSE					fail
  */
-static BOOL group_monitor_free_table(STR_HASH_TABLE *ptable)
+static void group_monitor_free_table(STR_HASH_TABLE *ptable)
 {
 	STR_HASH_ITER *iter;
 	DOUBLE_LIST *plist;
@@ -676,7 +674,6 @@ static BOOL group_monitor_free_table(STR_HASH_TABLE *ptable)
 	}
 	str_hash_iter_free(iter);
 	str_hash_free(ptable);
-	return NULL;
 }
 
 
