@@ -52,9 +52,7 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 { 
- 
-	int context_num;
-	int context_aver_uints;
+	int context_num, context_aver_units;
 	size_t context_max_mem;
 	size_t context_aver_mem;
 	int listen_port, listen_ssl_port;
@@ -195,16 +193,16 @@ int main(int argc, const char **argv)
 	bytetoa(context_max_mem, temp_buff);
 	printf("[pop3]: context maximum memory is %s\n", temp_buff);
 
-	if (!resource_get_integer("CONTEXT_AVERAGE_UNITS", &context_aver_uints)) {
-		context_aver_uints = 1024;
-		resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_uints);
+	if (!resource_get_integer("CONTEXT_AVERAGE_UNITS", &context_aver_units)) {
+		context_aver_units = 1024;
+		resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_units);
 	} else {
-		if (context_aver_uints < 256) {
-			context_aver_uints = 256;
-			resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_uints);
+		if (context_aver_units < 256) {
+			context_aver_units = 256;
+			resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_units);
 		}
 	}
-	printf("[pop3]: context average units number is %d\n", context_aver_uints);
+	printf("[pop3]: context average units number is %d\n", context_aver_units);
 	
 	str_val = resource_get_string("POP3_CONN_TIMEOUT");
 	if (str_val == NULL) {
@@ -430,7 +428,7 @@ int main(int argc, const char **argv)
 	func_ptr    = (STOP_FUNC)system_services_stop;
 	vstack_push(&stop_stack, (void*)&func_ptr);
 
-	units_allocator_init(context_num * context_aver_uints);  
+	units_allocator_init(context_num * context_aver_units);
 	if (0 != units_allocator_run()) { 
 		printf("[system]: can not run units allocator\n"); 
 		goto EXIT_PROGRAM; 
