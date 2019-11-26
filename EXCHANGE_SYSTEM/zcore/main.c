@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "util.h"
 #include "service.h"
 #include "ab_tree.h"
@@ -75,7 +78,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", ZCORE_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	umask(0);	

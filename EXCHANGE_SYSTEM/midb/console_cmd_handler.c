@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "console_server.h"
@@ -14,7 +17,6 @@
 
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
-#define MIDB_VERSION			"4.0"
 #define MIDB_BUILT_DATE			"2018-06-01"
 
 
@@ -143,7 +145,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		console_server_reply_to_client("250 MIDB DAEMON information:\r\n"
 									"\tversion                     %s\r\n"
 									"\tbuilt in                    %s",
-									MIDB_VERSION, MIDB_BUILT_DATE);
+			PROJECT_VERSION, MIDB_BUILT_DATE);
 									return TRUE;
 	}
 	

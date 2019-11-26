@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <unistd.h>
 #include "util.h"
 #include "smtp.h"
@@ -9,8 +12,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
-
-#define SUPERVISOR_VERSION		"1.0"
 
 static BOOL g_notify_stop = FALSE;
 
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", SUPERVISOR_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	pconfig = config_file_init(argv[1]);

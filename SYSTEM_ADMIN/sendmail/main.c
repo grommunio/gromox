@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <ctype.h>
 #include "single_list.h"
 #include "util.h"
@@ -18,9 +21,6 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <errno.h>
-
-#define SENDMAIL_VERSION    "2.0"
-
 #define SOCKET_TIMEOUT      30
 
 typedef struct _RCPT_ITEM {
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 	}
 
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", SENDMAIL_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		exit(0);
 	}
 

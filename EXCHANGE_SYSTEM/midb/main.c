@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "util.h"
 #include "service.h"
 #include "listener.h"
@@ -18,8 +21,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/resource.h>
-
-#define MIDB_VERSION		"3.0"
 
 BOOL g_notify_stop = FALSE;
 
@@ -67,7 +68,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", MIDB_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	umask(0);	

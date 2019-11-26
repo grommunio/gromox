@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "config_file.h"
 #include "ext_buffer.h"
 #include "mapi_types.h"
@@ -17,9 +20,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <mysql/mysql.h>
-
-
-#define MKPRIVATE_VERSION					"1.0"
 
 enum {
 	RES_ID_IPM,
@@ -456,7 +456,7 @@ int main(int argc, char **argv)
 	
 	
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", MKPRIVATE_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		exit(0);
 	}
 	

@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
@@ -16,7 +19,6 @@
 
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
-#define IMAP_VERSION			"3.0"
 #define IMAP_BUILT_DATE			"2015-6-20"
 
 
@@ -452,7 +454,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		console_server_reply_to_client("250 IMAP DAEMON information:\r\n"
 			"\tversion                     %s\r\n"
 			"\tbuilt in                    %s",
-			IMAP_VERSION, IMAP_BUILT_DATE);
+			PROJECT_VERSION, IMAP_BUILT_DATE);
 			return TRUE;
 	}
 

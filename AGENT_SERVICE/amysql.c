@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "util.h"
 #include "double_list.h"
 #include "config_file.h"
@@ -24,10 +27,6 @@
 #include <netdb.h>
 #include <crypt.h>
 #include <mysql/mysql.h>
-
-
-#define AMYSQL_VERSION                  "1.0"
-
 #define CS_PATH                         "/var/pandora/token/amysql"
 
 #define SOCKET_TIMEOUT                  60
@@ -113,7 +112,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", AMYSQL_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	pconfig = config_file_init(argv[1]);

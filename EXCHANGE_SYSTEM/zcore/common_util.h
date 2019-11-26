@@ -3,9 +3,6 @@
 #include "common_types.h"
 #include "store_object.h"
 #include "message_object.h"
-
-#define ZCORE_VERSION								"steep zcore 1.0"
-
 #define SOCKET_TIMEOUT								60
 
 #define CALL_ID_LOGON								0x00

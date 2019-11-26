@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "console_server.h"
@@ -142,7 +145,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		console_server_reply_to_client("250 ZCORE DAEMON information:\r\n"
 									"\tversion                     %s\r\n"
 									"\tbuilt in                    %s",
-									ZCORE_VERSION, ZCORE_BUILT_DATE);
+			PROJECT_VERSION, ZCORE_BUILT_DATE);
 									return TRUE;
 	}
 	

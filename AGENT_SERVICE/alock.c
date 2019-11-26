@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>
@@ -21,10 +24,6 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <netdb.h>
-
-
-#define ALOCK_VERSION      "2.0"
-
 #define CS_PATH     "/var/pandora/token/alock"
 
 
@@ -105,7 +104,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", ALOCK_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	pconfig = config_file_init(argv[1]);
@@ -159,8 +158,6 @@ int main(int argc, char **argv)
 	printf("[system]: locker connection number is %d\n", g_conn_num);
 
 	g_conn_num ++;
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 
 	signal(SIGPIPE, SIG_IGN);

@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "log_flusher.h"
 #include "log_analyzer.h"
 #include "message.h"
@@ -20,8 +23,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#define DAEMON_VERSION		"2.0"
 
 int main(int argc, char **argv)
 {
@@ -63,7 +64,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", DAEMON_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	umask(0);

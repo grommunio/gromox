@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "util.h"
 #include "fifo.h"
 #include "str_hash.h"
@@ -16,9 +19,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
-#define EVENT_VERSION			"2.0"
-
 #define SOCKET_TIMEOUT			60
 
 #define SELECT_INTERVAL			24*60*60
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", EVENT_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);

@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "util.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -15,10 +18,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-
-
-#define SENSOR_VERSION		"3.0"
-
 #define SOCKET_TIMEOUT		60
 
 #define EXMDB_CONN_NUM		4
@@ -123,7 +122,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", SENSOR_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);

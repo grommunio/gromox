@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <ctype.h>
 #include "util.h"
 #include "double_list.h"
@@ -14,9 +17,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
-#define SESSION_VERSION				"4.0"
-
 #define SOCKET_TIMEOUT				60
 
 #define SESSION_FIELD_LENGTH		512
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", SESSION_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);

@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "util.h"
 #include "mail_func.h"
 #include "config_file.h"
@@ -21,11 +24,6 @@
 #include <openssl/ssl.h>
 #include <openssl/md5.h>
 #include <openssl/err.h>
-
-
-#define RSYNC_VERSION		"1.0"
-
-
 #define SOCKET_TIMEOUT		300
 
 typedef struct _CONNECTION_NODE {
@@ -89,7 +87,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s role: server\n", RSYNC_VERSION);
+		printf("version: %s role: server\n", PROJECT_VERSION);
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);

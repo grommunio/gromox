@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "util.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -29,10 +32,6 @@
 #include <netinet/in.h>
 #include <openssl/md5.h>
 #include <mysql/mysql.h>
-
-
-#define CDND_VERSION		"1.0"
-
 #define SOCKET_TIMEOUT		60
 
 #define SCAN_INTERVAL		60
@@ -209,7 +208,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", CDND_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);

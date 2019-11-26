@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <ctype.h>
 #include <stdbool.h>
 #include "util.h"
@@ -24,10 +27,6 @@
 #include <openssl/ssl.h>
 #include <openssl/md5.h>
 #include <openssl/err.h>
-
-
-#define RSYNCER_VERSION		"2.0"
-
 #define SOCKET_TIMEOUT      300
 
 enum {
@@ -1041,7 +1040,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s role: client\n", RSYNCER_VERSION);
+		printf("version: %s role: client\n", PROJECT_VERSION);
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);

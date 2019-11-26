@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "mail.h"
 #include "mail_func.h"
 #include "util.h"
@@ -13,9 +16,6 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <netdb.h>
-
-#define ARCHIVE_VERSION			"1.0"
-
 #define MAX_DIGLEN				256*1024
 
 #define SOCKET_TIMEOUT			60
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	}
 	
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", ARCHIVE_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 

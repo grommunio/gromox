@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "console_cmd_handler.h"
 #include "console_server.h"
 #include "common_types.h"
@@ -13,7 +16,6 @@
 
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
-#define DELIVERY_VERSION		"2.0"
 #define DELIVERY_BUILT_DATE		"2015-1-20"
 
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
@@ -373,7 +375,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
         console_server_reply_to_client("250 DELIVERY APP information:\r\n"
             "\tversion                     %s\r\n"
             "\tbuilt in                    %s",
-            DELIVERY_VERSION, DELIVERY_BUILT_DATE);
+			PROJECT_VERSION, DELIVERY_BUILT_DATE);
             return TRUE;
     }
     console_server_reply_to_client("550 invalid argument %s", argv[1]);

@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -7,10 +10,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-
-
-#define MIGRATOR_VERSION		"1.0"
-
 #define VDIR_PER_PARTITION		200
 #define SUBDIR_PER_VDIR			250
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
@@ -98,7 +97,7 @@ int main(int argc, char **argv)
 	}
 
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", MIGRATOR_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 

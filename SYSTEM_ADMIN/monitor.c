@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "single_list.h"
 #include "util.h"
 #include "list_file.h"
@@ -14,8 +17,6 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-
-#define MONITOR_VERSION		"1.0"
 #define SHARE_MEMORY_SIZE	64*1024
 #define STATISTIC_COMMAND	"spam_statistic.svc status\r\n"
 #define SYSTEM_COMMAND		"system status\r\n"
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", MONITOR_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);

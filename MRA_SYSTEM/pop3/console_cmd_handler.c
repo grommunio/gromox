@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
@@ -17,7 +20,6 @@
 
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
-#define POP3_VERSION			"2.0"
 #define POP3_BUILT_DATE			"2015-1-20"
 
 
@@ -426,7 +428,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		console_server_reply_to_client("250 POP3 DAEMON information:\r\n"
 			"\tversion                     %s\r\n"
 			"\tbuilt in                    %s",
-			POP3_VERSION, POP3_BUILT_DATE);
+			PROJECT_VERSION, POP3_BUILT_DATE);
 			return TRUE;
 	}
 

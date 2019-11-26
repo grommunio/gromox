@@ -1,6 +1,7 @@
 AC_INIT([gromox], [0])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
+AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.10 foreign subdir-objects])
 LT_INIT([disable-static])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
@@ -70,5 +71,7 @@ AS_IF([test "$with_php" != "no"], [
 ])
 
 AC_SUBST([my_CXXFLAGS])
+AH_TEMPLATE([PROJECT_VERSION], [])
+AC_DEFINE([PROJECT_VERSION], [PACKAGE_VERSION]) dnl for now
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

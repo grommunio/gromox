@@ -1,12 +1,12 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "mail.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
-#define DIGEST_VERSION		"1.0"
-
 
 int main(int argc, char **argv)
 {
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	}
 
 	if (0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", DIGEST_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 

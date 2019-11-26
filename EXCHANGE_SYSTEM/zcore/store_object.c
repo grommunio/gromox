@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "msgchg_grouping.h"
 #include "system_services.h"
 #include "zarafa_server.h"
@@ -1360,7 +1363,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ECSERVERVERSION:
-		*ppvalue = ZCORE_VERSION;
+		*ppvalue = PROJECT_VERSION;
 		return TRUE;
 	case PROP_TAG_OOFSTATE:
 	case PROP_TAG_OOFINTERNALREPLY:

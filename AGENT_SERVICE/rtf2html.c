@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include "rtf.h"
 #include "rtfcp.h"
 #include "list_file.h"
@@ -5,8 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#define RTF2HTML_VERSION		"1.0"
 
 static LIST_FILE *g_list_file;
 
@@ -37,7 +38,7 @@ int main(int argc, char **argv)
 	ATTACHMENT_LIST *pattachments;
 	
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", RTF2HTML_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	offset = 0;

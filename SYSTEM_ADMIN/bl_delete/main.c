@@ -1,9 +1,11 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include "midb_client.h"
-#define BL_DELETE_VERSION                                "1.0"
 
 int main(int argc, char **argv)
 {
@@ -18,7 +20,7 @@ int main(int argc, char **argv)
 	
 	
         if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-                printf("version: %s\n", BL_DELETE_VERSION);
+                printf("version: %s\n", PROJECT_VERSION);
                 exit(0);
         }
 

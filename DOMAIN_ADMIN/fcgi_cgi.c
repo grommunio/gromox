@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <sys/wait.h>
 #include "double_list.h"
 #include "config_file.h"
@@ -25,10 +28,6 @@
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <sys/socket.h>
-
-
-#define FCGICGI_VERSION							"1.0"
-
 #define SOCKET_TIMEOUT							180
 
 #define FCGI_VERSION							1
@@ -144,7 +143,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", FCGICGI_VERSION);
+		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
 	pconfig = config_file_init(argv[1]);
