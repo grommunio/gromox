@@ -2,8 +2,10 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "util.h"
 #include "service.h"
 #include "ab_tree.h"
@@ -36,6 +38,17 @@ static struct HXoption g_options_table[] = {
 	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
+};
+
+static const char *const g_dfl_svc_plugins[] = {
+	"libexsvc_codepage_lang.so",
+	"libexsvc_lang_charset.so",
+	"libexsvc_log_plugin.so",
+	"libexsvc_mime_extension.so",
+	"libexsvc_ms_locale.so",
+	"libexsvc_mysql_adaptor.so",
+	"libexsvc_timer_agent.so",
+	NULL,
 };
 
 static void term_handler(int signo)
@@ -138,6 +151,15 @@ int main(int argc, const char **argv)
 		strcpy(service_path, str_value);
 	}
 	printf("[system]: service plugin path is %s\n", service_path);
+	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_LIST");
+	const char *const *service_plugin_list = NULL;
+	if (str_value != NULL) {
+		service_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		if (service_plugin_list == NULL) {
+			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
+			return 2;
+		}
+	}
 
 	str_value = config_file_get_value(pconfig, "CONFIG_FILE_PATH");
 	if (NULL == str_value) {
@@ -163,7 +185,8 @@ int main(int argc, const char **argv)
 	sprintf(folderlang_path, "%s/folder_lang.txt", data_path);
 	
 	msgchg_grouping_init(grouping_path);
-	service_init(threads_num, service_path, config_path, data_path);
+	service_init(threads_num, service_path, config_path, data_path,
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
 	
 	str_value = config_file_get_value(pconfig, "ADDRESS_TABLE_SIZE");
 	if (NULL == str_value) {

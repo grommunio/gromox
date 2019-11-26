@@ -97,6 +97,7 @@ static LIB_BUFFER *g_bnode_allocator;
 static LIB_BUFFER *g_stack_allocator;
 static LIB_BUFFER *g_context_allocator;
 static LIB_BUFFER *g_processor_allocator;
+static const char *const *g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	{{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60}}, 2};
 
@@ -156,7 +157,8 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 
 void pdu_processor_init(int connection_num, int connection_ratio,
 	const char *netbios_name, const char *dns_name, const char *dns_domain,
-	BOOL header_signing, size_t max_request_mem, const char *plugins_path)
+    BOOL header_signing, size_t max_request_mem, const char *plugins_path,
+    const char *const *names)
 {
 	union {
 		uint32_t i;
@@ -178,6 +180,7 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	strcpy(g_dns_domain, dns_domain);
 	g_header_signing = header_signing;
 	strcpy(g_plugins_path, plugins_path);
+	g_plugin_names = names;
 	double_list_init(&g_plugin_list);
 	double_list_init(&g_endpoint_list);
 	double_list_init(&g_processor_list);
@@ -187,10 +190,7 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 
 int pdu_processor_run()
 {
-	DIR *dirp;
-	int length;
 	int context_num;
-	struct dirent *direntp;
 	
 	pthread_key_create(&g_call_key, NULL);
 	pthread_key_create(&g_stack_key, NULL);
@@ -236,20 +236,12 @@ int pdu_processor_run()
 	if (NULL == g_async_hash) {
 		return -8;
 	}
-	dirp = opendir(g_plugins_path);
-	if (NULL == dirp){
-		printf("[pdu_processor]: fail to open "
-			"plugins' directory %s\n", g_plugins_path);
-		return -9;
+
+	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
+		int ret = pdu_processor_load_library(*i);
+		if (ret != PLUGIN_LOAD_OK)
+			return -1;
 	}
-	while ((direntp = readdir(dirp)) != NULL) {
-		/*extended name ".proc" */
-		length = strlen(direntp->d_name);
-		if (0 == strcmp(direntp->d_name + length - 5, ".proc")){
-			pdu_processor_load_library(direntp->d_name);
-		}
-	}
-	closedir(dirp);
 	return 0;
 }
 
@@ -404,6 +396,8 @@ void pdu_processor_free()
 	double_list_free(&g_processor_list);
 	pthread_mutex_destroy(&g_list_lock);
 	pthread_mutex_destroy(&g_async_lock);
+	g_plugins_path[0] = '\0';
+	g_plugin_names = NULL;
 }
 
 
@@ -3854,18 +3848,20 @@ static void* pdu_processor_queryservice(char *service)
  */
 static int pdu_processor_load_library(const char* plugin_name)
 {
-	void *handle;
+	const char *fake_path = plugin_name;
 	PLUGIN_MAIN func;
 	PROC_PLUGIN *pplugin;
 	void* two_server_funcs[2];
-	char fake_path[256];
 	
 	two_server_funcs[0] = (void*)pdu_processor_getversion;
 	two_server_funcs[1] = (void*)pdu_processor_queryservice;
 	
-	snprintf(fake_path, 256, "%s/%s", g_plugins_path, plugin_name);
-
-	handle = dlopen(fake_path, RTLD_LAZY);
+	void *handle = dlopen(plugin_name, RTLD_LAZY);
+	if (handle == NULL && strchr(plugin_name, '/') == NULL) {
+		char altpath[256];
+		snprintf(altpath, sizeof(altpath), "%s/%s", g_plugins_path, plugin_name);
+		handle = dlopen(altpath, RTLD_LAZY);
+	}
 	if (NULL == handle){
 		printf("[pdu_processor]: error to load %s reason: %s\n", fake_path,
 			dlerror());

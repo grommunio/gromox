@@ -10,8 +10,8 @@ enum{
 	TRANSPORTER_CREATED_THREADS
 };
 
-void transporter_init(const char *path, int threads_min, int threads_max,
-	int free_num, int mime_ratio, BOOL dm_valid);
+extern void transporter_init(const char *path, const char *const *names,
+	int threads_min, int threads_max, int free_num, int mime_ratio, BOOL dm_valid);
 extern int transporter_run(void);
 extern int transporter_stop(void);
 extern void transporter_free(void);

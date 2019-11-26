@@ -34,8 +34,7 @@ typedef struct _HPM_PLUGIN {
 	char file_name[256];
 } HPM_PLUGIN;
 
-void hpm_processor_init(int context_num, const char *plugins_path,
-	uint64_t cache_size, uint64_t max_size);
+extern void hpm_processor_init(int context_num, const char *plugins_path, const char *const *names, uint64_t cache_size, uint64_t max_size);
 extern int hpm_processor_run(void);
 extern int hpm_processor_stop(void);
 extern void hpm_processor_free(void);

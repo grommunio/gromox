@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
+#include <gromox/fileio.h>
 #include "config_file.h"
 #include "listener.h" 
 #include "resource.h" 
@@ -29,6 +31,18 @@ static struct HXoption g_options_table[] = {
 	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
+};
+
+static const char *const g_dfl_svc_plugins[] = {
+	"libmrasvc_event_proxy.so",
+	"libmrasvc_event_stub.so",
+	"libmrasvc_ip_container.so",
+	"libmrasvc_ip_filter.so",
+	"libmrasvc_log_plugin.so",
+	"libmrasvc_midb_agent.so",
+	"libmrasvc_mysql_adaptor.so",
+	"libmrasvc_user_filter.so",
+	NULL,
 };
 
 typedef void (*STOP_FUNC)();
@@ -310,6 +324,15 @@ int main(int argc, const char **argv)
 		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
+	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
+	const char *const *service_plugin_list = NULL;
+	if (str_value != NULL) {
+		service_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		if (service_plugin_list == NULL) {
+			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
+			goto EXIT_PROGRAM;
+		}
+	}
 
 	str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
@@ -388,7 +411,8 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
-	service_init(context_num, service_plugin_path);
+	service_init(context_num, service_plugin_path,
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 

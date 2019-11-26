@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
+#include <gromox/fileio.h>
 #include "config_file.h"
 #include "util.h"
 #include "vstack.h"
@@ -36,6 +38,33 @@ static struct HXoption g_options_table[] = {
 	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
+};
+
+static const char *const g_dfl_hpm_plugins[] = {
+	"libexhpm_proxy.so",
+	NULL,
+};
+
+static const char *const g_dfl_proc_plugins[] = {
+	"libexproc_exchange_emsmdb.so",
+	"libexproc_exchange_nsp.so",
+	"libexproc_exchange_rfr.so",
+	NULL,
+};
+
+static const char *const g_dfl_svc_plugins[] = {
+	"libexsvc_codepage_lang.so",
+	"libexsvc_exmdb_provider.so",
+	"libexsvc_ip_container.so",
+	"libexsvc_ip_filter.so",
+	"libexsvc_lang_charset.so",
+	"libexsvc_log_plugin.so",
+	"libexsvc_mime_extension.so",
+	"libexsvc_ms_locale.so",
+	"libexsvc_mysql_adaptor.so",
+	"libexsvc_timer_agent.so",
+	"libexsvc_user_filter.so",
+	NULL,
 };
 
 typedef void (*STOP_FUNC)();
@@ -298,6 +327,15 @@ int main(int argc, const char **argv)
 		resource_set_string("PROC_PLUGIN_PATH", proc_plugin_path);
 	}
 	printf("[pdu_processor]: proc plugins path is %s\n", proc_plugin_path);
+	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
+	const char *const *proc_plugin_list = NULL;
+	if (str_value != NULL) {
+		proc_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		if (proc_plugin_list == NULL) {
+			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
+			goto EXIT_PROGRAM;
+		}
+	}
 	
 	hpm_plugin_path = resource_get_string("HPM_PLUGIN_PATH");
 	if (hpm_plugin_path == NULL) {
@@ -305,6 +343,15 @@ int main(int argc, const char **argv)
 		resource_set_string("HPM_PLUGIN_PATH", hpm_plugin_path);
 	}
 	printf("[hpm_processor]: hpm plugins path is %s\n", hpm_plugin_path);
+	str_value = resource_get_string("HPM_PLUGIN_LIST");
+	const char *const *hpm_plugin_list = NULL;
+	if (str_value != NULL) {
+		hpm_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		if (hpm_plugin_list == NULL) {
+			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
+			goto EXIT_PROGRAM;
+		}
+	}
 	
 	str_val = resource_get_string("HPM_CACHE_SIZE");
 	if (str_val == NULL) {
@@ -340,6 +387,15 @@ int main(int argc, const char **argv)
 		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
+	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
+	const char *const *service_plugin_list = NULL;
+	if (str_value != NULL) {
+		service_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		if (service_plugin_list == NULL) {
+			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
+			goto EXIT_PROGRAM;
+		}
+	}
 
 	str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
@@ -463,7 +519,8 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
-	service_init(context_num, service_plugin_path);
+	service_init(context_num, service_plugin_path,
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 
@@ -511,7 +568,8 @@ int main(int argc, const char **argv)
 	vstack_push(&stop_stack, (void*)&func_ptr);
 
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
-		dns_name, dns_domain, TRUE, max_request_mem, proc_plugin_path);
+		dns_name, dns_domain, TRUE, max_request_mem, proc_plugin_path,
+		proc_plugin_list != NULL ? proc_plugin_list : g_dfl_proc_plugins);
 	printf("---------------------------- proc plugins begin "
 		   "----------------------------\n");
 	if (0 != pdu_processor_run()) {
@@ -531,6 +589,7 @@ int main(int argc, const char **argv)
 	vstack_push(&stop_stack, (void*)&func_ptr);
 	
 	hpm_processor_init(context_num, hpm_plugin_path,
+		hpm_plugin_list != NULL ? hpm_plugin_list : g_dfl_hpm_plugins,
 		hpm_cache_size, hpm_max_size);
 	printf("---------------------------- hpm plugins begin "
 		   "----------------------------\n");

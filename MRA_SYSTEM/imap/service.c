@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <stdbool.h>
 #include "service.h"
 #include "util.h"
 #include "double_list.h"
@@ -5,7 +7,6 @@
 #include "resource.h"
 #include <sys/types.h>
 #include <dlfcn.h>
-#include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,10 +40,6 @@ typedef struct _SERVICE_ENTRY{
 	DOUBLE_LIST			list_reference;
 } SERVICE_ENTRY;
 
-int service_load_library(const char *path);
-
-int service_unload_library(const char *path);
-
 static int service_get_version();
 
 static void* service_query_service(const char *service);
@@ -68,15 +65,17 @@ static DOUBLE_LIST      g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static PLUG_ENTITY		*g_cur_plug;
 static int				g_context_num;
+static const char *const *g_plugin_names;
 
 /*
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-void service_init(int context_num, const char* path)
+void service_init(int context_num, const char *path, const char *const *names)
 {
 	g_context_num = context_num;
 	strcpy(g_init_path, path);
+	g_plugin_names = names;
 }
 
 /*
@@ -85,6 +84,7 @@ void service_init(int context_num, const char* path)
 void service_free()
 {
 	g_init_path[0] = '\0';
+	g_plugin_names = NULL;
 }
 
 /*
@@ -95,31 +95,13 @@ void service_free()
  */
 int service_run()
 {
-	DIR *dirp;
-	struct dirent *direntp;
-	int length, i, j;
-	char   temp_path[256];
-
 	double_list_init(&g_list_plug);
 	double_list_init(&g_list_service);
-	dirp = opendir(g_init_path);
-	if (NULL == dirp){
-		printf("[service]: fail to open plugins' directory %s\n",
-				g_init_path);
-		return -1;
+	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
+		int ret = service_load_library(*i);
+		if (ret != PLUGIN_LOAD_OK)
+			return -1;
 	}
-	while ((direntp = readdir(dirp)) != NULL) {
-		char ext_name[5];  /*extended name ".svc" */
-		length = strlen(direntp->d_name);
-		for (i=length-4, j=0; i<=length; i++,j++) {
-			ext_name[j]=direntp->d_name[i];
-		}
-		if (strcmp(ext_name, ".svc") == 0){
-			sprintf(temp_path, "%s/%s", g_init_path, direntp->d_name);
-			service_load_library(temp_path);
-		}
-	}
-	closedir(dirp);
 	return 0;
 }
 
@@ -174,36 +156,29 @@ int service_stop()
  */
 int service_load_library(const char *path)
 {
+	const char *fake_path = path;
 	void* two_server_funcs[2];
 	DOUBLE_LIST_NODE *pnode;
-	void *handle;
 	PLUGIN_MAIN func;
 	PLUG_ENTITY *plib;
-	char *pname;
-	char fake_path[256];
 
 	two_server_funcs[0] = (void*)service_get_version;
 	two_server_funcs[1] = (void*)service_query_service;
 
-	if (NULL == (pname = strrchr(path, '/'))) {
-		snprintf(fake_path, 256, "%s/%s", g_init_path, path);
-		pname = (char*)path;
-	} else {
-		strncpy(fake_path, path, 256);
-		pname++;
-	}
-	fake_path[255] = '\0';
-
 	/* check whether the library is already loaded */
 	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
 		 pnode=double_list_get_after(&g_list_plug, pnode)) {
-		if (strcmp(((PLUG_ENTITY*)(pnode->pdata))->file_name, pname) == 0) {
-			printf("[service]: %s is already loaded by service module\n", 
-					pname);
+		if (strcmp(((PLUG_ENTITY*)(pnode->pdata))->file_name, path) == 0) {
+			printf("[service]: %s is already loaded by service module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
 	}
-	handle = dlopen(fake_path, RTLD_LAZY);
+	void *handle = dlopen(path, RTLD_LAZY);
+	if (handle == NULL && strchr(path, '/') == NULL) {
+		char altpath[256];
+		snprintf(altpath, sizeof(altpath), "%s/%s", g_init_path, path);
+		handle = dlopen(altpath, RTLD_LAZY);
+	}
 	if (NULL == handle){
 		printf("[service]: error to load %s reason: %s\n", fake_path,
 				dlerror());
@@ -234,7 +209,7 @@ int service_load_library(const char *path)
 	 *  acquire the write lock.
 	 */
 	double_list_init(&plib->list_service);
-	strncpy(plib->file_name, pname, 255);
+	strncpy(plib->file_name, path, 255);
 	strncpy(plib->full_path, fake_path, 255);
 	plib->handle = handle;
 	plib->lib_main = func;

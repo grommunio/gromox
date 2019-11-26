@@ -18,7 +18,6 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <dirent.h>
 #include <string.h>
 #include <malloc.h>
 #include <dlfcn.h>
@@ -142,6 +141,7 @@ static const char *anti_spamming_get_data_path();
 static int anti_spamming_get_context_num();
 
 static char g_init_path[256];
+static const char *const *g_plugin_names;
 static DOUBLE_LIST	  g_list_lib;
 static STR_HASH_TABLE *g_hash_type;
 static DOUBLE_LIST	  g_list_judge;
@@ -155,15 +155,15 @@ static pthread_rwlock_t g_plugin_lock;
 /* for remembering the lib pointer when register plugin's filter function */
 static SHARELIB *g_cur_lib;
 
-
 /*
  *	  anti-spamming's construct function
  *	  @param
  *		  path	  indicate the path for searching
  */
-void anti_spamming_init(const char *path) 
+void anti_spamming_init(const char *path, const char *const *names)
 {	 
 	strncpy(g_init_path, path, 256);
+	g_plugin_names = names;
 }
 
 
@@ -175,36 +175,17 @@ void anti_spamming_init(const char *path)
  */
 int anti_spamming_run() 
 {	 
-	DIR *dirp;
-	struct dirent *direntp;
-	int length, i, j;
-	char   temp_path[256];	  
-
 	double_list_init(&g_list_lib);
 	double_list_init(&g_list_judge);
 	g_hash_type = str_hash_init(256, sizeof(TYPE_NODE), NULL);
 	double_list_init(&g_list_auditor);
 	double_list_init(&g_list_statistic);
-	dirp = opendir(g_init_path);
-	if (NULL == dirp){
-		printf("[anti_spamming]: fail to open plugins' directory %s\n",
-				g_init_path);
-		return -1;
-	}
-	/* init the plug lock here */
 	pthread_rwlock_init(&g_plugin_lock, NULL);
-	while ((direntp = readdir(dirp)) != NULL) {
-		char ext_name[5];  /*extended name ".pas" */
-		length = strlen(direntp->d_name);
-		for (i=length-4, j=0; i<=length; i++,j++) {
-			ext_name[j]=direntp->d_name[i];
-		}
-		if (strcmp(ext_name, ".pas") == 0){
-			sprintf(temp_path, "%s/%s", g_init_path, direntp->d_name);
-			anti_spamming_load_library(temp_path);
-		}
+	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
+		int ret = anti_spamming_load_library(*i);
+		if (ret != PLUGIN_LOAD_OK)
+			return -1;
 	}
-	closedir(dirp);
 	return 0;
 }
 
@@ -222,36 +203,29 @@ int anti_spamming_run()
  */
 int anti_spamming_load_library(const char* path)
 {
+	const char *fake_path = path;
 	void* two_server_funcs[2];
 	DOUBLE_LIST_NODE *pnode;
-	void *handle;
 	PLUGIN_MAIN func;
 	SHARELIB *plib;
-	char *pname;
-	char fake_path[256];
 
 	two_server_funcs[0] = (void*)anti_spamming_getversion;
 	two_server_funcs[1] = (void*)anti_spamming_queryservice;
 
-	if (NULL == (pname = strrchr(path, '/'))) {
-		snprintf(fake_path, 256, "%s/%s", g_init_path, path);
-		pname = (char*)path;
-	} else {
-		strncpy(fake_path, path, 256);
-		pname++;
-	}
-	fake_path[255] = '\0';
-
 	/* check whether the library is already loaded */
 	for (pnode=double_list_get_head(&g_list_lib); NULL!=pnode;
 		 pnode=double_list_get_after(&g_list_lib, pnode)) {
-			if (strcmp(((SHARELIB*)(pnode->pdata))->file_name, pname) == 0) {
-				printf("[anti_spamming]: %s is already loaded by anti-spamming"
-						" module\n", pname);
+			if (strcmp(((SHARELIB*)(pnode->pdata))->file_name, path) == 0) {
+				printf("[anti_spamming]: %s is already loaded by anti-spamming module\n", path);
 				return PLUGIN_ALREADY_LOADED;
 			}
 	}
-	handle = dlopen(fake_path, RTLD_LAZY);
+	void *handle = dlopen(path, RTLD_LAZY);
+	if (handle == NULL && strchr(path, '/') == NULL) {
+		char altpath[256];
+		snprintf(altpath, sizeof(altpath), "%s/%s", g_init_path, path);
+		handle = dlopen(altpath, RTLD_LAZY);
+	}
 	if (NULL == handle){
 		printf("[anti_spamming]: error to load %s reason: %s\n", fake_path, 
 				dlerror());
@@ -286,7 +260,7 @@ int anti_spamming_load_library(const char* path)
 	double_list_init(&plib->list_auditor);
 	double_list_init(&plib->list_filter);
 	double_list_init(&plib->list_statistic);
-	strncpy(plib->file_name, pname, 255);
+	strncpy(plib->file_name, path, 255);
 	strncpy(plib->full_path, fake_path, 255);
 	plib->handle = handle;
 	plib->lib_main = func;
@@ -1303,6 +1277,7 @@ int anti_spamming_stop()
 void anti_spamming_free()
 {
 	g_init_path[0] = '\0';
+	g_plugin_names = NULL;
 }
 
 /*

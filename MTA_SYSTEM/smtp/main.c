@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
+#include <gromox/fileio.h>
 #include "config_file.h"
 #include "listener.h" 
 #include "resource.h" 
@@ -33,6 +35,131 @@ static struct HXoption g_options_table[] = {
 	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
+};
+
+static const char *const g_dfl_as_plugins[] = {
+	"libmtapas_address_checker.so",
+	"libmtapas_anti_enum.so",
+	"libmtapas_attach_filter.so",
+	"libmtapas_attach_wildcard.so",
+	"libmtapas_auth_whitelist.so",
+	"libmtapas_base64_encoding.so",
+	"libmtapas_boundary_filter.so",
+	"libmtapas_ddns_filter.so",
+	"libmtapas_dns_rbl.so",
+	"libmtapas_domain_filter.so",
+	"libmtapas_domain_keyword.so",
+	"libmtapas_domain_limit.so",
+	"libmtapas_from_auditor.so",
+	"libmtapas_from_filter.so",
+	"libmtapas_from_validator.so",
+	"libmtapas_header_filter.so",
+	"libmtapas_headerfrom_filter.so",
+	"libmtapas_hello_filter.so",
+	"libmtapas_inmail_frequency.so",
+	"libmtapas_keyword_filter.so",
+	"libmtapas_multipart_check.so",
+	"libmtapas_outmail_frequency.so",
+	"libmtapas_precise_interception.so",
+	"libmtapas_property_001.so",
+	"libmtapas_property_002.so",
+	"libmtapas_property_003.so",
+	"libmtapas_property_004.so",
+	"libmtapas_property_005.so",
+	"libmtapas_property_006.so",
+	"libmtapas_property_007.so",
+	"libmtapas_property_008.so",
+	"libmtapas_property_009.so",
+	"libmtapas_property_010.so",
+	"libmtapas_property_011.so",
+	"libmtapas_property_012.so",
+	"libmtapas_property_013.so",
+	"libmtapas_property_014.so",
+	"libmtapas_property_015.so",
+	"libmtapas_property_016.so",
+	"libmtapas_property_017.so",
+	"libmtapas_property_018.so",
+	"libmtapas_property_019.so",
+	"libmtapas_property_020.so",
+	"libmtapas_property_021.so",
+	"libmtapas_property_022.so",
+	"libmtapas_property_023.so",
+	"libmtapas_property_024.so",
+	"libmtapas_property_025.so",
+	"libmtapas_property_026.so",
+	"libmtapas_property_027.so",
+	"libmtapas_property_028.so",
+	"libmtapas_property_029.so",
+	"libmtapas_property_030.so",
+	"libmtapas_property_031.so",
+	"libmtapas_property_032.so",
+	"libmtapas_property_033.so",
+	"libmtapas_property_034.so",
+	"libmtapas_property_035.so",
+	"libmtapas_property_036.so",
+	"libmtapas_property_037.so",
+	"libmtapas_property_038.so",
+	"libmtapas_property_039.so",
+	"libmtapas_property_040.so",
+	"libmtapas_property_041.so",
+	"libmtapas_property_042.so",
+	"libmtapas_property_043.so",
+	"libmtapas_property_044.so",
+	"libmtapas_property_045.so",
+	"libmtapas_property_046.so",
+	"libmtapas_property_047.so",
+	"libmtapas_property_048.so",
+	"libmtapas_property_049.so",
+	"libmtapas_property_050.so",
+	"libmtapas_property_051.so",
+	"libmtapas_property_052.so",
+	"libmtapas_property_053.so",
+	"libmtapas_property_054.so",
+	"libmtapas_property_055.so",
+	"libmtapas_property_056.so",
+	"libmtapas_property_057.so",
+	"libmtapas_property_058.so",
+	"libmtapas_property_059.so",
+	"libmtapas_rbl_check.so",
+	"libmtapas_rcpt_filter.so",
+	"libmtapas_rcpt_limit.so",
+	"libmtapas_scamming_filter.so",
+	"libmtapas_site_protection.so",
+	"libmtapas_special_protection.so",
+	"libmtapas_spf_filter.so",
+	"libmtapas_subject_auditor.so",
+	"libmtapas_subject_dots.so",
+	"libmtapas_trojan_detector.so",
+	"libmtapas_xmailer_filter.so",
+	NULL,
+};
+
+static const char *const g_dfl_svc_plugins[] = {
+	"libmtasvc_boundary_list.so",
+	"libmtasvc_domain_list.so",
+	"libmtasvc_domain_whitelist.so",
+	"libmtasvc_forbidden_domain.so",
+	"libmtasvc_forbidden_from.so",
+	"libmtasvc_forbidden_rcpt.so",
+	"libmtasvc_inmail_frequency_audit.so",
+	"libmtasvc_ip_container.so",
+	"libmtasvc_ip_filter.so",
+	"libmtasvc_ip_whitelist.so",
+	"libmtasvc_log_plugin.so",
+	"libmtasvc_mail_from_audit.so",
+	"libmtasvc_mail_subject_audit.so",
+	"libmtasvc_midb_agent.so",
+	"libmtasvc_mysql_adaptor.so",
+	"libmtasvc_outmail_frequency_audit.so",
+	"libmtasvc_outmail_limitation_audit.so",
+	"libmtasvc_protection_ip_audit.so",
+	"libmtasvc_relay_list.so",
+	"libmtasvc_retrying_table.so",
+	"libmtasvc_spam_statistic.so",
+	"libmtasvc_special_protection_audit.so",
+	"libmtasvc_tagging_table.so",
+	"libmtasvc_user_filter.so",
+	NULL,
 };
 
 typedef void (*STOP_FUNC)();
@@ -419,21 +546,39 @@ int main(int argc, const char **argv)
 	
 	anti_spam_path = resource_get_string("ANTI_SPAMMING_INIT_PATH");
 	if (anti_spam_path == NULL) {
-		anti_spam_path = "../as_plugins";
+		anti_spam_path = "/usr/libexec/gromox";
 		resource_set_string("ANTI_SPAMMING_INIT_PATH", anti_spam_path);
 	}
 	printf("[anti_spamming]: anti-spamming plugin path %s\n", anti_spam_path);
+	const char *str_value = resource_get_string("ANTI_SPAMMING_PLUGIN_LIST");
+	const char *const *as_plugin_list = NULL;
+	if (str_value != NULL) {
+		as_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		if (as_plugin_list == NULL) {
+			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
+			goto EXIT_PROGRAM;
+		}
+	}
  
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {
-		service_plugin_path = "../service_plugins/smtp";
+		service_plugin_path = "/usr/libexec/gromox";
 		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
+	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
+	const char *const *service_plugin_list = NULL;
+	if (str_value != NULL) {
+		service_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		if (service_plugin_list == NULL) {
+			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
+			goto EXIT_PROGRAM;
+		}
+	}
 
 	flusher_plugin_path = resource_get_string("FLUSHER_PLUGIN_PATH");
 	if (flusher_plugin_path == NULL) {
-		flusher_plugin_path = "../flusher_plugins/message_enqueue.flh";
+		flusher_plugin_path = "libmtaflh_message_enqueue.so";
 		resource_set_string("FLUSHER_PLUGIN_PATH", flusher_plugin_path);
 	}
 	printf("[flusher]: flusher plugin path %s\n", flusher_plugin_path);
@@ -515,7 +660,8 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
-	service_init(context_num, service_plugin_path);
+	service_init(context_num, service_plugin_path,
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 
@@ -664,7 +810,8 @@ int main(int argc, const char **argv)
 	func_ptr	= (STOP_FUNC)console_server_stop;
 	vstack_push(&stop_stack, (void*)&func_ptr);
 
-	anti_spamming_init(anti_spam_path); 
+	anti_spamming_init(anti_spam_path, as_plugin_list != NULL ?
+		as_plugin_list : g_dfl_as_plugins);
 
 	printf("------------------------ anti-spamming plugins begin"
 		   "------------------------\n");

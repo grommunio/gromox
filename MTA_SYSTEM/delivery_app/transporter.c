@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/defs.h>
 #include "transporter.h"
 #include "system_services.h"
 #include "resource.h"
@@ -101,6 +102,7 @@ typedef struct _THREAD_DATA{
 } THREAD_DATA;
 
 static char				g_path[256];
+static const char *const *g_plugin_names;
 static char				g_local_path[256];
 static char				g_remote_path[256];
 static HOOK_FUNCTION	g_local_hook;
@@ -191,8 +193,6 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext);
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext);
 
 static MESSAGE_CONTEXT* transporter_dequeue_context();
-
-static int transporter_cmpstringp(const void *p1, const void *p2);
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 
 /*
@@ -203,10 +203,12 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const cha
  *		free_num				free contexts number for hooks to throw out
  *		mime_ratio				how many mimes will be allocated per context
  */
-void transporter_init(const char *path, int threads_min, int threads_max,
-	int free_num, int mime_radito, BOOL dm_valid)
+void transporter_init(const char *path, const char *const *names,
+    int threads_min, int threads_max, int free_num, int mime_radito,
+    BOOL dm_valid)
 {
 	strcpy(g_path, path);
+	g_plugin_names = names;
 	g_local_path[0] = '\0';
 	g_remote_path[0] = '\0';
 	g_notify_stop = FALSE;
@@ -240,17 +242,12 @@ void transporter_init(const char *path, int threads_min, int threads_max,
  */
 int transporter_run()
 {
-	int length;
 	size_t size;
-	int i, j, count;
+	int i, j;
 	pthread_attr_t attr;
 	FREE_CONTEXT *pcontext;
 	ANTI_LOOP *panti;
 	CIRCLE_NODE *pcircle;
-	DIR *dirp;
-    struct dirent *direntp;
-	char temp_path[256];
-    char **filename_array;
 	
 	size = sizeof(CIRCLE_NODE)*g_threads_max*MAX_THROWING_NUM;
 	g_circles_ptr = (CIRCLE_NODE*)malloc(size);
@@ -322,56 +319,15 @@ int transporter_run()
 		(g_free_ptr + i)->context.pmail = &(g_free_ptr + i)->mail;
 		(g_free_ptr + i)->context.pcontrol = &(g_free_ptr + i)->mail_control;
 	}
-	dirp = opendir(g_path);
-    if (NULL == dirp){
-        printf("[transporter]: fail to open plugins' directory %s\n", g_path);
-		transporter_collect_resource();
-        return -7;
-    }
 
-	count = 0;
-	while ((direntp = readdir(dirp)) != NULL) {
-        char ext_name[6];  /*extended name ".hook" */
-        length = strlen(direntp->d_name);
-        for (i=length-5, j=0; i<=length; i++,j++) {
-            ext_name[j]=direntp->d_name[i];
-        }
-        if (strcmp(ext_name, ".hook") == 0){
-			count ++;		
+	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
+		int ret = transporter_load_library(*i);
+		if (ret != PLUGIN_LOAD_OK) {
+			transporter_collect_hooks();
+			transporter_collect_resource();
+			return -7;
 		}
 	}
-	filename_array = malloc(count*sizeof(char*));
-	if (NULL == filename_array) {
-		printf("[transporter]: fail to alloc memory for file name sorting\n");
-		closedir(dirp);
-		transporter_collect_hooks();
-		transporter_collect_resource();
-		return -7;
-		
-	}
-	seekdir(dirp,0);
-
-	count = 0;
-    while ((direntp = readdir(dirp)) != NULL) {
-        char ext_name[6];  /*extended name ".hook" */
-        length = strlen(direntp->d_name);
-        for (i=length-5, j=0; i<=length; i++,j++) {
-            ext_name[j]=direntp->d_name[i];
-        }
-        if (strcmp(ext_name, ".hook") == 0){
-            filename_array[count] = strndup(direntp->d_name, 256);
-			count ++;		
-        }
-    }
-    closedir(dirp);
-
-	qsort(filename_array, count, sizeof(char*), transporter_cmpstringp);
-	for (i=0; i<count; i++) {
-		sprintf(temp_path, "%s/%s", g_path, filename_array[i]);
-		transporter_load_library(temp_path);
-		free(filename_array[i]);
-	}
-	free(filename_array);
 
 	if ('\0' == g_local_path[0]) {
 		printf("[transporter]: there's no local hook registered in system\n");
@@ -515,6 +471,7 @@ int transporter_stop()
 void transporter_free()
 {
 	g_path[0] = '\0';
+	g_plugin_names = NULL;
 	g_threads_min = 0;
 	g_threads_max = 0;
 	g_mime_num = 0;
@@ -796,51 +753,45 @@ static void* scan_work_func(void* arg)
  */
 int transporter_load_library(const char* path)
 {
+	const char *fake_path = path;
 	void* two_server_funcs[2];
     DOUBLE_LIST_NODE *pnode;
-    void *handle;
     PLUGIN_MAIN func;
     PLUG_ENTITY *plib;
-    char *pname;
-	char fake_path[256];
 
 	transporter_clean_up_unloading();
 
     two_server_funcs[0] = (void*)transporter_getversion;
     two_server_funcs[1] = (void*)transporter_queryservice;
 
-    if (NULL == (pname = strrchr(path, '/'))) {
-        snprintf(fake_path, 256, "%s/%s", g_path, path);
-        pname = (char*)path;
-    } else {
-        strncpy(fake_path, path, 256);
-        pname++;
-    }
-    fake_path[255] = '\0';
-
 	/* check whether the plugin is same as local or remote plugin */
-	if (0 == strcmp(pname, g_local_path) || 0 == strcmp(pname, g_remote_path)) {
-        printf("[transporter]: %s is already loaded in module\n", pname);
+	if (strcmp(path, g_local_path) == 0 || strcmp(path, g_remote_path) == 0) {
+		printf("[transporter]: %s is already loaded in module\n", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
 	
     /* check whether the library is in unloading list */
     for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
          pnode=double_list_get_after(&g_unloading_list, pnode)) {
-		if (strcmp(((PLUG_ENTITY*)(pnode->pdata))->file_name, pname) == 0) {
-        	printf("[transporter]: %s is already loaded in module\n", pname);
+		if (strcmp(static_cast(PLUG_ENTITY *, pnode->pdata)->file_name, path) == 0) {
+			printf("[transporter]: %s is already loaded in module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
 	}
     /* check whether the library is already loaded */
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)) {
-		if (strcmp(((PLUG_ENTITY*)(pnode->pdata))->file_name, pname) == 0) {
-        	printf("[transporter]: %s is already loaded in module\n", pname);
+		if (strcmp(static_cast(PLUG_ENTITY *, pnode->pdata)->file_name, path) == 0) {
+			printf("[transporter]: %s is already loaded in module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
 	}
-    handle = dlopen(fake_path, RTLD_LAZY);
+	void *handle = dlopen(path, RTLD_LAZY);
+	if (handle == NULL && strchr(path, '/') == NULL) {
+		char altpath[256];
+		snprintf(altpath, sizeof(altpath), "%s/%s", g_path, path);
+		handle = dlopen(altpath, RTLD_LAZY);
+	}
     if (NULL == handle){
         printf("[transporter]: error to load %s reason: %s\n", fake_path,
                 dlerror());
@@ -867,7 +818,7 @@ int transporter_load_library(const char* path)
     plib->node.pdata = plib;
     double_list_init(&plib->list_reference);
     double_list_init(&plib->list_hook);
-    strncpy(plib->file_name, pname, 255);
+	strncpy(plib->file_name, path, 255);
     strncpy(plib->full_path, fake_path, 255);
     plib->handle = handle;
     plib->lib_main = func;
@@ -1693,9 +1644,3 @@ BOOL transporter_domainlist_valid()
 {
 	return g_domainlist_valid;
 }
-
-static int transporter_cmpstringp(const void *p1, const void *p2)
-{
-	return strcmp(* (char * const *) p1, * (char * const *) p2);
-}
-

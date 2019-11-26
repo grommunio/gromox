@@ -46,7 +46,7 @@ typedef int (*AUDITOR_FUNCTION)(int, MAIL_ENTITY*, CONNECTION*, char*, int);
 typedef int (*FILTER_FUNCTION)(int, int, MAIL_BLOCK*, char*, int);
 typedef int (*STATISTIC_FUNCTION)(int, MAIL_WHOLE*, CONNECTION*, char*, int);
 
-void anti_spamming_init(const char *path);
+extern void anti_spamming_init(const char *path, const char *const *names);
 extern int anti_spamming_run(void);
 int anti_spamming_unload_library(const char* path);
 

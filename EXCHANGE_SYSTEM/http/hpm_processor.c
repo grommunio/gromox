@@ -8,7 +8,6 @@
 #include "vstack.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <dlfcn.h>
 #include <fcntl.h>
 
@@ -55,13 +54,15 @@ static char g_plugins_path[256];
 static HPM_PLUGIN *g_cur_plugin;
 static DOUBLE_LIST g_plugin_list;
 static HPM_CONTEXT *g_context_list;
+static const char *const *g_plugin_names;
 
 void hpm_processor_init(int context_num, const char *plugins_path,
-	uint64_t cache_size, uint64_t max_size)
+    const char *const *names, uint64_t cache_size, uint64_t max_size)
 {
 	g_context_num = context_num;
 	double_list_init(&g_plugin_list);
 	strcpy(g_plugins_path, plugins_path);
+	g_plugin_names = names;
 	g_cache_size = cache_size;
 	g_max_size = max_size;
 }
@@ -400,18 +401,22 @@ static void hpm_processor_unload_library(const char *plugin_name)
 	free(pplugin);
 }
 
-static int hpm_processor_load_library(const char* plugin_name)
+static int hpm_processor_load_library(const char *plugin_name)
 {
-	void *handle;
+	const char *fake_path = plugin_name;
 	PLUGIN_MAIN func;
 	HPM_PLUGIN *pplugin;
 	void* two_server_funcs[2];
-	char fake_path[256];
 	
 	two_server_funcs[0] = (void*)hpm_processor_getversion;
 	two_server_funcs[1] = (void*)hpm_processor_queryservice;
-	snprintf(fake_path, 256, "%s/%s", g_plugins_path, plugin_name);
-	handle = dlopen(fake_path, RTLD_LAZY);
+
+	void *handle = dlopen(plugin_name, RTLD_LAZY);
+	if (handle == NULL && strchr(plugin_name, '/') == NULL) {
+		char altpath[256];
+		snprintf(altpath, sizeof(altpath), "%s/%s", g_plugins_path, plugin_name);
+		handle = dlopen(altpath, RTLD_LAZY);
+	}
 	if (NULL == handle){
 		printf("[hpm_processor]: error to load %s"
 			" reason: %s\n", fake_path, dlerror());
@@ -464,30 +469,18 @@ static int hpm_processor_load_library(const char* plugin_name)
 
 int hpm_processor_run()
 {
-	DIR *dirp;
-	int length;
-	struct dirent *direntp;
-	
 	g_context_list = malloc(sizeof(HPM_CONTEXT)*g_context_num);
 	if (NULL == g_context_list) {
 		printf("[hpm_processor]: fail to allocate context list\n");
 		return -1;
 	}
 	memset(g_context_list, 0, sizeof(HPM_CONTEXT)*g_context_num);
-	dirp = opendir(g_plugins_path);
-	if (NULL == dirp) {
-		printf("[hpm_processor]: fail to open "
-			"plugins' directory %s\n", g_plugins_path);
-		return -2;
+
+	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
+		int ret = hpm_processor_load_library(*i);
+		if (ret != PLUGIN_LOAD_OK)
+			return -1;
 	}
-	while ((direntp = readdir(dirp)) != NULL) {
-		/* extended name ".hpm" */
-		length = strlen(direntp->d_name);
-		if (0 == strcmp(direntp->d_name + length - 4, ".hpm")) {
-			hpm_processor_load_library(direntp->d_name);
-		}
-	}
-	closedir(dirp);
 	return 0;
 }
 
@@ -519,6 +512,8 @@ int hpm_processor_stop()
 void hpm_processor_free()
 {
 	double_list_free(&g_plugin_list);
+	g_plugins_path[0] = '\0';
+	g_plugin_names = NULL;
 }
 
 int hpm_processor_console_talk(int argc,

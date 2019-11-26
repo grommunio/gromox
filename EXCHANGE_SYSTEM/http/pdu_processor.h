@@ -130,9 +130,10 @@ typedef struct _BLOB_NODE {
 	DATA_BLOB blob;
 } BLOB_NODE;
 
-void pdu_processor_init(int connection_num, int connection_ratio,
+extern void pdu_processor_init(int connection_num, int connection_ratio,
 	const char *netbios_name, const char *dns_name, const char *dns_domain,
-	BOOL header_signing, size_t max_request_mem, const char *plugins_path);
+	BOOL header_signing, size_t max_request_mem, const char *plugins_path,
+	const char *const *names);
 extern int pdu_processor_run(void);
 extern int pdu_processor_stop(void);
 extern void pdu_processor_free(void);

@@ -3,7 +3,7 @@
 #include "common_types.h"
 #include "plugin.h"
 
-void service_init(int context_num, const char *path);
+extern void service_init(int context_num, const char *path, const char *const *names);
 extern void service_free(void);
 extern int service_run(void);
 extern int service_stop(void);
