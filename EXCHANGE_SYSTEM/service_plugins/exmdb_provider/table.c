@@ -5167,11 +5167,11 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		"COMMIT TRANSACTION", NULL, NULL, NULL);
 RESTORE_POSITION:
 	if (0 != message_id) {
-		sql_len = sprintf(sql_string, "SELEC idx FROM t%u WHERE "
+		sql_len = sprintf(sql_string, "SELECT idx FROM t%u WHERE "
 				"inst_id=%llu AND inst_num=%u", ptnode->table_id,
 				message_id, inst_num);
 	} else {
-		sql_len = sprintf(sql_string, "SELEC idx FROM t%u WHERE"
+		sql_len = sprintf(sql_string, "SELECT idx FROM t%u WHERE"
 					" row_id=%llu", ptnode->table_id, row_id1);
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
