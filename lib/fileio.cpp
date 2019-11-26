@@ -29,6 +29,7 @@ char **read_file_by_line(const char *file)
 	try {
 		std::list<std::unique_ptr<char[]>> dq;
 		while (HX_getl(&line, fp.get()) != nullptr) {
+			HX_chomp(line);
 			decltype(dq)::value_type s(strdup(line));
 			if (s == nullptr)
 				return nullptr;
