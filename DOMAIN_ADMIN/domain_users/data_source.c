@@ -550,7 +550,7 @@ RETRYING:
 	}
 
 	data_source_encode_squote(username, temp_user);
-	lower_string(temp_user);
+	HX_strlower(temp_user);
 	sprintf(sql_string, "SELECT address_type FROM"
 		" users WHERE username='%s'", temp_user);
 
@@ -628,7 +628,7 @@ RETRYING:
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow[0]);
 		data_source_encode_squote(virtual_address, temp_address);
-		lower_string(temp_address);
+		HX_strlower(temp_address);
 		snprintf(sql_string, 4096, "INSERT INTO users (username, password, "
 			"lang, title, real_name, nickname, tel, cell, homeaddress, memo,"
 			" domain_id, group_id, maildir, max_size, max_file, create_day, "
@@ -781,7 +781,7 @@ RETRYING:
 	}
 	
 	data_source_encode_squote(alias, temp_alias);
-	lower_string(temp_alias);
+	HX_strlower(temp_alias);
 	sprintf(sql_string, "SELECT id, address_type FROM users WHERE "
 		"username='%s'", temp_alias);
 	if (0 != mysql_query(pmysql, sql_string) ||
@@ -810,7 +810,7 @@ RETRYING:
 	mysql_free_result(pmyres);
 	
 	data_source_encode_squote(username, temp_user);
-	lower_string(temp_user);
+	HX_strlower(temp_user);
 	sprintf(sql_string, "SELECT password, real_name, domain_id, group_id, "
 		"maildir, max_size, max_file, create_day, mobile_phone, "
 		"privilege_bits, address_status, address_type, memo, nickname, "
@@ -921,7 +921,7 @@ RETRYING:
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow[0]);
 		data_source_encode_squote(virtual_address, temp_address);
-		lower_string(temp_address);
+		HX_strlower(temp_address);
 		snprintf(sql_string, 4096, "INSERT INTO users (username, password, "
 			"title, real_name, nickname, tel, cell, homeaddress, memo, domain_id, "
 			"group_id, maildir, max_size, max_file, create_day, mobile_phone, "

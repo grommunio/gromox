@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "uncheck_domains.h"
 #include "str_hash.h"
 #include "util.h"
@@ -44,8 +45,7 @@ BOOL uncheck_domains_query(const char* domain)
 	
 	strncpy(temp_string, domain, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);
-	
+	HX_strlower(temp_string);
 	pthread_rwlock_rdlock(&g_domain_lock);
     if (NULL != g_domain_table &&
 		NULL != str_hash_query(g_domain_table, temp_string)) {
@@ -79,7 +79,7 @@ int uncheck_domains_refresh()
 		return TABLE_REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		lower_string(pitem + 256*i);
+		HX_strlower(pitem + 256 * i);
         str_hash_add(phash, pitem + 256*i, &i);   
     }
     list_file_free(plist_file);

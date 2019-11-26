@@ -472,7 +472,7 @@ int list_ui_run()
 		groupname[ptr2 - ptr1] = '\0';
 		ltrim_string(groupname);
 		rtrim_string(groupname);
-		lower_string(groupname);
+		HX_strlower(groupname);
 		
 		pat = strchr(groupname, '@');
 		if (NULL == pat) {

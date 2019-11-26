@@ -688,19 +688,6 @@ char* search_string(const char *haystack, const char *needle,
 	return NULL;
 }
 
-/*
- *	transfer string to lower
- *	@param
- *		string [in, out] string to be transfered
- */
-void lower_string(char *string)
-{
-	while (*string) {
-		*string = tolower(*string);
-		string ++;
-	}
-}
-
 #ifdef _STRCASESTR_ 
 char *strcasestr(const char *s1, const char *s2)
 {

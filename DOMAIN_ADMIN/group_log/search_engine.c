@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "data_source.h"
 #include "search_engine.h"
 #include <gromox/system_log.h>
@@ -136,7 +137,7 @@ BOOL search_engine_search(const char *domain, const char *ip, const char *from,
 	}
 	
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	
 	if (NULL == ip || '\0' == ip[0]) {
 		pip = NULL;
@@ -150,7 +151,7 @@ BOOL search_engine_search(const char *domain, const char *ip, const char *from,
 		from_domain = NULL;
 	} else {
 		strcpy(temp_from, from);
-		lower_string(temp_from);
+		HX_strlower(temp_from);
 		if (NULL == strchr(temp_from, '@')) {
 			pfrom = NULL;
 			from_domain = temp_from;
@@ -164,7 +165,7 @@ BOOL search_engine_search(const char *domain, const char *ip, const char *from,
 		rcpt_domain = NULL;
 	} else {
 		strcpy(temp_rcpt, rcpt);
-		lower_string(temp_rcpt);
+		HX_strlower(temp_rcpt);
 		if (NULL == strchr(temp_rcpt, '@')) {
 			prcpt = NULL;
 			rcpt_domain = temp_rcpt;

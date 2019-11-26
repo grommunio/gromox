@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "exec_sched.h"
 #include "str_hash.h"
 #include "util.h"
@@ -77,7 +78,7 @@ int exec_sched_run()
 	temp_info.b_working = FALSE;
 
     for (i=0; i<list_len; i++) {
-		lower_string(pitem + 128*i);
+		HX_strlower(pitem + 128 * i);
         str_hash_add(g_hash_table, pitem + 128*i, &temp_info);   
     }
     list_file_free(plist_file);	
@@ -145,7 +146,7 @@ BOOL exec_sched_add(const char* username)
 
 	strncpy(temp_string, username, 128);
 	temp_string[127] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	string_len = strlen(temp_string);
 	for (i=0, j=0; i<string_len; i++, j++) {
 		if (' ' == temp_string[i] || '\\' == temp_string[i] ||
@@ -215,7 +216,7 @@ BOOL exec_sched_remove(const char* username)
 	
 	strncpy(temp_string, username, 127);
 	temp_string[127] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	pthread_rwlock_wrlock(&g_table_lock);
 	/* check first if the string is in hash table */
 	if (NULL == str_hash_query(g_hash_table, temp_string)) {

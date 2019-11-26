@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/exsvc_common.h>
 #include "list_file.h"
 #include "int_hash.h"
@@ -28,7 +29,7 @@ static const char* mime_to_extension(const char *ptype)
 	char tmp_type[256];
 	
 	strncpy(tmp_type, ptype, 256);
-	lower_string(tmp_type);
+	HX_strlower(tmp_type);
 	pthread_mutex_lock(&g_mime_lock);
 	pextension = str_hash_query(g_mime_hash, tmp_type);
 	pthread_mutex_unlock(&g_mime_lock);
@@ -41,7 +42,7 @@ static const char* extension_to_mime(const char *pextension)
 	char tmp_extension[16];
 	
 	strncpy(tmp_extension, pextension, 16);
-	lower_string(tmp_extension);
+	HX_strlower(tmp_extension);
 	pthread_mutex_lock(&g_extension_lock);
 	ptype = str_hash_query(g_extension_hash, tmp_extension);
 	pthread_mutex_unlock(&g_extension_lock);
@@ -93,8 +94,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		for (i=0; i<item_num; i++) {
-			lower_string(pitem + 80*i);
-			lower_string(pitem + 80*i + 16);
+			HX_strlower(pitem + 80 * i);
+			HX_strlower(pitem + 80 * i + 16);
 			str_hash_add(g_extension_hash,
 				pitem + 80*i, pitem + 80*i + 16);
 			str_hash_add(g_mime_hash,

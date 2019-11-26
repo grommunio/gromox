@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/exsvc_common.h>
 #include "list_file.h"
 #include "int_hash.h"
@@ -58,7 +59,7 @@ static uint32_t charset_to_cpid(const char *charset)
 	char tmp_charset[32];
 	
 	strcpy(tmp_charset, charset);
-	lower_string(tmp_charset);
+	HX_strlower(tmp_charset);
 	pthread_mutex_lock(&g_charset_lock);
 	pcpid = str_hash_query(g_charset_hash, tmp_charset);
 	pthread_mutex_unlock(&g_charset_lock);
@@ -75,7 +76,7 @@ static uint32_t ltag_to_lcid(const char *lang_tag)
 	char tmp_ltag[32];
 	
 	strncpy(tmp_ltag, lang_tag, sizeof(tmp_ltag));
-	lower_string(tmp_ltag);
+	HX_strlower(tmp_ltag);
 	pthread_mutex_lock(&g_ltag_lock);
 	plcid = str_hash_query(g_ltag_hash, tmp_ltag);
 	pthread_mutex_unlock(&g_ltag_lock);
@@ -137,7 +138,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		for (i=0; i<item_num; i++) {
-			lower_string(pcpid_item[i].charset);
+			HX_strlower(pcpid_item[i].charset);
 			if (1 != int_hash_add(g_cpid_hash,
 				pcpid_item[i].cpid, pcpid_item[i].charset)) {
 				printf("[ms_locale]: fail to add item into cpid hash\n");
@@ -175,7 +176,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				continue;
 			}
 			lcid = strtol(pitem + 48*i + 2, NULL, 16);
-			lower_string(pitem + 48*i + 16);
+			HX_strlower(pitem + 48 * i + 16);
 			if (1 != str_hash_add(g_ltag_hash, pitem + 48*i + 16, &lcid)) {
 				printf("[ms_locale]: fail to add item into ltag hash\n");
 			}

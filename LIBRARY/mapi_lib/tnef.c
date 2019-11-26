@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "tarray_set.h"
@@ -1244,7 +1245,7 @@ static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
 	} else {
 		snprintf(tag_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
 	}
-	lower_string(tag_string);
+	HX_strlower(tag_string);
 }
 
 static BOOL tnef_convert_to_propname(char *tag_string,

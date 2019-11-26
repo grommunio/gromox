@@ -1639,7 +1639,7 @@ static void ab_tree_get_server_dn(
 		memset(username, 0, sizeof(username));
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username);
 		ptoken = strchr(username, '@');
-		lower_string(username);
+		HX_strlower(username);
 		if (NULL != ptoken) {
 			ptoken ++;
 		} else {

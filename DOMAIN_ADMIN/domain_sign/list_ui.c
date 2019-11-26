@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "list_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -237,7 +238,7 @@ int list_ui_run()
 				domainname[i] = post_buff[i];
 			}
 		}
-		lower_string(domainname);
+		HX_strlower(domainname);
 
 		while (NULL != fgets(post_buff, 1024, stdin)) {
 			if (0 == strcmp(post_buff, boundary)) {
@@ -356,7 +357,7 @@ int list_ui_run()
 				charset[i] = post_buff[i];
 			}
 		}
-		lower_string(charset);
+		HX_strlower(charset);
 		if (strlen(charset) == 0) {
 			system_log_info("[list_ui]: query string of POST format error");
 			list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_REQUEST", language));
@@ -414,7 +415,7 @@ int list_ui_run()
 				type[i] = post_buff[i];
 			}
 		}
-		lower_string(type);
+		HX_strlower(type);
 		if (0 != strcmp(type, "plain") && 0 != strcmp(type, "html")) {
 			system_log_info("[list_ui]: query string of POST format error");
 			list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_REQUEST", language));
@@ -490,7 +491,7 @@ int list_ui_run()
 			}
 			memcpy(domainname, ptr1, ptr2 - ptr1);
 			domainname[ptr2 - ptr1] = '\0';
-			lower_string(domainname);
+			HX_strlower(domainname);
 			ptr1 = ptr2 + 9;
 			if (NULL != (ptr2 = search_string(search_buff, "&open=", len))) {
 				if ((ptr2 - ptr1 > 255)) {

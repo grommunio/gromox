@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "util.h"
 #include "str_hash.h"
@@ -101,7 +102,7 @@ static int collector_refresh()
 	}
 	pitem = list_file_get_list(plist);
 	for (i=0; i<item_num; i++) {
-		lower_string(pitem + 2*256*i);
+		HX_strlower(pitem + 2 * 256 * i);
 		str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);
 	}
 	list_file_free(plist);
@@ -121,7 +122,7 @@ static BOOL collector_query(const char *domain, char *fwd_mailbox)
 	char temp_domain[256];
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	pthread_rwlock_rdlock(&g_table_lock);
 	presult = str_hash_query(g_hash_table, temp_domain);
 	if (NULL == presult) {

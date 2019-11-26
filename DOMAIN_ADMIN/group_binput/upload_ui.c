@@ -401,7 +401,7 @@ int upload_ui_run()
 				groupname[i] = post_buff[i];
 			}
 		}
-		lower_string(groupname);
+		HX_strlower(groupname);
 		pdomain = strchr(groupname, '@');
 		if (NULL == pdomain) {
 			goto POST_ERROR;
@@ -721,7 +721,7 @@ int upload_ui_run()
 			}
 			memcpy(groupname, ptr1, ptr2 - ptr1);
 			groupname[ptr2 - ptr1] = '\0';
-			lower_string(groupname);
+			HX_strlower(groupname);
 
 			ptr1 = ptr2 + 9;
 			if (strlen(ptr1) > 127) {
@@ -1682,7 +1682,7 @@ static BOOL upload_ui_xls_input(const char *domainname,
 			}
 			strcpy(pitem->username, row->cells.cell[0].str);
 		}
-		lower_string(pitem->username);
+		HX_strlower(pitem->username);
 		for (pnode=double_list_get_head(plist); NULL!=pnode;
 			pnode=double_list_get_after(plist, pnode)) {
 			if (0 == strcasecmp(pitem->username,
@@ -1960,7 +1960,7 @@ static BOOL upload_ui_xls_delete(const char *domainname,
 			}
 			strcpy(pitem->username, row->cells.cell[0].str);
 		}
-		lower_string(pitem->username);
+		HX_strlower(pitem->username);
 		double_list_append_as_tail(plist, &pitem->node);
 	}
 	

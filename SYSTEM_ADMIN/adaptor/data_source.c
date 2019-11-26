@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include "util.h"
@@ -208,7 +209,7 @@ RETRYING:
 		myrow = mysql_fetch_row(pmyres);
 		
 		strcpy(pitem->domainname, myrow[0]);
-		lower_string(pitem->domainname);
+		HX_strlower(pitem->domainname);
 		strcpy(pitem->homedir, myrow[1]);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
@@ -277,9 +278,9 @@ RETRYING:
 		myrow = mysql_fetch_row(pmyres);
 		
 		strcpy(pitem->aliasname, myrow[0]);
-		lower_string(pitem->aliasname);
+		HX_strlower(pitem->aliasname);
 		strcpy(pitem->mainname, myrow[1]);
-		lower_string(pitem->mainname);
+		HX_strlower(pitem->mainname);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
 	
@@ -352,7 +353,7 @@ RETRYING:
 		pnode->pdata = pitem;
 		
 		strcpy(pitem->domainname, myrow[0]);
-		lower_string(pitem->domainname);
+		HX_strlower(pitem->domainname);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
 	
@@ -425,7 +426,7 @@ RETRYING:
 		pnode->pdata = pitem;
 		
 		strcpy(pitem->domainname, myrow[0]);
-		lower_string(pitem->domainname);
+		HX_strlower(pitem->domainname);
 		strcpy(pitem->homedir, myrow[1]);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
@@ -499,7 +500,7 @@ RETRYING:
 		pnode->pdata = pitem;
 		
 		strcpy(pitem->domainname, myrow[0]);
-		lower_string(pitem->domainname);
+		HX_strlower(pitem->domainname);
 		strcpy(pitem->homedir, myrow[1]);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
@@ -573,7 +574,7 @@ RETRYING:
 		pnode->pdata = pitem;
 		
 		strcpy(pitem->domainname, myrow[0]);
-		lower_string(pitem->domainname);
+		HX_strlower(pitem->domainname);
 		strcpy(pitem->homedir, myrow[1]);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
@@ -649,7 +650,7 @@ RETRYING:
 		}
 		pnode->pdata = pitem;
 		strcpy(pitem->groupname, myrow[0]);
-		lower_string(pitem->groupname);
+		HX_strlower(pitem->groupname);
 		sprintf(sql_string, "SELECT homedir FROM domains WHERE id=%s", myrow[1]);
 		if (0 != mysql_query(pmysql, sql_string) ||
 			NULL == (pmyres1 = mysql_store_result(pmysql))) {

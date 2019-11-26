@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "address_list.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -39,7 +40,7 @@ int address_list_refresh()
 	}
 	pitem = list_file_get_list(plist);
 	for (i=0; i<item_num; i++) {
-		lower_string(pitem + (256+32)*i);
+		HX_strlower(pitem + (256 + 32) * i);
 		if (NULL == extract_ip(pitem + (256+32)*i + 256, temp_host.ip)) {
 			printf("[domain_subsystem]: line %d: ip address format error in "
 				"address list\n", i);
@@ -75,7 +76,7 @@ BOOL address_list_query(const char *domain, char *ip, int *port)
 	char temp_domain[256];
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	pthread_rwlock_rdlock(&g_table_lock);
 	phost = str_hash_query(g_hash_table, temp_domain);
 	if (NULL == phost) {

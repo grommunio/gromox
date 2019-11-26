@@ -3,6 +3,7 @@
 #endif
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "msgchg_grouping.h"
 #include "system_services.h"
 #include "zarafa_server.h"
@@ -158,7 +159,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 			free(tmp_name.pname);
 		}
 	}
-	lower_string(tmp_string);
+	HX_strlower(tmp_string);
 	if (NULL == str_hash_query(pstore->ppropname_hash, tmp_string)) {
 		if (1 != str_hash_add(pstore->ppropname_hash, tmp_string, &propid)) {
 			if (FALSE == store_object_enlarge_propname_hash(pstore)
@@ -421,7 +422,7 @@ BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
 		break;
 	case KIND_NAME:
 		snprintf(tmp_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
-		lower_string(tmp_string);
+		HX_strlower(tmp_string);
 		break;
 	default:
 		*ppropid = 0;
@@ -498,7 +499,7 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 		case KIND_NAME:
 			snprintf(tmp_string, 256, "%s:name:%s",
 				tmp_guid, ppropnames->ppropname[i].pname);
-			lower_string(tmp_string);
+			HX_strlower(tmp_string);
 			break;
 		default:
 			ppropids->ppropid[i] = 0;

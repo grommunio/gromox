@@ -8,6 +8,7 @@
  *
  */
 #include <unistd.h>
+#include <libHX/string.h>
 #include "str_filter.h"
 #include "audit_filter.h"
 #include "str_hash.h"
@@ -135,7 +136,7 @@ BOOL audit_filter_judge(const char *str)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);	
+		HX_strlower(temp_string);	
 	}
 	pthread_mutex_lock(&g_audit_mutex_lock); 
     paudit = (STR_AUDIT*)str_hash_query(g_audit_hash, temp_string);
@@ -203,7 +204,7 @@ BOOL audit_filter_query(const char *str)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);	
+		HX_strlower(temp_string);	
 	}
 	pthread_mutex_lock(&g_audit_mutex_lock); 
 	gettimeofday(&current_time, NULL);
@@ -281,7 +282,7 @@ BOOL audit_filter_echo(const char *str, time_t *pfirst_access,
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_mutex_lock(&g_audit_mutex_lock);
     gettimeofday(&current_time, NULL);           
@@ -322,7 +323,7 @@ BOOL audit_filter_remove_string(const char *str)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_mutex_lock(&g_audit_mutex_lock);
 	if (NULL == str_hash_query(g_audit_hash, temp_string)) {

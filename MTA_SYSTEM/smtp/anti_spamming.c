@@ -5,7 +5,7 @@
  *	  actually compare the data in mail body and the judge whether this mail is 
  *	  spamming 
  */
-
+#include <libHX/string.h>
 #include "anti_spamming.h"
 #include "double_list.h"
 #include "lib_buffer.h"
@@ -398,7 +398,7 @@ static BOOL anti_spamming_register_filter(char* type, FILTER_FUNCTION func)
 		return FALSE;
 	}
 	swap_string(tmp_buff, type);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	ptype = (TYPE_NODE*)str_hash_query(g_hash_type, tmp_buff);
 	/* allocate the filter node and fill it */
 	pfilter = malloc(sizeof(FILTER_NODE));
@@ -613,7 +613,7 @@ static BOOL anti_spamming_unregister_filter(char* type, FILTER_FUNCTION func)
 		return FALSE;
 	}
 	swap_string(tmp_buff, type);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	ptype = (TYPE_NODE*)str_hash_query(g_hash_type, tmp_buff);
 	
 	if (NULL == ptype) {
@@ -795,7 +795,7 @@ int anti_spamming_unload_library(const char* path)
 			 pnode=double_list_get_after(&plib->list_filter, pnode)) {
 			strncpy(type, ((FILTER_NODE*)(pnode->pdata))->type, 256);
 			swap_string(tmp_buff, type);
-			lower_string(tmp_buff);
+			HX_strlower(tmp_buff);
 			ptype = (TYPE_NODE*)str_hash_query(g_hash_type, tmp_buff);
 			if (NULL == ptype) {
 				printf("[anti_spamming]: fatal error when unload the "
@@ -1065,7 +1065,7 @@ void anti_spamming_inform_filters(const char *type, SMTP_CONTEXT *pcontext,
 	memset(&block_info, 0, sizeof(MAIL_BLOCK));
 	block_info.block_ID = block_ID;
 	swap_string(tmp_buff, type);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	/* acquire the read lock when to pass the filters */
 	pthread_rwlock_rdlock(&g_plugin_lock);
 	/* an empty string is reserved for all types, first find in all type list */
@@ -1116,7 +1116,7 @@ int anti_spamming_pass_filters(const char* type, SMTP_CONTEXT* pcontext,
 	}
 	context_ID	= pcontext - smtp_parser_get_contexts_list();
 	swap_string(tmp_buff, type);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	/* acquire the read lock when to pass the filters */
 	pthread_rwlock_rdlock(&g_plugin_lock);
 	/* an empty string is reserved for all types, first find in all type list */

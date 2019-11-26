@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/exsvc_common.h>
 #include "str_hash.h"
 #include "list_file.h"
@@ -84,7 +85,7 @@ static BOOL table_query(const char* lang, char *charset)
 	}
 	strncpy(temp_string, lang, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	
 	pthread_rwlock_rdlock(&g_refresh_lock);
     pcharset = str_hash_query(g_hash_table, temp_string);
@@ -126,7 +127,7 @@ static int table_refresh()
 		return REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		lower_string(pitem + 64*i);
+		HX_strlower(pitem + 64 * i);
         str_hash_add(phash, pitem + 64*i, pitem + 64*i + 32);   
     }
     list_file_free(plist_file);

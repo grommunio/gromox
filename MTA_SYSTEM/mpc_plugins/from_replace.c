@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "str_hash.h"
 #include "list_file.h"
@@ -94,7 +95,7 @@ static BOOL table_query(const char* str, char *buff)
 	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	pthread_rwlock_rdlock(&g_refresh_lock);
     presult = str_hash_query(g_hash_table, temp_string);
     if (NULL != presult) {
@@ -144,7 +145,7 @@ static int table_refresh()
 			printf("[from_replace]: address format error in line %d\n", i);
 			continue;
 		}
-		lower_string(pitem + 2*256*i);
+		HX_strlower(pitem + 2 * 256 * i);
         str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);   
     }
     list_file_free(plist_file);

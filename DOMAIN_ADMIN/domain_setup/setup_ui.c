@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "setup_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -405,7 +406,7 @@ int setup_ui_run()
 			}
 			memcpy(domain, ptr1, ptr2 - ptr1);
 			domain[ptr2 - ptr1] = '\0';
-			lower_string(domain);
+			HX_strlower(domain);
 			
 			ptr1 = ptr2 + 9;
 			ptr2 = search_string(ptr1, "&action=", len);
@@ -624,7 +625,7 @@ int setup_ui_run()
 				domain[i] = post_buff[i];
 			}
 		}
-		lower_string(domain);
+		HX_strlower(domain);
 
 		while (NULL != fgets(post_buff, 1024, stdin)) {
 			if (0 == strcmp(post_buff, boundary)) {

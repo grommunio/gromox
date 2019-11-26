@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "mail_forwarder.h"
 #include "mail_func.h"
 #include "list_file.h"
@@ -125,7 +126,7 @@ BOOL mail_forwarder_process(MESSAGE_CONTEXT *pcontext)
 	}
 	/* first search the "from" domain */
 	strcpy(tmp_buff, pcontext->pcontrol->from);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	pdomain = strchr(tmp_buff, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -186,7 +187,7 @@ BOOL mail_forwarder_process(MESSAGE_CONTEXT *pcontext)
 		MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
 		rcpt_to, 256)) {
-		lower_string(rcpt_to);
+		HX_strlower(rcpt_to);
 		pdomain1 = strchr(rcpt_to, '@');
 		if (NULL == pdomain1) {
 			continue;
@@ -401,7 +402,7 @@ static int mail_forwarder_refresh()
 			should_add = FALSE;
 		}
 		if (TRUE == should_add) {
-			lower_string(str_tag);
+			HX_strlower(str_tag);
 			if (FALSE == mail_forwarder_add_table(phash, type, str_tag, 
 				str_value)) {
 				printf("[mail_forwarder]: fail to add %s into table, it may "
@@ -504,7 +505,7 @@ static int mail_forwarder_add(int type, const char *tag, const char *address)
 	STR_HASH_TABLE *phash;
 	
 	strcpy(tmp_buff, tag);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	switch (type) {
 	case FORWARD_IN:
 		string_len = sprintf(tmp_line, "F_IN\t%s\t%s\n", tmp_buff, address);
@@ -594,7 +595,7 @@ static BOOL mail_forwarder_remove(const char *tag, const char *address)
 	char tmp_buff[256];
 
 	strcpy(tmp_buff, tag);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	/* check first if the string is in hash table */
 	pthread_rwlock_wrlock(&g_refresh_lock);
 	plist = str_hash_query(g_hash_table, tmp_buff);

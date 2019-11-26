@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "str_hash.h"
 #include "list_file.h"
@@ -198,7 +199,7 @@ BOOL domain_table_query(const char *aliasname, char *mainname)
 	
 	strncpy(temp_string, aliasname, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	
 	pthread_rwlock_rdlock(&g_domain_lock);
 	presult = str_hash_query(g_domain_hash, temp_string);
@@ -220,7 +221,7 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	
 	strncpy(temp_string, aliasname, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	
 	pthread_rwlock_rdlock(&g_address_lock);
 	presult = str_hash_query(g_address_hash, temp_string);
@@ -258,7 +259,7 @@ static int domain_table_refresh()
 		return REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		lower_string(pitem + 2*256*i);
+		HX_strlower(pitem + 2 * 256 * i);
         str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);   
     }
     list_file_free(plist_file);
@@ -296,7 +297,7 @@ static int address_table_refresh()
 		return REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		lower_string(pitem + 2*256*i);
+		HX_strlower(pitem + 2 * 256 * i);
         str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);   
     }
     list_file_free(plist_file);

@@ -2,6 +2,7 @@
    relay the stream to pdu processor. it also process other http request
  */ 
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "pdu_ndr.h"
 #include "resource.h"
@@ -282,7 +283,7 @@ static VIRTUAL_CONNECTION* http_parser_get_vconnection(
 	VIRTUAL_CONNECTION *pvconnection;
 	
 	snprintf(tmp_buff, 256, "%s:%d:%s", conn_cookie, port, host);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	pthread_mutex_lock(&g_vconnection_lock);
 	pvconnection = str_hash_query(g_vconnection_hash, tmp_buff);
 	if (NULL != pvconnection) {
@@ -2214,7 +2215,7 @@ RETRY_QUERY:
 		tmp_conn.pcontext_outsucc = NULL;
 		snprintf(tmp_conn.hash_key, 256, "%s:%d:%s",
 			conn_cookie, pcontext->port, pcontext->host);
-		lower_string(tmp_conn.hash_key);
+		HX_strlower(tmp_conn.hash_key);
 		pthread_mutex_lock(&g_vconnection_lock);
 		if (1 != str_hash_add(g_vconnection_hash,
 			tmp_conn.hash_key, &tmp_conn)) {

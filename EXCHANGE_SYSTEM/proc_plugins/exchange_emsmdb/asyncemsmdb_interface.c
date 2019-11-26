@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
 #include <gromox/proc_common.h>
@@ -180,7 +181,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	}
 	pwait->node.pdata = pwait;
 	pwait->async_id = async_id;
-	lower_string(pwait->username);
+	HX_strlower(pwait->username);
 	time(&pwait->wait_time);
 	if (0 == async_id) {
 		pwait->out_payload.context_id = pout->flags_out;
@@ -188,7 +189,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pwait->out_payload.pout = pout;
 	}
 	sprintf(tmp_tag, "%s:%d", pwait->username, (int)pwait->cxr);
-	lower_string(tmp_tag);
+	HX_strlower(tmp_tag);
 	pthread_mutex_lock(&g_async_lock);
 	if (0 != async_id) {
 		if (1 != int_hash_add(g_async_hash, async_id, &pwait)) {
@@ -227,7 +228,7 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	}
 	pwait = *ppwait;
 	sprintf(tmp_tag, "%s:%d", pwait->username, (int)pwait->cxr);
-	lower_string(tmp_tag);
+	HX_strlower(tmp_tag);
 	str_hash_remove(g_tag_hash, tmp_tag);
 	int_hash_remove(g_async_hash, async_id);
 	pthread_mutex_unlock(&g_async_lock);
@@ -248,7 +249,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 		return;
 	}
 	sprintf(tmp_tag, "%s:%d", username, cxr);
-	lower_string(tmp_tag);
+	HX_strlower(tmp_tag);
 	pthread_mutex_lock(&g_async_lock);
 	ppwait = str_hash_query(g_tag_hash, tmp_tag);
 	if (NULL == ppwait) {
@@ -291,7 +292,7 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 	ASYNC_WAIT **ppwait;
 	
 	sprintf(tmp_tag, "%s:%d", username, (int)cxr);
-	lower_string(tmp_tag);
+	HX_strlower(tmp_tag);
 	pthread_mutex_lock(&g_async_lock);
 	ppwait = str_hash_query(g_tag_hash, tmp_tag);
 	if (NULL == ppwait) {

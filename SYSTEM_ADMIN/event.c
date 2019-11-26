@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "fifo.h"
 #include "str_hash.h"
@@ -786,7 +787,7 @@ NEXT_LOOP:
 			temp_string[temp_len] = ':';
 			temp_len ++;
 			temp_string[temp_len] = '\0';
-			lower_string(temp_string);
+			HX_strlower(temp_string);
 			strcat(temp_string, pspace + 1);
 			
 			b_result = FALSE;
@@ -824,7 +825,7 @@ NEXT_LOOP:
 			temp_string[temp_len] = ':';
 			temp_len ++;
 			temp_string[temp_len] = '\0';
-			lower_string(temp_string);
+			HX_strlower(temp_string);
 			strcat(temp_string, pspace + 1);
 			
 			pthread_mutex_lock(&g_host_lock);
@@ -875,7 +876,7 @@ NEXT_LOOP:
 			temp_string[temp_len] = ':';
 			temp_len ++;
 			temp_string[temp_len] = '\0';
-			lower_string(temp_string);
+			HX_strlower(temp_string);
 			memcpy(temp_string + temp_len, pspace1 + 1, pspace2 - pspace1 - 1);
 			temp_string[temp_len + (pspace2 - pspace1 - 1)] = '\0';
 			pthread_mutex_lock(&g_host_lock);

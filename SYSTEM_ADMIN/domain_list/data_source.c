@@ -588,7 +588,7 @@ BOOL data_source_add_domain(const char *domainname, const char *homedir,
 	strftime(str_end, 16, "%Y-%m-%d", &tmp_tm);
 
 	data_source_encode_squote(domainname, temp_domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	data_source_encode_squote(title, temp_title);
 	data_source_encode_squote(address, temp_address);
 	data_source_encode_squote(admin_name, temp_admin);
@@ -701,10 +701,9 @@ BOOL data_source_add_alias(const char *domainname, const char *alias,
 	lockd = locker_client_lock(resource_name);
 
 	data_source_encode_squote(domainname, temp_domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	data_source_encode_squote(alias, temp_alias);
-	lower_string(temp_alias);
-	
+	HX_strlower(temp_alias);
 	i = 0;
 	
 	
@@ -856,7 +855,7 @@ RETRYING:
 		}
 		strcpy(pat + 1, alias);
 		data_source_encode_squote(alias_address, temp_address);
-		lower_string(temp_address);
+		HX_strlower(temp_address);
 		data_source_encode_squote(myrow[2], temp_real);
 		data_source_encode_squote(myrow[12], temp_memo);
 		data_source_encode_squote(myrow[13], temp_nick);

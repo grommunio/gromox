@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "guid.h"
 #include "oxcmail.h"
@@ -202,7 +203,7 @@ int exmdb_local_run()
 	last_propid = 0x8001;
 	for (i=0; i<num; i++) {
 		strcpy(temp_line, pitem + 256*i);
-		lower_string(temp_line);
+		HX_strlower(temp_line);
 		str_hash_add(g_str_hash, temp_line, &last_propid);
 		last_propid ++;
 	}
@@ -441,7 +442,7 @@ BOOL exmdb_local_get_propids(
 			snprintf(tmp_string, 256, "GUID=%s,NAME=%s",
 				tmp_guid, ppropnames->ppropname[i].pname);
 		}
-		lower_string(tmp_string);
+		HX_strlower(tmp_string);
 		ppropid = str_hash_query(g_str_hash, tmp_string);
 		if (NULL == ppropid) {
 			ppropids->ppropid[i] = 0;

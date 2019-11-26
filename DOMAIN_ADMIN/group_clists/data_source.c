@@ -317,7 +317,7 @@ RETRYING:
 	temp_status = (domain_status<<4) | (group_status<<2);
 	
 	data_source_encode_squote(listname, temp_name);
-	lower_string(temp_name);
+	HX_strlower(temp_name);
 	sprintf(sql_string, "INSERT INTO users (username, password, real_name, "
 		"domain_id, group_id, maildir, max_size, max_file, create_day, "
 		"mobile_phone, privilege_bits, address_status, address_type) "
@@ -356,7 +356,7 @@ RETRYING:
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow[0]);
 		data_source_encode_squote(virtual_address, temp_name);
-		lower_string(temp_name);
+		HX_strlower(temp_name);
 		sprintf(sql_string, "INSERT INTO users (username, password, real_name, "
 			"domain_id, group_id, maildir, max_size, max_file, create_day, "
 			"mobile_phone, privilege_bits, address_status, address_type) "
@@ -375,7 +375,7 @@ RETRYING:
 	mysql_free_result(pmyres);
 
 	data_source_encode_squote(listname, temp_name);
-	lower_string(temp_name);
+	HX_strlower(temp_name);
 	snprintf(sql_string, 4096, "INSERT INTO mlists (listname, domain_id, "
 		"list_type, list_privilege) VALUES ('%s', %d, 3, %d)", temp_name,
 		domain_id, list_privilege);
@@ -1378,7 +1378,7 @@ RETRYING:
 
 
 	data_source_encode_squote(address, temp_name);
-	lower_string(temp_name);
+	HX_strlower(temp_name);
 	sprintf(sql_string, "INSERT INTO specifieds (username, list_id) "
 		"VALUES ('%s', %d)", temp_name, list_id);
 

@@ -1733,7 +1733,7 @@ void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length)
 		memset(username, 0, sizeof(username));
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username);
 		ptoken = strchr(username, '@');
-		lower_string(username);
+		HX_strlower(username);
 		if (NULL != ptoken) {
 			ptoken ++;
 		} else {

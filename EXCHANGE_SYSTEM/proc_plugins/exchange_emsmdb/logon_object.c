@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "emsmdb_interface.h"
 #include "msgchg_grouping.h"
 #include "logon_object.h"
@@ -132,7 +133,7 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 			free(tmp_name.pname);
 		}
 	}
-	lower_string(tmp_string);
+	HX_strlower(tmp_string);
 	if (NULL == str_hash_query(plogon->ppropname_hash, tmp_string)) {
 		if (1 != str_hash_add(plogon->ppropname_hash, tmp_string, &propid)) {
 			if (FALSE == logon_object_enlarge_propname_hash(plogon)
@@ -377,7 +378,7 @@ BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
 		break;
 	case KIND_NAME:
 		snprintf(tmp_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
-		lower_string(tmp_string);
+		HX_strlower(tmp_string);
 		break;
 	default:
 		*ppropid = 0;
@@ -454,7 +455,7 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 		case KIND_NAME:
 			snprintf(tmp_string, 256, "%s:name:%s",
 				tmp_guid, ppropnames->ppropname[i].pname);
-			lower_string(tmp_string);
+			HX_strlower(tmp_string);
 			break;
 		default:
 			ppropids->ppropid[i] = 0;

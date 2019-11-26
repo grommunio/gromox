@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "invalid_user.h"
 #include "config_file.h"
 #include "mail_func.h"
@@ -90,8 +91,7 @@ BOOL invalid_user_check(const char *rcpt_address)
 
 	strncpy(temp_string, rcpt_address, 255);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
-	
+	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_table_lock); 
     ptime = (time_t*)str_hash_query(g_hash_table, temp_string);
     time(&current_time);                  
@@ -165,7 +165,7 @@ static BOOL invalid_user_add(const char *rcpt_address)
 
 	strncpy(temp_string, rcpt_address, 256);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_table_lock);
 	time(&current_time);
     ptime = (time_t*)str_hash_query(g_hash_table, temp_string);
@@ -192,7 +192,7 @@ static void invalid_user_remove(const char *rcpt_address)
 
 	strncpy(temp_string, rcpt_address, 256);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_table_lock);
     str_hash_remove(g_hash_table, temp_string);
 	pthread_mutex_unlock(&g_table_lock);

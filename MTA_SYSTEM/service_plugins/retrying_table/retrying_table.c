@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "retrying_table.h"
 #include "config_file.h"
 #include "str_hash.h"
@@ -106,7 +107,7 @@ BOOL retrying_table_check(const char *ip, const char *from, MEM_FILE *pfile)
 	snprintf(temp_string, 255, "%s:%s:%s:%d", temp_ip, from, temp_rcpt,
 		rcpt_num);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	
 	pthread_mutex_lock(&g_table_lock); 
     ptime = (time_t*)str_hash_query(g_hash_table, temp_string);

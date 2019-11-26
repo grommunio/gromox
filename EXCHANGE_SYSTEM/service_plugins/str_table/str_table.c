@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "str_table.h"
 #include "str_hash.h"
 #include "util.h"
@@ -95,7 +96,7 @@ BOOL str_table_query(const char* str)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_rwlock_rdlock(&g_refresh_lock);
     if (NULL != str_hash_query(g_string_list_table, temp_string)) {
@@ -140,7 +141,7 @@ static int str_table_refresh()
 	}
     for (i=0; i<list_len; i++) {
 		if (FALSE == g_case_sensitive) {
-			lower_string(pitem + 256*i);
+			HX_strlower(pitem + 256 * i);
 		}
         str_hash_add(phash, pitem + 256*i, &i);   
     }
@@ -181,7 +182,7 @@ BOOL str_table_add(const char* str)
 	strncpy(temp_string, str, 255);
 	temp_string[255] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	string_len = strlen(temp_string);
 	for (i=0, j=0; i<string_len; i++, j++) {
@@ -262,7 +263,7 @@ BOOL str_table_remove(const char* str)
 	strncpy(temp_string, str, 255);
 	temp_string[255] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_rwlock_wrlock(&g_refresh_lock);
 	/* check first if the string is in hash table */

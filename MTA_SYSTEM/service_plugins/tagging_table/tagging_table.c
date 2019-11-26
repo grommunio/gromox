@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "tagging_table.h"
 #include "str_hash.h"
 #include "util.h"
@@ -94,15 +95,14 @@ BOOL tagging_table_check(const char* from, MEM_FILE *pfile)
 	
 	strncpy(temp_string, from, 256);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
-	
+	HX_strlower(temp_string);
     if (NULL != str_hash_query(g_tagging_table, temp_string)) {
 		pthread_rwlock_unlock(&g_refresh_lock);
         return TRUE;
     }
 	
 	while (MEM_END_OF_FILE != mem_file_readline(pfile, temp_string, 256)) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 		if (NULL != str_hash_query(g_tagging_table, temp_string)) {
 			pthread_rwlock_unlock(&g_refresh_lock);
 			return TRUE;
@@ -145,7 +145,7 @@ static int tagging_table_refresh()
 		return TAGGING_TABLE_REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		lower_string(pitem + 256*i);
+		HX_strlower(pitem + 256 * i);
         str_hash_add(phash, pitem + 256*i, &i);   
     }
     list_file_free(plist_file);
@@ -184,7 +184,7 @@ static BOOL tagging_table_add(const char* str)
 	}
 	strncpy(temp_string, str, 255);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	string_len = strlen(temp_string);
 	for (i=0, j=0; i<string_len; i++, j++) {
 		if (' ' == temp_string[i] || '\\' == temp_string[i] ||
@@ -263,7 +263,7 @@ BOOL tagging_table_remove(const char* str)
 	}
 	strncpy(temp_string, str, 255);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
+	HX_strlower(temp_string);
 	
 	pthread_rwlock_wrlock(&g_refresh_lock);
 	/* check first if the string is in hash table */

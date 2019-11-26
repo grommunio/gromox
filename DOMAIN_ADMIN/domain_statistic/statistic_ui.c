@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "statistic_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -208,7 +209,7 @@ int statistic_ui_run()
 			}
 			memcpy(domain, ptr1, ptr2 - ptr1);
 			domain[ptr2 - ptr1] = '\0';
-			lower_string(domain);
+			HX_strlower(domain);
 			
 			ptr1 = ptr2 + 9;
 			ptr2 = search_string(query, "&year=", len);

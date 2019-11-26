@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "group_monitor.h"
 #include <gromox/hook_common.h>
 #include "mail_func.h"
@@ -197,7 +198,7 @@ BOOL group_monitor_process(MESSAGE_CONTEXT *pcontext)
 	mem_file_init(&temp_file, pcontext->pcontrol->f_rcpt_to.allocator);
 	mem_file_copy(&pcontext->pcontrol->f_rcpt_to, &f_rcpt_to);
 	strcpy(temp_from, pcontext->pcontrol->from);
-	lower_string(temp_from);
+	HX_strlower(temp_from);
 	pdomain = strchr(temp_from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
@@ -207,7 +208,7 @@ BOOL group_monitor_process(MESSAGE_CONTEXT *pcontext)
 			if (TRUE == get_group_name(temp_from, temp_group) &&
 				'\0' != temp_group[0]) {
 				mem_file_writeline(&temp_file, temp_group);
-				lower_string(temp_group);
+				HX_strlower(temp_group);
 				pforward_context = NULL;
 				pthread_rwlock_rdlock(&g_table_lock);
 				pphash = (STR_HASH_TABLE**)str_hash_query(g_group_hash,
@@ -256,7 +257,7 @@ BOOL group_monitor_process(MESSAGE_CONTEXT *pcontext)
 					} else {
 						mem_file_writeline(&temp_file, temp_group);
 					}
-					lower_string(temp_group);
+					HX_strlower(temp_group);
 					pforward_context = NULL;
 					pthread_rwlock_rdlock(&g_table_lock);
 					pphash = (STR_HASH_TABLE**)str_hash_query(g_group_hash,
@@ -343,7 +344,7 @@ static void group_monitor_forward(const char *group, STR_HASH_TABLE *phash,
 	/* search every recipient and check if they have forwarder */
 	mem_file_seek(fp_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(fp_rcpt_to, rcpt_to, 256)) {
-		lower_string(rcpt_to);
+		HX_strlower(rcpt_to);
 		pdomain1 = strchr(rcpt_to, '@');
 		if (NULL == pdomain1) {
 			continue;
@@ -466,7 +467,7 @@ static int group_monitor_add_group(const char *group)
 	char *str_type, *str_tag, *str_value;
 
 	strcpy(temp_group, group);
-	lower_string(temp_group);
+	HX_strlower(temp_group);
 	pdomain = strchr(temp_group, '@');
 	if (NULL == pdomain) {
 		return GROUP_LOAD_NAME_ERROR;
@@ -502,7 +503,7 @@ static int group_monitor_add_group(const char *group)
 				"of \"F_IN\", \"F_OUT\", \"F_ALL\"\n", i + 1);
 			continue;
 		}
-		lower_string(str_tag);
+		HX_strlower(str_tag);
 		if (FALSE == group_monitor_add_table(phash, type, str_tag, 
 			str_value)) {
 			printf("[group_monitor]: fail to add %s into table, it may "
@@ -565,7 +566,7 @@ static void group_monitor_remove_group(const char *group)
 	STR_HASH_ITER *iter;
 
 	strcpy(temp_group, group);
-	lower_string(temp_group);
+	HX_strlower(temp_group);
 	pdomain = strchr(temp_group, '@');
 	if (NULL == pdomain) {
 		return;

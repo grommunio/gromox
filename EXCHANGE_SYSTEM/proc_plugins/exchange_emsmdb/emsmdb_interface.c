@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
 #include "notify_response.h"
@@ -258,8 +259,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	temp_handle.info.upctx_ref = 0;
 	time(&temp_handle.last_time);
 	strncpy(temp_handle.username, username, 256);
-	lower_string(temp_handle.username);
-	
+	HX_strlower(temp_handle.username);
 	guid_to_string(&temp_handle.guid, guid_string, sizeof(guid_string));
 	pthread_mutex_lock(&g_lock);
 	if (1 != str_hash_add(g_handle_hash, guid_string, &temp_handle)) {

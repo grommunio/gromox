@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "domain_monitor.h"
 #include "mail_func.h"
 #include "list_file.h"
@@ -158,7 +159,7 @@ BOOL domain_monitor_process(MESSAGE_CONTEXT *pcontext)
 	mem_file_copy(&pcontext->pcontrol->f_rcpt_to, &f_rcpt_to);
 	
 	strcpy(temp_from, pcontext->pcontrol->from);
-	lower_string(temp_from);
+	HX_strlower(temp_from);
 	pdomain = strchr(temp_from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
@@ -185,7 +186,7 @@ BOOL domain_monitor_process(MESSAGE_CONTEXT *pcontext)
 	}
 	while (MEM_END_OF_FILE != mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
 		temp_rcpt, 256)) {
-		lower_string(temp_rcpt);
+		HX_strlower(temp_rcpt);
 		pdomain = strchr(temp_rcpt, '@');
 		if (NULL != pdomain) {
 			pdomain ++;
@@ -281,7 +282,7 @@ static void domain_monitor_forward(const char *domain, STR_HASH_TABLE *phash,
 	/* search every recipient and check if they have forwarder */
 	mem_file_seek(fp_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(fp_rcpt_to, rcpt_to, 256)) {
-		lower_string(rcpt_to);
+		HX_strlower(rcpt_to);
 		pdomain1 = strchr(rcpt_to, '@');
 		if (NULL == pdomain1) {
 			continue;
@@ -403,7 +404,7 @@ static int domain_monitor_add_domain(const char *domain)
 	char *str_type, *str_tag, *str_value;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	sprintf(temp_path, "%s/%s.txt", g_root_path, temp_domain);
 	/* initialize the list filter */
 	plist_file = list_file_init(temp_path, "%s:16%s:256:%s:256");
@@ -434,7 +435,7 @@ static int domain_monitor_add_domain(const char *domain)
 				"of \"F_IN\", \"F_OUT\", \"F_ALL\"\n", i + 1);
 			continue;
 		}
-		lower_string(str_tag);
+		HX_strlower(str_tag);
 		if (FALSE == domain_monitor_add_table(phash, type, str_tag, 
 			str_value)) {
 			printf("[domain_monitor]: fail to add %s into table, it may "
@@ -485,8 +486,7 @@ static void domain_monitor_remove_domain(const char *domain)
 	STR_HASH_TABLE *phash = NULL;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-	
+	HX_strlower(temp_domain);
 	pthread_rwlock_wrlock(&g_table_lock);
 	pphash = (STR_HASH_TABLE**)str_hash_query(g_domain_hash, temp_domain);
 	if (NULL != pphash) {

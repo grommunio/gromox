@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "sender_routing.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -110,7 +111,7 @@ static STR_HASH_TABLE* sender_routing_load_hash()
 	for (i=0; i<list_num; i++) {
 		sender_name = pitem + 1280*i;
 		routing_ips = sender_name + 256;
-		lower_string(sender_name);
+		HX_strlower(sender_name);
 		single_list_init(&temp_list);
 		pbegin = routing_ips;
 		while (NULL != (pcomma = strchr(pbegin, ':'))) {
@@ -170,7 +171,7 @@ BOOL sender_routing_check(const char *sender, VSTACK *pstack)
 	SINGLE_LIST_NODE *pnode;
 	
 	strncpy(tmp_sender, sender, sizeof(tmp_sender));
-	lower_string(tmp_sender);
+	HX_strlower(tmp_sender);
 	vstack_clear(pstack);
 	pthread_mutex_lock(&g_hash_lock);
 	plist = (SINGLE_LIST*)str_hash_query(g_hash_table, tmp_sender);

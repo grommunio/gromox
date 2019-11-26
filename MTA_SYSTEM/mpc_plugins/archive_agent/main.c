@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "list_file.h"
 #include "config_file.h"
@@ -608,8 +609,7 @@ static BACK_CONN *get_connection(const char *pdomain)
 		memcpy(tmp_buff, pdomain, len);
 		memset(tmp_buff + len, 0, 9 - len);
 	}
-
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 
 	pthread_mutex_lock(&g_server_lock);
 	if (0 == double_list_get_nodes_num(&g_server_list)) {

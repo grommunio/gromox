@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "auth_cache.h"
 #include "str_hash.h"
 #include "util.h"
@@ -64,8 +65,8 @@ BOOL auth_cache_login(const char *username, const char *password)
     }
 	strncpy(temp_string, username, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);	
-	
+	HX_strlower(temp_string);
+
 	pthread_mutex_lock(&g_hash_lock); 
     pitem = (STR_ITEM*)str_hash_query(g_cache_hash, temp_string);
 	if (NULL == pitem) {
@@ -93,7 +94,7 @@ void auth_cache_add(const char *username, const char *password)
     }
 	strncpy(temp_string, username, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);	
+	HX_strlower(temp_string);
 	strcpy(temp_item.password, password);
 	temp_item.times = 1;
 	

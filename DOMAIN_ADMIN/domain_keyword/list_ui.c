@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "list_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -225,7 +226,7 @@ int list_ui_run()
 			}
 			memcpy(domain, ptr1, ptr2 - ptr1);
 			domain[ptr2 - ptr1] = '\0';
-			lower_string(domain);
+			HX_strlower(domain);
 			ptr1 = ptr2 + 9;
 			ptr2 = search_string(search_buff, "&keyword=", len);
 			if (NULL == ptr2) {

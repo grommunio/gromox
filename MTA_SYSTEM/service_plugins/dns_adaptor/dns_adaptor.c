@@ -1,4 +1,5 @@
 #include <libHX/misc.h>
+#include <libHX/string.h>
 #include <gromox/resolv.h>
 #include "dns_adaptor.h"
 #include "inbound_ips.h"
@@ -191,7 +192,7 @@ static BOOL dns_adaptor_refresh()
 	for (i=0; i<list_num; i++) {
 		dns_type = pitem + 1284*i;
 		dns_name = dns_type + 4;
-		lower_string(dns_name);
+		HX_strlower(dns_name);
 		dns_ips = dns_name + 256;
 		if (0 == strcasecmp(dns_type, "MX")) {
 			ptable = g_MX_table;
@@ -307,7 +308,7 @@ BOOL dns_adaptor_query_MX(char* mx_name, VSTACK* pstack)
 	char tmp_name[256];
 
 	strncpy(tmp_name, mx_name, 256);
-	lower_string(tmp_name);
+	HX_strlower(tmp_name);
 	if (TRUE == dns_adaptor_query_table(tmp_name, pstack, g_MX_table,
 		&g_MX_lock)) {
 		return TRUE;
@@ -354,7 +355,7 @@ BOOL dns_adaptor_query_A(char* a_name, VSTACK* pstack)
 	char tmp_name[256];
 
 	strncpy(tmp_name, a_name, 256);
-	lower_string(tmp_name);
+	HX_strlower(tmp_name);
 	if (TRUE == dns_adaptor_query_table(tmp_name, pstack, g_A_table, &g_A_lock)) {
 		return TRUE;
 	}
@@ -537,7 +538,7 @@ static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 	
 	for (i=0; i<num; i++) {
 		if (extract_ip(mxhosts[i], temp_ip) == NULL) {
-			lower_string(mxhosts[i]);
+			HX_strlower(mxhosts[i]);
 			if (TRUE == dns_adaptor_query_A_table_into_list(mxhosts[i], plist)||
 				TRUE == dns_adaptor_get_A_into_list(mxhosts[i], plist)) {
 				ret_val = TRUE;

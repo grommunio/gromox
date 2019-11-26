@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "domain_classifier.h"
 #include "util.h"
 #include "str_hash.h"
@@ -171,7 +172,7 @@ int domain_classifier_run()
 				continue;
 			}
 			memcpy(item.from, ptr, length);
-			lower_string(item.from);
+			HX_strlower(item.from);
 			if (TRUE == b_outgoing) {
 				first_domain = strchr(item.from, '@');
 				if (NULL == first_domain) {
@@ -208,7 +209,7 @@ int domain_classifier_run()
 					continue;
 				}
 				memcpy(item.to + 64*i, ptr_prev, ptr - ptr_prev);
-				lower_string(item.to + 64*i);
+				HX_strlower(item.to + 64 * i);
 				if (FALSE == b_outgoing) {
 					if (0 == i) {
 						first_domain = strchr(item.to, '@');
@@ -359,7 +360,7 @@ int domain_classifier_run()
 					continue;
 				}
 				memcpy(item.from, ptr, length);
-				lower_string(item.from);
+				HX_strlower(item.from);
 				ptr = ptr1 + 6;
 				ptr1 = strstr(ptr, " ");
 				if (NULL == ptr1) {
@@ -370,7 +371,7 @@ int domain_classifier_run()
 					continue;
 				}
 				memcpy(item.to, ptr, length);
-				lower_string(item.to);
+				HX_strlower(item.to);
 				/* get "to domain" name */
 				first_domain = strchr(item.to, '@');
 				if (NULL == first_domain) {

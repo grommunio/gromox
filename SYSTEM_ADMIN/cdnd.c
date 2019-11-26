@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -711,7 +712,7 @@ static void *thread_work_func(void *param)
 		if (0 == strncasecmp(pconnection->line, "MAILBOX ", 8) &&
 			strlen(pconnection->line) > 8) {
 			strncpy(username, pconnection->line + 8, 128);
-			lower_string(username);
+			HX_strlower(username);
 			pthread_mutex_lock(&g_hash_lock);
 			puser = str_hash_query(g_user_hash, username);
 			if (NULL != puser) {
@@ -1900,7 +1901,7 @@ static USER_ITEM* lock_mailbox(const char *username)
 
 	count = 1;
 	strncpy(temp_user, username, 128);
-	lower_string(temp_user);
+	HX_strlower(temp_user);
 
 TRY_LOCK:
 	pthread_mutex_lock(&g_hash_lock);

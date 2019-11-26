@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdint.h>
+#include <libHX/string.h>
 #include "html.h"
 #include "util.h"
 #include "int_hash.h"
@@ -233,7 +234,7 @@ static void html_set_fonttable(RTF_WRITER *pwriter, const char* font_name)
 	FONT_NODE tmp_node;
 	
 	strncpy(tmp_node.font_name, font_name, sizeof(tmp_node.font_name));
-	lower_string(tmp_node.font_name);
+	HX_strlower(tmp_node.font_name);
 	pfnode = str_hash_query(pwriter->pfont_hash, tmp_node.font_name);
 	if (NULL != pfnode) {
 		return;
@@ -254,7 +255,7 @@ static int html_get_fonttable(RTF_WRITER *pwriter, const char* font_name)
 	char tmp_buff[128];
 	
 	strncpy(tmp_buff, font_name, 128);
-	lower_string(tmp_buff);
+	HX_strlower(tmp_buff);
 	pfnode = str_hash_query(pwriter->pfont_hash, tmp_buff);
 	if (NULL == pfnode) {
 		return -1;
@@ -672,7 +673,7 @@ static int html_convert_color(const char *value)
 		return color;
 	}
 	strcpy(color_string, value);
-	lower_string(color_string);
+	HX_strlower(color_string);
 	pcolor = str_hash_query(g_color_hash, color_string);
 	if (NULL != pcolor) {
 		return *pcolor;

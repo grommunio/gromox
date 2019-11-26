@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "guid.h"
 #include "rpc_ext.h"
@@ -820,7 +821,7 @@ uint32_t zarafa_server_logon(const char *username,
 		}
 	}
 	strncpy(tmp_name, username, sizeof(tmp_name));
-	lower_string(tmp_name);
+	HX_strlower(tmp_name);
 	pthread_mutex_lock(&g_table_lock);
 	puser_id = str_hash_query(g_user_table, tmp_name);
 	if (NULL != puser_id) {
@@ -858,7 +859,7 @@ uint32_t zarafa_server_logon(const char *username,
 	tmp_info.domain_id = domain_id;
 	tmp_info.org_id = org_id;
 	strcpy(tmp_info.username, username);
-	lower_string(tmp_info.username);
+	HX_strlower(tmp_info.username);
 	strcpy(tmp_info.lang, lang);
 	if (FALSE == system_services_lang_to_charset(
 		lang, charset)) {
@@ -1405,7 +1406,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	if (TRUE == common_util_parse_addressbook_entryid(
 		entryid, &address_type, essdn)) {
 		if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
-			lower_string(essdn);
+			HX_strlower(essdn);
 			if ('\0' == essdn[0]) {
 				type = CONTAINER_TYPE_ABTREE;
 				container_id.abtree_id.base_id = base_id;

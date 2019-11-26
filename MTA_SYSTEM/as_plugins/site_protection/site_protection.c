@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "site_protection.h"
 #include "str_hash.h"
 #include "double_list.h"
@@ -134,7 +135,7 @@ static int site_protection_list_refresh()
 			continue;
 		}
 		pbegin += 16;
-		lower_string(pbegin);
+		HX_strlower(pbegin);
 		str_hash_add(phash, pbegin, &temp_protection);
 		pprotection = (PROTECTION_ITEM*)str_hash_query(phash, pbegin);
 		if (NULL == pprotection) {
@@ -203,7 +204,7 @@ BOOL site_protection_verify(char *domain, char *ip)
 	char temp_domain[256];
 	
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	pthread_rwlock_rdlock(&g_reload_lock);
 	if (NULL != g_protection_hash) {
 		pprotection = (PROTECTION_ITEM*)str_hash_query(

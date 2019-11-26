@@ -286,7 +286,7 @@ RETRYING:
 	temp_privilege = (domain_privilege|privilege_bits);
 
 	data_source_encode_squote(groupname, temp_group);
-	lower_string(temp_group);
+	HX_strlower(temp_group);
 	data_source_encode_squote(title, temp_title);
 	snprintf(sql_string, 4096, "INSERT INTO groups (groupname, password,"
 		"domain_id, max_size, max_user, title, create_day, privilege_bits, "

@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "uri_rbl.h"
 #include "uri_cache.h"
 #include "str_hash.h"
@@ -390,8 +391,7 @@ BOOL uri_rbl_check_cctld(const char *domain)
 	
 	strncpy(temp_string, domain, 255);
 	temp_string[255] = '\0';
-	lower_string(temp_string);
-	
+	HX_strlower(temp_string);
 	pthread_rwlock_rdlock(&g_table_lock);
 	if (NULL != str_hash_query(g_cctld_hash, temp_string)) {
 		pthread_rwlock_unlock(&g_table_lock);
@@ -444,7 +444,7 @@ BOOL uri_rbl_refresh()
 		return FALSE;
 	}
 	for (i=0; i<count; i++) {
-		lower_string(pitem + 256*i);
+		HX_strlower(pitem + 256 * i);
 		str_hash_add(phash, pitem + 256*i, &i);
 	}
 	list_file_free(plist);

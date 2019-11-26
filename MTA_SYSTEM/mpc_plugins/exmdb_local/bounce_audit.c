@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "bounce_audit.h"
 #include <gromox/hook_common.h>
 #include "mail_func.h"
@@ -90,8 +91,7 @@ BOOL bounce_audit_check(const char *audit_string)
     }
 	strncpy(temp_string, audit_string, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	lower_string(temp_string);	
-	
+	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_audit_mutex_lock); 
     ptime = (time_t*)str_hash_query(g_audit_hash, temp_string);
     time(&current_time);    

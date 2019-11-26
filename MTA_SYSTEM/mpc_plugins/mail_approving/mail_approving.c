@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "mail_approving.h"
 #include "bounce_producer.h"
 #include "mail_func.h"
@@ -183,7 +184,7 @@ BOOL mail_approving_process(MESSAGE_CONTEXT *pcontext)
 
 	
 	strcpy(temp_from, pcontext->pcontrol->from);
-	lower_string(temp_from);
+	HX_strlower(temp_from);
 	pdomain = strchr(temp_from, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -345,7 +346,7 @@ static int mail_approving_add_domain(const char *domain)
 	char *str_lang, *str_obj, *str_dst;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	domain_len = strlen(temp_domain);
 	sprintf(temp_path, "%s/%s.txt", g_root_path, temp_domain);
 	/* initialize the list filter */
@@ -366,7 +367,7 @@ static int mail_approving_add_domain(const char *domain)
 		str_obj = pitem + 544*i;
 		str_dst = str_obj + 256;
 		str_lang = str_dst + 256;
-		lower_string(str_obj);
+		HX_strlower(str_obj);
 		address_len = strlen(str_obj);
 		if (address_len <= domain_len + 1 ||
 			'@' != str_obj[address_len - domain_len - 1] ||
@@ -426,8 +427,7 @@ static void mail_approving_remove_domain(const char *domain)
 	STR_HASH_TABLE *phash = NULL;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-	
+	HX_strlower(temp_domain);
 	pthread_rwlock_wrlock(&g_table_lock);
 	pphash = (STR_HASH_TABLE**)str_hash_query(g_domain_hash, temp_domain);
 	if (NULL != pphash) {

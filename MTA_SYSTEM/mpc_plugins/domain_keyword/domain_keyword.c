@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "domain_keyword.h"
 #include "bounce_producer.h"
 #include "keyword_engine.h"
@@ -319,8 +320,7 @@ static BOOL domain_keyword_match(MESSAGE_CONTEXT *pcontext,
 	pdomain = strchr(pcontext->pcontrol->from, '@');
 	if (NULL != pdomain) {
 		strcpy(from_domain, pdomain + 1);
-		lower_string(from_domain);
-
+		HX_strlower(from_domain);
 		pthread_rwlock_rdlock(&g_hash_lock);
 		/* query the hash table */
 		ppengine = (KEYWORD_ENGINE**)str_hash_query(g_hash_table, from_domain);
@@ -339,7 +339,7 @@ static BOOL domain_keyword_match(MESSAGE_CONTEXT *pcontext,
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(
 		&pcontext->pcontrol->f_rcpt_to, temp_rcpt, 256)) {
-		lower_string(temp_rcpt);
+		HX_strlower(temp_rcpt);
 		pdomain = strchr(temp_rcpt, '@');
 		if (NULL == pdomain) {
 			continue;
@@ -547,7 +547,7 @@ static BOOL domain_keyword_insulate(MESSAGE_CONTEXT *pcontext, char *msgid)
 	}
 	pdomain ++;
 	strcpy(temp_domain, pdomain);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	time(&current_time);
 	snprintf(msgid, 128, "on.%d.%ld.%s", domain_keyword_sequence_ID(),
 		current_time, get_host_ID());
@@ -616,8 +616,7 @@ static void domain_keyword_remove(const char *domain)
 	KEYWORD_ENGINE **ppengine;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-	
+	HX_strlower(temp_domain);
 	pthread_rwlock_wrlock(&g_hash_lock);
 	ppengine= (KEYWORD_ENGINE**)str_hash_query(g_hash_table, temp_domain);
 	if (NULL != ppengine) {
@@ -641,8 +640,7 @@ static int domain_keyword_add(const char *domain)
 	KEYWORD_ENGINE **ppengine;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-
+	HX_strlower(temp_domain);
 	sprintf(charset_path, "%s/charset.txt", g_root_path);
 	sprintf(keyword_path, "%s/%s.txt", g_root_path, temp_domain);
 	pengine = keyword_engine_init(charset_path, keyword_path);

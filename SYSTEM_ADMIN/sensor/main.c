@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -589,7 +590,7 @@ NEXT_LOOP:
 		}
 
 		if (0 == strncasecmp(pconnection->line, "SET ", 4)) {
-			lower_string(pconnection->line + 4);
+			HX_strlower(pconnection->line + 4);
 			pspace = strchr(pconnection->line + 4, ' ');
 			if (NULL == pspace) {
 				write(pconnection->sockd, "FALSE 1\r\n", 9);	
@@ -632,7 +633,7 @@ NEXT_LOOP:
 			}
 			write(pconnection->sockd, "TRUE\r\n", 6);
 		} else if (0 == strncasecmp(pconnection->line, "ADD ", 4)) {
-			lower_string(pconnection->line + 4);
+			HX_strlower(pconnection->line + 4);
 			pspace = strchr(pconnection->line + 4, ' ');
 			if (NULL == pspace) {
 				write(pconnection->sockd, "FALSE 1\r\n", 9);
@@ -673,13 +674,13 @@ NEXT_LOOP:
 			}
 			write(pconnection->sockd, "TRUE\r\n", 6);
 		} else if (0 == strncasecmp(pconnection->line, "REM ", 4)) {
-			lower_string(pconnection->line + 4);
+			HX_strlower(pconnection->line + 4);
 			pthread_mutex_lock(&g_hash_lock);
 			str_hash_remove(g_hash_table, pconnection->line + 4);
 			pthread_mutex_unlock(&g_hash_lock);
 			write(pconnection->sockd, "TRUE\r\n", 6);
 		} else if (0 == strncasecmp(pconnection->line, "GET ", 4)) {
-			lower_string(pconnection->line + 4);
+			HX_strlower(pconnection->line + 4);
 			pthread_mutex_lock(&g_hash_lock);
 			pitem = (SENSOR_ITEM*)str_hash_query(
 				g_hash_table, pconnection->line + 4);

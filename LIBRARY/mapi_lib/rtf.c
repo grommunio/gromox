@@ -361,7 +361,7 @@ static BOOL rtf_escape_output(RTF_READER *preader, char *string)
 		HX_strupper(string);
 	}
 	if (TRUE == preader->b_simulate_smallcaps) {
-		lower_string(string);
+		HX_strlower(string);
 	}
 	for (i=0; i<tmp_len; i++) {
 		switch (string[i]) {

@@ -407,7 +407,7 @@ int upload_ui_run()
 				domainname[i] = post_buff[i];
 			}
 		}
-		lower_string(domainname);
+		HX_strlower(domainname);
 
 		while (NULL != fgets(post_buff, 1024, stdin)) {
 			if (0 == strcmp(post_buff, boundary)) {
@@ -695,7 +695,7 @@ int upload_ui_run()
 			}
 			memcpy(domainname, ptr1, ptr2 - ptr1);
 			domainname[ptr2 - ptr1] = '\0';
-			lower_string(domainname);
+			HX_strlower(domainname);
 
 			ptr1 = ptr2 + 9;
 			if (strlen(ptr1) > 127) {
@@ -1572,7 +1572,7 @@ static BOOL upload_ui_xls_input(const char *domainname,
 			}
 			strcpy(pitem->username, row->cells.cell[0].str);
 		}
-		lower_string(pitem->username);
+		HX_strlower(pitem->username);
 		for (pnode=double_list_get_head(plist); NULL!=pnode;
 			pnode=double_list_get_after(plist, pnode)) {
 			if (0 == strcasecmp(pitem->username,
@@ -1864,7 +1864,7 @@ static BOOL upload_ui_xls_delete(const char *domainname,
 			}
 			strcpy(pitem->username, row->cells.cell[0].str);
 		}
-		lower_string(pitem->username);
+		HX_strlower(pitem->username);
 		double_list_append_as_tail(plist, &pitem->node);
 	}
 	

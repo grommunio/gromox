@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "double_list.h"
 #include "str_hash.h"
@@ -529,7 +530,7 @@ NEXT_LOOP:
 		}
 
 		if (0 == strncasecmp(pconnection->line, "ALLOC ", 6)) {
-			lower_string(pconnection->line + 6);
+			HX_strlower(pconnection->line + 6);
 			pthread_mutex_lock(&g_session_lock);
 			plist = (DOUBLE_LIST*)str_hash_query(g_session_table,
 						pconnection->line + 6);
@@ -621,7 +622,7 @@ NEXT_LOOP:
 			pthread_mutex_unlock(&g_session_lock);
 			write(pconnection->sockd, temp_line, 39);
 		} else if (0 == strncasecmp(pconnection->line, "FREE ", 5)) {
-			lower_string(pconnection->line + 5);
+			HX_strlower(pconnection->line + 5);
 			pspace = strchr(pconnection->line + 5, ' ');
 			if (NULL == pspace) {
 				write(pconnection->sockd, "FALSE\r\n", 7);
@@ -662,7 +663,7 @@ NEXT_LOOP:
 				continue;
 			}
 			*pspace = '\0';
-			lower_string(pconnection->line + 4);
+			HX_strlower(pconnection->line + 4);
 			pspace ++;
 			pspace1 = strchr(pspace, ' ');
 			if (NULL == pspace1) {
@@ -719,7 +720,7 @@ NEXT_LOOP:
 				write(pconnection->sockd, "FALSE\r\n", 7);
 			}
 		} else if (0 == strncasecmp(pconnection->line, "CHECK ", 6)) {
-			lower_string(pconnection->line + 6);
+			HX_strlower(pconnection->line + 6);
 			pspace = strchr(pconnection->line + 6, ' ');
 			if (NULL == pspace) {
 				write(pconnection->sockd, "FALSE\r\n", 7);
@@ -765,7 +766,7 @@ NEXT_LOOP:
 				write(pconnection->sockd, "FALSE\r\n", 7);
 			}
 		} else if (0 == strncasecmp(pconnection->line, "QUERY ", 6)) {
-			lower_string(pconnection->line + 6);
+			HX_strlower(pconnection->line + 6);
 			pspace = strchr(pconnection->line + 6, ' ');
 			if (NULL == pspace) {
 				write(pconnection->sockd, "FALSE\r\n", 7);
@@ -824,7 +825,7 @@ NEXT_LOOP:
 				continue;
 			}
 			*pspace = '\0';
-			lower_string(pconnection->line + 4);
+			HX_strlower(pconnection->line + 4);
 			pspace ++;
 			pthread_mutex_lock(&g_user_lock);
 			puser = str_hash_query(g_user_table, pconnection->line + 4);
@@ -855,7 +856,7 @@ NEXT_LOOP:
 			pthread_mutex_unlock(&g_user_lock);
 			write(pconnection->sockd, "TRUE\r\n", 6);
 		} else if (0 == strncasecmp(pconnection->line, "GET ", 4)) {
-			lower_string(pconnection->line + 4);
+			HX_strlower(pconnection->line + 4);
 			pthread_mutex_lock(&g_user_lock);
 			puser = str_hash_query(g_user_table, pconnection->line + 4);
 			if (NULL == puser) {

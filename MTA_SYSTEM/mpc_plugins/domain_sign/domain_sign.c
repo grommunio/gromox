@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <unistd.h>
+#include <libHX/string.h>
 #include "domain_sign.h"
 #include "single_list.h"
 #include "str_hash.h"
@@ -186,8 +187,7 @@ void domain_sign_mark(const char *domain, MAIL *pmail)
 	}
 
 	strncpy(temp_domain, domain, 255);
-	lower_string(temp_domain);
-
+	HX_strlower(temp_domain);
 	pthread_rwlock_rdlock(&g_hash_lock);
 	pplist = str_hash_query(g_sign_hash, temp_domain);
 	if (NULL == pplist) {
@@ -351,7 +351,7 @@ static int domain_sign_add_domain(const char *domain)
 	SINGLE_LIST *plist, **pptemp_list;
 
 	strncpy(temp_domain, domain, 255);
-	lower_string(temp_domain);
+	HX_strlower(temp_domain);
 	snprintf(temp_path, 255, "%s/%s", g_root_path, temp_domain);
 
 	plist = malloc(sizeof(SINGLE_LIST));
@@ -460,8 +460,7 @@ static void domain_sign_remove_domain(const char *domain)
 
 	plist = NULL;
 	strncpy(temp_domain, domain, 255);
-	lower_string(temp_domain);
-
+	HX_strlower(temp_domain);
 	pthread_rwlock_wrlock(&g_hash_lock);
 	pplist = (SINGLE_LIST**)str_hash_query(g_sign_hash, temp_domain);
 	if (NULL != pplist) {

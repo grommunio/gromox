@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "domain_limit.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -219,7 +220,7 @@ BOOL domain_limit_check(const char *from, MEM_FILE *pf_rcpt_to)
 	BOOL b_allowed;
 
 	strcpy(from_domain, strchr(from, '@') + 1);
-	lower_string(from_domain);
+	HX_strlower(from_domain);
 
 	/* query the deny table */
 	pthread_rwlock_rdlock(&g_deny_lock);
@@ -249,7 +250,7 @@ BOOL domain_limit_check(const char *from, MEM_FILE *pf_rcpt_to)
 	}
 	mem_file_seek(pf_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(pf_rcpt_to, temp_rcpt, 256)) {
-		lower_string(temp_rcpt);
+		HX_strlower(temp_rcpt);
 		rcpt_domain = strchr(temp_rcpt, '@') + 1;
 		plist = str_hash_query(g_deny_hash, rcpt_domain);
 		if (NULL != plist) {
@@ -304,7 +305,7 @@ BOOL domain_limit_check(const char *from, MEM_FILE *pf_rcpt_to)
 	}
 	mem_file_seek(pf_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(pf_rcpt_to, temp_rcpt, 256)) {
-		lower_string(temp_rcpt);
+		HX_strlower(temp_rcpt);
 		rcpt_domain = strchr(temp_rcpt, '@') + 1;
 		plist = str_hash_query(g_allow_hash, rcpt_domain);
 		if (NULL != plist) {
@@ -384,8 +385,7 @@ static void domain_limit_remove_deny(const char *domain)
 	char temp_path[256];
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-	
+	HX_strlower(temp_domain);
 	pthread_rwlock_wrlock(&g_deny_lock);
 	plist = str_hash_query(g_deny_hash, temp_domain);
 	if (NULL != plist) {
@@ -407,8 +407,7 @@ static void domain_limit_remove_allow(const char *domain)
 	char temp_path[256];
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-	
+	HX_strlower(temp_domain);
 	pthread_rwlock_wrlock(&g_allow_lock);
 	plist = str_hash_query(g_allow_hash, temp_domain);
 	if (NULL != plist) {
@@ -437,8 +436,7 @@ static int domain_limit_add_deny(const char *domain)
 	char *pitem;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-
+	HX_strlower(temp_domain);
 	sprintf(temp_path, "%s/deny/%s.txt", g_root_path, temp_domain);
 	plist_file = list_file_init(temp_path, "%s:256");
 	if (NULL == plist_file) {
@@ -509,8 +507,7 @@ static int domain_limit_add_allow(const char *domain)
 	char *pitem;
 
 	strcpy(temp_domain, domain);
-	lower_string(temp_domain);
-
+	HX_strlower(temp_domain);
 	sprintf(temp_path, "%s/allow/%s.txt", g_root_path, temp_domain);
 	plist_file = list_file_init(temp_path, "%s:256");
 	if (NULL == plist_file) {

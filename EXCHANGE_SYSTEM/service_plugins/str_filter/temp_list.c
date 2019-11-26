@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "temp_list.h"
 #include "str_filter.h"
 #include "str_hash.h"
@@ -96,7 +97,7 @@ BOOL temp_list_add_string(const char *str, int interval)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_mutex_lock(&g_string_mutex_lock);
 	
@@ -137,7 +138,7 @@ BOOL temp_list_remove_string(const char *str)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_mutex_lock(&g_string_mutex_lock);
 	if (NULL == str_hash_query(g_string_hash, temp_string)) {
@@ -173,7 +174,7 @@ BOOL temp_list_query(const char *str)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_mutex_lock(&g_string_mutex_lock);
 	pwhen = (time_t*)str_hash_query(g_string_hash, temp_string);
@@ -240,7 +241,7 @@ BOOL temp_list_echo(const char *str, time_t *puntil)
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	if (FALSE == g_case_sensitive) {
-		lower_string(temp_string);
+		HX_strlower(temp_string);
 	}
 	pthread_mutex_lock(&g_string_mutex_lock);
 	/* first remove the overdue items */

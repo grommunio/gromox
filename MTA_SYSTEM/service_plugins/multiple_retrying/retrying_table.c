@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "retrying_table.h"
 #include "config_file.h"
 #include "str_hash.h"
@@ -83,8 +84,7 @@ BOOL retrying_table_check(char *temp_string)
     if (NULL == g_hash_table) {
         return TRUE;
     }
-	lower_string(temp_string);
-	
+	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_table_lock); 
     ptime = (time_t*)str_hash_query(g_hash_table, temp_string);
     time(&current_time);                  

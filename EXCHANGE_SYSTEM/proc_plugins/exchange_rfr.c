@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/proc_common.h>
 #include "util.h"
 #include "guid.h"
@@ -105,7 +106,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	memset(username, 0, sizeof(username));
 	strcpy(username, rpc_info.username);
 	ptoken = strchr(username, '@');
-	lower_string(username);
+	HX_strlower(username);
 	if (NULL != ptoken) {
 		ptoken ++;
 	} else {
