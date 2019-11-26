@@ -80,11 +80,11 @@ static void* thread_work_func(void *param)
 		if (FALSE == url_downloader_get(temp_url, temp_path)) {
 			continue;
 		}
-		pconfig_master = config_file_init(temp_path);
+		pconfig_master = config_file_init2(temp_path, NULL);
 		if (NULL == pconfig_master) {
 			continue;
 		}
-		pconfig_slave = config_file_init(g_config_path);
+		pconfig_slave = config_file_init2(g_config_path, NULL);
 		if (NULL == pconfig_slave) {
 			continue;
 		}

@@ -270,7 +270,7 @@ static void* thread_work_func1(void *param)
 			data_source_collect_forward(pcollect)) {
 			pdomain_item = (DOMAIN_ITEM*)data_source_collect_get_value(pcollect);
 			sprintf(temp_path1, "%s/domain.cfg", pdomain_item->homedir);
-			pconfig = config_file_init(temp_path1);
+			pconfig = config_file_init2(NULL, temp_path1);
 			if (NULL != pconfig) {
 				str_value = config_file_get_value(pconfig, "COLLECTOR_MAILBOX");
 				if (NULL != str_value) {
@@ -311,7 +311,7 @@ static void* thread_work_func1(void *param)
 			data_source_collect_forward(pcollect)) {
 			pdomain_item = (DOMAIN_ITEM*)data_source_collect_get_value(pcollect);
 			sprintf(temp_path1, "%s/domain.cfg", pdomain_item->homedir);
-			pconfig = config_file_init(temp_path1);
+			pconfig = config_file_init2(NULL, temp_path1);
 			if (NULL != pconfig) {
 				str_value = config_file_get_value(pconfig, "SUBSYSTEM_ADDRESS");
 				if (NULL != str_value) {
@@ -393,8 +393,7 @@ static void* thread_work_func2(void *param)
 				continue;
 			}
 			sprintf(temp_path, "%s/domain.cfg", pdomain_item->homedir);
-			
-			pconfig = config_file_init(temp_path);
+			pconfig = config_file_init2(NULL, temp_path);
 			if (NULL == pconfig) {
 				pdomain_item->type = 0;	
 			} else {

@@ -229,7 +229,7 @@ void domain_subsystem_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 invalid times %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -253,7 +253,7 @@ void domain_subsystem_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 invalid interval %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;

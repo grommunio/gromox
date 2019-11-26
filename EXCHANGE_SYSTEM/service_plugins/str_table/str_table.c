@@ -124,7 +124,7 @@ static int str_table_refresh()
 	char *pitem;
 	
     /* initialize the list filter */
-	plist_file = list_file_init(g_list_path, "%s:256");
+	plist_file = list_file_init3(g_list_path, "%s:256", false);
 	if (NULL == plist_file) {
 		str_table_echo("fail to open list file");
 		return STR_TABLE_REFRESH_FILE_ERROR;

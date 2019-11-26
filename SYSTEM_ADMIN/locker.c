@@ -105,7 +105,6 @@ int main(int argc, const char **argv)
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 
-	opt_config_file = config_default_path("locker.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
@@ -113,8 +112,8 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);
-	pconfig = config_file_init(opt_config_file);
-	if (NULL == pconfig) {
+	pconfig = config_file_init2(opt_config_file, config_default_path("locker.cfg"));
+	if (opt_config_file != NULL && pconfig != NULL) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}

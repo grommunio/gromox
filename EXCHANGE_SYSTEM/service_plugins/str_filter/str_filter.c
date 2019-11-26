@@ -327,7 +327,7 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			if (audit_interval <= 0) {
 				snprintf(result, length,"550 %s is illegal", pslash + 1);
 			}
-			pconfig = config_file_init(g_config_path);
+			pconfig = config_file_init2(NULL, g_config_path);
 			if (NULL == pconfig) {
 				strncpy(result, "550 fail to open config file", length);
 				return;

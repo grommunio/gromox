@@ -612,7 +612,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 bounce-policy should be 0, 1 or 2");
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -644,7 +644,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 				"than 0");
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -669,7 +669,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 invalid alram-interval %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -692,7 +692,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 invalid retrying-times %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -715,7 +715,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 invalid backend-scan %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -738,7 +738,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 invalid cache-scan %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -761,7 +761,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 			snprintf(result, length, "550 invalid block-interval %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;

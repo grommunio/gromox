@@ -1175,8 +1175,7 @@ XMAILER_LIST:
 SYSTEM_SETUP:
 	sprintf(src_file, "%s/data_files/athena.cfg", g_backup_path);
 	file_operation_copy_file(src_file, g_config_path);
-
-	pconfig = config_file_init(g_config_path);
+	pconfig = config_file_init2(NULL, g_config_path);
 	if (NULL == pconfig) {
 		system_log_info("[backup_ui]: config_file_init %s: %s\n",
 			g_config_path, strerror(errno));

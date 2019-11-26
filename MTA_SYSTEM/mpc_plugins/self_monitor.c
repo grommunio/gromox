@@ -65,7 +65,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     case PLUGIN_INIT:
 		LINK_API(ppdata);
 		
-		pconfig = config_file_init("../config/smtp.cfg");
+		pconfig = config_file_init2(NULL, "../config/smtp.cfg");
 		if (NULL == pconfig) {
 			g_smtp_port = 25;
 		} else {

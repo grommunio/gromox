@@ -244,7 +244,7 @@ static int domain_table_refresh()
     STR_HASH_TABLE *phash = NULL;
 	
     /* initialize the list filter */
-	plist_file = list_file_init(g_domain_path, "%s:256%s:256");
+	plist_file = list_file_init3(g_domain_path, "%s:256%s:256", false);
 	if (NULL == plist_file) {
 		printf("[alias_translator]: fail to open domain list file\n");
 		return REFRESH_FILE_ERROR;
@@ -282,7 +282,7 @@ static int address_table_refresh()
     STR_HASH_TABLE *phash = NULL;
 	
     /* initialize the list filter */
-	plist_file = list_file_init(g_address_path, "%s:256%s:256");
+	plist_file = list_file_init3(g_address_path, "%s:256%s:256", false);
 	if (NULL == plist_file) {
 		printf("[alias_translator]: fail to open address list file\n");
 		return REFRESH_FILE_ERROR;

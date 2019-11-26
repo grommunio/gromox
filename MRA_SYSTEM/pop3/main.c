@@ -75,13 +75,11 @@ int main(int argc, const char **argv)
 
 	allocator = vstack_allocator_init(sizeof(STOP_FUNC), 50, FALSE);    
 	vstack_init(&stop_stack, allocator, sizeof(STOP_FUNC), 50);
-	opt_config_file = config_default_path("pop3.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, term_handler);
-	resource_init(opt_config_file);
- 
+	resource_init(opt_config_file, config_default_path("pop3.cfg"));
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 
 		goto EXIT_PROGRAM; 

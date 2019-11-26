@@ -687,7 +687,7 @@ static void list_ui_broadcast_list(const char *domain)
 	
 
 	snprintf(temp_path, 256, "%s/domain.cfg", g_domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		keyword_type = 0;
 	} else {
@@ -787,7 +787,7 @@ static void list_ui_approve_html(const char *domain, const char *session,
 		strcpy(language, "en");
 	} else {
 		snprintf(temp_path, 256, "%s/domain.cfg", g_domain_path);
-		pconfig = config_file_init(temp_path);
+		pconfig = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig) {
 			strcpy(language, "en");
 		} else {

@@ -43,7 +43,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
-		pfile = config_file_init(tmp_path);
+		pfile = config_file_init2(NULL, tmp_path);
 		if (NULL == pfile) {
 			printf("[%s]: config_file_init %s: %s\n", file_name, tmp_path, strerror(errno));
 			return FALSE;
@@ -65,7 +65,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		config_file_free(pfile);
-		pfile = config_file_init(config_file_path);
+		pfile = config_file_init2(NULL, config_file_path);
 		if (NULL == pfile) {
 			printf("[%s]: fail to open %s\n", file_name, config_file_path);
 			return FALSE;

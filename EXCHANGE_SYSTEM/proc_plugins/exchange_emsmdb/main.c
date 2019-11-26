@@ -83,7 +83,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		sprintf(data_path, "%s/%s", get_data_path(), file_name);
 		sprintf(resource_path, "%s/notify_bounce", get_data_path());
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
-		pfile = config_file_init(temp_path);
+		pfile = config_file_init2(NULL, temp_path);
 		if (NULL == pfile) {
 			printf("[exchange_emsmdb]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;

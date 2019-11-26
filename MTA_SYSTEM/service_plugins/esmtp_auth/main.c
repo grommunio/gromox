@@ -50,7 +50,8 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		sprintf(cfg_path, "%s/%s.cfg", get_config_path(), file_name);
 		sprintf(list_path, "%s/%s.txt", get_data_path(), file_name);
 		strcpy(g_config_path, cfg_path);
-        if (NULL == (cfg_file = config_file_init(cfg_path))) {
+		cfg_file = config_file_init2(NULL, cfg_path);
+		if (cfg_file == NULL) {
             printf("[service_auth]: can not open config file %s\n", cfg_path);
             return FALSE;
         }
@@ -217,7 +218,7 @@ static void console_talk(int argc, char** argv, char* result, int length)
 			snprintf(result, length, "550 invalid retrying-times %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -241,7 +242,7 @@ static void console_talk(int argc, char** argv, char* result, int length)
 			snprintf(result, length, "550 invalid scan-interval %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;

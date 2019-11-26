@@ -220,7 +220,7 @@ int grey_list_refresh()
 	if (0 == g_growing_num) {
 		return GREY_REFRESH_OK;
 	}
-	plist_file = list_file_init(g_list_path, "%s:16%d%s:32");
+	plist_file = list_file_init3(g_list_path, "%s:16%d%s:32", false);
 	if (NULL == plist_file) {
         ip_filter_echo("fail to open list file for grey list");
         return GREY_REFRESH_FILE_ERROR;

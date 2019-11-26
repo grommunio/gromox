@@ -101,7 +101,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		sprintf(g_config_path, "%s/%s.cfg", get_config_path(), file_name);
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			printf("[relay_agent]: config_file_init %s: %s\n", g_config_path, strerror(errno));
 			return FALSE;
@@ -459,7 +459,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 
 	if (3 == argc && 0 == strcmp("switch", argv[1])) {
 		if (0 == strcasecmp(argv[2], "ON")) {
-			pfile = config_file_init(g_config_path);
+			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
 				strncpy(result, "550 fail to open config file", length);
 				return;
@@ -475,7 +475,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 			strncpy(result, "250 relay switch is turned ON", length);
 			return;
 		} else if (0 == strcasecmp(argv[2], "OFF")) {
-			pfile = config_file_init(g_config_path);
+			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
 				strncpy(result, "550 fail to open config file", length);
 				return;
@@ -502,7 +502,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 			snprintf(result, length, "550 illegal interval %s", argv[2]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			strncpy(result, "550 fail to open config file", length);
 			return;

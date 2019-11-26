@@ -352,7 +352,7 @@ int ui_main_run()
 		}
 		cookie_buff[0] = '\0';
 		sprintf(temp_path, "%s/domain.cfg", homedir);
-		pconfig = config_file_init(temp_path);
+		pconfig = config_file_init2(NULL, temp_path);
 		if (NULL != pconfig) {
 			str_value = config_file_get_value(pconfig, "REPORT_LANGUAGE");
 			if (NULL != str_value && '\0' != str_value[0]) {
@@ -701,7 +701,7 @@ static void ui_main_exit_html(const char *domain, const char *session)
 		sprintf(temp_path, "%s/tmp/domain_users.%s", domain_path, session);
 		remove(temp_path);
 		sprintf(temp_path, "%s/domain.cfg", domain_path);
-		pconfig = config_file_init(temp_path);
+		pconfig = config_file_init2(NULL, temp_path);
 		if (NULL != pconfig) {
 			str_value = config_file_get_value(pconfig, "EXIT_URL");
 			if (NULL != str_value) {

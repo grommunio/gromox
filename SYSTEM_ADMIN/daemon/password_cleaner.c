@@ -61,7 +61,7 @@ int password_cleaner_run()
 		data_source_collect_forward(pcollect)) {
 		pdomain = (EXTPASSWD_DOMAIN*)data_source_collect_get_value(pcollect);
 		snprintf(temp_path, 256, "%s/domain.cfg", pdomain->homedir);
-		pconfig = config_file_init(temp_path);
+		pconfig = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig) {
 			continue;
 		}

@@ -4,23 +4,23 @@
  *
  */
 #include <errno.h>
+#include <libHX/string.h>
 #include "resource.h"
 #include "config_file.h"
 #include "util.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#define MAX_FILE_NAME_LEN       256
 #define MAX_FILE_LINE_LEN       1024
 
 /* private global variables */
-static char g_cfg_filename[MAX_FILE_NAME_LEN];
+static char *g_cfg_filename, *g_cfg_filename2;
 static CONFIG_FILE *g_config_file;
 
-void resource_init(const char *cfg_filename)
+void resource_init(const char *c1, const char *c2)
 {
-    strcpy(g_cfg_filename, cfg_filename);
+	g_cfg_filename  = HX_strdup(c1);
+	g_cfg_filename2 = HX_strdup(c2);
 }
 
 void resource_free()
@@ -30,13 +30,16 @@ void resource_free()
         config_file_free(g_config_file);
         g_config_file = NULL;
     }
+	free(g_cfg_filename);
+	free(g_cfg_filename2);
+	g_cfg_filename  = NULL;
+	g_cfg_filename2 = NULL;
 }
 
 int resource_run()
 {
-    g_config_file = config_file_init(g_cfg_filename);
-
-    if (NULL == g_config_file) {
+	g_config_file = config_file_init2(g_cfg_filename, g_cfg_filename2);
+	if (g_cfg_filename != NULL && g_config_file == NULL) {
 		printf("[resource]: config_file_init %s: %s\n", g_cfg_filename, strerror(errno));
         return -1;
 	}

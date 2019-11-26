@@ -40,7 +40,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
-		pfile = config_file_init(config_path);
+		pfile = config_file_init2(NULL, config_path);
 		if (NULL == pfile) {
 			printf("[%s]: config_file_init %s: %s\n", file_name, config_path, strerror(errno));
 			return FALSE;

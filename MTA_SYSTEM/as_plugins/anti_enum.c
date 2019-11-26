@@ -56,7 +56,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
 		strcpy(g_config_file, temp_path);
-		pconfig_file = config_file_init(temp_path);
+		pconfig_file = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig_file) {
 			printf("[anti_enum]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
@@ -174,7 +174,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		if (min_rcpt <= 1) {
 			snprintf(result, length, "550 illegal number %s", argv[3]);
 		} else {
-			pfile = config_file_init(g_config_file);
+			pfile = config_file_init2(NULL, g_config_file);
 			if (NULL == pfile) {
 				strncpy(result, "550 fail to open config file", length);
 				return;

@@ -144,15 +144,14 @@ int main(int argc, const char **argv)
 	struct passwd *puser_pass;
 	struct sockaddr_un unix_addr;
 
-	opt_config_file = config_default_path("fcgi_cgi.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	pconfig = config_file_init(opt_config_file);
-	if (NULL == pconfig) {
+	pconfig = config_file_init2(opt_config_file, config_default_path("fcgi_cgi.cfg"));
+	if (opt_config_file != NULL && pconfig != NULL) {
 		printf("[system]: open %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}

@@ -42,7 +42,7 @@ int AS_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
-		pconfig_file = config_file_init(temp_path);
+		pconfig_file = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig_file) {
 			printf("[property_040]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;

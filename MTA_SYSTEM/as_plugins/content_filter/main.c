@@ -126,7 +126,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
 		strcpy(g_config_file, temp_path);
-		pconfig_file = config_file_init(temp_path);
+		pconfig_file = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig_file) {
 			printf("[content_filter]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
@@ -696,7 +696,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 				snprintf(result, length, "550 illegal interval %s", argv[3]);
 				return;
 			} else {
-				pfile = config_file_init(g_config_file);
+				pfile = config_file_init2(NULL, g_config_file);
 				if (NULL == pfile) {
 					strncpy(result, "550 fail to open config file", length);
 					return;
@@ -716,7 +716,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		}
 		if (4 == argc && 0 == strcmp("immediate-reject", argv[2])) {
 			if (0 == strcasecmp(argv[3], "TRUE")) {
-				pfile = config_file_init(g_config_file);
+				pfile = config_file_init2(NULL, g_config_file);
 				if (NULL == pfile) {
 					strncpy(result, "550 fail to open config file", length);
 					return;
@@ -731,7 +731,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 				g_immediate_reject = TRUE;
 				strncpy(result, "250 immediate-reject set OK", length);
 			} else if (0 == strcasecmp(argv[3], "FALSE")) {
-				pfile = config_file_init(g_config_file);
+				pfile = config_file_init2(NULL, g_config_file);
 				if (NULL == pfile) {
 					strncpy(result, "550 fail to open config file", length);
 					return;

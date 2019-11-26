@@ -44,7 +44,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		strcpy(g_config_path, config_path);
 		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_data_path());
-		pfile = config_file_init(config_path);
+		pfile = config_file_init2(NULL, config_path);
 		if (NULL == pfile) {
 			printf("[mysql_adaptor]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
@@ -356,7 +356,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 			snprintf(result, length, "550 interval should larger than 0");
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;

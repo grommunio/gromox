@@ -13,9 +13,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
-
-
-#define MAX_FILE_NAME_LEN       256
 #define MAX_FILE_LINE_LEN       1024
 
 typedef struct _LANG_FOLDER {
@@ -122,7 +119,7 @@ static IMAP_RETURN_CODE g_default_code_table[] = {
 
 
 /* private global variables */
-static char g_cfg_filename[MAX_FILE_NAME_LEN];
+static char *g_cfg_filename, *g_cfg_filename2;
 static CONFIG_FILE *g_config_file;
 static IMAP_RETURN_CODE *g_return_code_table, *g_def_code_table;
 static pthread_rwlock_t g_return_table_lock;
@@ -138,10 +135,11 @@ static int resource_parse_imap_line(char* dest, char* src_str, int len);
 
 static BOOL resource_load_imap_lang_list();
 
-void resource_init(const char *cfg_filename)
+void resource_init(const char *c1, const char *c2)
 {
 	g_lang_list = NULL;
-    strcpy(g_cfg_filename, cfg_filename);
+	g_cfg_filename  = HX_strdup(c1);
+	g_cfg_filename2 = HX_strdup(c2);
     pthread_rwlock_init(&g_return_table_lock, NULL);
 }
 
@@ -153,6 +151,10 @@ void resource_free()
         config_file_free(g_config_file);
         g_config_file = NULL;
     }
+	free(g_cfg_filename);
+	free(g_cfg_filename2);
+	g_cfg_filename  = NULL;
+	g_cfg_filename2 = NULL;
 }
 
 int resource_run()
@@ -164,9 +166,8 @@ int resource_run()
         printf("[resource]: fail to allocate default code table\n" );
         return -1;
     }
-    g_config_file = config_file_init(g_cfg_filename);
-
-    if (NULL == g_config_file) {
+	g_config_file = config_file_init2(g_cfg_filename, g_cfg_filename2);
+	if (g_cfg_filename != NULL && g_config_file == NULL) {
 		printf("[resource]: config_file_init %s: %s\n", g_cfg_filename, strerror(errno));
         free(g_def_code_table);
         return -2;

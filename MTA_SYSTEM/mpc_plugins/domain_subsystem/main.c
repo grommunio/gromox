@@ -32,7 +32,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
         }
         sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
         sprintf(list_path, "%s/%s.txt", get_data_path(), file_name);
-        pfile = config_file_init(tmp_path);
+        pfile = config_file_init2(NULL, tmp_path);
         if (NULL == pfile) {
 			printf("[domain_subsystem]: config_file_init %s: %s\n", tmp_path, strerror(errno));
             return FALSE;

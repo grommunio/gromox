@@ -75,7 +75,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     case PLUGIN_INIT:
 		LINK_API(ppdata);
 		/* get the plugin name from system api */
-		pfile = config_file_init("../config/smtp.cfg");
+		pfile = config_file_init2(NULL, "../config/smtp.cfg");
 		if (NULL == pfile) {
 			printf("[system_updater]: config_file_init ../config/smtp.cfg: %s\n", strerror(errno));
 			return FALSE;
@@ -98,7 +98,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		printf("[system_updater]: smtp console port is %d\n", g_smtp_port);
 		config_file_free(pfile);
-		pfile = config_file_init("../config/delivery.cfg");
+		pfile = config_file_init2(NULL, "../config/delivery.cfg");
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_IP");
 		if (NULL == str_value) {
 			strcpy(g_delivery_ip, "127.0.0.1");

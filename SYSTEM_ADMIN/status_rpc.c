@@ -53,7 +53,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html\n\n");
 		printf("Cannot init configure file %s\n", temp_path);

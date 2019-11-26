@@ -71,7 +71,7 @@ void auto_response_reply(const char *user_home,
 	}
 	
 	snprintf(temp_path, 256, "%s/config/autoreply.cfg", user_home);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return;
 	}

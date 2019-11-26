@@ -361,7 +361,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
         if (interval <= 0) {
             snprintf(result, length, "550 illegal interval %s", argv[3]);
         } else {
-            pfile = config_file_init(g_config_path);
+            pfile = config_file_init2(NULL, g_config_path);
             if (NULL == pfile) {
                 strncpy(result, "550 fail to open config file", length);
                 return;
@@ -383,7 +383,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
         if (interval <= 0) {
             snprintf(result, length, "550 illegal interval %s", argv[3]);
         } else {
-            pfile = config_file_init(g_config_path);
+            pfile = config_file_init2(NULL, g_config_path);
             if (NULL == pfile) {
                 strncpy(result, "550 fail to open config file", length);
                 return;
@@ -405,7 +405,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
         if (interval <= 0) {
             snprintf(result, length, "550 illegal interval %s", argv[3]);
         } else {
-            pfile = config_file_init(g_config_path);
+            pfile = config_file_init2(NULL, g_config_path);
             if (NULL == pfile) {
                 strncpy(result, "550 fail to open config file", length);
                 return;

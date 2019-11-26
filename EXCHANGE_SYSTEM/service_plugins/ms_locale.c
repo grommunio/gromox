@@ -118,7 +118,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pthread_mutex_init(&g_charset_lock, NULL);
 		
 		sprintf(tmp_path, "%s/cpid.txt", get_data_path());
-		pfile = list_file_init(tmp_path, "%d%s:64");
+		pfile = list_file_init3(tmp_path, "%d%s:64", false);
 		if (NULL == pfile) {
 			printf("[ms_locale]: fail to load list file cpid.txt\n");
 			return FALSE;

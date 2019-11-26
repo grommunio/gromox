@@ -853,7 +853,7 @@ static void setup_ui_main_html(const char *domain, const char *session)
 		}
 		close(fd);
 	}
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		setup_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL", language));
 		return;
@@ -1149,7 +1149,7 @@ static void setup_ui_set_keyword(const char *domain, int type,
 	}
 	snprintf(temp_num, 16, "%d", type);
 	snprintf(temp_path, 256, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
@@ -1209,7 +1209,7 @@ static void setup_ui_set_mailbox(const char *domain, const char *session,
 	}
 	snprintf(temp_num, 16, "%d", type);
 	snprintf(temp_path, 256, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
@@ -1253,7 +1253,7 @@ static void setup_ui_set_limit_type(const char *domain, int type)
 		return;
 	}
 	snprintf(temp_path, 256, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
@@ -1327,7 +1327,7 @@ static void setup_ui_set_extpass_type(const char *domain, int type)
 		return;
 	}
 	snprintf(temp_path, 256, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
@@ -1375,7 +1375,7 @@ static void setup_ui_set_collector(const char *domain, const char *mailbox)
 		return;
 	}
 	snprintf(temp_path, 256, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
@@ -1418,7 +1418,7 @@ static void setup_ui_set_subsystem(const char *domain, const char *address)
 		return;
 	}
 	snprintf(temp_path, 256, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,

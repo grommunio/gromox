@@ -692,7 +692,7 @@ static BOOL domain_keyword_get_fwdinfo(const char *domain,
 	}
 
 	snprintf(tmp_path, 256, "%s/domain.cfg", homedir);
-	pconfig = config_file_init(tmp_path);
+	pconfig = config_file_init2(NULL, tmp_path);
 	if (NULL == pconfig) {
 		return FALSE;
 	}

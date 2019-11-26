@@ -451,7 +451,7 @@ void remote_postman_console_talk(int argc,
 					"interval should larger than 0");
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -476,7 +476,7 @@ void remote_postman_console_talk(int argc,
 			snprintf(result, length, "550 invalid alram-interval %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -499,7 +499,7 @@ void remote_postman_console_talk(int argc,
 			snprintf(result, length, "550 invalid max-rcpts %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -522,7 +522,7 @@ void remote_postman_console_talk(int argc,
 			snprintf(result, length, "550 invalid trying-times %s", argv[3]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -560,7 +560,7 @@ void remote_postman_console_talk(int argc,
 			snprintf(result, length, "550 invalid interval %s", argv[6]);
 			return;
 		}
-		pfile = config_file_init(g_config_path);
+		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
 			snprintf(result, length, "550 fail to open config file");
 			return;
@@ -596,7 +596,7 @@ void remote_postman_console_talk(int argc,
 	}
 	if (3 == argc && 0 == strcmp("starttls", argv[1])) {
 		if (0 == strcasecmp("ON", argv[2])) {
-			pfile = config_file_init(g_config_path);
+			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
 				snprintf(result, length, "550 fail to open config file");
 				return;
@@ -611,7 +611,7 @@ void remote_postman_console_talk(int argc,
 			smtp_deliverer_set_param(SMTP_DELIVERER_SSL_SWITCH, TRUE);
 			strncpy(result, "250 starttls support is on", length);
 		} else if (0 == strcasecmp("OFF", argv[2])) {
-			pfile = config_file_init(g_config_path);
+			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
 				snprintf(result, length, "550 fail to open config file");
 				return;

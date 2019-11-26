@@ -81,7 +81,6 @@ int main(int argc, const char **argv)
 	CONFIG_FILE *pconfig_file;
 	CONSOLE_PORT *pconsole;
 	
-	opt_config_file = config_default_path("monitor.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
@@ -89,8 +88,8 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	signal(SIGPIPE, SIG_IGN);
-	pconfig_file = config_file_init(opt_config_file);
-	if (NULL == pconfig_file) {
+	pconfig_file = config_file_init2(opt_config_file, config_default_path("monitor.cfg"));
+	if (opt_config_file != NULL && pconfig_file != NULL) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}

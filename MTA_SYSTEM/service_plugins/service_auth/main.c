@@ -33,7 +33,8 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			*psearch = '\0';
 		}
 		sprintf(cfg_path, "%s/%s.cfg", get_config_path(), file_name);
-        if (NULL == (cfg_file = config_file_init(cfg_path))) {
+		cfg_file = config_file_init2(NULL, cfg_path);
+		if (cfg_file == NULL) {
             printf("[service_auth]: can not open config file %s\n", cfg_path);
             return FALSE;
         }

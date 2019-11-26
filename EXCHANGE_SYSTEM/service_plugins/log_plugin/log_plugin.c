@@ -331,7 +331,7 @@ void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 				strncpy(result, "550 level should between 0 and 8", length);
 				return;
 			}
-			pfile = config_file_init(g_config_path);
+			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
 				strncpy(result, "550 fail to open config file", length);
 				return;
@@ -348,7 +348,7 @@ void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 				strncpy(result, "550 level should large than 0", length);
 				return;
 			}
-			pfile = config_file_init(g_config_path);
+			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
 				strncpy(result, "550 fail to open config file", length);
 				return;

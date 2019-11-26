@@ -116,15 +116,14 @@ int main(int argc, const char **argv)
 	MIDB_ITEM *pitem;
     DOUBLE_LIST_NODE *pnode;
 
-	opt_config_file = config_default_path("amidb.cfg");
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	pconfig = config_file_init(opt_config_file);
-	if (NULL == pconfig) {
+	pconfig = config_file_init2(opt_config_file, config_default_path("amidb.cfg"));
+	if (opt_config_file != NULL && pconfig == NULL) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}

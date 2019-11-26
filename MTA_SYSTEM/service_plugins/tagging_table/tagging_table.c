@@ -129,7 +129,7 @@ static int tagging_table_refresh()
 	char *pitem;
 	
     /* initialize the list filter */
-	plist_file = list_file_init(g_list_path, "%s:256");
+	plist_file = list_file_init3(g_list_path, "%s:256", false);
 	if (NULL == plist_file) {
 		printf("[tagging_table]: fail to open list file\n");
 		return TAGGING_TABLE_REFRESH_FILE_ERROR;

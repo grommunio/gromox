@@ -60,7 +60,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	umask(0);
-	pconfig = config_file_init("../config/athena.cfg");
+	pconfig = config_file_init2(NULL, "../config/athena.cfg");
 	if (NULL == pconfig) {
 		printf("config_file_init ../config/athena.cfg: %s\n", strerror(errno));
 		return 2;

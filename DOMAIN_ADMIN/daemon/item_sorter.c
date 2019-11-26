@@ -2230,7 +2230,7 @@ static int item_sorter_domain_query(const char* domain, char *domain_path,
 	}
 	
 	sprintf(temp_path, "%s/domain.cfg", domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return REPORT_NONE;
 	}

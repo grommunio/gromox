@@ -437,7 +437,7 @@ static void limit_ui_main_html(const char *domain, const char *session)
 			language));
 		return;
 	}
-	pconfig = config_file_init(config_path);
+	pconfig = config_file_init2(NULL, config_path);
 	if (NULL == pconfig) {
 		system_log_info("[limit_ui]: open %s: %s", config_path, strerror(errno));
 		limit_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
@@ -681,7 +681,7 @@ static void limit_ui_broadcast_list(const char *domain)
 	
 
 	snprintf(temp_path, 256, "%s/domain.cfg", g_domain_path);
-	pconfig = config_file_init(temp_path);
+	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return;
 	}

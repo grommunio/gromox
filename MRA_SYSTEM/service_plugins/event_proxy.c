@@ -85,7 +85,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
-		pfile = config_file_init(config_path);
+		pfile = config_file_init2(NULL, config_path);
 		if (NULL == pfile) {
 			printf("[event_proxy]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;

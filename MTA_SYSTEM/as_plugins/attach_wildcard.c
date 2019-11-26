@@ -70,7 +70,7 @@ int AS_LibMain(int reason, void **ppdata, char *path)
 		}
 		sprintf(g_list_path, "%s/%s.txt", get_data_path(), file_name);
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
-		pconfig_file = config_file_init(temp_path);
+		pconfig_file = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig_file) {
 			printf("[attach_wildcard]: config_file_init %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
@@ -125,7 +125,7 @@ static BOOL reload_list()
 	LIST_FILE *pfile;
 	LIST_FILE *pfile_tmp;
 
-	pfile = list_file_init(g_list_path, "%s:128");
+	pfile = list_file_init3(g_list_path, "%s:128", false);
 	if (NULL == pfile) {
 		return FALSE;
 	}

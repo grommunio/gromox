@@ -84,7 +84,7 @@ int domain_cleaner_run()
 				pdomain_info->end_day < g_now_time) {
 				data_source_make_outofdate(pdomain_info->domainname);
 				sprintf(temp_path, "%s/domain.cfg", pdomain_info->homedir);
-				pconfig = config_file_init(temp_path);
+				pconfig = config_file_init2(NULL, temp_path);
 				if (NULL != pconfig) {
 					str_value = config_file_get_value(pconfig, "ADMIN_MAILBOX");
 					if (NULL != str_value) {
@@ -109,7 +109,7 @@ int domain_cleaner_run()
 				pdomain_info->end_day - g_now_time >= 6*24*60*60 &&
 				pdomain_info->end_day - g_now_time <= 7*24*60*60) {
 				sprintf(temp_path, "%s/domain.cfg", pdomain_info->homedir);
-				pconfig = config_file_init(temp_path);
+				pconfig = config_file_init2(NULL, temp_path);
 				if (NULL != pconfig) {
 					str_value = config_file_get_value(pconfig, "ADMIN_MAILBOX");
 					if (NULL != str_value) {

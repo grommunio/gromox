@@ -115,7 +115,7 @@ static int ip_table_refresh()
 	char *pitem;
 	
     /* initialize the list filter */
-	plist_file = list_file_init(g_list_path, "%s:16");
+	plist_file = list_file_init3(g_list_path, "%s:16", false);
 	if (NULL == plist_file) {
 		ip_table_echo("fail to open list file");
 		return IP_TABLE_REFRESH_FILE_ERROR;
