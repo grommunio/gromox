@@ -418,11 +418,10 @@ static char* mail_engine_ct_decode_mime(
 				last_pos = i;
 			}
 		}
-		if (-1 == end_pos && -1 != begin_pos && '?' == in_buff[i] &&
-			'=' == in_buff[i + 1] && ('q' != in_buff[i - 1] &&
-			'Q' != in_buff[i - 1] || '?' != in_buff[i - 2])) {
+		if (end_pos == -1 && begin_pos != -1 && in_buff[i] == '?' &&
+		    in_buff[i+1] == '=' && ((in_buff[i-1] != 'q' &&
+		    in_buff[i-1] != 'Q') || in_buff[i-2] != '?'))
 			end_pos = i + 1;
-		}
 		if (-1 != begin_pos && -1 != end_pos) {
 			parse_mime_encode_string(in_buff + begin_pos, 
 				end_pos - begin_pos + 1, &encode_string);

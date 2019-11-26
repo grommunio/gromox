@@ -335,9 +335,8 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 				if (count > 1) {
 					return FALSE;
 				}
-				if (1 == count && ptr1 == last_ptr || ptr1 == pend - 1) {
+				if ((count == 1 && ptr1 == last_ptr) || ptr1 == pend - 1)
 					return FALSE;
-				}
 			}
 			nodes[i].pdata = argv[i];
 			double_list_append_as_tail(plist, &nodes[i]);

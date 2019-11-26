@@ -2496,7 +2496,7 @@ BOOL common_util_get_properties(int table_type,
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if ((PROPVAL_TYPE_OBJECT == pproptags->pproptag[i] & 0xFFFF) &&
+		if (PROPVAL_TYPE_OBJECT == (pproptags->pproptag[i] & 0xFFFF) &&
 			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
 			PROP_TAG_ATTACHDATAOBJECT != pproptags->pproptag[i])) {
 			continue;
@@ -3133,9 +3133,7 @@ BOOL common_util_get_properties(int table_type,
 					sql_string, sql_len, &pstmt, NULL)) {
 					return FALSE;
 				}
-				sqlite3_bind_int64(pstmt, 1,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_WSTRING);
+				sqlite3_bind_int64(pstmt, 1, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
 				break;
 			case FOLDER_PROPERTIES_TABLE:
 				sql_len = sprintf(sql_string, "SELECT proptag,"
@@ -3146,9 +3144,7 @@ BOOL common_util_get_properties(int table_type,
 					return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_WSTRING);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
 				break;
 			case MESSAGE_PROPERTIES_TABLE:
 				pstmt = common_util_get_optimize_stmt(table_type, FALSE);
@@ -3165,12 +3161,8 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_WSTRING);
-				sqlite3_bind_int64(pstmt, 3,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_STRING);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
+				sqlite3_bind_int64(pstmt, 3, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING);
 				break;
 			case RECIPIENT_PROPERTIES_TABLE:
 				pstmt = common_util_get_optimize_stmt(table_type, FALSE);
@@ -3187,12 +3179,8 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_WSTRING);
-				sqlite3_bind_int64(pstmt, 3,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_STRING);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
+				sqlite3_bind_int64(pstmt, 3, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING);
 				break;
 			case ATTACHMENT_PROPERTIES_TABLE:
 				sql_len = sprintf(sql_string, "SELECT proptag, propval"
@@ -3203,12 +3191,8 @@ BOOL common_util_get_properties(int table_type,
 					return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_WSTRING);
-				sqlite3_bind_int64(pstmt, 3,
-					pproptags->pproptag[i] &
-					0xFFFF0000 | PROPVAL_TYPE_STRING);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
+				sqlite3_bind_int64(pstmt, 3, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING);
 				break;
 			}
 		} else if (PROPVAL_TYPE_STRING_ARRAY == proptype) {
@@ -3220,9 +3204,7 @@ BOOL common_util_get_properties(int table_type,
 					sql_string, sql_len, &pstmt, NULL)) {
 					return FALSE;
 				}
-				sqlite3_bind_int64(pstmt, 1,
-					pproptags->pproptag[i] & 0xFFFF0000 |
-					PROPVAL_TYPE_WSTRING_ARRAY);
+				sqlite3_bind_int64(pstmt, 1, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY);
 				break;
 			case FOLDER_PROPERTIES_TABLE:
 				sql_len = sprintf(sql_string, "SELECT propval "
@@ -3233,9 +3215,7 @@ BOOL common_util_get_properties(int table_type,
 					return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] & 0xFFFF0000 |
-					PROPVAL_TYPE_WSTRING_ARRAY);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY);
 				break;
 			case MESSAGE_PROPERTIES_TABLE:
 				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
@@ -3252,9 +3232,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] & 0xFFFF0000 |
-					PROPVAL_TYPE_WSTRING_ARRAY);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY);
 				break;
 			case RECIPIENT_PROPERTIES_TABLE:
 				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
@@ -3271,9 +3249,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] & 0xFFFF0000 |
-					PROPVAL_TYPE_WSTRING_ARRAY);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY);
 				break;
 			case ATTACHMENT_PROPERTIES_TABLE:
 				sql_len = sprintf(sql_string, "SELECT propval "
@@ -3284,9 +3260,7 @@ BOOL common_util_get_properties(int table_type,
 					return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2,
-					pproptags->pproptag[i] & 0xFFFF0000 |
-					PROPVAL_TYPE_WSTRING_ARRAY);
+				sqlite3_bind_int64(pstmt, 2, (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY);
 				break;
 			}
 		} else {
@@ -4405,11 +4379,9 @@ BOOL common_util_set_properties(int table_type,
 		}
 		proptype = ppropvals->ppropval[i].proptag & 0xFFFF;
 		if (0 != cpid && PROPVAL_TYPE_STRING == proptype) {
-			sqlite3_bind_int64(pstmt, 1, ppropvals->ppropval[i].proptag &
-									0xFFFF0000 | PROPVAL_TYPE_WSTRING);
+			sqlite3_bind_int64(pstmt, 1, (ppropvals->ppropval[i].proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
 		} else if (0!= cpid && PROPVAL_TYPE_STRING_ARRAY == proptype) {
-			sqlite3_bind_int64(pstmt, 1, ppropvals->ppropval[i].proptag &
-								0xFFFF0000 | PROPVAL_TYPE_WSTRING_ARRAY);
+			sqlite3_bind_int64(pstmt, 1, (ppropvals->ppropval[i].proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY);
 		} else {
 			sqlite3_bind_int64(pstmt, 1, ppropvals->ppropval[i].proptag);
 		}
@@ -4767,15 +4739,13 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 		case PROPVAL_TYPE_STRING:
 		case PROPVAL_TYPE_WSTRING:
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1,
-				proptag & 0xFFFF0000 | PROPVAL_TYPE_WSTRING);
+			sqlite3_bind_int64(pstmt, 1, (proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
 			}
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1,
-				proptag & 0xFFFF0000 | PROPVAL_TYPE_STRING);
+			sqlite3_bind_int64(pstmt, 1, (proptag & 0xFFFF0000) | PROPVAL_TYPE_STRING);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -4784,15 +4754,13 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 		case PROPVAL_TYPE_STRING_ARRAY:
 		case PROPVAL_TYPE_WSTRING_ARRAY:
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1,
-				proptag & 0xFFFF0000 | PROPVAL_TYPE_WSTRING_ARRAY);
+			sqlite3_bind_int64(pstmt, 1, (proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
 			}
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1,
-				proptag & 0xFFFF0000 | PROPVAL_TYPE_STRING_ARRAY);
+			sqlite3_bind_int64(pstmt, 1, (proptag & 0xFFFF0000) | PROPVAL_TYPE_STRING_ARRAY);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;

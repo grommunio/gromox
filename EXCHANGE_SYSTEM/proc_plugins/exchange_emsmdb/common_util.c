@@ -1309,7 +1309,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 		prow->pppropval[i] = common_util_get_propvals(
 			(TPROPVAL_ARRAY*)ppropvals, pcolumns->pproptag[i]);
 		if (NULL != prow->pppropval[i] &&
-			pcolumns->pproptag[i] & 0xFFFF == PROPVAL_TYPE_UNSPECIFIED) {
+		    (pcolumns->pproptag[i] & 0xFFFF) == PROPVAL_TYPE_UNSPECIFIED) {
 			if (FALSE == common_util_convert_unspecified(
 				cpid, b_unicode, prow->pppropval[i])) {
 				return FALSE;
@@ -1673,18 +1673,18 @@ BOOL common_util_modifyrecipient_to_propvals(
 static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 {
 	if (TRUE == to_unicode) {
-		if (PROPVAL_TYPE_STRING == *pproptag & 0xFFFF) {
+		if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_STRING) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_WSTRING;
-		} else if (PROPVAL_TYPE_STRING_ARRAY == *pproptag & 0xFFFF) {
+		} else if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_STRING_ARRAY) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_WSTRING_ARRAY;
 		}
 	} else {
-		if (PROPVAL_TYPE_WSTRING == *pproptag & 0xFFFF) {
+		if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_WSTRING) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_STRING;
-		} else if (PROPVAL_TYPE_WSTRING_ARRAY == *pproptag & 0xFFFF) {
+		} else if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_WSTRING_ARRAY) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_STRING_ARRAY;
 		}

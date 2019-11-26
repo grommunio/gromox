@@ -337,10 +337,8 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		return EC_NOT_SUPPORTED;	
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (ppropvals->ppropval[i].proptag & 0xFFFF
-			!= PROPVAL_TYPE_UNSPECIFIED) {
+		if ((ppropvals->ppropval[i].proptag & 0xFFFF) != PROPVAL_TYPE_UNSPECIFIED)
 			continue;	
-		}
 		if (FALSE == common_util_convert_unspecified(cpid,
 			b_unicode, ppropvals->ppropval[i].pvalue)) {
 			return EC_OUT_OF_MEMORY;	

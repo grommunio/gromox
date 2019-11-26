@@ -691,9 +691,8 @@ RETRYING:
 		mysql_free_result(pmyres);
 	}
 
-	temp_privilege = original_privilege&0xFF00|privilege_bits;
-	temp_status = original_status&0xC|group_status;
-	
+	temp_privilege = (original_privilege & 0xFF00) | privilege_bits;
+	temp_status = (original_status & 0xC) | group_status;
 	data_source_encode_squote(title, temp_title);
 	if ('\0' == password[0]) {
 		snprintf(sql_string, 4096, "UPDATE groups SET max_size=%d, "

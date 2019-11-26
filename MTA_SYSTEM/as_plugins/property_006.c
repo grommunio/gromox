@@ -115,10 +115,8 @@ static int xmailer_filter(int action, int context_ID,
 						return MESSAGE_ACCEPT;
 					}
 					mem_file_read(&mail_entity.phead->f_others, buff, val_len);
-					if ('<' != buff[0] || '@' != buff[33]
-						&& '>' != buff[val_len - 1]) {
+					if (buff[0] != '<' || (buff[33] != '@' && buff[val_len-1] != '>'))
 						return MESSAGE_ACCEPT;
-					}
 					for (i=1; i<=32; i++) {
 						if (('0' <= buff[i] && buff[i] <= '9') ||
 							('A' <= buff[i] && buff[i] <= 'F')) {

@@ -2079,8 +2079,8 @@ int uuencode(int mode, const char *file_name, const char *in,
 		}
 		for (i=0; i<n; i+=3) {
 			c1 = ptr[i] >> 2;
-			c2 = (ptr[i] << 4) & 060 | (ptr[i + 1] >> 4) & 017;
-			c3 = (ptr[i + 1] << 2) & 074 | (ptr[i + 2] >> 6) & 03;
+			c2 = ((ptr[i] << 4) & 060) | ((ptr[i + 1] >> 4) & 017);
+			c3 = ((ptr[i + 1] << 2) & 074) | ((ptr[i + 2] >> 6) & 03);
 			c4 = ptr[i + 2] & 077;
 			out[offset++] = ENC(c1);
 			if (offset >= outmax) {

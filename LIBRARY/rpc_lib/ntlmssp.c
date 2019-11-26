@@ -579,38 +579,22 @@ static void ntlmssp_handle_neg_flags(NTLMSSP_CTX *pntlmssp, uint32_t neg_flags)
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
-	}
-
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
-	}
-
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_128) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_128))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
-	}
-
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_56) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_56))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
-	}
-
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
-	}
-
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
-	}
-
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_SEAL))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
-	}
-
-	if (0 == neg_flags & NTLMSSP_NEGOTIATE_VERSION) {
+	if (!(neg_flags & NTLMSSP_NEGOTIATE_VERSION))
 		pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
-	}
-
 	if (neg_flags & NTLMSSP_REQUEST_TARGET) {
 		pntlmssp->neg_flags |= NTLMSSP_REQUEST_TARGET;
 	}
@@ -1544,7 +1528,7 @@ BOOL ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 	DATA_BLOB *psig)
 {
 	pthread_mutex_lock(&pntlmssp->lock);
-	if (0 == pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN ||
+	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) ||
 		0 == pntlmssp->session_key.length) {
 		pthread_mutex_unlock(&pntlmssp->lock);
 		return FALSE;
@@ -1624,12 +1608,10 @@ BOOL ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 {
 	uint32_t crc;
 	
-	if (0 == pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SEAL))
 		return FALSE;
-	}
-	if (0 == pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN))
 		return FALSE;
-	}
 	pthread_mutex_lock(&pntlmssp->lock);
 	if (0 == pntlmssp->session_key.length) {
 		pthread_mutex_unlock(&pntlmssp->lock);
