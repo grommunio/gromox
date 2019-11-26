@@ -124,7 +124,7 @@ int main(int argc, const char **argv)
 	struct sockaddr_in my_name;
 	CONNECTION_NODE *pconnection;
 
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);

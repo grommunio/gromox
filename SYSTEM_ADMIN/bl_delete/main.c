@@ -26,7 +26,7 @@ int main(int argc, const char **argv)
 	char temp_line[1024];
 	char temp_buff[4096];
 
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s role: client\n", PROJECT_VERSION);

@@ -419,7 +419,7 @@ void restart_service()
 
 int main(int argc, const char **argv)
 {
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_path == NULL) {
 		printf("You need to specify the -p option.\n");
