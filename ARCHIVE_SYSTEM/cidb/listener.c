@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "common_types.h"
 #include "list_file.h"
 #include "double_list.h"
@@ -77,7 +78,7 @@ int listener_run()
 	
 	status = bind(g_listen_sockd, (struct sockaddr*)&my_name, sizeof(my_name));
 	if (-1 == status) {
-		printf("[listener]: fail to bind socket\n");
+		printf("[listener]: bind %s:%u: %s\n", g_listen_ip, g_listen_port, strerror(errno));
         close(g_listen_sockd);
 		return -3;
     }

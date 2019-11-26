@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "exec_sched.h"
 #include "util.h"
 #include "double_list.h"
@@ -124,7 +125,7 @@ int communicator_run()
 	
 	status = bind(g_listen_sockd, (struct sockaddr*)&my_name, sizeof(my_name));
 	if (-1 == status) {
-		printf("[communicator]: fail to bind socket\n");
+		printf("[communicator]: bind %s:%u: %s\n", g_listen_ip, g_listen_port, strerror(errno));
         close(g_listen_sockd);
 		return -2;
     }

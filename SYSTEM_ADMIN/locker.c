@@ -250,7 +250,7 @@ int main(int argc, const char **argv)
 	
 	status = bind(sockd, (struct sockaddr*)&my_name, sizeof(my_name));
 	if (-1 == status) {
-		printf("[system]: fail to bind socket\n");
+		printf("[system]: bind %s:%u: %s\n", listen_ip, listen_port, strerror(errno));
         close(sockd);
 		str_hash_free(g_hash_table);
 		return 5;

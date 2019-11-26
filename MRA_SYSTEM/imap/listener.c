@@ -4,6 +4,7 @@
  *    connection is legal, construct a context to represent the connection and 
  *    throw it into contexts pool, or close the connection
  */
+#include <errno.h>
 #include "listener.h"
 #include "system_services.h"
 #include "contexts_pool.h"
@@ -82,7 +83,7 @@ int listener_run()
 	status = bind(g_listener_sock, (struct sockaddr*)&server_peer, 
 		sizeof(server_peer));
 	if (status == -1) {
-		printf("[listener]: fail to bind\n");
+		printf("[listener]: bind *:%u: %s\n", g_listener_port, strerror(errno));
 		close(g_listener_sock);
 		return -3;
 	}
@@ -114,7 +115,7 @@ int listener_run()
 		status = bind(g_listener_ssl_sock, (struct sockaddr*)&server_peer, 
 			sizeof(server_peer));
 		if (status == -1) {
-			printf("[listener]: fail to bind\n");
+			printf("[listener]: bind *:%u: %s\n", g_listener_ssl_port, strerror(errno));
 			close(g_listener_ssl_sock);
 			return -3;
 		}

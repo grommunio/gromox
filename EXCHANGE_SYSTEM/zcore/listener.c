@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -65,7 +66,7 @@ int listener_run()
 	/* Bind the name to the descriptor */
 	if (bind(g_listen_sockd, (struct sockaddr*)&unix_addr, len) < 0) {
 		close(g_listen_sockd);
-		printf("[listener]: fail to bind listen socket\n");
+		printf("[listener]: bind %s: %s\n", unix_addr.sun_path, strerror(errno));
 		return -2;
 	}
 	if (chmod(CS_PATH, 0666) < 0) {

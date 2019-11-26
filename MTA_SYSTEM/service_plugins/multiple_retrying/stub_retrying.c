@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "retrying_table.h"
@@ -107,7 +109,7 @@ int stub_retrying_run()
 	
 	status = bind(sockd, (struct sockaddr*)&my_name, sizeof(my_name));
 	if (-1 == status) {
-		printf("[multiple_retrying]: fail to bind socket\n");
+		printf("[multiple_retrying]: bind *:%u: %s\n", g_port, strerror(errno));
         close(sockd);
 		return -3;
     }

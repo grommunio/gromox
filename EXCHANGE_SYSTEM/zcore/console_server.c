@@ -1,6 +1,7 @@
 /*
  *  the console server which communicate with the telnet clients
  */
+#include <errno.h>
 #include "console_server.h"
 #include "console_cmd_handler.h"
 #include "util.h"
@@ -136,7 +137,7 @@ int console_server_run()
     host.sin_port = htons(g_listen_port);
 
     if (bind(sock, (SA*)&host, sizeof(host)) < 0) {
-		printf("[console_server] fail to bind socket\n");
+		printf("[console_server] bind %s:%u: %s\n", g_listen_ip, g_listen_port, strerror(errno));
 		close(sock);
         return -3;
 	}

@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "relay_bridge.h"
 #include "relay_agent.h"
 #include "double_list.h"
@@ -122,7 +124,7 @@ int relay_bridge_run()
 
 	status = bind(sockd, (struct sockaddr*)&my_name, sizeof(my_name));
 	if (-1 == status) {
-		printf("[relay_agent]: fail to bind socket\n");
+		printf("[relay_agent]: bind *:%u: %s\n", g_listen_port, strerror(errno));
 		close(sockd);
 		return -5;
 	}

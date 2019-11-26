@@ -266,7 +266,7 @@ int main(int argc, const char **argv)
         close(sockd);
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-		printf("[system]: fail to bind socket\n");
+		printf("[system]: bind %s:%u: %s\n", listen_ip, listen_port, strerror(errno));
 		return 6;
     }
 	

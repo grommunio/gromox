@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "common_util.h"
@@ -145,7 +146,7 @@ int exmdb_listener_run()
 	
 	status = bind(g_listen_sockd, (struct sockaddr*)&my_name, sizeof(my_name));
 	if (-1 == status) {
-		printf("[exmdb_provider]: fail to bind socket\n");
+		printf("[exmdb_provider]: bind %s:%u: %s\n", g_listen_ip, g_listen_port, strerror(errno));
         close(g_listen_sockd);
 		return -3;
     }

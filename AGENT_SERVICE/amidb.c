@@ -226,7 +226,7 @@ int main(int argc, const char **argv)
     /* Bind the name to the descriptor */
     if (bind(listenfd, (struct sockaddr*)&unix_addr, len) < 0) {
         close(listenfd);
-        printf("[system]: fail to bind listen socket\n");
+		printf("[system]: bind %s: %s\n", unix_addr.sun_path, strerror(errno));
 		return 5;
     }
 
