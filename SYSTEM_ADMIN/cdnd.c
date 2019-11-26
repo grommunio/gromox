@@ -547,7 +547,7 @@ int main(int argc, const char **argv)
 		double_list_append_as_tail(&g_sync_list, &psync->node);
 	}
 	
-	printf("[system]: CDND is now rinning\n");
+	printf("[system]: CDND is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}

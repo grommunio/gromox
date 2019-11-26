@@ -336,7 +336,7 @@ int main(int argc, const char **argv)
 	pthread_setname_np(scan_id, "scan");
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
-	printf("[system]: SENSOR is now rinning\n");
+	printf("[system]: SENSOR is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}

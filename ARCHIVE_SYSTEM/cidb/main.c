@@ -312,7 +312,7 @@ int main(int argc, const char **argv)
 	
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
-	printf("[system]: CIDB is now rinning\n");
+	printf("[system]: CIDB is now running\n");
 	while (FALSE == g_notify_stop) {
 		time(&now_time);
 		ptm = localtime_r(&now_time, &tmp_tm);

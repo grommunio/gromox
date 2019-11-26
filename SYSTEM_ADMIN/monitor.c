@@ -174,7 +174,7 @@ int main(int argc, const char **argv)
 
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
-	printf("[system]: MONITOR is now rinning\n");
+	printf("[system]: MONITOR is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}

@@ -398,7 +398,7 @@ int main(int argc, const char **argv)
 	time(&last_cltime);
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
-	printf("[system]: TIMER is now rinning\n");
+	printf("[system]: TIMER is now running\n");
 
 	while (FALSE == g_notify_stop) {
 		pthread_mutex_lock(&g_list_lock);

@@ -469,7 +469,7 @@ int main(int argc, const char **argv)
 	pthread_setname_np(thr_id, "accept");
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
-	printf("[system]: EVENT is now rinning\n");
+	printf("[system]: EVENT is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}

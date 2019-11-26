@@ -303,7 +303,7 @@ int main(int argc, const char **argv)
 	
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
-	printf("[system]: PAD is now rinning\n");
+	printf("[system]: PAD is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(1);
 	}
