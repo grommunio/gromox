@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 	pfile = list_file_init(list_path, "%s:12%s:256%s:256%d%d");
 	if (NULL == pfile) {
 		printf("[engine]: fail to init list file area_list.txt\n");
-		exit(-1);
+		return 1;
 	}
 	pitem = (AREA_ITEM*)list_file_get_list(pfile);
 	item_num = list_file_get_item_num(pfile);

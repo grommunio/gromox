@@ -99,22 +99,22 @@ int main(int argc, char **argv)
 	if (6 != argc) {
 		printf("usage: %s username maildir folder_name"
 					" mid_string ip:port\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 	snprintf(temp_path, 256, "%s/eml/%s", argv[2], argv[4]);
 	if (0 != stat(temp_path, &node_stat)) {
 		printf("can not find mail file %s\n", temp_path);
-		exit(-2);
+		return 2;
 	}
 
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("%s is not regular file\n", temp_path);
-		exit(-3);
+		return 3;
 	}
 
 	if (NULL == extract_ip(argv[5], smtp_ip)) {
 		printf("cannot find smtp server ip address in %s", argv[5]);
-		exit(-4);
+		return 4;
 	}
 
 	ptoken = strchr(argv[5], ':');
@@ -124,28 +124,28 @@ int main(int argc, char **argv)
 		smtp_port = atoi(ptoken + 1);
 		if (0 == smtp_port) {
 			printf("smtp server port error in %s\n", argv[5]);
-			exit(-5);
+			return 5;
 		}
 	}
 
 	pbuff = malloc(node_stat.st_size);
 	if (NULL == pbuff) {
 		printf("fail to allocate memory for reading mail\n");
-		exit(-6);
+		return 6;
 	}
 
 	fd = open(temp_path, O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open mail file %s\n", temp_path);
 		free(pbuff);
-		exit(-7);
+		return 7;
 	}
 
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
 		printf("fail to read mail from file into memory\n");
 		free(pbuff);
 		close(fd);
-		exit(-8);
+		return 8;
 	}
 
 	close(fd);
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 	if (NULL == ppool) {
 		free(pbuff);
 		printf("fail to init mime pool\n");
-		exit(-9);
+		return 9;
 	}
 	
 	mail_init(&imail, ppool);
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 		free(pbuff);
 		mime_pool_free(ppool);
 		printf("fail to retrieve file into mail object\n");
-		exit(-10);
+		return 10;
 	}
 
 	pmime_head = mail_get_head(&imail);
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 		free(pbuff);
 		mime_pool_free(ppool);
 		printf("fail to get head from mail object\n");
-		exit(-11);
+		return 11;
 	}
 
 	
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 		free(pbuff);
 		mime_pool_free(ppool);
 		printf("fail to get rcpt address from mail object\n");
-		exit(-12);
+		return 12;
 	}
 
 	
@@ -356,7 +356,7 @@ int main(int argc, char **argv)
 		if (TRUE == move_to_sent(argv[2], argv[3], argv[4])) {
 			exit(0);
 		} else {
-			exit(-13);
+			return 13;
 		}
 	}
 
@@ -365,7 +365,7 @@ EXIT_PROGRAM:
 	mail_free(&imail);
 	free(pbuff);
 	mime_pool_free(ppool);
-	exit(-14);
+	return 14;
 }
 
 static BOOL send_command(int sockd, const char *command, int command_len)

@@ -26,14 +26,14 @@ int main(int argc, char **argv)
 
 	if (argc != 2) {
 		printf("usage: %s log_file\n");
-		exit(-1);
+		return 1;
 	}
 
 	fp = fopen(argv[1], "r");
 
 	if (NULL == fp) {
 		printf("fail to open %s\n", argv[1]);
-		exit(-2);
+		return 2;
 	}
 
 
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	if (0 != midb_client_run()) {
 		fclose(fp);
 		printf("fail to run midb client\n");
-		exit(-2);
+		return 2;
 	}
 
 

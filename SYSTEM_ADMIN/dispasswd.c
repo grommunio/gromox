@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("usage: %s address\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 
 	if (0 == strcmp(argv[1], "--help")) {
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init("../config/athena.cfg");
 	if (NULL == pconfig) {
 		printf("fail to init config file\n");
-		exit(-2);
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("fail to init mysql object\n");
 		config_file_free(pconfig);
-		exit(-3);
+		return 3;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 		mysql_close(pmysql);
 		config_file_free(pconfig);
 		printf("fail to connect database\n");
-		exit(-4);
+		return 4;
 	}
 	config_file_free(pconfig);
 	
@@ -115,14 +115,14 @@ int main(int argc, char **argv)
 		NULL == (pmyres = mysql_store_result(pmysql))) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		exit(-5);
+		return 5;
 	}
 	if (1 != mysql_num_rows(pmyres)) {
 		printf("cannot find information from database "
 				"for username %s\n", argv[1]);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-6);
+		return 6;
 	}
 	myrow = mysql_fetch_row(pmyres);
 	len = sprintf(tmp_line, "%s\t%s\n", argv[1], myrow[0]);
@@ -133,14 +133,14 @@ int main(int argc, char **argv)
 		printf("cannot record original password "
 			"information into tmp_password.txt\n");
 		mysql_close(pmysql);
-		exit(-7);
+		return 7;
 	}
 	if (len != write(fd, tmp_line, len)) {
 		printf("cannot record original password "
 			"information into tmp_password.txt\n");
 		close(fd);
 		mysql_close(pmysql);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	sprintf(sql_string, "UPDATE users SET password=''"
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	if (0 != mysql_query(pmysql, sql_string)) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		exit(-8);
+		return 8;
 	}
 	mysql_close(pmysql);
 	printf("%s's password has been disabled temporarily,"

@@ -25,12 +25,12 @@ int main(int argc, char **argv)
 	CONFIG_FILE *pconfig;
 
 	if (NULL == getcwd(work_path, 256)) {
-		exit(-1);
+		return 1;
 	}
 	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
 	pconfig = config_file_init(temp_path);
 	if (NULL == pconfig) {
-		exit(-1);
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -78,19 +78,19 @@ int main(int argc, char **argv)
 	}
 	config_file_free(pconfig);
 	if (0 != system_log_run()) {
-		exit(-2);
+		return 2;
 	}
 	if (0 != acl_control_run()) {
-		exit(-3);
+		return 3;
 	}
 	if (0 != translator_run()) {
-		exit(-4);
+		return 4;
 	}
 	if (0 != data_extractor_run()) {
-		exit(-5);
+		return 5;
 	}
 	if (0 != statistic_ui_run()) {
-		exit(-6);
+		return 6;
 	}
 	statistic_ui_stop();
 	statistic_ui_free();

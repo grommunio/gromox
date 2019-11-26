@@ -52,13 +52,13 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("usage: %s <username>\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 	umask(0);
 	pconfig = config_file_init("../config/athena.cfg");
 	if (NULL == pconfig) {
 		printf("fail to init config file\n");
-		exit(-2);
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("fail to init mysql object\n");
 		config_file_free(pconfig);
-		exit(-3);
+		return 3;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 		mysql_close(pmysql);
 		config_file_free(pconfig);
 		printf("fail to connect database\n");
-		exit(-3);
+		return 3;
 	}
 	
 	config_file_free(pconfig);
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 		NULL == (pmyres = mysql_store_result(pmysql))) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		exit(-3);
+		return 3;
 	}
 		
 	if (1 != mysql_num_rows(pmyres)) {
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 				"for username %s\n", argv[1]);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-3);
+		return 3;
 	}
 
 	myrow = mysql_fetch_row(pmyres);
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 		printf("address type is not normal\n");
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-4);
+		return 4;
 	}
 	
 	if (0 != atoi(myrow[1])) {
@@ -154,37 +154,37 @@ int main(int argc, char **argv)
 	if (0 == stat(temp_path, &node_stat)) {
 		printf("can not create sotre database,"
 			" %s already exits\n", temp_path);
-		exit(-6);
+		return 6;
 	}
 	
 	if (0 != stat("../doc/sqlite3_midb.txt", &node_stat)) {
 		printf("can not find store template"
 			" file \"sqlite3_midb.txt\"\n");	
-		exit(-7);
+		return 7;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("\"sqlite3_midb.txt\" is not a regular file\n");
-		exit(-7);
+		return 7;
 	}
 	str_size = node_stat.st_size;
 	
 	sql_string = malloc(str_size + 1);
 	if (NULL == sql_string) {
 		printf("fail to allocate memory\n");
-		exit(-8);
+		return 8;
 	}
 	fd = open("../doc/sqlite3_midb.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_midb.txt\" for reading\n");
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	if (str_size != read(fd, sql_string, str_size)) {
 		printf("fail to read content from store"
 			" template file \"sqlite3_midb.txt\"\n");
 		close(fd);
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	sql_string[str_size] = '\0';
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 		printf("fail to create store database\n");
 		free(sql_string);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	chmod(temp_path, 0666);
 	/* begin the transaction */
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
 		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	free(sql_string);
 	
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_USERNAME);
@@ -230,7 +230,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	
 	sqlite3_finalize(pstmt);

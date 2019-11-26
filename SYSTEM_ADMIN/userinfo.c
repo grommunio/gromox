@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("usage: %s address\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 
 	if (0 == strcmp(argv[1], "--help")) {
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init("../config/athena.cfg");
 	if (NULL == pconfig) {
 		printf("fail to init config file\n");
-		exit(-2);
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("fail to init mysql object\n");
 		config_file_free(pconfig);
-		exit(-3);
+		return 3;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 		mysql_close(pmysql);
 		config_file_free(pconfig);
 		printf("fail to connect database\n");
-		exit(-4);
+		return 4;
 	}
 	
 	config_file_free(pconfig);
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 		NULL == (pmyres = mysql_store_result(pmysql))) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		exit(-5);
+		return 5;
 	}
 		
 	if (1 != mysql_num_rows(pmyres)) {
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 				"for username %s\n", argv[1]);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-6);
+		return 6;
 	}
 
 	myrow = mysql_fetch_row(pmyres);

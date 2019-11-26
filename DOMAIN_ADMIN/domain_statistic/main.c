@@ -28,12 +28,12 @@ int main(int argc, char **argv)
 	CONFIG_FILE *pconfig;
 
 	if (NULL == getcwd(work_path, 256)) {
-		exit(-1);
+		return 1;
 	}
 	sprintf(temp_path, "%s/../config/posidon.cfg", work_path);
 	pconfig = config_file_init(temp_path);
 	if (NULL == pconfig) {
-		exit(-1);
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -109,10 +109,10 @@ int main(int argc, char **argv)
 	statistic_ui_init(str_value, lang_path);
 	config_file_free(pconfig);
 	if (0 != system_log_run()) {
-		exit(-2);
+		return 2;
 	}
 	if (0 != statistic_ui_run()) {
-		exit(-3);
+		return 3;
 	}
 	statistic_ui_stop();
 	statistic_ui_free();

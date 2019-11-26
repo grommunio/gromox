@@ -35,12 +35,12 @@ int main(int argc, char **argv)
 
 	umask(0);
 	if (NULL == getcwd(work_path, 256)) {
-		exit(-1);
+		return 1;
 	}
 	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
 	pconfig = config_file_init(temp_path);
 	if (NULL == pconfig) {
-		exit(-1);
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -138,22 +138,22 @@ int main(int argc, char **argv)
 	admin_ui_init(valid_days, str_value, cidb_path, lang_path);
 	config_file_free(pconfig);
 	if (0 != system_log_run()) {
-		exit(-2);
+		return 2;
 	}
 	if (0 != acl_control_run()) {
-		exit(-3);
+		return 3;
 	}
 	if (0 != data_source_run()) {
-		exit(-4);
+		return 4;
 	}
 	if (0 != midb_client_run()) {
-		exit(-5);
+		return 5;
 	}
 	if (0 != message_lookup_run()) {
-		exit(-6);
+		return 6;
 	}
 	if (0 != admin_ui_run()) {
-		exit(-7);
+		return 7;
 	}
 	admin_ui_stop();
 	admin_ui_free();

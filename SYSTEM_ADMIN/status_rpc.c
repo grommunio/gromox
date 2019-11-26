@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 	
 
 	if (NULL == getcwd(work_path, 256)) {
-		exit(-1);
+		return 1;
 	}
 	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
 	pconfig = config_file_init(temp_path);

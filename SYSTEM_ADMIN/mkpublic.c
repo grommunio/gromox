@@ -267,13 +267,13 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("usage: %s <domainname>\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 	umask(0);
 	pconfig = config_file_init("../config/athena.cfg");
 	if (NULL == pconfig) {
 		printf("fail to init config file\n");
-		exit(-2);
+		return 2;
 	}
 	str_value = config_file_get_value(pconfig, "PUBLIC_STORE_RATIO");
 	if (NULL == str_value) {
@@ -320,7 +320,7 @@ int main(int argc, char **argv)
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("fail to init mysql object\n");
 		config_file_free(pconfig);
-		exit(-3);
+		return 3;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 		mysql_close(pmysql);
 		config_file_free(pconfig);
 		printf("fail to connect database\n");
-		exit(-3);
+		return 3;
 	}
 	
 	config_file_free(pconfig);
@@ -340,7 +340,7 @@ int main(int argc, char **argv)
 		NULL == (pmyres = mysql_store_result(pmysql))) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		exit(-3);
+		return 3;
 	}
 		
 	if (1 != mysql_num_rows(pmyres)) {
@@ -348,7 +348,7 @@ int main(int argc, char **argv)
 				"for username %s\n", argv[1]);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-3);
+		return 3;
 	}
 
 	myrow = mysql_fetch_row(pmyres);
@@ -357,7 +357,7 @@ int main(int argc, char **argv)
 		printf("domain type is not normal\n");
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-4);
+		return 4;
 	}
 	
 	if (0 != atoi(myrow[3])) {
@@ -382,76 +382,76 @@ int main(int argc, char **argv)
 	if (0 == stat(temp_path, &node_stat)) {
 		printf("can not create store database,"
 			" %s already exits\n", temp_path);
-		exit(-6);
+		return 6;
 	}
 	
 	if (0 != stat("../doc/sqlite3_common.txt", &node_stat)) {
 		printf("can not find store template"
 			" file \"sqlite3_common.txt\"\n");	
-		exit(-7);
+		return 7;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("\"sqlite3_common.txt\" is not a regular file\n");
-		exit(-7);
+		return 7;
 	}
 	str_size = node_stat.st_size;
 	
 	if (0 != stat("../doc/sqlite3_public.txt", &node_stat)) {
 		printf("can not find store template "
 			"file \"sqlite3_public.txt\"\n");	
-		exit(-7);
+		return 7;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("\"sqlite3_public.txt\" is not a regular file\n");
-		exit(-7);
+		return 7;
 	}
 	str_size1 = node_stat.st_size;
 	
 	sql_string = malloc(str_size + str_size1 + 1);
 	if (NULL == sql_string) {
 		printf("fail to allocate memory\n");
-		exit(-8);
+		return 8;
 	}
 	fd = open("../doc/sqlite3_common.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_common.txt\" for reading\n");
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	if (str_size != read(fd, sql_string, str_size)) {
 		printf("fail to read content from store"
 			" template file \"sqlite3_common.txt\"\n");
 		close(fd);
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	fd = open("../doc/sqlite3_public.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_public.txt\" for reading\n");
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	if (str_size1 != read(fd, sql_string + str_size, str_size1)) {
 		printf("fail to read content from store"
 			" template file \"sqlite3_public.txt\"\n");
 		close(fd);
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	sql_string[str_size + str_size1] = '\0';
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("fail to initialize sqlite engine\n");
 		free(sql_string);
-		exit(-9);
+		return 9;
 	}
 	if (SQLITE_OK != sqlite3_open_v2(temp_path, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		printf("fail to create store database\n");
 		free(sql_string);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	chmod(temp_path, 0666);
 	/* begin the transaction */
@@ -463,7 +463,7 @@ int main(int argc, char **argv)
 		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	free(sql_string);
 	
@@ -472,7 +472,7 @@ int main(int argc, char **argv)
 		printf("fail to read \"propnames.txt\"\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-7);
+		return 7;
 	}
 	line_num = list_file_get_item_num(pfile);
 	pline = list_file_get_list(pfile);
@@ -484,7 +484,7 @@ int main(int argc, char **argv)
 		list_file_free(pfile);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	
 	for (i=0; i<line_num; i++) {
@@ -497,7 +497,7 @@ int main(int argc, char **argv)
 			sqlite3_finalize(pstmt);
 			sqlite3_close(psqlite);
 			sqlite3_shutdown();
-			exit(-9);
+			return 9;
 		}
 		sqlite3_reset(pstmt);
 	}
@@ -510,7 +510,7 @@ int main(int argc, char **argv)
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
@@ -518,7 +518,7 @@ int main(int argc, char **argv)
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
@@ -529,7 +529,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_PROHIBITRECEIVEQUOTA);
@@ -539,7 +539,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_PROHIBITSENDQUOTA);
@@ -549,7 +549,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_STORAGEQUOTALIMIT);
@@ -559,7 +559,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_MESSAGESIZEEXTENDED);
@@ -569,7 +569,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
@@ -579,7 +579,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_NORMALMESSAGESIZEEXTENDED);
@@ -589,7 +589,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_ROOT,
@@ -597,28 +597,28 @@ int main(int argc, char **argv)
 		printf("fail to create \"root\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_IPMSUBTREE,
 		PUBLIC_FID_ROOT, domain_id, "IPM_SUBTREE", NULL)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_NONIPMSUBTREE,
 		PUBLIC_FID_ROOT, domain_id, "NON_IPM_SUBTREE", NULL)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_EFORMSREGISTRY,
 		PUBLIC_FID_NONIPMSUBTREE, domain_id, "EFORMS REGISTRY", NULL)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	
 	sql_string = "INSERT INTO configurations VALUES (?, ?)";
@@ -627,7 +627,7 @@ int main(int argc, char **argv)
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	tmp_guid = guid_random_new();
 	guid_to_string(&tmp_guid, tmp_buff, sizeof(tmp_buff));
@@ -638,7 +638,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_CURRENT_EID);
@@ -648,7 +648,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAXIMUM_EID);
@@ -658,7 +658,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_CHANGE_NUMBER);
@@ -668,7 +668,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_CID);
@@ -678,7 +678,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_ARTICLE_NUMBER);
@@ -688,7 +688,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_SEARCH_STATE);
@@ -698,7 +698,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_DEFAULT_PERMISSION);
@@ -710,7 +710,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_ANONYMOUS_PERMISSION);
@@ -720,7 +720,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	

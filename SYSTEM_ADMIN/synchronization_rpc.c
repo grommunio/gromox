@@ -26,12 +26,12 @@ int main(int argc, char **argv)
 	
 
 	if (NULL == getcwd(work_path, 256)) {
-		exit(-1);
+		return 1;
 	}
 	sprintf(temp_path, "%s/../config/athena.cfg", work_path);
 	pconfig = config_file_init(temp_path);
 	if (NULL == pconfig) {
-		exit(-1);
+		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -41,14 +41,14 @@ int main(int argc, char **argv)
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {
-		exit(-1);
+		return 1;
 	}
 	if (0 != strcmp(request, "GET")) {
-		exit(-1);
+		return 1;
 	}
 	query = getenv("QUERY_STRING");
 	if (NULL == query) {
-		exit(-1);
+		return 1;
 	}
 	
 	if (0 == strcmp(query, "athena.cfg")) {
@@ -76,20 +76,20 @@ int main(int argc, char **argv)
 		config_file_free(pconfig);
 		sprintf(temp_path, "%s/area_list.txt", data_path);
 		if (0 != stat(temp_path, &node_stat)) {
-			exit(-1);
+			return 1;
 		}
 		ptr = malloc(node_stat.st_size + 1);
 		if (NULL == ptr) {
-			exit(-1);
+			return 1;
 		}
 		fd = open(temp_path, O_RDONLY);
 		if (-1 == fd) {
-			exit(-1);
+			return 1;
 		}
 		if (node_stat.st_size != read(fd, ptr, node_stat.st_size)) {
 			free(ptr);
 			close(fd);
-			exit(-1);
+			return 1;
 		}
 		ptr[node_stat.st_size] = '\0';
 		printf("Content-Type:text/plain\n\n");
@@ -99,27 +99,27 @@ int main(int argc, char **argv)
 		config_file_free(pconfig);
 		sprintf(temp_path, "%s/cidb_list.txt", data_path);
 		if (0 != stat(temp_path, &node_stat)) {
-			exit(-1);
+			return 1;
 		}
 		ptr = malloc(node_stat.st_size + 1);
 		if (NULL == ptr) {
-			exit(-1);
+			return 1;
 		}
 		fd = open(temp_path, O_RDONLY);
 		if (-1 == fd) {
-			exit(-1);
+			return 1;
 		}
 		if (node_stat.st_size != read(fd, ptr, node_stat.st_size)) {
 			free(ptr);
 			close(fd);
-			exit(-1);
+			return 1;
 		}
 		ptr[node_stat.st_size] = '\0';
 		printf("Content-Type:text/plain\n\n");
 		printf(ptr);
 		exit(0);
 	} else {
-		exit(-1);
+		return 1;
 	}
 }
 

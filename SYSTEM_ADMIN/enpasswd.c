@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("usage: %s address\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 
 	if (0 == strcmp(argv[1], "--help")) {
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	plist = list_file_init("../data/tmp_password.txt", "%s:128%s:128");
 	if (NULL == plist) {
 		printf("cannot find password information from tmp_password.txt\n");
-		exit(-1);
+		return 1;
 	}
 	pitem = list_file_get_list(plist);
 	num = list_file_get_item_num(plist);
@@ -54,13 +54,13 @@ int main(int argc, char **argv)
 	if (i >= num) {
 		list_file_free(plist);
 		printf("cannot find password information from tmp_password.txt\n");
-		exit(-2);
+		return 2;
 	}
 	fd = open("../data/tmp_password.tmp", O_CREAT|O_TRUNC|O_WRONLY, 0666);
 	if (-1 == fd) {
 		list_file_free(plist);
 		printf("fail to create temp file for writing\n");
-		exit(-3);
+		return 3;
 	}
 	for (i=0; i<num; i++) {
 		if (0 == strcasecmp(pitem + 256*i, argv[1])) {
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 			close(fd);
 			list_file_free(plist);
 			printf("fail to write temp file\n");
-			exit(-4);
+			return 4;
 		}
 	}
 	list_file_free(plist);
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	pconfig = config_file_init("../config/athena.cfg");
 	if (NULL == pconfig) {
 		printf("fail to init config file\n");
-		exit(-5);
+		return 5;
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("fail to init mysql object\n");
 		config_file_free(pconfig);
-		exit(-6);
+		return 6;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 		mysql_close(pmysql);
 		config_file_free(pconfig);
 		printf("fail to connect database\n");
-		exit(-7);
+		return 7;
 	}
 	config_file_free(pconfig);
 	
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	if (0 != mysql_query(pmysql, sql_string)) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		exit(-8);
+		return 8;
 	}
 	mysql_close(pmysql);
 	remove("../data/tmp_password.txt");

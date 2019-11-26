@@ -387,76 +387,76 @@ int main(int argc, char **argv)
 
 	if (2 != argc) {
 		printf("usage: %s <maildir>\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 	umask(0);
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", argv[1]);
 	if (0 != stat(temp_path, &node_stat)) {
 		printf("can not find sotre database,"
 			" %s does not exit\n", temp_path);
-		exit(-1);
+		return 1;
 	}
 	
 	if (0 != stat("../doc/sqlite3_common.txt", &node_stat)) {
 		printf("can not find store template"
 			" file \"sqlite3_common.txt\"\n");	
-		exit(-2);
+		return 2;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("\"sqlite3_common.txt\" is not a regular file\n");
-		exit(-3);
+		return 3;
 	}
 	str_size = node_stat.st_size;
 	
 	if (0 != stat("../doc/sqlite3_private.txt", &node_stat)) {
 		printf("can not find store template "
 			"file \"sqlite3_private.txt\"\n");	
-		exit(-4);
+		return 4;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("\"sqlite3_private.txt\" is not a regular file\n");
-		exit(-5);
+		return 5;
 	}
 	str_size1 = node_stat.st_size;
 	
 	sql_string = malloc(str_size + str_size1 + 1);
 	if (NULL == sql_string) {
 		printf("fail to allocate memory\n");
-		exit(-6);
+		return 6;
 	}
 	fd = open("../doc/sqlite3_common.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_common.txt\" for reading\n");
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	if (str_size != read(fd, sql_string, str_size)) {
 		printf("fail to read content from store"
 			" template file \"sqlite3_common.txt\"\n");
 		close(fd);
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	fd = open("../doc/sqlite3_private.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_private.txt\" for reading\n");
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	if (str_size1 != read(fd, sql_string + str_size, str_size1)) {
 		printf("fail to read content from store"
 			" template file \"sqlite3_private.txt\"\n");
 		close(fd);
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	sql_string[str_size + str_size1] = '\0';
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("fail to initialize sqlite engine\n");
 		free(sql_string);
-		exit(-8);
+		return 8;
 	}
 	snprintf(temp_path1, 256, "%s/exmdb/new.sqlite3", argv[1]);
 	remove(temp_path1);
@@ -465,7 +465,7 @@ int main(int argc, char **argv)
 		printf("fail to create store database\n");
 		free(sql_string);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	chmod(temp_path1, 0666);
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -475,7 +475,7 @@ int main(int argc, char **argv)
 		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	free(sql_string);
 	/* commit the transaction */
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 		printf("fail to excute attach database sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -498,7 +498,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO allocated_eids "
 		"SELECT * FROM source_db.allocated_eids";
@@ -507,7 +507,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO named_properties "
 		"SELECT * FROM source_db.named_properties";
@@ -516,7 +516,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO store_properties "
 		"SELECT * FROM source_db.store_properties";
@@ -525,7 +525,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO permissions "
 		"SELECT * FROM source_db.permissions";
@@ -534,7 +534,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO rules "
 		"SELECT * FROM source_db.rules";
@@ -543,7 +543,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO folders "
 		"SELECT * FROM source_db.folders";
@@ -552,7 +552,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO folder_properties "
 		"SELECT * FROM source_db.folder_properties";
@@ -561,7 +561,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO receive_table "
 		"SELECT * FROM source_db.receive_table";
@@ -570,7 +570,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO messages "
 		"SELECT * FROM source_db.messages";
@@ -579,7 +579,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO message_properties "
 		"SELECT * FROM source_db.message_properties";
@@ -588,7 +588,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO message_changes "
 		"SELECT * FROM source_db.message_changes";
@@ -597,7 +597,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO recipients "
 		"SELECT * FROM source_db.recipients";
@@ -606,7 +606,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO recipients_properties "
 		"SELECT * FROM source_db.recipients_properties";
@@ -615,7 +615,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO attachments "
 		"SELECT * FROM source_db.attachments";
@@ -624,7 +624,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO attachment_properties "
 		"SELECT * FROM source_db.attachment_properties";
@@ -633,7 +633,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO search_scopes "
 		"SELECT * FROM source_db.search_scopes";
@@ -642,7 +642,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "INSERT INTO search_result "
 		"SELECT * FROM source_db.search_result";
@@ -651,7 +651,7 @@ int main(int argc, char **argv)
 		printf("fail to excute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
@@ -662,7 +662,7 @@ int main(int argc, char **argv)
 		printf("fail to excute reindex sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sql_string = "PRAGMA integrity_check";
 	if (SQLITE_OK == sqlite3_prepare_v2(
@@ -672,7 +672,7 @@ int main(int argc, char **argv)
 			if (NULL == presult || 0 != strcmp(presult, "ok")) {
 				printf("new database is still "
 					"malformed, can not be fixed!\n");
-				exit(-10);
+				return 10;
 			}
 		}
 		sqlite3_finalize(pstmt);
@@ -684,7 +684,7 @@ int main(int argc, char **argv)
 	plist = list_file_init("../data/exmdb_list.txt", "%s:256%s:16%s:16%d");
 	if (NULL == plist) {
 		printf("fail to open exmdb list file\n");
-		exit(-11);
+		return 11;
 	}
 	list_num = list_file_get_item_num(plist);
 	pitem = (EXMDB_ITEM*)list_file_get_list(plist);
@@ -703,7 +703,7 @@ int main(int argc, char **argv)
 	list_file_free(plist);
 	if (FALSE == exmdb_client_unload_store(argv[1])) {
 		printf("fail to unload store\n");
-		exit(-12);
+		return 12;
 	}
 	remove(temp_path);
 	link(temp_path1, temp_path);

@@ -31,12 +31,12 @@ int main(int argc, char **argv)
 
 	umask(0);
 	if (NULL == getcwd(work_path, 256)) {
-		exit(-1);
+		return 1;
 	}
 	sprintf(temp_path, "%s/../config/posidon.cfg", work_path);
 	pconfig = config_file_init(temp_path);
 	if (NULL == pconfig) {
-		exit(-2);
+		return 2;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
 	if (NULL == str_value) {
@@ -115,19 +115,19 @@ int main(int argc, char **argv)
 	list_ui_init(str_value, lang_path);
 	config_file_free(pconfig);
 	if (0 != system_log_run()) {
-		exit(-2);
+		return 2;
 	}
 	if (0 != exmdb_client_run()) {
-		exit(-3);
+		return 3;
 	}
 	if (0 != session_client_run()) {
-		exit(-4);
+		return 4;
 	}
 	if (0 != data_source_run()) {
-		exit(-5);
+		return 5;
 	}
 	if (0 != list_ui_run()) {
-		exit(-6);
+		return 6;
 	}
 	list_ui_stop();
 	list_ui_free();

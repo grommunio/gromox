@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 	pbuff = malloc(buff_len);
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
-		exit(-1);
+		return 1;
 	}
 	while ((read_len = read(STDIN_FILENO, pbuff, buff_len - offset)) > 0) {
 		offset += read_len;
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 			pbuff = realloc(pbuff, buff_len);
 			if (NULL == pbuff) {
 				fprintf(stderr, "out of memory\n");
-				exit(-1);
+				return 1;
 			}
 		}
 	}
@@ -64,24 +64,24 @@ int main(int argc, char **argv)
 	pbuff = malloc(8*buff_len + 1024*1024);
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
-		exit(-1);
+		return 1;
 	}
 	if (FALSE == rtfcp_uncompress(&rtf_bin, pbuff, &rtf_len)) {
 		fprintf(stderr, "fail to uncompress rtf\n");
-		exit(-2);
+		return 2;
 	}
 	g_list_file = list_file_init("../data/cpid.txt", "%d%s:64");
 	if (NULL == g_list_file) {
 		fprintf(stderr, "fail to load list file cpid.txt\n");
-		exit(-3);
+		return 3;
 	}
 	pattachments = attachment_list_init();
 	if (NULL == pattachments) {
-		exit(-1);
+		return 1;
 	}
 	if (FALSE == rtf_init_library(cpid_to_charset_to)) {
 		fprintf(stderr, "fail to init rtf library\n");
-		exit(-4);
+		return 4;
 	}
 	tmp_len = 8*buff_len + 1024*1024 - rtf_len;
 	if (TRUE == rtf_to_html(pbuff, rtf_len, "utf-8",
@@ -90,6 +90,6 @@ int main(int argc, char **argv)
 		exit(0);
 	} else {
 		fprintf(stderr, "fail to convert rtf\n");
-		exit(-5);
+		return 5;
 	}
 }

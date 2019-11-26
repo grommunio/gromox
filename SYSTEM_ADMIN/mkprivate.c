@@ -467,13 +467,13 @@ int main(int argc, char **argv)
 	
 	if (2 != argc) {
 		printf("usage: %s <username>\n", argv[0]);
-		exit(-1);
+		return 1;
 	}
 	umask(0);
 	pconfig = config_file_init("../config/athena.cfg");
 	if (NULL == pconfig) {
 		printf("fail to init config file\n");
-		exit(-2);
+		return 2;
 	}
 
 	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
@@ -512,7 +512,7 @@ int main(int argc, char **argv)
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("fail to init mysql object\n");
 		config_file_free(pconfig);
-		exit(-3);
+		return 3;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
@@ -520,7 +520,7 @@ int main(int argc, char **argv)
 		mysql_close(pmysql);
 		config_file_free(pconfig);
 		printf("fail to connect database\n");
-		exit(-3);
+		return 3;
 	}
 	
 	config_file_free(pconfig);
@@ -533,7 +533,7 @@ int main(int argc, char **argv)
 		NULL == (pmyres = mysql_store_result(pmysql))) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		exit(-3);
+		return 3;
 	}
 		
 	if (1 != mysql_num_rows(pmyres)) {
@@ -541,7 +541,7 @@ int main(int argc, char **argv)
 				"for username %s\n", argv[1]);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-3);
+		return 3;
 	}
 
 	myrow = mysql_fetch_row(pmyres);
@@ -550,7 +550,7 @@ int main(int argc, char **argv)
 		printf("address type is not normal\n");
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		exit(-4);
+		return 4;
 	}
 	
 	if (0 != atoi(myrow[4])) {
@@ -570,7 +570,7 @@ int main(int argc, char **argv)
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == pfile) {
 		printf("fail to read \"folder_lang.txt\"\n");
-		exit(-7);
+		return 7;
 	}
 	line_num = list_file_get_item_num(pfile);
 	pline = list_file_get_list(pfile);
@@ -612,76 +612,76 @@ int main(int argc, char **argv)
 	if (0 == stat(temp_path, &node_stat)) {
 		printf("can not create sotre database,"
 			" %s already exits\n", temp_path);
-		exit(-6);
+		return 6;
 	}
 	
 	if (0 != stat("../doc/sqlite3_common.txt", &node_stat)) {
 		printf("can not find store template"
 			" file \"sqlite3_common.txt\"\n");	
-		exit(-7);
+		return 7;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("\"sqlite3_common.txt\" is not a regular file\n");
-		exit(-7);
+		return 7;
 	}
 	str_size = node_stat.st_size;
 	
 	if (0 != stat("../doc/sqlite3_private.txt", &node_stat)) {
 		printf("can not find store template "
 			"file \"sqlite3_private.txt\"\n");	
-		exit(-7);
+		return 7;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		printf("\"sqlite3_private.txt\" is not a regular file\n");
-		exit(-7);
+		return 7;
 	}
 	str_size1 = node_stat.st_size;
 	
 	sql_string = malloc(str_size + str_size1 + 1);
 	if (NULL == sql_string) {
 		printf("fail to allocate memory\n");
-		exit(-8);
+		return 8;
 	}
 	fd = open("../doc/sqlite3_common.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_common.txt\" for reading\n");
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	if (str_size != read(fd, sql_string, str_size)) {
 		printf("fail to read content from store"
 			" template file \"sqlite3_common.txt\"\n");
 		close(fd);
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	fd = open("../doc/sqlite3_private.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_private.txt\" for reading\n");
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	if (str_size1 != read(fd, sql_string + str_size, str_size1)) {
 		printf("fail to read content from store"
 			" template file \"sqlite3_private.txt\"\n");
 		close(fd);
 		free(sql_string);
-		exit(-7);
+		return 7;
 	}
 	close(fd);
 	sql_string[str_size + str_size1] = '\0';
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("fail to initialize sqlite engine\n");
 		free(sql_string);
-		exit(-9);
+		return 9;
 	}
 	if (SQLITE_OK != sqlite3_open_v2(temp_path, &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		printf("fail to create store database\n");
 		free(sql_string);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	chmod(temp_path, 0666);
 	/* begin the transaction */
@@ -693,7 +693,7 @@ int main(int argc, char **argv)
 		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	free(sql_string);
 	
@@ -702,7 +702,7 @@ int main(int argc, char **argv)
 		printf("fail to read \"propnames.txt\"\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-7);
+		return 7;
 	}
 	line_num = list_file_get_item_num(pfile);
 	pline = list_file_get_list(pfile);
@@ -714,7 +714,7 @@ int main(int argc, char **argv)
 		list_file_free(pfile);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	
 	for (i=0; i<line_num; i++) {
@@ -727,7 +727,7 @@ int main(int argc, char **argv)
 			sqlite3_finalize(pstmt);
 			sqlite3_close(psqlite);
 			sqlite3_shutdown();
-			exit(-9);
+			return 9;
 		}
 		sqlite3_reset(pstmt);
 	}
@@ -742,7 +742,7 @@ int main(int argc, char **argv)
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_bind_text(pstmt, 1, "", -1, SQLITE_STATIC);
 	sqlite3_bind_int64(pstmt, 2, PRIVATE_FID_INBOX);
@@ -752,7 +752,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_text(pstmt, 1, "IPC", -1, SQLITE_STATIC);
@@ -763,7 +763,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_text(pstmt, 1, "IPM", -1, SQLITE_STATIC);
@@ -774,7 +774,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_text(pstmt, 1, "REPORT.IPM", -1, SQLITE_STATIC);
@@ -785,7 +785,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	
@@ -795,7 +795,7 @@ int main(int argc, char **argv)
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_CREATIONTIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
@@ -804,7 +804,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_PROHIBITRECEIVEQUOTA);
@@ -814,7 +814,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_PROHIBITSENDQUOTA);
@@ -824,7 +824,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_STORAGEQUOTALIMIT);
@@ -834,7 +834,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_OUTOFOFFICESTATE);
@@ -844,7 +844,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_MESSAGESIZEEXTENDED);
@@ -854,7 +854,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
@@ -864,7 +864,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_NORMALMESSAGESIZEEXTENDED);
@@ -874,7 +874,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_ROOT,
@@ -882,14 +882,14 @@ int main(int argc, char **argv)
 		printf("fail to create \"root container\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_IPMSUBTREE,
 		PRIVATE_FID_ROOT, user_id, folder_lang[RES_ID_IPM], NULL, FALSE)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_INBOX,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_INBOX],
@@ -897,7 +897,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"inbox\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DRAFT,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_DRAFT],
@@ -905,7 +905,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"draft\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_OUTBOX,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_OUTBOX],
@@ -913,7 +913,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"outbox\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SENT_ITEMS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_SENT],
@@ -921,7 +921,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"sent\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DELETED_ITEMS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_DELETED],
@@ -929,7 +929,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"deleted\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CONTACTS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_CONTACTS],
@@ -937,7 +937,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"contacts\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CALENDAR,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_CALENDAR],
@@ -945,7 +945,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"calendar\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%llu, 'default', %u)",
@@ -957,7 +957,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"journal\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_NOTES,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_NOTES],
@@ -965,7 +965,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"notes\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_TASKS,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_TASKS],
@@ -973,7 +973,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"tasks\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_QUICKCONTACTS,
 		PRIVATE_FID_CONTACTS, user_id, "Quick Contacts",
@@ -981,7 +981,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"quick contacts\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_IMCONTACTLIST,
 		PRIVATE_FID_CONTACTS, user_id, "IM Contacts List",
@@ -989,7 +989,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"im contacts list\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_GALCONTACTS,
 		PRIVATE_FID_CONTACTS, user_id, "GAL Contacts",
@@ -997,7 +997,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"contacts\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);	
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_JUNK,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_JUNK],
@@ -1005,7 +1005,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"junk\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite,
 		PRIVATE_FID_CONVERSATION_ACTION_SETTINGS, PRIVATE_FID_IPMSUBTREE,
@@ -1013,56 +1013,56 @@ int main(int argc, char **argv)
 		printf("fail to create \"conversation action settings\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DEFERRED_ACTION,
 		PRIVATE_FID_ROOT, user_id, "Deferred Action", NULL, FALSE)) {
 		printf("fail to create \"deferred action\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
 		PRIVATE_FID_ROOT, user_id, "Spooler Queue", "IPF.Note")) {
 		printf("fail to create \"spooler queue\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_COMMON_VIEWS,
 		PRIVATE_FID_ROOT, user_id, "Common Views", NULL, FALSE)) {
 		printf("fail to create \"common views\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SCHEDULE,
 		PRIVATE_FID_ROOT, user_id, "Schedule", NULL, FALSE)) {
 		printf("fail to create \"schedule\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_FINDER,
 		PRIVATE_FID_ROOT, user_id, "Finder", NULL, FALSE)) {
 		printf("fail to create \"finder\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_VIEWS,
 		PRIVATE_FID_ROOT, user_id, "Views", NULL, FALSE)) {
 		printf("fail to create \"views\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SHORTCUTS,
 		PRIVATE_FID_ROOT, user_id, "Shortcuts", NULL, FALSE)) {
 		printf("fail to create \"shortcuts\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SYNC_ISSUES,
 		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_SYNC],
@@ -1070,7 +1070,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"sync issues\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CONFLICTS,
 		PRIVATE_FID_SYNC_ISSUES, user_id, folder_lang[RES_ID_CONFLICT],
@@ -1078,7 +1078,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"conflicts\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite,
 		PRIVATE_FID_LOCAL_FAILURES, PRIVATE_FID_SYNC_ISSUES,
@@ -1086,7 +1086,7 @@ int main(int argc, char **argv)
 		printf("fail to create \"local failures\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite,
 		PRIVATE_FID_SERVER_FAILURES, PRIVATE_FID_SYNC_ISSUES,
@@ -1094,14 +1094,14 @@ int main(int argc, char **argv)
 		printf("fail to create \"server failures\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_LOCAL_FREEBUSY,
 		PRIVATE_FID_ROOT, user_id, "Freebusy Data", NULL, FALSE)) {
 		printf("fail to create \"freebusy data\" folder\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-10);
+		return 10;
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%llu, 'default', %u)",
@@ -1113,7 +1113,7 @@ int main(int argc, char **argv)
 		printf("fail to prepare sql statement\n");
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	tmp_guid = guid_random_new();
 	guid_to_string(&tmp_guid, tmp_buff, sizeof(tmp_buff));
@@ -1124,7 +1124,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_CURRENT_EID);
@@ -1134,7 +1134,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAXIMUM_EID);
@@ -1144,7 +1144,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_CHANGE_NUMBER);
@@ -1154,7 +1154,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_CID);
@@ -1164,7 +1164,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_ARTICLE_NUMBER);
@@ -1174,7 +1174,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_SEARCH_STATE);
@@ -1184,7 +1184,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_DEFAULT_PERMISSION);
@@ -1194,7 +1194,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_ANONYMOUS_PERMISSION);
@@ -1204,7 +1204,7 @@ int main(int argc, char **argv)
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
-		exit(-9);
+		return 9;
 	}
 	sqlite3_finalize(pstmt);
 	
