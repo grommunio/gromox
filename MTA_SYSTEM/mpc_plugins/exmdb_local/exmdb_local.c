@@ -767,7 +767,7 @@ void exmdb_local_console_talk(int argc,
 					"\tstatistic interval       %s\r\n"
 					"\talarm interval           %s\r\n"
 					"\tcache interval           %s\r\n"
-					"\tretring times            %d\r\n"
+					"\tretrying times           %d\r\n"
 					"\tresponse capacity        %d\r\n"
 					"\tresponse interval        %s",
 					net_failure_get_param(NET_FAILURE_STATISTIC_TIMES),

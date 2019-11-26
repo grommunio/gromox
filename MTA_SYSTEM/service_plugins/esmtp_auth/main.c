@@ -200,7 +200,7 @@ static void console_talk(int argc, char** argv, char* result, int length)
 		itvltoa(host_list_get_param(HOST_LIST_SCAN_INTERVAL), str_interval);
 		snprintf(result, length,
 				"250 remote delivery module information:\r\n"
-				"\tretring times            %d\r\n"
+				"\tretrying times           %d\r\n"
 				"\tinvalid-scan interval    %s\r\n"
 				"\ttotal cache size         %d\r\n"
 				"\tcurrent used items       %d",

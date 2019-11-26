@@ -67,7 +67,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "RETRYING_TIMES", "6");
             }
 		}
-        printf("[domain_subsystem]: retring times on temporary failure is %d\n",
+		printf("[domain_subsystem]: retrying times on temporary failure is %d\n",
 			times);
 		
 		if (get_threads_num() - 4 > 0) {

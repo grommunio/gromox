@@ -1388,9 +1388,9 @@ SYSTEM_SETUP:
 			break;
 		}
 	}
-	str_value1 = config_file_get_value(pconfig, "SUBSYSTEM_RETRING_TIMES");
-	str_value2 = config_file_get_value(pconfig, "SUBSYSTEM_RETRING_INTERVAL_NUM");
-	str_value3 = config_file_get_value(pconfig, "SUBSYSTEM_RETRING_INTERVAL_UNIT");
+	str_value1 = config_file_get_value(pconfig, "SUBSYSTEM_RETRYING_TIMES");
+	str_value2 = config_file_get_value(pconfig, "SUBSYSTEM_RETRYING_INTERVAL_NUM");
+	str_value3 = config_file_get_value(pconfig, "SUBSYSTEM_RETRYING_INTERVAL_UNIT");
 	if (NULL != str_value1 && NULL != str_value2 && NULL != str_value3) {
 		unit_num = atoi(str_value3);
 		switch (unit_num) {
@@ -1420,9 +1420,9 @@ SYSTEM_SETUP:
 			break;
 		}
 	}
-	str_value1 = config_file_get_value(pconfig, "LOCAL_RETRING_TIMES");
-	str_value2 = config_file_get_value(pconfig, "LOCAL_RETRING_INTERVAL_NUM");
-	str_value3 = config_file_get_value(pconfig, "LOCAL_RETRING_INTERVAL_UNIT");
+	str_value1 = config_file_get_value(pconfig, "LOCAL_RETRYING_TIMES");
+	str_value2 = config_file_get_value(pconfig, "LOCAL_RETRYING_INTERVAL_NUM");
+	str_value3 = config_file_get_value(pconfig, "LOCAL_RETRYING_INTERVAL_UNIT");
 	if (NULL != str_value1 && NULL != str_value2 && NULL != str_value3) {
 		unit_num = atoi(str_value3);
 		switch (unit_num) {

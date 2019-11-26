@@ -559,7 +559,7 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 					"\tbounce policy            %s\r\n"
 					"\tback-end interval        %s\r\n"
 					"\tcache interval           %s\r\n"
-					"\tretring times            %d\r\n"
+					"\tretrying times           %d\r\n"
 					"\tnouser block interval    %s",
 					net_failure_get_param(NET_FAILURE_STATISTIC_TIMES),
 					str_interval,

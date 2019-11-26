@@ -166,7 +166,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "RETRYING_TIMES", "30");
             }
 		}
-        printf("[gateway_dispatch]: retring times on temporary failure is %d\n",
+		printf("[gateway_dispatch]: retrying times on temporary failure is %d\n",
 			retrying_times);
 		
 		str_value = config_file_get_value(pfile, "NOUSER_BLOCK_INTERVAL");

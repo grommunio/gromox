@@ -126,7 +126,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "SENDING_TRYING_TIMES", "3");
 			}
 		}
-		printf("[remote_postman]: retring times on temporary failure is %d\n",
+		printf("[remote_postman]: retrying times on temporary failure is %d\n",
 			trying_times);
 		
 		str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
@@ -180,7 +180,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			config_file_set_value(pfile, "FIRST_TRYING_INTERVAL", temp_buff);
 		}
 		itvltoa(fresh_interval, temp_buff);
-		printf("[remote_postman]: first failure retring interval is %s\n",
+		printf("[remote_postman]: first failure retrying interval is %s\n",
 			temp_buff);
 
 		str_value = config_file_get_value(pfile, "SECOND_TRYING_INTERVAL");
@@ -196,7 +196,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			config_file_set_value(pfile, "SECOND_TRYING_INTERVAL", temp_buff);
 		}
 		itvltoa(retrying_interval, temp_buff);
-		printf("[remote_postman]: second failure retring interval is %s\n",
+		printf("[remote_postman]: second failure retrying interval is %s\n",
 			temp_buff);
 
 		str_value = config_file_get_value(pfile, "FINAL_TRYING_INTERVAL");

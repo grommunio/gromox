@@ -1687,12 +1687,11 @@ static void setup_ui_main_html(const char *session)
 		lang_resource_get(g_lang_resource,"MSGERR_INTVLERR", language),
 		url_buff, session);
 	
-	str_times = config_file_get_value(g_cfg_file, "SUBSYSTEM_RETRING_TIMES");
+	str_times = config_file_get_value(g_cfg_file, "SUBSYSTEM_RETRYING_TIMES");
 	if (NULL == str_times) {
 		str_times = "N/A";
 	}
-	str_intvl = config_file_get_value(g_cfg_file,
-					"SUBSYSTEM_RETRING_INTERVAL_NUM");
+	str_intvl = config_file_get_value(g_cfg_file, "SUBSYSTEM_RETRYING_INTERVAL_NUM");
 	if (NULL == str_intvl) {
 		str_intvl = "N/A";
 	}
@@ -1702,8 +1701,7 @@ static void setup_ui_main_html(const char *session)
 		lang_resource_get(g_lang_resource,"MAIN_SUBSYSTEM_TIMES", language), str_times,
 		lang_resource_get(g_lang_resource,"MAIN_SUBSYSTEM_INTERVAL", language), str_intvl);
 
-	str_value = config_file_get_value(g_cfg_file,
-					"SUBSYSTEM_RETRING_INTERVAL_UNIT");
+	str_value = config_file_get_value(g_cfg_file, "SUBSYSTEM_RETRYING_INTERVAL_UNIT");
 	if (NULL == str_value) {
 		option = UNIT_MINUTE;
 	} else {
@@ -1724,12 +1722,11 @@ static void setup_ui_main_html(const char *session)
 		lang_resource_get(g_lang_resource,"MSGERR_INTVLERR", language),
 		url_buff, session);
 
-	str_times = config_file_get_value(g_cfg_file, "LOCAL_RETRING_TIMES");
+	str_times = config_file_get_value(g_cfg_file, "LOCAL_RETRYING_TIMES");
 	if (NULL == str_times) {
 		str_times = "N/A";
 	}
-	str_intvl = config_file_get_value(g_cfg_file,
-					"LOCAL_RETRING_INTERVAL_NUM");
+	str_intvl = config_file_get_value(g_cfg_file, "LOCAL_RETRYING_INTERVAL_NUM");
 	if (NULL == str_intvl) {
 		str_intvl = "N/A";
 	}
@@ -1739,8 +1736,7 @@ static void setup_ui_main_html(const char *session)
 		lang_resource_get(g_lang_resource,"MAIN_RETRYING_TIMES", language), str_times,
 		lang_resource_get(g_lang_resource,"MAIN_RETRYING_INTERVAL", language), str_intvl);
 
-	str_value = config_file_get_value(g_cfg_file,
-					"LOCAL_RETRING_INTERVAL_UNIT");
+	str_value = config_file_get_value(g_cfg_file, "LOCAL_RETRYING_INTERVAL_UNIT");
 	if (NULL == str_value) {
 		option = UNIT_MINUTE;
 	} else {
@@ -2519,11 +2515,11 @@ static void setup_ui_set_subsystem_freq(int times, int num, int unit)
 	}
 	gateway_control_notify(command_string, NOTIFY_DELIVERY);
 	sprintf(command_string, "%d", times);
-	config_file_set_value(g_cfg_file, "SUBSYSTEM_RETRING_TIMES", command_string);
+	config_file_set_value(g_cfg_file, "SUBSYSTEM_RETRYING_TIMES", command_string);
 	sprintf(command_string, "%d", num);
-	config_file_set_value(g_cfg_file, "SUBSYSTEM_RETRING_INTERVAL_NUM", command_string);
+	config_file_set_value(g_cfg_file, "SUBSYSTEM_RETRYING_INTERVAL_NUM", command_string);
 	sprintf(command_string, "%d", unit);
-	config_file_set_value(g_cfg_file, "SUBSYSTEM_RETRING_INTERVAL_UNIT", command_string);
+	config_file_set_value(g_cfg_file, "SUBSYSTEM_RETRYING_INTERVAL_UNIT", command_string);
 	config_file_save(g_cfg_file);
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	charset = lang_resource_get(g_lang_resource,"CHARSET", language);
@@ -2553,11 +2549,11 @@ static void setup_ui_set_retrying_freq(int times, int num, int unit)
 	}
 	gateway_control_notify(command_string, NOTIFY_DELIVERY);
 	sprintf(command_string, "%d", times);
-	config_file_set_value(g_cfg_file, "LOCAL_RETRING_TIMES", command_string);
+	config_file_set_value(g_cfg_file, "LOCAL_RETRYING_TIMES", command_string);
 	sprintf(command_string, "%d", num);
-	config_file_set_value(g_cfg_file, "LOCAL_RETRING_INTERVAL_NUM", command_string);
+	config_file_set_value(g_cfg_file, "LOCAL_RETRYING_INTERVAL_NUM", command_string);
 	sprintf(command_string, "%d", unit);
-	config_file_set_value(g_cfg_file, "LOCAL_RETRING_INTERVAL_UNIT", command_string);
+	config_file_set_value(g_cfg_file, "LOCAL_RETRYING_INTERVAL_UNIT", command_string);
 	config_file_save(g_cfg_file);
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	charset = lang_resource_get(g_lang_resource,"CHARSET", language);

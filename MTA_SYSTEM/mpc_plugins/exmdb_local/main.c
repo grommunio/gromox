@@ -132,7 +132,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "RETRYING_TIMES", "30");
 			}
 		}
-		printf("[exmdb_local]: retring times on temporary failure is %d\n",
+		printf("[exmdb_local]: retrying times on temporary failure is %d\n",
 			retrying_times);
 		
 		str_value = config_file_get_value(pfile, "FAILURE_TIMES_FOR_ALARM");
