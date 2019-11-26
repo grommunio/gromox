@@ -1,5 +1,9 @@
 #ifndef _H_PDU_PROCESSOR_
 #define _H_PDU_PROCESSOR_
+
+#ifndef __cplusplus
+#	include <stdbool.h>
+#endif
 #include "ndr.h"
 #include "plugin.h"
 #include "ntlmssp.h"
@@ -50,6 +54,7 @@ typedef struct _PROC_PLUGIN {
 	PLUGIN_MAIN lib_main;
 	TALK_MAIN talk_main;
 	char file_name[256];
+	bool completed_init;
 } PROC_PLUGIN;
 
 typedef struct _DCERPC_ENDPOINT {

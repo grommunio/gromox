@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <libHX/defs.h>
 #include "pdu_processor.h"
@@ -3568,8 +3569,9 @@ static void pdu_processor_unload_library(const char* plugin_name)
 	double_list_free(&pplugin->interface_list);
 	
 	func = (PLUGIN_MAIN)pplugin->lib_main;
-	/* notify the plugin that it willbe unloaded */
-	func(PLUGIN_FREE, NULL);
+	if (pplugin->completed_init)
+		/* notify the plugin that it willbe unloaded */
+		func(PLUGIN_FREE, NULL);
 	
 	/* free the reference list */
 	while ((pnode = double_list_get_from_head(&pplugin->list_reference))) {
@@ -3910,7 +3912,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXCUTEMAIN;
 	}
-		
+	pplugin->completed_init = true;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }

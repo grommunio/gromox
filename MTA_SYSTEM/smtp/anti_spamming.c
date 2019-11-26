@@ -5,6 +5,7 @@
  *	  actually compare the data in mail body and the judge whether this mail is 
  *	  spamming 
  */
+#include <stdbool.h>
 #include <libHX/string.h>
 #include "anti_spamming.h"
 #include "double_list.h"
@@ -41,6 +42,7 @@ typedef struct _SHARELIB{
 	void				*handle;
 	PLUGIN_MAIN			lib_main;
 	TALK_MAIN			talk_main;
+	bool completed_init;
 } SHARELIB;
 
 /* structure for describing service reference */
@@ -285,6 +287,7 @@ int anti_spamming_load_library(const char* path)
 		g_cur_lib = NULL;
 		return PLUGIN_FAIL_EXCUTEMAIN;
 	}
+	plib->completed_init = true;
 	g_cur_lib = NULL;
 	return 0;
 }
@@ -838,8 +841,8 @@ int anti_spamming_unload_library(const char* path)
 	
 	/* notify the plugin that it has been unloaded */
 	func = (PLUGIN_MAIN)plib->lib_main;
-	func(PLUGIN_FREE, NULL);
-	
+	if (plib->completed_init)
+		func(PLUGIN_FREE, NULL);
 	dlclose(plib->handle);
 	free(plib);
 	return PLUGIN_UNLOAD_OK;

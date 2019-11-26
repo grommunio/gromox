@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include "transporter.h"
@@ -50,6 +51,7 @@ typedef struct _PLUG_ENTITY{
     TALK_MAIN           talk_main;
     char                file_name[256];
     char                full_path[256];
+	bool completed_init;
 } PLUG_ENTITY;
 
 typedef struct _HOOK_ENTRY{
@@ -838,6 +840,7 @@ int transporter_load_library(const char* path)
 		g_cur_lib = NULL;
         return PLUGIN_FAIL_EXCUTEMAIN;
     }
+	plib->completed_init = true;
     g_cur_lib = NULL;
     return PLUGIN_LOAD_OK;
 }
@@ -875,8 +878,10 @@ int transporter_unload_library(const char* path)
     }
     plib = (PLUG_ENTITY*)(pnode->pdata);
     func = (PLUGIN_MAIN)plib->lib_main;
-    /* notify the plugin that it willbe unloaded */
-    func(PLUGIN_FREE, NULL);
+	if (plib->completed_init)
+		/* notify the plugin that it willbe unloaded */
+		func(PLUGIN_FREE, NULL);
+
 	if (0 != double_list_get_nodes_num(&plib->list_hook)) {
         for (pnode=double_list_get_head(&plib->list_hook); NULL!=pnode;
              pnode=double_list_get_after(&plib->list_hook, pnode)) {

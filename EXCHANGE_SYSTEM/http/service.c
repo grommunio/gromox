@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <libHX/defs.h>
 #include "pdu_processor.h"
 #include "double_list.h"
@@ -29,6 +30,7 @@ typedef struct _PLUG_ENTITY{
     TALK_MAIN			talk_main;
     char				file_name[256];
 	char				full_path[256];
+	bool completed_init;
 } PLUG_ENTITY;
 
 typedef struct _SERVICE_ENTRY{
@@ -234,6 +236,7 @@ int service_load_library(const char *path)
 		g_cur_plug = NULL;
 		return PLUGIN_FAIL_EXCUTEMAIN;
 	}
+	plib->completed_init = true;
 	g_cur_plug = NULL;
 	return PLUGIN_LOAD_OK;
 }
@@ -274,8 +277,9 @@ int service_unload_library(const char *path)
 		return PLUGIN_UNABLE_UNLOAD;
 	}
 	func = (PLUGIN_MAIN)plib->lib_main;
-	/* notify the plugin that it will be unloaded */
-	func(PLUGIN_FREE, NULL);
+	if (plib->completed_init)
+		/* notify the plugin that it will be unloaded */
+		func(PLUGIN_FREE, NULL);
 	/* check if the there rests service(s) that has not been unrigstered */
 	if (0 != double_list_get_nodes_num(&plib->list_service)) {
 		for (pnode=double_list_get_head(&plib->list_service); NULL!=pnode;

@@ -1,5 +1,9 @@
 #ifndef _H_HPM_PROCESSOR_
 #define _H_HPM_PROCESSOR_
+
+#ifndef __cplusplus
+#	include <stdbool.h>
+#endif
 #include "plugin.h"
 #include "double_list.h"
 #include "common_types.h"
@@ -32,6 +36,7 @@ typedef struct _HPM_PLUGIN {
 	PLUGIN_MAIN lib_main;
 	TALK_MAIN talk_main;
 	char file_name[256];
+	bool completed_init;
 } HPM_PLUGIN;
 
 extern void hpm_processor_init(int context_num, const char *plugins_path, const char *const *names, uint64_t cache_size, uint64_t max_size);

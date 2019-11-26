@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "flusher.h"
 #include "service.h"
 #include "single_list.h"
@@ -42,6 +43,7 @@ typedef struct _PLUG_ENTITY {
 	SINGLE_LIST			list_reference;
 	char			file_name[256];
 	char            path[256];
+	bool completed_init;
 } PLUG_ENTITY;
 
 static BOOL flusher_load_plugin(char* path);
@@ -291,6 +293,7 @@ static BOOL flusher_load_plugin(char* path)
 		g_flusher_plug->handle = NULL;
 		return FALSE;
 	}
+	g_flusher_plug->completed_init = true;
 	return TRUE;
 }
 
@@ -302,7 +305,7 @@ static BOOL flusher_unload_plugin()
 	if (NULL == g_flusher_plug || NULL == g_flusher_plug->appmain) {
 		return FALSE;
 	}
-	if (FALSE == g_flusher_plug->appmain(PLUGIN_FREE, NULL)) {
+	if (g_flusher_plug->completed_init && !g_flusher_plug->appmain(PLUGIN_FREE, NULL)) {
 		printf("[flusher]: error to excute Flusher_LibMain with "
 			   "FLUSHER_LIB_FREE in plugin %s\n", g_flusher_plug->path);
 		return FALSE;

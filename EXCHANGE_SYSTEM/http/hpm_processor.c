@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <unistd.h>
 #include "hpm_processor.h"
 #include "pdu_processor.h"
@@ -388,8 +389,10 @@ static void hpm_processor_unload_library(const char *plugin_name)
         return;
     }
 	func = (PLUGIN_MAIN)pplugin->lib_main;
-	/* notify the plugin that it willbe unloaded */
-	func(PLUGIN_FREE, NULL);
+	if (pplugin->completed_init)
+		/* notify the plugin that it willbe unloaded */
+		func(PLUGIN_FREE, NULL);
+
 	/* free the reference list */
 	while ((pnode = double_list_get_from_head(&pplugin->list_reference))) {
 		service_release(((SERVICE_NODE*)(pnode->pdata))->service_name,
@@ -465,6 +468,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 		g_cur_plugin = NULL;
 		return PLUGIN_FAIL_EXCUTEMAIN;
 	}
+	pplugin->completed_init = true;
 	g_cur_plugin = NULL;
 	return PLUGIN_LOAD_OK;
 }
