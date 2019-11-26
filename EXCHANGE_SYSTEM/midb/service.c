@@ -174,7 +174,7 @@ int service_load_library(const char *path)
 	if (handle == NULL && strchr(path, '/') == NULL) {
 		char altpath[256];
 		snprintf(altpath, sizeof(altpath), "%s/%s", g_init_path, path);
-		handle = dlopen(fake_path, RTLD_LAZY);
+		handle = dlopen(altpath, RTLD_LAZY);
 	}
 	if (NULL == handle){
 		printf("[service]: error loading %s: %s\n", fake_path, dlerror());
