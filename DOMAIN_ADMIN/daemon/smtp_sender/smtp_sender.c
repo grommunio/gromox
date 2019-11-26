@@ -620,7 +620,7 @@ typedef union {
     /* sort all records by preference. */
     for (i = 0; i < nmx; i++) {
         for (j = i + 1; j < nmx; j++) {
-            if (prefer[i] < prefer[j]) {
+            if (prefer[j] < prefer[i]) {
                 register u_short tmppref;
                 register char *tmphost;
 
