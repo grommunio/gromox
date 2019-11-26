@@ -8,7 +8,7 @@
 #include "media_migrator.h"
 #include "password_cleaner.h"
 #include "data_source.h"
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 #include "system_log.h"
 #include "keyword_cleaning.h"
 #include "file_operation.h"

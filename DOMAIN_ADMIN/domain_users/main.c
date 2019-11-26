@@ -6,7 +6,7 @@
 #include "data_source.h"
 #include "config_file.h"
 #include "exmdb_client.h"
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 #include "session_client.h"
 #include <sys/types.h>
 #include <sys/stat.h>

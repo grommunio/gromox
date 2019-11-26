@@ -22,7 +22,7 @@
 #include "double_list.h"
 #include "data_source.h"
 #include "midb_client.h"
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 
 #define TYPE_USER_AREA			0
 #define TYPE_DOMAIN_AREA		1

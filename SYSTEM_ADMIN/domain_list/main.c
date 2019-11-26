@@ -4,7 +4,7 @@
 #include "exmdb_tool.h"
 #include "data_source.h"
 #include "config_file.h"
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 #include "util.h"
 #include <unistd.h>
 #include <string.h>

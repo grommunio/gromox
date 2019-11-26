@@ -9,7 +9,7 @@
 #include "system_log.h"
 #include "data_source.h"
 #include "midb_client.h"
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 #include "engine.h"
 #include "config_file.h"
 #include <stdio.h>

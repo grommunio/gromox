@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "domain_cleaner.h"
 #include "data_source.h"
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 #include "message.h"
 #include "smtp_sender.h"
 #include "util.h"

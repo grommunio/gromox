@@ -3,7 +3,7 @@
 #include "system_log.h"
 #include "session_client.h"
 #include "data_source.h"
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 #include "list_file.h"
 #include "util.h"
 #include "double_list.h"

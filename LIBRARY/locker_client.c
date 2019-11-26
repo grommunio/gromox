@@ -1,6 +1,6 @@
 #include <time.h>
 #include <unistd.h>
-#include "locker_client.h"
+#include <gromox/locker_client.h>
 #include "common_types.h"
 #include <fcntl.h>
 #include <stdio.h>
