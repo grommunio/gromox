@@ -9,7 +9,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "cookie_parser.h"
 
 #define SOCKET_TIMEOUT				30

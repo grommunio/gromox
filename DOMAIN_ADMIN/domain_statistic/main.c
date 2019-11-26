@@ -1,7 +1,7 @@
 #include "system_log.h"
 #include "statistic_ui.h"
 #include "data_source.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>

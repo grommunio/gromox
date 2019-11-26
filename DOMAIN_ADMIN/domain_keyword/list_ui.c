@@ -3,7 +3,7 @@
 #include "system_log.h"
 #include <gromox/gateway_control.h>
 #include "data_source.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "list_file.h"
 #include "config_file.h"
 #include "mail_func.h"

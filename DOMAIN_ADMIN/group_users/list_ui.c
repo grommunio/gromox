@@ -10,7 +10,7 @@
 #include "lang_resource.h"
 #include <gromox/locker_client.h>
 #include "request_parser.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>

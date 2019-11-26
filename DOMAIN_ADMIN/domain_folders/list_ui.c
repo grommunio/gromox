@@ -4,7 +4,7 @@
 #include "data_source.h"
 #include "lang_resource.h"
 #include "request_parser.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "mail_func.h"
 #include "rop_util.h"
 #include "util.h"

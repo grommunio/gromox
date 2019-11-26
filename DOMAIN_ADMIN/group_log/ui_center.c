@@ -3,7 +3,7 @@
 #include "lang_resource.h"
 #include "system_log.h"
 #include "search_engine.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "util.h"
 #include <time.h>
 #include <stdio.h>

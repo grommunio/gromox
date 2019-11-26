@@ -3,7 +3,7 @@
 #include "setup_ui.h"
 #include "config_file.h"
 #include "data_source.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include <gromox/gateway_control.h>
 #include "util.h"
 #include <unistd.h>

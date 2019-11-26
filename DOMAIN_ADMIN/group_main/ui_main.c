@@ -5,7 +5,7 @@
 #include "data_source.h"
 #include "lang_resource.h"
 #include "cookie_parser.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "request_parser.h"
 #include "util.h"
 #include <time.h>

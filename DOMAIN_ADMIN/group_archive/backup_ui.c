@@ -2,7 +2,7 @@
 #include "lang_resource.h"
 #include "request_parser.h"
 #include "system_log.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "message_lookup.h"
 #include "data_source.h"
 #include "util.h"

@@ -3,7 +3,7 @@
 #include "midb_client.h"
 #include "message_lookup.h"
 #include "data_source.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "backup_ui.h"
 #include "config_file.h"
 #include "util.h"

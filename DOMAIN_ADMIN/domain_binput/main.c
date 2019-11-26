@@ -6,7 +6,7 @@
 #include "config_file.h"
 #include "exmdb_client.h"
 #include <gromox/locker_client.h>
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>

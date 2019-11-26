@@ -1,5 +1,5 @@
 #include "system_log.h"
-#include "session_client.h"
+#include <gromox/session_client.h>
 #include "info_ui.h"
 #include "data_source.h"
 #include "config_file.h"
