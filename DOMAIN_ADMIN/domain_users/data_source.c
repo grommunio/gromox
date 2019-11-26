@@ -1398,7 +1398,6 @@ BOOL data_source_remove_user(const char *username, BOOL *pb_alias,
 {
 	int i, j, k;
 	int rows, rows1;
-	int user_id;
 	int address_type;
 	char *pdomain, *pat;
 	char temp_user[256];
@@ -1466,7 +1465,6 @@ RETRYING:
 		return TRUE;
 	}
 	myrow = mysql_fetch_row(pmyres);
-	user_id = atoi(myrow[0]);
 	address_type = atoi(myrow[1]);
 	
 	mysql_free_result(pmyres);

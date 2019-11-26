@@ -160,8 +160,6 @@ static char* dns_skip_questions(char *buffer, int len, int count, char *ptr)
 {
 	int rr_name_len;
 	char rr_name[NS_MAXDNAME];
-	int rr_type;
-	int rr_class;
 
 	for(; count>0; count--) {
 		rr_name_len = sizeof(rr_name);
@@ -173,8 +171,8 @@ static char* dns_skip_questions(char *buffer, int len, int count, char *ptr)
 			return NULL;
 		}
 		ptr += rr_name_len;
-		NS_GET16(rr_type, ptr);
-		NS_GET16(rr_class, ptr);
+		ptr += NS_INT16SZ; /* rr_type */
+		ptr += NS_INT16SZ; /* rr_class */
 	}
 	return ptr;
 }

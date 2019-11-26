@@ -345,7 +345,6 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	BINARY *pbin;
 	uint32_t crc;
 	size_t input_idx;
-	size_t output_idx;
 	uint16_t dict_ref;
 	EXT_PUSH ext_push;
 	uint8_t control_bit;
@@ -356,7 +355,6 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	uint8_t	dict[RTF_DICTLENGTH];
 	
 	input_idx = 0;
-	output_idx = 0;
 	control_bit = 0x01;
 	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 		return NULL;

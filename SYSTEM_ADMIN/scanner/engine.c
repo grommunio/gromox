@@ -462,10 +462,10 @@ static BOOL engine_clean_and_calculate_maildir(
 	char tmp_path2[256];
 	const char *presult;
 	sqlite3_stmt *pstmt;
-	int temp_files, files;
+	int temp_files;
 	struct stat node_stat;
 	struct dirent *direntp;
-	uint64_t bytes, temp_bytes;
+	uint64_t temp_bytes;
 	
 	sprintf(tmp_path, "%s/exmdb/exchange.sqlite3", path);
 	if (SQLITE_OK == sqlite3_open_v2(tmp_path,
@@ -530,8 +530,6 @@ static BOOL engine_clean_and_calculate_maildir(
 	engine_clean_eml_and_ext(path);
 	engine_clean_cid(path);
 	engine_cleaning_tmp(path);
-	bytes = 0;
-	files = 0;
 	*pbytes = 0;
 	*pfiles = 0;
 	dirp = opendir(path);
@@ -573,9 +571,9 @@ static BOOL engine_clean_and_calculate_homedir(
 	const char *presult;
 	sqlite3_stmt *pstmt;
 	struct stat node_stat;
-	int temp_files, files;
+	int temp_files;
 	struct dirent *direntp;
-	uint64_t bytes, temp_bytes;
+	uint64_t temp_bytes;
 	
 	sprintf(tmp_path, "%s/exmdb/exchange.sqlite3", path);
 	if (SQLITE_OK == sqlite3_open_v2(tmp_path,
@@ -612,9 +610,6 @@ static BOOL engine_clean_and_calculate_homedir(
 	engine_clean_cid(path);
 	snprintf(tmp_path, 255, "%s/log", path);
 	engine_homedirlog_cleaning(tmp_path);
-	
-	bytes = 0;
-	files = 0;
 	*pbytes = 0;
 	*pfiles = 0;
 	dirp = opendir(path);

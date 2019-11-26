@@ -1034,7 +1034,6 @@ static int summary_folder(char *path, char *folder, int *pexists,
 	unsigned int *puidnext, int *pfirst_unseen, int *perrno)
 {
 	int length;
-	char *pspace;
 	BACK_CONN *pback;
 	char buff[1024];
 	int exists, recent;
@@ -1057,7 +1056,6 @@ static int summary_folder(char *path, char *folder, int *pexists,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			pspace = strchr(buff, ' ');
 			if (6 != sscanf(buff, "TRUE %d %d %d %ld %d %d", &exists,
 				&recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
 				*perrno = -1;

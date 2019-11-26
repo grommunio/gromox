@@ -654,7 +654,7 @@ static const char* extract_uri(const char *in_buff, int length, char *uri)
 
 static void console_talk(int argc, char **argv, char *result, int length)
 {
-	int interval, len;
+	int interval;
 	CONFIG_FILE *pfile;
 	char black_buff[32];
 	char help_string[] = "250 uri rbl help information:\r\n"
@@ -681,7 +681,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "info")) {
 		itvltoa(uri_cache_get_param(URI_CACHE_BLACK_INTERVAL), black_buff);
-		len = snprintf(result, length, "250 %s information:\r\n"
+		snprintf(result, length, "250 %s information:\r\n"
 								 "\tblacklist cache size             %d\r\n"
 								 "\tblacklist interval               %s\r\n"
 								 "\timmediate reject                 %s\r\n"

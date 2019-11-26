@@ -1286,6 +1286,8 @@ static int pdu_ndr_push_dcerpc_object(NDR_PUSH *pndr,
 	int status;
 	
 	status = ndr_push_union_align(pndr, 4);
+	if (status != NDR_ERR_SUCCESS)
+		return status;
 	if (pndr->flags & NDR_FLAG_OBJECT_PRESENT) {
 		return ndr_push_guid(pndr, &r->object);
 	}

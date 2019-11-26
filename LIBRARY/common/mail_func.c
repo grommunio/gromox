@@ -186,12 +186,10 @@ void parse_email_addr(EMAIL_ADDR *e_addr, const char *email)
 	int lasttokenloc;
 	const char *tmp_ptr;
 	const char *loc_ptr;
-	const char *email_ptr;
 	
 	tokenloc = 0;
 	bgettoken = 0;
 	lasttokenloc = -1;
-	email_ptr = email;
 	tmp_ptr = email;
 	loc_ptr = email;
 	/* first get the display name, begin with token " */
@@ -516,11 +514,9 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 	int lasttokenloc;
 	const char *tmp_ptr;
 	const char *loc_ptr;
-	const char *email_ptr;
 	
 	tmp_ptr = email;
 	loc_ptr = email;
-	email_ptr = email;
 	tokenloc = 0;
 	bquoted = 0;
 	bgettoken = 0;
@@ -918,13 +914,12 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 	MEM_FILE *pfile)
 {
 	char *ptr, *prev_section, *ptr_equal;
-	int offset, distance;
+	int distance;
 	int paratag_len = 0;
 	int paraval_len = 0;
 	char param_tag[MIME_FIELD_LEN];
 	char param_value[MIME_FIELD_LEN];
 
-	offset = 0;
 	ptr = in_buff;
 	prev_section = NULL;
 	while ((ptr = memchr(ptr, ';', buff_len - (ptr - in_buff))) != NULL) {
@@ -1883,7 +1878,7 @@ int html_to_plain(char *rbuf, int len)
 	int i = 0;
 	char is_xml = 0;
 	uint8_t state = 0;
-	int br, depth = 0, in_q = 0;
+	int depth = 0, in_q = 0;
 	char *tbuf, *buf, *p, *tp, *rp, c, lc;
 	
 	buf = malloc(len + 1);
@@ -1895,7 +1890,6 @@ int html_to_plain(char *rbuf, int len)
 	c = *buf;
 	p = buf;
 	rp = rbuf;
-	br = 0;
 	tbuf = tp = NULL;
 	while (i < len) {
 		switch (c) {

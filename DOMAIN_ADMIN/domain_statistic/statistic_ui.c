@@ -361,9 +361,7 @@ static void statistic_ui_main_html(const char *domain, const char *session,
 	int max_num;
 	int item_num;
 	int first_year;
-	int first_month;
 	int last_year;
-	int last_month;
 	int total_spam;
 	int total_normal;
 	int total_outgoing;
@@ -392,7 +390,6 @@ static void statistic_ui_main_html(const char *domain, const char *session,
 	if (NULL == pfile) {
 		item_num = 0;
 		first_year = year;
-		first_month = month;
 	} else {
 		pitem = (STATISTIC_ITEM*)list_file_get_list(pfile);
 		item_num = list_file_get_item_num(pfile);
@@ -402,12 +399,10 @@ static void statistic_ui_main_html(const char *domain, const char *session,
 			return;
 		}
 		first_year = temp_tm.tm_year + 1900;
-		first_month = temp_tm.tm_mon + 1;
 	}
 	time(&cur_time);
 	ptm = localtime(&cur_time);
 	last_year = ptm->tm_year + 1900;
-	last_month = ptm->tm_mon + 1;
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	printf("Content-Type:text/html;charset=%s\n\n",
 		lang_resource_get(g_lang_resource,"CHARSET", language));

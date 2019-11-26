@@ -2435,7 +2435,6 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 	uint32_t bytes;
 	uint8_t pad_len;
 	uint32_t offset;
-	uint32_t offset1;
 	uint32_t offset2;
 	
 	status = ext_buffer_pull_uint32(pext, &r->count);
@@ -2452,7 +2451,6 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 	}
 	offset = pext->offset + bytes;
 	for (i=0; i<r->count; i++) {
-		offset1 = pext->offset;
 		status = ext_buffer_pull_uint32(pext, &bytes);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -5122,7 +5120,6 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 	const PROPTAG_ARRAY *pproptags, const RECIPIENT_ROW *r)
 {
 	int status;
-	uint8_t type;
 	BOOL b_unicode;
 	PROPTAG_ARRAY proptags;
 	
@@ -5130,7 +5127,6 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE) {
 		b_unicode = TRUE;
 	}
-	type = r->flags & 0x0007;
 	status = ext_buffer_push_uint16(pext, r->flags);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;

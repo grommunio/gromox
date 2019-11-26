@@ -29,7 +29,6 @@ BOOL spam_complain_process(MESSAGE_CONTEXT *pcontext)
 {
 	char date_buf[128];
 	char rcpt_to[256];
-	char *pdomain;
 	time_t cur_time;
 	struct tm time_buff;
 	MIME *pmime;
@@ -37,7 +36,6 @@ BOOL spam_complain_process(MESSAGE_CONTEXT *pcontext)
 	
 
 	mem_file_readline(&pcontext->pcontrol->f_rcpt_to, rcpt_to, 256);
-	pdomain = strchr(rcpt_to, '@') + 1;
 	if (0 != strncasecmp(rcpt_to, "spam-complain@", 14)) {
 		return FALSE;
 	}

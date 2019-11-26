@@ -153,12 +153,10 @@ static int data_extractor_parse_buffer(char *buff_in, STATUS_ITEM *pitem)
 	char temp_buff[128];
 	int i, j;
 	int temp_len;
-	int buff_len;
 	int start_pos;
 	int end_pos;
 	
 	last_ptr = 0;
-	buff_len = strlen(buff_in);
 	temp_ptr = strstr(buff_in, "250 ");
 	if (NULL == temp_ptr) {
 		return 0;

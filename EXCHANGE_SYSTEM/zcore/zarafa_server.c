@@ -4990,7 +4990,6 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 {
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	MESSAGE_OBJECT *pmessage;
 	ATTACHMENT_OBJECT *pattachment;
 	
@@ -5008,7 +5007,6 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_SUPPORTED;
 	}
-	pstore = message_object_get_store(pmessage);
 	pattachment = attachment_object_create(pmessage, attach_id);
 	if (NULL == pattachment) {
 		zarafa_server_put_user_info(pinfo);
@@ -5036,7 +5034,6 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 {
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	MESSAGE_OBJECT *pmessage;
 	ATTACHMENT_OBJECT *pattachment;
 	
@@ -5054,7 +5051,6 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return EC_NOT_SUPPORTED;
 	}
-	pstore = message_object_get_store(pmessage);
 	if (FALSE == message_object_check_writable(pmessage)) {
 		zarafa_server_put_user_info(pinfo);
 		return EC_ACCESS_DENIED;

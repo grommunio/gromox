@@ -1266,7 +1266,6 @@ static void imap_parser_event_touch(char *username, char *folder)
 
 void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 {
-	int len;
 	char buff[1024];
 	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
@@ -1289,8 +1288,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 		}
 	}
 	pthread_mutex_unlock(&g_hash_lock);
-	
-	len = snprintf(buff, 1024, "MESSAGE-FLAG %s %s %s",
+	snprintf(buff, 1024, "MESSAGE-FLAG %s %s %s",
 		pcontext->username, pcontext->selected_folder, mid_string);
 	system_services_broadcast_event(buff);
 }

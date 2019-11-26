@@ -283,11 +283,9 @@ static PROXY_NODE* find_proxy_node(
 	const char *domain, const char *uri_path)
 {
 	int tmp_len;
-	int path_len;
 	PROXY_NODE *pxnode;
 	DOUBLE_LIST_NODE *pnode;
 
-	path_len = strlen(uri_path);
 	for (pnode=double_list_get_head(&g_proxy_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_proxy_list, pnode)) {
 		pxnode = (PROXY_NODE*)pnode->pdata;

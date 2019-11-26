@@ -2423,9 +2423,7 @@ BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 	SINGLE_LIST *plist;
 	SINGLE_LIST_NODE *prnode;
 	SINGLE_LIST_NODE *psnode;
-	SIMPLE_TREE_NODE *ptnode;
 	
-	ptnode = NULL;
 	plist = &pbase->gal_list;
 	single_list_init(presult_list);
 	for (psnode=single_list_get_head(plist); NULL!=psnode;

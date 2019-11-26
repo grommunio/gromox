@@ -482,9 +482,8 @@ int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v)
 	int status;
 	
 	status = ndr_pull_ulong(pndr, v);
-	if (*v != 0) {
+	if (status == NDR_ERR_SUCCESS && *v != 0)
 		pndr->ptr_count ++;
-	}
 	return NDR_ERR_SUCCESS;
 }
 

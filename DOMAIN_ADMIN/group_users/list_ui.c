@@ -1999,7 +1999,6 @@ static void list_ui_edit_html(const char *groupname, const char *session,
 	const char *username)
 {
 	int fd;
-	int len;
 	char type[16];
 	int privilege;
 	char *pdomain;
@@ -2080,8 +2079,6 @@ static void list_ui_edit_html(const char *groupname, const char *session,
 	}
 	
 	options_extpass[extpasswd_type] = "selected";
-	
-	len  = 0;
 	prompt[0] = '\0';
 	if (ADDRESS_TYPE_ALIAS == temp_item.address_type) {
 		if (FALSE == data_source_get_username_by_alias(username, temp_user)) {
@@ -2089,7 +2086,7 @@ static void list_ui_edit_html(const char *groupname, const char *session,
 				g_lang_resource, "ERROR_INTERNAL", language));
 			return;
 		}
-		len = sprintf(prompt, lang_resource_get(
+		sprintf(prompt, lang_resource_get(
 				g_lang_resource,"PROMPT_ALIAS",
 				language), temp_user);
 		strcpy(option_submit, OPTION_DISABLED);

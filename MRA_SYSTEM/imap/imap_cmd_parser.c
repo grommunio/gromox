@@ -1317,7 +1317,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 	const char *lang, const char *sys_folder, char *imap_folder)
 {
-	int i ,len;
+	int i;
 	char *ptoken;
 	char **f_strings;
 	char temp_name[512];
@@ -1366,7 +1366,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		}
 	}
 	if (NULL != ptoken) {
-		len = snprintf(converted_name, 512, "%s%s", temp_folder, ptoken);
+		snprintf(converted_name, 512, "%s%s", temp_folder, ptoken);
 	} else {
 		strcpy(converted_name, temp_folder);
 	}

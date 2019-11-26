@@ -25,7 +25,6 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	int i;
 	uint64_t *pmid;
 	uint32_t table_id;
-	RESTRICTION *pres;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t tmp_proptag;
@@ -35,7 +34,6 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	EID_ARRAY *pmessage_ids;
 	RESTRICTION_PROPERTY res_prop;
 	
-	pres = &restriction;
 	if (TRUE == b_fai) {
 		tmp_associated = 1;
 	} else {

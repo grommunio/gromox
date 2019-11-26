@@ -634,7 +634,6 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	int fd;
 	ino_t ino;
 	int tmp_len;
-	int path_len;
 	char *ptoken;
 	time_t mtime;
 	uint32_t size;
@@ -720,7 +719,6 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 			strcpy(suffix, ptoken);
 		}
 	}
-	path_len = strlen(request_uri);
 	for (pnode=double_list_get_head(&g_directory_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_directory_list, pnode)) {
 		pdnode = (DIRECTORY_NODE*)pnode->pdata;	

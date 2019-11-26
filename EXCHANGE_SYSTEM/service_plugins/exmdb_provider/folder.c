@@ -1687,7 +1687,6 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 	BOOL b_normal, BOOL b_fai, BOOL b_sub, BOOL *pb_partial)
 {
 	DB_ITEM *pdb;
-	BOOL b_private;
 	uint64_t fid_val;
 	uint64_t fai_size;
 	char sql_string[256];
@@ -1704,7 +1703,6 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
-	b_private = exmdb_server_check_private();
 	message_count = 0;
 	folder_count = 0;
 	normal_size = 0;

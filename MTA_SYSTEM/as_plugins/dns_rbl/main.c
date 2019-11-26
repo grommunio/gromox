@@ -209,7 +209,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 
 static void console_talk(int argc, char **argv, char *result, int length)
 {
-	int interval, len;
+	int interval;
 	CONFIG_FILE *pfile;
 	char black_buff[32];
 	char normal_buff[32];
@@ -240,7 +240,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	if (2 == argc && 0 == strcmp(argv[1], "info")) {
 		itvltoa(rbl_cache_get_param(RBL_CACHE_NORMAL_INTERVAL), normal_buff);
 		itvltoa(rbl_cache_get_param(RBL_CACHE_BLACK_INTERVAL), black_buff);
-		len = snprintf(result, length, "250 %s information:\r\n"
+		snprintf(result, length, "250 %s information:\r\n"
 								 "\tnormal cache size                %d\r\n"
 								 "\tnormal interval                  %s\r\n"
 								 "\tblacklist cache size             %d\r\n"

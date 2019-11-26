@@ -90,11 +90,9 @@ static FASTCGI_NODE* mod_fastcgi_find_backend(
 	BOOL *pb_index)
 {
 	int tmp_len;
-	int path_len;
 	FASTCGI_NODE *pfnode;
 	DOUBLE_LIST_NODE *pnode;
 	
-	path_len = strlen(uri_path);
 	for (pnode=double_list_get_head(&g_fastcgi_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_fastcgi_list, pnode)) {
 		pfnode = (FASTCGI_NODE*)pnode->pdata;

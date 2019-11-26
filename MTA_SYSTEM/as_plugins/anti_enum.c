@@ -148,7 +148,7 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 
 static void console_talk(int argc, char **argv, char *result, int length)
 {
-	int min_rcpt, len;
+	int min_rcpt;
 	CONFIG_FILE *pfile;
 	char help_string[] = "250 anti enumeration help information:\r\n"
 						 "\t%s info\r\n"
@@ -166,7 +166,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		return;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "info")) {
-		len = snprintf(result, length, "250 %s information:\r\n"
+		snprintf(result, length, "250 %s information:\r\n"
 								 "\tminimum rcpt                     %d",
 								 argv[0], g_min_rcpt);
 		return;

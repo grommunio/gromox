@@ -1659,7 +1659,6 @@ static void html_string_to_utf8(uint32_t cpid,
 	const char *src, char *dst, size_t len)
 {
 	size_t in_len;
-	size_t out_len;
 	char *pin, *pout;
 	iconv_t conv_id;
 	const char *charset;
@@ -1674,7 +1673,6 @@ static void html_string_to_utf8(uint32_t cpid,
 	pout = dst;
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
-	out_len = len;
 	iconv(conv_id, &pin, &in_len, &pout, &len);	
 	iconv_close(conv_id);
 }

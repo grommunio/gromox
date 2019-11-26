@@ -1305,7 +1305,6 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	BOOL b_conversation;
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
-	const char *username;
 	DCERPC_INFO rpc_info;
 	FOLDER_OBJECT *pfolder;
 	
@@ -1351,7 +1350,6 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	}
 	if (FALSE == b_conversation) {
 		rpc_info = get_rpc_info();
-		username = NULL;
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 			if (FALSE == exmdb_client_check_folder_permission(
 				logon_object_get_dir(plogon),

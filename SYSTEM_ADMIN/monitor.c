@@ -188,7 +188,6 @@ static void* thread_work_func(void *arg)
 	int ham_num;
 	int spam_num;
 	int smtp_num;
-	int delivery_num;
 	int cpu_val;
 	int network_val;
 	int connection_val;
@@ -276,7 +275,7 @@ static void* thread_work_func(void *arg)
 		if (NULL == strstr(temp_buff, "console>")) {
 			read(sockd_delivery, read_buff, 1024);
 		}
-		delivery_num = parse_statistic(temp_buff, delivery_items);
+		parse_statistic(temp_buff, delivery_items);
 		if (sizeof(STATUS_COMMAND) != write(sockd_delivery, STATUS_COMMAND,
 			sizeof(STATUS_COMMAND))) {
 			close(sockd_delivery);
@@ -444,14 +443,12 @@ static void parse_status(char *buff_in, int *cpu, int *network)
 	char *last_ptr;
 	char temp_buff[128];
 	int temp_len;
-	int buff_len;
 	int start_pos;
 	int end_pos;
 	
 	*cpu = 0;
 	*network = 0;
 	last_ptr = 0;
-	buff_len = strlen(buff_in);
 	temp_ptr = strstr(buff_in, "250 ");
 	if (NULL == temp_ptr) {
 		return;

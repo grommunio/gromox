@@ -1322,7 +1322,6 @@ int encode64(const char *_in, size_t inlen,
 	const unsigned char *in = (const unsigned char *)_in;
 	unsigned char *out = (unsigned char *)_out;
 	unsigned char oval;
-	char *blah;
 	size_t olen;
 
 	/* Will it fit? */
@@ -1333,7 +1332,6 @@ int encode64(const char *_in, size_t inlen,
 	  return BUFOVER;
 
 	/* Do the work... */
-	blah=(char *) out;
 	while (inlen >= 3) {
 	  /* user provided max buffer size; make sure we don't go over it */
 		*out++ = basis_64[in[0] >> 2];

@@ -373,9 +373,7 @@ static void statistic_ui_main_html(const char *session, int year, int month)
 	int max_num;
 	int item_num;
 	int first_year;
-	int first_month;
 	int last_year;
-	int last_month;
 	int total_spam;
 	int total_normal;
 	time_t cur_time;
@@ -409,11 +407,9 @@ static void statistic_ui_main_html(const char *session, int year, int month)
 		return;
 	}
 	first_year = temp_tm.tm_year + 1900;
-	first_month = temp_tm.tm_mon + 1;
 	time(&cur_time);
 	ptm = localtime(&cur_time);
 	last_year = ptm->tm_year + 1900;
-	last_month = ptm->tm_mon + 1;
 	printf("Content-Type:text/html;charset=%s\n\n",
 		lang_resource_get(g_lang_resource,"CHARSET", language));
 	printf(HTML_COMMON_1);

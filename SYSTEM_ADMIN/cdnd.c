@@ -1856,7 +1856,6 @@ static void save_hash(const char *maildir, int version,
 
 static int compare_hash(STR_HASH_TABLE *phash, STR_HASH_TABLE *phash1)
 {
-	int *psize;
 	char temp_name[128];
 	STR_HASH_ITER *iter;
 
@@ -1869,7 +1868,7 @@ static int compare_hash(STR_HASH_TABLE *phash, STR_HASH_TABLE *phash1)
 	iter = str_hash_iter_init(phash);
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		psize = str_hash_iter_get_value(iter, temp_name);
+		str_hash_iter_get_value(iter, temp_name);
 		if (NULL == str_hash_query(phash1, temp_name)) {
 			str_hash_iter_free(iter);
 			return 1;
@@ -1880,7 +1879,7 @@ static int compare_hash(STR_HASH_TABLE *phash, STR_HASH_TABLE *phash1)
 	iter = str_hash_iter_init(phash1);
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		psize = str_hash_iter_get_value(iter, temp_name);
+		str_hash_iter_get_value(iter, temp_name);
 		if (NULL == str_hash_query(phash, temp_name)) {
 			str_hash_iter_free(iter);
 			return -1;

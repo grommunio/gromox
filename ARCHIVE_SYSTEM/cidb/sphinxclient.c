@@ -1447,7 +1447,7 @@ static int net_create_inet_sock ( sphinx_client * client )
 {
 	struct hostent * hp;
 	struct sockaddr_in sa;
-	int sock, res, err, optval;
+	int sock, res, err;
 
 	hp = gethostbyname ( client->host );
 	if ( !hp )
@@ -1474,9 +1474,6 @@ static int net_create_inet_sock ( sphinx_client * client )
 		return -1;
 	}
 
-	optval = 1;
-
-
 	res = connect ( sock, (struct sockaddr*)&sa, sizeof(sa) );
 	if ( res==0 )
 		return sock;
@@ -1495,7 +1492,7 @@ static int net_create_inet_sock ( sphinx_client * client )
 static int net_create_unix_sock ( sphinx_client * client )
 {
 	struct sockaddr_un uaddr;
-	int sock, res, err, optval, len;
+	int sock, res, err, len;
 
 	len = strlen ( client->host );
 
@@ -1518,9 +1515,6 @@ static int net_create_unix_sock ( sphinx_client * client )
 		set_error ( client, "sock_set_nonblocking() failed: %s", sock_error() );
 		return -1;
 	}
-
-	optval = 1;
-
 
 	res = connect ( sock, (struct sockaddr *)&uaddr, sizeof(uaddr) );
 	if ( res==0 )
@@ -1722,7 +1716,7 @@ static void net_get_response ( int fd, sphinx_client * client )
 {
 	int len;
 	char header_buf[32], *cur, *response;
-	unsigned short status, ver;
+	unsigned short status;
 
 	// dismiss previous response
 	if ( client->response_buf )
@@ -1743,7 +1737,7 @@ static void net_get_response ( int fd, sphinx_client * client )
 
 	cur = header_buf;
 	status = unpack_short ( &cur );
-	ver = unpack_short ( &cur );
+	unpack_short(&cur);
 	len = unpack_int ( &cur );
 
 	// sanity check the length, alloc the buffer
@@ -2508,7 +2502,7 @@ char ** sphinx_status ( sphinx_client * client, int * num_rows, int * num_cols )
 char ** sphinx_status_extended ( sphinx_client * client, int * num_rows, int * num_cols, int local )
 {
 	int i, j, k, n;
-	char *p, *pmax, *req, *buf, **res;
+	char *p, *req, *buf, **res;
 
 	// check args
 	if ( !client || !num_rows || !num_cols )
@@ -2543,8 +2537,6 @@ char ** sphinx_status_extended ( sphinx_client * client, int * num_rows, int * n
 
 	// parse response
 	p = client->response_start;
-	pmax = client->response_start + client->response_len; // max position for checks, to protect against broken responses
-
 	*num_rows = unpack_int ( &p );
 	*num_cols = unpack_int ( &p );
 	n = (*num_rows)*(*num_cols);

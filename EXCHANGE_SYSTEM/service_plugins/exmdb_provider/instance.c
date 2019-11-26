@@ -1842,7 +1842,6 @@ BOOL exmdb_server_flush_instance(const char *dir,
 	BINARY *pbin;
 	BOOL b_result;
 	uint32_t *pcpid;
-	uint64_t nt_time;
 	uint64_t folder_id;
 	char tmp_buff[1024];
 	char address_type[16];
@@ -1866,7 +1865,6 @@ BOOL exmdb_server_flush_instance(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	nt_time = rop_util_current_nttime();
 	if (INSTANCE_TYPE_ATTACHMENT == pinstance->type) {
 		pinstance1 = instance_get_instance(pdb, pinstance->parent_id);
 		if (NULL == pinstance1 ||

@@ -48,12 +48,10 @@ void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
 #endif
 	/* acllocate the first node in initialization */
 	bappend = stream_append_node(pstream);
-#ifdef _DEBUG_UMTA
 	if (FALSE == bappend) {
 		debug_info("[stream]: fail to allocate first node in stream_init");
 		return;
 	}
-#endif
 	pstream->pnode_rd = pstream->pnode_wr;
 }
 
@@ -895,7 +893,7 @@ unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset)
 
 int stream_write(STREAM *pstream, char *pbuff, size_t size)
 {
-	char *pstream_buff, *ptr;
+	char *pstream_buff;
 	unsigned int buff_size, actual_size;
 	size_t offset;
 
@@ -906,7 +904,6 @@ int stream_write(STREAM *pstream, char *pbuff, size_t size)
 	}
 #endif
 
-	ptr = pbuff;
 	offset = 0;
 	while (offset < size) {
 		buff_size = STREAM_BLOCK_SIZE;

@@ -1879,7 +1879,7 @@ static void smtp_parser_record_mime_field(SMTP_CONTEXT *pcontext,
 	MIME_FIELD *pfield)
 {
 	char *ptmp, *ptmp2;
-	int j, len;
+	int len;
 	
 	switch (pfield->field_name_len) {
 	case 2:
@@ -1984,7 +1984,6 @@ static void smtp_parser_record_mime_field(SMTP_CONTEXT *pcontext,
 		}
 		goto FIELD_DEFAULT;
 	case 16:
-		j = 0;
 		if (0 == strncasecmp("X-Originating-IP", pfield->field_name, 16)) {
 			pfield->field_value[pfield->field_value_len] = '\0';
 			extract_ip(pfield->field_value, pcontext->mail.head.x_original_ip);

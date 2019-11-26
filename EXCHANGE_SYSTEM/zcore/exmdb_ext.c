@@ -3096,7 +3096,7 @@ static int exmdb_ext_pull_get_message_brief_response(
 	uint8_t tmp_byte;
 	
 	status = ext_buffer_pull_uint8(pext, &tmp_byte);
-	if (0 == tmp_byte) {
+	if (status != EXT_ERR_SUCCESS || tmp_byte == 0) {
 		ppayload->get_message_brief.pbrief = NULL;
 		return EXT_ERR_SUCCESS;
 	} else {

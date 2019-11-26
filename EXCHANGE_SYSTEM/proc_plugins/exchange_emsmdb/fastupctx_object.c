@@ -408,7 +408,6 @@ static BOOL fastupctx_object_record_marker(
 	TARRAY_SET *prcpts;
 	uint64_t parent_id;
 	uint64_t folder_id;
-	EMSMDB_INFO *pinfo;
 	uint32_t instance_id;
 	TARRAY_SET tmp_rcpts;
 	MARKER_NODE *pmarker;
@@ -673,7 +672,6 @@ static BOOL fastupctx_object_record_marker(
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			tmp_rcpts.count = 1;
 			tmp_rcpts.pparray = &pctx->pproplist;
-			pinfo = emsmdb_interface_get_emsmdb_info();
 			if (FALSE == exmdb_client_update_message_instance_rcpts(
 				logon_object_get_dir(pctx->pstream->plogon),
 				((MARKER_NODE*)pnode->pdata)->data.instance_id,
@@ -996,7 +994,6 @@ static BOOL fastupctx_object_record_propval(
 	FASTUPCTX_OBJECT *pctx, const TAGGED_PROPVAL *ppropval)
 {
 	BOOL b_result;
-	EMSMDB_INFO *pinfo;
 	uint32_t last_marker;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -1054,13 +1051,11 @@ static BOOL fastupctx_object_record_propval(
 			return tpropval_array_set_propval(
 					pctx->pproplist, ppropval);
 		case ROOT_ELEMENT_MESSAGECONTENT:
-			pinfo = emsmdb_interface_get_emsmdb_info();
 			return exmdb_client_set_instance_property(
 					logon_object_get_dir(pctx->pstream->plogon),
 					message_object_get_instance_id(pctx->pobject),
 					ppropval, &b_result);
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
-			pinfo = emsmdb_interface_get_emsmdb_info();
 			return exmdb_client_set_instance_property(
 					logon_object_get_dir(pctx->pstream->plogon),
 					attachment_object_get_instance_id(pctx->pobject),
@@ -1082,7 +1077,6 @@ static BOOL fastupctx_object_record_propval(
 	case NEWATTACH:
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
-			pinfo = emsmdb_interface_get_emsmdb_info();
 			return exmdb_client_set_instance_property(
 					logon_object_get_dir(pctx->pstream->plogon),
 					((MARKER_NODE*)pnode->pdata)->data.instance_id,

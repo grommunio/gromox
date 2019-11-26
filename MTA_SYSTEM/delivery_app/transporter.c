@@ -555,9 +555,8 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data)
 {
 	DOUBLE_LIST_NODE *pnode, *phead, *ptail;
-	PLUG_ENTITY *plib;
 	HOOK_ENTRY *phook;
-	BOOL hook_result, ret_val;
+	BOOL hook_result;
 	
 	/*
 	 *	first get the head and tail of list, this will be thread safe because 
@@ -568,12 +567,10 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	ptail = double_list_get_tail(&g_hook_list);
 	pthread_mutex_unlock(&g_mpc_list_lock);
 	
-	ret_val = FALSE;
 	hook_result = FALSE;
 	for (pnode=phead; NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
 		phook = (HOOK_ENTRY*)(pnode->pdata);
-		plib = phook->plib;
 		/* check if this hook is valid, if it is, excute the function */
 		if (TRUE == phook->valid) {
 			if (pthr_data->last_thrower == phook->hook_addr) {
@@ -590,7 +587,6 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			phook->count --;
 			pthread_mutex_unlock(&g_count_lock);
 			if (TRUE == hook_result) {
-				ret_val = TRUE;
 				break;
 			}
 		}

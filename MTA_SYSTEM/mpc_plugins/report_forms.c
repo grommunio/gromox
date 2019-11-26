@@ -360,11 +360,9 @@ static int buffer_extractor(char *buff_in, STATISTIC_ITEM *pitem)
 static char* html_reactor(STATISTIC_ITEM *pitem, int num, int max_val, char *buff_out)
 { 
 	int i, temp_len;
-	int base_val;
 	char *ptr;
 	
 	ptr = buff_out;
-	base_val = max_val / 64;
 
 	for (i=0; i<num; i++,pitem++) {
 		if (i % 2 != 0) {
