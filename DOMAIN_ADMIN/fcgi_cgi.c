@@ -802,7 +802,7 @@ static FCGI_CGI start_cgi(RECORD_PARAMS *pparams)
 		args[0] = path;
 		args[1] = NULL;
 		execve(path, args, envp);
-		exit(-1);
+		_exit(-1);
 	case -1:
 		printf("[system]: cannot fork cgi process\n");
 		close(pipes_in[0]);

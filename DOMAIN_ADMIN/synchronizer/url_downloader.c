@@ -44,9 +44,8 @@ BOOL url_downloader_get(const char *url, const char *save_path)
 		args[1] = "-q";
 		args[2] = url;
 		args[3] = option_buff;
-		if (execvp("wget", const_cast(char **, args)) != 0) {
-			exit(EXIT_FAILURE);
-		}
+		execvp("wget", const_cast(char **, args));
+		_exit(-1);
 	} else if (pid > 0) {
 		temp_node.pid = pid;
 		temp_node.node.pdata = &temp_node;

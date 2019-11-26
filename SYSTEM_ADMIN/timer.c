@@ -616,9 +616,8 @@ static void execute_timer(TIMER *ptimer)
 		pid = fork();
 		if (0 == pid) {
 			chdir("../tools");
-			if (-1 == execve(argv[0], argv, NULL)) {
-				exit(-1);
-			}
+			execve(argv[0], argv, NULL);
+			_exit(-1);
 		} else if (pid > 0) {
 			if (waitpid(pid, &status, 0) > 0) {
 				if (WIFEXITED(status) && 0 == WEXITSTATUS(status)) {

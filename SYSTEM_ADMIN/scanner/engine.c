@@ -438,9 +438,8 @@ static BOOL engine_rebuild_exmdb(const char *path)
 		argv[0] = "./rebuild";
 		argv[1] = (void*)path;
 		argv[2] = NULL;
-		if (execve("./rebuild", const_cast(char *const *, argv), NULL) == -1) {
-			exit(-1);
-		}
+		execve("./rebuild", const_cast(char *const *, argv), NULL);
+		_exit(-1);
 	} else if (pid < 0) {
 		return FALSE;
 	}
@@ -1271,6 +1270,7 @@ static void engine_compress(const char *src_path, const char *dst_file)
 		args[2] = dst_file;
 		args[4] = src_path;
 		execvp("tar", const_cast(char **, args));
+		_exit(-1);
 	} else if (pid > 0) {
 		waitpid(pid, &status, 0);
 	}

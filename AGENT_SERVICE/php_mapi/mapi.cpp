@@ -4301,7 +4301,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 		args[0] = const_cast<char *>("./rtf2html");
 		args[1] = NULL;
 		execv("./rtf2html", args);
-		exit(-1);
+		_exit(-1);
 	 case -1:
 		close(pipes_in[0]);
 		close(pipes_in[1]);

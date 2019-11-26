@@ -7746,9 +7746,8 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		chdir(tool_path);
 		argv[0] = tool_command;
 		argv[1] = NULL;
-		if (execve(tool_command, argv, NULL) == -1) {
-			exit(-1);
-		}
+		execve(tool_command, argv, NULL);
+		_exit(-1);
 	} else if (pid < 0) {
 		close(pipes_in[0]);
 		close(pipes_in[1]);

@@ -228,9 +228,8 @@ static void *thread_work_func(void *param)
 			args[1] = "-q";
 			args[2] = g_url_path;
 			args[3] = option_buff;
-			if (execvp("wget", const_cast(char **, args)) == -1) {
-				exit(EXIT_FAILURE);
-			}
+			execvp("wget", const_cast(char **, args));
+			_exit(-1);
 		} else if (pid > 0) {
 			waitpid(pid, &status, 0);
 			if (0 != WEXITSTATUS(status)) {

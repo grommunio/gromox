@@ -1680,9 +1680,8 @@ static BOOL setup_ui_unzip(const char *domain)
 		args[1] = tmp_path1;
 		args[2] = "-d";
 		args[3] = tmp_path;
-		if (execvp("unzip", const_cast(char **, args)) == -1) {
-			exit(EXIT_FAILURE);
-		}
+		execvp("unzip", const_cast(char **, args));
+		_exit(-1);
 	} else if (pid > 0) {
 		waitpid(pid, &status, 0);
 		remove(tmp_path1);

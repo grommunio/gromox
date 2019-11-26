@@ -121,9 +121,8 @@ void start_amysql()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./amysql", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./amysql", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -160,9 +159,8 @@ void start_asession()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./asession", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./asession", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -198,9 +196,8 @@ void start_alock()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./alock", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./alock", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -236,9 +233,8 @@ void start_asensor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./asensor", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./asensor", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -274,9 +270,8 @@ void start_amidb()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(PANDORA_MAIN_DIR);
-				if (execve("./amidb", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./amidb", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}

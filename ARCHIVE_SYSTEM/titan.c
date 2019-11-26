@@ -102,9 +102,8 @@ void start_cidb()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(TITAN_MAIN_DIR);
-				if (execve("./cidb", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./cidb", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}

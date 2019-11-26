@@ -35,6 +35,7 @@ void file_operation_compress(const char *src_path, const char *dst_file)
 		args[2] = dst_file;
 		args[4] = src_path;
 		execvp("tar", const_cast(char **, args));
+		_exit(-1);
 	} else if (pid > 0) {
 		waitpid(pid, &status, 0);
 	}
@@ -51,6 +52,7 @@ void file_operation_decompress(const char *src_file, const char *dst_dir)
 		args[2] = src_file;
 		args[4] = dst_dir;
 		execvp("tar", const_cast(char **, args));
+		_exit(-1);
 	} else if (pid > 0) {
 		waitpid(pid, &status, 0);
 	}

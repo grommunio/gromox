@@ -136,9 +136,8 @@ void start_smtp()
 				dup2(fd, STDOUT_FILENO);
 				close(fd);
 				chdir(HERCULIZ_MAIN_DIR);
-				if (execve("./smtp", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./smtp", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -183,9 +182,8 @@ void start_delivery()
 				dup2(fd, STDOUT_FILENO);
 				close(fd);
 				chdir(HERCULIZ_MAIN_DIR);
-				if (execve("./delivery", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./delivery", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				time(&start_points[start_times]);
 				waitpid(g_supervised_process, &status, 0);

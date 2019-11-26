@@ -95,9 +95,8 @@ void start_pop3()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(APOLLO_MAIN_DIR);
-				if (execve("./pop3", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./pop3", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -127,9 +126,8 @@ void start_imap()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(APOLLO_MAIN_DIR);
-				if (execve("./imap", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./imap", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}

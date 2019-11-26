@@ -151,9 +151,8 @@ void start_analyzer()
 	pid = fork();
 	if (0 == pid) {
 		chdir(ATHENA_MAIN_DIR);
-		if (execve("./sa_daemon", const_cast(char **, args), NULL) == -1) {
-			exit(EXIT_FAILURE);
-		}
+		execve("./sa_daemon", const_cast(char **, args), NULL);
+		_exit(-1);
 	} else if (pid > 0) {
 		lseek(g_token_fd, SEEK_SET, 0);	
 		write(g_token_fd, "-1\n", 3);
@@ -192,9 +191,8 @@ void start_monitor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./monitor", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./monitor", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -231,9 +229,8 @@ void start_supervisor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./supervisor", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./supervisor", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -269,9 +266,8 @@ void start_adaptor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./adaptor", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./adaptor", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -307,9 +303,8 @@ void start_scanner()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./scanner", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./scanner", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -345,9 +340,8 @@ void start_locker()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./locker", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./locker", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -383,9 +377,8 @@ void start_event()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./event", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./event", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -421,9 +414,8 @@ void start_sensor()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./sensor", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./sensor", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -459,9 +451,8 @@ void start_rsync()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./rsync", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./rsync", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -497,9 +488,8 @@ void start_cdnd()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./cdnd", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./cdnd", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -535,9 +525,8 @@ void start_timer()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./timer", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./timer", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -573,9 +562,8 @@ void start_pad()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./pad", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./pad", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -611,9 +599,8 @@ void start_session()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(ATHENA_MAIN_DIR);
-				if (execve("./session", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./session", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}

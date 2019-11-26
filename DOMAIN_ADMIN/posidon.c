@@ -93,9 +93,8 @@ void start_analyzer()
 	pid = fork();
 	if (0 == pid) {
 		chdir(POSIDON_MAIN_DIR);
-		if (execve("./da_daemon", const_cast(char **, args), NULL) == -1) {
-			exit(EXIT_FAILURE);
-		}
+		execve("./da_daemon", const_cast(char **, args), NULL);
+		_exit(-1);
 	} else if (pid > 0) {
 		lseek(g_token_fd, SEEK_SET, 0);	
 		write(g_token_fd, "-1\n", 3);
@@ -134,9 +133,8 @@ void start_synchronizer()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(POSIDON_MAIN_DIR);
-				if (execve("./synchronizer", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./synchronizer", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
@@ -172,9 +170,8 @@ void start_fcgicgi()
 			g_supervised_process = fork();
 			if (0 == g_supervised_process) {
 				chdir(POSIDON_MAIN_DIR);
-				if (execve("./fcgi_cgi", const_cast(char **, args), NULL) == -1) {
-					exit(EXIT_FAILURE);
-				}
+				execve("./fcgi_cgi", const_cast(char **, args), NULL);
+				_exit(-1);
 			} else if (g_supervised_process > 0) {
 				waitpid(g_supervised_process, &status, 0);
 			}
