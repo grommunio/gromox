@@ -46,6 +46,7 @@ static SSL_CTX *g_ssl_ctx;
 static LIB_BUFFER *g_stack_allocator;
 static pthread_mutex_t *g_ssl_mutex_buf;
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static void smtp_deliverer_ssl_locking(int mode,
 	int n, const char *file, int line)
 {
@@ -60,6 +61,7 @@ static void smtp_deliverer_ssl_id(CRYPTO_THREADID* id)
 {
 	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
 }
+#endif
 
 /*
  *	smtp deliverer's construct function

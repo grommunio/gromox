@@ -1,7 +1,7 @@
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
  */ 
-
+#include <libHX/defs.h>
 #include "util.h"
 #include "pdu_ndr.h"
 #include "resource.h"
@@ -69,12 +69,6 @@ static void http_parser_context_free(HTTP_CONTEXT *pcontext);
 
 static void http_parser_request_clear(HTTP_REQUEST *prequest);
 
-static void http_parser_ssl_locking(int mode,
-	int n, const char *file, int line);
-
-static void http_parser_ssl_id(CRYPTO_THREADID* id);
-
-
 void http_parser_init(int context_num, unsigned int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,
@@ -99,6 +93,21 @@ void http_parser_init(int context_num, unsigned int timeout,
 		strcpy(g_private_key_path, key_path);
 	}
 }
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static void http_parser_ssl_locking(int mode, int n, const char *file, int line)
+{
+	if (mode & CRYPTO_LOCK)
+		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+	else
+		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+}
+
+static void http_parser_ssl_id(CRYPTO_THREADID* id)
+{
+	CRYPTO_THREADID_set_numeric(id, reinterpret_cast(uintptr_t, pthread_self()));
+}
+#endif
 
 /* 
  * run the http parser module
@@ -2137,22 +2146,6 @@ void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, char *format, ...)
 	}
 
 }
-
-static void http_parser_ssl_locking(int mode,
-	int n, const char *file, int line)
-{
-	if (mode&CRYPTO_LOCK) {
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
-	} else {
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
-	}
-}
-
-static void http_parser_ssl_id(CRYPTO_THREADID* id)
-{
-	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
-}
-
 
 HTTP_CONTEXT* http_parser_get_context()
 {

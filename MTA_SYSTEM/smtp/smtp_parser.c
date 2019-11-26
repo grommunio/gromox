@@ -2,6 +2,7 @@
  * commands and then do the corresponding action. 
  */ 
 #include <unistd.h>
+#include <libHX/defs.h>
 #include "smtp_parser.h"
 #include "smtp_cmd_handler.h"
 #include "files_allocator.h"
@@ -70,11 +71,6 @@ static int smtp_parser_parse_and_save_blkmime(SMTP_CONTEXT *pcontext,
 	char *in_buff, int length);
 
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
-
-static void smtp_parser_ssl_locking(int mode,
-	int n, const char *file, int line);
-
-static void smtp_parser_ssl_id(CRYPTO_THREADID* id);
 
 static int g_context_num;
 static int g_threads_num;
@@ -171,6 +167,21 @@ void smtp_parser_init(int context_num, int threads_num, int mode,
 		strcpy(g_private_key_path, key_path);
 	}
 }
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static void smtp_parser_ssl_locking(int mode, int n, const char *file, int line)
+{
+	if (mode & CRYPTO_LOCK)
+		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+	else
+		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+}
+
+static void smtp_parser_ssl_id(CRYPTO_THREADID* id)
+{
+	CRYPTO_THREADID_set_numeric(id, reinterpret_cast(uintptr_t, pthread_self()));
+}
+#endif
 
 /* 
  * run the smtp parser module
@@ -2290,19 +2301,3 @@ BOOL smtp_parser_set_extra_value(SMTP_CONTEXT *pcontext, char* tag, char* pval)
 	}
 	return TRUE;
 }
-
-static void smtp_parser_ssl_locking(int mode,
-	int n, const char *file, int line)
-{
-	if (mode&CRYPTO_LOCK) {
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
-	} else {
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
-	}
-}
- 
-static void smtp_parser_ssl_id(CRYPTO_THREADID* id)
-{
-	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
-}
-

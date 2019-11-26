@@ -503,6 +503,7 @@ static int remote_md5(CONNECTION conn,
 
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static void ssl_locking(int mode, int n, const char * file, int line)
 {
 	if (mode&CRYPTO_LOCK) {
@@ -516,6 +517,7 @@ static unsigned long ssl_id()
 {
 	return (unsigned long)pthread_self();
 }
+#endif
 
 static void remove_inode(const char *path)
 {

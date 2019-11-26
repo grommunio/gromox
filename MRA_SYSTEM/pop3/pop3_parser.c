@@ -2,6 +2,7 @@
  * commands and then do the corresponding action. 
  */ 
 #include <unistd.h>
+#include <libHX/defs.h>
 #include "pop3_parser.h"
 #include "pop3_cmd_handler.h"
 #include "blocks_allocator.h"
@@ -34,11 +35,6 @@ static void pop3_parser_context_init(POP3_CONTEXT *pcontext);
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 
 static void pop3_parser_context_free(POP3_CONTEXT *pcontext);
-
-static void pop3_parser_ssl_locking(int mode,
-	int n, const char *file, int line);
-
-static void pop3_parser_ssl_id(CRYPTO_THREADID* id);
 
 static int g_context_num;
 static size_t g_retrieving_size;
@@ -81,6 +77,22 @@ void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	}
 	strcpy(g_cdn_path, cdn_path);
 }
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static void pop3_parser_ssl_locking(int mode,
+	int n, const char *file, int line)
+{
+	if (mode & CRYPTO_LOCK)
+		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+	else
+		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+}
+
+static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
+{
+	CRYPTO_THREADID_set_numeric(id, reinterpret_cast(uintptr_t, pthread_self()));
+}
+#endif
 
 /* 
  * run the pop3 parser module
@@ -856,20 +868,3 @@ void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, char *format, ...)
 		pcontext->username, pcontext->connection.client_ip, log_buf);
 
 }
-
-static void pop3_parser_ssl_locking(int mode,
-	int n, const char *file, int line)
-{
-	if (mode&CRYPTO_LOCK) {
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
-	} else {
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
-	}
-}
-
-static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
-{
-	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
-}
-
-

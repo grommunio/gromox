@@ -56,9 +56,20 @@ static BOOL read_mark(CONNECTION_NODE *pconnection);
 
 static BOOL md5_file(const char *path, BOOL b_msg, char *digest);
 
-static void ssl_locking(int mode, int n, const char * file, int line);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static void ssl_locking(int mode, int n, const char * file, int line)
+{
+	if (mode & CRYPTO_LOCK)
+		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+	else
+		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+}
 
-static unsigned long ssl_id();
+static unsigned long ssl_id()
+{
+	return (unsigned long)pthread_self();
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -746,19 +757,3 @@ static BOOL md5_file(const char *path, BOOL b_msg, char *digest)
 	return TRUE;
 
 }
-
-
-static void ssl_locking(int mode, int n, const char * file, int line)
-{
-	if (mode&CRYPTO_LOCK) {
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
-	} else {
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
-	}
-}
-
-static unsigned long ssl_id()
-{
-	return (unsigned long)pthread_self();
-}
-

@@ -1,7 +1,7 @@
 /* imap parser is a module, which first read data from socket, parses the imap 
  * commands and then do the corresponding action. 
  */ 
- 
+#include <libHX/defs.h>
 #include "util.h"
 #include "mjson.h"
 #include "str_hash.h"
@@ -58,10 +58,6 @@ static void imap_parser_context_init(IMAP_CONTEXT *pcontext);
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
 
 static void imap_parser_context_free(IMAP_CONTEXT *pcontext);
-
-static void imap_parser_ssl_locking(int mode, int n, const char * file, int line);
-
-static void imap_parser_ssl_id(CRYPTO_THREADID* id);
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
 static int g_squence_ID;
@@ -137,6 +133,22 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 		strcpy(g_private_key_path, key_path);
 	}
 }
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+static void imap_parser_ssl_locking(int mode,
+	int n, const char *file, int line)
+{
+	if (mode & CRYPTO_LOCK)
+		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
+	else
+		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
+}
+
+static void imap_parser_ssl_id(CRYPTO_THREADID* id)
+{
+	CRYPTO_THREADID_set_numeric(id, reinterpret_cast(uintptr_t, pthread_self()));
+}
+#endif
 
 /* 
  * run the imap parser module
@@ -1942,21 +1954,6 @@ MIME_POOL* imap_parser_get_mpool()
 LIB_BUFFER* imap_parser_get_jpool()
 {
 	return g_alloc_mjson;
-}
-
-static void imap_parser_ssl_locking(int mode,
-	int n, const char *file, int line)
-{
-	if (mode&CRYPTO_LOCK) {
-		pthread_mutex_lock(&g_ssl_mutex_buf[n]);
-	} else {
-		pthread_mutex_unlock(&g_ssl_mutex_buf[n]);
-	}
-}
-
-static void imap_parser_ssl_id(CRYPTO_THREADID* id)
-{
-	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
 }
 
 int imap_parser_get_squence_ID()
