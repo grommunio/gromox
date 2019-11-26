@@ -1,10 +1,13 @@
 #ifndef _H_NSP_TYPES_
 #define _H_NSP_TYPES_
 
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "rpc_types.h"
 #include "proptags.h"
-#include <stdint.h>
-
 
 #define RESTRICTION_TYPE_AND				0x0
 #define RESTRICTION_TYPE_OR					0x1

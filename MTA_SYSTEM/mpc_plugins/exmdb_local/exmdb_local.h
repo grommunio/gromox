@@ -1,6 +1,5 @@
 #ifndef _H_EXMDB_LOCAL_
 #define _H_EXMDB_LOCAL_
-#include <stdarg.h>
 #include "hook_common.h"
 
 enum {

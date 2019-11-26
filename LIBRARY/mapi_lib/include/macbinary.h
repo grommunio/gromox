@@ -1,8 +1,14 @@
 #ifndef _H_MACBINARY_
 #define _H_MACBINARY_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#	include <ctime>
+#else
+#	include <stdint.h>
+#	include <time.h>
+#endif
 #include "ext_buffer.h"
-#include <stdint.h>
-#include <time.h>
 
 #define ORIGINAL_FLAG_ISALIAS				0x80
 #define ORIGINAL_FLAG_ISINVISIBLE			0x40

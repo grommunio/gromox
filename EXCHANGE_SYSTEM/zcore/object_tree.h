@@ -1,9 +1,14 @@
 #ifndef _H_OBJECT_TREE_
 #define _H_OBJECT_TREE_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "tpropval_array.h"
 #include "simple_tree.h"
 #include "int_hash.h"
-#include <stdint.h>
 
 #define ROOT_HANDLE						0
 #define INVALID_HANDLE					0xFFFFFFFF

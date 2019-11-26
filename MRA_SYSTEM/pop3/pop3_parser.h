@@ -1,11 +1,15 @@
 #ifndef _H_POP3_PARSER_
 #define _H_POP3_PARSER_
 
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
 #include "contexts_pool.h"
 #include "stream.h"
 #include "array.h"
-#include <stdint.h>
 #include <sys/time.h>
 #include <openssl/ssl.h>
 

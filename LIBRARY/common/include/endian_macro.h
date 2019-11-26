@@ -1,6 +1,11 @@
 #ifndef _H_ENDIAN_MACRO_
 #define _H_ENDIAN_MACRO_
-#include <stdint.h>
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 
 #define CVAL(buf, pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
 #define CVAL_NC(buf, pos) (((uint8_t *)(buf))[pos]) /* Non-const version of CVAL */

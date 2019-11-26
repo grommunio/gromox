@@ -1,11 +1,16 @@
 #ifndef _H_ROP_PROCESSOR_
 #define _H_ROP_PROCESSOR_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#	include <ctime>
+#else
+#	include <stdint.h>
+#	include <time.h>
+#endif
 #include "logon_object.h"
 #include "mapi_types.h"
 #include "mem_file.h"
-#include <stdint.h>
-#include <time.h>
-
 
 #define OBJECT_TYPE_NONE					0
 #define OBJECT_TYPE_LOGON					1

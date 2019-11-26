@@ -1,7 +1,12 @@
 #ifndef _H_RPC_TYPES_
 #define _H_RPC_TYPES_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
-#include <stdint.h>
 
 typedef struct _CONTEXT_HANDLE {
 	uint32_t handle_type;

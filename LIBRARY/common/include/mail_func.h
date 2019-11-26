@@ -3,8 +3,13 @@
  */
 #ifndef _H_MAIL_FUNC_
 #define _H_MAIL_FUNC_
+
+#ifdef __cplusplus
+#	include <ctime>
+#else
+#	include <time.h>
+#endif
 #include "mem_file.h"
-#include <time.h>
 
 #define MIME_NAME_LEN			80
 #define MIME_FIELD_LEN			64*1024

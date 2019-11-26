@@ -1,12 +1,18 @@
 #ifndef _H_AB_TREE_
 #define _H_AB_TREE_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#	include <ctime>
+#else
+#	include <stdint.h>
+#	include <time.h>
+#endif
 #include "simple_tree.h"
 #include "single_list.h"
 #include "mapi_types.h"
 #include "int_hash.h"
 #include "mem_file.h"
-#include <stdint.h>
-#include <time.h>
 
 /* PROP_TAG_CONTAINERFLAGS values */
 #define	AB_RECIPIENTS						0x1

@@ -1,6 +1,11 @@
 #ifndef _H_TYPES_
 #define _H_TYPES_
-#include <stdint.h>
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 
 #define EC_SUCCESS									0x00000000
 #define EC_ERROR									0x80004005

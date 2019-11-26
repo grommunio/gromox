@@ -1,13 +1,18 @@
 #ifndef _H_AB_TREE_
 #define _H_AB_TREE_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#	include <ctime>
+#else
+#	include <stdint.h>
+#	include <time.h>
+#endif
 #include "proc_common.h"
 #include "simple_tree.h"
 #include "single_list.h"
 #include "int_hash.h"
 #include "mem_file.h"
-#include <stdint.h>
-#include <time.h>
-
 
 #define NODE_TYPE_DOMAIN					0x81
 #define NODE_TYPE_GROUP						0x82

@@ -1,10 +1,13 @@
 #ifndef _H_AUX_TYPES_
 #define _H_AUX_TYPES_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "rpc_types.h"
 #include "double_list.h"
-#include <stdint.h>
-
-
 
 #define AUX_VERSION_1								0x1
 #define AUX_VERSION_2								0x2

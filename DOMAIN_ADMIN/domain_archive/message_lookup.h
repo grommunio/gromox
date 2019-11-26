@@ -1,8 +1,13 @@
 #ifndef _H_MATCH_ENGINE_
 #define _H_MATCH_ENGINE_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
 #include "double_list.h"
-#include <stdint.h>
 
 typedef struct _LOOKUP_COLLECT {
 	DOUBLE_LIST message_list;

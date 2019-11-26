@@ -1,9 +1,13 @@
 #ifndef _H_NDR_
 #define _H_NDR_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "rpc_types.h"
 #include "double_list.h"
-#include <stdint.h>
-
 
 #define NDR_ERR_SUCCESS					0
 #define NDR_ERR_FAILURE					1

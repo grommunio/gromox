@@ -1,9 +1,14 @@
 #ifndef _H_MSGCHG_GROUPING_
 #define _H_MSGCHG_GROUPING_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "element_data.h"
 #include "store_object.h"
 #include "mapi_types.h"
-#include <stdint.h>
 
 void msgchg_grouping_init(const char *path);
 

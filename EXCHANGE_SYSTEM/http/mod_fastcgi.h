@@ -1,9 +1,15 @@
 #ifndef _H_MOD_FASTCGI_
 #define _H_MOD_FASTCGI_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#	include <ctime>
+#else
+#	include <stdint.h>
+#	include <time.h>
+#endif
 #include "common_types.h"
 #include "double_list.h"
-#include <stdint.h>
-#include <time.h>
 
 #define RESPONSE_TIMEOUT				-1
 #define RESPONSE_WAITING				0

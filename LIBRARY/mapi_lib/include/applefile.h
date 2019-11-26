@@ -1,9 +1,14 @@
 #ifndef _H_APPLEFILE_
 #define _H_APPLEFILE_
-#include "ext_buffer.h"
-#include <stdint.h>
-#include <time.h>
 
+#ifdef __cplusplus
+#	include <cstdint>
+#	include <ctime>
+#else
+#	include <stdint.h>
+#	include <time.h>
+#endif
+#include "ext_buffer.h"
 
 #define APPLESINGLE_MAGIC	0x00051600
 #define APPLEDOUBLE_MAGIC	0x00051607

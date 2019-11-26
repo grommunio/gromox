@@ -1,6 +1,11 @@
 #ifndef _H_USER_OBJECT_
 #define _H_USER_OBJECT_
-#include <stdint.h>
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "mail_func.h"
 #include "mapi_types.h"
 

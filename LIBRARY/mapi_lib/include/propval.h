@@ -1,7 +1,12 @@
 #ifndef _H_PROPVAL_
 #define _H_PROPVAL_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
-#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

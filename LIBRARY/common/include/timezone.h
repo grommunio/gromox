@@ -1,6 +1,11 @@
 #ifndef _H_TIMEZONE_
 #define _H_TIMEZONE_
-#include <time.h>
+
+#ifdef __cplusplus
+#	include <ctime>
+#else
+#	include <time.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

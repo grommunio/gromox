@@ -1,6 +1,11 @@
 #ifndef _H_HMACMD5_
 #define _H_HMACMD5_
-#include <stdint.h>
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include <openssl/md5.h>
 
 typedef struct _HMACMD5_CTX {

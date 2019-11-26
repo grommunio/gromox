@@ -1,10 +1,14 @@
 #ifndef _H_SYSTEM_SERVICES_
 #define _H_SYSTEM_SERVICES_
 
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
 #include "array.h"
 #include "single_list.h"
-#include <stdint.h>
 
 void system_services_init();
 

@@ -1,6 +1,11 @@
 #ifndef _H_CONTAINER_OBJECT_
 #define _H_CONTAINER_OBJECT_
-#include <stdint.h>
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "mapi_types.h"
 
 #define SPECIAL_CONTAINER_GAL					0

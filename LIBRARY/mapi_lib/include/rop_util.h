@@ -1,7 +1,12 @@
 #ifndef _H_ROP_UTIL_
 #define _H_ROP_UTIL_
+
+#ifdef __cplusplus
+#	include <ctime>
+#else
+#	include <time.h>
+#endif
 #include "mapi_types.h"
-#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {

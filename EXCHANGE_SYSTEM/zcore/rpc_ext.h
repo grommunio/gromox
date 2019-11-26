@@ -1,8 +1,13 @@
 #ifndef _H_RPC_EXT_
 #define _H_RPC_EXT_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "mapi_types.h"
 #include "common_util.h"
-#include <stdint.h>
 
 #define RESPONSE_CODE_SUCCESS						0x00
 #define RESPONSE_CODE_LACK_MEMORY					0x01

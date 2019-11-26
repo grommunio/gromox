@@ -1,12 +1,16 @@
 #ifndef _H_DB_ENGINE_
 #define _H_DB_ENGINE_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "element_data.h"
 #include "double_list.h"
 #include "mapi_types.h"
 #include <pthread.h>
 #include <sqlite3.h>
-#include <stdint.h>
-
 
 #define CONTENT_ROW_HEADER						1
 #define CONTENT_ROW_MESSAGE						2

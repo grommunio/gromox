@@ -1,7 +1,12 @@
 #ifndef _H_CODEPAGE_LANG_
 #define _H_CODEPAGE_LANG_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
-#include <stdint.h>
 
 void codepage_lang_init(const char *path);
 

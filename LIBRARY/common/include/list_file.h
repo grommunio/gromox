@@ -1,6 +1,11 @@
 #ifndef _H_LIST_FILE_
 #define _H_LIST_FILE_
-#include <stdio.h>
+
+#ifdef __cplusplus
+#	include <cstdio>
+#else
+#	include <stdio.h>
+#endif
 
 typedef struct _LIST_FILE {
     FILE*       file_ptr;

@@ -1,7 +1,13 @@
 #ifndef _H_COMMON_TYPES_
 #define _H_COMMON_TYPES_
-#include <stddef.h>
-#include <stdint.h>
+
+#ifdef __cplusplus
+#	include <cstddef>
+#	include <cstdint>
+#else
+#	include <stddef.h>
+#	include <stdint.h>
+#endif
 
 #ifndef BOOL
 #define BOOL    int

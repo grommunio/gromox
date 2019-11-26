@@ -1,6 +1,11 @@
 #ifndef _H_DOUBLE_LIST_
 #define _H_DOUBLE_LIST_
-#include <stddef.h>
+
+#ifdef __cplusplus
+#	include <cstddef>
+#else
+#	include <stddef.h>
+#endif
 
 /* double list is composed by the base unit DOUBLE_LIST_NODE */
 typedef struct _DOUBLE_LIST_NODE{

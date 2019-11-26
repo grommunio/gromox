@@ -1,8 +1,14 @@
 #ifndef _H_LIB_BUFFER_
 #define _H_LIB_BUFFER_
+
+#ifdef __cplusplus
+#	include <cstdlib>
+#	include <cstring>
+#else
+#	include <stdlib.h>
+#	include <string.h>
+#endif
 #include "common_types.h"
-#include <stdlib.h>
-#include <string.h>
 #include <pthread.h>
 #define WSIZE           sizeof(void*)  /* word size (bytes) */
 

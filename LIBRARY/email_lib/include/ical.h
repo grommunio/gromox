@@ -1,8 +1,13 @@
 #ifndef _H_ICAL_
 #define _H_ICAL_
+
+#ifdef __cplusplus
+#	include <ctime>
+#else
+#	include <time.h>
+#endif
 #include "common_types.h"
 #include "double_list.h"
-#include <time.h>
 
 #define ICAL_NAME_LEN					64
 
