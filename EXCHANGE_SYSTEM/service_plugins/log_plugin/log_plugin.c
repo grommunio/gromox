@@ -476,7 +476,7 @@ static BOOL log_plugin_flush_log()
 	snprintf(filename, 256, "%s%s.%s", g_file_name, time_str, g_file_postfix);
 	filename[sizeof(filename) - 1] = '\0';	
 	if (NULL == (file_ptr = fopen(filename, "a+"))) {
-		printf("[log_plugin]: fail to creat log file %s\n", filename);
+		printf("[log_plugin]: fail to create log file %s\n", filename);
 	} else {
 		fd = fileno(file_ptr);
 		written_bytes = write(fd, g_log_buf_ptr, g_current_size);

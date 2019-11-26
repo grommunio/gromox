@@ -92,7 +92,7 @@ void site_protection_free()
  *  *  reload the list
  *  @return
  *		SPL_FILE_FAIL       fail to load list file
- *		SPL_HASH_FAIL       fail to creat hash table
+ *		SPL_HASH_FAIL       fail to create hash table
  *		SPL_REFRESH_OK      OK to reload list
  */
 static int site_protection_list_refresh()

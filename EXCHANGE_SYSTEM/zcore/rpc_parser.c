@@ -794,7 +794,7 @@ int rpc_parser_run()
 			pthread_cancel(g_thread_ids[i]);
 		}
 		free(g_thread_ids);
-		printf("[rpc_parser]: fail to creat pool thread\n");
+		printf("[rpc_parser]: fail to create pool thread\n");
 		return -2;
 	}
 	return 0;

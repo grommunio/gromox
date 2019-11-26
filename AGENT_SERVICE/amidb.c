@@ -250,7 +250,7 @@ int main(int argc, const char **argv)
 
 	for (i=0; i<g_conn_num; i++) {
 		if (0 != pthread_create(&thr_ids[i], NULL, thread_work_func, NULL)) {
-			printf("[system]: fail to creat pool thread\n");
+			printf("[system]: fail to create pool thread\n");
 			break;
 		}
 	}
