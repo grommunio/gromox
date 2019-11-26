@@ -1,3 +1,4 @@
+#include "ext.hpp"
 #include "zarafa_client.h"
 #include "rpc_ext.h"
 #include <sys/socket.h>
@@ -47,7 +48,7 @@ static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
 				pbin->cb = 1;
-				pbin->pb = emalloc(1);
+				pbin->pb = static_cast<uint8_t *>(emalloc(1));
 				if (NULL == pbin->pb) {
 					return 0;
 				}
@@ -55,7 +56,7 @@ static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
 				return 1;
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pb = emalloc(pbin->cb);
+				pbin->pb = static_cast<uint8_t *>(emalloc(pbin->cb));
 				if (NULL == pbin->pb) {
 					return 0;
 				}
@@ -148,8 +149,8 @@ uint32_t zarafa_client_logon(const char *username,
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOGON;
-	request.payload.logon.username = (void*)username;
-	request.payload.logon.password = (void*)password;
+	request.payload.logon.username = const_cast<char *>(username);
+	request.payload.logon.password = const_cast<char *>(password);
 	request.payload.logon.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -180,7 +181,7 @@ uint32_t zarafa_client_uinfo(const char *username, BINARY *pentryid,
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_UINFO;
-	request.payload.uinfo.username = (void*)username;
+	request.payload.uinfo.username = const_cast<char *>(username);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -275,7 +276,7 @@ uint32_t zarafa_client_resolvename(GUID hsession,
 	
 	request.call_id = CALL_ID_RESOLVENAME;
 	request.payload.resolvename.hsession = hsession;
-	request.payload.resolvename.pcond_set = (void*)pcond_set;
+	request.payload.resolvename.pcond_set = const_cast<TARRAY_SET *>(pcond_set);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -312,7 +313,7 @@ uint32_t zarafa_client_modifypermissions(GUID hsession,
 	request.call_id = CALL_ID_MODIFYPERMISSIONS;
 	request.payload.modifypermissions.hsession = hsession;
 	request.payload.modifypermissions.hfolder = hfolder;
-	request.payload.modifypermissions.pset = (void*)pset;
+	request.payload.modifypermissions.pset = const_cast<PERMISSION_SET *>(pset);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -329,7 +330,7 @@ uint32_t zarafa_client_modifyrules(GUID hsession,
 	request.payload.modifyrules.hsession = hsession;
 	request.payload.modifyrules.hfolder = hfolder;
 	request.payload.modifyrules.flags = flags;
-	request.payload.modifyrules.plist = (void*)plist;
+	request.payload.modifyrules.plist = const_cast<RULE_LIST *>(plist);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -508,7 +509,7 @@ uint32_t zarafa_client_deletemessages(GUID hsession,
 	request.call_id = CALL_ID_DELETEMESSAGES;
 	request.payload.deletemessages.hsession = hsession;
 	request.payload.deletemessages.hfolder = hfolder;
-	request.payload.deletemessages.pentryids = (void*)pentryids;
+	request.payload.deletemessages.pentryids = const_cast<BINARY_ARRAY *>(pentryids);
 	request.payload.deletemessages.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -527,7 +528,7 @@ uint32_t zarafa_client_copymessages(GUID hsession,
 	request.payload.copymessages.hsession = hsession;
 	request.payload.copymessages.hsrcfolder = hsrcfolder;
 	request.payload.copymessages.hdstfolder = hdstfolder;
-	request.payload.copymessages.pentryids = (void*)pentryids;
+	request.payload.copymessages.pentryids = const_cast<BINARY_ARRAY *>(pentryids);
 	request.payload.copymessages.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -545,7 +546,7 @@ uint32_t zarafa_client_setreadflags(GUID hsession,
 	request.call_id = CALL_ID_SETREADFLAGS;
 	request.payload.setreadflags.hsession = hsession;
 	request.payload.setreadflags.hfolder = hfolder;
-	request.payload.setreadflags.pentryids = (void*)pentryids;
+	request.payload.setreadflags.pentryids = const_cast<BINARY_ARRAY *>(pentryids);
 	request.payload.setreadflags.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -565,8 +566,8 @@ uint32_t zarafa_client_createfolder(GUID hsession,
 	request.payload.createfolder.hsession = hsession;
 	request.payload.createfolder.hparent_folder = hparent_folder;
 	request.payload.createfolder.folder_type = folder_type;
-	request.payload.createfolder.folder_name = (void*)folder_name;
-	request.payload.createfolder.folder_comment = (void*)folder_comment;
+	request.payload.createfolder.folder_name = const_cast<char *>(folder_name);
+	request.payload.createfolder.folder_comment = const_cast<char *>(folder_comment);
 	request.payload.createfolder.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -622,7 +623,7 @@ uint32_t zarafa_client_copyfolder(GUID hsession,
 	request.payload.copyfolder.hsrc_folder = hsrc_folder;
 	request.payload.copyfolder.entryid = entryid;
 	request.payload.copyfolder.hdst_folder = hdst_folder;
-	request.payload.copyfolder.new_name = (void*)new_name;
+	request.payload.copyfolder.new_name = const_cast<char *>(new_name);
 	request.payload.copyfolder.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -637,7 +638,7 @@ uint32_t zarafa_client_getstoreentryid(
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_GETSTOREENTRYID;
-	request.payload.getstoreentryid.mailbox_dn = (void*)mailbox_dn;
+	request.payload.getstoreentryid.mailbox_dn = const_cast<char *>(mailbox_dn);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -658,7 +659,7 @@ uint32_t zarafa_client_entryidfromsourcekey(
 	request.payload.entryidfromsourcekey.hsession = hsession;
 	request.payload.entryidfromsourcekey.hstore = hstore;
 	request.payload.entryidfromsourcekey.folder_key = folder_key;
-	request.payload.entryidfromsourcekey.pmessage_key = (void*)pmessage_key;
+	request.payload.entryidfromsourcekey.pmessage_key = const_cast<BINARY *>(pmessage_key);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -678,7 +679,7 @@ uint32_t zarafa_client_storeadvise(GUID hsession,
 	request.call_id = CALL_ID_STOREADVISE;
 	request.payload.storeadvise.hsession = hsession;
 	request.payload.storeadvise.hstore = hstore;
-	request.payload.storeadvise.pentryid = (void*)pentryid;
+	request.payload.storeadvise.pentryid = const_cast<BINARY *>(pentryid);
 	request.payload.storeadvise.event_mask = event_mask;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -712,7 +713,7 @@ uint32_t zarafa_client_notifdequeue(const NOTIF_SINK *psink,
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_NOTIFDEQUEUE;
-	request.payload.notifdequeue.psink = (void*)psink;
+	request.payload.notifdequeue.psink = const_cast<NOTIF_SINK *>(psink);
 	request.payload.notifdequeue.timeval = timeval;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -736,8 +737,8 @@ uint32_t zarafa_client_queryrows(
 	request.payload.queryrows.htable = htable;
 	request.payload.queryrows.start = start;
 	request.payload.queryrows.count = count;
-	request.payload.queryrows.prestriction = (void*)prestriction;
-	request.payload.queryrows.pproptags = (void*)pproptags;
+	request.payload.queryrows.prestriction = const_cast<RESTRICTION *>(prestriction);
+	request.payload.queryrows.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -756,7 +757,7 @@ uint32_t zarafa_client_setcolumns(GUID hsession, uint32_t htable,
 	request.call_id = CALL_ID_SETCOLUMNS;
 	request.payload.setcolumns.hsession = hsession;
 	request.payload.setcolumns.htable = htable;
-	request.payload.setcolumns.pproptags = (void*)pproptags;
+	request.payload.setcolumns.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	request.payload.setcolumns.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -794,7 +795,7 @@ uint32_t zarafa_client_sorttable(GUID hsession,
 	request.call_id = CALL_ID_SORTTABLE;
 	request.payload.sorttable.hsession = hsession;
 	request.payload.sorttable.htable = htable;
-	request.payload.sorttable.psortset = (void*)psortset;
+	request.payload.sorttable.psortset = const_cast<SORTORDER_SET *>(psortset);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -828,7 +829,7 @@ uint32_t zarafa_client_restricttable(GUID hsession, uint32_t htable,
 	request.call_id = CALL_ID_RESTRICTTABLE;
 	request.payload.restricttable.hsession = hsession;
 	request.payload.restricttable.htable = htable;
-	request.payload.restricttable.prestriction = (void*)prestriction;
+	request.payload.restricttable.prestriction = const_cast<RESTRICTION *>(prestriction);
 	request.payload.restricttable.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -847,7 +848,7 @@ uint32_t zarafa_client_findrow(GUID hsession, uint32_t htable,
 	request.payload.findrow.hsession = hsession;
 	request.payload.findrow.htable = htable;
 	request.payload.findrow.bookmark = bookmark;
-	request.payload.findrow.prestriction = (void*)prestriction;
+	request.payload.findrow.prestriction = const_cast<RESTRICTION *>(prestriction);
 	request.payload.findrow.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
@@ -901,7 +902,7 @@ uint32_t zarafa_client_getreceivefolder(GUID hsession,
 	request.call_id = CALL_ID_GETRECEIVEFOLDER;
 	request.payload.getreceivefolder.hsession = hsession;
 	request.payload.getreceivefolder.hstore = hstore;
-	request.payload.getreceivefolder.pstrclass = (void*)pstrclass;
+	request.payload.getreceivefolder.pstrclass = const_cast<char *>(pstrclass);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -921,7 +922,7 @@ uint32_t zarafa_client_modifyrecipients(GUID hsession,
 	request.payload.modifyrecipients.hsession = hsession;
 	request.payload.modifyrecipients.hmessage = hmessage;
 	request.payload.modifyrecipients.flags = flags;
-	request.payload.modifyrecipients.prcpt_list = (void*)prcpt_list;
+	request.payload.modifyrecipients.prcpt_list = const_cast<TARRAY_SET *>(prcpt_list);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1022,7 +1023,7 @@ uint32_t zarafa_client_setpropval(GUID hsession,
 	propvals.count = 1;
 	propvals.ppropval = &propval;
 	propval.proptag = proptag;
-	propval.pvalue = (void*)pvalue;
+	propval.pvalue = const_cast<void *>(pvalue);
 	return zarafa_client_setpropvals(hsession, hobject, &propvals);
 }
 
@@ -1035,7 +1036,7 @@ uint32_t zarafa_client_setpropvals(GUID hsession,
 	request.call_id = CALL_ID_SETPROPVALS;
 	request.payload.setpropvals.hsession = hsession;
 	request.payload.setpropvals.hobject = hobject;
-	request.payload.setpropvals.ppropvals = (void*)ppropvals;
+	request.payload.setpropvals.ppropvals = const_cast<TPROPVAL_ARRAY *>(ppropvals);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1074,7 +1075,7 @@ uint32_t zarafa_client_getpropvals(GUID hsession,
 	request.call_id = CALL_ID_GETPROPVALS;
 	request.payload.getpropvals.hsession = hsession;
 	request.payload.getpropvals.hobject = hobject;
-	request.payload.getpropvals.pproptags = (void*)pproptags;
+	request.payload.getpropvals.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1093,7 +1094,7 @@ uint32_t zarafa_client_deletepropvals(GUID hsession,
 	request.call_id = CALL_ID_DELETEPROPVALS;
 	request.payload.deletepropvals.hsession = hsession;
 	request.payload.deletepropvals.hobject = hobject;
-	request.payload.deletepropvals.pproptags = (void*)pproptags;
+	request.payload.deletepropvals.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1144,7 +1145,7 @@ uint32_t zarafa_client_getnamedpropids(GUID hsession, uint32_t hstore,
 	request.call_id = CALL_ID_GETNAMEDPROPIDS;
 	request.payload.getnamedpropids.hsession = hsession;
 	request.payload.getnamedpropids.hstore = hstore;
-	request.payload.getnamedpropids.ppropnames = (void*)ppropnames;
+	request.payload.getnamedpropids.ppropnames = const_cast<PROPNAME_ARRAY *>(ppropnames);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1163,7 +1164,7 @@ uint32_t zarafa_client_getpropnames(GUID hsession, uint32_t hstore,
 	request.call_id = CALL_ID_GETPROPNAMES;
 	request.payload.getpropnames.hsession = hsession;
 	request.payload.getpropnames.hstore = hstore;
-	request.payload.getpropnames.ppropids = (void*)ppropids;
+	request.payload.getpropnames.ppropids = const_cast<PROPID_ARRAY *>(ppropids);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1183,7 +1184,7 @@ uint32_t zarafa_client_copyto(GUID hsession, uint32_t hsrcobject,
 	request.call_id = CALL_ID_COPYTO;
 	request.payload.copyto.hsession = hsession;
 	request.payload.copyto.hsrcobject = hsrcobject;
-	request.payload.copyto.pexclude_proptags = (void*)pexclude_proptags;
+	request.payload.copyto.pexclude_proptags = const_cast<PROPTAG_ARRAY *>(pexclude_proptags);
 	request.payload.copyto.hdstobject = hdstobject;
 	request.payload.copyto.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1254,8 +1255,8 @@ uint32_t zarafa_client_configsync(GUID hsession,
 	request.payload.configsync.hsession = hsession;
 	request.payload.configsync.hctx = hctx;
 	request.payload.configsync.flags = flags;
-	request.payload.configsync.pstate = (void*)pstate;
-	request.payload.configsync.prestriction = (void*)prestriction;
+	request.payload.configsync.pstate = const_cast<BINARY *>(pstate);
+	request.payload.configsync.prestriction = const_cast<RESTRICTION *>(prestriction);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1405,7 +1406,7 @@ uint32_t zarafa_client_configimport(GUID hsession,
 	request.payload.configimport.hsession = hsession;
 	request.payload.configimport.hctx = hctx;
 	request.payload.configimport.sync_type = sync_type;
-	request.payload.configimport.pstate = (void*)pstate;
+	request.payload.configimport.pstate = const_cast<BINARY *>(pstate);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1440,7 +1441,7 @@ uint32_t zarafa_client_importmessage(GUID hsession, uint32_t hctx,
 	request.payload.importmessage.hsession = hsession;
 	request.payload.importmessage.hctx = hctx;
 	request.payload.importmessage.flags = flags;
-	request.payload.importmessage.pproplist = (void*)pproplist;
+	request.payload.importmessage.pproplist = const_cast<TPROPVAL_ARRAY *>(pproplist);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1459,7 +1460,7 @@ uint32_t zarafa_client_importfolder(GUID hsession,
 	request.call_id = CALL_ID_IMPORTFOLDER;
 	request.payload.importfolder.hsession = hsession;
 	request.payload.importfolder.hctx = hctx;
-	request.payload.importfolder.pproplist = (void*)pproplist;
+	request.payload.importfolder.pproplist = const_cast<TPROPVAL_ARRAY *>(pproplist);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1476,7 +1477,7 @@ uint32_t zarafa_client_importdeletion(GUID hsession,
 	request.payload.importdeletion.hsession = hsession;
 	request.payload.importdeletion.hctx = hctx;
 	request.payload.importdeletion.flags = flags;
-	request.payload.importdeletion.pbins = (void*)pbins;
+	request.payload.importdeletion.pbins = const_cast<BINARY_ARRAY *>(pbins);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1492,7 +1493,7 @@ uint32_t zarafa_client_importreadstates(GUID hsession,
 	request.call_id = CALL_ID_IMPORTREADSTATES;
 	request.payload.importreadstates.hsession = hsession;
 	request.payload.importreadstates.hctx = hctx;
-	request.payload.importreadstates.pstates = (void*)pstates;
+	request.payload.importreadstates.pstates = const_cast<STATE_ARRAY *>(pstates);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1532,8 +1533,8 @@ uint32_t zarafa_client_setsearchcriteria(
 	request.payload.setsearchcriteria.hsession = hsession;
 	request.payload.setsearchcriteria.hfolder = hfolder;
 	request.payload.setsearchcriteria.flags = flags;
-	request.payload.setsearchcriteria.pfolder_array = (void*)pfolder_array;
-	request.payload.setsearchcriteria.prestriction = (void*)prestriction;
+	request.payload.setsearchcriteria.pfolder_array = const_cast<BINARY_ARRAY *>(pfolder_array);
+	request.payload.setsearchcriteria.prestriction = const_cast<RESTRICTION *>(prestriction);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1567,7 +1568,7 @@ uint32_t zarafa_client_rfc822tomessage(GUID hsession,
 	request.call_id = CALL_ID_RFC822TOMESSAGE;
 	request.payload.rfc822tomessage.hsession = hsession;
 	request.payload.rfc822tomessage.hmessage = hmessage;
-	request.payload.rfc822tomessage.peml_bin = (void*)peml_bin;
+	request.payload.rfc822tomessage.peml_bin = const_cast<BINARY *>(peml_bin);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1601,7 +1602,7 @@ uint32_t zarafa_client_icaltomessage(GUID hsession,
 	request.call_id = CALL_ID_ICALTOMESSAGE;
 	request.payload.icaltomessage.hsession = hsession;
 	request.payload.icaltomessage.hmessage = hmessage;
-	request.payload.icaltomessage.pical_bin = (void*)pical_bin;
+	request.payload.icaltomessage.pical_bin = const_cast<BINARY *>(pical_bin);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1635,7 +1636,7 @@ uint32_t zarafa_client_vcftomessage(GUID hsession,
 	request.call_id = CALL_ID_VCFTOMESSAGE;
 	request.payload.vcftomessage.hsession = hsession;
 	request.payload.vcftomessage.hmessage = hmessage;
-	request.payload.vcftomessage.pvcf_bin = (void*)pvcf_bin;
+	request.payload.vcftomessage.pvcf_bin = const_cast<BINARY *>(pvcf_bin);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}
@@ -1670,9 +1671,9 @@ uint32_t zarafa_client_setpasswd(const char *username,
 	RPC_RESPONSE response;
 	
 	request.call_id = CALL_ID_SETPASSWD;
-	request.payload.setpasswd.username = (void*)username;
-	request.payload.setpasswd.passwd = (void*)passwd;
-	request.payload.setpasswd.new_passwd = (void*)new_passwd;
+	request.payload.setpasswd.username = const_cast<char *>(username);
+	request.payload.setpasswd.passwd = const_cast<char *>(passwd);
+	request.payload.setpasswd.new_passwd = const_cast<char *>(new_passwd);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return EC_RPC_FAIL;
 	}

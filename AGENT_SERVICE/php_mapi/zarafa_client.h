@@ -3,6 +3,12 @@
 #include "php.h"
 #include "types.h"
 
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
+
 uint32_t zarafa_client_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession);
 
@@ -273,5 +279,6 @@ uint32_t zarafa_client_setpasswd(const char *username,
 
 uint32_t zarafa_client_linkmessage(GUID hsession,
 	BINARY search_entryid, BINARY message_entryid);
+extern uint32_t zarafa_client_checksession(GUID);
 
 #endif /* _H_ZARAFA_CLIENT_ */

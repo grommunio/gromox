@@ -73,8 +73,6 @@ typedef struct _ICS_EXPORT_CTX {
 	uint32_t total_steps;
 } ICS_EXPORT_CTX;
 
-extern uint32_t zarafa_client_checksession(GUID);
-
 /* Not defined anymore in PHP 5.3.0 */
 #if ZEND_MODULE_API_NO >= 20071006
 ZEND_BEGIN_ARG_INFO(first_arg_force_ref, 0)
