@@ -504,7 +504,7 @@ void rop_processor_free()
 	pthread_mutex_destroy(&g_hash_lock);
 }
 
-static int rop_processor_excute_and_push(uint8_t *pbuff,
+static int rop_processor_execute_and_push(uint8_t *pbuff,
 	uint32_t *pbuff_len, ROP_BUFFER *prop_buff,
 	BOOL b_notify, DOUBLE_LIST *presponse_list)
 {
@@ -748,7 +748,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	}
 	double_list_init(&response_list);
 	tmp_cb = *pcb_out;
-	result = rop_processor_excute_and_push(pout,
+	result = rop_processor_execute_and_push(pout,
 		&tmp_cb, &rop_buff, TRUE, &response_list);
 	if (EC_SUCCESS != result) {
 		return result;
@@ -799,7 +799,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			}
 			tmp_cb = *pcb_out - offset;
-			result = rop_processor_excute_and_push(pout + offset,
+			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
 			if (EC_SUCCESS != result) {
 				break;
@@ -826,7 +826,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			}
 			tmp_cb = *pcb_out - offset;
-			result = rop_processor_excute_and_push(pout + offset,
+			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
 			if (EC_SUCCESS != result) {
 				break;
@@ -857,7 +857,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			}
 			tmp_cb = *pcb_out - offset;
-			result = rop_processor_excute_and_push(pout + offset,
+			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
 			if (EC_SUCCESS != result) {
 				break;

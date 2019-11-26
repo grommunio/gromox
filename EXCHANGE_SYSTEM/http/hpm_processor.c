@@ -458,7 +458,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 		NULL == pplugin->interface.preproc ||
 		NULL == pplugin->interface.proc ||
 		NULL == pplugin->interface.retr) {
-		printf("[hpm_processor]: error to excute plugin's init "
+		printf("[hpm_processor]: error to execute plugin's init "
 			"function or interface not registered in %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		/*
@@ -467,7 +467,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 		 */
         hpm_processor_unload_library(plugin_name);
 		g_cur_plugin = NULL;
-		return PLUGIN_FAIL_EXCUTEMAIN;
+		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	pplugin->completed_init = true;
 	g_cur_plugin = NULL;

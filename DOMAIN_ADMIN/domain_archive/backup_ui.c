@@ -386,7 +386,7 @@ int backup_ui_run()
 		
 		if (TRUE == backup_ui_delivery_all(username, maildir, patime)) {
 			backup_ui_result_html(domain, session, lang_resource_get(g_lang_resource,
-				"MSGERR_RESTORE_EXCUTED", language));
+				"MSGERR_RESTORE_EXECUTED", language));
 		} else {
 			backup_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL", language));
 		}

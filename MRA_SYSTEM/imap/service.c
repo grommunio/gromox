@@ -154,7 +154,7 @@ int service_stop()
  *      PLUGIN_FAIL_OPEN            error to load the file
  *      PLUGIN_NO_MAIN              error to find library function
  *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
- *      PLUGIN_FAIL_EXCUTEMAIN      error to excute plugin's init function
+ *      PLUGIN_FAIL_EXECUTEMAIN     error to execute plugin's init function
  */
 int service_load_library(const char *path)
 {
@@ -225,7 +225,7 @@ int service_load_library(const char *path)
 	g_cur_plug = plib;
 	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
-		printf("[service]: error to excute plugin's init function "
+		printf("[service]: error to execute plugin's init function "
 				"in %s\n", fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
 		/*
@@ -234,7 +234,7 @@ int service_load_library(const char *path)
 		 */
 		service_unload_library(fake_path);
 		g_cur_plug = NULL;
-		return PLUGIN_FAIL_EXCUTEMAIN;
+		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	plib->completed_init = true;
 	g_cur_plug = NULL;

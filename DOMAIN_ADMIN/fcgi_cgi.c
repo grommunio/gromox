@@ -892,7 +892,7 @@ NEXT_LOOP:
 			}
 			fcgi_cgi = start_cgi(&record.val.params);
 			if (-1 == fcgi_cgi.pid) {
-				printf("[system]: fail to excute cgi process\n");
+				printf("[system]: fail to execute cgi process\n");
 				goto FREE_CONNECTION;
 			}
 			continue;

@@ -12,7 +12,7 @@ ARCHIVE_TIME			archive\ time
 SEARCH_HTML_TITLE		Search\ archive\ restore
 SEARCH_TIME_FORMAT		%Y-%m-%d
 ACTIVE_LABEL			activate
-MSGERR_RESTORE_EXCUTED	mail\ restoring\ processed
+MSGERR_RESTORE_EXECUTED	mail\ restoring\ processed
 MSGERR_USERNAME_EMPTY	username\ cannot\ be\ empty
 MSGERR_USERNAME_ERROR	username\ format\ error
 MSGERR_USERNAME_DOMAIN	domain\ of\ username\ error

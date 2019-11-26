@@ -475,7 +475,7 @@ int main(int argc, const char **argv)
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table creation sql, error: %s\n", err_msg);
+		printf("fail to execute table creation sql, error: %s\n", err_msg);
 		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
@@ -488,7 +488,7 @@ int main(int argc, const char **argv)
 		"'%s/exmdb/exchange.sqlite3' AS source_db", argv[1]);
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		tmp_sql, NULL, NULL, &err_msg)) {
-		printf("fail to excute attach database sql, error: %s\n", err_msg);
+		printf("fail to execute attach database sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -499,7 +499,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.configurations";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -508,7 +508,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.allocated_eids";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -517,7 +517,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.named_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -526,7 +526,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.store_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -535,7 +535,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.permissions";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -544,7 +544,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.rules";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -553,7 +553,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.folders";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -562,7 +562,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.folder_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -571,7 +571,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.receive_table";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -580,7 +580,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.messages";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -589,7 +589,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.message_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -598,7 +598,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.message_changes";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -607,7 +607,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.recipients";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -616,7 +616,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.recipients_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -625,7 +625,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.attachments";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -634,7 +634,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.attachment_properties";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -643,7 +643,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.search_scopes";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -652,7 +652,7 @@ int main(int argc, const char **argv)
 		"SELECT * FROM source_db.search_result";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table copy sql, error: %s\n", err_msg);
+		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -663,7 +663,7 @@ int main(int argc, const char **argv)
 	csql_string = "REINDEX";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute reindex sql, error: %s\n", err_msg);
+		printf("fail to execute reindex sql, error: %s\n", err_msg);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;

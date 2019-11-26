@@ -59,7 +59,7 @@ static CONSOLE_NODE *g_console_buff;
 static DOUBLE_LIST g_free_list;
 static DOUBLE_LIST g_console_list;
 static pthread_mutex_t g_list_lock;
-static pthread_mutex_t g_excute_lock;
+static pthread_mutex_t g_execute_lock;
 static pthread_key_t g_client_fd_key;
 static COMMAND_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
 
@@ -82,7 +82,7 @@ void console_server_init(const char* bind_ip, int port)
 	g_listen_port = port;
 	console_server_install_command();	/* need to be implements */
 	pthread_mutex_init(&g_list_lock, NULL);
-	pthread_mutex_init(&g_excute_lock, NULL);
+	pthread_mutex_init(&g_execute_lock, NULL);
 	double_list_init(&g_console_list);
 	double_list_init(&g_free_list);
 	pthread_key_create(&g_client_fd_key, NULL);
@@ -96,7 +96,7 @@ void console_server_free()
 	g_listen_ip[0] = '\0';
 	g_listen_port = 0;
 	pthread_mutex_destroy(&g_list_lock);
-	pthread_mutex_destroy(&g_excute_lock);
+	pthread_mutex_destroy(&g_execute_lock);
 	double_list_free(&g_console_list);
 	double_list_free(&g_free_list);
 	pthread_key_delete(g_client_fd_key);
@@ -459,11 +459,11 @@ static void console_server_execve_command(char* cmdline)
 
 	memset(argv, 0, sizeof(argv));
 	/* parse command line */
-	pthread_mutex_lock(&g_excute_lock);
+	pthread_mutex_lock(&g_execute_lock);
 	argc = console_server_parse_line(cmdline, argv);
 	cmd = argv[0];
 	if (0 == argc) {
-		pthread_mutex_unlock(&g_excute_lock);
+		pthread_mutex_unlock(&g_execute_lock);
 		return; /* ignore empty lines */
 	}
 	/* compare build-in command */
@@ -471,18 +471,18 @@ static void console_server_execve_command(char* cmdline)
 		if ('\0' != *(g_cmd_entry[i].cmd) && 
 			0 == strcmp(g_cmd_entry[i].cmd, cmd)) {
 			g_cmd_entry[i].cmd_handler(argc, argv);
-			pthread_mutex_unlock(&g_excute_lock);
+			pthread_mutex_unlock(&g_execute_lock);
 			return;
 		}
 	}
 	for (i = 0; i < g_cmd_num; i++) {
 		if ('\0' == *(g_cmd_entry[i].cmd) &&
 			TRUE == g_cmd_entry[i].cmd_handler(argc, argv)) {
-			pthread_mutex_unlock(&g_excute_lock);
+			pthread_mutex_unlock(&g_execute_lock);
 			return;
 		}
 	}
-	pthread_mutex_unlock(&g_excute_lock);
+	pthread_mutex_unlock(&g_execute_lock);
 	
 	/* 
 	 *	unknown command, use the default unknown command handler, always at 

@@ -202,7 +202,7 @@ int anti_spamming_run()
  *		  PLUGIN_FAIL_OPEN			  error to load the file
  *		  PLUGIN_NO_MAIN			  error to find library function
  *		  PLUGIN_FAIL_ALLOCNODE		  fail to allocate memory for a node
- *		  PLUGIN_FAIL_EXCUTEMAIN	  error to excute plugin's init function	
+ *		  PLUGIN_FAIL_EXECUTEMAIN	  error to execute plugin's init function	
  */
 int anti_spamming_load_library(const char* path)
 {
@@ -277,7 +277,7 @@ int anti_spamming_load_library(const char* path)
 	g_cur_lib = plib;
 	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
-		printf("[anti_spamming]: error to excute plugin's init function "
+		printf("[anti_spamming]: error to execute plugin's init function "
 				"in %s\n", fake_path);
 		printf("[anti_spamming]: the plugin %s is not loaded\n", fake_path);
 		/*
@@ -286,7 +286,7 @@ int anti_spamming_load_library(const char* path)
 		*/
 		anti_spamming_unload_library(fake_path);
 		g_cur_lib = NULL;
-		return PLUGIN_FAIL_EXCUTEMAIN;
+		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	plib->completed_init = true;
 	g_cur_lib = NULL;
@@ -855,7 +855,7 @@ int anti_spamming_unload_library(const char* path)
  *	  @param
  *		path	indicate the filename of plugin
  *	  @return
- *		PLUGIN_RELOAD_FAIL_EXCUTEMAIN	fail to execute the main in the plugin
+ *		PLUGIN_RELOAD_FAIL_EXECUTEMAIN	fail to execute the main in the plugin
  *		PLUGIN_RELOAD_FAIL_ALLOCNODE	malloc fail
  *		PLUGIN_RELOAD_NO_MAIN			the plugin does not have the entry 
  *										function
@@ -908,9 +908,8 @@ int anti_spamming_reload_library(const char* path)
 	switch (retval) {
 	case PLUGIN_LOAD_OK:
 		return PLUGIN_RELOAD_OK;
-
-	case PLUGIN_FAIL_EXCUTEMAIN:
-		return PLUGIN_RELOAD_FAIL_EXCUTEMAIN;
+	case PLUGIN_FAIL_EXECUTEMAIN:
+		return PLUGIN_RELOAD_FAIL_EXECUTEMAIN;
 	case PLUGIN_FAIL_ALLOCNODE:
 		return PLUGIN_RELOAD_FAIL_ALLOCNODE;
 	case PLUGIN_NO_MAIN:

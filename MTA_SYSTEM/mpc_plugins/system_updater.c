@@ -653,7 +653,7 @@ static BOOL console_control(const char *ip, int port, const char *cmdline,
 		return FALSE;
 	}
 
-	/* read excute result */
+	/* read execute result */
 	tv.tv_sec = SOCKET_TIMEOUT;
 	tv.tv_usec = 0;
 	FD_ZERO(&myset);
@@ -832,7 +832,7 @@ static void cmd_delivery_control(int argc, char **argv)
 		return;
 	}
 	if (0 == strncmp("system stop", argv[1], 11)) {
-		update_log("cannot excute system stop command for delivery server");
+		update_log("cannot execute system stop command for delivery server");
 		return;
 	}
 	if (FALSE == console_control(g_delivery_ip, g_delivery_port, argv[1],

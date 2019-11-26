@@ -193,7 +193,7 @@ BOOL cmd_handler_service_control(int argc, char** argv)
 		case PLUGIN_FAIL_ALLOCNODE:
 			console_server_reply_to_client("550 fail to plug-in alloc memory");
 			break;
-		case PLUGIN_FAIL_EXCUTEMAIN:
+		case PLUGIN_FAIL_EXECUTEMAIN:
 			console_server_reply_to_client("550 fail to execute plugin's "
 						"init function");
 			break;

@@ -50,7 +50,7 @@ systemctl start mariadb
 mysql < /var/athena/doc/mysql.txt
 
 #close selinux by editting /etc/selinux/config, change "SELINUX=enforcing" to "SELINUX=disabled"
-#also excute the command to turn off selinux
+#also execute the command to turn off selinux
 setenforce 0
 
 #close the firewalld

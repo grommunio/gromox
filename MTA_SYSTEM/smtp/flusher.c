@@ -307,7 +307,7 @@ static BOOL flusher_unload_plugin()
 		return FALSE;
 	}
 	if (g_flusher_plug->completed_init && !g_flusher_plug->appmain(PLUGIN_FREE, NULL)) {
-		printf("[flusher]: error to excute Flusher_LibMain with "
+		printf("[flusher]: error to execute Flusher_LibMain with "
 			   "FLUSHER_LIB_FREE in plugin %s\n", g_flusher_plug->path);
 		return FALSE;
 	}

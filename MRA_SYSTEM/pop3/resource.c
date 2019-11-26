@@ -37,7 +37,7 @@ static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
     { 2170019, "-ERR fail to retrieve message" },
     { 2170020, "-ERR cannot relogin under login stat" },
 	{ 2170021, "-ERR midb read/write error" },
-	{ 2170022, "-ERR fail to excute command in midb"},
+	{2170022, "-ERR fail to execute command in midb"},
 	{ 2170023, "-ERR fail to initialize TLS"},
 	{ 2170024, "+OK begin TLS negotiation"},
 	{ 2170025, "-ERR TLS negotiation only begin in AUTHORIZATION state"},

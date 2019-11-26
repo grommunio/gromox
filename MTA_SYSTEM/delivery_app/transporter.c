@@ -529,7 +529,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	for (pnode=phead; NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
 		phook = (HOOK_ENTRY*)(pnode->pdata);
-		/* check if this hook is valid, if it is, excute the function */
+		/* check if this hook is valid, if it is, execute the function */
 		if (TRUE == phook->valid) {
 			if (pthr_data->last_thrower == phook->hook_addr) {
 				goto NEXT_LOOP;
@@ -752,7 +752,7 @@ static void* scan_work_func(void* arg)
  *		PLUGIN_FAIL_OPEN			fail to open share library
  *		PLUGIN_NO_MAIN				cannot find main entry
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
- *		PLUGIN_FAIL_EXCUTEMAIN		main entry in plugin returns FALSE
+ *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
 int transporter_load_library(const char* path)
 {
@@ -830,7 +830,7 @@ int transporter_load_library(const char* path)
     g_cur_lib = plib;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
     if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
-        printf("[transporter]: error to excute plugin's init function "
+		printf("[transporter]: error to execute plugin's init function "
                 "in %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
         /*
@@ -839,7 +839,7 @@ int transporter_load_library(const char* path)
          */
         transporter_unload_library(fake_path);
 		g_cur_lib = NULL;
-        return PLUGIN_FAIL_EXCUTEMAIN;
+		return PLUGIN_FAIL_EXECUTEMAIN;
     }
 	plib->completed_init = true;
     g_cur_lib = NULL;

@@ -465,7 +465,7 @@ int main(int argc, const char **argv)
 	
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, &err_msg)) {
-		printf("fail to excute table creation sql, error: %s\n", err_msg);
+		printf("fail to execute table creation sql, error: %s\n", err_msg);
 		free(sql_string);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();

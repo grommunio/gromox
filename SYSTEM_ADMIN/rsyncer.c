@@ -42,7 +42,7 @@ enum {
 enum {
 	SUCCESS = 0,
 	ERROR_SOCKET,
-	ERROR_EXCUTE
+	ERROR_EXECUTE,
 };
 
 typedef struct _AREA_ITEM {
@@ -323,7 +323,7 @@ static int remote_list(CONNECTION conn, DOUBLE_LIST *plist)
 						last_pos = i + 2;
 						b_first = TRUE;
 					} else if (0 == strcasecmp(buff, "FALSE")) {
-						return ERROR_EXCUTE;
+						return ERROR_EXECUTE;
 					} else {
 						return ERROR_SOCKET;
 					}
@@ -424,7 +424,7 @@ static int remote_get(CONNECTION conn,
 				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
 					buff[i] = '\0';
 					if (0 == strcasecmp(buff, "FALSE")) {
-						return ERROR_EXCUTE;
+						return ERROR_EXECUTE;
 					} else if (0 == strncasecmp(buff, "TRUE gzip ", 10)) {
 
 						snprintf(temp_path, 256, "%s/%s.gz", local_path,
@@ -485,7 +485,7 @@ static int remote_link(CONNECTION conn,
 		strncpy(link_buff, temp_buff + 5, 256);
 		return SUCCESS;
 	} else {
-		return ERROR_EXCUTE;
+		return ERROR_EXECUTE;
 	}
 
 }
@@ -510,7 +510,7 @@ static int remote_md5(CONNECTION conn,
 		strncpy(md5_buff, temp_buff + 5, 2*MD5_DIGEST_LENGTH + 1);
 		return SUCCESS;
 	} else {
-		return ERROR_EXCUTE;
+		return ERROR_EXECUTE;
 	}
 
 }
@@ -603,7 +603,7 @@ static int remote_dir(CONNECTION conn, const char *remote_path)
 	if (0 == strcasecmp(temp_buff, "TRUE")) {
 		return SUCCESS;
 	} else {
-		return ERROR_EXCUTE;
+		return ERROR_EXECUTE;
 	}
 }
 
@@ -622,7 +622,7 @@ CONNECT_RSYNCD:
 			close(conn.sockd);
 			sleep(60);
 			goto CONNECT_RSYNCD;
-		case ERROR_EXCUTE:
+		case ERROR_EXECUTE:
 			SSL_free(conn.ssl);
 			conn.ssl = NULL;
 			close(conn.sockd);
@@ -671,7 +671,7 @@ static CONNECTION backup_subdir(CONNECTION conn, char *path)
 	result = remote_dir(conn2, path);
 	switch (result) {
 	case ERROR_SOCKET:
-	case ERROR_EXCUTE:
+	case ERROR_EXECUTE:
 		SSL_free(conn.ssl);
 		conn.ssl = NULL;
 		close(conn.sockd);
@@ -684,7 +684,7 @@ static CONNECTION backup_subdir(CONNECTION conn, char *path)
 	result = remote_list(conn2, &dir_list);
 	switch (result) {
 	case ERROR_SOCKET:
-	case ERROR_EXCUTE:
+	case ERROR_EXECUTE:
 		SSL_free(conn2.ssl);
 		conn2.ssl = NULL;
 		close(conn2.sockd);
@@ -853,7 +853,7 @@ BEGIN_BACKUP:
 		close(conn.sockd);
 		conn.sockd = -1;
 		goto BEGIN_BACKUP;
-	case ERROR_EXCUTE:
+	case ERROR_EXECUTE:
 		printf("[system]: fail to open directory %s in remote host\n", path);
 		SSL_free(conn.ssl);
 		conn.ssl = NULL;
@@ -872,7 +872,7 @@ BEGIN_BACKUP:
 		conn.sockd = -1;
 		double_list_free(&dir_list);
 		goto BEGIN_BACKUP;
-	case ERROR_EXCUTE:
+	case ERROR_EXECUTE:
 		printf("[system]: fail to list directory %s in remote host\n", path);
 		SSL_free(conn.ssl);
 		conn.ssl = NULL;

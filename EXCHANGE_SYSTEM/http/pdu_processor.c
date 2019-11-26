@@ -3849,7 +3849,7 @@ static void* pdu_processor_queryservice(char *service)
  *		PLUGIN_FAIL_OPEN			fail to open share library
  *		PLUGIN_NO_MAIN				cannot find main entry
  *		PLUGIN_FAIL_ALLOCNODE		fail to allocate node for plugin
- *		PLUGIN_FAIL_EXCUTEMAIN		main entry in plugin returns FALSE
+ *		PLUGIN_FAIL_EXECUTEMAIN		main entry in plugin returns FALSE
  */
 static int pdu_processor_load_library(const char* plugin_name)
 {
@@ -3902,7 +3902,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 	g_cur_plugin = pplugin;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
     if (FALSE == func(PLUGIN_INIT, (void**)two_server_funcs)) {
-		printf("[pdu_processor]: error to excute plugin's init function "
+		printf("[pdu_processor]: error to execute plugin's init function "
 			"in %s\n", fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		/*
@@ -3911,7 +3911,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 		 */
         pdu_processor_unload_library(plugin_name);
 		g_cur_plugin = NULL;
-		return PLUGIN_FAIL_EXCUTEMAIN;
+		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	pplugin->completed_init = true;
 	g_cur_plugin = NULL;
