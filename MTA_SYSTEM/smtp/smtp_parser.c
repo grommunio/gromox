@@ -1954,10 +1954,10 @@ static void smtp_parser_record_mime_field(SMTP_CONTEXT *pcontext,
 				if (0 == strncasecmp(pfield->field_value, "multipart/", 10)) {
 					ptmp2 = strchr(ptmp, '"');
 					if (NULL == ptmp2) {
-						ptmp2 == strchr(ptmp, '\'');
+						ptmp2 = strchr(ptmp, '\'');
 					}
 					if (NULL == ptmp2) {
-						ptmp2 == strchr(ptmp, ';');
+						ptmp2 = strchr(ptmp, ';');
 					}
 					if (NULL == ptmp2) {
 						len = strlen(ptmp);
@@ -2072,10 +2072,10 @@ static int smtp_parser_parse_and_save_blkmime(SMTP_CONTEXT *pcontext,
 				if (0 == strncasecmp(mime_field.field_value, "multipart/", 10)) {
 					ptmp2 = strchr(ptmp, '"');
 					if (NULL == ptmp2) {
-						ptmp2 == strchr(ptmp, '\'');
+						ptmp2 = strchr(ptmp, '\'');
 					}
 					if (NULL == ptmp2) {
-						ptmp2 == strchr(ptmp, ';');
+						ptmp2 = strchr(ptmp, ';');
 					}
 					if (NULL == ptmp2) {
 						len = strlen(ptmp);

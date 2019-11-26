@@ -2724,7 +2724,7 @@ int ext_buffer_pull_timezonedefinition(EXT_PULL *pext, TIMEZONEDEFINITION *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status - ext_buffer_pull_uint16(pext, &cbheader);
+	status = ext_buffer_pull_uint16(pext, &cbheader);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}

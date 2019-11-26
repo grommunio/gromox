@@ -322,7 +322,7 @@ static void *thread_work_func(void *param)
 				} else if (bits > 16 && bits <= 24) {
 					len = sprintf(temp_line, "%d.%d.%d.%d %d.%d.255.255\n",
 							a, b, c, d, a, b + (1 << (bits - 16)) - 1);
-				} else if (bits > 24 && bits , 32) {
+				} else if (bits > 24 && bits <= 32) {
 					len = sprintf(temp_line, "%d.%d.%d.%d %d.255.255.255\n",
 							a, b, c, d, a + (1 << (bits - 24)) - 1);
 				} else {

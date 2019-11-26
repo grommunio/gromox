@@ -3021,7 +3021,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				tmp_byte |= FMS_LOCAL;
 			}
 			if ((*(uint32_t*)pvalue) & MESSAGE_FLAG_SUBMITTED) {
-				tmp_byte | FMS_SUBMITTED;
+				tmp_byte |= FMS_SUBMITTED;
 			}
 		}
 		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)

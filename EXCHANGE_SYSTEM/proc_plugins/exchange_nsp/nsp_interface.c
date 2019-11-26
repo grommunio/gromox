@@ -2535,8 +2535,8 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 				nsp_interface_position_in_list(pstat,
 					pgal_list, &row, &last_row, &total);
 				for (i=0,psnode=single_list_get_head(pgal_list);
-					NULL!=psnode,i<row; i++,
-					psnode=single_list_get_after(pgal_list, psnode));
+				     psnode != NULL && i < row; ++i)
+					psnode = single_list_get_after(pgal_list, psnode);
 			}
 			if (NULL == psnode) {
 				pnode1 = NULL;

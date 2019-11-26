@@ -117,7 +117,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			table_flags |= TABLE_FLAG_SOFTDELETES;
 		}
 		if (ptable->table_flags & FLAG_ASSOCIATED) {
-			table_flags != TABLE_FLAG_ASSOCIATED;
+			table_flags |= TABLE_FLAG_ASSOCIATED;
 		}
 		if (FALSE == exmdb_client_load_content_table(
 			store_object_get_dir(ptable->pstore), pinfo->cpid,
