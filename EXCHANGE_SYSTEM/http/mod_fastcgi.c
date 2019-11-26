@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "contexts_pool.h"
 #include "threads_pool.h"
 #include "mod_fastcgi.h"
@@ -164,7 +165,7 @@ static void mod_fastcgi_load_extra_headers(
 		if ('\0' == tmp_buff[0]) {
 			continue;
 		}
-		upper_string(tmp_buff);
+		HX_strupper(tmp_buff);
 		pnode = malloc(sizeof(DOUBLE_LIST_NODE));
 		pnode->pdata = strdup(tmp_buff);
 		double_list_append_as_tail(plist, pnode);

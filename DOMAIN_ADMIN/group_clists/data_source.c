@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include <gromox/locker_client.h>
@@ -163,7 +164,7 @@ BOOL data_source_add_clist(const char *groupname, int class_id,
 	
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -655,7 +656,7 @@ BOOL data_source_remove_clist(const char *groupname, const char *listname)
 	
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1034,7 +1035,7 @@ BOOL data_source_specified_del(const char *groupname, const char *listname,
 
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1233,7 +1234,7 @@ BOOL data_source_specified_insert(const char *groupname, const char *listname,
 
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;

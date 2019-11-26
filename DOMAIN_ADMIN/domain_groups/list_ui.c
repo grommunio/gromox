@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "list_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -780,7 +781,7 @@ int list_ui_run()
 					}
 					
 					sprintf(resource_name, "DATABASE-%s", domainname);
-					upper_string(resource_name);
+					HX_strupper(resource_name);
 					lockd = locker_client_lock(resource_name);
 					pcollect = data_source_collect_init();
 					if (NULL == pcollect) {

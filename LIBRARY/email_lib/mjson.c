@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "mail.h"
 #include "util.h"
 #include "mjson.h"
@@ -1601,8 +1602,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	
 FETCH_STRUCTURE_LOOP:
 	strncpy(ctype, pmime->ctype, 256);
-	upper_string(ctype);
-	
+	HX_strupper(ctype);
 	psubtype = strchr(ctype, '/');
 	if (NULL == psubtype) {
 		psubtype = const_cast(char *, "NIL");

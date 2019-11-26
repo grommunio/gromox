@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "dsn.h"
 #include "rtf.h"
 #include "html.h"
@@ -169,7 +170,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
-	upper_string(pessdn);
+	HX_strupper(pessdn);
 	if (NULL != paddress_type) {
 		*paddress_type = address_type;
 	}
@@ -537,7 +538,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			essdn[0] = '\0';
 			address_type = ADDRESS_TYPE_NORMAL;
 			tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s", username) + 1;
-			upper_string(tmp_buff);
+			HX_strupper(tmp_buff);
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
 			propval.pvalue  = const_cast(char *, "SMTP");
 			if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -756,7 +757,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		if (FALSE == oxcmail_username_to_essdn(username, essdn, NULL)) {
 			essdn[0] = '\0';
 			tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s", username) + 1;
-			upper_string(tmp_buff);
+			HX_strupper(tmp_buff);
 		} else {
 			tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
 		}
@@ -3783,7 +3784,7 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 		address_type = ADDRESS_TYPE_NORMAL;
 		tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s",
 					f_info.final_recipient) + 1;
-		upper_string(tmp_buff);
+		HX_strupper(tmp_buff);
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
 		propval.pvalue  = const_cast(char *, "SMTP");
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {

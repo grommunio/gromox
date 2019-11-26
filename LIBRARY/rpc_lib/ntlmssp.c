@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "ndr.h"
 #include "util.h"
 #include "crc32.h"
@@ -143,7 +144,7 @@ static void ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 	} else {
 		strcpy(tmpbuf, passwd);
 	}
-	upper_string(tmpbuf);
+	HX_strupper(tmpbuf);
 	/* Only the first 14 chars are considered */
 	E_P16(tmpbuf, p16);  /* ntlmdes.h */
 }
@@ -896,8 +897,7 @@ static BOOL ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	client_key.length = pntv2_response->length - 16;
 	
 	strncpy(tmp_user, user, 128);
-	upper_string(tmp_user);
-	
+	HX_strupper(tmp_user);
 	user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
 	domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, sizeof(domain_in));
 	if (user_len < 0 || domain_len < 0) {
@@ -955,8 +955,7 @@ static BOOL ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	client_key.length = pntv2_response->length - 16;
 
 	strncpy(tmp_user, user, 128);
-	upper_string(tmp_user);
-	
+	HX_strupper(tmp_user);
 	user_len = ntlmssp_utf8_to_utf16le(
 		tmp_user, user_in, sizeof(user_in));
 	domain_len = ntlmssp_utf8_to_utf16le(
@@ -1002,8 +1001,7 @@ static BOOL ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	
 	
 	strncpy(upper_domain, pntlmssp->domain, sizeof(upper_domain));
-	upper_string(upper_domain);
-	
+	HX_strupper(upper_domain);
 	memset(nt_p16, 0, 16);
 	ntlmssp_md4hash(plain_passwd, nt_p16);
 	

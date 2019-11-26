@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include <gromox/locker_client.h>
@@ -160,7 +161,7 @@ BOOL data_source_add_class(const char *groupname, int parent_id,
 
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -554,7 +555,7 @@ BOOL data_source_link_class(const char *groupname, int parent_id,
 
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -781,7 +782,7 @@ BOOL data_source_unlink_class(const char *groupname, int parent_id,
 
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1173,7 +1174,7 @@ BOOL data_source_link_user(const char *groupname, int parent_id,
 
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1394,7 +1395,7 @@ BOOL data_source_unlink_user(const char *groupname, int parent_id,
 
 	pdomain = strchr(groupname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;

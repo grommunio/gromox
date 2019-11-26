@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
@@ -207,7 +208,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.bin.pb = pbuff;
 		}
 		sprintf(pprop->value.bin.pb, "EX:%s", dn);
-		upper_string(pprop->value.bin.pb);
+		HX_strupper(pprop->value.bin.pb);
 		break;
 	case PROP_TAG_INSTANCEKEY:
 		if (NULL == pbuff) {
@@ -3413,7 +3414,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 			return MAPI_E_NOT_ENOUGH_MEMORY;
 		}
 		sprintf(pprop->value.bin.pb, "SMTP:%s", paddress);
-		upper_string(pprop->value.bin.pb);
+		HX_strupper(pprop->value.bin.pb);
 		break;
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:

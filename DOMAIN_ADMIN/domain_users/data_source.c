@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/locker_client.h>
 #include <gromox/system_log.h>
@@ -403,7 +404,7 @@ BOOL data_source_add_user(const char *username, const char *password,
 
 	pdomain = strchr(username, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -690,7 +691,7 @@ BOOL data_source_add_alias(const char *username, const char *alias,
 	
 	pdomain = strchr(username, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1045,7 +1046,7 @@ BOOL data_source_edit_user(const char *username, const char *password,
 	pdomain = strchr(username, '@') + 1;
 
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1420,7 +1421,7 @@ BOOL data_source_remove_user(const char *username, BOOL *pb_alias,
 	data_source_encode_squote(pdomain, temp_domain);
 	
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;

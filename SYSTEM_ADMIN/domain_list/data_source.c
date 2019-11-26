@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/locker_client.h>
 #include <gromox/system_log.h>
@@ -696,7 +697,7 @@ BOOL data_source_add_alias(const char *domainname, const char *alias,
 	LOCKD lockd;
 	
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 
 	data_source_encode_squote(domainname, temp_domain);
@@ -993,7 +994,7 @@ BOOL data_source_edit_domain(const char *domainname, const char *media,
 	time(&now_time);
 
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	data_source_encode_squote(domainname, temp_domain);
@@ -1294,7 +1295,7 @@ BOOL data_source_remove_domain(const char *domainname)
 	
 
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	data_source_encode_squote(domainname, temp_domain);
@@ -1567,7 +1568,7 @@ BOOL data_source_restore_domain(const char *domainname, int *presult,
 	
 	
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	data_source_encode_squote(domainname, temp_domain);

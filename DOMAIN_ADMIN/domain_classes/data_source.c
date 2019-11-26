@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include <gromox/locker_client.h>
@@ -154,7 +155,7 @@ BOOL data_source_add_class(const char *domainname, const char *classname,
 	
 
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -461,7 +462,7 @@ BOOL data_source_link_class(const char *domainname, int parent_id,
 	
 
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -645,7 +646,7 @@ BOOL data_source_unlink_class(const char *domainname, int parent_id,
 	
 
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;

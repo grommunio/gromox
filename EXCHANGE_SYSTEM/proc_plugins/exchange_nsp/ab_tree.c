@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
@@ -1372,7 +1373,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
 				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 				g_org_name, hex_string1, hex_string, username);
-		upper_string(pbuff);
+		HX_strupper(pbuff);
 		break;
 	case NODE_TYPE_MLIST:
 		id = pabnode->id;
@@ -1399,7 +1400,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
 				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 				g_org_name, hex_string1, hex_string, username);
-		upper_string(pbuff);
+		HX_strupper(pbuff);
 		break;
 	default:
 		if (TRUE == b_remote) {
@@ -1751,7 +1752,7 @@ void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length)
 			username[2], username[3], username[4], username[5],
 			username[6], username[7], username[8], username[9],
 			username[10], username[11], hex_string, ptoken);
-		upper_string(dn);
+		HX_strupper(dn);
 	}
 }
 

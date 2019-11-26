@@ -689,19 +689,6 @@ char* search_string(const char *haystack, const char *needle,
 }
 
 /*
- *	transfer string to upper
- *	@param
- *		string [in, out] string to be transfered
- */
-void upper_string(char *string)
-{
-	while (*string) {
-		*string = toupper(*string);
-		string ++;
-	}
-}
-
-/*
  *	transfer string to lower
  *	@param
  *		string [in, out] string to be transfered

@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "tpropval_array.h"
 #include "cookie_parser.h"
 #include "endian_macro.h"
@@ -1626,7 +1627,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 				ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 				return FALSE;
 			}
-			upper_string(tmp_buff1);
+			HX_strupper(tmp_buff1);
 			strcpy(uid_buff, tmp_buff1);
 		}
 	} else {
@@ -1650,7 +1651,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 			return FALSE;
 		}
-		upper_string(tmp_buff1);
+		HX_strupper(tmp_buff1);
 		strcpy(uid_buff, tmp_buff1);
 	}
 	return TRUE;

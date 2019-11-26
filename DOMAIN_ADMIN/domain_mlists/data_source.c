@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include <gromox/locker_client.h>
@@ -163,7 +164,7 @@ BOOL data_source_add_clist(int class_id, const char *listname,
 
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 
 	i = 0;
@@ -438,7 +439,7 @@ BOOL data_source_add_mlist(const char *listname, int list_type,
 	
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -829,7 +830,7 @@ BOOL data_source_remove_mlist(const char *listname)
 	
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1205,7 +1206,7 @@ BOOL data_source_mlist_del(const char *listname, const char *address)
 
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1348,7 +1349,7 @@ BOOL data_source_mlist_insert(const char *listname, const char *address)
 
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1503,7 +1504,7 @@ BOOL data_source_specified_del(const char *listname, const char *address)
 
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1645,7 +1646,7 @@ BOOL data_source_specified_insert(const char *listname, const char *address)
 
 	pdomain = strchr(listname, '@') + 1;
 	sprintf(resource_name, "DATABASE-%s", pdomain);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;

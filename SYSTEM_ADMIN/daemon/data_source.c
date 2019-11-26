@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include <gromox/locker_client.h>
@@ -228,7 +229,7 @@ RETRYING:
 		mysql_free_result(pmyres1);
 		
 		sprintf(resource_name, "DATABASE-%s", mainname);
-		upper_string(resource_name);
+		HX_strupper(resource_name);
 		lockd = locker_client_lock(resource_name);
 		data_source_encode_squote(mainname, temp_name);
 		sprintf(sql_string, "SELECT id FROM domains WHERE domainname='%s'",
@@ -569,7 +570,7 @@ BOOL data_source_status_media(const char *domainname, int status)
 
 	
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;
@@ -1112,7 +1113,7 @@ BOOL data_source_make_outofdate(const char *domainname)
 	
 	
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	i = 0;

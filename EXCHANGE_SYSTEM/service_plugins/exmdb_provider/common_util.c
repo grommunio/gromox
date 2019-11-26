@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "pcl.h"
 #include "util.h"
 #include "guid.h"
@@ -207,7 +208,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
-	upper_string(pessdn);
+	HX_strupper(pessdn);
 	return TRUE;
 }
 	

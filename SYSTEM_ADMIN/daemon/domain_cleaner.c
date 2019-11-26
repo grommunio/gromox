@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <libHX/string.h>
 #include "domain_cleaner.h"
 #include "data_source.h"
 #include <gromox/locker_client.h>
@@ -159,7 +160,7 @@ static void domain_cleaner_delete_domain(const char *domainname,
 	char resource_name[256];
 	
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	pcollect = data_source_collect_init();
 	if (NULL == pcollect) {

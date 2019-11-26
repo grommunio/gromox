@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "midb_tool.h"
 #include "upload_ui.h"
@@ -848,7 +849,7 @@ static BOOL upload_ui_batch_input(const char *domainname,
 	strftime(str_create, 16, "%Y-%m-%d", &tmp_tm);
 	
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	if (NULL == (pmysql = mysql_init(NULL)) ||
@@ -1308,7 +1309,7 @@ static BOOL upload_ui_batch_delete(const char *domainname,
 	
 
 	sprintf(resource_name, "DATABASE-%s", domainname);
-	upper_string(resource_name);
+	HX_strupper(resource_name);
 	lockd = locker_client_lock(resource_name);
 	
 	if (NULL == (pmysql = mysql_init(NULL)) ||

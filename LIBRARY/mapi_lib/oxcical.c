@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "tpropval_array.h"
 #include "tarray_set.h"
 #include "ext_buffer.h"
@@ -5792,7 +5793,7 @@ EXPORT_VEVENT:
 				ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 				return FALSE;
 			}
-			upper_string(tmp_buff1);
+			HX_strupper(tmp_buff1);
 			piline = ical_new_simple_line("UID", tmp_buff1);
 		}
 		if (NULL == piline) {
@@ -5820,7 +5821,7 @@ EXPORT_VEVENT:
 			ext_push.offset, tmp_buff1, sizeof(tmp_buff1))) {
 			return FALSE;
 		}
-		upper_string(tmp_buff1);
+		HX_strupper(tmp_buff1);
 		piline = ical_new_simple_line("UID", tmp_buff1);
 		if (NULL == piline) {
 			return FALSE;

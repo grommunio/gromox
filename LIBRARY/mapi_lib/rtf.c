@@ -1,3 +1,4 @@
+#include <libHX/string.h>
 #include "rtf.h"
 #include "util.h"
 #include "int_hash.h"
@@ -357,7 +358,7 @@ static BOOL rtf_escape_output(RTF_READER *preader, char *string)
 		return TRUE;
 	}
 	if (TRUE == preader->b_simulate_allcaps) {
-		upper_string(string);
+		HX_strupper(string);
 	}
 	if (TRUE == preader->b_simulate_smallcaps) {
 		lower_string(string);

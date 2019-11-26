@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/exsvc_common.h>
 #include "tpropval_array.h"
@@ -2262,7 +2263,7 @@ static void message_md5_string(const char *string, uint8_t *pdgt)
 	
 	strncpy(tmp_string, string, 255);
 	tmp_string[255] = '\0';
-	upper_string(tmp_string);
+	HX_strupper(tmp_string);
 	MD5_Init(&ctx);
 	MD5_Update(&ctx, tmp_string, strlen(tmp_string));
 	MD5_Final(dgt_buff, &ctx);
@@ -4686,7 +4687,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						account, essdn_buff + 3)) {
 						return FALSE;
 					}
-					upper_string(essdn_buff);
+					HX_strupper(essdn_buff);
 					pvalue = common_util_username_to_addressbook_entryid(
 																account);
 					if (NULL == pvalue) {
@@ -5411,7 +5412,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		upper_string(essdn_buff);
+		HX_strupper(essdn_buff);
 		propval.proptag = PROP_TAG_RECEIVEDBYENTRYID;
 		propval.pvalue = pentryid;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);

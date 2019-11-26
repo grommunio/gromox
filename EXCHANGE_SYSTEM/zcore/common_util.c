@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "pcl.h"
 #include "ical.h"
 #include "util.h"
@@ -554,7 +555,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	snprintf(pessdn, 1024, "/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 			g_org_name, hex_string2, hex_string, tmp_name);
-	upper_string(pessdn);
+	HX_strupper(pessdn);
 	return TRUE;
 }
 
@@ -1336,7 +1337,7 @@ BOOL common_util_username_to_entryid(const char *username,
 		snprintf(x500dn, 1024, "/o=%s/ou=Exchange Administrative "
 				"Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 				g_org_name, hex_string2, hex_string, tmp_name);
-		upper_string(x500dn);
+		HX_strupper(x500dn);
 		if (FALSE == common_util_essdn_to_entryid(x500dn, pbin)) {
 			return FALSE;
 		}
