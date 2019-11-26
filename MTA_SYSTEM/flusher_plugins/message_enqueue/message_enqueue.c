@@ -483,9 +483,8 @@ int message_enqueue_try_save_tape(FLUSH_ENTITY *pentity)
 		}
 	}
 	g_last_pos = i + 1;
-	if (g_last_pos = g_tape_units) {
+	if (g_last_pos == g_tape_units)
 		g_last_pos = 0;
-	}
 	/* found an empty block */
 	
 	origin_ptr = ptr;
