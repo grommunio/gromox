@@ -18,7 +18,7 @@ zend_bool php_to_binary_array(zval *pzval,
 	BINARY_ARRAY *pbins TSRMLS_DC);
 
 zend_bool binary_array_to_php(const BINARY_ARRAY *pbins,
-	zval **ppzval TSRMLS_DC);
+	zval *ppzval TSRMLS_DC);
 
 zend_bool php_to_sortorder_set(zval *pzval,
 	SORTORDER_SET *pset TSRMLS_DC);
@@ -39,25 +39,25 @@ zend_bool php_to_restriction(zval *pzval,
 	RESTRICTION *pres TSRMLS_DC);
 
 zend_bool restriction_to_php(const RESTRICTION *pres,
-	zval **ppret TSRMLS_DC);
+	zval *ppret TSRMLS_DC);
 
 zend_bool proptag_array_to_php(const PROPTAG_ARRAY *pproptags,
-	zval **ppret TSRMLS_DC);
+	zval *ppret TSRMLS_DC);
 
 zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
-	zval **ppret TSRMLS_DC);
+	zval *ppret TSRMLS_DC);
 	
 zend_bool tarray_set_to_php(const TARRAY_SET *pset,
-	zval **ppret TSRMLS_DC);
+	zval *ppret TSRMLS_DC);
 
 zend_bool state_array_to_php(const STATE_ARRAY *pstates,
-	zval **ppret TSRMLS_DC);
+	zval *ppret TSRMLS_DC);
 
 zend_bool php_to_state_array(zval *pzval,
 	STATE_ARRAY *pstates TSRMLS_DC);
 
 zend_bool znotification_array_to_php(
-	ZNOTIFICATION_ARRAY *pnotifications, zval **ppret TSRMLS_DC);
+	ZNOTIFICATION_ARRAY *pnotifications, zval *ppret TSRMLS_DC);
 
 zend_bool php_to_propname_array(zval *pzval_names,
 	zval *pzval_guids, PROPNAME_ARRAY *ppropnames TSRMLS_DC);
