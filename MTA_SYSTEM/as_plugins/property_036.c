@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
@@ -106,9 +106,8 @@ static int boundary_filter(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	for (i=12; i<35; i++) {
-		if (0 == isdigit(buf[i])) {
+		if (!HX_isdigit(buf[i]))
 			return MESSAGE_ACCEPT;
-		}
 	}
 	if (TRUE == check_tagging(pmail->penvelop->from,
 		&pmail->penvelop->f_rcpt_to)) {

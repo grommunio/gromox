@@ -1,7 +1,7 @@
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
-#include <ctype.h>
 #include <stdio.h>
 
 #define SPAM_STATISTIC_PROPERTY_019		50
@@ -106,9 +106,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	}
 	
 	for (i=15; i<25; i++) {
-		if (0 == isdigit(buf[i])) {
+		if (!HX_isdigit(buf[i]))
 			return MESSAGE_ACCEPT;
-		}
 	}
 	strncpy(reason, g_return_string, length);
 	if (NULL != spam_statistic) {

@@ -1,7 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include "single_list.h"
 #include "util.h"
@@ -398,10 +398,10 @@ static int get_response(int sockd, char *response, int response_len,
 	}
 	response[read_len] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_SEND_OK;
 	} else if(TRUE == expect_3xx && '3' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	   HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_SEND_OK;
 	} else {
 		if ('4' == response[0]) {

@@ -2,7 +2,6 @@
 #include "config_file.h"
 #include <gromox/as_common.h>
 #include "util.h"
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 

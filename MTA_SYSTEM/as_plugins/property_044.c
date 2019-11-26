@@ -1,10 +1,9 @@
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "mail_func.h"
 #include "util.h"
 #include <stdio.h>
-#include <ctype.h>
-
 #define SPAM_STATISTIC_PROPERTY_044        81
 
 
@@ -90,10 +89,10 @@ static int xmailer_filter(int action, int context_ID, MAIL_BLOCK* mail_blk,
 		if (0 != mem_file_get_total_length(&mail_entity.phead->f_xmailer)) {
 			out_len = mem_file_read(&mail_entity.phead->f_xmailer, buff, 1024);
 			if (out_len < 16 || ('_' != buff[6] && '_' != buff[7]) ||
-				!isdigit(buff[0]) || !isdigit(buff[1]) || !isdigit(buff[2]) ||
-				!isdigit(buff[3]) || !isdigit(buff[4]) || !isdigit(buff[5])) {
+			    !HX_isdigit(buff[0]) || !HX_isdigit(buff[1]) ||
+			    !HX_isdigit(buff[2]) || !HX_isdigit(buff[3]) ||
+			    !HX_isdigit(buff[4]) || !HX_isdigit(buff[5]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 		
 		out_len = mem_file_read(&mail_entity.phead->f_content_type, buff, 1024);

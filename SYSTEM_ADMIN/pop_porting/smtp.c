@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include "smtp.h"
 #include "util.h"
 #include <sys/time.h>
@@ -6,7 +7,6 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <ctype.h>
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>
@@ -343,10 +343,10 @@ static int smtp_get_response(int sockd, char *response, int response_len,
 	}
 	response[read_len] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_SEND_OK;
 	} else if(TRUE == expect_3xx && '3' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_SEND_OK;
 	} else {
 		if ('4' == response[0]) {

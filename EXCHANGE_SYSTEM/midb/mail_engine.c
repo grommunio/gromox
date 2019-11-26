@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include "util.h"
 #include "mail.h"
 #include "mjson.h"
@@ -18,7 +19,6 @@
 #include <time.h>
 #include <iconv.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -1632,7 +1632,7 @@ static DOUBLE_LIST* mail_engine_ct_parse_squence(char *string)
 	last_break = string;
 	last_colon = NULL;
 	for (i=0; i<=len; i++) {
-		if (0 == isdigit(string[i]) && '*' != string[i]
+		if (!HX_isdigit(string[i]) && string[i] != '*'
 			&& ',' != string[i] && ':' != string[i]) {
 			mail_engine_ct_free_squence(plist);
 			return NULL;

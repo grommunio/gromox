@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "util.h"
 #include "midb_tool.h"
@@ -13,7 +14,6 @@
 #include <xls.h>
 #include <time.h>
 #include <iconv.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -1994,9 +1994,8 @@ static BOOL upload_ui_check_address(const char *address)
 
 	for (ptr=address; '\0'!=*ptr; ptr++) {
 		if ('.' == *ptr || '-' == *ptr || '_' == *ptr ||
-			'@' == *ptr || isdigit(*ptr) || isalpha(*ptr)) {
+		    *ptr == '@' || HX_isdigit(*ptr) || HX_isalpha(*ptr))
 			continue;
-		}
 		return FALSE;
 	}
 	return TRUE;

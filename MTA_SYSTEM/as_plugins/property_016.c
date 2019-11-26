@@ -2,8 +2,6 @@
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>
-#include <ctype.h>
-
 #define OFFICE_XMAILER					1
 #define WEBMAIL_XMAILER					2
 #define SPAM_STATISTIC_PROPERTY_016		45

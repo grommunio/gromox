@@ -3,9 +3,6 @@
 #include "mail_func.h"
 #include "util.h"
 #include <stdio.h>
-#include <ctype.h>
-
-
 #define SPAM_STATISTIC_PROPERTY_042          79
 
 typedef void (*SPAM_STATISTIC)(int);

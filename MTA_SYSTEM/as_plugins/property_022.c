@@ -1,9 +1,9 @@
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>
-#include <ctype.h>
 #include <string.h>
 
 
@@ -95,9 +95,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	}
 	ptr += 20;
 	for (i=0; i<8; i++) {
-		if (0 == isdigit(ptr[i])) {
+		if (!HX_isdigit(ptr[i]))
 			return MESSAGE_ACCEPT;
-		}
 	}
 	ptr += 8;
 	if (0 != strncmp(ptr, "_=----\"", 7)) {

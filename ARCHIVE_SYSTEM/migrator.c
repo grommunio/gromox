@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <string.h>
 #define VDIR_PER_PARTITION		200
 #define SUBDIR_PER_VDIR			250

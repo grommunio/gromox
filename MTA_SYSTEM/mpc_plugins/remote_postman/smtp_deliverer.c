@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <string.h>
+#include <libHX/ctype_helper.h>
 #include "files_allocator.h"
 #include "sender_routing.h"
 #include "smtp_deliverer.h"
@@ -288,10 +288,10 @@ static BOOL smtp_deliverer_get_response(CONNECTION *pconnection,
 	}
 	response[offset] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return TRUE;
 	} else if (TRUE == expect_3xx && '3' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return TRUE;
 	} else {
 		if ('4' == response[0]) {
@@ -514,16 +514,14 @@ SESSION_BEGIN:
 			 * program should be aware of this situation 
 			 */
 			while (ptr < response_line + 1024) {
-				if (0 != isdigit(*ptr) || '\r' == *ptr) {
+				if (HX_isdigit(*ptr) || *ptr == '\r')
 					break;
-				}
 				ptr ++;
 			}
 			pbegin = ptr;
 			while (ptr < response_line + 1024) {
-				if (0 == isdigit(*ptr)) {
+				if (!HX_isdigit(*ptr))
 					break;
-				}
 				ptr ++;
 			}
 			pend = ptr;

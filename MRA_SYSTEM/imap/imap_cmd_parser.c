@@ -1,7 +1,7 @@
 /* 
  * collection of functions for handling the imap command
  */ 
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
@@ -82,7 +82,7 @@ static BOOL imap_cmd_parser_parse_squence(DOUBLE_LIST *plist,
 	last_break = string;
 	last_colon = NULL;
 	for (i=0,j=0; i<=len&&j<1024; i++) {
-		if (0 == isdigit(string[i]) && '*' != string[i]
+		if (!HX_isdigit(string[i]) && string[i] != '*'
 			&& ',' != string[i] && ':' != string[i]) {
 			double_list_free(plist);
 			return FALSE;
@@ -252,9 +252,8 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 						return FALSE;
 					}
 					for (j=0; j<len; j++) {
-						if (0 == isdigit(last_ptr[j])) {
+						if (!HX_isdigit(last_ptr[j]))
 							break;
-						}
 					}
 					if (j < len) {
 						break;
@@ -277,9 +276,8 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 				0 != strncasecmp(buff, "HEADER.FIELDS ", 14) &&
 				0 != strncasecmp(buff, "HEADER.FIELDS.NOT ", 18)) {
 				for (j=0; j<len; j++) {
-					if (0 == isdigit(buff[j])) {
+					if (!HX_isdigit(buff[j]))
 						return FALSE;
-					}
 				}
 			} else if (0 == strncasecmp(buff, "HEADER.FIELDS ", 14)) {
 				memcpy(temp_buff, buff + 14, strlen(buff) - 14);
@@ -323,7 +321,7 @@ static BOOL imap_cmd_parser_parse_fetch_args(DOUBLE_LIST *plist,
 				count = 0;
 				last_ptr = ptr;
 				while ('>' != *ptr) {
-					if (isdigit(*ptr)) {
+					if (HX_isdigit(*ptr)) {
 						/* do nothing */
 					} else if ('.' == *ptr) {
 						ptr1 = ptr;
@@ -976,9 +974,8 @@ FETCH_BODYSTRUCTURE_SIMPLE:
 			temp_buff[len] = '\0';
 			ptr = NULL;
 			for (i=0; i<len; i++) {
-				if ('.' == temp_buff[i] || isdigit(temp_buff[i])) {
+				if (temp_buff[i] == '.' || HX_isdigit(temp_buff[i]))
 					continue;
-				}
 				ptr = temp_buff + i - 1;
 				*ptr = '\0';
 				break;
@@ -1146,10 +1143,9 @@ static BOOL imap_cmd_parser_covert_imaptime(
 	} else {
 		return FALSE;
 	}
-	if (!isdigit(str_zone[1]) || !isdigit(str_zone[2]) ||
-		!isdigit(str_zone[3]) || !isdigit(str_zone[4])) {
+	if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
+	    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
 		return FALSE;
-	}
 	tmp_buff[0] = str_zone[1];
 	tmp_buff[1] = str_zone[2];
 	tmp_buff[2] = '\0';
@@ -1234,7 +1230,7 @@ static BOOL imap_cmd_parser_wildcard_match(const char *data, const char *mask)
 			lsn = data;
 			continue;                 /* Next char, please */
 		}
-		if ((icase && data - na < 5) ? (toupper(*mask) == toupper(*data)) :
+		if ((icase && data - na < 5) ? HX_toupper(*mask) == HX_toupper(*data) :
 			(*mask == *data)) {     /* If matching char */
 			mask--;
 			data--;

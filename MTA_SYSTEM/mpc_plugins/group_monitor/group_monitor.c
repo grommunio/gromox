@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "group_monitor.h"
 #include <gromox/hook_common.h>
@@ -12,8 +13,6 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <ctype.h>
-
 
 enum{
 	GROUP_LOAD_OK = 0,
@@ -154,9 +153,8 @@ int group_monitor_run()
 		}
 		temp_group[temp_len - 4] = '\0';
 		for (i=0; i<temp_len-4; i++) {
-			if (0 != isupper(temp_group[i])) {
+			if (HX_isupper(temp_group[i]))
 				break;
-			}
 		}
 		if (i < temp_len - 4) {
 			continue;

@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "pcl.h"
@@ -15,7 +16,6 @@
 #include "bounce_producer.h"
 #include "emsmdb_interface.h"
 #include <time.h>
-#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <iconv.h>
@@ -2133,10 +2133,10 @@ static int common_util_get_response(int sockd,
 	}
 	response[read_len] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_SEND_OK;
 	} else if(TRUE == expect_3xx && '3' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_SEND_OK;
 	} else {
 		if ('4' == response[0]) {

@@ -1,10 +1,10 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include "keyword_engine.h"
 #include "single_list.h"
 #include "list_file.h"
 #include <stdio.h>
 #include <iconv.h>
-#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -116,29 +116,29 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 					"ignored\n", temp_buff);
 				continue;
 			}
-			if (0 != isalpha(temp_buff[0]) && 0 != isalpha(temp_buff[1])) {
-				temp_buff[0] = tolower(temp_buff[0]);
-				temp_buff[1] = tolower(temp_buff[1]);
+			if (HX_isalpha(temp_buff[0]) && HX_isalpha(temp_buff[1])) {
+				temp_buff[0] = HX_tolower(temp_buff[0]);
+				temp_buff[1] = HX_tolower(temp_buff[1]);
 				memcpy(&temp_index[0], temp_buff, sizeof(unsigned short));
-				temp_buff[1] = toupper(temp_buff[1]);
+				temp_buff[1] = HX_toupper(temp_buff[1]);
 				memcpy(&temp_index[1], temp_buff, sizeof(unsigned short));
-				temp_buff[0] = toupper(temp_buff[0]);
+				temp_buff[0] = HX_toupper(temp_buff[0]);
 				memcpy(&temp_index[2], temp_buff, sizeof(unsigned short));
-				temp_buff[1] = tolower(temp_buff[1]);
+				temp_buff[1] = HX_tolower(temp_buff[1]);
 				memcpy(&temp_index[3], temp_buff, sizeof(unsigned short));
-			} else if (0 != isalpha(temp_buff[0])) {
-				temp_buff[0] = tolower(temp_buff[0]);
+			} else if (HX_isalpha(temp_buff[0])) {
+				temp_buff[0] = HX_tolower(temp_buff[0]);
 				memcpy(&temp_index[0], temp_buff, sizeof(unsigned short));
-				temp_buff[0] = toupper(temp_buff[0]);
+				temp_buff[0] = HX_toupper(temp_buff[0]);
 				memcpy(&temp_index[1], temp_buff, sizeof(unsigned short));
 				temp_index[2] = 0;
 				temp_index[3] = 0;
-			} else if (0 != isalpha(temp_buff[1])) {
+			} else if (HX_isalpha(temp_buff[1])) {
 				temp_index[0] = 0;
 				temp_index[1] = 0;
-				temp_buff[1] = tolower(temp_buff[1]);
+				temp_buff[1] = HX_tolower(temp_buff[1]);
 				memcpy(&temp_index[2], temp_buff, sizeof(unsigned short));
-				temp_buff[1] = toupper(temp_buff[1]);
+				temp_buff[1] = HX_toupper(temp_buff[1]);
 				memcpy(&temp_index[3], temp_buff, sizeof(unsigned short));
 			} else {
 				memcpy(&temp_index[0], temp_buff, sizeof(unsigned short));

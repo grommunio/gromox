@@ -4,7 +4,6 @@
 #include <gromox/as_common.h>
 #include "mail_func.h"
 #include "config_file.h"
-#include <ctype.h>
 #include <stdio.h>
 #include <netdb.h>
 #include <string.h>

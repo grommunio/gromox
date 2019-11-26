@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <unistd.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "domain_sign.h"
 #include "single_list.h"
@@ -96,9 +96,8 @@ int domain_sign_run()
 		strcpy(temp_domain, direntp->d_name);
 		temp_len = strlen(temp_domain);
 		for (i=0; i<temp_len; i++) {
-			if (0 != isupper(temp_domain[i])) {
+			if (HX_isupper(temp_domain[i]))
 				break;
-			}
 		}
 		if (i == temp_len) {
 			domain_sign_add_domain(temp_domain);

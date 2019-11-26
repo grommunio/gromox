@@ -2,8 +2,6 @@
 #include "util.h"
 #include "config_file.h"
 #include <stdio.h>
-#include <ctype.h>
-
 #define SPAM_STATISTIC_PROPERTY_049		86
 
 typedef void (*SPAM_STATISTIC)(int);

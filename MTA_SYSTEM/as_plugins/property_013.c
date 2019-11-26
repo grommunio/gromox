@@ -1,8 +1,8 @@
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
 #include "mail_func.h"
-#include <ctype.h>
 #include <stdio.h>
 
 #define SPAM_STATISTIC_PROPERTY_013        42
@@ -179,9 +179,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 
 		/*
 		for (i=0; i<24; i++) {
-			if (0 == isdigit(temp_ptr[i])) {
+			if (!HX_isdigit(temp_ptr[i]))
 				break;
-			}
 		}
 		if (24 == i && '"' == temp_ptr[24]) {
 			g_context_list[context_ID] = PROPERTY_BOUNDARY;
@@ -191,15 +190,13 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		
 		/* ------------9B16D306.4AD3355D */
 		for (i=0; i<8; i++) {
-			if (0 == isdigit(temp_ptr[i]) && 0 == isupper(temp_ptr[i])) {
+			if (!HX_isdigit(temp_ptr[i]) && !HX_isupper(temp_ptr[i]))
 				break;
-			}
 		}
 		if (8 == i && '.' == temp_ptr[8] && '"' == temp_ptr[17]) {
 			for (i=9; i<17; i++) {
-				if (0 == isdigit(temp_ptr[i]) && 0 == isupper(temp_ptr[i])) {
+				if (!HX_isdigit(temp_ptr[i]) && !HX_isupper(temp_ptr[i]))
 					break;
-				}
 			}
 			if (17 == i) {
 				g_context_list[context_ID] = PROPERTY_BOUNDARY;
@@ -217,9 +214,9 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 			if ('"' == temp_ptr[i]) {
 				break;
 			}
-			if (0 != isupper(temp_ptr[i])) {
+			if (HX_isupper(temp_ptr[i])) {
 				upper_num ++;
-			} else if (0 != isdigit(temp_ptr[i])) {
+			} else if (HX_isdigit(temp_ptr[i])) {
 				digit_num ++;
 			} else {
 				b_mismatch = TRUE;
@@ -242,24 +239,20 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 			goto CHECK_MIME;
 		}
 		for (i=0; i<3; i++) {
-			if (0 == isdigit(temp_ptr[i]) && 0 == isupper(temp_ptr[i])) {
+			if (!HX_isdigit(temp_ptr[i]) && !HX_isupper(temp_ptr[i]))
 				goto CHECK_MIME;
-			}
 		}
 		for (i=4; i<8; i++) {
-			if (0 == isdigit(temp_ptr[i]) && 0 == isupper(temp_ptr[i])) {
+			if (!HX_isdigit(temp_ptr[i]) && !HX_isupper(temp_ptr[i]))
 				goto CHECK_MIME;
-			}
 		}
 		for (i=9; i<17; i++) {
-			if (0 == isdigit(temp_ptr[i]) && 0 == isupper(temp_ptr[i])) {
+			if (!HX_isdigit(temp_ptr[i]) && !HX_isupper(temp_ptr[i]))
 				goto CHECK_MIME;
-			}
 		}
 		for (i=18; i<26; i++) {
-			if (0 == isdigit(temp_ptr[i]) && 0 == isupper(temp_ptr[i])) {
+			if (!HX_isdigit(temp_ptr[i]) && !HX_isupper(temp_ptr[i]))
 				goto CHECK_MIME;
-			}
 		}
 		ms_boundary = TRUE;
 	}

@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "domain_keyword.h"
 #include "bounce_producer.h"
@@ -17,7 +18,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <ctype.h>
 #include <stdarg.h>
 
 
@@ -137,9 +137,8 @@ int domain_keyword_run()
 		}
 		temp_domain[temp_len - 4] = '\0';
 		for (i=0; i<temp_len-4; i++) {
-			if (0 != isupper(temp_domain[i])) {
+			if (HX_isupper(temp_domain[i]))
 				break;
-			}
 		}
 		if (i < temp_len - 4) {
 			continue;

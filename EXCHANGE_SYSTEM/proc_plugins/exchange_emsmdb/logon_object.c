@@ -9,7 +9,6 @@
 #include "rop_util.h"
 #include "util.h"
 #include "guid.h"
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

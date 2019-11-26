@@ -1,7 +1,7 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
-#include <ctype.h>
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
@@ -952,9 +952,8 @@ static BOOL engine_check_format(const char *filename)
 		return FALSE;
 	}
 	for (ptr=filename; ptr<pdot; ptr++) {
-		if (0 == isdigit(*ptr)) {
+		if (!HX_isdigit(*ptr))
 			return FALSE;
-		}
 	}
 	ptr = pdot + 1;
 	pdot = strchr(ptr, '.');
@@ -962,9 +961,8 @@ static BOOL engine_check_format(const char *filename)
 		return FALSE;
 	}
 	for (; ptr<pdot; ptr++) {
-		if (0 == isdigit(*ptr)) {
+		if (!HX_isdigit(*ptr))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }

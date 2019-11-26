@@ -17,7 +17,6 @@
 #include <arpa/inet.h>
 #include <resolv.h>
 #include <netdb.h>
-#include <ctype.h>
 #include <time.h>
 #include <pthread.h>
 #include <errno.h>

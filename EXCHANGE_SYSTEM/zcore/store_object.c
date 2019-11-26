@@ -16,7 +16,6 @@
 #include "rop_util.h"
 #include "util.h"
 #include "guid.h"
-#include <ctype.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>

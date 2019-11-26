@@ -4,7 +4,6 @@
 #include "config_file.h"
 #include "util.h"
 #include "mail_func.h"
-#include <ctype.h>
 #include <stdio.h>
 #include <netdb.h>
 #include <string.h>

@@ -1,10 +1,10 @@
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
 #include "mail_func.h"
 #include <stdio.h>
-#include <ctype.h>
 #include <string.h>
 
 
@@ -115,10 +115,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	if (MEM_END_OF_FILE != out_len) {
 		if (FALSE == b_from && (0 != strncmp(buff, "=?gb2312?B?", 11) &&
 			0 != strncmp(buff, "=?utf-8?B?", 10) && 
-			!(8 == out_len && islower(buff[0]) && '-' == buff[1]))) {
+			!(out_len == 8 && HX_islower(buff[0]) && buff[1] == '-')))
 			return MESSAGE_ACCEPT;
-		}
-	
 	
 		len = decode_mime_string(buff, out_len, subject_buff, 1024);
 

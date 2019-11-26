@@ -13,7 +13,6 @@
 #include <time.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <iconv.h>
 #include <string.h>
 #include <stdlib.h>

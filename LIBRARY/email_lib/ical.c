@@ -1,8 +1,8 @@
+#include <libHX/ctype_helper.h>
 #include "mail_func.h"
 #include "timezone.h"
 #include "ical.h"
 #include "util.h"
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1063,10 +1063,9 @@ BOOL ical_parse_utc_offset(const char *str_offset,
 	} else {
 		return FALSE;
 	}
-	if (!isdigit(str_zone[1]) || !isdigit(str_zone[2]) ||
-		!isdigit(str_zone[3]) || !isdigit(str_zone[4])) {
+	if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
+	    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
 		return FALSE;
-	}
 	tmp_buff[0] = str_zone[1];
 	tmp_buff[1] = str_zone[2];
 	tmp_buff[2] = '\0';
@@ -1598,14 +1597,14 @@ BOOL ical_parse_byday(const char *str_byday,
 		b_negative = FALSE;
 		pbegin = tmp_buff;
 	}
-	if (0 == isdigit(*pbegin)) {
+	if (!HX_isdigit(*pbegin)) {
 		*pweekorder = 0;
 		goto PARSE_WEEKDAY;
 	}
 	tmp_num[0] = *pbegin;
 	pbegin ++;
 	tmp_num[1] = '\0';
-	if (0 != isdigit(*pbegin)) {
+	if (HX_isdigit(*pbegin)) {
 		tmp_num[1] = *pbegin;
 		pbegin ++;
 		tmp_num[2] = '\0';
@@ -1724,9 +1723,8 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 			ptoken = ptoken1 + 1;
 			break;
 		default:
-			if (0 == isdigit(*ptoken1)) {
+			if (!HX_isdigit(*ptoken1))
 				return FALSE;
-			}
 			break;
 		}
 	}

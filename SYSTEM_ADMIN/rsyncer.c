@@ -1,9 +1,9 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include "util.h"
 #include "list_file.h"
@@ -571,9 +571,8 @@ static BOOL check_format(const char *filename)
 		return FALSE;
 	}
 	for (ptr=filename; ptr<pdot; ptr++) {
-		if (0 == isdigit(*ptr)) {
+		if (!HX_isdigit(*ptr))
 			return FALSE;
-		}
 	}
 	ptr = pdot + 1;
 	pdot = strchr(ptr, '.');
@@ -581,9 +580,8 @@ static BOOL check_format(const char *filename)
 		return FALSE;
 	}
 	for (; ptr<pdot; ptr++) {
-		if (0 == isdigit(*ptr)) {
+		if (!HX_isdigit(*ptr))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }

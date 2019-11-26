@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
@@ -109,13 +109,12 @@ static int xmailer_filter(int action, int context_ID,
 			b_num = FALSE;
 			b_alph = FALSE;
 			for (i=0; i<34; i++) {
-				if (0 != isalpha(ptr[i])) {
+				if (HX_isalpha(ptr[i]))
 					b_alph = TRUE;
-				} else if (0 != isdigit(ptr[i])) {
+				else if (HX_isdigit(ptr[i]))
 					b_num = TRUE;
-				} else {
+				else
 					break;
-				}
 			}
 			if (34 == i && TRUE == b_alph && TRUE == b_num) {
 				if (NULL != spam_statistic) {

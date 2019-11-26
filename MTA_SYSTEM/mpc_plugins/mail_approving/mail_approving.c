@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "mail_approving.h"
 #include "bounce_producer.h"
@@ -14,7 +15,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <ctype.h>
 #include <stdarg.h>
 
 
@@ -126,9 +126,8 @@ int mail_approving_run()
 		}
 		temp_domain[temp_len - 4] = '\0';
 		for (i=0; i<temp_len-4; i++) {
-			if (0 != isupper(temp_domain[i])) {
+			if (HX_isupper(temp_domain[i]))
 				break;
-			}
 		}
 		if (i < temp_len - 4) {
 			continue;
@@ -856,7 +855,7 @@ static void mail_approving_produce_session(const char *tag, char *session)
 		if ('@' == temp_name[i]) {
 			temp_name[i] = '0';
 		} else {
-			temp_name[i] = tolower(temp_name[i]);
+			temp_name[i] = HX_tolower(temp_name[i]);
 		}
 	}
 	for (i=0; i<32; i++) {

@@ -1,7 +1,7 @@
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
-#include <ctype.h>
 #include <stdio.h>
 
 #define SPAM_STATISTIC_PROPERTY_010		39
@@ -99,13 +99,12 @@ static int boundary_filter(int context_ID, MAIL_ENTITY *pmail,
 			return MESSAGE_ACCEPT;
 		}
 		for (i=5; i<13; i++) {
-			if (0 != isalpha(pbackup[i])) {
+			if (HX_isalpha(pbackup[i]))
 				continue;
-			} else if (0 != isdigit(pbackup[i])) {
+			else if (HX_isdigit(pbackup[i]))
 				break;
-			} else {
+			else
 				return MESSAGE_ACCEPT;
-			}
 		}
 		if (i < 8 || i > 11) {
 			return MESSAGE_ACCEPT;
@@ -116,24 +115,20 @@ static int boundary_filter(int context_ID, MAIL_ENTITY *pmail,
 			return MESSAGE_ACCEPT;
 		}
 		for (i=0; i<3; i++) {
-			if (0 == isdigit(pbackup[offset+i])) {
+			if (!HX_isdigit(pbackup[offset+i]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 		for (i=4; i<8; i++) {
-			if (0 == isdigit(pbackup[offset+i])) {
+			if (!HX_isdigit(pbackup[offset+i]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 		for (i=9; i<17; i++) {
-			if (0 == isdigit(pbackup[offset+i])) {
+			if (!HX_isdigit(pbackup[offset+i]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 		for (i=19; i<24; i++) {
-			if (0 == isdigit(pbackup[offset+i])) {
+			if (!HX_isdigit(pbackup[offset+i]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 		if (TRUE == check_tagging(pmail->penvelop->from,
 			&pmail->penvelop->f_rcpt_to)) {

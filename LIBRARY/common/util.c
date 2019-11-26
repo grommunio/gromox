@@ -2,13 +2,13 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include "util.h"
 #include <time.h>
 #include <stdio.h>
 #include <crypt.h>
 #include <iconv.h>
-#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -1140,7 +1140,7 @@ int wildcard_match(const char *data, const char *mask, BOOL icase)
 	  data--;
 	  continue;					/* '?' always matches */
 	}
-	if (icase ? (toupper(*mask) == toupper(*data)) :
+	if (icase ? HX_toupper(*mask) == HX_toupper(*data) :
 	(*mask == *data)) {		/* If matching char */
 	  mask--;
 	  data--;
@@ -1222,7 +1222,7 @@ int wildcard_hierarchy_match(const char *data, char seperator,
 	  sofar = 0;				/* Update fallback pos */
 	  continue;					/* Next char, please */
 	}
-	if (icase ? (toupper(*mask) == toupper(*data)) :
+	if (icase ? HX_toupper(*mask) == HX_toupper(*data) :
 	(*mask == *data)) {		/* If matching char */
 	  mask--;
 	  data--;
@@ -1771,8 +1771,8 @@ int qp_decode(void *voutput, const char *input, size_t length)
 		switch (c) {
 		case '=':
 			/* quoted char, process it */
-			if (i < length - 2 && isxdigit(input[i+1]) && 
-			isxdigit(input[i+2])) { /* OK, this is =HEX */
+			if (i < length - 2 && HX_isxdigit(input[i+1]) &&
+			    HX_isxdigit(input[i+2])) { /* OK, this is =HEX */
 				output[cnt++] = (hex_tab[input[i+1] & 0xff] << 4) | 
 					hex_tab[input[i+2] & 0xff];
 				i +=2;
@@ -1813,8 +1813,8 @@ int qp_decode_ex(void *voutput, size_t out_len, const char *input,
 		switch (c) {
 		case '=':
 			/* quoted char, process it */
-			if (i < length - 2 && isxdigit(input[i+1]) && 
-			isxdigit(input[i+2])) { /* OK, this is =HEX */
+			if (i < length - 2 && HX_isxdigit(input[i+1]) &&
+			    HX_isxdigit(input[i+2])) { /* OK, this is =HEX */
 				cnt++;
 				i +=2;
 				break;

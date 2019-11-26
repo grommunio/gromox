@@ -1,10 +1,8 @@
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>
-#include <ctype.h>
-
-
 #define SPAM_STATISTIC_PROPERTY_045          82
 
 typedef void (*SPAM_STATISTIC)(int);
@@ -122,9 +120,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 
 	ptr += i;
 	for (i=0; i<22; i++) {
-		if (0 == isdigit(ptr[i])) {
+		if (!HX_isdigit(ptr[i]))
 			break;
-		}
 	}
 	
 	if (i < 16 || i> 22) {

@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <string.h>
+#include <libHX/ctype_helper.h>
 #include "esmtp_auth.h"
 #include "util.h"
 #include "mail_func.h"
@@ -281,9 +281,9 @@ RECONNECT:
 			/* send quit command to server */
 			esmtp_auth_send_command(sockd, command_line, 6);
 			close(sockd);
-			if (0 != isdigit(response_line[0]) &&
-				0 != isdigit(response_line[1]) &&
-				0 != isdigit(response_line[2]) &&
+			if (HX_isdigit(response_line[0]) &&
+			    HX_isdigit(response_line[1]) &&
+			    HX_isdigit(response_line[2]) &&
 				' ' == response_line[3]) {
 				strncpy(reason, response_line + 4, reason_len);
 			} else {
@@ -343,9 +343,9 @@ RECONNECT:
 			/* send quit command to server */
 			esmtp_auth_send_command(sockd, command_line, 6);
 			close(sockd);
-			if (0 != isdigit(response_line[0]) &&
-				0 != isdigit(response_line[1]) &&
-				0 != isdigit(response_line[2]) &&
+			if (HX_isdigit(response_line[0]) &&
+			    HX_isdigit(response_line[1]) &&
+			    HX_isdigit(response_line[2]) &&
 				' ' == response_line[3]) {
 				strncpy(reason, response_line + 4, reason_len);
 			} else {
@@ -418,10 +418,10 @@ static int esmtp_auth_get_response(int sockd, char *response, int response_len,
 	}
 	response[read_len] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_RESPONSE_OK;
 	} else if(TRUE == expect_3xx && '3' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_RESPONSE_OK;
 	} else {
 		if ('4' == response[0]) {

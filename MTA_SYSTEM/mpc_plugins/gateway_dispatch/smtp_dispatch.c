@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <string.h>
+#include <libHX/ctype_helper.h>
 #include "smtp_dispatch.h"
 #include "files_allocator.h"
 #include "backend_list.h"
@@ -516,10 +516,10 @@ static int smtp_dispatch_get_response(int sockd, char *response,
 	}
 	response[read_len] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_DISPATCH_RESPONSE_OK;
 	} else if (TRUE == expect_3xx && '3' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_DISPATCH_RESPONSE_OK;
 	} else {
 		if ('5' == response[0]) {

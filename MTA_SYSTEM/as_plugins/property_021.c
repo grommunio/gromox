@@ -1,9 +1,9 @@
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>
-#include <ctype.h>
 #include <string.h>
 
 
@@ -117,9 +117,8 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 				}
 
 				for (i=4; i<10; i++) {
-					if (0 == isdigit(buff[i])) {
+					if (!HX_isdigit(buff[i]))
 						return MESSAGE_ACCEPT;
-					}
 				}
 
 				if (TRUE == check_tagging(pmail->penvelop->from, &pmail->penvelop->f_rcpt_to)) {

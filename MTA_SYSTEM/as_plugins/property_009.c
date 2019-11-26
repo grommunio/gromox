@@ -1,7 +1,6 @@
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
-#include <ctype.h>
 #include <stdio.h>
 
 #define SPAM_STATISTIC_PROPERTY_009        33

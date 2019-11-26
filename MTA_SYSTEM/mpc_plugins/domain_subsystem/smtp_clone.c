@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <string.h>
+#include <libHX/ctype_helper.h>
 #include "smtp_clone.h"
 #include "util.h"
 #include <sys/time.h>
@@ -380,10 +380,10 @@ static int smtp_clone_get_response(int sockd, char *response, int response_len,
 	}
 	response[read_len] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_CLONE_RESPONSE_OK;
 	} else if (TRUE == expect_3xx && '3' == response[0] &&
-		0 != isdigit(response[1]) && 0 != isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_CLONE_RESPONSE_OK;
 	} else {
 		if ('5' == response[0]) {

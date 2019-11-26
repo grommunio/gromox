@@ -27,7 +27,6 @@
 #include <errno.h>
 #include <resolv.h>
 #include <stdint.h>
-#include <ctype.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>

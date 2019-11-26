@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
@@ -180,14 +180,12 @@ static int subject_auditor(int context_ID, MAIL_ENTITY *pmail,
 			}
 		}
 		for (i=24; i<32; i++) {
-			if (0 == isdigit(pbackup[i]) && 0 == isalpha(pbackup[i])) {
+			if (!HX_isdigit(pbackup[i]) && !HX_isalpha(pbackup[i]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 		for (i=33; i<41; i++) {
-			if (0 == isdigit(pbackup[i]) && 0 == isalpha(pbackup[i])) {
+			if (!HX_isdigit(pbackup[i]) && !HX_isalpha(pbackup[i]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 	} else {
 		local_len = strlen(rcpt_to);

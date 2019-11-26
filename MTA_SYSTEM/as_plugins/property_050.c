@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
@@ -104,21 +104,19 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 	for (i=0; i<tmp_len; i++) {
-		if (0 == isdigit(ptoken[i])) {
+		if (!HX_isdigit(ptoken[i]))
 			return MESSAGE_ACCEPT;
-		}
 	}
 	up_num = 0;
 	low_num = 0;
 	ptoken = buff;
 	while ('\0' != *ptoken) {
-		if (islower(*ptoken)) {
+		if (HX_islower(*ptoken))
 			low_num ++;
-		} else if (isupper(*ptoken)) {
+		else if (HX_isupper(*ptoken))
 			up_num ++;
-		} else {
+		else
 			return MESSAGE_ACCEPT;
-		}
 		ptoken ++;
 	}
 	if (low_num < 1 || 1 == up_num) {

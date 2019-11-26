@@ -2,7 +2,6 @@
 #include "config_file.h"
 #include "util.h"
 #include "mail_func.h"
-#include <ctype.h>
 #include <stdio.h>
 
 #define SPAM_STATISTIC_PROPERTY_053        90

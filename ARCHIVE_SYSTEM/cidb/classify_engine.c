@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include "util.h"
 #include "mail_func.h"
 #include <gromox/system_log.h>
@@ -12,7 +13,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
@@ -697,7 +697,7 @@ static DOUBLE_LIST* classify_engine_cl_build(int argc, char **argv)
 			i ++;
 		} else if (0 == strcasecmp(argv[i], "PRIORITY")) {
 			if (i + 1 >= argc || strlen(argv[i + 1]) != 1 ||
-				!isdigit(argv[i + 1][0])) {
+			    !HX_isdigit(argv[i+1][0])) {
 				free(pconnode);
 				classify_engine_cl_destroy(pclist);
 				return NULL;
@@ -1766,9 +1766,8 @@ static BOOL classify_engine_cl_check_numstring(const char *string)
 	len = strlen(string);
 
 	for (i=0; i<len; i++) {
-		if (!isdigit(string[i])) {
+		if (!HX_isdigit(string[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }

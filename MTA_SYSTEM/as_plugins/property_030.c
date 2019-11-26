@@ -1,8 +1,8 @@
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
-#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -106,19 +106,16 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 				if ('<' == buff[0] && '>' == buff[val_len - 1] &&
 					'$' == buff[13] && '$' == buff[22] && '@' == buff[31]) {
 					for (i=1; i<13; i++) {
-						if (0 == isdigit(buff[i])) {
+						if (!HX_isdigit(buff[i]))
 							return MESSAGE_ACCEPT;
-						}
 					}
 					for (i=14; i<22; i++) {
-						if (0 == isdigit(buff[i])) {
+						if (!HX_isdigit(buff[i]))
 							return MESSAGE_ACCEPT;
-						}
 					}
 					for (i=23; i<31; i++) {
-						if (0 == isdigit(buff[i])) {
+						if (!HX_isdigit(buff[i]))
 							return MESSAGE_ACCEPT;
-						}
 					}
 					if (TRUE == check_tagging(pmail->penvelop->from,
 						&pmail->penvelop->f_rcpt_to)) {
@@ -134,19 +131,16 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 				} else if ('<' == buff[0] && '>' == buff[val_len - 1] &&
 					'$' == buff[11] && '$' == buff[20] && '@' == buff[29]) {
 					for (i=1; i<11; i++) {
-						if (0 == isdigit(buff[i])) {
+						if (!HX_isdigit(buff[i]))
 							return MESSAGE_ACCEPT;
-						}
 					}
 					for (i=12; i<20; i++) {
-						if (0 == isdigit(buff[i])) {
+						if (!HX_isdigit(buff[i]))
 							return MESSAGE_ACCEPT;
-						}
 					}
 					for (i=21; i<29; i++) {
-						if (0 == isdigit(buff[i])) {
+						if (!HX_isdigit(buff[i]))
 							return MESSAGE_ACCEPT;
-						}
 					}
 					if (TRUE == check_tagging(pmail->penvelop->from,
 						&pmail->penvelop->f_rcpt_to)) {

@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "domain_keyword.h"
 #include "keyword_engine.h"
@@ -7,7 +8,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <stdio.h>
-#include <ctype.h>
 
 enum {
 	DOMAIN_KEYWORD_ADD_OK = 0,
@@ -80,9 +80,8 @@ int domain_keyword_run()
 		}
 		temp_domain[temp_len - 4] = '\0';
 		for (i=0; i<temp_len-4; i++) {
-			if (0 != isupper(temp_domain[i])) {
+			if (HX_isupper(temp_domain[i]))
 				break;
-			}
 		}
 		if (i < temp_len - 4) {
 			continue;

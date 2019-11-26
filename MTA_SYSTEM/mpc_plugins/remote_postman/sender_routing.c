@@ -4,7 +4,6 @@
 #include "list_file.h"
 #include "mail_func.h"
 #include "util.h"
-#include <ctype.h>
 #include <time.h>
 #include <pthread.h>
 #include <errno.h>

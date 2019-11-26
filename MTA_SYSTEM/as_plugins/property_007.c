@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "mem_file.h"
 #include "config_file.h"
@@ -82,14 +82,12 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	if (tmp_len < 7 || tmp_len > 12) {
 		return MESSAGE_ACCEPT;
 	}
-	if (0 == isupper(tmp_buff[0]) || ' ' != tmp_buff[tmp_len - 2]
-		|| 0 == isdigit(tmp_buff[tmp_len - 1])) {
+	if (!HX_isupper(tmp_buff[0]) || tmp_buff[tmp_len-2] != ' ' ||
+	    !HX_isdigit(tmp_buff[tmp_len-1]))
 		return MESSAGE_ACCEPT;	
-	}
 	for (i=1; i<tmp_len-2; i++) {
-		if (0 == islower(tmp_buff[i])) {
+		if (!HX_islower(tmp_buff[i]))
 			return MESSAGE_ACCEPT;
-		}
 	}
 	while (MEM_END_OF_FILE != mem_file_read(
 		&pmail->phead->f_others, &tag_len, sizeof(int))) {

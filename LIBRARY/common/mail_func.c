@@ -1,13 +1,12 @@
 /*
  *	  Addr_kids, for parse the email addr
  */
+#include <libHX/ctype_helper.h>
 #include "common_types.h"
 #include "mail_func.h"
 #include "timezone.h"
 #include "util.h"
 #include <string.h>
-#include <ctype.h>
-
 
 enum {
 	SW_USUAL = 0,
@@ -1464,10 +1463,9 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		} else {
 			return FALSE;
 		}
-		if (!isdigit(str_zone[1]) || !isdigit(str_zone[2]) ||
-			!isdigit(str_zone[3]) || !isdigit(str_zone[4])) {
+		if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
+		    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
 			return FALSE;
-		}
 
 		tmp_buff[0] = str_zone[1];
 		tmp_buff[1] = str_zone[2];
@@ -1735,7 +1733,7 @@ void enriched_to_html(const char *enriched_txt,
 			} else {
 				for (j=0, p=token; (c=enriched_txt[i+j])!='\0'&&c!='>'; j++) {
 					if (j < sizeof(token)-1) {
-						*p++ = isupper(c) ? tolower(c) : c;
+						*p++ = HX_isupper(c) ? HX_tolower(c) : c;
 					}
 				}
 				*p = '\0';
@@ -1899,9 +1897,8 @@ int html_to_plain(char *rbuf, int len)
 			if (in_q) {
 				break;
 			}
-			if (isspace(*(p + 1))) {
+			if (HX_isspace(p[1]))
 				goto REG_CHAR;
-			}
 			if (0 == state) {
 				if (0 == strncasecmp(p, "<br>", 4) ||
 					0 == strncasecmp(p, "</p>", 4)) {
@@ -2036,12 +2033,12 @@ int html_to_plain(char *rbuf, int len)
 		case 'e':
 			/* !DOCTYPE exception */
 			if (3 == state && p > buf + 6
-				&& tolower(*(p - 1)) == 'p'
-				&& tolower(*(p - 2)) == 'y'
-				&& tolower(*(p - 3)) == 't'
-				&& tolower(*(p - 4)) == 'c'
-				&& tolower(*(p - 5)) == 'o'
-				&& tolower(*(p - 6)) == 'd') {
+				&& HX_tolower(*(p - 1)) == 'p'
+				&& HX_tolower(*(p - 2)) == 'y'
+				&& HX_tolower(*(p - 3)) == 't'
+				&& HX_tolower(*(p - 4)) == 'c'
+				&& HX_tolower(*(p - 5)) == 'o'
+				&& HX_tolower(*(p - 6)) == 'd') {
 				state = 1;
 				break;
 			}

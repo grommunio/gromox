@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <crypt.h>
 #include <fcntl.h>
 #include <iconv.h>

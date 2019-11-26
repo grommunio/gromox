@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include "util.h"
 #include "uri_rbl.h"
 #include "mail_func.h"
@@ -523,14 +523,12 @@ static int htoi(char *s)
 	int value;
 
 	c = ((unsigned char *)s)[0];
-	if (isupper(c)) {
-		c = tolower(c);
-	}
+	if (HX_isupper(c))
+		c = HX_tolower(c);
 	value = (c >= '0' && c <= '9' ? c - '0' : c - 'a' + 10) * 16;
 	c = ((unsigned char *)s)[1];
-	if (isupper(c)) {
-		c = tolower(c);
-	}
+	if (HX_isupper(c))
+		c = HX_tolower(c);
 	value += c >= '0' && c <= '9' ? c - '0' : c - 'a' + 10;
 	return value;
 }
@@ -544,8 +542,7 @@ static int url_decode(char *str, int len)
 		if ('+' == *data) {
 			*dest = ' ';
 		} else if ('%' == *data && len >= 2
-			&& isxdigit((int)*(data + 1)) &&
-			isxdigit((int)*(data + 2))) {
+		    && HX_isxdigit(data[1]) && HX_isxdigit(data[2])) {
 			*dest = (char)htoi(data + 1);
 			data += 2;
 			len -= 2;

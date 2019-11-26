@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <stdlib.h>
+#include <libHX/ctype_helper.h>
 #include "engine.h"
 #include "file_operation.h"
 #include <gromox/gateway_control.h>
@@ -471,9 +471,8 @@ static void* thread_work_func2(void *param)
 				}
 				temp_domain[len - 4] = '\0';
 				for (i=0; i<len-4; i++) {
-					if (0 != isupper(temp_domain[i])) {
+					if (HX_isupper(temp_domain[i]))
 						break;
-					}
 				}
 				if (i < len - 4) {
 					continue;
@@ -517,9 +516,8 @@ static void* thread_work_func2(void *param)
 				}
 				temp_domain[len - 4] = '\0';
 				for (i=0; i<len-4; i++) {
-					if (0 != isupper(temp_domain[i])) {
+					if (HX_isupper(temp_domain[i]))
 						break;
-					}
 				}
 				if (i < len - 4) {
 					continue;
@@ -615,9 +613,8 @@ static void* thread_work_func2(void *param)
 				}
 				temp_domain[len - 4] = '\0';
 				for (i=0; i<len-4; i++) {
-					if (0 != isupper(temp_domain[i])) {
+					if (HX_isupper(temp_domain[i]))
 						break;
-					}
 				}
 				if (i < len - 4) {
 					continue;
@@ -725,9 +722,8 @@ static void* thread_work_func2(void *param)
 				}
 				temp_group[len - 4] = '\0';
 				for (i=0; i<len-4; i++) {
-					if (0 != isupper(temp_group[i])) {
+					if (HX_isupper(temp_group[i]))
 						break;
-					}
 				}
 				if (i < len - 4) {
 					continue;

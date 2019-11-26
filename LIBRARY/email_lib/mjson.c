@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "mail.h"
@@ -10,8 +11,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include <ctype.h>
-
 
 #define MAX_RFC822_DEPTH	5
 
@@ -301,7 +300,7 @@ BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
 				scount = 0;
 				bcount = 0;
 				token_type = RETRIEVE_TOKEN_BRACKET;
-			} else if (isdigit(digest_buff[i])) {
+			} else if (HX_isdigit(digest_buff[i])) {
 				rstat = RETRIEVE_VALUE_FOUND;
 				last_pos = i;
 				token_type = RETRIEVE_TOKEN_DIGIT;
@@ -405,7 +404,7 @@ BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
 						return FALSE;
 					}
 					rstat = RETRIEVE_VALUE_END;
-				} else if (0 == isdigit(digest_buff[i])) {
+				} else if (!HX_isdigit(digest_buff[i])) {
 					return FALSE;
 				}
 				break;
@@ -1372,7 +1371,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 				rstat = RETRIEVE_VALUE_FOUND;
 				b_digit = FALSE;
 				last_pos = i + 1;
-			} else if (isdigit(value[i])) {
+			} else if (HX_isdigit(value[i])) {
 				rstat = RETRIEVE_VALUE_FOUND;
 				b_digit = TRUE;
 				last_pos = i;

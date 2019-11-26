@@ -1,3 +1,4 @@
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "rtf.h"
 #include "util.h"
@@ -9,7 +10,6 @@
 #include "element_data.h"
 #include "endian_macro.h"
 #include "tpropval_array.h"
-#include <ctype.h>
 #include <stdio.h>
 #include <iconv.h>
 #include <string.h>
@@ -465,7 +465,7 @@ static int rtf_parse_control(const char *string,
 		return 0;
 	}
 	len = 0;
-    while (isalpha(*string) && len < maxlen) {
+	while (HX_isalpha(*string) && len < maxlen) {
         *name = *string;
 		name ++;
 		string ++;
@@ -478,9 +478,8 @@ static int rtf_parse_control(const char *string,
     if ('\0' == *string) {
         return 0;
 	}
-    if (*string != '-' && 0 == isdigit(*string)) {
+	if (*string != '-' && !HX_isdigit(*string))
         return -1;
-	}
     *pnum = atoi(string);
     return 1;
 }
@@ -1534,10 +1533,10 @@ static char* rtf_read_element(RTF_READER *preader)
 			break;
 		}
 		if (TRUE == is_control_word) {
-			if (FALSE == b_numeric_param && (isdigit(ch) || '-' == ch)) {
+			if (FALSE == b_numeric_param && (HX_isdigit(ch) || ch == '-')) {
 				b_numeric_param = TRUE;
 			} else {
-				if (TRUE == b_numeric_param && 0 == isdigit(ch)) {
+				if (TRUE == b_numeric_param && !HX_isdigit(ch)) {
 					if (ch != ' ') {
 						need_unget = TRUE;
 					}
@@ -1569,7 +1568,7 @@ static char* rtf_read_element(RTF_READER *preader)
 	}
 	input_str[ix] = '\0';
 	if (0 == memcmp(input_str, "\\bin", 4)
-		&& isdigit(input_str[4])) {
+	    && HX_isdigit(input_str[4])) {
 		ext_buffer_pull_advance(&preader->ext_pull,
 			atoi(input_str + 4));
 	}
@@ -1586,7 +1585,7 @@ static BOOL rtf_optimize_element(DOUBLE_LIST *pcollection_list,
 	for (i=0; i<sizeof(opt_tags)/sizeof(char*); i++) {	
 		len = strlen(opt_tags[i]);
 		if (0 == strncmp(opt_tags[i], str_word, len) &&
-			(0 != isdigit(str_word[len]) || '-' == str_word[len])) {
+		    (HX_isdigit(str_word[len]) || str_word[len] == '-')) {
 			text = rtf_get_from_collection(pcollection_list, i);
 			if (NULL == text) {
 				continue;
@@ -2063,19 +2062,19 @@ static BOOL rtf_word_output_date(
 		if ('\\' == *string) {
 			string ++;
 			if (0 == strncmp(string, "yr", 2)
-				&& isdigit(string[2])) {
+			    && HX_isdigit(string[2])) {
 				year = atoi(string + 2);
 			} else if (0 == strncmp(string, "mo", 2)
-				&& isdigit(string[2])) {
+			    && HX_isdigit(string[2])) {
 				month = atoi(string + 2);
 			} else if (0 == strncmp(string, "dy", 2)
-				&& isdigit(string[2])) {
+			    && HX_isdigit(string[2])) {
 				day = atoi(string + 2);
 			} else if (0 == strncmp(string, "min", 3)
-				&& isdigit(string[3])) {
+			    && HX_isdigit(string[3])) {
 				minute = atoi(string + 3);
 			} else if (0 == strncmp(string, "hr", 2)
-				&& isdigit(string[2])) {
+			    && HX_isdigit(string[2])) {
 				hour = atoi(string + 2);
 			}
 		}

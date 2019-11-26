@@ -6,7 +6,6 @@
 #include "util.h"
 #include <time.h>
 #include <netdb.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h> 

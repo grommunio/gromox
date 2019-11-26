@@ -3,8 +3,6 @@
 #include "util.h"
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
-
 #define MAX_LINE			1024
 
 static BOOL list_file_analyse_format(LIST_FILE* list_file, const char* format);

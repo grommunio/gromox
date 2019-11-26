@@ -1,4 +1,4 @@
-#include <ctype.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
@@ -159,7 +159,7 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	b_local_hint = TRUE;
 	local_len = 0;
 	for (ptr=penvelop->from; ptr<at_pos; ptr++) {
-		if (0 == isdigit(*ptr)) {
+		if (!HX_isdigit(*ptr)) {
 			b_local_hint = FALSE;
 			break;
 		}
@@ -169,7 +169,7 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	b_domain_hint = TRUE;
 	domain_len = 0;
 	for (ptr=at_pos+1; ptr<dot_pos; ptr++) {
-		if (0 == isdigit(*ptr)) {
+		if (!HX_isdigit(*ptr)) {
 			b_domain_hint = FALSE;
 			break;
 		}
@@ -202,9 +202,8 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 		return MESSAGE_ACCEPT;
 	}
 	for (ptr=penvelop->from; ptr<at_pos; ptr++) {
-		if (0 == isdigit(*ptr)) {
+		if (!HX_isdigit(*ptr))
 			return MESSAGE_ACCEPT;
-		}
 	}
 	hyphen_pos = strchr(at_pos, '-');
 	digit_num = 0;
@@ -212,13 +211,12 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	if (NULL == hyphen_pos) {
 		/* 721471@BE0D5C530AE843A.net */
 		for (ptr=at_pos+1; ptr<dot_pos; ptr++) {
-			if (0 != isupper(*ptr)) {
+			if (HX_isupper(*ptr))
 				upper_num ++;
-			} else if (0 != isdigit(*ptr)) {
+			else if (HX_isdigit(*ptr))
 				digit_num ++;
-			} else {
+			else
 				return MESSAGE_ACCEPT;
-			}
 		}
 		if (upper_num > 0 && digit_num > 3) {
 			if (TRUE == check_tagging(penvelop->from, &penvelop->f_rcpt_to)) {
@@ -238,18 +236,16 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 			return MESSAGE_ACCEPT;
 		}
 		for (ptr=at_pos+1; ptr<hyphen_pos; ptr++) {
-			if (0 == isupper(*ptr) && 0 == isdigit(*ptr)) {
+			if (!HX_isupper(*ptr) && !HX_isdigit(*ptr))
 				return MESSAGE_ACCEPT;
-			}
 		}
 		for (ptr=hyphen_pos+1; ptr<dot_pos; ptr++) {
-			if (0 != isupper(*ptr)) {
+			if (HX_isupper(*ptr))
 				upper_num ++;
-			} else if (0 != isdigit(*ptr)) {
+			else if (HX_isdigit(*ptr))
 				digit_num ++;
-			} else {
+			else
 				return MESSAGE_ACCEPT;
-			}
 		}
 		if (upper_num > 0 && digit_num > 3 &&
 			14 == prefix_len + digit_num + upper_num) {

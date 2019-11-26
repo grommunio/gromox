@@ -1,5 +1,5 @@
-#include <ctype.h>
 #include <time.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/acl_control.h>
 #include <gromox/system_log.h>
 #include "list_file.h"
@@ -153,7 +153,7 @@ BOOL acl_control_produce(const char *username, const char *ip, char *session)
 		if ('@' == temp_name[i]) {
 			temp_name[i] = '0';
 		} else {
-			temp_name[i] = tolower(temp_name[i]);
+			temp_name[i] = HX_tolower(temp_name[i]);
 		}
 	}
 	for (i=0; i<32; i++) {

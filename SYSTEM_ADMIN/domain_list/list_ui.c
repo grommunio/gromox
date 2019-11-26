@@ -10,7 +10,6 @@
 #include "lang_resource.h"
 #include <time.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <fcntl.h>
 #include <iconv.h>
 #include <dirent.h>

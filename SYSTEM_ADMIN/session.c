@@ -1,9 +1,9 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <ctype.h>
 #include <errno.h>
 #include <string.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include "util.h"
@@ -951,7 +951,7 @@ static void produce_session(const char *tag, char *session)
 		if ('@' == temp_name[i]) {
 			temp_name[i] = '0';
 		} else {
-			temp_name[i] = tolower(temp_name[i]);
+			temp_name[i] = HX_tolower(temp_name[i]);
 		}
 	}
 	for (i=0; i<32; i++) {

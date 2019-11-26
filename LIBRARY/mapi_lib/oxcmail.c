@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "dsn.h"
@@ -22,7 +23,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iconv.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -989,7 +989,7 @@ static BOOL oxcmail_parse_subject(const char *charset,
 		for (i=0; i<tmp_len; i+=2) {
 			if ((':' == tmp_buff[i] ||
 				' ' == tmp_buff[i] ||
-				isdigit(tmp_buff[0])) &&
+			    HX_isdigit(tmp_buff[0])) &&
 				'\0' == tmp_buff[i + 1]) {
 				return TRUE;
 			}

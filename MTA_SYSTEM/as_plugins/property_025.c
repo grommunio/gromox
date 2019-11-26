@@ -1,8 +1,9 @@
 #include <stdbool.h>
+#include <libHX/ctype_helper.h>
 #include <gromox/as_common.h>
 #include "config_file.h"
+#include <libHX/ctype_helper.h>
 #include "util.h"
-#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -131,15 +132,13 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		if (MEM_END_OF_FILE == out_len || out_len < 4 || out_len > 14) {
 			return MESSAGE_ACCEPT;
 		}
-		if (out_len < 4 || 0 == isupper(buff[0]) ||
+		if (out_len < 4 || !HX_isupper(buff[0]) ||
 			' ' != buff[out_len - 2] ||
-			0 == isdigit(buff[out_len - 1])) {
+		    !HX_isdigit(buff[out_len-1]))
 			return MESSAGE_ACCEPT;
-		}
 		for (i=1; i<out_len-2; i++) {
-			if (0 == islower(buff[i])) {
+			if (!HX_islower(buff[i]))
 				return MESSAGE_ACCEPT;
-			}
 		}
 	} else if (28 == out_len && 0 == strncmp(pbackup, "----=_0", 7) &&
 		'_' == pbackup[10]  && '.' == pbackup[19]) {
