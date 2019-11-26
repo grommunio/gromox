@@ -1,1 +1,0 @@
-../../../EXCHANGE_SYSTEM/service_plugins/log_plugin/log_plugin.c
