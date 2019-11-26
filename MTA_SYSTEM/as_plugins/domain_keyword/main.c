@@ -74,7 +74,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s", get_data_path(), file_name);
 		domain_keyword_init(growing_num, temp_path);
 		if (0 != domain_keyword_run()) {
-			printf("[domain_keyword]: fail to domain limit module\n");
+			printf("[domain_keyword]: failed to run the domain keyword module\n");
 			return FALSE;
 		}
 		
