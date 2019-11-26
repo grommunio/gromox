@@ -22,8 +22,8 @@
 874		windows-874
 875		cp875
 932		shift_jis
-936		gbk
 936		gb2312
+936		gbk
 949		cp949
 950		big5
 1026	IBM1026
