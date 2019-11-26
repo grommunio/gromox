@@ -23,6 +23,7 @@ extern "C" {
 
 extern char *config_default_path(const char *filename);
 extern CONFIG_FILE *config_file_init(const char *filename);
+extern CONFIG_FILE *config_file_init2(const char *ov, const char *fb);
 void config_file_free(CONFIG_FILE* cfg_file);
 extern char *config_file_get_value(CONFIG_FILE *, const char *key);
 extern BOOL config_file_set_value(CONFIG_FILE *, const char *key, const char *value);

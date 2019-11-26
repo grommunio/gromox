@@ -4,6 +4,7 @@
 #ifdef __cplusplus
 #	include <cstdio>
 #else
+#	include <stdbool.h>
 #	include <stdio.h>
 #endif
 
@@ -17,6 +18,7 @@ typedef struct _LIST_FILE {
     void*       pfile;
 } LIST_FILE;
 
+extern LIST_FILE *list_file_init3(const char *filename, const char *format, bool require);
 extern LIST_FILE *list_file_init(const char *filename, const char *format);
 void list_file_free(LIST_FILE* list_file);
 

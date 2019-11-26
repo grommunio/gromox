@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <stdbool.h>
 #include "list_file.h"
 #include "common_types.h"
 #include "util.h"
@@ -8,6 +10,18 @@
 static BOOL list_file_analyse_format(LIST_FILE* list_file, const char* format);
 static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line);
 static BOOL list_file_construct_list(LIST_FILE* list_file);
+
+static LIST_FILE *list_file_alloc(const char *format)
+{
+	LIST_FILE *lf = calloc(1, sizeof(*lf));
+	if (lf == NULL)
+		return NULL;
+	if (!list_file_analyse_format(lf, format)) {
+		free(lf);
+		return NULL;
+	}
+	return lf;
+}
 
 /*
  *	initialize the list file
@@ -25,33 +39,31 @@ static BOOL list_file_construct_list(LIST_FILE* list_file);
  *		<>NULL					object pointer
  *
  */
-LIST_FILE *list_file_init(const char *filename, const char *format)
+LIST_FILE *list_file_init3(const char *filename, const char *format, bool hard)
 {
-	LIST_FILE *list_file;
-	FILE *file_ptr;
-
-	file_ptr = fopen(filename, "r");
-
-	if (NULL == file_ptr) {
-		debug_info("[list_file]: can not open %s", filename);
+	LIST_FILE *list_file = list_file_alloc(format);
+	if (list_file == NULL)
 		return NULL;
-	}
-	
-	list_file = (LIST_FILE*)malloc(sizeof(LIST_FILE));
-	memset(list_file, 0, sizeof(LIST_FILE));
-	list_file->file_ptr		= file_ptr;
-	if (FALSE == list_file_analyse_format(list_file, format)) {
+	FILE *file_ptr = fopen(filename, "r");
+	if (file_ptr == NULL) {
+		if (errno == ENOENT && !hard)
+			return list_file;
+		debug_info("[list_file]: cannot open %s: %s", filename, strerror(errno));
 		free(list_file);
-		fclose(file_ptr);
 		return NULL;
 	}
-
+	list_file->file_ptr = file_ptr;
 	if (FALSE == list_file_construct_list(list_file)) {
 		free(list_file);
 		fclose(file_ptr);
 		return NULL;
 	}
 	return list_file;
+}
+
+LIST_FILE *list_file_init(const char *filename, const char *format)
+{
+	return list_file_init3(filename, format, true);
 }
 
 /*
@@ -67,8 +79,8 @@ void list_file_free(LIST_FILE* list_file)
 		return;
 	}
 #endif
-
-	fclose(list_file->file_ptr);
+	if (list_file->file_ptr != NULL)
+		fclose(list_file->file_ptr);
 	if (NULL != list_file->pfile) {
 		free(list_file->pfile);
 	}

@@ -37,6 +37,20 @@ char *config_default_path(const char *filename)
 	return ret;
 }
 
+static CONFIG_FILE *config_file_alloc(size_t z)
+{
+	CONFIG_FILE *cfg = calloc(1, sizeof(*cfg));
+	if (cfg == NULL)
+		return NULL;
+	cfg->total_entries = z;
+	cfg->config_table = calloc(z, sizeof(*cfg->config_table));
+	if (cfg->config_table == NULL) {
+		free(cfg);
+		return NULL;
+	}
+	return cfg;
+}
+
 /*
  *	init a config file object with the specified filename
  *
@@ -59,28 +73,17 @@ CONFIG_FILE *config_file_init(const char *filename)
 			filename, strerror(errno));
 		return NULL;
 	}
-
-	if (NULL == (cfg = malloc(sizeof(CONFIG_FILE)))) {
-		debug_info("[config_file]: config_file_init: %s, alloc fail", filename);
-		fclose(fin);
-		return NULL;
-	}
-	memset(cfg, 0, sizeof(CONFIG_FILE));
 	for (table_size = 0; fgets(line, MAX_LINE_LEN, fin); table_size++) {
 		if (line[0] == '\r' || line[0] == '\n' || line[0] == '#') {
 			table_size--;
 		}
 	}
-	cfg->total_entries = table_size + EXT_ENTRY_NUM;
-	if (NULL == (cfg->config_table = malloc(cfg->total_entries * 
-		sizeof(CONFIG_ENTRY)))) {
+	cfg = config_file_alloc(table_size + EXT_ENTRY_NUM);
+	if (cfg == NULL) {
 		debug_info("[config_file]: config_file_init: %s, alloc fail", filename);
-		free(cfg);
 		fclose(fin);
 		return NULL;
 	}
-	memset(cfg->config_table, 0, cfg->total_entries * sizeof(CONFIG_ENTRY));
-	
 	rewind(fin);
 	/* read the first 2 entries from each line, the rest are comments */
 
@@ -96,6 +99,25 @@ CONFIG_FILE *config_file_init(const char *filename)
 
 	fclose(fin);
 	strcpy(cfg->file_name, filename);
+	return cfg;
+}
+
+/**
+ * Read a user-specified config file. If not, use system default
+ * given by @fb and do not complain about errors with it.
+ */
+CONFIG_FILE *config_file_init2(const char *ov, const char *fb)
+{
+	struct stat sb;
+	if (ov != NULL)
+		return config_file_init(ov);
+	errno = 0;
+	if (stat(fb, &sb) == 0 || errno != ENOENT)
+		return config_file_init(fb);
+	CONFIG_FILE *cfg = config_file_alloc(EXT_ENTRY_NUM);
+	if (cfg == NULL)
+		return NULL;
+	strcpy(cfg->file_name, fb);
 	return cfg;
 }
 
