@@ -29,7 +29,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	CONFIG_FILE  *pfile;
 	char file_name[256], tmp_path[256];
 	char config_file_path[256];
-	char *str_value, *psearch;
+	const char *str_value;
+	char *psearch;
 	char service_name[256];
 	
 	switch(reason) {
@@ -72,10 +73,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_IP");
 		if (NULL == str_value) {
-			printf("[%s]: fail to get console server ip in %s\n", file_name,
-				config_file_path);
-			config_file_free(pfile);
-			return FALSE;
+			str_value = "127.0.0.1";
+			config_file_set_value(pfile, "CONSOLE_SERVER_IP", str_value);
 		} else {
 			if (NULL == extract_ip(str_value, g_console_ip)) {
 				printf("[%s]: console server ip %s format error!!!\n",
@@ -88,10 +87,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_PORT");
 		if (NULL == str_value) {
-			printf("[%s]: fail to get console server port in %s\n", file_name,
-				config_file_path);
-			config_file_free(pfile);
-			return FALSE;
+			g_console_port = 6677;
+			config_file_set_value(pfile, "CONSOLE_SERVER_PORT", "6677");
 		} else {
 			g_console_port = atoi(str_value);
 			if (g_console_port <= 0) {
