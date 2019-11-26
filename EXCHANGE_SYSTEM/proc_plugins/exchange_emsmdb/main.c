@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <gromox/paths.h>
 #include "guid.h"
 #include "util.h"
 #include "rop_util.h"
@@ -215,12 +216,10 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		printf("[exchange_emsmdb]: smtp server is %s:%d\n", smtp_ip, smtp_port);
 		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
-		if (NULL == str_value) {
-			printf("[exchange_emsmdb]: failed to get SUBMIT_COMMAND in config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
-		strcpy(submit_command, str_value);
+		if (str_value == nullptr)
+			strcpy(submit_command, "/usr/bin/php " PKGDATADIR "/sa/submit.php");
+		else
+			strcpy(submit_command, str_value);
 		str_value = config_file_get_value(pfile, "ASYNC_THREADS_NUM");
 		if (NULL == str_value) {
 			async_num = 4;
