@@ -69,10 +69,9 @@ int net_failure_run()
 	return 0;
 }
 
-int net_failure_stop()
+void net_failure_stop()
 {
 	pthread_mutex_destroy(&g_lock);
-	return 0;
 }
 
 void net_failure_free()

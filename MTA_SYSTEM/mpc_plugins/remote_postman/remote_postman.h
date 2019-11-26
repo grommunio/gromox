@@ -10,7 +10,7 @@ void remote_postman_init(int max_thr, int files_num,
 	int scan_interval, int fresh_interval, int retrying_interval,
 	int final_interval, const char *routing_path, const char *config_path);
 extern int remote_postman_run(void);
-extern int remote_postman_stop(void);
+extern void remote_postman_stop(void);
 extern void remote_postman_free(void);
 BOOL remote_postman_hook(MESSAGE_CONTEXT *pcontext);
 

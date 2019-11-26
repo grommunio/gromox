@@ -26,7 +26,7 @@ enum{
 
 void smtp_deliverer_init(int trying_times, BOOL ssl_switch);
 extern int smtp_deliverer_run(void);
-extern int smtp_deliverer_stop(void);
+extern void smtp_deliverer_stop(void);
 extern void smtp_deliverer_free(void);
 int smtp_deliverer_process(MESSAGE_CONTEXT *pcontext,
 	char *ip_addr, char *response_line, int length);

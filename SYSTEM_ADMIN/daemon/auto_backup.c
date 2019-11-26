@@ -30,7 +30,7 @@ void auto_backup_init(const char *config_path, const char *data_path,
 int auto_backup_run()
 {
 	int fd, len;
-	int encode_len;
+	size_t encode_len;
 	time_t now_time;
 	char temp_buff[256];
 	char dst_dir[256];

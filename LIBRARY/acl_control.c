@@ -80,7 +80,8 @@ BOOL acl_control_auth(const char *username, const char *password)
 {
 	char temp_buff[256];
 	char *pitem, temp_char;
-	int i, j, len, item_num;
+	int i, j, item_num;
+	size_t len;
 
 	item_num = list_file_get_item_num(g_acl_list);
 	pitem = list_file_get_list(g_acl_list);

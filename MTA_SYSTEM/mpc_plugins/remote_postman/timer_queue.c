@@ -128,7 +128,7 @@ int timer_queue_run()
  *		 0					OK
  *		<>0					fail
  */
-int timer_queue_stop()
+void timer_queue_stop()
 {
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
@@ -138,7 +138,6 @@ int timer_queue_stop()
 		free(g_list_ptr);
 		g_list_ptr = NULL;
 	}
-	return 0;
 }
 
 /*

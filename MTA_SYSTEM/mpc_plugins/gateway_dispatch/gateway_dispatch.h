@@ -28,7 +28,7 @@ void gateway_dispatch_init(const char *list_path, int backend_interval,
 	const char* separator, const char *cache_path, int cache_interval,
 	int retrying_times, int block_interval, const char *config_path);
 extern int gateway_dispatch_run(void);
-extern int gateway_dispatch_stop(void);
+extern void gateway_dispatch_stop(void);
 extern void gateway_dispatch_free(void);
 BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext);
 

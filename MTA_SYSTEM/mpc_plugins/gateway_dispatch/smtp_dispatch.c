@@ -75,10 +75,8 @@ int smtp_dispatch_run()
  *		 0			OK
  *		<>0			fail
  */
-int smtp_dispatch_stop()
-{
-	return 0;
-}
+void smtp_dispatch_stop()
+{}
 
 /*
  *	module's destruct function

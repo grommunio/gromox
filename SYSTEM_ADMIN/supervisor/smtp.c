@@ -87,7 +87,7 @@ void smtp_send_message(const char *from, const char *rcpt, const char *message)
 	}
 	pdomain ++;
 	size = strlen(message);
-	num = gx_getmxbyname(pdomain, mx_buff);
+	num = gx_getmxbyname(pdomain, &mx_buff);
 	if (num <= 0) {
 		HX_zvecfree(mx_buff);
 		return;

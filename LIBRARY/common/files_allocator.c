@@ -39,14 +39,13 @@ int files_allocator_run()
  *        -1    fail to stop
  *         0    OK
  */
-int files_allocator_stop()
+void files_allocator_stop()
 {
     if (NULL == g_allocator) {
-        return 0;
+		return;
     }
     lib_buffer_free(g_allocator);
     g_allocator = 0;
-    return 0;
 }
 
 /*

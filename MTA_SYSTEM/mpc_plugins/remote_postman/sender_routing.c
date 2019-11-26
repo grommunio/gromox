@@ -154,13 +154,12 @@ static STR_HASH_TABLE* sender_routing_load_hash()
 	return phash;
 }
 
-int sender_routing_stop()
+void sender_routing_stop()
 {
 	if (NULL != g_hash_table) {
 		sender_routing_free_hash(g_hash_table);
 		g_hash_table = NULL;
 	}
-    return 0;
 }
 
 BOOL sender_routing_check(const char *sender, VSTACK *pstack)

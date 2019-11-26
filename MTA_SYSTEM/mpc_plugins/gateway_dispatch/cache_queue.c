@@ -85,13 +85,12 @@ int cache_queue_run()
  *		 0					OK
  *		<>0					fail
  */
-int cache_queue_stop()
+void cache_queue_stop()
 {
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
 		pthread_join(g_thread_id, NULL);
 	}
-	return 0;
 }
 
 /*

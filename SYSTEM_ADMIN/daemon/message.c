@@ -123,7 +123,8 @@ void message_make(char *buff, int type, const char *language,
 {
 	char *ptr;
 	char img_buf[MESSAGE_BUFF_SIZE/2];
-	int len, fd;
+	size_t len;
+	int fd;
 	time_t cur_time;
 	struct tm temp_tm;
 	struct stat node_stat;

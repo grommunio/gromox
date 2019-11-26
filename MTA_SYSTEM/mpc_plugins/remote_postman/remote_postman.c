@@ -22,7 +22,7 @@ static int g_concurrent_thr;
 static char g_config_path[256];
 static pthread_mutex_t g_concurrent_mutex;
 
-typedef int (*STOP_FUNC)();
+typedef void (*STOP_FUNC)();
 
 static STOP_FUNC g_running_modules[7];
 
@@ -134,10 +134,9 @@ static void remote_postman_clean_up()
  *		 0				OK
  *		<>0				fail
  */
-int remote_postman_stop()
+void remote_postman_stop()
 {
 	remote_postman_clean_up();
-	return 0;
 }
 
 /*

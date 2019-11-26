@@ -158,7 +158,7 @@ int smtp_deliverer_run()
  *		 0			OK
  *		<>0			fail
  */
-int smtp_deliverer_stop()
+void smtp_deliverer_stop()
 {
 	int i;
 	
@@ -179,7 +179,6 @@ int smtp_deliverer_stop()
 		vstack_allocator_free(g_stack_allocator);
 		g_stack_allocator = NULL;
 	}
-	return 0;
 }
 
 /*

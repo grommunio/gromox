@@ -11,7 +11,7 @@ void sender_routing_init(const char *list_path);
 extern int sender_routing_run(void);
 BOOL sender_routing_check(const char *sender, VSTACK *pstack);
 extern BOOL sender_routing_refresh(void);
-extern int sender_routing_stop(void);
+extern void sender_routing_stop(void);
 extern void sender_routing_free(void);
 
 #endif /* end of _H_SENDER_ROUTING_ */

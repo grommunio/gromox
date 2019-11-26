@@ -23,7 +23,7 @@ static int  g_block_interval;
 static int  g_bounce_policy;
 static LIB_BUFFER *g_stack_allocator;
 
-typedef int (*STOP_FUNC)();
+typedef void (*STOP_FUNC)(void);
 typedef BOOL (*DNS_QUERY)(char*, VSTACK*);
 typedef BOOL (*CHECK_LOCAL)(const char*);
 typedef BOOL (*GATEWAY_NOUSER_AUDIT)(char*);
@@ -204,10 +204,9 @@ static void gateway_dispatch_clean_up()
  *		 0				OK
  *		<>0				fail
  */
-int gateway_dispatch_stop()
+void gateway_dispatch_stop()
 {
 	gateway_dispatch_clean_up();
-	return 0;
 }
 
 /*

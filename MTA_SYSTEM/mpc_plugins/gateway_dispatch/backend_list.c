@@ -64,7 +64,7 @@ int backend_list_run()
 
 }
 
-int backend_list_stop()
+void backend_list_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 
@@ -76,7 +76,6 @@ int backend_list_stop()
 		free(pnode->pdata);
 	while ((pnode = double_list_get_from_head(&g_invalid_list)) != NULL)
 		free(pnode->pdata);
-	return 0;
 }
 
 void backend_list_free()

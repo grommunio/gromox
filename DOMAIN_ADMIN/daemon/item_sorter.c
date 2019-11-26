@@ -361,20 +361,10 @@ static char *g_bar32_ptr;
 static char *g_vp_ptr;
 static char *g_vu_ptr;
 static char *g_vh_ptr;
-static int g_d1_len;
-static int g_d2_len;
-static int g_kl_len;
-static int g_kr_len;
-static int g_logo_len;
-static int g_bar01_len;
-static int g_bar02_len;
-static int g_bar04_len;
-static int g_bar08_len;
-static int g_bar16_len;
-static int g_bar32_len;
-static int g_vp_len;
-static int g_vu_len;
-static int g_vh_len;
+static size_t g_d1_len, g_d2_len, g_kl_len, g_kr_len, g_logo_len;
+static size_t g_bar01_len, g_bar02_len, g_bar04_len;
+static size_t g_bar08_len, g_bar16_len, g_bar32_len;
+static size_t g_vp_len, g_vu_len, g_vh_len;
 static BOOL g_bar1_hit;
 static BOOL g_bar2_hit;
 static BOOL g_bar4_hit;
@@ -394,10 +384,7 @@ static void item_sorter_daily_statistics(ITEM_DATA *parray, int size,
 
 static void item_sorter_mensual_statistics(char *path, const char *domain,
 	const char *padministrator, const char *language);
-
-static BOOL item_sorter_retrieve_image(const char *path, char **pptr,
-	int *plen);
-
+static BOOL item_sorter_retrieve_image(const char *path, char **pptr, size_t *plen);
 static int item_sorter_domain_query(const char* domain, char *domain_path,
 	char *administrator, char *language);
 
@@ -2183,7 +2170,7 @@ static void item_sorter_mensual_statistics(char *path, const char *domain,
 }
 
 static BOOL item_sorter_retrieve_image(const char *path, char **pptr,
-	int *plen)
+    size_t *plen)
 {
 	
 	char *ptr;

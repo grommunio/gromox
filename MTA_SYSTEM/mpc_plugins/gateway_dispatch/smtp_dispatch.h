@@ -13,7 +13,7 @@ enum{
 
 void smtp_dispatch_init(const char *mask_string);
 extern int smtp_dispatch_run(void);
-extern int smtp_dispatch_stop(void);
+extern void smtp_dispatch_stop(void);
 extern void smtp_dispatch_free(void);
 int smtp_dispatch_process(MESSAGE_CONTEXT *pcontext,
 	char *dest_ip, char *response_line, int length);
