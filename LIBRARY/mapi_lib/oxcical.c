@@ -743,7 +743,7 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	PROPERTY_NAME propname;
 	TIMEZONEDEFINITION tz_definition;
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
-	char bin_buff[MAX_TZDEFINITION_LENGTH];
+	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 	
 	tz_definition.prules = rules_buff;
 	if (FALSE == oxcical_parse_tzdefinition(
@@ -796,7 +796,7 @@ static BOOL oxcical_parse_recurring_timezone(
 	TIMEZONESTRUCT tz_struct;
 	TIMEZONEDEFINITION tz_definition;
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
-	char bin_buff[MAX_TZDEFINITION_LENGTH];
+	uint8_t bin_buff[MAX_TZDEFINITION_LENGTH];
 	
 	tz_definition.prules = rules_buff;
 	if (FALSE == oxcical_parse_tzdefinition(
@@ -915,7 +915,7 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 	ICAL_LINE *piline;
 	uint32_t tmp_int32;
 	TARRAY_SET *prcpts;
-	char tmp_buff[1024];
+	uint8_t tmp_buff[1024];
 	const char *pcutype;
 	const char *paddress;
 	TAGGED_PROPVAL propval;
@@ -1587,7 +1587,7 @@ MAKE_GLOBALOBJID:
 		return FALSE;
 	}
 	tmp_bin.cb = ext_push.offset;
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pc = tmp_buff;
 	/* PidLidGlobalObjectId */
 	lid = 0x00000003;
 	propname.kind = KIND_LID;
@@ -1613,7 +1613,7 @@ MAKE_GLOBALOBJID:
 		return FALSE;
 	}
 	tmp_bin.cb = ext_push.offset;
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pc = tmp_buff;
 	/* PidLidCleanGlobalObjectId */
 	lid1 = 0x00000023;
 	propname.kind = KIND_LID;
@@ -1722,7 +1722,7 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 {
 	void *pvalue;
 	BINARY tmp_bin;
-	char tmp_buff[1024];
+	uint8_t tmp_buff[1024];
 	const char *paddress;
 	TAGGED_PROPVAL propval;
 	const char *pdisplay_name;
@@ -2547,7 +2547,7 @@ static BOOL oxcical_parse_attachment(
 			}
 			tmp_bin.cb = snprintf(tmp_buff, 1024,
 				"[InternetShortcut]\r\nURL=%s", pvalue);
-			tmp_bin.pb = tmp_buff;
+			tmp_bin.pc = tmp_buff;
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
 			propval.pvalue = &tmp_bin;
 			if (FALSE == tpropval_array_set_propval(
@@ -5812,7 +5812,7 @@ EXPORT_VEVENT:
 			"\x74\xC5\xB7\x10\x1A\x82\xE0\x08", 16);
 		globalobjectid.creationtime = rop_util_unix_to_nttime(cur_time);
 		globalobjectid.data.cb = 16;
-		globalobjectid.data.pb = tmp_buff1;
+		globalobjectid.data.pc = tmp_buff1;
 		guid = guid_random_new();
 		ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0);
 		ext_buffer_push_guid(&ext_push, &guid);

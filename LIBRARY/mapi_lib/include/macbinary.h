@@ -47,8 +47,8 @@ typedef struct _MACBINARY_HEADER {
 	uint16_t comment_len;
 	uint8_t finder_flags;
 	uint32_t signature;
-	char fd_script;
-	char fd_xflags;
+	int8_t fd_script;
+	int8_t fd_xflags;
 	uint8_t pads1[8];
 	uint32_t total_unpacked;
 	uint16_t xheader_len;

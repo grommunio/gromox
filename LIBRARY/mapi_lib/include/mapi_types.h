@@ -34,7 +34,11 @@
 
 typedef struct _BINARY {
 	uint32_t cb;
-	uint8_t *pb;
+	union {
+		uint8_t *pb;
+		char *pc;
+		void *pv;
+	};
 } BINARY;
 
 typedef struct _BINARY_ARRAY {

@@ -145,7 +145,7 @@ BINARY* pcl_serialize(PCL *ppcl)
 	BINARY *pbin;
 	BINARY tmp_bin;
 	SIZED_XID *pxid;
-	char buff[0x8000];
+	uint8_t buff[0x8000];
 	DOUBLE_LIST_NODE *pnode;
 	
 	tmp_bin.cb = 0;

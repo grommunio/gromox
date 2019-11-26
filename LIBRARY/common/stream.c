@@ -836,9 +836,8 @@ unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size)
 int stream_dump(STREAM *pstream, int fd)
 {
 	char	*pbuff;
-	int		size, wr_result;
-
-	size	= STREAM_BLOCK_SIZE;
+	ssize_t wr_result;
+	unsigned int size = STREAM_BLOCK_SIZE;
 
 	stream_reset_reading(pstream);
 	while ((pbuff = stream_getbuffer_for_reading(pstream, &size))) {
@@ -1090,9 +1089,8 @@ NONE_EOM:
  */
 void stream_split_eom(STREAM *pstream, STREAM *pstream_second)
 {
-	int blocks;
-	int i, size;
-	int fake_pos;
+	size_t blocks, i, fake_pos;
+	unsigned int size;
 	char *pbuff;
 	STREAM fake_stream;
 	DOUBLE_LIST_NODE *pnode;

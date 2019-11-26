@@ -84,7 +84,7 @@ typedef struct _NTLM_AUTH_CHALLENGE {
 typedef struct _NTLMSSP_SESSION_INFO {
 	char username[128];
 	DATA_BLOB session_key;
-	char session_key_buff[16];
+	uint8_t session_key_buff[16];
 } NTLMSSP_SESSION_INFO;
 
 typedef BOOL (*NTLMSSP_GET_PASSWORD)(const char*, char*);
@@ -106,14 +106,14 @@ typedef struct _NTLMSSP_CTX {
 	char dns_domain[128];
 	
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
-	char internal_chal_buff[32];
+	uint8_t internal_chal_buff[32];
 	
 	DATA_BLOB lm_resp;
-	char lm_resp_buff[32];
+	uint8_t lm_resp_buff[32];
 	DATA_BLOB nt_resp;
-	char nt_resp_buff[512];
+	uint8_t nt_resp_buff[512];
 	DATA_BLOB session_key;
-	char session_key_buff[32];
+	uint8_t session_key_buff[32];
 
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 

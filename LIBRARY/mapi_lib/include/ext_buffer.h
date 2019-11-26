@@ -24,7 +24,11 @@ typedef void* (*EXT_BUFFER_ALLOC)(size_t);
 
 typedef struct _EXT_PULL {
 	EXT_BUFFER_ALLOC alloc;
-	const uint8_t *data;
+	union {
+		const uint8_t *data;
+		const char *cdata;
+		const void *vdata;
+	};
 	uint32_t data_size;
 	uint32_t offset;
 	uint32_t flags;
@@ -32,7 +36,11 @@ typedef struct _EXT_PULL {
 
 typedef struct _EXT_PUSH {
 	BOOL b_alloc;
-	uint8_t *data;
+	union {
+		uint8_t *data;
+		char *cdata;
+		void *vdata;
+	};
 	uint32_t alloc_size;
 	uint32_t offset;
 	uint32_t flags;

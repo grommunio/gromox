@@ -1246,9 +1246,8 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 	char *out_buff, size_t *plength)
 {
 	char *ptr;
-	long tmp_len;
-	size_t offset;
-	int buff_size;
+	size_t offset, tmp_len;
+	unsigned int buff_size;
 	size_t tmp_size;
 	BOOL has_submime;
 	STREAM tmp_stream;
@@ -1444,16 +1443,14 @@ BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
  */
 BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 {
-	int tmp_len;
-	int buff_size;
 	STREAM tmp_stream;
 	char *ptr, *pbuff;
 	int encoding_type;
 	char encoding[256];
 	size_t mail_len, size;
 	LIB_BUFFER *pallocator;
-	size_t i, offset, max_length;
-	
+	size_t i, offset, max_length, tmp_len;
+	unsigned int buff_size;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime || NULL == out_buff || NULL == plength) {

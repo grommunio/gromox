@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "tarray_set.h"
@@ -1437,7 +1438,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	TARRAY_SET *prcpts;
 	char *pdisplay_name;
 	STR_HASH_ITER *iter;
-	char tmp_buff[1280];
+	uint8_t tmp_buff[1280];
 	char tmp_string[256];
 	uint16_t last_propid;
 	PROPID_ARRAY propids;
@@ -2874,7 +2875,7 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 	BINARY *pbin;
 	BINARY tmp_bin;
 	char *pdisplay_name;
-	char tmp_buff[1280];
+	uint8_t tmp_buff[1280];
 	TNEF_PROPLIST *ptnef_proplist;
 	
 	ptnef_proplist = alloc(sizeof(TNEF_PROPLIST));

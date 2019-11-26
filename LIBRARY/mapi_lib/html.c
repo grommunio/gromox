@@ -379,11 +379,8 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 	int tmp_len;
 	uint16_t wchar;
 	char tmp_buff[8];
-	const uint8_t *ptr;
-	const uint8_t *pend;
-	
-	ptr = string;
-	pend = string + strlen(string);
+	const char *ptr = string, *pend = string + strlen(string);
+
 	while ('\0' != *ptr) {
 		len = html_utf8_byte_num(*ptr);
 		if (ptr + len > pend) {
@@ -624,8 +621,7 @@ static int html_convert_color(const char *value)
 	int *pcolor;
 	const char *ptr;
 	const char *ptr1;
-	uint8_t tmp_buff[8];
-	char color_string[128];
+	char color_string[128], tmp_buff[8];
 	
 	if ('#' == value[0]) {
 		if (FALSE == decode_hex_binary(

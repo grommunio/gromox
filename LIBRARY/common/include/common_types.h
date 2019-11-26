@@ -34,7 +34,11 @@ typedef struct _GUID {
 } GUID;
 
 typedef struct _DATA_BLOB {
-	uint8_t *data;
+	union {
+		uint8_t *data;
+		char *cdata;
+		void *vdata;
+	};
 	uint32_t length;
 } DATA_BLOB;
 

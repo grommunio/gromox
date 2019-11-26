@@ -35,11 +35,11 @@
 
 typedef struct _NTLMSSP_SERVER_AUTH_STATE {
 	DATA_BLOB user_session_key;
-	char user_session_key_buff[32];
+	uint8_t user_session_key_buff[32];
 	DATA_BLOB lm_session_key;
-	char lm_session_key_buff[32];
+	uint8_t lm_session_key_buff[32];
 	DATA_BLOB encrypted_session_key; /* internal variables used by KEY_EXCH */
-	char encrypted_session_key_buff[32];
+	uint8_t encrypted_session_key_buff[32];
 	BOOL doing_ntlm2;
 	uint8_t session_nonce[16]; /* internal variables used by NTLM2 */
 } NTLMSSP_SERVER_AUTH_STATE;
@@ -171,7 +171,7 @@ static BOOL ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	va_list ap;
 	uint32_t length;
 	int intargs[64];
-	char buffs[64][1024];
+	uint8_t buffs[64][1024];
 	DATA_BLOB blobs[64];
 	int head_ofs, data_ofs;
 	int head_size, data_size;
@@ -204,7 +204,7 @@ static BOOL ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 		case 'A':
 			s = va_arg(ap, char*);
 			head_size += 8;
-			blobs[i].data = s;
+			blobs[i].cdata = s;
 			blobs[i].length = strlen(s);
 			data_size += blobs[i].length;
 			break;
@@ -638,12 +638,11 @@ static BOOL ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	NTLMSSP_VERSION vers;
 	DATA_BLOB struct_blob;
 	DATA_BLOB version_blob;
-	uint8_t cryptkey[8 + 1];
+	char cryptkey[9];
 	const char *target_name;
 	const char *parse_string;
 	uint32_t ntlmssp_command;
-	char struct_blob_buff[1024];
-	
+	uint8_t struct_blob_buff[1024];
 	
 	neg_flags = 0;
 	if (0 != request.length) {
@@ -991,9 +990,9 @@ static BOOL ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	DATA_BLOB tmp_key;
 	const char *pdomain;
 	DATA_BLOB *pchallenge;
-	char tmp_key_buff[256];
+	uint8_t tmp_key_buff[256];
 	char upper_domain[128];
-	char nt_p16[16], p16[16];
+	uint8_t nt_p16[16], p16[16];
 	const DATA_BLOB *plm_response;
 	const DATA_BLOB *pnt_response;
 	
@@ -1009,8 +1008,7 @@ static BOOL ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	ntlmssp_md4hash(plain_passwd, nt_p16);
 	
 	memset(p16, 0, 16);
-	ntlmssp_deshash(plain_passwd, (uint8_t*)p16);
-
+	ntlmssp_deshash(plain_passwd, p16);
 	
 	if (pnt_response->length != 0 && pnt_response->length < 24) {
 		debug_info("[ntlmssp]: invalid NT password length (%u) for user %s "
@@ -1250,7 +1248,7 @@ static BOOL ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	DATA_BLOB *puser_key;
 	HMACMD5_CTX hmac_ctx;
 	DATA_BLOB session_key;
-	char session_key_buff[32];
+	uint8_t session_key_buff[32];
 	static const uint8_t zeros[24] = {0, };
 	
 
@@ -1378,7 +1376,7 @@ static BOOL ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 BOOL ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 {
 	DATA_BLOB tmp_blob;
-	char blob_buff[1024];
+	uint8_t blob_buff[1024];
 	uint32_t ntlmssp_command;
 
 	if (NTLMSSP_PROCESS_DONE == pntlmssp->expected_state) {
@@ -1530,8 +1528,7 @@ static BOOL ntlmssp_check_packet_internal(NTLMSSP_CTX *pntlmssp,
 	size_t pdu_length, const DATA_BLOB *psig)
 {
 	DATA_BLOB local_sig;
-	char local_sig_buff[16];
-
+	uint8_t local_sig_buff[16];
 	
 	local_sig.data = local_sig_buff;
 	if (0 == pntlmssp->session_key.length) {

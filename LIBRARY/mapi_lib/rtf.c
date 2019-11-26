@@ -418,7 +418,7 @@ static BOOL rtf_flush_iconv_cache(RTF_READER *preader)
 	if (NULL == ptmp_buff) {
 		return FALSE;
 	}
-	in_buff = preader->iconv_push.data;
+	in_buff = preader->iconv_push.cdata;
 	in_size = preader->iconv_push.offset;
 	out_buff = ptmp_buff;
 	out_size = tmp_len;
@@ -3908,7 +3908,7 @@ static BOOL rtf_convert_group_node(
 				free(tmp_bin.pb);
 				goto CONVERT_FAILURE;
 			}
-			if (FALSE == decode_hex_binary(picture_push.data,
+			if (FALSE == decode_hex_binary(picture_push.cdata,
 				tmp_bin.pb, tmp_bin.cb)) {
 				free(tmp_bin.pb);
 				goto CONVERT_FAILURE;

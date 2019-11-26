@@ -1,4 +1,3 @@
-#include <libHX/defs.h>
 #include "endian_macro.h"
 #include "ext_buffer.h"
 #include "util.h"
@@ -236,7 +235,7 @@ int ext_buffer_pull_string(EXT_PULL *pext, char **ppstr)
 	if (pext->offset >= pext->data_size) {
 		return EXT_ERR_BUFSIZE;
 	}
-	len = strnlen(pext->data + pext->offset, pext->data_size - pext->offset);
+	len = strnlen(pext->cdata + pext->offset, pext->data_size - pext->offset);
 	if (len + 1 > pext->data_size - pext->offset) {
 		return EXT_ERR_BUFSIZE;
 	}

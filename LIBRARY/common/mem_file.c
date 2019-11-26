@@ -292,7 +292,8 @@ size_t	mem_file_read(MEM_FILE *pfile, void* pbuff, size_t size)
 ssize_t	mem_file_seek(MEM_FILE* pfile, int type, ssize_t offset, int opt)
 {
 	DOUBLE_LIST_NODE *pnode;
-	ssize_t blocks, end, ret_val;
+	ssize_t ret_val;
+	size_t blocks, end;
 
 #ifdef _DEBUG_UMTA
 	if(NULL == pfile) {

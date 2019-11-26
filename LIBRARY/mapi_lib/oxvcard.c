@@ -406,7 +406,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (0 != decode64(pstring, tmp_len, tmp_buff, &decode_len)) {
 				goto IMPORT_FAILURE;
 			}
-			tmp_bin.pb = tmp_buff;
+			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
 			propval.pvalue = &tmp_bin;
@@ -785,7 +785,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			propval.pvalue = &bin_array;
 			bin_array.count = 1;
 			bin_array.pbin = &tmp_bin;
-			tmp_bin.pb = tmp_buff;
+			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
 			if (FALSE == tpropval_array_set_propval(
 				&pmsg->proplist, &propval)) {

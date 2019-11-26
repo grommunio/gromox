@@ -68,8 +68,8 @@ typedef struct _FINFO {
 typedef struct _FXINFO {
 	int16_t fd_iconid;		/* icon ID number */
 	int16_t fd_unused[3];	/* spare */
-	char fd_script;			/* scrip flag and code */
-	char fd_xflags;			/* reserved */
+	int8_t fd_script; /* scrip flag and code */
+	int8_t fd_xflags; /* reserved */
 	int16_t fd_comment;		/* comment ID number */
 	int32_t fd_putaway;		/* home directory ID */
 } FXINFO;

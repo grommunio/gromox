@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "dsn.h"
 #include "rtf.h"
 #include "html.h"
@@ -564,7 +565,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 			return FALSE;
 		}
-		tmp_bin.pb = tmp_buff;
+		tmp_bin.pc = tmp_buff;
 		propval.proptag = PROP_TAG_SEARCHKEY;
 		propval.pvalue = &tmp_bin;
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -572,7 +573,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		}
 		propval.proptag = PROP_TAG_ENTRYID;
 		tmp_bin.cb = 0;
-		tmp_bin.pb = tmp_buff;
+		tmp_bin.pc = tmp_buff;
 		propval.pvalue = &tmp_bin;
 		if ('\0' == essdn[0]) {
 			if (FALSE == oxcmail_username_to_oneoff(
@@ -758,7 +759,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		} else {
 			tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
 		}
-		tmp_bin.pb = tmp_buff;
+		tmp_bin.pc = tmp_buff;
 		propval.proptag = proptag5;
 		propval.pvalue = &tmp_bin;
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -766,7 +767,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		}
 		propval.proptag = proptag6;
 		tmp_bin.cb = 0;
-		tmp_bin.pb = tmp_buff;
+		tmp_bin.pc = tmp_buff;
 		propval.pvalue = &tmp_bin;
 		if ('\0' == essdn[0]) {
 			if (FALSE == oxcmail_username_to_oneoff(
@@ -1055,7 +1056,7 @@ static BOOL oxcmail_parse_thread_index(
 	if (0 != decode64(field, strlen(field), tmp_buff, &len)) {
 		return TRUE;
 	}
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pc = tmp_buff;
 	tmp_bin.cb = len;
 	propval.proptag = PROP_TAG_CONVERSATIONINDEX;
 	propval.pvalue = &tmp_bin;
@@ -2265,7 +2266,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 			return FALSE;
 		}
 		tmp_bin.cb = length;
-		tmp_bin.pb = pcontent;
+		tmp_bin.pc = pcontent;
 		propval.proptag = PROP_TAG_HTML;
 		propval.pvalue = &tmp_bin;
 	} else if (0 == strcasecmp(content_type, "text/plain")) {
@@ -2292,7 +2293,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 			return FALSE;
 		}
 		tmp_bin.cb = strlen(pcontent + length + 1);
-		tmp_bin.pb = pcontent + length + 1;
+		tmp_bin.pc = pcontent + length + 1;
 		propval.proptag = PROP_TAG_HTML;
 		propval.pvalue = &tmp_bin;
 	}
@@ -2336,7 +2337,7 @@ static void oxcmail_compose_mac_additional(
 		} else if (tmp_buff[i] < 32 || tmp_buff[i] > 251 || 127 == tmp_buff[i]) {
 			pbin->pb[pbin->cb] = '\\';
 			pbin->cb ++;
-			sprintf(pbin->pb + pbin->cb, "%03o", (int)tmp_buff[i]);
+			sprintf(pbin->pc + pbin->cb, "%03o", tmp_buff[i]);
 		} else {
 			pbin->pb[pbin->cb] = tmp_buff[i];
 			pbin->cb ++;
@@ -2418,7 +2419,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 		}
 	}
 	tmp_bin.cb = 0;
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pc = tmp_buff;
 	oxcmail_compose_mac_additional(binhex.type, binhex.creator, &tmp_bin);
 	propval.proptag = PROP_TAG_ATTACHADDITIONALINFORMATION;
 	propval.pvalue = &tmp_bin;
@@ -2592,7 +2593,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		}
 		if (AS_FINDERINFO == applefile.pentries[i].entry_id) {
 			tmp_bin.cb = 0;
-			tmp_bin.pb = tmp_buff;
+			tmp_bin.pc = tmp_buff;
 			oxcmail_compose_mac_additional(
 				((ASFINDERINFO*)
 				applefile.pentries[i].pentry)->finfo.fd_type,
@@ -2711,7 +2712,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	}
 	rop_util_free_binary(pbin);
 	(*plast_propid) ++;
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pc = tmp_buff;
 	oxcmail_compose_mac_additional(macbin.header.type,
 					macbin.header.creator, &tmp_bin);
 	propval.proptag = PROP_TAG_ATTACHADDITIONALINFORMATION;
@@ -2724,7 +2725,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	propval.proptag = PROP_TAG_ATTACHDATABINARY;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
-	tmp_bin.pb = pcontent;
+	tmp_bin.pc = pcontent;
 	if (FALSE == tpropval_array_set_propval(
 		&pattachment->proplist, &propval)) {
 		free(pcontent);
@@ -2818,7 +2819,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		}
 		if (AS_FINDERINFO == applefile.pentries[i].entry_id) {
 			tmp_bin.cb = 0;
-			tmp_bin.pb = tmp_buff;
+			tmp_bin.pc = tmp_buff;
 			oxcmail_compose_mac_additional(((ASFINDERINFO*)
 				applefile.pentries[i].pentry)->finfo.fd_type, ((ASFINDERINFO*)
 				applefile.pentries[i].pentry)->finfo.fd_creator, &tmp_bin);
@@ -3229,7 +3230,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = content_len;
-			tmp_bin.pb = pcontent;
+			tmp_bin.pc = pcontent;
 			pmime_enum->b_result = tpropval_array_set_propval(
 							&pattachment->proplist, &propval);
 			free(pcontent);
@@ -3323,7 +3324,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		tmp_bin.cb = sprintf(tmp_buff, "[InternetShortcut]\r\n"
 					"URL=ftp://%s/%s/%s%s", site_buff, dir_buff,
 					file_name, mode_buff);
-		tmp_bin.pb = mode_buff;
+		tmp_bin.pc = mode_buff;
 		propval.proptag = PROP_TAG_ATTACHDATABINARY;
 		propval.pvalue = &tmp_bin;
 		if (FALSE == tpropval_array_set_propval(
@@ -3402,7 +3403,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	propval.proptag = PROP_TAG_ATTACHDATABINARY;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
-	tmp_bin.pb = pcontent;
+	tmp_bin.pc = pcontent;
 	pmime_enum->b_result = tpropval_array_set_propval(
 					&pattachment->proplist, &propval);
 	free(pcontent);
@@ -3811,7 +3812,7 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
 		return FALSE;
 	}
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pc = tmp_buff;
 	propval.proptag = PROP_TAG_SEARCHKEY;
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -3819,7 +3820,7 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	}
 	propval.proptag = PROP_TAG_ENTRYID;
 	tmp_bin.cb = 0;
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pc = tmp_buff;
 	propval.pvalue = &tmp_bin;
 	if ('\0' == essdn[0]) {
 		if (FALSE == oxcmail_username_to_oneoff(
@@ -4226,7 +4227,7 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 		if (len <= 1024 && 0 == decode64(value, len, tmp_buff, &len)) {
 			propval.proptag = PROP_TAG_PARENTKEY;
 			propval.pvalue = &tmp_bin;
-			tmp_bin.pb = tmp_buff;
+			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = len;
 			return tpropval_array_set_propval(
 				&((MESSAGE_CONTENT*)pparam)->proplist, &propval);
@@ -4417,7 +4418,7 @@ static BOOL oxcmail_parse_smime_message(
 	propval.proptag = PROP_TAG_ATTACHDATABINARY;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = offset;
-	tmp_bin.pb = pcontent;
+	tmp_bin.pc = pcontent;
 	if (FALSE == tpropval_array_set_propval(
 		&pattachment->proplist, &propval)) {
 		free(pcontent);
@@ -5058,9 +5059,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 					message_content_free(pmsg);
 					return NULL;
 				}
-				if (TRUE == html_to_rtf(
-					phtml_bin->pb, phtml_bin->cb,
-					tmp_int32, pvalue, &content_len)) {
+				if (TRUE == html_to_rtf(phtml_bin->pc,
+				    phtml_bin->cb, tmp_int32, pvalue, &content_len)) {
 					propval.proptag = PROP_TAG_RTFCOMPRESSED;
 					propval.pvalue = rtfcp_compress(
 								pvalue, content_len);
@@ -5125,8 +5125,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				message_content_free(pmsg);
 				return NULL;
 			}
-			strcpy(phtml_bin->pb, pvalue);
-			phtml_bin->cb = plain_to_html(phtml_bin->pb, tmp_int32);
+			strcpy(phtml_bin->pc, pvalue);
+			phtml_bin->cb = plain_to_html(phtml_bin->pc, tmp_int32);
 			propval.proptag = PROP_TAG_HTML;
 			propval.pvalue = phtml_bin;
 			tpropval_array_set_propval(
@@ -6897,14 +6897,14 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		if (FALSE == mime_write_content(pmime1, pbin->pb,
+		if (FALSE == mime_write_content(pmime1, pbin->pc,
 			pbin->cb, MIME_ENCODING_BASE64)) {
 			rop_util_free_binary(pbin);
 			return FALSE;
 		}
 		rop_util_free_binary(pbin);
 	} else {
-		if (FALSE == mime_write_content(pmime1, pbin->pb,
+		if (FALSE == mime_write_content(pmime1, pbin->pc,
 			pbin->cb, MIME_ENCODING_BASE64)) {
 			return FALSE;
 		}
@@ -6967,7 +6967,6 @@ static BOOL oxcmail_export_attachment(
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
 	MIME_POOL *ppool, MIME *pmime)
 {
-	int size;
 	void *ptr;
 	MAIL imail;
 	BOOL b_tnef;
@@ -7213,7 +7212,7 @@ static BOOL oxcmail_export_attachment(
 		}
 				
 		offset = 0;
-		size = STREAM_BLOCK_SIZE;
+		size_t size = STREAM_BLOCK_SIZE;
 		while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size)) != NULL) {
 			memcpy(pbuff + offset, ptr, size);
 			offset += size;
@@ -7233,7 +7232,7 @@ static BOOL oxcmail_export_attachment(
 				&pattachment->proplist,
 				PROP_TAG_ATTACHDATABINARY);
 	if (NULL != pvalue && 0 != ((BINARY*)pvalue)->cb) {
-		if (FALSE == mime_write_content(pmime, ((BINARY*)pvalue)->pb,
+		if (FALSE == mime_write_content(pmime, reinterpret_cast(BINARY *, pvalue)->pc,
 			((BINARY*)pvalue)->cb, MIME_ENCODING_BASE64)) {
 			return FALSE;
 		}
@@ -7450,7 +7449,7 @@ HTML_ONLY:
 		if (NULL == pbin) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_write_content(pmime, pbin->pb,
+		if (FALSE == mime_write_content(pmime, pbin->pc,
 			pbin->cb, MIME_ENCODING_BASE64)) {
 			goto EXPORT_FAILURE;
 		}
@@ -7468,8 +7467,8 @@ HTML_ONLY:
 		if (NULL == pbin || 0 == pbin->cb) {
 			goto EXPORT_FAILURE;
 		}
-		tmp_len = parse_mime_field(pbin->pb, pbin->cb, &mime_field);
-		if (0 == tmp_len || 0 != strncmp(pbin->pb + tmp_len,
+		tmp_len = parse_mime_field(pbin->pc, pbin->cb, &mime_field);
+		if (0 == tmp_len || 0 != strncmp(pbin->pc + tmp_len,
 			"\r\n", 2) || 12 != mime_field.field_name_len
 			|| 0 != strncasecmp( mime_field.field_name,
 			"Content-Type", 12) || mime_field.field_value_len > 1024
@@ -7483,7 +7482,7 @@ HTML_ONLY:
 			mime_field.field_value)) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_write_content(pmime, pbin->pb + tmp_len + 2,
+		if (FALSE == mime_write_content(pmime, pbin->pc + tmp_len + 2,
 			pbin->cb - tmp_len - 2, MIME_ENCODING_NONE)) {
 			return FALSE;
 		}
@@ -7539,7 +7538,7 @@ HTML_ONLY:
 			tnef_serialize(pmsg, alloc, get_propname))) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_write_content(pmime, pbin->pb,
+		if (FALSE == mime_write_content(pmime, pbin->pc,
 			pbin->cb, MIME_ENCODING_BASE64)) {
 			rop_util_free_binary(pbin);
 			goto EXPORT_FAILURE;
@@ -7556,8 +7555,7 @@ HTML_ONLY:
 	}
 	
 	if (NULL != phtml) {
-		if (FALSE == mime_write_content(phtml,
-			mime_skeleton.phtml->pb,
+		if (FALSE == mime_write_content(phtml, mime_skeleton.phtml->pc,
 			mime_skeleton.phtml->cb,
 			MIME_ENCODING_BASE64)) {
 			goto EXPORT_FAILURE;
