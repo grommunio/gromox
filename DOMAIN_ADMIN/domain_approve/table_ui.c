@@ -1,7 +1,7 @@
 #include "table_ui.h"
 #include "lang_resource.h"
 #include "system_log.h"
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "session_client.h"
 #include "data_source.h"
 #include "list_file.h"

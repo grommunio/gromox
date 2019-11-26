@@ -2,7 +2,7 @@
 #include "setup_ui.h"
 #include <gromox/acl_control.h>
 #include "config_file.h"
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "util.h"
 #include <unistd.h>
 #include <string.h>

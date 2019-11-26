@@ -2,7 +2,7 @@
 #include "backup_ui.h"
 #include <gromox/acl_control.h>
 #include "file_operation.h"
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>

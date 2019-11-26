@@ -7,7 +7,7 @@
 #include "data_source.h"
 #include "file_operation.h"
 #include "system_log.h"
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "config_file.h"
 #include <stdio.h>
 #include <string.h>

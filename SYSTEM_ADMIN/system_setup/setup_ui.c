@@ -2,7 +2,7 @@
 #include "lang_resource.h"
 #include "system_log.h"
 #include <gromox/acl_control.h>
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "list_file.h"
 #include "util.h"
 #include <time.h>

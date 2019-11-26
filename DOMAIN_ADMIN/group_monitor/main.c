@@ -3,7 +3,7 @@
 #include "table_ui.h"
 #include "data_source.h"
 #include "session_client.h"
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>

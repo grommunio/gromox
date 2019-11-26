@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "engine.h"
 #include "file_operation.h"
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "data_source.h"
 #include "config_file.h"
 #include <stdio.h>

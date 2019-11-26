@@ -1,4 +1,4 @@
-#include "gateway_control.h"
+#include <gromox/gateway_control.h>
 #include "util.h"
 #include "single_list.h"
 #include "list_file.h"
