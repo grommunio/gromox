@@ -1090,7 +1090,7 @@ int exmdb_parser_run()
 			b_private = FALSE;
 		} else {
 			printf("[exmdb_provider]: unknown type \"%s\", only"
-				"can be \"private\" or \"public\"!");
+				"can be \"private\" or \"public\"!", pitem[i].type);
 			list_file_free(plist);
 			return 2;
 		}

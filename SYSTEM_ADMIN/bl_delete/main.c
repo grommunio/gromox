@@ -33,7 +33,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	if (argc != 2) {
-		printf("usage: %s log_file\n");
+		printf("usage: %s log_file\n", argv[0]);
 		return 1;
 	}
 

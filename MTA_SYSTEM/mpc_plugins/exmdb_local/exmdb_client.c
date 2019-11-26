@@ -593,7 +593,7 @@ int exmdb_client_run()
 			b_private = FALSE;
 		} else {
 			printf("[exmdb_local]: unknown type \"%s\", "
-				"can only be \"private\" or \"public\"!");
+				"can only be \"private\" or \"public\"!", pitem[i].type);
 			list_file_free(plist);
 			g_notify_stop = TRUE;
 			return 2;
