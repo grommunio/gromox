@@ -1,5 +1,6 @@
 #include <time.h>
 #include <libHX/defs.h>
+#include <libHX/option.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -25,7 +26,13 @@ static int g_notify_stop;
 static pid_t g_synchronizer_pid;
 static pid_t g_fcgicgi_pid;
 static pid_t g_supervised_process;
+static char *opt_path;
 
+static struct HXoption g_options_table[] = {
+	{.sh = 'p', .type = HXTYPE_STRING, .ptr = &opt_path, .help = "Path to Gromox binaries", .htyp = "DIR"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 /*
  *  set the stop flag and relay signal to supervised process
@@ -76,17 +83,17 @@ void start_analyzer()
 	int len, status;
 	char temp_str[32];
 	char temp_path[256];
-	const char *args[] = {"./daemon", "../config/posidon.cfg", NULL};
+	const char *args[] = {"da_daemon", "-c", "../config/posidon.cfg", NULL};
 	struct stat node_stat;
 	
-	sprintf(temp_path, "%s/daemon", POSIDON_MAIN_DIR);
+	sprintf(temp_path, "%s/da_daemon", POSIDON_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
 		return;
 	}
 	pid = fork();
 	if (0 == pid) {
 		chdir(POSIDON_MAIN_DIR);
-		if (execve("./daemon", const_cast(char **, args), NULL) == -1) {
+		if (execve("./da_daemon", const_cast(char **, args), NULL) == -1) {
 			exit(EXIT_FAILURE);
 		}
 	} else if (pid > 0) {
@@ -109,7 +116,7 @@ void start_synchronizer()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./synchronizer", "../config/posidon.cfg", NULL};
+	const char *args[] = {"synchronizer", "-c", "../config/posidon.cfg", NULL};
 
 	sprintf(temp_path, "%s/synchronizer", POSIDON_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -147,7 +154,7 @@ void start_fcgicgi()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./fcgi_cgi", "../config/posidon.cfg", NULL};
+	const char *args[] = {"fcgi_cgi", "-c", "../config/posidon.cfg", NULL};
 
 	sprintf(temp_path, "%s/fcgi_cgi", POSIDON_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -360,27 +367,29 @@ void restart_service()
 
 int main(int argc, const char **argv)
 {
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s start|stop|restart|status\n", argv[0]);
-		exit(EXIT_SUCCESS);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_path == NULL) {
+		printf("You need to specify the -p option.\n");
+		return EXIT_FAILURE;
 	}
-	if (3 != argc) {
-		printf("usage: %s path start|stop|restart|status\n", argv[0]);
+	if (argc != 2) {
+		printf("usage: %s -p path {start|stop|restart|status}\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	
-	sprintf(PID_LOCK_FILE, "%s/token/token.pid", argv[1]);
-	sprintf(POSIDON_MAIN_DIR, "%s/bin", argv[1]);
-	if (0 == strcmp(argv[2], "start")) {
+	sprintf(PID_LOCK_FILE, "%s/token/token.pid", opt_path);
+	sprintf(POSIDON_MAIN_DIR, "%s/bin", opt_path);
+	if (strcmp(argv[1], "start") == 0) {
 		start_service();
-	} else if (0 == strcmp(argv[2], "stop")) {
+	} else if (strcmp(argv[1], "stop") == 0) {
 		stop_service();
-	} else if (0 == strcmp(argv[2], "restart")) {
+	} else if (strcmp(argv[1], "restart") == 0) {
 		restart_service();
-	} else if (0 == strcmp(argv[2], "status")) {
+	} else if (strcmp(argv[1], "status") == 0) {
 		status_service();
 	} else {
-		printf("unknown option %s\n", argv[1]);
+		printf("unknown command %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 }

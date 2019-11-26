@@ -1,5 +1,6 @@
 #include <time.h>
 #include <libHX/defs.h>
+#include <libHX/option.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -53,7 +54,13 @@ static pid_t g_sensor_pid;
 static pid_t g_rsync_pid;
 static pid_t g_cdnd_pid;
 static pid_t g_supervised_process;
+static char *opt_path;
 
+static struct HXoption g_options_table[] = {
+	{.sh = 'p', .type = HXTYPE_STRING, .ptr = &opt_path, .help = "Path to Gromox binaries", .htyp = "DIR"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 /*
  *  set the stop flag and relay signal to supervised process
@@ -134,17 +141,17 @@ void start_analyzer()
 	int len, status;
 	char temp_str[32];
 	char temp_path[256];
-	const char *args[] = {"./daemon", "../config/athena.cfg", NULL};
+	const char *args[] = {"sa_daemon", "-c", "../config/athena.cfg", NULL};
 	struct stat node_stat;
 	
-	sprintf(temp_path, "%s/daemon", ATHENA_MAIN_DIR);
+	sprintf(temp_path, "%s/sa_daemon", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
 		return;
 	}
 	pid = fork();
 	if (0 == pid) {
 		chdir(ATHENA_MAIN_DIR);
-		if (execve("./daemon", const_cast(char **, args), NULL) == -1) {
+		if (execve("./sa_daemon", const_cast(char **, args), NULL) == -1) {
 			exit(EXIT_FAILURE);
 		}
 	} else if (pid > 0) {
@@ -167,7 +174,7 @@ void start_monitor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./monitor", "../config/athena.cfg", NULL};
+	const char *args[] = {"monitor", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/monitor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -206,7 +213,7 @@ void start_supervisor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./supervisor", "../config/athena.cfg", NULL};
+	const char *args[] = {"supervisor", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/supervisor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -244,7 +251,7 @@ void start_adaptor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./adaptor", "../config/athena.cfg", NULL};
+	const char *args[] = {"adaptor", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/adaptor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -282,7 +289,7 @@ void start_scanner()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./scanner", "../config/athena.cfg", NULL};
+	const char *args[] = {"scanner", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/scanner", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -320,7 +327,7 @@ void start_locker()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./locker", "../config/athena.cfg", NULL};
+	const char *args[] = {"locker", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/locker", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -358,7 +365,7 @@ void start_event()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./event", "../config/athena.cfg", NULL};
+	const char *args[] = {"event", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/event", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -396,7 +403,7 @@ void start_sensor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./sensor", "../config/athena.cfg", NULL};
+	const char *args[] = {"sensor", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/sensor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -434,7 +441,7 @@ void start_rsync()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./rsync", "../config/athena.cfg", NULL};
+	const char *args[] = {"rsync", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/rsync", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -472,7 +479,7 @@ void start_cdnd()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./cdnd", "../config/athena.cfg", NULL};
+	const char *args[] = {"cdnd", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/cdnd", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -510,7 +517,7 @@ void start_timer()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./timer", "../config/athena.cfg", NULL};
+	const char *args[] = {"timer", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/timer", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -548,7 +555,7 @@ void start_pad()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./pad", "../config/athena.cfg", NULL};
+	const char *args[] = {"pad", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/pad", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -586,7 +593,7 @@ void start_session()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./session", "../config/athena.cfg", NULL};
+	const char *args[] = {"session", "-c", "../config/athena.cfg", NULL};
 
 	sprintf(temp_path, "%s/session", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -904,29 +911,31 @@ void restart_service()
 
 int main(int argc, const char **argv)
 {
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s start|stop|restart|status\n", argv[0]);
-		exit(EXIT_SUCCESS);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_path == NULL) {
+		printf("You need to specify the -p option.\n");
+		return EXIT_FAILURE;
 	}
-	if (3 != argc) {
-		printf("usage: %s path start|stop|restart|status\n", argv[0]);
+	if (argc != 2) {
+		printf("usage: %s -p path {start|stop|restart|status}\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	
-	sprintf(PID_LOCK_FILE, "%s/token/token.pid", argv[1]);
-	sprintf(CONTROL_TOKEN_FILE, "%s/token/control.msg", argv[1]);
-	sprintf(SESSION_TOKEN_FILE, "%s/token/session.shm", argv[1]);
-	sprintf(ATHENA_MAIN_DIR, "%s/bin", argv[1]);
-	if (0 == strcmp(argv[2], "start")) {
+	sprintf(PID_LOCK_FILE, "%s/token/token.pid", opt_path);
+	sprintf(CONTROL_TOKEN_FILE, "%s/token/control.msg", opt_path);
+	sprintf(SESSION_TOKEN_FILE, "%s/token/session.shm", opt_path);
+	sprintf(ATHENA_MAIN_DIR, "%s/bin", opt_path);
+	if (strcmp(argv[1], "start") == 0) {
 		start_service();
-	} else if (0 == strcmp(argv[2], "stop")) {
+	} else if (strcmp(argv[1], "stop") == 0) {
 		stop_service();
-	} else if (0 == strcmp(argv[2], "restart")) {
+	} else if (strcmp(argv[1], "restart") == 0) {
 		restart_service();
-	} else if (0 == strcmp(argv[2], "status")) {
+	} else if (strcmp(argv[1], "status") == 0) {
 		status_service();
 	} else {
-		printf("unknown option %s\n", argv[1]);
+		printf("unknown command %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 }

@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/option.h>
 #include "config_file.h"
 #include <time.h>
 #include <stdio.h>
@@ -15,6 +16,14 @@
 #include <sys/types.h>
 #include <mysql/mysql.h>
 #define CONFIG_ID_USERNAME				1
+
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 int main(int argc, const char **argv)
 {
@@ -39,15 +48,11 @@ int main(int argc, const char **argv)
 	CONFIG_FILE *pconfig;
 	struct stat node_stat;
 	
-	
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
-		exit(0);
-	}
-	
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s <username>\n", argv[0]);
-		exit(0);
+		return 0;
 	}
 	
 	if (2 != argc) {

@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/option.h>
 #include "double_list.h"
 #include "config_file.h"
 #include "list_file.h"
@@ -85,6 +86,15 @@ static DOUBLE_LIST g_front_list;
 static DOUBLE_LIST g_front_list1;
 static DOUBLE_LIST g_server_list;
 static DOUBLE_LIST g_lost_list;
+static char *opt_config_file = NULL;
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 int main(int argc, const char **argv)
 {
@@ -107,22 +117,19 @@ int main(int argc, const char **argv)
 	MIDB_ITEM *pitem;
     DOUBLE_LIST_NODE *pnode;
 
-
-	if (2 != argc) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 1;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 0;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	pconfig = config_file_init(argv[1]);
+	if (opt_config_file == NULL) {
+		printf("You need to specify the -c option.\n");
+		return EXIT_FAILURE;
+	}
+	pconfig = config_file_init(opt_config_file);
 	if (NULL == pconfig) {
-		printf("[system]: config_file_init %s: %s\n", argv[1], strerror(errno));
+		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}
 

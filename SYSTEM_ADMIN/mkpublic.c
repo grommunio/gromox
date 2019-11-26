@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/option.h>
 #include "config_file.h"
 #include "ext_buffer.h"
 #include "mapi_types.h"
@@ -25,6 +26,13 @@
 static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static BOOL create_generic_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t parent_id, int domain_id,
@@ -255,15 +263,11 @@ int main(int argc, const char **argv)
 	struct stat node_stat;
 	char mysql_string[1024];
 	
-	
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
-		exit(0);
-	}
-	
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s <domainname>\n", argv[0]);
-		exit(0);
+		return 0;
 	}
 	
 	if (2 != argc) {

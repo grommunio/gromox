@@ -1,12 +1,21 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/option.h>
 #include "mail.h"
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 int main(int argc, const char **argv)
 {
@@ -18,23 +27,16 @@ int main(int argc, const char **argv)
 	MIME_POOL *ppool;
 	struct stat node_stat;
 	
-
-
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
+		printf("version: %s\n", PROJECT_VERSION);
+		return 0;
+	}
 	if (2 != argc) {
 		printf("%s msg-path\n", argv[0]);
 		return 1;
 	}
-
-	if (0 == strcmp(argv[1], "--help")) {
-		printf("%s index-path msg-path\n", argv[0]);
-		return 0;
-	}
-
-	if (0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", PROJECT_VERSION);
-		return 0;
-	}
-
     
 	if (0 != stat(argv[1], &node_stat)) {
 		printf("fail to find %s\n", argv[1]);

@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/option.h>
 #include "single_list.h"
 #include "util.h"
 #include "list_file.h"
@@ -39,6 +40,15 @@ typedef struct _CONSOLE_PORT {
 
 static int *g_shm_begin;
 static BOOL g_notify_stop;
+static char *opt_config_file;
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static void term_handler(int signo);
 
@@ -71,22 +81,20 @@ int main(int argc, const char **argv)
 	CONFIG_FILE *pconfig_file;
 	CONSOLE_PORT *pconsole;
 	
-	if (2 != argc) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 1;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 0;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
+	if (opt_config_file == NULL) {
+		printf("You need to specify the -c option.\n");
+		return EXIT_FAILURE;
+	}
 	signal(SIGPIPE, SIG_IGN);
-	pconfig_file = config_file_init(argv[1]);
+	pconfig_file = config_file_init(opt_config_file);
 	if (NULL == pconfig_file) {
-		printf("[system]: config_file_init %s: %s\n", argv[1], strerror(errno));
+		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}
 	str_value = config_file_get_value(pconfig_file, "DATA_FILE_PATH");

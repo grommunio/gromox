@@ -1,5 +1,6 @@
 #include <time.h>
 #include <libHX/defs.h>
+#include <libHX/option.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -26,7 +27,13 @@ static int g_token_fd;
 static int g_notify_stop;
 static pid_t g_cidb_pid;
 static pid_t g_supervised_process;
+static char *opt_path;
 
+static struct HXoption g_options_table[] = {
+	{.sh = 'p', .type = HXTYPE_STRING, .ptr = &opt_path, .help = "Path to Gromox binaries", .htyp = "DIR"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 /*
  *  set the stop flag and relay signal to supervised process
@@ -77,7 +84,7 @@ void start_cidb()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"./cidb", "../config/titan.cfg", NULL};
+	const char *args[] = {"cidb", "-c", "../config/titan.cfg", NULL};
 
 	sprintf(temp_path, "%s/cidb", TITAN_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -296,28 +303,30 @@ void restart_service()
 
 int main(int argc, const char **argv)
 {
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s start|stop|restart|status\n", argv[0]);
-		exit(EXIT_SUCCESS);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_path == NULL) {
+		printf("You need to specify the -p option.\n");
+		return EXIT_FAILURE;
 	}
-	if (3 != argc) {
-		printf("usage: %s path start|stop|restart|status\n", argv[0]);
+	if (argc != 2) {
+		printf("usage: %s -p path {start|stop|restart|status}\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	
-	sprintf(PID_LOCK_FILE, "%s/token/token.pid", argv[1]);
-	sprintf(CONTROL_TOKEN_FILE, "%s/token/control.msg", argv[1]);
-	sprintf(TITAN_MAIN_DIR, "%s/bin", argv[1]);
-	if (0 == strcmp(argv[2], "start")) {
+	sprintf(PID_LOCK_FILE, "%s/token/token.pid", opt_path);
+	sprintf(CONTROL_TOKEN_FILE, "%s/token/control.msg", opt_path);
+	sprintf(TITAN_MAIN_DIR, "%s/bin", opt_path);
+	if (strcmp(argv[1], "start") == 0) {
 		start_service();
-	} else if (0 == strcmp(argv[2], "stop")) {
+	} else if (strcmp(argv[1], "stop") == 0) {
 		stop_service();
-	} else if (0 == strcmp(argv[2], "restart")) {
+	} else if (strcmp(argv[1], "restart") == 0) {
 		restart_service();
-	} else if (0 == strcmp(argv[2], "status")) {
+	} else if (strcmp(argv[1], "status") == 0) {
 		status_service();
 	} else {
-		printf("unknown option %s\n", argv[1]);
+		printf("unknown command %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 }

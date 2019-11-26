@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/option.h>
 #include "log_flusher.h"
 #include "log_analyzer.h"
 #include "message.h"
@@ -24,6 +25,16 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+static char *opt_config_file;
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 int main(int argc, const char **argv)
 {
@@ -56,23 +67,21 @@ int main(int argc, const char **argv)
 	char *mysql_passwd;
 	char db_name[256];
 
-	if (2 != argc) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 10;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 0;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
+	if (opt_config_file == NULL) {
+		printf("You need to specify the -c option.\n");
+		return EXIT_FAILURE;
+	}
 	umask(0);
 	time(&now_time);	
-	pconfig = config_file_init(argv[1]);
+	pconfig = config_file_init(opt_config_file);
 	if (NULL == pconfig) {
-		printf("[system]: config_file_init %s: %s\n", argv[1], strerror(errno));
+		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
@@ -246,7 +255,7 @@ int main(int argc, const char **argv)
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
 	log_analyzer_init(now_time, statistic_path, mount_path);
 	keyword_cleaning_init(now_time, group_path, console_path, kstatisitic_path);
-	auto_backup_init(argv[1], data_path, system_backup_path,
+	auto_backup_init(opt_config_file, data_path, system_backup_path,
 		admin_mailbox, default_domain);
 	domain_cleaner_init(now_time);
 	password_cleaner_init(now_time);

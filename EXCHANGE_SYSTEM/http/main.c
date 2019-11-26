@@ -1,3 +1,4 @@
+#include <libHX/option.h>
 #include "util.h"
 #include "vstack.h"
 #include "service.h"
@@ -25,14 +26,20 @@
 
 #define PDU_PROCESSOR_RATIO			10
 
-/* the only global variable in system to indicate the program to exit */
 BOOL g_notify_stop = FALSE;
+static char *opt_config_file;
+
+static struct HXoption g_options_table[] = {
+	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 typedef void (*STOP_FUNC)();
 
 static void term_handler(int signo);
 
-int main(int argc, char* argv[]) 
+int main(int argc, const char **argv)
 {
 	struct rlimit rl;
 	VSTACK stop_stack;
@@ -68,13 +75,15 @@ int main(int argc, char* argv[])
 
 	allocator = vstack_allocator_init(sizeof(STOP_FUNC), 50, FALSE);    
 	vstack_init(&stop_stack, allocator, sizeof(STOP_FUNC), 50);
-	if (argc != 2) { 
-		printf("%s <cfg file>\n", argv[0]); 
-		exit(1); 
-	} 
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_config_file == NULL) {
+		printf("You need to specify the -c option.\n");
+		return EXIT_FAILURE;
+	}
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, term_handler);
-	resource_init(argv[1]); 
+	resource_init(opt_config_file);
  
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 

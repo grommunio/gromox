@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <ctype.h>
+#include <libHX/option.h>
 #include "single_list.h"
 #include "util.h"
 #include "mail.h"
@@ -45,6 +46,14 @@ static BOOL send_command(int sockd, const char *command, int command_len);
 static int get_response(int sockd, char *response, int response_len,
 	BOOL expect_3xx);
 
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
+
 static BOOL move_to_sent(const char *maildir,
 	const char *folder_name, const char *mid_string)
 {
@@ -83,18 +92,12 @@ int main(int argc, const char **argv)
 	int smtp_port, res_val, command_len;
 	int fd, sockd, opt, val_opt, opt_len;
 	
-
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s username maildir folder_name"
-					" mid_string ip:port\n", argv[0]);
-		exit(0);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
+		printf("version: %s role: client\n", PROJECT_VERSION);
+		return 0;
 	}
-
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
-		printf("version: %s\n", PROJECT_VERSION);
-		exit(0);
-	}
-
 	if (6 != argc) {
 		printf("usage: %s username maildir folder_name"
 					" mid_string ip:port\n", argv[0]);

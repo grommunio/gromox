@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/option.h>
 #include "rtf.h"
 #include "rtfcp.h"
 #include "list_file.h"
@@ -10,6 +11,13 @@
 #include <unistd.h>
 
 static LIST_FILE *g_list_file;
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static const char* cpid_to_charset_to(uint32_t cpid)
 {
@@ -37,7 +45,9 @@ int main(int argc, const char **argv)
 	size_t tmp_len;
 	ATTACHMENT_LIST *pattachments;
 	
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}

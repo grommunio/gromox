@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/option.h>
 #include "log_flusher.h"
 #include "domain_classifier.h"
 #include "data_source.h"
@@ -13,6 +14,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static char *opt_config_file = NULL;
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 int main(int argc, const char **argv)
 {
@@ -32,22 +43,20 @@ int main(int argc, const char **argv)
 	char *mysql_passwd;
 	char db_name[256];
 
-	if (2 != argc) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 10;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("%s <cfg file>\n", argv[0]);
-		return 0;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
+	if (opt_config_file == NULL) {
+		printf("You need to specify the -c option.\n");
+		return EXIT_FAILURE;
+	}
 	time(&now_time);	
-	pconfig = config_file_init(argv[1]);
+	pconfig = config_file_init(opt_config_file);
 	if (NULL == pconfig) {
-		printf("[system]: config_file_init %s: %s\n", argv[1], strerror(errno));
+		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");

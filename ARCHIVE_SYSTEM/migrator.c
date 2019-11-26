@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/option.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -14,6 +15,13 @@
 #define SUBDIR_PER_VDIR			250
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static void move_file(char *src_file, char *dst_file, int size)
 {
@@ -91,12 +99,9 @@ int main(int argc, const char **argv)
 {
 	struct stat node_stat;
 
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s src-path dst-path\n", argv[0]);
-		return 0;
-	}
-
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}

@@ -20,6 +20,7 @@
  */
 #include <time.h>
 #include <libHX/defs.h>
+#include <libHX/option.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -55,6 +56,13 @@ static int g_notify_stop;
 static pid_t g_smtp_supervisor;
 static pid_t g_delivery_supervisor;
 static pid_t g_supervised_process;
+static char *opt_path;
+
+static struct HXoption g_options_table[] = {
+	{.sh = 'p', .type = HXTYPE_STRING, .ptr = &opt_path, .help = "Path to Gromox binaries", .htyp = "DIR"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 /*
  *	set the stop flag and relay signal to supervised process
@@ -106,7 +114,7 @@ void start_smtp()
 {
 	int fd, status;
 	struct stat node_stat;
-	const char *args[] = {"./smtp", "../config/smtp.cfg", NULL};
+	const char *args[] = {"smtp", "-c", "../config/smtp.cfg", NULL};
 
 	if (0 != stat(SMTP_LOG_FILE, &node_stat) 
 		|| node_stat.st_size > 128*1024*1024) {
@@ -152,7 +160,7 @@ void start_delivery()
 	struct stat node_stat;
 	time_t start_points[3];
 	int fd, status, start_times;
-	const char *args[] = {"./delivery", "../config/delivery.cfg", NULL};
+	const char *args[] = {"delivery", "-c", "../config/delivery.cfg", NULL};
 
 	if (0 != stat(DELIVERY_LOG_FILE, &node_stat)
 		|| node_stat.st_size > 128*1024*1024) {
@@ -410,32 +418,34 @@ void restart_service()
 
 int main(int argc, const char **argv)
 {
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s start|stop|restart|status\n", argv[0]);
-		exit(EXIT_SUCCESS);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_path == NULL) {
+		printf("You need to specify the -p option.\n");
+		return 1;
 	}
-	if (3 != argc) {
-		printf("usage: %s path start|stop|restart|status\n", argv[0]);
+	if (argc != 2) {
+		printf("usage: %s -p path {start|stop|restart|status}\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	
-	sprintf(QUEUE_MESS_PATH, "%s/queue/mess", argv[1]);
-	sprintf(QUEUE_SAVE_PATH, "%s/queue/save", argv[1]);
-	sprintf(MONITOR_TOKEN_FILE, "%s/queue/token.ipc", argv[1]);
-	sprintf(PID_LOCK_FILE, "%s/queue/token.pid", argv[1]);
-	sprintf(SMTP_LOG_FILE, "%s/logs/smtp_running.log", argv[1]);
-	sprintf(DELIVERY_LOG_FILE, "%s/logs/delivery_running.log", argv[1]);
-	sprintf(HERCULIZ_MAIN_DIR, "%s/bin", argv[1]);
-	if (0 == strcmp(argv[2], "start")) {
+	sprintf(QUEUE_MESS_PATH, "%s/queue/mess", opt_path);
+	sprintf(QUEUE_SAVE_PATH, "%s/queue/save", opt_path);
+	sprintf(MONITOR_TOKEN_FILE, "%s/queue/token.ipc", opt_path);
+	sprintf(PID_LOCK_FILE, "%s/queue/token.pid", opt_path);
+	sprintf(SMTP_LOG_FILE, "%s/logs/smtp_running.log", opt_path);
+	sprintf(DELIVERY_LOG_FILE, "%s/logs/delivery_running.log", opt_path);
+	sprintf(HERCULIZ_MAIN_DIR, "%s/bin", opt_path);
+	if (strcmp(argv[1], "start") == 0) {
 		start_service();
-	} else if (0 == strcmp(argv[2], "stop")) {
+	} else if (strcmp(argv[1], "stop") == 0) {
 		stop_service();
-	} else if (0 == strcmp(argv[2], "restart")) {
+	} else if (strcmp(argv[1], "restart") == 0) {
 		restart_service();
-	} else if (0 == strcmp(argv[2], "status")) {
+	} else if (strcmp(argv[1], "status") == 0) {
 		status_service();
 	} else {
-		printf("unknown option %s\n", argv[1]);
+		printf("unknown command %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 }

@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <string.h>
+#include <libHX/option.h>
 #include "mail.h"
 #include "mail_func.h"
 #include "util.h"
@@ -26,6 +27,15 @@ static int g_cidb_port;
 static char g_cidb_host[16];
 static char g_area_path[128];
 static MIME_POOL *g_mime_pool;
+static char *opt_config_file = NULL;
+static unsigned int opt_show_version;
+
+static struct HXoption g_options_table[] = {
+	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 static void insert_directory(const char *dir_path);
 
@@ -38,13 +48,9 @@ int main(int argc, const char **argv)
 	char *ptoken;
 	struct stat node_stat;
 	
-
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("%s src-dir dst-path cidb-host:port\n", argv[0]);
-		return 0;
-	}
-	
-	if (2 == argc && 0 == strcmp(argv[1], "--version")) {
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}

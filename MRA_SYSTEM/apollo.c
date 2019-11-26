@@ -1,5 +1,6 @@
 #include <time.h>
 #include <libHX/defs.h>
+#include <libHX/option.h>
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -24,7 +25,13 @@ static int g_notify_stop;
 static pid_t g_pop3_pid;
 static pid_t g_imap_pid;
 static pid_t g_supervised_process;
+static char *opt_path;
 
+static struct HXoption g_options_table[] = {
+	{.sh = 'p', .type = HXTYPE_STRING, .ptr = &opt_path, .help = "Path to Gromox binaries", .htyp = "DIR"},
+	HXOPT_AUTOHELP,
+	HXOPT_TABLEEND,
+};
 
 /*
  *  set the stop flag and relay signal to supervised process
@@ -75,7 +82,7 @@ void daemon_sigstop(int sig)
 void start_pop3()
 {
 	int status;
-	const char *args[] = {"./pop3", "../config/pop3.cfg", NULL};
+	const char *args[] = {"pop3", "-c", "../config/pop3.cfg", NULL};
 
 	g_pop3_pid = fork();
 	if (g_pop3_pid < 0) {
@@ -107,7 +114,7 @@ void start_pop3()
 void start_imap()
 {
 	int status;
-	const char *args[] = {"./imap", "../config/imap.cfg", NULL};
+	const char *args[] = {"imap", "-c", "../config/imap.cfg", NULL};
 
 	g_imap_pid = fork();
 	if (g_imap_pid < 0) {
@@ -305,27 +312,29 @@ void restart_service()
 
 int main(int argc, const char **argv)
 {
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		printf("usage: %s start|stop|restart|status\n", argv[0]);
-		exit(EXIT_SUCCESS);
+	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) < 0)
+		return EXIT_FAILURE;
+	if (opt_path == NULL) {
+		printf("You need to specify the -p option.\n");
+		return 1;
 	}
-	if (3 != argc) {
-		printf("usage: %s path start|stop|restart|status\n", argv[0]);
+	if (argc != 2) {
+		printf("usage: %s -p path {start|stop|restart|status}\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 	
-	sprintf(PID_LOCK_FILE, "%s/token/token.pid", argv[1]);
-	sprintf(APOLLO_MAIN_DIR, "%s/bin", argv[1]);
-	if (0 == strcmp(argv[2], "start")) {
+	sprintf(PID_LOCK_FILE, "%s/token/token.pid", opt_path);
+	sprintf(APOLLO_MAIN_DIR, "%s/bin", opt_path);
+	if (strcmp(argv[1], "start") == 0) {
 		start_service();
-	} else if (0 == strcmp(argv[2], "stop")) {
+	} else if (strcmp(argv[1], "stop") == 0) {
 		stop_service();
-	} else if (0 == strcmp(argv[2], "restart")) {
+	} else if (strcmp(argv[1], "restart") == 0) {
 		restart_service();
-	} else if (0 == strcmp(argv[2], "status")) {
+	} else if (strcmp(argv[1], "status") == 0) {
 		status_service();
 	} else {
-		printf("unknown option %s\n", argv[1]);
+		printf("unknown command %s\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 }
