@@ -106,7 +106,7 @@ void config_file_free(CONFIG_FILE* cfg_file)
  *	@return
  *		the value that mapped the specified key
  */
-char* config_file_get_value(CONFIG_FILE* cfg_file, char* key)
+char *config_file_get_value(CONFIG_FILE *cfg_file, const char *key)
 {
 	size_t i, len;
 
@@ -199,7 +199,8 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	return;
 }
 
-BOOL config_file_set_value(CONFIG_FILE* cfg_file, char* key, char* value)
+BOOL config_file_set_value(CONFIG_FILE *cfg_file, const char *key,
+    const char *value)
 {
 	size_t index, i, len;   
 

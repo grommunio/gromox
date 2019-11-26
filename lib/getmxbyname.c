@@ -81,7 +81,7 @@ static int getmx_extract_rr(unsigned char *answer, size_t answ_size,
 
 static int getmx_sort(const void *a, const void *b)
 {
-	const char *const *f = a, **g = b;
+	const char *const *f = a, *const *g = b;
 	uint16_t x, y;
 	memcpy(&x, *f + strlen(*f) + 1, sizeof(x));
 	memcpy(&y, *g + strlen(*g) + 1, sizeof(y));

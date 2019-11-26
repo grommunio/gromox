@@ -25,11 +25,8 @@ extern "C" {
 CONFIG_FILE* config_file_init(char* filename);
 
 void config_file_free(CONFIG_FILE* cfg_file);
-
-char* config_file_get_value(CONFIG_FILE* cfg_file, char* key);
-
-BOOL config_file_set_value(CONFIG_FILE* cfg_file, char* key, char* value);
-
+extern char *config_file_get_value(CONFIG_FILE *, const char *key);
+extern BOOL config_file_set_value(CONFIG_FILE *, const char *key, const char *value);
 BOOL config_file_save(CONFIG_FILE* cfg_file);
 
 
