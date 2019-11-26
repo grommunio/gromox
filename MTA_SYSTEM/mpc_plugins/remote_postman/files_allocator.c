@@ -1,1 +1,1 @@
-../../../MTA_SYSTEM/mpc_plugins/gateway_dispatch/files_allocator.c
+../gateway_dispatch/files_allocator.c

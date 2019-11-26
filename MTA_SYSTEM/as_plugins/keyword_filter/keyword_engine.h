@@ -1,1 +1,1 @@
-../../../MTA_SYSTEM/as_plugins/domain_keyword/keyword_engine.h
+../domain_keyword/keyword_engine.h

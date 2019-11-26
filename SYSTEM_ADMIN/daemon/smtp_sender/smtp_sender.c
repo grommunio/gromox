@@ -1,1 +1,0 @@
-../../../DOMAIN_ADMIN/daemon/smtp_sender/smtp_sender.c

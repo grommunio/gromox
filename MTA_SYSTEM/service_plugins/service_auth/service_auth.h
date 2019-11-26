@@ -1,1 +1,1 @@
-../../../MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.h
+../esmtp_auth/service_auth.h

@@ -1,1 +1,1 @@
-../../../../MTA_SYSTEM/as_plugins/domain_keyword/domain_keyword/charset.txt
+../../../as_plugins/domain_keyword/domain_keyword/charset.txt
