@@ -55,7 +55,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				config_file_set_value(pfile, "CACHE_CAPACITY", "1000");
 			}
 		}
-		printf("[dns_adaptor]: cahce capacity is %d\n", capacity);	
+		printf("[dns_adaptor]: cache capacity is %d\n", capacity);	
 		str_value = config_file_get_value(pfile, "VALID_INTERVAL");
 		if (NULL == str_value) {
 			interval = 24*60*60;

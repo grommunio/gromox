@@ -294,7 +294,7 @@ static int connect_exmdb(const char *dir)
 	switch (response_code) {
 	case RESPONSE_CODE_ACCESS_DENY:
 		fprintf(stderr, "fail to connect to %s:%d for prefix "
-			"\"%s\", access deny!\n", pexnode->exmdb_info.ip_addr,
+			"\"%s\", access denied.\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
 	case RESPONSE_CODE_MAX_REACHED:

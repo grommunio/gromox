@@ -224,7 +224,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	switch (response_code) {
 	case RESPONSE_CODE_ACCESS_DENY:
 		printf("[exmdb_provider]: fail to connect to "
-			"%s:%d for prefix \"%s\", access deny!\n",
+			"%s:%d for prefix \"%s\", access denied.\n",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
 	case RESPONSE_CODE_MAX_REACHED:

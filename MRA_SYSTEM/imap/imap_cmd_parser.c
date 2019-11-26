@@ -1600,7 +1600,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	HX_strltrim(pcontext->username);
 	if (FALSE == system_services_judge_user(pcontext->username)) {
-		/* IMAP_CODE_2190001: NO access deny by user filter */
+		/* IMAP_CODE_2190001: NO access denied by user filter */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190001, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s",
@@ -1640,7 +1640,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
 			system_services_add_user_into_temp_list(pcontext->username,
 				imap_parser_get_param(BLOCK_AUTH_FAIL));
-			/* IMAP_CODE_2190003: NO too many failure,
+			/* IMAP_CODE_2190003: NO too many failures,
 				user will be blocked for a while */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2190003, 1, &string_length);
@@ -1702,7 +1702,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	strcpy(pcontext->username, argv[2]);
 	HX_strltrim(pcontext->username);
 	if (FALSE == system_services_judge_user(pcontext->username)) {
-		/* IMAP_CODE_2190001: NO access deny by user filter */
+		/* IMAP_CODE_2190001: NO access denied by user filter */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190001, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -1744,7 +1744,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
 			system_services_add_user_into_temp_list(pcontext->username,
 				imap_parser_get_param(BLOCK_AUTH_FAIL));
-			/* IMAP_CODE_2190003: NO too many failure, user will be blocked for a while */
+			/* IMAP_CODE_2190003: NO too many failures, user will be blocked for a while */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2190003, 1, &string_length);
 			string_length = snprintf(buff, 1024,

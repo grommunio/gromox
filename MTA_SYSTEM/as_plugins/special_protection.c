@@ -247,9 +247,9 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	CONFIG_FILE *pfile;
 	char help_string[] = "250 special protection help information:\r\n"
 						 "\t%s info\r\n"
-						 "\t    --printf spection protection's information\r\n"
+						 "\t    -- print special protection's information\r\n"
 						 "\t%s set block-interval <interval>\r\n"
-						 "\t    --set the block interval of special protection";
+						 "\t    -- set the block interval of special protection";
 	
 	if (1 == argc) {
 	    strncpy(result, "550 too few arguments", length);

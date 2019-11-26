@@ -86,9 +86,9 @@ static IMAP_RETURN_CODE g_default_code_table[] = {
 	{2180019, "BAD decode username error"},
 	{2180020, "BAD decode password error"},
 
-	{2190001, "NO access deny by user filter"},
+	{2190001, "NO access denied by user filter"},
 	{2190002, "NO cannot get mailbox location from database"},
-	{2190003, "NO too many failure, user will be blocked for a while"},
+	{2190003, "NO too many failures, user will be blocked for a while"},
 	{2190004, "NO login auth fail, <reason>"},
 	{2190005, "NO server internal error, missing MIDB connection"},
 	{2190006, "NO server internal error, fail to communicate with MIDB"},

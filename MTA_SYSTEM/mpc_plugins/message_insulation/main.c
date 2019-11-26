@@ -64,7 +64,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			}
 		}
 		itvltoa(anon_valid_interval, temp_buff);
-		printf("[message_insulation]: anonymus valid interval is %s\n", temp_buff);
+		printf("[message_insulation]: anonymous valid interval is %s\n", temp_buff);
 		
 		str_val = config_file_get_value(pfile, "ONYMOUS_VALID_INTERVAL");
 		if (NULL == str_val) {
@@ -79,7 +79,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			}
 		}
 		itvltoa(on_valid_interval, temp_buff);
-		printf("[message_insulation]: onymus valid interval is %s\n", temp_buff);
+		printf("[message_insulation]: anonymous valid interval is %s\n", temp_buff);
 		
 		config_file_free(pfile);
 		sprintf(queue_path, "%s/insulation", get_queue_path());

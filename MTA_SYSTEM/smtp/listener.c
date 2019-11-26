@@ -229,7 +229,7 @@ static void* thread_work_func(void* arg)
 		}
 		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
-			/* access deny */
+			/* access denied */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
 			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
@@ -349,7 +349,7 @@ static void* thread_work_ssl_func(void* arg)
 		}
 		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
-			/* access deny */
+			/* access denied */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
 			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
