@@ -352,7 +352,7 @@ FREE_RESOURCE:
 	free(presource);
 }
 
-int bounce_producer_stop()
+void bounce_producer_stop(void)
 {
 	bounce_producer_unload_list(&g_resource_list);
 	pthread_rwlock_destroy(&g_list_lock);

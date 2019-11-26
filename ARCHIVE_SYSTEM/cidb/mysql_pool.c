@@ -247,7 +247,7 @@ int mysql_pool_get_param(int param)
 		return double_list_get_nodes_num(&g_connection_list);
 	case MYSQL_POOL_DEAD_CONNECTION:
 		return double_list_get_nodes_num(&g_invalid_list);
-
 	}
+	return -1;
 }
 

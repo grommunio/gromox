@@ -246,6 +246,7 @@ WAIT_CLEAN:
 			sleep(1);
 		}
 	}
+	return NULL;
 }
 
 /*

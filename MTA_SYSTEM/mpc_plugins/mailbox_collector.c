@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "util.h"
 #include "str_hash.h"
@@ -75,6 +76,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		pthread_rwlock_destroy(&g_table_lock);
         return TRUE;
     }
+	return false;
 }
 
 

@@ -1000,5 +1000,6 @@ static int smtp_cmd_handler_auth_service_interact(const char *cmd_line,
 		}
 		return DISPATCH_CONTINUE;
 	}
+	return DISPATCH_SHOULD_CLOSE;
 }
 

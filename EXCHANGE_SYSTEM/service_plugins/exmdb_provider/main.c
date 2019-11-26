@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "bounce_producer.h"
 #include "service_common.h"
 #include "exmdb_listener.h"
@@ -644,4 +645,5 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		common_util_free();
 		return TRUE;
 	}
+	return false;
 }

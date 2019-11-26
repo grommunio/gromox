@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include <stdio.h>
 
@@ -31,6 +32,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     case PLUGIN_FREE:
         return TRUE;
     }
+	return false;
 }
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)

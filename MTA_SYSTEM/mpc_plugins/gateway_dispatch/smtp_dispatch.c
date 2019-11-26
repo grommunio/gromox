@@ -449,6 +449,7 @@ int smtp_dispatch_process(MESSAGE_CONTEXT *pcontext,
 			return SMTP_DISPATCH_OK;
 		}
 	}
+	return SMTP_DISPATCH_PERMANENT_ERROR;
 }
 
 

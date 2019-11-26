@@ -334,7 +334,7 @@ static void bounce_producer_load_template(const char *temp_name, SINGLE_LIST *pl
  *		 0				OK
  *		<>0				fail
  */
-int bounce_producer_stop()
+void bounce_producer_stop(void)
 {
 	bounce_producer_unload_list(&g_resource_list);
 	pthread_rwlock_destroy(&g_list_lock);

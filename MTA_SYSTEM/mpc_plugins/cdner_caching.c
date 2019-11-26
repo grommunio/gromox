@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "double_list.h"
 #include "config_file.h"
@@ -195,6 +196,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
         return TRUE;
     }
+	return false;
 }
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)

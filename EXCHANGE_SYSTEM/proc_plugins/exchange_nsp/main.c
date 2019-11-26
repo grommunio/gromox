@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "guid.h"
 #include "util.h"
 #include "nsp_ndr.h"
@@ -163,6 +164,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		common_util_free();
 		return TRUE;
 	}
+	return false;
 }
 
 static int exchange_nsp_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)

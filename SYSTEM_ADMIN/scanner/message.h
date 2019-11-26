@@ -8,9 +8,7 @@ void message_init(const char *background_path, const char *logo_path,
 	const char *logo_link);
 
 int message_run();
-
-int message_stop();
-
+extern void message_stop(void);
 void message_free();
 
 void message_alarm_message(char *buff, const char *area, const char *to);

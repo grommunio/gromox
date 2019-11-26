@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "domain_sign.h"
 #include <stdio.h>
@@ -47,6 +48,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	case SYS_THREAD_DESTROY:
 		return TRUE;
     }
+	return false;
 }
 
 static BOOL sign_hook(MESSAGE_CONTEXT *pcontext)

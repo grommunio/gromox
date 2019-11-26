@@ -364,6 +364,7 @@ static void *thread_work_func(void *param)
 		i = 0;
 		
 	}
+	return NULL;
 }
 
 void ip_range_set_param(int param, int val)

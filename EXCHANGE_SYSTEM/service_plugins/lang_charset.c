@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -67,6 +68,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		g_list_path[0] = '\0';
 		return TRUE;
 	}
+	return false;
 }
 
 

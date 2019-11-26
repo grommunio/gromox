@@ -440,6 +440,7 @@ static void* thread_work_func(void* arg)
 		i = 0;
 	}
 	closedir(dirp);
+	return NULL;
 }
 
 int cache_queue_get_param(int param)

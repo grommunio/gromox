@@ -897,4 +897,5 @@ int smtp_deliverer_get_param(int param)
 	case SMTP_DELIVERER_SSL_SWITCH:
 		return g_tls_switch;
 	}
+	return -1;
 }

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "util.h"
 #include "idset.h"
 #include "rop_util.h"
@@ -68,6 +69,7 @@ BOOL idset_register_mapping(IDSET *pset,
 		}
 	}
 	pset->mapping = mapping;
+	return true;
 }
 
 void idset_clear(IDSET *pset)

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "remote_postman.h"
 #include "config_file.h"
@@ -261,4 +262,5 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		remote_postman_free();
 		return TRUE;
 	}
+	return false;
 }

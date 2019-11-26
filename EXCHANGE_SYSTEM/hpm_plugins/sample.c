@@ -34,6 +34,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		return TRUE;
 	}
+	return false;
 }
 
 static BOOL preproc(int context_id)

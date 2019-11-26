@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "util.h"
 #include "mail_func.h"
@@ -111,6 +112,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pthread_mutex_destroy(&g_control_lock);
 		return TRUE;
 	}
+	return false;
 }
 
 static BOOL console_server_control(const char *cmdline, char *result,

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "str_filter.h"
 #include "config_file.h"
@@ -171,6 +172,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		str_filter_free();
 		return TRUE;
 	}
+	return false;
 }
 
 

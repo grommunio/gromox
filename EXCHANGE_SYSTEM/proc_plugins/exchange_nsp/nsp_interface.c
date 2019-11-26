@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "nsp_interface.h"
 #include "common_util.h"
 #include "proc_common.h"
@@ -1862,6 +1863,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 	case RESTRICTION_TYPE_SUBRESTRICTION:
 		return FALSE;
 	}	
+	return false;
 }
 
 int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,

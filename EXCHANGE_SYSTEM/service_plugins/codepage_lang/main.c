@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "codepage_lang.h"
 #include <stdio.h>
@@ -42,6 +43,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		codepage_lang_free();
 		return TRUE;
 	}
+	return false;
 }
 
 static void console_talk(int argc, char **argv, char *result, int length)

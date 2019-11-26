@@ -5,9 +5,7 @@
 void translator_init(const char *path);
 
 int translator_run();
-
-int translator_stop();
-
+extern void translator_stop(void);
 void translator_free();
 
 void translator_do(STATISTIC_ITEM *psmtp_item, int smtp_num,

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "list_file.h"
 #include <time.h>
@@ -97,6 +98,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		return TRUE;
 	}
+	return false;
 }
 
 

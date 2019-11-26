@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "log_plugin.h"
 #include "config_file.h"
@@ -104,6 +105,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		log_plugin_free();
 		return TRUE;
 	}
+	return false;
 }
 
 

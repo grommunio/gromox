@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "config_file.h"
 #include "as_common.h"
 #include "util.h"
@@ -61,6 +62,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
     case SYS_THREAD_DESTROY:
         return TRUE;
     }
+	return false;
 }
 
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,

@@ -769,7 +769,7 @@ int pdu_ndr_pull_dcerpc_auth(NDR_PULL *pndr, DCERPC_AUTH *r)
 }
 
 /* free memory internal of auth except of auth itself */
-int pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r)
+void pdu_ndr_free_dcerpc_auth(DCERPC_AUTH *r)
 {
 	ndr_free_data_blob(&r->credentials);
 }
@@ -2074,9 +2074,8 @@ static int pdu_ndr_push_dcerpc_payload(NDR_PUSH *pndr, uint8_t pkt_type,
 		return pdu_ndr_push_dcerpc_auth3(pndr, &r->auth3);
 	case DCERPC_PKT_RTS:
 		return pdu_ndr_push_dcerpc_rts(pndr, &r->rts);
-	default:
-		return NDR_ERR_BAD_SWITCH;
 	}	
+	return NDR_ERR_BAD_SWITCH;
 }
 
 int pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt)

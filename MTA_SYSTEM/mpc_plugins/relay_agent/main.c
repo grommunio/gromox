@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "config_file.h"
 #include "relay_agent.h"
@@ -248,6 +249,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		pthread_mutex_destroy(&g_concurrent_mutex);
         return TRUE;
     }
+	return false;
 }
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)

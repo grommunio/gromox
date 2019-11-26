@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "pcl.h"
 #include "util.h"
 #include "oxcmail.h"
@@ -2336,6 +2337,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 			" message from %s", g_smtp_ip, g_smtp_port, sender);
 		return TRUE;
 	}
+	return false;
 }
 
 static void common_util_set_dir(const char *dir)

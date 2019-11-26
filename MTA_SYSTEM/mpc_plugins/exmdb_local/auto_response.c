@@ -264,8 +264,7 @@ int auto_response_run()
 	return 0;
 }
 
-
-int auto_response_stop() 
+void auto_response_stop(void)
 {
 	/* do nothing */
 }

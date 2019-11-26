@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "config_file.h"
 #include "exmdb_local.h"
@@ -263,4 +264,5 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		net_failure_free();
         return TRUE;
     }
+	return false;
 }

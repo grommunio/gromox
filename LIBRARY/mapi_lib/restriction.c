@@ -539,4 +539,5 @@ uint32_t restriction_size(const RESTRICTION *r)
 	case RESTRICTION_TYPE_COUNT:
 		return restriction_count_size(r->pres) + sizeof(uint8_t);
 	}
+	return 0;
 }

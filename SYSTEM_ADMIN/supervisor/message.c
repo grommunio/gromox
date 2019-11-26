@@ -54,9 +54,10 @@ void message_init()
 int message_run()
 {
 	/* do nothing */
+	return 0;
 }
 
-int message_stop()
+void message_stop(void)
 {
 	/* do nothing */
 }

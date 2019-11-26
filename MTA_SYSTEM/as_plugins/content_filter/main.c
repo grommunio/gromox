@@ -427,6 +427,7 @@ static int paragraph_filter(int action, int context_ID,
 	case ACTION_BLOCK_FREE:
 		return MESSAGE_ACCEPT;
 	}
+	return MESSAGE_ACCEPT;
 }
 
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,

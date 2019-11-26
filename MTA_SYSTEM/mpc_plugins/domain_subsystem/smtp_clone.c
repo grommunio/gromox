@@ -335,6 +335,7 @@ int smtp_clone_process(MESSAGE_CONTEXT *pcontext, const char *ip, int port)
 		close(sockd);
 		return SMTP_CLONE_OK;
 	}
+	return SMTP_CLONE_PERMANENT_ERROR;
 }
 
 

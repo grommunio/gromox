@@ -30,9 +30,10 @@ void message_lookup_init(const char *cidb_path)
 int message_lookup_run()
 {
 	/* do nothing */
+	return 0;
 }
 
-int message_lookup_stop()
+void message_lookup_stop(void)
 {
 	/* do nothing */
 }

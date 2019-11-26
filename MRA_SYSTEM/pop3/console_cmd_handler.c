@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
 #include "units_allocator.h"
@@ -85,6 +86,7 @@ BOOL cmd_handler_help(int argc, char** argv)
 		return TRUE;
 	}
 	console_server_reply_to_client(g_server_help);
+	return true;
 }
 
 /*

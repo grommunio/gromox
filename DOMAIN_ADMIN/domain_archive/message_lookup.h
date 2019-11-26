@@ -29,9 +29,7 @@ typedef struct _HEADER_VAL {
 void message_lookup_init(const char *cidb_path);
 
 int message_lookup_run();
-
-int message_lookup_stop();
-
+extern void message_lookup_stop(void);
 void message_lookup_free();
 
 LOOKUP_COLLECT* message_lookup_collect_init();

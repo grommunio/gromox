@@ -665,6 +665,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			8, "user's mailbox is full");
 		return DELIVERY_MAILBOX_FULL;
 	}
+	return DELIVERY_OPERATION_FAILURE;
 }
 
 void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext,

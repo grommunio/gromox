@@ -6,9 +6,7 @@
 void mod_rewrite_init(const char *list_path);
 
 int mod_rewrite_run();
-
-int mod_rewrite_stop();
-
+extern void mod_rewrite_stop(void);
 void mod_rewrite_free();
 
 BOOL mod_rewrite_process(const char *uri_buff,

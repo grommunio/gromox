@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "config_file.h"
 #include <sys/socket.h>
@@ -117,6 +118,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	case SYS_THREAD_DESTROY:
 		return TRUE;
     }
+	return false;
 }
 
 static BOOL monitor_hook(MESSAGE_CONTEXT *pcontext)
@@ -310,6 +312,7 @@ BOOL send_message()
 		close(sockd);
 		return TRUE;
 	}
+	return false;
 }
 
 

@@ -738,6 +738,7 @@ static void* thread_work_func(void* arg)
 		plib = (PLUG_ENTITY*)(pnode->pdata);
 		((PLUGIN_MAIN)plib->lib_main)(PLUGIN_THREAD_DESTROY, NULL);
 	}
+	return NULL;
 }
 
 
@@ -1694,6 +1695,7 @@ int transporter_get_param(int param)
 	case TRANSPORTER_CREATED_THREADS:
 		return double_list_get_nodes_num(&g_threads_list); 
 	}
+	return 0;
 }
 
 void transporter_validate_domainlist(BOOL b_valid)

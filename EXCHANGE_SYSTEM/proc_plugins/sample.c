@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "guid.h"
 #include "proc_common.h"
 #include <string.h>
@@ -43,6 +44,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		return TRUE;
 	}
+	return false;
 }
 
 

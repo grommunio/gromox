@@ -5,11 +5,7 @@
 void password_cleaner_init(time_t now_time);
 
 int password_cleaner_run();
-
-
-int password_cleaner_stop();
-
-
+extern void password_cleaner_stop(void);
 void password_cleaner_free();
 
 

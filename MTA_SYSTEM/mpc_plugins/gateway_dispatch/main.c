@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "gateway_dispatch.h"
 #include "config_file.h"
@@ -206,5 +207,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		gateway_dispatch_free();
         return TRUE;
     }
+	return false;
 }
 

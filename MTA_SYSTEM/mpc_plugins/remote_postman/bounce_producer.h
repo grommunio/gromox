@@ -19,9 +19,7 @@ enum{
 void bounce_producer_init(const char *path, const char* separator);
 
 int bounce_producer_run();
-
-int bounce_producer_stop();
-
+extern void bounce_producer_stop(void);
 void bounce_producer_free();
 
 BOOL bounce_producer_refresh();

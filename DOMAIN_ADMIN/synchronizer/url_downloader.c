@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "url_downloader.h"
 #include "double_list.h"
 #include <stdio.h>
@@ -57,12 +58,9 @@ BOOL url_downloader_get(const char *url, const char *save_path)
 		pthread_mutex_unlock(&g_list_lock);
 		if (0 == WEXITSTATUS(status)) {
 			return TRUE;
-		} else {
-			return FALSE;
 		}
-	} else {
-		return FALSE;
 	}
+	return false;
 }
 
 int url_downloader_stop()

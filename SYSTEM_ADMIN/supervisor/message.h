@@ -31,9 +31,7 @@ enum {
 void message_init();
 
 int message_run();
-
-int message_stop();
-
+extern void message_stop(void);
 void message_free();
 
 void message_supervising(char *buff, int message_type, int id);

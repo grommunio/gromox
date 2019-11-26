@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "multiple_retrying.h"
 #include "proxy_retrying.h"
@@ -154,6 +155,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		multiple_retrying_free();
 		return TRUE;
 	}
+	return false;
 }
 
 

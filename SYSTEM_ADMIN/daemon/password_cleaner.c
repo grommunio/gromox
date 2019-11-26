@@ -101,7 +101,7 @@ int password_cleaner_run()
 
 }
 
-int password_cleaner_stop()
+void password_cleaner_stop(void)
 {
 	/* do nothing */
 

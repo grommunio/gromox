@@ -299,6 +299,7 @@ SENDING_RETRY:
 		close(sockd);
 		return TRUE;
 	}
+	return false;
 }
 
 static BOOL smtp_send_command(int sockd, const char *command, int command_len)

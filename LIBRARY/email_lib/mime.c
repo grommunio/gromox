@@ -4,7 +4,7 @@
  * point. if user uses mime_write_content function, the mime will then maintain
  * its own buffer
  */
-
+#include <stdbool.h>
 #include "mime.h"
 #include "util.h"
 #include "mail_func.h"
@@ -478,6 +478,7 @@ BOOL mime_write_content(MIME *pmime, char *pcontent, size_t length,
 		mime_set_field(pmime, "Content-Transfer-Encoding", "base64");
 		return TRUE;
 	}
+	return false;
 }
 
 /*

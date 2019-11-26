@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "double_list.h"
 #include "config_file.h"
@@ -160,6 +161,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		g_event_stub_func = NULL;
 		return TRUE;
 	}
+	return false;
 }
 
 

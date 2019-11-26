@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "domain_mailbox.h"
 #include <stdio.h>
@@ -39,5 +40,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		domain_mailbox_free();
         return TRUE;
     }
+	return false;
 }
 

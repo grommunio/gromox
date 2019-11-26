@@ -43,9 +43,7 @@ void mod_fastcgi_init(int context_num, const char *list_path,
 	uint64_t cache_size, uint64_t max_size, int exec_timeout);
 
 int mod_fastcgi_run();
-
-int mod_fastcgi_stop();
-
+extern void mod_fastcgi_stop(void);
 void mod_fastcgi_free();
 
 BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp);

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "as_common.h"
 
 DECLARE_API;
@@ -57,6 +58,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
     case SYS_THREAD_DESTROY:
         return TRUE;
     }
+	return false;
 }
 
 static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
@@ -84,6 +86,7 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     case ACTION_BLOCK_FREE:
         return MESSAGE_ACCEPT;
     }
+	return MESSAGE_ACCEPT;
 }
 
 static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,

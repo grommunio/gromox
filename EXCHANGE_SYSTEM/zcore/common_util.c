@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "pcl.h"
 #include "ical.h"
 #include "util.h"
@@ -753,6 +754,7 @@ BOOL common_util_build_environment()
 	alloc_context_init(&pctx->allocator);
 	pctx->clifd = -1;
 	pthread_setspecific(g_env_key, pctx);
+	return true;
 }
 
 void common_util_free_environment()
@@ -2255,6 +2257,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 			" message from %s", g_smtp_ip, g_smtp_port, sender);
 		return TRUE;
 	}
+	return false;
 }
 
 static void common_util_set_dir(const char *dir)

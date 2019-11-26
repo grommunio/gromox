@@ -2253,6 +2253,7 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 		return ext_buffer_push_bytes(pext,
 			g_pad_bytes, tnef_align(tmp_int));
 	}
+	return EXT_ERR_SUCCESS;
 }
 
 static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,

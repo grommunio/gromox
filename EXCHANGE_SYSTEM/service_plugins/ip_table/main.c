@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "ip_table.h"
 #include "config_file.h"
@@ -98,6 +99,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		ip_table_free();
 		return TRUE;
 	}
+	return false;
 }
 
 

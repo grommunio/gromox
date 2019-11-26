@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "guid.h"
 #include "util.h"
 #include "rop_util.h"
@@ -319,6 +320,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		bounce_producer_free();
 		return TRUE;
 	}
+	return false;
 }
 
 static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)

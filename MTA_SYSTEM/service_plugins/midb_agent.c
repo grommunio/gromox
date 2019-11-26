@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "util.h"
 #include "list_file.h"
@@ -209,6 +210,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		return TRUE;
 	}
+	return false;
 }
 
 

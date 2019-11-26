@@ -87,6 +87,7 @@ int data_extractor_retrieve(const char *console_ip, STATUS_ITEM *items)
 			return data_extractor_parse_buffer(temp_buff, items);
 		}
 	}
+	return 0;
 }
 
 int data_extractor_stop()

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "domain_subsystem.h"
 #include "config_file.h"
@@ -98,5 +99,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		domain_subsystem_free();
         return TRUE;
     }
+	return false;
 }
 

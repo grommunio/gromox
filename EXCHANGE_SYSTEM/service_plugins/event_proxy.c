@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "double_list.h"
 #include "config_file.h"
@@ -178,6 +179,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		return TRUE;
 	}
+	return false;
 }
 
 

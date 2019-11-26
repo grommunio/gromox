@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "double_list.h"
 #include "hpm_common.h"
 #include "list_file.h"
@@ -255,6 +256,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		double_list_free(&g_proxy_list);
 		return TRUE;
 	}
+	return false;
 }
 
 static void* thread_work_func(void *pparam)

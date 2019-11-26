@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
@@ -2635,6 +2636,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	case RESTRICTION_TYPE_SUBOBJ:
 		return FALSE;
 	}
+	return false;
 }
 
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,

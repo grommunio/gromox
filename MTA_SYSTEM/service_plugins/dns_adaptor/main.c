@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "dns_adaptor.h"
 #include "inbound_ips.h"
@@ -119,5 +120,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		dns_adaptor_free();
 		return TRUE;
 	}
+	return false;
 }
 

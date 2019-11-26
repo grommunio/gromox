@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "list_file.h"
 #include "int_hash.h"
@@ -125,4 +126,5 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pthread_mutex_destroy(&g_extension_lock);
 		return TRUE;
 	}
+	return false;
 }

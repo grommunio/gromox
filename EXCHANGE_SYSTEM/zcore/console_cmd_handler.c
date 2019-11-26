@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "console_server.h"
 #include "zarafa_server.h"
@@ -52,6 +53,7 @@ BOOL cmd_handler_help(int argc, char** argv)
 		return TRUE;
 	}
 	console_server_reply_to_client(g_server_help);
+	return true;
 }
 
 static void cmd_handler_dump_plugname(const char* plugname)

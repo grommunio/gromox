@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "as_common.h"
 #include "util.h"
 #include "mail_func.h"
@@ -255,6 +256,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
     case SYS_THREAD_DESTROY:
         return TRUE;
     }
+	return false;
 }
 
 static int mime_auditor(int context_ID, MAIL_ENTITY *pmail,
@@ -427,7 +429,7 @@ static int text_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     case ACTION_BLOCK_FREE:
         return MESSAGE_ACCEPT;
     }
-
+	return MESSAGE_ACCEPT;
 }
 
 static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
@@ -474,6 +476,7 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     case ACTION_BLOCK_FREE:
         return MESSAGE_ACCEPT;
     }
+	return MESSAGE_ACCEPT;    
 }
 
 static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name)

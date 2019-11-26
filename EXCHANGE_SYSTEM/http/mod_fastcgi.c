@@ -225,7 +225,7 @@ int mod_fastcgi_run()
 	return 0;
 }
 
-int mod_fastcgi_stop()
+void mod_fastcgi_stop(void)
 {
 	FASTCGI_NODE *pfnode;
 	DOUBLE_LIST_NODE *pnode;

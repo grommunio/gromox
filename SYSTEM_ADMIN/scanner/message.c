@@ -91,9 +91,10 @@ void message_init(const char *background_path, const char *logo_path,
 int message_run()
 {
 	/* do nothing */
+	return 0;
 }
 
-int message_stop()
+void message_stop(void)
 {
 	/* do nothing */
 }

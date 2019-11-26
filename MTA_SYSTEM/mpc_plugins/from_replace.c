@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -69,6 +70,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     	pthread_rwlock_destroy(&g_refresh_lock);
         return TRUE;
     }
+	return false;
 }
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)

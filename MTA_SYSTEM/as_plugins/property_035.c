@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "as_common.h"
 #include "config_file.h"
 #include "util.h"
@@ -73,6 +74,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
     case SYS_THREAD_DESTROY:
         return TRUE;
     }
+	return false;
 }
 
 
@@ -181,5 +183,6 @@ static int html_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     case ACTION_BLOCK_FREE:
 		return MESSAGE_ACCEPT;
     }
+	return MESSAGE_ACCEPT;
 }
 

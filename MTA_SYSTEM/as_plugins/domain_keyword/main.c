@@ -242,7 +242,7 @@ static int text_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     case ACTION_BLOCK_FREE:
         return MESSAGE_ACCEPT;
     }
-
+	return MESSAGE_ACCEPT;
 }
 
 static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
@@ -278,6 +278,7 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     case ACTION_BLOCK_FREE:
         return MESSAGE_ACCEPT;
     }
+	return MESSAGE_ACCEPT;
 }
 
 static BOOL extract_attachment_name(MEM_FILE *pmem_file, char *file_name)

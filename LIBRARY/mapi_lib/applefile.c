@@ -494,10 +494,7 @@ static int applefile_push_asfiledates(EXT_PUSH *pext, const ASFILEDATES *r)
 		return status;
 	}
 	tmp_time = r->access - TIMEDIFF;
-	status = applefile_push_int32(pext, tmp_time);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
+	return applefile_push_int32(pext, tmp_time);
 }
 
 static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)

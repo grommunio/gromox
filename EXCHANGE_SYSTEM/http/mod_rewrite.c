@@ -157,7 +157,7 @@ int mod_rewrite_run()
 	return 0;
 }
 
-int mod_rewrite_stop()
+void mod_rewrite_stop(void)
 {
 	REWRITE_NODE *prnode;
 	DOUBLE_LIST_NODE *pnode;

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "util.h"
 #include "list_file.h"
 #include "mail_func.h"
@@ -103,6 +104,7 @@ static BOOL unzip_file(const char *src_path, const char *dst_path)
 	close(fd);
 	gzclose(gz_fd);
 	remove(src_path);
+	return true;
 }
 
 static BOOL md5_file(const char *path, char *digest)
@@ -617,10 +619,8 @@ CONNECT_RSYNCD:
 			conn.sockd = -1;
 			return conn;
 		}
-	} else {
-		goto CONNECT_RSYNCD;
-
 	}
+	goto CONNECT_RSYNCD;
 }
 
 static CONNECTION backup_subdir(CONNECTION conn, char *path)

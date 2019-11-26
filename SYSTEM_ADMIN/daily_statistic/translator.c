@@ -74,7 +74,7 @@ int translator_run()
 	return 0;
 }
 
-int translator_stop()
+void translator_stop(void)
 {
 	SINGLE_LIST_NODE *pnode;
 	LANGUAGE_NODE *plang;

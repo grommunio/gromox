@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "proc_common.h"
 #include "util.h"
 #include "guid.h"
@@ -86,6 +87,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		return TRUE;
 	}
+	return false;
 }
 
 static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
@@ -449,4 +451,5 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 		}
 		return ndr_push_uint32(pndr, prfr_dn->result);
 	}
+	return NDR_ERR_SUCCESS;
 }

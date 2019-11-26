@@ -180,7 +180,7 @@ int scheduler_run()
 	return 0;	
 }
 
-int scheduler_stop()
+void scheduler_stop(void)
 {
 	SMTP_UNIT *psmtp_unit;
 	POP3_UNIT *ppop3_unit;	

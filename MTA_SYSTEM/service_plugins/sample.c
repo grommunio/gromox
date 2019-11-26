@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +32,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		unregister_talk(console_talk);
 		return TRUE;
 	}
+	return false;
 }
 
 

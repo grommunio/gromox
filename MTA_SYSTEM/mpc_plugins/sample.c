@@ -24,6 +24,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	case SYS_THREAD_DESTROY:
 		return TRUE;
     }
+	return false;
 }
 
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)

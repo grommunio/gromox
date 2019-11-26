@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "setup_ui.h"
 #include "lang_resource.h"
 #include "system_log.h"
@@ -1697,12 +1698,9 @@ static BOOL setup_ui_unzip(const char *domain)
 		remove(tmp_path1);
 		if (0 == WEXITSTATUS(status)) {
 			return TRUE;
-		} else {
-			return FALSE;
 		}
-	} else {
-		return FALSE;
 	}
+	return false;
 }
 
 static void setup_ui_set_theme(const char *domain)

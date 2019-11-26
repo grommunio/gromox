@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "container_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"
@@ -209,6 +210,7 @@ static BOOL container_object_match_contact_message(
 	case RESTRICTION_TYPE_SUBOBJ:
 		return FALSE;
 	}
+	return false;
 }
 
 static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)

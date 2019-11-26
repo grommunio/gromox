@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "config_file.h"
 #include "util.h"
@@ -136,6 +137,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	case SYS_THREAD_DESTROY:
 		return TRUE;
     }
+	return false;
 }
 
 static void* thread_work_func(void *arg)

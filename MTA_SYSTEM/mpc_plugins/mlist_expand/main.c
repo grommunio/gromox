@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 #include "bounce_producer.h"
 #include <stdio.h>
@@ -56,6 +57,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	case SYS_THREAD_DESTROY:
 		return TRUE;
     }
+	return false;
 }
 
 static BOOL expand_process(MESSAGE_CONTEXT *pcontext)

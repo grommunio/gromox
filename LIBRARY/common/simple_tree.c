@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "util.h"
 #include "simple_tree.h"
 #include <string.h>
@@ -53,6 +54,7 @@ BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode)
 
 	ptree->root = pnode;
 	ptree->nodes_num = 1;
+	return true;
 }
 
 /*

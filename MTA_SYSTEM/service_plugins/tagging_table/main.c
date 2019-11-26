@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "tagging_table.h"
 #include "config_file.h"
@@ -73,6 +74,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		tagging_table_free();
 		return TRUE;
 	}
+	return false;
 }
 
 

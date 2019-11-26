@@ -251,6 +251,7 @@ int net_failure_get_param(int param)
 	case NET_FAILURE_ALARM_INTERVAL:
 		return g_alarm_interval;
 	}
+	return -1;
 }
 
 void net_failure_set_param(int param, int val)
