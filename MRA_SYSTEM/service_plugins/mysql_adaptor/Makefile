@@ -1,1 +1,0 @@
-../../../EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/Makefile

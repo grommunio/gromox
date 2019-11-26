@@ -1,1 +1,0 @@
-../../../SYSTEM_ADMIN/dns_table/main/Makefile

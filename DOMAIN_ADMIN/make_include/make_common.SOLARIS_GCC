@@ -1,1 +1,0 @@
-../../AGENT_SERVICE/make_include/make_common.SOLARIS_GCC

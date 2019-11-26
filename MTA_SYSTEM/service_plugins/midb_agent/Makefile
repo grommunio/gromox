@@ -1,1 +1,0 @@
-../../../MRA_SYSTEM/service_plugins/midb_agent/Makefile
