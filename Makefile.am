@@ -1318,5 +1318,6 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
-.tps.service: ${top_builddir}/config.status
+%.service: ${top_builddir}/config.status
+.tps.service:
 	${AM_V_GEN}${SED} -e 's|@''libexecdir''@|${libexecdir}|g' <$< >$@
