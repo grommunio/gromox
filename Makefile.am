@@ -148,28 +148,49 @@ mta_plugins = \
 	libmtahook_system_sign.la \
 	libmtahook_system_updater.la \
 	libmtahook_user_forwarder.la \
-	libmtasvc_console_control.la \
+	libmtasvc_backup_list.la \
+	libmtasvc_boundary_list.la \
+	libmtasvc_delivery_console_control.la \
 	libmtasvc_dns_adaptor.la \
+	libmtasvc_domain_list.la \
+	libmtasvc_domain_whitelist.la \
 	libmtasvc_esmtp_auth.la \
+	libmtasvc_forbidden_domain.la \
+	libmtasvc_forbidden_from.la \
+	libmtasvc_forbidden_rcpt.la \
+	libmtasvc_inmail_frequency_audit.la \
 	libmtasvc_invalid_user.la \
 	libmtasvc_ip_container.la \
 	libmtasvc_ip_filter.la \
-	libmtasvc_ip_table.la \
+	libmtasvc_ip_whitelist.la \
 	libmtasvc_lang_charset.la \
 	libmtasvc_log_plugin.la \
+	libmtasvc_mail_from_audit.la \
+	libmtasvc_mail_subject_audit.la \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
+	libmtasvc_monitor_domains.la \
 	libmtasvc_ms_locale.la \
 	libmtasvc_multiple_retrying.la \
 	libmtasvc_mysql_adaptor.la \
+	libmtasvc_outmail_frequency_audit.la \
+	libmtasvc_outmail_limitation_audit.la \
+	libmtasvc_protection_ip_audit.la \
+	libmtasvc_relay_domains.la \
+	libmtasvc_relay_list.la \
+	libmtasvc_remote_delivery_audit.la \
+	libmtasvc_remote_delivery_forbidden.la \
+	libmtasvc_remote_mx_hello.la \
 	libmtasvc_retrying_table.la \
 	libmtasvc_sample.la \
 	libmtasvc_service_auth.la \
+	libmtasvc_single_rcpt.la \
+	libmtasvc_smtp_console_control.la \
 	libmtasvc_spam_statistic.la \
+	libmtasvc_special_protection_audit.la \
 	libmtasvc_sssp_agent.la \
-	libmtasvc_str_filter.la \
-	libmtasvc_str_table.la \
-	libmtasvc_tagging_table.la
+	libmtasvc_tagging_table.la \
+	libmtasvc_user_filter.la
 noinst_DATA += \
 	libmtapas_address_checker.ldd \
 	libmtapas_anti_enum.ldd \
@@ -301,28 +322,49 @@ noinst_DATA += \
 	libmtahook_system_sign.ldd \
 	libmtahook_system_updater.ldd \
 	libmtahook_user_forwarder.ldd \
-	libmtasvc_console_control.ldd \
-	libmtasvc_dns_adaptor.ldd \
-	libmtasvc_esmtp_auth.ldd \
-	libmtasvc_invalid_user.ldd \
-	libmtasvc_ip_container.ldd \
-	libmtasvc_ip_filter.ldd \
-	libmtasvc_ip_table.ldd \
-	libmtasvc_lang_charset.ldd \
-	libmtasvc_log_plugin.ldd \
-	libmtasvc_midb_agent.ldd \
-	libmtasvc_mime_extension.ldd \
-	libmtasvc_ms_locale.ldd \
-	libmtasvc_multiple_retrying.ldd \
-	libmtasvc_mysql_adaptor.ldd \
-	libmtasvc_retrying_table.ldd \
-	libmtasvc_sample.ldd \
-	libmtasvc_service_auth.ldd \
-	libmtasvc_spam_statistic.ldd \
-	libmtasvc_sssp_agent.ldd \
-	libmtasvc_str_filter.ldd \
-	libmtasvc_str_table.ldd \
-	libmtasvc_tagging_table.ldd
+	libmtasvc_backup_list.ldd \
+	libmtasvc_boundary_list.ldd \
+	libmtasvc_delivery_console_control.ldd \
+	libmtasvc_dns_adaptor.la \
+	libmtasvc_domain_list.ldd \
+	libmtasvc_domain_whitelist.ldd \
+	libmtasvc_esmtp_auth.la \
+	libmtasvc_forbidden_domain.ldd \
+	libmtasvc_forbidden_from.ldd \
+	libmtasvc_forbidden_rcpt.ldd \
+	libmtasvc_inmail_frequency_audit.ldd \
+	libmtasvc_invalid_user.la \
+	libmtasvc_ip_container.la \
+	libmtasvc_ip_filter.la \
+	libmtasvc_ip_whitelist.ldd \
+	libmtasvc_lang_charset.la \
+	libmtasvc_log_plugin.la \
+	libmtasvc_mail_from_audit.ldd \
+	libmtasvc_mail_subject_audit.ldd \
+	libmtasvc_midb_agent.la \
+	libmtasvc_mime_extension.la \
+	libmtasvc_monitor_domains.ldd \
+	libmtasvc_ms_locale.la \
+	libmtasvc_multiple_retrying.la \
+	libmtasvc_mysql_adaptor.la \
+	libmtasvc_outmail_frequency_audit.ldd \
+	libmtasvc_outmail_limitation_audit.ldd \
+	libmtasvc_protection_ip_audit.ldd \
+	libmtasvc_relay_domains.ldd \
+	libmtasvc_relay_list.ldd \
+	libmtasvc_remote_delivery_audit.ldd \
+	libmtasvc_remote_delivery_forbidden.ldd \
+	libmtasvc_remote_mx_hello.ldd \
+	libmtasvc_retrying_table.la \
+	libmtasvc_sample.la \
+	libmtasvc_service_auth.la \
+	libmtasvc_single_rcpt.ldd \
+	libmtasvc_smtp_console_control.ldd \
+	libmtasvc_spam_statistic.la \
+	libmtasvc_special_protection_audit.ldd \
+	libmtasvc_sssp_agent.la \
+	libmtasvc_tagging_table.ldd \
+	libmtasvc_user_filter.ldd
 mra_system = apollo pop3 imap
 mra_plugins = \
 	libmrasvc_cdner_agent.la \
@@ -330,26 +372,22 @@ mra_plugins = \
 	libmrasvc_event_stub.la \
 	libmrasvc_ip_container.la \
 	libmrasvc_ip_filter.la \
-	libmrasvc_ip_table.la \
 	libmrasvc_log_plugin.la \
 	libmrasvc_midb_agent.la \
 	libmrasvc_mysql_adaptor.la \
 	libmrasvc_sample.la \
-	libmrasvc_str_filter.la \
-	libmrasvc_str_table.la
+	libmrasvc_user_filter.la
 noinst_DATA += \
 	libmrasvc_cdner_agent.ldd \
 	libmrasvc_event_proxy.ldd \
 	libmrasvc_event_stub.ldd \
 	libmrasvc_ip_container.ldd \
 	libmrasvc_ip_filter.ldd \
-	libmrasvc_ip_table.ldd \
 	libmrasvc_log_plugin.ldd \
 	libmrasvc_midb_agent.ldd \
 	libmrasvc_mysql_adaptor.ldd \
 	libmrasvc_sample.ldd \
-	libmrasvc_str_filter.ldd \
-	libmrasvc_str_table.ldd
+	libmrasvc_user_filter.ldd
 exchange_progs = http medusa midb zcore
 exchange_plugins = \
 	libexsvc_codepage_lang.la \
@@ -357,15 +395,13 @@ exchange_plugins = \
 	libexsvc_exmdb_provider.la \
 	libexsvc_ip_container.la \
 	libexsvc_ip_filter.la \
-	libexsvc_ip_table.la \
 	libexsvc_lang_charset.la \
 	libexsvc_log_plugin.la \
 	libexsvc_mime_extension.la \
 	libexsvc_ms_locale.la \
 	libexsvc_mysql_adaptor.la \
 	libexsvc_sample.la \
-	libexsvc_str_filter.la \
-	libexsvc_str_table.la \
+	libexsvc_user_filter.la \
 	libexsvc_timer_agent.la \
 	libexproc_exchange_emsmdb.la \
 	libexproc_exchange_nsp.la \
@@ -379,15 +415,13 @@ noinst_DATA += \
 	libexsvc_exmdb_provider.ldd \
 	libexsvc_ip_container.ldd \
 	libexsvc_ip_filter.ldd \
-	libexsvc_ip_table.ldd \
 	libexsvc_lang_charset.ldd \
 	libexsvc_log_plugin.ldd \
 	libexsvc_mime_extension.ldd \
 	libexsvc_ms_locale.ldd \
 	libexsvc_mysql_adaptor.ldd \
 	libexsvc_sample.ldd \
-	libexsvc_str_filter.ldd \
-	libexsvc_str_table.ldd \
+	libexsvc_user_filter.ldd \
 	libexsvc_timer_agent.ldd \
 	libexproc_exchange_emsmdb.ldd \
 	libexproc_exchange_nsp.ldd \
@@ -810,15 +844,39 @@ libmtahook_system_updater_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_e
 libmtahook_user_forwarder_la_SOURCES = MTA_SYSTEM/mpc_plugins/user_forwarder.c
 libmtahook_user_forwarder_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_user_forwarder_la_LIBADD = libgromox_common.la libgromox_email.la
-libmtasvc_console_control_la_SOURCES = MTA_SYSTEM/service_plugins/console_control.c
-libmtasvc_console_control_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_console_control_la_LIBADD = libgromox_common.la
+libmtasvc_backup_list_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_table/main.c EXCHANGE_SYSTEM/service_plugins/str_table/str_table.c
+libmtasvc_backup_list_la_LDFLAGS = ${plugin_LDFLAGS}
+libmtasvc_backup_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+libmtasvc_boundary_list_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_boundary_list_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_boundary_list_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_delivery_console_control_la_SOURCES = MTA_SYSTEM/service_plugins/console_control.c
+libmtasvc_delivery_console_control_la_LDFLAGS = ${plugin_LDFLAGS}
+libmtasvc_delivery_console_control_la_LIBADD = libgromox_common.la
+libmtasvc_domain_list_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_domain_list_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_domain_whitelist_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_domain_whitelist_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_domain_whitelist_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
 libmtasvc_dns_adaptor_la_SOURCES = MTA_SYSTEM/service_plugins/dns_adaptor/dns_adaptor.c MTA_SYSTEM/service_plugins/dns_adaptor/inbound_ips.c MTA_SYSTEM/service_plugins/dns_adaptor/main.c
 libmtasvc_dns_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_dns_adaptor_la_LIBADD = -lpthread -lresolv ${HX_LIBS} libgromox_common.la libgromox_resolv.la
 libmtasvc_esmtp_auth_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/auth_cache.c MTA_SYSTEM/service_plugins/esmtp_auth/esmtp_auth.c MTA_SYSTEM/service_plugins/esmtp_auth/host_list.c MTA_SYSTEM/service_plugins/esmtp_auth/main.c MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
 libmtasvc_esmtp_auth_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_esmtp_auth_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+libmtasvc_forbidden_from_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_forbidden_from_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_forbidden_from_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_forbidden_domain_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_forbidden_domain_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_forbidden_domain_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_forbidden_rcpt_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_forbidden_rcpt_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_forbidden_rcpt_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_inmail_frequency_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
+libmtasvc_inmail_frequency_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
+libmtasvc_inmail_frequency_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
 libmtasvc_invalid_user_la_SOURCES = MTA_SYSTEM/service_plugins/invalid_user/invalid_user.c MTA_SYSTEM/service_plugins/invalid_user/main.c
 libmtasvc_invalid_user_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_invalid_user_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -828,21 +886,30 @@ libmtasvc_ip_container_la_LIBADD = ${libexsvc_ip_container_la_LIBADD}
 libmtasvc_ip_filter_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmtasvc_ip_filter_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
 libmtasvc_ip_filter_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
-libmtasvc_ip_table_la_SOURCES = ${libexsvc_ip_table_la_SOURCES}
-libmtasvc_ip_table_la_LDFLAGS = ${libexsvc_ip_table_la_LDFLAGS}
-libmtasvc_ip_table_la_LIBADD = ${libexsvc_ip_table_la_LIBADD}
+libmtasvc_ip_whitelist_la_SOURCES = MTA_SYSTEM/service_plugins/ip_table/ip_table.c MTA_SYSTEM/service_plugins/ip_table/main.c
+libmtasvc_ip_whitelist_la_LDFLAGS = ${plugin_LDFLAGS}
+libmtasvc_ip_whitelist_la_LIBADD = -lpthread libgromox_common.la
 libmtasvc_lang_charset_la_SOURCES = ${libexsvc_lang_charset_la_SOURCES}
 libmtasvc_lang_charset_la_LDFLAGS = ${libexsvc_lang_charset_la_LDFLAGS}
 libmtasvc_lang_charset_la_LIBADD = ${libexsvc_lang_charset_la_LIBADD}
 libmtasvc_log_plugin_la_SOURCES = ${libexsvc_log_plugin_la_SOURCES}
 libmtasvc_log_plugin_la_LDFLAGS = ${libexsvc_log_plugin_la_LDFLAGS}
 libmtasvc_log_plugin_la_LIBADD = ${libexsvc_log_plugin_la_LIBADD}
+libmtasvc_mail_from_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
+libmtasvc_mail_from_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
+libmtasvc_mail_from_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
+libmtasvc_mail_subject_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
+libmtasvc_mail_subject_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
+libmtasvc_mail_subject_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
 libmtasvc_midb_agent_la_SOURCES = MTA_SYSTEM/service_plugins/midb_agent.c
 libmtasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 libmtasvc_mime_extension_la_SOURCES = ${libexsvc_mime_extension_la_SOURCES}
 libmtasvc_mime_extension_la_LDFLAGS = ${libexsvc_mime_extension_la_LDFLAGS}
 libmtasvc_mime_extension_la_LIBADD = ${libexsvc_mime_extension_la_LIBADD}
+libmtasvc_monitor_domains_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_monitor_domains_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_monitor_domains_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
 libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
 libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
@@ -852,6 +919,39 @@ libmtasvc_multiple_retrying_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 libmtasvc_mysql_adaptor_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c MTA_SYSTEM/service_plugins/mysql_adaptor/cdner_agent.c MTA_SYSTEM/service_plugins/mysql_adaptor/main.c MTA_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c MTA_SYSTEM/service_plugins/mysql_adaptor/uncheck_domains.c
 libmtasvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
+libmtasvc_outmail_frequency_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
+libmtasvc_outmail_frequency_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
+libmtasvc_outmail_frequency_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
+libmtasvc_outmail_limitation_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
+libmtasvc_outmail_limitation_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
+libmtasvc_outmail_limitation_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
+libmtasvc_protection_ip_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
+libmtasvc_protection_ip_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
+libmtasvc_protection_ip_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
+libmtasvc_relay_domains_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_relay_domains_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_relay_domains_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_relay_list_la_SOURCES = ${libmtasvc_ip_whitelist_la_SOURCES}
+libmtasvc_relay_list_la_LDFLAGS = ${libmtasvc_ip_whitelist_la_LDFLAGS}
+libmtasvc_relay_list_la_LIBADD = ${libmtasvc_ip_whitelist_la_LIBADD}
+libmtasvc_remote_delivery_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
+libmtasvc_remote_delivery_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
+libmtasvc_remote_delivery_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
+libmtasvc_remote_mx_hello_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_remote_mx_hello_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_remote_mx_hello_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_single_rcpt_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
+libmtasvc_single_rcpt_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
+libmtasvc_single_rcpt_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_smtp_console_control_la_SOURCES = ${libmtasvc_delivery_console_control_la_SOURCES}
+libmtasvc_smtp_console_control_la_LDFLAGS = ${libmtasvc_delivery_console_control_la_LDFLAGS}
+libmtasvc_smtp_console_control_la_LIBADD = ${libmtasvc_delivery_console_control_la_LIBADD}
+libmtasvc_special_protection_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
+libmtasvc_special_protection_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
+libmtasvc_special_protection_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
+libmtasvc_remote_delivery_forbidden_la_SOURCES = ${libmtasvc_ip_whitelist_la_SOURCES}
+libmtasvc_remote_delivery_forbidden_la_LDFLAGS = ${libmtasvc_ip_whitelist_la_LDFLAGS}
+libmtasvc_remote_delivery_forbidden_la_LIBADD = ${libmtasvc_ip_whitelist_la_LIBADD}
 libmtasvc_retrying_table_la_SOURCES = MTA_SYSTEM/service_plugins/retrying_table/main.c MTA_SYSTEM/service_plugins/retrying_table/retrying_table.c
 libmtasvc_retrying_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_retrying_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -866,15 +966,12 @@ libmtasvc_spam_statistic_la_LIBADD = libgromox_common.la
 libmtasvc_sssp_agent_la_SOURCES = MTA_SYSTEM/service_plugins/sssp_agent.c
 libmtasvc_sssp_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_sssp_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-libmtasvc_str_filter_la_SOURCES = ${libexsvc_str_filter_la_SOURCES}
-libmtasvc_str_filter_la_LDFLAGS = ${libexsvc_str_filter_la_LDFLAGS}
-libmtasvc_str_filter_la_LIBADD = ${libexsvc_str_filter_la_LIBADD}
-libmtasvc_str_table_la_SOURCES = ${libexsvc_str_table_la_SOURCES}
-libmtasvc_str_table_la_LDFLAGS = ${libexsvc_str_table_la_LDFLAGS}
-libmtasvc_str_table_la_LIBADD = ${libexsvc_str_table_la_LIBADD}
 libmtasvc_tagging_table_la_SOURCES = MTA_SYSTEM/service_plugins/tagging_table/main.c MTA_SYSTEM/service_plugins/tagging_table/tagging_table.c
 libmtasvc_tagging_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_tagging_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+libmtasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
+libmtasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
+libmtasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
 
 # MRA_SYSTEM
 pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c MRA_SYSTEM/imap/service.c MRA_SYSTEM/pop3/console_server.c MRA_SYSTEM/pop3/console_cmd_handler.c MRA_SYSTEM/pop3/pop3_parser.c MRA_SYSTEM/pop3/pop3_cmd_handler.c MRA_SYSTEM/pop3/resource.c MRA_SYSTEM/pop3/system_services.c MRA_SYSTEM/pop3/units_allocator.c MRA_SYSTEM/pop3/main.c MRA_SYSTEM/pop3/listener.c
@@ -898,9 +995,6 @@ libmrasvc_ip_container_la_LIBADD = ${libexsvc_ip_container_la_LIBADD}
 libmrasvc_ip_filter_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmrasvc_ip_filter_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
 libmrasvc_ip_filter_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
-libmrasvc_ip_table_la_SOURCES = ${libexsvc_ip_table_la_SOURCES}
-libmrasvc_ip_table_la_LDFLAGS = ${libexsvc_ip_table_la_LDFLAGS}
-libmrasvc_ip_table_la_LIBADD = ${libexsvc_ip_table_la_LIBADD}
 libmrasvc_log_plugin_la_SOURCES = ${libexsvc_log_plugin_la_SOURCES}
 libmrasvc_log_plugin_la_LDFLAGS = ${libexsvc_log_plugin_la_LDFLAGS}
 libmrasvc_log_plugin_la_LIBADD = ${libexsvc_log_plugin_la_LIBADD}
@@ -912,12 +1006,9 @@ libmrasvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la
 libmrasvc_sample_la_SOURCES = ${libexsvc_sample_la_SOURCES}
 libmrasvc_sample_la_LDFLAGS = ${libexsvc_sample_la_LDFLAGS}
-libmrasvc_str_filter_la_SOURCES = ${libexsvc_str_filter_la_SOURCES}
-libmrasvc_str_filter_la_LDFLAGS = ${libexsvc_str_filter_la_LDFLAGS}
-libmrasvc_str_filter_la_LIBADD = ${libexsvc_str_filter_la_LIBADD}
-libmrasvc_str_table_la_SOURCES = ${libexsvc_str_table_la_SOURCES}
-libmrasvc_str_table_la_LDFLAGS = ${libexsvc_str_table_la_LDFLAGS}
-libmrasvc_str_table_la_LIBADD = ${libexsvc_str_table_la_LIBADD}
+libmrasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
+libmrasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
+libmrasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
 
 # EXCHANGE_SYSTEM
 http_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/console_server.c EXCHANGE_SYSTEM/http/console_cmd_handler.c EXCHANGE_SYSTEM/http/hpm_processor.c EXCHANGE_SYSTEM/http/http_parser.c EXCHANGE_SYSTEM/http/listener.c EXCHANGE_SYSTEM/http/main.c EXCHANGE_SYSTEM/http/mod_cache.c EXCHANGE_SYSTEM/http/mod_fastcgi.c EXCHANGE_SYSTEM/http/mod_rewrite.c EXCHANGE_SYSTEM/http/pdu_processor.c EXCHANGE_SYSTEM/http/pdu_ndr.c EXCHANGE_SYSTEM/http/resource.c EXCHANGE_SYSTEM/http/service.c EXCHANGE_SYSTEM/http/system_services.c
@@ -943,9 +1034,6 @@ libexsvc_ip_container_la_LIBADD = -lpthread libgromox_common.la
 libexsvc_ip_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/ip_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/ip_filter/ip_filter.c EXCHANGE_SYSTEM/service_plugins/ip_filter/main.c EXCHANGE_SYSTEM/service_plugins/ip_filter/temp_list.c
 libexsvc_ip_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_ip_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-libexsvc_ip_table_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_table/ip_table.c EXCHANGE_SYSTEM/service_plugins/ip_table/main.c
-libexsvc_ip_table_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_ip_table_la_LIBADD = -lpthread libgromox_common.la
 libexsvc_lang_charset_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/lang_charset.c
 libexsvc_lang_charset_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_lang_charset_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -963,12 +1051,9 @@ libexsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la
 libexsvc_sample_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/sample.c
 libexsvc_sample_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_str_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/str_filter/main.c EXCHANGE_SYSTEM/service_plugins/str_filter/str_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/temp_list.c
-libexsvc_str_filter_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_str_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-libexsvc_str_table_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_table/main.c EXCHANGE_SYSTEM/service_plugins/str_table/str_table.c
-libexsvc_str_table_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_str_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+libexsvc_user_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/str_filter/main.c EXCHANGE_SYSTEM/service_plugins/str_filter/str_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/temp_list.c
+libexsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
+libexsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 libexsvc_timer_agent_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/timer_agent.c
 libexsvc_timer_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_timer_agent_la_LIBADD = -lpthread libgromox_common.la
