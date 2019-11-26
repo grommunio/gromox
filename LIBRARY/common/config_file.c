@@ -33,11 +33,10 @@ CONFIG_FILE *config_file_init(const char *filename)
 {
 	CONFIG_FILE* cfg = NULL;	/* the config object pointer	*/
 	char line[MAX_LINE_LEN];	/* current line being processed */
-	FILE *fin = NULL;			/* umta config file pointer		*/
 	size_t i, table_size;		   /* loop counter, table line num */
 	
-
-	if (NULL == (fin = fopen(filename, "r+"))) {
+	FILE *fin = fopen(filename, "r");
+	if (fin == NULL) {
 		debug_info("[config_file]: config_file_init: open %s: %s",
 			filename, strerror(errno));
 		return NULL;
