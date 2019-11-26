@@ -470,12 +470,8 @@ int main(int argc, const char **argv)
 	} else {
 		HX_strlcpy(CS_PATH, str_value, sizeof(CS_PATH));
 	}
-	
-	config_file_save(pconfig);
 	config_file_free(pconfig);
-	
 	system_services_init();
-	
 	listener_init();
 
 	if (0 != service_run()) {

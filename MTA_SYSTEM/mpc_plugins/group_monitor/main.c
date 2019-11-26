@@ -49,11 +49,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			str_subject = "group monitor mail";
 		}
 		printf("[group_monitor]: forward mail subject is %s\n", str_subject);
-		if (FALSE == config_file_save(pfile)) {
-			printf("[group_monitor]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
 		sprintf(tmp_path, "%s/%s", get_data_path(), file_name);
 		group_monitor_init(tmp_path, str_subject, growing_num);
 		if (0 != group_monitor_run()) {

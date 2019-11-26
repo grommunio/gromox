@@ -91,7 +91,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 		itvltoa(scan_interval, temp_buff);
 		printf("[esmtp_auth]: scan interval is %s\n", temp_buff);
-		config_file_save(cfg_file);
         config_file_free(cfg_file);
 		
 		auth_cache_init(cache_size);

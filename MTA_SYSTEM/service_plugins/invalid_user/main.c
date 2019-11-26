@@ -62,11 +62,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		itvltoa(valid_interval, temp_buff);
 		printf("[invalid_user]: valid interval is %s\n", temp_buff);
-		if (FALSE == config_file_save(pfile)) {
-			config_file_free(pfile);
-			printf("[invalid_user]: config_file_save: %s\n", strerror(errno));
-			return FALSE;
-		}
 		config_file_free(pfile);
 		invalid_user_init(tmp_path, table_size, valid_interval);
 		if (0 != invalid_user_run()) {

@@ -201,8 +201,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[relay_agent]: listen port is %d\n", listen_port);
-		
-		config_file_save(pfile);
 		config_file_free(pfile);
 
 		sprintf(mess_path, "%s/mess", get_queue_path());

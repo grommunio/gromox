@@ -63,11 +63,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			strcpy(separator, str_val);
 		}
 
-		if (FALSE == config_file_save(pfile)) {
-			printf("[mail_approving]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
 		sprintf(tmp_path, "%s/approving_bounce", get_data_path());
 		bounce_producer_init(tmp_path, separator);
 		sprintf(tmp_path, "%s/%s", get_data_path(), file_name);

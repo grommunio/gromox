@@ -126,11 +126,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[%s]: grey list growing number is %d\n", file_name,
 			growing_num);
-		if (FALSE == config_file_save(pfile)) {
-			printf("[%s]: config_file_save: %s\n", file_name, strerror(errno));
-			config_file_free(pfile);
-			return FALSE;
-		}
 		judge_name = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");
 		add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
 		query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");

@@ -331,8 +331,6 @@ int main(int argc, const char **argv)
 	if (g_mysql_timeout > 0) {
 		printf("[system]: mysql read write timeout is %d\n", g_mysql_timeout);
 	}
-	
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	
 	/* create a socket */

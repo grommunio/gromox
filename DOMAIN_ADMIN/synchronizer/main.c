@@ -78,8 +78,6 @@ int main(int argc, const char **argv)
 	url_downloader_init();
 	file_operation_init(mount_path);
 	processing_engine_init(str_value, data_path, argv[1]);
-	
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	
 	if (0 != url_downloader_run()) {

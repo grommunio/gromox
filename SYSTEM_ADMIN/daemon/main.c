@@ -234,7 +234,6 @@ int main(int argc, const char **argv)
 	itvltoa(max_interval, temp_buff);
 	printf("[system]: locker maximum interval is %s\n", temp_buff);
 	
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	sprintf(area_path, "%s/area_list.txt", data_path);
 	sprintf(midb_path, "%s/midb_list.txt", data_path);

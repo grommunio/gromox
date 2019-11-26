@@ -469,12 +469,6 @@ int main(int argc, const char **argv)
 	}
 	itvltoa(fastcgi_exec_timeout, temp_buff);
 	printf("[http]: fastcgi excution time out is %s\n", temp_buff);
-	
-	if (FALSE == resource_save()) {
-		printf("[system]: config_file_save: %s\n", strerror(errno));
-		goto EXIT_PROGRAM;
-	}
-
 	listener_init(listen_port, listen_ssl_port, mss_size);
 																			
 	if (0 != listener_run()) {

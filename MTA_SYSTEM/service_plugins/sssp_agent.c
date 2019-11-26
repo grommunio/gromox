@@ -115,8 +115,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[sssp_agent]: sssp server listen port is %d\n", g_sssp_port);
-
-		config_file_save(pconfig);
 		config_file_free(pconfig);
 
 		for (i=0; i<g_conn_num; i++) {

@@ -183,12 +183,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		itvltoa(block_interval, temp_buff);
 		printf("[gateway_dispatch]: nouser block interval is %s\n", temp_buff);
 		
-		if (FALSE == config_file_save(pfile)) {
-			printf("[gateway_dispatch]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
-		
 		gateway_dispatch_init(list_path, backend_interval, files_num,
 			times, interval, alarm_interval, bounce_policy, mask_string,
 			resource_path, separator, cache_path, cache_interval,

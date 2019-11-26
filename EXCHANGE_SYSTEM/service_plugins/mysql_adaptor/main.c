@@ -139,8 +139,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		
 		mysql_adaptor_init(conn_num, scan_interval, mysql_host,
 			mysql_port, mysql_user, mysql_passwd, db_name, timeout);
-
-		config_file_save(pfile);
 		config_file_free(pfile);
 		
 		if (0 != mysql_adaptor_run()) {

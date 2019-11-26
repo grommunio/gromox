@@ -237,11 +237,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			printf("[remote_postman]: STARTTLS support is OFF\n");
 		}
 		
-		if (FALSE == config_file_save(pfile)) {
-			printf("[remote_postman]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
 		remote_postman_init(max_thr, files_num, times, interval,
 			alarm_interval, tls_switch, trying_times, max_rcpt,
 			resource_path, separator, timer_path, timer_threads,

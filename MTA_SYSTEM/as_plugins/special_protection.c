@@ -118,11 +118,6 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			strcpy(g_return_reason, str_value);
 		}
 		printf("[special_protection]: return string is %s\n", g_return_reason);
-		if (FALSE == config_file_save(pconfig_file)) {
-			printf("[special_protection]: fail to save config file\n");
-			config_file_free(pconfig_file);
-			return FALSE;
-		}
 		config_file_free(pconfig_file);
         /* invoke register_auditor for registering auditor of mail head */
         if (FALSE == register_auditor(special_protection)) {

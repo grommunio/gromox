@@ -49,11 +49,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			str_subject = "system forward mail";
 		}
 		printf("[mail_forwarder]: forward mail subject is %s\n", str_subject);
-		if (FALSE == config_file_save(pfile)) {
-			printf("[mail_forwarder]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		mail_forwarder_init(tmp_path, str_subject, get_host_ID(), growing_num);
 		if (0 != mail_forwarder_run()) {

@@ -75,11 +75,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		itvltoa(valid_interval, temp_buff);
 		printf("[retrying_table]: valid interval is %s\n", temp_buff);
-		if (FALSE == config_file_save(pfile)) {
-			config_file_free(pfile);
-			printf("[retrying_table]: config_file_save: %s\n", strerror(errno));
-			return FALSE;
-		}
 		config_file_free(pfile);
 		retrying_table_init(tmp_path, table_size, min_interval, valid_interval);
 		if (0 != retrying_table_run()) {

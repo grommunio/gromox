@@ -206,12 +206,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		itvltoa(response_interval, temp_buff);
 		printf("[exmdb_local]: auto response interval is %s\n", temp_buff);
-		
-		if (FALSE == config_file_save(pfile)) {
-			printf("[exmdb_local]: config_file_save: %s\n", strerror(errno));
-			config_file_free(pfile);
-			return FALSE;
-		}
+
 		config_file_free(pfile);
 		net_failure_init(times, interval, alarm_interval);
 		bounce_producer_init(resource_path, separator);

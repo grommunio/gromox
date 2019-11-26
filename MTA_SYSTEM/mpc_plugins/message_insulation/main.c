@@ -81,11 +81,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		itvltoa(on_valid_interval, temp_buff);
 		printf("[message_insulation]: onymus valid interval is %s\n", temp_buff);
 		
-		if (FALSE == config_file_save(pfile)) {
-			printf("[message_insulation]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
 		config_file_free(pfile);
 		sprintf(queue_path, "%s/insulation", get_queue_path());
 		sprintf(resource_path, "%s/insulation_bounce", get_data_path());

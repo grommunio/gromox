@@ -216,8 +216,6 @@ int main(int argc, const char **argv)
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 	
 	g_threads_num ++;
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	
 	g_fifo_alloc = fifo_allocator_init(sizeof(MEM_FILE),

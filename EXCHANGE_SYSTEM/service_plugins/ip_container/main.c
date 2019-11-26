@@ -49,11 +49,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[ip_containe]: maximum connection number is %d\n", max_num);
-		if (FALSE == config_file_save(pfile)) {
-			printf("[ip_container]: config_file_save: %s\n", strerror(errno));
-			config_file_free(pfile);
-			return FALSE;
-		}
 		config_file_free(pfile);
 		ip_container_init(2*get_context_num(), max_num);
 		if (0 != ip_container_run()) {

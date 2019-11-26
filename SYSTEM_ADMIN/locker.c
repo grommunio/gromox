@@ -213,8 +213,6 @@ int main(int argc, const char **argv)
 	printf("[system]: threads number is %d\n", g_threads_num);
 
 	g_threads_num ++;
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 
 	g_hash_table = str_hash_init(table_size, sizeof(DOUBLE_LIST), NULL);

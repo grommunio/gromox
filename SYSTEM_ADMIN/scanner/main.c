@@ -298,8 +298,6 @@ int main(int argc, const char **argv)
 	engine_init(area_path, log_days, valid_days, default_domain,
 		admin_mailbox, db_name, backup_path, parellel_scanning,
 		freetime_scanning);
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {

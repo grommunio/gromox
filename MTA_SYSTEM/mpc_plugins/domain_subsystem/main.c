@@ -76,12 +76,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			max_thr = get_threads_num();
 		}
 		
-		if (FALSE == config_file_save(pfile)) {
-			printf("[domain_subsystem]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
-		
 		domain_subsystem_init(tmp_path, list_path, queue_path, times, interval,
 			max_thr);
 

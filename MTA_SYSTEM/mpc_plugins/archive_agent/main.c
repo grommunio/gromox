@@ -135,8 +135,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 
 		printf("[archive_agent]: cidb connection number is %d\n", g_conn_num);
-
-		config_file_save(pconfig);
 		config_file_free(pconfig);
 
 		if (FALSE == load_list()) {

@@ -126,8 +126,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 
 		printf("[midb_agent]: midb connection number is %d\n", g_conn_num);
-
-		config_file_save(pconfig);
 		config_file_free(pconfig);
 
 		plist = list_file_init(list_path, "%s:256%s:16%d");

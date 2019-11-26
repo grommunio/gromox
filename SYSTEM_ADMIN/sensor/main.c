@@ -231,8 +231,6 @@ int main(int argc, const char **argv)
 	}
 	itvltoa(g_max_interval, temp_buff);
 	printf("[system]: sensor item life circle is %s\n", temp_buff);
-	
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	
 	exmdb_client_init(EXMDB_CONN_NUM, EVENT_THREAD_NUM, list_path);

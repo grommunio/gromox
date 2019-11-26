@@ -69,11 +69,6 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			strcpy(g_return_reason, str_value);
 		}
 		printf("[domain_keyword]: return string is %s\n", g_return_reason);
-		if (FALSE == config_file_save(pconfig_file)) {
-			printf("[domain_keyword]: fail to save config file\n");
-			config_file_free(pconfig_file);
-			return FALSE;
-		}
 		config_file_free(pconfig_file);
 		
 		sprintf(temp_path, "%s/%s", get_data_path(), file_name);

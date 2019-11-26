@@ -133,11 +133,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[multiple_retrying]: channel number per unit is %d\n",
 			channel_num);
-		if (FALSE == config_file_save(pfile)) {
-			config_file_free(pfile);
-			printf("[multiple_retrying]: config_file_save: %s\n", strerror(errno));
-			return FALSE;
-		}
 		config_file_free(pfile);
 		multiple_retrying_init(config_path, list_path, table_size, min_interval,
 			valid_interval, port, time_out, ping_interval, channel_num);

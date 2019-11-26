@@ -233,7 +233,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[exchange_emsmdb]: async threads number is %d\n", async_num);
-		config_file_save(pfile);
 		config_file_free(pfile);
 		
 		/* host can include wildcard */

@@ -115,11 +115,6 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		itvltoa(black_valid, temp_buff);
 		printf("[dns_rbl]: blacklist cache interval is %s\n", temp_buff);
-		if (FALSE == config_file_save(pconfig_file)) {
-			printf("[dns_rbl]: fail to save config file\n");
-			config_file_free(pconfig_file);
-			return FALSE;
-		}
 		config_file_free(pconfig_file);
 		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
 		dns_rbl_init(temp_path);

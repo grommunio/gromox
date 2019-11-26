@@ -52,11 +52,7 @@ BOOL FLH_LibMain(int reason, void** ppdata)
         }
 		bytetoa(tape_units*2*64*1024, temp_buff);
 		printf("[message_enqueue]: enqueue tape size is %s\n", temp_buff);
-		if (FALSE == config_file_save(pfile)) {
-			printf("[message_enqueue]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
+
         message_enqueue_init(queue_path, tape_units);
         if (0 != message_enqueue_run()) {
             printf("[message_enqueue]: fail to run the module\n");

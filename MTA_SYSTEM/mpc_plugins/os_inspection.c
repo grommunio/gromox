@@ -117,8 +117,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		printf("[os_inspection]: swap quota alarm percentage is %d%%\n",
 			g_mem_alarm_percentage);
-		
-		config_file_save(pfile);
 		config_file_free(pfile);
 		
 		g_notify_stop = FALSE;

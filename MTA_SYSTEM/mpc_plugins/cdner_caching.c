@@ -131,10 +131,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[cdner_caching]: cdner port is %d\n", g_host_port);
-
-		config_file_save(pconfig);
 		config_file_free(pconfig);
-
 		register_talk(console_talk);
 	
 		if (0 == g_conn_num) {

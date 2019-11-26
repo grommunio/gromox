@@ -92,7 +92,6 @@ int main(int argc, const char **argv)
 	acl_control_free();
 	system_log_stop();
 	system_log_free();
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	exit(0);
 }

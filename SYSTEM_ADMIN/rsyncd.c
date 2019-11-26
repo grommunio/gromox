@@ -155,11 +155,7 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 	strncpy(private_key_path, str_value, 256);
-
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
-
 	
 	/* create a socket */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);

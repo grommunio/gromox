@@ -312,11 +312,6 @@ int main(int argc, const char **argv)
     }
     printf("[console_server]: console server port is %d\n",
 		console_server_port);
-
-	if (FALSE == resource_save()) {
-		printf("[system]: config_file_save: %s\n", strerror(errno));
-		goto EXIT_PROGRAM;
-	}
 	
     if (NULL != user_name) {
         puser_pass = getpwnam(user_name);

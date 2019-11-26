@@ -86,11 +86,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			strcpy(log_file_name, str_value);
 		}
 		printf("[log_plugin]: log file name is %s\n", log_file_name);
-		if (FALSE == config_file_save(pfile)) {
-			config_file_free(pfile);
-			printf("[log_plugin]: fail to save config file\n");
-			return FALSE;
-		}
 		config_file_free(pfile);
 		log_plugin_init(tmp_path, log_file_name, log_level, files_num,
 			cache_size);

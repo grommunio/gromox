@@ -113,7 +113,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[event_proxy]: event port is %d\n", g_event_port);
-		config_file_save(pfile);
 		config_file_free(pfile);
 
 		g_notify_stop = FALSE;

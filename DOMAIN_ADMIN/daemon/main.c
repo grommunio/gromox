@@ -165,8 +165,6 @@ int main(int argc, const char **argv)
 	
 	domain_classifier_init(now_time, mount_path, 100, cache_size);
 	item_sorter_init(now_time, data_path, url_link, resource_path);
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {

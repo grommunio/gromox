@@ -250,9 +250,6 @@ int main(int argc, const char **argv)
 	printf("[system]: mysql database name is %s\n", db_name);
 
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
-
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 
 	system_log_init(log_path);

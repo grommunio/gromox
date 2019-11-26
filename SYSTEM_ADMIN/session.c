@@ -210,8 +210,6 @@ int main(int argc, const char **argv)
 	}
 	itvltoa(g_max_interval, temp_buff);
 	printf("[system]: session timeout interval is %s\n", temp_buff);
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 
 	g_session_table = str_hash_init(table_size, sizeof(DOUBLE_LIST), NULL);

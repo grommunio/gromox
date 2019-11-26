@@ -192,8 +192,6 @@ int main(int argc, const char **argv)
 	printf("[system]: processing threads number is %d\n", g_threads_num);
 
 	g_threads_num ++;
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 
 	pfile = list_file_init(g_list_path, "%d%l%s:512");

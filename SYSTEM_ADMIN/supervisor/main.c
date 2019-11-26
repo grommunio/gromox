@@ -93,7 +93,6 @@ int main(int argc, const char **argv)
 	}
 	itvltoa(supervise_interval, temp_buff);
 	printf("[system]: supervise interval is %s\n", temp_buff);
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 
 	message_init();

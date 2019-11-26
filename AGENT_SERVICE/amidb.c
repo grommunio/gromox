@@ -163,8 +163,6 @@ int main(int argc, const char **argv)
 	} else {
 		HX_strlcpy(CS_PATH, str_value, sizeof(CS_PATH));
 	}
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 
 	plist = list_file_init(list_path, "%s:256%s:16%d");

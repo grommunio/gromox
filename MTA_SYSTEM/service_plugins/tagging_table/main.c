@@ -49,11 +49,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			}
 		}
 		printf("[tagging_table]: table growing number is %d\n", growing_num);
-		if (FALSE == config_file_save(pfile)) {
-			printf("[tagging_table]: config_file_save: %s\n", strerror(errno));
-			config_file_free(pfile);
-			return FALSE;
-		}
 		config_file_free(pfile);
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		if (0 != stat(tmp_path, &node_stat)) {

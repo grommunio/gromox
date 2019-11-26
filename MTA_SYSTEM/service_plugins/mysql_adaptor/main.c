@@ -189,8 +189,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		mysql_adaptor_init(conn_num, scan_interval, mysql_host, mysql_port,
 			mysql_user, mysql_passwd, db_name, timeout);
 		service_auth_init(get_context_num(), mysql_adaptor_login);
-
-		config_file_save(pfile);
 		config_file_free(pfile);
 
 		if (0 != cdner_agent_run()) {

@@ -260,10 +260,7 @@ int main(int argc, const char **argv)
 	
 	mysql_pool_init(conn_num, scan_interval, mysql_host, mysql_port,
 		mysql_user, mysql_passwd, db_name, 0);
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
-
 	system_log_init(log_path);
 
 	listener_init(listen_ip, listen_port, list_path);

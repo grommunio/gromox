@@ -72,11 +72,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		itvltoa(interval, temp_buff);
 		printf("[dns_adaptor]: valid interval is %s\n", temp_buff);
-		if (FALSE == config_file_save(pfile)) {
-			printf("[dns_adaptor]: fail to save config file\n");
-			config_file_free(pfile);
-			return FALSE;
-		}
 		config_file_free(pfile);
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		if (0 != stat(tmp_path, &node_stat)) {

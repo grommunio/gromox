@@ -329,8 +329,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[exmdb_provider]: populating threads"
 				" number is %d\n", populating_num);
-		
-		config_file_save(pconfig);
 		config_file_free(pconfig);
 		
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);

@@ -190,10 +190,7 @@ int main(int argc, const char **argv)
 		strncpy(username, str_value, 256);
 		printf("[system]: running identity of process will be %s\n", username);
 	}
-	config_file_save(pconfig);
 	config_file_free(pconfig);
-	
-	
 	signal(SIGPIPE, SIG_IGN);
 
 	/* Create a Unix domain stream socket */

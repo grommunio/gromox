@@ -110,7 +110,6 @@ int main(int argc, const char **argv)
 		strcpy(token_path, str_value);
 	}
 	printf("[system]: token path is %s\n", token_path);
-	config_file_save(pconfig_file);
 	config_file_free(pconfig_file);
 
 	sprintf(temp_path, "%s/monitor.shm", token_path);

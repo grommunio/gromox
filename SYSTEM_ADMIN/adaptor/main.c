@@ -161,9 +161,6 @@ int main(int argc, const char **argv)
 	engine_init(mount_path, domainlist_path,
 		aliasaddress_path, aliasdomain_path, backup_path,
 		unchkusr_path, collector_path, subsystem_path);
-
-
-	config_file_save(pconfig);
 	config_file_free(pconfig);
 	
 	if (0 != file_operation_run()) {

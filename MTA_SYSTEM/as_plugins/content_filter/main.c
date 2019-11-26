@@ -181,11 +181,6 @@ BOOL AS_LibMain(int reason, void **ppdata)
 			strncpy(uribl_dns, str_value, 255);
 			uribl_dns[255] = '\0';
 		}
-		if (FALSE == config_file_save(pconfig_file)) {
-			printf("[content_filter]: fail to save config file\n");
-			config_file_free(pconfig_file);
-			return FALSE;
-		}
 		config_file_free(pconfig_file);
 		g_context_list = malloc(sizeof(URI_INFORMATION)*get_context_num());
 		if (NULL == g_context_list) {

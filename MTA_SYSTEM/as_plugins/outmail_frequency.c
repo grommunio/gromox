@@ -103,11 +103,6 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		printf("[outmail_frequency]: return string 2 is %s\n",
 				g_return_string_2);
-		if (FALSE == config_file_save(pconfig_file)) {
-			printf("[outmail_frequency]: fail to save config file\n");
-			config_file_free(pconfig_file);
-			return FALSE;
-		}
 		config_file_free(pconfig_file);
         /* invoke register_statistic for registering statistic of mail */
         if (FALSE == register_statistic(mail_statistic)) {

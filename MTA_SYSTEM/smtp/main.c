@@ -610,12 +610,6 @@ int main(int argc, const char **argv)
 	}
 	printf("[console_server]: console server is port %d\n",
 		console_server_port);
-
-	if (FALSE == resource_save()) {
-		printf("[system]: config_file_save: %s\n", strerror(errno));
-		goto EXIT_PROGRAM;
-	}
-
 	listener_init(listen_port, listen_ssl_port);
 																			
 	if (0 != listener_run()) {
