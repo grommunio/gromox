@@ -792,11 +792,9 @@ libexproc_sample_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/EXCHANGE_SYSTEM/pr
 libexproc_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_sample_la_LIBADD = libgromox_common.la
 libexhpm_proxy_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/mod_proxy.c
-libexhpm_proxy_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/EXCHANGE_SYSTEM/hpm_plugins/include
 libexhpm_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 libexhpm_sample_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/sample.c
-libexhpm_sample_la_CPPFLAGS = ${AM_CPPFLAGS} -I${top_srcdir}/EXCHANGE_SYSTEM/hpm_plugins/include
 libexhpm_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 
 # AGENT_SERVICE

@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "hpm_common.h"
+#include <gromox/hpm_common.h>
 
 DECLARE_API;
 

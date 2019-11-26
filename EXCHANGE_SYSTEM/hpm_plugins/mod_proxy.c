@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include "double_list.h"
-#include "hpm_common.h"
+#include <gromox/hpm_common.h>
 #include "list_file.h"
 #include "mail_func.h"
 #include "util.h"
