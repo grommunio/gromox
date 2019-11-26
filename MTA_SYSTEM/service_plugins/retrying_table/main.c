@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <gromox/mtasvc_common.h>
 #include "retrying_table.h"
@@ -76,8 +77,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[retrying_table]: valid interval is %s\n", temp_buff);
 		if (FALSE == config_file_save(pfile)) {
 			config_file_free(pfile);
-			printf("[retrying_table]: fail to write configuration back "
-				"to file\n");
+			printf("[retrying_table]: config_file_save: %s\n", strerror(errno));
 			return FALSE;
 		}
 		config_file_free(pfile);

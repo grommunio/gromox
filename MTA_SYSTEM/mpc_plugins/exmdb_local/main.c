@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 #include <gromox/hook_common.h>
 #include "config_file.h"
 #include "exmdb_local.h"
@@ -206,8 +208,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		printf("[exmdb_local]: auto response interval is %s\n", temp_buff);
 		
 		if (FALSE == config_file_save(pfile)) {
-			printf("[exmdb_local]: fail to write configuration back to "
-				"file\n");
+			printf("[exmdb_local]: config_file_save: %s\n", strerror(errno));
 			config_file_free(pfile);
 			return FALSE;
 		}

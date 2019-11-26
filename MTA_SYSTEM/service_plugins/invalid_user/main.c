@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <gromox/mtasvc_common.h>
@@ -63,7 +64,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[invalid_user]: valid interval is %s\n", temp_buff);
 		if (FALSE == config_file_save(pfile)) {
 			config_file_free(pfile);
-			printf("[invalid_user]: fail to write configuration back to file\n");
+			printf("[invalid_user]: config_file_save: %s\n", strerror(errno));
 			return FALSE;
 		}
 		config_file_free(pfile);

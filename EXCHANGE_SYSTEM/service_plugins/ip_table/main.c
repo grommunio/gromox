@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -56,8 +57,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[%s]: table growing number is %d\n", file_name, growing_num);
 		if (FALSE == config_file_save(pfile)) {
-			printf("[%s]: fail to write configuration back to file\n",
-				file_name);
+			printf("[%s]: config_file_save: %s\n", file_name, strerror(errno));
 			config_file_free(pfile);
 			return FALSE;
 		}

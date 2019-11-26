@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/option.h>
 #include "message_dequeue.h" 
 #include "console_server.h" 
@@ -233,7 +235,7 @@ int main(int argc, const char **argv)
 		console_server_port);
 
 	if (FALSE == resource_save()) {
-		printf("[system]: fail to write configuration back to file\n");
+		printf("[system]: config_file_save: %s\n", strerror(errno));
 		goto EXIT_PROGRAM;
 	}
 	

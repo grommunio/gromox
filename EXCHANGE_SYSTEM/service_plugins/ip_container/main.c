@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <gromox/exsvc_common.h>
@@ -49,8 +50,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[ip_containe]: maximum connection number is %d\n", max_num);
 		if (FALSE == config_file_save(pfile)) {
-			printf("[ip_container]: fail to write configuration "
-				"back to file\n");
+			printf("[ip_container]: config_file_save: %s\n", strerror(errno));
 			config_file_free(pfile);
 			return FALSE;
 		}

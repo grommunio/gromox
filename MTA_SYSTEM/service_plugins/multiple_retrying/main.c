@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <gromox/mtasvc_common.h>
 #include "multiple_retrying.h"
@@ -134,8 +135,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			channel_num);
 		if (FALSE == config_file_save(pfile)) {
 			config_file_free(pfile);
-			printf("[multiple_retrying]: fail to write configuration back "
-				"to file\n");
+			printf("[multiple_retrying]: config_file_save: %s\n", strerror(errno));
 			return FALSE;
 		}
 		config_file_free(pfile);
