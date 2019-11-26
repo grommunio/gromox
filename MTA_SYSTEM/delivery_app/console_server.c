@@ -143,7 +143,7 @@ int console_server_run()
 	}
 	/* Make it a listening socket ready to accept connection requests */
 	if (listen(sock, 1024) < 0) {
-		printf("[console_server] fail to listen on prot %d\n", g_listen_port);
+		printf("[console_server] fail to listen on port %d\n", g_listen_port);
 		close(sock);
 		return -4;
 	}
