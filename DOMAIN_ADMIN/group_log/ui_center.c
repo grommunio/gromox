@@ -98,7 +98,7 @@ width=\"100%\" border=0><TBODY><TR><TD colSpan=4 align=right>\n\
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</TD></TR>\n\
 <TR><TD></TD><TD vAlign=center>\n"
 
-/* fill IP address tag here */
+/* fill ipaddr address tag here */
 
 #define HTML_SEARCH_9 \
 "</TD><TD vAlign=center><SPAN><INPUT type=\"text\" name=ip /></SPAN>\n\

@@ -204,7 +204,7 @@ int main(int argc, const char **argv)
 	} else {
 		strncpy(locker_ip, str_value, 16);
 	}
-	printf("[system]: locker listen ip is %s\n", locker_ip);
+	printf("[system]: locker listen ipaddr is %s\n", locker_ip);
 
 	str_value = config_file_get_value(pconfig, "LOCKER_LISTEN_PORT");
 	if (NULL == str_value) {

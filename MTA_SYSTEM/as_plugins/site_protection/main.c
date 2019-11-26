@@ -69,7 +69,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pconfig_file, "RETURN_STRING");
 		if (NULL == str_value) {
-			strcpy(g_return_reason, "000023 it seems your IP %s does not "
+			strcpy(g_return_reason, "000023 it seems your IP address %s does not "
 				"belong to domain %s, please send a mail to %s to complain "
 				"this problem, thank you!");
 		} else {

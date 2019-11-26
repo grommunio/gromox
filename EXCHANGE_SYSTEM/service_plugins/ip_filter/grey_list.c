@@ -86,7 +86,7 @@ int grey_list_stop()
 }
 
 
-/*  query the grey list for the specified ip. 
+/*  query the grey list for the specified ipaddr.
  *  @param  
  *		ip [in]					ip address
  *		b_count					whether to count the access times
@@ -260,7 +260,7 @@ int grey_list_refresh()
 }
 
 /*
- *  add item into ip file and hash table
+ *  add item into ipaddr file and hash table
  *  @param
  *      ip [in]        ip address
  *      times          times
@@ -348,7 +348,7 @@ BOOL grey_list_add_ip(const char *ip, int times, int interval)
 }
 
 /*
- *  remove item from ip file and hash table
+ *  remove item from ipaddr file and hash table
  *  @param
  *      ip [in]        ip address
  *  @return

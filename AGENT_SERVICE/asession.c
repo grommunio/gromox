@@ -108,7 +108,7 @@ int main(int argc, const char **argv)
 	} else {
 		strcpy(g_session_ip, str_value);
 	}
-	printf("[system]: session listen ip is %s\n", g_session_ip);
+	printf("[system]: session listen ipaddr is %s\n", g_session_ip);
 
 	str_value = config_file_get_value(pconfig, "SESSION_LISTEN_PORT");
 	if (NULL == str_value) {

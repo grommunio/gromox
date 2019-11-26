@@ -86,7 +86,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		} else {
 			strncpy(g_smtp_ip, str_value, 16);
 		}
-		printf("[system_updater]: smtp console ip is %s\n", g_smtp_ip);
+		printf("[system_updater]: smtp console ipaddr is %s\n", g_smtp_ip);
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_PORT");
 		if (NULL == str_value) {
 			g_smtp_port = 5566;
@@ -105,7 +105,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		} else {
 			strncpy(g_delivery_ip, str_value, 16);
 		}
-		printf("[system_updater]: delivery console ip is %s\n", g_delivery_ip);
+		printf("[system_updater]: delivery console ipaddr is %s\n", g_delivery_ip);
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_PORT");
 		if (NULL == str_value) {
 			g_delivery_port = 6677;

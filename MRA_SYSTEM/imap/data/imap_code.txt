@@ -51,7 +51,7 @@
 2180013 BAD search parameter syntax error
 2180014 BAD internal error, fail to init SSL object
 2180015 BAD <host> service not available
-2180016 BAD access is denied from your IP <remote_ip>
+2180016 BAD access is denied from your IP address <remote_ip>
 2180017 BAD literal size too large
 2180018 BAD expected DONE
 2180019 BAD decode username error

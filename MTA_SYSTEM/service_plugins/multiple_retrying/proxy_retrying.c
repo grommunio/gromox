@@ -280,7 +280,7 @@ static BOOL proxy_retrying_host_islocal(const char *ip)
 		if (0 == ioctl(fd, SIOCGIFCONF, (char *)&ifc)) {
 			intrface = ifc.ifc_len / sizeof(struct ifreq);
 			while (intrface-- > 0) {
-				/*Get IP of the net card */
+				/* Get IP address of the net card */
 				if (0 == (ioctl(fd, SIOCGIFADDR, (char *)&buf[intrface])) &&
 					0 == strcmp(ip, inet_ntoa(((struct sockaddr_in*)(
 					&buf[intrface].ifr_addr))->sin_addr))) {

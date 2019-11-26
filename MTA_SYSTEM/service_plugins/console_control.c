@@ -77,13 +77,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			config_file_set_value(pfile, "CONSOLE_SERVER_IP", str_value);
 		} else {
 			if (NULL == extract_ip(str_value, g_console_ip)) {
-				printf("[%s]: console server ip %s format error!!!\n",
+				printf("[%s]: console server ipaddr \"%s\" format error\n",
 					file_name, str_value);
 				config_file_free(pfile);
 				return FALSE;
 			}
 			strcpy(g_console_ip, str_value);
-			printf("[%s]: console server ip is %s\n", file_name, g_console_ip);
+			printf("[%s]: console server ipaddr is %s\n", file_name, g_console_ip);
 		}
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_PORT");
 		if (NULL == str_value) {

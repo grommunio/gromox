@@ -325,7 +325,7 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 					tmp_ip);
 			itvltoa(g_block_interval, add_command + len);
 			smtp_console_control(add_command, reason_buff, 1024);
-			smtp_dispatch_log_info(&fake_context, 8, "ip %s has sent too "
+			smtp_dispatch_log_info(&fake_context, 8, "ipaddr %s has sent too "
 				"many mails of nouser, will be blocked for a while", tmp_ip);
 		}
 		if (FALSE == smtp_dispatch_has_maskstring()) {
@@ -376,7 +376,7 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 					host_ip)) {
 					need_bounce = FALSE;
 					smtp_dispatch_log_info(&fake_context, 8,
-						"original ip is different from DNS result, "
+						"original ipaddr is different from DNS result, "
 						"will not bounce nouser mail");
 				}
 			}

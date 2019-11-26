@@ -161,10 +161,10 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_IP");
 	if (NULL == str_value) {
 		listen_ip[0] = '\0';
-		printf("[system]: listen ip is ANY\n");
+		printf("[system]: listen ipaddr is ANY\n");
 	} else {
 		strncpy(listen_ip, str_value, 16);
-		printf("[system]: listen ip is %s\n", listen_ip);
+		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	}
 
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_PORT");
@@ -319,7 +319,7 @@ int main(int argc, const char **argv)
 		strcpy(console_ip, "127.0.0.1");
 		config_file_set_value(pconfig, "CONSOLE_SERVER_IP", "127.0.0.1");
 	}
-	printf("[system]: console server ip is %s\n", console_ip);
+	printf("[system]: console server ipaddr is %s\n", console_ip);
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {
 		console_port = 9900;

@@ -142,12 +142,12 @@ BOOL ip_filter_judge(char* ip)
 }
 
 /*
- *  query if ip is in, do not audit IP
+ *  query if ipaddr is in, do not audit IP address
  *  @param
  *		ip				ip address
  *  @return  
- *		TRUE			ip is in filter
- *		FALSE			ip is not in filter
+ *		TRUE			ipaddr is in filter
+ *		FALSE			ipaddr is not in filter
  */                                                                                        
 BOOL ip_filter_query(char* ip) 
 {
@@ -167,7 +167,7 @@ BOOL ip_filter_query(char* ip)
 }
 
 /*
- *  search ip in filter
+ *  search ipaddr in filter
  *  @param
  *      ip             ip address
  *  @return
@@ -195,7 +195,7 @@ static int ip_filter_search(char* ip)
 }
 
 /*
- *  add one IP into temporary ip table
+ *  add one ipaddr into temporary ip table
  *  @param
  *		ip [in]		ip address
  *		interval	interval
@@ -230,34 +230,34 @@ void ip_filter_console_talk(int argc, char **argv, char *result, int length)
 	char *pslash;
 	CONFIG_FILE *pconfig;
 	char help_string[] = "250 ip filter help information:\r\n"
-						 "\t%s search <ip>\r\n"
-						 "\t    --search ip in ip filter\r\n"
+						 "\t%s search <ipaddr>\r\n"
+						 "\t    --search ipaddr in ipaddr filter\r\n"
 						 "\t%s audit info\r\n"
 						 "\t    --print the audit information\r\n"
 		                 "\t%s audit set <times/interval>\r\n"
 		                 "\t    --set the audit parameters\r\n"
-						 "\t%s audit remove <ip>\r\n"
+						 "\t%s audit remove <ipaddr>\r\n"
 						 "\t    --remove ip from audit\r\n"
-		                 "\t%s audit echo <ip>\r\n"
-		                 "\t    --print ip information in audit\r\n"
+		                 "\t%s audit echo <ipaddr>\r\n"
+		                 "\t    --print ipaddr information in audit\r\n"
 		                 "\t%s audit dump <path>\r\n"
 		                 "\t    --dump ips in audit to file\r\n"
 		                 "\t%s grey-list reload\r\n"
 		                 "\t    --reload the grey list table\r\n"
-		                 "\t%s grey-list add <ip> <times/interval>\r\n"
-		                 "\t    --add ip into grey list\r\n"
-		                 "\t%s grey-list remove <ip>\r\n"
+		                 "\t%s grey-list add <ipaddr> <times/interval>\r\n"
+		                 "\t    --add ipaddr into grey list\r\n"
+		                 "\t%s grey-list remove <ipaddr>\r\n"
 		                 "\t    --remove ip from grey list\r\n"
-		                 "\t%s grey-list echo <ip>\r\n"
-		                 "\t    --printf ip information in grey list\r\n"
+		                 "\t%s grey-list echo <ipaddr>\r\n"
+		                 "\t    --printf ipaddr information in grey list\r\n"
 		                 "\t%s grey-list dump <path>\r\n"
 		                 "\t    --dump ips in grey list to file\r\n"
-						 "\t%s temp-list add <ip> <interval>\r\n"
-						 "\t    --add ip into temporary list\r\n"
-		                 "\t%s temp-list remove <ip>\r\n"
+						 "\t%s temp-list add <ipaddr> <interval>\r\n"
+						 "\t    --add ipaddr into temporary list\r\n"
+		                 "\t%s temp-list remove <ipaddr>\r\n"
 		                 "\t    --remove ip from temporary list\r\n"
-		                 "\t%s temp-list echo <ip>\r\n"
-		                 "\t    --print ip information in temporary list\r\n"
+		                 "\t%s temp-list echo <ipaddr>\r\n"
+		                 "\t    --print ipaddr information in temporary list\r\n"
 		                 "\t%s temp-list dump <path>\r\n"
 		                 "\t    --dump ips in temporary list to file";
 	

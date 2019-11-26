@@ -70,7 +70,7 @@ void temp_list_free()
 }
 
 /*
- *	add the specified ip into the temp list
+ *	add the specified ipaddr into the temp list
  *
  *	@param	
  *		ip				ip address
@@ -140,7 +140,7 @@ BOOL temp_list_remove_ip(const char *ip)
 }
 
 /*
- *	query if the specified ip is in the temp list
+ *	query if the specified ipaddr is in the temp list
  *	@param	
  *		ip		ip address to query
  *	@return	 

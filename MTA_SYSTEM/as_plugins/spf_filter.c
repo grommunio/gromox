@@ -66,7 +66,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pconfig_file, "RETURN_STRING");
 		if (NULL == str_value) {
-			strcpy(g_return_string, "000023 client IP doesn't"
+			strcpy(g_return_string, "000023 client IP address does not"
 						" match the SPF record of your domain");
 		} else {
 			strcpy(g_return_string, str_value);

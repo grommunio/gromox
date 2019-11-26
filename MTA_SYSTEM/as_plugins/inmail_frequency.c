@@ -84,7 +84,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		printf("[inmail_frequency]: block interval is %s\n", temp_buff);
 		str_value = config_file_get_value(pconfig_file, "RETURN_STRING");
 		if (NULL == str_value) {
-			strcpy(g_return_string, "000002 your IP has sent too many "
+			strcpy(g_return_string, "000002 your IP address has sent too many "
 				"mails, will be blocked for a while");
 		} else {
 			strcpy(g_return_string, str_value);

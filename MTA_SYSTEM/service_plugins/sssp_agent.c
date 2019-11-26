@@ -103,7 +103,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_sssp_ip, str_value);
 		}
-		printf("[sssp_agent]: sssp server listen ip is %s\n", g_sssp_ip);
+		printf("[sssp_agent]: sssp server listen ipaddr is %s\n", g_sssp_ip);
 
 		str_value = config_file_get_value(pconfig, "SSSP_LISTEN_PORT");
 		if (NULL == str_value) {

@@ -223,7 +223,7 @@ static void* thread_work_func(void* arg)
 			continue;        
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
-		/* pass the client IP into the IP filter */
+		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			/* access deny */
 			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
@@ -233,7 +233,7 @@ static void* thread_work_func(void* arg)
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "connection %s is denied by ip filter",
+			system_services_log_info(8, "connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -241,7 +241,7 @@ static void* thread_work_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-		/* pass the client IP into the IP container */
+		/* pass the client ipaddr into the ipaddr container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
 			/* 421 Access is denied from your IP <remote_ip> for audit ... */
 			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
@@ -252,7 +252,7 @@ static void* thread_work_func(void* arg)
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
 			system_services_log_info(8, "connection %s is denied by "
-				"ip container", client_hostip);
+				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
 			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,
@@ -339,7 +339,7 @@ static void* thread_work_ssl_func(void* arg)
 			continue;        
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
-		/* pass the client IP into the IP filter */
+		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			/* access deny */
 			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
@@ -349,7 +349,7 @@ static void* thread_work_ssl_func(void* arg)
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, client_hostip,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "ssl connection %s is denied by ip filter",
+			system_services_log_info(8, "SSL connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -357,9 +357,9 @@ static void* thread_work_ssl_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-		/* pass the client IP into the IP container */
+		/* pass the client ipaddr into the ipaddr container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
-			/* 421 Access is denied from your IP <remote_ip> for audit ... */
+			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
 			pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170012, 1,
 							 &string_length);
 			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170012, 2,
@@ -368,7 +368,7 @@ static void* thread_work_ssl_func(void* arg)
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
 			system_services_log_info(8, "ssl connection %s is denied by "
-				"ip container", client_hostip);
+				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
 			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,

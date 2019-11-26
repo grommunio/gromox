@@ -148,10 +148,10 @@ int main(int argc, const char **argv)
 			strncpy(listen_ip, str_value, 16);
 		}
 		g_list_path[0] = '\0';
-		printf("[system]: listen ip is %s\n", listen_ip);
+		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	} else {
 		listen_ip[0] = '\0';
-		printf("[system]: listen ip is ANY\n");
+		printf("[system]: listen ipaddr is ANY\n");
 	}
 
 	str_value = config_file_get_value(pconfig, "LOCKER_LISTEN_PORT");

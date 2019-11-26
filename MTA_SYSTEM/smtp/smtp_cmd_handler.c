@@ -471,7 +471,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 					write(pcontext->connection.sockd, reason, string_length);
 				}
                 smtp_parser_log_info(pcontext, 8, "close session because"
-                             " rcpt address is not in our system and ip is not"
+                             " rcpt address is not in our system and ipaddr is not"
                              " in our relay list, too");
                 return DISPATCH_SHOULD_CLOSE;
             }

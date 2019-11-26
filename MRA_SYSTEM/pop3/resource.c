@@ -27,7 +27,7 @@ static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
     { 2170009, "-ERR fail to open message" },
     { 2170010, "+OK quit <host>" },
     { 2170011, "+OK <host> pop service ready" },
-    { 2170012, "-ERR access deny by ip filter for <ip>" },
+    { 2170012, "-ERR access deny by ipaddr filter for <ip>" },
     { 2170013, "-ERR <host> pop service unavailable" },
     { 2170014, "-ERR login auth fail, because: <reason>" },
     { 2170015, "-ERR cannot get mailbox location from database" },

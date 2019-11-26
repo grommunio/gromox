@@ -35,7 +35,7 @@ enum {
 typedef struct _DCERPC_INFO {
 	const char *client_ip;
 	int client_port;
-	const char *server_ip; /* http server ip */
+	const char *server_ip; /* http server ipaddr */
 	int server_port;       /* http server port */
 	const char *ep_host;   /* endpoint host name */
 	int ep_port;           /* endpoint port */

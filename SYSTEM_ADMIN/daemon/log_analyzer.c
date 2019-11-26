@@ -91,7 +91,7 @@ int log_analyzer_run()
 				continue;
 			} 
 
-			/* retrieve the source IP */
+			/* retrieve the source ipaddr */
 			if (NULL != strstr(ptr, "IP: 127.0.0.1,")) {
 				continue;
 			}

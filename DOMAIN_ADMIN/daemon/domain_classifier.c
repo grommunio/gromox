@@ -131,7 +131,7 @@ int domain_classifier_run()
 			} 
 
 			item.time = mktime(&tm_time);
-			/* retrieve the source IP */
+			/* retrieve the source ipaddr */
 			ptr = strstr(ptr, " IP: ");
 			if (NULL == ptr) {
 				continue;
@@ -333,7 +333,7 @@ int domain_classifier_run()
 			} 
 
 			item.time = mktime(&tm_time);
-			/* retrieve the source IP */
+			/* retrieve the source ipaddr */
 			if (0 != strncmp(ptr, "SMTP message queue-ID: ", 23)) {
 				continue;
 			}

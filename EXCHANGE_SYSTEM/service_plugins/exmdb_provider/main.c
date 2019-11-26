@@ -134,10 +134,10 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		str_value = config_file_get_value(pconfig, "LISTEN_IP");
 		if (NULL == str_value) {
 			listen_ip[0] = '\0';
-			printf("[exmdb_provider]: listen ip is ANY\n");
+			printf("[exmdb_provider]: listen ipaddr is ANY\n");
 		} else {
 			strncpy(listen_ip, str_value, 16);
-			printf("[exmdb_provider]: listen ip is %s\n", listen_ip);
+			printf("[exmdb_provider]: listen ipaddr is %s\n", listen_ip);
 		}
 		
 		str_value = config_file_get_value(pconfig, "LISTEN_PORT");

@@ -227,7 +227,7 @@ static void* thread_work_func(void* arg)
 			pcontext->mail.envelop.is_relay = TRUE;
 			goto SERVICE_AVAILABLE;
 		}
-		/* pass the client IP into the IP filter */
+		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			/* access deny */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
@@ -237,7 +237,7 @@ static void* thread_work_func(void* arg)
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
 				  smtp_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "connection %s is denied by ip filter",
+			system_services_log_info(8, "connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -245,9 +245,9 @@ static void* thread_work_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-		/* pass the client IP into the IP container */
+		/* pass the client ipaddr into the ipaddr container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
-			/* 421 Access is denied from your IP <remote_ip> for audit ... */
+			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
 			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
@@ -256,7 +256,7 @@ static void* thread_work_func(void* arg)
 				  smtp_reply_str2);
 			write(sockd2, buff, len);
 			system_services_log_info(8, "connection %s is denied by "
-				"ip container", client_hostip);
+				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
 			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,
@@ -347,7 +347,7 @@ static void* thread_work_ssl_func(void* arg)
 			pcontext->mail.envelop.is_relay = TRUE;
 			goto SERVICE_AVAILABLE;
 		}
-		/* pass the client IP into the IP filter */
+		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			/* access deny */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
@@ -357,7 +357,7 @@ static void* thread_work_ssl_func(void* arg)
 			len = sprintf(buff, "%s%s%s", smtp_reply_str, client_hostip,
 				  smtp_reply_str2);
 			write(sockd2, buff, len);
-			system_services_log_info(8, "ssl connection %s is denied by ip filter",
+			system_services_log_info(8, "SSL connection %s is denied by ipaddr filter",
 				client_hostip);
 			close(sockd2);
 			/* release the context */
@@ -365,9 +365,9 @@ static void* thread_work_ssl_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-		/* pass the client IP into the IP container */
+		/* pass the client ipaddr into the ipaddr container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
-			/* 421 Access is denied from your IP <remote_ip> for audit ... */
+			/* 421 Access is denied from your IP address <remote_ip> for audit ... */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
 			smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2174007, 2,
@@ -376,7 +376,7 @@ static void* thread_work_ssl_func(void* arg)
 				  smtp_reply_str2);
 			write(sockd2, buff, len);
 			system_services_log_info(8, "ssl connection %s is denied by "
-				"ip container", client_hostip);
+				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
 			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,

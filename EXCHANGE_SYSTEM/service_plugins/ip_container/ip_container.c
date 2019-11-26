@@ -18,7 +18,7 @@ static int g_table_size;
 static int g_max_num;
 
 /*
- *	ip container's construct function
+ *	ipaddr container construct function
  */
 void ip_container_init(int table_size, int max_num)
 {
@@ -28,7 +28,7 @@ void ip_container_init(int table_size, int max_num)
 }
 
 /*
- *	ip container's destruct function
+ *	ipaddr container destruct function
  */
 void ip_container_free()
 {
@@ -38,7 +38,7 @@ void ip_container_free()
 }
 
 /*
- *	run ip container
+ *	run ipaddr container
  *	@return
  *		 0		success
  *		<>0		fail
@@ -54,7 +54,7 @@ int ip_container_run()
 }
 
 /*
- *	stop ip container
+ *	stop ipaddr container
  *	@return
  *		 0		success
  *		<>0		fail
@@ -69,9 +69,9 @@ int ip_container_stop()
 }
 
 /*
- *	add item into ip file and hash container
+ *	add item into ipaddr file and hash container
  *  @param
- *		ip [in]        ip to be added
+ *		ip [in]        ipaddr to be added
  *  @return
  *		TRUE            OK
  *      FALSE           fail
@@ -84,7 +84,7 @@ BOOL ip_container_add(const char* ip)
 		return FALSE;
 	}
 	pthread_mutex_lock(&g_container_lock);
-	/* check first if the ip is already in the container */
+	/* check first if the ipaddr is already in the container */
 	pnum = (int*)ip4_hash_query(g_container_table, (char*)ip);
 	if (NULL != pnum) {
 		if ((*pnum) >= g_max_num) {
@@ -104,9 +104,9 @@ BOOL ip_container_add(const char* ip)
 }
 
 /*
- *  remove item from ip file and hash container
+ *  remove item from ipaddr file and hash container
  *  @param
- *      ip [in]        ip to be removed
+ *      ip [in]        ipaddr to be removed
  *  @return
  *      TRUE            OK
  *      FALSE           fail
@@ -119,7 +119,7 @@ BOOL ip_container_remove(const char *ip)
 		return FALSE;
 	}
 	pthread_mutex_lock(&g_container_lock);
-	/* check first if the ip is in hash container */
+	/* check first if the ipaddr is in hash container */
 	pnum = (int*)ip4_hash_query(g_container_table, (char*)ip);
 	if (NULL != pnum) {
 		(*pnum) --;
@@ -132,7 +132,7 @@ BOOL ip_container_remove(const char *ip)
 }
 
 /*
- *	ip container's console talk
+ *	ipaddr container console talk
  *	@param
  *		argc			arguments number
  *		argv [in]		arguments value
@@ -145,11 +145,11 @@ void ip_container_console_talk(int argc, char **argv, char *result, int length)
 	char ip[16], temp_string[32];
 	IP4_HASH_ITER *iter;
 	
-	char help_string[] = "250 ip container help information:\r\n"
+	char help_string[] = "250 ipaddr container help information:\r\n"
 						 "\t%s dump <path>\r\n"
 						 "\t    --dump container's content to file\r\n"
-						 "\t%s search <ip>\r\n"
-						 "\t    --search ip in the ip container";
+						 "\t%s search <ipaddr>\r\n"
+						 "\t    --search ipaddr in the ipaddr container";
 
 	if (1 == argc) {
 		strncpy(result, "550 too few arguments", length);
@@ -180,7 +180,7 @@ void ip_container_console_talk(int argc, char **argv, char *result, int length)
 		ip4_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_container_lock);
 		close(fd);
-		strncpy(result, "250 ip container items dump OK", length);	
+		strncpy(result, "250 ipaddr container items dump OK", length);	
 		return;
 	}
 	if (3 == argc && 0 == strcmp("search", argv[1])) {
@@ -191,9 +191,9 @@ void ip_container_console_talk(int argc, char **argv, char *result, int length)
 		pthread_mutex_lock(&g_container_lock);
 		pnum = (int*)ip4_hash_query(g_container_table, ip);
 		if (NULL == pnum) {
-			snprintf(result, length, "550 %s is not in the ip container", ip);	
+			snprintf(result, length, "550 %s is not in the ipaddr container", ip);	
 		} else {
-			snprintf(result, length, "250 %s in the ip container with "
+			snprintf(result, length, "250 %s in the ipaddr container with "
 				"number %d", ip, (*pnum));
 		}
 		pthread_mutex_unlock(&g_container_lock);

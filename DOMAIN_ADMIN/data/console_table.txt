@@ -1,2 +1,2 @@
-#smtp console ip		port		delivery console ip			port
+#smtp console ipaddr		port		delivery console ipaddr			port
 127.0.0.1				5566		127.0.0.1					6677

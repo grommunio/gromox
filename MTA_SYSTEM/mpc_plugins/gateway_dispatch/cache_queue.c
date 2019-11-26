@@ -417,7 +417,7 @@ static void* thread_work_func(void* arg)
 							from_domain, host_ip)) {
 							need_bounce = FALSE;
 							smtp_dispatch_log_info(pcontext, 8,
-								"original ip is different from DNS result, "
+								"original ipaddr is different from DNS result, "
 								"will not bounce nouser mail");
 						}
 					}

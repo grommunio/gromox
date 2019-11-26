@@ -356,7 +356,7 @@ int main(int argc, const char **argv)
 		console_server_ip = "127.0.0.1"; 
 		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
 	}
-	printf("[console_server]: console server ip %s\n", console_server_ip);
+	printf("[console_server]: console server ipaddr %s\n", console_server_ip);
  
 	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
 		console_server_port = 4455; 

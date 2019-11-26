@@ -110,7 +110,7 @@ int smtp_dispatch_process(MESSAGE_CONTEXT *pcontext,
 	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 			MEM_FILE_SEEK_BEGIN);
 	mem_file_readline(&pcontext->pcontrol->f_rcpt_to, rcpt_to, 256);
-	/* try to find domain's corresponding IP */
+	/* try to find domain's corresponding IP address */
 	if (FALSE == backend_list_get_unit(dest_ip, &port)) {
 		smtp_dispatch_log_info(pcontext, 8, "cannot get one back-end server "
 			"to send the message");

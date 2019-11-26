@@ -445,7 +445,7 @@ int main(int argc, const char **argv)
 		strcpy(console_ip, "127.0.0.1");
 		config_file_set_value(pconfig, "CONSOLE_SERVER_IP", "127.0.0.1");
 	}
-	printf("[system]: console server ip is %s\n", console_ip);
+	printf("[system]: console server ipaddr is %s\n", console_ip);
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {
 		console_port = 9900;

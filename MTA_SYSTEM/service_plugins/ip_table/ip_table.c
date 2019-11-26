@@ -77,7 +77,7 @@ int ip_table_stop()
 }
 
 /*
- *  check if the specified ip is in the table
+ *  check if the specified ipaddr is in the table
  *
  *  @param
  *      ip [in]     the checked ip address
@@ -173,7 +173,7 @@ BOOL ip_table_add(const char* ip)
 	temp_key[ip_len] = '\n';
 	ip_len ++;
 	pthread_rwlock_wrlock(&g_refresh_lock);
-	/* check first if the ip is already in the table */
+	/* check first if the ipaddr is already in the table */
 	if (NULL != ip4_hash_query(g_ip_list_table, (char*)ip)) {
 		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
@@ -235,7 +235,7 @@ BOOL ip_table_remove(const char *ip)
 		return FALSE;
 	}
 	pthread_rwlock_wrlock(&g_refresh_lock);
-	/* check first if the ip is in hash table */
+	/* check first if the ipaddr is in hash table */
 	if (NULL == ip4_hash_query(g_ip_list_table, (char*)ip)) {
 		return TRUE;
 	}
@@ -277,13 +277,13 @@ void ip_table_console_talk(int argc, char **argv, char *result, int length)
 	
 	char help_string[] = "250 ip table help information:\r\n"
 						 "\t%s reload\r\n"
-						 "\t    --reload the ip table from list file\r\n"
-						 "\t%s add <ip>\r\n"
-						 "\t    --add ip to ip table\r\n"
-						 "\t%s remove <ip>\r\n"
-						 "\t    --remove ip from the ip table\r\n"
-						 "\t%s search <ip>\r\n"
-						 "\t    --search ip in the ip table";
+						 "\t    --reload the ipaddr table from list file\r\n"
+						 "\t%s add <ipaddr>\r\n"
+						 "\t    --add ipaddr to ipaddr table\r\n"
+						 "\t%s remove <ipaddr>\r\n"
+						 "\t    --remove ipaddr from the ipaddr table\r\n"
+						 "\t%s search <ipaddr>\r\n"
+						 "\t    --search ipaddr in the ipaddr table";
 
 	if (1 == argc) {
 		strncpy(result, "550 too few arguments", length);

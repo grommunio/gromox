@@ -1,9 +1,9 @@
 /*
  *  Audit filter module which is a sub module of the connection filter.
  *  We check if in the specified iterval a client comes from the same
- *  ip connects too much and we will reject it as long as the specified
+ *  ipaddr connects too much and we will reject it as long as the specified
  *  period after its last connection. If the client try to connect again
- *  and again, it will be reject forever. If the ip is in the white list,
+ *  and again, it will be reject forever. If the ipaddr is in the white list,
  *  it will never pass through this module.
  *
  */
@@ -114,7 +114,7 @@ void audit_filter_free()
 
 
 /*
- *  query and audit IP in audit hash map
+ *  query and audit ipaddr in audit hash map
  *  @param  
  *      ip      ip address to query
  *  @return  
@@ -176,7 +176,7 @@ BOOL audit_filter_judge(const char *ip)
 }
 
 /*
- *  query IP in hash map
+ *  query ipaddr in hash map
  *  @param  
  *      ip      ip address to query
  *  @return  
@@ -244,7 +244,7 @@ static int audit_filter_collect_entry(struct timeval *current_time)
 }
 
 /*
- *  echo ip in audit hash map
+ *  echo ipaddr in audit hash map
  *  @param
  *      ip [in]            ip address
  *      pfirst_access [out] for retrieving first access time
@@ -286,7 +286,7 @@ BOOL audit_filter_echo(const char *ip, time_t *pfirst_access,
 }
 
 /*
- *  remove the specified ip from the audit
+ *  remove the specified ipaddr from the audit
  *  @param
  *		ip      ip address to remove
  *  @return

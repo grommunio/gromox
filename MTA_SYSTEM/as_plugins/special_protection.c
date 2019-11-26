@@ -4,8 +4,8 @@
  *  these plugins then can use some special methods to protect these mailbox.
  *  these mothod may cause system to refuse some normal email, so we call them
  *  special protection, and only apply to some users.
- *  for these receivers, we also audit source IP, and if certain IP sends too
- *  many mails to these receivers, such IP will be blocked by system IP filter
+ *  for these receivers, we also audit source IP, and if certain IP address sends too
+ *  many mails to these receivers, such IP address will be blocked by system IP address filter
  */
 #include <errno.h>
 #include <string.h>

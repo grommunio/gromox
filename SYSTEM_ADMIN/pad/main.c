@@ -101,10 +101,10 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "PAD_LISTEN_IP");
 	if (NULL == str_value) {
 		listen_ip[0] = '\0';
-		printf("[system]: listen ip is ANY\n");
+		printf("[system]: listen ipaddr is ANY\n");
 	} else {
 		strncpy(listen_ip, str_value, 16);
-		printf("[system]: listen ip is %s\n", listen_ip);
+		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	}
 
 	str_value = config_file_get_value(pconfig, "PAD_LISTEN_PORT");
@@ -179,7 +179,7 @@ int main(int argc, const char **argv)
 		strcpy(sensor_ip, "127.0.0.1");
 	} else {
 		strncpy(sensor_ip, str_value, 16);
-		printf("[system]: sensor ip is %s\n", sensor_ip);
+		printf("[system]: sensor ipaddr is %s\n", sensor_ip);
 	}
 
 	str_value = config_file_get_value(pconfig, "SENSOR_LISTEN_PORT");

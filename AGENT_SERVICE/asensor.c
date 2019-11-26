@@ -109,8 +109,7 @@ int main(int argc, const char **argv)
 		strcpy(g_sensor_ip, str_value);
 	}
 
-	printf("[system]: sensor listen ip %s\n", g_sensor_ip);
-
+	printf("[system]: sensor listen ipaddr %s\n", g_sensor_ip);
 	str_value = config_file_get_value(pconfig, "SENSOR_LISTEN_PORT");
 	if (NULL == str_value) {
 		g_sensor_port = 11111;

@@ -43,7 +43,7 @@ static uint32_t  g_uri_usual[] = {
  *		buff_in [in]   buffer contains ip address
  *		buff_out [out] buffer for saving out result
  *	@return
- *		begin address of IP in original buffer
+ *		begin address of ipaddr in original buffer
  */
 const char *extract_ip(const char *buff_in, char *buff_out)
 {

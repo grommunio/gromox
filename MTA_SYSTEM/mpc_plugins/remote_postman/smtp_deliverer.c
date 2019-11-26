@@ -769,13 +769,13 @@ int smtp_deliverer_process(MESSAGE_CONTEXT *pcontext,
 		return SMTP_DELIVERER_DNS_ERROR;
 	}
 	pdomain ++;
-	/* try to find domain's corresponding IP */
+	/* try to find domain's corresponding IP address */
 	vstack_init(&stack, g_stack_allocator, 16, 1024);
 	if (FALSE == sender_routing_check(pcontext->pcontrol->from, &stack)) {
 		if (FALSE == smtp_deliverer_dns_query_MX(pdomain, &stack)) {
 			if (FALSE == smtp_deliverer_dns_query_A(pdomain, &stack)) {
 				smtp_deliverer_log_info(pcontext, 8, "cannot "
-					"find any IP corresponding to %s", pdomain);
+					"find any IP address corresponding to %s", pdomain);
 				vstack_free(&stack);
 				return SMTP_DELIVERER_DNS_ERROR;
 			}
