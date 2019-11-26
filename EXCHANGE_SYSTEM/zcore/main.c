@@ -437,6 +437,15 @@ int main(int argc, const char **argv)
 	printf("[system]: console server port is %d\n", console_port);
 	
 	console_server_init(console_ip, console_port);
+
+	const char *CS_PATH;
+	str_value = config_file_get_value(pconfig, "zcore_listen");
+	if (str_value == NULL) {
+		CS_PATH = strdup("/run/gromox/zcore.sock");
+		config_file_set_value(pconfig, "zcore_listen", CS_PATH);
+	} else {
+		CS_PATH = strdup(str_value);
+	}
 	
 	config_file_save(pconfig);
 	config_file_free(pconfig);
@@ -539,7 +548,7 @@ int main(int argc, const char **argv)
 		return 12;
 	}
 	
-	if (0 != listener_run()) {
+	if (listener_run(CS_PATH) != 0) {
 		console_server_stop();
 		exmdb_client_stop();
 		zarafa_server_stop();

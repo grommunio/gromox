@@ -12,8 +12,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#define CS_PATH							"/var/medusa/token/zarafa"
-
 static BOOL g_notify_stop;
 static int g_listen_sockd;
 static pthread_t g_listener_id;
@@ -46,7 +44,7 @@ void listener_init()
 	g_notify_stop = TRUE;
 }
 
-int listener_run()
+int listener_run(const char *CS_PATH)
 {
 	int len;
 	struct sockaddr_un unix_addr;
