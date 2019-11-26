@@ -214,6 +214,7 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	cfg->num_entries ++;
 	cfg->config_table[index].is_touched = FALSE;
 	strcpy(cfg->config_table[index].keyname, temp_buf);
+	HX_strlower(cfg->config_table[index].keyname);
 	strcpy(cfg->config_table[index].value, equal_ptr);
 	return;
 }
@@ -261,6 +262,7 @@ BOOL config_file_set_value(CONFIG_FILE *cfg_file, const char *key,
 	cfg_file->num_entries ++;
 	cfg_file->config_table[index].is_touched = TRUE;
 	strcpy(cfg_file->config_table[index].keyname, key);
+	HX_strlower(cfg_file->config_table[index].keyname);
 	strcpy(cfg_file->config_table[index].value, value);
 	return TRUE;
 }
