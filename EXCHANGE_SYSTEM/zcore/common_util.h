@@ -517,7 +517,7 @@ BOOL common_util_convert_to_zrule(
 	STORE_OBJECT *pstore, TPROPVAL_ARRAY *ppropvals);
 
 BOOL common_util_load_file(const char *path, BINARY *pbin);
-
+BOOL common_util_convert_to_zrule_data(STORE_OBJECT *, TPROPVAL_ARRAY *);
 BOOL common_util_remote_copy_message(
 	STORE_OBJECT *pstore, uint64_t message_id,
 	STORE_OBJECT *pstore1, uint64_t folder_id1);

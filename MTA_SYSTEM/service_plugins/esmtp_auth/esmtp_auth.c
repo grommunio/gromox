@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "esmtp_auth.h"
 #include "util.h"
 #include "mail_func.h"

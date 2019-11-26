@@ -1,5 +1,7 @@
+#include <unistd.h>
 #include "message.h"
 #include "lang_resource.h"
+#include "util.h"
 #include <time.h>
 #include <fcntl.h>
 #include <stdio.h>

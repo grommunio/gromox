@@ -1,3 +1,5 @@
+#include <ctype.h>
+#include <stdlib.h>
 #include "engine.h"
 #include "file_operation.h"
 #include "gateway_control.h"

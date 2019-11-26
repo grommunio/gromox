@@ -1,8 +1,10 @@
+#include <unistd.h>
 #include "config_file.h"
 #include "multiple_retrying.h"
 #include "retrying_table.h"
 #include "proxy_retrying.h"
 #include "stub_retrying.h"
+#include "util.h"
 #include <stdio.h>
 
 static char g_config_path[256];

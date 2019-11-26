@@ -1,5 +1,7 @@
+#include <unistd.h>
 #include "data_source.h"
 #include "system_log.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

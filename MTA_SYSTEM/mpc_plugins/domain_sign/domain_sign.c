@@ -1,6 +1,9 @@
+#include <ctype.h>
+#include <unistd.h>
 #include "domain_sign.h"
 #include "single_list.h"
 #include "str_hash.h"
+#include "util.h"
 #include <stdio.h>
 #include <pthread.h>
 #include <sys/types.h>

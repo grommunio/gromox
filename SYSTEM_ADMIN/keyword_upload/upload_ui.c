@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "upload_ui.h"
 #include "lang_resource.h"
 #include "system_log.h"

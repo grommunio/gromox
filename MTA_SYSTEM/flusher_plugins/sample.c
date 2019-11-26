@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "flusher_common.h"
 #include <stdio.h>
 #include <pthread.h>

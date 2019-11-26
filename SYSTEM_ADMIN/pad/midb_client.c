@@ -1,3 +1,4 @@
+#include <time.h>
 #include "midb_client.h"
 #include "double_list.h"
 #include "list_file.h"

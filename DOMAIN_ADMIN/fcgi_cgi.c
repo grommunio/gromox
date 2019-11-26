@@ -1,3 +1,4 @@
+#include <sys/wait.h>
 #include "double_list.h"
 #include "config_file.h"
 #include "ndr.h"

@@ -45,5 +45,6 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 
 BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	const PERMISSION_SET *pperm_set);
+BOOL folder_object_updaterules(FOLDER_OBJECT *, uint32_t flags, const RULE_LIST *);
 
 #endif /* _H_FOLDER_OBJECT_ */

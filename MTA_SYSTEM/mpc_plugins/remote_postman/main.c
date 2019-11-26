@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include "hook_common.h"
 #include "remote_postman.h"
+#include "util.h"
 #include "config_file.h"
 #include <stdio.h>
 

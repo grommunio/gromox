@@ -50,6 +50,7 @@ static void parse_status(char *buff_in, int *cpu, int *network);
 
 static void flush_data(int index, int cpu, int network, int connection,
 	int ham, int spam);
+static int connect_console(const char *ip, int port);
 
 int main(int argc, char **argv)
 {
@@ -318,7 +319,7 @@ static void* thread_work_func(void *arg)
 	return NULL;
 }
 
-int connect_console(const char *ip, int port)
+static int connect_console(const char *ip, int port)
 {
 	int sockd;
 	int offset, read_len;

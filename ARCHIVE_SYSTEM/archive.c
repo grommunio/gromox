@@ -1,10 +1,12 @@
 #include "mail.h"
 #include "mail_func.h"
+#include "util.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <stdint.h>
+#include <arpa/inet.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>

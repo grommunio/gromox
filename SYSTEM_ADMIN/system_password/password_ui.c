@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "password_ui.h"
 #include "lang_resource.h"
 #include "system_log.h"

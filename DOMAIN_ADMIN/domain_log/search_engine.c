@@ -1,6 +1,7 @@
 #include "search_engine.h"
 #include "system_log.h"
 #include "util.h"
+#include "data_source.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

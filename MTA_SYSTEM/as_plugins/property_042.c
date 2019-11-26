@@ -1,5 +1,6 @@
 #include "as_common.h"
 #include "config_file.h"
+#include "mail_func.h"
 #include "util.h"
 #include <stdio.h>
 #include <ctype.h>

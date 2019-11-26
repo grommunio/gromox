@@ -9,6 +9,7 @@
 #include "zarafa_server.h"
 #include "message_object.h"
 #include "container_object.h"
+#include "propval.h"
 #include <stdlib.h>
 #include <string.h>
 

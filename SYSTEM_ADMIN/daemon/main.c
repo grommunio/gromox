@@ -13,6 +13,7 @@
 #include "midb_client.h"
 #include "auto_backup.h"
 #include "config_file.h"
+#include "util.h"
 #include <time.h>
 #include <stdio.h>
 #include <string.h>

@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "session_client.h"
 #include "cookie_parser.h"
 #include <sys/socket.h>

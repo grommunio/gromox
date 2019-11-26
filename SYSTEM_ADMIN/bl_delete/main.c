@@ -2,8 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-
-
+#include "midb_client.h"
 #define BL_DELETE_VERSION                                "1.0"
 
 int main(int argc, char **argv)

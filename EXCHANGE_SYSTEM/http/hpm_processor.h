@@ -42,7 +42,7 @@ int hpm_processor_run();
 int hpm_processor_stop();
 
 void hpm_processor_free();
-
+int hpm_processor_console_talk(int argc, char **argv, char *result, int length);
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp);
 
 void hpm_processor_put_context(HTTP_CONTEXT *phttp);

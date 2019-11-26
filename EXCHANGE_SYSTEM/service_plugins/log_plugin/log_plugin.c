@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "log_plugin.h"
 #include "config_file.h"
 #include "util.h"

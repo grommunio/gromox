@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "contexts_pool.h"
 #include "threads_pool.h"
 #include "mod_fastcgi.h"

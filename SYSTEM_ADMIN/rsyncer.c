@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdbool.h>
 #include "util.h"
 #include "list_file.h"

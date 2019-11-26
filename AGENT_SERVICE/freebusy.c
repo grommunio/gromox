@@ -8,6 +8,7 @@
 #include "rop_util.h"
 #include "ical.h"
 #include "guid.h"
+#include "util.h"
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

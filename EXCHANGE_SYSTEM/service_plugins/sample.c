@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <string.h>
 #include "service_common.h"
 #include <stdio.h>
 

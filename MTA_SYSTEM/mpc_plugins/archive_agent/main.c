@@ -1,7 +1,9 @@
 #include <stdbool.h>
+#include <arpa/inet.h>
 #include "hook_common.h"
 #include "list_file.h"
 #include "config_file.h"
+#include "util.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <fcntl.h>

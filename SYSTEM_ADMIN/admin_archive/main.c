@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include "system_log.h"
 #include "acl_control.h"
 #include "midb_client.h"

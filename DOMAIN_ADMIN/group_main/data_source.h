@@ -15,5 +15,6 @@ void data_source_free();
 
 BOOL data_source_info_group(const char *groupname, int *pgroup_status,
 	char *password_buff, char *path_buff, BOOL *presult);
+BOOL data_source_get_homedir(const char *domainname, char *path_buff);
 
 #endif

@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include "system_log.h"
 #include "ui_main.h"
 #include "acl_control.h"

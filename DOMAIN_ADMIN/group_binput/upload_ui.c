@@ -8,6 +8,7 @@
 #include "exmdb_client.h"
 #include "lang_resource.h"
 #include "locker_client.h"
+#include "session_client.h"
 #include <xls.h>
 #include <time.h>
 #include <iconv.h>

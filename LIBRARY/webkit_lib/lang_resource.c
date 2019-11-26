@@ -1,5 +1,6 @@
 #include "lang_resource.h"
 #include "list_file.h"
+#include "util.h"
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>

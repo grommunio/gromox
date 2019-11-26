@@ -1,3 +1,5 @@
+#include <unistd.h>
+#include <sys/wait.h>
 #include "util.h"
 #include "guid.h"
 #include "rpc_ext.h"
@@ -17,6 +19,8 @@
 #include "container_object.h"
 #include "icsdownctx_object.h"
 #include "attachment_object.h"
+#include "exmdb_client.h"
+#include "idset.h"
 #include <sys/socket.h>
 #include <stdio.h>
 #include <poll.h>
@@ -3487,9 +3491,8 @@ uint32_t zarafa_server_entryidfromsourcekey(
 				zarafa_server_put_user_info(pinfo);
 				return EC_INVALID_PARAMETER;
 			}
-			if (FALSE == exmdb_client_get_mapping_replid(
-				store_object_get_dir(pstore),
-				&tmp_xid.guid, &b_found, &replid)) {
+			if (!exmdb_client_get_mapping_replid(store_object_get_dir(pstore),
+			    tmp_xid.guid, &b_found, &replid)) {
 				zarafa_server_put_user_info(pinfo);
 				return EC_ERROR;
 			}

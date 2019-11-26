@@ -5,6 +5,7 @@
 #include "auth_cache.h"
 #include "esmtp_auth.h"
 #include "host_list.h"
+#include "util.h"
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>

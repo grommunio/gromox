@@ -1,3 +1,5 @@
+#include <time.h>
+#include <unistd.h>
 #include "session_client.h"
 #include <fcntl.h>
 #include <string.h>

@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <unistd.h>
 #include "util.h"
 #include "config_file.h"
 #include "communicator.h"

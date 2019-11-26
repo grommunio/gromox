@@ -113,7 +113,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			if (0 == strncasecmp(pitem + 768*i + 512, "http://", 7)) {
 				ptoken1 = pitem + 768*i + 512 + 7;
 			} else {
-				print("[mod_proxy]: scheme of destination in '%s' "
+				printf("[mod_proxy]: scheme of destination in '%s' "
 					"error, can only be http\n", pitem + 768*i + 512);
 				break;
 			}
@@ -154,7 +154,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 				*ptoken = '\0';
 				pxnode->remote_port = atoi(ptoken + 1);
 				if (pxnode->remote_port <= 0) {
-					print("[mod_proxy]: port number of "
+					printf("[mod_proxy]: port number of "
 						"destination in '%s' error", ptoken1);
 					break;
 				}

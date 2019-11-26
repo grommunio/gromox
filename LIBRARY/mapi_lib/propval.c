@@ -1,3 +1,4 @@
+#include "guid.h"
 #include "util.h"
 #include "propval.h"
 #include "restriction.h"

@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "as_common.h"
 #include "config_file.h"
 #include "util.h"

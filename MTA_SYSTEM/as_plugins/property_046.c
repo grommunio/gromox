@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <arpa/inet.h>
 #include "as_common.h"
 #include "mail_func.h"
 #include "config_file.h"

@@ -316,7 +316,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 		if (FALSE == register_service("check_mlist_include",
 			mysql_adaptor_check_mlist_include)) {
-			print("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: fail to register"
 				" \"check_mlist_include\" service\n");
 			return FALSE;
 		}

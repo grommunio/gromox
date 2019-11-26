@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "util.h"
 #include "uri_rbl.h"
 #include "mail_func.h"

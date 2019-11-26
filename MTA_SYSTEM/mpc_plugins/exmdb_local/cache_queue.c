@@ -1,5 +1,8 @@
+#include <netdb.h>
+#include <unistd.h>
 #include "cache_queue.h"
 #include "exmdb_local.h"
+#include "net_failure.h"
 #include "bounce_audit.h"
 #include "bounce_producer.h"
 #include <sys/types.h>

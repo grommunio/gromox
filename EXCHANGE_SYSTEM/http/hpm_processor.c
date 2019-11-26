@@ -1,8 +1,10 @@
+#include <unistd.h>
 #include "hpm_processor.h"
 #include "pdu_processor.h"
 #include "http_parser.h"
 #include "resource.h"
 #include "service.h"
+#include "util.h"
 #include "vstack.h"
 #include <sys/types.h>
 #include <sys/stat.h>

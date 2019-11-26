@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "system_log.h"
 #include <sys/types.h>
 #include <sys/stat.h>

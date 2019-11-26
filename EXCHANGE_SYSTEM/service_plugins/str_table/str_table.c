@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "str_table.h"
 #include "str_hash.h"
 #include "util.h"

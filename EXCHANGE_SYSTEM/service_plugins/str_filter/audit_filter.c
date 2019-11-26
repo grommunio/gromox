@@ -7,6 +7,7 @@
  *  it will never pass through this module.
  *
  */
+#include <unistd.h>
 #include "str_filter.h"
 #include "audit_filter.h"
 #include "str_hash.h"

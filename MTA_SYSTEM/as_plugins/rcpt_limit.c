@@ -1,5 +1,6 @@
 #include "as_common.h"
 #include "config_file.h"
+#include "util.h"
 #include <stdio.h>
 
 #define SPAM_STATISTIC_RCPT_LIMIT			36

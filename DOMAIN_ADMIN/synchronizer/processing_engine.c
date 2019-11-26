@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "processing_engine.h"
 #include "url_downloader.h"
 #include "file_operation.h"

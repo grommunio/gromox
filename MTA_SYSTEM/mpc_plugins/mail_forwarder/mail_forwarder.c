@@ -1,7 +1,9 @@
+#include <unistd.h>
 #include "mail_forwarder.h"
 #include "mail_func.h"
 #include "list_file.h"
 #include "str_hash.h"
+#include "util.h"
 #include "double_list.h"
 #include <stdio.h>
 #include <time.h>

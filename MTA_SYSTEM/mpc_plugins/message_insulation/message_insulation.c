@@ -1,6 +1,7 @@
 #include "message_insulation.h"
 #include "bounce_producer.h"
 #include "config_file.h"
+#include "util.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdarg.h>

@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "smtp_clone.h"
 #include "util.h"
 #include <sys/time.h>

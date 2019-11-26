@@ -5,6 +5,7 @@
  *  specified interval
  *
  */
+#include <stdlib.h>
 #include "common_types.h"
 #include "config_file.h"
 #include "str_filter.h"

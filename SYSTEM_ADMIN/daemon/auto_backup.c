@@ -1,6 +1,8 @@
+#include <unistd.h>
 #include "auto_backup.h"
 #include "file_operation.h"
 #include "smtp_sender.h"
+#include "util.h"
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>

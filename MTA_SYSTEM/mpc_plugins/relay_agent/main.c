@@ -4,6 +4,7 @@
 #include "relay_agent.h"
 #include "relay_bridge.h"
 #include "ip_range.h"
+#include "util.h"
 #include "vstack.h"
 #include <pthread.h>
 #include <stdio.h>

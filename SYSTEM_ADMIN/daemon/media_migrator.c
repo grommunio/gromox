@@ -2,6 +2,7 @@
 #include "data_source.h"
 #include "locker_client.h"
 #include "list_file.h"
+#include "system_log.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>

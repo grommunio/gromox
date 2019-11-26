@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "files_allocator.h"
 #include "sender_routing.h"
 #include "smtp_deliverer.h"

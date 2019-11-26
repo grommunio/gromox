@@ -1,7 +1,9 @@
+#include <unistd.h>
 #include "host_list.h"
 #include "double_list.h"
 #include "list_file.h"
 #include "mail_func.h"
+#include "util.h"
 #include <fcntl.h>
 #include <netdb.h>
 #include <errno.h>

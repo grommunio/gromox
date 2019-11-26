@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "tagging_table.h"
 #include "str_hash.h"
 #include "util.h"

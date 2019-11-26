@@ -2,6 +2,7 @@
 #include "service_common.h"
 #include "str_hash.h"
 #include "list_file.h"
+#include "util.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>

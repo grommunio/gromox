@@ -1,3 +1,4 @@
+#include "idx_array.h"
 #include "request_parser.h"
 #include <stdio.h>
 

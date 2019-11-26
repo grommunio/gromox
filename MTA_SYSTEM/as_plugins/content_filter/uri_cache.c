@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "uri_cache.h"
 #include "str_hash.h"
 #include <time.h>

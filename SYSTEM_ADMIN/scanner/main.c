@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+#include <unistd.h>
 #include "util.h"
 #include "smtp.h"
 #include "message.h"

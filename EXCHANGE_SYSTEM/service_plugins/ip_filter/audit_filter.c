@@ -7,6 +7,7 @@
  *  it will never pass through this module.
  *
  */
+#include <unistd.h>
 #include "ip_filter.h"
 #include "audit_filter.h"
 #include "ip4_hash.h"

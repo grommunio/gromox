@@ -8,6 +8,7 @@
 #include "mail_func.h"
 #include "rop_util.h"
 #include "util.h"
+#include "exmdb_client.h"
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>

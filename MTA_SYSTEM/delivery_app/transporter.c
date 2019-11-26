@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "transporter.h"
 #include "system_services.h"
 #include "resource.h"
@@ -5,6 +6,7 @@
 #include "plugin.h"
 #include "single_list.h"
 #include "double_list.h"
+#include "util.h"
 #include "vstack.h"
 #include <sys/types.h>
 #include <pthread.h>

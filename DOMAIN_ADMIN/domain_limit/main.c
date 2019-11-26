@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include "system_log.h"
 #include "limit_ui.h"
 #include "data_source.h"

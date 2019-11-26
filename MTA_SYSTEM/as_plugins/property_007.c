@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "as_common.h"
 #include "mem_file.h"
 #include "config_file.h"

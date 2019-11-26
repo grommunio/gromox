@@ -11,6 +11,7 @@
 #include "anti_spamming.h"
 #include "service.h" 
 #include "system_services.h"
+#include "util.h"
 #include "vstack.h"
 #include "lib_buffer.h"
 #include <pwd.h>

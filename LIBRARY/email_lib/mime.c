@@ -5,6 +5,7 @@
  * its own buffer
  */
 #include <stdbool.h>
+#include "mail.h"
 #include "mime.h"
 #include "util.h"
 #include "mail_func.h"

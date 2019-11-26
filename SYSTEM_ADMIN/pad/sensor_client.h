@@ -1,5 +1,5 @@
-#ifndef _H_MIDB_CLIENT_
-#define _H_MIDB_CLIENT_
+#ifndef _H_SENSOR_CLIENT_
+#define _H_SENSOR_CLIENT_
 
 void sensor_client_init(const char *sensor_ip, int sensor_port);
 

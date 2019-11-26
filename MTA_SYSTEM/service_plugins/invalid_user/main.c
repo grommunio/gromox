@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdlib.h>
 #include "service_common.h"
 #include "invalid_user.h"
 #include "config_file.h"

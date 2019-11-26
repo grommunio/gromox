@@ -1,7 +1,7 @@
 /* 
  * collection of functions for handling the pop3 command
  */ 
-
+#include <unistd.h>
 #include "pop3_cmd_handler.h"
 #include "system_services.h"
 #include "resource.h"

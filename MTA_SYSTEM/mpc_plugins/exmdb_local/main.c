@@ -7,6 +7,7 @@
 #include "bounce_audit.h"
 #include "exmdb_client.h"
 #include "bounce_producer.h"
+#include "util.h"
 #include <stdio.h>
 
 DECLARE_API;

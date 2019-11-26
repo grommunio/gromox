@@ -7,6 +7,7 @@
 #include "str_hash.h"
 #include "list_file.h"
 #include "config_file.h"
+#include "util.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>

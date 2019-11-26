@@ -8,6 +8,7 @@
  */
 #include "message_dequeue.h"
 #include "system_services.h"
+#include "util.h"
 #include "int_hash.h"
 #include <sys/types.h>
 #include <sys/ipc.h>

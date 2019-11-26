@@ -8,6 +8,7 @@
  */
 #include "common_types.h"
 #include "message_enqueue.h"
+#include "util.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>

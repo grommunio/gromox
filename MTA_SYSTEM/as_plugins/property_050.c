@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdbool.h>
 #include "as_common.h"
 #include "config_file.h"

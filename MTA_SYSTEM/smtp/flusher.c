@@ -2,6 +2,7 @@
 #include "service.h"
 #include "single_list.h"
 #include "resource.h"
+#include "util.h"
 #include <pthread.h>
 #include <sys/types.h>
 #include <dlfcn.h>

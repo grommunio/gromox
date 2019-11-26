@@ -3,6 +3,7 @@
 #include "config_file.h"
 #include "bounce_producer.h"
 #include "message_insulation.h"
+#include "util.h"
 #include <stdio.h>
 
 DECLARE_API;

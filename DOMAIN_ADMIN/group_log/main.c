@@ -3,6 +3,8 @@
 #include "ui_center.h"
 #include "config_file.h"
 #include "util.h"
+#include "data_source.h"
+#include "session_client.h"
 #include <unistd.h>
 #include <string.h>
 #include <time.h>

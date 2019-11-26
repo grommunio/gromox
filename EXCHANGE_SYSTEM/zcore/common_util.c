@@ -1,4 +1,6 @@
+#include <ctype.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include "pcl.h"
 #include "ical.h"
 #include "util.h"

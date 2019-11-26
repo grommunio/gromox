@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <mysql/mysql.h>
 #include "data_source.h"
 #include "system_log.h"

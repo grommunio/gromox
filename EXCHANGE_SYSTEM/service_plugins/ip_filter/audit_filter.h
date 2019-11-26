@@ -24,9 +24,7 @@ int audit_filter_get_param(int type);
 void audit_filter_free();
 
 BOOL audit_filter_query(const char *ip);
-
-BOOL audit_filer_judge(const char *ip);
-
+BOOL audit_filter_judge(const char *ip);
 BOOL audit_filter_echo(const char *ip, time_t *pfirst_access,
 	time_t *plast_access, int *ptimes);
 

@@ -3,6 +3,7 @@
 #include "list_file.h"
 #include "mail_func.h"
 #include "system_log.h"
+#include "util.h"
 #undef NOERROR                  /* in <sys/streams.h> on solaris 2.x */
 #include <arpa/nameser.h>
 #include <sys/param.h>

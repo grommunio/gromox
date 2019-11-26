@@ -1,9 +1,11 @@
+#include <unistd.h>
 #include "message.h"
 #include <time.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
+#include "util.h"
 
 #define	MESSAGE_BODY_1	\
 "Received: from unknown (helo localhost) (unkown@127.0.0.1)\r\n\

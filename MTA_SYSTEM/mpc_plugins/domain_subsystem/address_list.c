@@ -2,6 +2,7 @@
 #include "str_hash.h"
 #include "list_file.h"
 #include "mail_func.h"
+#include "util.h"
 #include <pthread.h>
 
 

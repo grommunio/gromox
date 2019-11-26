@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "util.h"
 #include "smtp.h"
 #include "pop3.h"

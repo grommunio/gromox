@@ -1,3 +1,4 @@
+#include "data_source.h"
 #include "search_engine.h"
 #include "system_log.h"
 #include "util.h"

@@ -21,8 +21,7 @@ void idx_array_free(IDX_ARRAY* pindex_array);
 long idx_array_append(IDX_ARRAY* pindex_array, void* pdata);
 
 void* idx_array_get_item(IDX_ARRAY* pindex_array, size_t index);
-
-size_t index_array_get_capacity(IDX_ARRAY* pindex_array);
+size_t idx_array_get_capacity(IDX_ARRAY *);
 
 #ifdef __cplusplus
 }

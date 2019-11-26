@@ -4,6 +4,7 @@
 #include "proc_common.h"
 #include "list_file.h"
 #include "ab_tree.h"
+#include "guid.h"
 #include "util.h"
 #include <sys/types.h>
 #include <sys/stat.h>

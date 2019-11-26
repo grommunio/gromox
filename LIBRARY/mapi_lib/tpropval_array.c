@@ -1,4 +1,5 @@
 #include "tpropval_array.h"
+#include "util.h"
 #include "propval.h"
 #include <stdlib.h>
 #include <string.h>

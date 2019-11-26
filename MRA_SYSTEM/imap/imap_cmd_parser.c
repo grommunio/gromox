@@ -1,7 +1,7 @@
 /* 
  * collection of functions for handling the imap command
  */ 
-
+#include <ctype.h>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
 #include "mail_func.h"

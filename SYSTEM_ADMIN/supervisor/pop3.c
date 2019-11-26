@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "common_types.h"
 #include "pop3.h"
 #include "message.h"

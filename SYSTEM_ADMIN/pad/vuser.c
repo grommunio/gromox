@@ -6,6 +6,7 @@
 #include "list_file.h"
 #include "mail_func.h"
 #include "mail.h"
+#include "sensor_client.h"
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>

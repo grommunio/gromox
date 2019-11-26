@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <unistd.h>
 #include "hook_common.h"
 #include "util.h"
 #include <time.h>

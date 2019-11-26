@@ -1,7 +1,9 @@
+#include <unistd.h>
 #include "tpropval_array.h"
 #include "folder_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"
+#include "exmdb_client.h"
 #include "ext_buffer.h"
 #include "rop_util.h"
 #include <stdio.h>

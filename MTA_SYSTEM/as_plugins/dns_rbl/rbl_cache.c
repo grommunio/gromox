@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "rbl_cache.h"
 #include "ip4_hash.h"
 #include <time.h>

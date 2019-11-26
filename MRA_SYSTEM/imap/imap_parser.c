@@ -62,6 +62,7 @@ static void imap_parser_context_free(IMAP_CONTEXT *pcontext);
 static void imap_parser_ssl_locking(int mode, int n, const char * file, int line);
 
 static void imap_parser_ssl_id(CRYPTO_THREADID* id);
+static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
 static int g_squence_ID;
 static int g_context_num;
@@ -1077,8 +1078,7 @@ END_PROCESSING:
 	return PROCESS_CLOSE;
 }
 
-
-int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
+static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 {
 	int len;
 	int read_len;

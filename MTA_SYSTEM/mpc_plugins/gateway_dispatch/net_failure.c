@@ -1,5 +1,6 @@
 #include "net_failure.h"
 #include "hook_common.h"
+#include "util.h"
 #include <time.h>
 #include <pthread.h>
 #include <stdio.h>

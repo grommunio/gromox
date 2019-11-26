@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "single_list.h"
 #include "util.h"
 #include "mail.h"

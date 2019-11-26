@@ -7,6 +7,8 @@
 #include "mail_func.h"
 #include "rop_util.h"
 #include "ab_tree.h"
+#include "exmdb_client.h"
+#include "propval.h"
 #include <stdio.h>
 
 CONTAINER_OBJECT* container_object_create(

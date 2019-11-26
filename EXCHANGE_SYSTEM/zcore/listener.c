@@ -1,3 +1,6 @@
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "listener.h"
 #include "rpc_parser.h"
 #include <sys/socket.h>

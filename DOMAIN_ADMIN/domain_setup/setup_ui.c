@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include "setup_ui.h"
 #include "lang_resource.h"
 #include "system_log.h"

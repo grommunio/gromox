@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "util.h"
 #include "guid.h"
 #include "oxcmail.h"

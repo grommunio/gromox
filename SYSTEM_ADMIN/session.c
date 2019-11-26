@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "util.h"
 #include "double_list.h"
 #include "str_hash.h"

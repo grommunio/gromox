@@ -1,5 +1,8 @@
+#include <unistd.h>
+#include <arpa/inet.h>
 #include "message_lookup.h"
 #include "list_file.h"
+#include "util.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>

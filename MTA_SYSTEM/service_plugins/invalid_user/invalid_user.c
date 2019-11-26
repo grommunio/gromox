@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "invalid_user.h"
 #include "config_file.h"
 #include "mail_func.h"

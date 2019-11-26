@@ -2,6 +2,7 @@
 #include "hook_common.h"
 #include "domain_subsystem.h"
 #include "config_file.h"
+#include "util.h"
 #include <stdio.h>
 
 DECLARE_API;

@@ -1,6 +1,6 @@
 /* collection of functions for handling the smtp command
  */ 
-
+#include <unistd.h>
 #include "smtp_cmd_handler.h"
 #include "system_services.h"
 #include "anti_spamming.h"

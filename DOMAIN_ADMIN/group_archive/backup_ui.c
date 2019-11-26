@@ -6,6 +6,8 @@
 #include "message_lookup.h"
 #include "data_source.h"
 #include "util.h"
+#include "mail_func.h"
+#include "midb_client.h"
 #include <time.h>
 #include <stdio.h>
 #include <ctype.h>

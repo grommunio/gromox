@@ -1,4 +1,6 @@
+#include <unistd.h>
 #include "admin_ui.h"
+#include "data_source.h"
 #include "lang_resource.h"
 #include "system_log.h"
 #include "acl_control.h"

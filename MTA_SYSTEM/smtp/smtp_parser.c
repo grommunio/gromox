@@ -1,7 +1,7 @@
 /* smtp parser is a module, which first read data from socket, parses the smtp 
  * commands and then do the corresponding action. 
  */ 
-
+#include <unistd.h>
 #include "smtp_parser.h"
 #include "smtp_cmd_handler.h"
 #include "files_allocator.h"

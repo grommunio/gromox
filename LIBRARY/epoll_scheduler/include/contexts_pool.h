@@ -66,7 +66,7 @@ SCHEDULE_CONTEXT* contexts_pool_get_context(int type);
 void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type);
 
 BOOL contexts_pool_wakeup_context(SCHEDULE_CONTEXT *pcontext, int type);
-
+void context_pool_activate_context(SCHEDULE_CONTEXT *);
 void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext);
 
 int contexts_pool_get_param(int type);

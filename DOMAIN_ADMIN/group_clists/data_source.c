@@ -1,6 +1,8 @@
+#include <unistd.h>
 #include "data_source.h"
 #include "system_log.h"
 #include "locker_client.h"
+#include "util.h"
 #include <mysql/mysql.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "smtp_dispatch.h"
 #include "files_allocator.h"
 #include "backend_list.h"

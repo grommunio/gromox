@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <unistd.h>
 #include "util.h"
 #include "listener.h"
 #include "mysql_pool.h"

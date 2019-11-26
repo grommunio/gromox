@@ -12,15 +12,10 @@ enum {
 
 void proxy_retrying_init(const char *list_path, int port, int time_out,
 	int ping_interval, int channel_num);
-
-int proxy_retying_run();
-
+int proxy_retrying_run();
 BOOL proxy_retrying_check(const char *ip, const char *from, MEM_FILE *pfile);
-
-int proxy_retying_stop();
-
-void proxy_retying_free();
-
+int proxy_retrying_stop();
+void proxy_retrying_free();
 int proxy_retrying_get_param(int param);
 
 void proxy_retrying_set_param(int param, int value);

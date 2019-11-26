@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include "html.h"
 #include "util.h"
 #include "int_hash.h"

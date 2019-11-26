@@ -1,3 +1,4 @@
+#include "address_list.h"
 #include "clone_queue.h"
 #include "smtp_clone.h"
 #include <sys/types.h>

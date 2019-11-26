@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include "util.h"
 #include "list_ui.h"
 #include "system_log.h"
