@@ -25,15 +25,17 @@ char **read_file_by_line(const char *file)
 	if (fp == nullptr)
 		return nullptr;
 
+	hxmc_t *line = nullptr;
 	try {
-		std::unique_ptr<char, hxmc_deleter> line;
-		std::list<std::unique_ptr<char>> dq;
-		while (HX_getl(&unique_tie(line), fp.get()) != nullptr) {
-			decltype(dq)::value_type s(strdup(line.get()));
+		std::list<std::unique_ptr<char[]>> dq;
+		while (HX_getl(&line, fp.get()) != nullptr) {
+			decltype(dq)::value_type s(strdup(line));
 			if (s == nullptr)
 				return nullptr;
 			dq.push_back(std::move(s));
 		}
+		HXmc_free(line);
+		line = nullptr;
 		auto ret = std::make_unique<char *[]>(dq.size() + 1);
 		size_t i = 0;
 		for (auto &e : dq)
@@ -42,5 +44,8 @@ char **read_file_by_line(const char *file)
 	} catch (const std::bad_alloc &) {
 		errno = ENOMEM;
 		return nullptr;
+	} catch (...) {
+		HXmc_free(line);
+		throw;
 	}
 }
