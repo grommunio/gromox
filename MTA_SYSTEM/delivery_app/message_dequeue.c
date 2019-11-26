@@ -641,6 +641,7 @@ static void* thread_work_func(void* arg)
 		}
 	}
 	closedir(dirp);
+	return NULL;
 }
 
 /*

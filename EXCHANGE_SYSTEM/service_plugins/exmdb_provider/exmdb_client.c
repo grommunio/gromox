@@ -367,6 +367,7 @@ static void *scan_work_func(void *pparam)
 		}
 		sleep(1);
 	}
+	return NULL;
 }
 
 static void *thread_work_func(void *pparam)

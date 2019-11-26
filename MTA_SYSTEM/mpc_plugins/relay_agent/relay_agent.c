@@ -500,6 +500,7 @@ static void *thread_work_func(void *param)
 		}
 		i = 0;
 	}
+	return NULL;
 }
 
 static int relay_agent_connect(const char *ip, int port)

@@ -346,6 +346,7 @@ SUBSYSTEM_LIST:
 NEXT_LOOP:
 		count = 0;
 	}
+	return NULL;
 }
 
 static void* thread_work_func2(void *param)
@@ -773,5 +774,5 @@ MONITOR_GROUP_LIST:
 NEXT_LOOP:
 		count = 0;
 	}
-	
+	return NULL;
 }

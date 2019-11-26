@@ -151,6 +151,7 @@ static void* thread_work_func(void* arg)
 			}
 		}
 	}
+	return NULL;
 }
 
 BOOL send_message()

@@ -431,6 +431,7 @@ static void* scan_work_func(void* arg)
 		pthread_cancel(pitem->thr_id);
 	}
 	pthread_mutex_unlock(&g_scan_lock);
+	return NULL;
 }
 
 static void* thread_work_func(void* arg)

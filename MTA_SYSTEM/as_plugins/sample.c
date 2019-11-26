@@ -63,12 +63,14 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
     CONNECTION *pconnection, char *reason, int length)
 {
     /* TODO add code here for judging mail envelop information */
+	return MESSAGE_ACCEPT;
 }
 
 static int mime_auditor(int context_ID, MAIL_ENTITY *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
     /* TODO add code here for auditing mime head information */
+	return MESSAGE_ACCEPT;
 }
 
 static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
@@ -88,6 +90,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
     /* TODO add code here for statisticing the mail */
+	return MESSAGE_ACCEPT;
 }
 
 static void console_talk(int argc, char **argv, char *result, int length)

@@ -490,6 +490,7 @@ static void *scan_work_func(void *pparam)
 		}
 		sleep(1);
 	}
+	return NULL;
 }
 
 static REMOTE_CONN* exmdb_client_get_connection(const char *dir)

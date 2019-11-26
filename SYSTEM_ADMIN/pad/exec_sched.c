@@ -289,6 +289,7 @@ static void* scan_work_func(void *param)
 		}
 		pthread_rwlock_unlock(&g_table_lock);
 	}
+	return NULL;
 }
 
 static void* thread_work_func(void *param)
@@ -324,5 +325,6 @@ static void* thread_work_func(void *param)
 		free(pnode->pdata);
 		free(pnode);
 	}
+	return NULL;
 }
 

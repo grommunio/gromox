@@ -167,6 +167,7 @@ static void *accept_work_func(void *param)
 			continue;
 		}
 	}
+	return NULL;
 }
 
 int stub_retrying_stop()

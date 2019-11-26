@@ -984,4 +984,5 @@ FREE_CONNECTION:
 	close(pconn->sockd);
 	free(pconn);
 	goto NEXT_LOOP;
+	return NULL;
 }

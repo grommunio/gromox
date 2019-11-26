@@ -236,7 +236,7 @@ static void* thread_work_func(void *arg)
 		}
 		sleep(1);
 	}
-
+	return NULL;
 }
 
 static void do_statistic()

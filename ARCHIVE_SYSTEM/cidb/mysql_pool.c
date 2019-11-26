@@ -237,6 +237,7 @@ static void* thread_work_func(void *arg)
 		i = 0;
 	}
 	double_list_free(&temp_list);
+	return NULL;
 }
 
 int mysql_pool_get_param(int param)

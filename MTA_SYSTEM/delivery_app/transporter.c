@@ -784,6 +784,7 @@ static void* scan_work_func(void* arg)
 			pthread_attr_destroy(&attr);
 		}
 	}
+	return NULL;
 }
 
 /*

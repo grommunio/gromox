@@ -1217,7 +1217,7 @@ static void* sync_work_func(void *param)
 		free(punode);
 		
 	}
-
+	return NULL;
 }
 
 
@@ -1412,6 +1412,7 @@ static void *scan_work_func(void *param)
 
 		sleep(1);
 	}
+	return NULL;
 }
 
 

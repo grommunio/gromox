@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hook_common.h"
 
 DECLARE_API;
@@ -28,6 +29,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 {
     /* TODO add code here for statisticing the mail */
+	return false;
 }
 
 static void console_talk(int argc, char **argv, char *result, int length)

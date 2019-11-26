@@ -1190,6 +1190,7 @@ static void *scan_work_func(void *param)
 			pthread_mutex_unlock(&g_base_lock);
 		}
 	}
+	return NULL;
 }
 
 static int ab_tree_node_to_rpath(SIMPLE_TREE_NODE *pnode,

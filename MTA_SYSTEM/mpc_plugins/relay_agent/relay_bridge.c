@@ -299,6 +299,7 @@ static void *accept_work_func(void *param)
 		}
 		pthread_attr_destroy(&attr);
 	}
+	return NULL;
 }
 
 static void *connection_work_func(void *param)

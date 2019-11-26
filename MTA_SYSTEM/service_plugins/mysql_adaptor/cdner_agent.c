@@ -204,7 +204,7 @@ static void *scan_work_func(void *param)
 		}
 		sleep(1);
 	}
-
+	return NULL;
 }
 
 static BACK_CONN *cdner_agent_get_connection()

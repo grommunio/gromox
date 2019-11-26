@@ -296,7 +296,7 @@ static void *scan_work_func(void *param)
 		}
 		sleep(1);
 	}
-
+	return NULL;
 }
 
 static int add_timer(const char *command, int interval)

@@ -450,6 +450,7 @@ static void *scan_work_func(void *param)
 		pthread_mutex_unlock(&g_back_lock);
 		sleep(1);
 	}
+	return NULL;
 }
 
 
@@ -928,7 +929,7 @@ NEXT_LOOP:
 			write(pfront->sockd, "FALSE\r\n", 7);
 		}
     }
-
+	return NULL;
 }
 
 static MYSQL_CONN* get_connection()

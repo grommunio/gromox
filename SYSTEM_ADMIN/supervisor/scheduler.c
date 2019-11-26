@@ -363,7 +363,7 @@ SMTPTHR_RETRIEVE:
 		sleep(g_max_interval);
 		time(&psmtp_unit->last_time);
 	}
-
+	return NULL;
 }
 	
 static void* pop3_work_func(void *param)
@@ -476,5 +476,6 @@ POP3THR_RETRIEVE:
 		sleep(g_max_interval);
 		time(&ppop3_unit->last_time);
 	}
+	return NULL;
 }
 

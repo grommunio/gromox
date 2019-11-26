@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "service_common.h"
 #include "lib_buffer.h"
 #include "config_file.h"
@@ -84,6 +85,7 @@ static BOOL user_login_auth(const char* username, const char* passwd,
     char* reason, int length)
 {
 	//TODO
+	return false;
 }
 
 /*

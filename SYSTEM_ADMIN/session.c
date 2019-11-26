@@ -891,6 +891,7 @@ NEXT_LOOP:
 			write(pconnection->sockd, "FALSE\r\n", 7);
 		}
 	}
+	return NULL;
 }
 
 static BOOL read_mark(CONNECTION_NODE *pconnection)

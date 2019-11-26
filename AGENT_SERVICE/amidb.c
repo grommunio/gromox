@@ -475,7 +475,7 @@ static void *scan_work_func(void *param)
 		}
 		sleep(1);
 	}
-
+	return NULL;
 }
 
 static char* parse_prefix(const char *cmd_line, char *buff)
@@ -702,7 +702,7 @@ NEXT_LOOP:
 		}
 
     }
-
+	return NULL;
 }
 
 static int transfer_response(int f_sockd, int b_sockd, int type)

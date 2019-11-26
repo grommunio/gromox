@@ -509,6 +509,7 @@ static void *scan_work_func(void *param)
 			free(pnode);
 		}
 	}
+	return NULL;
 }
 
 static BOOL read_mark(CONNECTION_NODE *pconnection)
@@ -726,4 +727,5 @@ NEXT_LOOP:
 			write(pconnection->sockd, "FALSE\r\n", 7);
 		}
 	}
+	return NULL;
 }

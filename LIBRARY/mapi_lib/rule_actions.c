@@ -346,6 +346,7 @@ static uint32_t movecopy_action_size(const MOVECOPY_ACTION *r)
 	} else {
 		size += sizeof(uint16_t) + ((BINARY*)r->pfolder_eid)->cb;
 	}
+	return size;
 }
 
 static uint32_t reply_action_size(const REPLY_ACTION *r)

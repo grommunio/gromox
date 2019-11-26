@@ -446,7 +446,7 @@ static void *scan_work_func(void *param)
 		}
 		sleep(1);
 	}
-
+	return NULL;
 }
 
 
@@ -579,7 +579,7 @@ NEXT_LOOP:
         }
 
     }
-
+	return NULL;
 }
 
 static void read_backend(FRONT_CONN *pconnection, int relay)

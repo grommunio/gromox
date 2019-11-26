@@ -571,6 +571,7 @@ static BOOL domain_monitor_free_table(STR_HASH_TABLE *ptable)
 	}
 	str_hash_iter_free(iter);
 	str_hash_free(ptable);
+	return NULL;
 }
 
 

@@ -227,7 +227,7 @@ static int pdu_ndr_pull_dcerpc_request(NDR_PULL *pndr, DCERPC_REQUEST *r)
 }
 
 /* free memory internal of request except of request itself */
-static int pdu_ndr_free_dcerpc_request(DCERPC_REQUEST *r)
+static void pdu_ndr_free_dcerpc_request(DCERPC_REQUEST *r)
 {
 	ndr_free_data_blob(&r->stub_and_verifier);
 	ndr_free_data_blob(&r->pad);
@@ -279,7 +279,7 @@ static int pdu_ndr_pull_dcerpc_response(NDR_PULL *pndr, DCERPC_RESPONSE *r)
 }
 
 /* free memory internal of response except of response itself */
-static int pdu_ndr_free_dcerpc_response(DCERPC_RESPONSE *r)
+static void pdu_ndr_free_dcerpc_response(DCERPC_RESPONSE *r)
 {
 	ndr_free_data_blob(&r->stub_and_verifier);
 	ndr_free_data_blob(&r->pad);
@@ -715,7 +715,7 @@ static int pdu_ndr_pull_dcerpc_auth3(NDR_PULL *pndr, DCERPC_AUTH3 *r)
 }
 
 /* free memory internal of auth3 except of auth3 itself */
-static int pdu_ndr_free_dcerpc_auth3(DCERPC_AUTH3 *r)
+static void pdu_ndr_free_dcerpc_auth3(DCERPC_AUTH3 *r)
 {	
 	ndr_free_data_blob(&r->auth_info);
 }
@@ -1085,7 +1085,7 @@ static int pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
 }
 
 /* free memory internal of rts except of rts itself */
-static int pdu_ndr_free_dcerpc_rts(DCERPC_RTS *r)
+static void pdu_ndr_free_dcerpc_rts(DCERPC_RTS *r)
 {
 	if (NULL != r->commands) {
 		free(r->commands);

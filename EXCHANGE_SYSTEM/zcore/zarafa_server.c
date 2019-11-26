@@ -237,6 +237,7 @@ static void* scan_work_func(void *param)
 		}
 		pthread_mutex_unlock(&g_notify_lock);
 	}
+	return NULL;
 }
 
 static void zarafa_server_notification_proc(const char *dir,

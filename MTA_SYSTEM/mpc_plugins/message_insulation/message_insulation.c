@@ -219,6 +219,7 @@ static void* thread_work_func(void* arg)
 		interval = 0;
 	}
 	closedir(dirp);
+	return NULL;
 }
 
 BOOL message_insulation_activate(const char *file_name)

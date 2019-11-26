@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "hpm_common.h"
 
 DECLARE_API;
@@ -38,16 +39,19 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 static BOOL preproc(int context_id)
 {
 	/* TODO add pre-proccess method here */
+	return false;
 }
 
 static BOOL proc(int context_id, const void *pcontent, uint64_t length)
 {
 	/* TODO add process method here */
+	return false;
 }
 
 static int retr(int context_id)
 {
 	/* TODO add retrieve method here */
+	return HPM_RETRIEVE_ERROR;
 }
 
 static void term(int context_id)

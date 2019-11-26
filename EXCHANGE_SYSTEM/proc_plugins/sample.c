@@ -49,17 +49,20 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 static int ndr_pull(int opnum, NDR_PULL* pndr, void **pin)
 {
 	/* TODO add unmarshaling code for method parameters here */
+	return NDR_ERR_FAILURE;
 }
 
 static int dispatch(int opnum, const GUID *pobject,
 	uint64_t handle, void *pin, void **ppout)
 {
 	/* TODO add excution code of method parameters here */
+	return DISPATCH_FAIL;
 }
 
 static int ndr_push(int opnum, NDR_PUSH *pndr, void *pout)
 {
 	/* TODO add marshaling code for method result here */
+	return NDR_ERR_FAILURE;
 }
 
 static void console_talk(int argc, char **argv, char *result, int length)

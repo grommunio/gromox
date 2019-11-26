@@ -145,5 +145,6 @@ static void* thread_work_func(void *param)
 			remove(temp_path1);
 		}
 	}
+	return NULL;
 }
 

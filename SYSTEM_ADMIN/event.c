@@ -587,6 +587,7 @@ static void* scan_work_func(void *param)
 		}
 		double_list_free(&temp_list);
 	}
+	return NULL;
 }
 
 static void* accept_work_func(void *param)
@@ -911,6 +912,7 @@ NEXT_LOOP:
 			continue;
 		}
 	}
+	return NULL;
 }
 
 static void* dequeue_work_func(void *param)
@@ -1056,6 +1058,7 @@ NEXT_LOOP:
 		pthread_mutex_unlock(&g_host_lock);
 		
 	}	
+	return NULL;
 }
 
 static BOOL read_response(int sockd)

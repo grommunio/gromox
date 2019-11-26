@@ -1147,6 +1147,7 @@ static void *engine_scan_partition(PARTITION_ITEM *ppartition)
 		close(fd);
 		remove(temp_path);
 	}
+	return NULL;
 }
 
 static void *scan_work_func(void *param)
@@ -1160,6 +1161,7 @@ static void *scan_work_func(void *param)
 		time(&end_time);
 		sleep(24*60*60 - (end_time - begin_time) % (24*60*60));
 	}
+	return NULL;
 }
 
 static void *backup_work_func(void *param)
@@ -1197,6 +1199,7 @@ static void *backup_work_func(void *param)
 		time(&end_time);
 		sleep(24*60*60 - (end_time - begin_time) % (24*60*60));
 	}
+	return NULL;
 }
 
 static void engine_read_partition_info(char *s,

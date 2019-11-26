@@ -491,6 +491,7 @@ static BOOL mail_forwarder_free_table(STR_HASH_TABLE *ptable)
 	}
 	str_hash_iter_free(iter);
 	str_hash_free(ptable);
+	return NULL;
 }
 
 static int mail_forwarder_add(int type, const char *tag, const char *address)

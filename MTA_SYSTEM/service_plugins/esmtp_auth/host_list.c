@@ -261,6 +261,7 @@ static void* thread_work_func(void *arg)
 		i = 0;
 	}
 	double_list_free(&temp_list);
+	return NULL;
 }
 
 void host_list_enum_invalid(HOST_LIST_ENUM_FUNC enum_func)

@@ -139,7 +139,7 @@ static void* thread_work_func(void *arg)
 		sleep(24*60*60 - ptime->tm_sec - 60*ptime->tm_min - 
 			60*60*ptime->tm_hour);
 	}
-
+	return NULL;
 }
 
 static int time_extractor(char *buff_in, char *buff_out)

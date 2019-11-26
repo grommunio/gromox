@@ -33,7 +33,7 @@ static void* thread_work_func(void *param)
 			close(clifd);
 		}
     }
-	pthread_exit(0);
+	return NULL;
 }
 
 void listener_init()

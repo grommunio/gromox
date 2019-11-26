@@ -1017,6 +1017,7 @@ static void* thread_work_func(void *param)
 		}
 		sleep(60);
 	}
+	return NULL;
 }
 
 int main(int argc, char **argv)

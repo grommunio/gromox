@@ -315,6 +315,7 @@ static void* thread_work_func(void *arg)
 		close(sockd_delivery);
 		sockd_delivery = -1;
 	}
+	return NULL;
 }
 
 int connect_console(const char *ip, int port)

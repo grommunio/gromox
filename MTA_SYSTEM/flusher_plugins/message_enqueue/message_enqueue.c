@@ -314,6 +314,7 @@ static void* thread_work_func(void* arg)
 		}
 		feedback_entity(pentity);
 	}
+	return NULL;
 }
 
 BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)

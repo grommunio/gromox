@@ -301,7 +301,7 @@ static void *scan_work_func(void *param)
 		}
 		sleep(1);
 	}
-
+	return NULL;
 }
 
 static void broadcast_select(const char *username, const char *folder)

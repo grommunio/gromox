@@ -426,7 +426,7 @@ static void *scan_work_func(void *param)
 		}
 		sleep(1);
 	}
-
+	return NULL;
 }
 
 
@@ -538,7 +538,7 @@ NEXT_LOOP:
 		len = snprintf(temp_buff, 1024, "%s\r\n", pfront->buff);
 		write(pfront->sockd, temp_buff, len);
     }
-
+	return NULL;
 }
 
 static int read_line(int sockd, FRONT_CONN *pconnection)
