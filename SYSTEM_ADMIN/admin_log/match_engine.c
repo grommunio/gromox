@@ -29,7 +29,7 @@ int match_engine_run()
 		return -1;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		system_log_info("[match_engine]: mount entry %s is not directory, "
+		system_log_info("[match_engine]: mount entry %s is not a directory, "
 				        "please check it ASAP!!!", g_mount_path);
 		return -2;
 	}
@@ -161,7 +161,7 @@ BOOL match_engine_match(time_t start_time, time_t end_time, const char *ip,
 		return FALSE;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		system_log_info("[match_engine]: %s is not directory\n", g_mount_path);
+		system_log_info("[match_engine]: %s is not a directory", g_mount_path);
 		return FALSE;
 	}
 

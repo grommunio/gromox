@@ -35,7 +35,7 @@ int message_lookup_run()
 		return -1;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		system_log_info("[message_lookup]: mount entry %s is not directory, "
+		system_log_info("[message_lookup]: mount entry %s is not a directory, "
 				        "please check it ASAP!!!", g_mount_path);
 		return -2;
 	}
@@ -136,7 +136,7 @@ BOOL message_lookup_match(char *from, char *to, const char *reason,
 		return FALSE;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		system_log_info("[message_lookup]: %s is not directory\n", g_mount_path);
+		system_log_info("[message_lookup]: %s is not a directory\n", g_mount_path);
 		return FALSE;
 	}
 

@@ -67,7 +67,7 @@ int main(int argc, const char **argv)
 	}
 	
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("%s is not directory\n", argv[1]);
+		printf("%s is not a directory\n", argv[1]);
 		return 2;
 	}
 	
@@ -77,7 +77,7 @@ int main(int argc, const char **argv)
 	}
 	
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("%s is not directory\n", argv[2]);
+		printf("%s is not a directory\n", argv[2]);
 		return 2;
 	}
 	

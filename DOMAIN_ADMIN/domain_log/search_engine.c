@@ -195,7 +195,7 @@ BOOL search_engine_search(const char *domain, const char *ip, const char *from,
 		return TRUE;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		system_log_info("[search_engine]: database error! %s is not directory",
+		system_log_info("[search_engine]: Database error! %s is not a directory.",
 			temp_path);
 		return FALSE;
 	}
