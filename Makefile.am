@@ -435,6 +435,7 @@ system_admin_progs = adaptor admin_archive admin_insulation admin_log admin_main
 archiver_system_progs = archive cidb migrator titan
 
 # LIBRARY
+BUILT_SOURCES = include/gromox/paths.h
 libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/fifo.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/long_hash.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/fileio.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
 libgromox_email_la_SOURCES = LIBRARY/email_lib/mime.c LIBRARY/email_lib/mime_pool.c LIBRARY/email_lib/mjson.c LIBRARY/email_lib/vcard.c LIBRARY/email_lib/mail.c LIBRARY/email_lib/ical.c LIBRARY/email_lib/dsn.c
@@ -1317,6 +1318,15 @@ mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 # tests
 noinst_PROGRAMS = tests/getmxbyname
 tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
+
+include/gromox/paths.h: include/gromox/paths.h.in
+	sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
+	 -e 's|#define PKGLIBDIR .*|#define PKGLIBDIR "${pkglibdir}"|' \
+	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
+	 -e 's|#define PKGSTATEDIR .*|#define PKGSTATEDIR "${localstatedir}/lib/${PACKAGE_NAME}"|' \
+	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
+		<$< >$@.tmp
+	if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@

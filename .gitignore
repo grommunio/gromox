@@ -148,4 +148,5 @@ Makefile.in
 /xmailer_blacklist
 /zcore
 
+/include/gromox/paths.h
 /system/*.service
