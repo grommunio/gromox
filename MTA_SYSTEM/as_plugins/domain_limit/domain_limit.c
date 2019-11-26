@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "domain_limit.h"
@@ -438,8 +440,8 @@ static int domain_limit_add_deny(const char *domain)
 	sprintf(temp_path, "%s/deny/%s.txt", g_root_path, temp_domain);
 	plist_file = list_file_init(temp_path, "%s:256");
 	if (NULL == plist_file) {
-		printf("[domain_limit]: fail to get domain deny list file %s\n",
-			temp_path);
+		printf("[domain_limit]: Failed to read domain deny list from %s: %s\n",
+			temp_path, strerror(errno));
 		return DOMAIN_LIST_FILE_FAIL;
 	}
 	single_list_init(&temp_list);
@@ -509,8 +511,8 @@ static int domain_limit_add_allow(const char *domain)
 	sprintf(temp_path, "%s/allow/%s.txt", g_root_path, temp_domain);
 	plist_file = list_file_init(temp_path, "%s:256");
 	if (NULL == plist_file) {
-		printf("[domain_limit]: fail to get domain allow list file %s\n",
-			temp_path);
+		printf("[domain_limit]: Failed to read domain allow list from %s: %s\n",
+			temp_path, strerror(errno));
 		return DOMAIN_LIST_FILE_FAIL;
 	}
 	single_list_init(&temp_list);

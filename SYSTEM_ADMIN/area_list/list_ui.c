@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include "util.h"
 #include "list_ui.h"
@@ -414,8 +415,8 @@ static void list_ui_main_html(const char *session)
 	
 	pfile = list_file_init(g_list_path, "%s:12%s:256%s:256%d%d");
 	if (NULL == pfile) {
-		system_log_info("[list_ui]: fail to open list file %s",
-			g_list_path);
+		system_log_info("[list_ui]: list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
 		return;

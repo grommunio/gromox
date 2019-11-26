@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include "keyword_engine.h"
@@ -46,13 +47,15 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 	single_list_init(charset_list);
 	pfile1 = list_file_init(charset_path, "%s:32");
 	if (NULL == pfile1) {
-		printf("[keyword_engine]: fail to init charset list file\n");
+		printf("[keyword_engine]: Failed to read charset list from %s: %s\n",
+			charset_path, strerror(errno));
 		free(charset_list);
 		return NULL;
 	}
 	pfile2 = list_file_init(list_path, "%s:256");
 	if (NULL == pfile2) {
-		printf("[keyword_engine]: fail to init keyword list file\n");
+		printf("[keyword_engine]: failed to read keyword list file from %s: %s\n",
+			list_path, strerror(errno));
 		free(charset_list);
 		list_file_free(pfile1);
 		return NULL;

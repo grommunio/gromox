@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "str_filter.h"
@@ -237,7 +239,8 @@ int grey_list_refresh()
 	}
 	plist_file = list_file_init3(g_list_path, "%s:256%d%s:32", false);
 	if (NULL == plist_file) {
-        str_filter_echo("fail to open list file for grey list");
+		str_filter_echo("Failed to read graylist from %s: %s",
+			g_list_path, strerror(errno));
         return GREY_REFRESH_FILE_ERROR;
 	}
 	pitem = (LIST_ITEM*)list_file_get_list(plist_file);

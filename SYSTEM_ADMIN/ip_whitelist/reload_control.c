@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "reload_control.h"
 #include "single_list.h"
 #include "util.h"
@@ -48,8 +49,9 @@ int reload_control_run()
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
-		printf("[reload_control]: fail to open console list file, will not" 
-			"notify server to reload list\n");
+		printf("[reload_control]: Failed to read console list from %s: %s. "
+			"Will not notify server to reload list.\n",
+			g_list_path, strerror(errno));
 		return 0;
 	}
 	

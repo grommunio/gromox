@@ -90,7 +90,8 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		sprintf(g_listfile_name, "%s/%s.txt", get_data_path(), file_name);
 		g_ddns_list = list_file_init(g_listfile_name, "%s:256");
 		if (NULL == g_ddns_list) {
-			printf("[ddns_filter]: fail to open list file!!!\n");
+			printf("[ddns_filter]: list_file_init %s: %s\n",
+				g_listfile_name, strerror(errno));
 			return FALSE;
 		}
         /* invoke register_statistic for registering static of mail envelop */
@@ -187,6 +188,8 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	if (2 == argc && 0 == strcmp(argv[1], "reload")) {
 		plist = list_file_init(g_listfile_name, "%s:256");
 		if (NULL == plist) {
+			fprintf(stderr, "list_file_init %s: %s\n",
+				g_listfile_name, strerror(errno));
 			strncpy(result, "550 ddns list file error", length);
 			return;
 		}

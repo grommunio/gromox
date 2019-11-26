@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <libHX/string.h>
 #include <gromox/exsvc_common.h>
@@ -76,7 +77,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		pfile = list_file_init(tmp_path, "%s:16%s:64");
 		if (NULL == pfile) {
-			printf("[mime_extension]: fail to load list file\n");
+			printf("[mime_extension]: list_file_init %s/%s: %s\n",
+				get_data_path(), file_name, strerror(errno));
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <libHX/ctype_helper.h>
@@ -835,7 +836,8 @@ int engine_run()
 	pfile = list_file_init(g_list_path, "%s:12%s:256%s:256%d%d");
 
 	if (NULL == pfile) {
-		printf("[engine]: fail to init list file %s\n", g_list_path);
+		printf("[engine]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return -1;
 	}
 	pitem = (AREA_ITEM*)list_file_get_list(pfile);

@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/string.h>
 #include "msgchg_grouping.h"
 #include "proptag_array.h"
@@ -184,8 +186,8 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 	sprintf(file_path, "%s/%s", g_folder_path, file_name);
 	pfile = list_file_init(file_path, "%s:256");
 	if (NULL == pfile) {
-		printf("[[exchange_emsmdb]: fail to read "
-			"list file %s\n", file_path);
+		printf("[exchange_emsmdb]: list_file_init %s: %s\n",
+			file_path, strerror(errno));
 		return NULL;
 	}
 	pinfo_node = msgchg_grouping_create_info_node(group_id);

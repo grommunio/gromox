@@ -41,7 +41,7 @@ int main(int argc, const char **argv)
 	
 	plist = list_file_init("../data/tmp_password.txt", "%s:128%s:128");
 	if (NULL == plist) {
-		printf("cannot find password information from tmp_password.txt\n");
+		printf("Cannot read ../data/tmp_password.txt: %s\n", strerror(errno));
 		return 1;
 	}
 	pitem = list_file_get_list(plist);

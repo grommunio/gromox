@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <errno.h>
 #include <libHX/option.h>
 #include "rtf.h"
 #include "rtfcp.h"
@@ -82,7 +83,8 @@ int main(int argc, const char **argv)
 	}
 	g_list_file = list_file_init("../data/cpid.txt", "%d%s:64");
 	if (NULL == g_list_file) {
-		fprintf(stderr, "fail to load list file cpid.txt\n");
+		fprintf(stderr, "list_file_init %s: %s\n",
+			"../data/cpid.txt", strerror(errno));
 		return 3;
 	}
 	pattachments = attachment_list_init();

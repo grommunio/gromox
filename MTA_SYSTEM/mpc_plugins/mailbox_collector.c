@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <stdbool.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
@@ -90,7 +92,8 @@ static int collector_refresh()
 
 	plist = list_file_init(g_list_path, "%s:256%s:256");
 	if (NULL == plist) {
-		printf("[mailbox_collector]: fail to init list file %s\n", g_list_path);
+		printf("[mailbox_collector]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
 	item_num = list_file_get_item_num(plist);

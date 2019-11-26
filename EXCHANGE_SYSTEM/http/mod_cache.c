@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "util.h"
 #include "str_hash.h"
@@ -151,7 +152,8 @@ int mod_cache_run()
 	
 	pfile = list_file_init(g_list_path, "%s:256%s:256%s:256");
 	if (NULL == pfile) {
-		printf("[mod_cache]: fail to init list file\n");
+		printf("[mod_cache]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return -1;
 	}
 	item_num = list_file_get_item_num(pfile);

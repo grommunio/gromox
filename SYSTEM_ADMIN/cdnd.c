@@ -366,7 +366,8 @@ int main(int argc, const char **argv)
 
 	plist = list_file_init(acl_path, "%s:16");
     if (NULL == plist) {
-		printf("[system]: fail to open acl file %s\n", acl_path);
+		printf("[system]: Failed to read ACLs from %s: %s\n",
+			acl_path, strerror(errno));
 		close(sockd);
 		return 6;
 	}
@@ -395,7 +396,8 @@ int main(int argc, const char **argv)
 
 	plist = list_file_init(midb_path, "%s:256%s:16%d");
 	if (NULL == plist) {
-		printf("[system]: fail to open list file %s\n", midb_path);
+		printf("[system]: list_file_init %s: %s\n",
+			midb_path, strerror(errno));
 		close(sockd);
 		str_hash_free(g_user_hash);
 		return 8;

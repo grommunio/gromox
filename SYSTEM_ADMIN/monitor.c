@@ -135,7 +135,8 @@ int main(int argc, const char **argv)
 	sprintf(temp_path, "%s/console_table.txt", data_path);
 	plist_file = list_file_init(temp_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
-		printf("[system]: fail to open console list file %s\n", temp_path);
+		printf("[system]: Failed to read console list from %s: %s\n",
+			temp_path, strerror(errno));
 		return 6;
 	}
 	single_list_init(&console_list);

@@ -196,7 +196,8 @@ int main(int argc, const char **argv)
 	pfile = list_file_init(g_list_path, "%d%l%s:512");
 
 	if (NULL == pfile) {
-		printf("[system]: fail to init timer from list file\n");
+		printf("[system]: Failed to read timers from %s: %s\n",
+			g_list_path, strerror(errno));
 		return 3;
 	}
 

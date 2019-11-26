@@ -432,7 +432,8 @@ static void limit_ui_main_html(const char *domain, const char *session)
 	}
 	pfile = list_file_init(list_path, "%s:256%s:256");
 	if (NULL == pfile) {
-		system_log_info("[limit_ui]: fail to open list file %s", list_path);
+		system_log_info("[limit_ui]: list_file_init %s: %s",
+			list_path, strerror(errno));
 		limit_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
 		return;

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "keyword_cleaning.h"
 #include "util.h"
 #include "list_file.h"
@@ -86,8 +87,9 @@ int keyword_cleaning_run()
 	
 	plist_file = list_file_init(g_console_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
-		printf("[keyword_cleaning]: fail to open console list file, will not" 
-			"notify server to reload list\n");
+		printf("[keyword_cleaning]: Failed to read console list from %s: %s. "
+			"Will not notify server to reload list.\n",
+			g_console_path, strerror(errno));
 		return 0;
 	}
 	

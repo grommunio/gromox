@@ -646,7 +646,8 @@ int exmdb_client_run()
 	
 	plist = list_file_init(g_list_path, "%s:256%s:16%s:16%d");
 	if (NULL == plist) {
-		system_log_info("[exmdb_client]: fail to open exmdb list file");
+		system_log_info("[exmdb_client]: Failed to read exmdb list from %s: %s",
+			g_list_path, strerror(errno));
 		return 1;
 	}
 	g_notify_stop = FALSE;

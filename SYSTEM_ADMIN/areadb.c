@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <dirent.h>
@@ -221,7 +222,8 @@ int main(int argc, const char **argv)
 	sprintf(list_path, "../data/area_list.txt");
 	pfile = list_file_init(list_path, "%s:12%s:256%s:256%d%d");
 	if (NULL == pfile) {
-		printf("[engine]: fail to init list file area_list.txt\n");
+		printf("[engine]: list_file_init %s: %s\n",
+			list_path, strerror(errno));
 		return 1;
 	}
 	pitem = (AREA_ITEM*)list_file_get_list(pfile);

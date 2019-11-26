@@ -687,7 +687,8 @@ int main(int argc, const char **argv)
 	double_list_init(&g_exmdb_list);
 	plist = list_file_init("../data/exmdb_list.txt", "%s:256%s:16%s:16%d");
 	if (NULL == plist) {
-		printf("fail to open exmdb list file\n");
+		printf("Failed to read exmdb list from ../data/exmdb_list: %s\n",
+			strerror(errno));
 		return 11;
 	}
 	list_num = list_file_get_item_num(plist);

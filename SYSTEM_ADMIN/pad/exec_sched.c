@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "exec_sched.h"
@@ -60,7 +62,8 @@ int exec_sched_run()
     /* initialize the list filter */
 	plist_file = list_file_init(g_list_path, "%s:128");
 	if (NULL == plist_file) {
-		printf("[exec_sched]: fail to open list file %s\n", g_list_path);
+		printf("[exec_sched]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return -1;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

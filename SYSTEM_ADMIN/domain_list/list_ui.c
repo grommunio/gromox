@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "util.h"
 #include "list_ui.h"
@@ -3068,8 +3069,8 @@ static BOOL list_ui_allocate_dir(const char *media_area, char *path_buff)
 	pfile = list_file_init(g_list_path, "%s:12%s:256%s:256%d%d");
 
 	if (NULL == pfile) {
-		system_log_info("[list_ui]: fail to init list file %s",
-			g_list_path);
+		system_log_info("[list_ui]: list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		return FALSE;
 	}
 	if (NULL == media_area) {

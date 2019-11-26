@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include "inbound_ips.h"
 #include "dns_adaptor.h"
 #include "list_file.h"
@@ -26,7 +28,8 @@ int inbound_ips_run()
 	}
 	g_inbound_list = list_file_init(g_list_path, "%s:16");
 	if (NULL == g_inbound_list) {
-		printf("[dns_adaptor]: fail to init list file for inbound-ips\n");
+		printf("[dns_adaptor]: Failed to read inbound-ip list from %s: %s\n",
+			g_list_path, strerror(errno));
 		return -2;
 	}
 	return 0;

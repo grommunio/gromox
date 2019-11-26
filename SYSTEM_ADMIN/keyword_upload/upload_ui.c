@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include "upload_ui.h"
 #include "lang_resource.h"
@@ -568,8 +569,8 @@ static void upload_ui_main_html(const char *session)
 	}
 	plist = list_file_init(g_charset_path, "%s:32");
 	if (NULL == plist) {
-		system_log_info("[upload_ui]: fail to init list file %s",
-			g_charset_path);
+		system_log_info("[upload_ui]: list_file_init %s: %s",
+			g_charset_path, strerror(errno));
 		upload_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
 		return;

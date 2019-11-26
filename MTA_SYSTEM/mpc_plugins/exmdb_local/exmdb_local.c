@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "util.h"
@@ -189,8 +191,8 @@ int exmdb_local_run()
 	}
 	plist = list_file_init(g_propname_path, "%s:256");
 	if (NULL == plist) {
-		printf("[exmdb_local]: fail to load property "
-				"name list from %s\n", g_propname_path);
+		printf("[exmdb_local]: Failed to read property name list from %s: %s\n",
+			g_propname_path, strerror(errno));
 		return -3;
 	}
 	num = list_file_get_item_num(plist);

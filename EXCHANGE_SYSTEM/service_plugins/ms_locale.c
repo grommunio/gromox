@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <libHX/string.h>
 #include <gromox/exsvc_common.h>
@@ -120,7 +121,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/cpid.txt", get_data_path());
 		pfile = list_file_init3(tmp_path, "%d%s:64", false);
 		if (NULL == pfile) {
-			printf("[ms_locale]: fail to load list file cpid.txt\n");
+			printf("[ms_locale]: list_file_init %s: %s\n",
+				tmp_path, strerror(errno));
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);
@@ -152,7 +154,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/lcid.txt", get_data_path());
 		pfile = list_file_init(tmp_path, "%s:16%s:32");
 		if (NULL == pfile) {
-			printf("[ms_locale]: fail to load list file lcid.txt\n");
+			printf("[ms_locale]: list_file_init %s: %s\n",
+				tmp_path, strerror(errno));
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);

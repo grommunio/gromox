@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/string.h>
 #include "domain_mailbox.h"
 #include "util.h"
@@ -38,7 +40,8 @@ static BOOL domain_mailbox_refresh_table()
 
 	plist = list_file_init(g_list_path, "%s:256%s:256");
 	if (NULL == plist) {
-		printf("[domain_mailbox]: fail to init list file %s\n", g_list_path);
+		printf("[domain_mailbox]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return FALSE;
 	}
 	item_num = list_file_get_item_num(plist);

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include "common_types.h"
 #include "scheduler.h"
@@ -80,7 +81,8 @@ int scheduler_run()
 
 	plist_file = list_file_init(g_list_path, "%s:16:%s:256%s:256%s:256%s:16%d");
 	if (NULL == plist_file) {
-		printf("[scheduler]: fail to init supervising list\n");
+		printf("[scheduler]: Failed to read supervising list from %s: %s\n",
+			g_list_path, strerror(errno));
 		return -1;
 	}
 	list_len = list_file_get_item_num(plist_file);

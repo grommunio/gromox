@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <gromox/gateway_control.h>
 #include "util.h"
 #include "single_list.h"
@@ -43,7 +44,8 @@ int gateway_control_run()
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
-		printf("[gateway_control]: fail to open console list file!");
+		printf("[gateway_control]: Failed to read console list from %s: %s\n",
+			g_list_path, strerror(errno));
 		return -1;
 	}
 	

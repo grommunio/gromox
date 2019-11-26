@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include "ip_table.h"
 #include "ip4_hash.h"
@@ -117,7 +119,8 @@ static int ip_table_refresh()
     /* initialize the list filter */
 	plist_file = list_file_init3(g_list_path, "%s:16", false);
 	if (NULL == plist_file) {
-		ip_table_echo("fail to open list file");
+		ip_table_echo("list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		return IP_TABLE_REFRESH_FILE_ERROR;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

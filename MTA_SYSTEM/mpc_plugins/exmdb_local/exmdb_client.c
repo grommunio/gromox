@@ -579,7 +579,8 @@ int exmdb_client_run()
 	
 	plist = list_file_init(g_list_path, "%s:256%s:16%s:16%d");
 	if (NULL == plist) {
-		printf("[exmdb_local]: fail to open exmdb list file\n");
+		printf("[exmdb_local]: Failed to read exmdb list from %s: %s\n",
+			g_list_path, strerror(errno));
 		return 1;
 	}
 	g_notify_stop = FALSE;

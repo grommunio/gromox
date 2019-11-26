@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "notification_agent.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
@@ -1076,7 +1077,8 @@ int exmdb_parser_run()
 	}
 	plist = list_file_init(g_list_path, "%s:256%s:16%s:16%d");
 	if (NULL == plist) {
-		printf("[exmdb_provider]: fail to open exmdb list file\n");
+		printf("[exmdb_provider]: Failed to read exmdb list from %s: %s\n",
+			g_list_path, strerror(errno));
 		return 1;
 	}
 	list_num = list_file_get_item_num(plist);

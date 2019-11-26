@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "str_table.h"
@@ -126,7 +128,7 @@ static int str_table_refresh()
     /* initialize the list filter */
 	plist_file = list_file_init3(g_list_path, "%s:256", false);
 	if (NULL == plist_file) {
-		str_table_echo("fail to open list file");
+		str_table_echo("list_file_init %s: %s", g_list_path, strerror(errno));
 		return STR_TABLE_REFRESH_FILE_ERROR;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

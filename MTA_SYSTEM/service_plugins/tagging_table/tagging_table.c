@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "tagging_table.h"
@@ -131,7 +133,8 @@ static int tagging_table_refresh()
     /* initialize the list filter */
 	plist_file = list_file_init3(g_list_path, "%s:256", false);
 	if (NULL == plist_file) {
-		printf("[tagging_table]: fail to open list file\n");
+		printf("[tagging_table]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return TAGGING_TABLE_REFRESH_FILE_ERROR;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include "double_list.h"
 #include <gromox/hpm_common.h>
@@ -86,7 +87,8 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		sprintf(list_path, "%s/proxy.txt", get_data_path());
 		pfile = list_file_init(list_path, "%s:256%s:256%s:256");
 		if (NULL == pfile) {
-			printf("[mod_proxy]: fail to init list file\n");
+			printf("[mod_proxy]: list_file_init %s: %s\n",
+				list_path, strerror(errno));
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);

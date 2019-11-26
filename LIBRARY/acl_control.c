@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <time.h>
 #include <libHX/ctype_helper.h>
 #include <gromox/acl_control.h>
@@ -38,7 +39,8 @@ int acl_control_run()
 	
 	g_acl_list = list_file_init(g_acl_path, "%s:256%s:256%s:256");
 	if (NULL == g_acl_list) {
-		system_log_info("[acl_control]: fail to init acl list %s", g_acl_path);
+		system_log_info("[acl_control]: Failed to read ACLs from %s: %s",
+			g_acl_path, strerror(errno));
 		return -1;
 	}
 	

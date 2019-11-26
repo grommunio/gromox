@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/string.h>
 #include "address_list.h"
 #include "str_hash.h"
@@ -28,7 +30,8 @@ int address_list_refresh()
 
 	plist = list_file_init(g_list_path, "%s:256%s:32");
 	if (NULL == plist) {
-		printf("[domain_subsystem]: fail to init list file %s\n", g_list_path);
+		printf("[domain_subsystem]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
 	item_num = list_file_get_item_num(plist);

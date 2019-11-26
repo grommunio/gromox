@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "mail_approving.h"
@@ -351,7 +353,8 @@ static int mail_approving_add_domain(const char *domain)
 	/* initialize the list filter */
 	plist_file = list_file_init(temp_path, "%s:256%s:256%s:32");
 	if (NULL == plist_file) {
-		printf("[mail_approving]: fail to open list file %s\n", temp_path);
+		printf("[mail_approving]: list_file_init %s: %s\n",
+			temp_path, strerror(errno));
 		return DOMAIN_LOAD_FILE_ERROR;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

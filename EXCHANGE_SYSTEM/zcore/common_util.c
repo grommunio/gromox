@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -670,7 +671,8 @@ int common_util_run()
 	g_langmap_list = list_file_init(g_langmap_path, "%s:32%s:32");
 	if (NULL == g_langmap_list ||
 		0 == list_file_get_item_num(g_langmap_list)) {
-		printf("[common_util]: fail to init langmap %s\n", g_langmap_path);
+		printf("[common_util]: Failed to read langmap from %s: %s\n",
+			g_langmap_path, strerror(errno));
 		return -3;
 	}
 	

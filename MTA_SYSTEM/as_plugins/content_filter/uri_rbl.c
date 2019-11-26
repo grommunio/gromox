@@ -431,7 +431,8 @@ BOOL uri_rbl_refresh()
 
 	plist = list_file_init(g_cctld_path, "%s:256"); 
 	if (NULL == plist) {
-		printf("[uri_rbl]: fail to load %s\n", g_cctld_path);
+		printf("[uri_rbl]: list_file_init %s: %s\n",
+			g_cctld_path, strerror(errno));
 		return FALSE;
 	}
 	count = list_file_get_item_num(plist);

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include "anonymous_keyword.h"
@@ -107,13 +108,15 @@ BOOL anonymous_keyword_refresh()
 	single_list_init(charset_list);
 	pfile1 = list_file_init(g_charset_path, "%s:32");
 	if (NULL == pfile1) {
+		printf("[anonymous_keyword]: Failed to read charset list from %s: %s\n",
+			g_charset_path, strerror(errno));
 		free(charset_list);
-		printf("[anonymous_keyword]: fail to init charset list file\n");
 		return FALSE;
 	}
 	pfile2 = list_file_init(g_list_path, "%s:256");
 	if (NULL == pfile2) {
-		printf("[anonymous_keyword]: fail to init keyword list file\n");
+		printf("[anonymous_keyword]: Failed to read keyword list from %s: %s\n",
+			g_list_path, strerror(errno));
 		free(charset_list);
 		list_file_free(pfile1);
 		return FALSE;

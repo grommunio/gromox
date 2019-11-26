@@ -166,7 +166,7 @@ int main(int argc, const char **argv)
 
 	plist = list_file_init(list_path, "%s:256%s:16%d");
 	if (NULL == plist) {
-		printf("[system]: fail to open list file %s\n", list_path);
+		printf("[system]: list_file_init %s: %s\n", list_path, strerror(errno));
 		return 2;
 	}
 

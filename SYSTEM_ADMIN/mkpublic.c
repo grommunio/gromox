@@ -474,7 +474,7 @@ int main(int argc, const char **argv)
 	
 	pfile = list_file_init("../doc/propnames.txt", "%s:256");
 	if (NULL == pfile) {
-		printf("fail to read \"propnames.txt\"\n");
+		printf("Failed to read ../doc/propnames.txt: %s\n", strerror(errno));
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 7;

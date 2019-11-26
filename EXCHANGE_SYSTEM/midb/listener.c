@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "common_types.h"
 #include "double_list.h"
 #include "cmd_parser.h"
@@ -95,7 +96,8 @@ int listener_run()
 	if ('\0' != g_list_path[0]) {
 		plist = list_file_init(g_list_path, "%s:16");
 		if (NULL == plist) {
-			printf("[listener]: fail to load acl from %s\n", g_list_path);
+			printf("[listener]: Failed to read ACLs from %s: %s\n",
+				g_list_path, strerror(errno));
 			close(g_listen_sockd);
 			return -5;
 		}

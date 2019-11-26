@@ -72,7 +72,8 @@ int AS_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
 		plist_file = list_file_init(temp_path, "%s:128%s:128");
 		if (NULL == plist_file) {
-			printf("[header_filter]: error to open list file!!!\n");
+			printf("[header_filter]: list_file_init %s: %s\n",
+				temp_path, strerror(errno));
 			return FALSE;
 		}
 		pitem = list_file_get_list(plist_file);

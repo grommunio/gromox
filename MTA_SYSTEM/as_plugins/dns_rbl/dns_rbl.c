@@ -401,7 +401,7 @@ BOOL dns_rbl_refresh()
 
 	plist_file = list_file_init(g_path, "%s:256");
 	if (NULL == plist_file) {
-		printf("[dns_rbl]: fail to load %s\n", g_path);
+		printf("[dns_rbl]: list_file_init %s: %s\n", g_path, strerror(errno));
 		return FALSE;
 	}
 	count = list_file_get_item_num(plist_file);

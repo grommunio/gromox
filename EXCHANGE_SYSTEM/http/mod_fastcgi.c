@@ -185,7 +185,8 @@ int mod_fastcgi_run()
 	pfile = list_file_init(g_list_path,
 		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256");
 	if (NULL == pfile) {
-		printf("[mod_fastcgi]: fail to init list file\n");
+		printf("[mod_fastcgi]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return -1;
 	}
 	item_num = list_file_get_item_num(pfile);

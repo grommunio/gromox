@@ -574,7 +574,8 @@ int main(int argc, const char **argv)
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == pfile) {
-		printf("fail to read \"folder_lang.txt\"\n");
+		printf("Failed to read ../doc/folder_lang.txt: %s\n",
+			strerror(errno));
 		return 7;
 	}
 	line_num = list_file_get_item_num(pfile);

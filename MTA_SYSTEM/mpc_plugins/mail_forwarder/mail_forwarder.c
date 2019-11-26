@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "mail_forwarder.h"
@@ -351,7 +353,8 @@ static int mail_forwarder_refresh()
 	/* initialize the list filter */
 	plist_file = list_file_init(g_path, "%s:16%s:256:%s:256");
 	if (NULL == plist_file) {
-		printf("[mail_forwarder]: fail to open list file\n");
+		printf("[mail_forwarder]: list_file_init %s: %s\n",
+			g_path, strerror(errno));
 		return TABLE_REFRESH_FILE_ERROR;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

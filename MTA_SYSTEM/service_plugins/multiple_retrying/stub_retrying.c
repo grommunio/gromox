@@ -67,7 +67,8 @@ int stub_retrying_run()
 	
 	plist = list_file_init(g_list_path, "%s:16");
 	if (NULL == plist) {
-		printf("[multiple_retrying]: fail to init list file %s\n", g_list_path);
+		printf("[multiple_retrying]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return -1;
 	}
 	pitem = list_file_get_list(plist);

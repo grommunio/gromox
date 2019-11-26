@@ -1127,7 +1127,8 @@ int main(int argc, const char **argv)
 
 	pfile = list_file_init(list_path, "%s:12%s:256%s:256%d%d");
 	if (NULL == pfile) {
-		printf("[system]: fail to init area list file %s\n", list_path);
+		printf("[system]: Failed to read area list from %s: %s\n",
+			list_path, strerror(errno));
 		return 5;
 	}
 	

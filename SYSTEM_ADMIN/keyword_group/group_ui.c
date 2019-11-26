@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "group_ui.h"
 #include <gromox/system_log.h>
@@ -458,8 +459,8 @@ static void group_ui_main_html(const char *session)
 	
 	pfile = list_file_init(g_list_path, "%s:256%l");
 	if (NULL == pfile) {
-		system_log_info("[group_ui]: fail to open list file %s",
-			g_list_path);
+		system_log_info("[group_ui]: list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		group_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
 		return;
@@ -810,7 +811,8 @@ static void group_ui_broadcast_list()
 	
 	pfile = list_file_init(g_list_path, "%s:256%l");
 	if (NULL == pfile) {
-		system_log_info("[group_ui]: fail to open list file %s", g_list_path);
+		system_log_info("[group_ui]: list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		return;
 	}
 	item_num = list_file_get_item_num(pfile);

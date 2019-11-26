@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "statistic_ui.h"
 #include "data_extractor.h"
 #include "lang_resource.h"
@@ -372,8 +373,8 @@ static void statistic_ui_main_html(const char *session, const char *console)
 	
 	pfile = list_file_init(g_list_path, "%s:16%d%s:16%d");
 	if (NULL == pfile) {
-		system_log_info("[statistic_ui]: fail to open list file %s",
-			g_list_path);
+		system_log_info("[statistic_ui]: list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		statistic_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
 		return;

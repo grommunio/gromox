@@ -106,7 +106,8 @@ int AS_LibMain(int reason, void **ppdata)
 		sprintf(g_listfile_name, "%s/%s.txt", get_data_path(), file_name);
         g_xmailer_list = list_file_init(g_listfile_name, "%s:16%s:256");
         if (NULL == g_xmailer_list) {
-            printf("[xmailer_filter]: fail to open list file!!!\n");
+			printf("[xmailer_filter]: list_file_init %s: %s\n",
+				g_listfile_name, strerror(errno));
             return FALSE;
         }
         /* invoke register_auditor for registering auditor of mime head */

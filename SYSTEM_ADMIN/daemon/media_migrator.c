@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "media_migrator.h"
 #include "data_source.h"
 #include <gromox/locker_client.h>
@@ -424,8 +425,8 @@ static BOOL media_migrator_allocate_mediadir(const char *media_area,
 	pfile = list_file_init(g_list_path, "%s:12%s:256%s:256%d%d");
 
 	if (NULL == pfile) {
-		system_log_info("[media_migrator]: fail to init list file %s",
-			g_list_path);
+		system_log_info("[media_migrator]: list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		return FALSE;
 	}
 	lockd = locker_client_lock("MEDIA-AREA");

@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "domain_monitor.h"
@@ -407,7 +409,8 @@ static int domain_monitor_add_domain(const char *domain)
 	/* initialize the list filter */
 	plist_file = list_file_init(temp_path, "%s:16%s:256:%s:256");
 	if (NULL == plist_file) {
-		printf("[domain_monitor]: fail to open list file %s\n", temp_path);
+		printf("[domain_monitor]: list_file_init %s: %s\n",
+			temp_path, strerror(errno));
 		return DOMAIN_LOAD_FILE_ERROR;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

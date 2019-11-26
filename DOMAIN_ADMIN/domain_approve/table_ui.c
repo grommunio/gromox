@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "table_ui.h"
 #include "lang_resource.h"
@@ -918,8 +919,8 @@ static void table_ui_broadcast_list(const char *domain)
 	snprintf(list_path, 256, "%s/approving.txt", g_domain_path);
 	pfile = list_file_init(list_path, "%s:256%s:256%s:32");
 	if (NULL == pfile) {
-		system_log_info("[table_ui]: fail to open whitelist %s",
-			list_path);
+		system_log_info("[table_ui]: Failed to read whitelist from %s: %s",
+			list_path, strerror(errno));
 		return;
 	}
 	item_num = list_file_get_item_num(pfile);

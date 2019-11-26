@@ -555,7 +555,8 @@ static void backup_ui_restore_html(const char *file_name)
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init bounday list file\n");
+		system_log_info("[backup_ui]: Failed to read bounday list from %s: %s\n",
+			src_file, strerror(errno));
 		goto DNS_TABLE;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -583,7 +584,8 @@ DNS_TABLE:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%s:8%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init dns list file\n");
+		system_log_info("[backup_ui]: Failed to read DNS list from %s: %s\n",
+			src_file, strerror(errno));
 		goto DOMAIN_BLACKLIST;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -612,7 +614,8 @@ DOMAIN_BLACKLIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init domain black list file\n");
+		system_log_info("[backup_ui]: Failed to read domain blacklist from %s: %s",
+			src_file, strerror(errno));
 		goto DOMAIN_MAILBOX;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -639,7 +642,8 @@ DOMAIN_MAILBOX:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%s:256%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init domain mailbox list file\n");
+		system_log_info("[backup_ui]: Failed to read domain mailbox list from %s: %s",
+			src_file, strerror(errno));
 		goto DOMAIN_WHITELIST;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -666,7 +670,8 @@ DOMAIN_WHITELIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init domain white list file\n");
+		system_log_info("[backup_ui]: Failed to read domain whitelist from %s: %s",
+			src_file, strerror(errno));
 		goto DYNAMIC_LIST;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -693,7 +698,8 @@ DYNAMIC_LIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init dynamic domain list file\n");
+		system_log_info("[backup_ui]: Failed to read dynamic domain list from %s: %s",
+			src_file, strerror(errno));
 		goto FORWARD_TABLE;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -720,7 +726,8 @@ FORWARD_TABLE:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%s:12%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init forward table file\n");
+		system_log_info("[backup_ui]: Failed to read forward table from %s: %s",
+			src_file, strerror(errno));
 		goto FROM_BLACKLIST;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -749,7 +756,8 @@ FROM_BLACKLIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init from black list file\n");
+		system_log_info("[backup_ui]: Failed to read blacklist from %s: %s",
+			src_file, strerror(errno));
 		goto FROM_REPLACE;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -776,7 +784,8 @@ FROM_REPLACE:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%s:256%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init from black list file\n");
+		system_log_info("[backup_ui]: Failed to read from_replace from %s: %s",
+			src_file, strerror(errno));
 		goto IP_GREYLIST;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -803,7 +812,8 @@ IP_GREYLIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:16%l%s:8%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init ip white list file\n");
+		system_log_info("[backup_ui]: Failed to read IPaddr whitelist from %s: %s",
+			src_file, strerror(errno));
 		goto IPDOMAIN_TABLE;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -865,7 +875,8 @@ IP_GREYLIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:16%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init ip black list file\n");
+		system_log_info("[backup_ui]: Failed to read IPaddr blacklist from %s: %s",
+			src_file, strerror(errno));
 		close(fd);
 		goto IPDOMAIN_TABLE;
 	}
@@ -887,7 +898,8 @@ IPDOMAIN_TABLE:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%s:8%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init ip-domain list file\n");
+		system_log_info("[backup_ui]: Failed to read IPdomain list from %s: %s",
+			src_file, strerror(errno));
 		goto KEYWORD_GROUP;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -915,7 +927,8 @@ KEYWORD_GROUP:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init keyword group list file\n");
+		system_log_info("[backup_ui]: Failed to read keyword group list from %s: %s",
+			src_file, strerror(errno));
 		goto KEYWORD_UPLOAD;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -981,7 +994,8 @@ KEYWORD_UPLOAD:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init rcpt black list file\n");
+		system_log_info("[backup_ui]: Failed to read recipient blacklist from %s: %s",
+			src_file, strerror(errno));
 		goto RELAY_ALLOW;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -1008,7 +1022,8 @@ RELAY_ALLOW:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:16%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init relay allow list file\n");
+		system_log_info("[backup_ui]: Failed to read relay allow list from %s: %s",
+			src_file, strerror(errno));
 		goto RELAY_DOMAINS;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -1034,7 +1049,8 @@ RELAY_DOMAINS:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init relay domains list file\n");
+		system_log_info("[backup_ui]: Failed to read relay domains from %s: %s",
+			src_file, strerror(errno));
 		goto RELAY_TABLE;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -1060,7 +1076,8 @@ RELAY_TABLE:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:16%s:256%d%d");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init relay service list file\n");
+		system_log_info("[backup_ui]: Failed to read relay services from %s: %s",
+			src_file, strerror(errno));
 		goto SINGLE_RCPT;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -1089,7 +1106,8 @@ SINGLE_RCPT:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init single rcpt file\n");
+		system_log_info("[backup_ui]: Failed to read single recipients from %s: %s",
+			src_file, strerror(errno));
 		goto SUPERVISING_LIST;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -1124,7 +1142,8 @@ SUPERVISING_LIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:256%l%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to tagging white list file\n");
+		system_log_info("[backup_ui]: Failed to read tagging whitelist from %s: %s",
+			src_file, strerror(errno));
 		goto XMAILER_LIST;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
@@ -1151,7 +1170,8 @@ XMAILER_LIST:
 	file_operation_copy_file(src_file, dst_file);
 	pfile = list_file_init(src_file, "%s:64%l%s:8%s:256");
 	if (NULL == pfile) {
-		system_log_info("[backup_ui]: fail to init xmailer black list file\n");
+		system_log_info("[backup_ui]: Failed to read xmailer blacklist from %s: %s",
+			src_file, strerror(errno));
 		goto SYSTEM_SETUP;
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);

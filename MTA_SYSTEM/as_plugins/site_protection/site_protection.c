@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/string.h>
 #include "site_protection.h"
 #include "str_hash.h"
@@ -104,7 +106,8 @@ static int site_protection_list_refresh()
 
 	plist_file = list_file_init(g_list_path, "%s:16%s:256%s:1024");
 	if (NULL == plist_file) {
-		printf("[site_protection]: fail to load list file\n");
+		printf("[site_protection]: list_file_init %s: %s\n",
+			g_list_path, strerror(errno));
 		return SPL_FILE_FAIL;
 	}
 	list_num = list_file_get_item_num(plist_file);

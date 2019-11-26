@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/string.h>
 #include "data_extractor.h"
 #include "single_list.h"
@@ -50,8 +52,9 @@ int data_extractor_run()
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
-		printf("[data_extractor]: fail to open console list file, will not" 
-			"notify server to reload list\n");
+		printf("[data_extractor]: Failed to read console list from %s: %s. "
+			"Will not notify server to reload list.\n",
+			g_list_path, strerror(errno));
 		return 0;
 	}
 	

@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <unistd.h>
 #include "password_ui.h"
 #include "lang_resource.h"
@@ -494,8 +495,8 @@ static BOOL password_ui_modify_list(const char *username, const char *password)
 
 	pfile = list_file_init(g_list_path, "%s:256%s:256%s:256");
 	if (NULL == pfile) {
-		system_log_info("[password_ui]: fail to init account list file %s",
-			g_list_path);
+		system_log_info("[password_ui]: Failed to read account list from %s: %s",
+			g_list_path, strerror(errno));
 		return FALSE;
 	}
 	item_num = list_file_get_item_num(pfile);

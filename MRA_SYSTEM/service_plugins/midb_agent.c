@@ -251,7 +251,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		plist = list_file_init(list_path, "%s:256%s:16%d");
 		if (NULL == plist) {
-			printf("[midb_agent]: fail to open midb list file\n");
+			printf("[midb_agent]: Failed to read midb list from %s: %s\n",
+				list_path, strerror(errno));
 			return FALSE;
 		}
 

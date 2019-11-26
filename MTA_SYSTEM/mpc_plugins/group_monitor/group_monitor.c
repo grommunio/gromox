@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <string.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "group_monitor.h"
@@ -475,7 +477,8 @@ static int group_monitor_add_group(const char *group)
 	/* initialize the list filter */
 	plist_file = list_file_init(temp_path, "%s:16%s:256:%s:256");
 	if (NULL == plist_file) {
-		printf("[group_monitor]: fail to open list file %s\n", temp_path);
+		printf("[group_monitor]: list_file_init %s: %s\n",
+			temp_path, strerror(errno));
 		return GROUP_LOAD_FILE_ERROR;
 	}
 	pitem = (char*)list_file_get_list(plist_file);

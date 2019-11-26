@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "log_flusher.h"
 #include "single_list.h"
 #include "util.h"
@@ -45,8 +46,9 @@ int log_flusher_run()
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
-		printf("[log_flusher]: fail to open console list file, will not" 
-			"flush logs\n");
+		printf("[log_flusher]: Failed to read console list from %s: %s. "
+			"Will not flush logs.\n",
+			g_list_path, strerror(errno));
 		return 0;
 	}
 	

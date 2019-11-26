@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "statistic_ui.h"
 #include <gromox/system_log.h>
 #include <gromox/acl_control.h>
@@ -367,8 +368,8 @@ static void statistic_ui_main_html(const char *session, int year, int month)
 	
 	pfile = list_file_init(g_list_path, "%s:16%s:32%d");
 	if (NULL == pfile) {
-		system_log_info("[statistic_ui]: fail to open list file %s",
-			g_list_path);
+		system_log_info("[statistic_ui]: list_file_init %s: %s",
+			g_list_path, strerror(errno));
 		statistic_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
 		return;

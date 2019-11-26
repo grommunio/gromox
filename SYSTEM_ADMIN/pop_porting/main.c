@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "pop3.h"
 #include "smtp.h"
 #include "mail_func.h"
@@ -66,7 +67,7 @@ int main(int argc, const char **argv)
 	
 	plist = list_file_init(argv[3], "%s:256%s:256");
 	if (NULL == plist) {
-		printf("fail to init list file %s\n", argv[3]);
+		printf("list_file_init %s: %s\n", argv[3], strerror(errno));
 		return 4;
 	}
 
