@@ -94,6 +94,7 @@ int exec_sched_run()
 		return -3;
 	}
 
+	pthread_setname_np(g_scan_tid, "esched/scan");
 	g_thread_tids = malloc(g_threads_num*sizeof(pthread_t));
 	if (NULL == g_thread_tids) {
 		pthread_cancel(g_scan_tid);
@@ -104,7 +105,11 @@ int exec_sched_run()
 	}
 
 	for (i=0; i<g_threads_num; i ++) {
-		pthread_create(&g_thread_tids[i], NULL, thread_work_func, NULL);
+		if (pthread_create(&g_thread_tids[i], NULL, thread_work_func, NULL) != 0)
+			continue;
+		char buf[32];
+		snprintf(buf, sizeof(buf), "esched/%u", i);
+		pthread_setname_np(g_thread_tids[i], buf);
 	}
 
     return 0;

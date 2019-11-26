@@ -1016,6 +1016,7 @@ void exmdb_parser_put_connection(EXMDB_CONNECTION *pconnection)
 		free(pconnection);
 		return;
 	}
+	pthread_setname_np(pconnection->thr_id, "exmdb_parser");
 }
 
 ROUTER_CONNECTION* exmdb_parser_get_router(const char *remote_id)

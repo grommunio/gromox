@@ -145,7 +145,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			printf("[archive_agent]: fail to create scan thread\n");
 			return FALSE;
 		}
-		
+		pthread_setname_np(g_scan_id, "arcagent/scan");
 		register_talk(console_talk);
 		
 		if (FALSE == register_hook(archive_process)) {

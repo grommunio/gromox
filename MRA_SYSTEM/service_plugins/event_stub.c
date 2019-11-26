@@ -124,6 +124,9 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 					free(pback);
 					break;
 				}
+				char buf[32];
+				snprintf(buf, sizeof(buf), "event_stub/%u", i);
+				pthread_setname_np(pback->thr_id, buf);
 				double_list_append_as_tail(&g_back_list, &pback->node);
 			}
 		}

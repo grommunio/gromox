@@ -141,6 +141,7 @@ int message_enqueue_run()
 		}
         return -7;
     }
+	pthread_setname_np(g_flushing_thread, "flusher");
     pthread_attr_destroy(&attr);
     return 0;
 }

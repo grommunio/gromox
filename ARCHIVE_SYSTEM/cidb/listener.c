@@ -125,6 +125,7 @@ int listener_trigger_accept()
 		printf("[listener]: fail to create listener thread\n");
 		return -1;
 	}
+	pthread_setname_np(thr_id, "accept");
 	return 0;
 }
 

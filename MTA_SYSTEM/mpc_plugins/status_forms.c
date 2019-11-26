@@ -188,6 +188,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			printf("[status_forms]: fail to create thread\n");
 			return FALSE;
 		}
+		pthread_setname_np(g_thread_id, "status_forms");
 		pthread_attr_destroy(&attr);
 		register_talk(console_talk);
         return TRUE;

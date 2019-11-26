@@ -309,6 +309,7 @@ int ab_tree_run()
 		g_notify_stop = TRUE;
 		return -4;
 	}
+	pthread_setname_np(g_scan_id, "nsp_abtree_scan");
 	for (i=0; i<2*g_file_blocks; i++) {
 		psnode = ab_tree_get_snode();
 		if (NULL != psnode) {

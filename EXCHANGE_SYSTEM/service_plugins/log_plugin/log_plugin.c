@@ -121,6 +121,7 @@ int log_plugin_run()
 		printf("[log_plugin]: fail to create thread\n");
 		return -3;
 	}
+	pthread_setname_np(g_thread_id, "log_plugin");
 	pthread_attr_destroy(&attr);
 	return 0;
 

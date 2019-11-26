@@ -50,6 +50,7 @@ int message_insulation_run()
 		g_notify_stop = TRUE;
 		return -2;
 	}
+	pthread_setname_np(g_thread_id, "msg_insulation");
 	pthread_attr_destroy(&attr);
 	return 0;
 }

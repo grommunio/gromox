@@ -169,6 +169,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[cdner_agent]: fail to create scan thread\n");
 			return FALSE;
 		}
+		pthread_setname_np(g_scan_id, "cdner_agent");
 
 		if (FALSE == register_service("cdn_uidl", list_cdn_mail) ||
 			FALSE == register_service("cdn_remove", delete_cdn_mail) ||

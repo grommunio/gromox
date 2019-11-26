@@ -141,6 +141,7 @@ int proxy_retrying_run()
 		g_notify_stop = TRUE;
 		return -4;
 	}
+	pthread_setname_np(g_thr_id, "multiretr/proxy");
 	return 0;
 }
 

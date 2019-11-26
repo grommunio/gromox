@@ -81,6 +81,7 @@ int ip_range_run()
 		g_notify_stop = TRUE;
 		return -1;
 	}
+	pthread_setname_np(g_thr_id, "iprange");
 	return 0;
 }
 

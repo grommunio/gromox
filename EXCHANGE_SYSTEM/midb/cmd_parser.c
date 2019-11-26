@@ -117,6 +117,9 @@ int cmd_parser_run()
 			printf("[cmd_parser]: fail to create pool thread\n");
 			goto FAILURE_EXIT;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "cmd_parser/%u", i);
+		pthread_setname_np(g_thread_ids[i], buf);
 	}
 
 	pthread_attr_destroy(&thr_attr);

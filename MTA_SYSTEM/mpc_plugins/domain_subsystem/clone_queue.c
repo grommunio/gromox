@@ -72,6 +72,7 @@ int clone_queue_run()
 		printf("[domain_subsystem]: fail to create timer thread\n");
 		return -3;
 	}
+	pthread_setname_np(g_thread_id, "clone_queue");
 	pthread_attr_destroy(&attr);
 	return 0;
 }

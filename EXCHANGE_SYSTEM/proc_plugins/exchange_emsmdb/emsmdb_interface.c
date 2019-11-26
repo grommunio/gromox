@@ -405,6 +405,7 @@ int emsmdb_interface_run()
 		printf("[exchange_emsmdb]: fail create scanning thread\n");
 		return -4;
 	}
+	pthread_setname_np(g_scan_id, "emsmdb/scan");
 	return 0;
 }
 

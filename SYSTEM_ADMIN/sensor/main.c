@@ -296,6 +296,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create pool thread\n");
 			return 8;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(thr_ids[i], buf);
 	}
 	
 	if ('\0' != g_list_path[0]) {
@@ -325,12 +328,12 @@ int main(int argc, const char **argv)
 		printf("[system]: fail to create accept thread\n");
 		return 10;
 	}
-	
+	pthread_setname_np(accept_id, "accept");
 	if (0 != pthread_create(&scan_id, NULL, scan_work_func, NULL)) {
 		printf("[system]: fail to create event stub pool thread\n");
 		return 11;
 	}
-	
+	pthread_setname_np(scan_id, "scan");
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
 	printf("[system]: SENSOR is now rinning\n");

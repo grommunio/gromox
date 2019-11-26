@@ -162,7 +162,11 @@ int main(int argc, const char **argv)
 		strcpy(pconsole->delivery_ip, pitem + 16 + sizeof(int));
 		pconsole->delivery_port = *(int*)(pitem + 32 + sizeof(int));
 		pitem += 32 + 2*sizeof(int);
-		pthread_create(&pconsole->tid, NULL, thread_work_func, pconsole);
+		if (pthread_create(&pconsole->tid, NULL, thread_work_func, pconsole) != 0) {
+			char buf[32];
+			snprintf(buf, sizeof(buf), "worker/%u", i);
+			pthread_setname_np(pconsole->tid, buf);
+		}
 		single_list_append_as_tail(&console_list, &pconsole->node);
 	}
 	*g_shm_begin = list_len;

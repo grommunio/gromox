@@ -116,6 +116,7 @@ int timer_queue_run()
 		printf("[remote_postman]: fail to create timer thread\n");
 		return -6;
 	}
+	pthread_setname_np(g_thread_id, "postman/timer");
 	pthread_attr_destroy(&attr);
 	return 0;
 }
@@ -409,6 +410,8 @@ static void* scan_work_func(void* arg)
 				double_list_append_as_tail(&g_scan_list, &pitem->node);
 				pthread_mutex_unlock(&g_scan_lock);
 
+			} else {
+				pthread_setname_np(pitem->thr_id, "postman/worker");
 			}
     	}
 		time(&scan_end);

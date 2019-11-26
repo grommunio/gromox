@@ -274,6 +274,7 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 	
+	pthread_setname_np(thr_id, "accept");	
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
 	printf("[system]: RSYNC is now rinning\n");
@@ -371,6 +372,7 @@ static void *accept_work_func(void *param)
 			free(pconnection);
 			continue;
 		}
+		pthread_setname_np(pconnection->thr_id, "client");
 		pthread_mutex_lock(&g_connection_lock);
 		double_list_append_as_tail(&g_connection_list, &pconnection->node);
 		pthread_mutex_unlock(&g_connection_lock);

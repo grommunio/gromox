@@ -40,6 +40,7 @@ BOOL FLH_LibMain(int reason, void** ppdata, char* path)
             printf("[sample flusher]: fail to create thread\n");
             return FALSE;
         }
+		pthread_setname_np(g_flushing_thread, "flusher");
         return TRUE;
     case PLUGIN_FREE:
         g_notify_stop = TRUE;

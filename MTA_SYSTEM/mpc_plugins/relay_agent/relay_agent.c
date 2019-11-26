@@ -184,7 +184,7 @@ int relay_agent_run()
 		g_notify_stop = TRUE;
 		return -1;
 	}
-	
+	pthread_setname_np(g_thr_id, "relay_agent");
 	return 0;
 }
 

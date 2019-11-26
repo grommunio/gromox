@@ -634,6 +634,7 @@ int exmdb_client_run()
 		g_notify_stop = TRUE;
 		return 5;
 	}
+	pthread_setname_np(g_scan_id, "mdbloc/scan");
 	return 0;
 }
 

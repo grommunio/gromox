@@ -283,6 +283,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create pool thread\n");
 			break;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(threads[i].thr_id, buf);
 	}
 
 	pthread_attr_destroy(&thr_attr);
@@ -367,6 +370,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	
+	pthread_setname_np(thr_id, "accept");
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
 	printf("[system]: LOCKER is now rinning\n");
@@ -648,6 +652,7 @@ static void unlock_resource(char *resource)
 				thread_work_func, pconnection->pthread)) {
 			sleep(1);
 		}
+		pthread_setname_np(pconnection->pthread->thr_id, "client");
 	}
 }
 

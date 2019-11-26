@@ -263,6 +263,9 @@ int main(int argc, const char **argv)
 			NULL, thread_work_func, ppartition)) {
 			free(ppartition);
 		} else {
+			char buf[32];
+			snprintf(buf, sizeof(buf), "part/%u", i);
+			pthread_setname_np(ppartition->thr_id, buf);
 			double_list_append_as_tail(&partition_list, &ppartition->node);
 		}
 	}

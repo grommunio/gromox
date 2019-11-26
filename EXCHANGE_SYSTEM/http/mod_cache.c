@@ -196,6 +196,7 @@ int mod_cache_run()
 		g_notify_stop = TRUE;
 		return -4;
 	}
+	pthread_setname_np(g_scan_tid, "mod_cache");
 	return 0;
 }
 

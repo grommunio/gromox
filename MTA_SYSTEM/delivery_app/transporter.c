@@ -345,6 +345,9 @@ int transporter_run()
             printf("[transporter]: fail to create transport thread [%d]\n", i);
 			return -10;
         }
+		char buf[32];
+		snprintf(buf, sizeof(buf), "xprt/%u", i);
+		pthread_setname_np(g_data_ptr[i].id, buf);
 		pthread_attr_destroy(&attr);
 		double_list_append_as_tail(&g_threads_list, &(g_data_ptr + i)->node);
     }
@@ -357,6 +360,7 @@ int transporter_run()
         printf("[transporter]: fail to create scanner thread\n");
 		return -11;
 	}
+	pthread_setname_np(g_scan_id, "xprt/scan");
     pthread_attr_destroy(&attr);
 	/* make all thread wake up */
 	pthread_cond_broadcast(&g_waken_cond);
@@ -714,6 +718,7 @@ static void* scan_work_func(void* arg)
 			pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
 			if (0 == pthread_create(&pthr_data->id, &attr, thread_work_func,
 				pthr_data)) {
+				pthread_setname_np(pthr_data->id, "xprt/+");
 				pthread_mutex_lock(&g_threads_list_mutex);
 				double_list_append_as_tail(&g_threads_list, &pthr_data->node);
 				pthread_mutex_unlock(&g_threads_list_mutex);

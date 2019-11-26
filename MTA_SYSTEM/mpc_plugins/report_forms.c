@@ -110,6 +110,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			printf("[report_forms]: fail to create thread\n");
 			return FALSE;
 		}
+		pthread_setname_np(g_thread_id, "report_forms");
 		pthread_attr_destroy(&attr);
         return TRUE;
     case PLUGIN_FREE:

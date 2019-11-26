@@ -284,6 +284,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create pool thread\n");
 			break;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(thr_ids[i], buf);
 	}
 
 	if (i != g_threads_num) {
@@ -371,6 +374,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	
+	pthread_setname_np(thr_id, "accept");
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
 	printf("[system]: SESSION is now rinning\n");

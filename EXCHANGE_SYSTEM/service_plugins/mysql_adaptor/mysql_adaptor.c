@@ -128,7 +128,7 @@ int mysql_adaptor_run()
 		printf("[mysql_adaptor]: fail to create scanning thread\n");
 		return -2;
 	}
-
+	pthread_setname_np(g_thread_id, "mysql_adaptor");
 	return 0;
 
 }

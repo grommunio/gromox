@@ -267,6 +267,7 @@ int message_dequeue_run()
 		message_dequeue_collect_resource();
 		return -9;
 	}
+	pthread_setname_np(g_thread_id, "msg_dequeue");
 	return 0;
 }
 

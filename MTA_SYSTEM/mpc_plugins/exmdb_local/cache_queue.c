@@ -76,6 +76,7 @@ int cache_queue_run()
 		printf("[exmdb_local]: fail to create timer thread\n");
 		return -3;
 	}
+	pthread_setname_np(g_thread_id, "cache_queue");
 	pthread_attr_destroy(&attr);
 	return 0;
 }

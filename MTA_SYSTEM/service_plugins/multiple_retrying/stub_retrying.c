@@ -126,6 +126,7 @@ int stub_retrying_run()
 		close(sockd);
 		return -5;
 	}
+	pthread_setname_np(g_thr_id, "multiretr/accept");
 	g_listen_sockd = sockd;
 	return 0;
 }
@@ -168,6 +169,7 @@ static void *accept_work_func(void *param)
 			free(pconnection);
 			continue;
 		}
+		pthread_setname_np(pconnection->tid, "multiretr/conn");
 	}
 	return NULL;
 }

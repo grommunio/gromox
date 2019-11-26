@@ -83,6 +83,7 @@ int listener_run(const char *CS_PATH)
 		printf("[listener]: fail to create accept thread\n");
 		return -5;
 	}
+	pthread_setname_np(g_listener_id, "accept");
 	return 0;
 }
 

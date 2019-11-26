@@ -173,10 +173,15 @@ int communicator_run()
 		return -5;
 	}
 
+	pthread_setname_np(g_listen_tid, "listen");
 	g_thr_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
 
 	for (i=0; i<g_threads_num; i++) {
-		pthread_create(&g_thr_ids[i], NULL, thread_work_func, NULL);
+		if (pthread_create(&g_thr_ids[i], NULL, thread_work_func, NULL) != 0)
+			continue;
+		char buf[32];
+		snprintf(buf, sizeof(buf), "comm/%u", i);
+		pthread_setname_np(g_thr_ids[i], buf);
 	}
 
 

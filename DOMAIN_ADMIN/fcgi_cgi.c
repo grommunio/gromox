@@ -256,6 +256,7 @@ int main(int argc, const char **argv)
 		close(listenfd);
 		return 8;
 	}
+	pthread_setname_np(accept_id, "accept");
 	pthr_ids = malloc(sizeof(pthread_t)*thread_num);
 	if (NULL == pthr_ids) {
 		pthread_cancel(accept_id);
@@ -267,6 +268,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create pool thread\n");
             break;
         }
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(pthr_ids[i], buf);
 	}
 	if (i != thread_num) {
         for (i-=1; i>=0; i--) {

@@ -300,6 +300,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[midb_agent]: fail to create scan thread\n");
 			return FALSE;
 		}
+		pthread_setname_np(g_scan_id, "midb_agent");
 
 		if (FALSE == register_service("list_mail", list_mail) ||
 			FALSE == register_service("delete_mail", delete_mail) ||

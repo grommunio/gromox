@@ -230,6 +230,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create pool thread\n");
 			break;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(thr_ids[i], buf);
 	}
 
 	if (i != g_conn_num) {
@@ -250,7 +253,7 @@ int main(int argc, const char **argv)
 		}
 		return 7;
 	}
-
+	pthread_setname_np(accept_id, "accept");
 	if (0 != pthread_create(&scan_id, NULL, scan_work_func, NULL)) {
 		printf("[system]: fail to create scan thread\n");
 		close(listenfd);
@@ -259,8 +262,7 @@ int main(int argc, const char **argv)
 		}
 		return 8;
 	}
-
-
+	pthread_setname_np(scan_id, "scan");
     g_notify_stop = 0;
     signal(SIGTERM, term_handler);
 

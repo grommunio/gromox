@@ -86,6 +86,7 @@ int threads_pool_run()
 		g_threads_data_buff = NULL;
 		return -2;
 	}
+	pthread_setname_np(g_scan_id, "ep_pool/scan");
 	pthread_attr_init(&attr);
 	created_thr_num = 0;
 	for (i=0; i<g_threads_pool_min_num; i++) {
@@ -98,6 +99,9 @@ int threads_pool_run()
 			thread_work_func, (void*)pdata)) {
 			printf("[threads_pool]: fail to create a pool thread\n");
 		} else {
+			char buf[32];
+			snprintf(buf, sizeof(buf), "ep_pool/%u", i);
+			pthread_setname_np(pdata->id, buf);
 			created_thr_num ++;
 			double_list_append_as_tail(&g_threads_data_list, &pdata->node);
 		}
@@ -307,6 +311,7 @@ static void* scan_work_func(void *pparam)
 						"to increase a pool thread\n");
 					lib_buffer_put(g_threads_data_buff, pdata);
 				} else {
+					pthread_setname_np(pdata->id, "ep_pool/+");
 					double_list_append_as_tail(
 						&g_threads_data_list, &pdata->node);
 					g_threads_pool_cur_thr_num ++;

@@ -488,6 +488,7 @@ int main(int argc, const char **argv)
 		printf("[system]: fail to create accept thread\n");
 		return 10;
 	}
+	pthread_setname_np(scan_thrid, "scan");
 	
 	if (0 != pthread_create(&accept_thrid, NULL, accept_work_func, (void*)(long)sockd)) {
 		g_notify_stop = TRUE;
@@ -527,6 +528,7 @@ int main(int argc, const char **argv)
 		printf("[system]: fail to create accept thread\n");
 		return 11;
 	}
+	pthread_setname_np(accept_thrid, "accept");
 	
 	for (i=0; i<thr_num; i++) {
 		psync = (SYNC_NODE*)malloc(sizeof(SYNC_NODE));
@@ -539,6 +541,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create sync thread\n");
 			continue;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(psync->thr_id, buf);
 		double_list_append_as_tail(&g_sync_list, &psync->node);
 	}
 	
@@ -657,6 +662,7 @@ static void *accept_work_func(void *param)
 			free(pconnection);
 			continue;
 		}
+		pthread_setname_np(pconnection->thr_id, "client");
 		pthread_mutex_lock(&g_connection_lock);
 		double_list_append_as_tail(&g_connection_list, &pconnection->node);
 		pthread_mutex_unlock(&g_connection_lock);

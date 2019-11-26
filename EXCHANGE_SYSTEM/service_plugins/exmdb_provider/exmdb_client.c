@@ -618,6 +618,9 @@ int exmdb_client_run()
 				g_notify_stop = TRUE;
 				return 8;
 			}
+			char buf[32];
+			snprintf(buf, sizeof(buf), "exmdbcl/%u", i);
+			pthread_setname_np(pagent->thr_id, buf);
 			double_list_append_as_tail(&g_agent_list, &pagent->node);
 		}
 	}
@@ -630,6 +633,7 @@ int exmdb_client_run()
 		g_notify_stop = TRUE;
 		return 9;
 	}
+	pthread_setname_np(g_scan_id, "exmdbcl/scan");
 	return 0;
 }
 

@@ -304,6 +304,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create enqueue pool thread\n");
 			break;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "enqueue/%u", i);
+		pthread_setname_np(en_ids[i], buf);
 	}
 
 	if (i != g_threads_num) {
@@ -340,6 +343,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create dequeue pool thread\n");
 			break;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "dequeue/%u", i);
+		pthread_setname_np(de_ids[i], buf);
 	}
 	
 	if (i != g_threads_num) {
@@ -460,6 +466,7 @@ int main(int argc, const char **argv)
 		return 11;
 	}
 	
+	pthread_setname_np(thr_id, "accept");
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
 	printf("[system]: EVENT is now rinning\n");

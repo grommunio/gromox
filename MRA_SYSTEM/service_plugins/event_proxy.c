@@ -142,6 +142,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[event_proxy]: fail to create scan thread\n");
 			return FALSE;
 		}
+		pthread_setname_np(g_scan_id, "event_proxy");
 
 		if (FALSE == register_service("broadcast_event", broadcast_event)) {
 			printf("[event_proxy]: fail to register broadcast_event\n");

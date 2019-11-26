@@ -125,6 +125,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			printf("[os_inspection]: fail to create thread\n");
 			return FALSE;
 		}
+		pthread_setname_np(g_thread_id, "osinspect");
         return TRUE;
     case PLUGIN_FREE:
 		if (FALSE == g_notify_stop) {

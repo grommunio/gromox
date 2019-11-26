@@ -238,6 +238,7 @@ int contexts_pool_run()
 		close(g_epoll_fd);
 		g_epoll_fd = -1;
 	}
+	pthread_setname_np(g_thread_id, "epollctx/work");
 	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
 		printf("[contexts_pool]: fail to create scan thread\n");
 		g_notify_stop = TRUE;
@@ -247,6 +248,7 @@ int contexts_pool_run()
 		free(g_events);
 		g_events = NULL;
 	}
+	pthread_setname_np(g_scan_id, "epollctx/scan");
 	return 0;    
 }
 

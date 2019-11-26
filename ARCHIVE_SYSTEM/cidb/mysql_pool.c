@@ -97,7 +97,7 @@ int mysql_pool_run()
 		printf("[mysql_pool]: fail to create scanning thread\n");
 		return -2;
 	}
-
+	pthread_setname_np(g_thread_id, "mysql_pool");
 	return 0;
 
 }

@@ -44,6 +44,7 @@ int processing_engine_run()
 			printf("[processing_engine]: fail to create fresh thread\n");
 			return -1;
 		}
+		pthread_setname_np(g_thread_id, "worker");
 	}
 	return 0;
 }

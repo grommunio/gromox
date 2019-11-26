@@ -165,6 +165,7 @@ int console_server_run()
 		close(sock);
 		return -5;
 	}
+	pthread_setname_np(g_listening_tid, "console/accept");
 	g_console_buff = pnodes;
     return 0;
 }
@@ -259,6 +260,7 @@ static void *thread_work_func(void *argp)
 			close(client_fd);
 			continue;
 		}
+		pthread_setname_np(pconsole->tid, "console/client");
 		double_list_append_as_tail(&g_console_list, pnode);
 		pthread_mutex_unlock(&g_list_lock);
     }

@@ -7129,6 +7129,7 @@ int mail_engine_run()
 		printf("[mail_engine]: fail to create scan thread\n");
 		return -5;
 	}
+	pthread_setname_np(g_scan_tid, "mail_engine");
 	cmd_parser_register_command("M-QUTA", mail_engine_mquta);
 	cmd_parser_register_command("M-SUMY", mail_engine_msumy);
 	cmd_parser_register_command("M-LIST", mail_engine_mlist);

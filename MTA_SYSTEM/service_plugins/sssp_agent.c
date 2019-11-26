@@ -131,7 +131,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[sssp_agent]: fail to create scan thread\n");
 			return FALSE;
 		}
-
+		pthread_setname_np(g_scan_id, "sssp_agent");
 		if (FALSE == register_service("check_virus", check_virus)) {
 			printf("[sssp_agent]: fail to register services\n");
 			return FALSE;

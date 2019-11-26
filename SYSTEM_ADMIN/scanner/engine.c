@@ -871,6 +871,9 @@ int engine_run()
 				NULL, scan_work_func, ppartition)) {
 				free(ppartition);
 			} else {
+				char buf[32];
+				snprintf(buf, sizeof(buf), "part/%u", i);
+				pthread_setname_np(ppartition->thr_id, buf);
 				double_list_append_as_tail(&g_partition_list, &ppartition->node);
 			}
 		} else {
@@ -883,6 +886,7 @@ int engine_run()
 		printf("[engine]: fail to create mysql backup thread\n");
 		return -2;
 	}
+	pthread_setname_np(g_backup_id, "backup");
 	g_created = TRUE;
 	return 0;
 

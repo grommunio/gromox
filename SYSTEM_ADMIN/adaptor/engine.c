@@ -54,6 +54,8 @@ int engine_run()
 		printf("[engine]: fail to create work thread\n");
 		return -1;
 	}
+	pthread_setname_np(g_thread_id1, "work/1");
+	pthread_setname_np(g_thread_id2, "work/2");
 	return 0;
 }
 

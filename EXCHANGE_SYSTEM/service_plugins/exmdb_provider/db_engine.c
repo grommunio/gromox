@@ -833,6 +833,7 @@ int db_engine_run()
 		printf("[exmdb_provider]: fail to create db scan thread\n");
 		return -4;
 	}
+	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
 	for (i=0; i<g_threads_num; i++) {
 		if (0 != pthread_create(g_thread_ids + i,
 			NULL, thread_work_func, NULL)) {
@@ -841,6 +842,9 @@ int db_engine_run()
 				"create populating thread\n");
 			return -5;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "exmdbeng/%u", i);
+		pthread_setname_np(g_thread_ids[i], buf);
 	}
 	return 0;
 }

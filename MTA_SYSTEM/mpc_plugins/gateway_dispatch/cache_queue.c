@@ -75,6 +75,7 @@ int cache_queue_run()
 		printf("[gateway_dispatch]: fail to create timer thread\n");
 		return -3;
 	}
+	pthread_setname_np(g_thread_id, "gwdispatch/cq");
 	pthread_attr_destroy(&attr);
 	return 0;
 }

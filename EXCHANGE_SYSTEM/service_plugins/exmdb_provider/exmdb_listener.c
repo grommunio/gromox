@@ -195,6 +195,7 @@ int exmdb_listener_trigger_accept()
 		printf("[exmdb_provider]: fail to create exmdb listener thread\n");
 		return -1;
 	}
+	pthread_setname_np(g_listener_id, "exmdb_listener");
 	return 0;
 }
 

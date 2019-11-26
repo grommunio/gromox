@@ -108,6 +108,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			printf("[self_monitor]: fail to create thread\n");
 			return FALSE;
 		}
+		pthread_setname_np(g_thread_id, "self_monitor");
 		pthread_attr_destroy(&attr);
         return TRUE;
     case PLUGIN_FREE:

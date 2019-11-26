@@ -160,6 +160,7 @@ int listerner_trigger_accept()
 		pthread_attr_destroy(&attr);
 		return -1;
 	}
+	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
 		if(0 != pthread_create(&g_ssl_thr_id,
 			&attr, thread_work_ssl_func, NULL)){
@@ -167,6 +168,7 @@ int listerner_trigger_accept()
 			pthread_attr_destroy(&attr);
 			return -2;
 		}
+		pthread_setname_np(g_ssl_thr_id, "tls_accept");
 	}
 	pthread_attr_destroy(&attr);
 	return 0;

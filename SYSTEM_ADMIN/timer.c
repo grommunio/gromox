@@ -307,6 +307,9 @@ int main(int argc, const char **argv)
 			printf("[system]: fail to create pool thread\n");
 			break;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(thr_ids[i], buf);
 	}
 
 	if (i != g_threads_num) {
@@ -391,6 +394,7 @@ int main(int argc, const char **argv)
 		return 10;
 	}
 	
+	pthread_setname_np(thr_accept_id, "accept");
 	time(&last_cltime);
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);

@@ -736,6 +736,7 @@ int zarafa_server_run()
 		int_hash_free(g_session_table);
 		return -4;
 	}
+	pthread_setname_np(g_scan_id, "zarafa");
 	exmdb_client_register_proc(zarafa_server_notification_proc);
 	return 0;
 }

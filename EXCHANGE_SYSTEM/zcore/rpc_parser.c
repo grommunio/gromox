@@ -787,6 +787,9 @@ int rpc_parser_run()
 			NULL, thread_work_func, NULL)) {
 			break;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "rpc/%u", i);
+		pthread_setname_np(g_thread_ids[i], buf);
 	}
 	if (i < g_thread_num) {
 		g_notify_stop = TRUE;

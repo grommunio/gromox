@@ -145,6 +145,7 @@ int relay_bridge_run()
 		close(sockd);
 		return -7;
 	}
+	pthread_setname_np(g_thr_id, "relay_bridge");
 	g_listen_sockd = sockd;
 	return 0;
 }
@@ -295,6 +296,7 @@ static void *accept_work_func(void *param)
 			free(pconnection);
 			continue;
 		}
+		pthread_setname_np(pconnection->tid, "relay_bridge_work");
 		pthread_attr_destroy(&attr);
 	}
 	return NULL;

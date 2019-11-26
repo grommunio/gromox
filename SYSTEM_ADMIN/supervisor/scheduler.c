@@ -169,6 +169,7 @@ int scheduler_run()
 				"service %s:%d\n", psmtp_unit->dest_ip, psmtp_unit->dest_port);
 			continue;
 		}
+		pthread_setname_np(psmtp_unit->tid, "smtpmon");
 	}
 	for (pnode=double_list_get_head(&g_pop3_list); pnode!=NULL;
 		pnode=double_list_get_after(&g_pop3_list, pnode)) {
@@ -179,6 +180,7 @@ int scheduler_run()
 				"service %s:%d\n", ppop3_unit->dest_ip, ppop3_unit->dest_port);
 			continue;
 		}
+		pthread_setname_np(ppop3_unit->tid, "pop3mon");
 	}
 	return 0;	
 }

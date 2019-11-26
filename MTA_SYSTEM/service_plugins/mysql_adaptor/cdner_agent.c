@@ -86,7 +86,7 @@ int cdner_agent_run()
 		g_notify_stop = TRUE;
 		return -1;
 	}
-
+	pthread_setname_np(g_scan_id, "sqladp/cdnagent");
 	return 0;
 }
 

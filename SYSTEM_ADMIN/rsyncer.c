@@ -1209,6 +1209,9 @@ int main(int argc, const char **argv)
 				pitem[i].slave);
 			continue;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(pthread->thr_id, buf);
 		double_list_append_as_tail(&g_thread_list, &pthread->node);
 	}
 
@@ -1222,6 +1225,7 @@ int main(int argc, const char **argv)
 			free(pthread);
 			printf("[system]: fail to create thread for %s\n", mysql_path);
 		} else {
+			pthread_setname_np(pthread->thr_id, "worker/+");
 			double_list_append_as_tail(&g_thread_list, &pthread->node);
 		}
 	}

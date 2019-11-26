@@ -99,6 +99,7 @@ int asyncemsmdb_interface_run()
 		g_notify_stop = TRUE;
 		return -5;
 	}
+	pthread_setname_np(g_scan_id, "asyncems/scan");
 	for (i=0; i<g_threads_num; i++) {
 		if (0 != pthread_create(g_thread_ids + i,
 			NULL, thread_work_func, NULL)) {
@@ -107,6 +108,9 @@ int asyncemsmdb_interface_run()
 					"wake up thread for asyncemsmdb\n");
 			return -6;
 		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "asyncems/%u", i);
+		pthread_setname_np(g_thread_ids[i], buf);
 	}
 	return 0;
 }

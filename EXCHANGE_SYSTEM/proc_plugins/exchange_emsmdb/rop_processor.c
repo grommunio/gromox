@@ -472,6 +472,7 @@ int rop_processor_run()
 			"scanning thread for logon hash table\n");
 		return -5;
 	}
+	pthread_setname_np(g_scan_id, "rop_scan");
 	return 0;
 }
 
