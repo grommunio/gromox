@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "as_common.h"
+#include <gromox/as_common.h>
 
 DECLARE_API;
 

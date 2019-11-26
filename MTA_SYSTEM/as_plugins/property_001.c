@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <arpa/inet.h>
 #include "util.h"
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "mail_func.h"
 #include "config_file.h"
 #include <ctype.h>

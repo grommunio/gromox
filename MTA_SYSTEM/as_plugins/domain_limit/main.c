@@ -1,4 +1,4 @@
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "config_file.h"
 #include "domain_limit.h"
 #include <stdio.h>

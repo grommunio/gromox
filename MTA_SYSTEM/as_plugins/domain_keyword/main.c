@@ -1,4 +1,4 @@
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "util.h"
 #include "mail_func.h"
 #include "config_file.h"

@@ -2,7 +2,7 @@
 #include <arpa/inet.h>
 #include "config_file.h"
 #include "mail_func.h"
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "util.h"
 #include <ctype.h>
 #include <stdio.h>

@@ -1,6 +1,6 @@
 #include "config_file.h"
 #include "mail_func.h"
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "mem_file.h"
 #include "util.h"
 #include <stdio.h>

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "config_file.h"
 #include "mail_func.h"
 

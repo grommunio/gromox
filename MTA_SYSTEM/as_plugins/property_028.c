@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
 #include <time.h>

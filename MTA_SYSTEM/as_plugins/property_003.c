@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include "config_file.h"
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "util.h"
 #include <ctype.h>
 #include <stdio.h>

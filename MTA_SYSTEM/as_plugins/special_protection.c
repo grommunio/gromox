@@ -7,8 +7,7 @@
  *  for these receivers, we also audit source IP, and if certain IP sends too
  *  many mails to these receivers, such IP will be blocked by system IP filter
  */
-
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>

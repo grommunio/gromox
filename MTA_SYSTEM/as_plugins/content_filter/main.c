@@ -3,7 +3,7 @@
 #include "uri_rbl.h"
 #include "mail_func.h"
 #include "uri_cache.h"
-#include "as_common.h"
+#include <gromox/as_common.h>
 #include "config_file.h"
 #include <string.h>
 #include <stdio.h>
