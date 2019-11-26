@@ -83,7 +83,7 @@ void start_analyzer()
 	int len, status;
 	char temp_str[32];
 	char temp_path[256];
-	const char *args[] = {"da_daemon", "-c", "../config/posidon.cfg", NULL};
+	const char *args[] = {"da_daemon", NULL};
 	struct stat node_stat;
 	
 	sprintf(temp_path, "%s/da_daemon", POSIDON_MAIN_DIR);
@@ -115,7 +115,7 @@ void start_synchronizer()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"synchronizer", "-c", "../config/posidon.cfg", NULL};
+	const char *args[] = {"synchronizer", NULL};
 
 	sprintf(temp_path, "%s/synchronizer", POSIDON_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -152,7 +152,7 @@ void start_fcgicgi()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"fcgi_cgi", "-c", "../config/posidon.cfg", NULL};
+	const char *args[] = {"fcgi_cgi", NULL};
 
 	sprintf(temp_path, "%s/fcgi_cgi", POSIDON_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {

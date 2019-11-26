@@ -89,7 +89,7 @@ void start_http()
 {
 	int fd, status;
 	struct stat node_stat;
-	const char *args[] = {"http", "-c", "../config/http.cfg", NULL};
+	const char *args[] = {"http", NULL};
 	
 	if (0 != stat(HTTP_LOG_FILE, &node_stat) 
 		|| node_stat.st_size > 128*1024*1024) {
@@ -128,7 +128,7 @@ void start_http()
 void start_midb()
 {
 	int status;
-	const char *args[] = {"midb", "-c", "../config/midb.cfg", NULL};
+	const char *args[] = {"midb", NULL};
 
 	g_midb_pid = fork();
 	if (g_midb_pid < 0) {
@@ -158,7 +158,7 @@ void start_midb()
 void start_zcore()
 {
 	int status;
-	const char *args[] = {"zcore", "-c", "../config/zcore.cfg", NULL};
+	const char *args[] = {"zcore", NULL};
 
 	g_zcore_pid = fork();
 	if (g_zcore_pid < 0) {

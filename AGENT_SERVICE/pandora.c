@@ -103,7 +103,7 @@ void start_amysql()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"amysql", "-c", "../config/pandora.cfg", NULL};
+	const char *args[] = {"amysql", NULL};
 
 	sprintf(temp_path, "%s/amysql", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -141,7 +141,7 @@ void start_asession()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"asession", "-c", "../config/pandora.cfg", NULL};
+	const char *args[] = {"asession", NULL};
 
 	sprintf(temp_path, "%s/asession", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -178,7 +178,7 @@ void start_alock()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"alock", "-c", "../config/pandora.cfg", NULL};
+	const char *args[] = {"alock", NULL};
 
 	sprintf(temp_path, "%s/alock", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -215,7 +215,7 @@ void start_asensor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"asensor", "-c", "../config/pandora.cfg", NULL};
+	const char *args[] = {"asensor", NULL};
 
 	sprintf(temp_path, "%s/asensor", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -252,7 +252,7 @@ void start_amidb()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"amidb", "-c", "../config/pandora.cfg", NULL};
+	const char *args[] = {"amidb", NULL};
 
 	sprintf(temp_path, "%s/amidb", PANDORA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {

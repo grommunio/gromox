@@ -82,7 +82,7 @@ void daemon_sigstop(int sig)
 void start_pop3()
 {
 	int status;
-	const char *args[] = {"pop3", "-c", "../config/pop3.cfg", NULL};
+	const char *args[] = {"pop3", NULL};
 
 	g_pop3_pid = fork();
 	if (g_pop3_pid < 0) {
@@ -113,7 +113,7 @@ void start_pop3()
 void start_imap()
 {
 	int status;
-	const char *args[] = {"imap", "-c", "../config/imap.cfg", NULL};
+	const char *args[] = {"imap", NULL};
 
 	g_imap_pid = fork();
 	if (g_imap_pid < 0) {

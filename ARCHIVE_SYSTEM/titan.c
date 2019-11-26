@@ -84,7 +84,7 @@ void start_cidb()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"cidb", "-c", "../config/titan.cfg", NULL};
+	const char *args[] = {"cidb", NULL};
 
 	sprintf(temp_path, "%s/cidb", TITAN_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {

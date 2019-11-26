@@ -114,7 +114,7 @@ void start_smtp()
 {
 	int fd, status;
 	struct stat node_stat;
-	const char *args[] = {"smtp", "-c", "../config/smtp.cfg", NULL};
+	const char *args[] = {"smtp", NULL};
 
 	if (0 != stat(SMTP_LOG_FILE, &node_stat) 
 		|| node_stat.st_size > 128*1024*1024) {
@@ -159,7 +159,7 @@ void start_delivery()
 	struct stat node_stat;
 	time_t start_points[3];
 	int fd, status, start_times;
-	const char *args[] = {"delivery", "-c", "../config/delivery.cfg", NULL};
+	const char *args[] = {"delivery", NULL};
 
 	if (0 != stat(DELIVERY_LOG_FILE, &node_stat)
 		|| node_stat.st_size > 128*1024*1024) {

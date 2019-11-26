@@ -141,7 +141,7 @@ void start_analyzer()
 	int len, status;
 	char temp_str[32];
 	char temp_path[256];
-	const char *args[] = {"sa_daemon", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"sa_daemon", NULL};
 	struct stat node_stat;
 	
 	sprintf(temp_path, "%s/sa_daemon", ATHENA_MAIN_DIR);
@@ -173,7 +173,7 @@ void start_monitor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"monitor", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"monitor", NULL};
 
 	sprintf(temp_path, "%s/monitor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -211,7 +211,7 @@ void start_supervisor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"supervisor", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"supervisor", NULL};
 
 	sprintf(temp_path, "%s/supervisor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -248,7 +248,7 @@ void start_adaptor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"adaptor", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"adaptor", NULL};
 
 	sprintf(temp_path, "%s/adaptor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -285,7 +285,7 @@ void start_scanner()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"scanner", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"scanner", NULL};
 
 	sprintf(temp_path, "%s/scanner", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -322,7 +322,7 @@ void start_locker()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"locker", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"locker", NULL};
 
 	sprintf(temp_path, "%s/locker", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -359,7 +359,7 @@ void start_event()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"event", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"event", NULL};
 
 	sprintf(temp_path, "%s/event", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -396,7 +396,7 @@ void start_sensor()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"sensor", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"sensor", NULL};
 
 	sprintf(temp_path, "%s/sensor", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -433,7 +433,7 @@ void start_rsync()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"rsync", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"rsync", NULL};
 
 	sprintf(temp_path, "%s/rsync", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -470,7 +470,7 @@ void start_cdnd()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"cdnd", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"cdnd", NULL};
 
 	sprintf(temp_path, "%s/cdnd", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -507,7 +507,7 @@ void start_timer()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"timer", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"timer", NULL};
 
 	sprintf(temp_path, "%s/timer", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -544,7 +544,7 @@ void start_pad()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"pad", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"pad", NULL};
 
 	sprintf(temp_path, "%s/pad", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
@@ -581,7 +581,7 @@ void start_session()
 	int status;
 	struct stat node_stat;
 	char temp_path[256];
-	const char *args[] = {"session", "-c", "../config/athena.cfg", NULL};
+	const char *args[] = {"session", NULL};
 
 	sprintf(temp_path, "%s/session", ATHENA_MAIN_DIR);
 	if (0 != stat(temp_path, &node_stat)) {
