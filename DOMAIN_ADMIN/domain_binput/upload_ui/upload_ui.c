@@ -8,7 +8,7 @@
 #include "exmdb_client.h"
 #include "lang_resource.h"
 #include "locker_client.h"
-#include <libxls/xls.h>
+#include <xls.h>
 #include <time.h>
 #include <iconv.h>
 #include <ctype.h>
