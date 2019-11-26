@@ -6565,7 +6565,7 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 		PROP_TAG_REPORTINGMESSAGETRANSFERAGENT);
 	if (NULL == pvalue) {
 		strcpy(tmp_buff, "dns; ");
-		gethostname(tmp_buff + 5, 1024);
+		gethostname(tmp_buff + 5, sizeof(tmp_buff) - 5);
 		if (FALSE == dsn_append_field(pdsn_fields,
 			"Reporting-MTA", tmp_buff)) {
 			dsn_free(&dsn);
