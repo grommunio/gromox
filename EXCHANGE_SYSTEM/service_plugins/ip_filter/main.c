@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "service_common.h"
+#include <gromox/exsvc_common.h>
 #include "ip_filter.h"
 #include "config_file.h"
 #include "util.h"

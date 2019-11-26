@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include "service_common.h"
+#include <gromox/exsvc_common.h>
 #include "str_hash.h"
 #include "list_file.h"
 #include "util.h"

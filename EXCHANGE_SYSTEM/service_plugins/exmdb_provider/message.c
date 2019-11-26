@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include "bounce_producer.h"
-#include "service_common.h"
+#include <gromox/exsvc_common.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "exmdb_client.h"

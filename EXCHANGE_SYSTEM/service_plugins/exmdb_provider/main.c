@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include "bounce_producer.h"
-#include "service_common.h"
+#include <gromox/exsvc_common.h>
 #include "exmdb_listener.h"
 #include "exmdb_client.h"
 #include "exmdb_server.h"

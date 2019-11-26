@@ -1,4 +1,4 @@
-#include "service_common.h"
+#include <gromox/exsvc_common.h>
 #include "mysql_adaptor.h"
 #include "util.h"
 #include "config_file.h"

@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
-#include "service_common.h"
+#include <gromox/exsvc_common.h>
 #include "log_plugin.h"
 #include "config_file.h"
 #include "util.h"
