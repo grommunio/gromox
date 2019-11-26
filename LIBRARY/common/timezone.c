@@ -169,7 +169,7 @@ static const char* getoffset(const char *strp, long *offsetp);
 static const char* getrule(const char *strp, struct rule *rulep);
 static void gmtload(struct state* const sp);
 static struct tm* gmtsub(const time_t *timep, long offset, struct tm *tmp);
-static struct tm* localsub(const struct state const *sp,
+static struct tm *localsub(const struct state *const sp,
 	const time_t *timep, long offset, struct tm *tmp);
 static int increment_overflow(int *number, int delta);
 static int leaps_thru_end_of(int y);
