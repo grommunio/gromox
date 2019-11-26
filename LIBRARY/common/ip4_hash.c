@@ -513,33 +513,6 @@ int ip4_hash_iter_remove(IP4_HASH_ITER *piter)
 	return 1;
 	
 }
-/*
-//////////////////////////////////////////////////////////////////
-// WAINING!!!!!
-// will not be used, nerver use it anyway!!!!!!!!!!!!!!!!!
-//////////////////////////////////////////////////////////////////
-int ip4_hash_iter_backward(IP4_HASH_ITER *piter)
-{
-	if (NULL == piter) {
-		debug_info("invalid param");
-		return -1;
-	}
-	
-	if (piter->ptable->item_num < 1) {
-		debug_info("the hash table is empty");
-		return -2;
-	}
-	if (piter->iter_curr_pos < 1) {
-		piter->cur_node = NULL;
-	} else {
-		piter->cur_node = piter->cur_node->pprev;
-		piter->iter_curr_pos	-= 1;
-	}
-	
-	return 1;
-}
-*/
-
 
 /*
  *	derived from hashpjw, Dragon Book P436
