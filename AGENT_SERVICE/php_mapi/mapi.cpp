@@ -293,33 +293,35 @@ static GUID IID_IExchangeImportContentsChanges = {0xf75abfa0,
 	0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
 static GUID IID_IExchangeImportHierarchyChanges = {0x85a66cf0,
 	0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
-	
+
+template<typename T> T *st_malloc() { return static_cast<T *>(emalloc(sizeof(T))); }
+template<typename T> T *sta_malloc(size_t elem) { return static_cast<T *>(emalloc(sizeof(T) * elem)); }
+template<typename T> T *sta_realloc(T *orig, size_t elem) { return static_cast<T *>(erealloc(orig, sizeof(T) * elem)); }
+template<typename T> T *st_calloc() { return static_cast<T *>(ecalloc(1, sizeof(T))); }
+
 static STREAM_OBJECT* stream_object_create()
 {
-	STREAM_OBJECT *pstream;
-	
-	pstream = emalloc(sizeof(STREAM_OBJECT));
+	auto pstream = st_calloc<STREAM_OBJECT>();
 	if (NULL == pstream) {
 		return NULL;
 	}
-	memset(pstream, 0, sizeof(STREAM_OBJECT));
 	return pstream;
 }
 
 static zend_bool stream_object_set_length(
 	STREAM_OBJECT *pstream, uint32_t length)
 {
-	void *pdata;
+	uint8_t *pdata;
 	
 	/* always leave trail null for string */
 	if (NULL == pstream->content_bin.pb) {
-		pstream->content_bin.pb = emalloc(length + 1);
+		pstream->content_bin.pb = sta_malloc<uint8_t>(length + 1);
 		if (NULL == pstream->content_bin.pb) {
 			return 0;
 		}
 		memset(pstream->content_bin.pb, 0, length + 1);
 	} else if (length > pstream->content_bin.cb) {
-		pdata = erealloc(pstream->content_bin.pb, length + 1);
+		pdata = sta_realloc<uint8_t>(pstream->content_bin.pb, length + 1);
 		if (NULL == pdata) {
 			return 0;
 		}
@@ -363,7 +365,7 @@ static uint32_t stream_object_write(STREAM_OBJECT *pstream,
 	void *pbuff, uint32_t buf_len)
 {	
 	if (NULL == pstream->content_bin.pb) {
-		pstream->content_bin.pb = emalloc(buf_len);
+		pstream->content_bin.pb = sta_malloc<uint8_t>(buf_len);
 		if (NULL == pstream->content_bin.pb) {
 			return 0;
 		}
@@ -491,13 +493,10 @@ static BINARY* stream_object_get_content(STREAM_OBJECT *pstream)
 
 static NOTIF_SINK* notif_sink_create()
 {
-	NOTIF_SINK *psink;
-	
-	psink = emalloc(sizeof(NOTIF_SINK));
+	auto psink = st_calloc<NOTIF_SINK>();
 	if (NULL == psink) {
 		return NULL;
 	}
-	memset(psink, 0, sizeof(NOTIF_SINK));
 	return psink;
 }
 
@@ -535,10 +534,9 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 	ADVISE_INFO *padvise;
 	
 	if (NULL == psink->padvise) {
-		padvise = emalloc(sizeof(ADVISE_INFO));
+		padvise = st_malloc<ADVISE_INFO>();
 	} else {
-		padvise = erealloc(psink->padvise,
-			sizeof(ADVISE_INFO)*(psink->count + 1));
+		padvise = sta_realloc<ADVISE_INFO>(psink->padvise, psink->count + 1);
 	}
 	if (NULL == padvise) {
 		return 0;
@@ -807,6 +805,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	static uint8_t oneoff_guid[] ={
 		0x81, 0x2B, 0x1F, 0xA4, 0xBE, 0xA3, 0x10, 0x19,
 		0x9D, 0x6E, 0x00, 0xDD, 0x01, 0x0F, 0x54, 0x02};
+	char empty[1]{};
 	
 	flags = 0;
 	name_len = 0;
@@ -818,7 +817,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 		goto THROW_EXCEPTION;
 	}
 	if (NULL == pdisplayname) {
-		pdisplayname = '\0';
+		pdisplayname = empty;
 	}
 	tmp_entry.flags = 0;
 	memcpy(tmp_entry.provider_uid, oneoff_guid, 16);
@@ -857,7 +856,7 @@ ZEND_FUNCTION(mapi_parseoneoff)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	ext_pack_pull_init(&pull_ctx, pentryid, cbentryid);
+	ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(pentryid), cbentryid);
 	if (!ext_pack_pull_oneoff_entryid(&pull_ctx, &oneoff_entry)) {
 		MAPI_G(hr) = EC_ERROR;
 		goto THROW_EXCEPTION;
@@ -908,7 +907,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -978,7 +977,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 		}
 		password = NULL;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1032,7 +1031,7 @@ ZEND_FUNCTION(mapi_openentry)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1079,7 +1078,7 @@ ZEND_FUNCTION(mapi_openaddressbook)
 		MAPI_G(hr) = EC_INVALID_OBJECT;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1131,7 +1130,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1275,7 +1274,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1322,7 +1321,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1377,7 +1376,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1438,7 +1437,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1499,7 +1498,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1546,7 +1545,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1718,6 +1717,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	MAPI_RESOURCE *presource;
+	char empty[1]{};
 	
 	flags = 0;
 	pcomment = NULL;
@@ -1731,7 +1731,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 		goto THROW_EXCEPTION;
 	}
 	if (NULL == pcomment || 0 == comment_len) {
-		pcomment = "";
+		pcomment = empty;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
@@ -1747,7 +1747,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -1967,7 +1967,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -2691,7 +2691,7 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -2814,7 +2814,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -2860,7 +2860,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -2908,7 +2908,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -3251,7 +3251,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 			stream_object_write(pstream,
 				((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb);
 		} else {
-			stream_object_write(pstream, pvalue, strlen(pvalue));
+			stream_object_write(pstream, pvalue, strlen(static_cast<const char *>(pvalue)));
 		}
 		stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 	}
@@ -3292,7 +3292,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -3377,7 +3377,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -3805,7 +3805,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = EC_INVALID_PARAMETER;
 			goto THROW_EXCEPTION;
 		}
-		ext_pack_pull_init(&pull_ctx, guidstr, sizeof(GUID));
+		ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(guidstr), sizeof(GUID));
 		ext_pack_pull_guid(&pull_ctx, &iid_guid);
 	}
 	zend_list_find(Z_RESVAL_P(pzresource), &type);
@@ -3884,7 +3884,7 @@ ZEND_FUNCTION(mapi_openproperty)
 						((BINARY*)pvalue)->cb);
 				} else {
 					stream_object_write(pstream,
-						pvalue, strlen(pvalue));
+						pvalue, strlen(static_cast<const char *>(pvalue)));
 				}
 				stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 			}
@@ -3902,7 +3902,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;
 		}
-		presource = emalloc(sizeof(MAPI_RESOURCE));
+		presource = st_malloc<MAPI_RESOURCE>();
 		if (NULL == presource) {
 			MAPI_G(hr) = EC_OUT_OF_MEMORY;
 			goto THROW_EXCEPTION;
@@ -3935,7 +3935,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = EC_NOT_SUPPORTED;
 			goto THROW_EXCEPTION;
 		}
-		pexporter = emalloc(sizeof(ICS_EXPORT_CTX));
+		pexporter = st_malloc<ICS_EXPORT_CTX>();
 		if (NULL == pexporter) {
 			MAPI_G(hr) = EC_OUT_OF_MEMORY;
 			goto THROW_EXCEPTION;
@@ -3970,7 +3970,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;	
 		}
-		pimporter = emalloc(sizeof(ICS_IMPORT_CTX));
+		pimporter = st_malloc<ICS_IMPORT_CTX>();
 		if (NULL == pimporter) {
 			MAPI_G(hr) = EC_OUT_OF_MEMORY;
 			goto THROW_EXCEPTION;
@@ -3999,7 +3999,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;	
 		}
-		pimporter = emalloc(sizeof(ICS_IMPORT_CTX));
+		pimporter = st_malloc<ICS_IMPORT_CTX>();
 		if (NULL == pimporter) {
 			MAPI_G(hr) = EC_OUT_OF_MEMORY;
 			goto THROW_EXCEPTION;
@@ -4183,7 +4183,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 		goto THROW_EXCEPTION;
 	}
 	propids.count = proptags.count;
-	propids.ppropid = emalloc(sizeof(uint16_t)*proptags.count);
+	propids.ppropid = sta_malloc<uint16_t>(proptags.count);
 	if (NULL == propids.ppropid) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -4270,7 +4270,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 		close(pipes_in[0]);
 		close(pipes_out[1]);
 		chdir(TOOLS_PATH);
-		args[0] = "./rtf2html";
+		args[0] = const_cast<char *>("./rtf2html");
 		args[1] = NULL;
 		execv("./rtf2html", args);
 		exit(-1);
@@ -4290,7 +4290,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	close(pipes_in[1]);
 	offset = 0;
 	bufflen = 64*1024;
-	pbuff = emalloc(bufflen);
+	pbuff = sta_malloc<char>(bufflen);
 	if (NULL == pbuff) {
 		close(pipes_out[0]);
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
@@ -4301,7 +4301,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 		offset += readlen;
 		if (offset == bufflen) {
 			bufflen *= 2;
-			pbuff = erealloc(pbuff, bufflen);
+			pbuff = sta_realloc<char>(pbuff, bufflen);
 			if (NULL == pbuff) {
 				close(pipes_out[0]);
 				MAPI_G(hr) = EC_OUT_OF_MEMORY;
@@ -4348,7 +4348,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -4643,7 +4643,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	}
 	zend_hash_internal_pointer_reset(ptarget_hash);
 	perm_set.count = zend_hash_num_elements(ptarget_hash);
-	perm_set.prows = emalloc(sizeof(PERMISSION_ROW)*perm_set.count);
+	perm_set.prows = sta_malloc<PERMISSION_ROW>(perm_set.count);
 	if (NULL == perm_set.prows) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -5327,7 +5327,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -5609,7 +5609,7 @@ ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	pctx = emalloc(sizeof(ICS_IMPORT_CTX));
+	pctx = st_malloc<ICS_IMPORT_CTX>();
 	if (NULL == pctx) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -5647,7 +5647,7 @@ ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	pctx = emalloc(sizeof(ICS_IMPORT_CTX));
+	pctx = st_malloc<ICS_IMPORT_CTX>();
 	if (NULL == pctx) {
 		MAPI_G(hr) = EC_OUT_OF_MEMORY;
 		goto THROW_EXCEPTION;
@@ -5749,7 +5749,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	eml_bin.pb = szstring;
+	eml_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	eml_bin.cb = cbstring;
 	result = zarafa_client_rfc822tomessage(
 		pmessage->hsession, pmessage->hobject,
@@ -5795,7 +5795,7 @@ ZEND_FUNCTION(mapi_icaltomapi)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	ical_bin.pb = szstring;
+	ical_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	ical_bin.cb = cbstring;
 	result = zarafa_client_icaltomessage(
 		pmessage->hsession, pmessage->hobject,
@@ -5878,7 +5878,7 @@ ZEND_FUNCTION(mapi_vcftomapi)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
-	vcf_bin.pb = szstring;
+	vcf_bin.pb = reinterpret_cast<uint8_t *>(szstring);
 	vcf_bin.cb = cbstring;
 	result = zarafa_client_vcftomessage(
 		pmessage->hsession, pmessage->hobject,
@@ -6033,7 +6033,7 @@ ZEND_FUNCTION(kc_session_restore)
 		RETVAL_LONG(EC_INVALID_PARAMETER);
 		return;
 	}
-	data_bin.pb = Z_STRVAL_P(pzdata);
+	data_bin.pb = reinterpret_cast<uint8_t *>(Z_STRVAL_P(pzdata));
 	data_bin.cb = Z_STRLEN_P(pzdata);
 	ext_pack_pull_init(&pull_ctx, data_bin.pb, data_bin.cb);
 	if (!ext_pack_pull_guid(&pull_ctx, &hsession)) {
@@ -6045,7 +6045,7 @@ ZEND_FUNCTION(kc_session_restore)
 		RETVAL_LONG(result);
 		return;
 	}
-	presource = emalloc(sizeof(MAPI_RESOURCE));
+	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
 		RETVAL_LONG(EC_OUT_OF_MEMORY);
 		return;
