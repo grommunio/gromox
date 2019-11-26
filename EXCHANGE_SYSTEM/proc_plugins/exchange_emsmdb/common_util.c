@@ -1255,9 +1255,8 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 	size_t tmp_len;
 	
 	if (TRUE == b_unicode) {
-		if (ptyped->type == PROPVAL_TYPE_WSTRING) {
+		if (ptyped->type != PROPVAL_TYPE_STRING)
 			return TRUE;
-		}
 		tmp_len = 2*strlen(ptyped->pvalue) + 1;
 		pvalue = common_util_alloc(tmp_len);
 		if (NULL == pvalue) {
@@ -1268,9 +1267,8 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 			return FALSE;	
 		}
 	} else {
-		if (ptyped->type == PROPVAL_TYPE_STRING) {
+		if (ptyped->type != PROPVAL_TYPE_WSTRING)
 			return TRUE;
-		}
 		tmp_len = 2*strlen(ptyped->pvalue) + 1;
 		pvalue = common_util_alloc(tmp_len);
 		if (NULL == pvalue) {
