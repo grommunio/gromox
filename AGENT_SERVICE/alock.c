@@ -145,8 +145,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "LOCKER_CONNECTION_NUM");
 	if (NULL == str_value) {
-		g_conn_num = 10;
-		config_file_set_value(pconfig, "LOCKER_CONNECTION_NUM", "10");
+		g_conn_num = 5;
+		config_file_set_value(pconfig, "LOCKER_CONNECTION_NUM", "5");
 	} else {
 		g_conn_num = atoi(str_value);
 		if (g_conn_num < 10 || g_conn_num > 100) {
