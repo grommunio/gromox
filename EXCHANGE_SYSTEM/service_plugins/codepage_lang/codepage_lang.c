@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "codepage_lang.h"
 #include "single_list.h"
 #include "util.h"
@@ -182,6 +183,7 @@ static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
 	
     fp = fopen(g_file_path, "r");
 	if (NULL == fp) {
+		printf("[codepage_lang]: failed to open %s: %s\n", g_file_path, strerror(errno));
        return FALSE;
     }
 	
