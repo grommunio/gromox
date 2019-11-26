@@ -539,19 +539,15 @@ static void backup_ui_restore_html(const char *file_name)
 	snprintf(dst_file, 256, "%s/%s", g_backup_path, file_name);
 	file_operation_decompress(dst_file, dst_dir);
 
-	
-AREA_LIST:
 	sprintf(src_file, "%s/data_files/area_list.txt", g_backup_path);
 	sprintf(dst_file, "%s/area_list.txt", g_data_path);
 	file_operation_copy_file(src_file, dst_file);
 
-ARCHIVER_LIST:
 	sprintf(src_file, "%s/data_files/cidb_list.txt", g_backup_path);
 	sprintf(dst_file, "%s/cidb_list.txt", g_data_path);
 	file_operation_copy_file(src_file, dst_file);
 	file_operation_broadcast(dst_file, "data/delivery/cidb_list.txt");
 	
-BOUNDARY_LIST:
 	sprintf(src_file, "%s/data_files/boundary_blacklist.txt", g_backup_path);
 	sprintf(dst_file, "%s/boundary_blacklist.txt", g_data_path);
 	sprintf(temp_file, "%s/data_files/temp.txt", g_backup_path);
@@ -973,13 +969,11 @@ KEYWORD_UPLOAD:
 	file_operation_copy_file(src_file, dst_file);
 	file_operation_broadcast(src_file, "data/smtp/keyword_filter/charset.txt");
 
-MESSAGE_SIGN:
 	sprintf(src_file, "%s/data_files/system_sign", g_backup_path);
 	sprintf(dst_file, "%s/system_sign", g_data_path);
 	file_operation_copy_dir(src_file, dst_file);
 	file_operation_broadcast_dir(src_file, "data/delivery/system_sign");
 	
-RCPT_BLACKLIST:
 	sprintf(src_file, "%s/data_files/rcpt_blacklist.txt", g_backup_path);
 	sprintf(dst_file, "%s/rcpt_blacklist.txt", g_data_path);
 	sprintf(temp_file, "%s/data_files/temp.txt", g_backup_path);
@@ -1119,12 +1113,10 @@ SUPERVISING_LIST:
 	sprintf(dst_file, "%s/supervising_list.txt", g_data_path);
 	file_operation_copy_file(src_file, dst_file);
 
-SYSTEM_USERS:
 	sprintf(src_file, "%s/data_files/system_users.txt", g_backup_path);
 	sprintf(dst_file, "%s/system_users.txt", g_data_path);
 	file_operation_copy_file(src_file, dst_file);
 
-TAGGING_WHITELIST:
 	sprintf(src_file, "%s/data_files/tagging_whitelist.txt", g_backup_path);
 	sprintf(dst_file, "%s/tagging_whitelist.txt", g_data_path);
 	sprintf(temp_file, "%s/data_files/temp.txt", g_backup_path);

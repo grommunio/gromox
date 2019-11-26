@@ -294,7 +294,6 @@ static int dnsrbl_check_query(const char * req, int type, char *answer_buff,
 	if (bl == 0) {
 		goto ret_notbl;
 	}
-ret_bl:
 	return 1;
 ret_err:
 	return -1;

@@ -258,7 +258,7 @@ static void* thread_work_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-SERVICE_AVAILABLE:
+
 		/* +OK <domain> Service ready */
 		pop3_reply_str = resource_get_pop3_code(POP3_CODE_2170011, 1,
 						 &string_length);
@@ -374,7 +374,7 @@ static void* thread_work_ssl_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-SERVICE_AVAILABLE:
+
 		/* construct the context object */
 		gettimeofday(&pcontext->connection.last_timestamp, NULL);
 		pcontext->connection.sockd          = sockd2;

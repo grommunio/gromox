@@ -292,7 +292,6 @@ MATCH_FILE:
 				}
 			}
 			
-APPEND_ITEM:
 			psearch = (SEARCH_NODE*)malloc(sizeof(SEARCH_NODE));
 			if (NULL == psearch) {
 				continue;

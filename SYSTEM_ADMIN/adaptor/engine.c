@@ -102,7 +102,6 @@ static void* thread_work_func1(void *param)
 			continue;
 		}
 		
-DOMAIN_LIST:		
 		pcollect = data_source_collect_init();
 	
 		if (NULL == pcollect) {
@@ -140,7 +139,6 @@ DOMAIN_LIST:
 				NOTIFY_SMTP|NOTIFY_DELIVERY);
 		}
 		
-ALIAS_LIST:
 		data_source_collect_clear(pcollect);
 
 		if (FALSE == data_source_get_alias_list(pcollect)) {
@@ -195,7 +193,6 @@ ALIAS_LIST:
 				NOTIFY_DELIVERY);
 		}
 		
-BACKUP_LIST:
 		data_source_collect_clear(pcollect);
 
 		if (FALSE == data_source_get_backup_list(pcollect)) {
@@ -228,7 +225,6 @@ BACKUP_LIST:
 				NOTIFY_DELIVERY);
 		}
 
-UNCHKUSR_LIST:
 		data_source_collect_clear(pcollect);
 
 		if (FALSE == data_source_get_uncheckusr_list(pcollect)) {
@@ -295,7 +291,6 @@ UNCHKUSR_LIST:
 				NOTIFY_DELIVERY);
 		}
 		
-SUBSYSTEM_LIST:
 		data_source_collect_clear(pcollect);
 
 		if (FALSE == data_source_get_subsystem_list(pcollect)) {
@@ -550,10 +545,6 @@ static void* thread_work_func2(void *param)
 			closedir(dirp1);
 		}
 		closedir(dirp);
-		
-		
-
-MONITOR_DOMAIN_LIST:
 		data_source_collect_clear(pcollect);
 		
 		if (FALSE == data_source_get_monitor_domains(pcollect)) {
@@ -652,8 +643,6 @@ MONITOR_DOMAIN_LIST:
 			closedir(dirp1);
 		}
 		closedir(dirp);	
-
-MONITOR_GROUP_LIST:
 		data_source_collect_clear(pcollect);
 		
 		if (FALSE == data_source_get_monitor_groups(pcollect)) {

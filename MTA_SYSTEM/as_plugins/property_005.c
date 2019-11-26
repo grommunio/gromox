@@ -123,13 +123,12 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 		return MESSAGE_ACCEPT;
 	}
 
-FIRST_CHECK:
 	ptr = strrchr(messageid, '@');
 	if (NULL != ptr && '0' == messageid[0] && '.' == messageid[1] &&
 		'0' == messageid[2] && '.' == messageid[3]) {
 		goto SPAM_FOUND;
 	}
-SECOND_CHECK:
+
 	/* Message-ID like 9175501272_5501272.5501272.yanfeng@suotex.com845v */
 	if ('\0' == xmailer[0]) {
 		out_len = mem_file_readline(&pmail->penvelop->f_rcpt_to, buff, 256);
@@ -141,8 +140,6 @@ SECOND_CHECK:
 			}
 		}
 	}
-THIRD_CHECK:
-
 	return MESSAGE_ACCEPT;
 
 SPAM_FOUND:

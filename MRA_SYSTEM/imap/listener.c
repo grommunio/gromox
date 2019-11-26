@@ -258,7 +258,7 @@ static void* thread_work_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-SERVICE_AVAILABLE:
+
 		/* IMAP_CODE_2170000: OK <domain> Service ready */
 		imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1,
 						 &string_length);
@@ -375,7 +375,7 @@ static void* thread_work_ssl_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-SERVICE_AVAILABLE:
+
 		/* construct the context object */
 		gettimeofday(&pcontext->connection.last_timestamp, NULL);
 		pcontext->connection.sockd          = sockd2;
