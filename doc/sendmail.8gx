@@ -1,0 +1,15 @@
+.TH sendmail 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBsendmail\fP [\fIoptions\fP...] \fIusername\fP \fImaildir\fP
+\fIfolder_name\fP \fImid_string\fP \fIipaddr\fP\fB:\fP\fIport\fP
+.SH Options
+.TP
+\fB\-\-version\fP
+Output version information and exit.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7)

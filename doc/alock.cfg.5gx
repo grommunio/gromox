@@ -1,0 +1,34 @@
+.TH alock.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBalock.cfg\fP \(em configuration file for the alock service
+.SH Directives
+.SS alock_listen
+.PP
+Path of the AF_LOCAL socket where alock will listen for connections.
+.PP
+Default: \fI/run/kopano/alock.sock\fP
+.SS locker_connection_num
+.PP
+The number of connections that will be made to the locker service. The value is
+clamped to the range 10..100. One additional connection is made on top of this.
+.PP
+Default: \fI10\fP
+.SS locker_interval
+.PP
+Timeout in seconds for conversing with the locker service. The value is clamped to the range 10..180.
+.PP
+Default: \fI60\fP
+.SS locker_listen_ip
+.PP
+The IPv4 address for contacting the \fBlocker\fP(8gx) service.
+.PP
+Default: \fI127.0.0.1\fP
+.SS locker_listen_port
+.PP
+The TCP port for contacting the locker service.
+.PP
+Default: \fI5555\fP
+.SH See also
+.PP
+\fBgromox\fP(7), \fBalock\fP(8gx)

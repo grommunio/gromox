@@ -1,0 +1,21 @@
+.TH pop3 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+pop3 \(em Gromox POP3 server
+.SH Synopsis
+.PP
+\fBpop3\fP [\fB\-c\fP \fIconfig\fP]
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/pop3.cfg will be read if it exists.
+.TP
+\fB\-\-version\fP
+Output version information and exit.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBpop3.cfg\fP(5gx)

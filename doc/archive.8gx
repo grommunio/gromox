@@ -1,0 +1,14 @@
+.TH archive 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBarchive\fP \fIsrc-dir\fP \fIdst-path\fP \fIcidb-host\fP:\fIport\fP
+.SH Options
+.TP
+\fB\-\-version\fP
+Output version information and exit.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBcidb\fP(8gx)

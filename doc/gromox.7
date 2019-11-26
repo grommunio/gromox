@@ -1,0 +1,232 @@
+.TH gromox 7 "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+gromox \(em overview of the Gromox groupware server
+.SH Agent subsystem
+.IP \(bu 4
+alock(8gx)
+.IP \(bu 4
+alock.cfg(5gx) \(em configuration file for the alock service
+.IP \(bu 4
+amidb(8gx)
+.IP \(bu 4
+amidb.cfg(5gx) \(em configuration file for the amidb service
+.IP \(bu 4
+amysql(8gx)
+.IP \(bu 4
+amysql.cfg(5gx) \(em configuration file for the amysql service
+.IP \(bu 4
+asensor(8gx)
+.IP \(bu 4
+asensor.cfg(5gx) \(em configuration file for the asensor service
+.IP \(bu 4
+asession(8gx)
+.IP \(bu 4
+asession.cfg(5gx) \(em configuration file for the asession service
+.IP \(bu 4
+digest(8gx)
+.IP \(bu 4
+gromox\-agent.target(8gx) \(em agent service group unit for systemd
+.IP \(bu 4
+rtf2html(1gx) \(em RTFCP to HTML converter
+.IP \(bu 4
+pandora(8gx) \(em agent services launcher
+.SH Archiving subsystem
+.IP \(bu 4
+archive(8gx)
+.IP \(bu 4
+cidb(8gx)
+.IP \(bu 4
+cidb.cfg(5gx) \(em configuration file for the cidb service
+.IP \(bu 4
+gromox\-archive.target(8gx) \(em systemd target replacing titan
+.IP \(bu 4
+migrator(8gx)
+.IP \(bu 4
+titan(8gx) \(em archive services launcher
+.SH Domain administration subsystem
+.IP \(bu 4
+da_daemon(8gx)
+.IP \(bu 4
+da_daemon.cfg(5gx) \(em configuration file for da_daemon
+.IP \(bu 4
+fcgi_cgi(8gx)
+.IP \(bu 4
+gromox\-da.target(8gx) \(em domain administration service group unit for
+systemd
+.IP \(bu 4
+posidon(8gx) \(em domain administration services launcher
+.IP \(bu 4
+posidon.cfg(5gx) \(em configuration file for fcgi_cgi
+.IP \(bu 4
+synchronizer(8gx)
+.SH Exchange subsystem
+.IP \(bu 4
+http(8gx)
+.IP \(bu 4
+http.cfg(5gx) \(em configuration file for the http service
+.IP \(bu 4
+medusa(8gx) \(em Exchange services launcher
+.IP \(bu 4
+midb(8gx)
+.IP \(bu 4
+midb.cfg(5gx) \(em configuration file for the midb service
+.IP \(bu 4
+zcore(8gx)
+.IP \(bu 4
+zcore.cfg(5gx) \(em configuration file for the zcore service
+.SH Mail retrieval agent subsystem
+.IP \(bu 4
+apollo(8gx) \(em MRA service launcher
+.IP \(bu 4
+gromox\-mra.target(8gx) \(em MRA service group unit for systemd
+.IP \(bu 4
+imap(8gx) \(em IMAP server
+.IP \(bu 4
+imap.cfg(5gx) \(em configuration file for the IMAP server
+.IP \(bu 4
+pop3(8gx) \(em POP3 server
+.IP \(bu 4
+pop3.cfg(5gx) \(em configuration file for the POP3 server
+.SH Mail transport agent subsystem
+.IP \(bu 4
+delivery(8gx)
+.IP \(bu 4
+delivery.cfg(5gx) \(em configuration file for the delivery service
+.IP \(bu 4
+gromox\-mta.target(8gx) \(em MTA service group unit for systemd
+.IP \(bu 4
+herculiz(8gx) \(em MTA service launcher
+.IP \(bu 4
+smtp(8gx) \(em SMTP server
+.IP \(bu 4
+smtp.cfg(5gx) \(em configuration file for the SMTP server
+.SH System administration subsystem
+.IP \(bu 4
+adaptor(8gx)
+.IP \(bu 4
+adaptor.cfg(5gx) \(em configuration file for the adaptor service
+.IP \(bu 4
+athena(8gx) \(em system administration services supervisor daemon
+.IP \(bu 4
+bl_delete(8gx)
+.IP \(bu 4
+cdnd(8gx)
+.IP \(bu 4
+cdnd.cfg(5gx) \(em configuration file for the cdnd service
+.IP \(bu 4
+event(8gx)
+.IP \(bu 4
+event.cfg(5gx) \(em configuration file for the event service
+.IP \(bu 4
+gromox\-sa.target(8gx) \(em system administration service group unit for
+systemd
+.IP \(bu 4
+locker(8gx)
+.IP \(bu 4
+locker.cfg(5gx) \(em configuration file for the locker service
+.IP \(bu 4
+mkmidb(8gx)
+.IP \(bu 4
+mkprivate(8gx)
+.IP \(bu 4
+mkpublic(8gx)
+.IP \(bu 4
+monitor(8gx)
+.IP \(bu 4
+monitor.cfg(5gx) \(em configuration file for the monitor service
+.IP \(bu 4
+pad(8gx)
+.IP \(bu 4
+pad.cfg(5gx) \(em configuration file for the pad service
+.IP \(bu 4
+rebuild(8gx)
+.IP \(bu 4
+rsyncd(8gx)
+.IP \(bu 4
+rsyncd.cfg(5gx) \(em configuration file for the rsyncd service
+.IP \(bu 4
+rsyncer(8gx)
+.IP \(bu 4
+rsyncer.cfg(5gx) \(em configuration file for the rsyncer service
+.IP \(bu 4
+sa_daemon(8gx)
+.IP \(bu 4
+sa_daemon.cfg(5gx) \(em configuration file for the sa_daemon service
+.IP \(bu 4
+scanner(8gx)
+.IP \(bu 4
+scanner.cfg(5gx) \(em configuration file for the scanner service
+.IP \(bu 4
+sendmail(8gx)
+.IP \(bu 4
+sensor(8gx)
+.IP \(bu 4
+sensor.cfg(5gx) \(em configuration file for the sensor service
+.IP \(bu 4
+session(8gx)
+.IP \(bu 4
+session.cfg(5gx) \(em configuration file for the session service
+.IP \(bu 4
+supervisor(8gx)
+.IP \(bu 4
+supervisor.cfg(5gx) \(em configuration file for the supervisor service
+.IP \(bu 4
+timer(8gx)
+.IP \(bu 4
+timer.cfg(5gx) \(em configuration file for the timer service
+.SH Default sockets
+.IP \(bu 4
+/run/gromox/alock.sock \(em alock(8gx)
+.IP \(bu 4
+/run/gromox/amidb.sock \(em amidb(8gx)
+.IP \(bu 4
+/run/gromox/amysql.sock \(em amysql(8gx)
+.IP \(bu 4
+/run/gromox/asensor.sock \(em asensor(8gx)
+.IP \(bu 4
+/run/gromox/asession.sock \(em asession(8gx)
+.IP \(bu 4
+*:25 \(em smtp(8gx) SMTP service
+.IP \(bu 4
+*:80 \(em http(8gx) HTTP service
+.IP \(bu 4
+*:110 \(em pop3(8gx) POP3 service
+.IP \(bu 4
+*:143 \(em imap(8gx) IMAP service
+.IP \(bu 4
+*:443 \(em http(8gx) HTTP over implicit TLS
+.IP \(bu 4
+*:993 \(em imap(8gx) IMAP over implicit TLS
+.IP \(bu 4
+*:995 \(em pop3(8gx) POP3 over implicit TLS
+.IP \(bu 4
+127.0.0.1:3344 \(em zcore(8gx) management console
+.IP \(bu 4
+127.0.0.1:4455 \(em imap(8gx) management console
+.IP \(bu 4
+127.0.0.1:5000 \(em http(8gx) exmdb service
+.IP \(bu 4
+127.0.0.1:5555 \(em midb(8gx) service
+.IP \(bu 4
+127.0.0.1:5566 \(em smtp(8gx) management console
+.IP \(bu 4
+127.0.0.1:6666 \(em timer(8gx) service
+.IP \(bu 4
+127.0.0.1:7777 \(em locker(8gx) service
+.IP \(bu 4
+127.0.0.1:7788 \(em pop3(8gx) management console
+.IP \(bu 4
+127.0.0.1:8899 \(em http(8gx) management console
+.IP \(bu 4
+127.0.0.1:9900 \(em midb(8gx) management console
+.IP \(bu 4
+127.0.0.1:9999 \(em session(8gx) service
+.IP \(bu 4
+127.0.0.1:10000 \(em cdnd(8gx) service
+.IP \(bu 4
+127.0.0.1:11111 \(em sensor(8gx) service
+.IP \(bu 4
+127.0.0.1:22222 \(em pad(8gx) service
+.IP \(bu 4
+127.0.0.1:33333 \(em event(8gx) service

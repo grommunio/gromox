@@ -1,0 +1,16 @@
+.TH gromox\-agent.target 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+gromox\-agent.target \(em agent service group unit for systemd
+.SH Synopsis
+.PP
+\fBsystemctl\fP {\fBstart\fP|\fBstop\fP|\fBrestart\fP}
+\fBgromox\-agent.target\fP
+.SH Description
+.PP
+gromox\-agent.target is a unit for starting/stopping units as a group.
+It replaces the functionality previously provided by pandora(8gx).
+.SH See also
+.PP
+\fBgromox\fP(7), \fBalock\fP(8gx), \fBamidb\fP(8gx), \fBamysql\fP(8gx),
+\fBasensor\fP(8gx), \fBasession\fP(8gx)

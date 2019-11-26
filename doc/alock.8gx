@@ -1,0 +1,22 @@
+.TH alock 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBalock\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+The alock service exposes its frontend thorugh the /var/pandora/token/alock
+AF_LOCAL socket. On the backend, it connects to the locker service.
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/alock.cfg will be read if it exists.
+.TP
+\fB\-\-version\fP
+Output version information and exit.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBalock.cfg\fP(5gx), \fBlocker\fP(8)

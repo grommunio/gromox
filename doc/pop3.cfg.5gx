@@ -1,0 +1,122 @@
+.TH pop3.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBpop3.cfg\fP \(em configuration file for the POP3 server
+.SH Directives
+.SS block_interval_auths
+.PP
+Default: \fI1 minute\fP
+.SS cdn_cache_path
+.PP
+Default: \fI/var/lib/gromox/cdn\fP
+.SS config_file_path
+.PP
+Path specifying the directory which contains configuration overrides for
+instances of service plugins run by pop3.
+.PP
+Default: \fI/etc/gromox/pop3\fP
+.SS console_server_ip
+.PP
+The IPv4 address to expose the management console frontend on.
+.PP
+Default: \fI127.0.0.1\fP
+.SS console_server_port
+.PP
+The TCP port to expose the management console frontend on.
+.PP
+Default: \fI7788\fP
+.SS context_average_mem
+.PP
+Default: \fI256K\fP
+.SS context_average_units
+.PP
+Lower clamp is 256.
+.PP
+Default: \fI1024\fP
+.SS context_max_mem
+.PP
+Default: \fI2M\fP
+.SS context_num
+.PP
+Default: \fI200\fP
+.SS data_file_path
+.PP
+Path contianing data files for service plugins.
+.PP
+Default: \fI/usr/share/gromox\fP
+.SS default_domain
+.PP
+Default: (empty)
+.SS host_id
+.PP
+Default: (hostname)
+.SS listen_port
+.PP
+The TCP port to expose the POP3 protocol service on. (The IP address is fixed
+to the wildcard address.)
+.PP
+Default: \fI110\fP
+.SS listen_ssl_port
+.PP
+The TCP port to expose implicit-TLS POP3 protocol service (POP3S) on. (The IP
+address is fixed to the wildcard address.)
+.PP
+Default: (empty)
+.SS pop3_auth_times
+.PP
+Default: \fI3\fP
+.SS pop3_certificate_passwd
+.PP
+Default: (empty)
+.SS pop3_certificate_path
+.PP
+Default: (empty)
+.SS pop3_conn_timeout
+.PP
+Default: \fI3minutes\fP
+.SS pop3_force_stls
+.PP
+Default: \fIfalse\fP
+.SS pop3_private_key_path
+.PP
+Default: (empty)
+.SS pop3_return_code_path
+.PP
+Location of the pop3_code.txt file.
+.PP
+Default: (empty)
+.SS pop3_support_stls
+.PP
+Default: \fIfalse\fP
+.SS running_identity
+.PP
+An unprivileged user account to switch the process to after startup.
+.PP
+Default: (retain identity)
+.SS service_plugin_ignore_errors
+.PP
+If set to yes, service plugins that fail to load on startup are ignored. If set
+to no, the daemon will exist if any plugin cannot be loaded.
+.PP
+Default: \fIno\fP
+.SS service_plugin_list
+.PP
+Path to a text file which lists the filenames of service plugins to load,
+one per line.
+.PP
+Default: (empty; use built-in plugin list)
+.SS service_plugin_path
+.PP
+Path to a secondary directory where service plugins will be loaded from if a
+primary search in standard directories (as per ld.so(8)) was unsuccessful.
+.PP
+Default: \fI/usr/lib/gromox\fP
+.SS thread_charge_num
+.PP
+Default: \fI40\fP
+.SS thread_init_num
+.PP
+Default: \fI1\fP
+.SH See also
+.PP
+\fBgromox\fP(7), \fBpop3\fP(8gx)

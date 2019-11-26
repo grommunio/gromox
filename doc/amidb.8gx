@@ -1,0 +1,23 @@
+.TH amidb 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBamidb\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+The amidb service exposes its frontend thorugh the /var/pandora/token/amidb
+AF_LOCAL socket. On the backend, amidb connects to midb services as laid out in
+the \fIDATA_FILE_PATH\fP/data/midb_list.txt file.
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/amidb.cfg will be read if it exists.
+.TP
+\fB\-\-version\fP
+Output version information and exit.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBamidb.cfg\fP(5gx), \fBmidb\fP(8gx)

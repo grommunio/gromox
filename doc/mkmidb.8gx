@@ -1,0 +1,14 @@
+.TH mkmidb 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBmkmidb\fP \fIusername\fP
+.SH Options
+.TP
+\fB\-\-version\fP
+Output version information and exit.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7)

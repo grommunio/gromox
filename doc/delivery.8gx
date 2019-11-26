@@ -1,0 +1,29 @@
+.TH delivery 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBdelivery\fP [\fB\-c\fP \fIconfig\fP]
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/delivery.cfg will be read if it exists.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH Plugins
+.PP
+The delivery daemon can be extended by a number of plugins. In Gromox, their
+filenames begin with libmtahook_. There are three classes:
+.IP \(bu 4
+local transports: libmtahook_exmdb_local.so, libmtahook_gateway_dispatch.so
+.IP \(bu 4
+remote transports: libmtahook_remote_postman.so
+.IP \(bu 4
+hooks: other libmtahook_* plugins
+.PP
+Exactly one local transport plugin and one remote transport plugin needs to be
+loaded for proper operation. By default, this is exmdb_local and
+remote_postman.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBdelivery.cfg\fP(5gx)

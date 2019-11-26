@@ -1,0 +1,23 @@
+.TH asession 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBasession\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+The asession service exposes its frontend thorugh the
+/var/pandora/token/asession AF_LOCAL socket. On the backend, it connects to the
+session service.
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/asession.cfg will be read if it exists.
+.TP
+\fB\-\-version\fP
+Output version information and exit.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBasession.cfg\fP(5gx), \fBsession\fP(8gx)

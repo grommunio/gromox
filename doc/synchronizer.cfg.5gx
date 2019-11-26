@@ -1,0 +1,8 @@
+.TH synchronizer.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBsynchronizer.cfg\fP \(em configuration file for the synchronizer service
+.SH Directives
+.SH See also
+.PP
+\fBgromox\fP(7), \fBsynchronizer\fP(8gx)

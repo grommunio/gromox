@@ -1,0 +1,15 @@
+.TH gromox\-exch.target 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+gromox\-exch.target \(em Exchange service group unit for systemd
+.SH Synopsis
+.PP
+\fBsystemctl\fP {\fBstart\fP|\fBstop\fP|\fBrestart\fP}
+\fBgromox\-exch.target\fP
+.SH Description
+.PP
+gromox\-exch.target is a unit for starting/stopping units as a group.
+It replaces the functionality previously provided by medusa(8gx).
+.SH See also
+.PP
+\fBgromox\fP(7), \fBhttp\fP(8gx), \fBmidb\fP(8gx), \fBzcore\fP(8gx)

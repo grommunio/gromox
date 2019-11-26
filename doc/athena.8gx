@@ -1,0 +1,22 @@
+.TH athena 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+athena \(em system administration services supervisor daemon
+.SH Synopsis
+.PP
+\fBathena\fP [\fB\-p\fP \fIpath\fP]
+{\fBstart\fP|\fBstop\fP|\fBrestart\fP|\fBstatus\fP}
+.SH Description
+.PP
+athena starts and stops a number of services. It is of historic value only and
+has been replaced by gromox\-sa.target.
+.SH Options
+.PP
+\fB\-p\fP \fIpath\fP
+Specifies the path to Gromox binaries.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBgromox\-sa.target\fP(8gx)

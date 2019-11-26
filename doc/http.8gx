@@ -1,0 +1,15 @@
+.TH http 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBhttp\fP [\fB\-c\fP \fIconfig\fP]
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/http.cfg will be read if it exists.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBhttp.cfg\fP(5gx)

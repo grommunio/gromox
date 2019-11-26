@@ -1,0 +1,16 @@
+.TH gromox\-da.target 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+gromox\-da.target \(em domain administration service group unit for systemd
+.SH Synopsis
+.PP
+\fBsystemctl\fP {\fBstart\fP|\fBstop\fP|\fBrestart\fP}
+\fBgromox\-da.target\fP
+.SH Description
+.PP
+gromox\-da.target is a unit for starting/stopping units as a group.
+It replaces the functionality previously provided by posidon(8gx).
+.SH See also
+.PP
+\fBgromox\fP(7), \fBda_daemon\fP(8gx), \fBfcgi_cgi\fP(8gx),
+\fBsynchronizer\fP(8gx)

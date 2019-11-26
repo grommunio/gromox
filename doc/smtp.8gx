@@ -1,0 +1,18 @@
+.TH smtp 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+smtp \(em Gromox SMTP server
+.SH Synopsis
+.PP
+\fBsmtp\fP [\fB\-c\fP \fIconfig\fP]
+.SH Options
+.TP
+\fB\-c\fP \fIconfig\fP
+Read configuration directives from the given file. If this option is not
+specified, /etc/gromox/smtp.cfg will be read if it exists.
+.TP
+\fB\-?\fP
+Display option summary.
+.TP
+.SH See also
+.PP
+\fBgromox\fP(7), \fBsmtp.cfg\fP(5gx)

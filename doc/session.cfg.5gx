@@ -1,0 +1,8 @@
+.TH session.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBsession.cfg\fP \(em configuration file for the session service
+.SH Directives
+.SH See also
+.PP
+\fBgromox\fP(7), \fBsession\fP(8gx)

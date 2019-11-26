@@ -1,0 +1,22 @@
+.TH titan 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+titan \(em archive services launcher
+.SH Synopsis
+.PP
+\fBtitan\fP [\fB\-p\fP \fIpath\fP]
+{\fBstart\fP|\fBstop\fP|\fBrestart\fP|\fBstatus\fP}
+.SH Description
+.PP
+titan starts and stops archive services. It is of historic value only and
+is replaced by gromox\-archive.target.
+.SH Options
+.PP
+\fB\-p\fP \fIpath\fP
+Specifies the path to Gromox binaries.
+.TP
+\fB\-?\fP
+Display option summary.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBcidb\fP(8gx), \fBgromox\-archive.target\fP(8gx)

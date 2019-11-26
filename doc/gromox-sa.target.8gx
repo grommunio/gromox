@@ -1,0 +1,18 @@
+.TH gromox\-sa.target 8gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+gromox\-sa.target \(em system administration service group unit for systemd
+.SH Synopsis
+.PP
+\fBsystemctl\fP {\fBstart\fP|\fBstop\fP|\fBrestart\fP}
+\fBgromox\-sa.target\fP
+.SH Description
+.PP
+gromox\-sa.target is a unit for starting/stopping units as a group.
+It replaces the functionality previously provided by athena(8gx).
+.SH See also
+.PP
+\fBgromox\fP(7), \fBadaptor\fP(8gx), \fBcdnd\fP(8gx), \fBevent\fP(8gx),
+\fBlocker\fP(8gx), \fBmonitor\fP(8gx), \fBpad\fP(8gx), \fBrsyncd\fP(8gx),
+\fBrsyncer\fP(8gx) \fBsa_daemon\fP(8gx), \fBscanner\fP(8gx), \fBsensor\fP(8gx),
+\fBsession\fP(8gx), \fBsupervisor\fP(8gx), \fBtimer\fP(8gx)

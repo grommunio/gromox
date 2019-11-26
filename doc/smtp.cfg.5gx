@@ -1,0 +1,152 @@
+.TH smtp.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBsmtp.cfg\fP \(em configuration file for the SMTP server
+.SH Directives
+.SS anti_spamming_ignore_errors
+.PP
+If set to yes, AS plugins that fail to load on startup are ignored. If set to
+no, the daemon will exist if any plugin cannot be loaded.
+.PP
+Default: \fIno\fP
+.SS anti_spamming_init_path
+.PP
+Path to a secondary directory where service plugins will be loaded from if a
+primary search in standard directories (as per ld.so(8)) was unsuccessful.
+.PP
+Default: \fI/usr/lib/gromox\fP
+.SS anti_spamming_plugin_list
+.PP
+Path to a text file which lists the filenames of service plugins to load,
+one per line.
+.PP
+Default: (empty; use built-in plugin list)
+.SS block_interval_auths
+.PP
+Default: \fI1 minute\fP
+.SS block_interval_sessions
+.PP
+Default: \fI1minute\fP
+.SS config_file_path
+.PP
+Path specifying the directory which contains configuration overrides for
+instances of service plugins run by smtp.
+.PP
+Default: \fI/etc/gromox/smtp\fP
+.SS console_server_ip
+.PP
+The IPv4 address to expose the management console frontend on.
+.PP
+Default: \fI127.0.0.1\fP
+.SS console_server_port
+.PP
+The TCP port to expose the management console frontend on.
+.PP
+Default: \fI5566\fP
+.SS context_average_mem
+.PP
+Default: \fI256K\fP
+.SS context_max_mem
+.PP
+Default: \fI2M\fP
+.SS context_num
+.PP
+Default: \fI200\fP
+.SS data_file_path
+.PP
+Default: \fI/usr/share/gromox/smtp\fP
+.SS default_domain
+.PP
+Default: (empty)
+.SS domain_list_valid
+.PP
+Default: \fItrue\fP
+.SS flusher_plugin_path
+.PP
+Filename of a flusher plugin to load and use. (Only one can be in use at any
+time.)
+.PP
+Default: \fIlibmtaflh_message_enqueue.so\fP
+.SS host_id
+.PP
+Default: (hostname of the system)
+.SS listen_port
+.PP
+The TCP port to export the SMTP protocol service on.
+.PP
+Default: \fI25\fP
+.SS listen_ssl_port
+.PP
+The TCP port to expose the implicit-TLS SMTP protocol service on.
+.PP
+Default: (empty)
+.SS mail_max_length
+.PP
+Default: \fI64M\fP
+.SS running_identity
+.PP
+An unprivileged user account to switch the process to after startup.
+.PP
+Default: (retain identity)
+.SS service_plugin_ignore_errors
+.PP
+If set to yes, service plugins that fail to load on startup are ignored. If set
+to no, the daemon will exist if any plugin cannot be loaded.
+.PP
+Default: \fIno\fP
+.SS service_plugin_list
+.PP
+Path to a text file which lists the filenames of service plugins to load,
+one per line.
+.PP
+Default: (empty; use built-in plugin list)
+.SS service_plugin_path
+.PP
+Path to a secondary directory where service plugins will be loaded from if a
+primary search in standard directories (as per ld.so(8)) was unsuccessful.
+.PP
+Default: \fI/usr/lib/gromox\fP
+.SS smtp_auth_times
+.PP
+Default: \fI3\fP
+.SS smtp_certificate_passwd
+.PP
+Default: (empty)
+.SS smtp_certificate_path
+.PP
+Default: (empty)
+.SS smtp_conn_timeout
+.PP
+Default: \fI3minutes\fP
+.SS smtp_force_starttls
+.PP
+Default: \fIfalse\fP
+.SS smtp_max_mail_num
+.PP
+Default: \fI10\fP
+.SS smtp_need_auth
+.PP
+Default: \fIfalse\fP
+.SS smtp_private_key_path
+.PP
+Default: (empty)
+.SS smtp_running_mode
+.PP
+Possible values: \fI0\fP (outbound), \fI1\fP (inbound), \fI2\fP (mixed)
+.PP
+Default: \fI2\fP
+.SS smtp_support_pipeline
+.PP
+Default: \fIfalse\fP
+.SS smtp_support_starttls
+.PP
+Default: \fIfalse\fP
+.SS thread_charge_num
+.PP
+Default: \fI40\fP
+.SS thread_init_num
+.PP
+Default: \fI1\fP
+.SH See also
+.PP
+\fBgromox\fP(7), \fBsmtp\fP(8gx)

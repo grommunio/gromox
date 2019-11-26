@@ -1,0 +1,30 @@
+.TH asession.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBasession.cfg\fP \(em configuration file for the asession service
+.SH Directives
+.SS asession_listen
+.PP
+Path of the AF_LOCAL socket where alock will listen for connections.
+.PP
+Default: \fI/run/kopano/asession.sock\fP
+.SS session_connection_num
+.PP
+The number of connections that will be made to the session service. The value
+is clamped to the range 10..100. One additional connection is made on top of
+this.
+.PP
+Default: \fI10\fP
+.SS session_listen_ip
+.PP
+The IPv4 address for contacting the \fBsession\fP(8gx) service.
+.PP
+Default: \fI127.0.0.1\fP
+.SS session_listen_port
+.PP
+The TCP port for contacting the session service.
+.PP
+Default: \fI9999\fP
+.SH See also
+.PP
+\fBgromox\fP(7), \fBasession\fP(8gx), \fBsession\fP(8gx)

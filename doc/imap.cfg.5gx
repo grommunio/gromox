@@ -1,0 +1,130 @@
+.TH imap.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBimap.cfg\fP \(em configuration file for the IMAP server
+.SH Directives
+.SS block_interval_auths
+.PP
+Default: \fI1 minute\fP
+.SS config_file_path
+.PP
+Path specifying the directory which contains configuration overrides for
+instances of service plugins run by imap.
+.PP
+Default: \fI/etc/gromox/imap\fP
+.SS console_server_ip
+.PP
+The IPv4 address to expose the management console frontend on.
+.PP
+Default: \fI127.0.0.1\fP
+.SS console_server_port
+.PP
+The TCP port to expose the management console frontend on.
+.PP
+Default: \fI4455\fP
+.SS context_average_mem
+.PP
+Default: \fI128K\fP
+.SS context_average_mitem
+.PP
+Lower clamp is at 128.
+.PP
+Default: \fI512\fP
+.SS context_max_mem
+.PP
+Default: \fI2M\fP
+.SS context_num
+.PP
+Default: \fI200\fP
+.SS data_file_path
+.PP
+Path containing data files for service plugins.
+.PP
+Default: \fI/usr/share/gromox/imap\fP
+.SS default_domain
+.PP
+Default: (empty)
+.SS default_lang
+.PP
+Default: \fIen\fP
+.SS host_id
+.PP
+Default: (hostname)
+.SS imap_auth_times
+.PP
+Default: \fI10\fP
+.SS imap_autologout_time
+.PP
+Default: \fI30minutes\fP
+.SS imap_certificate_passwd
+.PP
+Default: (empty)
+.SS imap_certificate_path
+.PP
+Default: (empty)
+.SS imap_conn_timeout
+.PP
+Default: \fI3minutes\fP
+.SS imap_force_starttls
+.PP
+Default: \fIfalse\fP
+.SS imap_lang_path
+.PP
+Path to the imap_lang.txt file.
+.PP
+Default: (empty)
+.SS imap_private_key_path
+.PP
+Default: (empty)
+.SS imap_return_code_path
+.PP
+Path to the imap_code.txt file.
+.PP
+Default: (empty)
+.SS imap_support_starttls
+.PP
+Default: \fIfalse\fP
+.SS listen_port
+.PP
+The TCP port to expose the IMAP protocol service on. (The IP address is fixed
+to the wildcard address.)
+.PP
+Default: \fI143\fP
+.SS listen_ssl_port
+.PP
+The TCP port to expose implicit-TLS IMAP protocol service (IMAPS) on. (The IP
+address is fixed to the wildcard address.)
+.PP
+Default: (empty)
+.SS running_identity
+.PP
+An unprivileged user account to switch the process to after startup.
+.PP
+Default: (retain identity)
+.SS service_plugin_ignore_errors
+.PP
+If set to yes, service plugins that fail to load on startup are ignored. If set
+to no, the daemon will exist if any plugin cannot be loaded.
+.PP
+Default: \fIno\fP
+.SS service_plugin_list
+.PP
+Path to a text file which lists the filenames of service plugins to load,
+one per line.
+.PP
+Default: (empty; use built-in plugin list)
+.SS service_plugin_path
+.PP
+Path to a secondary directory where service plugins will be loaded from if a
+primary search in standard directories (as per ld.so(8)) was unsuccessful.
+.PP
+Default: \fI/usr/lib/gromox\fP
+.SS thread_charge_num
+.PP
+Default: \fI40\fP
+.SS thread_init_num
+.PP
+Default: \fI1\fP
+.SH See also
+.PP
+\fBgromox\fP(7), \fBimap\fP(8gx)
