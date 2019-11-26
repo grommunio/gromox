@@ -249,8 +249,10 @@ BOOL config_file_set_value(CONFIG_FILE *cfg_file, const char *key,
 	}
 	for (i=0; i<cfg_file->num_entries; i++) {
 		if (0 == strcasecmp(key, cfg_file->config_table[i].keyname)) {
-			strcpy(cfg_file->config_table[i].value, value);
-			cfg_file->config_table[i].is_touched = TRUE;
+			if (cfg_file->config_table[i].value != value) {
+				strcpy(cfg_file->config_table[i].value, value);
+				cfg_file->config_table[i].is_touched = TRUE;
+			}
 			return TRUE;
 		}
 	}
