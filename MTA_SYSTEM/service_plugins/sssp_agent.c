@@ -1,3 +1,4 @@
+/* plugin for the Sophs Simple Scanning Protocol (run by savdid(8)) */
 #include <stdbool.h>
 #include <libHX/string.h>
 #include <gromox/mtasvc_common.h>
@@ -103,7 +104,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		} else {
 			strcpy(g_sssp_ip, str_value);
 		}
-		printf("[sssp_agent]: sssp server listen ipaddr is %s\n", g_sssp_ip);
+		printf("[sssp_agent]: sssp server connect ipaddr is %s\n", g_sssp_ip);
 
 		str_value = config_file_get_value(pconfig, "SSSP_LISTEN_PORT");
 		if (NULL == str_value) {
@@ -114,7 +115,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				g_sssp_port = 4010;
 			}
 		}
-		printf("[sssp_agent]: sssp server listen port is %d\n", g_sssp_port);
+		printf("[sssp_agent]: sssp server connect port is %d\n", g_sssp_port);
 		config_file_free(pconfig);
 
 		for (i=0; i<g_conn_num; i++) {
