@@ -47,7 +47,7 @@ static void move_file(char *src_file, char *dst_file, int size)
 	remove(src_file);
 }
 
-static do_migration(const char *src_path, const char *dst_path)
+static void do_migration(const char *src_path, const char *dst_path)
 {
 	int i, j;
 	DIR *dirp;

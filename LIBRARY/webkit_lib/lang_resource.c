@@ -100,7 +100,7 @@ LANG_RESOURCE* lang_resource_init(const char *path)
 	return presource;
 }
 
-static lang_resource_enum(const char *key, char **ppvalue)
+static void lang_resource_enum(const char *key, char **ppvalue)
 {
 	free(*ppvalue);
 }

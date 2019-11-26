@@ -20,7 +20,7 @@ static time_t password_cleaner_type_until(time_t cur_time, int type);
 static void password_cleaner_verify_user(int default_type, time_t cur_time,
 	const char *username, const char *maildir, const char *password);
 
-static password_cleaner_get_userlang(const char *maildir, char *lang);
+static void password_cleaner_get_userlang(const char *maildir, char *lang);
 
 static void password_cleaner_send_mail(char *msg_buff, int length,
 	const char *maildir);
@@ -334,7 +334,7 @@ static int password_cleaner_daysofmonth(int year, int month)
 	}
 }
 
-static password_cleaner_get_userlang(const char *maildir, char *lang)
+static void password_cleaner_get_userlang(const char *maildir, char *lang)
 {
 	int fd;
 	size_t tmp_len;

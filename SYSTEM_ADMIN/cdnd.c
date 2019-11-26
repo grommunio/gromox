@@ -134,7 +134,7 @@ static pthread_mutex_t g_connection_lock;
 
 static MYSQL_CONN* get_mysql_connection();
 
-static put_mysql_connection(MYSQL_CONN *pmyconn);
+static void put_mysql_connection(MYSQL_CONN *pmyconn);
 
 static MIDB_CONN *get_midb_connection(const char *prefix);
 
@@ -1442,7 +1442,7 @@ static MYSQL_CONN* get_mysql_connection()
 	return (MYSQL_CONN*)pnode->pdata;
 }
 
-static put_mysql_connection(MYSQL_CONN *pmyconn)
+static void put_mysql_connection(MYSQL_CONN *pmyconn)
 {
 	if (NULL != pmyconn->pmysql) {
 		pthread_mutex_lock(&g_mysql_lock);

@@ -516,7 +516,7 @@ static int classify_engine_adele(int argc, char **argv, int sockd)
 	return 0;
 }
 
-static classify_engine_dinfo(int argc, char **argv, int sockd)
+static BOOL classify_engine_dinfo(int argc, char **argv, int sockd)
 {
 	int length;
 	char buff[1024];

@@ -245,7 +245,7 @@ BOOL store_object_check_private(STORE_OBJECT *pstore)
 	return pstore->b_private;
 }
 
-store_object_check_owner_mode(STORE_OBJECT *pstore)
+BOOL store_object_check_owner_mode(STORE_OBJECT *pstore)
 {
 	USER_INFO *pinfo;
 	

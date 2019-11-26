@@ -1542,7 +1542,7 @@ int ext_buffer_pull_tarray_set(EXT_PULL *pext, TARRAY_SET *r)
 	return EXT_ERR_SUCCESS;
 }
 
-static ext_buffer_pull_property_problem(EXT_PULL *pext, PROPERTY_PROBLEM *r)
+static int ext_buffer_pull_property_problem(EXT_PULL *pext, PROPERTY_PROBLEM *r)
 {
 	int status;
 	
@@ -4635,7 +4635,7 @@ int ext_buffer_push_tarray_set(EXT_PUSH *pext, const TARRAY_SET *r)
 }
 
 
-static ext_buffer_push_property_problem(EXT_PUSH *pext, const PROPERTY_PROBLEM *r)
+static int ext_buffer_push_property_problem(EXT_PUSH *pext, const PROPERTY_PROBLEM *r)
 {
 	int status;
 	
