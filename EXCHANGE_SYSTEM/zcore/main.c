@@ -232,7 +232,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
 	if (NULL == str_value) {
-		strcpy(separator, " ");
+		strcpy(separator, ";");
 	} else {
 		strcpy(separator, str_value);
 	}
@@ -376,7 +376,7 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "ZARAFA_THREADS_NUM");
 	if (NULL == str_value) {
 		threads_num = 50;
-		config_file_set_value(pconfig, "ZARAFA_THREADS_NUM", "50");
+		config_file_set_value(pconfig, "ZARAFA_THREADS_NUM", "100");
 	} else {
 		threads_num = atoi(str_value);
 		if (threads_num < 20) {
@@ -395,7 +395,7 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "USER_TABLE_SIZE");
 	if (NULL == str_value) {
 		table_size = 3000;
-		config_file_set_value(pconfig, "USER_TABLE_SIZE", "3000");
+		config_file_set_value(pconfig, "USER_TABLE_SIZE", "5000");
 	} else {
 		table_size = atoi(str_value);
 		if (table_size < 100) {
@@ -448,13 +448,13 @@ int main(int argc, const char **argv)
 	printf("[system]: console server ipaddr is %s\n", console_ip);
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {
-		console_port = 9900;
-		config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "9900");
+		console_port = 3344;
+		config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "3344");
 	} else {
 		console_port = atoi(str_value);
 		if (console_port <= 0) {
-			console_port = 9900;
-			config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "9900");
+			console_port = 3344;
+			config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "3344");
 		}
 	}
 	printf("[system]: console server port is %d\n", console_port);

@@ -159,13 +159,11 @@ int main(int argc, const char **argv)
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_IP");
-	if (NULL == str_value) {
-		listen_ip[0] = '\0';
-		printf("[system]: listen ipaddr is ANY\n");
-	} else {
+	if (str_value == nullptr)
+		HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
+	else
 		strncpy(listen_ip, str_value, 16);
-		printf("[system]: listen ipaddr is %s\n", listen_ip);
-	}
+	printf("[system]: listen ipaddr is %s\n", listen_ip);
 
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_PORT");
 	if (NULL == str_value) {
@@ -182,8 +180,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "MIDB_THREADS_NUM");
 	if (NULL == str_value) {
-		threads_num = 50;
-		config_file_set_value(pconfig, "MIDB_THREADS_NUM", "50");
+		threads_num = 100;
+		config_file_set_value(pconfig, "MIDB_THREADS_NUM", "100");
 	} else {
 		threads_num = atoi(str_value);
 		if (threads_num < 20) {
@@ -198,8 +196,8 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "MIDB_TABLE_SIZE");
 	if (NULL == str_value) {
-		table_size = 3000;
-		config_file_set_value(pconfig, "MIDB_TABLE_SIZE", "3000");
+		table_size = 5000;
+		config_file_set_value(pconfig, "MIDB_TABLE_SIZE", "5000");
 	} else {
 		table_size = atoi(str_value);
 		if (table_size < 100) {
@@ -214,8 +212,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "MIDB_CACHE_INTERVAL");
 	if (NULL == str_value) {
-		cache_interval = 600;
-		config_file_set_value(pconfig, "MIDB_CACHE_INTERVAL", "10minutes");
+		cache_interval = 60 * 30;
+		config_file_set_value(pconfig, "MIDB_CACHE_INTERVAL", "30minutes");
 	} else {
 		cache_interval = atoitvl(str_value);
 		if (cache_interval < 60 || cache_interval > 1800) {

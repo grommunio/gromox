@@ -179,13 +179,13 @@ int main(int argc, const char **argv)
 		printf("[system]: running identity of process will be %s\n", user_name);
 
 	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
-		context_num = 200;
+		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
 	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		thread_charge_num = 40; 
+		thread_charge_num = 20;
 		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
 		if (thread_charge_num < 4) {
@@ -200,7 +200,7 @@ int main(int argc, const char **argv)
 		thread_charge_num);
 	
 	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
-		thread_init_num = 1; 
+		thread_init_num = 5;
 		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	if (thread_init_num * thread_charge_num > context_num) {
@@ -245,7 +245,7 @@ int main(int argc, const char **argv)
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
 	if (!resource_get_integer("HTTP_AUTH_TIMES", &http_auth_times)) {
-		http_auth_times = 3; 
+		http_auth_times = 10;
 		resource_set_integer("HTTP_AUTH_TIMES", http_auth_times);
 	} else {
 		if (http_auth_times <= 0) {
@@ -310,8 +310,8 @@ int main(int argc, const char **argv)
 	
 	str_val = resource_get_string("REQUEST_MAX_MEM");
 	if (str_val == NULL) {
-		max_request_mem = 64*1024*1024;
-		resource_set_string("REQUEST_MAX_MEM", "64M");
+		max_request_mem = 4 << 20;
+		resource_set_string("REQUEST_MAX_MEM", "4M");
 	} else {
 		max_request_mem = atobyte(str_val);
 		if (max_request_mem < 1024*1024) {
@@ -366,8 +366,8 @@ int main(int argc, const char **argv)
 	
 	str_val = resource_get_string("HPM_CACHE_SIZE");
 	if (str_val == NULL) {
-		hpm_cache_size = 256*1024;
-		resource_set_string("HPM_CACHE_SIZE", "256K");
+		hpm_cache_size = 512 << 10;
+		resource_set_string("HPM_CACHE_SIZE", "512K");
 	} else {
 		hpm_cache_size = atobyte(str_val);
 		if (hpm_cache_size < 64*1024) {
@@ -380,8 +380,8 @@ int main(int argc, const char **argv)
 	
 	str_val = resource_get_string("HPM_MAX_SIZE");
 	if (str_val == NULL) {
-		hpm_max_size = 1024*1024;
-		resource_set_string("HPM_MAX_SIZE", "1M");
+		hpm_max_size = 4 << 20;
+		resource_set_string("HPM_MAX_SIZE", "4M");
 	} else {
 		hpm_max_size = atobyte(str_val);
 		if (hpm_max_size < 64*1024) {
@@ -455,8 +455,8 @@ int main(int argc, const char **argv)
 	
 	str_val = resource_get_string("FASTCGI_MAX_SIZE");
 	if (str_val == NULL) {
-		fastcgi_max_size = 1024*1024;
-		resource_set_string("FASTCGI_MAX_SIZE", "1M");
+		fastcgi_max_size = 4 << 20;
+		resource_set_string("FASTCGI_MAX_SIZE", "4M");
 	} else {
 		fastcgi_max_size = atobyte(str_val);
 		if (fastcgi_max_size < 64*1024) {
