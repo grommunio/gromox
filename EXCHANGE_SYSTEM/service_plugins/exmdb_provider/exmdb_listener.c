@@ -53,6 +53,8 @@ static void *thread_work_func(void *param)
 		NULL == common_util_send_mail ||
 		NULL == common_util_get_mime_pool ||
 		NULL == common_util_log_info) {
+		if (g_notify_stop)
+			break;
 		sleep(1);	
 	}
 	while (FALSE == g_notify_stop) {
