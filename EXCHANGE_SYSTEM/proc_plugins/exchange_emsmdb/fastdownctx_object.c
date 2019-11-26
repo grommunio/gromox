@@ -406,7 +406,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			}
 			break;
 		case FUNC_ID_MESSAGE:
-			pinfo = pinfo = emsmdb_interface_get_emsmdb_info();
+			pinfo = emsmdb_interface_get_emsmdb_info();
 			if (TRUE == logon_object_check_private(
 				pctx->pstream->plogon)) {
 				if (FALSE == exmdb_client_read_message(
