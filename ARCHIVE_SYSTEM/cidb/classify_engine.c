@@ -4,12 +4,10 @@
 #include "cmd_parser.h"
 #include "classify_engine.h"
 #include "mysql_pool.h"
-#include "mail_func.h"
 #include "mem_file.h"
 #include "double_list.h"
 #include "sphinxclient.h"
 #include "mjson.h"
-#include "util.h"
 #include <iconv.h>
 #include <stdint.h>
 #include <stdlib.h>

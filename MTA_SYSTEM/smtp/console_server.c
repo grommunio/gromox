@@ -17,7 +17,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 #define TIMEOUT				300	   
 #define MAXLINE				65536  /* max line size */

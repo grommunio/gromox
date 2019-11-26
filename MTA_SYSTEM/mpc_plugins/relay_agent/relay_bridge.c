@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <sys/types.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>

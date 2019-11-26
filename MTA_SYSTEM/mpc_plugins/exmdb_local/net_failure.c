@@ -2,7 +2,6 @@
 #include "hook_common.h"
 #include <stdio.h>
 #include <time.h>
-#include <time.h>
 #include <pthread.h>
 
 

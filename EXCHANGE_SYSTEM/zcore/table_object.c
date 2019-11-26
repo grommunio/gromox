@@ -5,7 +5,6 @@
 #include "table_object.h"
 #include "sortorder_set.h"
 #include "folder_object.h"
-#include "sortorder_set.h"
 #include "proptag_array.h"
 #include "zarafa_server.h"
 #include "message_object.h"

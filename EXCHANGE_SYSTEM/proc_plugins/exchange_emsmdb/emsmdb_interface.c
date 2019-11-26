@@ -7,7 +7,6 @@
 #include "rop_util.h"
 #include "int_hash.h"
 #include "str_hash.h"
-#include "str_hash.h"
 #include "aux_ext.h"
 #include "util.h"
 #include "guid.h"

@@ -11,8 +11,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
-
 
 int main(int argc, char **argv)
 {

@@ -1,6 +1,5 @@
 #include "file_operation.h"
 #include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>

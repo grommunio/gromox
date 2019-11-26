@@ -2,7 +2,6 @@
 #include "scheduler.h"
 #include "list_file.h"
 #include "double_list.h"
-#include "list_file.h"
 #include "message.h"
 #include "smtp.h"
 #include "pop3.h"

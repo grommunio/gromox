@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <stdio.h>
 
 #define INVALID_BUFFER_SIZE		4096
 

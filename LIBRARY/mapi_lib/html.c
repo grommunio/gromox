@@ -6,7 +6,6 @@
 #include "double_list.h"
 #include <stdio.h>
 #include <gumbo.h>
-#include <stdio.h>
 #include <iconv.h>
 #include <stdlib.h> 
 #include <string.h>

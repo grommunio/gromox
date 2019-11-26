@@ -1,6 +1,5 @@
 #include "file_operation.h"
 #include <sys/wait.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -8,7 +7,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <dirent.h>
 #include <stdio.h>
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH

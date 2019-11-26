@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <unistd.h>
 
 /* the only global variable in system to indicate the program to exit */
 BOOL g_notify_stop = FALSE;
