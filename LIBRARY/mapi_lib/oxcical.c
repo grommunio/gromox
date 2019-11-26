@@ -5661,7 +5661,7 @@ EXPORT_VEVENT:
 		if (NULL != pvalue) {
 			pvalue = tpropval_array_get_propval(&pmsg->proplist,
 						PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
-			if (NULL != pvalue)
+			if (pvalue != NULL) {
 				if (0 == strcasecmp(pvalue, "SMTP")) {
 					pvalue = tpropval_array_get_propval(&pmsg->proplist,
 								PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
@@ -5674,6 +5674,7 @@ EXPORT_VEVENT:
 						} else {
 							pvalue = tmp_buff;
 						}
+					}
 				} else {
 					pvalue = NULL;
 				}
