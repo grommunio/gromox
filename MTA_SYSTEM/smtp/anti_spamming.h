@@ -1,6 +1,9 @@
 #ifndef _H_ANTI_SPAMMING_
 #define _H_ANTI_SPAMMING_
 
+#ifndef __cplusplus
+#	include <stdbool.h>
+#endif
 #include "common_types.h"
 #include "smtp_parser.h"
 #include "plugin.h"
@@ -46,7 +49,7 @@ typedef int (*AUDITOR_FUNCTION)(int, MAIL_ENTITY*, CONNECTION*, char*, int);
 typedef int (*FILTER_FUNCTION)(int, int, MAIL_BLOCK*, char*, int);
 typedef int (*STATISTIC_FUNCTION)(int, MAIL_WHOLE*, CONNECTION*, char*, int);
 
-extern void anti_spamming_init(const char *path, const char *const *names);
+extern void anti_spamming_init(const char *path, const char *const *names, bool ignerr);
 extern int anti_spamming_run(void);
 int anti_spamming_unload_library(const char* path);
 

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdbool.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -267,6 +268,9 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
+	str_value = resource_get_string("MPC_PLUGIN_IGNORE_ERRORS");
+	bool mpcplug_ignerr = parse_bool(str_value);
+	resource_set_string("MPC_PLUGIN_IGNORE_ERRORS", mpcplug_ignerr ? "true" : "false");
  
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {
@@ -283,6 +287,9 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
+	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
+	bool svcplug_ignerr = parse_bool(str_value);
+	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
 
 	str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
@@ -330,7 +337,8 @@ int main(int argc, const char **argv)
     }
 
 	service_init(threads_max + free_contexts, service_plugin_path,
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
     if (0 != service_run()) { 
@@ -395,7 +403,7 @@ int main(int argc, const char **argv)
 
     transporter_init(mpc_plugin_path, mpc_plugin_list != NULL ?
 		mpc_plugin_list : g_dfl_mpc_plugins, threads_min, threads_max,
-		free_contexts, mime_ratio, domainlist_valid); 
+		free_contexts, mime_ratio, domainlist_valid, mpcplug_ignerr);
 
 	printf("--------------------------- mpc plugins begin"
 		"---------------------------\n");

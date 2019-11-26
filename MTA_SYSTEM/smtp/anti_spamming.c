@@ -136,6 +136,7 @@ static int anti_spamming_get_context_num(void);
 
 static char g_init_path[256];
 static const char *const *g_plugin_names;
+static bool g_ign_loaderr;
 static DOUBLE_LIST	  g_list_lib;
 static STR_HASH_TABLE *g_hash_type;
 static DOUBLE_LIST	  g_list_judge;
@@ -154,10 +155,12 @@ static SHARELIB *g_cur_lib;
  *	  @param
  *		  path	  indicate the path for searching
  */
-void anti_spamming_init(const char *path, const char *const *names)
+void anti_spamming_init(const char *path, const char *const *names,
+    bool ignerr)
 {	 
 	strncpy(g_init_path, path, 256);
 	g_plugin_names = names;
+	g_ign_loaderr = ignerr;
 }
 
 
@@ -177,7 +180,7 @@ int anti_spamming_run()
 	pthread_rwlock_init(&g_plugin_lock, NULL);
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = anti_spamming_load_library(*i);
-		if (ret != PLUGIN_LOAD_OK)
+		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;

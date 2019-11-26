@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdbool.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -332,6 +333,9 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
+	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
+	bool svcplug_ignerr = parse_bool(str_value);
+	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
 
 	str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
@@ -405,7 +409,8 @@ int main(int argc, const char **argv)
 		}
 	}
 	service_init(context_num, service_plugin_path,
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 

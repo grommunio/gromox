@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdbool.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -558,6 +559,9 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
+	str_value = resource_get_string("ANTI_SPAMMING_IGNORE_ERRORS");
+	bool as_ignerr = parse_bool(str_value);
+	resource_set_string("ANTI_SPAMMING_IGNORE_ERRORS", as_ignerr ? "true" : "false");
  
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {
@@ -574,6 +578,9 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
+	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
+	bool svcplug_ignerr = parse_bool(str_value);
+	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
 
 	flusher_plugin_path = resource_get_string("FLUSHER_PLUGIN_PATH");
 	if (flusher_plugin_path == NULL) {
@@ -654,7 +661,8 @@ int main(int argc, const char **argv)
 		}
 	}
 	service_init(context_num, service_plugin_path,
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 
@@ -804,7 +812,7 @@ int main(int argc, const char **argv)
 	vstack_push(&stop_stack, (void*)&func_ptr);
 
 	anti_spamming_init(anti_spam_path, as_plugin_list != NULL ?
-		as_plugin_list : g_dfl_as_plugins);
+		as_plugin_list : g_dfl_as_plugins, as_ignerr);
 
 	printf("------------------------ anti-spamming plugins begin"
 		   "------------------------\n");

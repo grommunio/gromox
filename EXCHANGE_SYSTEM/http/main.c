@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdbool.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -326,8 +327,12 @@ int main(int argc, const char **argv)
 		proc_plugin_path = PKGLIBDIR;
 		resource_set_string("PROC_PLUGIN_PATH", proc_plugin_path);
 	}
+	const char *str_value = resource_get_string("PROC_PLUGIN_IGNORE_ERRORS");
+	bool procplug_ignerr = parse_bool(str_value);
+	resource_set_string("PROC_PLUGIN_IGNORE_ERRORS", procplug_ignerr ? "true" : "false");
+
 	printf("[pdu_processor]: proc plugins path is %s\n", proc_plugin_path);
-	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
+	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *proc_plugin_list = NULL;
 	if (str_value != NULL) {
 		proc_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
@@ -336,6 +341,9 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
+	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
+	bool svcplug_ignerr = parse_bool(str_value);
+	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
 	
 	hpm_plugin_path = resource_get_string("HPM_PLUGIN_PATH");
 	if (hpm_plugin_path == NULL) {
@@ -352,6 +360,9 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
+	str_value = resource_get_string("HPM_PLUGIN_IGNORE_ERRORS");
+	bool hpmplug_ignerr = parse_bool(str_value);
+	resource_set_string("HPM_PLUGIN_IGNORE_ERRORS", hpmplug_ignerr ? "true" : "false");
 	
 	str_val = resource_get_string("HPM_CACHE_SIZE");
 	if (str_val == NULL) {
@@ -514,7 +525,8 @@ int main(int argc, const char **argv)
 		}
 	}
 	service_init(context_num, service_plugin_path,
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 
@@ -563,7 +575,8 @@ int main(int argc, const char **argv)
 
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem, proc_plugin_path,
-		proc_plugin_list != NULL ? proc_plugin_list : g_dfl_proc_plugins);
+		proc_plugin_list != NULL ? proc_plugin_list : g_dfl_proc_plugins,
+		procplug_ignerr);
 	printf("---------------------------- proc plugins begin "
 		   "----------------------------\n");
 	if (0 != pdu_processor_run()) {
@@ -584,7 +597,7 @@ int main(int argc, const char **argv)
 	
 	hpm_processor_init(context_num, hpm_plugin_path,
 		hpm_plugin_list != NULL ? hpm_plugin_list : g_dfl_hpm_plugins,
-		hpm_cache_size, hpm_max_size);
+		hpm_cache_size, hpm_max_size, hpmplug_ignerr);
 	printf("---------------------------- hpm plugins begin "
 		   "----------------------------\n");
 	if (0 != hpm_processor_run()) {

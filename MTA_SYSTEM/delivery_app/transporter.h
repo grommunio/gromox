@@ -1,5 +1,9 @@
 #ifndef _H_TRANSPORTER_
 #define _H_TRANSPORTER_
+
+#ifndef __cplusplus
+#	include <stdbool.h>
+#endif
 #include "message_dequeue.h"
 #include "plugin.h"
 #include "mail.h"
@@ -11,7 +15,8 @@ enum{
 };
 
 extern void transporter_init(const char *path, const char *const *names,
-	int threads_min, int threads_max, int free_num, int mime_ratio, BOOL dm_valid);
+	int threads_min, int threads_max, int free_num, int mime_ratio, BOOL dm_valid,
+	bool ignerr);
 extern int transporter_run(void);
 extern int transporter_stop(void);
 extern void transporter_free(void);

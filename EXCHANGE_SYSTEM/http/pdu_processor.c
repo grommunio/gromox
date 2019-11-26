@@ -89,6 +89,7 @@ static PROC_PLUGIN *g_cur_plugin;
 static DOUBLE_LIST g_plugin_list;
 static pthread_mutex_t g_list_lock;
 static DOUBLE_LIST g_endpoint_list;
+static bool g_ign_loaderr;
 static pthread_mutex_t g_async_lock;
 static INT_HASH_TABLE *g_async_hash;
 static LIB_BUFFER *g_call_allocator;
@@ -160,7 +161,7 @@ static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type
 void pdu_processor_init(int connection_num, int connection_ratio,
 	const char *netbios_name, const char *dns_name, const char *dns_domain,
     BOOL header_signing, size_t max_request_mem, const char *plugins_path,
-    const char *const *names)
+    const char *const *names, bool ignerr)
 {
 	union {
 		uint32_t i;
@@ -183,6 +184,7 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	g_header_signing = header_signing;
 	strcpy(g_plugins_path, plugins_path);
 	g_plugin_names = names;
+	g_ign_loaderr = ignerr;
 	double_list_init(&g_plugin_list);
 	double_list_init(&g_endpoint_list);
 	double_list_init(&g_processor_list);
@@ -241,7 +243,7 @@ int pdu_processor_run()
 
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = pdu_processor_load_library(*i);
-		if (ret != PLUGIN_LOAD_OK)
+		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;

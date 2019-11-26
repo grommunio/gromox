@@ -4,6 +4,7 @@
 #ifdef __cplusplus
 #	include <cstdint>
 #else
+#	include <stdbool.h>
 #	include <stdint.h>
 #endif
 #include "common_types.h"
@@ -83,6 +84,7 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern void debug_info(const char *format, ...);
+extern bool parse_bool(const char *s);
 
 #ifdef __cplusplus
 }

@@ -2058,3 +2058,15 @@ int uuencode(int mode, const char *file_name, const char *in,
 	return 0;
 }
 
+bool parse_bool(const char *s)
+{
+	if (s == NULL)
+		return false;
+	char *end = NULL;
+	if (strtoul(s, &end, 0) == 0 && *end == '\0')
+		return false;
+	if (strcasecmp(s, "no") == 0 || strcasecmp(s, "off") == 0 ||
+	    strcasecmp(s, "false") == 0)
+		return false;
+	return true;
+}

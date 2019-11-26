@@ -138,7 +138,7 @@ typedef struct _BLOB_NODE {
 extern void pdu_processor_init(int connection_num, int connection_ratio,
 	const char *netbios_name, const char *dns_name, const char *dns_domain,
 	BOOL header_signing, size_t max_request_mem, const char *plugins_path,
-	const char *const *names);
+	const char *const *names, bool ignerr);
 extern int pdu_processor_run(void);
 extern int pdu_processor_stop(void);
 extern void pdu_processor_free(void);

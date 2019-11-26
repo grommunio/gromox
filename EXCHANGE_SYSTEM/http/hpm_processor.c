@@ -57,9 +57,11 @@ static HPM_PLUGIN *g_cur_plugin;
 static DOUBLE_LIST g_plugin_list;
 static HPM_CONTEXT *g_context_list;
 static const char *const *g_plugin_names;
+static bool g_ign_loaderr;
 
 void hpm_processor_init(int context_num, const char *plugins_path,
-    const char *const *names, uint64_t cache_size, uint64_t max_size)
+    const char *const *names, uint64_t cache_size, uint64_t max_size,
+    bool ignerr)
 {
 	g_context_num = context_num;
 	double_list_init(&g_plugin_list);
@@ -67,6 +69,7 @@ void hpm_processor_init(int context_num, const char *plugins_path,
 	g_plugin_names = names;
 	g_cache_size = cache_size;
 	g_max_size = max_size;
+	g_ign_loaderr = ignerr;
 }
 
 
@@ -484,7 +487,7 @@ int hpm_processor_run()
 
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = hpm_processor_load_library(*i);
-		if (ret != PLUGIN_LOAD_OK)
+		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;

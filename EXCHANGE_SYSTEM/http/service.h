@@ -1,9 +1,13 @@
 #ifndef _H_SERVICE_
 #define _H_SERVICE_
+
+#ifndef __cplusplus
+#	include <stdbool.h>
+#endif
 #include "common_types.h"
 #include "plugin.h"
 
-extern void service_init(int context_num, const char *path, const char *const *names);
+extern void service_init(int context_num, const char *path, const char *const *names, bool ignerr);
 extern void service_free(void);
 extern int service_run(void);
 extern int service_stop(void);

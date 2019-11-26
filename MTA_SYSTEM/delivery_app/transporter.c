@@ -139,6 +139,7 @@ static pthread_cond_t	 g_waken_cond;
 static pthread_mutex_t	 g_cond_mutex;
 static pthread_mutex_t	 g_mpc_list_lock;
 static pthread_mutex_t	 g_count_lock;
+static bool g_ign_loaderr;
 
 static void transporter_collect_resource(void);
 static void transporter_collect_hooks(void);
@@ -192,7 +193,7 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const cha
  */
 void transporter_init(const char *path, const char *const *names,
     int threads_min, int threads_max, int free_num, int mime_radito,
-    BOOL dm_valid)
+    BOOL dm_valid, bool ignerr)
 {
 	strcpy(g_path, path);
 	g_plugin_names = names;
@@ -204,6 +205,7 @@ void transporter_init(const char *path, const char *const *names,
 	g_free_num = free_num;
 	g_mime_num = mime_radito*(threads_max + free_num);
 	g_domainlist_valid = dm_valid;
+	g_ign_loaderr = ignerr;
 	single_list_init(&g_free_list);
 	pthread_mutex_init(&g_context_lock, NULL);
 	pthread_mutex_init(&g_queue_lock, NULL);
@@ -309,7 +311,7 @@ int transporter_run()
 
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = transporter_load_library(*i);
-		if (ret != PLUGIN_LOAD_OK) {
+		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
 			return -7;

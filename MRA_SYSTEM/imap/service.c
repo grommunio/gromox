@@ -62,16 +62,19 @@ static DOUBLE_LIST		g_list_service;
 static PLUG_ENTITY		*g_cur_plug;
 static int				g_context_num;
 static const char *const *g_plugin_names;
+static bool g_ign_loaderr;
 
 /*
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-void service_init(int context_num, const char *path, const char *const *names)
+void service_init(int context_num, const char *path, const char *const *names,
+    bool ignerr)
 {
 	g_context_num = context_num;
 	strcpy(g_init_path, path);
 	g_plugin_names = names;
+	g_ign_loaderr = ignerr;
 }
 
 /*
@@ -95,7 +98,7 @@ int service_run()
 	double_list_init(&g_list_service);
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = service_load_library(*i);
-		if (ret != PLUGIN_LOAD_OK)
+		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;
