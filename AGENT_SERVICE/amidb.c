@@ -28,8 +28,6 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <netdb.h>
-#define CS_PATH                 "/var/pandora/token/amidb"
-
 #define SOCKET_TIMEOUT          60
 
 typedef struct _MIDB_ITEM {
@@ -156,6 +154,15 @@ int main(int argc, const char **argv)
 	printf("[system]: midb connection number is %d\n", g_conn_num);
 
 	g_conn_num ++;
+
+	char CS_PATH[256];
+	str_value = config_file_get_value(pconfig, "amidb_listen");
+	if (str_value == NULL) {
+		HX_strlcpy(CS_PATH, "/run/gromox/amidb.sock", sizeof(CS_PATH));
+		config_file_set_value(pconfig, "amidb_listen", CS_PATH);
+	} else {
+		HX_strlcpy(CS_PATH, str_value, sizeof(CS_PATH));
+	}
 
 	config_file_save(pconfig);
 	config_file_free(pconfig);

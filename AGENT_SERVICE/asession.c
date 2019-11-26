@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>
@@ -25,8 +26,6 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <netdb.h>
-#define CS_PATH                 "/var/pandora/token/asession"
-
 #define SOCKET_TIMEOUT          60
 
 
@@ -141,6 +140,15 @@ int main(int argc, const char **argv)
 	printf("[system]: session connection number is %d\n", g_conn_num);
 
 	g_conn_num ++;
+
+	char CS_PATH[256];
+	str_value = config_file_get_value(pconfig, "asession_listen");
+	if (str_value == NULL) {
+		HX_strlcpy(CS_PATH, "/run/gromox/asession.sock", sizeof(CS_PATH));
+		config_file_set_value(pconfig, "asession_listen", CS_PATH);
+	} else {
+		HX_strlcpy(CS_PATH, str_value, sizeof(CS_PATH));
+	}
 
 	config_file_save(pconfig);
 	config_file_free(pconfig);

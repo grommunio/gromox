@@ -3,6 +3,7 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
 #include "util.h"
 #include "service.h"
 #include "ab_tree.h"
@@ -438,13 +439,13 @@ int main(int argc, const char **argv)
 	
 	console_server_init(console_ip, console_port);
 
-	const char *CS_PATH;
+	char CS_PATH[256];
 	str_value = config_file_get_value(pconfig, "zcore_listen");
 	if (str_value == NULL) {
-		CS_PATH = strdup("/run/gromox/zcore.sock");
+		HX_strlcpy(CS_PATH, "/run/gromox/zcore.sock", sizeof(CS_PATH));
 		config_file_set_value(pconfig, "zcore_listen", CS_PATH);
 	} else {
-		CS_PATH = strdup(str_value);
+		HX_strlcpy(CS_PATH, str_value, sizeof(CS_PATH));
 	}
 	
 	config_file_save(pconfig);
