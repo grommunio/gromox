@@ -32,7 +32,7 @@
 #define MAXIMUM_SEARCHING_DEPTH					10
 
 /*
-	causion!!! if any errors in parsing any sub type, ignore this sub type.
+	Caution. If any errors in parsing any sub type, ignore this sub type.
 	for example, if an error appears when parsing tnef attachment, treat
 	this tnef sub type as normal attachment. there will be no error for
 	parsing email object into message object!

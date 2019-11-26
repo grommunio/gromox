@@ -6,7 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-/* caution!!! also defined in cgi/search_engin/search_engine.h */
+/* Caution! Also defined in cgi/search_engin/search_engine.h. */
 #define LOG_ITEM_OK					0
 #define LOG_ITEM_SPAM_MAIL	        1
 #define LOG_ITEM_SPAM_VIRUS			2
@@ -25,7 +25,7 @@ typedef struct _LOG_ITEM {
 	int queue_id;       /* queue ID of received mail */
 } LOG_ITEM;
 
-/* caution!!! also defined in cgi/search_engin/search_engine.h */
+/* Caution! Also defined in cgi/search_engin/search_engine.h. */
 typedef struct _ITEM_DATA {
 	time_t time;
 	in_addr_t ip;

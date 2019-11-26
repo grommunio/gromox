@@ -3719,9 +3719,9 @@ BOOL exmdb_client_update_folder_rule(const char *dir,
 	return TRUE;
 }
 
-/* CAUSION!!! this function is not a common exmdb service,
+/* Caution. This function is not a common exmdb service,
 	it only can be called by message_rule_new_message to
-	pass message to delegate's mailbox */
+	pass a message to the delegate's mailbox. */
 BOOL exmdb_client_relay_delivery(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,

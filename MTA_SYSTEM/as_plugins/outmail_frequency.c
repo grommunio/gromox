@@ -178,10 +178,10 @@ CHECK_FREQUENCY:
 		}
 		if (FALSE == outmail_frequency_audit(pmail->penvelop->from)) {
 			/* 
-			 * if user uses client tools to send mail, block the account
-			 * CAUSION!!! if user use webmail to send spam mail, smtp will
-			 * not block such users, these users can only be blocked by webmail
-			 * itself
+			 * If the user uses client tools to send mail, block the account.
+			 * Caution. If the user uses webmail to send spam mail, smtp will
+			 * not block such users; these users can only be blocked by webmail
+			 * itself.
 			 */
 			if (TRUE == pmail->penvelop->is_login) {
 				user_filter_add(pmail->penvelop->username, g_block_interval);
