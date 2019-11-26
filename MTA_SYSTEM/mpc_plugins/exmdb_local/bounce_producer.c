@@ -177,6 +177,9 @@ BOOL bounce_producer_refresh()
 	dirp = opendir(g_path);
 	if (dirp != NULL) {
 		while ((direntp = readdir(dirp)) != NULL) {
+			if (strcmp(direntp->d_name, ".") == 0 ||
+			    strcmp(direntp->d_name, "..") == 0)
+				continue;
 			if (!bounce_producer_check_subdir(direntp->d_name))
 				continue;
 			bounce_producer_load_subdir(direntp->d_name, &resource_list);
@@ -239,6 +242,9 @@ static BOOL bounce_producer_check_subdir(const char *dir_name)
 	sub_dirp = opendir(dir_buff);
     item_num = 0;
     while ((sub_direntp = readdir(sub_dirp)) != NULL) {
+		if (strcmp(sub_direntp->d_name, ".") == 0 ||
+		    strcmp(sub_direntp->d_name, "..") == 0)
+			continue;
         sprintf(sub_buff, "%s/%s", dir_buff, sub_direntp->d_name);
         if (0 != stat(sub_buff, &node_stat) ||
             0 == S_ISREG(node_stat.st_mode)) {
@@ -294,6 +300,9 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
     sprintf(dir_buff, "%s/%s", g_path, dir_name);
     sub_dirp = opendir(dir_buff);
     while ((sub_direntp = readdir(sub_dirp)) != NULL) {
+		if (strcmp(sub_direntp->d_name, ".") == 0 ||
+		    strcmp(sub_direntp->d_name, "..") == 0)
+			continue;
         sprintf(sub_buff, "%s/%s", dir_buff, sub_direntp->d_name);
         if (0 != stat(sub_buff, &node_stat) ||
             0 == S_ISREG(node_stat.st_mode)) {

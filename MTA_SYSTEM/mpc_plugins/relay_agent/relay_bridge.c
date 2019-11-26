@@ -487,6 +487,9 @@ static int relay_bridge_retrieve_min_ID()
 	/* get minimum ID in mess */
 	dirp = opendir(g_mess_path);
 	while ((direntp = readdir(dirp)) != NULL) {
+		if (strcmp(direntp->d_name, ".") == 0 ||
+		    strcmp(direntp->d_name, "..") == 0)
+			continue;
 		temp_ID = atoi(direntp->d_name);
 		if (temp_ID < min_ID) {
 			sprintf(temp_path, "%s/%s", g_mess_path, direntp->d_name);

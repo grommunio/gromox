@@ -192,6 +192,9 @@ void start_delivery()
 					if (start_points[2] - start_points[0] <= 600) {
 						dirp = opendir(QUEUE_MESS_PATH);
 						while ((direntp = readdir(dirp)) != NULL) {
+							if (strcmp(direntp->d_name, ".") == 0 ||
+							    strcmp(direntp->d_name, "..") == 0)
+								continue;
 							sprintf(temp_path, "%s/%s", QUEUE_MESS_PATH,
 								direntp->d_name);
 							sprintf(save_name, "%s/%s", QUEUE_SAVE_PATH,

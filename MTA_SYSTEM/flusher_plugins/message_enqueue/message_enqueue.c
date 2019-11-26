@@ -597,6 +597,9 @@ static int message_enqueue_retrieve_max_ID()
    	sprintf(temp_path, "%s/mess", g_path);
     dirp = opendir(temp_path);
     while ((direntp = readdir(dirp)) != NULL) {
+		if (strcmp(direntp->d_name, ".") == 0 ||
+		    strcmp(direntp->d_name, "..") == 0)
+			continue;
     	temp_ID = atoi(direntp->d_name);
         if (temp_ID > max_ID) {
 			sprintf(temp_path, "%s/mess/%s", g_path, direntp->d_name);

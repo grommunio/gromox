@@ -214,6 +214,9 @@ static int cache_queue_retrieve_mess_ID()
 	*/
 	dirp = opendir(g_path);
 	while ((direntp = readdir(dirp)) != NULL) {
+		if (strcmp(direntp->d_name, ".") == 0 ||
+		    strcmp(direntp->d_name, "..") == 0)
+			continue;
 		temp_ID = atoi(direntp->d_name);
 		if (temp_ID > max_ID) {
 			max_ID = temp_ID;
@@ -283,6 +286,9 @@ static void* thread_work_func(void* arg)
 			if (FALSE != g_notify_stop) {
 				break;
 			}
+			if (strcmp(direntp->d_name, ".") == 0 ||
+			    strcmp(direntp->d_name, "..") == 0)
+				continue;
 			sprintf(temp_path, "%s/%s", g_path, direntp->d_name);
 			if (0 != stat(temp_path, &node_stat) ||
 				0 == S_ISREG(node_stat.st_mode)) {
