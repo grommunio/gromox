@@ -2380,20 +2380,19 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		if (-1 == ((SQUENCE_NODE*)pnode->pdata)->max) {
-			if (-1 == ((SQUENCE_NODE*)pnode->pdata)->min) {
+		SQUENCE_NODE *pseq = pnode->pdata;
+		if (pseq->max == -1) {
+			if (pseq->min == -1)
 				length = snprintf(buff, 1024, "P-SIML %s %s UID ASC -1 1\r\n",
 						path, folder);
-			} else {
+			else
 				length = snprintf(buff, 1024, "P-SIML %s %s UID ASC %d "
 						"1000000000\r\n", path, folder,
-						((SQUENCE_NODE*)pnode->pdata)->min - 1);
-			}
+						pseq->min - 1);
 		} else {
 			length = snprintf(buff, 1024, "P-SIML %s %s UID ASC %d %d\r\n",
-						path, folder, ((SQUENCE_NODE*)pnode->pdata)->min - 1,
-						((SQUENCE_NODE*)pnode->pdata)->max - 
-						((SQUENCE_NODE*)pnode->pdata)->min + 1);
+						path, folder, pseq->min - 1,
+						pseq->max - pseq->min + 1);
 		}
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
@@ -2467,8 +2466,7 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 								num = xarray_get_capacity(pxarray);
 								pitem = xarray_get_item(pxarray, num - 1);
 								pitem->uid = uid;
-								pitem->id = ((SQUENCE_NODE*)pnode->pdata)->min +
-												count - 1;
+								pitem->id = pseq->min + count - 1;
 								strncpy(pitem->mid, temp_line, sizeof(pitem->mid));
 								pitem->flag_bits = 0;
 								if (NULL != strchr(pspace1, 'A')) {
@@ -2588,20 +2586,19 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		if (-1 == ((SQUENCE_NODE*)pnode->pdata)->max) {
-			if (-1 == ((SQUENCE_NODE*)pnode->pdata)->min) {
+		SQUENCE_NODE *pseq = pnode->pdata;
+		if (pseq->max == -1) {
+			if (pseq->min == -1)
 				length = snprintf(buff, 1024, "M-LIST %s %s UID ASC -1 1\r\n",
 						path, folder);
-			} else {
+			else
 				length = snprintf(buff, 1024, "M-LIST %s %s UID ASC %d "
 						"1000000000\r\n", path, folder,
-						((SQUENCE_NODE*)pnode->pdata)->min - 1);
-			}
+						pseq->min - 1);
 		} else {
 			length = snprintf(buff, 1024, "M-LIST %s %s UID ASC %d %d\r\n",
-						path, folder, ((SQUENCE_NODE*)pnode->pdata)->min - 1,
-						((SQUENCE_NODE*)pnode->pdata)->max - 
-						((SQUENCE_NODE*)pnode->pdata)->min + 1);
+						path, folder, pseq->min - 1,
+						pseq->max - pseq->min + 1);
 		}
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
@@ -2673,8 +2670,7 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 						if (xarray_append(pxarray, &mitem, mitem.uid) >= 0) {
 							num = xarray_get_capacity(pxarray);
 							pitem = xarray_get_item(pxarray, num - 1);
-							pitem->id = ((SQUENCE_NODE*)pnode->pdata)->min +
-											count - 1;
+							pitem->id = pseq->min + count - 1;
 							pitem->flag_bits = FLAG_LOADED;
 							if (TRUE == get_digest_integer(temp_line, line_pos,
 								"replied", &value) && 1 == value) {
@@ -2813,9 +2809,9 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
+		SQUENCE_NODE *pseq = pnode->pdata;
 		length = snprintf(buff, 1024, "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
-					((SQUENCE_NODE*)pnode->pdata)->min,
-					((SQUENCE_NODE*)pnode->pdata)->max);
+					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
 		}
@@ -3017,9 +3013,9 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
+		SQUENCE_NODE *pseq = pnode->pdata;
 		length = snprintf(buff, 1024, "P-DTLU %s %s UID ASC %d %d\r\n", path,
-					folder, ((SQUENCE_NODE*)pnode->pdata)->min,
-					((SQUENCE_NODE*)pnode->pdata)->max);
+					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
 		}
