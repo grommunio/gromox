@@ -1,7 +1,7 @@
 #include <sys/stat.h>
 #include "system_log.h"
 #include "ui_main.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "config_file.h"
 #include "util.h"
 #include <stdio.h>

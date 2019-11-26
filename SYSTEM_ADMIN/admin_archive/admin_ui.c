@@ -3,7 +3,7 @@
 #include "data_source.h"
 #include "lang_resource.h"
 #include "system_log.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "midb_client.h"
 #include "message_lookup.h"
 #include "request_parser.h"

@@ -1,5 +1,5 @@
 #include "system_log.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "status_ui.h"
 #include "data_extractor.h"
 #include "config_file.h"

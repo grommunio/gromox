@@ -1,6 +1,6 @@
 #include "system_log.h"
 #include "list_ui.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "config_file.h"
 #include "reload_control.h"
 #include "util.h"

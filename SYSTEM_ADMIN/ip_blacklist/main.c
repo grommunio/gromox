@@ -1,5 +1,5 @@
 #include "system_log.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "blacklist_ui.h"
 #include "reload_control.h"
 #include "config_file.h"

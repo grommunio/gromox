@@ -4,7 +4,7 @@
 #include "system_log.h"
 #include "match_engine.h"
 #include "admin_ui.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "log_flusher.h"
 #include "config_file.h"
 #include "util.h"

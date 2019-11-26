@@ -1,6 +1,6 @@
 #include "admin_ui.h"
 #include "system_log.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "match_engine.h"
 #include "lang_resource.h"
 #include "util.h"

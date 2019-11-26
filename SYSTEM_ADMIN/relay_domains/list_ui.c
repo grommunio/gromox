@@ -2,7 +2,7 @@
 #include "lang_resource.h"
 #include "system_log.h"
 #include "reload_control.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "list_file.h"
 #include "mail_func.h"
 #include "util.h"

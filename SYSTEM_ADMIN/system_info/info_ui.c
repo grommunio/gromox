@@ -1,7 +1,7 @@
 #include "info_ui.h"
 #include "lang_resource.h"
 #include "system_log.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "data_source.h"
 #include "util.h"
 #include <stdio.h>

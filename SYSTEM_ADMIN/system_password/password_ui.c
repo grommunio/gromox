@@ -2,7 +2,7 @@
 #include "password_ui.h"
 #include "lang_resource.h"
 #include "system_log.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "list_file.h"
 #include "util.h"
 #include <time.h>

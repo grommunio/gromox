@@ -1,7 +1,7 @@
 #include "system_log.h"
 #include "translator.h"
 #include "statistic_ui.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "data_extractor.h"
 #include "config_file.h"
 #include "util.h"

@@ -1,6 +1,6 @@
 #include <sys/stat.h>
 #include "system_log.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "midb_client.h"
 #include "message_lookup.h"
 #include "admin_ui.h"

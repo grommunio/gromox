@@ -1,6 +1,6 @@
 #include "statistic_ui.h"
 #include "lang_resource.h"
-#include "acl_control.h"
+#include <gromox/acl_control.h>
 #include "system_log.h"
 #include "list_file.h"
 #include "util.h"
