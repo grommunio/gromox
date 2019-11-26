@@ -397,7 +397,7 @@ static BOOL binhex_stream_check_overflow(
 }
 
 static BOOL binhex_write_stream(BINHEXT_STREAM *pstream,
-	const uint8_t *pdata, uint32_t n)
+	const void *pdata, uint32_t n)
 {
 	if (FALSE == binhex_stream_check_overflow(pstream, n)) {
 		return FALSE;

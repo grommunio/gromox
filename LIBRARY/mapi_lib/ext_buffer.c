@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "endian_macro.h"
 #include "ext_buffer.h"
 #include "util.h"
@@ -15,7 +16,7 @@
 
 #define GROWING_BLOCK_SIZE				0x80000
 
-void ext_buffer_pull_init(EXT_PULL *pext, const uint8_t *pdata,
+void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
 	uint32_t data_size, EXT_BUFFER_ALLOC alloc, uint32_t flags)
 {
 	pext->data = pdata;
@@ -190,7 +191,7 @@ int ext_buffer_pull_bool(EXT_PULL *pext, BOOL *v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_pull_bytes(EXT_PULL *pext, uint8_t *data, uint32_t n)
+int ext_buffer_pull_bytes(EXT_PULL *pext, void *data, uint32_t n)
 {
 	if (pext->data_size < n || pext->offset + n > pext->data_size) {
 		return EXT_ERR_BUFSIZE;
@@ -3391,9 +3392,7 @@ int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *r)
 	return EXT_ERR_SUCCESS;
 }
 
-/*---------------------------------------------------------------------------*/
-
-BOOL ext_buffer_push_init(EXT_PUSH *pext, uint8_t *pdata,
+BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata,
 	uint32_t alloc_size, uint32_t flags)
 {
 	if (NULL == pdata) {
@@ -3477,7 +3476,7 @@ int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_bytes(EXT_PUSH *pext, const uint8_t *pdata, uint32_t n)
+int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n)
 {
 	if (FALSE == ext_buffer_push_check_overflow(pext, n)) {
 		return EXT_ERR_BUFSIZE;

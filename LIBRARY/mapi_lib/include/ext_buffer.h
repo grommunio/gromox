@@ -54,7 +54,7 @@ typedef struct _RPC_HEADER_EXT {
 extern "C" {
 #endif
 
-void ext_buffer_pull_init(EXT_PULL *pext, const uint8_t *pdata,
+extern void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
 	uint32_t data_size, EXT_BUFFER_ALLOC alloc, uint32_t flags);
 
 void ext_buffer_pull_free(EXT_PULL *pext);
@@ -84,9 +84,7 @@ int ext_buffer_pull_float(EXT_PULL *pext, float *v);
 int ext_buffer_pull_double(EXT_PULL *pext, double *v);
 
 int ext_buffer_pull_bool(EXT_PULL *pext, BOOL *v);
-
-int ext_buffer_pull_bytes(EXT_PULL *pext, uint8_t *data, uint32_t n);
-
+extern int ext_buffer_pull_bytes(EXT_PULL *pext, void *data, uint32_t n);
 int ext_buffer_pull_guid(EXT_PULL *pext, GUID *r);
 
 int ext_buffer_pull_string(EXT_PULL *pext, char **ppstr);
@@ -216,10 +214,8 @@ int ext_buffer_pull_appointmentrecurrencepattern(
 int ext_buffer_pull_globalobjectid(EXT_PULL *pext, GLOBALOBJECTID *r);
 
 int ext_buffer_pull_message_content(EXT_PULL *pext, MESSAGE_CONTENT *pmsg);
-
-BOOL ext_buffer_push_init(EXT_PUSH *pext, uint8_t *pdata,
+extern BOOL ext_buffer_push_init(EXT_PUSH *pext, void *pdata,
 	uint32_t alloc_size, uint32_t flags);
-
 void ext_buffer_push_free(EXT_PUSH *pext);
 
 int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size);
@@ -227,9 +223,7 @@ int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size);
 int ext_buffer_push_rpc_header_ext(EXT_PUSH *pext, const RPC_HEADER_EXT *r);
 
 BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size);
-
-int ext_buffer_push_bytes(EXT_PUSH *pext, const uint8_t *pdata, uint32_t n);
-
+extern int ext_buffer_push_bytes(EXT_PUSH *pext, const void *pdata, uint32_t n);
 int ext_buffer_push_int8(EXT_PUSH *pext, int8_t v);
 
 int ext_buffer_push_uint8(EXT_PUSH *pext, uint8_t v);

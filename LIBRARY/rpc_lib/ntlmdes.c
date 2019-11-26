@@ -309,7 +309,7 @@ void des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7], int 
 	}
 }
 
-void E_P16(const uint8_t *p14,uint8_t *p16)
+void E_P16(const void *p14, uint8_t *p16)
 {
 	const uint8_t sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
 	des_crypt56(p16, sp8, p14, 1);

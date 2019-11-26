@@ -73,7 +73,7 @@ static void ntlmssp_calc_ntlm2_key(uint8_t subkey[16],
 	MD5_Final(subkey, &md5_ctx);
 }
 
-static int ntlmssp_utf8_to_utf16le(const char *src, char *dst, size_t len)
+static int ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
@@ -95,7 +95,7 @@ static int ntlmssp_utf8_to_utf16le(const char *src, char *dst, size_t len)
 	}
 }
 
-static BOOL ntlmssp_utf16le_to_utf8(const char *src, size_t src_len,
+static BOOL ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 	char *dst, size_t len)
 {
 	char *pin, *pout;
@@ -114,8 +114,9 @@ static BOOL ntlmssp_utf16le_to_utf8(const char *src, size_t src_len,
 	}
 }
 
-static void ntlmssp_md4hash(const char *passwd, uint8_t p16[16])
+static void ntlmssp_md4hash(const char *passwd, void *p16v)
 {
+	uint8_t *p16 = p16v;
 	int passwd_len;
 	MD4_CTX md4_ctx;
 	char upasswd[256];
@@ -1262,7 +1263,7 @@ static BOOL ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	if (TRUE == pauth->doing_ntlm2) {
 		if (16 == puser_key->length) {
 			hmacmd5_init(&hmac_ctx, puser_key->data, 16);
-			hmacmd5_update(&hmac_ctx, (unsigned char*)pauth->session_nonce,
+			hmacmd5_update(&hmac_ctx, pauth->session_nonce,
 				sizeof(pauth->session_nonce));
 			hmacmd5_final(&hmac_ctx, session_key.data);
 			session_key.length = 16;

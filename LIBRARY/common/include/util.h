@@ -19,7 +19,7 @@ BOOL utf8_len(const char *str, int *plen);
 BOOL utf8_truncate(char *str, int length);
 
 void utf8_filter(char *string);
-extern void wchar_to_utf8(uint32_t wchar, uint8_t *string);
+extern void wchar_to_utf8(uint32_t wchar, char *string);
 const char* replace_iconv_charset(const char *charset);
 
 BOOL string_to_utf8(const char *charset,
@@ -78,34 +78,18 @@ int wildcard_hierarchy_match(const char *data, char seperator,
 	const char *mask, BOOL icase);
 
 void randstring(char *buff, int length);
-
-int encode64(const char *_in, size_t inlen, char *_out,
-	size_t outmax, size_t *outlen);
-
-int encode64_ex(const char *_in, size_t inlen, char *_out, size_t outmax, 
-    size_t *outlen);
-
-int decode64(const char *in, size_t inlen, char *out, size_t *outlen);
-
-int decode64_ex(const char *in, size_t inlen, char *out, size_t outmax,
-	size_t *outlen);
-
-int qp_decode(unsigned char* output, const char* input, size_t length);
-
-int qp_decode_ex(unsigned char* output, size_t out_len, const char* input,
-	size_t length);
-
-int qp_encode_ex(unsigned char* output, size_t outlen, const char* input,
-	size_t length);
-
+extern int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
+extern int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
+extern int decode64(const char *in, size_t inlen, void *out, size_t *outlen);
+extern int decode64_ex(const char *in, size_t inlen, void *out, size_t outmax, size_t *outlen);
+extern int qp_decode(void *output, const char *input, size_t length);
+extern int qp_decode_ex(void *output, size_t out_len, const char *input, size_t length);
+extern int qp_encode_ex(void *output, size_t outlen, const char *input, size_t length);
 void encode_hex_int(int id, char *out);
 
 int decode_hex_int(const char *in);
-
-BOOL encode_hex_binary(const char *src, int srclen, char *dst, int dstlen);
-
-BOOL decode_hex_binary(const char *src, char *dst, int dstlen);
-
+extern BOOL encode_hex_binary(const void *src, int srclen, char *dst, int dstlen);
+extern BOOL decode_hex_binary(const char *src, void *dst, int dstlen);
 int uudecode(const char *in, size_t inlen, int *pmode,
 	char *file_name, char *out, size_t *outlen);
 

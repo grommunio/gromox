@@ -14,11 +14,9 @@ typedef struct _HMACMD5_CTX {
 	uint8_t k_opad[65];
 } HMACMD5_CTX;
 
-void hmacmd5_init(HMACMD5_CTX *ctx, const uint8_t *key, int key_len);
-
-void hmacmd5_update(HMACMD5_CTX *ctx, const uint8_t *text, int text_len);
-
-void hmacmd5_final(HMACMD5_CTX *ctx, uint8_t *digest);
+extern void hmacmd5_init(HMACMD5_CTX *ctx, const void *key, int key_len);
+extern void hmacmd5_update(HMACMD5_CTX *ctx, const void *text, int text_len);
+extern void hmacmd5_final(HMACMD5_CTX *ctx, void *digest);
 
 #endif /* _H_HMACMD5_ */
 

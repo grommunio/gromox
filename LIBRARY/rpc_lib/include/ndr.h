@@ -64,8 +64,7 @@ extern "C" {
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
 
 uint32_t ndr_pull_get_ptrcnt(NDR_PULL *pndr);
-
-void ndr_pull_init(NDR_PULL *pndr, uint8_t *pdata,
+extern void ndr_pull_init(NDR_PULL *pndr, void *pdata,
 	uint32_t data_size, uint32_t flags);
 
 void ndr_pull_destroy(NDR_PULL *pndr);
@@ -118,8 +117,7 @@ int ndr_pull_generic_ptr(NDR_PULL *pndr, uint32_t *v);
 int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r);
 
 void ndr_push_set_ptrcnt(NDR_PUSH *pndr, uint32_t ptr_count);
-
-void ndr_push_init(NDR_PUSH *pndr, uint8_t *pdata,
+extern void ndr_push_init(NDR_PUSH *pndr, void *pdata,
 	uint32_t alloc_size, uint32_t flags);
 
 void ndr_push_destroy(NDR_PUSH *pndr);

@@ -58,7 +58,7 @@ static size_t ndr_align_size(uint32_t offset, size_t n)
 }
 
 
-void ndr_pull_init(NDR_PULL *pndr, uint8_t *pdata,
+void ndr_pull_init(NDR_PULL *pndr, void *pdata,
 	uint32_t data_size, uint32_t flags)
 {
 	pndr->data = pdata;
@@ -517,7 +517,7 @@ void ndr_push_set_ptrcnt(NDR_PUSH *pndr, uint32_t ptr_count)
 	pndr->ptr_count = ptr_count;
 }
 
-void ndr_push_init(NDR_PUSH *pndr, uint8_t *pdata,
+void ndr_push_init(NDR_PUSH *pndr, void *pdata,
 	uint32_t alloc_size, uint32_t flags)
 {
 	pndr->data = pdata;
@@ -554,7 +554,7 @@ static BOOL ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
 	return TRUE;
 }
 
-static int ndr_push_bytes(NDR_PUSH *pndr, const uint8_t *pdata, uint32_t n)
+static int ndr_push_bytes(NDR_PUSH *pndr, const void *pdata, uint32_t n)
 {
 	if (FALSE == ndr_push_check_overflow(pndr, n)) {
 		return NDR_ERR_BUFSIZE;

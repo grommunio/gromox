@@ -343,7 +343,7 @@ static BOOL rtf_iconv_open(RTF_READER *preader, const char *fromcode)
 	return TRUE;
 }
 
-static BOOL rtf_escape_output(RTF_READER *preader, uint8_t *string)
+static BOOL rtf_escape_output(RTF_READER *preader, char *string)
 {
 	int i;
 	int status;

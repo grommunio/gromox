@@ -2,7 +2,7 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
-
+#include <libHX/defs.h>
 #include "util.h"
 #include <time.h>
 #include <stdio.h>
@@ -116,7 +116,7 @@ void utf8_filter(char *string)
 	int m;
 	int count_s = 0;
 	int minus_s = 0;
-	unsigned char *bytes = string;
+	unsigned char *bytes = reinterpret_cast(unsigned char *, string);
 	unsigned char *end = bytes + strlen(string);
   
 	while (bytes < end) {
@@ -203,8 +203,9 @@ void utf8_filter(char *string)
 	}
 }
 
-void wchar_to_utf8(uint32_t wchar, uint8_t *string)
+void wchar_to_utf8(uint32_t wchar, char *zstring)
 {
+	unsigned char *string = reinterpret_cast(unsigned char *, zstring);
 	if (wchar < 0x7f) {
 		string[0] = wchar;
 		string[1] = '\0';
@@ -1316,11 +1317,10 @@ static char index_64[128] = {
 };
 
 
-int encode64(const char *_in, size_t inlen,
-	char *_out, size_t outmax, size_t *outlen)
+int encode64(const void *_in, size_t inlen, char *out,
+    size_t outmax, size_t *outlen)
 {
-	const unsigned char *in = (const unsigned char *)_in;
-	unsigned char *out = (unsigned char *)_out;
+	const unsigned char *in = _in;
 	unsigned char oval;
 	size_t olen;
 
@@ -1357,8 +1357,9 @@ int encode64(const char *_in, size_t inlen,
 	return OK;
 }
 
-int decode64(const char *in, size_t inlen, char *out, size_t *outlen)
+int decode64(const char *in, size_t inlen, void *vout, size_t *outlen)
 {
+	uint8_t *out = vout;
 	size_t len = 0,lup;
 	int c1, c2, c3, c4;
 
@@ -1432,9 +1433,10 @@ static char hextab[] = "0123456789ABCDEF";
 
 
 
-int encode64_ex(const char* _in, size_t inlen, char* _out,
+int encode64_ex(const void *vin, size_t inlen, char *_out,
 	size_t outmax, size_t *outlen)
 {
+	const uint8_t *_in = vin;
 	size_t inLen = inlen;
 	size_t i;
 	char* out = _out;
@@ -1512,11 +1514,11 @@ int encode64_ex(const char* _in, size_t inlen, char* _out,
 }
 
 
-int decode64_ex(const char* _in, size_t inlen, char* _out,
+int decode64_ex(const char *_in, size_t inlen, void *_out,
 	size_t outmax, size_t *outlen)
 {
+	uint8_t *out = _out;
 	size_t inLen = inlen;
-	char* out = _out;
 	size_t outsize = ( ( inLen + 3 ) / 4 ) * 3;
 	/* Get four input chars at a time and decode them. Ignore white space
 	 * chars (CR, LF, SP, HT). If '=' is encountered, terminate input. If
@@ -1632,8 +1634,9 @@ int decode64_ex(const char* _in, size_t inlen, char* _out,
 	return (is_err) ? -1 : 0;
 }
 
-int qp_encode_ex(unsigned char*output, size_t outlen, const char* input, size_t length)
+int qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
 {
+	uint8_t *output = voutput;
 	size_t inpos, outpos, linelen;
 	int ch;
 
@@ -1783,8 +1786,9 @@ static const unsigned char hex_tab[256] =
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10
 };
 
-int qp_decode(unsigned char* output, const char* input, size_t length)
+int qp_decode(void *voutput, const char *input, size_t length)
 {
+	uint8_t *output = voutput;
 	int c;
 	size_t i, cnt = 0;
 	for (i = 0; i < length; i++) {
@@ -1823,9 +1827,10 @@ int qp_decode(unsigned char* output, const char* input, size_t length)
 	return cnt;
 }
 
-int qp_decode_ex(unsigned char* output, size_t out_len, const char* input,
-	size_t length)
+int qp_decode_ex(void *voutput, size_t out_len, const char *input,
+    size_t length)
 {
+	uint8_t *output = voutput;
 	int c;
 	size_t i, cnt = 0;
 	for (i = 0; i < length; i++) {
@@ -1900,8 +1905,9 @@ int decode_hex_int(const char *in)
 	return retval;
 }
 
-BOOL encode_hex_binary(const char *src, int srclen, char *dst, int dstlen)
+BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
 {
+	const uint8_t *src = vsrc;
 	static char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 							 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	int i, j;
@@ -1919,8 +1925,9 @@ BOOL encode_hex_binary(const char *src, int srclen, char *dst, int dstlen)
 	return TRUE;
 }
 
-BOOL decode_hex_binary(const char *src, char *dst, int dstlen)
+BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 {
+	uint8_t *dst = vdst;
 	char t_buff[3];
 	int i, j, len;
 

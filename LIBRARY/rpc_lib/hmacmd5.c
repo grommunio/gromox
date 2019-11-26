@@ -2,7 +2,7 @@
 #include <string.h>
 
 /* the microsoft version of hmac_md5 initialisation */
-void hmacmd5_init(HMACMD5_CTX *ctx, const uint8_t *key, int key_len)
+void hmacmd5_init(HMACMD5_CTX *ctx, const void *key, int key_len)
 {
 	int i;
 	
@@ -22,12 +22,12 @@ void hmacmd5_init(HMACMD5_CTX *ctx, const uint8_t *key, int key_len)
 	MD5_Update(&ctx->ctx, ctx->k_ipad, 64);  
 }
 
-void hmacmd5_update(HMACMD5_CTX *ctx, const uint8_t *text, int text_len)
+void hmacmd5_update(HMACMD5_CTX *ctx, const void *text, int text_len)
 {
 	MD5_Update(&ctx->ctx, text, text_len);
 }
 
-void hmacmd5_final(HMACMD5_CTX *ctx, uint8_t *digest)
+void hmacmd5_final(HMACMD5_CTX *ctx, void *digest)
 {
 	MD5_CTX ctx_o;
 
