@@ -293,7 +293,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "default-domain")) {
-		resource_set_string(RES_DEFAULT_DOMAIN, argv[3]);
+		resource_set_string("DEFAULT_DOMAIN", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 		} else {
@@ -304,7 +304,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "admin-mailbox")) {
-		resource_set_string(RES_ADMIN_MAILBOX, argv[3]);
+		resource_set_string("ADMIN_MAILBOX", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 		} else {
@@ -316,7 +316,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "domain-list")) {
 		if (0 == strcasecmp(argv[3], "TRUE")) {
-			resource_set_string(RES_DOMAIN_LIST_VALID, "TRUE");
+			resource_set_string("DOMAIN_LIST_VALID", "TRUE");
 			if (FALSE == resource_save()) {
 				console_server_reply_to_client("550 fail to save config file");
 				return TRUE;
@@ -325,7 +325,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			console_server_reply_to_client("250 domain-list valid set OK");
 			return TRUE;
 		} else if (0 == strcasecmp(argv[3], "FALSE")) {
-			resource_set_string(RES_DOMAIN_LIST_VALID, "FALSE");
+			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
 			if (FALSE == resource_save()) {
 				console_server_reply_to_client("550 fail to save config file");
 				return TRUE;
@@ -350,7 +350,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			"\tdequeued messages number from queue  %d\r\n"
 			"\tallocated message blocks number      %d\r\n"
 			"\tdomain list valid                    %s",
-			resource_get_string(RES_HOST_ID),
+			resource_get_string("HOST_ID"),
 			transporter_get_param(TRANSPORTER_MIN_THREADS),
 			transporter_get_param(TRANSPORTER_MAX_THREADS),
 			transporter_get_param(TRANSPORTER_CREATED_THREADS),

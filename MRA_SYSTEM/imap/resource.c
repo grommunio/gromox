@@ -29,48 +29,6 @@ typedef struct _LANG_FOLDER {
 	char junk[256];
 } LANG_FOLDER;
 
-static struct {
-#define MAX_VAR_LEN     256
-    int  var_id;
-    char name[MAX_VAR_LEN];
-} g_string_table[MAX_RES_CONFG_VAR_NUM] = {
-    { RES_LISTEN_PORT, "LISTEN_PORT" }, 
-	{ RES_LISTEN_SSL_PORT, "LISTEN_SSL_PORT" },
-    { RES_HOST_ID, "HOST_ID" },
-	{ RES_DEFAULT_DOMAIN, "DEFAULT_DOMAIN" },
-    
-    { RES_CONTEXT_NUM, "CONTEXT_NUM" },
-    { RES_CONTEXT_AVERAGE_MEM, "CONTEXT_AVERAGE_MEM" },
-    { RES_CONTEXT_MAX_MEM, "CONTEXT_MAX_MEM" },
-	{ RES_CONTEXT_AVERAGE_MITEM, "CONTEXT_AVERAGE_MITEM" },
-
-    { RES_IMAP_AUTH_TIMES, "IMAP_AUTH_TIMES" },
-    { RES_IMAP_CONN_TIMEOUT, "IMAP_CONN_TIMEOUT" },
-	{ RES_IMAP_AUTOLOGOUT_TIME, "IMAP_AUTOLOGOUT_TIME" },
-	{ RES_IMAP_SUPPORT_STARTTLS, "IMAP_SUPPORT_STARTTLS" },
-	{ RES_IMAP_CERTIFICATE_PATH, "IMAP_CERTIFICATE_PATH" },
-	{ RES_IMAP_CERTIFICATE_PASSWD, "IMAP_CERTIFICATE_PASSWD" },
-	{ RES_IMAP_PRIVATE_KEY_PATH, "IMAP_PRIVATE_KEY_PATH"},
-	{ RES_IMAP_FORCE_STARTTLS, "IMAP_FORCE_STARTTLS" },
-
-    { RES_THREAD_INIT_NUM, "THREAD_INIT_NUM" },
-    { RES_THREAD_CHARGE_NUM, "THREAD_CHARGE_NUM" },
-
-    { RES_IMAP_RETURN_CODE_PATH, "IMAP_RETURN_CODE_PATH" },
-	{ RES_IMAP_LANG_PATH, "IMAP_LANG_PATH" },
-	
-	{ RES_DEFAULT_LANG, "DEFAULT_LANG" },
-
-    { RES_CONSOLE_SERVER_IP, "CONSOLE_SERVER_IP" },
-    { RES_CONSOLE_SERVER_PORT, "CONSOLE_SERVER_PORT" },
-
-    { RES_SERVICE_PLUGIN_PATH, "SERVICE_PLUGIN_PATH" },
-    { RES_RUNNING_IDENTITY, "RUNNING_IDENTITY" },
-    { RES_BLOCK_INTERVAL_AUTHS, "BLOCK_INTERVAL_AUTHS" },
-    { RES_CONFIG_FILE_PATH, "CONFIG_FILE_PATH" },
-    { RES_DATA_FILE_PATH, "DATA_FILE_PATH" }
-};
-
 static IMAP_RETURN_CODE g_default_code_table[] = {
 	{2160001, "BYE logging out"},
 	{2160002, "+ idling"},
@@ -281,11 +239,11 @@ BOOL resource_save()
  *      TRUE        success
  *      FALSE       fail
  */
-BOOL resource_get_integer(int key, int* value)
+BOOL resource_get_integer(const char *key, int *value)
 {
     char *pvalue    = NULL;     /* string value of the mapped key */
 
-    if ((key < 0 || key > MAX_RES_CONFG_VAR_NUM) && NULL != value) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param resource_get_integer");
         return FALSE;
     }
@@ -295,9 +253,7 @@ BOOL resource_get_integer(int key, int* value)
                     " it is now being used");
         return FALSE;
     }
-    pvalue = config_file_get_value(g_config_file, 
-        g_string_table[key].name);
-
+	pvalue = config_file_get_value(g_config_file, key);
     if (NULL == pvalue) {
         debug_info("[resource]: no value map to the key in "
                     "resource_get_integer");
@@ -318,12 +274,11 @@ BOOL resource_get_integer(int key, int* value)
  *      TRUE        success
  *      FALSE       fail
  */
-
-BOOL resource_set_integer(int key, int value)
+BOOL resource_set_integer(const char *key, int value)
 {
     char m_buf[32];             /* buffer to hold the int string  */
 
-    if ((key < 0 || key > MAX_RES_CONFG_VAR_NUM)) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param in resource_set_integer");
         return FALSE;
     }
@@ -334,8 +289,7 @@ BOOL resource_set_integer(int key, int value)
         return FALSE;
     }
     itoa(value, m_buf, 10);
-    return config_file_set_value(g_config_file, 
-				g_string_table[key].name, m_buf);
+	return config_file_set_value(g_config_file, key, m_buf);
 }
 
 /*
@@ -349,10 +303,9 @@ BOOL resource_set_integer(int key, int value)
  *      TRUE        success
  *      FALSE       fail
  */
-BOOL resource_set_string(int key, const char *value)
+BOOL resource_set_string(const char *key, const char *value)
 {
-
-    if (key < 0 || key > MAX_RES_CONFG_VAR_NUM || NULL == value) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param in resource_set_string");
         return FALSE;
     }
@@ -362,9 +315,7 @@ BOOL resource_set_string(int key, const char *value)
                     " it is now being used");
         return FALSE;
     }
-
-    return config_file_set_value(g_config_file,
-				g_string_table[key].name, value);
+	return config_file_set_value(g_config_file, key, value);
 }
 
 /*
@@ -378,12 +329,11 @@ BOOL resource_set_string(int key, const char *value)
  *      TRUE        success
  *      FALSE       fail
  */
-
-const char* resource_get_string(int key)
+const char *resource_get_string(const char *key)
 {
     const char *pvalue  = NULL;     /* string value of the mapped key */
 
-    if ((key < 0 || key > MAX_RES_CONFG_VAR_NUM) && NULL != pvalue) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param in resource_get_string");
         return NULL;
     }
@@ -393,9 +343,7 @@ const char* resource_get_string(int key)
                     " it is now being used");
         return NULL;
     }
-
-    pvalue = config_file_get_value(g_config_file, g_string_table[key].name);
-
+	pvalue = config_file_get_value(g_config_file, key);
     if (NULL == pvalue) {
         debug_info("[resource]: no value map to the key in "
                     "resource_get_string");
@@ -421,13 +369,12 @@ const char* resource_get_string(int key)
 static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
 {
     char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
-    char *filename, *pbackup, *ptr, code[32];
+	char *pbackup, *ptr, code[32];
     IMAP_RETURN_CODE *code_table;
     FILE *file_ptr = NULL;
 
     int total, index, native_code, len;
-
-    filename = (char*)resource_get_string(RES_IMAP_RETURN_CODE_PATH);
+	const char *filename = resource_get_string("IMAP_RETURN_CODE_PATH");
 	if (NULL == filename) {
 		return -1;
 	}
@@ -701,7 +648,6 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	int total;
 	char *ptr;
 	size_t temp_len;
-	char *filename;
 	SINGLE_LIST temp_list;
 	FILE *file_ptr;
 	SINGLE_LIST_NODE *pnode;
@@ -710,8 +656,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	char line[MAX_FILE_LINE_LEN];
 	
 	single_list_init(&temp_list);
-	
-	filename = (char*)resource_get_string(RES_IMAP_LANG_PATH);
+	const char *filename = resource_get_string("IMAP_LANG_PATH");
 	if (NULL == filename) {
 		return -1;
 	}
@@ -789,10 +734,8 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	for (pnode=single_list_get_head(&temp_list); NULL!=pnode;
 		pnode=single_list_get_after(&temp_list, pnode)) {
 		plang = (LANG_FOLDER*)pnode->pdata;
-		if (0 == strcasecmp(plang->lang,
-			resource_get_string(RES_DEFAULT_LANG))) {
+		if (strcasecmp(plang->lang, resource_get_string("DEFAULT_LANG")) == 0)
 			break;
-		}
 	}
 	
 	if (NULL == pnode) {
@@ -831,10 +774,8 @@ const char* resource_get_default_charset(const char *lang)
 	for (pnode=single_list_get_head(g_lang_list); NULL!=pnode;
 		pnode=single_list_get_after(g_lang_list, pnode)) {
 		plang = (LANG_FOLDER*)pnode->pdata;
-		if (0 == strcasecmp(plang->lang,
-			resource_get_string(RES_DEFAULT_LANG))) {
+		if (strcasecmp(plang->lang, resource_get_string("DEFAULT_LANG")) == 0)
 			return plang->charset;
-		}
 	}
 	
 	return NULL;
@@ -856,10 +797,8 @@ char** resource_get_folder_strings(const char*lang)
 	for (pnode=single_list_get_head(g_lang_list); NULL!=pnode;
 		pnode=single_list_get_after(g_lang_list, pnode)) {
 		plang = (LANG_FOLDER*)pnode->pdata;
-		if (0 == strcasecmp(plang->lang,
-			resource_get_string(RES_DEFAULT_LANG))) {
+		if (strcasecmp(plang->lang, resource_get_string("DEFAULT_LANG")) == 0)
 			return plang->folders;
-		}
 	}
 	
 	return NULL;

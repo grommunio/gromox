@@ -16,45 +16,6 @@
 #define MAX_FILE_NAME_LEN       256
 #define MAX_FILE_LINE_LEN       1024
 
-static struct {
-#define MAX_VAR_LEN     256
-    int  var_id;
-    char name[MAX_VAR_LEN];
-} g_string_table[MAX_RES_CONFG_VAR_NUM] = {
-    { RES_LISTEN_PORT, "LISTEN_PORT" }, 
-	{ RES_LISTEN_SSL_PORT, "LISTEN_SSL_PORT" },
-    { RES_HOST_ID, "HOST_ID" },
-	{ RES_DEFAULT_DOMAIN, "DEFAULT_DOMAIN" },
-    
-    { RES_CONTEXT_NUM, "CONTEXT_NUM" },
-    { RES_CONTEXT_AVERAGE_MEM, "CONTEXT_AVERAGE_MEM" },
-    { RES_CONTEXT_MAX_MEM, "CONTEXT_MAX_MEM" },
-    { RES_CONTEXT_AVERAGE_UNITS, "CONTEXT_AVERAGE_UNITS" },
-
-    { RES_POP3_AUTH_TIMES, "POP3_AUTH_TIMES" },
-    { RES_POP3_CONN_TIMEOUT, "POP3_CONN_TIMEOUT" },
-	{ RES_POP3_SUPPORT_STLS, "POP3_SUPPORT_STLS" },
-	{ RES_POP3_CERTIFICATE_PATH, "POP3_CERTIFICATE_PATH" },
-	{ RES_POP3_CERTIFICATE_PASSWD, "POP3_CERTIFICATE_PASSWD" },
-	{ RES_POP3_PRIVATE_KEY_PATH, "POP3_PRIVATE_KEY_PATH"},
-	{ RES_POP3_FORCE_STLS, "POP3_FORCE_STLS" },
-
-    { RES_THREAD_INIT_NUM, "THREAD_INIT_NUM" },
-    { RES_THREAD_CHARGE_NUM, "THREAD_CHARGE_NUM" },
-
-    { RES_POP3_RETURN_CODE_PATH, "POP3_RETURN_CODE_PATH" },
-
-    { RES_CONSOLE_SERVER_IP, "CONSOLE_SERVER_IP" },
-    { RES_CONSOLE_SERVER_PORT, "CONSOLE_SERVER_PORT" },
-
-	{ RES_CDN_CACHE_PATH, "CDN_CACHE_PATH"},
-    { RES_SERVICE_PLUGIN_PATH, "SERVICE_PLUGIN_PATH" },
-    { RES_RUNNING_IDENTITY, "RUNNING_IDENTITY" },
-    { RES_BLOCK_INTERVAL_AUTHS, "BLOCK_INTERVAL_AUTHS" },
-    { RES_CONFIG_FILE_PATH, "CONFIG_FILE_PATH" },
-    { RES_DATA_FILE_PATH, "DATA_FILE_PATH" }
-};
-
 static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
     { 2170000, "+OK" },
     { 2170001, "-ERR time out" },
@@ -181,11 +142,11 @@ BOOL resource_save()
  *      TRUE        success
  *      FALSE       fail
  */
-BOOL resource_get_integer(int key, int* value)
+BOOL resource_get_integer(const char *key, int *value)
 {
     char *pvalue    = NULL;     /* string value of the mapped key */
 
-    if ((key < 0 || key > MAX_RES_CONFG_VAR_NUM) && NULL != value) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param resource_get_integer");
         return FALSE;
     }
@@ -195,9 +156,7 @@ BOOL resource_get_integer(int key, int* value)
                     " it is now being used");
         return FALSE;
     }
-    pvalue = config_file_get_value(g_config_file, 
-        g_string_table[key].name);
-
+	pvalue = config_file_get_value(g_config_file, key);
     if (NULL == pvalue) {
         debug_info("[resource]: no value map to the key in "
                     "resource_get_integer");
@@ -218,12 +177,11 @@ BOOL resource_get_integer(int key, int* value)
  *      TRUE        success
  *      FALSE       fail
  */
-
-BOOL resource_set_integer(int key, int value)
+BOOL resource_set_integer(const char *key, int value)
 {
     char m_buf[32];             /* buffer to hold the int string  */
 
-    if ((key < 0 || key > MAX_RES_CONFG_VAR_NUM)) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param in resource_set_integer");
         return FALSE;
     }
@@ -234,8 +192,7 @@ BOOL resource_set_integer(int key, int value)
         return FALSE;
     }
     itoa(value, m_buf, 10);
-    return config_file_set_value(g_config_file, 
-				g_string_table[key].name, m_buf);
+	return config_file_set_value(g_config_file, key, m_buf);
 }
 
 /*
@@ -249,10 +206,9 @@ BOOL resource_set_integer(int key, int value)
  *      TRUE        success
  *      FALSE       fail
  */
-BOOL resource_set_string(int key, const char *value)
+BOOL resource_set_string(const char *key, const char *value)
 {
-
-    if (key < 0 || key > MAX_RES_CONFG_VAR_NUM || NULL == value) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param in resource_set_string");
         return FALSE;
     }
@@ -262,9 +218,7 @@ BOOL resource_set_string(int key, const char *value)
                     " it is now being used");
         return FALSE;
     }
-
-    return config_file_set_value(g_config_file,
-				g_string_table[key].name, value);
+	return config_file_set_value(g_config_file, key, value);
 }
 
 /*
@@ -278,12 +232,11 @@ BOOL resource_set_string(int key, const char *value)
  *      TRUE        success
  *      FALSE       fail
  */
-
-const char* resource_get_string(int key)
+const char *resource_get_string(const char *key)
 {
     const char *pvalue  = NULL;     /* string value of the mapped key */
 
-    if ((key < 0 || key > MAX_RES_CONFG_VAR_NUM) && NULL != pvalue) {
+	if (key == NULL) {
         debug_info("[resource]: invalid param in resource_get_string");
         return NULL;
     }
@@ -293,9 +246,7 @@ const char* resource_get_string(int key)
                     " it is now being used");
         return NULL;
     }
-
-    pvalue = config_file_get_value(g_config_file, g_string_table[key].name);
-
+	pvalue = config_file_get_value(g_config_file, key);
     if (NULL == pvalue) {
         debug_info("[resource]: no value map to the key in "
                     "resource_get_string");
@@ -321,13 +272,12 @@ const char* resource_get_string(int key)
 static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable)
 {
     char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
-    char *filename, *pbackup, *ptr, code[32];
+	char *pbackup, *ptr, code[32];
     POP3_ERROR_CODE *code_table;
     FILE *file_ptr = NULL;
 
     int total, index, native_code, len;
-
-    filename = (char*)resource_get_string(RES_POP3_RETURN_CODE_PATH);
+	const char *filename = resource_get_string("POP3_RETURN_CODE_PATH");
 	if (NULL == filename) {
 		return -1;
 	}

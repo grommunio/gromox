@@ -256,7 +256,7 @@ BOOL cmd_handler_imap_control(int argc, char** argv)
 			"\tauth failure block interval          %s\r\n"
 			"\tsupport TLS?                         %s\r\n"
 			"\tforce TLS?                           %s",
-			resource_get_string(RES_HOST_ID),
+			resource_get_string("HOST_ID"),
 			str_timeout,
 			str_autologout,
 			auth_times,
@@ -290,7 +290,7 @@ BOOL cmd_handler_imap_control(int argc, char** argv)
 			console_server_reply_to_client("550 invalid time-out %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_IMAP_CONN_TIMEOUT, argv[3]);
+		resource_set_string("IMAP_CONN_TIMEOUT", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -304,7 +304,7 @@ BOOL cmd_handler_imap_control(int argc, char** argv)
 			console_server_reply_to_client("550 invalid autologout-time %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_IMAP_AUTOLOGOUT_TIME, argv[3]);
+		resource_set_string("IMAP_AUTOLOGOUT_TIME", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -319,7 +319,7 @@ BOOL cmd_handler_imap_control(int argc, char** argv)
 				argv[3]);
 			return TRUE;
 		}
-		resource_set_integer(RES_IMAP_AUTH_TIMES, value);
+		resource_set_integer("IMAP_AUTH_TIMES", value);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -334,7 +334,7 @@ BOOL cmd_handler_imap_control(int argc, char** argv)
 				"block-interval-auths %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_BLOCK_INTERVAL_AUTHS, argv[3]);
+		resource_set_string("BLOCK_INTERVAL_AUTHS", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -358,7 +358,7 @@ BOOL cmd_handler_imap_control(int argc, char** argv)
 				"TRUE or FALSE");
 			return TRUE;
 		}
-		resource_set_string(RES_IMAP_FORCE_STARTTLS, argv[3]);
+		resource_set_string("IMAP_FORCE_STARTTLS", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -403,7 +403,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "default-domain")) {
-		resource_set_string(RES_DEFAULT_DOMAIN, argv[3]);
+		resource_set_string("DEFAULT_DOMAIN", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 		} else {
@@ -436,7 +436,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			"\tmemory block size            %ldK\r\n"
 			"\tcurrent allocated blocks     %ld\r\n"
 			"\tcurrent threads number       %d",
-			resource_get_string(RES_HOST_ID),
+			resource_get_string("HOST_ID"),
 			max_context_num,
 			parsing_context_num,
 			sleeping_context_num,

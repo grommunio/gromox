@@ -274,7 +274,7 @@ BOOL cmd_handler_http_control(int argc, char** argv)
 			"\tauthentication times                 %d\r\n"
 			"\tauth failure block interval          %s\r\n"
 			"\tsupport SSL?                         %s",
-			resource_get_string(RES_HOST_ID),
+			resource_get_string("HOST_ID"),
 			str_timeout,
 			auth_times,
 			str_authblock,
@@ -299,7 +299,7 @@ BOOL cmd_handler_http_control(int argc, char** argv)
 			console_server_reply_to_client("550 invalid time-out %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_HTTP_CONN_TIMEOUT, argv[3]);
+		resource_set_string("HTTP_CONN_TIMEOUT", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -315,7 +315,7 @@ BOOL cmd_handler_http_control(int argc, char** argv)
 				argv[3]);
 			return TRUE;
 		}
-		resource_set_integer(RES_HTTP_AUTH_TIMES, value);
+		resource_set_integer("HTTP_AUTH_TIMES", value);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -330,7 +330,7 @@ BOOL cmd_handler_http_control(int argc, char** argv)
 				"block-interval-auths %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_BLOCK_INTERVAL_AUTHS, argv[3]);
+		resource_set_string("BLOCK_INTERVAL_AUTHS", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -428,7 +428,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "default-domain")) {
-		resource_set_string(RES_DEFAULT_DOMAIN, argv[3]);
+		resource_set_string("DEFAULT_DOMAIN", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 		} else {
@@ -459,7 +459,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			"\tmemory block size            %ld * 64K\r\n"
 			"\tcurrent allocated blocks     %ld\r\n"
 			"\tcurrent threads number       %d",
-			resource_get_string(RES_HOST_ID),
+			resource_get_string("HOST_ID"),
 			max_context_num,
 			parsing_context_num,
 			max_block_num,

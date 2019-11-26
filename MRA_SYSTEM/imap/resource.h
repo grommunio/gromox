@@ -2,45 +2,6 @@
 #define _H_RESOURCE_
 #include "common_types.h"
 
-enum {
-    RES_LISTEN_PORT = 0,
-	RES_LISTEN_SSL_PORT,
-    RES_HOST_ID,
-	RES_DEFAULT_DOMAIN,
-
-    RES_CONTEXT_NUM,
-    RES_CONTEXT_AVERAGE_MEM,
-    RES_CONTEXT_MAX_MEM,
-	RES_CONTEXT_AVERAGE_MITEM,
-
-    RES_IMAP_AUTH_TIMES,
-    RES_IMAP_CONN_TIMEOUT,
-	RES_IMAP_AUTOLOGOUT_TIME,
-	RES_IMAP_SUPPORT_STARTTLS,
-	RES_IMAP_CERTIFICATE_PATH,
-	RES_IMAP_CERTIFICATE_PASSWD,
-	RES_IMAP_PRIVATE_KEY_PATH,
-	RES_IMAP_FORCE_STARTTLS,
-
-    RES_THREAD_INIT_NUM,
-    RES_THREAD_CHARGE_NUM,
-
-    RES_IMAP_RETURN_CODE_PATH,
-	RES_IMAP_LANG_PATH,
-	
-	RES_DEFAULT_LANG,
-
-    RES_CONSOLE_SERVER_IP,
-    RES_CONSOLE_SERVER_PORT,
-
-    RES_SERVICE_PLUGIN_PATH,
-    RES_RUNNING_IDENTITY,
-    RES_BLOCK_INTERVAL_AUTHS,
-    RES_CONFIG_FILE_PATH,
-    RES_DATA_FILE_PATH,
-    MAX_RES_CONFG_VAR_NUM
-};
-
 typedef struct _IMAP_RETURN_CODE {
     int     code;
     char    comment[512];
@@ -142,12 +103,10 @@ extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
 extern BOOL resource_save(void);
-BOOL resource_get_integer(int key, int* value);
-
-const char* resource_get_string(int key);
-
-BOOL resource_set_integer(int key, int value);
-extern BOOL resource_set_string(int key, const char *value);
+extern BOOL resource_get_integer(const char *key, int *value);
+const char *resource_get_string(const char *key);
+extern BOOL resource_set_integer(const char *key, int value);
+extern BOOL resource_set_string(const char *key, const char *value);
 extern const char *resource_get_imap_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_imap_code_table(void);
 char** resource_get_folder_strings(const char*lang);

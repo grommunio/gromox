@@ -1659,7 +1659,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 								"Server: %s\r\n"
 								"Date: %s\r\n"
 								"%s\r\n", status_line,
-								resource_get_string(RES_HOST_ID),
+								resource_get_string("HOST_ID"),
 								dstring, response_buff);
 			} else {
 				if (TRUE == phttp->pfast_context->b_chunked) {
@@ -1669,7 +1669,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 								"Date: %s\r\n"
 								"Transfer-Encoding: chunked\r\n"
 								"%s\r\n", status_line,
-								resource_get_string(RES_HOST_ID),
+								resource_get_string("HOST_ID"),
 								dstring, response_buff);
 				} else {
 					tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
@@ -1677,7 +1677,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 								"Server: %s\r\n"
 								"Date: %s\r\n"
 								"%s\r\n", status_line,
-								resource_get_string(RES_HOST_ID),
+								resource_get_string("HOST_ID"),
 								dstring, response_buff);
 				}
 			}

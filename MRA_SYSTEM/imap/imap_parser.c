@@ -274,9 +274,8 @@ int imap_parser_run()
     for (i=0; i<g_context_num; i++) {
         imap_parser_context_init(g_context_list + i);
     }
-	if (FALSE == resource_get_integer(RES_LISTEN_SSL_PORT, &g_ssl_port)) {
+	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
-	}
 	
 	g_notify_stop = FALSE;
 	if (0 != pthread_create(&g_thr_id, NULL, thread_work_func, NULL)) {
@@ -475,7 +474,7 @@ CONTEXT_PROCESSING:
 				/* IMAP_CODE_2170000: OK <domain> Service ready */
 				imap_reply_str = resource_get_imap_code(IMAP_CODE_2170000, 1, &string_length);
 				imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2, &string_length);
-				host_ID = resource_get_string(RES_HOST_ID);
+				host_ID = resource_get_string("HOST_ID");
 				len = sprintf(reply_buff, "* %s%s%s",
 					imap_reply_str, host_ID, imap_reply_str2);
 				SSL_write(pcontext->connection.ssl, reply_buff, len);

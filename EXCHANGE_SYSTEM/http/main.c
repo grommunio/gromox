@@ -94,27 +94,26 @@ int main(int argc, const char **argv)
 	func_ptr    = (STOP_FUNC)resource_stop;
 	vstack_push(&stop_stack, (void*)&func_ptr);
 	
-
-	if (FALSE == resource_get_integer(RES_LISTEN_PORT, &listen_port)) { 
+	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 80; 
-		resource_set_integer(RES_LISTEN_PORT, 80);
+		resource_set_integer("LISTEN_PORT", listen_port);
 	}
 	printf("[system]: system listening port %d\n", listen_port);
 
-	if (FALSE == resource_get_integer(RES_LISTEN_SSL_PORT, &listen_ssl_port)) {
+	if (!resource_get_integer("LISTEN_SSL_PORT", &listen_ssl_port))
 		listen_ssl_port = 0;
-	}
 	
-	if (FALSE == resource_get_integer(RES_TCP_MAX_SEGMENT, &mss_size)) {
+	if (!resource_get_integer("TCP_MAX_SEGMENT", &mss_size)) {
 		mss_size = 0;
 	} else {
 		printf("[system]: maximum TCP segment size is %d\n", mss_size);
 	}
 
-	if (NULL == (str_val = resource_get_string(RES_HOST_ID))) { 
+	str_val = resource_get_string("HOST_ID");
+	if (str_val == NULL) {
 		memset(temp_buff, 0, 256);
 		gethostname(temp_buff, 256);
-		resource_set_string(RES_HOST_ID, temp_buff);
+		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find host ID, OS host name will be "
 			"used as host ID\n");
@@ -123,10 +122,11 @@ int main(int argc, const char **argv)
 	strncpy(host_name, str_val, 256);
 	dns_name = str_val;
 	
-	if (NULL == (str_val = resource_get_string(RES_DEFAULT_DOMAIN))) {
+	str_val = resource_get_string("DEFAULT_DOMAIN");
+	if (str_val == NULL) {
 		memset(temp_buff, 0, 256);
 		getdomainname(temp_buff, 256);
-		resource_set_string(RES_DEFAULT_DOMAIN, temp_buff);
+		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find default domain, OS domain name "
 			"will be used as default domain\n");
@@ -142,110 +142,109 @@ int main(int argc, const char **argv)
 		dns_domain = ptoken + 1;
 	}
 	
-	
-	if (NULL == (user_name = resource_get_string(RES_RUNNING_IDENTITY))) {
+	user_name = resource_get_string("RUNNING_IDENTITY");
+	if (user_name == NULL)
 		printf("[system]: running identity will not be changed\n");
-	} else {
+	else
 		printf("[system]: running identity of process will be %s\n", user_name);
-	}
 
-	if (FALSE == resource_get_integer(RES_CONTEXT_NUM, &context_num)) { 
+	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
 		context_num = 200;
-		resource_set_integer(RES_CONTEXT_NUM, 200);
+		resource_set_integer("CONTEXT_NUM", context_num);
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
-	if (FALSE == resource_get_integer(RES_THREAD_CHARGE_NUM, 
-		&thread_charge_num)) { 
+	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
 		thread_charge_num = 40; 
-		resource_set_integer(RES_THREAD_CHARGE_NUM, 40);
+		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
 		if (thread_charge_num < 4) {
 			thread_charge_num = 40;
-			resource_set_integer(RES_THREAD_CHARGE_NUM, 40);
+			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		} else if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			resource_set_integer(RES_THREAD_CHARGE_NUM, thread_charge_num);
+			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		}
 	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	if (FALSE == resource_get_integer(RES_THREAD_INIT_NUM, 
-		&thread_init_num)) { 
+	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
 		thread_init_num = 1; 
-		resource_set_integer(RES_THREAD_INIT_NUM, 1);
+		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			context_num = thread_charge_num;
-			resource_set_integer(RES_CONTEXT_NUM, context_num);
+			resource_set_integer("CONTEXT_NUM", context_num);
 			printf("[system]: rectify contexts number %d\n", context_num);
 		}
-		resource_set_integer(RES_THREAD_INIT_NUM, thread_init_num);
+		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
-	if (NULL == (str_val = resource_get_string(RES_CONTEXT_AVERAGE_MEM))) { 
+	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
+	if (str_val == NULL) {
 		context_aver_mem = 4;
-		resource_set_string(RES_CONTEXT_AVERAGE_MEM, "256K");
+		resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
 	} else {
 		context_aver_mem = atobyte(str_val)/(64*1024);
 		if (context_aver_mem <= 2) {
 			context_aver_mem = 4;
-			resource_set_string(RES_CONTEXT_AVERAGE_MEM, "256K");
+			resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
 		}
 	}
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[http]: context average memory is %s\n", temp_buff);
 	
-	if (NULL == (str_val = resource_get_string(RES_HTTP_CONN_TIMEOUT))) {
+	str_val = resource_get_string("HTTP_CONN_TIMEOUT");
+	if (str_val == NULL) {
 		http_conn_timeout = 180;
-		resource_set_string(RES_HTTP_CONN_TIMEOUT, "3minutes");
+		resource_set_string("HTTP_CONN_TIMEOUT", "3minutes");
 	} else {
 		http_conn_timeout = atoitvl(str_val);
 		if (http_conn_timeout < 30) {
 			http_conn_timeout = 180;
-			resource_set_string(RES_HTTP_CONN_TIMEOUT, "3minutes");
+			resource_set_string("HTTP_CONN_TIMEOUT", "3minutes");
 		}
 	}
 	itvltoa(http_conn_timeout, temp_buff);
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
- 
-	if (FALSE == resource_get_integer(RES_HTTP_AUTH_TIMES, 
-		&http_auth_times)) { 
+	if (!resource_get_integer("HTTP_AUTH_TIMES", &http_auth_times)) {
 		http_auth_times = 3; 
-		resource_set_integer(RES_HTTP_AUTH_TIMES, 3);
+		resource_set_integer("HTTP_AUTH_TIMES", http_auth_times);
 	} else {
 		if (http_auth_times <= 0) {
 			http_auth_times = 3;
-			resource_set_integer(RES_HTTP_AUTH_TIMES, 3);
+			resource_set_integer("HTTP_AUTH_TIMES", http_auth_times);
 		}
 	}
 	printf("[http]: maximum authentification failure times is %d\n", 
 			http_auth_times);
 
-	if (NULL == (str_val = resource_get_string(RES_BLOCK_INTERVAL_AUTHS))) { 
+	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
+	if (str_val == NULL) {
 		block_interval_auth = 60;
-		resource_set_string(RES_BLOCK_INTERVAL_AUTHS, "1 minute");
+		resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
 	} else {
 		block_interval_auth = atoitvl(str_val);
 		if (block_interval_auth <= 0) {
 			block_interval_auth = 60;
-			resource_set_string(RES_BLOCK_INTERVAL_AUTHS, "1 minute");
+			resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
 		}
 	}
 	itvltoa(block_interval_auth, temp_buff);
 	printf("[http]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 	
-	if (NULL == (str_val = resource_get_string(RES_HTTP_SUPPORT_SSL))) {
+	str_val = resource_get_string("HTTP_SUPPORT_SSL");
+	if (str_val == NULL) {
 		http_support_ssl = FALSE;
-		resource_set_string(RES_HTTP_SUPPORT_SSL, "FALSE");
+		resource_set_string("HTTP_SUPPORT_SSL", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			http_support_ssl = FALSE;
@@ -253,12 +252,12 @@ int main(int argc, const char **argv)
 			http_support_ssl = TRUE;
 		} else {
 			http_support_ssl = FALSE;
-			resource_set_string(RES_HTTP_SUPPORT_SSL, "FALSE");
+			resource_set_string("HTTP_SUPPORT_SSL", "FALSE");
 		}
 	}
-	certificate_path = resource_get_string(RES_HTTP_CERTIFICATE_PATH);
-	cb_passwd = resource_get_string(RES_HTTP_CERTIFICATE_PASSWD);
-	private_key_path = resource_get_string(RES_HTTP_PRIVATE_KEY_PATH);
+	certificate_path = resource_get_string("HTTP_CERTIFICATE_PATH");
+	cb_passwd = resource_get_string("HTTP_CERTIFICATE_PASSWD");
+	private_key_path = resource_get_string("HTTP_PRIVATE_KEY_PATH");
 	if (TRUE == http_support_ssl) {
 		if (NULL == certificate_path || NULL == private_key_path) {
 			http_support_ssl = FALSE;
@@ -279,130 +278,137 @@ int main(int argc, const char **argv)
 		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
 	}
 	
-	if (NULL == (str_val = resource_get_string(RES_REQUEST_MAX_MEM))) { 
+	str_val = resource_get_string("REQUEST_MAX_MEM");
+	if (str_val == NULL) {
 		max_request_mem = 64*1024*1024;
-		resource_set_string(RES_REQUEST_MAX_MEM, "64M");
+		resource_set_string("REQUEST_MAX_MEM", "64M");
 	} else {
 		max_request_mem = atobyte(str_val);
 		if (max_request_mem < 1024*1024) {
 			max_request_mem = 1024*1024;
-			resource_set_string(RES_REQUEST_MAX_MEM, "1M");
+			resource_set_string("REQUEST_MAX_MEM", "1M");
 		}
 	}
 	bytetoa(max_request_mem, temp_buff);
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
-	if (NULL == (proc_plugin_path = resource_get_string(
-		RES_PROC_PLUGIN_PATH))) {
+	proc_plugin_path = resource_get_string("PROC_PLUGIN_PATH");
+	if (proc_plugin_path == NULL) {
 		proc_plugin_path = "../proc_plugins";
-		resource_set_string(RES_PROC_PLUGIN_PATH, "../proc_plugins");
+		resource_set_string("PROC_PLUGIN_PATH", proc_plugin_path);
 	}
 	printf("[pdu_processor]: proc plugins path is %s\n", proc_plugin_path);
 	
-	if (NULL == (hpm_plugin_path = resource_get_string(
-		RES_HPM_PLUGIN_PATH))) {
+	hpm_plugin_path = resource_get_string("HPM_PLUGIN_PATH");
+	if (hpm_plugin_path == NULL) {
 		hpm_plugin_path = "../hpm_plugins";
-		resource_set_string(RES_HPM_PLUGIN_PATH, "../hpm_plugins");
+		resource_set_string("HPM_PLUGIN_PATH", hpm_plugin_path);
 	}
 	printf("[hpm_processor]: hpm plugins path is %s\n", hpm_plugin_path);
 	
-	if (NULL == (str_val = resource_get_string(RES_HPM_CACHE_SIZE))) { 
+	str_val = resource_get_string("HPM_CACHE_SIZE");
+	if (str_val == NULL) {
 		hpm_cache_size = 256*1024;
-		resource_set_string(RES_HPM_CACHE_SIZE, "256K");
+		resource_set_string("HPM_CACHE_SIZE", "256K");
 	} else {
 		hpm_cache_size = atobyte(str_val);
 		if (hpm_cache_size < 64*1024) {
 			hpm_cache_size = 256*1024;
-			resource_set_string(RES_HPM_CACHE_SIZE, "256K");
+			resource_set_string("HPM_CACHE_SIZE", "256K");
 		}
 	}
 	bytetoa(hpm_cache_size, temp_buff);
 	printf("[hpm_processor]: fastcgi cache size is %s\n", temp_buff);
 	
-	if (NULL == (str_val = resource_get_string(RES_HPM_MAX_SIZE))) { 
+	str_val = resource_get_string("HPM_MAX_SIZE");
+	if (str_val == NULL) {
 		hpm_max_size = 1024*1024;
-		resource_set_string(RES_HPM_MAX_SIZE, "1M");
+		resource_set_string("HPM_MAX_SIZE", "1M");
 	} else {
 		hpm_max_size = atobyte(str_val);
 		if (hpm_max_size < 64*1024) {
 			hpm_max_size = 1024*1024;
-			resource_set_string(RES_HPM_MAX_SIZE, "1M");
+			resource_set_string("HPM_MAX_SIZE", "1M");
 		}
 	}
 	bytetoa(hpm_max_size, temp_buff);
 	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
 
-	if (NULL == (service_plugin_path = resource_get_string(
-		RES_SERVICE_PLUGIN_PATH))) {
+	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
+	if (service_plugin_path == NULL) {
 		service_plugin_path = "../service_plugins/http";
-		resource_set_string(RES_SERVICE_PLUGIN_PATH, "../service_plugins/http");
+		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
 
-	if (NULL == (str_val = resource_get_string(RES_CONFIG_FILE_PATH))) {
+	str_val = resource_get_string("CONFIG_FILE_PATH");
+	if (str_val == NULL) {
 		str_val = "../config/http";
-		resource_set_string(RES_CONFIG_FILE_PATH, "../config/http");
+		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
-	if (NULL == (str_val = resource_get_string(RES_DATA_FILE_PATH))) {
+	str_val = resource_get_string("DATA_FILE_PATH");
+	if (str_val == NULL) {
 		str_val = "../data/http";
-		resource_set_string(RES_DATA_FILE_PATH, "../data/http");
+		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	sprintf(fastcgi_list_path, "%s/fastcgi.txt", str_val);
 	sprintf(cache_list_path, "%s/cache.txt", str_val);
 	sprintf(rewrite_list_path, "%s/rewrite.txt", str_val);
 	printf("[system]: data files path is %s\n", str_val);
 	
-	if (NULL == (console_server_ip = resource_get_string(
-		RES_CONSOLE_SERVER_IP))) { 
+	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
+	if (console_server_ip == NULL) {
 		console_server_ip = "127.0.0.1"; 
-		resource_set_string(RES_CONSOLE_SERVER_IP, "127.0.0.1");
+		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
 	}
 	printf("[console_server]: console server ip %s\n", console_server_ip);
  
-	if (FALSE == (resource_get_integer(RES_CONSOLE_SERVER_PORT, 
-		&console_server_port))) { 
+	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
 		console_server_port = 8899; 
-		resource_set_integer(RES_CONSOLE_SERVER_PORT, 8899);
+		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
 	}
 	printf("[console_server]: console server is port %d\n",
 		console_server_port);
 	
-	if (NULL == (str_val = resource_get_string(RES_FASTCGI_CACHE_SIZE))) { 
+	str_val = resource_get_string("FASTCGI_CACHE_SIZE");
+	if (str_val == NULL) {
 		fastcgi_cache_size = 256*1024;
-		resource_set_string(RES_FASTCGI_CACHE_SIZE, "256K");
+		resource_set_string("FASTCGI_CACHE_SIZE", "256K");
 	} else {
 		fastcgi_cache_size = atobyte(str_val);
 		if (fastcgi_cache_size < 64*1024) {
 			fastcgi_cache_size = 256*1024;
-			resource_set_string(RES_FASTCGI_CACHE_SIZE, "256K");
+			resource_set_string("FASTCGI_CACHE_SIZE", "256K");
 		}
 	}
 	bytetoa(fastcgi_cache_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi cache size is %s\n", temp_buff);
 	
-	if (NULL == (str_val = resource_get_string(RES_FASTCGI_MAX_SIZE))) { 
+	str_val = resource_get_string("FASTCGI_MAX_SIZE");
+	if (str_val == NULL) {
 		fastcgi_max_size = 1024*1024;
-		resource_set_string(RES_FASTCGI_MAX_SIZE, "1M");
+		resource_set_string("FASTCGI_MAX_SIZE", "1M");
 	} else {
 		fastcgi_max_size = atobyte(str_val);
 		if (fastcgi_max_size < 64*1024) {
 			fastcgi_max_size = 1024*1024;
-			resource_set_string(RES_FASTCGI_MAX_SIZE, "1M");
+			resource_set_string("FASTCGI_MAX_SIZE", "1M");
 		}
 	}
 	bytetoa(fastcgi_max_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
 	
-	if (NULL == (str_val = resource_get_string(RES_FASTCGI_EXEC_TIMEOUT))) {
+	str_val = resource_get_string("FASTCGI_EXEC_TIMEOUT");
+	if (str_val == NULL) {
 		fastcgi_exec_timeout = 600;
-		resource_set_string(RES_FASTCGI_EXEC_TIMEOUT, "10minutes");
+		resource_set_string("FASTCGI_EXEC_TIMEOUT", "10minutes");
 	} else {
 		fastcgi_exec_timeout = atoitvl(str_val);
 		if (fastcgi_exec_timeout < 60) {
 			fastcgi_exec_timeout = 600;
-			resource_set_string(RES_FASTCGI_EXEC_TIMEOUT, "10minutes");
+			resource_set_string("FASTCGI_EXEC_TIMEOUT", "10minutes");
 		}
 	}
 	itvltoa(fastcgi_exec_timeout, temp_buff);

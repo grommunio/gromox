@@ -51,9 +51,7 @@ static BOOL flusher_unload_plugin();
 static void* flusher_queryservice(const char *service);
 
 static int flusher_get_queue_length();
-
-static char* flusher_get_host_ID();
-
+static const char *flusher_get_host_ID(void);
 static int flusher_get_version();
 
 static FLUSH_ENTITY* flusher_get_from_queue();
@@ -474,9 +472,9 @@ static const char* flusher_get_extra_value(int context_ID, int pos)
 	return smtp_parser_get_extra_value(pcontext, pos);
 }
 
-static char* flusher_get_host_ID()
+static const char *flusher_get_host_ID(void)
 {
-	return (char*)resource_get_string(RES_HOST_ID);
+	return resource_get_string("HOST_ID");
 }
 
 static int flusher_get_queue_length()
@@ -544,9 +542,7 @@ static const char* flusher_get_plugin_name()
 
 static const char* flusher_get_config_path()
 {
-	const char *ret_value;
-
-	ret_value = resource_get_string(RES_CONFIG_FILE_PATH);
+	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
 	if (NULL == ret_value) {
 		    ret_value = "../config";
 	}
@@ -556,9 +552,7 @@ static const char* flusher_get_config_path()
 
 static const char* flusher_get_data_path()
 {
-	const char *ret_value;
-
-	ret_value = resource_get_string(RES_DATA_FILE_PATH);
+	const char *ret_value = resource_get_string("DATA_FILE_PATH");
 	if (NULL == ret_value) {
 		    ret_value ="../data";
 	}

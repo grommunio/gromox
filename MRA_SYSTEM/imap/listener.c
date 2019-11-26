@@ -215,7 +215,7 @@ static void* thread_work_func(void* arg)
 							 &string_length);
 			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180015, 2,
 							 &string_length);
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
 				  imap_reply_str2);
 			write(sockd2, buff, len);
@@ -265,7 +265,7 @@ static void* thread_work_func(void* arg)
 						 &string_length);
 		imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2170000, 2,
 						 &string_length);
-		host_ID = resource_get_string(RES_HOST_ID);
+		host_ID = resource_get_string("HOST_ID");
 		len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
 			  imap_reply_str2);
 		write(sockd2, buff, len);
@@ -332,7 +332,7 @@ static void* thread_work_ssl_func(void* arg)
 							 &string_length);
 			imap_reply_str2 = resource_get_imap_code(IMAP_CODE_2180015, 2,
 							 &string_length);
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "* %s%s%s", imap_reply_str, host_ID,
 				  imap_reply_str2);
 			write(sockd2, buff, len);

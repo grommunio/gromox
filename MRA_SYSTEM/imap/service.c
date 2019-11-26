@@ -390,9 +390,7 @@ static const char* service_get_plugin_name()
  */
 static const char* service_get_config_path()
 {
-	const char *ret_value;
-	
-	ret_value = resource_get_string(RES_CONFIG_FILE_PATH);
+	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
 	if (NULL == ret_value) {
 		ret_value = "../config";
 	}
@@ -406,9 +404,7 @@ static const char* service_get_config_path()
  */
 static const char* service_get_data_path()
 {
-	const char *ret_value;
-	
-	ret_value = resource_get_string(RES_DATA_FILE_PATH);
+	const char *ret_value = resource_get_string("DATA_FILE_PATH");
 	if (NULL == ret_value) {
 		ret_value =	"../data";
 	}
@@ -432,9 +428,7 @@ static int service_get_context_num()
  */
 static const char* service_get_host_ID()
 {
-	const char *ret_value;
-
-	ret_value = resource_get_string(RES_HOST_ID);
+	const char *ret_value = resource_get_string("HOST_ID");
 	if (NULL == ret_value) {
 		ret_value = "localhost";
 	}

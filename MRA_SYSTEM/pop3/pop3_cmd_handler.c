@@ -994,7 +994,7 @@ NORMAL_DELETE:
 END_QUIT:
 	array_clear(&pcontext->array);
 	sprintf(temp_buff, "%s%s%s", resource_get_pop3_code(POP3_CODE_2170010, 1, 
-		    &string_length), resource_get_string(RES_HOST_ID), 
+		&string_length), resource_get_string("HOST_ID"),
 			resource_get_pop3_code(POP3_CODE_2170010, 2, &string_length));
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, temp_buff, strlen(temp_buff));

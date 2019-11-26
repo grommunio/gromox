@@ -161,10 +161,8 @@ int pop3_parser_run()
     for (i=0; i<g_context_num; i++) {
         pop3_parser_context_init(g_context_list + i);
     }
-	if (FALSE == resource_get_integer(RES_LISTEN_SSL_PORT, &g_ssl_port)) {
+	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
-	}
-
     return 0;
 }
 
@@ -292,7 +290,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 						                 &string_length);
 				pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170011, 2,
 						                 &string_length);
-				host_ID = resource_get_string(RES_HOST_ID);
+				host_ID = resource_get_string("HOST_ID");
 				len = sprintf(reply_buf, "%s%s%s", pop3_reply_str, host_ID,
 						      pop3_reply_str2);
 				SSL_write(pcontext->connection.ssl, reply_buf, len);

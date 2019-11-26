@@ -228,7 +228,7 @@ static void* thread_work_func(void* arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			system_services_log_info(8, "out of http context");
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
@@ -241,7 +241,7 @@ static void* thread_work_func(void* arg)
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
 		/* pass the client IP into the IP filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
@@ -258,7 +258,7 @@ static void* thread_work_func(void* arg)
 		}
 		/* pass the client IP into the IP container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
@@ -334,7 +334,7 @@ static void* thread_work_ssl_func(void* arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			system_services_log_info(8, "out of http context");
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
@@ -347,7 +347,7 @@ static void* thread_work_ssl_func(void* arg)
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
 		/* pass the client IP into the IP filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
-		   host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
@@ -364,7 +364,7 @@ static void* thread_work_ssl_func(void* arg)
 		}
 		/* pass the client IP into the IP container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"

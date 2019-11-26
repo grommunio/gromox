@@ -109,8 +109,7 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
 
     /* inform client side the esmtp type*/
     pcontext->last_cmd = T_EHLO_CMD;
-    string_length = sprintf(buff, "250-%s\r\n",
-		resource_get_string(RES_HOST_ID));
+	string_length = sprintf(buff, "250-%s\r\n", resource_get_string("HOST_ID"));
     if (SMTP_MODE_INBOUND != smtp_parser_get_param(SMTP_RUNNING_MODE) &&
 		NULL != system_services_auth_ehlo) {
         string_length += sprintf(buff + string_length, "250-AUTH %s\r\n",
@@ -683,7 +682,7 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
     }
     /* 221 <domain> Good-bye */
     sprintf(buff, "%s%s%s", resource_get_smtp_code(SMTP_CODE_2172003, 1, 
-            &string_length), resource_get_string(RES_HOST_ID), 
+		&string_length), resource_get_string("HOST_ID"),
             resource_get_smtp_code(SMTP_CODE_2172003, 2, &string_length));
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, buff, strlen(buff));

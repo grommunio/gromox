@@ -683,7 +683,7 @@ CONTEXT_PROCESSING:
 						"Server: %s\r\n"
 						"Content-Length: 0\r\n"
 						"Connection: close\r\n"
-						"\r\n", dstring, resource_get_string(RES_HOST_ID));
+						"\r\n", dstring, resource_get_string("HOST_ID"));
 					stream_write(&pcontext->stream_out,
 						response_buff, response_len);
 					pcontext->total_length = response_len;
@@ -709,7 +709,7 @@ CONTEXT_PROCESSING:
 							"Keep-Alive: timeout=%d\r\n"
 							"Connection: Keep-Alive\r\n"
 							"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-							"\r\n", dstring, resource_get_string(RES_HOST_ID),
+							"\r\n", dstring, resource_get_string("HOST_ID"),
 							g_timeout);
 						stream_write(&pcontext->stream_out,
 							response_buff, response_len);
@@ -722,8 +722,7 @@ CONTEXT_PROCESSING:
 					}
 
 					if ('\0' == pcontext->lang[0]) {
-						strcpy(pcontext->lang,
-							resource_get_string(RES_USER_DEFAULT_LANG));
+						strcpy(pcontext->lang, resource_get_string("USER_DEFAULT_LANG"));
 					}
 					pcontext->b_authed = TRUE;
 					http_parser_log_info(pcontext, 8, "login success");
@@ -747,7 +746,7 @@ CONTEXT_PROCESSING:
 						"Content-Length: %d\r\n"
 						"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
 						"\r\n%s\r\n", dstring,
-						resource_get_string(RES_HOST_ID),
+						resource_get_string("HOST_ID"),
 						g_timeout, strlen(reason) + 2, reason);
 					stream_write(&pcontext->stream_out,
 						response_buff, response_len);
@@ -809,7 +808,7 @@ CONTEXT_PROCESSING:
 						"Keep-Alive: timeout=%d\r\n"
 						"Connection: Keep-Alive\r\n"
 						"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-						"\r\n", dstring, resource_get_string(RES_HOST_ID),
+						"\r\n", dstring, resource_get_string("HOST_ID"),
 						g_timeout);
 					stream_write(&pcontext->stream_out,
 						response_buff, response_len);
@@ -946,7 +945,7 @@ CONTEXT_PROCESSING:
 						"<center><h1>404 Not Found</h1></center>\r\n"
 						"</body>\r\n"
 						"</html>\r\n",
-						dstring, resource_get_string(RES_HOST_ID));
+						dstring, resource_get_string("HOST_ID"));
 			stream_write(&pcontext->stream_out, response_buff, response_len);
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
@@ -1795,7 +1794,7 @@ BAD_HTTP_REQUEST:
 					"Server: %s\r\n"
 					"Content-Length: 0\r\n"
 					"Connection: close\r\n"
-					"\r\n", dstring, resource_get_string(RES_HOST_ID));
+					"\r\n", dstring, resource_get_string("HOST_ID"));
 	stream_write(&pcontext->stream_out, response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
@@ -1818,7 +1817,7 @@ INERTNAL_SERVER_ERROR:
 					"Server: %s\r\n"
 					"Content-Length: 0\r\n"
 					"Connection: close\r\n"
-					"\r\n", dstring, resource_get_string(RES_HOST_ID));
+					"\r\n", dstring, resource_get_string("HOST_ID"));
 	stream_write(&pcontext->stream_out, response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
@@ -1841,7 +1840,7 @@ REQUEST_TIME_OUT:
 					"Server: %s\r\n"
 					"Content-Length: 0\r\n"
 					"Connection: close\r\n"
-					"\r\n", dstring, resource_get_string(RES_HOST_ID));
+					"\r\n", dstring, resource_get_string("HOST_ID"));
 	stream_write(&pcontext->stream_out, response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;

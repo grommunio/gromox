@@ -215,7 +215,7 @@ static void* thread_work_func(void* arg)
 							 &string_length);
 			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170013, 2,
 							 &string_length);
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);
@@ -265,7 +265,7 @@ static void* thread_work_func(void* arg)
 						 &string_length);
 		pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170011, 2,
 						 &string_length);
-		host_ID = resource_get_string(RES_HOST_ID);
+		host_ID = resource_get_string("HOST_ID");
 		len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 			  pop3_reply_str2);
 		write(sockd2, buff, len);
@@ -331,7 +331,7 @@ static void* thread_work_ssl_func(void* arg)
 							 &string_length);
 			pop3_reply_str2 = resource_get_pop3_code(POP3_CODE_2170013, 2,
 							 &string_length);
-			host_ID = resource_get_string(RES_HOST_ID);
+			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "%s%s%s", pop3_reply_str, host_ID,
 				  pop3_reply_str2);
 			write(sockd2, buff, len);

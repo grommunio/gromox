@@ -258,9 +258,8 @@ int smtp_parser_run()
 	for (i=0; i<g_context_num; i++) {
 		smtp_parser_context_init(g_context_list + i);
 	}
-	if (FALSE == resource_get_integer(RES_LISTEN_SSL_PORT, &g_ssl_port)) {
+	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
-	}
 	pthread_key_create(&g_as_buff_key, NULL);
 	pthread_mutex_init(&g_block_ID_mutex, NULL);
 	return 0;
@@ -529,7 +528,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						                 &string_length);
 				smtp_reply_str2 = resource_get_smtp_code(SMTP_CODE_2172002, 2,
 						                 &string_length);
-				host_ID = resource_get_string(RES_HOST_ID);
+				host_ID = resource_get_string("HOST_ID");
 				len = sprintf(reply_buf, "%s%s%s", smtp_reply_str, host_ID,
 						      smtp_reply_str2);
 				SSL_write(pcontext->connection.ssl, reply_buf, len);

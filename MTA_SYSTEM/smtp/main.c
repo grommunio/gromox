@@ -84,119 +84,118 @@ int main(int argc, const char **argv)
 	func_ptr	= (STOP_FUNC)resource_stop;
 	vstack_push(&stop_stack, (void*)&func_ptr);
 	
-
-	if (FALSE == resource_get_integer(RES_LISTEN_PORT, &listen_port)) { 
+	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 25; 
-		resource_set_integer(RES_LISTEN_PORT, 25);
+		resource_set_integer("LISTEN_PORT", listen_port);
 	}
 	printf("[system]: system listening port %d\n", listen_port);
 
-	if (FALSE == resource_get_integer(RES_LISTEN_SSL_PORT, &listen_ssl_port)) {
+	if (!resource_get_integer("LISTEN_SSL_PORT", &listen_ssl_port))
 		listen_ssl_port = 0;
-	}
 
-	if (NULL == (str_val = resource_get_string(RES_HOST_ID))) { 
+	str_val = resource_get_string("HOST_ID");
+	if (str_val == NULL) {
 		memset(temp_buff, 0, 256);
 		gethostname(temp_buff, 256);
-		resource_set_string(RES_HOST_ID, temp_buff);
+		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find host ID, OS host name will be "
 			"used as host ID\n");
 	}
 	printf("[system]: host ID is %s\n", str_val);
 	
-	if (NULL == (str_val = resource_get_string(RES_DEFAULT_DOMAIN))) {
+	str_val = resource_get_string("DEFAULT_DOMAIN");
+	if (str_val == NULL) {
 		memset(temp_buff, 0, 256);
 		getdomainname(temp_buff, 256);
-		resource_set_string(RES_DEFAULT_DOMAIN, temp_buff);
+		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find default domain, OS domain name "
 			"will be used as default domain\n");
 	}
 	printf("[system]: default domain is %s\n", str_val);
 	
-	if (NULL == (user_name = resource_get_string(RES_RUNNING_IDENTITY))) {
+	user_name = resource_get_string("RUNNING_IDENTITY");
+	if (user_name == NULL)
 		printf("[system]: running identity will not be changed\n");
-	} else {
+	else
 		printf("[system]: running identity of process will be %s\n", user_name);
-	}
 
-	if (FALSE == resource_get_integer(RES_CONTEXT_NUM, &context_num)) { 
+	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
 		context_num = 200;
-		resource_set_integer(RES_CONTEXT_NUM, 200);
+		resource_set_integer("CONTEXT_NUM", context_num);
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
-	if (FALSE == resource_get_integer(RES_THREAD_CHARGE_NUM, 
-		&thread_charge_num)) { 
+	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
 		thread_charge_num = 40; 
-		resource_set_integer(RES_THREAD_CHARGE_NUM, 40);
+		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
 		if (thread_charge_num < 4) {
 			thread_charge_num = 40;	
-			resource_set_integer(RES_THREAD_CHARGE_NUM, 40);
+			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		} else if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			resource_set_integer(RES_THREAD_CHARGE_NUM, thread_charge_num);
+			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		}
 	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	if (FALSE == resource_get_integer(RES_THREAD_INIT_NUM, 
-		&thread_init_num)) { 
+	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
 		thread_init_num = 1; 
-		resource_set_integer(RES_THREAD_INIT_NUM, 1);
+		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			context_num = thread_charge_num;
-			resource_set_integer(RES_CONTEXT_NUM, context_num);
+			resource_set_integer("CONTEXT_NUM", context_num);
 			printf("[system]: rectify contexts number %d\n", context_num);
 		}
-		resource_set_integer(RES_THREAD_INIT_NUM, thread_init_num);
+		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
-	if (NULL == (str_val = resource_get_string(RES_CONTEXT_AVERAGE_MEM))) { 
+	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
+	if (str_val == NULL) {
 		context_aver_mem = 4;
-		resource_set_string(RES_CONTEXT_AVERAGE_MEM, "256K");
+		resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
 	} else {
 		context_aver_mem = atobyte(str_val)/(64*1024);
 		if (context_aver_mem <= 1) {
 			context_aver_mem = 4;
-			resource_set_string(RES_CONTEXT_AVERAGE_MEM, "256K");
+			resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
 		}
 	}
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[smtp]: context average memory is %s\n", temp_buff);
  
-	if (NULL == (str_val = resource_get_string(RES_CONTEXT_MAX_MEM))) {
+	str_val = resource_get_string("CONTEXT_MAX_MEM");
+	if (str_val == NULL) {
 		context_max_mem = 32; 
-		resource_set_string(RES_CONTEXT_MAX_MEM, "2M");
+		resource_set_string("CONTEXT_MAX_MEM", "2M");
 	} else {
 		context_max_mem = atobyte(str_val)/(64*1024); 
 	}
 	if (context_max_mem < context_aver_mem) {
 		context_max_mem = context_aver_mem;
 		bytetoa(context_max_mem*64*1024, temp_buff);
-		resource_set_string(RES_CONTEXT_MAX_MEM, temp_buff);
+		resource_set_string("CONTEXT_MAX_MEM", temp_buff);
 	} 
 	context_max_mem *= 64*1024;
 	bytetoa(context_max_mem, temp_buff);
 	printf("[smtp]: context maximum memory is %s\n", temp_buff);
  
-	if (FALSE == resource_get_integer(RES_SMTP_RUNNING_MODE, 
-		&smtp_running_mode)) { 
+	if (!resource_get_integer("SMTP_RUNNING_MODE", &smtp_running_mode)) {
 		smtp_running_mode = SMTP_MODE_MIXTURE; 
-		resource_set_integer(RES_SMTP_RUNNING_MODE, 2);
+		resource_set_integer("SMTP_RUNNING_MODE", smtp_running_mode);
 	} else if (smtp_running_mode < SMTP_MODE_OUTBOUND || 
 		smtp_running_mode >	 SMTP_MODE_MIXTURE) { 
 		smtp_running_mode = SMTP_MODE_MIXTURE; 
-		resource_set_integer(RES_SMTP_RUNNING_MODE, 2);
+		resource_set_integer("SMTP_RUNNING_MODE", smtp_running_mode);
 	}
 	switch(smtp_running_mode) {
 	case SMTP_MODE_OUTBOUND:
@@ -210,18 +209,19 @@ int main(int argc, const char **argv)
 		break;
 	}
 
-	if (NULL == (str_val = resource_get_string(RES_DOMAIN_LIST_VALID))) {
+	str_val = resource_get_string("DOMAIN_LIST_VALID");
+	if (str_val == NULL) {
 		if (SMTP_MODE_MIXTURE == smtp_running_mode) {
-			resource_set_string(RES_DOMAIN_LIST_VALID, "TRUE");
+			resource_set_string("DOMAIN_LIST_VALID", "TRUE");
 			domainlist_valid = TRUE;
 		} else {
-			resource_set_string(RES_DOMAIN_LIST_VALID, "FALSE");
+			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
 			domainlist_valid = FALSE;
 		}
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			if (SMTP_MODE_MIXTURE == smtp_running_mode) {
-				resource_set_string(RES_DOMAIN_LIST_VALID, "TRUE");
+				resource_set_string("DOMAIN_LIST_VALID", "TRUE");
 				domainlist_valid = TRUE;
 			} else {
 				domainlist_valid = FALSE;
@@ -230,10 +230,10 @@ int main(int argc, const char **argv)
 			domainlist_valid = TRUE;
 		} else {
 			if (SMTP_MODE_MIXTURE == smtp_running_mode) {
-				resource_set_string(RES_DOMAIN_LIST_VALID, "TRUE");
+				resource_set_string("DOMAIN_LIST_VALID", "TRUE");
 				domainlist_valid = TRUE;
 			} else {
-				resource_set_string(RES_DOMAIN_LIST_VALID, "FALSE");
+				resource_set_string("DOMAIN_LIST_VALID", "FALSE");
 				domainlist_valid = FALSE;
 			}
 		}
@@ -244,22 +244,24 @@ int main(int argc, const char **argv)
 		printf("[system]: domain list in system is valid\n");
 	}
 	
-	if (NULL == (str_val = resource_get_string(RES_SMTP_CONN_TIMEOUT))) {
+	str_val = resource_get_string("SMTP_CONN_TIMEOUT");
+	if (str_val == NULL) {
 		smtp_conn_timeout = 180;
-		resource_set_string(RES_SMTP_CONN_TIMEOUT, "3minutes");
+		resource_set_string("SMTP_CONN_TIMEOUT", "3minutes");
 	} else {
 		smtp_conn_timeout = atoitvl(str_val);
 		if (smtp_conn_timeout <= 0) {
 			smtp_conn_timeout = 180;
-			resource_set_string(RES_SMTP_CONN_TIMEOUT, "3minutes");
+			resource_set_string("SMTP_CONN_TIMEOUT", "3minutes");
 		}
 	}
 	itvltoa(smtp_conn_timeout, temp_buff);
 	printf("[smtp]: smtp socket read write time out is %s\n", temp_buff);
  
-	if (NULL == (str_val = resource_get_string(RES_SMTP_SUPPORT_PIPELINE))) {
+	str_val = resource_get_string("SMTP_SUPPORT_PIPELINE");
+	if (str_val == NULL) {
 		smtp_support_pipeline = FALSE;
-		resource_set_string(RES_SMTP_SUPPORT_PIPELINE, "FALSE");
+		resource_set_string("SMTP_SUPPORT_PIPELINE", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			smtp_support_pipeline = FALSE;
@@ -267,7 +269,7 @@ int main(int argc, const char **argv)
 			smtp_support_pipeline = TRUE;
 		} else {
 			smtp_support_pipeline = FALSE;
-			resource_set_string(RES_SMTP_SUPPORT_PIPELINE, "FALSE");
+			resource_set_string("SMTP_SUPPORT_PIPELINE", "FALSE");
 		}
 	}
 	if (FALSE == smtp_support_pipeline) {
@@ -276,9 +278,10 @@ int main(int argc, const char **argv)
 		printf("[smtp]: smtp supports esmtp pipeline mode\n");
 	}
 
-	if (NULL == (str_val = resource_get_string(RES_SMTP_SUPPORT_STARTTLS))) {
+	str_val = resource_get_string("SMTP_SUPPORT_STARTTLS");
+	if (str_val == NULL) {
 		smtp_support_starttls = FALSE;
-		resource_set_string(RES_SMTP_SUPPORT_STARTTLS, "FALSE");
+		resource_set_string("SMTP_SUPPORT_STARTTLS", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			smtp_support_starttls = FALSE;
@@ -286,12 +289,12 @@ int main(int argc, const char **argv)
 			smtp_support_starttls = TRUE;
 		} else {
 			smtp_support_starttls = FALSE;
-			resource_set_string(RES_SMTP_SUPPORT_STARTTLS, "FALSE");
+			resource_set_string("SMTP_SUPPORT_STARTTLS", "FALSE");
 		}
 	}
-	certificate_path = resource_get_string(RES_SMTP_CERTIFICATE_PATH);
-	cb_passwd = resource_get_string(RES_SMTP_CERTIFICATE_PASSWD);
-	private_key_path = resource_get_string(RES_SMTP_PRIVATE_KEY_PATH);
+	certificate_path = resource_get_string("SMTP_CERTIFICATE_PATH");
+	cb_passwd = resource_get_string("SMTP_CERTIFICATE_PASSWD");
+	private_key_path = resource_get_string("SMTP_PRIVATE_KEY_PATH");
 	if (TRUE == smtp_support_starttls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
 			smtp_support_starttls = FALSE;
@@ -304,9 +307,10 @@ int main(int argc, const char **argv)
 		printf("[smtp]: smtp doesn't support esmtp TLS mode\n");
 	}
 
-	if (NULL == (str_val = resource_get_string(RES_SMTP_FORCE_STARTTLS))) {
+	str_val = resource_get_string("SMTP_FORCE_STARTTLS");
+	if (str_val == NULL) {
 		smtp_force_starttls = FALSE;
-		resource_set_string(RES_SMTP_FORCE_STARTTLS, "FALSE");
+		resource_set_string("SMTP_FORCE_STARTTLS", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			smtp_force_starttls = FALSE;
@@ -314,7 +318,7 @@ int main(int argc, const char **argv)
 			smtp_force_starttls = TRUE;
 		} else {
 			smtp_force_starttls = FALSE;
-			resource_set_string(RES_SMTP_FORCE_STARTTLS, "FALSE");
+			resource_set_string("SMTP_FORCE_STARTTLS", "FALSE");
 		}
 	}
 	
@@ -330,10 +334,10 @@ int main(int argc, const char **argv)
 		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
 	}
 
- 
-	if (NULL == (str_val = resource_get_string(RES_SMTP_NEED_AUTH))) {
+	str_val = resource_get_string("SMTP_NEED_AUTH");
+	if (str_val == NULL) {
 		smtp_need_auth = FALSE;
-		resource_set_string(RES_SMTP_NEED_AUTH, "FALSE");
+		resource_set_string("SMTP_NEED_AUTH", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			smtp_need_auth = FALSE;
@@ -341,7 +345,7 @@ int main(int argc, const char **argv)
 			smtp_need_auth = TRUE;
 		} else {
 			smtp_need_auth = FALSE;
-			resource_set_string(RES_SMTP_NEED_AUTH, "FALSE");
+			resource_set_string("SMTP_NEED_AUTH", "FALSE");
 		}
 	}
 	if (FALSE == smtp_need_auth) {
@@ -350,113 +354,114 @@ int main(int argc, const char **argv)
 		printf("[smtp]: smtp forces users to authentificate\n");
 	}
 
-	if (FALSE == resource_get_integer(RES_SMTP_AUTH_TIMES, 
-		&smtp_auth_times)) { 
+	if (!resource_get_integer("SMTP_AUTH_TIMES", &smtp_auth_times)) {
 		smtp_auth_times = 3; 
-		resource_set_integer(RES_SMTP_AUTH_TIMES, 3);
+		resource_set_integer("SMTP_AUTH_TIMES", smtp_auth_times);
 	} else {
 		if (smtp_auth_times <= 0) {
 			smtp_auth_times = 3;
-			resource_set_integer(RES_SMTP_AUTH_TIMES, 3);
+			resource_set_integer("SMTP_AUTH_TIMES", smtp_auth_times);
 		}
 	}
 	printf("[smtp]: maximum authentification failure times is %d\n", 
 			smtp_auth_times);
 
-	if (NULL == (str_val = resource_get_string(RES_BLOCK_INTERVAL_AUTHS))) { 
+	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
+	if (str_val == NULL) {
 		block_interval_auth = 60;
-		resource_set_string(RES_BLOCK_INTERVAL_AUTHS, "1 minute");
+		resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
 	} else {
 		block_interval_auth = atoitvl(str_val);
 		if (block_interval_auth <= 0) {
 			block_interval_auth = 60;
-			resource_set_string(RES_BLOCK_INTERVAL_AUTHS, "1 minute");
+			resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
 		}
 	}
 	itvltoa(block_interval_auth, temp_buff);
 	printf("[smtp]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 
-	if (NULL == (str_val = resource_get_string(RES_MAIL_MAX_LENGTH))) {
+	str_val = resource_get_string("MAIL_MAX_LENGTH");
+	if (str_val == NULL) {
 		max_mail_len = 64*1024*1024; 
-		resource_set_string(RES_MAIL_MAX_LENGTH, "64M");
+		resource_set_string("MAIL_MAX_LENGTH", "64M");
 	} else {
 		max_mail_len = atobyte(str_val);
 		if (max_mail_len <= 0) {
 			max_mail_len = 64*1024*1024; 
-			resource_set_string(RES_MAIL_MAX_LENGTH, "64M");
+			resource_set_string("MAIL_MAX_LENGTH", "64M");
 		}
 	}
 	bytetoa(max_mail_len, temp_buff);
 	printf("[smtp]: maximum mail length is %s\n", temp_buff);
 
-	if (FALSE == resource_get_integer(RES_SMTP_MAX_MAIL_NUM, 
-		&smtp_max_mail_num)) { 
+	if (!resource_get_integer("SMTP_MAX_MAIL_NUM", &smtp_max_mail_num)) {
 		smtp_max_mail_num = 10; 
-		resource_set_integer(RES_SMTP_MAX_MAIL_NUM, 10);
+		resource_set_integer("SMTP_MAX_MAIL_NUM", smtp_max_mail_num);
 	}
 	printf("[smtp]: maximum mails number for one session is %d\n",
 		smtp_max_mail_num);
 	 
-	if (NULL == (str_val = resource_get_string(RES_BLOCK_INTERVAL_SESSIONS))) {
+	str_val = resource_get_string("BLOCK_INTERVAL_SESSIONS");
+	if (str_val == NULL) {
 		block_interval_sessions = 60;
-		resource_set_string(RES_BLOCK_INTERVAL_SESSIONS, "1minute");
+		resource_set_string("BLOCK_INTERVAL_SESSIONS", "1minute");
 	} else {
 		block_interval_sessions = atoitvl(str_val);
 		if (block_interval_sessions <= 0) {
 			block_interval_sessions = 60;
-			resource_set_string(RES_BLOCK_INTERVAL_SESSIONS, "1minute");
+			resource_set_string("BLOCK_INTERVAL_SESSIONS", "1minute");
 		}
 	}
 	itvltoa(block_interval_sessions, temp_buff);
 	printf("[smtp]: block remote side %s when mails number is exceed for one "
 			"session\n", temp_buff);
 	
-	if (NULL == (anti_spam_path = resource_get_string(
-		RES_ANTI_SPAMMING_INIT_PATH))) { 
+	anti_spam_path = resource_get_string("ANTI_SPAMMING_INIT_PATH");
+	if (anti_spam_path == NULL) {
 		anti_spam_path = "../as_plugins";
-		resource_set_string(RES_ANTI_SPAMMING_INIT_PATH, "../as_plugins");
+		resource_set_string("ANTI_SPAMMING_INIT_PATH", anti_spam_path);
 	}
 	printf("[anti_spamming]: anti-spamming plugin path %s\n", anti_spam_path);
  
-	if (NULL == (service_plugin_path = resource_get_string(
-		RES_SERVICE_PLUGIN_PATH))) {
+	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
+	if (service_plugin_path == NULL) {
 		service_plugin_path = "../service_plugins/smtp";
-		resource_set_string(RES_SERVICE_PLUGIN_PATH, "../service_plugins/smtp");
+		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
 
-	if (NULL == (flusher_plugin_path = resource_get_string(
-		RES_FLUSHER_PLUGIN_PATH))) {
+	flusher_plugin_path = resource_get_string("FLUSHER_PLUGIN_PATH");
+	if (flusher_plugin_path == NULL) {
 		flusher_plugin_path = "../flusher_plugins/message_enqueue.flh";
-		resource_set_string(RES_FLUSHER_PLUGIN_PATH, 
-			"../flusher_plugins/message_enqueue.flh");
+		resource_set_string("FLUSHER_PLUGIN_PATH", flusher_plugin_path);
 	}
 	printf("[flusher]: flusher plugin path %s\n", flusher_plugin_path);
 
-	if (NULL == (str_val = resource_get_string(RES_CONFIG_FILE_PATH))) {
+	str_val = resource_get_string("CONFIG_FILE_PATH");
+	if (str_val == NULL) {
 		str_val = "../config/smtp";
-		resource_set_string(RES_CONFIG_FILE_PATH, "../config/smtp");
+		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
-	if (NULL == (str_val = resource_get_string(RES_DATA_FILE_PATH))) {
+	str_val = resource_get_string("DATA_FILE_PATH");
+	if (str_val == NULL) {
 		str_val = "../data/smtp";
-		resource_set_string(RES_DATA_FILE_PATH, "../data/smtp");
+		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	printf("[system]: data files path is %s\n", str_val);
 	
-	if (NULL == (console_server_ip = resource_get_string(
-		RES_CONSOLE_SERVER_IP))) { 
+	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
+	if (console_server_ip == NULL) {
 		console_server_ip = "127.0.0.1"; 
-		resource_set_string(RES_CONSOLE_SERVER_IP, "127.0.0.1");
+		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
 	}
 	printf("[console_server]: console server ip %s\n", console_server_ip);
  
-	if (FALSE == (resource_get_integer(RES_CONSOLE_SERVER_PORT, 
-		&console_server_port))) { 
+	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
 		console_server_port = 5566; 
-		resource_set_integer(RES_CONSOLE_SERVER_PORT, 5566);
+		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
 	}
 	printf("[console_server]: console server is port %d\n",
 		console_server_port);

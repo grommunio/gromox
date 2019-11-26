@@ -75,181 +75,183 @@ int main(int argc, const char **argv)
 	func_ptr    = (STOP_FUNC)resource_stop;
 	vstack_push(&stop_stack, (void*)&func_ptr);
 	
-
-	if (FALSE == resource_get_integer(RES_LISTEN_PORT, &listen_port)) { 
+	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 143; 
-		resource_set_integer(RES_LISTEN_PORT, 143);
+		resource_set_integer("LISTEN_PORT", listen_port);
 	}
 	printf("[system]: system listening port %d\n", listen_port);
 
-	if (FALSE == resource_get_integer(RES_LISTEN_SSL_PORT, &listen_ssl_port)) {
+	if (!resource_get_integer("LISTEN_SSL_PORT", &listen_ssl_port))
 		listen_ssl_port = 0;
-	}
 
-	if (NULL == (str_val = resource_get_string(RES_HOST_ID))) { 
+	str_val = resource_get_string("HOST_ID");
+	if (str_val == NULL) {
 		memset(temp_buff, 0, 256);
 		gethostname(temp_buff, 256);
-		resource_set_string(RES_HOST_ID, temp_buff);
+		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find host ID, OS host name will be "
 			"used as host ID\n");
 	}
 	printf("[system]: host ID is %s\n", str_val);
 	
-	if (NULL == (str_val = resource_get_string(RES_DEFAULT_DOMAIN))) {
+	str_val = resource_get_string("DEFAULT_DOMAIN");
+	if (str_val == NULL) {
 		memset(temp_buff, 0, 256);
 		getdomainname(temp_buff, 256);
-		resource_set_string(RES_DEFAULT_DOMAIN, temp_buff);
+		resource_set_string("DEFAULT_DOMAIN", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find default domain, OS domain name "
 			"will be used as default domain\n");
 	}
 	printf("[system]: default domain is %s\n", str_val);
 	
-	if (NULL == (user_name = resource_get_string(RES_RUNNING_IDENTITY))) {
+	user_name = resource_get_string("RUNNING_IDENTITY");
+	if (user_name == NULL)
 		printf("[system]: running identity will not be changed\n");
-	} else {
+	else
 		printf("[system]: running identity of process will be %s\n", user_name);
-	}
 
-	if (FALSE == resource_get_integer(RES_CONTEXT_NUM, &context_num)) { 
+	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
 		context_num = 200;
-		resource_set_integer(RES_CONTEXT_NUM, 200);
+		resource_set_integer("CONTEXT_NUM", context_num);
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
-	if (FALSE == resource_get_integer(RES_THREAD_CHARGE_NUM, 
-		&thread_charge_num)) { 
+	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
 		thread_charge_num = 40; 
-		resource_set_integer(RES_THREAD_CHARGE_NUM, 40);
+		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
 		if (thread_charge_num < 4) {
 			thread_charge_num = 40;	
-			resource_set_integer(RES_THREAD_CHARGE_NUM, 40);
+			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		} else if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			resource_set_integer(RES_THREAD_CHARGE_NUM, thread_charge_num);
+			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		}
 	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	if (FALSE == resource_get_integer(RES_THREAD_INIT_NUM, 
-		&thread_init_num)) { 
+	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
 		thread_init_num = 1; 
-		resource_set_integer(RES_THREAD_INIT_NUM, 1);
+		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
 			thread_init_num = 1;
 			context_num = thread_charge_num;
-			resource_set_integer(RES_CONTEXT_NUM, context_num);
+			resource_set_integer("CONTEXT_NUM", context_num);
 			printf("[system]: rectify contexts number %d\n", context_num);
 		}
-		resource_set_integer(RES_THREAD_INIT_NUM, thread_init_num);
+		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
-	if (NULL == (str_val = resource_get_string(RES_CONTEXT_AVERAGE_MEM))) { 
+	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
+	if (str_val == NULL) {
 		context_aver_mem = 2;
-		resource_set_string(RES_CONTEXT_AVERAGE_MEM, "128K");
+		resource_set_string("CONTEXT_AVERAGE_MEM", "128K");
 	} else {
 		context_aver_mem = atobyte(str_val)/(64*1024);
 		if (context_aver_mem <= 1) {
 			context_aver_mem = 2;
-			resource_set_string(RES_CONTEXT_AVERAGE_MEM, "128K");
+			resource_set_string("CONTEXT_AVERAGE_MEM", "128K");
 		}
 	}
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[imap]: context average memory is %s\n", temp_buff);
  
-	if (NULL == (str_val = resource_get_string(RES_CONTEXT_MAX_MEM))) {
+	str_val = resource_get_string("CONTEXT_MAX_MEM");
+	if (str_val == NULL) {
 		context_max_mem = 32; 
-		resource_set_string(RES_CONTEXT_MAX_MEM, "2M");
+		resource_set_string("CONTEXT_MAX_MEM", "2M");
 	} else {
 		context_max_mem = atobyte(str_val)/(64*1024); 
 	}
 	if (context_max_mem < context_aver_mem) {
 		context_max_mem = context_aver_mem;
 		bytetoa(context_max_mem*64*1024, temp_buff);
-		resource_set_string(RES_CONTEXT_MAX_MEM, temp_buff);
+		resource_set_string("CONTEXT_MAX_MEM", temp_buff);
 	} 
 	context_max_mem *= 64*1024;
 	bytetoa(context_max_mem, temp_buff);
 	printf("[imap]: context maximum memory is %s\n", temp_buff);
  
-	if (NULL == (str_val = resource_get_string(RES_CONTEXT_AVERAGE_MITEM))) {
+	str_val = resource_get_string("CONTEXT_AVERAGE_MITEM");
+	if (str_val == NULL) {
 		context_aver_mitem = 512; 
-		resource_set_string(RES_CONTEXT_AVERAGE_MITEM, "512");
+		resource_set_string("CONTEXT_AVERAGE_MITEM", "512");
 	} else {
 		context_aver_mitem = atoi(str_val); 
 	}
 	if (context_aver_mitem < 128) {
 		context_aver_mitem = 128;
-		resource_set_string(RES_CONTEXT_AVERAGE_MITEM, "128");
+		resource_set_string("CONTEXT_AVERAGE_MITEM", "128");
 	} 
 	printf("[imap]: context average mitem number is %d\n", context_aver_mitem);
 	
-	if (NULL == (str_val = resource_get_string(RES_IMAP_CONN_TIMEOUT))) {
+	str_val = resource_get_string("IMAP_CONN_TIMEOUT");
+	if (str_val == NULL) {
 		imap_conn_timeout = 180;
-		resource_set_string(RES_IMAP_CONN_TIMEOUT, "3minutes");
+		resource_set_string("IMAP_CONN_TIMEOUT", "3minutes");
 	} else {
 		imap_conn_timeout = atoitvl(str_val);
 		if (imap_conn_timeout <= 0) {
 			imap_conn_timeout = 180;
-			resource_set_string(RES_IMAP_CONN_TIMEOUT, "3minutes");
+			resource_set_string("IMAP_CONN_TIMEOUT", "3minutes");
 		}
 	}
 	itvltoa(imap_conn_timeout, temp_buff);
 	printf("[imap]: imap socket read write time out is %s\n", temp_buff);
  
-	if (NULL == (str_val = resource_get_string(RES_IMAP_AUTOLOGOUT_TIME))) {
+	str_val = resource_get_string("IMAP_AUTOLOGOUT_TIME");
+	if (str_val == NULL) {
 		autologout_time = 180;
-		resource_set_string(RES_IMAP_AUTOLOGOUT_TIME, "30minutes");
+		resource_set_string("IMAP_AUTOLOGOUT_TIME", "30minutes");
 	} else {
 		autologout_time = atoitvl(str_val);
 		if (autologout_time <= 0) {
 			autologout_time = 1800;
-			resource_set_string(RES_IMAP_AUTOLOGOUT_TIME, "30minutes");
+			resource_set_string("IMAP_AUTOLOGOUT_TIME", "30minutes");
 		}
 	}
 	itvltoa(autologout_time, temp_buff);
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
- 
-	if (FALSE == resource_get_integer(RES_IMAP_AUTH_TIMES, 
-		&imap_auth_times)) { 
+	if (!resource_get_integer("IMAP_AUTH_TIMES", &imap_auth_times)) {
 		imap_auth_times = 3; 
-		resource_set_integer(RES_IMAP_AUTH_TIMES, 3);
+		resource_set_integer("IMAP_AUTH_TIMES", imap_auth_times);
 	} else {
 		if (imap_auth_times <= 0) {
 			imap_auth_times = 3;
-			resource_set_integer(RES_IMAP_AUTH_TIMES, 3);
+			resource_set_integer("IMAP_AUTH_TIMES", imap_auth_times);
 		}
 	}
 	printf("[imap]: maximum authentification failure times is %d\n", 
 			imap_auth_times);
 
-	if (NULL == (str_val = resource_get_string(RES_BLOCK_INTERVAL_AUTHS))) { 
+	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
+	if (str_val == NULL) {
 		block_interval_auth = 60;
-		resource_set_string(RES_BLOCK_INTERVAL_AUTHS, "1 minute");
+		resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
 	} else {
 		block_interval_auth = atoitvl(str_val);
 		if (block_interval_auth <= 0) {
 			block_interval_auth = 60;
-			resource_set_string(RES_BLOCK_INTERVAL_AUTHS, "1 minute");
+			resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
 		}
 	}
 	itvltoa(block_interval_auth, temp_buff);
 	printf("[imap]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 
-
-	if (NULL == (str_val = resource_get_string(RES_IMAP_SUPPORT_STARTTLS))) {
+	str_val = resource_get_string("IMAP_SUPPORT_STARTTLS");
+	if (str_val == NULL) {
 		imap_support_stls = FALSE;
-		resource_set_string(RES_IMAP_SUPPORT_STARTTLS, "FALSE");
+		resource_set_string("IMAP_SUPPORT_STARTTLS", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			imap_support_stls = FALSE;
@@ -257,12 +259,12 @@ int main(int argc, const char **argv)
 			imap_support_stls = TRUE;
 		} else {
 			imap_support_stls = FALSE;
-			resource_set_string(RES_IMAP_SUPPORT_STARTTLS, "FALSE");
+			resource_set_string("IMAP_SUPPORT_STARTTLS", "FALSE");
 		}
 	}
-	certificate_path = resource_get_string(RES_IMAP_CERTIFICATE_PATH);
-	cb_passwd = resource_get_string(RES_IMAP_CERTIFICATE_PASSWD);
-	private_key_path = resource_get_string(RES_IMAP_PRIVATE_KEY_PATH);
+	certificate_path = resource_get_string("IMAP_CERTIFICATE_PATH");
+	cb_passwd = resource_get_string("IMAP_CERTIFICATE_PASSWD");
+	private_key_path = resource_get_string("IMAP_PRIVATE_KEY_PATH");
 	if (TRUE == imap_support_stls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
 			imap_support_stls = FALSE;
@@ -275,9 +277,10 @@ int main(int argc, const char **argv)
 		printf("[imap]: imap doesn't support TLS mode\n");
 	}
 	
-	if (NULL == (str_val = resource_get_string(RES_IMAP_FORCE_STARTTLS))) {
+	str_val = resource_get_string("IMAP_FORCE_STARTTLS");
+	if (str_val == NULL) {
 		imap_force_stls = FALSE;
-		resource_set_string(RES_IMAP_FORCE_STARTTLS, "FALSE");
+		resource_set_string("IMAP_FORCE_STARTTLS", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			imap_force_stls = FALSE;
@@ -285,7 +288,7 @@ int main(int argc, const char **argv)
 			imap_force_stls = TRUE;
 		} else {
 			imap_force_stls = FALSE;
-			resource_set_string(RES_IMAP_FORCE_STARTTLS, "FALSE");
+			resource_set_string("IMAP_FORCE_STARTTLS", "FALSE");
 		}
 	}
 	
@@ -301,37 +304,37 @@ int main(int argc, const char **argv)
 		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
 	}
 
-
-	if (NULL == (service_plugin_path = resource_get_string(
-		RES_SERVICE_PLUGIN_PATH))) {
+	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
+	if (service_plugin_path == NULL) {
 		service_plugin_path = "../service_plugins/imap";
-		resource_set_string(RES_SERVICE_PLUGIN_PATH, "../service_plugins/imap");
+		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
 
-	if (NULL == (str_val = resource_get_string(RES_CONFIG_FILE_PATH))) {
+	str_val = resource_get_string("CONFIG_FILE_PATH");
+	if (str_val == NULL) {
 		str_val = "../config/imap";
-		resource_set_string(RES_CONFIG_FILE_PATH, "../config/imap");
+		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
-	if (NULL == (str_val = resource_get_string(RES_DATA_FILE_PATH))) {
+	str_val = resource_get_string("DATA_FILE_PATH");
+	if (str_val == NULL) {
 		str_val = "../data/imap";
-		resource_set_string(RES_DATA_FILE_PATH, "../data/imap");
+		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	printf("[system]: data files path is %s\n", str_val);
 	
-	if (NULL == (console_server_ip = resource_get_string(
-		RES_CONSOLE_SERVER_IP))) { 
+	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
+	if (console_server_ip == NULL) {
 		console_server_ip = "127.0.0.1"; 
-		resource_set_string(RES_CONSOLE_SERVER_IP, "127.0.0.1");
+		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
 	}
 	printf("[console_server]: console server ip %s\n", console_server_ip);
  
-	if (FALSE == (resource_get_integer(RES_CONSOLE_SERVER_PORT, 
-		&console_server_port))) { 
+	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
 		console_server_port = 4455; 
-		resource_set_integer(RES_CONSOLE_SERVER_PORT, 4455);
+		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
 	}
 	printf("[console_server]: console server is port %d\n",
 		console_server_port);

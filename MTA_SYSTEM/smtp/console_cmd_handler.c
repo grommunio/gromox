@@ -434,7 +434,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			"\trunning mode                         %s\r\n"
 			"\tauth failure block interval          %s\r\n"
 			"\tsession-exceed block interval        %s",
-			resource_get_string(RES_HOST_ID),
+			resource_get_string("HOST_ID"),
 			max_mails,
 			str_length,
 			str_flush,
@@ -466,7 +466,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			console_server_reply_to_client("550 invalid max-mails %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_integer(RES_SMTP_MAX_MAIL_NUM, value);
+		resource_set_integer("SMTP_MAX_MAIL_NUM", value);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -481,7 +481,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 				argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_MAIL_MAX_LENGTH, argv[3]);
+		resource_set_string("MAIL_MAX_LENGTH", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -495,7 +495,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			console_server_reply_to_client("550 invalid time-out %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_SMTP_CONN_TIMEOUT, argv[3]);
+		resource_set_string("SMTP_CONN_TIMEOUT", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -514,7 +514,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 					"TRUE or FALSE");
 			return TRUE;
 		}
-		resource_set_string(RES_SMTP_NEED_AUTH, argv[3]);
+		resource_set_string("SMTP_NEED_AUTH", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -533,7 +533,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 					"TRUE or FALSE");
 			return TRUE;
 		}
-		resource_set_string(RES_SMTP_SUPPORT_PIPELINE, argv[3]);
+		resource_set_string("SMTP_SUPPORT_PIPELINE", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -557,7 +557,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 					"TRUE or FALSE");
 			return TRUE;
 		}
-		resource_set_string(RES_SMTP_FORCE_STARTTLS, argv[3]);
+		resource_set_string("SMTP_FORCE_STARTTLS", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -573,7 +573,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 				argv[3]);
 			return TRUE;
 		}
-		resource_set_integer(RES_SMTP_AUTH_TIMES, value);
+		resource_set_integer("SMTP_AUTH_TIMES", value);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -588,7 +588,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 				"block-interval-auths %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_BLOCK_INTERVAL_AUTHS, argv[3]);
+		resource_set_string("BLOCK_INTERVAL_AUTHS", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -603,7 +603,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 				"block-interval-sessions %s", argv[3]);
 			return TRUE;
 		}
-		resource_set_string(RES_BLOCK_INTERVAL_SESSIONS, argv[3]);
+		resource_set_string("BLOCK_INTERVAL_SESSIONS", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 			return TRUE;
@@ -647,7 +647,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "default-domain")) {
-		resource_set_string(RES_DEFAULT_DOMAIN, argv[3]);
+		resource_set_string("DEFAULT_DOMAIN", argv[3]);
 		if (FALSE == resource_save()) {
 			console_server_reply_to_client("550 fail to save config file");
 		} else {
@@ -658,7 +658,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "domain-list")) {
 		if (0 == strcasecmp(argv[3], "TRUE")) {
-			resource_set_string(RES_DOMAIN_LIST_VALID, "TRUE");
+			resource_set_string("DOMAIN_LIST_VALID", "TRUE");
 			if (FALSE == resource_save()) {
 				console_server_reply_to_client("550 fail to save config file");
 				return TRUE;
@@ -672,7 +672,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 					"list under mixture mode");
 				return TRUE;
 			}
-			resource_set_string(RES_DOMAIN_LIST_VALID, "FALSE");
+			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
 			if (FALSE == resource_save()) {
 				console_server_reply_to_client("550 fail to save config file");
 				return TRUE;
@@ -711,7 +711,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			"\tcurrent allocated blocks     %ld\r\n"
 			"\tcurrent threads number       %d\r\n"
 			"\tdomain list valid            %s",
-			resource_get_string(RES_HOST_ID),
+			resource_get_string("HOST_ID"),
 			max_context_num,
 			parsing_context_num,
 			flushing_context_num,

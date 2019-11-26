@@ -123,12 +123,12 @@ static BOOL hpm_processor_unregister_talk(TALK_MAIN talk)
 
 static const char *hpm_processor_get_host_ID()
 {
-	return resource_get_string(RES_HOST_ID);
+	return resource_get_string("HOST_ID");
 }
 
 static const char* hpm_processor_get_default_domain()
 {
-	return resource_get_string(RES_DEFAULT_DOMAIN);
+	return resource_get_string("DEFAULT_DOMAIN");
 }
 
 static const char* hpm_processor_get_plugin_name()
@@ -141,9 +141,7 @@ static const char* hpm_processor_get_plugin_name()
 
 static const char* hpm_processor_get_config_path()
 {
-    const char *ret_value;
-
-    ret_value = resource_get_string(RES_CONFIG_FILE_PATH);
+	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
     if (NULL == ret_value) {
         ret_value = "../config";
     }
@@ -152,9 +150,7 @@ static const char* hpm_processor_get_config_path()
 
 static const char* hpm_processor_get_data_path()
 {
-    const char *ret_value;
-
-    ret_value = resource_get_string(RES_DATA_FILE_PATH);
+	const char *ret_value = resource_get_string("DATA_FILE_PATH");
     if (NULL == ret_value) {
         ret_value = "../data";
     }

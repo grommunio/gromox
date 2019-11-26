@@ -385,7 +385,7 @@ static BOOL mod_cache_response_unmodified(HTTP_CONTEXT *phttp)
 					"HTTP/1.1 304 Not Modified\r\n"
 					"Server: %s\r\n"
 					"Date: %s\r\n\r\n",
-					resource_get_string(RES_HOST_ID), dstring);
+					resource_get_string("HOST_ID"), dstring);
 	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,
 		response_buff, response_len)) {
 		return FALSE;	
@@ -436,7 +436,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 					"Accept-Ranges: bytes\r\n"
 					"Last-Modified: %s\r\n"
 					"ETag: \"%s\"\r\n",
-					resource_get_string(RES_HOST_ID),
+					resource_get_string("HOST_ID"),
 					date_string, pcontent_type,
 					pcontext->until - pcontext->offset,
 					modified_string, etag);
@@ -522,7 +522,7 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 					"Content-Length: %u\r\n"
 					"Last-Modified: %s\r\n"
 					"ETag: \"%s\"\r\n",
-					resource_get_string(RES_HOST_ID),
+					resource_get_string("HOST_ID"),
 					date_string, BOUNDARY_STRING,
 					content_length, modified_string, etag);
 	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,

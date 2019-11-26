@@ -1624,7 +1624,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			strcpy(pcontext->lang, resource_get_string(RES_DEFAULT_LANG));
+			strcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
@@ -1728,7 +1728,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			strcpy(pcontext->lang, resource_get_string(RES_DEFAULT_LANG));
+			strcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
@@ -3220,7 +3220,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		time(&tmp_time);
 	}
 	snprintf(file_name, 127, "%ld.%d.%s", tmp_time,
-		imap_parser_get_squence_ID(), resource_get_string(RES_HOST_ID));
+		imap_parser_get_squence_ID(), resource_get_string("HOST_ID"));
 	snprintf(temp_path, 255, "%s/eml/%s", pcontext->maildir, file_name);
 	fd = open(temp_path, O_CREAT|O_RDWR|O_TRUNC, 0666);
 	if (-1 == fd || FALSE == mail_to_file(&imail, fd)) {
@@ -3388,7 +3388,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	}
 	snprintf(pcontext->mid, 127, "%ld.%d.%s", time(NULL),
-		imap_parser_get_squence_ID(), resource_get_string(RES_HOST_ID));
+		imap_parser_get_squence_ID(), resource_get_string("HOST_ID"));
 	snprintf(pcontext->file_path, 255, "%s/tmp/%s",
 				pcontext->maildir, pcontext->mid);
 	fd = open(pcontext->file_path, O_CREAT|O_RDWR|O_TRUNC, 0666);

@@ -1470,7 +1470,7 @@ static void* anti_spamming_queryservice(char *service)
 
 static const char* anti_spamming_get_default_domain()
 {
-	return resource_get_string(RES_DEFAULT_DOMAIN);
+	return resource_get_string("DEFAULT_DOMAIN");
 }
 
 static const char* anti_spamming_get_plugin_name()
@@ -1483,9 +1483,7 @@ static const char* anti_spamming_get_plugin_name()
 
 static const char* anti_spamming_get_config_path()
 {
-	const char *ret_value;
-	
-	ret_value = resource_get_string(RES_CONFIG_FILE_PATH);
+	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
 	if (NULL == ret_value) {
 		ret_value = "../config";
 	}
@@ -1494,9 +1492,7 @@ static const char* anti_spamming_get_config_path()
 
 static const char *anti_spamming_get_data_path()
 {
-	const char *ret_value;
-
-	ret_value = resource_get_string(RES_DATA_FILE_PATH);
+	const char *ret_value = resource_get_string("DATA_FILE_PATH");
 	if (NULL == ret_value) {
 		ret_value = "../data";
 	}

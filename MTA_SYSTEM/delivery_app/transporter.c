@@ -1453,17 +1453,17 @@ static BOOL transporter_unregister_talk(TALK_MAIN talk)
 
 static const char* transporter_get_host_ID()
 {
-	return resource_get_string(RES_HOST_ID);
+	return resource_get_string("HOST_ID");
 }
 
 static const char* transporter_get_default_domain()
 {
-	return resource_get_string(RES_DEFAULT_DOMAIN);
+	return resource_get_string("DEFAULT_DOMAIN");
 }
 
 static const char* transporter_get_admin_mailbox()
 {
-	return resource_get_string(RES_ADMIN_MAILBOX);
+	return resource_get_string("ADMIN_MAILBOX");
 }
 
 /*
@@ -1473,9 +1473,7 @@ static const char* transporter_get_admin_mailbox()
  */
 static const char* transporter_get_config_path()
 {
-    const char *ret_value;
-
-    ret_value = resource_get_string(RES_CONFIG_FILE_PATH);
+	const char *ret_value  = resource_get_string("CONFIG_FILE_PATH");
     if (NULL == ret_value) {
         ret_value = "../config";
     }
@@ -1489,9 +1487,7 @@ static const char* transporter_get_config_path()
  */
 static const char* transporter_get_data_path()
 {
-    const char *ret_value;
-
-    ret_value = resource_get_string(RES_DATA_FILE_PATH);
+	const char *ret_value = resource_get_string("DATA_FILE_PATH");
     if (NULL == ret_value) {
         ret_value = "../data";
     }
@@ -1540,7 +1536,7 @@ static const char* transporter_get_plugin_name()
  */
 static const char* transporter_get_queue_path()
 {
-	return resource_get_string(RES_DEQUEUE_PATH);
+	return resource_get_string("DEQUEUE_PATH");
 }
 
 /*
