@@ -1,1 +1,0 @@
-#smtp console ip		port		delivery console ip			port
