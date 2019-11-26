@@ -1,4 +1,1 @@
-gb2312
-gbk
-gb18030
-utf-8
+../../../../MTA_SYSTEM/as_plugins/domain_keyword/domain_keyword/charset.txt

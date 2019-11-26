@@ -1,2 +1,1 @@
-#prefix			ip_address	port
-/u-data/		127.0.0.1	5555
+../../../../MRA_SYSTEM/service_plugins/data/imap/midb_list.txt

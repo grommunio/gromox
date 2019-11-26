@@ -1,2 +1,1 @@
-#smtp console ip		port		delivery console ip			port
-127.0.0.1				5566		127.0.0.1					6677
+../../DOMAIN_ADMIN/data/console_table.txt

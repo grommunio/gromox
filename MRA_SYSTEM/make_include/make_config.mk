@@ -1,3 +1,1 @@
-MAKE=make
-MAKEDEPEND=makedepend
-ECHO=echo -e
+../../AGENT_SERVICE/make_include/make_config.mk

@@ -1,14 +1,1 @@
-#ifndef _H_LIST_UI_
-#define _H_LIST_UI_
-
-void list_ui_init(const char *list_path, const char *token_path,
-	const char *url_link, const char *resource_path);
-
-int list_ui_run();
-
-int list_ui_stop();
-
-void list_ui_free();
-
-#endif
-
+../../../SYSTEM_ADMIN/area_list/list_ui/list_ui.h
