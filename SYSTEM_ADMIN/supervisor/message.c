@@ -168,7 +168,7 @@ void message_alarm_message(char *buff, int type, const char *command,
 		ptr += len;
 		break;
 	case MESSAGE_POP3_RESPONSE_ERROR:
-		len = sprintf("POP3 service on %s:%d responds %s after command %s",
+		len = sprintf(ptr, "POP3 service on %s:%d responds %s after command %s",
 				ip, port, command, response);
 		ptr += len;
 		break;
