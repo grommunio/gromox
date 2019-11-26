@@ -3,6 +3,7 @@
  *	The comments is start with '#' at the leading of each comment line
  *
  */
+#include <errno.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>
@@ -37,7 +38,8 @@ CONFIG_FILE *config_file_init(const char *filename)
 	
 
 	if (NULL == (fin = fopen(filename, "r+"))) {
-		debug_info("[config_file]: config_file_init: open %s fail", filename);
+		debug_info("[config_file]: config_file_init: open %s: %s",
+			filename, strerror(errno));
 		return NULL;
 	}
 

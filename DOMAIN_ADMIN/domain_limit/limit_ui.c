@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "limit_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -437,7 +438,7 @@ static void limit_ui_main_html(const char *domain, const char *session)
 	}
 	pconfig = config_file_init(config_path);
 	if (NULL == pconfig) {
-		system_log_info("[limit_ui]: fail to open config file %s", config_path);
+		system_log_info("[limit_ui]: open %s: %s", config_path, strerror(errno));
 		limit_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
 			language));
 		list_file_free(pfile);

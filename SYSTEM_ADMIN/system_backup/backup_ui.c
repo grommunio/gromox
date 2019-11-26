@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "backup_ui.h"
 #include "lang_resource.h"
 #include <gromox/system_log.h>
@@ -1177,7 +1178,8 @@ SYSTEM_SETUP:
 
 	pconfig = config_file_init(g_config_path);
 	if (NULL == pconfig) {
-		system_log_info("[backup_ui]: fail to init config file\n");
+		system_log_info("[backup_ui]: config_file_init %s: %s\n",
+			g_config_path, strerror(errno));
 		goto CONSOLE_FLUSH;
 	}
 	

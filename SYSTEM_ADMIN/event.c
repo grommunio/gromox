@@ -1,6 +1,8 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <errno.h>
+#include <string.h>
 #include "util.h"
 #include "fifo.h"
 #include "str_hash.h"
@@ -140,7 +142,7 @@ int main(int argc, const char **argv)
 	
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
-		printf("[system]: fail to open config file %s\n", argv[1]);
+		printf("[system]: config_file_init %s: %s\n", argv[1], strerror(errno));
 		return 2;
 	}
 

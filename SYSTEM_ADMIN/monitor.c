@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <errno.h>
 #include "single_list.h"
 #include "util.h"
 #include "list_file.h"
@@ -85,7 +86,7 @@ int main(int argc, const char **argv)
 	signal(SIGPIPE, SIG_IGN);
 	pconfig_file = config_file_init(argv[1]);
 	if (NULL == pconfig_file) {
-		printf("[system]: fail to open config file %s\n", argv[1]);
+		printf("[system]: config_file_init %s: %s\n", argv[1], strerror(errno));
 		return 2;
 	}
 	str_value = config_file_get_value(pconfig_file, "DATA_FILE_PATH");

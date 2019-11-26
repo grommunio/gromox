@@ -78,7 +78,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		pconfig = config_file_init(config_path);
 		if (NULL == pconfig) {
-			printf("[sssp_agent]: fail to open config file!!!\n");
+			printf("[sssp_agent]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
 		}
 		

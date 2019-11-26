@@ -88,7 +88,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		pconfig = config_file_init(config_path);
 		if (NULL == pconfig) {
-			printf("[cdner_caching]: fail to open config file!!!\n");
+			printf("[cdner_caching]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
 		}
 		

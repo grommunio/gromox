@@ -3,6 +3,7 @@
  *  programmer to set and get the configuration dynamicly
  *
  */
+#include <errno.h>
 #include "resource.h"
 #include "config_file.h"
 #include "util.h"
@@ -61,7 +62,7 @@ int resource_run()
     g_config_file = config_file_init(g_cfg_filename);
 
     if (NULL == g_config_file) {
-        printf("[resource]: fail to init config file\n");
+		printf("[resource]: config_file_init %s: %s\n", g_cfg_filename, strerror(errno));
         return -1;
 	}
     return 0;

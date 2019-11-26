@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include "bounce_producer.h"
 #include <gromox/exsvc_common.h>
@@ -107,7 +108,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		pconfig = config_file_init(config_path);
 		if (NULL == pconfig) {
-			printf("[exmdb_provider]: fail to open config file!!!\n");
+			printf("[exmdb_provider]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
 		}
 		

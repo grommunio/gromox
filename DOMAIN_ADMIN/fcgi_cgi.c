@@ -148,7 +148,7 @@ int main(int argc, const char **argv)
 	}
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
-		printf("[system]: fail to open config file %s\n", argv[1]);
+		printf("[system]: open %s: %s\n", argv[1], strerror(errno));
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "FCGI_UNIX_PATH");

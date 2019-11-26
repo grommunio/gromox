@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 #include <arpa/inet.h>
@@ -115,7 +116,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		pconfig = config_file_init(config_path);
 		if (NULL == pconfig) {
-			printf("[archive_agent]: fail to open config file!!!\n");
+			printf("[archive_agent]: config_file_init %s: %s\n", config_path, strerror(errno));
 			return FALSE;
 		}
 		

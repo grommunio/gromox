@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include "util.h"
 #include "list_file.h"
@@ -1049,7 +1050,7 @@ int main(int argc, const char **argv)
 	
 	pconfig = config_file_init(argv[1]);
 	if (NULL == pconfig) {
-		printf("[system]: fail to open config file %s\n", argv[1]);
+		printf("[system]: config_file_init %s: %s\n", argv[1], strerror(errno));
 		return 2;
 	}
 	

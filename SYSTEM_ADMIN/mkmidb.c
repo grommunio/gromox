@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <errno.h>
 #include "config_file.h"
 #include <time.h>
 #include <stdio.h>
@@ -56,7 +57,7 @@ int main(int argc, const char **argv)
 	umask(0);
 	pconfig = config_file_init("../config/athena.cfg");
 	if (NULL == pconfig) {
-		printf("fail to init config file\n");
+		printf("config_file_init ../config/athena.cfg: %s\n", strerror(errno));
 		return 2;
 	}
 
