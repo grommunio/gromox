@@ -9,16 +9,11 @@
 #include "common_types.h"
 
 void codepage_lang_init(const char *path);
-
-int codepage_lang_run();
-
-int codepage_lang_stop();
-
-void codepage_lang_free();
-
+extern int codepage_lang_run(void);
+extern int codepage_lang_stop(void);
+extern void codepage_lang_free(void);
 BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 	char *value, int len);
-	
-BOOL codepage_lang_reload();
+extern BOOL codepage_lang_reload(void);
 
 #endif /* _H_CODEPAGE_LANG_ */

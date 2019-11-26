@@ -16,15 +16,10 @@ enum{
 };
 
 void grey_list_init(const char *path, int growing_num);
-
-int grey_list_run();
-
-int grey_list_stop();
-
-void grey_list_free();
-
-int grey_list_refresh();
-
+extern int grey_list_run(void);
+extern int grey_list_stop(void);
+extern void grey_list_free(void);
+extern int grey_list_refresh(void);
 int grey_list_query(const char *ip, BOOL b_count);
 
 BOOL grey_list_add_ip(const char *ip, int times, int interval);

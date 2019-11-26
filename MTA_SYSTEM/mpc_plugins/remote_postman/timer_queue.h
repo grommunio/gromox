@@ -17,13 +17,9 @@ enum{
 
 void timer_queue_init(const char *path, int max_thr, int scan_interval,
 	int fresh_interval, int retrying_interval, int final_interval);
-
-int timer_queue_run();
-
-int timer_queue_stop();
-
-void timer_queue_free();
-
+extern int timer_queue_run(void);
+extern int timer_queue_stop(void);
+extern void timer_queue_free(void);
 BOOL timer_queue_put(MESSAGE_CONTEXT *pcontext, time_t original_time,
 	BOOL is_untried);
 

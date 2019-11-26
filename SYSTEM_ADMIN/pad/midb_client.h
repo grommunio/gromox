@@ -4,13 +4,9 @@
 #include "common_types.h"
 
 void midb_client_init(const char *list_path);
-
-int midb_client_run();
-
-int midb_client_stop();
-
-void midb_client_free();
-
+extern int midb_client_run(void);
+extern int midb_client_stop(void);
+extern void midb_client_free(void);
 BOOL midb_client_ckfl(const char *maildir);
 
 BOOL midb_client_insert(const char *maildir,

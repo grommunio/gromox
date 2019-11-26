@@ -47,11 +47,9 @@ typedef struct _HTTP_CONTEXT HTTP_CONTEXT;
 
 void mod_fastcgi_init(int context_num, const char *list_path,
 	uint64_t cache_size, uint64_t max_size, int exec_timeout);
-
-int mod_fastcgi_run();
+extern int mod_fastcgi_run(void);
 extern void mod_fastcgi_stop(void);
-void mod_fastcgi_free();
-
+extern void mod_fastcgi_free(void);
 BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp);
 
 BOOL mod_fastcgi_check_end_of_read(HTTP_CONTEXT *phttp);

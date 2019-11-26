@@ -10,16 +10,10 @@ enum {
 
 
 void address_list_init(const char *list_path);
-
-int address_list_run();
-
-int address_list_stop();
-
-void address_list_free();
-
+extern int address_list_run(void);
+extern int address_list_stop(void);
+extern void address_list_free(void);
 BOOL address_list_query(const char *domain, char *ip, int *port);
-
-int address_list_refresh();
-
+extern int address_list_refresh(void);
 
 #endif

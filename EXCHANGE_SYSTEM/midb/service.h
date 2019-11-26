@@ -5,13 +5,9 @@
 
 void service_init(int context_num, const char* plugin_path,
 	const char *config_path, const char *data_path);
-
-void service_free();
-
-int  service_run();
-
-int  service_stop();
-
+extern void service_free(void);
+extern int service_run(void);
+extern int service_stop(void);
 int service_load_library(const char *path);
 
 int service_unload_library(const char *path);

@@ -10,13 +10,9 @@ enum {
 };
 
 void dns_adaptor_init(const char *path, int capacity, time_t valid_interval);
-
-void dns_adaptor_free();
-
-int dns_adaptor_run();
-
-int dns_adaptor_stop();
-
+extern void dns_adaptor_free(void);
+extern int dns_adaptor_run(void);
+extern int dns_adaptor_stop(void);
 BOOL dns_adaptor_query_MX(char* mx_name, VSTACK* pstack);
 
 BOOL dns_adaptor_query_A(char* domain, VSTACK* pstack);

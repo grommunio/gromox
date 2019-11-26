@@ -54,13 +54,9 @@ void contexts_pool_init(void *pcontexts, int context_num,
 	int unit_offset, int (*get_socket)(void*),
 	struct timeval (*get_timestamp)(void*),
 	int contexts_per_thr, int timeout);
-
-int contexts_pool_run();
-
-int contexts_pool_stop();
-
-void contexts_pool_free();
-
+extern int contexts_pool_run(void);
+extern int contexts_pool_stop(void);
+extern void contexts_pool_free(void);
 SCHEDULE_CONTEXT* contexts_pool_get_context(int type);
 
 void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type);

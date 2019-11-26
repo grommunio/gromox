@@ -26,13 +26,9 @@ enum {
 };
 
 void flusher_init(const char* path, size_t queue_len);
-
-void flusher_free();
-
-int flusher_run();
-
-int flusher_stop();
-
+extern void flusher_free(void);
+extern int flusher_run(void);
+extern int flusher_stop(void);
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext);
 
 void flusher_cancel(SMTP_CONTEXT *pcontext);

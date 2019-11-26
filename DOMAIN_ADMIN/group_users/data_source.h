@@ -115,8 +115,7 @@ typedef struct _DATA_NODE {
 	USER_ITEM item;
 } DATA_NODE;
 
-DATA_COLLECT* data_source_collect_init();
-
+extern DATA_COLLECT *data_source_collect_init(void);
 void data_source_collect_free(DATA_COLLECT *pcollect);
 
 int data_source_collect_total(DATA_COLLECT *pcollect);
@@ -132,13 +131,9 @@ int data_source_collect_forward(DATA_COLLECT *pcollect);
 
 void data_source_init(const char *host, int port, const char *user,
 	const char *password, const char *db_name);
-
-int data_source_run();
-
-int data_source_stop();
-
-void data_source_free();
-
+extern int data_source_run(void);
+extern int data_source_stop(void);
+extern void data_source_free(void);
 BOOL data_source_query(const char *groupname, const char *username,
 	const char *title, const char *real_name, const char *nickname,
 	const char *tel, const char *cell, const char *homeaddress,

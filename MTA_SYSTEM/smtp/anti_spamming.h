@@ -47,9 +47,7 @@ typedef int (*FILTER_FUNCTION)(int, int, MAIL_BLOCK*, char*, int);
 typedef int (*STATISTIC_FUNCTION)(int, MAIL_WHOLE*, CONNECTION*, char*, int);
 
 void anti_spamming_init(const char *path);
-
-int anti_spamming_run();
-
+extern int anti_spamming_run(void);
 int anti_spamming_unload_library(const char* path);
 
 int anti_spamming_load_library(const char* path);
@@ -76,10 +74,8 @@ int anti_spamming_console_talk(int argc, char **argv, char *result,int length);
 void anti_spamming_enum_plugins(ENUM_PLUGINS enum_func);
 
 void anti_spamming_threads_event_proc(int action);
-
-int anti_spamming_stop();
-
-void anti_spamming_free();
+extern int anti_spamming_stop(void);
+extern void anti_spamming_free(void);
 
 #endif
 

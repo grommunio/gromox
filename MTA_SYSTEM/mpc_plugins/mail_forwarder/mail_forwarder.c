@@ -315,7 +315,7 @@ BOOL mail_forwarder_process(MESSAGE_CONTEXT *pcontext)
 int mail_forwarder_stop()
 {
 	if (NULL != g_hash_table) {
-		mail_forwarder_free(g_hash_table);
+		mail_forwarder_free_table(g_hash_table);
 	}
 	return 0;
 }

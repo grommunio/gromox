@@ -4,13 +4,9 @@
 
 void backup_ui_init(int valid_days, const char *url_link,
 	const char *resource_path);
-
-int backup_ui_run();
-
-int backup_ui_stop();
-
-void backup_ui_free();
-
+extern int backup_ui_run(void);
+extern int backup_ui_stop(void);
+extern void backup_ui_free(void);
 
 #endif
 

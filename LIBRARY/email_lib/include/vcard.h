@@ -49,9 +49,7 @@ VCARD_PARAM* vcard_new_param(const char*name);
 BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval);
 
 void vcard_append_param(VCARD_LINE *pvline, VCARD_PARAM *pvparam);
-
-VCARD_VALUE* vcard_new_value();
-
+extern VCARD_VALUE *vcard_new_value(void);
 BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval);
 
 void vcard_append_value(VCARD_LINE *pvline, VCARD_VALUE *pvvalue);

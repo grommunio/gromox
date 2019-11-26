@@ -12,13 +12,9 @@
 
 
 void exmdb_client_init(int conn_num, const char *list_path);
-
-int exmdb_client_run();
-
-int exmdb_client_stop();
-
-void exmdb_client_free();
-
+extern int exmdb_client_run(void);
+extern int exmdb_client_stop(void);
+extern void exmdb_client_free(void);
 int exmdb_client_delivery_message(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,

@@ -6,15 +6,10 @@
 
 void retrying_table_init(const char *config_path, int size, int min_intvl,
 	int valid_intvl);
-
-int retrying_table_run();
-
+extern int retrying_table_run(void);
 BOOL retrying_table_check(const char *ip, const char *from, MEM_FILE *pfile);
-
-int retrying_table_stop();
-
-void retrying_table_free();
-
+extern int retrying_table_stop(void);
+extern void retrying_table_free(void);
 void retrying_table_console_talk(int argc, char **argv,
 	char *result, int length);
 

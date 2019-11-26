@@ -12,13 +12,9 @@
 void str_filter_init(const char *module_name, const char *config_path,
 	BOOL case_sensitive, int audit_num, int audit_interval, int audit_times,
 	int temp_list_size, const char *list_path, int growing_num); 
-
-void str_filter_free();
-
-int str_filter_run();
-
-int str_filter_stop();
-
+extern void str_filter_free(void);
+extern int str_filter_run(void);
+extern int str_filter_stop(void);
 BOOL str_filter_judge(char* str);
 
 BOOL str_filter_query(char* str);

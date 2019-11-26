@@ -4,12 +4,9 @@
 
 void setup_ui_init(const char *mount_path, const char *app_path,
 	const char *url_link, const char *resource_path);
-
-int setup_ui_run();
-
-int setup_ui_stop();
-
-void setup_ui_free();
+extern int setup_ui_run(void);
+extern int setup_ui_stop(void);
+extern void setup_ui_free(void);
 
 #endif
 

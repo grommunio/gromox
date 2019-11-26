@@ -8,13 +8,9 @@ enum {
 };
 
 void uri_cache_init(int black_size, int black_interval);
-
-int uri_cache_run();
-
-int uri_cache_stop();
-
-void uri_cache_free();
-
+extern int uri_cache_run(void);
+extern int uri_cache_stop(void);
+extern void uri_cache_free(void);
 BOOL uri_cache_query(const char *uri, char *reason, int length);
 
 void uri_cache_add(const char *uri, char *reason);

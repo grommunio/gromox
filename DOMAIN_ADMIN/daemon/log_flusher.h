@@ -2,11 +2,8 @@
 #define _H_LOG_FLUSHER_
 
 void log_flusher_init(const char *path);
-
-int log_flusher_run();
-
-int log_flusher_stop();
-
-void log_flusher_free();
+extern int log_flusher_run(void);
+extern int log_flusher_stop(void);
+extern void log_flusher_free(void);
 
 #endif

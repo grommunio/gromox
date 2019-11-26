@@ -32,13 +32,10 @@ typedef struct _HEADER_VAL {
 } HEADER_VAL;
 
 void message_lookup_init(const char *cidb_path);
-
-int message_lookup_run();
+extern int message_lookup_run(void);
 extern void message_lookup_stop(void);
-void message_lookup_free();
-
-LOOKUP_COLLECT* message_lookup_collect_init();
-
+extern void message_lookup_free(void);
+extern LOOKUP_COLLECT *message_lookup_collect_init(void);
 void message_lookup_collect_free(LOOKUP_COLLECT *pcollect);
 
 int message_lookup_collect_total(LOOKUP_COLLECT *pcollect);

@@ -8,13 +8,9 @@ typedef struct _STATUS_ITEM {
 } STATUS_ITEM;
 
 void data_extractor_init(const char *path);
-
-int data_extractor_run();
-
+extern int data_extractor_run(void);
 int data_extractor_retrieve(const char *console_ip, STATUS_ITEM *items);
-
-int data_extractor_stop();
-
-void data_extractor_free();
+extern int data_extractor_stop(void);
+extern void data_extractor_free(void);
 
 #endif

@@ -2,14 +2,10 @@
 #define _H_SPAM_COMPLAIN__
 #include "hook_common.h"
 
-void spam_complain_init();
-
-int spam_complain_run();
-
-int spam_complain_stop();
-
-void spam_complain_free();
-
+extern void spam_complain_init(void);
+extern int spam_complain_run(void);
+extern int spam_complain_stop(void);
+extern void spam_complain_free(void);
 BOOL spam_complain_process(MESSAGE_CONTEXT *pcontext);
 
 #endif /* _H_SPAM_COMPLAIN_ */

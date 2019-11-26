@@ -7,13 +7,9 @@ enum {
 
 void stub_retrying_init(const char *list_path, int port, int time_out,
 	int channel_num);
-
-int stub_retrying_run();
-
-int stub_retrying_stop();
-
-void stub_retrying_free();
-
+extern int stub_retrying_run(void);
+extern int stub_retrying_stop(void);
+extern void stub_retrying_free(void);
 void stub_retrying_set_param(int param, int value);
 
 #endif

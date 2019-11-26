@@ -3,12 +3,9 @@
 
 void table_ui_init(const char *mount_path, const char *url_link,
 	const char *resource_path);
-
-int table_ui_run();
-
-int table_ui_stop();
-
-void table_ui_free();
+extern int table_ui_run(void);
+extern int table_ui_stop(void);
+extern void table_ui_free(void);
 
 #endif
 

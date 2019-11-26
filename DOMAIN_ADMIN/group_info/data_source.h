@@ -29,13 +29,9 @@
 
 void data_source_init(const char *host, int port, const char *user,
 	const char *password, const char *db_name);
-
-int data_source_run();
-
-int data_source_stop();
-
-void data_source_free();
-
+extern int data_source_run(void);
+extern int data_source_stop(void);
+extern void data_source_free(void);
 BOOL data_source_group_info(const char *groupname, char *grouptitle,
 	time_t *pcreate_day, int *pmax_size, int *pactual_size, int *pmax_user,
 	int *pactual_user, int *palias_num, int *pprivilege_bits);

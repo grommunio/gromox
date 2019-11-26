@@ -2,15 +2,11 @@
 #define _H_SMTP_SENDER_
 #include "common_types.h"
 
-void smtp_sender_init();
-
-int smtp_sender_run();
-
+extern void smtp_sender_init(void);
+extern int smtp_sender_run(void);
 void smtp_sender_send(const char *sender, const char *address, 
 	const char *pbuff, int size);
-
-int smtp_sender_stop();
-
-void smtp_sender_free();
+extern int smtp_sender_stop(void);
+extern void smtp_sender_free(void);
 
 #endif

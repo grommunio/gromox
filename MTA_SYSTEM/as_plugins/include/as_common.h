@@ -91,9 +91,9 @@ typedef int (*FILTER_FUNCTION)(int, int, MAIL_BLOCK*, char*, int);
 typedef int (*STATISTIC_FUNCTION)(int, MAIL_WHOLE*, CONNECTION*, char*, int);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void* (*QUERY_SERVICE)(char*);
-typedef int (*QUERY_VERSION)();
-typedef const char* (*GET_ENVIRONMENT)();
-typedef int (*GET_INTEGER)();
+typedef int (*QUERY_VERSION)(void);
+typedef const char *(*GET_ENVIRONMENT)(void);
+typedef int (*GET_INTEGER)(void);
 /* represent function type of register_judge and unregister_judge */
 typedef BOOL(*JUDGE_REGISTRATION)(JUDGE_FUNCTION);
 /* represent function type of register_auditor and unregister_auditor */
@@ -117,11 +117,11 @@ typedef MAIL_ENTITY (*GET_MAIL_ENTITY)(int);
 /* get connection of a context */
 typedef CONNECTION* (*GET_CONNECTION)(int);
 /* does system force user to authentificate before send mail data */
-typedef BOOL (*IS_NEED_AUTH)();
+typedef BOOL (*IS_NEED_AUTH)(void);
 /* check_domain, check_relay */
 typedef BOOL (*CHECKING_FUNCTION)(char*);
 /* is domain list valid, if TRUE, check_domain will functionate */
-typedef BOOL (*IS_DOMAINLIST_VALID)();
+typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
 extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;

@@ -14,9 +14,7 @@
 #define ACL_SESSION_PRIVILEGE		2
 
 void acl_control_init(const char *token_path, const char *acl_path, int timeout);
-
-int acl_control_run();
-
+extern int acl_control_run(void);
 BOOL acl_control_auth(const char *usernmae, const char *password);
 
 BOOL acl_control_produce(const char *username, const char *ip, char *session);
@@ -28,10 +26,7 @@ BOOL acl_control_naming(const char *session, char *usernmae);
 void acl_control_remove(const char *session);
 
 void acl_control_clear(const char *name);
-
-int acl_control_stop();
-
-void acl_control_free();
-
+extern int acl_control_stop(void);
+extern void acl_control_free(void);
 
 #endif

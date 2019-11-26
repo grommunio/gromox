@@ -3,13 +3,10 @@
 #include "common_types.h"
 #include "mem_file.h"
 
-void system_services_init();
-
-int system_services_run();
-
-int system_services_stop();
-
-void system_services_free();
+extern void system_services_init(void);
+extern int system_services_run(void);
+extern int system_services_stop(void);
+extern void system_services_free(void);
 
 extern BOOL (*system_services_get_user_lang)(const char*, char*);
 extern BOOL (*system_services_set_user_lang)(const char*, const char*);

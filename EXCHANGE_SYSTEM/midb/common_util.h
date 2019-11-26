@@ -1457,27 +1457,16 @@ typedef struct _DB_NOTIFY_DATAGRAM {
 	DB_NOTIFY db_notify;
 } DB_NOTIFY_DATAGRAM;
 
-
-void common_util_init();
-
-int common_util_run();
-
-int common_util_stop();
-
-void common_util_free();
-
+extern void common_util_init(void);
+extern int common_util_run(void);
+extern int common_util_stop(void);
+extern void common_util_free(void);
 BOOL common_util_build_environment(const char *maildir);
-
-void common_util_free_environment();
-
+extern void common_util_free_environment(void);
 void* common_util_alloc(size_t size);
-
-BOOL common_util_switch_allocator();
-
+extern BOOL common_util_switch_allocator(void);
 void common_util_set_maildir(const char *maildir);
-
-const char* common_util_get_maildir();
-
+extern const char* common_util_get_maildir(void);
 char* common_util_dup(const char *pstr);
 
 BOOL common_util_check_local_ip(const char *ip_addr);

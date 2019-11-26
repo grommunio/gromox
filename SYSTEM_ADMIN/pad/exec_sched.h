@@ -4,13 +4,9 @@
 
 
 void exec_sched_init(const char *list_path, int pop_interval, int threads_num);
-
-void exec_sched_free();
-
-int exec_sched_run();
-
-int exec_sched_stop();
-
+extern void exec_sched_free(void);
+extern int exec_sched_run(void);
+extern int exec_sched_stop(void);
 BOOL exec_sched_add(const char *username);
 
 BOOL exec_sched_remove(const char *username);

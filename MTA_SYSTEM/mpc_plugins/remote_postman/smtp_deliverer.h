@@ -24,13 +24,9 @@ enum{
 #define		BOUND_REMOTE_BOUNCE			5
 
 void smtp_deliverer_init(int trying_times, BOOL ssl_switch);
-
-int smtp_deliverer_run();
-
-int smtp_deliverer_stop();
-
-void smtp_deliverer_free();
-
+extern int smtp_deliverer_run(void);
+extern int smtp_deliverer_stop(void);
+extern void smtp_deliverer_free(void);
 int smtp_deliverer_process(MESSAGE_CONTEXT *pcontext,
 	char *ip_addr, char *response_line, int length);
 

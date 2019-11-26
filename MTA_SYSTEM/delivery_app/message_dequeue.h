@@ -42,15 +42,10 @@ typedef struct _MESSAGE {
 
 void message_dequeue_init(const char *path, int tapse_units,
 	size_t max_memory);
-
-int message_dequeue_run();
-
-int message_dequeue_stop();
-
-void message_dequeue_free();
-
-MESSAGE* message_dequeue_get();
-
+extern int message_dequeue_run(void);
+extern int message_dequeue_stop(void);
+extern void message_dequeue_free(void);
+extern MESSAGE *message_dequeue_get(void);
 void message_dequeue_put(MESSAGE *pmessage);
 
 int message_dequeue_get_param(int param);

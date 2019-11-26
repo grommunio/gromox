@@ -16,15 +16,10 @@ enum{
 };
 
 void grey_list_init(BOOL case_sensitive, const char *path, int growing_num);
-
-int grey_list_run();
-
-int grey_list_stop();
-
-void grey_list_free();
-
-int grey_list_refresh();
-
+extern int grey_list_run(void);
+extern int grey_list_stop(void);
+extern void grey_list_free(void);
+extern int grey_list_refresh(void);
 int grey_list_query(const char *str, BOOL b_count);
 
 BOOL grey_list_add_string(const char *str, int times, int interval);

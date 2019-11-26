@@ -53,20 +53,20 @@ typedef struct _DCERPC_INTERFACE {
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void* (*QUERY_SERVICE)(char*);
-typedef int (*QUERY_VERSION)();
-typedef const char* (*GET_ENVIRONMENT)();
-typedef int (*GET_INTEGER)();
+typedef int (*QUERY_VERSION)(void);
+typedef const char *(*GET_ENVIRONMENT)(void);
+typedef int (*GET_INTEGER)(void);
 typedef void (*SET_INTEGER)(int);
-typedef BOOL (*GET_BOOLEAN)();
+typedef BOOL (*GET_BOOLEAN)(void);
 typedef void* (*EP_REGISTRATION)(const char*, int);
 typedef BOOL (*IF_REGISTRATION)(void*, DCERPC_INTERFACE*);
-typedef DCERPC_INFO (*GET_RPC_INFO)();
-typedef uint64_t (*GET_BINDING_HANDLE)();
+typedef DCERPC_INFO (*GET_RPC_INFO)(void);
+typedef uint64_t (*GET_BINDING_HANDLE)(void);
 typedef void* (*NDR_STACK_ALLOC)(int, size_t);
 typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
 typedef BOOL (*BUILD_ENVIRONMENT)(int);
-typedef BOOL (*NEW_ENVIRONMENT)();
-typedef void (*FREE_ENVIRONMENT)();
+typedef BOOL (*NEW_ENVIRONMENT)(void);
+typedef void (*FREE_ENVIRONMENT)(void);
 typedef void (*ASYNC_REPLY)(int, void*);
 /* represent function type of log_info */
 typedef void (*LOG_INFO)(int, char*, ...);

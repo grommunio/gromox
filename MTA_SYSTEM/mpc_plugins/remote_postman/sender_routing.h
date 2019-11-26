@@ -8,16 +8,10 @@
 
 
 void sender_routing_init(const char *list_path);
-
-int sender_routing_run();
-
+extern int sender_routing_run(void);
 BOOL sender_routing_check(const char *sender, VSTACK *pstack);
-
-BOOL sender_routing_refresh();
-
-int sender_routing_stop();
-
-void sender_routing_free();
-
+extern BOOL sender_routing_refresh(void);
+extern int sender_routing_stop(void);
+extern void sender_routing_free(void);
 
 #endif /* end of _H_SENDER_ROUTING_ */

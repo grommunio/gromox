@@ -58,19 +58,19 @@ typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef BOOL (*CANCEL_REGISTRATION)(CANCEL_FUNCTION);
 typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
 typedef void* (*QUERY_SERVICE)(const char*);
-typedef int (*QUERY_VERSION)();
-typedef int (*GET_QUEUE_LENGTH)();
+typedef int (*QUERY_VERSION)(void);
+typedef int (*GET_QUEUE_LENGTH)(void);
 typedef BOOL (*FEEDBACK_ENTITY)(FLUSH_ENTITY*);
-typedef FLUSH_ENTITY* (*QUEUE_OPERATION)();
+typedef FLUSH_ENTITY *(*QUEUE_OPERATION)(void);
 typedef void (*LOG_INFO)(int, char*, ...);
 typedef const char* (*GET_EXTRA_TAGVAL)(int, int);
 typedef int (*GET_EXTRA_NUM)(int);
-typedef const char* (*GET_ENVIRONMENT)();
+typedef const char *(*GET_ENVIRONMENT)(void);
 typedef BOOL (*SET_FLUSH_ID)(int);
-typedef int (*INC_FLUSH_ID)();
+typedef int (*INC_FLUSH_ID)(void);
 typedef BOOL (*CHECKING_FUNCTION)(char*);
 /* is domain list valid, if TRUE, check_domain will functionate */
-typedef BOOL (*IS_DOMAINLIST_VALID)();
+typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
 extern QUERY_SERVICE query_service;
 extern QUERY_VERSION query_version;

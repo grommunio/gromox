@@ -28,12 +28,10 @@ enum {
 	MESSAGE_SUPERVISING_POP3
 };
 
-void message_init();
-
-int message_run();
+extern void message_init(void);
+extern int message_run(void);
 extern void message_stop(void);
-void message_free();
-
+extern void message_free(void);
 void message_supervising(char *buff, int message_type, int id);
 
 void message_alarm_message(char *buff, int type, const char *command,

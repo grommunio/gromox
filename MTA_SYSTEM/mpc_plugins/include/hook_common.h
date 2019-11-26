@@ -32,20 +32,20 @@ typedef struct _MESSAGE_CONTEXT{
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void* (*QUERY_SERVICE)(char*);
-typedef int (*QUERY_VERSION)();
-typedef const char* (*GET_ENVIRONMENT)();
-typedef int (*GET_INTEGER)();
+typedef int (*QUERY_VERSION)(void);
+typedef const char *(*GET_ENVIRONMENT)(void);
+typedef int (*GET_INTEGER)(void);
 typedef BOOL(*HOOK_REGISTRATION)(HOOK_FUNCTION);
 typedef BOOL(*TALK_REGISTRATION)(TALK_MAIN);
 /* represent function type of log_info */
 typedef void (*LOG_INFO)(int, char*, ...);
-typedef MESSAGE_CONTEXT* (*GET_CONTEXT)();
+typedef MESSAGE_CONTEXT *(*GET_CONTEXT)(void);
 typedef void (*PUT_CONTEXT)(MESSAGE_CONTEXT*);
 typedef BOOL (*THROW_CONTEXT)(MESSAGE_CONTEXT*);
 typedef void (*ENQUEUE_CONTEXT)(MESSAGE_CONTEXT*);
 typedef BOOL (*CHECKING_FUNCTION)(char*);
 /* is domain list valid, if TRUE, check_domain will functionate */
-typedef BOOL (*IS_DOMAINLIST_VALID)();
+typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
 extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;

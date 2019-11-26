@@ -62,9 +62,9 @@ typedef struct _HTTP_AUTH_INFO {
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void* (*QUERY_SERVICE)(char*);
-typedef int (*QUERY_VERSION)();
-typedef const char* (*GET_ENVIRONMENT)();
-typedef int (*GET_INTEGER)();
+typedef int (*QUERY_VERSION)(void);
+typedef const char *(*GET_ENVIRONMENT)(void);
+typedef int (*GET_INTEGER)(void);
 typedef void (*SET_INTEGER)(int);
 typedef BOOL (*REGISTER_INTERFACE)(HPM_INTERFACE*);
 typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
@@ -76,8 +76,8 @@ typedef void (*WAKEUP_CONTEXT)(int);
 typedef void (*ACTIVATE_CONTEXT)(int);
 typedef void (*SET_EP_INFO)(int, const char*, int);
 typedef void* (*NDR_STACK_ALLOC)(int, size_t);
-typedef BOOL (*NEW_ENVIRONMENT)();
-typedef void (*FREE_ENVIRONMENT)();
+typedef BOOL (*NEW_ENVIRONMENT)(void);
+typedef void (*FREE_ENVIRONMENT)(void);
 typedef void (*LOG_INFO)(int, char*, ...);
 
 extern QUERY_VERSION query_version;

@@ -3,13 +3,10 @@
 #include "mapi_types.h"
 #include "element_data.h"
 
-void exmdb_client_init();
-
-int exmdb_client_run();
-
-int exmdb_client_stop();
-
-void exmdb_client_free();
+extern void exmdb_client_init(void);
+extern int exmdb_client_run(void);
+extern int exmdb_client_stop(void);
+extern void exmdb_client_free(void);
 
 extern BOOL (*exmdb_client_ping_store)(const char *dir);
 

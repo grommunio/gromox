@@ -12,13 +12,9 @@
 void ip_filter_init(const char *module_name, const char *config_path,
 	int audit_num, int audit_interval, int audit_times, int temp_list_size,
 	const char *list_path, int growing_num); 
-
-void ip_filter_free();
-
-int ip_filter_run();
-
-int ip_filter_stop();
-
+extern void ip_filter_free(void);
+extern int ip_filter_run(void);
+extern int ip_filter_stop(void);
 BOOL ip_filter_judge(char *ip);
 
 BOOL ip_filter_query(char *ip);

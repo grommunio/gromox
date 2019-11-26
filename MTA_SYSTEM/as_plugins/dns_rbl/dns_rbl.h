@@ -3,16 +3,11 @@
 #include "common_types.h"
 
 void dns_rbl_init(const char *path);
-
-void dns_rbl_free();
-
-int dns_rbl_run();
-
-int dns_rbl_stop();
-
+extern void dns_rbl_free(void);
+extern int dns_rbl_run(void);
+extern int dns_rbl_stop(void);
 BOOL dns_rbl_judge(const char *ip, char *answer_buff, int answer_len);
-
-BOOL dns_rbl_refresh();
+extern BOOL dns_rbl_refresh(void);
 
 #endif
 

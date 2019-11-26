@@ -4,13 +4,9 @@
 
 
 void data_extractor_init(const char *path);
-
-int data_extractor_run();
-
+extern int data_extractor_run(void);
 void data_extractor_retrieve(int *array, int array_num);
-
-int data_extractor_stop();
-
-void data_extractor_free();
+extern int data_extractor_stop(void);
+extern void data_extractor_free(void);
 
 #endif

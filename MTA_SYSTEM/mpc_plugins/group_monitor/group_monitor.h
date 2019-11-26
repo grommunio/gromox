@@ -4,15 +4,10 @@
 
 void group_monitor_init(const char *root_path, const char *subject,
 	int growing_num);
-
-int group_monitor_run();
-
+extern int group_monitor_run(void);
 BOOL group_monitor_process(MESSAGE_CONTEXT *pcontext);
-
-int group_monitor_stop();
-
-void group_monitor_free();
-
+extern int group_monitor_stop(void);
+extern void group_monitor_free(void);
 void group_monitor_console_talk(int argc, char **argv, char *result,
 	int length);
 

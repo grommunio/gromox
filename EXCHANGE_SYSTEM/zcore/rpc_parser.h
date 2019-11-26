@@ -3,13 +3,9 @@
 #include "common_types.h"
 
 void rpc_parser_init(int thread_num);
-
-int rpc_parser_run();
-
-int rpc_parser_stop();
-
-void rpc_parser_free();
-
+extern int rpc_parser_run(void);
+extern int rpc_parser_stop(void);
+extern void rpc_parser_free(void);
 BOOL rpc_parser_activate_connection(int clifd);
 
 #endif	/* _H_RPC_PARSER_ */

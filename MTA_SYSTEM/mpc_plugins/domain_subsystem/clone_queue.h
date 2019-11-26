@@ -9,13 +9,9 @@ enum{
 };
 
 void clone_queue_init(const char *path, int scan_interval, int retrying_times);
-
-int clone_queue_run();
-
-int clone_queue_stop();
-
-void clone_queue_free();
-
+extern int clone_queue_run(void);
+extern int clone_queue_stop(void);
+extern void clone_queue_free(void);
 BOOL clone_queue_put(MESSAGE_CONTEXT *pcontext, time_t original_time);
 
 int clone_queue_get_param(int param);

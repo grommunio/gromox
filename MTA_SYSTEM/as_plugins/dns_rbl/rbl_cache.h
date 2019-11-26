@@ -17,13 +17,9 @@ enum {
 
 void rbl_cache_init(int normal_size, int normal_interval, int black_size,
 	int black_interval);
-
-int rbl_cache_run();
-
-int rbl_cache_stop();
-
-void rbl_cache_free();
-
+extern int rbl_cache_run(void);
+extern int rbl_cache_stop(void);
+extern void rbl_cache_free(void);
 int rbl_cache_query(char *ip, char *reason, int length);
 
 void rbl_cache_add(char *ip, int type, char *reason);

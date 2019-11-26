@@ -5,13 +5,9 @@
 
 
 void nsp_interface_init(BOOL b_check);
-
-int nsp_interface_run();
-
-int nsp_interface_stop();
-
-void nsp_interface_free();
-
+extern int nsp_interface_run(void);
+extern int nsp_interface_stop(void);
+extern void nsp_interface_free(void);
 int nsp_interface_bind(uint64_t hrpc, uint32_t flags, STAT *pstat,
 	FLATUID *pserver_guid, NSPI_HANDLE *phandle);
 

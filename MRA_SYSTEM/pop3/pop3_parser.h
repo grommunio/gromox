@@ -72,15 +72,10 @@ void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_stls, BOOL force_stls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path,
 	const char *cdn_path);
-
-int pop3_parser_run();
-
+extern int pop3_parser_run(void);
 int pop3_parser_process(POP3_CONTEXT *pcontext);
-
-int pop3_parser_stop();
-
-void pop3_parser_free();
-
+extern int pop3_parser_stop(void);
+extern void pop3_parser_free(void);
 int pop3_parser_get_context_socket(POP3_CONTEXT *pcontext);
 
 struct timeval pop3_parser_get_context_timestamp(POP3_CONTEXT *pcontext);
@@ -88,16 +83,13 @@ struct timeval pop3_parser_get_context_timestamp(POP3_CONTEXT *pcontext);
 int pop3_parser_get_param(int param);
 
 int pop3_parser_set_param(int param, int value);
-
-POP3_CONTEXT* pop3_parser_get_contexts_list();
-
+extern POP3_CONTEXT *pop3_parser_get_contexts_list(void);
 int pop3_parser_threads_event_proc(int action);
 
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);
 
 void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, char *format, ...);
-
-char* pop3_parser_cdn_path();
+extern char *pop3_parser_cdn_path(void);
 
 #endif
 

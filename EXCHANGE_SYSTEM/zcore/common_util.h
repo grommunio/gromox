@@ -346,21 +346,14 @@ void common_util_init(const char *org_name, const char *hostname,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *freebusy_path, const char *langmap_path,
 	const char *folderlang_path, const char *submit_command);
-
-int common_util_run();
-
-int common_util_stop();
-
-void common_util_free();
-
+extern int common_util_run(void);
+extern int common_util_stop(void);
+extern void common_util_free(void);
 unsigned int common_util_get_param(int param);
 
 void common_util_set_param(int param, unsigned int value);
-
-const char* common_util_get_hostname();
-
-const char* common_util_get_freebusy_path();
-
+extern const char *common_util_get_hostname(void);
+extern const char *common_util_get_freebusy_path(void);
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
@@ -430,17 +423,12 @@ void common_util_exmdb_locinfo_to_string(
 BOOL common_util_exmdb_locinfo_from_string(
 	const char *loc_string, uint8_t *ptype,
 	int *pdb_id, uint64_t *peid);
-
-BOOL common_util_build_environment();
-
-void common_util_free_environment();
-
+extern BOOL common_util_build_environment(void);
+extern void common_util_free_environment(void);
 void* common_util_alloc(size_t size);
 
 void common_util_set_clifd(int clifd);
-
-int common_util_get_clifd();
-
+extern int common_util_get_clifd(void);
 char* common_util_dup(const char *pstr);
 
 ZNOTIFICATION* common_util_dup_znotification(
@@ -523,11 +511,8 @@ BOOL common_util_remote_copy_folder(
 	STORE_OBJECT *pstore, uint64_t folder_id,
 	STORE_OBJECT *pstore1, uint64_t folder_id1,
 	const char *new_name);
-	
-uint8_t* common_util_get_muidecsab();
-
-uint8_t* common_util_get_muidzcsab();
-
+extern uint8_t *common_util_get_muidecsab(void);
+extern uint8_t *common_util_get_muidzcsab(void);
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);
 
 BOOL common_util_send_message(STORE_OBJECT *pstore,
@@ -558,11 +543,8 @@ BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm);
 const char* common_util_lang_to_i18n(const char *lang);
 
 const char* common_util_i18n_to_lang(const char *i18n);
-
-const char* common_util_get_default_timezone();
-
-const char* common_util_get_submit_command();
-
+extern const char *common_util_get_default_timezone(void);
+extern const char *common_util_get_submit_command(void);
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 
 #endif /* _H_COMMON_UTIL_ */

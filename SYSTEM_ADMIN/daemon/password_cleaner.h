@@ -3,10 +3,8 @@
 #include <time.h>
 
 void password_cleaner_init(time_t now_time);
-
-int password_cleaner_run();
+extern int password_cleaner_run(void);
 extern void password_cleaner_stop(void);
-void password_cleaner_free();
-
+extern void password_cleaner_free(void);
 
 #endif

@@ -7,12 +7,8 @@ void engine_init(const char *list_path, int log_days,
 	const char *admin_mailbox, const char *db_name,
 	const char *backup_path, BOOL parellel_scanning,
 	BOOL freetime_scanning);
-
-int engine_run();
-
-int engine_stop();
-
-void engine_free();
-
+extern int engine_run(void);
+extern int engine_stop(void);
+extern void engine_free(void);
 
 #endif

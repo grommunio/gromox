@@ -11,13 +11,9 @@ enum {
 void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
 	int port, const char *user, const char *password, const char *db_name,
 	int timeout);
-
-int mysql_adaptor_run();
-
-int mysql_adaptor_stop();
-
-void mysql_adaptor_free();
-
+extern int mysql_adaptor_run(void);
+extern int mysql_adaptor_stop(void);
+extern void mysql_adaptor_free(void);
 BOOL mysql_adaptor_login(const char *username,
 	const char *password, char *reason, int length);
 

@@ -10,16 +10,10 @@ enum{
 
 
 void uncheck_domains_init(const char *list_path);
-
-void uncheck_domains_free();
-
-int uncheck_domains_run();
-
-int uncheck_domains_stop();
-
+extern void uncheck_domains_free(void);
+extern int uncheck_domains_run(void);
+extern int uncheck_domains_stop(void);
 BOOL uncheck_domains_query(const char* domain);
-
-int uncheck_domains_refresh();
-
+extern int uncheck_domains_refresh(void);
 
 #endif

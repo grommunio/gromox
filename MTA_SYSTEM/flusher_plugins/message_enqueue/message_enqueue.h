@@ -19,17 +19,11 @@ typedef void (*SPAM_STATISTIC)(int);
 extern SPAM_STATISTIC spam_statistic;
 
 void message_enqueue_init(const char *path, int tapse_units);
-
-int message_enqueue_run();
-
-int message_enqueue_stop();
-
-void message_enqueue_free();
-
+extern int message_enqueue_run(void);
+extern int message_enqueue_stop(void);
+extern void message_enqueue_free(void);
 void message_enqueue_cancel(FLUSH_ENTITY *pentity);
-
-int message_enqueue_retrieve_flush_ID();
-
+extern int message_enqueue_retrieve_flush_ID(void);
 void message_enqueue_console_talk(int argc, char **argv, char *result,
 	int length);
 

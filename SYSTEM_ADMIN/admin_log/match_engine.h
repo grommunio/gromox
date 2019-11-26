@@ -17,15 +17,10 @@ typedef struct _MATCH_COLLECTION {
 } MATCH_COLLECT;
 
 void match_engine_init(const char *mount_path);
-
-int match_engine_run();
-
-int match_engine_stop();
-
-void match_engine_free();
-
-MATCH_COLLECT* match_engine_collect_init();
-
+extern int match_engine_run(void);
+extern int match_engine_stop(void);
+extern void match_engine_free(void);
+extern MATCH_COLLECT *match_engine_collect_init(void);
 void match_engine_collect_free(MATCH_COLLECT *pcollect);
 
 int match_engine_collect_total(MATCH_COLLECT *pcollect);

@@ -3,13 +3,9 @@
 #include "mapi_types.h"
 
 void exmdb_client_init(const char *list_path);
-
-int exmdb_client_run();
-
-int exmdb_client_stop();
-
-void exmdb_client_free();
-
+extern int exmdb_client_run(void);
+extern int exmdb_client_stop(void);
+extern void exmdb_client_free(void);
 BOOL exmdb_client_create_folder(const char *dir, int domain_id,
 	const char *folder_name, const char *container, const char *comment);
 	

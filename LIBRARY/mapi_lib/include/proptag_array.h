@@ -7,9 +7,7 @@ extern "C" {
 #endif
 
 BOOL proptag_array_init_internal(PROPTAG_ARRAY *pproptags);
-
-PROPTAG_ARRAY* proptag_array_init();
-
+extern PROPTAG_ARRAY *proptag_array_init(void);
 void proptag_array_free_internal(PROPTAG_ARRAY *pproptags);
 
 void proptag_array_free(PROPTAG_ARRAY *pproptags);

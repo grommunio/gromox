@@ -6,13 +6,9 @@
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 void ip_table_init(const char *module_name, const char *path, int growing_num);
-
-void ip_table_free();
-
-int ip_table_run();
-
-int ip_table_stop();
-
+extern void ip_table_free(void);
+extern int ip_table_run(void);
+extern int ip_table_stop(void);
 BOOL ip_table_query(const char* ip);
 
 BOOL ip_table_add(const char* ip);

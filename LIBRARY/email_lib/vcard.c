@@ -447,7 +447,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 				0 == strcasecmp(pvline->name, "TITLE") ||
 				0 == strcasecmp(pvline->name, "PRODID") ||
 				0 == strcasecmp(pvline->name, "VERSION")) {
-				pvvalue = vcard_new_value(NULL);
+				pvvalue = vcard_new_value();
 				if (NULL == pvvalue) {
 					break;
 				}

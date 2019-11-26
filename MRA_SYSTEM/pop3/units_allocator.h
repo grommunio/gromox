@@ -10,13 +10,9 @@ typedef struct _MSG_UNIT {
 } MSG_UNIT;
 
 void units_allocator_init(size_t blocks);
-
-int units_allocator_run();
-
-int units_allocator_stop();
-
-void units_allocator_free();
-
-LIB_BUFFER* units_allocator_get_allocator();
+extern int units_allocator_run(void);
+extern int units_allocator_stop(void);
+extern void units_allocator_free(void);
+extern LIB_BUFFER *units_allocator_get_allocator(void);
 
 #endif

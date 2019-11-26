@@ -6,8 +6,7 @@
 extern "C" {
 #endif
 
-EID_ARRAY* eid_array_init();
-
+extern EID_ARRAY *eid_array_init(void);
 void eid_array_free(EID_ARRAY *parray);
 
 BOOL eid_array_append(EID_ARRAY *parray, uint64_t eid);

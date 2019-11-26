@@ -46,15 +46,10 @@ enum {
 
 
 void resource_init(char* cfg_filename);
-
-void resource_free();
-
-int resource_run();
-
-int resource_stop();
-
-BOOL resource_save();
-
+extern void resource_free(void);
+extern int resource_run(void);
+extern int resource_stop(void);
+extern BOOL resource_save(void);
 BOOL resource_get_integer(int key, int* value);
 
 const char* resource_get_string(int key);

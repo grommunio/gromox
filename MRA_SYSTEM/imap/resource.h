@@ -138,15 +138,10 @@ enum {
 };
 
 void resource_init(char* cfg_filename);
-
-void resource_free();
-
-int resource_run();
-
-int resource_stop();
-
-BOOL resource_save();
-
+extern void resource_free(void);
+extern int resource_run(void);
+extern int resource_stop(void);
+extern BOOL resource_save(void);
 BOOL resource_get_integer(int key, int* value);
 
 const char* resource_get_string(int key);
@@ -156,9 +151,7 @@ BOOL resource_set_integer(int key, int value);
 BOOL resource_set_string(int key, char* value);
 
 char* resource_get_imap_code(int code_type, int n, int *len);
-
-BOOL resource_refresh_imap_code_table();
-
+extern BOOL resource_refresh_imap_code_table(void);
 char** resource_get_folder_strings(const char*lang);
 
 const char* resource_get_default_charset(const char *lang);

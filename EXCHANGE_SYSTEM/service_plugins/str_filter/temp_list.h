@@ -5,13 +5,9 @@
 
 
 void temp_list_init(BOOL case_sensive, int size);
-
-int temp_list_run();
-
-int temp_list_stop();
-
-void temp_list_free();
-
+extern int temp_list_run(void);
+extern int temp_list_stop(void);
+extern void temp_list_free(void);
 BOOL temp_list_add_string(const char *str, int interval);
 
 BOOL temp_list_query(const char *str);

@@ -132,9 +132,7 @@ NTLMSSP_CTX* ntlmssp_init(const char *netbios_name, const char *dns_name,
 	NTLMSSP_GET_PASSWORD get_password);
 
 BOOL ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob);
-
-size_t ntlmssp_sig_size();
-
+extern size_t ntlmssp_sig_size(void);
 uint32_t ntlmssp_expected_state(NTLMSSP_CTX *pntlmssp);
 
 BOOL ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,

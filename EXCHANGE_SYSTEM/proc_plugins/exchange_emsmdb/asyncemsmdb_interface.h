@@ -3,13 +3,9 @@
 #include "asyncemsmdb_ndr.h"
 
 void asyncemsmdb_interface_init(int threads_num);
-
-int asyncemsmdb_interface_run();
-
-int asyncemsmdb_interface_stop();
-
-void asyncemsmdb_interface_free();
-
+extern int asyncemsmdb_interface_run(void);
+extern int asyncemsmdb_interface_stop(void);
+extern void asyncemsmdb_interface_free(void);
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout);
 

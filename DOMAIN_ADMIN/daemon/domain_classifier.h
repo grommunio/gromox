@@ -37,12 +37,8 @@ typedef struct _ITEM_DATA {
 
 void domain_classifier_init(time_t now_time, const char *orignal_path,
 	int hash_num, int table_size);
-
-int domain_classifier_run();
-
-int domain_classifier_stop();
-
-void domain_classifier_free();
-
+extern int domain_classifier_run(void);
+extern int domain_classifier_stop(void);
+extern void domain_classifier_free(void);
 
 #endif

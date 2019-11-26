@@ -9,12 +9,12 @@
 #define NDR_STACK_OUT				1
 
 typedef void* (*QUERY_SERVICE)(char*);
-typedef int (*QUERY_VERSION)();
+typedef int (*QUERY_VERSION)(void);
 typedef BOOL (*SERVICE_REGISTRATION)(char*, void*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
-typedef const char* (*GET_ENVIRONMENT)();
-typedef int (*GET_INTEGER)();
+typedef const char *(*GET_ENVIRONMENT)(void);
+typedef int (*GET_INTEGER)(void);
 typedef void* (*NDR_STACK_ALLOC)(int, size_t);
 
 extern QUERY_VERSION query_version;

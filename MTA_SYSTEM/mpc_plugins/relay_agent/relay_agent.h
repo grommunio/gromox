@@ -42,17 +42,11 @@ enum {
 
 void relay_agent_init(const char *list_path, const char *save_path,
 	int channel_num, BOOL relay_switch);
-
-int relay_agent_run();
-
-int relay_agent_stop();
-
-void relay_agent_free();
-
+extern int relay_agent_run(void);
+extern int relay_agent_stop(void);
+extern void relay_agent_free(void);
 BOOL relay_agent_process(MESSAGE_CONTEXT *pcontext);
-
-BOOL relay_agent_refresh_table();
-
+extern BOOL relay_agent_refresh_table(void);
 int relay_agent_get_param(int param);
 
 void relay_agent_set_param(int param, int value);

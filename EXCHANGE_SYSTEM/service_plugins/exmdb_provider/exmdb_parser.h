@@ -35,15 +35,10 @@ int exmdb_parser_get_param(int param);
 
 void exmdb_parser_init(int max_threads,
 	int max_routers, const char *list_path);
-
-int exmdb_parser_run();
-
-int exmdb_parser_stop();
-
-void exmdb_parser_free();
-
-EXMDB_CONNECTION* exmdb_parser_get_connection();
-
+extern int exmdb_parser_run(void);
+extern int exmdb_parser_stop(void);
+extern void exmdb_parser_free(void);
+extern EXMDB_CONNECTION *exmdb_parser_get_connection(void);
 void exmdb_parser_put_connection(EXMDB_CONNECTION *pconnection);
 
 ROUTER_CONNECTION* exmdb_parser_get_router(const char *remote_id);

@@ -36,13 +36,9 @@ extern SPAM_STATISTIC exmdb_local_spam_statistic;
 void exmdb_local_init(const char *config_path,
 	const char *org_name, const char *default_charset,
 	const char *default_timezone, const char *propname_path);
-
-int exmdb_local_run();
-
-int exmdb_local_stop();
-
-void exmdb_local_free();
-
+extern int exmdb_local_run(void);
+extern int exmdb_local_stop(void);
+extern void exmdb_local_free(void);
 BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext);
 
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address);

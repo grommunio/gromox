@@ -81,11 +81,8 @@
 
 #define EPOCH_DIFF 						11644473600LL
 
-
-const uint8_t* common_util_get_nspi_guid();
-
-GUID common_util_get_server_guid();
-
+extern const uint8_t *common_util_get_nspi_guid(void);
+extern GUID common_util_get_server_guid(void);
 void common_util_day_to_filetime(const char *day, FILETIME *pftime);
 
 int common_util_from_utf8(uint32_t codepage,
@@ -107,28 +104,20 @@ BOOL common_util_permanent_entryid_to_binary(
 	
 BOOL common_util_ephemeral_entryid_to_binary(
 	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin);
-	
-PROPROW_SET* common_util_proprowset_init();
-
+extern PROPROW_SET *common_util_proprowset_init(void);
 PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset);
 
 PROPERTY_ROW* common_util_propertyrow_init(PROPERTY_ROW *prow);
 
 PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow);
-
-PROPTAG_ARRAY* common_util_proptagarray_init();
-
+extern PROPTAG_ARRAY *common_util_proptagarray_init(void);
 uint32_t* common_util_proptagarray_enlarge(PROPTAG_ARRAY *pproptags);
 
 BOOL common_util_load_file(const char *path, BINARY *pbin);
-
-void common_util_init();
-
-int common_util_run();
-
-int common_util_stop();
-
-void common_util_free();
+extern void common_util_init(void);
+extern int common_util_run(void);
+extern int common_util_stop(void);
+extern void common_util_free(void);
 
 #endif /* _H_COMMON_UTIL_ */
  

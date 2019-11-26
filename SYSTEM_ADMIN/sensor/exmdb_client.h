@@ -6,13 +6,9 @@
 
 void exmdb_client_init(int conn_num,
 	int threads_num, const char *list_path);
-
-int exmdb_client_run();
-
-int exmdb_client_stop();
-
-void exmdb_client_free();
-
+extern int exmdb_client_run(void);
+extern int exmdb_client_stop(void);
+extern void exmdb_client_free(void);
 BOOL exmdb_client_ping_store(const char *dir);
 
 BOOL exmdb_client_subscribe_notification(const char *dir,

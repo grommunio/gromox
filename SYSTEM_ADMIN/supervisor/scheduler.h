@@ -3,9 +3,8 @@
 
 void scheduler_init(const char *list_path, const char *failure_path,
 	const char *default_domain, const char *admin_mailbox, int max_interval);
-
-int scheduler_run();
+extern int scheduler_run(void);
 extern void scheduler_stop(void);
-void scheduler_free();
+extern void scheduler_free(void);
 
 #endif

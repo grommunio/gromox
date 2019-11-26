@@ -9,19 +9,13 @@ enum {
 typedef void (*BACKEND_LIST_ENUM_FUNC)(const char *ip, int port);
 
 void backend_list_init(const char *list_path, int scan_interval);
-
-int backend_list_run();
-
+extern int backend_list_run(void);
 BOOL backend_list_get_unit(char *ip, int *port);
 
 void backend_list_invalid_unit(const char *ip, int port);
-
-BOOL backend_list_refresh();
-
-int backend_list_stop();
-
-void backend_list_free();
-
+extern BOOL backend_list_refresh(void);
+extern int backend_list_stop(void);
+extern void backend_list_free(void);
 void backend_list_enum_invalid(BACKEND_LIST_ENUM_FUNC enum_func);
 
 int backend_list_get_param(int param);

@@ -6,8 +6,7 @@
 extern "C" {
 #endif
 
-PCL* pcl_init();
-
+extern PCL *pcl_init(void);
 void pcl_free(PCL *ppcl);
 
 BOOL pcl_append(PCL *ppcl, const SIZED_XID *pxid);

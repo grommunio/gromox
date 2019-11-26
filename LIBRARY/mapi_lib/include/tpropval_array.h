@@ -6,8 +6,7 @@
 extern "C" {
 #endif
 
-TPROPVAL_ARRAY* tpropval_array_init();
-
+extern TPROPVAL_ARRAY *tpropval_array_init(void);
 void tpropval_array_free(TPROPVAL_ARRAY *parray);
 
 BOOL tpropval_array_init_internal(TPROPVAL_ARRAY *parray);

@@ -5,13 +5,9 @@
 #include "smtp_parser.h"
 
 void bndstack_allocator_init(size_t items);
-
-int bndstack_allocator_run();
-
-int bndstack_allocator_stop();
-
-void bndstack_allocator_free();
-
-LIB_BUFFER* bndstack_allocator_get_allocator();
+extern int bndstack_allocator_run(void);
+extern int bndstack_allocator_stop(void);
+extern void bndstack_allocator_free(void);
+extern LIB_BUFFER *bndstack_allocator_get_allocator(void);
 
 #endif

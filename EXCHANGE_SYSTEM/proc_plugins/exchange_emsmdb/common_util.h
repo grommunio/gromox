@@ -227,29 +227,20 @@ extern int (*common_util_add_timer)(const char *command, int interval);
 
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 
-LIB_BUFFER* common_util_get_allocator();
-
+LIB_BUFFER *common_util_get_allocator(void);
 void common_util_init(const char *org_name, int average_blocks,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *submit_command);
-
-int common_util_run();
-
-int common_util_stop();
-
-void common_util_free();
-
+extern int common_util_run(void);
+extern int common_util_stop(void);
+extern void common_util_free(void);
 unsigned int common_util_get_param(int param);
 
 void common_util_set_param(int param, unsigned int value);
-
-const char* common_util_get_submit_command();
-	
-uint32_t common_util_get_ftstream_id();
-
-MIME_POOL* common_util_get_mime_pool();
-
+extern const char *common_util_get_submit_command(void);
+extern uint32_t common_util_get_ftstream_id(void);
+extern MIME_POOL *common_util_get_mime_pool(void);
 void common_util_log_info(int level, char *format, ...);
 
 #endif /* _H_COMMON_UTIL_ */

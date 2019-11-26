@@ -4,15 +4,10 @@
 
 void domain_monitor_init(const char *root_path, const char *subject,
 	int growing_num);
-
-int domain_monitor_run();
-
+extern int domain_monitor_run(void);
 BOOL domain_monitor_process(MESSAGE_CONTEXT *pcontext);
-
-int domain_monitor_stop();
-
-void domain_monitor_free();
-
+extern int domain_monitor_stop(void);
+extern void domain_monitor_free(void);
 void domain_monitor_console_talk(int argc, char **argv, char *result,
 	int length);
 

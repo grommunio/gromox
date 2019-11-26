@@ -10,17 +10,11 @@ enum {
 };
 
 void retrying_table_init(int size, int min_intvl, int valid_intvl);
-
-int retrying_table_run();
-
+extern int retrying_table_run(void);
 BOOL retrying_table_check(char *temp_string);
-
-int retrying_table_stop();
-
-void retrying_table_free();
-
-int retrying_table_get_valid();
-
+extern int retrying_table_stop(void);
+extern void retrying_table_free(void);
+extern int retrying_table_get_valid(void);
 void retrying_table_set_param(int param, int value);
 
 int retrying_table_get_param(int param);

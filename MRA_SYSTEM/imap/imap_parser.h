@@ -130,15 +130,10 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	int block_auth_fail, BOOL support_starttls, BOOL force_starttls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path);
 
-
-int imap_parser_run();
-
+extern int imap_parser_run(void);
 int imap_parser_process(IMAP_CONTEXT *pcontext);
-
-int imap_parser_stop();
-
-void imap_parser_free();
-
+extern int imap_parser_stop(void);
+extern void imap_parser_free(void);
 int imap_parser_get_context_socket(IMAP_CONTEXT *pcontext);
 
 struct timeval imap_parser_get_context_timestamp(IMAP_CONTEXT *pcontext);
@@ -146,9 +141,7 @@ struct timeval imap_parser_get_context_timestamp(IMAP_CONTEXT *pcontext);
 int imap_parser_get_param(int param);
 
 int imap_parser_set_param(int param, int value);
-
-IMAP_CONTEXT* imap_parser_get_contexts_list();
-
+extern IMAP_CONTEXT *imap_parser_get_contexts_list(void);
 int imap_parser_threads_event_proc(int action);
 
 void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder);
@@ -162,20 +155,14 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext);
 void imap_parser_remove_select(IMAP_CONTEXT *pcontext);
 
 void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t count);
-
-LIB_BUFFER* imap_parser_get_allocator();
-
-MIME_POOL* imap_parser_get_mpool();
+extern LIB_BUFFER *imap_parser_get_allocator(void);
+extern MIME_POOL *imap_parser_get_mpool(void);
 
 /* get allocator for mjson mime */
-LIB_BUFFER* imap_parser_get_jpool();
-
-LIB_BUFFER* imap_parser_get_xpool();
-
-LIB_BUFFER* imap_parser_get_dpool();
-
-int imap_parser_get_squence_ID();
-
+extern LIB_BUFFER *imap_parser_get_jpool(void);
+extern LIB_BUFFER *imap_parser_get_xpool(void);
+extern LIB_BUFFER *imap_parser_get_dpool(void);
+extern int imap_parser_get_squence_ID(void);
 void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, char *format, ...);
 
 #endif

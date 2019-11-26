@@ -3,13 +3,9 @@
 #include "mapi_types.h"
 
 void exmdb_client_init(const char *list_path);
-
-int exmdb_client_run();
-
-int exmdb_client_stop();
-
-void exmdb_client_free();
-
+extern int exmdb_client_run(void);
+extern int exmdb_client_stop(void);
+extern void exmdb_client_free(void);
 BOOL exmdb_client_get_store_properties(const char *dir,
 	uint32_t cpid, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *ppropvals);

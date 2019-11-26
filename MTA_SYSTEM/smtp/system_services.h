@@ -10,13 +10,10 @@ enum{
 
 };
 
-void system_services_init();
-
-int system_services_run();
-
-int system_services_stop();
-
-void system_services_free();
+extern void system_services_init(void);
+extern int system_services_run(void);
+extern int system_services_stop(void);
+extern void system_services_free(void);
 
 extern BOOL (*system_services_judge_ip)(const char*);
 extern int (*system_services_add_ip_into_temp_list)(const char*, int);
@@ -29,7 +26,7 @@ extern BOOL (*system_services_check_domain)(const char*);
 extern BOOL (*system_services_check_user)(const char*, char*);
 extern BOOL (*system_services_check_full)(const char*);
 extern void (*system_services_log_info)(int, char*, ...);
-extern const char* (*system_services_auth_ehlo)();
+extern const char *(*system_services_auth_ehlo)(void);
 extern int (*system_services_auth_process)(int, const char*, int, char*, int);
 extern BOOL (*system_services_auth_retrieve)(int, char*, int);
 extern void (*system_services_auth_clear)(int);

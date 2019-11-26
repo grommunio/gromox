@@ -132,15 +132,10 @@ void http_parser_init(int context_num, unsigned int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,
 	const char *key_path);
-
-int http_parser_run();
-
+extern int http_parser_run(void);
 int http_parser_process(HTTP_CONTEXT *pcontext);
-
-int http_parser_stop();
-
-void http_parser_free();
-
+extern int http_parser_stop(void);
+extern void http_parser_free(void);
 int http_parser_get_context_socket(HTTP_CONTEXT *pcontext);
 
 void http_parser_set_context(int context_id);
@@ -150,9 +145,7 @@ struct timeval http_parser_get_context_timestamp(HTTP_CONTEXT *pcontext);
 int http_parser_get_param(int param);
 
 int http_parser_set_param(int param, int value);
-
-HTTP_CONTEXT* http_parser_get_contexts_list();
-
+HTTP_CONTEXT *http_parser_get_contexts_list(void);
 int http_parser_threads_event_proc(int action);
 
 BOOL http_parser_get_password(const char *username, char *password);
@@ -173,11 +166,8 @@ BOOL http_parser_activate_inrecycling(
 
 BOOL http_parser_activate_outrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie);
-
-HTTP_CONTEXT* http_parser_get_context();
-
-void http_parser_shutdown_async();
-
+HTTP_CONTEXT *http_parser_get_context(void);
+void http_parser_shutdown_async(void);
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
 

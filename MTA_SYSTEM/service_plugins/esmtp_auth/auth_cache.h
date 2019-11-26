@@ -8,13 +8,9 @@ enum {
 };
 
 void auth_cache_init(int size);
-
-int auth_cache_run();
-
-int auth_cache_stop();
-
-void auth_cache_free();
-
+extern int auth_cache_run(void);
+extern int auth_cache_stop(void);
+extern void auth_cache_free(void);
 BOOL auth_cache_login(const char *username, const char *password);
 
 void auth_cache_add(const char *username, const char *password);

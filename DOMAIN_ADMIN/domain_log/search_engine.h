@@ -41,16 +41,11 @@ typedef struct _SEARCH_NODE {
 	ITEM_DATA item;
 } SEARCH_NODE;
 
-void search_engine_init();
-
-int search_engine_run();
-
-int search_engine_stop();
-
-void search_engine_free();
-
-SEARCH_COLLECT* search_engine_collect_init();
-
+extern void search_engine_init(void);
+extern int search_engine_run(void);
+extern int search_engine_stop(void);
+extern void search_engine_free(void);
+extern SEARCH_COLLECT *search_engine_collect_init(void);
 void search_engine_collect_free(SEARCH_COLLECT *pcollect);
 
 int search_engine_collect_total(SEARCH_COLLECT *pcollect);

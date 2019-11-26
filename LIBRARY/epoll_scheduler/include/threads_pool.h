@@ -33,20 +33,14 @@ extern "C" {
 
 void threads_pool_init(int init_pool_num,
 	int (*process_func)(SCHEDULE_CONTEXT*));
-
-int threads_pool_run();
-
-int threads_pool_stop();
-
-void threads_pool_free();
-
+extern int threads_pool_run(void);
+extern int threads_pool_stop(void);
+extern void threads_pool_free(void);
 int threads_pool_get_param(int type);
 
 THREADS_EVENT_PROC threads_pool_register_event_proc(THREADS_EVENT_PROC proc);
-
-void threads_pool_wakeup_thread();
-
-void threads_pool_wakeup_all_threads();
+extern void threads_pool_wakeup_thread(void);
+extern void threads_pool_wakeup_all_threads(void);
 
 #ifdef __cplusplus
 }

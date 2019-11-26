@@ -9,13 +9,9 @@ enum {
 };
 
 void cdner_agent_init(int conn_num, const char *host_ip, int host_port);
-
-int cdner_agent_run();
-
-int cdner_agent_stop();
-
-void cdner_agent_free();
-
+extern int cdner_agent_run(void);
+extern int cdner_agent_stop(void);
+extern void cdner_agent_free(void);
 int cdner_agent_get_param(int param);
 
 BOOL cdner_agent_check_user(const char *username);
