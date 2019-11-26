@@ -1,3 +1,5 @@
+#include <libHX/misc.h>
+#include <gromox/resolv.h>
 #include "dns_adaptor.h"
 #include "inbound_ips.h"
 #include "str_hash.h"
@@ -52,8 +54,6 @@ static STR_HASH_TABLE   *g_MX_table; /* domain hash table */
 static LIB_BUFFER		*g_ip_pool;      /* ip node pool */
 static pthread_mutex_t	g_A_lock;
 static pthread_mutex_t	g_MX_lock;
-
-static int getmxbyname(char *mx_name, char *hostbuf, char **MxHosts); 
 
 static BOOL dns_adaptor_get_A_into_list(char *a_name, SINGLE_LIST *plist);
 
@@ -536,14 +536,14 @@ static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 {
 	IP_NODE *p_ip;
 	SINGLE_LIST_NODE *pnode;
-	char hostbuf[MAXMXBUFSIZ];
-	char *mxhosts[MAXMXHOSTS];
+	char **mxhosts = NULL;
 	char temp_ip[16];
 	int i, num;
 	BOOL ret_val;
 	
-	num = getmxbyname(mx_name, hostbuf, mxhosts);
+	num = gx_getmxbyname(mx_name, &mxhosts);
 	if (num <= 0) {
+		HX_zvecfree(mxhosts);
 	    return FALSE;
 	}
 	ret_val = FALSE;
@@ -564,6 +564,7 @@ static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 				p_ip = (IP_NODE*)lib_buffer_get(g_ip_pool);
 			}
 			if (NULL == p_ip) {
+				HX_zvecfree(mxhosts);
 				return FALSE;
 			}
 			p_ip->node.pdata = p_ip;
@@ -572,6 +573,7 @@ static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 			ret_val = TRUE;
 		}
 	}
+	HX_zvecfree(mxhosts);
 	return ret_val;
 }
 
@@ -687,181 +689,3 @@ void dns_adaptor_console_talk(int argc, char **argv, char *result, int length)
 	return;
 
 }
-
-
-/************************************************************************/
-/* BELOW Is the function for getting mx record from UC berkeley.        */
-/************************************************************************/
-
-/*
- * Copyright (c) 1983 Eric P. Allman
- * Copyright (c) 1988 Regents of the University of California.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms are permitted provided
- * that: (1) source distributions retain this entire copyright notice and
- * comment, and (2) distributions including binaries display the following
- * acknowledgement:  ``This product includes software developed by the
- * University of California, Berkeley and its contributors'' in the
- * documentation or other materials provided with the distribution and in
- * all advertising materials mentioning features or use of this software.
- * Neither the name of the University nor the names of its contributors may
- * be used to endorse or promote products derived from this software without
- * specific prior written permission.
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
- */
-           
-
-#if defined(BIND_493)
-typedef u_char  qbuf_t;
-#else
-typedef char    qbuf_t;
-#endif                
-
-#if defined(BIND_493)
-typedef char    nbuf_t;
-#else
-typedef u_char  nbuf_t;
-#endif
-
-/*
- *  Fetch mx hosts for the specified domain and push the host
- *  onto the stack
- *
- *  @param
- *      mx_name [in]    the mx name such as (sina.com, yahoo.com)
- *
- *  @return
- *      number of mx hosts found.
- */
-
-static int getmxbyname(char* mx_name, char *hostbuf, char **MxHosts) 
-{
-typedef union {
-    HEADER hdr;
-    u_char buf[MAXPACKET];
-} querybuf;
-
-    querybuf answer;            /* answer buffer from nameserver */
-    HEADER *hp;                 /* answer buffer header */
-    int ancount, qdcount;       /* answer count and query count */
-    u_char *msg, *eom, *cp;     /* answer buffer positions */
-    int type, class, dlen;      /* record type, class and length */
-    u_short pref;               /* mx preference value */
-    u_short prefer[MAXMXHOSTS]; /* saved preferences of mx records */
-    char *bp;                   /* hostbuf pointer */
-    int nmx;                    /* number of mx hosts found */
-    int i, j, n;
-
-    /* query the nameserver to retrieve mx records for the given domain */
-    errno   = 0;            /* reset before querying nameserver */
-    h_errno = 0;
-
-    n = res_search(mx_name, C_IN, T_MX, (u_char *)&answer, sizeof(answer));
-    if (n < 0) {
-#ifndef _SOLARIS_
-        if (_res.options & RES_DEBUG) {
-            debug_info("[dns_adaptor]: res_search failed");
-		}
-#endif
-        return -1;
-    }
-
-    errno   = 0;            /* reset after we got an answer */
-
-    if (n < HFIXEDSZ) {
-        h_errno = NO_RECOVERY;
-        return -2;
-    }
-
-    /* avoid problems after truncation in tcp packets */
-    if (n > sizeof(answer)) {
-        n = sizeof(answer);
-	}
-
-    /* valid answer received. skip the query record. */
-    hp  = (HEADER *)&answer;
-    qdcount = ntohs((u_short)hp->qdcount);
-    ancount = ntohs((u_short)hp->ancount);
-
-    msg = (u_char *)&answer;
-    eom = (u_char *)&answer + n;
-    cp  = (u_char *)&answer + HFIXEDSZ;
-
-    while (qdcount-- > 0 && cp < eom) {
-        n = dn_skipname(cp, eom);
-        if (n < 0) {
-            return -1;
-		}
-        cp += n;
-        cp += QFIXEDSZ;
-    }
-
-    /* loop through the answer buffer and extract mx records. */
-    nmx = 0;
-    bp  = hostbuf;
-
-    while (ancount-- > 0 && cp < eom && nmx < MAXMXHOSTS) {
-
-        n = dn_expand(msg, eom, cp, (nbuf_t *)bp, MAXBUF);
-        if (n < 0) {
-            break;
-		}
-        cp += n;
-
-        type = _getshort(cp);
-        cp += INT16SZ;
-
-        class = _getshort(cp);
-        cp += INT16SZ;
-
-        /* ttl = _getlong(cp); */
-        cp += INT32SZ;
-
-        dlen = _getshort(cp);
-        cp += INT16SZ;
-
-        if (type != T_MX || class != C_IN) {
-            cp += dlen;
-            continue;
-        }
-
-        pref = _getshort(cp);
-        cp  += INT16SZ;
-
-        n = dn_expand(msg, eom, cp, (nbuf_t *)bp, MAXBUF);
-        if (n < 0) {
-            break;
-		}
-        cp += n;
-
-        prefer[nmx] = pref;
-        MxHosts[nmx] = bp;
-        nmx++;
-
-        n = strlen(bp) + 1;
-        bp += n;
-    }
-
-    /* sort all records by preference. */
-    for (i = 0; i < nmx; i++) {
-        for (j = i + 1; j < nmx; j++) {
-            if (prefer[j] < prefer[i]) {
-                register u_short tmppref;
-                register char *tmphost;
-
-                tmppref   = prefer[i];
-                prefer[i] = prefer[j];
-                prefer[j] = tmppref;
-
-                tmphost = MxHosts[i];
-                MxHosts[i] = MxHosts[j];
-                MxHosts[j] = tmphost;
-            }
-        }
-    }
-    return nmx;
-}
-
