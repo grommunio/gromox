@@ -1,0 +1,8 @@
+[Unit]
+Description=Gromox domain administration service group
+Documentation=man:gromox-da.target(8gx)
+Wants=gromox-da_daemon.service gromox-fcgi_cgi.service
+Wants=gromox-synchronizer.service
+
+[Install]
+WantedBy=multi-user.target

@@ -24,6 +24,15 @@ AS_IF([test -n "$cxxmode"], [
 	AC_MSG_RESULT([$cxxmode])
 ])
 
+AC_ARG_WITH([unitdir],
+	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
+	[unitdir="$withval"],
+	[
+		unitdir=$("$PKG_CONFIG" systemd --variable systemdsystemunitdir 2>/dev/null)
+		AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
+	])
+AC_SUBST([unitdir])
+
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([HX], [libHX >= 1.10])
 PKG_CHECK_MODULES([archive], [libarchive])

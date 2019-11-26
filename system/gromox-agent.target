@@ -1,0 +1,8 @@
+[Unit]
+Description=Gromox agent service group
+Documentation=man:gromox-agent.target(8gx)
+Wants=gromox-alock.service gromox-amidb.service gromox-amysql.service
+Wants=gromox-asensor.service gromox-asession.service
+
+[Install]
+WantedBy=multi-user.target

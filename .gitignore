@@ -147,3 +147,5 @@ Makefile.in
 /userinfo
 /xmailer_blacklist
 /zcore
+
+/system/*.service
