@@ -3,6 +3,7 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <gromox/defs.h>
 #include "util.h"
 #include "mail_func.h"
 #include "config_file.h"
@@ -106,7 +107,7 @@ int main(int argc, const char **argv)
 	}
 	signal(SIGPIPE, SIG_IGN);
 	pconfig = config_file_init2(opt_config_file, config_default_path("rsyncd.cfg"));
-	if (opt_config_file != NULL && pconfig != NULL) {
+	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}

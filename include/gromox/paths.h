@@ -1,5 +1,6 @@
 /* The default paths */
 #pragma once
+#include <gromox/defs.h>
 #define PKGSYSCONFDIR "/etc/gromox"
 #define PKGSYSCONFDELIVERYDIR PKGSYSCONFDIR "/delivery"
 #define PKGSYSCONFHTTPDIR PKGSYSCONFDIR "/http"

@@ -78,7 +78,7 @@ int main(int argc, const char **argv)
 	umask(0);
 	time(&now_time);	
 	pconfig = config_file_init2(opt_config_file, config_default_path("sa_daemon.cfg"));
-	if (opt_config_file != NULL && pconfig != NULL) {
+	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}

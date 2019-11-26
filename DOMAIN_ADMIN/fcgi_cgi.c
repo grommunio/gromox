@@ -3,6 +3,7 @@
 #endif
 #include <sys/wait.h>
 #include <libHX/option.h>
+#include <gromox/defs.h>
 #include "double_list.h"
 #include "config_file.h"
 #include "ndr.h"
@@ -151,7 +152,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	pconfig = config_file_init2(opt_config_file, config_default_path("fcgi_cgi.cfg"));
-	if (opt_config_file != NULL && pconfig != NULL) {
+	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: open %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
 	}
