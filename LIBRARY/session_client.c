@@ -1,25 +1,23 @@
-#include <unistd.h>
-#include "session_client.h"
-#include "cookie_parser.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <net/if.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include "session_client.h"
+#include "cookie_parser.h"
 
 #define SOCKET_TIMEOUT				30
 
 static char g_session_ip[16];
 static int g_session_port;
 
-
-static BOOL session_client_readline_timeout(
-	int sockd, char *buff, int length)
+static BOOL session_client_readline_timeout(int sockd, char *buff, int length)
 {
     int offset;
     int temp_len;
