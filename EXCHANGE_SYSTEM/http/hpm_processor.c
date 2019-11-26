@@ -137,6 +137,8 @@ static const char* hpm_processor_get_plugin_name()
 	if (NULL == g_cur_plugin) {
 		return NULL;
 	}
+	if (strncmp(g_cur_plugin->file_name, "libexhpm_", 9) == 0)
+		return g_cur_plugin->file_name + 9;
 	return g_cur_plugin->file_name;
 }
 

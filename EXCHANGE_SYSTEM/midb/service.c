@@ -358,6 +358,8 @@ static const char* service_get_plugin_name()
 	if (NULL == g_cur_plug) {
 		return NULL;
 	}
+	if (strncmp(g_cur_plug->file_name, "libexsvc_", 9) == 0)
+		return g_cur_plug->file_name + 9;
 	return g_cur_plug->file_name;
 }
 

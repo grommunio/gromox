@@ -355,6 +355,9 @@ static const char* service_get_plugin_name()
 	if (NULL == g_cur_plug) {
 		return NULL;
 	}
+	if (strncmp(g_cur_plug->file_name, "libmrasvc_", 10) == 0 ||
+	    strncmp(g_cur_plug->file_name, "libmtasvc_", 10) == 0)
+		return g_cur_plug->file_name + 10;
 	return g_cur_plug->file_name;
 }
 
