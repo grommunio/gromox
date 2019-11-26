@@ -292,6 +292,7 @@ int service_unload_library(const char *path)
 		double_list_free(&plib->list_service);
 	}
 	double_list_remove(&g_list_plug, &plib->node);
+	printf("[service]: unloading %s\n", plib->file_name);
 	dlclose(plib->handle);
 	free(plib);
 	return PLUGIN_UNLOAD_OK;

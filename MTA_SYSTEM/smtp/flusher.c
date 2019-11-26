@@ -300,6 +300,7 @@ static BOOL flusher_unload_plugin()
 			   "FLUSHER_LIB_FREE in plugin %s\n", g_flusher_plug->path);
 		return FALSE;
 	}
+	printf("[flusher]: unloading %s\n", g_flusher_plug->path);
 	dlclose(g_flusher_plug->handle);
 	/* free the service reference of the plugin */
 	if (0 != single_list_get_nodes_num(&g_flusher_plug->list_reference)) {

@@ -838,6 +838,7 @@ int anti_spamming_unload_library(const char* path)
 	func = (PLUGIN_MAIN)plib->lib_main;
 	if (plib->completed_init)
 		func(PLUGIN_FREE, NULL);
+	printf("[anti_spamming]: unloading %s\n", plib->file_name);
 	dlclose(plib->handle);
 	free(plib);
 	return PLUGIN_UNLOAD_OK;

@@ -929,6 +929,7 @@ static void transporter_clean_up_unloading()
 				free(((SERVICE_NODE*)(pnode1->pdata))->service_name);
 				free(pnode1->pdata);
 			}
+			printf("[transporter]: unloading %s\n", plib->file_name);
 			dlclose(plib->handle);
 		}
 	}

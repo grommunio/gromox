@@ -3586,6 +3586,7 @@ static void pdu_processor_unload_library(const char* plugin_name)
 	double_list_free(&pplugin->list_reference);
 	
 	double_list_remove(&g_plugin_list, &pplugin->node);
+	printf("[pdu_processor]: unloading %s\n", pplugin->file_name);
 	dlclose(pplugin->handle);
 	free(pplugin);
 }
