@@ -825,7 +825,6 @@ static void *thread_work_func(void *pparam)
 	EXMDB_REQUEST request;
 	struct pollfd pfd_read;
 	EXMDB_RESPONSE response;
-	DOUBLE_LIST_NODE *pnode;
 	ROUTER_CONNECTION *prouter;
 	EXMDB_CONNECTION *pconnection;
 	

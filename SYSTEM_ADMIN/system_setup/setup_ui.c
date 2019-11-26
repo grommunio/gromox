@@ -702,7 +702,6 @@ int setup_ui_run()
 	char action[64];
 	char value[256];
 	char session[256];
-	char search_buff[1024];
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
@@ -2048,7 +2047,6 @@ static void setup_ui_set_mysql(const char *path)
 {
 	char *language;
 	const char *charset;
-	char command_string[1024];
 	int ctrl_id;
 	key_t k_ctrl;
 	long ctrl_type;

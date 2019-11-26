@@ -61,8 +61,6 @@ BOOL table_object_check_loaded(TABLE_OBJECT *ptable)
 
 BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 {
-	int i;
-	int object_type;
 	uint32_t row_num;
 	uint32_t table_id;
 	EMSMDB_INFO *pinfo;
@@ -376,7 +374,6 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
-	DOUBLE_LIST_NODE *pnode;
 	BOOKMARK_NODE *pbookmark;
 	
 	if (FALSE == exmdb_client_mark_table(
@@ -473,8 +470,6 @@ void table_object_clear_bookmarks(TABLE_OBJECT *ptable)
 
 void table_object_reset(TABLE_OBJECT *ptable)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
 	if (NULL != ptable->pcolumns) {
 		proptag_array_free(ptable->pcolumns);
 		ptable->pcolumns = NULL;

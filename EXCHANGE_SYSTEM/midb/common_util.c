@@ -267,7 +267,6 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	uint64_t parent_id, const char *folder_name, uint64_t *pfolder_id)
 {
 	PCL *ppcl;
-	uint64_t cn;
 	BINARY *pbin;
 	SIZED_XID xid;
 	BINARY tmp_bin;

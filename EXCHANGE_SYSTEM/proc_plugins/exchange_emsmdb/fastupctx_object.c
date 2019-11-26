@@ -144,7 +144,6 @@ static BOOL fastupctx_object_create_folder(
 	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	XID tmp_xid;
-	BOOL b_exist;
 	BINARY *pbin;
 	BINARY *pbin1;
 	uint64_t tmp_id;
@@ -431,12 +430,9 @@ static BOOL fastupctx_object_record_marker(
 	MARKER_NODE *pmarker;
 	uint32_t last_marker;
 	TPROPVAL_ARRAY *prcpt;
-	PROPTAG_ARRAY proptags;
 	TAGGED_PROPVAL propval;
-	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
-	uint32_t proptag_buff[2];
 	MESSAGE_CONTENT *pmsgctnt;
 	TPROPVAL_ARRAY *pproplist;
 	PROBLEM_ARRAY tmp_problems;
@@ -1017,11 +1013,8 @@ static BOOL fastupctx_object_record_propval(
 {
 	BOOL b_result;
 	EMSMDB_INFO *pinfo;
-	uint32_t instance_id;
 	uint32_t last_marker;
-	MARKER_NODE *pmarker;
 	DOUBLE_LIST_NODE *pnode;
-	MESSAGE_CONTENT *pmsgctnt;
 	
 	switch (ppropval->proptag) {
 	case META_TAG_FXDELPROP:

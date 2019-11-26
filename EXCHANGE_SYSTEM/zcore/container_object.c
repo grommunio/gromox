@@ -1073,7 +1073,6 @@ static BOOL container_object_get_specialtables_from_node(
 {
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;
-	TPROPVAL_ARRAY *ppropvals;
 	
 	count = (pset->count / 100 + 1) * 100;
 	if (pset->count + 1 >= count) {

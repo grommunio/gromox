@@ -474,7 +474,6 @@ void bounce_producer_make(MESSAGE_CONTEXT *pcontext, time_t original_time,
 	char mcharset[32];
 	char tmp_buff[2048];
 	char date_buff[128];
-	struct tm *datetime;
 	struct tm time_buff;
 	int i, len, until_tag;
 	const struct state *sp;

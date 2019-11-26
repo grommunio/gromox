@@ -220,11 +220,10 @@ static void *thread_work_func(void *argp)
    
     fd_set myset;
 	struct timeval tv;
-	char listen_ip[16];
 	CONSOLE_NODE *pconsole;
 	DOUBLE_LIST_NODE *pnode;
 	int sock, client_len, client_fd;
-	struct sockaddr_in fact_addr, client_peer;
+	struct sockaddr_in client_peer;
 
     sock = (int)(long)argp;
     while (FALSE == g_terminate) {

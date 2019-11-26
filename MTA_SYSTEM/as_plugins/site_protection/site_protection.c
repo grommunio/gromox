@@ -95,7 +95,6 @@ void site_protection_free()
 static int site_protection_list_refresh()
 {
 	IP_SECT *psect;
-	DOUBLE_LIST_NODE *pnode;
 	STR_HASH_TABLE *phash, *phash_temp;
 	PROTECTION_ITEM *pprotection, temp_protection;
 	char *pitem, *pbegin, *pcomma;
@@ -199,7 +198,6 @@ static void site_protection_list_free(STR_HASH_TABLE *phash)
 BOOL site_protection_verify(char *domain, char *ip)
 {
 	IP_SECT *psect;
-	STR_HASH_ITER *iter;
 	DOUBLE_LIST_NODE *pnode;
 	PROTECTION_ITEM *pprotection;
 	char temp_domain[256];

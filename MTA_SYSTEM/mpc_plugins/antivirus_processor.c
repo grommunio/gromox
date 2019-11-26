@@ -46,8 +46,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 {
 	char *psearch;
 	char file_name[128];
-	char queue_path[256];
-	char resource_path[256];
 
     switch (reason) {
     case PLUGIN_INIT:

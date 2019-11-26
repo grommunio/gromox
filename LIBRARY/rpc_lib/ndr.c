@@ -568,8 +568,6 @@ static int ndr_push_bytes(NDR_PUSH *pndr, const uint8_t *pdata, uint32_t n)
 
 int ndr_push_int8(NDR_PUSH *pndr, int8_t v)
 {
-	int status;
-	
 	if (FALSE == ndr_push_check_overflow(pndr, 1)) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -580,8 +578,6 @@ int ndr_push_int8(NDR_PUSH *pndr, int8_t v)
 
 int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v)
 {
-	int status;
-	
 	if (FALSE == ndr_push_check_overflow(pndr, 1)) {
 		return NDR_ERR_BUFSIZE;
 	}

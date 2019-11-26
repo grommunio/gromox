@@ -83,7 +83,6 @@ BOOL uri_cache_query(const char *uri, char *reason, int length)
 
 void uri_cache_add(const char *uri, char *reason)
 {
-	int add_result;
 	time_t cur_time;
 	BLCAK_ITEM temp_item;
 	

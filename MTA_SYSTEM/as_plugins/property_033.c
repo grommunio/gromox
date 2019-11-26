@@ -79,7 +79,6 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	char temp_num[9];
 	char buff[1024];
 	char *ptr, *pbackup;
-	int size;
 	int out_len;
 	int tag_len;
 	int val_len;

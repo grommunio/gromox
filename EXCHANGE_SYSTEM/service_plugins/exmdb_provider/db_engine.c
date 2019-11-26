@@ -3168,7 +3168,6 @@ static void* db_engine_get_extremum_value(DB_ITEM *pdb,
 static void db_engine_notify_content_table_delete_row(
 	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
 {
-	int i;
 	int result;
 	int sql_len;
 	BOOL b_index;
@@ -3192,7 +3191,6 @@ static void db_engine_notify_content_table_delete_row(
 	sqlite3_stmt *pstmt2;
 	sqlite3_stmt *pstmt3;
 	sqlite3_stmt *pstmt4;
-	sqlite3_stmt *pstmt5;
 	DOUBLE_LIST tmp_list;
 	ROWINFO_NODE *prnode;
 	ROWDEL_NODE *pdelnode;

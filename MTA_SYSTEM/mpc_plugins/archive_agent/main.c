@@ -208,7 +208,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 static BOOL archive_process(MESSAGE_CONTEXT *pcontext)
 {
 	int fd;
-	int sockd;
 	int length;
 	int offset;
 	MAIL *pmail;
@@ -428,7 +427,6 @@ RDWR_ERROR:
 static int connect_cidb(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;
@@ -642,7 +640,6 @@ static BOOL load_list()
 	LIST_FILE *plist;
 	BACK_CONN *pback;
 	BACK_SVR *pserver;
-	DOUBLE_LIST_NODE *pnode;
 	
 	plist = list_file_init(g_list_path, "%s:128%s:16%d");
 	if (NULL == plist) {

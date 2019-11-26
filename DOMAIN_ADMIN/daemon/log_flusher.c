@@ -96,7 +96,7 @@ void log_flusher_free()
 
 static BOOL log_flusher_control(const char *ip, int port)
 {
-	int sockd, cmd_len;
+	int sockd;
 	int read_len, offset;
 	struct sockaddr_in servaddr;
 	char temp_buff[1024];

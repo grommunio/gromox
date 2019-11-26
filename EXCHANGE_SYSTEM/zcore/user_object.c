@@ -48,8 +48,6 @@ void user_object_free(USER_OBJECT *puser)
 BOOL user_object_get_properties(USER_OBJECT *puser,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	void *pvalue;
 	AB_BASE *pbase;
 	char username[256];
 	char tmp_buff[1024];

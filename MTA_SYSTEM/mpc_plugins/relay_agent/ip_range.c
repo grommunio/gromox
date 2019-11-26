@@ -201,7 +201,6 @@ static void *thread_work_func(void *param)
 	char *ptr, *ptr1;
 	char *pitem;
 	char temp_line[128];
-	char country[128];
 	char temp_path[256];
 	char option_buff[512];
 	char *args[] = {"wget", NULL, NULL, NULL, NULL};

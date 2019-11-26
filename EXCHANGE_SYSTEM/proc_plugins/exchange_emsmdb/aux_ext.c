@@ -438,7 +438,6 @@ static int aux_ext_push_aux_perf_serverinfo(
 	uint16_t server_dn_offset;
 	uint16_t server_dn_size;
 	uint16_t server_name_offset;
-	uint16_t server_name_size;
 	
 	status = ext_buffer_push_uint16(pext, r->server_id);
 	if (EXT_ERR_SUCCESS != status) {
@@ -527,7 +526,6 @@ static int aux_ext_push_aux_perf_processinfo(
 {
 	int status;
 	uint16_t process_name_offset;
-	uint16_t process_name_size;
 	
 	status = ext_buffer_push_uint16(pext, r->process_id);
 	if (EXT_ERR_SUCCESS != status) {
@@ -1921,7 +1919,6 @@ int aux_ext_pull_aux_info(EXT_PULL *pext, AUX_INFO *r)
 	int status;
 	uint8_t *pdata;
 	EXT_PULL subext;
-	AUX_HEADER *paux;
 	uint8_t buff[0x1008];
 	DOUBLE_LIST_NODE *pnode;
 	uint32_t decompressed_len;

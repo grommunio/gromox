@@ -107,7 +107,6 @@ void translator_do(STATISTIC_ITEM *psmtp_item, int smtp_num,
 	DOUBLE_LIST accept_list;
 	DOUBLE_LIST_NODE *pdnode;
 	LANGUAGE_ACCEPT *paccept;
-	static char fake_string[] = "error to get item";
 
 	found_lang = FALSE;
 	double_list_init(&accept_list);

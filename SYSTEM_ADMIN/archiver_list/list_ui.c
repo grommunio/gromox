@@ -476,12 +476,9 @@ static void list_ui_error_html(const char *error_string)
 
 static void list_ui_main_html(const char *session)
 {
-	int offset;
 	int item_num;
-	int i, len, fd;
-	char *ptoken;
+	int i;
 	char *language;
-	char temp_buff[1024];
 	char url_buff[1024];
 	LIST_FILE *pfile;
 	ARCHIVE_ITEM *pitem;

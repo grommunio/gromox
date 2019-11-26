@@ -197,7 +197,6 @@ int list_ui_run()
 	int space, files;
 	const char *slave;
 	const char *pvalue;
-	char temp_buff[16];
 	const char *master;
 	const char *session;
 	const char *database;

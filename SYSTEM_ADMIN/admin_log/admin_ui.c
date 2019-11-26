@@ -254,7 +254,7 @@ int admin_ui_run()
 	time_t start, end;
 	int start_day, end_day;
 	int start_hour, end_hour;
-	int scan_num, type, len;
+	int len;
 	char *language;
 	char *remote_ip;
 	char *ptr1, *ptr2;
@@ -568,7 +568,7 @@ static void admin_ui_error_html(const char *error_string)
 
 static void admin_ui_search_html(const char *session)
 {
-	int i, len;
+	int i;
 	char *language;
 	char time_buff[64];
 	char url_buff[1024];
@@ -647,7 +647,6 @@ static void admin_ui_result_html(const char *session, const char *ip,
 	char *language;
 	char temp_buff[64];
 	char url_buff[1024];
-	struct in_addr addr;
 	MATCH_COLLECT *pcollection;
 
 	pcollection = match_engine_collect_init();

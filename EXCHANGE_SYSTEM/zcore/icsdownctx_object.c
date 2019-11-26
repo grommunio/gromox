@@ -49,10 +49,8 @@ BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx,
 	const BINARY *pstate_bin, const RESTRICTION *prestriction,
 	uint16_t sync_flags, BOOL *pb_changed, uint32_t *pmsg_count)
 {
-	int i;
 	IDSET *pseen;
 	IDSET *pread;
-	BOOL b_ordered;
 	IDSET *pseen_fai;
 	USER_INFO *pinfo;
 	uint32_t count_fai;
@@ -605,7 +603,6 @@ BOOL icsdownctx_object_sync_readstates(
 {
 	int i;
 	BINARY *pbin;
-	STORE_OBJECT *pstore;
 	
 	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
 		return FALSE;

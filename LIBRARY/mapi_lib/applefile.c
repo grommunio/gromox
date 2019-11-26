@@ -594,7 +594,6 @@ static int applefile_push_asfinderinfo(EXT_PUSH *pext, const ASFINDERINFO *r)
 
 static int applefile_push_asmacinfo(EXT_PUSH *pext, const ASMACINFO *r)
 {
-	int i;
 	int status;
 	
 	status = ext_buffer_push_bytes(pext, r->filler, 3);

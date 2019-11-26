@@ -66,9 +66,6 @@ typedef struct _CONDITION_NODE {
 	void *pstatment;
 } CONDITION_NODE;
 
-
-static BOOL g_notify_stop;            /* stop signal for scaning thread */
-
 static char g_storage_path[128];
 
 static char g_sphinx_host[128];
@@ -1013,7 +1010,6 @@ static char* classify_engine_cl_to_utf8(const char *charset, const char *string)
 static char* classify_engine_cl_decode_mime(const char *charset,
 	const char *mime_string)
 {
-	BOOL b_decoded;
 	int i, buff_len;
 	int offset;
 	size_t tmp_len, decode_len;

@@ -90,11 +90,9 @@ void message_alarm_message(char *buff, int type, const char *command,
 	const char *response, const char *ip, int port, const char *to)
 {
 	char *ptr;
-	char img_buf[MESSAGE_BUFF_SIZE/2];
-	int len, fd;
+	int len;
 	time_t cur_time;
 	struct tm temp_tm;
-	struct stat node_stat;
 	
 	ptr = buff;
 	memcpy(ptr, MESSAGE_BODY_1, sizeof(MESSAGE_BODY_1) - 1);

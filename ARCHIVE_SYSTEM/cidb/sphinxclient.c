@@ -1494,7 +1494,6 @@ static int net_create_inet_sock ( sphinx_client * client )
 
 static int net_create_unix_sock ( sphinx_client * client )
 {
-	struct hostent * hp;
 	struct sockaddr_un uaddr;
 	int sock, res, err, optval, len;
 

@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 { 
  
 	int listen_port, listen_ssl_port;
-	int cache_size, autologout_time, context_aver_mitem;
+	int autologout_time, context_aver_mitem;
 	int context_num, context_aver_mem, context_max_mem;
 	int imap_auth_times, imap_conn_timeout;
 	int thread_init_num, thread_charge_num; 

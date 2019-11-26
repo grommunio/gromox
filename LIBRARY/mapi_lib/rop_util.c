@@ -205,7 +205,6 @@ time_t rop_util_nttime_to_unix(uint64_t nt_time)
 
 uint64_t rop_util_current_nttime()
 {
-	uint64_t nt_time;
 	struct timeval tvl;
 	
 	gettimeofday(&tvl, NULL);

@@ -88,8 +88,6 @@ int cache_queue_run()
  */
 int cache_queue_stop()
 {
-	DOUBLE_LIST_NODE *pnode;
-
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
 		pthread_join(g_thread_id, NULL);
@@ -242,8 +240,7 @@ static int cache_queue_increase_mess_ID()
 static void* thread_work_func(void* arg)
 {
 	DIR *dirp;
-	MIME *pmime;
-	int i, times, size, len, bounce_type;
+	int i, times, size, bounce_type;
 	int scan_interval, fd, mess_len;
 	time_t scan_begin, scan_end, original_time;
     struct dirent *direntp;
@@ -251,7 +248,7 @@ static void* thread_work_func(void* arg)
 	char temp_from[256];
 	char temp_rcpt[256];
     char temp_path[256];
-	char *pbuff, *ptr, host_ip[16], *from_domain;
+	char *pbuff, *ptr;
 	MESSAGE_CONTEXT *pcontext, *pbounce_context;
 	BOOL need_bounce, need_remove;
 

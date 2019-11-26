@@ -40,7 +40,6 @@ int gateway_control_run()
 	int i, list_len;
 	CONSOLE_PORT *pport;
 	LIST_FILE *plist_file;
-	SINGLE_LIST_NODE *pnode;
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {

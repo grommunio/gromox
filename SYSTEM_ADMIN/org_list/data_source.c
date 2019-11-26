@@ -143,7 +143,6 @@ void data_source_free()
 BOOL data_source_query(DATA_COLLECT *pcollect)
 {
 	int i, j;
-	int	len, offset;
 	int rows, rows1;
 	char sql_string[128];
 	MYSQL_RES *pmyres;

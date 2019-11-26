@@ -388,8 +388,6 @@ static void list_ui_error_html(const char *error_string)
 
 static void list_ui_main_html(const char *session)
 {
-	int org_id;
-	int domain_id;
 	char *language;
 	ORG_ITEM *porg;
 	char url_buff[1024];

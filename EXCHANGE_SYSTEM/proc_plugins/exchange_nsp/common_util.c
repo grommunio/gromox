@@ -150,7 +150,6 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 {
 	int len;
 	char buff[128];
-	const char *dn_string;
 	
 	ppermeid->id_type = 0x0;
 	ppermeid->r1 = 0x0;

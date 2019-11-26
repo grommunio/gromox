@@ -58,7 +58,6 @@ STORE_OBJECT* folder_object_get_store(FOLDER_OBJECT *pfolder)
 BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (FALSE == exmdb_client_get_folder_all_proptags(
@@ -235,10 +234,7 @@ static BOOL folder_object_get_calculated_property(
 	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
-	uint32_t tmp_proptag;
 	PERSISTDATA *ppersistdata;
-	PROPTAG_ARRAY tmp_proptags;
-	TPROPVAL_ARRAY tmp_propvals;
 	static uint8_t bin_buff[22];
 	static uint32_t fake_del = 0;
 	PERSISTDATA_ARRAY persistdatas;
@@ -680,7 +676,6 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	const TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
 	XID tmp_xid;
 	uint16_t count;
 	BINARY *pbin_pcl;
@@ -919,7 +914,6 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_DATA *pperm_data;
-	static uint64_t default_id = 0;
 	static uint32_t proptag_buff[] = {
 		PROP_TAG_ENTRYID,
 		PROP_TAG_MEMBERID

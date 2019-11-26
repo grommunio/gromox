@@ -193,9 +193,8 @@ int table_ui_run()
 	char temp_passive[256];
 	char domain[256];
 	char session[256];
-	char post_buff[1024];
 	char search_buff[1024];
-	int len, privilege_bits;
+	int len;
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
@@ -497,21 +496,17 @@ static void table_ui_error_html(const char *error_string)
 
 static void table_ui_main_html(const char *domain, const char *session)
 {
-	int i, len;
+	int i;
 	int item_num;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char item_lang[256];
 	char list_path[256];
-	char temp_buff[128];
 	char temp_dest[512];
 	char temp_passive[512];
-	char domain_path[256];
 	BLACKLIST_ITEM *pitem;
-	struct tm temp_tm, *ptm;
-	
-	
+
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 
 	if (FALSE == table_ui_get_self(url_buff, 1024)) {
@@ -583,7 +578,6 @@ static void table_ui_main_html(const char *domain, const char *session)
 static void table_ui_approve_html(const char *domain, const char *session,
 	const char *action)
 {
-	int fd;
 	const char *str_msg;
 	char path[256];
 	char buff[1024];

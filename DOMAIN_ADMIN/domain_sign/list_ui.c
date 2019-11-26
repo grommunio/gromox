@@ -138,7 +138,6 @@ int list_ui_run()
 	char type[32];
 	char charset[32];
 	char session[256];
-	char password[256];
 	char command[1024];
 	char boundary[1024];
 	char temp_path[256];
@@ -771,8 +770,6 @@ static void list_ui_item_html(char *filename)
 static void list_ui_main_html(const char *domainname, const char *session)
 {
 	DIR *dirp;
-	int type;
-	int i, len;
 	char *pdot;
 	char *language;
 	char url_buff[1024];
@@ -858,7 +855,7 @@ static void list_ui_main_html(const char *domainname, const char *session)
 static void list_ui_broadcast_dir(const char *domainname)
 {
 	char *pbuff;
-	int fd, fd1, len;
+	int fd, fd1;
 	DIR *dirp, *dirp1;
 	char temp_path[256];
 	struct stat node_stat;

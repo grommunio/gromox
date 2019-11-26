@@ -317,13 +317,9 @@ static void *scan_work_func(void *param)
 static BOOL check_virus(int buflen, void *pbuff, char *virusname)
 {
 	int length;
-	int offset;
-	int read_len;
-	fd_set myset;
 	char *ptoken;
 	int writie_len;
 	BACK_CONN *pback;
-	struct timeval tv;
 	char buff[4096];
 	DOUBLE_LIST_NODE *pnode;
 
@@ -409,7 +405,6 @@ static BOOL check_virus(int buflen, void *pbuff, char *virusname)
 static int connect_sssp(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;
@@ -449,7 +444,6 @@ static int connect_sssp(const char *ip_addr, int port)
 
 static void console_talk(int argc, char **argv, char *result, int length)
 {
-	DOUBLE_LIST_NODE *pnode;
 	char help_string[] = "250 sssp agent help information:\r\n"
 						 "\t%s echo\r\n"
 						 "\t    --print the sssp server information";

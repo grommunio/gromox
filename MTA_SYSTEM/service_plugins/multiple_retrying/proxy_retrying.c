@@ -143,7 +143,7 @@ int proxy_retrying_run()
 
 static void *scanning_work_func(void *param)
 {
-	int i, read_len;
+	int i;
 	time_t cur_time;
 	char temp_buff[256];
 	DOUBLE_LIST temp_list;

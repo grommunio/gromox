@@ -171,7 +171,6 @@ static int exmdb_client_push_load_content_table_request(
 	EXT_PUSH *pext, const LOAD_CONTENT_TABLE_REQUEST *r)
 {
 	int status;
-	uint8_t tmp_byte;
 	
 	status = ext_buffer_push_string(pext, r->dir);
 	if (EXT_ERR_SUCCESS != status) {
@@ -642,11 +641,9 @@ static int connect_exmdb(const char *dir)
 	int prefix_len;
 	int process_id;
 	BINARY tmp_bin;
-	struct timeval tv;
 	EXMDB_NODE *pexnode;
 	char remote_id[128];
 	char tmp_buff[1024];
-	const char *str_host;
 	uint8_t response_code;
 	CONNECT_REQUEST request;
 	DOUBLE_LIST_NODE *pnode;
@@ -1076,7 +1073,6 @@ static BOOL recurrencepattern_to_rrule(ICAL_COMPONENT *ptz_component,
 	time_t unix_time;
 	uint64_t nt_time;
 	ICAL_LINE *piline;
-	const char *str_tag;
 	ICAL_VALUE *pivalue;
 	char tmp_buff[1024];
 	
@@ -1742,7 +1738,6 @@ static BOOL get_freebusy(const char *dir)
 {
 	int i;
 	int sockd;
-	GUID guid;
 	void *pvalue;
 	BOOL b_first;
 	BOOL b_private;

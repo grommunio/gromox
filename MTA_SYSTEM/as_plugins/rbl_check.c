@@ -33,9 +33,6 @@ static SPAM_STATISTIC spam_statistic;
 static CHECK_RETRYING check_retrying;
 static CHECK_TAGGING check_tagging;
 
-
-static char g_return_string[1024];
-
 BOOL AS_LibMain(int reason, void **ppdata)
 {
 	/* path conatins the config files directory */

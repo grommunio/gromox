@@ -1055,7 +1055,7 @@ char* bytetoa(uint64_t byte, char *string)
 
 uint64_t atobyte(const char *string)
 {
-	int i, length, last_pos;
+	int length, last_pos;
 	char unit;
 	char temp_buff[36]; 
 
@@ -1872,7 +1872,7 @@ void encode_hex_int(int id, char *out)
 	static char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 							'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	char t_char;
-	int i, j, len;
+	int i, j;
 	
 	for (i=0,j=0; i<sizeof(int); i++,j+=2) {
 		t_char = (id >> i*8) & 0xFF;

@@ -353,9 +353,6 @@ BOOL dns_rbl_judge(const char *ip, char *answer_buff, int answer_len)
 	struct in_addr addr;
 	struct dnsrbl *r;
 	int s, i;
-	unsigned int total_sum = 0;
-	unsigned int count = 0;
-	unsigned int blacklisted = 0;
 
 	if (inet_pton(AF_INET, ip, &addr) <= 0) {
 		return TRUE;

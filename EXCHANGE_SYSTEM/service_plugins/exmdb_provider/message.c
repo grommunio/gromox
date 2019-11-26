@@ -582,7 +582,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	BOOL b_batch;
 	BOOL b_check;
 	BOOL b_owner;
-	BOOL b_result;
 	int del_count;
 	uint64_t tmp_cn;
 	uint64_t nt_time;
@@ -1190,7 +1189,6 @@ BOOL exmdb_server_check_message_deleted(const char *dir,
 BOOL exmdb_server_get_message_rcpts(const char *dir,
 	uint64_t message_id, TARRAY_SET *pset)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	uint64_t mid_val;
 	
@@ -1430,12 +1428,9 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 BOOL exmdb_server_allocate_message_id(const char *dir,
 	uint64_t folder_id, uint64_t *pmessage_id)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	uint64_t eid_val;
 	uint64_t fid_val;
-	sqlite3_stmt *pstmt;
-	char sql_string[128];
 	
 	pdb = db_engine_get_db(dir);
 	if (NULL == pdb) {
@@ -2259,8 +2254,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 
 static void message_md5_string(const char *string, uint8_t *pdgt)
 {
-	int i;
-	uint64_t b;
 	MD5_CTX ctx;
 	char tmp_string[256];
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
@@ -2607,7 +2600,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	int tmp_int;
 	int tmp_int1;
 	void *pvalue;
-	BINARY *pbin;
 	BOOL b_exist;
 	BOOL b_result;
 	uint32_t next;
@@ -3041,7 +3033,6 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 	int sql_len;
 	void *pvalue;
 	uint32_t state;
-	uint32_t sequence;
 	RULE_NODE *prnode;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
@@ -3395,11 +3386,9 @@ static BOOL message_make_deferred_error_message(
 	const char *provider, DOUBLE_LIST *pmsg_list)
 {
 	BOOL b_result;
-	BINARY tmp_bin;
 	uint64_t tmp_eid;
 	uint64_t mid_val;
 	uint64_t nt_time;
-	char tmp_buff[1024];
 	MESSAGE_NODE *pmnode;
 	MESSAGE_CONTENT *pmsg;
 	TAGGED_PROPVAL propval;
@@ -4347,7 +4336,6 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	int tmp_id;
 	int tmp_id1;
 	BOOL b_exit;
-	int sql_len;
 	BOOL b_exist;
 	void *pvalue;
 	GUID tmp_guid;

@@ -378,7 +378,6 @@ void bounce_producer_make(MESSAGE_CONTEXT *pcontext,
 	char mcharset[32];
 	char tmp_buff[1024];
 	char date_buff[128];
-	struct tm *datetime;
 	struct tm time_buff;
 	int prev_pos, mail_len;
 	const struct state *sp;

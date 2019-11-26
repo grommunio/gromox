@@ -174,7 +174,6 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 	BOOL b_cdn_create;
     int string_length;
 	char reason[256];
-	char temp_size[32];
 	char temp_buff[1024];
 	char temp_password[256];
     const char* pop3_reply_str;
@@ -614,7 +613,6 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	int n;
     int string_length;
 	char temp_path[256];
-	char temp_buff[1024];
 	char temp_command[256];
     const char* pop3_reply_str;
 	MSG_UNIT *punit;
@@ -714,10 +712,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
 	int n;
-	int count;
     int string_length;
-	char deleted_path[256];
-	char temp_buff[1024];
 	char temp_command[256];
     const char* pop3_reply_str;
 	MSG_UNIT *punit;

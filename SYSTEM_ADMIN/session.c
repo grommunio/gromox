@@ -89,7 +89,6 @@ int main(int argc, char **argv)
 	char listen_ip[16];
 	char *str_value, *pitem;
 	ACL_ITEM *pacl;
-	struct in_addr addr;
 	struct sockaddr_in my_name;
 	LIST_FILE *plist;
 	CONFIG_FILE *pconfig;
@@ -935,7 +934,6 @@ static BOOL read_mark(CONNECTION_NODE *pconnection)
 
 static void produce_session(const char *tag, char *session)
 {
-	char *pitem;
 	time_t cur_time;
 	int i, pos, mod;
 	char temp_time[16];

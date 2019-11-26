@@ -298,7 +298,6 @@ int list_ui_run()
 	char temp_address[128];
 	char temp_buff[32];
 	int len, result, class_id;
-	int list_type;
 	int list_privilege;
 	
 

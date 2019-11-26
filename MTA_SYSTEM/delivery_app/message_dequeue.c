@@ -197,15 +197,10 @@ int message_dequeue_run()
 {
 	size_t size;
 	key_t k_msg, k_shm;
-    int i, flush_ID;
+	int i;
     char name[256];
 	MESSAGE *pmessage;
-	char *ptr;
-	DIR *dirp;
-    struct dirent *direntp;
 	pthread_attr_t attr;
-	MSG_BUFF msg;
-	SINGLE_LIST_NODE *pnode;
 
 	if (FALSE == message_dequeue_check()) {
 		return -1;
@@ -479,7 +474,6 @@ static void message_dequeue_load_from_mess(int mess)
 	MESSAGE *pmessage;
 	char *ptr;
 	size_t size;
-	SINGLE_LIST_NODE *pnode;
 
 	pthread_mutex_lock(&g_hash_mutex);
     pmessage = (MESSAGE*)int_hash_query(g_mess_hash, mess);
@@ -568,7 +562,6 @@ static void* thread_work_func(void* arg)
 	size_t size;
     char dir_name[256];
     char file_name[256];
-    MESSAGE *pmessage;
     DIR *dirp;
     struct dirent *direntp;
     int mess_fd, i, len, mess;

@@ -243,10 +243,9 @@ int list_ui_run()
 	char *language;
 	char *ptr1, *ptr2;
 	char *query, *request;
-	char *pat, type[16];
+	char type[16];
 	char session[256];
 	char domainname[128];
-	char username[128];
 	char temp_buff[256];
 	char search_buff[1024];
 	char temp_name[128];
@@ -803,13 +802,12 @@ static void list_ui_link_class_html(const char *domainname,
 static void list_ui_main_html(const char *domainname, const char *session,
 	int class_id)
 {
-	int i, rows;
+	int rows;
 	char *language;
 	char url_buff[1024];
 	char url_add_class[1280];
 	char url_link_class[1280];
 	char url_link_up[1280];
-	char temp_user[256];
 	char temp_name[32];
 	CLASS_ITEM *pitem;
 	DATA_COLLECT *pcollect;

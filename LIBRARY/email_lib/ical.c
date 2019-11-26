@@ -177,7 +177,6 @@ static void ical_free_value(ICAL_VALUE *pivalue)
 
 static void ical_free_line(ICAL_LINE *piline)
 {
-	ICAL_VALUE *pivalue;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while (pnode=double_list_get_from_head(&piline->param_list)) {
@@ -331,7 +330,6 @@ static ICAL_PARAM* ical_retrieve_param(char *ptag)
 	char *ptr;
 	char *pnext;
 	ICAL_PARAM *piparam;
-	DOUBLE_LIST_NODE *pnode;
 	
 	ptr = strchr(ptag, '=');
 	if (NULL == ptr) {
@@ -474,7 +472,6 @@ static BOOL ical_retrieve_component(
 	ICAL_LINE *piline;
 	LINE_ITEM tmp_item;
 	ICAL_VALUE *pivalue;
-	DOUBLE_LIST_NODE *pnode;
 	ICAL_COMPONENT *pcomponent1;
 	
 	ical_clear_component(pcomponent);
@@ -623,7 +620,6 @@ static size_t ical_serialize_value_string(char *pbuff,
 	size_t i;
 	size_t offset;
 	size_t tmp_len;
-	size_t line_begin;
 	
 	if (line_offset >= MAX_LINE) {
 		line_offset %= MAX_LINE;
@@ -2039,7 +2035,6 @@ BOOL ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
 	int hour_offset;
 	struct tm tmp_tm;
 	int minute_offset;
-	ICAL_LINE *piline;
 	const char *str_offset;
 	
 	if (itime.leap_second >= 60) {

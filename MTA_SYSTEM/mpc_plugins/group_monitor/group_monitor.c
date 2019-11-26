@@ -300,7 +300,7 @@ static void group_monitor_forward(const char *group, STR_HASH_TABLE *phash,
 	char rcpt_to[256], origin_rcpt[256];
 	char composed_subject[1024];
 	char original_subject[1024];
-	char *pdomain, *ptr, *pdomain1;
+	char *pdomain, *pdomain1;
 	FORWARD_DATA *pdata;
 	MEM_FILE file_forward;
 	BOOL should_forward;

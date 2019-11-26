@@ -20,7 +20,6 @@ static char APOLLO_MAIN_DIR[256];
 
 static int g_token_fd;
 static int g_notify_stop;
-static pid_t g_process_id;
 static pid_t g_pop3_pid;
 static pid_t g_imap_pid;
 static pid_t g_supervised_process;
@@ -75,8 +74,6 @@ void daemon_sigstop(int sig)
 void start_pop3()
 {
 	int status;
-	struct stat node_stat;
-	char temp_path[256];
 	char *args[] = {"./pop3", "../config/pop3.cfg", NULL};
 
 	g_pop3_pid = fork();
@@ -109,8 +106,6 @@ void start_pop3()
 void start_imap()
 {
 	int status;
-	struct stat node_stat;
-	char temp_path[256];
 	char *args[] = {"./imap", "../config/imap.cfg", NULL};
 
 	g_imap_pid = fork();
@@ -142,13 +137,9 @@ void start_imap()
  */
 void start_service()
 {
-	time_t now_time;
-	struct tm *ptm;
 	pid_t pid, sid; /* process ID and session ID */
-	int fd, ctrl_id;
+	int fd;
 	char str[16];
-	key_t k_ctrl;
-	long ctrl_type;
 
 
 	pid = fork();
@@ -313,11 +304,6 @@ void restart_service()
 
 int main(int argc, char **argv)
 {
-	int fd;
-	pid_t pid;
-	char str[32];
-	struct stat node_stat;
-
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);
 		exit(EXIT_SUCCESS);

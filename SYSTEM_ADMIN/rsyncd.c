@@ -64,17 +64,14 @@ static unsigned long ssl_id();
 
 int main(int argc, char **argv)
 {
-	int i, num;
+	int i;
 	int optval;
-	BOOL b_listen;
 	int listen_port;
 	int sockd, status;
 	pthread_t thr_id;
 	char ca_path[256];
-	char temp_buff[32];
-	struct in_addr addr;
 	CONFIG_FILE *pconfig;
-	char *str_value, *pitem;
+	char *str_value;
 	DOUBLE_LIST_NODE *pnode;
 	struct sockaddr_in my_name;
 	char certificate_path[256];

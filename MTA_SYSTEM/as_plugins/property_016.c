@@ -83,7 +83,6 @@ static int head_auditor(int context_ID, MAIL_ENTITY *pmail,
 	BOOL b_unlst;
 	char *pdomain;
     char buff[1024];
-	int  i, out_len;
 	int tag_len, val_len;
 
 	if (TRUE == pmail->penvelop->is_outbound ||

@@ -172,7 +172,6 @@ static int g_mime_num;
 static int g_table_size;              /* hash table size */
 static int g_squence_id;
 static BOOL g_notify_stop;            /* stop signal for scaning thread */
-static int g_ping_interval;
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */
@@ -379,7 +378,6 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 static char* mail_engine_ct_decode_mime(
 	const char *charset, const char *mime_string)
 {
-	BOOL b_decoded;
 	int i, buff_len;
 	int offset;
 	size_t tmp_len, decode_len;
@@ -479,9 +477,6 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 	char *pbuff;
 	size_t length;
 	size_t temp_len;
-	iconv_t conv_id;
-	MJSON temp_mjson;
-	char *pin, *pout;
 	char *ret_string;
 	const char *charset;
 	const char *filename;
@@ -620,7 +615,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 	uint32_t uidnext, CONDITION_TREE *ptree)
 {
 	int sp = 0;
-	int sql_len;
 	BOOL b_loaded;
 	BOOL b_result;
 	BOOL b_result1;
@@ -631,7 +625,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 	char *ret_string;
 	int results[1024];
 	char temp_buff[1024];
-	char sql_string[1024];
 	char temp_buff1[1024];
 	int conjunctions[1024];
 	DOUBLE_LIST_NODE *pnode;
@@ -2999,7 +2992,6 @@ static void *scan_work_func(void *param)
 	char htag[256];
 	IDB_ITEM *pidb;
 	SUB_NODE *psub;
-	uint32_t sub_id;
 	time_t now_time;
 	STR_HASH_ITER *iter;
 	DOUBLE_LIST temp_list;
@@ -3189,7 +3181,6 @@ static int mail_engine_mfree(int argc, char **argv, int sockd)
 static int mail_engine_mping(int argc, char **argv, int sockd)
 {
 	IDB_ITEM *pidb;
-	IDB_ITEM temp_idb;
 	
 	if (2 != argc || strlen(argv[1]) >= 256) {
 		return 1;
@@ -3985,7 +3976,6 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 	BOOL b_partial;
 	IDB_ITEM *pidb;
 	uint64_t folder_id;
-	char temp_path[256];
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	EID_ARRAY message_ids;
@@ -4217,7 +4207,6 @@ static int mail_engine_mmove(int argc, char **argv, int sockd)
 	sqlite3_stmt *pstmt;
 	char sql_string[1024];
 	EID_ARRAY message_ids;
-	char temp_buff[MAX_DIGLEN];
 
 	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024
 		|| strlen(argv[4]) >= 1024 || 0 == strcmp(argv[2], argv[4])) {
@@ -4288,7 +4277,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	int flags_len;
 	IDB_ITEM *pidb;
 	uint8_t b_read;
-	size_t mess_len;
 	uint64_t nt_time;
 	char charset[32];
 	uint8_t b_unsent;
@@ -5098,7 +5086,6 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 
 static int mail_engine_psubf(int argc, char **argv, int sockd)
 {
-	int sql_len;
 	IDB_ITEM *pidb;
 	uint64_t folder_id;
 	char sql_string[1024];
@@ -5125,7 +5112,6 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 
 static int mail_engine_punsf(int argc, char **argv, int sockd)
 {
-	int sql_len;
 	IDB_ITEM *pidb;
 	uint64_t folder_id;
 	char sql_string[1024];
@@ -5622,12 +5608,10 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 	int buff_len;
 	uint32_t uid;
 	uint32_t idx;
-	int flags_len;
 	IDB_ITEM *pidb;
 	int sort_field;
 	uint64_t folder_id;
 	sqlite3_stmt *pstmt;
-	char flags_buff[16];
 	char temp_line[1024];
 	char sql_string[1024];
 	const char *mid_string;
@@ -6697,7 +6681,6 @@ static void mail_engine_move_notification_folder(
 	int sql_len;
 	int tmp_len;
 	void *pvalue;
-	uint64_t commit_max;
 	sqlite3_stmt *pstmt;
 	char temp_name[512];
 	uint32_t tmp_proptag;
@@ -6965,12 +6948,8 @@ static void mail_engine_notification_proc(const char *dir,
 	uint64_t parent_id;
 	uint64_t message_id;
 	sqlite3_stmt *pstmt;
-	uint32_t tmp_proptag;
 	char temp_buff[1280];
 	char sql_string[1024];
-	PROPTAG_ARRAY proptags;
-	TPROPVAL_ARRAY propvals;
-	char encoded_name[1024];
 	
 	if (TRUE == b_table) {
 		return;
@@ -7197,8 +7176,6 @@ int mail_engine_run()
 
 int mail_engine_stop()
 {
-	int i;
-
 	g_notify_stop = TRUE;
 	pthread_join(g_scan_tid, NULL);
 	str_hash_free(g_hash_table);

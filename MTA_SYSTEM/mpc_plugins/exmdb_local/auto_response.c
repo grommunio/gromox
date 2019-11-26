@@ -45,7 +45,6 @@ void auto_response_reply(const char *user_home,
 	char content_type[256];
 	char template_path[256];
 	char new_buff[128*1024];
-	const struct state * sp;
 	MESSAGE_CONTEXT *pcontext;
 
 	if (0 == strcasecmp(from, rcpt) ||

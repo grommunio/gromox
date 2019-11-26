@@ -143,7 +143,6 @@ static int attach_name_filter(int action, int context_ID,
 {
 	size_t i, num;
 	char *pwildcards;
-	char file_name[256];
 	MAIL_ENTITY mail_entity;
     char attachment_name[1024];
 	CONNECTION *pconnection;

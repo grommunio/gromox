@@ -223,7 +223,6 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	int read_len;
 	int ssl_errno;
 	int written_len;
-	int copy_result;
 	int string_length;
 	const char *host_ID;
     char *pop3_reply_str;

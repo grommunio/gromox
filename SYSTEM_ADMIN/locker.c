@@ -86,7 +86,6 @@ int main(int argc, char **argv)
 	char listen_ip[16];
 	char *str_value, *pitem;
 	ACL_ITEM *pacl;
-	struct in_addr addr;
 	struct sockaddr_in my_name;
 	LIST_FILE *plist;
 	CONFIG_FILE *pconfig;

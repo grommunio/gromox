@@ -18,7 +18,6 @@ int main(int argc, char **argv)
 {
 	char *str_value;
 	char data_path[256];
-	char log_path[256];
 	char mount_path[256];
 	CONFIG_FILE *pconfig;
 

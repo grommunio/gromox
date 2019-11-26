@@ -225,10 +225,7 @@ BOOL exmdb_tool_create(const char *dir, int domain_id, uint64_t max_size)
 	int str_size1;
 	char *err_msg;
 	GUID tmp_guid;
-	int mysql_port;
-	BINARY tmp_bin;
 	uint16_t propid;
-	char *str_value;
 	LIST_FILE *pfile;
 	uint64_t nt_time;
 	char *sql_string;

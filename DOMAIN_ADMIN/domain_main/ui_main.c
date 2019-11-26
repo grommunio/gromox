@@ -275,7 +275,6 @@ int ui_main_run()
 	char *str_value;
 	char saved_pw[40];
 	char homedir[256];
-	char *pip, *pfrom;
 	int domain_status;
 	const char *domain;
 	const char *session;
@@ -286,7 +285,6 @@ int ui_main_run()
 	char session_buff[64];
 	char *query, *request;
 	char cookie_buff[512];
-	char search_buff[1024];
 	REQUEST_PARSER *pparser;
 	COOKIE_PARSER *pcookie_parser;
 	

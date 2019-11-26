@@ -457,7 +457,7 @@ RETRYING:
 BOOL data_source_get_media_domain(int type, DATA_COLLECT *pcollect)
 {
 	int i, j, rows;
-	int row_type, num;
+	int row_type;
 	char sql_string[4096];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
@@ -775,7 +775,6 @@ BOOL data_source_get_user_list(const char *domainname, DATA_COLLECT *pcollect)
 	MYSQL *pmysql;
 	DOUBLE_LIST_NODE *pnode;
 	USER_INFO *pitem;
-	struct tm tmp_tm;
 	
 	data_source_encode_squote(domainname, temp_name);
 	

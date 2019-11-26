@@ -318,7 +318,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 
 static void emsmdb_interface_remove_handle(CXH *pcxh)
 {
-	int i;
 	void *plogmap;
 	DOUBLE_LIST *plist;
 	char guid_string[64];

@@ -578,7 +578,6 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	char mime_received[256];
 	char mime_reference[2048];
 	char mime_notification[1024];
-	ENCODE_STRING encode_string;
 	SIMPLE_TREE_NODE *pnode;
 
 

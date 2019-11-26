@@ -1368,7 +1368,6 @@ static void tnef_tpropval_array_to_unicode(
 	int i;
 	void *pvalue;
 	uint16_t proptype;
-	STRING_ARRAY *parray;
 	
 	for (i=0; i<pproplist->count; i++) {
 		proptype = pproplist->ppropval[i].proptag & 0xFFFF;

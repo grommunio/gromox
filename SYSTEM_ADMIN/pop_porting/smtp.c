@@ -53,7 +53,7 @@ BOOL smtp_send(SMTP_SESSION *psession, const char *from, const char *rcpt,
 	char response_line[1024];
 	int size, times;
 	int command_len, sockd, opt;
-	int port, val_opt, opt_len;
+	int val_opt, opt_len;
 	struct sockaddr_in servaddr;
 	struct timeval tv;
 	fd_set myset;

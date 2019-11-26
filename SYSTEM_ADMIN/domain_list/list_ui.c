@@ -859,7 +859,6 @@ int list_ui_run()
 	int privilege_bits;
 	int size_min, size_max;
 	int user_min, user_max;
-	int temp_size, temp_user;
 	int len, domain_status;
 	int total_domains, result;
 	int domain_type, page_index;
@@ -2559,7 +2558,6 @@ static void list_ui_edit_html(const char *session, const char *domainname)
 
 static void list_ui_search_html(const char *session)
 {
-	int i, len;
 	char *language;
 	char url_buff[1024];
 	char url_add[1280];
@@ -2754,7 +2752,6 @@ static unsigned int list_ui_cache_result(const char *session,
 	int domain_status, int domain_type)
 {
 	DIR *dirp;
-	char *language;
 	time_t cur_time;
 	int i, fd, page_index;
 	char temp_path[256];

@@ -41,7 +41,6 @@ int reload_control_run()
 	LIST_FILE *plist_file;
 	char *pitem;
 	int i, list_len;
-	SINGLE_LIST_NODE *pnode;
 	CONSOLE_PORT *pport;
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
@@ -100,7 +99,7 @@ void reload_control_free()
 
 static BOOL reload_control_send(const char *ip, int port)
 {
-	int sockd, cmd_len;
+	int sockd;
 	int read_len, offset;
 	struct sockaddr_in servaddr;
 	char temp_buff[1024];

@@ -90,10 +90,8 @@ void message_enqueue_init(const char *path, int tape_units)
 int message_enqueue_run()
 {
 	key_t k_msg, k_shm;
-    int size, fd;
+	int size;
     char name[256];
-    DIR *dirp;
-    struct dirent *direntp;
     pthread_attr_t attr;
 
     if (FALSE == message_enqueue_check()) {
@@ -272,7 +270,6 @@ static BOOL message_enqueue_check()
 static void* thread_work_func(void* arg)
 {
     FLUSH_ENTITY *pentity = NULL;
-    char name[256]; 
     int pos;
 	MSG_BUFF msg;
 

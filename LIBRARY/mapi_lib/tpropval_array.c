@@ -130,8 +130,7 @@ void tpropval_array_free(TPROPVAL_ARRAY *parray)
 void tpropval_array_update(TPROPVAL_ARRAY *parray_dst,
 	const TPROPVAL_ARRAY *parray)
 {
-	int i, j;
-	void *pvalue;
+	int i;
 	
 	for (i=0; i<parray->count; i++) {
 		tpropval_array_set_propval(parray_dst, parray->ppropval + i);

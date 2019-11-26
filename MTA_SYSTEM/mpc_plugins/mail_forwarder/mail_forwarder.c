@@ -111,8 +111,8 @@ BOOL mail_forwarder_process(MESSAGE_CONTEXT *pcontext)
 	char rcpt_to[256], origin_rcpt[256];
 	char rcpt_buf[1024], tmp_buff[256];
 	char date_buf[1024];
-	char *pdomain, *ptr, *pdomain1;
-	int length, offset, f_type;
+	char *pdomain, *pdomain1;
+	int length, offset;
 	time_t cur_time;
 	struct tm time_buff;
 	FORWARD_DATA *pdata;
@@ -595,7 +595,6 @@ static BOOL mail_forwarder_remove(const char *tag, const char *address)
 {
 	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
-	FORWARD_DATA *pdata;
 	char tmp_buff[256];
 
 	strcpy(tmp_buff, tag);
@@ -629,7 +628,7 @@ static BOOL mail_forwarder_remove(const char *tag, const char *address)
 
 static BOOL mail_forwarder_flush()
 {
-	int i, j, fd;
+	int fd;
 	int string_len;
 	char tmp_buff[256];
 	char tmp_line[1024];
@@ -692,7 +691,6 @@ void mail_forwarder_console_talk(int argc, char **argv, char *result,
 	int length)
 {
 	int type;
-	char tmp_buff[16];
 	char help_string[] = "250 mail forwarder help information:\r\n"
 						 "\t%s reload\r\n"
 						 "\t    --reload the forward table from file\r\n"

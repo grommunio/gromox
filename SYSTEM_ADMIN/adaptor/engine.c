@@ -74,19 +74,13 @@ void engine_free()
 
 static void* thread_work_func1(void *param)
 {
-	BOOL b_found;
-	int item_num, count;
-	int i, fd, fd1, len;
-	DIR *dirp;
+	int count;
+	int fd, fd1, len;
 	char *str_value;
-	char *pdomain;
 	char temp_domain[257];
 	char temp_line[1024];
 	char temp_path[256];
 	char temp_path1[256];
-	char command_string[256];
-	struct dirent *direntp;
-	struct stat node_stat;
 	CONFIG_FILE *pconfig;
 	DOMAIN_ITEM *pdomain_item;
 	ALIAS_ITEM *palias_item;
@@ -354,15 +348,14 @@ NEXT_LOOP:
 static void* thread_work_func2(void *param)
 {
 	BOOL b_found;
-	int item_num, count;
-	int i, fd, fd1, len;
+	int count;
+	int i, len;
 	DIR *dirp, *dirp1;
 	char *str_value;
 	char *pdomain;
 	char fake_group[128];
 	char temp_domain[257];
 	char temp_group[257];
-	char temp_line[1024];
 	char temp_path[256];
 	char temp_path1[256];
 	char command_string[256];

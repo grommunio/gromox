@@ -1055,7 +1055,6 @@ static char* common_util_calculate_folder_path(
 {
 	int len;
 	int len1;
-	int offset;
 	int sql_len;
 	BOOL b_private;
 	uint64_t tmp_fid;
@@ -1427,7 +1426,6 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t *pfolder_type)
 {
 	int sql_len;
-	uint32_t count;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	
@@ -1466,8 +1464,6 @@ static BOOL common_util_check_folder_rules(
 	sqlite3 *psqlite, uint64_t folder_id)
 {
 	int sql_len;
-	void *pvalue;
-	uint64_t message_id;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	
@@ -1699,7 +1695,6 @@ static BINARY* common_util_to_folder_entryid(
 static BINARY* common_util_to_message_entryid(
 	sqlite3 *psqlite, uint64_t message_id)
 {
-	BOOL b_found;
 	BINARY *pbin;
 	int account_id;
 	EXT_PUSH ext_push;
@@ -2207,7 +2202,6 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	int sql_len;
 	void *pbuff;
 	uint64_t cid;
-	BINARY *pbin;
 	char path[256];
 	const char *dir;
 	uint32_t proptag1;
@@ -2274,7 +2268,6 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	int sql_len;
 	void *pbuff;
 	uint64_t cid;
-	BINARY *pbin;
 	char path[256];
 	const char *dir;
 	uint32_t proptag1;
@@ -3772,7 +3765,6 @@ static BOOL common_util_set_message_subject(
 	uint32_t cpid, uint64_t message_id,
 	sqlite3_stmt *pstmt, const TAGGED_PROPVAL *ppropval)
 {
-	BOOL b_result;
 	char *pstring;
 	
 	if (PROP_TAG_SUBJECT == ppropval->proptag) {
@@ -5146,7 +5138,6 @@ BOOL common_util_entryid_to_username(
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
-	char tmp_name[256];
 	uint8_t tmp_uid[16];
 	uint8_t provider_uid[16];
 	ONEOFF_ENTRYID oneoff_entry;
@@ -5199,7 +5190,6 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
-	char tmp_name[256];
 	uint8_t tmp_uid[16];
 	uint8_t provider_uid[16];
 	ONEOFF_ENTRYID oneoff_entry;
@@ -6759,7 +6749,6 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	sqlite3_stmt *pstmt1;
 	char sql_string[128];
 	char guid_string[64];
-	char temp_name[2048];
 	char name_string[2560];
 	
 	ppropids->ppropid = common_util_alloc(
@@ -7307,7 +7296,6 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 {
 	void *pvalue;
 	EXT_PULL ext_pull;
-	char temp_buff[256];
 	
 	if (SQLITE_NULL == sqlite3_column_type(pstmt, column_index)) {
 		return NULL;

@@ -90,8 +90,6 @@ static int exmdb_ext_push_get_named_propids_request(
 static int exmdb_ext_pull_get_named_propnames_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	int status;
-	
 	ppayload->get_named_propnames.ppropids =
 		common_util_alloc(sizeof(PROPID_ARRAY));
 	if (NULL == ppayload->get_named_propnames.ppropids) {
@@ -7719,7 +7717,6 @@ static int exmdb_ext_push_get_public_folder_unread_count_response(
 int exmdb_ext_pull_response(const BINARY *pbin_in,
 	EXMDB_RESPONSE *presponse)
 {
-	int status;
 	EXT_PULL ext_pull;
 	
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,

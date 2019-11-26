@@ -421,7 +421,6 @@ BOOL bounce_producer_make_content(const char *from,
 	int prev_pos;
 	time_t cur_time;
 	char charset[32];
-	char tmp_buff[1024];
 	char date_buff[128];
 	struct tm time_buff;
 	const char *pcharset;

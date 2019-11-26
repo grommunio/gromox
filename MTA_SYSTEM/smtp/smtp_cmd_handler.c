@@ -862,8 +862,6 @@ int smtp_cmd_handler_else(const char* cmd_line, int line_length,
 {
     int string_length;
     const char* smtp_reply_str;
-    char buff[1024];
-    char reply_buf[1024];
     
     if (T_AUTH_PROCESS == pcontext->last_cmd) {
 		return smtp_cmd_handler_auth_service_interact(cmd_line, line_length,

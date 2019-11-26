@@ -45,7 +45,6 @@ int vuser_work(VUSER *puser)
 	char buf[2046];
 	char temp_ip[16];
 	char mid_string[128];
-	char digest_buff[1024*1024];
 	struct hostent hostinfo, *phost;
 	POP3_ACCOUNT *paccount;
 	POP3_ACCOUNT *accounts;

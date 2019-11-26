@@ -262,7 +262,7 @@ void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 {
 	BOOL flush_result;
 	CONFIG_FILE *pfile;
-	int fd, log_level;
+	int log_level;
 	int valid_days;
 	char temp_buff[64];
 	char help_string[] = "250 log plugin help information:\r\n"

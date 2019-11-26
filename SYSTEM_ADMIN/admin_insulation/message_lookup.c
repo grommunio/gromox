@@ -126,7 +126,6 @@ BOOL message_lookup_match(char *from, char *to, const char *reason,
 	struct dirent *direntp;
 	struct dirent *direntp1;
 	struct stat node_stat;
-	char temp_buff[32];
 	char temp_path[256];
 	char file_name[256];
 	
@@ -187,7 +186,6 @@ static void message_lookup_compare(const char *from, const char *to,
 	BOOL b_from;
 	BOOL b_reason;
 	BOOL b_rcpt;
-	int i, temp_len;
 	int fd, read_len;
 	int offset, parsed_len;
 	time_t tmp_time;

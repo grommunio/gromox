@@ -21,7 +21,6 @@
 
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
 static size_t g_plugname_buffer_size = 0;
-static FILE *g_file_ptr = NULL;
 
 static char g_server_help[] =
 	"250 SMTP DAEMON server help information:\r\n"
@@ -373,7 +372,7 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 	size_t  flushing_size, auth_times;
 	size_t  max_mails, mail_length, time_out;
 	size_t  block_interval_auths, block_interval_sessions;
-	BOOL need_auth, support_authplain, support_pipeline;
+	BOOL need_auth, support_pipeline;
 	BOOL support_tls, necessary_tls;
 	char str_mode[16];
 	char str_flush[32];

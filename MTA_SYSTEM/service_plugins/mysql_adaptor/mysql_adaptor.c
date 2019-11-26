@@ -1004,7 +1004,6 @@ RETRYING:
 BOOL mysql_adaptor_get_username(int user_id, char *username)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -1191,7 +1190,6 @@ BOOL mysql_adaptor_check_same_org2(
 	int i;
 	int org_id1;
 	int org_id2;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name1[512];

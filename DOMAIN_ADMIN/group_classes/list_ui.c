@@ -1042,7 +1042,7 @@ static void list_ui_link_user_html(const char *groupname,
 static void list_ui_main_html(const char *groupname, const char *session,
 	int class_id)
 {
-	int i, rows;
+	int rows;
 	char *language;
 	char url_buff[1024];
 	char url_add_class[1280];

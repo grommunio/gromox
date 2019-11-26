@@ -114,8 +114,6 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 
 void attachment_object_free(ATTACHMENT_OBJECT *pattachment)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
 	if (0 != pattachment->instance_id) {
 		exmdb_client_unload_instance(
 			store_object_get_dir(
@@ -137,7 +135,6 @@ uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment)
 
 BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 {
-	void *pvalue;
 	BOOL b_result;
 	uint64_t nt_time;
 	TAGGED_PROPVAL tmp_propval;

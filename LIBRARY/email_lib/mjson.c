@@ -2268,7 +2268,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	char msg_path[256];
 	char dgt_path[256];
 	char temp_path[256];
-	struct stat node_stat;
 	BUILD_PARAM build_param;
 	
 	if (FALSE == pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||

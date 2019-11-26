@@ -57,7 +57,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	char file_name[256];
 	char charset_path[256];
 	char keyword_path[256];
-	char queue_path[256];
 
     switch (reason) {
     case PLUGIN_INIT:

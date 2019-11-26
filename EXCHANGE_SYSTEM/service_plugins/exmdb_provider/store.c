@@ -141,10 +141,7 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 BOOL exmdb_server_get_mapping_guid(const char *dir,
 	uint16_t replid, BOOL *pb_found, GUID *pguid)
 {
-	int sql_len;
 	DB_ITEM *pdb;
-	sqlite3_stmt *pstmt;
-	char sql_string[128];
 	
 	if (TRUE == exmdb_server_check_private()) {
 		return FALSE;

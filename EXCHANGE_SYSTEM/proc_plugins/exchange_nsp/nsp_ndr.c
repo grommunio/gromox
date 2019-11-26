@@ -3540,7 +3540,6 @@ int nsp_ndr_pull_nspiqueryrows(NDR_PULL *pndr, NSPIQUERYROWS_IN *r)
 int nsp_ndr_push_nspiqueryrows(NDR_PUSH *pndr, const NSPIQUERYROWS_OUT *r)
 {
 	int status;
-	uint32_t cnt;
 	
 	status = nsp_ndr_push_stat(pndr, &r->stat);
 	if (NDR_ERR_SUCCESS != status) {
@@ -3801,7 +3800,6 @@ int nsp_ndr_pull_nspiresortrestriction(NDR_PULL *pndr, NSPIRESORTRESTRICTION_IN 
 int nsp_ndr_push_nspiresortrestriction(NDR_PUSH *pndr, const NSPIRESORTRESTRICTION_OUT *r)
 {
 	int status;
-	uint32_t ptr;
 	
 	status = nsp_ndr_push_stat(pndr, &r->stat);
 	if (NDR_ERR_SUCCESS != status) {
@@ -3823,7 +3821,6 @@ int nsp_ndr_push_nspiresortrestriction(NDR_PUSH *pndr, const NSPIRESORTRESTRICTI
 int nsp_ndr_pull_nspidntomid(NDR_PULL *pndr, NSPIDNTOMID_IN *r)
 {
 	int status;
-	uint32_t ptr;
 
 	status = ndr_pull_context_handle(pndr, &r->handle);
 	if (NDR_ERR_SUCCESS != status) {
@@ -3856,7 +3853,6 @@ int nsp_ndr_push_nspidntomid(NDR_PUSH *pndr, const NSPIDNTOMID_OUT *r)
 int nsp_ndr_pull_nspigetproplist(NDR_PULL *pndr, NSPIGETPROPLIST_IN *r)
 {
 	int status;
-	uint32_t ptr;
 
 	status = ndr_pull_context_handle(pndr, &r->handle);
 	if (NDR_ERR_SUCCESS != status) {
@@ -4023,7 +4019,6 @@ int nsp_ndr_push_nspimodprops(NDR_PUSH *pndr, const NSPIMODPROPS_OUT *r)
 int nsp_ndr_pull_nspigetspecialtable(NDR_PULL *pndr, NSPIGETSPECIALTABLE_IN *r)
 {
 	int status;
-	uint32_t ptr;
 	
 	status = ndr_pull_context_handle(pndr, &r->handle);
 	if (NDR_ERR_SUCCESS != status) {
@@ -4171,7 +4166,6 @@ int nsp_ndr_push_nspimodlinkatt(NDR_PUSH *pndr, const NSPIMODLINKATT_OUT *r)
 int nsp_ndr_pull_nspiquerycolumns(NDR_PULL *pndr, NSPIQUERYCOLUMNS_IN *r)
 {
 	int status;
-	uint32_t ptr;
 	
 	status = ndr_pull_context_handle(pndr, &r->handle);
 	if (NDR_ERR_SUCCESS != status) {

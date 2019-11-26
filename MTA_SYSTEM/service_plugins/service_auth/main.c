@@ -18,7 +18,7 @@ static void console_talk(int argc, char** argv, char *reslut, int length);
 
 BOOL SVC_LibMain(int reason, void** ppdata)
 {
-    char cfg_path[256], *ptr, *psearch;
+	char cfg_path[256], *psearch;
 	char file_name[256];
     CONFIG_FILE *cfg_file   = NULL;
 

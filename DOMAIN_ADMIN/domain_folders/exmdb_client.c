@@ -521,9 +521,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	int sockd;
 	int process_id;
 	BINARY tmp_bin;
-	struct timeval tv;
 	char remote_id[128];
-	char tmp_buff[1024];
 	uint8_t response_code;
 	CONNECT_REQUEST request;
 	struct sockaddr_in servaddr;
@@ -934,7 +932,6 @@ static BOOL exmdb_client_update_folder_permission(int sockd,
 	uint16_t count, const PERMISSION_DATA *prow)
 {
 	BINARY tmp_bin;
-	EXT_PULL ext_pull;
 	UPDATE_FOLDER_PERMISSION_REQUEST request;
 	
 	request.dir = dir;
@@ -965,7 +962,6 @@ BOOL exmdb_client_create_folder(const char *dir, int domain_id,
 {
 	PCL *ppcl;
 	int sockd;
-	uint64_t cn;
 	BINARY *pbin;
 	SIZED_XID xid;
 	BINARY tmp_bin;
@@ -1155,7 +1151,6 @@ BOOL exmdb_client_remove_folder_owner(const char *dir,
 	uint64_t folder_id, uint64_t member_id)
 {
 	int sockd;
-	uint32_t member_rights;
 	TAGGED_PROPVAL propval_buff;
 	PERMISSION_DATA permission_data;
 	

@@ -85,7 +85,6 @@ static void* thread_work_func(void* arg)
 	time_t tmp_time;
 	char *ptr1, *ptr2;
 	char time_str[32];
-	char tmp_buff[256];
 	char temp_path[256];
 	char temp_rcpt[256];
 	time_t current_time;

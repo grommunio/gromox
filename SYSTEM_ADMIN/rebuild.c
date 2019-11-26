@@ -225,11 +225,9 @@ static int connect_exmdb(const char *dir)
 	int prefix_len;
 	int process_id;
 	BINARY tmp_bin;
-	struct timeval tv;
 	EXMDB_NODE *pexnode;
 	char remote_id[128];
 	char tmp_buff[1024];
-	const char *str_host;
 	uint8_t response_code;
 	CONNECT_REQUEST request;
 	DOUBLE_LIST_NODE *pnode;

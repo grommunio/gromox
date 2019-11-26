@@ -21,7 +21,6 @@ static char POSIDON_MAIN_DIR[256];
 
 static int g_token_fd;
 static int g_notify_stop;
-static pid_t g_process_id;
 static pid_t g_synchronizer_pid;
 static pid_t g_fcgicgi_pid;
 static pid_t g_supervised_process;
@@ -185,11 +184,8 @@ void start_service()
 	time_t now_time;
 	struct tm *ptm;
 	pid_t pid, sid; /* process ID and session ID */
-	int fd, ctrl_id;
+	int fd;
 	char str[16];
-	key_t k_ctrl;
-	long ctrl_type;
-
 
 	pid = fork();
 	if (pid < 0) {
@@ -363,11 +359,6 @@ void restart_service()
 
 int main(int argc, char **argv)
 {
-	int fd;
-	pid_t pid;
-	char str[32];
-	struct stat node_stat;
-
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);
 		exit(EXIT_SUCCESS);

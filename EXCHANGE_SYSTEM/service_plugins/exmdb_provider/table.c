@@ -147,7 +147,6 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 	const RESTRICTION *prestriction, sqlite3_stmt *pstmt, int depth,
 	uint32_t *prow_count)
 {
-	int i;
 	int sql_len;
 	uint64_t folder_id1;
 	uint32_t permission;
@@ -252,7 +251,6 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	TABLE_NODE *ptnode;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
-	uint32_t tmp_proptag;
 	const char *remote_id;
 	const GUID *phandle_guid;
 	
@@ -1578,7 +1576,6 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 	BOOL b_default;
 	BOOL b_anonymous;
 	uint64_t member_id;
-	uint32_t permission;
 	char sql_string[256];
 	sqlite3_stmt *pstmt1;
 	const char *pusername;
@@ -1733,7 +1730,6 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 {
 	int i;
 	int len;
-	int sql_len;
 	void *pvalue;
 	void *pvalue1;
 	uint32_t val_size;
@@ -1923,7 +1919,6 @@ static BOOL table_load_rules(sqlite3 *psqlite, uint64_t folder_id,
 	int sql_len;
 	uint64_t rule_id;
 	char sql_string[80];
-	uint32_t permission;
 	sqlite3_stmt *pstmt1;
 	
 	sql_len = sprintf(sql_string, "SELECT rule_id FROM "
@@ -4857,7 +4852,6 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	sqlite3_stmt *pstmt1;
 	sqlite3_stmt *pstmt2;
 	sqlite3_stmt *pstmt3;
-	uint32_t tmp_proptag;
 	char sql_string[1024];
 	struct stat node_stat;
 	DOUBLE_LIST_NODE *pnode;

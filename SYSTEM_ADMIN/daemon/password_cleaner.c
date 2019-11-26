@@ -407,8 +407,6 @@ static void password_cleaner_send_mail(char *msg_buff, int length,
 	const char *maildir)
 {
 	int fd;
-	int tmp_len;
-	size_t offset;
 	char temp_path[256];
 	char mid_string[128];
 	

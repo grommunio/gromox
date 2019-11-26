@@ -362,10 +362,8 @@ BOOL midb_client_rewrite_eml(const char *maildir, const char *mid_string)
 
 BOOL midb_client_all_mid_strings(const char *maildir, sqlite3_stmt *pstmt)
 {
-	int len;
 	int sockd;
 	BACK_SVR *pserver;
-	char temp_buff[1024];
 	DOUBLE_LIST_NODE *pnode;
 	SINGLE_LIST_NODE *psnode;
 	SINGLE_LIST folders_list;
@@ -468,7 +466,6 @@ void midb_client_free()
 static int midb_client_connect(const char *ip_addr, int port)
 {
 	int sockd;
-	int offset;
 	int read_len;
 	char temp_buff[1024];
 	struct sockaddr_in servaddr;

@@ -984,8 +984,6 @@ static BOOL ftstream_producer_write_groupinfo(
 	uint32_t marker;
 	uint32_t offset;
 	uint32_t offset1;
-	uint32_t tmp_val;
-	uint32_t info_len;
 	EXT_PUSH ext_push;
 	uint32_t name_size;
 	PROPERTY_NAME propname;
@@ -1284,7 +1282,6 @@ BOOL ftstream_producer_write_progresstotal(
 	FTSTREAM_PRODUCER *pstream,
 	const PROGRESS_INFORMATION *pprogtotal)
 {
-	uint32_t length;
 	uint32_t marker;
 	
 	marker = INCRSYNCPROGRESSMODE;

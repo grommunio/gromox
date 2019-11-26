@@ -173,7 +173,6 @@ int table_ui_run()
 	char group[256], *pat;
 	char fake_group[256];
 	char session[256];
-	char post_buff[1024];
 	char search_buff[1024];
 	int type, len;
 	int privilege_bits;
@@ -522,19 +521,16 @@ static void table_ui_error_html(const char *error_string)
 static void table_ui_main_html(const char *group, const char *session)
 {
 	int type;
-	int i, len;
+	int i;
 	int item_num;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char item_type[256];
 	char list_path[256];
-	char temp_buff[128];
 	char temp_dest[512];
 	char temp_passive[512];
 	BLACKLIST_ITEM *pitem;
-	struct tm temp_tm, *ptm;
-	
 	
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 

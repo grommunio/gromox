@@ -3840,7 +3840,6 @@ static int exmdb_ext_pull_check_contact_address_response(
 int exmdb_ext_pull_response(const BINARY *pbin_in,
 	EXMDB_RESPONSE *presponse)
 {
-	int status;
 	EXT_PULL ext_pull;
 	
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,

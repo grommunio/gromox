@@ -447,9 +447,8 @@ static void backup_ui_main_html(const char *session)
 	char *language;
 	char url_buff[1024];
 	char temp_buff[1024];
-	struct tm temp_tm, *ptm;
+	struct tm temp_tm;
 	struct dirent *direntp;
-	
 	
 	if (FALSE == backup_ui_get_self(url_buff, 1024)) {
 		backup_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",
@@ -525,12 +524,11 @@ static void backup_ui_restore_html(const char *file_name)
 	const char *charset;
 	int item_num;
 	int unit_num;
-	int i, fd, fd1, len;
+	int i, fd, len;
 	char src_file[256];
 	char dst_dir[256];
 	char dst_file[256];
 	char temp_file[256];
-	char temp_file1[256];
 	char temp_line[2048];
 	char temp_buff[2048];
 	LIST_FILE *pfile;
@@ -1623,7 +1621,6 @@ static void backup_ui_backup_file()
 	char src_file[256];
 	char dst_file[256];
 	time_t now_time;
-	struct tm *ptm;
 
 	time(&now_time);
 	sprintf(dst_dir, "%s/data_files", g_backup_path);

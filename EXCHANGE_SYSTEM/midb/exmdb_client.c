@@ -155,7 +155,6 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	int sockd;
 	int process_id;
 	BINARY tmp_bin;
-	struct timeval tv;
 	char remote_id[128];
 	EXMDB_REQUEST request;
 	uint8_t response_code;
@@ -2464,8 +2463,6 @@ BOOL exmdb_client_get_change_indices(const char *dir,
 
 BOOL exmdb_client_mark_modified(const char *dir, uint64_t message_id)
 {
-	BOOL b_result;
-	BOOL b_private;
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
 	

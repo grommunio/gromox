@@ -82,7 +82,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
 	int count;
-	int i, len;
+	int len;
 	int out_len;
 	int tag_len;
 	int val_len;

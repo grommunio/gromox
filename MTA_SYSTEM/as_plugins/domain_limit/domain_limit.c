@@ -502,7 +502,6 @@ static int domain_limit_add_deny(const char *domain)
 
 static int domain_limit_add_allow(const char *domain)
 {
-	int result;
 	int i, item_num;
 	SINGLE_LIST_NODE *pnode;
 	LIMIT_UNIT *punit;

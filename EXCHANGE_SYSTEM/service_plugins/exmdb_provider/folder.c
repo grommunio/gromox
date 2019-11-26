@@ -579,7 +579,6 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *pproperties,
 	uint64_t *pfolder_id)
 {
-	int i;
 	int sql_len;
 	DB_ITEM *pdb;
 	void *pvalue;
@@ -2739,7 +2738,6 @@ BOOL exmdb_server_get_search_criteria(
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
 	uint32_t search_flags;
-	RESTRICTION *prestriction;
 	
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
@@ -3108,7 +3106,6 @@ BOOL exmdb_server_check_folder_permission(const char *dir,
 BOOL exmdb_server_empty_folder_permission(
 	const char *dir, uint64_t folder_id)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	char sql_string[1024];
 	
@@ -3419,7 +3416,6 @@ PERMISSION_FAILURE:
 BOOL exmdb_server_empty_folder_rule(
 	const char *dir, uint64_t folder_id)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	char sql_string[1024];
 	

@@ -204,12 +204,9 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 {
 	int timer_id;
 	void *pvalue;
-	BOOL b_exist;
 	BOOL b_marked;
-	BOOL b_result;
 	BOOL b_unsent;
 	BOOL b_delete;
-	BINARY tmp_bin;
 	int object_type;
 	time_t cur_time;
 	uint32_t tmp_num;
@@ -221,7 +218,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	uint32_t tag_access;
 	uint32_t mail_length;
 	LOGON_OBJECT *plogon;
-	uint64_t fid_spooler;
 	uint64_t submit_time;
 	uint32_t deferred_time;
 	uint32_t message_flags;
@@ -474,14 +470,11 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_exist;
-	BOOL b_result;
 	EMSMDB_INFO *pinfo;
 	uint32_t *ptimer_id;
 	LOGON_OBJECT *plogon;
 	uint64_t fid_spooler;
 	uint32_t *pmessage_flags;
-	uint32_t proptag_buff[0];
-	PROPTAG_ARRAY tmp_proptags;
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {

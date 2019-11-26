@@ -532,7 +532,6 @@ int admin_ui_run()
 	struct tm *ptm;
 	time_t current_time;
 	time_t tmp_time;
-	int scan_num, type;
 	int start_day, end_day;
 	int start_hour, end_hour;
 	char *language;
@@ -1126,7 +1125,7 @@ static void admin_ui_error_html(const char *error_string)
 
 static void admin_ui_search_html(const char *session)
 {
-	int i, len, num;
+	int i, num;
 	char *language;
 	char time_buff[64];
 	char url_buff[1024];
@@ -1322,7 +1321,6 @@ static BOOL admin_ui_cache_result(const char *session, const char *charset,
 	CACHE_ITEM tmp_item;
 	struct stat node_stat;
 	struct dirent *direntp;
-	DOUBLE_LIST_NODE *pnode;
 	LOOKUP_COLLECT *pcollection;
 	
 	
@@ -1424,7 +1422,6 @@ static char* admin_ui_to_utf8(const char *charset, const char *string)
 
 static char* admin_ui_decode_mime(const char *charset, const char *mime_string)
 {
-	BOOL b_decoded;
 	int i, buff_len;
 	int offset;
 	size_t tmp_len, decode_len;

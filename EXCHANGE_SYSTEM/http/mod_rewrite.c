@@ -92,7 +92,6 @@ int mod_rewrite_run()
 	int tmp_len;
 	int line_no;
 	char *ptoken;
-	int table_size;
 	FILE *file_ptr;
 	char line[MAX_LINE];
 	REWRITE_NODE *prnode;

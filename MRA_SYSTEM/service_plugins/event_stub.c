@@ -239,8 +239,6 @@ static int connect_event()
 
 static void* thread_work_func(void *param)
 {
-	char *pspace;
-	char *pspace1;
 	BACK_CONN *pback;
 	char buff[MAX_CMD_LENGTH];	
 	

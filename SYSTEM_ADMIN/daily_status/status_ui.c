@@ -147,7 +147,6 @@ int status_ui_run()
 	char *remote_ip;
 	char *ptr1, *ptr2;
 	char session[256];
-	char search_buff[1024];
 	char temp_buff[16];
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
@@ -344,7 +343,7 @@ static void status_ui_error_html(const char *error_string)
 
 static void status_ui_main_html(const char *session, const char *console)
 {
-	int i, len;
+	int i;
 	int height;
 	int item_num;
 	int max_connection;

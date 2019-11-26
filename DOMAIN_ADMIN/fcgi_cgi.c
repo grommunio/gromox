@@ -728,7 +728,6 @@ static FCGI_CGI start_cgi(RECORD_PARAMS *pparams)
 	char dir[256];
 	char path[256];
 	FCGI_CGI fcgi_cgi;
-	char cmd_line[1024];
 	int pipes_in[2] = {-1, -1};
 	int pipes_out[2] = {-1, -1};
 	int pipes_err[2] = {-1, -1};

@@ -58,7 +58,6 @@ static CHECK_TAGGING check_tagging;
 
 static BOOL g_immediate_reject;
 static char g_config_file[256];
-static char g_return_string[1024];
 static URI_INFORMATION *g_context_list = NULL;
 
 BOOL AS_LibMain(int reason, void **ppdata)
@@ -358,8 +357,6 @@ static int paragraph_filter(int action, int context_ID,
 	const char *ptr;
 	const char *ptr1;
 	char tmp_buff[256];
-	MAIL_ENTITY mail_entity;
-	CONNECTION *pconnection;
 	
 	switch (action) {
 	case ACTION_BLOCK_NEW:

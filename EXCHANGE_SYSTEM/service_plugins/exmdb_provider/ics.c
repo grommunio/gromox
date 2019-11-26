@@ -204,7 +204,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	BOOL b_fai;
 	int sql_len;
 	DB_ITEM *pdb;
-	void *pvalue;
 	int read_state;
 	uint64_t dtime;
 	uint64_t mtime;
@@ -225,7 +224,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	char sql_string[256];
 	ENUM_PARAM enum_param;
 	uint64_t message_size;
-	PROPTAG_ARRAY proptags;
 	
 	*pfai_count = 0;
 	*pfai_total = 0;

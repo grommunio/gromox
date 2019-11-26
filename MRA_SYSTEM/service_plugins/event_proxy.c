@@ -324,7 +324,7 @@ static void broadcast_unselect(const char *username, const char *folder)
 
 static void broadcast_event(const char *event)
 {
-	int i, len;
+	int len;
 	BACK_CONN *pback;
 	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[MAX_CMD_LENGTH];

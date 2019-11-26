@@ -493,7 +493,6 @@ static uint32_t restriction_comment_size(
 {
 	int i;
 	uint32_t size;
-	int status;
 	
 	size = sizeof(uint8_t);
 	for (i=0; i<r->count; i++) {

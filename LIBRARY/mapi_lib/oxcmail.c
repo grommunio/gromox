@@ -360,7 +360,6 @@ static BOOL oxcmail_get_content_param(MIME *pmime,
 static BOOL oxcmail_get_field_param(char *field,
 	const char *tag, char *value, int length)
 {
-	int i;
 	char *pend;
 	int tmp_len;
 	char *pbegin;
@@ -2647,7 +2646,6 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	BOOL b_description, EXT_BUFFER_ALLOC alloc,
 	uint16_t *plast_propid, INT_HASH_TABLE *phash)
 {	
-	int i;
 	BINARY *pbin;
 	char *pcontent;
 	BINARY tmp_bin;
@@ -2859,7 +2857,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	BOOL b_unifn;
 	BOOL b_unidp;
 	char *ptoken;
-	void *pvalue;
 	BOOL b_inline;
 	BINARY tmp_bin;
 	char *pcontent;
@@ -3581,8 +3578,6 @@ static BOOL oxcmail_copy_message_proplist(
 static BOOL oxcmail_merge_message_attachments(
 	MESSAGE_CONTENT *pmsg, MESSAGE_CONTENT *pmsg1)
 {
-	int i;
-	
 	if (NULL == pmsg1->children.pattachments) {
 		pmsg1->children.pattachments = pmsg->children.pattachments;
 		pmsg->children.pattachments = NULL;
@@ -4168,7 +4163,6 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 	const char *value, void *pparam)
 {
 	size_t len;
-	char *pvalue;
 	char *ptoken;
 	BINARY tmp_bin;
 	char tmp_buff[1024];
@@ -4500,7 +4494,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	char *pcontent;
 	uint8_t tmp_byte;
 	BINARY *phtml_bin;
-	BINARY *ptnef_key;
 	TARRAY_SET *prcpts;
 	uint32_t tmp_int32;
 	size_t content_len;
@@ -4697,7 +4690,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		&& (pmsg1 = oxcmail_parse_tnef(phead,
 		alloc, get_propids))) {
 #ifdef VERIFY_TNEF_CORRELATOR
-		ptnef_key = tpropval_array_get_propval(
+		BINARY *ptnef_key = tpropval_array_get_propval(
 					&pmsg1->proplist,
 					PROP_TAG_TNEFCORRELATIONKEY);
 		if (NULL == ptnef_key || 0 != strncmp(
@@ -5432,7 +5425,6 @@ static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
 	int offset;
 	char *pvalue;
 	char address[256];
-	char tmp_buff[512];
 	
 	offset = 0;
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag1);

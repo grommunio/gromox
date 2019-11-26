@@ -76,7 +76,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
-	int i, len;
+	int i;
 	int out_len;
 	int tag_len;
 	int val_len;

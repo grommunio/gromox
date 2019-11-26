@@ -20,7 +20,6 @@ int main(int argc, char **argv)
 	char token_path[256];
 	char acl_path[256];
 	char lang_path[256];
-	char *mount_path;
 	int timeout;
 	CONFIG_FILE *pconfig;
 

@@ -153,7 +153,6 @@ static void ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 {
 	int len;
 	char tmpbuf[14];
-	size_t converted_size;
 	
 	if (strlen(passwd) >= sizeof(tmpbuf)) {
 		len = sizeof(tmpbuf) - 1;
@@ -666,9 +665,7 @@ static int ntlmssp_ndr_push_ntlm_version(NDR_PUSH *pndr, NTLMSSP_VERSION *r)
 static BOOL ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 	const DATA_BLOB request, DATA_BLOB *preply)
 {
-	uint16_t tmp_len;
 	NDR_PUSH ndr_push;
-	char ssp_buff[64];
 	uint32_t neg_flags;
 	uint32_t chal_flags;
 	char ndr_buff[1024];
@@ -1033,8 +1030,6 @@ static BOOL ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	char nt_p16[16], p16[16];
 	const DATA_BLOB *plm_response;
 	const DATA_BLOB *pnt_response;
-	const static uint8_t zeros[8];
-	
 	
 	pchallenge = &pntlmssp->challenge.blob;
 	plm_response = &pntlmssp->lm_resp;

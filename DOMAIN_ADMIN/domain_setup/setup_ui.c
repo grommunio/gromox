@@ -337,11 +337,9 @@ void setup_ui_init(const char *mount_path, const char *app_path,
 
 int setup_ui_run()
 {
-	int type;
 	int i, fd;
 	int offset;
 	int len, num;
-	int interval;
 	char *query;
 	int bnd_len;
 	char *request;
@@ -816,7 +814,7 @@ static void setup_ui_error_html(const char *error_string)
 
 static void setup_ui_main_html(const char *domain, const char *session)
 {
-	int i, fd;
+	int fd;
 	int option;
 	int subsys_port;
 	int privilege_bits;
@@ -824,8 +822,6 @@ static void setup_ui_main_html(const char *domain, const char *session)
 	char *pcolon;
 	char *language;
 	char *str_value;
-	char *str_times;
-	char *str_intvl;
 	char subsys_ip[16];
 	char url_buff[1024];
 	char str_submit[64];
@@ -1132,7 +1128,6 @@ static void setup_ui_main_html(const char *domain, const char *session)
 static void setup_ui_set_keyword(const char *domain, int type,
 	const char *mailbox, const char *lang)
 {
-	int old_type;
 	char *language;
 	const char *charset;
 	char temp_num[16];
@@ -1302,7 +1297,6 @@ static void setup_ui_set_limit_type(const char *domain, int type)
 
 static void setup_ui_set_extpass_type(const char *domain, int type)
 {
-	int fd;
 	char *language;
 	char num_buff[16];
 	const char *charset;
@@ -1448,7 +1442,6 @@ static void setup_ui_set_password(const char *domain, const char *old_password,
 {
 	BOOL b_result;
 	char *language;
-	char *str_value;
 	const char *charset;
 	char old_pw[40];
 	char new_pw[40];
@@ -1512,14 +1505,11 @@ static void setup_ui_broadcast_keyword(const char *list_path, const char *domain
 	int item_num;
 	int i, fd, len;
 	char *pitem;
-	char *str_value;
 	char temp_path[256];
 	char temp_keyword[512];
 	char command_line[1024];
 	struct dirent *direntp;
 	LIST_FILE *pfile;	
-	CONFIG_FILE *pconfig;
-	
 
 	pfile = list_file_init((char*)list_path, "%s:256%s:256");
 	if (NULL == pfile) {
@@ -1584,14 +1574,11 @@ static void setup_ui_broadcast_limit(const char *list_path, const char *domain,
 	int item_num;
 	int i, fd, len;
 	char *pitem;
-	char *str_value;
 	char temp_object[257];
 	char temp_path[256];
 	char command_line[1024];
 	struct dirent *direntp;
 	LIST_FILE *pfile;	
-	CONFIG_FILE *pconfig;
-	
 
 	pfile = list_file_init((char*)list_path, "%s:256%s:256");
 	if (NULL == pfile) {

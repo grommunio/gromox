@@ -188,7 +188,6 @@ int pdu_processor_run()
 	DIR *dirp;
 	int length;
 	int context_num;
-	char temp_path[256];
 	struct dirent *direntp;
 	
 	pthread_key_create(&g_call_key, NULL);
@@ -304,7 +303,6 @@ int pdu_processor_stop()
 	DOUBLE_LIST_NODE *pnode1;
 	DCERPC_CONTEXT *pcontext;
 	PDU_PROCESSOR *pprocessor;
-	DCERPC_ENDPOINT *pendpoint;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	
 	
@@ -492,7 +490,6 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	uint64_t handle;
 	DCERPC_CALL *pcall;
 	DCERPC_CALL fake_call;
-	ASYNC_NODE *pasync_node;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
@@ -1031,7 +1028,6 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 {
 	BLOB_NODE *pblob_node;
-	DOUBLE_LIST_NODE *pnode;
 	DCERPC_NCACN_PACKET pkt;
 	
 	
@@ -1067,7 +1063,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	int i;
 	int port2;
 	GUID uuid;
-	char bitmap;
 	BOOL b_found;
 	BOOL b_ndr64;
 	uint32_t reason;
@@ -1411,7 +1406,6 @@ static BOOL pdu_processor_auth_alter_ack(DCERPC_CALL *pcall)
 static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 {
 	int i;
-	int port2;
 	GUID uuid;
 	BOOL b_ndr64;
 	BOOL b_found;
@@ -2214,7 +2208,6 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 {
 	int async_id;
 	BOOL b_cancel;
-	uint32_t call_id;
 	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
@@ -3871,7 +3864,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 	PLUGIN_MAIN func;
 	PROC_PLUGIN *pplugin;
 	void* two_server_funcs[2];
-	char buf[256], fake_path[256];
+	char fake_path[256];
 	
 	two_server_funcs[0] = (void*)pdu_processor_getversion;
 	two_server_funcs[1] = (void*)pdu_processor_queryservice;

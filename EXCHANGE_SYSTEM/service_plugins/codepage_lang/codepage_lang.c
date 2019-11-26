@@ -176,7 +176,6 @@ static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
 	FILE *fp;
 	char *ptr;
 	size_t temp_len;
-	char temp_buff[256];
 	char temp_line[64*1024];
 	CODEPAGE_NODE *pcodepage;
 	

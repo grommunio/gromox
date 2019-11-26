@@ -125,7 +125,7 @@ void keyword_cleaning_free()
 
 static BOOL keyword_cleaning_send(const char *ip, int port, char *buff, int len)
 {
-	int sockd, cmd_len;
+	int sockd;
 	int read_len, offset;
 	char temp_buff[256];
 	struct sockaddr_in servaddr;
@@ -176,7 +176,7 @@ static void keyword_cleaning_parse_buffer(char *buff_in, int *array,
 	char temp_buff[64];
 	int buff_len, last_crlf;
 	int  start_pos, end_pos;
-	int i, j, item_num, temp_len; 
+	int i, j, item_num;
 	
 	buff_len = strlen(buff_in);
 	for (i=0; i<buff_len; i++) {

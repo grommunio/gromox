@@ -976,7 +976,6 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 	int i;
 	EMSMDB_INFO *pinfo;
 	PROBLEM_ARRAY tmp_problems;
-	PROPERTY_PROBLEM *pproblem;
 	TPROPVAL_ARRAY tmp_propvals;
 	uint16_t *poriginal_indices;
 	
@@ -1044,7 +1043,6 @@ BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
 	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems)
 {
 	int i;
-	PROPERTY_PROBLEM *pproblem;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	pproblems->count = 0;

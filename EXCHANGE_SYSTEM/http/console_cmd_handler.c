@@ -25,7 +25,6 @@
 
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
 static int  g_plugname_buffer_size = 0;
-static FILE *g_file_ptr = NULL;
 
 static char g_server_help[] =
 	"250 HTTP DAEMON server help information:\r\n"

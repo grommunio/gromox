@@ -183,7 +183,6 @@ BOOL pcl_deserialize(PCL *ppcl, const BINARY *pbin)
 	SIZED_XID xid;
 	uint16_t offset;
 	uint16_t offset1;
-	XID_NODE *pxnode;
 	
 	offset = 0;
 	while (offset1 = pcl_pull_sized_xid(pbin, offset, &xid)) {

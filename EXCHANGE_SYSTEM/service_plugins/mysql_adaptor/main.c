@@ -335,7 +335,6 @@ static void console_talk(int argc, char **argv, char *result, int length)
 {
 	CONFIG_FILE *pfile;
 	int scan_interval, offset;
-	char str_interval[64];
 	char help_string[] = "250 mysql auth help information:\r\n"
 						 "\t%s info\r\n"
 						 "\t    --print the module information\r\n"

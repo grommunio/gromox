@@ -696,8 +696,6 @@ BOOL data_source_add_alias(const char *domainname, const char *alias,
 	MYSQL_ROW myrow;
 	MYSQL *pmysql;
 	LOCKD lockd;
-	struct tm tmp_tm;
-	
 	
 	sprintf(resource_name, "DATABASE-%s", domainname);
 	upper_string(resource_name);
@@ -954,8 +952,7 @@ BOOL data_source_edit_domain(const char *domainname, const char *media,
 	time_t end_day, int privilege_bits, int domain_status, int *presult)
 {
 	int rows;
-	int rows1;
-	int i, j, k;
+	int i, j;
 	int domain_id;
 	int temp_id;
 	int temp_status;
@@ -1280,8 +1277,7 @@ DOMAIN_UPDATE:
 BOOL data_source_remove_domain(const char *domainname)
 {
 	int rows;
-	int rows1;
-	int i, j, k;
+	int i, j;
 	int temp_id;
 	int domain_id;
 	int domain_type;
@@ -1562,7 +1558,6 @@ BOOL data_source_restore_domain(const char *domainname, int *presult,
 	int temp_status1;
 	int domain_type;
 	char temp_domain[128];
-	char temp_alias[128];
 	char *pat, mainname[128];
 	char alias_address[128];
 	char sql_string[4096];

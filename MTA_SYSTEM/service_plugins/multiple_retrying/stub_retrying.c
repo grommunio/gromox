@@ -61,7 +61,6 @@ int stub_retrying_run()
 	int sockd, status;
 	LIST_FILE *plist;
 	UNIT_ADDR *punit;
-	struct in_addr addr;
 	struct sockaddr_in my_name;
 	
 	plist = list_file_init(g_list_path, "%s:16");
@@ -220,7 +219,6 @@ static BOOL stub_retrying_check_allowing(const char *client_ip)
 static void *connection_work_func(void *param)
 {
 	BOOL b_result;
-	time_t time_stamp;
 	char temp_line[256];
 	CONNECTION_THR *pconnection;
 

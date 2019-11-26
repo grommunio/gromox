@@ -621,8 +621,6 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 /* free memory internal of bind ack except of bind ack itself */
 static void pdu_ndr_free_dcerpc_bind_ack(DCERPC_BIND_ACK *r)
 {
-	int i;
-	
 	ndr_free_data_blob(&r->pad);
 	if (NULL != r->ctx_list) {
 		free(r->ctx_list);

@@ -326,8 +326,6 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
  
 static void html_free_writer(RTF_WRITER *pwriter)
 {
-	DOUBLE_LIST *pnode;
-	
 	str_hash_free(pwriter->pfont_hash);
 	double_list_free(&pwriter->font_table);
 	int_hash_free(pwriter->pcolor_hash);
@@ -1438,9 +1436,7 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 {
 	int color;
 	int cell_num;
-	int value_len;
 	unsigned int i;
-	BOOL unit_point;
 	const char *pvalue;
 	GumboAttribute *pattribute;
 	

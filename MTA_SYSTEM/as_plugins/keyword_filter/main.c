@@ -64,7 +64,6 @@ static void console_talk(int argc, char **argv, char *result, int length);
 
 BOOL AS_LibMain(int reason, void **ppdata)
 {
-	int fd;
 	CONFIG_FILE *pconfig_file;
 	char file_name[256];
 	char temp_path[256];
@@ -263,7 +262,6 @@ static int mime_auditor(int context_ID, MAIL_ENTITY *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
 	int buff_len, out_len;
-	char keyword[256];
 	char temp_buff[1024];
 	char parsed_buff[1024];
 	const char *presult;
@@ -436,7 +434,6 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     char *reason, int length)
 {
 	int out_len;
-	int key_len;
 	int buff_len;
 	const char *presult;
 	char temp_buff[1024];

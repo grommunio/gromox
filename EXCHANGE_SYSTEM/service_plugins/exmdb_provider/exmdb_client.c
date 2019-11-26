@@ -164,7 +164,6 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	int sockd;
 	int process_id;
 	BINARY tmp_bin;
-	struct timeval tv;
 	char remote_id[128];
 	const char *str_host;
 	EXMDB_REQUEST request;

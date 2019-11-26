@@ -63,7 +63,6 @@ int media_migrator_run()
 	LOCKD lockd;
 	char temp_path[256];
 	struct stat node_stat;
-	char resource_name[256];
 	DATA_COLLECT *pcollect;
 	DATA_COLLECT *pcollect1;
 	USER_INFO *puser_info;
@@ -411,7 +410,6 @@ static BOOL media_migrator_allocate_mediadir(const char *media_area,
 	int i, fd, len, item_num;
 	int space, files, homes;
 	int average_space;
-	char *plast, *ptoken;
 	char temp_path[256];
 	char temp_path1[256];
 	char temp_buff[1024];
@@ -652,7 +650,6 @@ static void media_migrator_copydir(char *src_path, char *dst_path)
 	char temp_path1[256];
 	struct dirent *direntp;
 	struct stat node_stat;
-	struct stat node_stat1;
 
 	dirp = opendir(src_path);
 	if (NULL == dirp) {

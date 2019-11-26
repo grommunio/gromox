@@ -16,7 +16,6 @@ void notification_agent_backward_notify(
 	const char *remote_id, DB_NOTIFY_DATAGRAM *pnotify)
 {
 	int i;
-	BINARY tmp_bin;
 	DATAGRAM_NODE *pdnode;
 	ROUTER_CONNECTION *prouter;
 	
@@ -69,7 +68,6 @@ static BOOL notification_agent_read_response(ROUTER_CONNECTION *prouter)
 
 void notification_agent_thread_work(ROUTER_CONNECTION *prouter)
 {
-	time_t cur_time;
 	struct timespec ts;
 	uint32_t ping_buff;
 	DATAGRAM_NODE *pdnode;

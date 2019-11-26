@@ -464,7 +464,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	int type_len;
 	size_t body_len;
 	int html_num, gif_num, gif_len;
-	char content_type[256], buff[1024];
+	char content_type[256];
 	
 	if (PROPERTY_IGNORE == g_context_list[context_ID]) {
 		return MESSAGE_ACCEPT;

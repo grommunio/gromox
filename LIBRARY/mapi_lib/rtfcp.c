@@ -350,7 +350,6 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	EXT_PUSH ext_push;
 	uint8_t control_bit;
 	size_t dict_write_idx;
-	COMPRESS_HEADER header;
 	size_t dict_match_length;
 	size_t dict_match_offset;
 	uint32_t control_byte_idx;

@@ -1015,8 +1015,6 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
  */
 char* find_url(char *buf, size_t howmuch, int *count)
 {
-	
-	long i;
 	char *s1, *s2;
 	register char tmp;
 

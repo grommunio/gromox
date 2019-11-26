@@ -493,13 +493,11 @@ static void list_ui_error_html(const char *error_string)
 
 static void list_ui_main_html(const char *session)
 {
-	int i, len;
+	int i;
 	int item_num;
-	time_t cur_time;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
-	char temp_buff[128];
 	LIST_ITEM *pitem;
 	char* str_table[] = {"32bit", "64bit"}; 
 	

@@ -188,16 +188,13 @@ void admin_ui_init(const char *url_link, const char *resource_path)
 
 int admin_ui_run()
 {
-	struct tm *ptm;
-	time_t current_time;
-	int scan_num, type, len;
+	int len;
 	char *language;
 	char *remote_ip;
 	char *ptr1, *ptr2;
 	char *query, *request;
 	char *precipient;
 	char *preason, *pfrom;
-	char password[256];
 	char session[256];
 	char post_buff[1024];
 	char search_buff[1024];
@@ -490,11 +487,8 @@ static void admin_ui_error_html(const char *error_string)
 
 static void admin_ui_search_html(const char *session)
 {
-	int i, len;
 	char *language;
-	char time_buff[64];
 	char url_buff[1024];
-	time_t current_time;
 	
 	if (FALSE == admin_ui_get_self(url_buff, 1024)) {
 		admin_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL", language));

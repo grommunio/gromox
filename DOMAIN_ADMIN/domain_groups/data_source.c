@@ -154,7 +154,7 @@ BOOL data_source_add_group(const char *groupname, const char *password,
 	char temp_domain[256];
 	char temp_group[256];
 	char temp_title[256];
-	char *pat, *pdomain;
+	char *pdomain;
 	char sql_string[4096];
 	char str_create[16];
 	char resource_name[256];
@@ -413,7 +413,7 @@ RETRYING:
 
 BOOL data_source_get_domain_homedir(const char *domainname, char *path_buff)
 {
-	int i, rows;
+	int i;
 	char temp_name[256];
 	char sql_string[4096];
 	MYSQL_RES *pmyres;
@@ -470,7 +470,6 @@ RETRYING:
 BOOL data_source_info_domain(const char *domainname, int *pprivilege_bites)
 {
 	int i;
-	int group_id;
 	char temp_name[256];
 	char sql_string[4096];
 	MYSQL_RES *pmyres;
@@ -546,8 +545,6 @@ BOOL data_source_edit_group(const char *groupname, const char *password,
 	MYSQL_ROW myrow;
 	MYSQL *pmysql;
 	LOCKD lockd;
-	struct tm tmp_tm;
-	
 	
 	pdomain = strchr(groupname, '@') + 1;
 
@@ -841,7 +838,6 @@ BOOL data_source_get_group_users(const char *groupname, DATA_COLLECT *pcollect)
 	MYSQL *pmysql;
 	DOUBLE_LIST_NODE *pnode;
 	USER_INFO *pitem;
-	struct tm tmp_tm;
 	
 	data_source_encode_squote(groupname, temp_name);
 	

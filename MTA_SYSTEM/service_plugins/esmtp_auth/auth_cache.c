@@ -85,7 +85,7 @@ BOOL auth_cache_login(const char *username, const char *password)
 
 void auth_cache_add(const char *username, const char *password) 
 {
-    STR_ITEM *pitem, temp_item;
+	STR_ITEM temp_item;
 	char temp_string[256];
 
     if (NULL == g_cache_hash) {

@@ -64,7 +64,7 @@ static int xmailer_filter(int action, int context_ID,
 	MAIL_BLOCK* mail_blk,  char* reason, int length)
 {
 	char *ptr, *ptr1;
-	int i, count, len;
+	int i, len;
 	BOOL b_alph, b_num;
 	MAIL_ENTITY mail_entity;
 

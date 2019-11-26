@@ -166,7 +166,6 @@ int list_ui_run()
 	char ip_addr[16];
 	char temp_ip[16];
 	char session[256];
-	char post_buff[1024];
 	char search_buff[1024];
 	int len;
 
@@ -437,17 +436,12 @@ static void list_ui_error_html(const char *error_string)
 
 static void list_ui_main_html(const char *session)
 {
-	int type;
-	int i, len;
+	int i;
 	int item_num;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
-	char item_type[256];
-	char temp_buff[128];
 	LIST_ITEM *pitem;
-	struct tm temp_tm, *ptm;
-	
 	
 	if (FALSE == list_ui_get_self(url_buff, 1024)) {
 		list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",

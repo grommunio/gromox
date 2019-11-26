@@ -404,7 +404,6 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r)
 {
 	int status;
-	uint32_t pad_len;
 	
 	status = macbinary_pull_header(pext, &r->header);
 	if (EXT_ERR_SUCCESS != status) {

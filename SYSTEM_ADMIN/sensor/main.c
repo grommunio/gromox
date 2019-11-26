@@ -56,7 +56,6 @@ typedef struct _SENSOR_ITEM {
 static int g_threads_num;
 static BOOL g_notify_stop;
 static int g_max_interval;
-static pthread_t g_scan_id;
 static char g_list_path[256];
 static DOUBLE_LIST g_acl_list;
 static pthread_cond_t g_waken_cond;
@@ -95,7 +94,7 @@ static void event_proc(const char *dir, BOOL b_table,
 int main(int argc, char **argv)
 {
 	int optval;
-	int i, j, num;
+	int i, num;
 	BOOL b_listen;
 	int table_size;
 	ACL_ITEM *pacl;
@@ -108,7 +107,6 @@ int main(int argc, char **argv)
 	char listen_ip[16];
 	char list_path[256];
 	pthread_t accept_id;
-	struct in_addr addr;
 	CONFIG_FILE *pconfig;
 	char *str_value, *pitem;
 	DOUBLE_LIST_NODE *pnode;
@@ -452,8 +450,6 @@ static void *scan_work_func(void *param)
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST temp_list1;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *ptail;
-	
 
 	double_list_init(&temp_list);
 	double_list_init(&temp_list1);

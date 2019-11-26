@@ -531,7 +531,7 @@ static void backup_ui_error_html(const char *error_string)
 
 static void backup_ui_search_html(const char *groupname, const char *session)
 {
-	int i, len;
+	int i;
 	char *pdomain;
 	char *language;
 	char time_buff[64];
@@ -615,7 +615,6 @@ static void backup_ui_result_html(const char *groupname, const char *session,
 	const char *msg)
 {
 	char *language;
-	char temp_buff[64];
 	char url_buff[1024];
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
@@ -640,14 +639,10 @@ static void backup_ui_result_html(const char *groupname, const char *session,
 static BOOL backup_ui_delivery_all(const char *username,
 	const char *maildir, VAL_SCOPE *atime)
 {
-	int fd;
 	pid_t pid;
 	int seq_id;
 	char *language;
-	char temp_path[256];
 	MESSAGE_ITEM *pitem;
-	char temp_buff[1200];
-	DOUBLE_LIST_NODE *pnode;
 	LOOKUP_COLLECT *pcollection;
 	
 	

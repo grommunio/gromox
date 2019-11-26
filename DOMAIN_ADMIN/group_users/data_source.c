@@ -132,7 +132,7 @@ BOOL data_source_query(const char *groupname, const char *username,
 	char *pat;
 	int sub_type;
 	int group_id;
-	int i, j, len;
+	int i, j;
 	int rows;
 	char temp_local[128];
 	char temp_local1[128];
@@ -668,7 +668,6 @@ BOOL data_source_add_alias(const char *groupname, const char *username,
 	int total_alias;
 	int address_type;
 	int address_status;
-	int domain_status;
 	int privilege_bits;
 	char maildir[128];
 	char password[40];
@@ -694,8 +693,6 @@ BOOL data_source_add_alias(const char *groupname, const char *username,
 	MYSQL_ROW myrow;
 	MYSQL *pmysql;
 	LOCKD lockd;
-	struct tm tmp_tm;
-	
 	
 	pdomain = strchr(username, '@') + 1;
 	data_source_encode_squote(pdomain, temp_domain);
@@ -1058,7 +1055,6 @@ BOOL data_source_edit_user(const char *groupname, const char *username,
 	int group_size;
 	int domain_size;
 	int user_id;
-	int temp_id;
 	int total_size;
 	int address_type;
 	int original_status;
@@ -1085,9 +1081,6 @@ BOOL data_source_edit_user(const char *groupname, const char *username,
 	MYSQL_ROW myrow1;
 	MYSQL *pmysql;
 	LOCKD lockd;
-	struct tm tmp_tm;
-	
-	
 	
 	pdomain = strchr(username, '@') + 1;
 	data_source_encode_squote(pdomain, temp_domain);
@@ -1466,14 +1459,10 @@ BOOL data_source_remove_user(const char *groupname, const char *username,
 {
 	int i, j, k;
 	int rows, rows1;
-	int temp_id;
 	int group_id;
 	int user_id;
-	int domain_id;
-	int temp_status;
 	int address_type;
 	char *pdomain, *pat;
-	char mainname[128];
 	char virtual_address[128];
 	char temp_user[256];
 	char temp_alias[256];
@@ -1946,7 +1935,7 @@ RETRYING:
 
 BOOL data_source_get_user_maildir(const char *username, char *path_buff)
 {
-	int i, rows;
+	int i;
 	char temp_name[256];
 	char sql_string[4096];
 	MYSQL_RES *pmyres;
@@ -2002,7 +1991,7 @@ RETRYING:
 
 BOOL data_source_get_domain_homedir(const char *domainname, char *path_buff)
 {
-	int i, rows;
+	int i;
 	char temp_name[128];
 	char sql_string[4096];
 	MYSQL_RES *pmyres;
@@ -2113,7 +2102,7 @@ RETRYING:
 
 BOOL data_source_get_domain_privilege(const char *domainname, int *pprivilege)
 {
-	int i, rows;
+	int i;
 	char temp_name[128];
     char sql_string[4096];
     MYSQL_RES *pmyres;
@@ -2170,7 +2159,7 @@ RETRYING:
 BOOL data_source_check_domain_migration(const char *domainname,
 	BOOL *pb_migrating, char *media_area)
 {
-	int i, rows;
+	int i;
 	char temp_name[128];
 	char sql_string[4096];
 	MYSQL_RES *pmyres;

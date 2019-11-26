@@ -80,7 +80,6 @@ void daemon_sigstop(int sig)
 void start_http()
 {
 	int fd, status;
-	char temp_path[256];
 	struct stat node_stat;
 	char *args[] = {"./http", "../config/http.cfg", NULL};
 	
@@ -122,8 +121,6 @@ void start_http()
 void start_midb()
 {
 	int status;
-	char temp_path[256];
-	struct stat node_stat;
 	char *args[] = {"./midb", "../config/midb.cfg", NULL};
 
 	g_midb_pid = fork();
@@ -155,8 +152,6 @@ void start_midb()
 void start_zcore()
 {
 	int status;
-	char temp_path[256];
-	struct stat node_stat;
 	char *args[] = {"./zcore", "../config/zcore.cfg", NULL};
 
 	g_zcore_pid = fork();
@@ -187,14 +182,9 @@ void start_zcore()
  */
 void start_service()
 {
-	time_t now_time;
-	struct tm *ptm;
 	pid_t pid, sid; /* process ID and session ID */
-	int fd, ctrl_id;
+	int fd;
 	char str[16];
-	key_t k_ctrl;
-	long ctrl_type;
-
 
 	pid = fork();
 	if (pid < 0) {
@@ -358,11 +348,6 @@ void restart_service()
 
 int main(int argc, char **argv)
 {
-	int fd;
-	pid_t pid;
-	char str[32];
-	struct stat node_stat;
-
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);
 		exit(EXIT_SUCCESS);

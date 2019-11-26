@@ -110,14 +110,12 @@ BOOL search_engine_search(const char *domain, const char *ip, const char *from,
 {
 	DIR *dirp;
 	int fd, len;
-	int hash_num;
 	time_t itime;
 	char *pdomain;
 	const char *pip;
 	char *pfrom, *prcpt;
 	char *from_domain;
 	char *rcpt_domain;
-	char temp_ip[16];
 	char temp_from[256];
 	char temp_rcpt[256];
 	char temp_path[256];

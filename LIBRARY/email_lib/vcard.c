@@ -90,7 +90,6 @@ static void vcard_free_value(VCARD_VALUE *pvvalue)
 
 static void vcard_free_line(VCARD_LINE *pvline)
 {
-	VCARD_VALUE *pvvalue;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while (pnode=double_list_get_from_head(&pvline->param_list)) {
@@ -287,7 +286,6 @@ static VCARD_PARAM* vcard_retrieve_param(char *ptag)
 	char *ptr;
 	char *pnext;
 	VCARD_PARAM *pvparam;
-	DOUBLE_LIST_NODE *pnode;
 	
 	ptr = strchr(ptag, '=');
 	if (NULL != ptr) {
@@ -482,7 +480,6 @@ static size_t vcard_serialize_string(char *pbuff,
 	size_t i;
 	size_t offset;
 	size_t tmp_len;
-	size_t line_begin;
 	
 	if (line_offset >= MAX_LINE) {
 		line_offset %= MAX_LINE;

@@ -802,10 +802,8 @@ static BOOL upload_ui_batch_input(const char *domainname,
 	int total_size;
 	time_t now_time;
 	uint64_t tmp_int64;
-	char *ptr1, *ptr2;
 	char maildir[256];
 	char mediadir[256];
-	char size_buff[16];
 	char temp_buff[256];
 	char temp_title[256];
 	char temp_real[256];
@@ -1297,7 +1295,6 @@ static BOOL upload_ui_batch_delete(const char *domainname,
 	DOUBLE_LIST *plist, int *presult)
 {
 	int i, rows;
-	int group_id;
 	int domain_id;
 	LOCKD lockd;
 	char maildir[256];
@@ -2244,7 +2241,6 @@ static void upload_ui_main_html(const char *domainname, const char *session)
 {
 	char *language;
 	char url_buff[1024];
-	char temp_buff[1024];
 	const char *str_submit;
 	
 	

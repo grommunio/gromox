@@ -147,7 +147,6 @@ uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment)
 
 BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 {
-	void *pvalue;
 	BOOL b_result;
 	uint64_t nt_time;
 	PROBLEM_ARRAY tmp_problems;

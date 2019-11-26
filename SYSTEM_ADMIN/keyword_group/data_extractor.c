@@ -43,7 +43,6 @@ int data_extractor_run()
 	LIST_FILE *plist_file;
 	char *pitem;
 	int i, list_len;
-	SINGLE_LIST_NODE *pnode;
 	CONSOLE_PORT *pport;
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
@@ -106,7 +105,7 @@ void data_extractor_free()
 
 static BOOL data_extractor_send(const char *ip, int port, char *buff, int len)
 {
-	int sockd, cmd_len;
+	int sockd;
 	int read_len, offset;
 	struct sockaddr_in servaddr;
 
@@ -154,7 +153,7 @@ static void data_extractor_parse_buffer(char *buff_in, int *array,
 	char temp_buff[64];
 	int buff_len, last_crlf;
 	int  start_pos, end_pos;
-	int i, j, item_num, temp_len; 
+	int i, j, item_num;
 	
 	buff_len = strlen(buff_in);
 	for (i=0; i<buff_len; i++) {

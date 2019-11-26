@@ -1425,7 +1425,6 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	uint64_t change_num;
 	uint32_t permission;
 	uint32_t parent_type;
-	const char *username;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	ICSUPCTX_OBJECT *pctx;

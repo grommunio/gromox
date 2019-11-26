@@ -292,7 +292,6 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	int sockd;
 	int process_id;
 	BINARY tmp_bin;
-	struct timeval tv;
 	char remote_id[128];
 	char tmp_buff[1024];
 	const char *str_host;
@@ -728,7 +727,6 @@ int exmdb_client_check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
 	BINARY tmp_bin;
-	uint32_t result;
 	REMOTE_CONN *pconn;
 	char tmp_buff[1024];
 	CHECK_CONTACT_ADDRESS_REQUEST request;

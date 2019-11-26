@@ -17,10 +17,8 @@ int main(int argc, char **argv)
 	MYSQL *pmysql;
 	int mysql_port;
 	char *str_value;
-	MYSQL_ROW myrow;
 	LIST_FILE *plist;
 	char db_name[256];
-	MYSQL_RES *pmyres;
 	char password[128];
 	char *mysql_passwd;
 	char tmp_line[1024];

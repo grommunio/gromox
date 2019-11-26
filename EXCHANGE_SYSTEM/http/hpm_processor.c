@@ -374,7 +374,6 @@ static void* hpm_processor_queryservice(char *service)
 static void hpm_processor_unload_library(const char *plugin_name)
 {
 	PLUGIN_MAIN func;
-	DOUBLE_LIST *plist;
 	HPM_PLUGIN *pplugin;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -411,7 +410,7 @@ static void hpm_processor_load_library(const char* plugin_name)
 	PLUGIN_MAIN func;
 	HPM_PLUGIN *pplugin;
 	void* two_server_funcs[2];
-	char buf[256], fake_path[256];
+	char fake_path[256];
 	
 	two_server_funcs[0] = (void*)hpm_processor_getversion;
 	two_server_funcs[1] = (void*)hpm_processor_queryservice;
@@ -470,7 +469,6 @@ int hpm_processor_run()
 {
 	DIR *dirp;
 	int length;
-	char temp_path[256];
 	struct dirent *direntp;
 	
 	g_context_list = malloc(sizeof(HPM_CONTEXT)*g_context_num);

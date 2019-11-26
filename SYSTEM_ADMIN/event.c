@@ -116,7 +116,6 @@ int main(int argc, char **argv)
 	pthread_t *en_ids;
 	pthread_t *de_ids;
 	char listen_ip[16];
-	struct in_addr addr;
 	CONFIG_FILE *pconfig;
 	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
@@ -924,7 +923,6 @@ static void* dequeue_work_func(void *param)
 	HOST_NODE *phost;
 	MEM_FILE temp_file;
 	struct timespec ts;
-	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
 	DOUBLE_LIST_NODE *pnode;
 	char buff[MAX_CMD_LENGTH];
@@ -1064,7 +1062,7 @@ NEXT_LOOP:
 static BOOL read_response(int sockd)
 {
 	fd_set myset;
-	int i, offset;
+	int offset;
 	int read_len;
 	char buff[1024];
 	struct timeval tv;

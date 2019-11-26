@@ -683,7 +683,6 @@ static void *thread_work_func(void *param)
 	char *ptr;
 	int *psize;
 	int offset;
-	int version;
 	char *pbuff;
 	char *parray;
 	gzFile gz_fd;
@@ -1113,7 +1112,6 @@ static void* sync_work_func(void *param)
 	USER_NODE *punode;
 	MYSQL_RES *pmyres;
 	MYSQL_CONN *pmyconn;
-	MIDB_CONN *pmidbconn;
 	struct stat node_stat;
 	char sql_string[1024];
 	STR_HASH_TABLE *phash;
@@ -1596,7 +1594,6 @@ static void put_midb_connection(MIDB_CONN *pmidbconn)
 static int connect_midb(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;
@@ -1639,15 +1636,9 @@ static BOOL midb_remove(char *path, char *mids)
 {
 	char *ptr;
 	int length;
-	int offset;
 	int tmp_len;
-	int read_len;
-	fd_set myset;
-	struct timeval tv;
 	char buff[256*1025];
 	MIDB_CONN *pmidbconn;
-	DOUBLE_LIST_NODE *pnode;
-
 	
 	pmidbconn = get_midb_connection(path);
 	if (NULL == pmidbconn) {

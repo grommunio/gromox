@@ -218,7 +218,6 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	char tmp_tag[256];
 	ASYNC_WAIT *pwait;
 	ASYNC_WAIT **ppwait;
-	DOUBLE_LIST **pplist;
 	
 	pthread_mutex_lock(&g_async_lock);
 	ppwait = int_hash_query(g_async_hash, async_id);

@@ -161,7 +161,6 @@ int list_ui_run()
 	char domain[256];
 	char session[256];
 	char temp_keyword[256];
-	char post_buff[1024];
 	char search_buff[1024];
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
@@ -444,16 +443,14 @@ static void list_ui_error_html(const char *error_string)
 static void list_ui_main_html(const char *domain, const char *session)
 {
 	int fd;
-	int i, len;
+	int i;
 	int item_num;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char list_path[256];
 	char temp_name[512];
-	char config_path[256];
 	BLACKLIST_ITEM *pitem;
-	struct tm temp_tm, *ptm;
 	struct stat node_stat;
 	
 	

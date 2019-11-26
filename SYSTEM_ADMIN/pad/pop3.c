@@ -51,8 +51,6 @@ BOOL pop3_login(POP3_SESSION *psession)
 	int command_len;
 	int val_opt, opt_len;
 	struct sockaddr_in servaddr;
-	struct in_addr ip_addr;
-	struct hostent *phost;
 	struct timeval tv;
 	fd_set myset;
 	char last_command[1024];
@@ -146,9 +144,7 @@ BOOL pop3_login(POP3_SESSION *psession)
 BOOL pop3_uidl(POP3_SESSION *psession)
 {
 	UID_ITEM *puid;
-	DOUBLE_LIST_NODE *pnode;
 	char last_command[1024];
-	char last_response[1024];
 	char *pcrlf, *plast, *pspace;
 	char list_buff[1024*1024];
 	int command_len;
@@ -204,7 +200,6 @@ BOOL pop3_retr(POP3_SESSION *psession, UID_ITEM *puid, char *path)
 {
 	int command_len;
 	char last_command[1024];
-	char last_response[1024];
 
 	if (-1 == psession->sockd) {
 		return FALSE;

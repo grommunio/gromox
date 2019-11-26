@@ -2071,10 +2071,8 @@ static BOOL oxcical_parse_summary(
 {
 	int i;
 	int tmp_len;
-	uint32_t lid;
 	const char *pvalue;
 	char tmp_buff[1024];
-	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
 	pvalue = ical_get_first_subvalue(piline);
@@ -2121,10 +2119,8 @@ static BOOL oxcical_parse_summary(
 static BOOL oxcical_parse_ownerapptid(
 	ICAL_LINE *piline, MESSAGE_CONTENT *pmsg)
 {
-	uint32_t lid;
 	uint32_t tmp_int32;
 	const char *pvalue;
-	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	
 	pvalue = ical_get_first_subvalue(piline);
@@ -2897,7 +2893,6 @@ static BOOL oxcical_import_internal(
 	long duration;
 	int tmp_count;
 	BOOL b_utc_end;
-	BINARY tmp_bin;
 	time_t tmp_time;
 	time_t end_time;
 	ICAL_TIME itime;
@@ -2906,16 +2901,13 @@ static BOOL oxcical_import_internal(
 	ICAL_LINE *piline;
 	time_t start_time;
 	uint32_t tmp_int32;
-	uint64_t tmp_int64;
 	const char *pvalue;
 	const char *pvalue1;
 	ICAL_TIME end_itime;
-	char tmp_buff[1280];
 	DOUBLE_LIST tmp_list;
 	uint16_t last_propid;
 	INT_HASH_TABLE *phash;
 	ICAL_TIME start_itime;
-	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE tmp_node;

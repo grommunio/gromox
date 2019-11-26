@@ -74,7 +74,6 @@ static int mime_auditor(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
 	int out_len;
-	char *purl;
 	char buff[1024];
 
 	if (TRUE == pmail->penvelop->is_outbound ||

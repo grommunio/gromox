@@ -75,7 +75,6 @@ BOOL esmtp_auth_login(const char *username, const char *password, char *reason,
 	int sockd, opt, auth_type, ireason;
 	int val_opt, opt_len;
 	struct sockaddr_in servaddr;
-	struct in_addr ip_addr;
 	struct timeval tv;
 	fd_set myset;
 

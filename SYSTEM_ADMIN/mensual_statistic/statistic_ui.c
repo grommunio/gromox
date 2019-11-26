@@ -150,9 +150,6 @@ int statistic_ui_run()
 	char *remote_ip;
 	char *ptr1, *ptr2;
 	char session[256];
-	char password[256];
-	char post_buff[1024];
-	char search_buff[1024];
 	char temp_buff[8];
 	int len, year, month;
 
@@ -373,7 +370,7 @@ static void statistic_ui_error_html(const char *error_string)
 
 static void statistic_ui_main_html(const char *session, int year, int month)
 {
-	int i, len;
+	int i;
 	int height;
 	int max_num;
 	int item_num;

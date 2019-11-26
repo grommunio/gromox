@@ -423,15 +423,11 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	uint32_t result;
 	USER_INFO *pinfo;
 	BINARY *pbin_pcl;
-	BINARY *pbin_pcl1;
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
-	uint32_t tmp_status;
 	INDEX_ARRAY *pindices;
 	BINARY *pbin_changekey;
 	INDEX_ARRAY tmp_indices;
-	MESSAGE_CONTENT *pmsgctnt;
-	PROBLEM_ARRAY tmp_problems;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
 	PROPERTY_GROUPINFO *pgpinfo;
@@ -855,8 +851,6 @@ BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage)
 BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage,
 	const TARRAY_SET *pset)
 {
-	int i;
-	
 	if (FALSE == exmdb_client_update_message_instance_rcpts(
 		store_object_get_dir(pmessage->pstore),
 		pmessage->instance_id, pset)) {

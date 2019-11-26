@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	char *str_value;
 	char list_path[256];
 	char data_path[256];
-    int clifd, len;
+	int len;
 	pthread_t *thr_ids;
 	pthread_t scan_id;
 	pthread_t accept_id;
@@ -857,7 +857,6 @@ static int read_line(FRONT_CONN *pconnection)
 static int connect_midb(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;

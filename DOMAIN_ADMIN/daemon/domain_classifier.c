@@ -42,8 +42,8 @@ int domain_classifier_run()
 	BOOL b_fopen;
 	BOOL b_outgoing;
 	STR_HASH_ITER *iter;
-	int length, fd, i;
-	int to_len, hash_num;
+	int length, i;
+	int hash_num;
 	struct dirent *direntp;
 	struct stat node_stat;
 	struct tm *ptime, tm_time;
@@ -53,7 +53,6 @@ int domain_classifier_run()
 	char temp_ip[16];
 	char time_str[32];
 	char temp_path[256];
-	char fake_domain[16];
 	char temp_buff[64*1024];
 	
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
@@ -450,8 +449,7 @@ int domain_classifier_run()
 static unsigned int domain_classifier_hash_domain(const char *domain_name)
 {
 	unsigned int sum;
-	int i, len;
-	char ascii;
+	int len;
 
 	len = strlen(domain_name);
 	sum = 0;

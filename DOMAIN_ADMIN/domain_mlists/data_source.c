@@ -776,7 +776,6 @@ BOOL data_source_edit_mlist(const char *listname, int list_privilege)
 	int i;
 	char temp_name[256];
 	char sql_string[4096];
-	MYSQL_RES *pmyres;
 	MYSQL *pmysql;
 	
 	data_source_encode_squote(listname, temp_name);
@@ -1851,8 +1850,8 @@ RETRYING:
 BOOL data_source_get_classes(const char *domainname, DATA_COLLECT *pcollect)
 {
 	int domain_id;
-	int i, j, k;
-	int rows, rows1;
+	int i, j;
+	int rows;
 	char temp_buff[256];
 	char group_title[128];
 	char sql_string[4096];

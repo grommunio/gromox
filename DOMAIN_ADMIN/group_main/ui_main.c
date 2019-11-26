@@ -217,12 +217,10 @@ int ui_main_run()
 	char *cookie;
 	BOOL b_result;
 	char *language;
-	int domain_type;
 	char *str_value;
 	int group_status;
 	char saved_pw[40];
 	char homedir[256];
-	char *pip, *pfrom;
 	const char *group;
 	const char *session;
 	char temp_path[256];
@@ -232,7 +230,6 @@ int ui_main_run()
 	char session_buff[64];
 	char *query, *request;
 	char cookie_buff[512];
-	char search_buff[1024];
 	REQUEST_PARSER *pparser;
 	COOKIE_PARSER *pcookie_parser;
 

@@ -26,7 +26,6 @@ static CHECK_RETRYING check_retrying;
 static CHECK_TAGGING check_tagging;
 
 static char g_config_file[256];
-static char g_return_string[1024];
 
 BOOL AS_LibMain(int reason, void **ppdata)
 {

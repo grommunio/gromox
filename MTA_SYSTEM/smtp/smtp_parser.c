@@ -181,8 +181,6 @@ void smtp_parser_init(int context_num, int threads_num, int mode,
 int smtp_parser_run()
 {
 	int i;
-	char *cacert_file;
-	char *cacert_path;
 	
 	if (TRUE == g_support_starttls) {
 		SSL_library_init();
@@ -368,7 +366,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	const char *host_ID;
 	char *smtp_reply_str;
 	char *smtp_reply_str2;
-	int i, len, string_length;
+	int len, string_length;
 	BOOL b_should_flush = FALSE;
 
 	/*========================================================================*/

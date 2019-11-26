@@ -111,7 +111,6 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
 	char *pdomain;
-	char rcpt_buff[256];
 	
 	/* ignore the inbound mails */
 	if (TRUE == pmail->penvelop->is_outbound ||
@@ -138,7 +137,7 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 
 static void console_talk(int argc, char **argv, char *result, int length)
 {
-	int block_interval, max_rcpt, len;
+	int block_interval, len;
 	CONFIG_FILE *pfile;
 	char help_string[] = "250 inmail frequency help information:\r\n"
 	                     "\t%s info\r\n"

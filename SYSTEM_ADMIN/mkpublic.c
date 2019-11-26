@@ -233,7 +233,6 @@ int main(int argc, char **argv)
 	char dir[256];
 	GUID tmp_guid;
 	int mysql_port;
-	BINARY tmp_bin;
 	int store_ratio;
 	uint16_t propid;
 	char *str_value;

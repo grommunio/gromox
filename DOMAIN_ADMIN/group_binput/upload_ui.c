@@ -870,10 +870,8 @@ static BOOL upload_ui_batch_input(const char *groupname,
 	time_t now_time;
 	uint64_t tmp_int64;
 	char *pdomain;
-	char *ptr1, *ptr2;
 	char maildir[256];
 	char mediadir[256];
-	char size_buff[16];
 	char temp_buff[256];
 	char temp_title[256];
 	char temp_real[256];
@@ -2334,7 +2332,6 @@ static void upload_ui_main_html(const char *groupname, const char *session)
 {
 	char *language;
 	char url_buff[1024];
-	char temp_buff[1024];
 	const char *str_submit;
 	
 	

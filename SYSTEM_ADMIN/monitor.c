@@ -193,7 +193,7 @@ static void* thread_work_func(void *arg)
 	int connection_val;
 	int sockd_smtp = -1;
 	int sockd_delivery = -1;
-	int read_len, offset;
+	int read_len;
 	int smtp_items[1024];
 	int delivery_items[1024];
 	unsigned long time_interval;
@@ -363,7 +363,7 @@ static int parse_statistic(char *buff_in, int *items)
 	char temp_buff[64];
 	int buff_len, last_crlf;
 	int  start_pos, end_pos;
-	int i, j, item_num, temp_len; 
+	int i, j, item_num;
 	
 	buff_len = strlen(buff_in);
 	for (i=0; i<buff_len; i++) {

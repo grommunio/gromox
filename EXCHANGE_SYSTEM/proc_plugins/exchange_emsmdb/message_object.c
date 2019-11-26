@@ -882,7 +882,6 @@ BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
 	PROPTAG_ARRAY *pcolumns;
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_columns;
-	PROPTAG_ARRAY tmp_proptags;
 	
 	if (TRUE == pmessage->b_new) {
 		return TRUE;
@@ -1510,7 +1509,6 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 	void *pvalue;
 	uint32_t proptag;
 	uint8_t tmp_bytes[3];
-	DCERPC_INFO rpc_info;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	uint16_t *poriginal_indices;

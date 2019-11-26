@@ -1185,7 +1185,6 @@ BOOL simple_tree_copy_node_to_slibling(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_child;
 	SIMPLE_TREE_NODE *pnode_parent;
 	SIMPLE_TREE_NODE *pnode_temp;
-	SIMPLE_TREE_NODE *pnode_last;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree_dst || NULL == pnode_dst 

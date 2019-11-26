@@ -111,7 +111,6 @@ static int mime_auditor(int context_ID, MAIL_ENTITY *pmail,
     CONNECTION *pconnection, char *reason, int length)
 {
 	int buff_len, out_len;
-	char keyword[256];
 	char temp_buff[1024];
 	char parsed_buff[1024];
 	ENCODE_STRING encode_string;
@@ -249,7 +248,6 @@ static int paragraph_filter(int action, int context_ID, MAIL_BLOCK *pblock,
     char *reason, int length)
 {
 	int out_len;
-	int key_len;
 	int buff_len;
 	char temp_buff[1024];
 	char parsed_buff[1024];

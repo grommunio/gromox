@@ -147,7 +147,6 @@ int list_ui_run()
 	char session[256];
 	char temp_domain[256];
 	char search_buff[1024];
-	char temp_buff[8];
 	int len;
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
@@ -401,15 +400,12 @@ static void list_ui_error_html(const char *error_string)
 
 static void list_ui_main_html(const char *session)
 {
-	int i, len;
+	int i;
 	int item_num;
-	time_t cur_time;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	LIST_ITEM *pitem;
-	struct tm temp_tm, *ptm;
-	
 	
 	if (FALSE == list_ui_get_self(url_buff, 1024)) {
 		list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",

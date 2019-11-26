@@ -71,7 +71,7 @@ static int xmailer_filter(int action, int context_ID,
 	int val_len;
 	BOOL b_messid;
 	BOOL b_mimeole;
-	int i, tmp_len;
+	int i;
 	char buff[1024];
 	MAIL_ENTITY mail_entity;
 

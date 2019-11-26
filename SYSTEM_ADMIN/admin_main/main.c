@@ -13,7 +13,6 @@
 
 int main(int argc, char **argv)
 {
-	BOOL b_ip;
 	int timeout;
 	char *str_value;
 	char work_path[256];
@@ -21,7 +20,6 @@ int main(int argc, char **argv)
 	char data_path[256];
 	char token_path[256];
 	char acl_path[256];
-	char *password;
 	CONFIG_FILE *pconfig;
 
 	umask(0);

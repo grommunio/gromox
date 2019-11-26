@@ -17,7 +17,6 @@ typedef void (*SPAM_STATISTIC)(int);
 typedef BOOL (*CHECK_TAGGING)(const char*, MEM_FILE*);
 
 static SPAM_STATISTIC spam_statistic;
-static CHECK_TAGGING check_tagging;
 
 DECLARE_API;
 

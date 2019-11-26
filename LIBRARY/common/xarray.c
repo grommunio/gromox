@@ -273,7 +273,6 @@ int xarray_get_index(XARRAY* pxarray, unsigned int xtag)
 	DOUBLE_LIST_NODE   *pnode = NULL;
 	XARRAY_UNIT *punit;
 	DOUBLE_LIST		   *plist;
-	int i;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pxarray) {

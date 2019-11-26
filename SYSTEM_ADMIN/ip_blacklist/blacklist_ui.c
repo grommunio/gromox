@@ -173,10 +173,8 @@ int blacklist_ui_run()
 	char ip_addr[16];
 	char temp_ip[16];
 	char session[256];
-	char post_buff[1024];
 	char search_buff[1024];
-	char temp_buff[8];
-	int len, year, month;
+	int len;
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
@@ -443,16 +441,13 @@ static void blacklist_ui_error_html(const char *error_string)
 
 static void blacklist_ui_main_html(const char *session)
 {
-	int i, len;
+	int i;
 	int item_num;
-	time_t cur_time;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char temp_buff[128];
 	BLACKLIST_ITEM *pitem;
-	struct tm temp_tm, *ptm;
-	
 	
 	if (FALSE == blacklist_ui_get_self(url_buff, 1024)) {
 		blacklist_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",

@@ -76,7 +76,6 @@ void sensor_client_free()
 static int sensor_client_connect(const char *ip_addr, int port)
 {
 	int sockd;
-	int offset;
 	int read_len;
 	char temp_buff[1024];
 	struct sockaddr_in servaddr;

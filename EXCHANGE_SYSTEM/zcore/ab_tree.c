@@ -203,7 +203,6 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 {
-	SINGLE_LIST_NODE *psnode;
 	SIMPLE_TREE_NODE **ppnode;
 	
 	ppnode = int_hash_query(pbase->phash, minid);
@@ -993,7 +992,6 @@ AB_BASE* ab_tree_get_base(int base_id)
 	int count;
 	AB_BASE *pbase;
 	AB_BASE **ppbase;
-	SINGLE_LIST_NODE *pnode;
 	
 	count = 0;
 RETRY_LOAD_BASE:
@@ -1236,7 +1234,6 @@ SIMPLE_TREE_NODE* ab_tree_guid_to_node(
 	AB_BASE *pbase, GUID guid)
 {
 	int domain_id;
-	int node_type;
 	GUID_ENUM tmp_enum;
 	DOMAIN_NODE *pdomain;
 	SIMPLE_TREE_NODE *ptnode;
@@ -1677,7 +1674,6 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
 	MEM_FILE fake_file;
-	char temp_buff[1024];
 	SIMPLE_TREE_NODE **ppnode;
 	
 	b_remote = FALSE;
@@ -1733,7 +1729,6 @@ static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
 	MEM_FILE fake_file;
-	char temp_buff[1024];
 	SIMPLE_TREE_NODE **ppnode;
 	
 	b_remote = FALSE;

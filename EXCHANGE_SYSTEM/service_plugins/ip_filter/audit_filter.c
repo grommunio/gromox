@@ -257,7 +257,7 @@ static int audit_filter_collect_entry(struct timeval *current_time)
 BOOL audit_filter_echo(const char *ip, time_t *pfirst_access,
 		    time_t *plast_access, int *ptimes)
 {
-	IP_AUDIT *paudit, new_audit;
+	IP_AUDIT *paudit;
 	struct timeval current_time;
 
 	if (NULL == g_audit_hash || NULL == ip ||

@@ -134,7 +134,6 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 	uint32_t count_normal;
 	EID_ARRAY chg_messages;
 	EID_ARRAY read_messags;
-	DOUBLE_LIST_NODE *pnode;
 	EID_ARRAY given_messages;
 	EID_ARRAY unread_messags;
 	EID_ARRAY updated_messages;
@@ -355,7 +354,6 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	EXT_PUSH ext_push;
 	uint64_t folder_id;
 	uint64_t parent_fid;
-	uint32_t permission;
 	const char *username;
 	DCERPC_INFO rpc_info;
 	char temp_buff[1024];
@@ -1958,7 +1956,6 @@ BOOL icsdownctx_object_continue_state_stream(ICSDOWNCTX_OBJECT *pctx,
 BOOL icsdownctx_object_end_state_stream(ICSDOWNCTX_OBJECT *pctx)
 {
 	IDSET *pset;
-	int repl_type;
 	BINARY tmp_bin;
 	uint32_t state_property;
 	

@@ -116,7 +116,6 @@ int rbl_cache_query(char *ip, char *reason, int length)
 
 void rbl_cache_add(char *ip, int type, char *reason)
 {
-	int add_result;
 	time_t cur_time;
 	BLCAK_ITEM temp_item;
 	

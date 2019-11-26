@@ -69,8 +69,6 @@ int AS_LibMain(int reason, void **ppdata)
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
-	char *ptr;
-	char *ptr1;
 	int tmp_len;
 	int tag_len;
 	int val_len;

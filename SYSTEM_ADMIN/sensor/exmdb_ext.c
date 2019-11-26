@@ -135,7 +135,6 @@ static int exmdb_ext_pull_subscribe_notification_response(
 int exmdb_ext_pull_response(const BINARY *pbin_in,
 	EXT_BUFFER_ALLOC auto_alloc, EXMDB_RESPONSE *presponse)
 {
-	int status;
 	EXT_PULL ext_pull;
 	
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
@@ -157,7 +156,6 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	EXT_BUFFER_ALLOC auto_alloc, DB_NOTIFY_DATAGRAM *pnotify)
 {
 	int status;
-	uint8_t tmp_byte;
 	EXT_PULL ext_pull;
 	
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,

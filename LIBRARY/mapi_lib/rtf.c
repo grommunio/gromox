@@ -286,7 +286,6 @@ static BOOL rtf_starting_text(RTF_READER *preader);
 
 static int rtf_decode_hex_char(const char *in)
 {
-	int tmp_ch;
 	int retval;
 	
 	if (strlen(in) < 2) {
@@ -393,7 +392,6 @@ static BOOL rtf_escape_output(RTF_READER *preader, uint8_t *string)
 
 static BOOL rtf_flush_iconv_cache(RTF_READER *preader)
 {
-	int status;
 	char *in_buff;
 	char *out_buff;
 	size_t in_size;
@@ -527,7 +525,6 @@ static uint32_t rtf_fcharset_to_cpid(int num)
 
 static FONTENTRY* rtf_lookup_font(RTF_READER *preader, int num) 
 {
-	int i;
 	static FONTENTRY fake_entries[] =
 		{{FONTNIL_STR, ""}, {FONTROMAN_STR, ""},
 		{FONTSWISS_STR, ""}, {FONTMODERN_STR, ""},
@@ -652,7 +649,6 @@ static void rtf_delete_tree_node(SIMPLE_TREE_NODE *pnode)
 
 static void rtf_free_reader(RTF_READER *preader)
 {
-	int i;
 	DOUBLE_LIST_NODE *pnode;
 	SIMPLE_TREE_NODE *proot;
 	ATTRSTACK_NODE *pattrstack;

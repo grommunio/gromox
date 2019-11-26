@@ -201,7 +201,7 @@ CHECK_FREQUENCY:
 
 static void console_talk(int argc, char **argv, char *result, int length)
 {
-	int block_interval, max_rcpt, len;
+	int block_interval, len;
 	CONFIG_FILE *pfile;
 	char help_string[] = "250 outmail frequency help information:\r\n"
 	                     "\t%s info\r\n"

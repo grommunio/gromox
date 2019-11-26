@@ -565,16 +565,13 @@ static BOOL engine_clean_and_calculate_homedir(
 	uint64_t *pbytes, int *pfiles)
 {
 	DIR *dirp;
-	int sql_len;
 	BOOL b_corrupt;
 	sqlite3 *psqlite;
-	sqlite3 *psqlite1;
 	char tmp_path[256];
 	char tmp_path1[256];
 	char tmp_path2[256];
 	const char *presult;
 	sqlite3_stmt *pstmt;
-	char sql_string[256];
 	struct stat node_stat;
 	int temp_files, files;
 	struct dirent *direntp;
@@ -952,7 +949,6 @@ static int engine_compare_file(const char *file1, char *file2, size_t size)
 
 static BOOL engine_check_format(const char *filename)
 {
-	int i;
 	char *pdot;
 	const char *ptr;
 
@@ -1002,7 +998,6 @@ static void *engine_scan_partition(PARTITION_ITEM *ppartition)
 	int i, fd, len;
 	int total_files;
 	time_t cur_time;
-	char time_str[32];
 	char temp_path[256];
 	uint64_t total_bytes;
 	char temp_path1[256];

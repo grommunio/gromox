@@ -8,8 +8,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-static BOOL g_notify_stop = FALSE;
-
 static void term_handler(int signo);
 
 int main(int argc, char **argv)

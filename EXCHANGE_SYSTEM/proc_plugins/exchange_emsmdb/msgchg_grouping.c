@@ -169,7 +169,6 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 	TAG_NODE *ptag_node;
 	GROUP_NODE *pgp_node;
 	INFO_NODE *pinfo_node;
-	DOUBLE_LIST_NODE *pnode;
 	
 	strcpy(file_path, file_name + 2);
 	ptoken = strchr(file_path, '.');
@@ -430,7 +429,6 @@ uint32_t msgchg_grouping_get_last_group_id()
 PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 	LOGON_OBJECT *plogon, uint32_t group_id)
 {
-	int group_num;
 	uint16_t propid;
 	uint32_t proptag;
 	TAG_NODE *ptag_node;

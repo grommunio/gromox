@@ -49,7 +49,6 @@ uint32_t folder_object_get_tag_access(FOLDER_OBJECT *pfolder)
 BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (FALSE == exmdb_client_get_folder_all_proptags(
@@ -709,7 +708,6 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	uint64_t change_num;
 	BINARY *pbin_changekey;
 	PROBLEM_ARRAY tmp_problems;
-	PROPERTY_PROBLEM *pproblem;
 	TPROPVAL_ARRAY tmp_propvals;
 	uint16_t *poriginal_indices;
 	

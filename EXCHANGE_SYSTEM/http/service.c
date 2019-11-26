@@ -216,7 +216,7 @@ int service_load_library(const char *path)
 	PLUGIN_MAIN func;
 	PLUG_ENTITY *plib;
 	char *pname;
-	char buf[256], fake_path[256];
+	char fake_path[256];
 
 	two_server_funcs[0] = (void*)service_get_version;
 	two_server_funcs[1] = (void*)service_query_service;
@@ -312,7 +312,7 @@ int service_unload_library(const char *path)
 	DOUBLE_LIST_NODE *pnode;
 	PLUGIN_MAIN func;
 	PLUG_ENTITY *plib;
-	char tmp_buff[256], *ptr;
+	char *ptr;
 
 	ptr = strrchr(path, '/');
 	if (NULL != ptr) {

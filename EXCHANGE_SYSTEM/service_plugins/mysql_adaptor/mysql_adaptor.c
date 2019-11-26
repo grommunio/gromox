@@ -618,7 +618,6 @@ RETRYING:
 BOOL mysql_adaptor_get_username_from_id(int user_id, char *username)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -709,7 +708,6 @@ RETRYING:
 BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -802,7 +800,6 @@ RETRYING:
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_dir[512];
@@ -896,7 +893,6 @@ BOOL mysql_adaptor_get_user_displayname(
 	const char *username, char *pdisplayname)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	int address_type;
 	MYSQL_RES *pmyres;
@@ -1002,7 +998,6 @@ BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -1421,7 +1416,6 @@ RETRYING:
 BOOL mysql_adaptor_get_maildir(const char *username, char *maildir)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -1514,7 +1508,6 @@ RETRYING:
 BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -1605,7 +1598,6 @@ RETRYING:
 BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -1698,7 +1690,6 @@ RETRYING:
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -1788,7 +1779,6 @@ RETRYING:
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_dir[512];
@@ -1983,7 +1973,6 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	int *pdomain_id, int *porg_id)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -2078,7 +2067,6 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	int *pgroup_id, int *pdomain_id)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -2176,7 +2164,6 @@ BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile)
 	int i;
 	int rows;
 	int domain_id;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -2266,7 +2253,6 @@ BOOL mysql_adaptor_get_domain_info(int domain_id,
 	char *name, char *title, char *address)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -2360,7 +2346,6 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 	int i;
 	int org_id1;
 	int org_id2;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -2458,7 +2443,6 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
 	int rows;
 	int temp_len;
 	int group_id;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -2556,7 +2540,6 @@ BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile)
 	int rows;
 	int temp_len;
 	int class_id;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -2652,7 +2635,6 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile)
 	int rows;
 	int temp_len;
 	int child_id;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
@@ -2745,7 +2727,6 @@ RETRYING:
 static BOOL mysql_adaptor_get_group_title(const char *groupname, char *title)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -2838,7 +2819,6 @@ static BOOL mysql_adaptor_get_class_title(
 	const char *listname, char *classname)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -2931,7 +2911,6 @@ static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 	int *plist_type, int *plist_privilege, char *title)
 {
 	int i;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
@@ -3036,7 +3015,6 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 	int temp_len;
 	char *ptoken;
 	int list_type;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	char title[1024];
 	MYSQL_RES *pmyres;
@@ -3221,7 +3199,6 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 	int temp_len;
 	char *ptoken;
 	int list_type;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	int address_type;
 	char title[1024];
@@ -3406,7 +3383,6 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 	int temp_len;
 	char *ptoken;
 	int list_type;
-	MYSQL *pmysql;
 	MYSQL_ROW myrow;
 	int address_type;
 	char title[1024];

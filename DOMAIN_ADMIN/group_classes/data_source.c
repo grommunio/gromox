@@ -382,7 +382,6 @@ BOOL data_source_rename_class(const char *groupname, int class_id,
 	char *pdomain;
 	char temp_buff[256];
 	char sql_string[4096];
-	char resource_name[256];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
 	MYSQL *pmysql;
@@ -946,7 +945,6 @@ static BOOL data_source_detect_loop(MYSQL *pmysql, int class_id,
 	int i, rows;
 	int parent_id;
 	char sql_string[512];
-	char temp_buff[256];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
 

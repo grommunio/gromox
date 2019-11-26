@@ -278,9 +278,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	int sockd;
 	int process_id;
 	BINARY tmp_bin;
-	struct timeval tv;
 	char remote_id[128];
-	char tmp_buff[1024];
 	uint8_t response_code;
 	CONNECT_REQUEST request;
 	struct sockaddr_in servaddr;

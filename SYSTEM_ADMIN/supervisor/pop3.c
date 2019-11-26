@@ -57,14 +57,11 @@ int pop3_retrieve_message(const char *ip, int port, const char *username,
 	char *last_response)
 {
 	BOOL b_connected;
-	char **p_addr;
 	char *pcrlf, *plast, *pspace;
 	char list_buff[RETRIEVE_BUFSIZE];
 	int id, size, command_len;
 	int sockd, opt, val_opt, opt_len;
 	struct sockaddr_in servaddr;
-	struct in_addr ip_addr;
-	struct hostent *phost;
 	struct timeval tv;
 	fd_set myset;
 	

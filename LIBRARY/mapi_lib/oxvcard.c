@@ -57,7 +57,6 @@ static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 	DOUBLE_LIST *plist;
 	VCARD_LINE *pvline;
 	const char *pstring;
-	VCARD_VALUE *pvvalue;
 	DOUBLE_LIST_NODE *pnode;
 	
 	b_version = FALSE;

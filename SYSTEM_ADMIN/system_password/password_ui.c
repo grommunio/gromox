@@ -150,7 +150,6 @@ int password_ui_run()
 	char *remote_ip;
 	char *ptr1, *ptr2;
 	char *query, *request;
-	char password[256];
 	char session[256];
 	char post_buff[1024];
 	char search_buff[1024];

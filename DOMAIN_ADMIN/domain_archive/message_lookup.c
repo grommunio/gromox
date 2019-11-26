@@ -118,7 +118,6 @@ int message_lookup_collect_forward(LOOKUP_COLLECT *pcollect)
 static int message_lookup_connect_cidb(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;
@@ -164,7 +163,6 @@ static BOOL message_lookup_search_mail(int server_id, CIDB_HOST *pserver,
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -302,8 +300,6 @@ BOOL message_lookup_search(int server_id, const char *charset,
 	CIDB_HOST *pitem;
 	LIST_FILE *pfile;
 	char cmd_buff[64*1024];
-	DOUBLE_LIST_NODE *pnode;
-	
 	
 	length = snprintf(cmd_buff, sizeof(cmd_buff), "A-SRCH %s", charset);
 	

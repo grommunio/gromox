@@ -126,7 +126,6 @@ static pthread_key_t	 g_tls_key;
 static pthread_t		 g_scan_id;
 static LIB_BUFFER		 *g_file_allocator;
 static MIME_POOL		 *g_mime_pool;
-static pthread_t         *g_threads_id;
 static THREAD_DATA		 *g_data_ptr;
 static FREE_CONTEXT		 *g_free_ptr;
 static PLUG_ENTITY		 *g_cur_lib;
@@ -810,7 +809,7 @@ int transporter_load_library(const char* path)
     PLUGIN_MAIN func;
     PLUG_ENTITY *plib;
     char *pname;
-    char buf[256], fake_path[256];
+	char fake_path[256];
 
 	transporter_clean_up_unloading();
 
@@ -912,7 +911,7 @@ int transporter_unload_library(const char* path)
     DOUBLE_LIST_NODE *pnode;
     PLUGIN_MAIN func;
     PLUG_ENTITY *plib;
-    char type[256], tmp_buff[256], *ptr;
+	char *ptr;
 
     ptr = strrchr(path, '/');
     if (NULL != ptr) {
@@ -1360,8 +1359,6 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
  */
 static BOOL transporter_register_local(HOOK_FUNCTION func)
 {
-	DOUBLE_LIST_NODE *pnode, *pnode_tail;
-
 	if (g_local_path[0] != '\0') {
 		return FALSE;
 	}
@@ -1381,8 +1378,6 @@ static BOOL transporter_register_local(HOOK_FUNCTION func)
  */
 static BOOL transporter_register_remote(HOOK_FUNCTION func)
 {
-	DOUBLE_LIST_NODE *pnode;
-
 	if (g_remote_path[0] != '\0') {
 		return FALSE;
 	}

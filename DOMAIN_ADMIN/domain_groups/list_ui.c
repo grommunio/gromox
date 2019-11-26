@@ -1221,7 +1221,7 @@ static void list_ui_edit_html(const char *domainname, const char *session,
 
 static void list_ui_main_html(const char *domainname, const char *session)
 {
-	int i, rows;
+	int rows;
 	char *language;
 	char url_buff[1024];
 	char url_add[1280];

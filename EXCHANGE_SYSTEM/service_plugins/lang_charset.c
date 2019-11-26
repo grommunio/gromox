@@ -28,7 +28,7 @@ static char g_list_path[256];
 
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
-	char *str_value, *psearch;
+	char *psearch;
 	char file_name[256];
 	
 	

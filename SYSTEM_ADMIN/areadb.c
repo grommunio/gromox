@@ -103,7 +103,6 @@ static void copy_dir(char *src_dir, char *dst_dir)
 	char temp_path[256];
 	char temp_path1[256];
 	struct stat node_stat;
-	struct stat node_stat1;
 	struct dirent *direntp;
 	
 	dirp = opendir(src_dir);

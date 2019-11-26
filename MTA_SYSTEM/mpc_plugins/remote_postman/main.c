@@ -20,7 +20,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	char timer_path[256];
 	int max_thr, max_rcpt;
 	char routing_path[256];
-	int alarm_interval, len;
+	int alarm_interval;
 	char resource_path[256];
 	char *str_value, *psearch;
 	int trying_times, timer_threads;

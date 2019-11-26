@@ -97,8 +97,6 @@ int communicator_run()
 	ACL_ITEM *pacl;
 	LIST_FILE *plist;
 	int optval, status;
-	char temp_line[2048];
-	struct in_addr addr;
 	DOUBLE_LIST_NODE *pnode;
 	struct sockaddr_in my_name;
 
@@ -288,15 +286,9 @@ static void *accept_work_func(void *param)
 
 static void *thread_work_func(void *param)
 {
-	int i;
-	int t_id;
-	time_t exec_time;
-	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;	
-	char *pspace, temp_line[1024];
-	
-	
+
 NEXT_LOOP:
 	pthread_mutex_lock(&g_cond_mutex);
 	pthread_cond_wait(&g_waken_cond, &g_cond_mutex);

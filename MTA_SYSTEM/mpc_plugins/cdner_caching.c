@@ -558,7 +558,6 @@ static BOOL read_line(int sockd, char *buff, int length)
 static int connect_cdner(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;

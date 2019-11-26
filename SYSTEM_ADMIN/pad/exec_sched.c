@@ -52,7 +52,6 @@ void exec_sched_free()
 int exec_sched_run()
 {
 	char *pitem;
-    STR_HASH_TABLE *phash = NULL;
     int i, list_len, hash_cap;
 	LIST_FILE *plist_file;
 	USER_INFO temp_info;

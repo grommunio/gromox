@@ -101,20 +101,17 @@ int main(int argc, char **argv)
 	time_t last_cltime;
 	pthread_t thr_accept_id;
 	pthread_t *thr_ids;
-	char temp_buff[32];
 	char listen_ip[16];
 	char temp_path[256];
 	char temp_line[2048];
 	char *str_value, *parray;
 	ACL_ITEM *pacl;
-	struct in_addr addr;
 	struct sockaddr_in my_name;
 	char *pitem, *ptr, *ptr1;
 	TIMER *ptimer;
 	LIST_FILE *pfile;
 	LIST_FILE *plist;
 	CONFIG_FILE *pconfig;
-	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 
@@ -652,7 +649,6 @@ static void *thread_work_func(void *param)
 	int temp_len;
 	int exec_interval;
 	TIMER *ptimer;
-	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;	
 	char *pspace, temp_line[1024];

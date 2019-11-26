@@ -228,7 +228,7 @@ int anti_spamming_load_library(const char* path)
 	PLUGIN_MAIN func;
 	SHARELIB *plib;
 	char *pname;
-	char buf[256], fake_path[256];
+	char fake_path[256];
 
 	two_server_funcs[0] = (void*)anti_spamming_getversion;
 	two_server_funcs[1] = (void*)anti_spamming_queryservice;

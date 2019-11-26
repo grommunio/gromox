@@ -243,7 +243,6 @@ static BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 static uint32_t table_object_get_folder_tag_access(
 	STORE_OBJECT *pstore, uint64_t folder_id, const char *username)
 {
-	uint64_t fid_val;
 	uint32_t tag_access;
 	uint32_t permission;
 	
@@ -278,7 +277,6 @@ static uint32_t table_object_get_folder_tag_access(
 static uint32_t table_object_get_folder_permission_rights(
 	STORE_OBJECT *pstore, uint64_t folder_id, const char *username)
 {
-	uint64_t fid_val;
 	uint32_t permission;
 	
 	if (TRUE == store_object_check_owner_mode(pstore)) {
@@ -918,7 +916,6 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
-	DOUBLE_LIST_NODE *pnode;
 	BOOKMARK_NODE *pbookmark;
 	
 	if (0 == ptable->table_id) {
@@ -1021,8 +1018,6 @@ void table_object_clear_bookmarks(TABLE_OBJECT *ptable)
 
 void table_object_reset(TABLE_OBJECT *ptable)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
 	if (NULL != ptable->pcolumns) {
 		proptag_array_free(ptable->pcolumns);
 		ptable->pcolumns = NULL;

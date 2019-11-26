@@ -112,7 +112,6 @@ static int mail_statistic(int context_ID, MAIL_WHOLE *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
 	BOOL b_hint;
-	char temp_buff[256];
 	char *pdomain, *pitem;
 	int i, len;
 	int item_size;

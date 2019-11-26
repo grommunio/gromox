@@ -112,7 +112,7 @@ static BOOL md5_file(const char *path, char *digest)
 {
 	char *pbuff;
 	MD5_CTX ctx;
-	int i, len, fd;
+	int i, fd;
 	struct stat node_stat;
 	unsigned char md[MD5_DIGEST_LENGTH];
 
@@ -370,7 +370,6 @@ static int remote_get(CONNECTION conn,
 	int i, fd;
 	int offset;
 	size_t length;
-	int last_pos;
     fd_set myset;
     int read_len;
 	BOOL b_first;
@@ -553,7 +552,6 @@ static void remove_inode(const char *path)
 
 static BOOL check_format(const char *filename)
 {
-	int i;
 	char *pdot;
 	const char *ptr;
 

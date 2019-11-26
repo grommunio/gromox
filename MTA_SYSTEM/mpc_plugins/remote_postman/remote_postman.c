@@ -163,13 +163,12 @@ void remote_postman_free()
  */
 BOOL remote_postman_hook(MESSAGE_CONTEXT *pcontext)
 {
-	MEM_FILE file_tmp;
 	CONTROL_INFO control;
 	time_t current_time;
 	MESSAGE_CONTEXT fake_context;
 	MESSAGE_CONTEXT *pbounce_context;
 	char reason_buff[1024], ip_addr[16];
-	int reason, bounce_type, len, timer_ID;
+	int bounce_type, timer_ID;
 	
 	BOOL need_retry, need_bounce, is_untried, can_enter;
 	int OK_num, permanent_fail, temp_fail, giveup_num;

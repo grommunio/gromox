@@ -145,8 +145,6 @@ int statistic_ui_run()
 	char *remote_ip;
 	char *ptr1, *ptr2;
 	char session[256];
-	char post_buff[1024];
-	char search_buff[1024];
 	char temp_buff[16];
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");

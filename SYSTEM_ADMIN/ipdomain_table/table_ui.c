@@ -195,10 +195,7 @@ int table_ui_run()
 	char part[256];
 	char temp_domain[256];
 	char session[256];
-	char password[256];
-	char post_buff[1024];
 	char search_buff[1024];
-	char temp_buff[8];
 	int type, len;
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
@@ -487,16 +484,13 @@ static void table_ui_error_html(const char *error_string)
 static void table_ui_main_html(const char *session)
 {
 	int type;
-	int i, len;
+	int i;
 	int item_num;
 	char *language;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char item_type[256];
-	char temp_buff[128];
 	TABLE_ITEM *pitem;
-	struct tm temp_tm, *ptm;
-	
 	
 	if (FALSE == table_ui_get_self(url_buff, 1024)) {
 		table_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",

@@ -22,7 +22,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char temp_buff[64];
 	char *str_value, *psearch;
 	int capacity, interval;
-	int fd, temp_list_size;
+	int fd;
 	struct stat node_stat;
 	
 	switch(reason) {

@@ -31,7 +31,6 @@ static void exchange_nsp_unbind(uint64_t handle);
 
 BOOL PROC_LibMain(int reason, void **ppdata)
 {
-	int org_size;
 	BOOL b_check;
 	char *org_name;
 	int table_size;

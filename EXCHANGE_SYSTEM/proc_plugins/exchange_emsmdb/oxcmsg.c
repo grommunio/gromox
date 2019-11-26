@@ -660,9 +660,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	uint32_t new_status;
 	LOGON_OBJECT *plogon;
 	TAGGED_PROPVAL propval;
-	PROPERTY_ROW message_row;
 	uint32_t original_status;
-	FLAGGED_PROPVAL *ppropval;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {

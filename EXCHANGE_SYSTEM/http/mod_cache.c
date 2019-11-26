@@ -198,7 +198,6 @@ int mod_cache_run()
 
 int mod_cache_stop()
 {
-	int i;
 	CACHE_ITEM *pitem;
 	CACHE_ITEM **ppitem;
 	STR_HASH_ITER *iter;

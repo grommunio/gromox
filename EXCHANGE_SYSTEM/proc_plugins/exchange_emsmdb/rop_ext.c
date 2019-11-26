@@ -1174,7 +1174,6 @@ static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
 static int rop_ext_push_findrow_response(
 	EXT_PUSH *pext, const FINDROW_RESPONSE *r)
 {
-	int i;
 	int status;
 	
 	status = ext_buffer_push_uint8(pext, r->bookmark_invisible);
@@ -2129,7 +2128,6 @@ static int rop_ext_push_querynamedproperties_response(
 static int rop_ext_pull_copyproperties_request(
 	EXT_PULL *pext, COPYPROPERTIES_REQUEST *r)
 {
-	int i;
 	int status;
 	
 	status = ext_buffer_pull_uint8(pext, &r->hindex);
@@ -2654,7 +2652,6 @@ static int rop_ext_pull_tellversion_request(
 {
 	int i;
 	int status;
-	uint16_t size;
 	
 	for (i=0; i<3; i++) {
 		status = ext_buffer_pull_uint16(pext, r->version + i);
@@ -3193,7 +3190,6 @@ static int rop_ext_push_backoff_response(EXT_PUSH *pext,
 static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 {
 	int status;
-	void *plogmap;
 	LOGON_OBJECT *plogon;
 	EMSMDB_INFO *pemsmdb_info;
 	
@@ -3922,7 +3918,6 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 {
 	int status;
 	LOGON_OBJECT *plogon;
-	PROPTAG_ARRAY *pcolumns;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	if (ROP_ID_GETMESSAGESTATUS == r->rop_id) {
@@ -4261,7 +4256,6 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	uint8_t *pdata;
 	uint8_t *pbuff;
 	EXT_PULL subext;
-	ROP_REQUEST *prequest;
 	DOUBLE_LIST_NODE *pnode;
 	uint32_t decompressed_len;
 	RPC_HEADER_EXT rpc_header_ext;
@@ -4352,7 +4346,6 @@ int rop_ext_make_rpc_ext(const uint8_t *pbuff_in, uint32_t in_len,
 	int i;
 	int status;
 	EXT_PUSH subext;
-	uint16_t offset;
 	EXT_PUSH ext_push;
 	uint32_t compressed_len;
 	uint8_t ext_buff[0x10000];

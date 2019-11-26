@@ -317,7 +317,6 @@ BOOL common_util_entryid_to_username(const BINARY *pbin, char *username)
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
-	char tmp_name[256];
 	uint8_t tmp_uid[16];
 	uint8_t provider_uid[16];
 	ONEOFF_ENTRYID oneoff_entry;
@@ -895,9 +894,7 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	PCL *ppcl1;
 	PCL *ppcl2;
 	BINARY *pbin;
-	SIZED_XID xid;
 	BINARY *ptmp_bin;
-	DOUBLE_LIST_NODE *pnode;
 	
 	pbin = common_util_alloc(sizeof(BINARY));
 	if (NULL == pbin) {
@@ -946,7 +943,6 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 BINARY* common_util_to_folder_replica(
 	const LONG_TERM_ID *plongid, const char *essdn)
 {
-	int i;
 	BINARY *pbin;
 	EXT_PUSH ext_push;
 	
@@ -1380,7 +1376,6 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	RECIPIENT_ROW *prow)
 {
-	void *pat;
 	void *pvalue;
 	uint8_t display_type;
 	

@@ -17,7 +17,6 @@ DECLARE_API;
 
 BOOL FLH_LibMain(int reason, void** ppdata, char* path)
 {
-    char *queue_path, *ptr;
     pthread_attr_t  attr;
 
     switch (reason) {

@@ -405,7 +405,6 @@ uint32_t rop_getowningservers(
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	GUID guid;
-	char *phost;
 	BOOL b_found;
 	int domain_id;
 	int object_type;
@@ -497,7 +496,6 @@ uint32_t rop_longtermidfromid(uint64_t id,
 	LONG_TERM_ID *plong_term_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	int i;
 	BOOL b_found;
 	uint16_t replid;
 	int object_type;

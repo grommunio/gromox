@@ -64,9 +64,6 @@ void processing_engine_free()
 
 static void* thread_work_func(void *param)
 {
-	int num;
-	BOOL b_master;
-	BOOL b_slave;
 	char *str_master;
 	char *str_slave;
 	char temp_url[1024];

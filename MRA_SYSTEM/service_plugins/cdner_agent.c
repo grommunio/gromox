@@ -629,14 +629,10 @@ RDWR_ERROR:
 static int delete_cdn_mail(const char *username, SINGLE_LIST *plist)
 {
 	int length;
-	int offset;
 	int cmd_len;
 	int temp_len;
-	int read_len;
-	fd_set myset;
 	MSG_UNIT *pmsg;
 	BACK_CONN *pback;
-	struct timeval tv;
 	char buff[128*1025];
 	SINGLE_LIST_NODE *pnode;
 
@@ -761,7 +757,6 @@ static BOOL read_line(int sockd, char *buff, int length)
 static int connect_cdner(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;
@@ -802,7 +797,6 @@ static int connect_cdner(const char *ip_addr, int port)
 static void console_talk(int argc, char **argv, char *result, int length)
 {
 	int alive_num;
-	DOUBLE_LIST_NODE *pnode;
 	char help_string[] = "250 cdner agent help information:\r\n"
 						 "\t%s info\r\n"
 						 "\t    --print the cdner server information";

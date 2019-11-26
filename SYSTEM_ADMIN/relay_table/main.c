@@ -17,7 +17,6 @@ int main(int argc, char **argv)
 	char work_path[256];
 	char temp_path[256];
 	char data_path[256];
-	char white_path[256];
 	char token_path[256];
 	char acl_path[256];
 	char lang_path[256];

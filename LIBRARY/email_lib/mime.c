@@ -125,7 +125,6 @@ BOOL mime_retrieve(MIME *pmime_parent,
 
 	long current_offset = 0, parsed_length = 0;
 	MIME_FIELD mime_field;
-	char *ptmp, *ptmp2;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime || NULL == in_buff) {
@@ -905,7 +904,6 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
  */
 BOOL mime_append_field(MIME *pmime, const char *tag, const char *value)
 {
-	MEM_FILE file_tmp;
 	int	tag_len, val_len;
 	
 #ifdef _DEBUG_UMTA
@@ -1339,9 +1337,6 @@ BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
 {
 	int		tag_len, val_len;
 	size_t	len, offset;
-	MIME	*pmime_child;
-	BOOL	has_submime;
-	SIMPLE_TREE_NODE *pnode;
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
 #ifdef _DEBUG_UMTA
@@ -2257,7 +2252,6 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
 	int i;
 	int mode;
 	char *ptr;
-	char *ptr1;
 	char *pend;
 	int tmp_len;
 	char *pbegin;
@@ -2637,8 +2631,6 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 	SIMPLE_TREE_NODE *pnode;
 	char    temp_id[64];
 	char    content_type[256];
-	char    temp_buff[512];
-
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime || NULL == pbuff || NULL == poffset || NULL == pcount) {
@@ -2811,7 +2803,6 @@ static BOOL mime_parse_multiple(MIME *pmime)
 	BOOL b_match;
 	int boundary_len;
 	char *ptr, *begin, *end;
-	long offset;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {

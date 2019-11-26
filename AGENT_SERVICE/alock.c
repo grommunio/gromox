@@ -83,10 +83,9 @@ static DOUBLE_LIST g_lost_list;
 
 int main(int argc, char **argv)
 {
-    char *ptr;
     int listenfd;
 	char *str_value;
-    int clifd, i, len;
+	int i, len;
 	pthread_t *thr_ids;
 	pthread_t scan_id;
 	pthread_t accept_id;
@@ -454,7 +453,6 @@ static void *thread_work_func(void *param)
 {
 	int i, len;
     time_t now_time;
-	BACK_CONN *pback;
 	FRONT_CONN *pfront;
 	char temp_buff[1024];
 	DOUBLE_LIST_NODE *pnode;
@@ -658,7 +656,6 @@ static int read_line(int sockd, FRONT_CONN *pconnection)
 static int connect_locker()
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;

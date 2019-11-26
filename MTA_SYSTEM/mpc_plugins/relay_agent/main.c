@@ -259,7 +259,6 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	char rcpt_to[256];
 	char temp_buff[256];
 	char *pdomain, *dest_ip;
-	int i, size_read, rcpt_len;
 	BOOL need_relay;
 	BOOL relay_all;
 	BOOL in_range;

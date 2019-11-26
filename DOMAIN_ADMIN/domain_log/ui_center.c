@@ -216,12 +216,11 @@ int ui_center_run()
 	struct tm *ptm;
 	time_t start, end;
 	time_t current_time;
-	int scan_num, len;
+	int len;
 	char *language;
 	char *ptr1, *ptr2;
 	char *query, *request;
 	char domain[256];
-	char password[256];
 	char session[256];
 	char post_buff[1024];
 	char search_buff[1024];
@@ -506,12 +505,11 @@ static void ui_center_error_html(const char *error_string)
 
 static void ui_center_search_html(const char *domain, const char *session)
 {
-	int i, len;
+	int i;
 	char *language;
 	char time_buff[64];
 	char url_buff[1024];
 	time_t current_time;
-	struct stat node_stat;
 	
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (FALSE == ui_center_get_self(url_buff, 1024)) {

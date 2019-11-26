@@ -82,8 +82,6 @@ void resource_free()
 
 int resource_run()
 {
-    int i;
-	
     g_config_file = config_file_init(g_cfg_filename);
 
     if (NULL == g_config_file) {

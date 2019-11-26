@@ -494,7 +494,6 @@ static void list_ui_remove_folder(const char *domain, uint64_t folder_id)
 {
 	BOOL b_result;
 	char *language;
-	char temp_path[256];
 	char domain_path[256];
 
 	if (FALSE == data_source_get_homedir(domain, domain_path, NULL)) {
@@ -513,7 +512,6 @@ static void list_ui_permission_html(const char *domain,
 	char *language;
 	char url_buff[1024];
 	char domain_path[256];
-	char temp_address[512];
 	TARRAY_SET permission_list;
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");

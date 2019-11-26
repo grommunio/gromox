@@ -19,7 +19,6 @@
 
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
 static int  g_plugname_buffer_size = 0;
-static FILE *g_file_ptr = NULL;
 
 static char g_server_help[] =
 	"250 ZCORE DAEMON server help information:\r\n"
@@ -73,8 +72,6 @@ static void cmd_handler_dump_plugname(const char* plugname)
  */
 BOOL cmd_handler_service_control(int argc, char** argv)
 {
-	int result;
-
 	if (1 == argc) {
 		console_server_reply_to_client("550 too few arguments");
 		return TRUE;
@@ -125,12 +122,6 @@ BOOL cmd_handler_zcore_control(int argc, char** argv)
 
 BOOL cmd_handler_system_control(int argc, char** argv)
 {
-	int current_thread_num;
-	LIB_BUFFER* block_allocator;
-	int max_context_num, parsing_context_num;
-	size_t max_block_num, current_alloc_num, block_size;
-	
-	
 	if (1 == argc) {
 		console_server_reply_to_client("550 too few auguments");
 		return TRUE;

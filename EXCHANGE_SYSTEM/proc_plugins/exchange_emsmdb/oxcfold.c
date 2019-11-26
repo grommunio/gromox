@@ -161,7 +161,6 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	void *pvalue;
 	uint64_t tmp_id;
 	int object_type;
-	uint32_t result;
 	BINARY *pentryid;
 	uint32_t tmp_type;
 	EMSMDB_INFO *pinfo;
@@ -589,7 +588,6 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 	uint32_t *psearch_flags, void *plogmap, uint8_t logon_id,
 	uint32_t hin)
 {
-	int i;
 	int object_type;
 	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;

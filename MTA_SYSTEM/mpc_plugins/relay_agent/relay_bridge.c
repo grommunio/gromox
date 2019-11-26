@@ -84,7 +84,6 @@ int relay_bridge_run()
 	int optval;
 	key_t k_msg;
 	int sockd, status;
-	struct in_addr addr;
 	struct sockaddr_in my_name;
 	
 	k_msg = ftok(g_token_path, TOKEN_MESSAGE_QUEUE);
@@ -311,7 +310,6 @@ static void *connection_work_func(void *param)
 	size_t offset;
 	size_t buff_len;
 	struct timeval tv;
-	time_t time_stamp;
 	char temp_path[256];
 	char dest_path[256];
 	char zipped_path[256];

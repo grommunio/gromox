@@ -194,11 +194,11 @@ static void* thread_work_func(void* arg)
 {
 	socklen_t addrlen;
 	int sockd2, client_port;
-	int string_length, len, flag;
+	int len, flag;
 	struct sockaddr_in fact_addr, client_peer;
 	char client_hostip[16], server_hostip[16];
 	HTTP_CONTEXT *pcontext;
-	const char *http_reply_str, *http_reply_str2, *host_ID;
+	const char *host_ID;
 	char buff[1024];
 	
 	for (;;) {
@@ -301,11 +301,11 @@ static void* thread_work_ssl_func(void* arg)
 {
 	socklen_t addrlen;
 	int sockd2, client_port;
-	int string_length, len, flag;
+	int len, flag;
 	struct sockaddr_in fact_addr, client_peer;
 	char client_hostip[16], server_hostip[16];
 	HTTP_CONTEXT *pcontext;
-	const char *http_reply_str, *http_reply_str2, *host_ID;
+	const char *host_ID;
 	char buff[1024];
 	
 	for (;;) {

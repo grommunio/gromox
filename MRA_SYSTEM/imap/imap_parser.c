@@ -396,17 +396,15 @@ int imap_parser_process(IMAP_CONTEXT *pcontext)
 	int temp_len;
 	int ssl_errno;
 	int written_len;
-	int copy_result;
 	size_t total_len;
 	int string_length;
 	const char *host_ID;
     char *imap_reply_str;
     char *imap_reply_str2;
 	char* argv[128];
-	char temp_path[256];
 	char temp_buff[4096];
 	char reply_buff[1024];
-	char *ptr, *ptr1, *pbuff;
+	char *ptr, *pbuff;
     struct timeval current_time;
 	
 CONTEXT_PROCESSING:
@@ -1323,7 +1321,6 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	BOOL b_first;
 	BOOL b_modify;
 	char buff[1024];
-	char estring[256];
 	char mid_string[256];
 	MEM_FILE temp_file;
 	

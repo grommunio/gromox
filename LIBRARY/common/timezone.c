@@ -63,7 +63,7 @@
 #define OPEN_MODE	O_RDONLY
 #endif /* !defined O_BINARY */
 
-#ifndef WILDABBR
+#ifdef TM_ZONE
 /*
 ** Someone might make incorrect use of a time zone abbreviation:
 **	1.	They might reference tzname[0] before calling tzset (explicitly
@@ -83,10 +83,8 @@
 ** manual page of what this "time zone abbreviation" means (doing this so
 ** that tzname[0] has the "normal" length of three characters).
 */
-#define WILDABBR	"   "
-#endif /* !defined WILDABBR */
-
-static char	wildabbr[] = WILDABBR;
+static char wildabbr[] = "   ";
+#endif /* TM_ZONE */
 
 static const char gmt[] = "GMT";
 

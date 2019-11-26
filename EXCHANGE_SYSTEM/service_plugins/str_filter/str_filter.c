@@ -222,7 +222,7 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 	struct tm time_buff;
 	char first_time[64];
 	char last_time[64];
-	char *pslash, *psearch;
+	char *pslash;
 	CONFIG_FILE *pconfig;
 	char help_string[] = "250 string filter help information:\r\n"
 						 "\t%s search <string>\r\n"

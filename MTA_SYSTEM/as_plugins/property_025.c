@@ -79,7 +79,6 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	char buff[1024];
 	char *ptr, *pbackup;
 	int out_len, i;
-	int tag_len, val_len;
 	
 	if (TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;

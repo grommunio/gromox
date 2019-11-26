@@ -1032,7 +1032,6 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	uint32_t last_row;
 	SINGLE_LIST *pgal_list;
 	SIMPLE_TREE_NODE *pnode;
-	SINGLE_LIST_NODE *psnode;
 	
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		return MAPI_E_NO_SUPPORT;
@@ -2190,7 +2189,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	STRINGS_ARRAY *pnames, PROPTAG_ARRAY **ppoutmids)
 {
-	int i, id;
+	int i;
 	int base_id;
 	AB_BASE *pbase;
 	SIMPLE_TREE_NODE *ptnode;
@@ -2740,8 +2739,6 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 {
 	int	tmp_tag;
 	int tmp_len;
-	int proptags[7];
-	const char *pdn;
 	char tmp_title[1024];
 	
 	
@@ -3480,8 +3477,6 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	SIMPLE_TREE_NODE *pnode;
 	SIMPLE_TREE_NODE *pnode1;
 	SIMPLE_TREE_NODE *pnode2;
-	SINGLE_LIST_NODE *psnode;
-	
 	
 	if (CODEPAGE_UNICODE == pstat->codepage) {
 		*ppmids = NULL;

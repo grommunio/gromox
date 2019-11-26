@@ -842,18 +842,17 @@ int list_ui_run()
 	char encrypt_pw[40];
 	char post_buff[4096];
 	int size_min, size_max;
-	int max_size, temp_size;
+	int max_size;
 	int group_id, address_type;
 	int address_status, result;
 	int page_index;
-	int user_id, fd;
+	int user_id;
 	int total_users;
 	uint64_t tmp_int64;
 	int extpasswd_type;
 	int privilege_bits;
 	time_t create_min;
 	time_t create_max;
-	time_t create_day;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	REQUEST_PARSER *pparser;
@@ -2013,7 +2012,6 @@ static void list_ui_edit_html(const char *domainname,
 	const char *session, const char *username)
 {
 	int fd;
-	int i, len;
 	int privilege;
 	char *language;
 	char type[16];
@@ -2022,7 +2020,6 @@ static void list_ui_edit_html(const char *domainname,
 	char url_buff[1024];
 	char temp_buff[1024];
 	char create_buff[32];
-	char end_buff[32];
 	char temp_user[128];
 	char prompt[1024];
 	char temp_title[128];
@@ -2313,7 +2310,6 @@ static void list_ui_edit_html(const char *domainname,
 
 static void list_ui_search_html(const char *domainname, const char *session)
 {
-	int i, len;
 	USER_ITEM *pitem;
 	char *language;
 	char url_buff[1024];
@@ -2564,7 +2560,6 @@ static unsigned int list_ui_cache_result(const char *domainname,
 	int address_status, int address_type)
 {
 	DIR *dirp;
-	char *language;
 	time_t cur_time;
 	int i, fd, page_index;
 	char temp_path[256];

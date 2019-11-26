@@ -5,7 +5,6 @@
 void hmacmd5_init(HMACMD5_CTX *ctx, const uint8_t *key, int key_len)
 {
 	int i;
-	uint8_t tk[16];
 	
 	if (key_len > 64) {
 		key_len = 64;

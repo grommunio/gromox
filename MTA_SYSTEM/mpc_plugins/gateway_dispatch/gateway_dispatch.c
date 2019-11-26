@@ -235,13 +235,13 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 	time_t current_time;
 	CONTROL_INFO control;
 	MEM_FILE remote_file;
-	int b_type, b_port, len;
+	int len;
 	MESSAGE_CONTEXT fake_context;
 	MESSAGE_CONTEXT *pbounce_context;
-	int reason, bounce_type, cache_ID;
+	int bounce_type, cache_ID;
 	char reason_buff[1024], rcpt_buff[256];
 	BOOL need_retry, need_bounce, local_found;
-	char tmp_buff[16], tmp_ip[16], host_ip[16];
+	char tmp_ip[16], host_ip[16];
 	char *pdomain, *from_domain, add_command[64];
 	
 	if (BOUND_NOTLOCAL == pcontext->pcontrol->bound_type) {
@@ -480,13 +480,11 @@ static void gateway_dispatch_dump_invalid(const char *ip, int port)
 void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 	int length)
 {
-	char *ptr, temp_ip[16];
-	MIME *pmime;
-	char tmp_buff[16];
+	char *ptr;
 	CONFIG_FILE *pfile;
 	int times, interval, alarm_interval;
 	int scan_interval, retrying_times;
-	int block_interval, port, bounce_policy;
+	int block_interval, bounce_policy;
 	char str_block[64], str_policy[64];
 	char str_interval[64], str_cache[64];
 	char str_backend[64], str_alarm[64];

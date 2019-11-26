@@ -117,10 +117,8 @@ int statistic_ui_run()
 	char *request;
 	char *language;
 	char *remote_ip;
-	char *ptr1, *ptr2;
+	char *ptr1;
 	char session[256];
-	char post_buff[1024];
-	char search_buff[1024];
 
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
@@ -272,15 +270,13 @@ static void statistic_ui_error_html(const char *error_string)
 
 static void statistic_ui_main_html(const char *session)
 {
-	int i, len;
+	int i;
 	int item_num;
-	time_t cur_time;
 	char *language;
 	LIST_FILE *pfile;
 	char temp_buff[1024];
 	STATISTIC_ITEM *pitem;
-	struct tm temp_tm, *ptm;
-	
+	struct tm temp_tm;
 	
 	pfile = list_file_init(g_list_path, "%s:32%s:32%d");
 	if (NULL == pfile) {

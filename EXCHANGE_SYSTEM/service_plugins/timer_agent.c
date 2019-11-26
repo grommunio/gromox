@@ -303,7 +303,7 @@ static void *scan_work_func(void *param)
 
 static int add_timer(const char *command, int interval)
 {
-	int i, len;
+	int len;
 	BACK_CONN *pback;
 	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[MAX_CMD_LENGTH];
@@ -349,7 +349,7 @@ static int add_timer(const char *command, int interval)
 
 static BOOL cancel_timer(int timer_id)
 {
-	int i, len;
+	int len;
 	BACK_CONN *pback;
 	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[MAX_CMD_LENGTH];
@@ -427,7 +427,6 @@ static int read_line(int sockd, char *buff, int length)
 static int connect_timer()
 {
     int sockd;
-	int temp_len;
     char temp_buff[1024];
     struct sockaddr_in servaddr;
 

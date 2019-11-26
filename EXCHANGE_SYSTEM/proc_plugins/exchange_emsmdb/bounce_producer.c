@@ -433,8 +433,6 @@ static BOOL bounce_producer_make_content(const char *username,
 	time_t tmp_time;
 	char charset[32];
 	const char *from;
-	const char *rcpt;
-	char tmp_buff[1024];
 	char date_buff[128];
 	struct tm time_buff;
 	const char *pcharset;

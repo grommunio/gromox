@@ -183,7 +183,6 @@ static void domain_keyword_remove(const char *domain)
 
 static int domain_keyword_add(const char *domain)
 {
-	int i, item_num;
 	STR_HASH_TABLE *phash;
 	STR_HASH_ITER *iter;
 	char temp_buff[256];

@@ -21,7 +21,6 @@ int main(int argc, char **argv)
 	char temp_path[256];
 	char lang_path[256];
 	char app_path[256];
-	char *password;
 	char *mount_path;
 	char session_ip[16];
 	int session_port;

@@ -409,11 +409,6 @@ void restart_service()
 
 int main(int argc, char **argv)
 {
-	int fd;
-	pid_t pid;
-	char str[32];
-	struct stat node_stat;
-
 	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
 		printf("usage: %s start|stop|restart|status\n", argv[0]);
 		exit(EXIT_SUCCESS);

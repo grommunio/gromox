@@ -475,8 +475,6 @@ static int mod_fastcgi_pull_record_header(
 	NDR_PULL *pndr, RECORD_HEADER *pheader)
 {
 	int status;
-	uint8_t tmp_byte;
-	uint16_t tmp_short;
 	
 	status = ndr_pull_uint8(pndr, &pheader->version);
 	if (NDR_ERR_SUCCESS != status) {
@@ -730,8 +728,6 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	FASTCGI_NODE *pfnode;
 	struct stat node_stat;
 	DOUBLE_LIST_NODE *pnode;
-	uint64_t content_length;
-	char document_root[1024];
 	
 	ndr_push_init(&ndr_push, pbuff, *plength,
 		NDR_FLAG_NOALIGN|NDR_FLAG_BIGENDIAN);
@@ -1470,7 +1466,6 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 {
-	char *pbuff;
 	int tmp_len;
 	uint8_t *pbody;
 	time_t cur_time;

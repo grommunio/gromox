@@ -418,7 +418,6 @@ CHECK_ERROR:
 static int connect_midb(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;

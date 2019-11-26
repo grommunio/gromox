@@ -671,14 +671,10 @@ RDWR_ERROR:
 static int delete_mail(char *path, char *folder, SINGLE_LIST *plist)
 {
 	int length;
-	int offset;
 	int cmd_len;
 	int temp_len;
-	int read_len;
-	fd_set myset;
 	MSG_UNIT *pmsg;
 	BACK_CONN *pback;
-	struct timeval tv;
 	char buff[128*1025];
 	SINGLE_LIST_NODE *pnode;
 
@@ -776,7 +772,6 @@ static int imap_search(char *path, char *folder, char *charset,
 	int length1;
 	BACK_CONN *pback;
 	size_t encode_len;
-	char num_buff[32];
 	char buff[256*1025];
 	char buff1[16*1024];
 
@@ -861,7 +856,6 @@ static int imap_search_uid(char *path, char *folder, char *charset,
 	int length1;
 	BACK_CONN *pback;
 	size_t encode_len;
-	char num_buff[32];
 	char buff[256*1025];
 	char buff1[16*1024];
 
@@ -944,7 +938,6 @@ static int get_mail_id(char *path, char *folder, char *mid_string,
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -995,7 +988,6 @@ static int get_mail_uid(char *path, char *folder, char *mid_string,
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -1047,7 +1039,6 @@ static int summary_folder(char *path, char *folder, int *pexists,
 	int length;
 	char *pspace;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 	int exists, recent;
 	int unseen, first_unseen;
@@ -1128,7 +1119,6 @@ static int make_folder(char *path, char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -1176,7 +1166,6 @@ static int remove_folder(char *path, char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 	
 
@@ -1224,7 +1213,6 @@ static int ping_mailbox(char *path, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 	
 
@@ -1273,7 +1261,6 @@ static int rename_folder(char *path, char *src_name, char *dst_name,
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -1322,7 +1309,6 @@ static int subscribe_folder(char *path, char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -1370,7 +1356,6 @@ static int unsubscribe_folder(char *path, char *folder, int *perrno)
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -1683,8 +1668,6 @@ static int insert_mail(char *path, char *folder, char *file_name,
 	int length;
 	char buff[1024];
 	BACK_CONN *pback;
-	char num_buff[32];
-
 
 	pback = get_connection(path);
 	if (NULL == pback) {
@@ -1730,14 +1713,10 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
 	int *perrno)
 {
 	int length;
-	int offset;
 	int cmd_len;
 	int temp_len;
-	int read_len;
-	fd_set myset;
 	MITEM *pitem;
 	BACK_CONN *pback;
-	struct timeval tv;
 	char buff[128*1025];
 	SINGLE_LIST_NODE *pnode;
 
@@ -1839,13 +1818,11 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 	int last_pos;
 	int read_len;
 	int line_pos;
-	fd_set myset;
 	char *pspace;
 	char *pspace1;
 	MITEM mitem;
 	int tv_msec;
 	BACK_CONN *pback;
-	struct timeval tv;
 	char num_buff[32];
 	char temp_line[512];
 	char buff[256*1025];
@@ -2388,7 +2365,6 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 	int i;
 	int uid;
 	int num;
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -2821,7 +2797,6 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	int i;
 	int uid;
 	int num;
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -3243,7 +3218,6 @@ static int set_mail_flags(char *path, char *folder, char *mid_string,
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 	char flags_string[16];
 
@@ -3329,7 +3303,6 @@ static int unset_mail_flags(char *path, char *folder, char *mid_string,
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 	char flags_string[16];
 
@@ -3416,7 +3389,6 @@ static int get_mail_flags(char *path, char *folder, char *mid_string,
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -3487,7 +3459,6 @@ static int copy_mail(char *path, char *src_folder, char *mid_string,
 {
 	int length;
 	BACK_CONN *pback;
-	char num_buff[32];
 	char buff[1024];
 
 
@@ -3571,7 +3542,6 @@ static BOOL read_line(int sockd, char *buff, int length)
 static int connect_midb(const char *ip_addr, int port)
 {
     int sockd;
-    int offset;
 	int tv_msec;
     int read_len;
     char temp_buff[1024];

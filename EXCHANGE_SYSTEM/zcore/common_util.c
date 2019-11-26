@@ -836,7 +836,6 @@ static BINARY* common_util_dup_binary(const BINARY *pbin)
 ZNOTIFICATION* common_util_dup_znotification(
 	ZNOTIFICATION *pnotification, BOOL b_temp)
 {
-	BINARY *pbin;
 	ZNOTIFICATION *pnotification1;
 	OBJECT_ZNOTIFICATION *pobj_notify;
 	OBJECT_ZNOTIFICATION *pobj_notify1;
@@ -1196,7 +1195,6 @@ static BOOL common_util_entryid_to_username_internal(
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
-	char tmp_name[256];
 	uint8_t tmp_uid[16];
 	uint8_t provider_uid[16];
 	ONEOFF_ENTRYID oneoff_entry;
@@ -1939,9 +1937,7 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	PCL *ppcl1;
 	PCL *ppcl2;
 	BINARY *pbin;
-	SIZED_XID xid;
 	BINARY *ptmp_bin;
-	DOUBLE_LIST_NODE *pnode;
 	
 	pbin = common_util_alloc(sizeof(BINARY));
 	if (NULL == pbin) {
@@ -2640,7 +2636,7 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 {
-	int i, j;
+	int i;
 	RULE_ACTIONS *pactions;
 	
 	pactions = common_util_get_propvals(
@@ -2729,13 +2725,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 	STORE_OBJECT *pstore, MOVECOPY_ACTION *pmovecopy)
 {
-	int db_id;
-	int status;
-	int user_id;
 	BINARY *pbin;
-	BOOL b_private;
-	SVREID *psvreid;
-	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	ZMOVECOPY_ACTION *pmovecopy1;
 	
@@ -2930,7 +2920,6 @@ static BOOL common_util_create_folder(
 	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	XID tmp_xid;
-	BOOL b_exist;
 	BINARY *pbin;
 	BINARY *pbin1;
 	uint64_t tmp_id;
@@ -3224,7 +3213,6 @@ uint8_t* common_util_get_muidzcsab()
 BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	uint64_t message_id, BINARY *peml_bin)
 {
-	int fd;
 	int size;
 	void *ptr;
 	MAIL imail;

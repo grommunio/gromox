@@ -164,7 +164,6 @@ BOOL mail_approving_process(MESSAGE_CONTEXT *pcontext)
 	char homedir[256];
 	char session[32 + 1];
 	char temp_from[256];
-	char temp_domain[256];
 	DOUBLE_LIST *plist;
 	MEM_FILE temp_file;
 	APPROVING_DATA *pdata;
@@ -846,7 +845,6 @@ static BOOL mail_approving_activate(const char *file_name)
 static void mail_approving_produce_session(const char *tag, char *session)
 {
 	int i, pos, mod;
-	char *pitem;
 	char temp_time[16];
 	char temp_name[16];
 	time_t cur_time;

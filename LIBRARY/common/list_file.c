@@ -31,7 +31,6 @@ LIST_FILE* list_file_init(char* filename, const char* format)
 {
 	LIST_FILE *list_file;
 	FILE *file_ptr;
-	int num, i;
 
 	file_ptr = fopen(filename, "r");
 
@@ -227,7 +226,7 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 {
 	char *ptr = line;
 	char temp_buf[MAX_LINE];
-	int i, j, len;
+	int i, j;
 	BOOL b_terminate = FALSE;
 
 #ifdef _DEBUG_UMTA

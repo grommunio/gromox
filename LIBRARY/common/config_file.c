@@ -251,7 +251,7 @@ BOOL config_file_save(CONFIG_FILE* cfg_file)
 	struct stat node_stat;
 	char *pbuff, *ptr, *psearch;
 	char *plf, *psharp;
-	char *pequal, *plf2, *psharp2;
+	char *pequal, *plf2;
 
 	for (i=0; i<cfg_file->num_entries; i++) {
 		if (TRUE == cfg_file->config_table[i].is_touched) {

@@ -130,8 +130,6 @@ int timer_queue_run()
  */
 int timer_queue_stop()
 {
-	DOUBLE_LIST_NODE *pnode;
-
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
 		pthread_join(g_thread_id, NULL);

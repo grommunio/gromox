@@ -67,8 +67,6 @@ int main(int argc, char **argv)
 	char *pbuff;
 	char *ptoken;
 	fd_set myset;
-	char **p_addr;
-	char *str_value;
 	char smtp_ip[16];
 	MIME_POOL *ppool;
 	MIME *pmime_head;
@@ -78,9 +76,6 @@ int main(int argc, char **argv)
 	char temp_path[256];
 	SINGLE_LIST temp_list;
 	struct stat node_stat;
-	struct hostent *phost;
-	EMAIL_ADDR email_addr;
-	struct in_addr ip_addr;
 	SINGLE_LIST_NODE *pnode;
 	char last_command[1024];
 	char last_response[1024];

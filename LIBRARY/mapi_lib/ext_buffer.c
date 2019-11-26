@@ -3472,8 +3472,6 @@ BOOL ext_buffer_push_check_overflow(EXT_PUSH *pext, uint32_t extra_size)
 
 int ext_buffer_push_advance(EXT_PUSH *pext, uint32_t size)
 {
-	int status;
-	
 	if (FALSE == ext_buffer_push_check_overflow(pext, size)) {
 		return EXT_ERR_BUFSIZE;
 	}
@@ -4964,7 +4962,6 @@ int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 	uint16_t type, const FLAGGED_PROPVAL *r)
 {
 	int status;
-	uint8_t flag;
 	void *pvalue;
 	
 	if (PROPVAL_TYPE_UNSPECIFIED == type) {

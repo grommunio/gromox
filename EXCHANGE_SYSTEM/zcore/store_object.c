@@ -808,7 +808,6 @@ static void* store_object_get_oof_property(
 	int fd;
 	int offset;
 	char *pbuff;
-	char *ptoken;
 	int buff_len;
 	void *pvalue;
 	char *str_value;
@@ -969,7 +968,6 @@ static BOOL store_object_get_calculated_property(
 	USER_INFO *pinfo;
 	uint32_t permission;
 	char temp_buff[1024];
-	static uint64_t tmp_ll = 0;
 	static uint8_t private_uid[] = {
 		0x54, 0x94, 0xA1, 0xC0, 0x29, 0x7F, 0x10, 0x1B,
 		0xA5, 0x87, 0x08, 0x00, 0x2B, 0x2A, 0x25, 0x17

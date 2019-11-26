@@ -89,8 +89,6 @@ static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	char *pdomain;
 	char temp_ip[16];
 	char rcpt_to[256];
-	char complain_address[256];
-	char subject[1024];
 	
 	if (TRUE == penvelop->is_outbound || TRUE == penvelop->is_relay) {
 		return MESSAGE_ACCEPT;

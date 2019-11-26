@@ -359,12 +359,9 @@ int smtp_send_inbound(const char *ip, int port, const char *rcpt,
 	const char *message, char *last_command, char *last_response)
 {
 	BOOL b_connected;
-	char **p_addr;
 	int size, res_val, command_len;
 	int sockd, opt, val_opt, opt_len;
 	struct sockaddr_in servaddr;
-	struct in_addr ip_addr;
-	struct hostent *phost;
 	struct timeval tv;
 	fd_set myset;
 	
@@ -547,7 +544,6 @@ int smtp_send_outbound(const char *ip, int port, const char *username,
 	char *last_command, char *last_response)
 {
 	BOOL b_connected;
-	char **p_addr;
 	char temp_line[1024];
 	int user_len, pass_len;
 	int size, res_val;
@@ -556,8 +552,6 @@ int smtp_send_outbound(const char *ip, int port, const char *username,
 	size_t command_len;
 	int sockd, opt, val_opt, opt_len;
 	struct sockaddr_in servaddr;
-	struct in_addr ip_addr;
-	struct hostent *phost;
 	struct timeval tv;
 	fd_set myset;
 	

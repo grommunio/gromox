@@ -714,7 +714,6 @@ BOOL exmdb_server_reload_message_instance(
 	void *pvalue;
 	uint32_t last_id;
 	uint32_t *pattach_id;
-	TAGGED_PROPVAL propval;
 	INSTANCE_NODE *pinstance;
 	INSTANCE_NODE *pinstance1;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -883,7 +882,6 @@ static BOOL instance_read_attachment(
 	int i;
 	BINARY *pbin;
 	uint64_t cid;
-	uint32_t length;
 	
 	if (pattachment1->proplist.count > 1) {
 		pattachment->proplist.ppropval = common_util_alloc(
@@ -3998,7 +3996,6 @@ BOOL exmdb_server_update_message_instance_rcpts(
 	uint32_t row_id;
 	uint32_t *prow_id;
 	TPROPVAL_ARRAY *prcpt;
-	TAGGED_PROPVAL propval;
 	INSTANCE_NODE *pinstance;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -4079,7 +4076,6 @@ BOOL exmdb_server_copy_instance_rcpts(
 {
 	DB_ITEM *pdb;
 	TARRAY_SET *prcpts;
-	MESSAGE_CONTENT *pmsgctnt;
 	INSTANCE_NODE *pinstance_src;
 	INSTANCE_NODE *pinstance_dst;
 	
@@ -4258,7 +4254,6 @@ BOOL exmdb_server_copy_instance_attachments(
 	uint32_t dst_instance_id, BOOL *pb_result)
 {
 	DB_ITEM *pdb;
-	MESSAGE_CONTENT *pmsgctnt;
 	INSTANCE_NODE *pinstance_src;
 	INSTANCE_NODE *pinstance_dst;
 	ATTACHMENT_LIST *pattachments;

@@ -70,10 +70,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length)
 {
 	int out_len;
-	int type_len;
-	int body_len;
 	char buff[1024];
-	char content_type[256];
 	   
 	if (TRUE == pmail->penvelop->is_relay) {
 		return MESSAGE_ACCEPT;

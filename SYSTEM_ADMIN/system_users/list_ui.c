@@ -453,8 +453,7 @@ static void list_ui_error_html(const char *error_string)
 
 static void list_ui_main_html(const char *session)
 {
-	int type;
-	int i, len;
+	int i;
 	int item_num;
 	BOOL b_added;
 	char *pitem;
@@ -462,8 +461,6 @@ static void list_ui_main_html(const char *session)
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char temp_buff[1024];
-	struct tm temp_tm, *ptm;
-	
 	
 	if (FALSE == list_ui_get_self(url_buff, 1024)) {
 		list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL",

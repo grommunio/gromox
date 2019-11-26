@@ -271,7 +271,6 @@ static void zarafa_server_notification_proc(const char *dir,
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
 	uint32_t proptag_buff[2];
 	ZNOTIFICATION *pnotification;
 	NEWMAIL_ZNOTIFICATION *pnew_mail;
@@ -1550,7 +1549,6 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 	char *pstring;
 	AB_BASE *pbase;
 	USER_INFO *pinfo;
-	BOOL b_ambiguous;
 	SINGLE_LIST temp_list;
 	PROPTAG_ARRAY proptags;
 	SINGLE_LIST result_list;
@@ -2773,7 +2771,6 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	void *pvalue;
 	uint32_t hstore;
 	uint64_t tmp_id;
-	uint32_t result;
 	BINARY *pentryid;
 	USER_INFO *pinfo;
 	uint32_t tmp_type;
@@ -3126,7 +3123,6 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 	USER_INFO *pinfo;
 	uint64_t fid_val;
 	uint8_t mapi_type;
-	uint64_t folder_id;
 	uint32_t permission;
 	STORE_OBJECT *pstore;
 	const char *username;
@@ -3380,7 +3376,6 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 uint32_t zarafa_server_getstoreentryid(
 	const char *mailbox_dn, BINARY *pentryid)
 {
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	char username[256];
 	char tmp_buff[1024];
@@ -5104,7 +5099,6 @@ uint32_t zarafa_server_deleteattachment(GUID hsession,
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	MESSAGE_OBJECT *pmessage;
-	ATTACHMENT_OBJECT *pattachment;
 	
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -5882,9 +5876,6 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 	BOOL b_touched;
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
-	uint32_t tmp_proptag;
-	PROPTAG_ARRAY proptags;
-	TPROPVAL_ARRAY propvals;
 	
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -6607,7 +6598,6 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	int domain_id;
 	BOOL b_partial;
 	uint64_t nttime;
-	uint32_t result;
 	uint16_t replid;
 	uint64_t tmp_fid;
 	USER_INFO *pinfo;
@@ -6618,7 +6608,6 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	uint64_t parent_id1;
 	uint64_t change_num;
 	uint32_t permission;
-	const char *username;
 	STORE_OBJECT *pstore;
 	ICSUPCTX_OBJECT *pctx;
 	TPROPVAL_ARRAY *pproplist;

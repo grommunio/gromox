@@ -318,7 +318,6 @@ BOOL data_source_rename_class(const char *domainname, int class_id,
 	int domain_id;
 	char temp_buff[256];
 	char sql_string[4096];
-	char resource_name[256];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
 	MYSQL *pmysql;
@@ -454,7 +453,6 @@ BOOL data_source_link_class(const char *domainname, int parent_id,
 {
 	LOCKD lockd;
 	int domain_id;
-	int group_id;
 	int i, j, rows;
 	char temp_buff[256];
 	char sql_string[4096];

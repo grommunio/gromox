@@ -182,8 +182,6 @@ uint16_t stream_object_read(STREAM_OBJECT *pstream,
 uint16_t stream_object_write(STREAM_OBJECT *pstream,
 	void *pbuff, uint16_t buf_len)
 {
-	uint32_t seek_ptr;
-	
 	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
 		return 0;
 	}

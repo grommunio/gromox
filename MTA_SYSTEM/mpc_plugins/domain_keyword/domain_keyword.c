@@ -167,7 +167,6 @@ BOOL domain_keyword_process(MESSAGE_CONTEXT *pcontext)
 	char msgid[128];
 	char domain[256];
 	char keyword[256];
-	char temp_path[256];
 	char forward_to[256];
 	char temp_buff[1024];
 	KEYWORD_RESULT result;
@@ -367,15 +366,6 @@ static BOOL domain_keyword_match(MESSAGE_CONTEXT *pcontext,
 void domain_keyword_console_talk(int argc, char **argv, char *result,
 	int length)
 {
-	char *ptr;
-	int fd, len;
-	time_t cur_time;
-	char temp_path[256];
-	char temp_path1[256];
-	char temp_buff[1024];
-	char temp_buff1[1024];
-	char session_path[256];
-	struct stat node_stat;
 	char help_string[] = "250 mail approving help information:\r\n"
 						 "\t%s bounce reload\r\n"
 						 "\t    --reload the bounce resource list\r\n"

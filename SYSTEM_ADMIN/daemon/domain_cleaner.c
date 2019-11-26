@@ -41,11 +41,9 @@ int domain_cleaner_run()
 	char language[32];
 	char temp_path[256];
 	char admin_mailbox[256];
-	char resource_name[256];
 	char message_buff[MESSAGE_BUFF_SIZE];
 	DATA_COLLECT *pcollect;
 	DELETED_DOMAIN *pdeleted;
-	USER_INFO *puser_info;
 	DOMAIN_INFO	*pdomain_info;
 	CONFIG_FILE *pconfig;
 	

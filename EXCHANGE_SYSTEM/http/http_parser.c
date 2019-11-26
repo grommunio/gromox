@@ -2406,7 +2406,6 @@ BOOL http_parser_activate_inrecycling(
 BOOL http_parser_activate_outrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie)
 {
-	DCERPC_CALL *pcall;
 	RPC_OUT_CHANNEL *pchannel_out;
 	VIRTUAL_CONNECTION *pvconnection;
 	

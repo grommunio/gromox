@@ -7,9 +7,8 @@ DECLARE_API;
 
 BOOL HOOK_LibMain(int reason, void **ppdata)
 {
-	int port, type;
     char file_name[256], tmp_path[256];
-    char *str_value, *psearch;
+	char *psearch;
 
     /* path conatins the config files directory */
     switch (reason) {

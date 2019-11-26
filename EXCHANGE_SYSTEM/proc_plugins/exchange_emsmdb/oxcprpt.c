@@ -687,7 +687,6 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY proptags1;
 	TPROPVAL_ARRAY propvals;
-	MESSAGE_CONTENT msgctnt;
 	PROBLEM_ARRAY tmp_problems;
 	uint16_t *poriginal_indices;
 	
@@ -1199,11 +1198,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	uint32_t *pstream_size, void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	void *pbuff;
 	BOOL b_write;
-	BINARY *pbin;
 	void *pobject;
-	uint32_t length;
 	int object_type;
 	uint32_t max_length;
 	uint32_t tag_access;
@@ -1211,8 +1207,6 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	STREAM_OBJECT *pstream;
-	PROPTAG_ARRAY proptags;
-	PROPERTY_ROW properties_row;
 	
 	/* MS-OXCPERM 3.1.4.1 */
 	if (PROP_TAG_SECURITYDESCRIPTORASXML == proptag) {
@@ -1354,7 +1348,6 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 	uint16_t *pwritten_size, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	int written_len;
 	uint32_t object_type;
 	STREAM_OBJECT *pstream;
 	
@@ -1466,7 +1459,6 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	uint32_t new_pos;
 	STREAM_OBJECT *pstream;
 	
 	switch (seek_pos) {

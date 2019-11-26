@@ -852,14 +852,12 @@ static void item_sorter_daily_statistics(ITEM_DATA *parray, int size,
 	int total_num, const char *domain, const char *padministrator,
 	const char *language, int type)
 {
-	FILE *fp;
 	char *pdomain;
 	char *pbuff, *ptr;
 	const char *str;
 	time_t now_time;
 	struct in_addr addr;
 	char time_buff[128];
-	char temp_buff[256];
 	char temp_sender[256];
 	int max_num, i, len;
 
@@ -1911,7 +1909,7 @@ static char* item_sorter_draw_chart(char *ptr, int base_val, int num)
 static void item_sorter_mensual_statistics(char *path, const char *domain,
 	const char *padministrator, const char *language)
 {
-	int i, len;
+	int i;
 	int height;
 	int max_num;
 	int item_num;
@@ -2236,7 +2234,6 @@ static int item_sorter_domain_query(const char* domain, char *domain_path,
 	char *str_mailbox;
 	char *str_language;
 	char temp_path[256];
-	char temp_string[256];
 	CONFIG_FILE *pconfig;
 
 	if (NULL == domain ||

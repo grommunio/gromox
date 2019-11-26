@@ -479,7 +479,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	char mcharset[32];
 	char tmp_buff[1024];
 	char date_buff[128];
-	struct tm *datetime;
 	struct tm time_buff;
 	int i, len, until_tag;
 	const struct state *sp;

@@ -1071,7 +1071,6 @@ AB_BASE* ab_tree_get_base(int base_id)
 	int count;
 	AB_BASE *pbase;
 	AB_BASE **ppbase;
-	SINGLE_LIST_NODE *pnode;
 	
 	count = 0;
 RETRY_LOAD_BASE:
@@ -1785,7 +1784,6 @@ void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
 	MEM_FILE fake_file;
-	char temp_buff[1024];
 	SIMPLE_TREE_NODE **ppnode;
 	
 	b_remote = FALSE;
@@ -1841,7 +1839,6 @@ void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
 	MEM_FILE fake_file;
-	char temp_buff[1024];
 	SIMPLE_TREE_NODE **ppnode;
 	
 	b_remote = FALSE;

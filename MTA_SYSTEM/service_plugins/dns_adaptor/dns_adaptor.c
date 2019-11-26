@@ -306,7 +306,6 @@ int dns_adaptor_stop()
 BOOL dns_adaptor_query_MX(char* mx_name, VSTACK* pstack)
 {
 	DNS_ENTRY temp_entry;
-	time_t	current_time;
 	SINGLE_LIST_NODE *pnode;
 	int result;
 	char tmp_name[256];
@@ -356,7 +355,6 @@ BOOL dns_adaptor_query_MX(char* mx_name, VSTACK* pstack)
 BOOL dns_adaptor_query_A(char* a_name, VSTACK* pstack)
 {
 	DNS_ENTRY temp_entry;
-	time_t	current_time;
 	SINGLE_LIST_NODE *pnode;
 	int result;
 	char tmp_name[256];
@@ -535,7 +533,6 @@ static BOOL dns_adaptor_get_A_into_list(char *a_name, SINGLE_LIST *plist)
 static BOOL dns_adaptor_get_MX_into_list(char *mx_name, SINGLE_LIST *plist)
 {
 	IP_NODE *p_ip;
-	SINGLE_LIST_NODE *pnode;
 	char **mxhosts = NULL;
 	char temp_ip[16];
 	int i, num;

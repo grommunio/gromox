@@ -321,7 +321,6 @@ static BOOL ftstream_parser_read_binary(
 static PROPERTY_NAME* ftstream_parser_read_property_name(
 	FTSTREAM_PARSER *pstream)
 {
-	BOOL b_continue;
 	PROPERTY_NAME *pname;
 	
 	pname = common_util_alloc(sizeof(PROPERTY_NAME));

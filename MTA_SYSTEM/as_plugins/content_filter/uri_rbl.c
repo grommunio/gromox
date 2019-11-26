@@ -305,7 +305,7 @@ ret_notbl:
 static BOOL dnsrbl_check(const char *uri, const char *dnsrbl,
 	char *answer_buff, int answer_len)
 {
-	int ret, uri_len;
+	int ret;
 	char *d0, *d1, *d2, *d3;
 	char req[1024], temp_ip[16];
 	
@@ -407,14 +407,6 @@ BOOL uri_rbl_check_cctld(const char *domain)
 
 BOOL uri_rbl_judge(const char *uri, char *answer_buff, int answer_len)
 {
-	int uri_len, ret;
-	char buf[2046];
-	char temp_ip[16];
-	char temp_buff[256];
-	char query_string[256];
-	char *d0, *d1, *d2, *d3;
-	struct hostent hostinfo, *phost;
-
 	if (TRUE == uri_cache_query(uri, answer_buff, answer_len)) {
 		return FALSE;
 	}
