@@ -8,7 +8,7 @@ INCLUDE_PATHS=./include\
 			  ../common/include\
 			  ../email_lib/include# add include paths here
 LIBRARY_PATHS=# add library paths here
-LIBRARY_FILES=iconv gumbo# add library files here
+LIBRARY_FILES=gumbo# add library files here
 COMPILING_FLAGS=-D_GNU_SOURCE#add here c or c++ flags for compiling
 LINK_FLAGS=$(patsubst %,-L%,$(LIBRARY_PATHS)) $(patsubst %,-l%,$(LIBRARY_FILES))
 INCLUDE_PATHS:=$(patsubst %,-I%,$(INCLUDE_PATHS))

@@ -3,7 +3,7 @@ HARDLNK_LIBS=../lib/common.so\
 			 ../lib/email_lib.so\
 			 ../lib/mapi_lib.so#add here the hard link libraries here
 LIBRARY_PATHS=# add library paths here
-LIBRARY_FILES=pthread dl iconv ssl# add library files here
+LIBRARY_FILES=pthread dl ssl# add library files here
 #object files under "lib" directory, used for linking
 REMOTE_LINKS=../../email_lib/email_lib.so\
 			 ../../common/common.so

@@ -1,7 +1,7 @@
 OUTPUT_NAME=imap# modify name here for binary excutable file name
 HARDLNK_LIBS=../lib/common.so ../lib/epoll_scheduler.so ../lib/email_lib.so#add here the hard link libraries here
 LIBRARY_PATHS=# add library paths here
-LIBRARY_FILES=pthread dl resolv ssl crypto iconv# add library files here
+LIBRARY_FILES=pthread dl resolv ssl crypto # add library files here
 #object files under "lib" directory, used for linking
 REMOTE_LINKS=../../epoll_scheduler/epoll_scheduler.so\
 			 ../../common/common.so\

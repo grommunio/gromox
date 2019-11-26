@@ -1,7 +1,7 @@
 OUTPUT_NAME=group_binput# modify name here for binary excutable file name
 HARDLNK_LIBS=../lib/common.so ../lib/email_lib.so ../lib/mapi_lib.so ../lib/webkit_lib.so#add here the hard link libraries here
 LIBRARY_PATHS=/usr/lib64/mysql /usr/lib/mysql# add library paths here
-LIBRARY_FILES=mysqlclient iconv sqlite3 xlsreader# add library files here
+LIBRARY_FILES=mysqlclient sqlite3 xlsreader# add library files here
 #object files under "lib" directory, used for linking
 REMOTE_LINKS=../../common/common.so ../../email_lib/email_lib.so ../../mapi_lib/mapi_lib.so ../../webkit_lib/webkit_lib.so
 LINK_FLAGS=$(patsubst %,-L%,$(LIBRARY_PATHS)) $(patsubst %,-l%,$(LIBRARY_FILES))

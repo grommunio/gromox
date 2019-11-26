@@ -1,7 +1,7 @@
 OUTPUT_NAME=midb# modify name here for binary excutable file name
 HARDLNK_LIBS=../lib/common.so ../lib/email_lib.so ../lib/mapi_lib.so#add here the hard link libraries here
 LIBRARY_PATHS=# add library paths here
-LIBRARY_FILES=resolv pthread dl iconv sqlite3# add library files here
+LIBRARY_FILES=resolv pthread dl sqlite3# add library files here
 #object files under "lib" directory, used for linking
 REMOTE_LINKS=../../common/common.so ../../email_lib/email_lib.so
 LINK_FLAGS=$(patsubst %,-L%,$(LIBRARY_PATHS)) $(patsubst %,-l%,$(LIBRARY_FILES))
