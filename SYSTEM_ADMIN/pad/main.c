@@ -10,7 +10,7 @@
 #include "data_source.h"
 #include "midb_client.h"
 #include "sensor_client.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>

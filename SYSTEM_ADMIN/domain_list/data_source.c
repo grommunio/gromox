@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include "data_source.h"
 #include <gromox/locker_client.h>
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "util.h"
 #include <time.h>
 #include <stdio.h>

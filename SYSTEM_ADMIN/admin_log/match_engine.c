@@ -1,5 +1,5 @@
 #include "match_engine.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "util.h"
 #include <sys/types.h>
 #include <sys/stat.h>

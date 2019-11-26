@@ -1,5 +1,5 @@
 #include "message_lookup.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "mail_func.h"
 #include "util.h"
 #include <sys/types.h>

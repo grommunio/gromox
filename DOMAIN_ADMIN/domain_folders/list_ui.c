@@ -1,6 +1,6 @@
 #include "list_ui.h"
 #include "mapi_types.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "data_source.h"
 #include "lang_resource.h"
 #include "request_parser.h"

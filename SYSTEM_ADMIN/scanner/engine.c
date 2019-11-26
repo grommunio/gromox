@@ -18,7 +18,7 @@
 #include "message.h"
 #include "proptags.h"
 #include "list_file.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "double_list.h"
 #include "data_source.h"
 #include "midb_client.h"

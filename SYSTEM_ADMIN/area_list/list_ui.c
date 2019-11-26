@@ -2,7 +2,7 @@
 #include "util.h"
 #include "list_ui.h"
 #include "list_file.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <gromox/acl_control.h>
 #include "lang_resource.h"
 #include "request_parser.h"

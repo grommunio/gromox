@@ -3,7 +3,7 @@
 #include "midb_tool.h"
 #include "upload_ui.h"
 #include "list_file.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "exmdb_tool.h"
 #include "double_list.h"
 #include "exmdb_client.h"

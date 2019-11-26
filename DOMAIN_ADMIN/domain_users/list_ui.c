@@ -2,7 +2,7 @@
 #include "list_ui.h"
 #include "list_file.h"
 #include "midb_tool.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "exmdb_tool.h"
 #include "double_list.h"
 #include "data_source.h"

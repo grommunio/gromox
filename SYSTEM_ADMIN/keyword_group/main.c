@@ -1,4 +1,4 @@
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "group_ui.h"
 #include <gromox/acl_control.h>
 #include "reload_control.h"

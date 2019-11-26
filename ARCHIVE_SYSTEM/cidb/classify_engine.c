@@ -1,6 +1,6 @@
 #include "util.h"
 #include "mail_func.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "cmd_parser.h"
 #include "classify_engine.h"
 #include "mysql_pool.h"

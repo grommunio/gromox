@@ -1,5 +1,5 @@
 #include <sys/stat.h>
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "setup_ui.h"
 #include "config_file.h"
 #include "data_source.h"

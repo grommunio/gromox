@@ -1,4 +1,4 @@
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <gromox/session_client.h>
 #include "list_ui.h"
 #include "data_source.h"

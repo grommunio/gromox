@@ -1,6 +1,6 @@
 #include "ui_main.h"
 #include "list_file.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "config_file.h"
 #include "data_source.h"
 #include "lang_resource.h"

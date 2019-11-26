@@ -2,7 +2,7 @@
 #include "endian_macro.h"
 #include "double_list.h"
 #include "ext_buffer.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "list_file.h"
 #include "rop_util.h"
 #include "pcl.h"

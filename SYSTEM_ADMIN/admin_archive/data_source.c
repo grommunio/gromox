@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include "data_source.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <stdio.h>
 #include <string.h>
 #include <mysql/mysql.h>

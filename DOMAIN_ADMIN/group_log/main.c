@@ -1,4 +1,4 @@
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "search_engine.h"
 #include "ui_center.h"
 #include "config_file.h"

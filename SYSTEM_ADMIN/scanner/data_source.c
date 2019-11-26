@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <mysql/mysql.h>
 #include "data_source.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <string.h>
 
 static char g_host[256];

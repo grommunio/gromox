@@ -6,7 +6,7 @@
 #include "data_source.h"
 #include "item_sorter.h"
 #include "smtp_sender.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "config_file.h"
 #include <time.h>
 #include <stdio.h>

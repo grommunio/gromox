@@ -3,7 +3,7 @@
 #include "cookie_parser.h"
 #include "request_parser.h"
 #include <gromox/acl_control.h>
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "util.h"
 #include <time.h>
 #include <stdio.h>

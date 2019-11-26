@@ -1,7 +1,7 @@
 #include "exmdb_client.h"
 #include "double_list.h"
 #include "ext_buffer.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "list_file.h"
 #include <sys/socket.h>
 #include <netinet/in.h>

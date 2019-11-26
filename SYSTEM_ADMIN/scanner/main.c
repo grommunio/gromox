@@ -6,7 +6,7 @@
 #include "util.h"
 #include "smtp.h"
 #include "message.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "data_source.h"
 #include "midb_client.h"
 #include <gromox/locker_client.h>

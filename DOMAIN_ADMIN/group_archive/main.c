@@ -1,5 +1,5 @@
 #include <sys/stat.h>
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "midb_client.h"
 #include "message_lookup.h"
 #include "data_source.h"

@@ -1,5 +1,5 @@
 #include <sys/stat.h>
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "limit_ui.h"
 #include "data_source.h"
 #include <gromox/session_client.h>

@@ -1,7 +1,7 @@
 #include "util.h"
 #include "midb_tool.h"
 #include "upload_ui.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "exmdb_tool.h"
 #include "config_file.h"
 #include "exmdb_client.h"

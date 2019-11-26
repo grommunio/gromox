@@ -9,7 +9,7 @@
 #include "password_cleaner.h"
 #include "data_source.h"
 #include <gromox/locker_client.h>
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "keyword_cleaning.h"
 #include "file_operation.h"
 #include "smtp_sender.h"

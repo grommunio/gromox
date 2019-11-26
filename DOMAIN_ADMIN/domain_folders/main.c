@@ -1,7 +1,7 @@
 #include <sys/stat.h>
 #include "util.h"
 #include "list_ui.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "config_file.h"
 #include "data_source.h"
 #include "exmdb_client.h"

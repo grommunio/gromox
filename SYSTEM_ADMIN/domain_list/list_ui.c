@@ -1,7 +1,7 @@
 #include "util.h"
 #include "list_ui.h"
 #include "list_file.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "exmdb_tool.h"
 #include "double_list.h"
 #include <gromox/acl_control.h>

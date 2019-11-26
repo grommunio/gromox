@@ -7,7 +7,7 @@
 #include "listener.h"
 #include "mysql_pool.h"
 #include "cmd_parser.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "config_file.h"
 #include "classify_engine.h"
 #include <time.h>

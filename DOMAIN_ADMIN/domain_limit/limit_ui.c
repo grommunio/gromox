@@ -1,6 +1,6 @@
 #include "limit_ui.h"
 #include "lang_resource.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "gateway_control.h"
 #include "data_source.h"
 #include <gromox/session_client.h>

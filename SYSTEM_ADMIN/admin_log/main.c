@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "match_engine.h"
 #include "admin_ui.h"
 #include <gromox/acl_control.h>

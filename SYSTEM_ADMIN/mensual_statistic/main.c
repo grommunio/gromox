@@ -1,4 +1,4 @@
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <gromox/acl_control.h>
 #include "statistic_ui.h"
 #include "config_file.h"

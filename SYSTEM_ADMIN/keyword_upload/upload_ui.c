@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include "upload_ui.h"
 #include "lang_resource.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <gromox/acl_control.h>
 #include "reload_control.h"
 #include "list_file.h"

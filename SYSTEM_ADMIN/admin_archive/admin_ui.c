@@ -2,7 +2,7 @@
 #include "admin_ui.h"
 #include "data_source.h"
 #include "lang_resource.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include <gromox/acl_control.h>
 #include "midb_client.h"
 #include "message_lookup.h"

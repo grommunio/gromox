@@ -1,5 +1,5 @@
 #include "search_engine.h"
-#include "system_log.h"
+#include <gromox/system_log.h>
 #include "util.h"
 #include "data_source.h"
 #include <sys/types.h>
