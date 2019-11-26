@@ -2679,7 +2679,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 					store_entryid.provider_uid);
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
-	memcpy(store_entryid.dll_name, "emsmdb.dll", 14);
+	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
 	if (TRUE == store_object_check_private(pstore)) {
 		rop_util_get_provider_uid(

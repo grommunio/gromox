@@ -112,9 +112,6 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
 #define VDIR_PER_PARTITION      200
 
 #define MAILDIR_PER_VDIR        250
-
-#define DIGEST_BUFLEN           256
-
 #define GROUP_PRIVILEGE_ACCOUNT	0x8
 
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
@@ -2339,7 +2336,7 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 	char *pdb_storage;
 	char temp_path[256];
 	char temp_path1[256];
-	char temp_buff[DIGEST_BUFLEN];
+	char temp_buff[1024];
 	struct stat node_stat;
 	LIST_FILE *pfile;
 	AREA_ITEM *pitem;

@@ -3395,7 +3395,7 @@ uint32_t zarafa_server_getstoreentryid(
 					store_entryid.provider_uid);
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
-	memcpy(store_entryid.dll_name, "emsmdb.dll", 14);
+	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
 	rop_util_get_provider_uid(
 		PROVIDER_UID_WRAPPED_PRIVATE,
