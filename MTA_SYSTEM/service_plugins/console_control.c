@@ -51,7 +51,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pfile, "CONFIG_FILE_PATH");
 		if (NULL == str_value) {
-			printf("[%s] fail to get console config file path!!!\n", file_name);
+			printf("[%s] failed to get console config file path\n", file_name);
 			config_file_free(pfile);
 			return FALSE;
 		} else {
@@ -61,7 +61,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		if (NULL != str_value) {
 			strcpy(service_name, str_value);
 		} else {
-			printf("[%s] fail to get service name!!!\n", file_name);
+			printf("[%s] failed to get service name\n", file_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
@@ -92,7 +92,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		} else {
 			g_console_port = atoi(str_value);
 			if (g_console_port <= 0) {
-				printf("[%s]: console server port %s format error!!!\n",
+				printf("[%s]: console server port %s format error\n",
 					file_name, str_value);
 				config_file_free(pfile);
 				return FALSE;

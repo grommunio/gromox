@@ -600,12 +600,10 @@ static void* thread_work_func(void* arg)
 			until_time = current_time + g_scan_interval;
 		}
 		if (sizeof(time_t) != write(pitem->fd, &until_time, sizeof(time_t))) {
-			printf("[remote_postman]: fatal error when updating time "
-					"stamp!!!\n");
+			printf("[remote_postman]: error while updating timestamp\n");
 		} else {
 			if (sizeof(int) != write(pitem->fd, &type, sizeof(int))) {
-				printf("[remote_postman]: fatal error when updating timer "
-						"type!!!\n");
+				printf("[remote_postman]: error while updating timer type\n");
 			}
 		}
 	}

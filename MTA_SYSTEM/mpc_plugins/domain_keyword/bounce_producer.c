@@ -287,7 +287,7 @@ static void bounce_producer_load_template(const char *temp_name, SINGLE_LIST *pl
 				break;
 			}
 		} else {
-			printf("[domain_keyword]: bounce mail %s format error!!!\n",
+			printf("[domain_keyword]: bounce mail %s format error\n",
 				dir_buff);
 			free(presource->content);
 			free(presource);

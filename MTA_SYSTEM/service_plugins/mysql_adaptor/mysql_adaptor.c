@@ -527,7 +527,7 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 	}
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return TRUE immediately!!!
+	 * database is down, return TRUE immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		if (NULL != path) {
@@ -635,7 +635,6 @@ BOOL mysql_adaptor_get_lang(const char *username, char *lang)
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -724,7 +723,6 @@ BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -814,7 +812,6 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -910,7 +907,6 @@ BOOL mysql_adaptor_get_user_ids(const char *username,
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -1010,10 +1006,6 @@ BOOL mysql_adaptor_get_username(int user_id, char *username)
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
-	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -1101,7 +1093,6 @@ BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir)
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -1198,10 +1189,6 @@ BOOL mysql_adaptor_check_same_org2(
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
-	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -1297,7 +1284,6 @@ BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -1428,7 +1414,6 @@ BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
 	}
@@ -1543,8 +1528,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 	}
 
 	pfrom_domain ++;
-
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		*presult = MLIST_RESULT_NONE;
 		return FALSE;
@@ -2253,8 +2236,6 @@ BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
-	
-	/* if no valid connection node available, return immediately */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		*pb_expanded = FALSE;
 		return FALSE;

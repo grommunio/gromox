@@ -401,8 +401,8 @@ static void* thread_work_func(void* arg)
 				lseek(fd, 0, SEEK_SET);
 				times ++;
 				if (sizeof(int) != write(fd, &times, sizeof(int))) {
-					printf("[exmdb_local]: fatal error when updating "
-						"times!!!\n");
+					printf("[exmdb_local]: error while updating "
+						"times\n");
 				}
 			}
 			close(fd);

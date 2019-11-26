@@ -2312,7 +2312,7 @@ static void table_truncate_string(uint32_t cpid, char *pstring)
 }
 
 /* every property value returned in a row MUST
-	be less than or equal to 510 bytes in size!!! */
+be less than or equal to 510 bytes in size. */
 BOOL exmdb_server_query_table(const char *dir, const char *username,
 	uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)

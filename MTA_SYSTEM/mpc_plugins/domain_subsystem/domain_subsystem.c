@@ -122,8 +122,8 @@ BOOL domain_subsystem_hook(MESSAGE_CONTEXT *pcontext)
 					"clone queue with queue ID %d and wait to be delivered next"
 					" time", queue_ID);
 			} else {
-				smtp_clone_log_info(&fake_context, 8, "fail to put message "
-					"into clone queue!!!");
+				smtp_clone_log_info(&fake_context, 8, "failed to put message "
+					"into clone queue");
 			}
 		}
 	}

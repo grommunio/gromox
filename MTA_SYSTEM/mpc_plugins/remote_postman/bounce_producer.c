@@ -384,7 +384,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 					break;
 				}
 			} else {
-				printf("[remote_postman]: bounce mail %s format error!!!\n",
+				printf("[remote_postman]: bounce mail %s format error\n",
 					sub_buff);
     			closedir(sub_dirp);
 				goto FREE_RESOURCE;

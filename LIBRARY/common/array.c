@@ -41,7 +41,7 @@ void array_init(ARRAY* parray, LIB_BUFFER* pbuf_pool, size_t data_size)
    
 	if (data_size > lib_buffer_get_param(pbuf_pool, 
 		MEM_ITEM_SIZE) - EXTRA_ARRAYNODE_SIZE) {
-		debug_info("[array]: array_init warning!!!! array data"
+		debug_info("[array]: array_init warning: array data"
 			" size larger than allocator item size");
 	}
 }

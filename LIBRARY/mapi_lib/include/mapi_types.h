@@ -452,7 +452,7 @@ typedef struct _PROPROW_SET {
 #define TABLE_SORT_MINIMUM_CATEGORY					0x8
 
 typedef struct SORT_ORDER {
-	uint16_t type; /* pay attention to the 0x2000 bit!!! */
+	uint16_t type; /* pay attention to the 0x2000 bit */
 	uint16_t propid;
 	uint8_t table_sort;
 } SORT_ORDER;

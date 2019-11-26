@@ -629,7 +629,7 @@ static void ui_main_error_html(const char *error_string)
 	char url_buff[1024];
 	
 	if (NULL ==error_string) {
-		error_string = "fatal error!!!";
+		error_string = "fatal error!";
 	}
 	if (FALSE == ui_main_get_self(url_buff, 1024)) {
 		url_buff[0] = '\0';

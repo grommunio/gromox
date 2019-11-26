@@ -315,7 +315,7 @@ void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 		flush_result = log_plugin_flush_log();
 		pthread_mutex_unlock(&g_buffer_lock);
 		if (FALSE == flush_result) {
-			strncpy(result, "550 flush fail!!!", length);
+			strncpy(result, "550 flush failed", length);
 		} else {
 			strncpy(result, "250 flush OK", length);
 		}
@@ -454,7 +454,7 @@ static void log_plugin_cache_log(const char *log, int length)
 }
 
 /*
- *	flush cached log into log file, use mutex lock when invoke this function!!! 
+ * Flush cached log into log file. Use mutex lock when invoking this function.
  */
 static BOOL log_plugin_flush_log()
 {

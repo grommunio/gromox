@@ -396,7 +396,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 					break;
 				}
 			} else {
-				printf("[mlist_expand]: bounce mail %s format error!!!\n",
+				printf("[mlist_expand]: bounce mail %s format error\n",
 					sub_buff);
     			closedir(sub_dirp);
 				goto FREE_RESOURCE;

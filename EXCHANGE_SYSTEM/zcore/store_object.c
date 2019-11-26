@@ -741,8 +741,8 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pproptags->pproptag[pproptags->count] =
 				PROP_TAG_EFORMSREGISTRYENTRYID;
 		pproptags->count ++;
-		/* TODO!!! for PROP_TAG_EMAILADDRESS
-			check if mail address of public folder exits! */
+		/* TODO: For PROP_TAG_EMAILADDRESS,
+		check if the mail address of a public folder exists. */
 	}
 	pproptags->pproptag[pproptags->count] =
 				PROP_TAG_IPMFAVORITESENTRYID;

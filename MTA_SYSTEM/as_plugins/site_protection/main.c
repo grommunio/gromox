@@ -85,11 +85,11 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
         /* invoke register_auditor for registering auditor of mail head */
         if (FALSE == register_auditor(mime_auditor)) {
-			printf("[site_protection]: fail to register judge function!!!\n");
+			printf("[site_protection]: failed to register judge function\n");
             return FALSE;
         }
 		if (FALSE == register_talk(site_protection_console_talk)) {
-			printf("[site_protection]: fail to register console talk!!!\n");
+			printf("[site_protection]: failed to register console talk\n");
             return FALSE;
 		}
         return TRUE;

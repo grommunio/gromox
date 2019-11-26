@@ -1036,7 +1036,7 @@ static BOOL rtf_express_attr_end(
 				return FALSE;
 			}
 		}
-		/* caution!!! no BREAK here */
+		/* Caution: no BREAK here */
 	case ATTR_HTMLTAG:
 		if (ATTR_HTMLTAG == attr) {
 			preader->is_within_htmltag = FALSE;

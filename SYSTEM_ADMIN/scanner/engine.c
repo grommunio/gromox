@@ -287,7 +287,7 @@ static void engine_clean_eml_and_ext(const char *path)
 	if (FALSE == midb_client_all_mid_strings(path, pstmt)) {
 		system_log_info("[engine]: fail to get all mid strings"
 			" from %s/exmdb/midb.sqlite3, sqlite3 database may"
-			" be corrupted! verify it ASAP!", path);
+			" be corrupted.", path);
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		return;
@@ -496,7 +496,7 @@ static BOOL engine_clean_and_calculate_maildir(
 				}
 				system_log_info("[engine]: "
 					"%s/exmdb/exchange.sqlite3 is malformed,"
-					" cannot be fixed, verify it ASAP!", path);
+					" cannot be fixed.", path);
 			}
 		}
 	}
@@ -524,7 +524,7 @@ static BOOL engine_clean_and_calculate_maildir(
 			} else {
 				system_log_info("[engine]: "
 					"%s/exmdb/midb.sqlite3 is malformed,"
-					" cannot be fixed, verify it ASAP!", path);
+					" cannot be fixed.", path);
 			}
 		}
 	}
@@ -604,7 +604,7 @@ static BOOL engine_clean_and_calculate_homedir(
 				}
 				system_log_info("[engine]: "
 					"%s/exmdb/exchange.sqlite3 is malformed,"
-					" cannot be fixed, verify it ASAP!", path);
+					" cannot be fixed.", path);
 			}
 		}
 	}

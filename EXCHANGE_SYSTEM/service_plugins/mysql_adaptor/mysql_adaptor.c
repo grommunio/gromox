@@ -626,7 +626,7 @@ BOOL mysql_adaptor_get_username_from_id(int user_id, char *username)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -717,7 +717,7 @@ BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -809,7 +809,7 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -903,7 +903,7 @@ BOOL mysql_adaptor_get_user_displayname(
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -1007,7 +1007,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -1425,7 +1425,7 @@ BOOL mysql_adaptor_get_maildir(const char *username, char *maildir)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -1516,7 +1516,7 @@ BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -1607,7 +1607,7 @@ BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -1698,7 +1698,7 @@ BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -1788,7 +1788,7 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -1982,7 +1982,7 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2075,7 +2075,7 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2172,7 +2172,7 @@ BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2261,7 +2261,7 @@ BOOL mysql_adaptor_get_domain_info(int domain_id,
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2354,7 +2354,7 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2451,7 +2451,7 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2548,7 +2548,7 @@ BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2643,7 +2643,7 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2736,7 +2736,7 @@ static BOOL mysql_adaptor_get_group_title(const char *groupname, char *title)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2828,7 +2828,7 @@ static BOOL mysql_adaptor_get_class_title(
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -2920,7 +2920,7 @@ static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return FALSE;
@@ -3026,7 +3026,7 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return -1;
@@ -3210,7 +3210,7 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return -1;
@@ -3394,7 +3394,7 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 	
 	/* 
 	 * if no valid connection node available, it means the
-	 * database is down, return immediately!!!
+	 * database is down, return immediately.
 	 */
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		return -1;

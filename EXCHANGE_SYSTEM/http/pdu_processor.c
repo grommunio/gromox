@@ -2040,7 +2040,7 @@ BUILD_BEGIN:
 	return TRUE;
 }
 
-/* only can be invoked in non-rpc thread!!! */
+/* only can be invoked in non-rpc thread */
 BOOL pdu_processor_rpc_new_environment()
 {
 	NDR_STACK_ROOT *pstack_root;
@@ -2053,7 +2053,7 @@ BOOL pdu_processor_rpc_new_environment()
 	return TRUE;
 }
 
-/* only can be invoked in non-rpc thread!!! */
+/* only can be invoked in non-rpc thread */
 void pdu_processor_rpc_free_environment()
 {
 	NDR_STACK_ROOT *pstack_root;

@@ -394,8 +394,8 @@ static void* thread_work_func(void* arg)
 				lseek(fd, 0, SEEK_SET);
 				times ++;
 				if (sizeof(int) != write(fd, &times, sizeof(int))) {
-					printf("[gateway_dispatch]: fatal error when updating "
-						"times!!!\n");
+					printf("[gateway_dispatch]: error while updating "
+						"times\n");
 				}
 			}
 			close(fd);

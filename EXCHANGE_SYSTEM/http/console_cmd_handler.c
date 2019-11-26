@@ -489,7 +489,7 @@ BOOL cmd_handler_proc_plugins(int argc, char** argv)
 		pdu_processor_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
 		if (strlen(buf) == 0) {
 			strncpy(buf, "550 proc plugin console talk is error "
-					"implemented!!!", sizeof(buf) - 1);
+					"implemented", sizeof(buf) - 1);
 			buf[sizeof(buf) - 1] = '\0';
 		}
 		console_server_reply_to_client("%s", buf);
@@ -507,7 +507,7 @@ BOOL cmd_handler_hpm_plugins(int argc, char** argv)
 		hpm_processor_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
 		if (strlen(buf) == 0) {
 			strncpy(buf, "550 proc plugin console talk is error "
-					"implemented!!!", sizeof(buf) - 1);
+					"implemented", sizeof(buf) - 1);
 			buf[sizeof(buf) - 1] = '\0';
 		}
 		console_server_reply_to_client("%s", buf);
@@ -525,7 +525,7 @@ BOOL cmd_handler_service_plugins(int argc, char** argv)
 		service_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
 		if (strlen(buf) == 0) {
 			strncpy(buf, "550 service plugin console talk is error "
-					"implemented!!!", sizeof(buf) - 1);
+					"implemented", sizeof(buf) - 1);
 			buf[sizeof(buf) - 1] = '\0';
 		}
 		console_server_reply_to_client("%s", buf);

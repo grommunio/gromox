@@ -736,7 +736,7 @@ static void cmd_merge(int argc, char **argv)
 	remove(argv[2]);
 	/* link source file to destination file */
 	if (0 != link(source_file, argv[2])) {
-		update_log("fatal error!!! unable to link %s", argv[2]);
+		update_log("error: unable to link %s", argv[2]);
 		return;
 	}
 	/* remove the source file reference count */
@@ -777,7 +777,7 @@ static void cmd_copy(int argc, char **argv)
 		/* remove the destination file if exist */
 		remove(argv[2]);
 		if (0 != link(source_file, argv[2])) {
-			update_log("fatal error!!! unable to link %s", argv[2]);
+			update_log("error: unable to link %s", argv[2]);
 			return;
 		}
 	}

@@ -1,7 +1,7 @@
 /*	
  *	double list's operating functions, including inserting, appending, pop,
- *	push ... CAUTION!!!! double_list is not thread-safe, use mutex to control
- *	the visiting of double list
+ *	push ... Caution: double_list is not thread-safe, use mutex to control
+ *	the visiting of double list.
  */
 
 #include "double_list.h"

@@ -515,7 +515,7 @@ void simple_tree_destroy_node(SIMPLE_TREE *ptree,
 }
 
 /*
- *	destroy all descendant nodes of pnode, including pnode itself!!!
+ *	Destroy all descendant nodes of pnode, including pnode itself.
  *	@param
  *		ptree [in]		indicate the tree oject
  *		pnode [in]		indicate the node object, where we begin from
@@ -523,7 +523,7 @@ void simple_tree_destroy_node(SIMPLE_TREE *ptree,
  *						will be invoked to notify the function caller, this
  *						is for the caller to free resources held by node!
  *						do not operate any field except data pointer in
- *						del_func!!!
+ *						del_func.
  */
 static void simple_tree_destroy_group(SIMPLE_TREE *ptree, 
 	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func)

@@ -48,7 +48,7 @@ typedef struct _MESSAGE_NODE {
 	uint64_t message_id;
 } MESSAGE_NODE;
 
-/* CAUTION!!! if a message is soft deleted from public folder,
+/* Caution: If a message is soft deleted from a public folder,
 	it also should be removed from read_states! if someone's
 	read stat is "unread", the item of this user should be
 	removed from read_states */

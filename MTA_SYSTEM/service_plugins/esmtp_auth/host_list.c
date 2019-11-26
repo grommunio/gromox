@@ -102,7 +102,7 @@ BOOL host_list_refresh()
 	}
 	list_len = list_file_get_item_num(pfile);
 	if (0 == list_len) {
-		printf("[esmtp_auth]: warning!!! backend list is empty!!!\n");
+		printf("[esmtp_auth]: warning: backend list is empty\n");
 	}
 	pitem = list_file_get_list(pfile);
 	double_list_init(&temp_list);

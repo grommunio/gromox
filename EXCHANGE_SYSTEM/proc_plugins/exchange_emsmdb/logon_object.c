@@ -573,8 +573,8 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 		pproptags->pproptag[pproptags->count] =
 						PROP_TAG_HIERARCHYSERVER;
 		pproptags->count ++;
-		/* TODO!!! for PROP_TAG_EMAILADDRESS
-			check if mail address of public folder exits! */
+		/* TODO: For PROP_TAG_EMAILADDRESS,
+		check if mail address of public folder exists. */
 	}
 	pproptags->pproptag[pproptags->count] =
 			PROP_TAG_DELETEDASSOCMESSAGESIZE;

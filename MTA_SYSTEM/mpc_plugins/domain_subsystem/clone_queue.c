@@ -362,8 +362,8 @@ static void* thread_work_func(void* arg)
 				lseek(fd, 0, SEEK_SET);
 				times ++;
 				if (sizeof(int) != write(fd, &times, sizeof(int))) {
-					printf("[domain_subsystem]: fatal error when updating "
-						"times!!!\n");
+					printf("[domain_subsystem]: error while updating "
+						"times\n");
 				}
 			}
 			close(fd);

@@ -685,9 +685,9 @@ static BOOL anti_spamming_unregister_judge(JUDGE_FUNCTION func)
 }
 
 /*
- *	unload the the plugin. CAUTION!!! can not invoke judge, auditor or filter's 
+ *	unload the the plugin. Caution: Cannot invoke judge, auditor or filter's
  *	unregister function because of the traversing of the double list (unregister
- *	functions will remove the node from list but the list is now traversed now)
+ *	functions will remove the node from list but the list is now traversed now).
  *	@param
  *		  path	  indicate the filename of plugin
  *	@return
@@ -949,7 +949,7 @@ int anti_spamming_pass_judges(SMTP_CONTEXT* pcontext, char *reason, int length)
 			MESSAGE_REJECT != judge_result &&
 			MESSAGE_RETRYING != judge_result) {
 			printf("[anti_spamming]: return value error in judge function "
-				"%p!!!\n", ((JUDGE_NODE*)(pnode->pdata))->judge_func);
+				"%p\n", ((JUDGE_NODE *)(pnode->pdata))->judge_func);
 			continue;
 		}
 		if (MESSAGE_ACCEPT != judge_result) {
@@ -998,7 +998,7 @@ int anti_spamming_pass_auditors(SMTP_CONTEXT* pcontext, char *reason,
 			MESSAGE_REJECT != audit_result &&
 			MESSAGE_RETRYING != audit_result) {
 			printf("[anti_spamming]: return value error in auditor function "
-				"%p!!!\n", ((AUDITOR_NODE*)(pnode->pdata))->auditor_func);
+				"%p\n", ((AUDITOR_NODE *)(pnode->pdata))->auditor_func);
 			continue;
 		}
 		if (MESSAGE_ACCEPT != audit_result) {
@@ -1108,7 +1108,7 @@ int anti_spamming_pass_filters(const char* type, SMTP_CONTEXT* pcontext,
 				MESSAGE_REJECT != result &&
 				MESSAGE_RETRYING != result) {
 				printf("[anti_spamming]: return value error in filter function "
-					"%p!!!\n", ((FILTER_NODE*)(pnode->pdata))->filter_func);
+					"%p\n", ((FILTER_NODE *)(pnode->pdata))->filter_func);
 				continue;
 			}
 			if (MESSAGE_ACCEPT != result) {
@@ -1136,7 +1136,7 @@ int anti_spamming_pass_filters(const char* type, SMTP_CONTEXT* pcontext,
 			MESSAGE_REJECT != result &&
 			MESSAGE_RETRYING != result) {
 			printf("[anti_spamming]: return value error in filter function "
-				"%p!!!\n", ((FILTER_NODE*)(pnode->pdata))->filter_func);
+				"%p\n", ((FILTER_NODE *)(pnode->pdata))->filter_func);
 			continue;
 		}
 		if (MESSAGE_ACCEPT != result) {
@@ -1186,7 +1186,7 @@ int anti_spamming_pass_statistics(SMTP_CONTEXT* pcontext, char *reason,
 			MESSAGE_REJECT != statistic_result &&
 			MESSAGE_RETRYING != statistic_result) {
 			printf("[anti_spamming]: return value error in statistic function "
-				"%p!!!\n", ((STATISTIC_NODE*)(pnode->pdata))->statistic_func);
+				"%p\n", ((STATISTIC_NODE *)(pnode->pdata))->statistic_func);
 			continue;
 		}
 		if (MESSAGE_ACCEPT != statistic_result) {

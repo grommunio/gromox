@@ -40,12 +40,12 @@ void vstack_init(VSTACK* pvstack, LIB_BUFFER* pbuf_pool, size_t data_size,
 	pvstack->max_size	 = max_size;
 	if (data_size > lib_buffer_get_param(pbuf_pool, 
 		MEM_ITEM_SIZE) - EXTRA_VSTACKNODE_SIZE) {
-		debug_info("[vstack]: vstack_init, warning!!!! vstack data"
+		debug_info("[vstack]: vstack_init warning: vstack data"
 			" size larger than allocator item size");
 	}
 	if (max_size > lib_buffer_get_param(pbuf_pool,
 			MEM_ITEM_NUM)) {
-		debug_info("[vstack]: vstack_init, warning!!!! vstack max "
+		debug_info("[vstack]: vstack_init warning: vstack max "
 			"capacity larger than allocator capacity");
 	}
 							

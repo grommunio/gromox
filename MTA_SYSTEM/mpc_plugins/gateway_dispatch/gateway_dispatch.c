@@ -354,8 +354,8 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 				"cache queue with cache ID %d and wait to be delivered next"
 				" time", cache_ID);
 		} else {
-			smtp_dispatch_log_info(&fake_context, 8, "fail to put message into "
-				"cache queue!!!");
+			smtp_dispatch_log_info(&fake_context, 8, "failed to put message into "
+				"cache queue");
 		}
 	}
 	need_bounce &= pcontext->pcontrol->need_bounce;

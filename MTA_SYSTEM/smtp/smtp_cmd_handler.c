@@ -723,7 +723,7 @@ int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
         return DISPATCH_CONTINUE;
     }
-    /* CAUTION!!! do not need to mark the last_cmd */
+	/* Caution: no need to mark the last_cmd */
     /* 250 OK */
     smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172005, 1,
                      &string_length);

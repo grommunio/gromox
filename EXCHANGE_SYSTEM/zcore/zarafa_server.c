@@ -2244,7 +2244,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	BOOL notify_non_read = FALSE; /* TODO!!! read from config or USER_INFO */
+	BOOL notify_non_read = FALSE; /* TODO: Read from config or USER_INFO. */
 	
 	if (FLAG_HARD_DELETE & flags) {
 		b_hard = FALSE;
@@ -2592,7 +2592,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	uint32_t tmp_proptag;
 	STORE_OBJECT *pstore;
 	const char *username;
-	BOOL b_notify = TRUE; /* TODO!!! read from config or USER_INFO */
+	BOOL b_notify = TRUE; /* TODO: Read from config or USER_INFO. */
 	BINARY_ARRAY tmp_bins;
 	PROPTAG_ARRAY proptags;
 	FOLDER_OBJECT *pfolder;

@@ -112,7 +112,7 @@ int AS_LibMain(int reason, void **ppdata)
         }
         /* invoke register_auditor for registering auditor of mime head */
         if (FALSE == register_auditor(xmailer_filter)) {
-			printf("[xmailer_filter]: fail to register auditor function!!!\n");
+			printf("[xmailer_filter]: failed to register auditor function\n");
             return FALSE;
         }
 		register_talk(console_talk);

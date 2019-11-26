@@ -742,7 +742,7 @@ BOOL cmd_handler_flusher_control(int argc, char** argv)
 	flusher_console_talk(argc, argv, result, TALK_BUFFER_LEN);
 	if (0 == strlen(result)) {
 		strncpy(result, "550 flusher plugin console talk is error "
-				"implemented!!!", sizeof(result) - 1);
+			"implemented", sizeof(result) - 1);
 		result[sizeof(result) - 1] = '\0';
 	}
 	console_server_reply_to_client("%s", result);
@@ -759,7 +759,7 @@ BOOL cmd_handler_as_plugins(int argc, char** argv)
 		anti_spamming_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
 		if (strlen(buf) == 0) {
 			strncpy(buf, "550 anti-spamming plugin console talk is error "
-					"implemented!!!", sizeof(buf) - 1);
+				"implemented", sizeof(buf) - 1);
 			buf[sizeof(buf) - 1] = '\0';
 		}
 		console_server_reply_to_client("%s", buf);
@@ -778,7 +778,7 @@ BOOL cmd_handler_service_plugins(int argc, char** argv)
 		service_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
 		if (strlen(buf) == 0) {
 			strncpy(buf, "550 service plugin console talk is error "
-					"implemented!!!", sizeof(buf) - 1);
+				"implemented", sizeof(buf) - 1);
 			buf[sizeof(buf) - 1] = '\0';
 		}
 		console_server_reply_to_client("%s", buf);

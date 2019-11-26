@@ -178,18 +178,16 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		
 		if (TRUE == need_alarm_one) {
 			offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
-						"has found %d times of failure and zero time of "
-						"success, please check it as soon as possible!!!\r\n"
+						"failed %d times in a row.\r\n"
 						"<P></P><BR><P></P><BR><P></P><BR>Alarm time: ",
 						get_host_ID(), g_times);
 		} else {
 			offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
-						"has found %d times of failure within ", get_host_ID(),
+						"failed %d times within ", get_host_ID(),
 						g_times);
 			itvltoa(g_interval, tmp_buff + offset);
 			offset += strlen(tmp_buff + offset);
-			strcpy(tmp_buff + offset, ", please check it as soon as "
-				"possible!!!\r\n<P></P><BR><P></P><BR><P></P><BR>Alarm time: ");
+			strcpy(tmp_buff + offset, "\r\n<P></P><BR><P></P><BR><P></P><BR>Alarm time: ");
 			offset += strlen(tmp_buff + offset);
 		}
 		datetime = localtime_r(&current_time, &time_buff);
@@ -208,7 +206,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
 				localtime_r(&current_time, &time_buff));
 		mime_set_field(pmime, "Date", tmp_buff);
-		sprintf(tmp_buff,"Local Delivery Alarm form %s!!!", get_host_ID());
+		sprintf(tmp_buff, "Local Delivery Alarm from %s", get_host_ID());
 		mime_set_field(pmime, "Subject", tmp_buff);
 		enqueue_context(pcontext);
 	}

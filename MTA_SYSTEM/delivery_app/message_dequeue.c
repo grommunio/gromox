@@ -543,8 +543,8 @@ static void message_dequeue_load_from_tape(int pos)
 	}
 	pmessage = message_dequeue_get_from_free(MESSAGE_TAPE, 0);
     if (NULL == pmessage) {
-    	debug_info("[message_dequeue]: fatal error when load, message "
-			"%d in tape!!!", pos);
+		debug_info("[message_dequeue]: error while loading message "
+			"%d in tape", pos);
         return;
 	}
 	pmessage->message_data = pos;
@@ -580,13 +580,13 @@ static void* thread_work_func(void* arg)
 			case MESSAGE_TAPE:
 				if (TRUE == g_with_tape) {
 					if (msg.msg_content >= g_tape_units) {
-						printf("[message_dequeue]: fatal error!!! enqueue tape"
+						printf("[message_dequeue]: error: enqueue tape"
 							" size may be larger than dequeue tape size\n");
 					} else {
 						message_dequeue_load_from_tape(msg.msg_content);
 					}
 				} else {
-					printf("[message_dequeue]: fatal error!!! should turn off"
+					printf("[message_dequeue]: error: should turn off"
 						" tape option in message enqueue flusher plugin\n");
 				}
 				break;

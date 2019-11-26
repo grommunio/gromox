@@ -18,7 +18,7 @@ To: "
 /* fill date */
 
 #define MESSAGE_BODY_3	\
-"\r\nSubject: Mail system supervisor alarm, faulure on %s:%d!!!\r\n\
+"\r\nSubject: Mail system supervisor alarm, failure on %s:%d\r\n\
 Content-Transfer-Encoding: 8bit\r\n\
 Content-Type: text/html;\r\n\
 	charset=\"us-ascii\"\r\n\r\n\
@@ -32,7 +32,7 @@ A:link {COLOR: #3b53b1; TEXT-DECORATION: none}\r\n\
 A:visited {COLOR: #0000ff; TEXT-DECORATION: none}\r\n\
 A:hover {COLOR: #0000ff; TEXT-DECORATION: underline}\r\n\
 .AlarmTitle {FONT-WEIGHT: bold; FONT-SIZE: 13pt; COLOR: #ffffff}\r\n\
---></STYLE>\r\n<TITLE> Mail system supervisor alarm!!! </TITLE>\r\n\
+--></STYLE>\r\n<TITLE>Mail system supervisor alarm</TITLE>\r\n\
 <META http-equiv=Content-Type content=\"text/html; charset=us-ascii\">\r\n\
 <META content=\"MSHTML 6.00.2900.2912\" name=GENERATOR></HEAD>\r\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\r\n\

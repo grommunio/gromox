@@ -415,7 +415,7 @@ static void backup_ui_error_html(const char *error_string)
 	const char *language;
 	
 	if (NULL == error_string) {
-		error_string = "fatal error!!!";
+		error_string = "fatal error";
 	}
 	
 	language = getenv("HTTP_ACCEPT_LANGUAGE");

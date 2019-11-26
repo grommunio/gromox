@@ -166,7 +166,7 @@ void lib_buffer_put(LIB_BUFFER* m_buf, void *item)
 	/* memory check */
 	memcpy(&pzero, pcur_item + m_buf->item_size, sizeof(void*));
 	if (pzero != 0) {
-		debug_info("[lib_buffer]: lib_buffer memory dump!!!");
+		debug_info("[lib_buffer]: lib_buffer memory dump");
 	}
 #endif
 

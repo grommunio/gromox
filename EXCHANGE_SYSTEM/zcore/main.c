@@ -331,7 +331,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "SUBMIT_COMMAND");
 	if (NULL == str_value) {
-		printf("[system]: fail to get SUBMIT_COMMAND in config file!!!\n");
+		printf("[system]: failed to get SUBMIT_COMMAND from config file\n");
 		config_file_free(pconfig);
 		return 2;
 	}

@@ -59,7 +59,7 @@ int AS_LibMain(int reason, void **ppdata)
 		printf("[auth_whitelist]: return string is \"%s\"\n", g_return_string);
 		config_file_free(pconfig_file);
         if (FALSE == register_judge(envelop_judge)) {
-			printf("[auth_whitelist]: fail to register judge function!!!\n");
+			printf("[auth_whitelist]: failed to register judge function\n");
             return FALSE;
         }
         return TRUE;

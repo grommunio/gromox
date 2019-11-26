@@ -2,7 +2,7 @@ COMPILING AND INSTALLING ON CENTOS 7 STEP BY STEP
 
 yum -y install gcc gcc-c++ makedepend mariadb mariadb-server mariadb-devel sqlite-devel php php-devel php-fpm php-xml php-soap php-gd php-process php-pear php-mbstring php-mysql libtool unzip wget dos2unix
 
-#build php-mapi, caution!!! cannot do this step after libiconv
+#build php-mapi. Caution: Cannot do this step after libiconv.
 cd STEEP_SYSTEM-master/AGENT_SERVICE/php_mapi
 sh build.sh
 cp modules/mapi.so /usr/lib64/php/modules/
@@ -34,7 +34,7 @@ build/autogen.sh
 ./configure --prefix=/usr --libdir=/usr/lib64
 make && make install
 
-#download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ caution!!! please download libxls-1.1.0.zip
+#download libxls from https://sourceforge.net/projects/libxls/files/libxls-old/ Caution: Download libxls-1.1.0.zip.
 unzip libxls-1.1.0.zip
 cd libxls
 ./configure --prefix=/usr --libdir=/usr/lib64
@@ -282,7 +282,7 @@ autodiscover.herculiz.com.			IN CNAME	exch1.herculiz.com.
 _autodiscover._tcp.herculiz.com.	SRV 0 0 443 exch1.herculiz.com.
 
 #------------------------------------------------------------------------------------------------------
-#caution!!! if hosted domain is different from the certificate domain name, for example,
+#Caution: If, for example, the hosted domain is different from the certificate domain name,
 #the hosted name is abc.com and certificate name is exch1.herculiz.com, then you must find
 #a different host (e.g. adjmp.herculiz.com), this host must turn off ssl support!
 #add a file named autodiscover.conf into /etc/httpd/conf.d on that no ssl host with the content below

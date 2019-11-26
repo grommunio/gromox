@@ -126,7 +126,7 @@ int resource_stop()
 BOOL resource_save()
 {
 	if (NULL == g_config_file) {
-        debug_info("[resource]: error!!! config file not init or init fail but"
+		debug_info("[resource]: error: config file not initialized or init failed, but"
                     " it is now being used");
 		return FALSE;
 	}
@@ -154,7 +154,7 @@ BOOL resource_get_integer(const char *key, int *value)
     }
 
     if (NULL == g_config_file) {
-        debug_info("[resource]: error!!! config file not init or init fail but"
+		debug_info("[resource]: error: config file not initialized or init failed, but"
                     " it is now being used");
         return FALSE;
     }
@@ -189,7 +189,7 @@ BOOL resource_set_integer(const char *key, int value)
     }
 
     if (NULL == g_config_file) {
-        debug_info("[resource]: error!!! config file not init or init fail but"
+		debug_info("[resource]: error: config file not initialized or init failed, but"
                     " it is now being used");
         return FALSE;
     }
@@ -216,7 +216,7 @@ BOOL resource_set_string(const char *key, const char *value)
     }
 
     if (NULL == g_config_file) {
-        debug_info("[resource]: error!!! config file not init or init fail but"
+		debug_info("[resource]: error: config file not initialized or init failed, but"
                     " it is now being used");
         return FALSE;
     }
@@ -244,7 +244,7 @@ const char *resource_get_string(const char *key)
     }
 
     if (NULL == g_config_file) {
-        debug_info("[resource]: error!!! config file not init or init fail but"
+		debug_info("[resource]: error: config file not initialized or init failed, but"
                     " it is now being used");
         return NULL;
     }

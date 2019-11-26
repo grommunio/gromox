@@ -20,7 +20,7 @@ To: "
 /* fill date */
 
 #define MESSAGE_BODY_3	\
-"\r\nSubject: Mail system scanner alarm, faulure on %s!!!\r\n\
+"\r\nSubject: Mail system scanner alarm, failure on %s\r\n\
 Content-Type: multipart/related;\r\n\
 	boundary=\"----=_NextPart_000_0005_5F7091A5.ABB0874\"\r\n\r\n\
 This is a multi-part message in MIME format.\r\n\r\n\
@@ -38,7 +38,7 @@ A:link {COLOR: #3b53b1; TEXT-DECORATION: none}\r\n\
 A:visited {COLOR: #0000ff; TEXT-DECORATION: none}\r\n\
 A:hover {COLOR: #0000ff; TEXT-DECORATION: underline}\r\n\
 .AlarmTitle {FONT-WEIGHT: bold; FONT-SIZE: 13pt; COLOR: #ffffff}\r\n\
---></STYLE>\r\n<TITLE> Mail system scanner alarm!!! </TITLE>\r\n\
+--></STYLE>\r\n<TITLE>Mail system scanner alarm</TITLE>\r\n\
 <META http-equiv=Content-Type content=\"text/html; charset=us-ascii\">\r\n\
 <META content=\"MSHTML 6.00.2900.2912\" name=GENERATOR></HEAD>\r\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\r\n\
@@ -46,7 +46,7 @@ marginheight=\"0\" marginwidth=\"0\">\r\n\
 <CENTER><TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0><TBODY>\r\n\
 <TR><TD noWrap align=middle background=\r\n\
 \"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\" height=55>\r\n\
-<SPAN class=AlarmTitle> Mail system scanner alarm!!! </SPAN>\r\n\
+<SPAN class=AlarmTitle>Mail system scanner alarm</SPAN>\r\n\
 <TD vAlign=bottom noWrap width=\"22%\"\r\n\
 background=\"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\"><A\r\n\
 href=\"%s\" target=_blank><IMG height=48\r\n\

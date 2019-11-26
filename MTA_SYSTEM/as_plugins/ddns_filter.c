@@ -96,7 +96,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		}
         /* invoke register_statistic for registering static of mail envelop */
         if (FALSE == register_statistic(mail_statistic)) {
-			printf("[ddns_filter]: fail to register judge function!!!\n");
+			printf("[ddns_filter]: failed to register judge function\n");
             return FALSE;
         }
 		register_talk(console_talk);

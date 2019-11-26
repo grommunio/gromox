@@ -31,12 +31,12 @@ int message_lookup_run()
 
 	if (0 != stat(g_mount_path, &node_stat)) {
 		system_log_info("[message_lookup]: mount entry %s does not"
-				        "exist, please check it ASAP!!!", g_mount_path);
+			"exist", g_mount_path);
 		return -1;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		system_log_info("[message_lookup]: mount entry %s is not a directory, "
-				        "please check it ASAP!!!", g_mount_path);
+		system_log_info("[message_lookup]: mount entry %s is not a directory",
+			g_mount_path);
 		return -2;
 	}
 	return 0;

@@ -315,7 +315,7 @@ typedef struct _PROPTAG_ARRAY {
 } PROPTAG_ARRAY;
 
 typedef struct SORT_ORDER {
-	uint16_t type; /* pay attention to the 0x2000 bit!!! */
+	uint16_t type; /* pay attention to the 0x2000 bit */
 	uint16_t propid;
 	uint8_t table_sort;
 } SORT_ORDER;

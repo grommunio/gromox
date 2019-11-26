@@ -32,7 +32,7 @@ void xarray_init(XARRAY* pxarray, LIB_BUFFER* pbuf_pool, int data_size)
    
 	if (data_size > lib_buffer_get_param(pbuf_pool, 
 		MEM_ITEM_SIZE) - EXTRA_XARRAYNODE_SIZE) {
-		debug_info("[xarray]: xarray_init warning!!!! xarray data"
+		debug_info("[xarray]: xarray_init warning: xarray data"
 			" size larger than allocator item size");
 	}
 }

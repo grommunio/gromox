@@ -680,10 +680,10 @@ CMD_PROCESS:
 						break;
 					case DISPATCH_BREAK:
 						/*
-						 caution!!! the stream object is different, so we 
+						 * Caution: The stream object is different, so we
 						 should get the pbuff from the new stream object and 
 						 backward the read ptr to zero as if the steam has 
-						 never been changed
+						 * never been changed.
 						 */
 						actual_read = STREAM_BLOCK_SIZE;
 						pbuff = stream_getbuffer_for_reading(&pcontext->stream,

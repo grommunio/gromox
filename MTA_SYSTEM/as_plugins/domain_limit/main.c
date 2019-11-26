@@ -68,7 +68,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		
         /* invoke register_judge for registering judge of mail envelop */
         if (FALSE == register_judge(envelop_judge)) {
-			printf("[domain_limit]: fail to register judge function!!!\n");
+			printf("[domain_limit]: failed to register judge function\n");
             return FALSE;
         }
 		register_talk(domain_limit_console_talk);

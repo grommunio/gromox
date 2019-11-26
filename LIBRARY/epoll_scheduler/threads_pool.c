@@ -46,8 +46,8 @@ void threads_pool_init(int init_pool_num,
 	
 	g_threads_pool_min_num = init_pool_num;
 	threads_pool_process_func = process_func;
-	/*  CAUTION !!! threads pool should be initialized
-		after that contexts pool has been initialized */
+	/* Caution: Threads pool should be initialized
+	after that contexts pool has been initialized. */
 	contexts_max_num = contexts_pool_get_param(MAX_CONTEXTS_NUM);
 	contexts_per_thr = contexts_pool_get_param(CONTEXTS_PER_THR);
 	g_threads_pool_max_num = (contexts_max_num +

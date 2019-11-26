@@ -121,8 +121,8 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		config_file_free(pconfig_file);
         /* invoke register_auditor for registering auditor of mail head */
         if (FALSE == register_auditor(special_protection)) {
-			printf("[special_protection]: fail to register statistic "
-				"function!!!\n");
+			printf("[special_protection]: failed to register statistic "
+				"function\n");
             return FALSE;
         }
 		register_talk(console_talk);

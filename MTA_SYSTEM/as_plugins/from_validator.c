@@ -73,7 +73,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		config_file_free(pconfig_file);
         /* invoke register_judge for registering judge of mail envelop */
         if (FALSE == register_judge(envelop_judge)) {
-			printf("[from_validator]: fail to register judge function!!!\n");
+			printf("[from_validator]: failed to register judge function\n");
             return FALSE;
         }
         return TRUE;

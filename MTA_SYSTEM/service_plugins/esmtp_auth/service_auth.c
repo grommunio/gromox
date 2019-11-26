@@ -258,7 +258,7 @@ int service_auth_process(int context_ID, const char *cmd_line, int line_len,
 	case T_PLAIN_ONE:
 		if (0 != decode64_ex(cmd_line, line_len, buff, 256, &string_length)) {
 			/* 
-         	*	only for foxmail!!!
+			 *	only for foxmail
 			*	C: auth plain
 		 	*	S: 334 OK, go on
 		 	*	C: XXX

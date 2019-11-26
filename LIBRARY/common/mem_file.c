@@ -1,6 +1,6 @@
 /*
  *	  mem file is actually like the file in disk, but mem file get blocks form
- *	  memory, it is virtual file, CAUTION!!! not thread-safe
+ *	  memory, it is virtual file. Caution: Not thread-safe.
  */
 #include "mem_file.h"
 #include "util.h"
@@ -692,7 +692,7 @@ void mem_file_free(MEM_FILE *pfile)
 }
 
 /*
- *	  append one block in mem file list. CAUTION!!! this function should be 
+ *	  append one block in mem file list. Caution: This function should be 
  *	  invoked when the last blcok is fully written. a new block is needed.
  *	  @param	
  *		  pfile [in]	indicate the mem file object

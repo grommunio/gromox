@@ -249,7 +249,7 @@ void stream_free(STREAM *pstream)
 }
 
 /*
- *	  append one block in stream list. CAUTION!!! this function should be invoked
+ *	Append one block in stream list. Caution: This function should be invoked
  *	when the last block is fully written. a new block is needed.
  *	  @param
  *		  pstream [in]	  indicate the stream object
@@ -336,12 +336,12 @@ unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset)
 }
 
 /*
- *	  backward the writing pointer, CAUTION!!! backward writing pointer will
- *	  truncate the stream total length!
+ *	Backtrack the writing pointer. Caution: The backward writing pointer will
+ *	truncate the stream total length.
  *	  @param
  *		  pstream [in]	  indicate the stream object
- *		  offset		  backward offset, CAUTION!!! offset must be smaller
- *						  than one block size!
+ *		  offset		  Backward offset. Caution: The offset must be smaller
+ *					  than one block size.
  *	  @return
  *		  offset actual made
  */
@@ -382,8 +382,8 @@ unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset)
  *	  backward the reading pointer.
  *	  @param
  *		  pstream [in]	  indicate the stream object
- *		  offset		  backward offset, CAUTION!!! offset must be smaller
- *						  than one block size!
+ *		  offset		  Backward offset. Caution: The offset must be smaller
+ *					  than one block size.
  *	  @return
  *		  offset actual made
  */
@@ -856,8 +856,8 @@ int stream_dump(STREAM *pstream, int fd)
  *	  forward the reading pointer.
  *	  @param
  *		  pstream [in]	  indicate the stream object
- *		  offset		  forward offset, CAUTION!!! offset must be smaller
- *						  than one block size!
+ *		  offset		  Forward offset. Caution: The offset must be smaller
+ *					  than one block size.
  *	  @return
  *		  offset actual made
  */

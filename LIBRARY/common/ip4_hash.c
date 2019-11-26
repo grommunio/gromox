@@ -2,7 +2,7 @@
  * A simple ip hash table data structure, which takes a string ip address as
  * the key. Remember the ip hash table is thread-unsafe!
  *
- * CAUTION!!!
+ * Caution:
  *		In multithread enviroment, we must consider mutual exclusion and 
  *		synchronized problems. 
  */

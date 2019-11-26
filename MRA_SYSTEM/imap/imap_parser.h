@@ -21,7 +21,7 @@
 #define FLAG_DRAFT				0x20
 
 /* bits for controlling of f_digest, if not set, 
-   means mem_file is not initialized!!! */
+means mem_file is not initialized. */
 #define FLAG_LOADED				0x80
 
 

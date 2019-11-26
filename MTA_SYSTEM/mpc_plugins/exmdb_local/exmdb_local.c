@@ -393,7 +393,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 						"wait to be delivered next time", cache_ID);
 				} else {
 					exmdb_local_log_info(pcontext, rcpt_buff, 8,
-						"fail to put message into cache queue!!!");
+						"failed to put message into cache queue");
 				}
 				break;
 			}

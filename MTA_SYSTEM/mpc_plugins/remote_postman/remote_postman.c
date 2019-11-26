@@ -283,7 +283,7 @@ BOOL remote_postman_hook(MESSAGE_CONTEXT *pcontext)
 					" time", timer_ID);
 			} else {
 				smtp_deliverer_log_info(&fake_context, 8,
-					"fail to put message into timer queue!!!");
+					"failed to put message into timer queue");
 			}
 		}
 		need_bounce &= pcontext->pcontrol->need_bounce;

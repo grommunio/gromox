@@ -185,7 +185,7 @@ static void* thread_work_func(void *arg)
 				current_time - g_fs_alarm_time > g_alarm_interval) {
 				g_fs_alarm_time = current_time;
 				sprintf(tmp_buff, "%d%% disk space has been used"
-					" up in mount point %s on host %s, please check it ASAP!!!",
+					" up in mountpoint %s on host %s.",
 					percentage, ptr1, get_host_ID());
 				alarm_message(tmp_buff);
 			}
@@ -238,7 +238,7 @@ static void* thread_work_func(void *arg)
 				g_mem_alarm_time = current_time;
 				sprintf(tmp_buff, "Swap partition on host %s is over "
 					"loaded, %d%% has been used up, if it continues, "
-					"system will be shut down!!!", get_host_ID(), percentage);
+					"the system will be shut down.", get_host_ID(), percentage);
 				alarm_message(tmp_buff);
 			}
 		}
@@ -313,7 +313,7 @@ static void alarm_message(const char *content)
 	strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
 		localtime_r(&current_time, &time_buff));
 	mime_set_field(pmime, "Date", tmp_buff);
-	sprintf(tmp_buff,"Operation System Inspection Alarm form %s!!!",
+	sprintf(tmp_buff, "Operation System Inspection Alarm from %s",
 		get_host_ID());
 	mime_set_field(pmime, "Subject", tmp_buff);
 	enqueue_context(pcontext);

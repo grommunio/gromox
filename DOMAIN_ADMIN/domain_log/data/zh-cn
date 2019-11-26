@@ -37,5 +37,5 @@ TYPE_RETRYING			重试邮件
 TYPE_OUTGOING			外发邮件
 SEARCH_LABEL			搜索
 MSGERR_STARTTIME		起始时间晚于终止时间
-MSGERR_IPADDRESS		IP地址格式不对!!，只能输入数字和点号
+MSGERR_IPADDRESS		IP地址格式不对!，只能输入数字和点号
 COMPANY_INFORMATION		2018上海晶格信息科技有限公司

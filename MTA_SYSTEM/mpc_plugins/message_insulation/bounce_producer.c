@@ -298,7 +298,7 @@ static void bounce_producer_load_template(const char *temp_name, SINGLE_LIST *pl
 				break;
 			}
 		} else {
-			printf("[message_insulation]: bounce mail %s format error!!!\n",
+			printf("[message_insulation]: bounce mail %s format error\n",
 				dir_buff);
 			free(presource->content);
 			free(presource);

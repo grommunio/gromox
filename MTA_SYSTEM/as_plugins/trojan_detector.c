@@ -60,7 +60,7 @@ int AS_LibMain(int reason, void **ppdata)
 		config_file_free(pconfig_file);
 		/* invoke register_auditor for registering auditor of mime head */
 		if (FALSE == register_auditor(xmailer_filter)) {
-			printf("[trojan_detector]: fail to register auditor function!!!\n");
+			printf("[trojan_detector]: failed to register auditor function\n");
 			return FALSE;
 		}
 		return TRUE;
