@@ -1158,6 +1158,8 @@ synchronizer_SOURCES = DOMAIN_ADMIN/synchronizer/file_operation.c DOMAIN_ADMIN/s
 synchronizer_LDADD = -lresolv -lpthread ${HX_LIBS} libgromox_common.la
 
 # SYSTEM_ADMIN
+saphpdir = ${pkgdatadir}/sa
+saphp_DATA = SYSTEM_ADMIN/php/conf.php SYSTEM_ADMIN/php/db.php SYSTEM_ADMIN/php/submit.php
 adaptor_SOURCES = LIBRARY/system_log.c SYSTEM_ADMIN/adaptor/data_source.c SYSTEM_ADMIN/adaptor/engine.c SYSTEM_ADMIN/adaptor/file_operation.c SYSTEM_ADMIN/adaptor/gateway_control.c SYSTEM_ADMIN/adaptor/main.c
 adaptor_LDADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
 admin_archive_SOURCES = DOMAIN_ADMIN/domain_archive/message_lookup.c DOMAIN_ADMIN/domain_archive/midb_client.c LIBRARY/acl_control.c LIBRARY/system_log.c SYSTEM_ADMIN/admin_archive/admin_ui.c SYSTEM_ADMIN/admin_archive/data_source.c SYSTEM_ADMIN/admin_archive/main.c
