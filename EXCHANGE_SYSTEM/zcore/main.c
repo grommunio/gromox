@@ -330,12 +330,10 @@ int main(int argc, const char **argv)
 	printf("[system]: smtp server is %s:%d\n", smtp_ip, smtp_port);
 	
 	str_value = config_file_get_value(pconfig, "SUBMIT_COMMAND");
-	if (NULL == str_value) {
-		printf("[system]: failed to get SUBMIT_COMMAND from config file\n");
-		config_file_free(pconfig);
-		return 2;
-	}
-	strcpy(submit_command, str_value);
+	if (str_value == nullptr)
+		strcpy(submit_command, "/usr/bin/php " PKGDATADIR "/sa/submit.php");
+	else
+		strcpy(submit_command, str_value);
 	
 	str_value = config_file_get_value(pconfig, "FREEBUSY_TOOL_PATH");
 	if (NULL == str_value) {
