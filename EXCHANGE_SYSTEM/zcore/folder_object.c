@@ -686,9 +686,8 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (0 == tmp_propvals.count) {
+	if (ppropvals->count == 0)
 		return TRUE;
-	}
 	count = ppropvals->count + 4;
 	tmp_propvals.ppropval = common_util_alloc(
 				sizeof(TAGGED_PROPVAL)*count);
