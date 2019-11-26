@@ -400,7 +400,7 @@ static void hpm_processor_unload_library(const char *plugin_name)
 	free(pplugin);
 }
 
-static void hpm_processor_load_library(const char* plugin_name)
+static int hpm_processor_load_library(const char* plugin_name)
 {
 	void *handle;
 	PLUGIN_MAIN func;
@@ -416,7 +416,7 @@ static void hpm_processor_load_library(const char* plugin_name)
 		printf("[hpm_processor]: error to load %s"
 			" reason: %s\n", fake_path, dlerror());
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
-		return;
+		return PLUGIN_FAIL_OPEN;
     }
 	func = (PLUGIN_MAIN)dlsym(handle, "HPM_LibMain");
 	if (NULL == func) {
@@ -424,14 +424,14 @@ static void hpm_processor_load_library(const char* plugin_name)
 			"HPM_LibMain function in %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
-		return;
+		return PLUGIN_NO_MAIN;
 	}
 	pplugin = malloc(sizeof(HPM_PLUGIN));
     if (NULL == pplugin) {
 		printf("[hpm_processor]: fail to allocate memory for %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
-		return;
+		return PLUGIN_FAIL_ALLOCNODE;
 	}
 	memset(pplugin, 0, sizeof(HPM_PLUGIN));
 	pplugin->node.pdata = pplugin;
@@ -456,9 +456,10 @@ static void hpm_processor_load_library(const char* plugin_name)
 		 */
         hpm_processor_unload_library(plugin_name);
 		g_cur_plugin = NULL;
-		return;
+		return PLUGIN_FAIL_EXCUTEMAIN;
 	}
 	g_cur_plugin = NULL;
+	return PLUGIN_LOAD_OK;
 }
 
 int hpm_processor_run()
