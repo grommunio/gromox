@@ -42,7 +42,8 @@ int main(int argc, const char **argv)
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	pconfig = config_file_init2(opt_config_file, config_default_path("synchronizer.cfg"));
+	char *dflcfgpath = config_default_path("synchronizer.cfg");
+	pconfig = config_file_init2(opt_config_file, dflcfgpath);
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: open %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
@@ -78,7 +79,7 @@ int main(int argc, const char **argv)
 	
 	url_downloader_init();
 	file_operation_init(mount_path);
-	processing_engine_init(str_value, data_path, argv[1]);
+	processing_engine_init(str_value, data_path, opt_config_file != nullptr ? opt_config_file : dflcfgpath);
 	config_file_free(pconfig);
 	
 	if (0 != url_downloader_run()) {
