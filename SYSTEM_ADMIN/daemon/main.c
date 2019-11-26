@@ -77,7 +77,8 @@ int main(int argc, const char **argv)
 	}
 	umask(0);
 	time(&now_time);	
-	pconfig = config_file_init2(opt_config_file, config_default_path("sa_daemon.cfg"));
+	char *dflcfgpath = config_default_path("synchronizer.cfg");
+	pconfig = config_file_init2(opt_config_file, dflcfgpath);
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
@@ -251,8 +252,8 @@ int main(int argc, const char **argv)
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
 	log_analyzer_init(now_time, statistic_path, mount_path);
 	keyword_cleaning_init(now_time, group_path, console_path, kstatisitic_path);
-	auto_backup_init(opt_config_file, data_path, system_backup_path,
-		admin_mailbox, default_domain);
+	auto_backup_init(opt_config_file != nullptr ? opt_config_file : dflcfgpath,
+		data_path, system_backup_path, admin_mailbox, default_domain);
 	domain_cleaner_init(now_time);
 	password_cleaner_init(now_time);
 	media_migrator_init(area_path);
