@@ -2332,7 +2332,7 @@ int main(int argc, const char **argv)
 	const char *pdtldayofweek;
 	
 	double_list_init(&g_exmdb_list);
-	plist = list_file_init(PKGDATAAGENTDIR "/exmdb_list.txt", "%s:256%s:16%s:16%d");
+	plist = list_file_init3(PKGDATAAGENTDIR "/exmdb_list.txt", "%s:256%s:16%s:16%d", false);
 	if (NULL == plist) {
 		fprintf(stderr, "Failed to read exmdb list from %s: %s\n",
 			PKGDATAAGENTDIR "/exmdb_list.txt", strerror(errno));

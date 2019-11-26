@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <libHX/option.h>
+#include <gromox/paths.h>
 #include "list_file.h"
 #include "ext_buffer.h"
 #include "double_list.h"
@@ -685,10 +686,10 @@ int main(int argc, const char **argv)
 	sqlite3_shutdown();
 	
 	double_list_init(&g_exmdb_list);
-	plist = list_file_init("../data/exmdb_list.txt", "%s:256%s:16%s:16%d");
+	plist = list_file_init3(PKGDATASADIR "/exmdb_list.txt", "%s:256%s:16%s:16%d", false);
 	if (NULL == plist) {
-		printf("Failed to read exmdb list from ../data/exmdb_list: %s\n",
-			strerror(errno));
+		printf("Failed to read exmdb list from %s: %s\n",
+			PKGDATASADIR "/exmdb_list.txt", strerror(errno));
 		return 11;
 	}
 	list_num = list_file_get_item_num(plist);

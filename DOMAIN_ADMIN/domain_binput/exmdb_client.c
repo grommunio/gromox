@@ -385,7 +385,7 @@ int exmdb_client_run()
 	EXMDB_ITEM *pitem;
 	REMOTE_SVR *pserver;
 	
-	plist = list_file_init(g_list_path, "%s:256%s:16%s:16%d");
+	plist = list_file_init3(g_list_path, "%s:256%s:16%s:16%d", false);
 	if (NULL == plist) {
 		system_log_info("[exmdb_client]: Failed to read exmdb list from %s: %s",
 			g_list_path, strerror(errno));

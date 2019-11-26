@@ -37,7 +37,7 @@ int acl_control_run()
 	int shm_id;
 	key_t k_shm;
 	
-	g_acl_list = list_file_init(g_acl_path, "%s:256%s:256%s:256");
+	g_acl_list = list_file_init3(g_acl_path, "%s:256%s:256%s:256", false);
 	if (NULL == g_acl_list) {
 		system_log_info("[acl_control]: Failed to read ACLs from %s: %s",
 			g_acl_path, strerror(errno));

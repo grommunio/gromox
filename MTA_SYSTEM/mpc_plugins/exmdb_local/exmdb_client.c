@@ -577,7 +577,7 @@ int exmdb_client_run()
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
 	
-	plist = list_file_init(g_list_path, "%s:256%s:16%s:16%d");
+	plist = list_file_init3(g_list_path, "%s:256%s:16%s:16%d", false);
 	if (NULL == plist) {
 		printf("[exmdb_local]: Failed to read exmdb list from %s: %s\n",
 			g_list_path, strerror(errno));
