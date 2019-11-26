@@ -20,8 +20,6 @@
 
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
-#define POP3_BUILT_DATE			"2015-1-20"
-
 
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
 static int  g_plugname_buffer_size = 0;
@@ -426,9 +424,8 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "version")) {
 		console_server_reply_to_client("250 POP3 DAEMON information:\r\n"
-			"\tversion                     %s\r\n"
-			"\tbuilt in                    %s",
-			PROJECT_VERSION, POP3_BUILT_DATE);
+			"\tversion                     %s",
+			PROJECT_VERSION);
 			return TRUE;
 	}
 
