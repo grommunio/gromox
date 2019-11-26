@@ -10,7 +10,7 @@
 
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
 
-static uint8_t rop_util_is_little_endia()
+static uint8_t rop_util_is_little_endian()
 {
 	int x;
 	char *py;
@@ -29,7 +29,7 @@ uint64_t rop_util_get_gc_value(uint64_t eid)
 {
 	uint64_t value;
 	
-	if (rop_util_is_little_endia()) {
+	if (rop_util_is_little_endian()) {
 		((uint8_t*)&value)[0] = ((uint8_t*)&eid)[7];
 		((uint8_t*)&value)[1] = ((uint8_t*)&eid)[6];
 		((uint8_t*)&value)[2] = ((uint8_t*)&eid)[5];
@@ -46,7 +46,7 @@ uint64_t rop_util_get_gc_value(uint64_t eid)
 
 void rop_util_get_gc_array(uint64_t eid, uint8_t gc[6])
 {
-	if (rop_util_is_little_endia()) {
+	if (rop_util_is_little_endian()) {
 		memcpy(gc, (uint8_t*)&eid + 2, 6);
 	} else {
 		memcpy(gc, &eid, 6);
@@ -55,7 +55,7 @@ void rop_util_get_gc_array(uint64_t eid, uint8_t gc[6])
 
 void rop_util_value_to_gc(uint64_t value, uint8_t gc[6])
 {
-	if (rop_util_is_little_endia()) {
+	if (rop_util_is_little_endian()) {
 		gc[5] = ((uint8_t*)&value)[0];
 		gc[4] = ((uint8_t*)&value)[1];
 		gc[3] = ((uint8_t*)&value)[2];
@@ -71,7 +71,7 @@ uint64_t rop_util_gc_to_value(uint8_t gc[6])
 {
 	uint64_t value;
 	
-	if (rop_util_is_little_endia()) {
+	if (rop_util_is_little_endian()) {
 		((uint8_t*)&value)[0] = gc[5];
 		((uint8_t*)&value)[1] = gc[4];
 		((uint8_t*)&value)[2] = gc[3];
@@ -93,7 +93,7 @@ uint64_t rop_util_make_eid(uint16_t replid, const uint8_t gc[6])
 {
 	uint64_t eid;
 	
-	if (rop_util_is_little_endia()) {
+	if (rop_util_is_little_endian()) {
 		((uint8_t*)&eid)[0] = 0;
 		((uint8_t*)&eid)[1] = 0;
 		memcpy((uint8_t*)&eid + 2, gc, 6);
