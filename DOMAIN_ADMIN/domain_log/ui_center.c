@@ -227,15 +227,15 @@ int ui_center_run()
 	char tmp_ip[16], tmp_rcpt[256];
 	char tmp_from[256], tmp_time[8];
 
+	g_lang_resource = lang_resource_init(g_resource_path);
+	if (g_lang_resource == nullptr) {
+		system_log_info("[ui_center]: failed to init language resource");
+		return -1;
+	}
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	if (NULL == language) {
 		ui_center_error_html(NULL);
 		return 0;
-	}
-	g_lang_resource = lang_resource_init(g_resource_path);
-	if (NULL == g_lang_resource) {
-		system_log_info("[ui_center]: fail to init language resource");
-		return -1;
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {
