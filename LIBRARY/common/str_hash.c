@@ -139,7 +139,7 @@ void str_hash_free(STR_HASH_TABLE* ptbl)
  *		-3	memory alloc fail
  *		-4	the key already exist	
  */
-int str_hash_add(STR_HASH_TABLE* ptbl, const char *key, void *value)
+int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value)
 {
 	DOUBLE_LIST_NODE* next	= NULL;
 	DOUBLE_LIST*	dlist	= NULL;

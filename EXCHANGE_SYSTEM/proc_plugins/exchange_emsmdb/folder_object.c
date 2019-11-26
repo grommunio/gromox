@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "emsmdb_interface.h"
 #include "tpropval_array.h"
 #include "folder_object.h"
@@ -213,10 +215,10 @@ static BOOL folder_object_get_calculated_property(
 	DCERPC_INFO rpc_info;
 	char temp_buff[1024];
 	PERSISTDATA *ppersistdata;
-	static uint8_t bin_buff[22];
-	static uint32_t fake_del;
+	static const uint8_t bin_buff[22];
+	static const uint32_t fake_del;
 	PERSISTDATA_ARRAY persistdatas;
-	static BINARY fake_bin = {22, bin_buff};
+	static const BINARY fake_bin = {.cb = sizeof(bin_buff), .pb = (uint8_t *)bin_buff};
 	
 	switch (proptag) {
 	case PROP_TAG_CONTENTUNREADCOUNT:
@@ -331,13 +333,13 @@ static BOOL folder_object_get_calculated_property(
 		if (TRUE == logon_object_check_private(pfolder->plogon)) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PRIVATE_FID_ROOT)) {
-				*ppvalue = &fake_bin;
+				*ppvalue = const_cast(BINARY *, &fake_bin);
 				return TRUE;
 			}
 		} else {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PUBLIC_FID_ROOT)) {
-				*ppvalue = &fake_bin;
+				*ppvalue = const_cast(BINARY *, &fake_bin);
 				return TRUE;
 			}
 		}
@@ -369,7 +371,7 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	case PROP_TAG_DELETEDFOLDERTOTAL:
 		/* just like exchange 2013, alway return 0 */
-		*ppvalue = &fake_del;
+		*ppvalue = const_cast(uint32_t *, &fake_del);
 		return TRUE;
 	case PROP_TAG_IPMDRAFTSENTRYID:
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
@@ -628,7 +630,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static uint32_t err_code = EC_ERROR;
+	static const uint32_t err_code = EC_ERROR;
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
@@ -656,7 +658,8 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
 					(pproptags->pproptag[i]&0xFFFF0000)|PROPVAL_TYPE_ERROR;
-				ppropvals->ppropval[ppropvals->count].pvalue = &err_code;
+				ppropvals->ppropval[ppropvals->count].pvalue =
+					const_cast(uint32_t *, &err_code);
 			}
 			ppropvals->count ++;
 		} else {

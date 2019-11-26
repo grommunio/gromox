@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "tpropval_array.h"
 #include "common_util.h"
 #include "ext_buffer.h"
@@ -81,22 +83,20 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	EXT_PUSH ext_push;
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
-	static BINARY fake_bin = {
-		.cb = 8,
-		.pb = "\0\0\0\0\0\0\0\0"
-	};
+	static uint8_t bin_buff[8];
+	static const BINARY fake_bin = {.cb = sizeof(bin_buff), .pb = (uint8_t *)bin_buff};
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
 		if (TRUE == idset_check_empty(pstate->pgiven) &&
 			TRUE == idset_check_empty(pstate->pseen) &&
 			TRUE == idset_check_empty(pstate->pseen_fai) &&
 			TRUE == idset_check_empty(pstate->pread)) {
-			return &fake_bin;
+			return const_cast(BINARY *, &fake_bin);
 		}
 	} else {
 		if (TRUE == idset_check_empty(pstate->pgiven) &&
 			TRUE == idset_check_empty(pstate->pseen)) {
-			return &fake_bin;	
+			return const_cast(BINARY *, &fake_bin);
 		}
 	}
 	pproplist = tpropval_array_init();

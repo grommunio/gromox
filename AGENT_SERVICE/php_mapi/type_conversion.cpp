@@ -1590,7 +1590,7 @@ zend_bool php_to_propname_array(zval *pzval_names,
 	zval *guidentry;
 	HashTable *pguidhash;
 	HashTable *pnameshash;
-	static GUID guid_appointment = {0x00062002, 0x0000, 0x0000,
+	static const GUID guid_appointment = {0x00062002, 0x0000, 0x0000,
 			{0xC0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
 	
 	pnameshash = Z_ARRVAL_P(pzval_names);

@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "exmdb_server.h"
@@ -2222,7 +2224,7 @@ static BOOL instance_get_message_display_recipients(
 	BOOL b_unicode;
 	char tmp_buff[64*1024];
 	uint32_t recipient_type;
-	static uint8_t fake_empty;
+	static const uint8_t fake_empty;
 	
 	switch (proptag) {
 	case PROP_TAG_DISPLAYTO:
@@ -2283,7 +2285,7 @@ static BOOL instance_get_message_display_recipients(
 		}
 	}
 	if  (0 == offset) {
-		*ppvalue = &fake_empty;
+		*ppvalue = const_cast(uint8_t *, &fake_empty);
 		return TRUE;
 	}
 	if (TRUE == b_unicode) {

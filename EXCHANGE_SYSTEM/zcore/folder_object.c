@@ -1,4 +1,6 @@
+#include <stdint.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include "tpropval_array.h"
 #include "folder_object.h"
 #include "zarafa_server.h"
@@ -235,10 +237,10 @@ static BOOL folder_object_get_calculated_property(
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
 	PERSISTDATA *ppersistdata;
-	static uint8_t bin_buff[22];
-	static uint32_t fake_del;
+	static const uint8_t bin_buff[22];
+	static const uint32_t fake_del;
 	PERSISTDATA_ARRAY persistdatas;
-	static BINARY fake_bin = {22, bin_buff};
+	static const BINARY fake_bin = {.cb = sizeof(bin_buff), .pb = (uint8_t *)bin_buff};
 	
 	switch (proptag) {
 	case PROP_TAG_ACCESS:
@@ -308,13 +310,13 @@ static BOOL folder_object_get_calculated_property(
 		if (TRUE == store_object_check_private(pfolder->pstore)) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PRIVATE_FID_ROOT)) {
-				*ppvalue = &fake_bin;
+				*ppvalue = const_cast(BINARY *, &fake_bin);
 				return TRUE;
 			}
 		} else {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PUBLIC_FID_ROOT)) {
-				*ppvalue = &fake_bin;
+				*ppvalue = const_cast(BINARY *, &fake_bin);
 				return TRUE;
 			}
 		}
@@ -341,7 +343,7 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	case PROP_TAG_DELETEDFOLDERTOTAL:
 		/* just like exchange 2013, alway return 0 */
-		*ppvalue = &fake_del;
+		*ppvalue = const_cast(uint32_t *, &fake_del);
 		return TRUE;
 	case PROP_TAG_IPMDRAFTSENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
@@ -846,7 +848,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 	BINARY *pentry_id;
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
-	static uint32_t proptag_buff[] = {
+	static const uint32_t proptag_buff[] = {
 		PROP_TAG_ENTRYID,
 		PROP_TAG_MEMBERRIGHTS
 	};
@@ -864,7 +866,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	proptags.count = 2;
-	proptags.pproptag = proptag_buff;
+	proptags.pproptag = const_cast(uint32_t *, proptag_buff);
 	if (FALSE == exmdb_client_query_table(dir, NULL, 0,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client_unload_table(dir, table_id);
@@ -913,7 +915,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_DATA *pperm_data;
-	static uint32_t proptag_buff[] = {
+	static const uint32_t proptag_buff[] = {
 		PROP_TAG_ENTRYID,
 		PROP_TAG_MEMBERID
 	};
@@ -924,7 +926,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	proptags.count = 2;
-	proptags.pproptag = proptag_buff;
+	proptags.pproptag = const_cast(uint32_t *, proptag_buff);
 	if (FALSE == exmdb_client_query_table(dir, NULL, 0,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client_unload_table(dir, table_id);

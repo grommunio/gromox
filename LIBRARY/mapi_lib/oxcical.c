@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "tpropval_array.h"
 #include "tarray_set.h"
 #include "ext_buffer.h"
@@ -737,8 +739,8 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
-	static uint32_t lid1;
-	static uint32_t lid2;
+	static const uint32_t lid1 = 0x0000825E; /* PidLidAppointmentTimeZoneDefinitionStartDisplay */
+	static const uint32_t lid2 = 0x0000825F; /* PidLidAppointmentTimeZoneDefinitionEndDisplay */
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
 	TIMEZONEDEFINITION tz_definition;
@@ -756,15 +758,7 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 		&tz_definition, TZRULE_FLAG_EFFECTIVE_TZREG, &tmp_bin)) {
 		return FALSE;
 	}
-	if (TRUE == b_dtstart) {
-		/* PidLidAppointmentTimeZoneDefinitionStartDisplay */
-		lid1 = 0x0000825E;
-		propname.plid = &lid1;
-	} else {
-		/* PidLidAppointmentTimeZoneDefinitionEndDisplay */
-		lid2 = 0x0000825F;
-		propname.plid = &lid2;
-	}
+	propname.plid = const_cast(uint32_t *, b_dtstart ? &lid1 : &lid2);
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
@@ -1541,7 +1535,7 @@ static BOOL oxcical_parse_uid(ICAL_LINE *piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	GLOBALOBJECTID globalobjectid;
-	static uint8_t arrayid[] = {
+	static const uint8_t arrayid[] = {
 		0x04, 0x00, 0x00, 0x00, 0x82, 0x00, 0xE0, 0x00,
 		0x74, 0xC5, 0xB7, 0x10, 0x1A, 0x82, 0xE0, 0x08};
 	

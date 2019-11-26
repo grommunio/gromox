@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <cstdint>
 #include "php.h"
 #include "php_mapi.h"
 #include "ext_pack.h"
@@ -805,7 +806,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	PUSH_CTX push_ctx;
 	char *pdisplayname;
 	ONEOFF_ENTRYID tmp_entry;
-	static uint8_t oneoff_guid[] ={
+	static const uint8_t oneoff_guid[] ={
 		0x81, 0x2B, 0x1F, 0xA4, 0xBE, 0xA3, 0x10, 0x19,
 		0x9D, 0x6E, 0x00, 0xDD, 0x01, 0x0F, 0x54, 0x02};
 	char empty[1]{};

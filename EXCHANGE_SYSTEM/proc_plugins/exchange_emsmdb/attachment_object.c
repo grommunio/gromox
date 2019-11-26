@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "attachment_object.h"
 #include "proptag_array.h"
 #include "exmdb_client.h"
@@ -372,7 +374,7 @@ BOOL attachment_object_get_properties(
 	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static uint32_t err_code = EC_ERROR;
+	static const uint32_t err_code = EC_ERROR;
 	
 	ppropvals->ppropval = common_util_alloc(
 		sizeof(TAGGED_PROPVAL)*pproptags->count);
@@ -396,7 +398,7 @@ BOOL attachment_object_get_properties(
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
 					(pproptags->pproptag[i]&0xFFFF0000)|PROPVAL_TYPE_ERROR;
-				ppropvals->ppropval[ppropvals->count].pvalue = &err_code;
+				ppropvals->ppropval[ppropvals->count].pvalue = const_cast(uint32_t *, &err_code);
 			}
 			ppropvals->count ++;
 			continue;

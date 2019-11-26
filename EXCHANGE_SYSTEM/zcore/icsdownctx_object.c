@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "icsdownctx_object.h"
 #include "tpropval_array.h"
 #include "proptag_array.h"
@@ -398,7 +400,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 	PROPTAG_ARRAY proptags;
 	uint32_t proptag_buff[6];
 	TPROPVAL_ARRAY tmp_propvals;
-	static uint8_t fake_false;
+	static const uint8_t fake_false;
 	
 	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
 		return FALSE;
@@ -499,7 +501,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	} else {
-		pproplist->ppropval[pproplist->count].pvalue = &fake_false;
+		pproplist->ppropval[pproplist->count].pvalue = const_cast(uint8_t *, &fake_false);
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag =

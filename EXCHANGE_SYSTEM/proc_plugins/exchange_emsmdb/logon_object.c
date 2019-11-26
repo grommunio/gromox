@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "emsmdb_interface.h"
 #include "msgchg_grouping.h"
 #include "logon_object.h"
@@ -693,9 +695,9 @@ static BOOL logon_object_get_calculated_property(
 	EMSMDB_INFO *pinfo;
 	char temp_buff[1024];
 	DCERPC_INFO rpc_info;
-	static uint64_t tmp_ll;
-	static uint8_t test_buff[256];
-	static BINARY test_bin = {256, test_buff};
+	static const uint64_t tmp_ll;
+	static const uint8_t test_buff[256];
+	static const BINARY test_bin = {.cb = sizeof(test_buff), .pb = (uint8_t *)test_buff};
 	
 	switch (proptag) {
 	case PROP_TAG_MESSAGESIZE:
@@ -781,7 +783,7 @@ static BOOL logon_object_get_calculated_property(
 	case PROP_TAG_DELETEDMSGCOUNT:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZE:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
-		*ppvalue = &tmp_ll;
+		*ppvalue = const_cast(uint32_t *, &tmp_ll);
 		return TRUE;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
@@ -902,7 +904,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_TESTLINESPEED:
-		*ppvalue = &test_bin;
+		*ppvalue = const_cast(BINARY *, &test_bin);
 		return TRUE;
 	}
 	return FALSE;
@@ -916,7 +918,7 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static uint32_t err_code = EC_ERROR;
+	static const uint32_t err_code = EC_ERROR;
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
@@ -944,7 +946,8 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
 					(pproptags->pproptag[i]&0xFFFF0000)|PROPVAL_TYPE_ERROR;
-				ppropvals->ppropval[ppropvals->count].pvalue = &err_code;
+				ppropvals->ppropval[ppropvals->count].pvalue =
+					const_cast(uint32_t *, &err_code);
 			}
 			ppropvals->count ++;
 		} else {

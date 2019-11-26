@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "pcl.h"
 #include "util.h"
 #include "oxcmail.h"
@@ -1203,7 +1205,7 @@ BOOL common_util_propvals_to_row(
 {
 	int i;
 	FLAGGED_PROPVAL *pflagged_val;
-	static uint32_t errcode = EC_NOT_FOUND;
+	static const uint32_t errcode = EC_NOT_FOUND;
 	
 	for (i=0; i<pcolumns->count; i++) {
 		if (NULL == common_util_get_propvals(
@@ -1233,7 +1235,7 @@ BOOL common_util_propvals_to_row(
 				pflagged_val->pvalue = common_util_get_propvals(ppropvals,
 					(pcolumns->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_ERROR);
 				if (NULL == pflagged_val->pvalue) {
-					pflagged_val->pvalue = &errcode;
+					pflagged_val->pvalue = const_cast(uint32_t *, &errcode);
 				}
 			} else {
 				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
@@ -1288,7 +1290,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 {
 	int i;
 	FLAGGED_PROPVAL *pflagged_val;
-	static uint32_t errcode = EC_NOT_FOUND;
+	static const uint32_t errcode = EC_NOT_FOUND;
 	
 	for (i=0; i<pcolumns->count; i++) {
 		if (NULL == common_util_get_propvals(
@@ -1325,7 +1327,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 				pflagged_val->pvalue = common_util_get_propvals(ppropvals,
 					(pcolumns->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_ERROR);
 				if (NULL == pflagged_val->pvalue) {
-					pflagged_val->pvalue = &errcode;
+					pflagged_val->pvalue = const_cast(uint32_t *, &errcode);
 				}
 			} else {
 				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;

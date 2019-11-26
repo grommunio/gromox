@@ -1,6 +1,8 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "msgchg_grouping.h"
 #include "system_services.h"
 #include "zarafa_server.h"
@@ -820,8 +822,8 @@ static void* store_object_get_oof_property(
 	CONFIG_FILE *pconfig;
 	MIME_FIELD mime_field;
 	struct stat node_stat;
-	static uint8_t fake_true = 1;
-	static uint8_t fake_false;
+	static const uint8_t fake_true = 1;
+	static const uint8_t fake_false;
 	
 	switch (proptag) {
 	case PROP_TAG_OOFSTATE:
@@ -943,7 +945,7 @@ static void* store_object_get_oof_property(
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
 		pconfig = config_file_init(temp_path);
 		if (NULL == pconfig) {
-			return &fake_false;
+			return const_cast(uint8_t *, &fake_false);
 		}
 		if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
 			str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
@@ -951,9 +953,9 @@ static void* store_object_get_oof_property(
 			str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
 		}
 		if (NULL == str_value || 0 == atoi(str_value)) {
-			pvalue = &fake_false;
+			pvalue = const_cast(uint8_t *, &fake_false);
 		} else {
-			pvalue = &fake_true;
+			pvalue = const_cast(uint8_t *, &fake_true);
 		}
 		config_file_free(pconfig);
 		return pvalue;
@@ -970,15 +972,15 @@ static BOOL store_object_get_calculated_property(
 	USER_INFO *pinfo;
 	uint32_t permission;
 	char temp_buff[1024];
-	static uint8_t private_uid[] = {
+	static const uint8_t private_uid[] = {
 		0x54, 0x94, 0xA1, 0xC0, 0x29, 0x7F, 0x10, 0x1B,
 		0xA5, 0x87, 0x08, 0x00, 0x2B, 0x2A, 0x25, 0x17
 	};
-	static uint8_t public_uid[] = {
+	static const uint8_t public_uid[] = {
 		0x78, 0xB2, 0xFA, 0x70, 0xAF, 0xF7, 0x11, 0xCD,
 		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A
 	};
-	static uint8_t share_uid[] = {
+	static const uint8_t share_uid[] = {
 		0x9E, 0xB4, 0x77, 0x00, 0x74, 0xE4, 0x11, 0xCE,
 		0x8C, 0x5E, 0x00, 0xAA, 0x00, 0x42, 0x54, 0xE2
 	};
@@ -990,15 +992,10 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		if (TRUE == pstore->b_private) {
-			if (TRUE == store_object_check_owner_mode(pstore)) {
-				((BINARY*)*ppvalue)->pb = private_uid;
-			} else {
-				((BINARY*)*ppvalue)->pb = share_uid;
-			}
-		} else {
-			((BINARY*)*ppvalue)->pb = public_uid;
-		}
+		static_cast(BINARY *, *ppvalue)->pb = const_cast(uint8_t *,
+			!pstore->b_private ? public_uid :
+			store_object_check_owner_mode(pstore) ?
+			private_uid : share_uid);
 		return TRUE;
 	case PROP_TAG_DISPLAYNAME:
 		*ppvalue = common_util_alloc(256);
@@ -1893,7 +1890,7 @@ static BOOL store_object_get_folder_permissions(
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
-	static uint32_t proptag_buff[] = {
+	static const uint32_t proptag_buff[] = {
 		PROP_TAG_ENTRYID,
 		PROP_TAG_MEMBERRIGHTS
 	};
@@ -1903,7 +1900,7 @@ static BOOL store_object_get_folder_permissions(
 		return FALSE;
 	}
 	proptags.count = 2;
-	proptags.pproptag = proptag_buff;
+	proptags.pproptag = const_cast(uint32_t *, proptag_buff);
 	if (FALSE == exmdb_client_query_table(pstore->dir, NULL,
 		0, table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client_unload_table(pstore->dir, table_id);

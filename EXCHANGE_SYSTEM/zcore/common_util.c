@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <unistd.h>
 #include "pcl.h"
 #include "ical.h"
@@ -3193,18 +3194,18 @@ BOOL common_util_remote_copy_folder(
 	return TRUE;
 }
 
-uint8_t* common_util_get_muidecsab()
+const uint8_t *common_util_get_muidecsab(void)
 {
-	static uint8_t MUIDECSAB[] = {
+	static const uint8_t MUIDECSAB[] = {
 		0xAC, 0x21, 0xA9, 0x50, 0x40, 0xD3, 0xEE, 0x48,
 		0xB3, 0x19, 0xFB, 0xA7, 0x53, 0x30, 0x44, 0x25};
 	
 	return MUIDECSAB;
 }
 
-uint8_t* common_util_get_muidzcsab()
+const uint8_t *common_util_get_muidzcsab(void)
 {
-	static uint8_t MUIDZCSAB[] = {
+	static const uint8_t MUIDZCSAB[] = {
 		0x72, 0x7F, 0x04, 0x30, 0xE3, 0x92, 0x4F, 0xDA,
 		0xB8, 0x6A, 0xE5, 0x2A, 0x7F, 0xE4, 0x65, 0x71};
 	return MUIDZCSAB;

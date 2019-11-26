@@ -521,9 +521,9 @@ static uint32_t rtf_fcharset_to_cpid(int num)
 	return 1252;
 }
 
-static FONTENTRY* rtf_lookup_font(RTF_READER *preader, int num) 
+static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
 {
-	static FONTENTRY fake_entries[] =
+	static const FONTENTRY fake_entries[] =
 		{{FONTNIL_STR, ""}, {FONTROMAN_STR, ""},
 		{FONTSWISS_STR, ""}, {FONTMODERN_STR, ""},
 		{FONTSCRIPT_STR, ""}, {FONTDECOR_STR, ""},
@@ -787,8 +787,8 @@ static BOOL rtf_express_attr_begin(
 	RTF_READER *preader, int attr, int param)
 {
 	int tmp_len;
-	char *encoding;
-	FONTENTRY *pentry;
+	const char *encoding;
+	const FONTENTRY *pentry;
 	char tmp_buff[256];
 	
 	switch (attr) {
@@ -988,8 +988,7 @@ static BOOL rtf_express_attr_end(
 	RTF_READER *preader, int attr, int param)
 {
 	int *pparam;
-	char *encoding;
-	FONTENTRY *pentry;
+	const char *encoding;
 	
 	switch (attr) {
 	case ATTR_BOLD:
@@ -1046,7 +1045,7 @@ static BOOL rtf_express_attr_end(
 		if (NULL == pparam) {
 			encoding = preader->default_encoding;
 		} else {
-			pentry = rtf_lookup_font(preader, *pparam);
+			const FONTENTRY *pentry = rtf_lookup_font(preader, *pparam);
 			if (NULL == pentry) {
 				encoding = preader->default_encoding;
 			} else {
@@ -1900,7 +1899,6 @@ static BOOL rtf_build_font_table(
 	int tmp_offset;
 	int fcharsetcp;
 	char name[1024];
-	FONTENTRY *pentry;
 	FONTENTRY tmp_entry;
 	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pword2;
@@ -2029,7 +2027,7 @@ static BOOL rtf_build_font_table(
 		strcpy(preader->default_encoding, "windows-1252");
 	}
 	if (FALSE == preader->have_ansicpg) {
-		pentry = rtf_lookup_font(preader, preader->default_font_number);
+		const FONTENTRY *pentry = rtf_lookup_font(preader, preader->default_font_number);
 		if (NULL != pentry) {
 			strcpy(preader->default_encoding, pentry->encoding);
 		} else {
@@ -2472,12 +2470,10 @@ static int rtf_cmd_f(RTF_READER *preader,
 	SIMPLE_TREE_NODE *pword, int align,
 	BOOL b_param, int num) 
 {
-	FONTENTRY *pentry;
-	
 	if (FALSE == b_param) {
         return CMD_RESULT_CONTINUE;
 	}
-	pentry = rtf_lookup_font(preader, num);
+	const FONTENTRY *pentry = rtf_lookup_font(preader, num);
 	if (NULL == pentry || NULL == pentry->name ||
 		NULL != strcasestr(pentry->name, "symbol")) {
 		return CMD_RESULT_CONTINUE;
@@ -4130,7 +4126,7 @@ BOOL rtf_to_html(const char *pbuff_in, size_t length,
 BOOL rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 {
 	int i;
-	static MAP_ITEM cmd_map[] ={
+	static const MAP_ITEM cmd_map[] ={
 		{"*",				rtf_cmd_maybe_ignore},
 		{"-",				rtf_cmd_optional_hyphen},
 		{"_",				rtf_cmd_soft_hyphen},

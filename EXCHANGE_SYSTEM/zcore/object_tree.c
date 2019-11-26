@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "util.h"
 #include "guid.h"
 #include "tarray_set.h"
@@ -552,7 +554,7 @@ BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
-	static uint32_t resource_type = MAPI_AB_PROVIDER;
+	static const uint32_t resource_type = MAPI_AB_PROVIDER;
 	
 	ppropvals->count = 0;
 	ppropvals->ppropval = common_util_alloc(
@@ -574,14 +576,14 @@ BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue =
-											&resource_type;
+				const_cast(uint32_t *, &resource_type);
 			ppropvals->count ++;
 			break;
 		case PROP_TAG_ABPROVIDERID:
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue =
-								common_util_get_muidecsab();
+				const_cast(uint8_t *, common_util_get_muidecsab());
 			ppropvals->count ++;
 			break;
 		}

@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "attachment_object.h"
 #include "emsmdb_interface.h"
 #include "message_object.h"
@@ -1381,8 +1383,8 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static uint32_t err_code = EC_ERROR;
-	static uint32_t lcid_default = 0x0409;
+	static const uint32_t err_code = EC_ERROR;
+	static const uint32_t lcid_default = 0x0409;
 	
 	ppropvals->ppropval = common_util_alloc(
 		sizeof(TAGGED_PROPVAL)*pproptags->count);
@@ -1406,7 +1408,8 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
 					(pproptags->pproptag[i]&0xFFFF0000)|PROPVAL_TYPE_ERROR;
-				ppropvals->ppropval[ppropvals->count].pvalue = &err_code;
+				ppropvals->ppropval[ppropvals->count].pvalue =
+					const_cast(uint32_t *, &err_code);
 			}
 			ppropvals->count ++;
 			continue;
@@ -1469,7 +1472,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 										&pinfo->lcid_string;
 		} else {
 			ppropvals->ppropval[ppropvals->count].pvalue =
-											&lcid_default;
+				const_cast(uint32_t *, &lcid_default);
 		}
 		ppropvals->count ++;
 	}
@@ -1899,7 +1902,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
-	static uint8_t fake_false;
+	static const uint8_t fake_false;
 	TAGGED_PROPVAL propval_buff[2];
 	
 	rpc_info = get_rpc_info();
@@ -2054,9 +2057,9 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;
 		propval_buff[0].proptag = PROP_TAG_READRECEIPTREQUESTED;
-		propval_buff[0].pvalue = &fake_false;
+		propval_buff[0].pvalue = const_cast(uint8_t *, &fake_false);
 		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		propval_buff[1].pvalue = &fake_false;
+		propval_buff[1].pvalue = const_cast(uint8_t *, &fake_false);
 		exmdb_client_set_instance_properties(
 			logon_object_get_dir(pmessage->plogon),
 			pmessage->instance_id, &propvals, &problems);

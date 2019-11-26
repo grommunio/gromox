@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "pcl.h"
 #include "util.h"
 #include "guid.h"
@@ -2107,7 +2109,7 @@ static BOOL common_util_get_message_display_recipients(
 	char sql_string[256];
 	char tmp_buff[64*1024];
 	uint32_t recipient_type;
-	static uint8_t fake_empty;
+	static const uint8_t fake_empty;
 	
 	switch (proptag) {
 	case PROP_TAG_DISPLAYTO:
@@ -2181,7 +2183,7 @@ static BOOL common_util_get_message_display_recipients(
 	}
 	sqlite3_finalize(pstmt);
 	if  (0 == offset) {
-		*ppvalue = &fake_empty;
+		*ppvalue = const_cast(uint8_t *, &fake_empty);
 		return TRUE;
 	}
 	if (TRUE == b_unicode) {
@@ -4931,12 +4933,12 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	char sql_string[128];
 	const char *pusername;
 	char display_name[256];
-	static BINARY fake_bin;
+	static const BINARY fake_bin;
 	
 	switch (proptag) {
 	case PROP_TAG_ENTRYID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
-			*ppvalue = &fake_bin;
+			*ppvalue = const_cast(BINARY *, &fake_bin);
 			return TRUE;
 		}
 		sql_len = sprintf(sql_string, "SELECT username FROM"
@@ -5023,7 +5025,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	case PROP_TAG_ENTRYID:
 		pusername = sqlite3_column_text(pstmt, 0);
 		if ('\0' == pusername[0] || 0 == strcasecmp(pusername, "default")) {
-			*ppvalue = &fake_bin;
+			*ppvalue = const_cast(BINARY *, &fake_bin);
 			sqlite3_finalize(pstmt);
 			return TRUE;
 		}
@@ -6627,7 +6629,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	TPROPVAL_ARRAY propvals;
 	PROBLEM_ARRAY tmp_problems;
 	TAGGED_PROPVAL tmp_propval;
-	static uint32_t fake_uid = 1;
+	static const uint32_t fake_uid = 1;
 	TAGGED_PROPVAL propval_buff[4];
 	
 	if (FALSE == common_util_copy_message_internal(psqlite, 
@@ -6641,7 +6643,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 			return FALSE;
 		}
 		if (NULL == pvalue) {
-			pvalue = &fake_uid;
+			pvalue = const_cast(uint32_t *, &fake_uid);
 		}
 		next = *(uint32_t*)pvalue + 1;
 		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;

@@ -1,5 +1,7 @@
+#include <stdint.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <libHX/defs.h>
 #include "util.h"
 #include "guid.h"
 #include "rpc_ext.h"
@@ -2597,7 +2599,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 	TPROPVAL_ARRAY propvals;
 	RESTRICTION restriction;
 	RESTRICTION_PROPERTY res_prop;
-	static uint8_t fake_false;
+	static const uint8_t fake_false;
 	TAGGED_PROPVAL propval_buff[2];
 	
 	pinfo = zarafa_server_query_session(hsession);
@@ -2630,7 +2632,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		}
 		res_prop.proptag = PROP_TAG_READ;
 		res_prop.propval.proptag = PROP_TAG_READ;
-		res_prop.propval.pvalue = &fake_false;
+		res_prop.propval.pvalue = const_cast(uint8_t *, &fake_false);
 		if (FALSE == exmdb_client_load_content_table(
 			store_object_get_dir(pstore), 0,
 			folder_object_get_id(pfolder), username,
@@ -2745,10 +2747,10 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 			propvals.ppropval = propval_buff;
 			propval_buff[0].proptag =
 				PROP_TAG_READRECEIPTREQUESTED;
-			propval_buff[0].pvalue = &fake_false;
+			propval_buff[0].pvalue = const_cast(uint8_t *, &fake_false);
 			propval_buff[1].proptag =
 				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-			propval_buff[1].pvalue = &fake_false;
+			propval_buff[1].pvalue = const_cast(uint8_t *, &fake_false);
 			exmdb_client_set_message_properties(
 				store_object_get_dir(pstore), username,
 				0, message_id, &propvals, &problems);
@@ -3766,10 +3768,10 @@ uint32_t zarafa_server_queryrows(
 	TABLE_OBJECT *ptable;
 	uint32_t *pobject_type;
 	TAGGED_PROPVAL *ppropvals;
-	static uint32_t object_type_store = OBJECT_STORE;
-	static uint32_t object_type_folder = OBJECT_FOLDER;
-	static uint32_t object_type_message = OBJECT_MESSAGE;
-	static uint32_t object_type_attachment = OBJECT_ATTACHMENT;
+	static const uint32_t object_type_store = OBJECT_STORE;
+	static const uint32_t object_type_folder = OBJECT_FOLDER;
+	static const uint32_t object_type_message = OBJECT_MESSAGE;
+	static const uint32_t object_type_attachment = OBJECT_ATTACHMENT;
 	
 	if (count > 0x7FFFFFFF) {
 		count = 0x7FFFFFFF;
@@ -3871,16 +3873,16 @@ uint32_t zarafa_server_queryrows(
 	}
 	switch (table_type) {
 	case STORE_TABLE:
-		pobject_type = &object_type_store;
+		pobject_type = const_cast(uint32_t *, &object_type_store);
 		break;
 	case HIERARCHY_TABLE:
-		pobject_type = &object_type_folder;
+		pobject_type = const_cast(uint32_t *, &object_type_folder);
 		break;
 	case CONTENT_TABLE:
-		pobject_type = &object_type_message;
+		pobject_type = const_cast(uint32_t *, &object_type_message);
 		break;
 	case ATTACHMENT_TABLE:
-		pobject_type = &object_type_attachment;
+		pobject_type = const_cast(uint32_t *, &object_type_attachment);
 		break;
 	}
 	for (i=0; i<prowset->count; i++) {

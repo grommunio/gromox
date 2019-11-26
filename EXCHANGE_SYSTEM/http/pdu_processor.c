@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "pdu_processor.h"
 #include "hpm_processor.h"
 #include "alloc_context.h"
@@ -866,7 +868,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 {
 	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
-	static uint8_t zeros[4];
+	static const uint8_t zeros[4];
 	
 	/* setup a bind_ack */
 	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
@@ -878,7 +880,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.context_id = 0;
 	pkt.payload.fault.cancel_count = 0;
 	pkt.payload.fault.status = fault_code;
-	pkt.payload.fault.pad.data = zeros;
+	pkt.payload.fault.pad.data = const_cast(uint8_t *, zeros);
 	pkt.payload.fault.pad.length = sizeof(zeros);
 
 	pblob_node = lib_buffer_get(g_bnode_allocator);

@@ -548,7 +548,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	LOGON_OBJECT *plogon;
-	static char* address_types[] = {"SMTP", "EX"};
+	static const char *const address_types[] = {"SMTP", "EX"};
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {

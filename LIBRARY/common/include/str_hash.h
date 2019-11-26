@@ -48,7 +48,7 @@ STR_HASH_TABLE* str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC
 void str_hash_free(STR_HASH_TABLE* ptbl);
 
 /* add the key and value into the specified hash table */
-int str_hash_add(STR_HASH_TABLE* ptbl, const char *key, void *value);
+extern int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value);
 
 /* query if the key is exist in the hash table */
 void* str_hash_query(STR_HASH_TABLE* ptbl, const char *key);

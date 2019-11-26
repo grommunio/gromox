@@ -1872,7 +1872,7 @@ int qp_decode_ex(void *voutput, size_t out_len, const char *input,
 
 void encode_hex_int(int id, char *out)
 {
-	static char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+	static const char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 							'8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	char t_char;
 	int i, j;
@@ -1908,7 +1908,7 @@ int decode_hex_int(const char *in)
 BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
 {
 	const uint8_t *src = vsrc;
-	static char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+	static const char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 							 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	int i, j;
 	char t_char;

@@ -1,5 +1,11 @@
 #ifndef _H_COMMON_UTIL_
 #define _H_COMMON_UTIL_
+
+#ifdef __cplusplus
+#	include <cstdint>
+#else
+#	include <stdint.h>
+#endif
 #include "common_types.h"
 #include "store_object.h"
 #include "message_object.h"
@@ -511,8 +517,8 @@ BOOL common_util_remote_copy_folder(
 	STORE_OBJECT *pstore, uint64_t folder_id,
 	STORE_OBJECT *pstore1, uint64_t folder_id1,
 	const char *new_name);
-extern uint8_t *common_util_get_muidecsab(void);
-extern uint8_t *common_util_get_muidzcsab(void);
+extern const uint8_t *common_util_get_muidecsab(void);
+extern const uint8_t *common_util_get_muidzcsab(void);
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);
 
 BOOL common_util_send_message(STORE_OBJECT *pstore,

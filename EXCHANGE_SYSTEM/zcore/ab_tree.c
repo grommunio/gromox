@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
@@ -1797,7 +1799,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		((BINARY*)*ppvalue)->pb = common_util_get_muidecsab();
+		static_cast(BINARY *, *ppvalue)->pb = const_cast(uint8_t *, common_util_get_muidecsab());
 		return TRUE;
 	case PROP_TAG_CONTAINERFLAGS:
 		if (node_type < 0x80) {

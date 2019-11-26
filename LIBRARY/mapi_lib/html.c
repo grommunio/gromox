@@ -54,8 +54,7 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode);
 BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 {
 	int i;
-	
-	static COLOR_ITEM color_map[] =
+	static const COLOR_ITEM color_map[] =
 		{{"black",				0x000000},
 		{"silver",				0xc0c0c0},
 		{"gray",				0x808080},

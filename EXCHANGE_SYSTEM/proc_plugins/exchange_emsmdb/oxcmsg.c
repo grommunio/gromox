@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "rops.h"
 #include "rop_util.h"
 #include "common_util.h"
@@ -746,7 +748,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 	PROBLEM_ARRAY problems;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
-	static uint8_t fake_false;
+	static const uint8_t fake_false;
 	TAGGED_PROPVAL propval_buff[2];
 	
 	rpc_info = get_rpc_info();
@@ -859,9 +861,9 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;
 		propval_buff[0].proptag = PROP_TAG_READRECEIPTREQUESTED;
-		propval_buff[0].pvalue = &fake_false;
+		propval_buff[0].pvalue = const_cast(uint8_t *, &fake_false);
 		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		propval_buff[1].pvalue = &fake_false;
+		propval_buff[1].pvalue = const_cast(uint8_t *, &fake_false);
 		exmdb_client_set_message_properties(
 			logon_object_get_dir(plogon), username,
 			0, message_id, &propvals, &problems);

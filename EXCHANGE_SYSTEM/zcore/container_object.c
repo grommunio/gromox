@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "container_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"
@@ -406,7 +408,7 @@ BOOL container_object_load_user_table(
 	LONG_ARRAY *pminid_array;
 	TPROPVAL_ARRAY *ppropvals;
 	uint32_t proptag_buff[25];
-	static uint32_t tmp_proptags[] = {
+	static const uint32_t tmp_proptags[] = {
 			PROP_TAG_NICKNAME,
 			PROP_TAG_SURNAME,
 			PROP_TAG_GIVENNAME,
@@ -679,7 +681,7 @@ BOOL container_object_load_user_table(
 			propval.proptag = PROP_TAG_ABPROVIDERID;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 16;
-			tmp_bin.pb = common_util_get_muidzcsab();
+			tmp_bin.pb = const_cast(uint8_t *, common_util_get_muidzcsab());
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -737,7 +739,7 @@ BOOL container_object_fetch_special_property(
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		((BINARY*)*ppvalue)->pb = common_util_get_muidecsab();
+		static_cast(BINARY *, *ppvalue)->pb = const_cast(uint8_t *, common_util_get_muidecsab());
 		return TRUE;
 	case PROP_TAG_ENTRYID:
 		pvalue = common_util_alloc(sizeof(BINARY));
@@ -864,7 +866,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			((BINARY*)pvalue)->cb = 16;
-			((BINARY*)pvalue)->pb = common_util_get_muidzcsab();
+			static_cast(BINARY *, pvalue)->pb = const_cast(uint8_t *, common_util_get_muidzcsab());
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
@@ -968,8 +970,7 @@ static BOOL container_object_fetch_folder_properties(
 
 static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 {
-	static PROPTAG_ARRAY proptags;
-	static uint32_t proptag_buff[] = {
+	static const uint32_t proptag_buff[] = {
 					PROP_TAG_FOLDERID,
 					PROP_TAG_SUBFOLDERS,
 					PROP_TAG_DISPLAYNAME,
@@ -977,11 +978,7 @@ static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 					PROP_TAG_FOLDERPATHNAME,
 					PROP_TAG_PARENTFOLDERID,
 					PROP_TAG_ATTRIBUTEHIDDEN};
-	
-	if (0 == proptags.count) {
-		proptags.count = 7;
-		proptags.pproptag = proptag_buff;
-	}
+	static const PROPTAG_ARRAY proptags = {.count = 7, .pproptag = (uint32_t *)proptag_buff};
 	return &proptags;
 }
 
@@ -1051,7 +1048,7 @@ BOOL container_object_get_container_table_num(
 void container_object_get_container_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	static uint32_t proptag_buff[] = {
+	static const uint32_t proptag_buff[] = {
 		PROP_TAG_ENTRYID,
 		PROP_TAG_CONTAINERFLAGS,
 		PROP_TAG_DEPTH,
@@ -1064,7 +1061,7 @@ void container_object_get_container_table_all_proptags(
 	};
 	
 	pproptags->count = 7;
-	pproptags->pproptag = proptag_buff;
+	pproptags->pproptag = const_cast(uint32_t *, proptag_buff);
 }
 
 static BOOL container_object_get_specialtables_from_node(
@@ -1378,7 +1375,7 @@ BOOL container_object_get_user_table_num(
 void container_object_get_user_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	static uint32_t proptag_buff[] = {
+	static const uint32_t proptag_buff[] = {
 		PROP_TAG_DISPLAYNAME,
 		PROP_TAG_NICKNAME,
 		PROP_TAG_SURNAME,
@@ -1415,7 +1412,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_THUMBNAILPHOTO
 	};
 	pproptags->count = 34;
-	pproptags->pproptag = proptag_buff;
+	pproptags->pproptag = const_cast(uint32_t *, proptag_buff);
 }
 
 BOOL container_object_query_user_table(

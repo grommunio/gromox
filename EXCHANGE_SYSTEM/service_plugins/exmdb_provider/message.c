@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "bounce_producer.h"
 #include "service_common.h"
 #include "tpropval_array.h"
@@ -2279,10 +2281,10 @@ static BOOL message_rectify_message(const char *account,
 	EXT_PUSH ext_push;
 	char cid_string[256];
 	MESSAGE_CONTENT *pembedded;
-	static uint8_t fake_true = 1;
-	static uint8_t fake_false;
-	static uint32_t fake_int32;
-	static uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED;
+	static const uint8_t fake_true = 1;
+	static const uint8_t fake_false;
+	static const uint32_t fake_int32;
+	static const uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED;
 	
 	pmsgctnt1->proplist.count = 0;
 	pmsgctnt1->proplist.ppropval = common_util_alloc(sizeof(
@@ -2314,16 +2316,16 @@ static BOOL message_rectify_message(const char *account,
 	pmsgctnt1->proplist.ppropval[
 		pmsgctnt1->proplist.count].proptag =
 		PROP_TAG_MESSAGESTATUS;
-	pmsgctnt1->proplist.ppropval[
-		pmsgctnt1->proplist.count].pvalue = &fake_int32;
+	pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
+		const_cast(uint32_t *, &fake_int32);
 	pmsgctnt1->proplist.count ++;
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS)) {
 		pmsgctnt1->proplist.ppropval[
 			pmsgctnt1->proplist.count].proptag =
 			PROP_TAG_MESSAGEFLAGS;
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].pvalue = &fake_flags;
+		pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
+			const_cast(uint8_t *, &fake_flags);
 		pmsgctnt1->proplist.count ++;
 	}
 	if (NULL == common_util_get_propvals(
@@ -2446,8 +2448,8 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.ppropval[
 			pmsgctnt1->proplist.count].proptag =
 			PROP_TAG_READ;
-		pmsgctnt1->proplist.ppropval[
-			pmsgctnt1->proplist.count].pvalue = &fake_false;
+		pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
+			const_cast(uint8_t *, &fake_false);
 		pmsgctnt1->proplist.count ++;
 	}
 	pbin1 = common_util_get_propvals(
@@ -2483,8 +2485,8 @@ static BOOL message_rectify_message(const char *account,
 	pmsgctnt1->proplist.ppropval[
 		pmsgctnt1->proplist.count].proptag =
 		PROP_TAG_CONVERSATIONINDEXTRACKING;
-	pmsgctnt1->proplist.ppropval[
-		pmsgctnt1->proplist.count].pvalue = &fake_true;
+	pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
+		const_cast(uint8_t *, &fake_true);
 	pmsgctnt1->proplist.count ++;
 	if (NULL == pbin1) {
 		pbin1 = common_util_alloc(sizeof(BINARY));
@@ -2618,7 +2620,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	MESSAGE_CONTENT msgctnt;
 	TAGGED_PROPVAL tmp_propval;
 	PROBLEM_ARRAY tmp_problems;
-	static uint32_t fake_uid = 1;
+	static const uint32_t fake_uid = 1;
 	const TPROPVAL_ARRAY *pproplist;
 	
 	pproplist = &pmsgctnt->proplist;
@@ -2849,7 +2851,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		}
 		if (NULL == pvalue) {
-			pvalue = &fake_uid;
+			pvalue = const_cast(uint32_t *, &fake_uid);
 		}
 		next = *(uint32_t*)pvalue + 1;
 		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
@@ -4375,7 +4377,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	MESSAGE_CONTENT *pmsgctnt;
 	MOVECOPY_ACTION *pmovecopy;
 	EXT_REPLY_ACTION *pextreply;
-	static uint8_t fake_true = 1;
+	static const uint8_t fake_true = 1;
 	EXT_RULE_ACTIONS ext_actions;
 	EXT_MOVECOPY_ACTION *pextmvcp;
 	FORWARDDELEGATE_ACTION *pfwddlgt;
@@ -4719,7 +4721,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				}
 				propval.proptag = PROP_TAG_DELEGATEDBYRULE;
-				propval.pvalue = &fake_true;
+				propval.pvalue = const_cast(uint8_t *, &fake_true);
 				common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				if (FALSE == message_recipient_blocks_to_list(
 					pfwddlgt->count, pfwddlgt->pblock, &rcpt_list)) {
@@ -4772,7 +4774,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					continue;
 				}
 				propval.proptag = PROP_TAG_READ;
-				propval.pvalue = &fake_true;
+				propval.pvalue = const_cast(uint8_t *, &fake_true);
 				if (FALSE == common_util_set_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					0, psqlite, &propval, &b_result)) {
@@ -5172,7 +5174,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				}
 				propval.proptag = PROP_TAG_DELEGATEDBYRULE;
-				propval.pvalue = &fake_true;
+				propval.pvalue = const_cast(uint8_t *, &fake_true);
 				common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				if (FALSE == message_ext_recipient_blocks_to_list(
 					pextfwddlgt->count, pextfwddlgt->pblock, &rcpt_list)) {
@@ -5225,7 +5227,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					continue;
 				}
 				propval.proptag = PROP_TAG_READ;
-				propval.pvalue = &fake_true;
+				propval.pvalue = const_cast(uint8_t *, &fake_true);
 				if (FALSE == common_util_set_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					0, psqlite, &propval, &b_result)) {
@@ -5300,7 +5302,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT tmp_msg;
 	char digest_buff[MAX_DIGLEN];
-	static uint8_t fake_true = 1;
+	static const uint8_t fake_true = 1;
 	
 	if (NULL != pdigest && strlen(pdigest) >= MAX_DIGLEN) {
 		return FALSE;
@@ -5459,11 +5461,11 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		}
 		if (TRUE == b_to_me) {
 			propval.proptag = PROP_TAG_MESSAGETOME;
-			propval.pvalue = &fake_true;
+			propval.pvalue = const_cast(uint8_t *, &fake_true);
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		} else if (TRUE == b_cc_me) {
 			propval.proptag = PROP_TAG_MESSAGECCME;
-			propval.pvalue = &fake_true;
+			propval.pvalue = const_cast(uint8_t *, &fake_true);
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		}
 	}

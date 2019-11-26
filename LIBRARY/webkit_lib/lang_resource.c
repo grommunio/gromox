@@ -139,8 +139,7 @@ const char* lang_resource_get(LANG_RESOURCE *presource, const char *tag,
 	SINGLE_LIST_NODE *pnode;
 	DOUBLE_LIST accept_list;
 	DOUBLE_LIST_NODE *pdnode;
-	static char fake_string[] = "unknown resource item";
-
+	static const char fake_string[] = "unknown resource item";
 
 	found_lang = FALSE;
 	double_list_init(&accept_list);

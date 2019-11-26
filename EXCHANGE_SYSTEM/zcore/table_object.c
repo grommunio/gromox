@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "tarray_set.h"
 #include "object_tree.h"
 #include "restriction.h"
@@ -156,7 +157,7 @@ static BOOL table_object_get_store_table_all_proptags(
 	USER_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags1;
 	PROPTAG_ARRAY tmp_proptags2;
-	static uint32_t proptag_buff[] = {
+	static const uint32_t proptag_buff[] = {
 		PROP_TAG_STOREPROVIDER,
 		PROP_TAG_MESSAGESIZE,
 		PROP_TAG_ASSOCMESSAGESIZE,

@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "icsdownctx_object.h"
 #include "emsmdb_interface.h"
 #include "tpropval_array.h"
@@ -365,7 +367,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	PERSISTDATA *ppersistdata;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_proplist;
-	static uint8_t fake_byte;
+	static const uint8_t fake_byte;
 	PERSISTDATA_ARRAY persistdatas;
 	TPROPVAL_ARRAY *pproplist_state;
 	TPROPVAL_ARRAY *pproplist_deletions;
@@ -429,19 +431,19 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 		if (NULL == common_util_get_propvals(
 			fldchgs.pfldchgs + i, PROP_TAG_ATTRIBUTEHIDDEN)) {
 			tmp_propval.proptag = PROP_TAG_ATTRIBUTEHIDDEN;
-			tmp_propval.pvalue = &fake_byte;
+			tmp_propval.pvalue = const_cast(uint8_t *, &fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
 		if (NULL == common_util_get_propvals(
 			fldchgs.pfldchgs + i, PROP_TAG_ATTRIBUTESYSTEM)) {
 			tmp_propval.proptag = PROP_TAG_ATTRIBUTESYSTEM;
-			tmp_propval.pvalue = &fake_byte;
+			tmp_propval.pvalue = const_cast(uint8_t *, &fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
 		if (NULL == common_util_get_propvals(
 			fldchgs.pfldchgs + i, PROP_TAG_ATTRIBUTEREADONLY)) {
 			tmp_propval.proptag = PROP_TAG_ATTRIBUTEREADONLY;
-			tmp_propval.pvalue = &fake_byte;
+			tmp_propval.pvalue = const_cast(uint8_t *, &fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
 		if (NULL == common_util_get_propvals(
@@ -994,7 +996,7 @@ static BOOL icsdownctx_object_get_changepartial(
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY *pchangetags;
 	PROPERTY_GROUPINFO *pgpinfo;
-	static BINARY fake_bin;
+	static const BINARY fake_bin;
 	
 	pgpinfo = logon_object_get_property_groupinfo(
 				pctx->pstream->plogon, group_id);
@@ -1045,16 +1047,16 @@ static BOOL icsdownctx_object_get_changepartial(
 			case PROP_TAG_MESSAGERECIPIENTS:
 				pmsg->pchanges[i].proplist.ppropval[
 					count].proptag = PROP_TAG_MESSAGERECIPIENTS;
-				pmsg->pchanges[i].proplist.ppropval[
-							count].pvalue = &fake_bin;
+				pmsg->pchanges[i].proplist.ppropval[count].pvalue =
+					const_cast(uint8_t *, &fake_bin);
 				count ++;
 				pmsg->children.prcpts = pmsgctnt->children.prcpts;
 				break;
 			case PROP_TAG_MESSAGEATTACHMENTS:
 				pmsg->pchanges[i].proplist.ppropval[
 					count].proptag = PROP_TAG_MESSAGEATTACHMENTS;
-				pmsg->pchanges[i].proplist.ppropval[
-							count].pvalue = &fake_bin;
+				pmsg->pchanges[i].proplist.ppropval[count].pvalue =
+					const_cast(uint8_t *, &fake_bin);
 				count ++;
 				pmsg->children.pattachments =
 					pmsgctnt->children.pattachments;
@@ -1087,16 +1089,16 @@ static BOOL icsdownctx_object_get_changepartial(
 		case PROP_TAG_MESSAGERECIPIENTS:
 			pmsg->pchanges[i].proplist.ppropval[
 				count].proptag = PROP_TAG_MESSAGERECIPIENTS;
-			pmsg->pchanges[i].proplist.ppropval[
-						count].pvalue = &fake_bin;
+			pmsg->pchanges[i].proplist.ppropval[count].pvalue =
+				const_cast(uint8_t *, &fake_bin);
 			count ++;
 			pmsg->children.prcpts = pmsgctnt->children.prcpts;
 			break;
 		case PROP_TAG_MESSAGEATTACHMENTS:
 			pmsg->pchanges[i].proplist.ppropval[
 				count].proptag = PROP_TAG_MESSAGEATTACHMENTS;
-			pmsg->pchanges[i].proplist.ppropval[
-				count].pvalue = &fake_bin;
+			pmsg->pchanges[i].proplist.ppropval[count].pvalue =
+				const_cast(uint8_t *, &fake_bin);
 			count ++;
 			pmsg->children.pattachments =
 				pmsgctnt->children.pattachments;
@@ -1196,8 +1198,8 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 	MESSAGE_CONTENT *pembedded;
 	MSGCHG_PARTIAL msg_partial;
 	TAGGED_PROPVAL tmp_propval;
-	static uint8_t fake_true = 1;
-	static uint8_t fake_false;
+	static const uint8_t fake_true = 1;
+	static const uint8_t fake_false;
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (TRUE == logon_object_check_private(pctx->pstream->plogon)) {
@@ -1319,17 +1321,17 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
 			if (NULL != pvalue && ((*(uint32_t*)pvalue)
 				& MESSAGE_FLAG_NOTIFYREAD)) {
-				tmp_propval.pvalue = &fake_true;
+				tmp_propval.pvalue = const_cast(uint8_t *, &fake_true);
 			} else {
-				tmp_propval.pvalue = &fake_false;
+				tmp_propval.pvalue = const_cast(uint8_t *, &fake_false);
 			}
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 			if (NULL != pvalue && ((*(uint32_t*)pvalue)
 				& MESSAGE_FLAG_NOTIFYUNREAD)) {
-				tmp_propval.pvalue = &fake_true;
+				tmp_propval.pvalue = const_cast(uint8_t *, &fake_true);
 			} else {
-				tmp_propval.pvalue = &fake_false;
+				tmp_propval.pvalue = const_cast(uint8_t *, &fake_false);
 			}
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			if (FALSE == ftstream_producer_write_messagechangefull(
@@ -1474,17 +1476,17 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
 		if (NULL != pvalue && ((*(uint32_t*)pvalue)
 			& MESSAGE_FLAG_NOTIFYREAD)) {
-			tmp_propval.pvalue = &fake_true;
+			tmp_propval.pvalue = const_cast(uint8_t *, &fake_true);
 		} else {
-			tmp_propval.pvalue = &fake_false;
+			tmp_propval.pvalue = const_cast(uint8_t *, &fake_false);
 		}
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
 		tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 		if (NULL != pvalue && ((*(uint32_t*)pvalue)
 			& MESSAGE_FLAG_NOTIFYUNREAD)) {
-			tmp_propval.pvalue = &fake_true;
+			tmp_propval.pvalue = const_cast(uint8_t *, &fake_true);
 		} else {
-			tmp_propval.pvalue = &fake_false;
+			tmp_propval.pvalue = const_cast(uint8_t *, &fake_false);
 		}
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
 		if (FALSE == ftstream_producer_write_messagechangefull(

@@ -1,3 +1,5 @@
+#include <stdint.h>
+#include <libHX/defs.h>
 #include "system_services.h"
 #include "zarafa_server.h"
 #include "user_object.h"
@@ -52,7 +54,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 	char username[256];
 	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
-	static uint32_t fake_type = OBJECT_USER;
+	static const uint32_t fake_type = OBJECT_USER;
 	
 	pbase = ab_tree_get_base(puser->base_id);
 	if (NULL == pbase) {
@@ -86,7 +88,7 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_OBJECTTYPE;
 				ppropvals->ppropval[ppropvals->count].pvalue =
-													&fake_type;
+					const_cast(uint32_t *, &fake_type);
 				ppropvals->count ++;
 			}
 			if (common_util_index_proptags(pproptags,

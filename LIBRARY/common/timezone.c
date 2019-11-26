@@ -831,7 +831,7 @@ static int tzparse(const char *name, register struct
 	register unsigned char *typep;
 	register char *cp;
 	register int load_result;
-	static struct ttinfo zttinfo;
+	static const struct ttinfo zttinfo;
 
 	INITIALIZE(dstname);
 	stdname = name;

@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <libHX/defs.h>
 #include "dsn.h"
 #include "rtf.h"
@@ -951,7 +952,7 @@ static BOOL oxcmail_parse_subject(const char *charset,
 	TAGGED_PROPVAL propval;
 	char tmp_buff[MIME_FIELD_LEN];
 	char utf8_field[MIME_FIELD_LEN];
-	static uint8_t seperator[] = {':', 0x00, ' ', 0x00};
+	static const uint8_t seperator[] = {':', 0x00, ' ', 0x00};
 	
 	if (TRUE == mime_string_to_utf8(
 		charset, field, utf8_field)) {
@@ -1178,7 +1179,7 @@ static BOOL oxcmail_parse_content_class(
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	TAGGED_PROPVAL propval1;
-	static uint32_t lid_infopathfromname = 0x000085B1;
+	static const uint32_t lid_infopathfromname = 0x000085B1;
 	
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	if (0 == strcasecmp(field, "fax")) {
@@ -1254,7 +1255,7 @@ static BOOL oxcmail_parse_content_class(
 				/* PidLidInfoPathFromName */
 				propname.kind = KIND_LID;
 				rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-				propname.plid = &lid_infopathfromname;
+				propname.plid = const_cast(uint32_t *, &lid_infopathfromname);
 				if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 					return FALSE;
 				}
@@ -1310,17 +1311,16 @@ static BOOL oxcmail_parse_message_flag(
 	uint32_t tmp_int32;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
-	static uint32_t lid_todo_title = 0x000085A4;
-	static uint32_t lid_task_status = 0x00008101;
-	static uint32_t lid_flag_request = 0x00008530;
-	static uint32_t lid_task_complete = 0x0000811C;
-	static uint32_t lid_percent_complete = 0x00008102;
-	
+	static const uint32_t lid_todo_title = 0x000085A4;
+	static const uint32_t lid_task_status = 0x00008101;
+	static const uint32_t lid_flag_request = 0x00008530;
+	static const uint32_t lid_task_complete = 0x0000811C;
+	static const uint32_t lid_percent_complete = 0x00008102;
 	
 	/* PidLidFlagRequest */
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-	propname.plid = &lid_flag_request;
+	propname.plid = const_cast(uint32_t *, &lid_flag_request);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -1355,7 +1355,7 @@ static BOOL oxcmail_parse_message_flag(
 	if (NULL != pvalue) {
 		propname.kind = KIND_LID;
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-		propname.plid = &lid_todo_title;
+		propname.plid = const_cast(uint32_t *, &lid_todo_title);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
@@ -1375,7 +1375,7 @@ static BOOL oxcmail_parse_message_flag(
 	/* PidLidTaskStatus */
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
-	propname.plid = &lid_task_status;
+	propname.plid = const_cast(uint32_t *, &lid_task_status);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -1390,7 +1390,7 @@ static BOOL oxcmail_parse_message_flag(
 	/* PidLidTaskComplete */
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
-	propname.plid = &lid_task_complete;
+	propname.plid = const_cast(uint32_t *, &lid_task_complete);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -1405,7 +1405,7 @@ static BOOL oxcmail_parse_message_flag(
 	/* PidLidPercentComplete */
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
-	propname.plid = &lid_percent_complete;
+	propname.plid = const_cast(uint32_t *, &lid_percent_complete);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -1430,13 +1430,13 @@ static BOOL oxcmail_parse_classified(char *field,
 	uint8_t tmp_byte;
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
-	static uint32_t lid_classified = 0x000085B5;
+	static const uint32_t lid_classified = 0x000085B5;
 	
 	/* PidLidClassified */
 	if (0 == strcasecmp(field, "true")) {
 		propname.kind = KIND_LID;
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-		propname.plid = &lid_classified;
+		propname.plid = const_cast(uint32_t *, &lid_classified);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
@@ -1459,13 +1459,13 @@ static BOOL oxcmail_parse_classkeep(char *field,
 	uint8_t tmp_byte;
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
-	static uint32_t lid_classification_keep = 0x000085BA;
+	static const uint32_t lid_classification_keep = 0x000085BA;
 	
 	/* PidLidClassificationKeep */
 	if (0 == strcasecmp(field, "true") || 0 == strcasecmp(field, "false")) {
 		propname.kind = KIND_LID;
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-		propname.plid = &lid_classification_keep;
+		propname.plid = const_cast(uint32_t *, &lid_classification_keep);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
@@ -1491,12 +1491,12 @@ static BOOL oxcmail_parse_classification(char *field,
 {
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
-	static uint32_t lid_classification = 0x000085B6;
+	static const uint32_t lid_classification = 0x000085B6;
 	
 	/* PidLidClassification */
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-	propname.plid = &lid_classification;
+	propname.plid = const_cast(uint32_t *, &lid_classification);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -1520,12 +1520,12 @@ static BOOL oxcmail_parse_classdesc(char *field,
 {
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
-	static uint32_t lid_classification_description = 0x000085B7;
+	static const uint32_t lid_classification_description = 0x000085B7;
 	
 	/* PidLidClassificationDescription */
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-	propname.plid = &lid_classification_description;
+	propname.plid = const_cast(uint32_t *, &lid_classification_description);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -1549,12 +1549,12 @@ static BOOL oxcmail_parse_classid(char *field,
 {
 	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
-	static uint32_t lid_classification_guid = 0x000085B8;
+	static const uint32_t lid_classification_guid = 0x000085B8;
 	
 	/* PidLidClassificationGuid */
 	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-	propname.plid = &lid_classification_guid;
+	propname.plid = const_cast(uint32_t *, &lid_classification_guid);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
@@ -3522,9 +3522,9 @@ static void oxcmail_remove_flag_propties(
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[3];
-	static uint32_t lid_task_duedate = 0x00008105;
-	static uint32_t lid_task_startdate = 0x00008104;
-	static uint32_t lid_task_datecompleted = 0x0000810F;
+	static const uint32_t lid_task_duedate = 0x00008105;
+	static const uint32_t lid_task_startdate = 0x00008104;
+	static const uint32_t lid_task_datecompleted = 0x0000810F;
 	
 	tpropval_array_remove_propval(&pmsg->proplist,
 						PROP_TAG_FLAGCOMPLETETIME);
@@ -3534,17 +3534,17 @@ static void oxcmail_remove_flag_propties(
 	propname_buff[0].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK,
 		&propname_buff[0].guid);
-	propname_buff[0].plid = &lid_task_duedate;
+	propname_buff[0].plid = const_cast(uint32_t *, &lid_task_duedate);
 	/* PidLidTaskStartDate */
 	propname_buff[1].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK,
 		&propname_buff[1].guid);
-	propname_buff[1].plid = &lid_task_startdate;
+	propname_buff[1].plid = const_cast(uint32_t *, &lid_task_startdate);
 	/* PidLidTaskDateCompleted */
 	propname_buff[2].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK,
 		&propname_buff[2].guid);
-	propname_buff[2].plid = &lid_task_datecompleted;
+	propname_buff[2].plid = const_cast(uint32_t *, &lid_task_datecompleted);
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return;
 	}
