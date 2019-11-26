@@ -199,10 +199,10 @@ int anti_spamming_run()
  *	  @return	  
  *		  PLUGIN_LOAD_OK			  success
  *		  PLUGIN_ALREADY_LOADED		  already loaded by anti-spamming module
- *		  PLUGIN_FAIL_OPEN			  error to load the file
- *		  PLUGIN_NO_MAIN			  error to find library function
+ *		  PLUGIN_FAIL_OPEN			  error loading the file
+ *		  PLUGIN_NO_MAIN			  error finding the library function
  *		  PLUGIN_FAIL_ALLOCNODE		  fail to allocate memory for a node
- *		  PLUGIN_FAIL_EXECUTEMAIN	  error to execute plugin's init function	
+ *		  PLUGIN_FAIL_EXECUTEMAIN	  error executing the plugin's init function	
  */
 int anti_spamming_load_library(const char* path)
 {
@@ -230,14 +230,14 @@ int anti_spamming_load_library(const char* path)
 		handle = dlopen(altpath, RTLD_LAZY);
 	}
 	if (NULL == handle){
-		printf("[anti_spamming]: error to load %s reason: %s\n", fake_path, 
+		printf("[anti_spamming]: error loading %s: %s\n", fake_path,
 				dlerror());
 		printf("[anti_spamming]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
 	}
 	func = (PLUGIN_MAIN)dlsym(handle, "AS_LibMain");
 	if (NULL == func) {
-		printf("[anti_spamming]: error to find AS_LibMain function in %s\n",
+		printf("[anti_spamming]: error finding the AS_LibMain function in %s\n",
 				fake_path);
 		printf("[anti_spamming]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
@@ -277,7 +277,7 @@ int anti_spamming_load_library(const char* path)
 	g_cur_lib = plib;
 	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
-		printf("[anti_spamming]: error to execute plugin's init function "
+		printf("[anti_spamming]: error executing the plugin's init function "
 				"in %s\n", fake_path);
 		printf("[anti_spamming]: the plugin %s is not loaded\n", fake_path);
 		/*

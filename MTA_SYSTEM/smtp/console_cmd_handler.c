@@ -181,7 +181,7 @@ BOOL cmd_handler_service_control(int argc, char** argv)
 								"been loaded");
 			break;
 		case PLUGIN_FAIL_OPEN:
-			console_server_reply_to_client("550 error to open the plug-in");
+			console_server_reply_to_client("550 error opening the plug-in");
 			break;
 		case PLUGIN_NO_MAIN:
 			console_server_reply_to_client("550 fail to find library function");
@@ -281,7 +281,7 @@ BOOL cmd_handler_anti_spamming_control(int argc, char** argv)
 								"been loaded");
 			break;
 		case PLUGIN_FAIL_OPEN:
-			console_server_reply_to_client("550 error to open the plug-in");
+			console_server_reply_to_client("550 error opening the plug-in");
 			break;
 		case PLUGIN_NO_MAIN:
 			console_server_reply_to_client("550 fail to find library function");
@@ -331,7 +331,7 @@ BOOL cmd_handler_anti_spamming_control(int argc, char** argv)
 			console_server_reply_to_client("550 reload error");
 			return TRUE;
 	 case PLUGIN_RELOAD_FAIL_OPEN:
-		 console_server_reply_to_client("550 error to open the plug-in");
+		 console_server_reply_to_client("550 error opening the plug-in");
 			return TRUE;
 		case PLUGIN_RELOAD_NO_MAIN:
 			console_server_reply_to_client("550 fail to find library function");

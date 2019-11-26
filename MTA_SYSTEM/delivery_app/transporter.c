@@ -796,14 +796,13 @@ int transporter_load_library(const char* path)
 		handle = dlopen(altpath, RTLD_LAZY);
 	}
     if (NULL == handle){
-        printf("[transporter]: error to load %s reason: %s\n", fake_path,
-                dlerror());
+        printf("[transporter]: error loading %s: %s\n", fake_path, dlerror());
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
         return PLUGIN_FAIL_OPEN;
     }
     func = (PLUGIN_MAIN)dlsym(handle, "HOOK_LibMain");
     if (NULL == func) {
-        printf("[transporter]: error to find HOOK_LibMain function in %s\n",
+        printf("[transporter]: error finding the HOOK_LibMain function in %s\n",
                 fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
         dlclose(handle);
@@ -830,7 +829,7 @@ int transporter_load_library(const char* path)
     g_cur_lib = plib;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
     if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
-		printf("[transporter]: error to execute plugin's init function "
+		printf("[transporter]: error executing the plugin's init function "
                 "in %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
         /*

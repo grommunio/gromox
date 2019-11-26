@@ -3868,14 +3868,14 @@ static int pdu_processor_load_library(const char* plugin_name)
 		handle = dlopen(altpath, RTLD_LAZY);
 	}
 	if (NULL == handle){
-		printf("[pdu_processor]: error to load %s reason: %s\n", fake_path,
+		printf("[pdu_processor]: error loading %s: %s\n", fake_path,
 			dlerror());
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
     }
 	func = (PLUGIN_MAIN)dlsym(handle, "PROC_LibMain");
 	if (NULL == func) {
-		printf("[pdu_processor]: error to find PROC_LibMain function in %s\n",
+		printf("[pdu_processor]: error finding the PROC_LibMain function in %s\n",
 			fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
@@ -3902,7 +3902,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 	g_cur_plugin = pplugin;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
     if (FALSE == func(PLUGIN_INIT, (void**)two_server_funcs)) {
-		printf("[pdu_processor]: error to execute plugin's init function "
+		printf("[pdu_processor]: error executing the plugin's init function "
 			"in %s\n", fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		/*

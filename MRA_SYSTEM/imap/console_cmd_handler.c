@@ -160,7 +160,7 @@ BOOL cmd_handler_service_control(int argc, char** argv)
 								"been loaded");
 			break;
 		case PLUGIN_FAIL_OPEN:
-			console_server_reply_to_client("550 error to open the plug-in");
+			console_server_reply_to_client("550 error opening the plug-in");
 			break;
 		case PLUGIN_NO_MAIN:
 			console_server_reply_to_client("550 fail to find library function");

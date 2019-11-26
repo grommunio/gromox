@@ -151,10 +151,10 @@ int service_stop()
  *  @return
  *      PLUGIN_LOAD_OK              success
  *      PLUGIN_ALREADY_LOADED       already loaded by service module
- *      PLUGIN_FAIL_OPEN            error to load the file
- *      PLUGIN_NO_MAIN              error to find library function
+ *      PLUGIN_FAIL_OPEN            error loading the file
+ *      PLUGIN_NO_MAIN              error finding the library function
  *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
- *      PLUGIN_FAIL_EXECUTEMAIN     error to execute plugin's init function
+ *      PLUGIN_FAIL_EXECUTEMAIN     error executing the plugin's init function
  */
 int service_load_library(const char *path)
 {
@@ -182,14 +182,13 @@ int service_load_library(const char *path)
 		handle = dlopen(altpath, RTLD_LAZY);
 	}
 	if (NULL == handle){
-		printf("[service]: error to load %s reason: %s\n", fake_path,
-				dlerror());
+		printf("[service]: error loading %s: %s\n", fake_path, dlerror());
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
 	}
 	func = (PLUGIN_MAIN)dlsym(handle, "SVC_LibMain");
 	if (NULL == func) {
-		printf("[service]: error to find SVC_LibMain function in %s\n",
+		printf("[service]: error finding the SVC_LibMain function in %s\n",
 				fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
@@ -225,7 +224,7 @@ int service_load_library(const char *path)
 	g_cur_plug = plib;
 	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
 	if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
-		printf("[service]: error to execute plugin's init function "
+		printf("[service]: error executing the plugin's init function "
 				"in %s\n", fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
 		/*

@@ -424,14 +424,13 @@ static int hpm_processor_load_library(const char *plugin_name)
 		handle = dlopen(altpath, RTLD_LAZY);
 	}
 	if (NULL == handle){
-		printf("[hpm_processor]: error to load %s"
-			" reason: %s\n", fake_path, dlerror());
+		printf("[hpm_processor]: error loading %s: %s\n", fake_path, dlerror());
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		return PLUGIN_FAIL_OPEN;
     }
 	func = (PLUGIN_MAIN)dlsym(handle, "HPM_LibMain");
 	if (NULL == func) {
-		printf("[hpm_processor]: error to find "
+		printf("[hpm_processor]: error finding the "
 			"HPM_LibMain function in %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
@@ -458,8 +457,8 @@ static int hpm_processor_load_library(const char *plugin_name)
 		NULL == pplugin->interface.preproc ||
 		NULL == pplugin->interface.proc ||
 		NULL == pplugin->interface.retr) {
-		printf("[hpm_processor]: error to execute plugin's init "
-			"function or interface not registered in %s\n", fake_path);
+		printf("[hpm_processor]: error executing the plugin's init "
+			"function, or interface not registered in %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		/*
 		 *  the lib node will automatically removed from plugin
