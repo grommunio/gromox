@@ -5,7 +5,6 @@
 #include <gromox/exsvc_common.h>
 #include "ip_table.h"
 #include "config_file.h"
-#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -17,8 +16,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char file_name[256], tmp_path[256];
 	char *str_value, *psearch;
 	char *query_name, *add_name, *remove_name;
-	int growing_num, fd;
-	struct stat node_stat;
+	int growing_num;
 	
 	switch(reason) {
 	case PLUGIN_INIT:
@@ -57,12 +55,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[%s]: table growing number is %d\n", file_name, growing_num);
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
-		if (0 != stat(tmp_path, &node_stat)) {
-			fd = open(tmp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-			if (fd >= 0)
-				close(fd);
-			printf("[%s]: warning! cannot find data file!!!\n", file_name);
-		}
 		ip_table_init(file_name, tmp_path, growing_num);
 		if (0 != ip_table_run()) {
 			printf("[%s]: fail to run the module\n", file_name);

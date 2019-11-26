@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
@@ -24,8 +23,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char temp_buff[64];
 	char *str_value, *psearch;
 	int capacity, interval;
-	int fd;
-	struct stat node_stat;
 	
 	switch(reason) {
 	case PLUGIN_INIT:
@@ -74,12 +71,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[dns_adaptor]: valid interval is %s\n", temp_buff);
 		config_file_free(pfile);
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
-		if (0 != stat(tmp_path, &node_stat)) {
-			fd = open(tmp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-			if (fd >= 0)
-				close(fd);
-			printf("[dns_adaptor]: warning! cannot find data file!!!\n");
-		}
 		dns_adaptor_init(tmp_path, capacity, interval);
 		if (0 != dns_adaptor_run()) {
 			printf("[dns_adaptor]: fail to run the dns-adaptor module\n");

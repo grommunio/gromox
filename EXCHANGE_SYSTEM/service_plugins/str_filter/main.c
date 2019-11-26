@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 
 DECLARE_API;
@@ -22,9 +21,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char *str_value, *psearch;
 	char *judge_name, *add_name, *query_name;
 	int audit_max, audit_interval, audit_times;
-	int temp_list_size, growing_num, fd;
+	int temp_list_size, growing_num;
 	BOOL case_sensitive;
-	struct stat node_stat;
 	
 	switch(reason) {
 	case PLUGIN_INIT:
@@ -130,12 +128,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		add_name = config_file_get_value(pfile, "ADD_SERVICE_NAME");
 		query_name = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
 		sprintf(list_path, "%s/%s.txt", get_data_path(), file_name);
-		if (0 != stat(list_path, &node_stat)) {
-			fd = open(list_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-			if (fd >= 0)
-				close(fd);
-			printf("[%s]: warning! cannot find data file!!!\n", file_name);
-		}
 		str_filter_init(file_name, config_path, case_sensitive, audit_max,
 		   audit_interval, audit_times, temp_list_size, list_path, growing_num);
 		if (0 != str_filter_run()) {

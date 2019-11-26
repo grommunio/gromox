@@ -5,7 +5,6 @@
 #include <gromox/mtasvc_common.h>
 #include "tagging_table.h"
 #include "config_file.h"
-#include <sys/stat.h>
 #include <stdio.h>
 
 DECLARE_API;
@@ -15,8 +14,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	CONFIG_FILE  *pfile;
 	char file_name[256], tmp_path[256];
 	char *str_value, *psearch;
-	int growing_num, fd;
-	struct stat node_stat;
+	int growing_num;
 	
 	switch(reason) {
 	case PLUGIN_INIT:
@@ -51,12 +49,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[tagging_table]: table growing number is %d\n", growing_num);
 		config_file_free(pfile);
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
-		if (0 != stat(tmp_path, &node_stat)) {
-			fd = open(tmp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-			if (fd >= 0)
-				close(fd);
-			printf("[tagging_table]: warning! cannot find data file!!!\n");
-		}
 		tagging_table_init(tmp_path, growing_num);
 		if (0 != tagging_table_run()) {
 			printf("[tagging_table]: fail to run the module\n");
