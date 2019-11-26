@@ -49,7 +49,7 @@ void domain_limit_init(int growing_num, const char *root_path)
 	pthread_rwlock_init(&g_deny_lock, NULL);
 }
 
-int domain_limit_run()
+static int domain_limit_run_deny(void)
 {
 	DIR *dirp;
 	char *pitem;
@@ -131,6 +131,22 @@ int domain_limit_run()
 		list_file_free(plist);
 	}
 	closedir(dirp);
+	return 0;
+}
+
+static int domain_limit_run_allow(void)
+{
+	DIR *dirp;
+	char *pitem;
+	int temp_len;
+	int domain_num;
+	int i, item_num;
+	SINGLE_LIST temp_list;
+	LIST_FILE *plist;
+	LIMIT_UNIT *punit;
+	char temp_path[256];
+	char temp_domain[256];
+	struct dirent *direntp;
 
 	sprintf(temp_path, "%s/allow", g_root_path);
 	dirp = opendir(temp_path);
@@ -209,6 +225,14 @@ int domain_limit_run()
 	}
 	closedir(dirp);
 	return 0;	
+}
+
+int domain_limit_run()
+{
+	int ret = domain_limit_run_deny();
+	if (ret != 0)
+		return ret;
+	return domain_limit_run_allow();
 }
 
 BOOL domain_limit_check(const char *from, MEM_FILE *pf_rcpt_to)
