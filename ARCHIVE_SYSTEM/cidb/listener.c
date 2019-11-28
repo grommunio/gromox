@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "list_file.h"
 #include "double_list.h"
@@ -56,7 +57,7 @@ int listener_run()
 	/* create a socket */
 	g_listen_sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (g_listen_sockd == -1) {
-        printf("[listener]: fail to create socket for listening\n");
+		printf("[listener]: failed to create socket: %s\n", strerror(errno));
 		return -1;
 	}
 	optval = -1;
@@ -121,8 +122,9 @@ int listener_trigger_accept()
 	pthread_t thr_id;
 
 	g_notify_stop = FALSE;
-	if(0 != pthread_create(&thr_id, NULL, thread_work_func, NULL)) {
-		printf("[listener]: fail to create listener thread\n");
+	int ret = pthread_create(&thr_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(thr_id, "accept");

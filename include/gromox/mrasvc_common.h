@@ -1,5 +1,7 @@
 #ifndef _H_SERVICE_COMMON_
 #define _H_SERVICE_COMMON_
+
+#include <gromox/defs.h>
 #include "common_types.h"
 
 #define PLUGIN_INIT     0

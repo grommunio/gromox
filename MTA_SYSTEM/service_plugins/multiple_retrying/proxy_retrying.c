@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <gromox/defs.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "retrying_table.h"
@@ -136,8 +137,9 @@ int proxy_retrying_run()
 	}
 	free(temp_array);
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thr_id, NULL, scanning_work_func, NULL)) {
-		printf("[multiple_retrying]: fail to create scanning thread\n");
+	int ret = pthread_create(&g_thr_id, nullptr, scanning_work_func, nullptr);
+	if (ret != 0) {
+		printf("[multiple_retrying]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return -4;
 	}

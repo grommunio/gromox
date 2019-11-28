@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "exec_sched.h"
 #include "util.h"
 #include "double_list.h"
@@ -106,7 +107,7 @@ int communicator_run()
 	/* create a socket */
 	g_listen_sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (g_listen_sockd == -1) {
-        printf("[communicator]: fail to create socket for listening\n");
+		printf("[communicator]: failed to create listen socket: %s\n", strerror(errno));
 		return -1;
 	}
 	optval = -1;
@@ -163,13 +164,12 @@ int communicator_run()
 	}
 
 	g_notify_stop = FALSE;
-
-	if (0 != pthread_create(&g_listen_tid, NULL,
-		accept_work_func, NULL)) {
+	int ret = pthread_create(&g_listen_tid, nullptr, accept_work_func, nullptr);
+	if (ret != 0) {
 		close(g_listen_sockd);
 		while ((pnode = double_list_get_from_head(&g_acl_list)) != NULL)
 			free(pnode->pdata);
-		printf("[communicator]: fail to create accept thread\n");
+		printf("[communicator]: failed to create accept thread: %s\n", strerror(ret));
 		return -5;
 	}
 

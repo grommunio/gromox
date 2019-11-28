@@ -48,10 +48,11 @@ void engine_init(const char *mount_path, const char *domainlist_path,
 int engine_run()
 {
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thread_id1, NULL, thread_work_func1, NULL) ||
-		0 != pthread_create(&g_thread_id2, NULL, thread_work_func2, NULL)) {
+	int ret = 0;
+	if ((ret = pthread_create(&g_thread_id1, nullptr, thread_work_func1, nullptr) != 0) ||
+	    (ret = pthread_create(&g_thread_id2, nullptr, thread_work_func2, nullptr) != 0)) {
 		g_notify_stop = TRUE;
-		printf("[engine]: fail to create work thread\n");
+		printf("[engine]: failed to create work thread: %s\n", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(g_thread_id1, "work/1");

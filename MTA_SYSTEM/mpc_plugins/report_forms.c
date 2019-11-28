@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
@@ -104,10 +105,11 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
 		g_notify_stop = FALSE;
 		pthread_attr_init(&attr);
-		if (0 != pthread_create(&g_thread_id, &attr, thread_work_func, NULL)) {
+		int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+		if (ret != 0) {
 			pthread_attr_destroy(&attr);
 			g_notify_stop = TRUE;
-			printf("[report_forms]: fail to create thread\n");
+			printf("[report_forms]: failed to create thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_thread_id, "report_forms");

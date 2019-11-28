@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "util.h"
 #include "mysql_pool.h"
 #include "common_types.h"
@@ -92,9 +93,10 @@ int mysql_pool_run()
 	}
 	
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
+	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
 		g_notify_stop = TRUE;
-		printf("[mysql_pool]: fail to create scanning thread\n");
+		printf("[mysql_pool]: failed to create scanning thread: %s\n", strerror(ret));
 		return -2;
 	}
 	pthread_setname_np(g_thread_id, "mysql_pool");

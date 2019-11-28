@@ -197,7 +197,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		}
 		g_epoll_fd = epoll_create(context_num);
 		if (-1 == g_epoll_fd) {
-			printf("[mod_proxy]: fail to create epoll instance\n");
+			printf("[mod_proxy]: failed to create epoll instance: %s\n", strerror(errno));
 			return FALSE;
 		}
 		g_events = malloc(sizeof(struct epoll_event)*context_num);
@@ -206,8 +206,9 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		g_notify_stop = FALSE;
-		if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
-			printf("[mod_proxy]: fail to create epoll thread\n");
+		int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+		if (ret != 0) {
+			printf("[mod_proxy]: failed to create epoll thread: %s\n", strerror(ret));
 			g_notify_stop = TRUE;
 			return FALSE;
 		}

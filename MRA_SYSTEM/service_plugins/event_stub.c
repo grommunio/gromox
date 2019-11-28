@@ -114,13 +114,14 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 
 		g_notify_stop = FALSE;
+		int ret = 0;
 		for (i=0; i<conn_num; i++) {
 			pback = (BACK_CONN*)malloc(sizeof(BACK_CONN));
 			if (NULL != pback) {
 		        pback->node.pdata = pback;
 				pback->sockd = -1;
-				if (0 != pthread_create(&pback->thr_id, NULL,
-					thread_work_func, pback)) {
+				ret = pthread_create(&pback->thr_id, nullptr, thread_work_func, pback);
+				if (ret != 0) {
 					free(pback);
 					break;
 				}
@@ -143,7 +144,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 				free(pback);
 			}
 			double_list_free(&g_back_list);
-			printf("[event_proxy]: fail to create stub thread");
+			printf("[event_proxy]: failed to create stub thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 

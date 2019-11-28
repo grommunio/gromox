@@ -61,7 +61,7 @@ int main(int argc, const char **argv)
 	fd = open("../data/tmp_password.tmp", O_CREAT|O_TRUNC|O_WRONLY, 0666);
 	if (-1 == fd) {
 		list_file_free(plist);
-		printf("fail to create temp file for writing\n");
+		printf("failed to create ../data/tmp_password.tmp: %s\n", strerror(errno));
 		return 3;
 	}
 	for (i=0; i<num; i++) {

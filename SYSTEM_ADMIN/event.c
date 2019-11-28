@@ -3,6 +3,7 @@
 #endif
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
@@ -239,7 +240,7 @@ int main(int argc, const char **argv)
 	if (sockd == -1) {
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
-        printf("[system]: fail to create socket for listening\n");
+		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
 		return 5;
 	}
 	optval = -1;
@@ -300,8 +301,9 @@ int main(int argc, const char **argv)
 	
 
 	for (i=0; i<g_threads_num; i++) {
-		if (0 != pthread_create(&en_ids[i], &thr_attr, enqueue_work_func, NULL)) {
-			printf("[system]: fail to create enqueue pool thread\n");
+		int ret = pthread_create(&en_ids[i], &thr_attr, enqueue_work_func, nullptr);
+		if (ret != 0) {
+			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
 			break;
 		}
 		char buf[32];
@@ -339,8 +341,9 @@ int main(int argc, const char **argv)
 	de_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
 	
 	for (i=0; i<g_threads_num; i++) {
-		if (0 != pthread_create(&de_ids[i], &thr_attr, dequeue_work_func, NULL)) {
-			printf("[system]: fail to create dequeue pool thread\n");
+		int ret = pthread_create(&de_ids[i], &thr_attr, dequeue_work_func, nullptr);
+		if (ret != 0) {
+			printf("[system]: failed to create dequeue pool thread: %s\n", strerror(ret));
 			break;
 		}
 		char buf[32];
@@ -428,11 +431,11 @@ int main(int argc, const char **argv)
 		list_file_free(plist);
 	}
 
-	
-	if (0 != pthread_create(&thr_id, NULL, accept_work_func, (void*)(long)sockd) ||
-		0 != pthread_create(&thr_id, NULL, scan_work_func, NULL)) {
-		printf("[system]: fail to create accept or scanning thread\n");
-
+	int ret = 0;
+	if ((ret = pthread_create(&thr_id, nullptr, accept_work_func,
+	    reinterpret_cast(void *, static_cast(intptr_t, sockd))) != 0) ||
+	    (ret = pthread_create(&thr_id, nullptr, scan_work_func, nullptr)) != 0) {
+		printf("[system]: failed to create accept or scanning thread: %s\n", strerror(ret));
 		for (i=0; i<g_threads_num; i++) {
 			pthread_cancel(en_ids[i]);
 		}

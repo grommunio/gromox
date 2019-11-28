@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <gromox/hook_common.h>
 #include "util.h"
@@ -115,7 +116,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	
     /* path conatins the config files directory */
     switch (reason) {
-    case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 
 		g_notify_stop = TRUE;
@@ -182,16 +183,18 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
 		g_notify_stop = FALSE;
 		pthread_attr_init(&attr);
-		if (0 != pthread_create(&g_thread_id, &attr, thread_work_func, NULL)) {
+		int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+		if (ret != 0) {
 			pthread_attr_destroy(&attr);
 			g_notify_stop = TRUE;
-			printf("[status_forms]: fail to create thread\n");
+			printf("[status_forms]: failed to create thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_thread_id, "status_forms");
 		pthread_attr_destroy(&attr);
 		register_talk(console_talk);
         return TRUE;
+	}
     case PLUGIN_FREE:
 		if (FALSE == g_notify_stop) {
 			g_notify_stop = TRUE;

@@ -1,5 +1,6 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "util.h"
 #include "mail.h"
 #include "mjson.h"
@@ -7122,11 +7123,12 @@ int mail_engine_run()
 		return -4;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_scan_tid, NULL, scan_work_func, NULL)) {
+	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
 		mime_pool_free(g_mime_pool);
 		str_hash_free(g_hash_table);
 		lib_buffer_free(g_alloc_mjson);
-		printf("[mail_engine]: fail to create scan thread\n");
+		printf("[mail_engine]: failed to create scan thread: %s\n", strerror(ret));
 		return -5;
 	}
 	pthread_setname_np(g_scan_tid, "mail_engine");

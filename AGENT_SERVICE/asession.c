@@ -1,8 +1,10 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>
@@ -153,7 +155,7 @@ int main(int argc, const char **argv)
     /* Create a Unix domain stream socket */
     listenfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (-1 == listenfd) {
-        printf("[system]: fail to create listen socket\n");
+		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
 		return 2;
     }
 
@@ -207,8 +209,9 @@ int main(int argc, const char **argv)
 	thr_ids = malloc(g_conn_num*sizeof(pthread_t));
 
 	for (i=0; i<g_conn_num; i++) {
-		if (0 != pthread_create(&thr_ids[i], NULL, thread_work_func, NULL)) {
-			printf("[system]: fail to create pool thread\n");
+		int ret = pthread_create(&thr_ids[i], nullptr, thread_work_func, nullptr);
+		if (ret != 0) {
+			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
 			break;
 		}
 		char buf[32];
@@ -224,10 +227,10 @@ int main(int argc, const char **argv)
 		return 6;
 	}
 
-
-	if (0 != pthread_create(&accept_id, NULL, accept_work_func,
-		(void*)(long)listenfd)) {
-		printf("[system]: fail to create accept thread\n");
+	int ret = pthread_create(&accept_id, nullptr, accept_work_func,
+	          reinterpret_cast(void *, static_cast(intptr_t, listenfd)));
+	if (ret != 0) {
+		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		close(listenfd);
 		for (i=0; i<g_conn_num; i++) {
 			pthread_cancel(thr_ids[i]);
@@ -235,8 +238,9 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 	pthread_setname_np(accept_id, "accept");
-	if (0 != pthread_create(&scan_id, NULL, scan_work_func, NULL)) {
-		printf("[system]: fail to create scan thread\n");
+	ret = pthread_create(&scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[system]: failed to create scan thread: %s\n", strerror(ret));
 		close(listenfd);
 		for (i=0; i<g_conn_num; i++) {
 			pthread_cancel(thr_ids[i]);

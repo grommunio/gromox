@@ -515,7 +515,8 @@ static void	blacklist_ui_modify_list(const char *boundary, const char *memo)
 	if (i < item_num) {
 		fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 		if (-1 == fd) {
-			system_log_info("[blacklist_ui]: fail to create %s", temp_path);
+			system_log_info("[blacklist_ui]: failed to create %s: %s",
+				temp_path, strerror(errno));
 			list_file_free(pfile);
 			return;
 		}
@@ -578,7 +579,8 @@ static void blacklist_ui_remove_item(const char *boundary)
 	}
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[blacklist_ui]: fail to create %s", temp_path);
+		system_log_info("[blacklist_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}

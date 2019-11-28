@@ -1,5 +1,7 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "retrying_table.h"
@@ -94,7 +96,7 @@ int stub_retrying_run()
 	/* create a socket */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
-        printf("[multiple_retrying]: fail to create socket for listening\n");
+		printf("[multiple_retrying]: failed to create listen socket: %s\n", strerror(errno));
 		return -2;
 	}
 	optval = -1;
@@ -121,8 +123,10 @@ int stub_retrying_run()
 		close(sockd);
 		return -4;
 	}
-	if (0 != pthread_create(&g_thr_id, NULL, accept_work_func, (void*)(long)sockd)) {
-		printf("[multiple_retrying]: fail to create accept thread\n");
+	int ret = pthread_create(&g_thr_id, nullptr, accept_work_func,
+	          reinterpret_cast(void *, static_cast(intptr_t, sockd)));
+	if (ret != 0) {
+		printf("[multiple_retrying]: failed to create accept thread: %s\n", strerror(ret));
 		close(sockd);
 		return -5;
 	}

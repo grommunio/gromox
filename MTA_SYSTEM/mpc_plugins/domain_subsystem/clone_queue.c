@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <gromox/defs.h>
 #include "address_list.h"
 #include "clone_queue.h"
 #include "smtp_clone.h"
@@ -66,10 +67,11 @@ int clone_queue_run()
 	g_mess_id = clone_queue_retrieve_mess_ID();
 	g_notify_stop = FALSE;
 	pthread_attr_init(&attr);
-	if(0 != pthread_create(&g_thread_id, &attr, thread_work_func, NULL)) {
+	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+	if (ret != 0) {
 		pthread_attr_destroy(&attr);
 		g_notify_stop = TRUE;
-		printf("[domain_subsystem]: fail to create timer thread\n");
+		printf("[domain_subsystem]: failed to create timer thread: %s\n", strerror(ret));
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "clone_queue");

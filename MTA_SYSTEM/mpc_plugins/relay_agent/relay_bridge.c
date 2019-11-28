@@ -1,5 +1,7 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "relay_bridge.h"
 #include "relay_agent.h"
 #include "double_list.h"
@@ -107,7 +109,7 @@ int relay_bridge_run()
 	/* create a socket */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
-		printf("[relay_agent]: fail to create socket for listening\n");
+		printf("[relay_agent]: failed to create listen socket: %s\n", strerror(errno));
 		return -4;
 	}
 	optval = -1;
@@ -139,9 +141,11 @@ int relay_bridge_run()
 		return -6;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thr_id, NULL, accept_work_func, (void*)(long)sockd)) {
+	int ret = pthread_create(&g_thr_id, nullptr, accept_work_func,
+	          reinterpret_cast(void *, static_cast(intptr_t, sockd)));
+	if (ret != 0) {
 		g_notify_stop = TRUE;
-		printf("[relay_agent]: fail to create accept thread\n");
+		printf("[relay_agent]: failed to create accept thread: %s\n", strerror(ret));
 		close(sockd);
 		return -7;
 	}

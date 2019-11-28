@@ -2,6 +2,8 @@
  *  the console server which communicate with the telnet clients
  */
 #include <errno.h>
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "console_server.h"
 #include "console_cmd_handler.h"
 #include "util.h"
@@ -117,7 +119,7 @@ int console_server_run()
 	optval = -1;
     /* create a socket descriptor */
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		printf("[console_server] fail to create socket\n");
+		printf("[console_server]: failed to create socket: %s\n", strerror(errno));
         return -1;
 	}
     /* eliminates "Address already in use" error from bind */
@@ -160,9 +162,10 @@ int console_server_run()
 		double_list_append_as_tail(&g_free_list, &pnodes[i].node);
 	}
 	/* create accepting thread */
-    if (0 != pthread_create(&g_listening_tid, NULL,
-		thread_work_func, (void*)(long)sock)) {
-		printf("[console_server] fail to create accepting thread\n");
+	int ret = pthread_create(&g_listening_tid, nullptr, thread_work_func,
+	          reinterpret_cast(void *, static_cast(long, sock)));
+	if (ret != 0) {
+		printf("[console_server]: failed to create accepting thread: %s\n", strerror(ret));
 		free(pnodes);
 		close(sock);
 		return -5;

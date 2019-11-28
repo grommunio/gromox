@@ -1,6 +1,7 @@
 #ifndef _H_FLUSH_COMMON_
 #define _H_FLUSH_COMMON_
 #include <sys/time.h>
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "mem_file.h"
 #include "stream.h"

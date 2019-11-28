@@ -90,7 +90,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
     DOUBLE_LIST_NODE *pnode;
 
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		
 		g_notify_stop = TRUE;
@@ -165,8 +165,9 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		list_file_free(plist);
 
 		g_notify_stop = FALSE;
-		if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-			printf("[midb_agent]: fail to create scan thread\n");
+		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+		if (ret != 0) {
+			printf("[midb_agent]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "midb_agent");
@@ -181,6 +182,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		if (FALSE == g_notify_stop) {
 			g_notify_stop = TRUE;

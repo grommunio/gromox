@@ -8,6 +8,7 @@
  */
 #include <errno.h>
 #include <string.h>
+#include <gromox/defs.h>
 #include "message_dequeue.h"
 #include "system_services.h"
 #include "util.h"
@@ -261,9 +262,9 @@ int message_dequeue_run()
 		return -8;
 	}
 	pthread_attr_init(&attr);
-	if (0 != pthread_create(&g_thread_id, &attr,
-		thread_work_func, NULL)) {
-		printf("[message_dequeue]: fail to create message dequeue thread\n");
+	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[message_dequeue]: failed to create message dequeue thread: %s\n", strerror(ret));
 		message_dequeue_collect_resource();
 		return -9;
 	}

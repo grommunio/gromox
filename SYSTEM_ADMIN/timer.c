@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
@@ -250,7 +251,7 @@ int main(int argc, const char **argv)
 	/* create a socket */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
-        printf("[system]: fail to create socket for listening\n");
+		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
 		return 4;
 	}
 	optval = -1;
@@ -303,8 +304,9 @@ int main(int argc, const char **argv)
 	thr_ids = (pthread_t*)malloc(g_threads_num*sizeof(pthread_t));
 
 	for (i=0; i<g_threads_num; i++) {
-		if (0 != pthread_create(&thr_ids[i], NULL,thread_work_func, NULL)) {
-			printf("[system]: fail to create pool thread\n");
+		int ret = pthread_create(&thr_ids[i], nullptr, thread_work_func, nullptr);
+		if (ret != 0) {
+			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
 			break;
 		}
 		char buf[32];
@@ -371,10 +373,10 @@ int main(int argc, const char **argv)
 
 	}
 	
-	if (0 != pthread_create(&thr_accept_id, NULL,
-		accept_work_func, (void*)(long)sockd)) {
-		printf("[system]: fail to create accept thread\n");
-
+	int ret = pthread_create(&thr_accept_id, nullptr, accept_work_func,
+	          reinterpret_cast(void *, static_cast(intptr_t, sockd)));
+	if (ret != 0) {
+		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		for (i=g_threads_num-1; i>=0; i--) {
 			pthread_cancel(thr_ids[i]);
 		}

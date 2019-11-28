@@ -6,6 +6,7 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
+#include <string.h>
 #include "common_types.h"
 #include "message_enqueue.h"
 #include "util.h"
@@ -132,9 +133,9 @@ int message_enqueue_run()
 
     g_notify_stop = FALSE;
     pthread_attr_init(&attr);
-    if (0 != pthread_create(&g_flushing_thread, &attr, 
-			thread_work_func, NULL)){
-		printf("[message_enqueue]: fail to create flushing thread\n");
+	int ret = pthread_create(&g_flushing_thread, &attr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[message_enqueue]: failed to create flushing thread: %s\n", strerror(ret));
 		if (NULL != g_tape_begin) {
 			shmdt(g_tape_begin);
 			g_tape_begin = NULL;

@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "util.h"
 #include "guid.h"
 #include "str_hash.h"
@@ -829,8 +830,9 @@ int db_engine_run()
 		return -3;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_scan_tid, NULL, scan_work_func, NULL)) {
-		printf("[exmdb_provider]: fail to create db scan thread\n");
+	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[exmdb_provider]: failed to create db scan thread: %s\n", strerror(ret));
 		return -4;
 	}
 	pthread_setname_np(g_scan_tid, "exmdbeng/scan");

@@ -646,7 +646,8 @@ static void	table_ui_modify_list(const char *group, const char *passive,
 	if (NULL == pfile) {
 		fd = open(list_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
-			system_log_info("[table_ui]: fail to create %s", list_path);
+			system_log_info("[table_ui]: failed to create %s: %s",
+				list_path, strerror(errno));
 			return;
 		}
 		table_ui_encode_line(passive, temp_passive);
@@ -679,7 +680,8 @@ static void	table_ui_modify_list(const char *group, const char *passive,
 	if (i < item_num) {
 		fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 		if (-1 == fd) {
-			system_log_info("[table_ui]: fail to create %s", temp_path);
+			system_log_info("[table_ui]: failed to create %s: %s",
+				temp_path, strerror(errno));
 			list_file_free(pfile);
 			return;
 		}
@@ -772,7 +774,8 @@ static void table_ui_remove_item(const char *group, const char *passive,
 	}
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[table_ui]: fail to create %s", temp_path);
+		system_log_info("[table_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}

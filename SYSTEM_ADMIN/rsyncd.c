@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
 #include "util.h"
@@ -160,7 +161,7 @@ int main(int argc, const char **argv)
 	/* create a socket */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
-        printf("[system]: fail to create socket for listening\n");
+		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
 		return 3;
 	}
 	optval = -1;
@@ -252,11 +253,10 @@ int main(int argc, const char **argv)
 	pthread_mutex_init(&g_connection_lock, NULL);
 	
 	double_list_init(&g_connection_list);
-
-
-	if (0 != pthread_create(&thr_id, NULL, accept_work_func, (void*)(long)sockd)) {
-		printf("[system]: fail to create accept thread\n");
-
+	int ret = pthread_create(&thr_id, nullptr, accept_work_func,
+	          reinterpret_cast(void *, static_cast(intptr_t, sockd)));
+	if (ret != 0) {
+		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		close(sockd);
 		SSL_CTX_free(g_ssl_ctx);
 		

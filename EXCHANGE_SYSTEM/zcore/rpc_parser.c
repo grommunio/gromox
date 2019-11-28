@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "idset.h"
 #include "rpc_ext.h"
 #include "rpc_parser.h"
@@ -782,11 +783,11 @@ int rpc_parser_run()
 		return -1;
 	}
 	g_notify_stop = FALSE;
+	int ret = 0;
 	for (i=0; i<g_thread_num; i++) {
-		if (0 != pthread_create(&g_thread_ids[i],
-			NULL, thread_work_func, NULL)) {
+		ret = pthread_create(&g_thread_ids[i], nullptr, thread_work_func, nullptr);
+		if (ret != 0)
 			break;
-		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "rpc/%u", i);
 		pthread_setname_np(g_thread_ids[i], buf);
@@ -797,7 +798,7 @@ int rpc_parser_run()
 			pthread_cancel(g_thread_ids[i]);
 		}
 		free(g_thread_ids);
-		printf("[rpc_parser]: fail to create pool thread\n");
+		printf("[rpc_parser]: failed to create pool thread: %s\n", strerror(ret));
 		return -2;
 	}
 	return 0;

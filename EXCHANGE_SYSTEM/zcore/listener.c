@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <gromox/defs.h>
 #include "listener.h"
 #include "rpc_parser.h"
 #include <sys/socket.h>
@@ -52,7 +53,7 @@ int listener_run(const char *CS_PATH)
 	 /* Create a Unix domain stream socket */
 	g_listen_sockd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (-1 == g_listen_sockd) {
-		printf("[listener]: fail to create listen socket\n");
+		printf("[listener]: failed to create listen socket: %s\n", strerror(errno));
 		return -1;
 	}
 	unlink(CS_PATH);
@@ -78,9 +79,10 @@ int listener_run(const char *CS_PATH)
 		return -4;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_listener_id, NULL, thread_work_func, NULL)) {
+	int ret = pthread_create(&g_listener_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
 		close(g_listen_sockd);
-		printf("[listener]: fail to create accept thread\n");
+		printf("[listener]: failed to create accept thread: %s\n", strerror(ret));
 		return -5;
 	}
 	pthread_setname_np(g_listener_id, "accept");

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <gromox/defs.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "common_util.h"
@@ -126,7 +127,7 @@ int exmdb_listener_run()
 	/* create a socket */
 	g_listen_sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (g_listen_sockd == -1) {
-        printf("[exmdb_provider]: fail to create socket for listening\n");
+		printf("[exmdb_provider]: failed to create listen socket: %s\n", strerror(errno));
 		return -1;
 	}
 	optval = -1;
@@ -192,9 +193,9 @@ int exmdb_listener_trigger_accept()
 		return 0;
 	}
 	g_notify_stop = FALSE;
-	if(0 != pthread_create(&g_listener_id,
-		NULL, thread_work_func, NULL)) {
-		printf("[exmdb_provider]: fail to create exmdb listener thread\n");
+	int ret = pthread_create(&g_listener_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[exmdb_provider]: failed to create exmdb listener thread: %s\n", strerror(ret));
 		return -1;
 	}
 	pthread_setname_np(g_listener_id, "exmdb_listener");

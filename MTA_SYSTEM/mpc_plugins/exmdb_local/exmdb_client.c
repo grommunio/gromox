@@ -629,8 +629,9 @@ int exmdb_client_run()
 		}
 	}
 	list_file_free(plist);
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[exmdb_local]: fail to create proxy scan thread\n");
+	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[exmdb_local]: failed to create proxy scan thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return 5;
 	}

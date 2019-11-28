@@ -555,7 +555,8 @@ static void backup_ui_restore_html(const char *file_name)
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto DNS_TABLE;
 	}
@@ -584,7 +585,8 @@ DNS_TABLE:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto DOMAIN_BLACKLIST;
 	}
@@ -614,7 +616,8 @@ DOMAIN_BLACKLIST:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto DOMAIN_MAILBOX;
 	}
@@ -642,7 +645,8 @@ DOMAIN_MAILBOX:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto DOMAIN_WHITELIST;
 	}
@@ -670,7 +674,8 @@ DOMAIN_WHITELIST:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto DYNAMIC_LIST;
 	}
@@ -698,7 +703,8 @@ DYNAMIC_LIST:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto FORWARD_TABLE;
 	}
@@ -726,7 +732,8 @@ FORWARD_TABLE:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto FROM_BLACKLIST;
 	}
@@ -756,7 +763,8 @@ FROM_BLACKLIST:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto FROM_REPLACE;
 	}
@@ -784,7 +792,8 @@ FROM_REPLACE:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto IP_GREYLIST;
 	}
@@ -812,7 +821,8 @@ IP_GREYLIST:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto IPDOMAIN_TABLE;
 	}
@@ -831,7 +841,8 @@ IP_GREYLIST:
 	
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto IPDOMAIN_TABLE;
 	}
@@ -850,7 +861,8 @@ IP_GREYLIST:
 	
 	fd = open(temp_file, O_TRUNC|O_WRONLY, DEF_MODE);	
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto IPDOMAIN_TABLE;
 	}
@@ -898,7 +910,8 @@ IPDOMAIN_TABLE:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto KEYWORD_GROUP;
 	}
@@ -927,7 +940,8 @@ KEYWORD_GROUP:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto KEYWORD_UPLOAD;
 	}
@@ -994,7 +1008,8 @@ KEYWORD_UPLOAD:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto RELAY_ALLOW;
 	}
@@ -1022,7 +1037,8 @@ RELAY_ALLOW:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto RELAY_DOMAINS;
 	}
@@ -1049,7 +1065,8 @@ RELAY_DOMAINS:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto RELAY_TABLE;
 	}
@@ -1076,7 +1093,8 @@ RELAY_TABLE:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto SINGLE_RCPT;
 	}
@@ -1106,7 +1124,8 @@ SINGLE_RCPT:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto SUPERVISING_LIST;
 	}
@@ -1142,7 +1161,8 @@ SUPERVISING_LIST:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto XMAILER_LIST;
 	}
@@ -1170,7 +1190,8 @@ XMAILER_LIST:
 	}
 	fd = open(temp_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[backup_ui]: fail to create temporary file\n");
+		system_log_info("[backup_ui]: failed to create file %s: %s\n",
+			temp_file, strerror(errno));
 		list_file_free(pfile);
 		goto SYSTEM_SETUP;
 	}

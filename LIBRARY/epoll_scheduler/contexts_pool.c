@@ -1,3 +1,5 @@
+#include <string.h>
+#include <gromox/defs.h>
 #include "contexts_pool.h"
 #include "threads_pool.h"
 #include "util.h"
@@ -219,7 +221,7 @@ int contexts_pool_run()
 {    
 	g_epoll_fd = epoll_create(g_context_num);
 	if (-1 == g_epoll_fd) {
-		printf("[contexts_pool]: fail to create epoll instance\n");
+		printf("[contexts_pool]: failed to create epoll instance: %s\n", strerror(errno));
 		return -1;
 	}
 	g_events = malloc(sizeof(struct epoll_event)*g_context_num);
@@ -230,8 +232,9 @@ int contexts_pool_run()
 		return -2;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
-		printf("[contexts_pool]: fail to create epoll thread\n");
+	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[contexts_pool]: failed to create epoll thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		free(g_events);
 		g_events = NULL;
@@ -239,8 +242,9 @@ int contexts_pool_run()
 		g_epoll_fd = -1;
 	}
 	pthread_setname_np(g_thread_id, "epollctx/work");
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[contexts_pool]: fail to create scan thread\n");
+	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[contexts_pool]: failed to create scan thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		pthread_join(g_thread_id, NULL);
 		close(g_epoll_fd);

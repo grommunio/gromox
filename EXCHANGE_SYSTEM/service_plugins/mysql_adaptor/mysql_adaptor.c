@@ -1,3 +1,5 @@
+#include <string.h>
+#include <gromox/defs.h>
 #include "mysql_adaptor.h"
 #include "double_list.h"
 #include "mem_file.h"
@@ -123,9 +125,10 @@ int mysql_adaptor_run()
 	}
 	
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
+	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
 		g_notify_stop = TRUE;
-		printf("[mysql_adaptor]: fail to create scanning thread\n");
+		printf("[mysql_adaptor]: failed to create scanning thread: %s\n", strerror(ret));
 		return -2;
 	}
 	pthread_setname_np(g_thread_id, "mysql_adaptor");

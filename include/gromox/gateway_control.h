@@ -1,5 +1,7 @@
 #ifndef _H_GATEWAY_CONTROL_
 #define _H_GATEWAY_CONTROL_
+
+#include <gromox/defs.h>
 #include "common_types.h"
 
 #define NOTIFY_SMTP			0x00000001

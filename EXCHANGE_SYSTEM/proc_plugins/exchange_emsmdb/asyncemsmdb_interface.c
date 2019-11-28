@@ -1,4 +1,6 @@
+#include <string.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
 #include <gromox/proc_common.h>
@@ -93,19 +95,20 @@ int asyncemsmdb_interface_run()
 		return -4;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[exchange_emsmdb]: fail to create"
-			" scanning thread for asyncemsmdb\n");
+	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[exchange_emsmdb]: failed to create scanning thread "
+		       "for asyncemsmdb: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return -5;
 	}
 	pthread_setname_np(g_scan_id, "asyncems/scan");
 	for (i=0; i<g_threads_num; i++) {
-		if (0 != pthread_create(g_thread_ids + i,
-			NULL, thread_work_func, NULL)) {
+		ret = pthread_create(g_thread_ids + i, nullptr, thread_work_func, nullptr);
+		if (ret != 0) {
 			g_threads_num = i;
-			printf("[exchange_emsmdb]: fail to create "
-					"wake up thread for asyncemsmdb\n");
+			printf("[exchange_emsmdb]: failed to create wake up "
+			       "thread for asyncemsmdb: %s\n", strerror(ret));
 			return -6;
 		}
 		char buf[32];

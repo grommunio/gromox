@@ -1,8 +1,10 @@
 /* imap parser is a module, which first read data from socket, parses the imap 
  * commands and then do the corresponding action. 
  */ 
+#include <errno.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "util.h"
 #include "mjson.h"
 #include "str_hash.h"
@@ -278,15 +280,17 @@ int imap_parser_run()
 		g_ssl_port = 0;
 	
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thr_id, NULL, thread_work_func, NULL)) {
-		printf("[imap_parser]: fail to create sleeping list scanning thread\n");
+	int ret = pthread_create(&g_thr_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[imap_parser]: failed to create sleeping list scanning thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return -11;
 	}
 	pthread_setname_np(g_thr_id, "parser/worker");
 	
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[imap_parser]: fail to create select hash scanning thread\n");
+	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[imap_parser]: failed to create select hash scanning thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		pthread_join(g_thr_id, NULL);
 		return -12;

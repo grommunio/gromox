@@ -135,11 +135,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 
 		g_notify_stop = FALSE;
-		if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
+		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+		if (ret != 0) {
 			g_notify_stop = TRUE;
 			while ((pnode = double_list_get_from_head(&g_back_list)) != NULL)
 				free(pnode->pdata);
-			printf("[event_proxy]: fail to create scan thread\n");
+			printf("[event_proxy]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "event_proxy");

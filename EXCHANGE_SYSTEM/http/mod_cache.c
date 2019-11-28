@@ -1,5 +1,7 @@
 #include <errno.h>
+#include <string.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "util.h"
 #include "str_hash.h"
 #include "resource.h"
@@ -191,8 +193,9 @@ int mod_cache_run()
 		return -3;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_scan_tid, NULL, scan_work_func, NULL)) {
-		printf("[mod_cache]: fail to create scanning thread\n");
+	int ret = pthread_create(&g_scan_tid, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[mod_cache]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return -4;
 	}

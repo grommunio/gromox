@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <gromox/defs.h>
 #include "processing_engine.h"
 #include "url_downloader.h"
 #include "file_operation.h"
@@ -39,9 +40,10 @@ int processing_engine_run()
 {
 	if (FALSE == g_noop) {
 		g_notify_stop = FALSE;
-		if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
+		int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+		if (ret != 0) {
 			g_notify_stop = TRUE;
-			printf("[processing_engine]: fail to create fresh thread\n");
+			printf("[processing_engine]: failed to create thread: %s\n", strerror(ret));
 			return -1;
 		}
 		pthread_setname_np(g_thread_id, "worker");

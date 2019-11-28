@@ -1,3 +1,4 @@
+#include <string.h>
 #include "subscription_object.h"
 #include "fastdownctx_object.h"
 #include "attachment_object.h"
@@ -466,10 +467,11 @@ int rop_processor_run()
 		return -4;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
+	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
 		g_notify_stop = TRUE;
-		printf("[exchange_emsmdb]: fail to create "
-			"scanning thread for logon hash table\n");
+		printf("[exchange_emsmdb]: failed to create scanning thread "
+		       "for logon hash table: %s\n", strerror(ret));
 		return -5;
 	}
 	pthread_setname_np(g_scan_id, "rop_scan");

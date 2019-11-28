@@ -466,7 +466,7 @@ static void save_attachments(MIME *pmime, BOOL* result)
 	fd = open(tmp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
 		free(pbuff);
-		update_log("fail to create file %s", name);
+		update_log("failed to create file %s: %s", name, strerror(errno));
 		*result = FALSE;
 		return;
 	}

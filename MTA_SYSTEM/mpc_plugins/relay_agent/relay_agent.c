@@ -1,4 +1,5 @@
 #include <string.h>
+#include <gromox/defs.h>
 #include "relay_agent.h"
 #include "util.h"
 #include "double_list.h"
@@ -179,8 +180,9 @@ int relay_agent_run()
 	}
 	
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thr_id, NULL, thread_work_func, NULL)) {
-		printf("[relay_agent]: fail to create scanning thread\n");
+	int ret = pthread_create(&g_thr_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[relay_agent]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return -1;
 	}

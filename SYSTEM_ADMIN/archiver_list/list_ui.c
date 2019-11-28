@@ -582,7 +582,8 @@ static void	list_ui_add_item(const char *prefix, const char *ip, int port)
 	snprintf(temp_path, 256, "%s.tmp", g_list_path);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[list_ui]: fail to create %s", temp_path);
+		system_log_info("[list_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}
@@ -626,7 +627,8 @@ static void list_ui_remove_item(const char *ip, int port)
 	item_num = list_file_get_item_num(pfile);
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[list_ui]: fail to create %s", temp_path);
+		system_log_info("[list_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}

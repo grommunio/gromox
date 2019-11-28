@@ -5,6 +5,7 @@
  *    throw it into contexts pool, or close the connection
  */
 #include <errno.h>
+#include <gromox/defs.h>
 #include "listener.h"
 #include "system_services.h"
 #include "contexts_pool.h"
@@ -65,7 +66,7 @@ int listener_run()
 	/* create a socket */
 	g_listener_sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (g_listener_sock == -1) {
-		printf("[listener]: fail to create socket\n");
+		printf("[listener]: failed to create socket: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -97,7 +98,7 @@ int listener_run()
 		/* create a socket */
 		g_listener_ssl_sock = socket(AF_INET, SOCK_STREAM, 0);
 		if (g_listener_ssl_sock == -1) {
-			printf("[listener]: fail to create socket\n");
+			printf("[listener]: failed to create socket: %s\n", strerror(errno));
 			return -1;
 		}
 
@@ -138,16 +139,17 @@ int listerner_trigger_accept()
 	pthread_attr_t  attr;
 
 	pthread_attr_init(&attr);
-	if(0 != pthread_create(&g_thr_id, &attr, thread_work_func, NULL)) {
-		printf("[listener]: fail to create listener thread\n");
+	int ret = pthread_create(&g_thr_id, &attr, thread_work_func, nullptr);
+	if (ret != 0) {
+		printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
 		pthread_attr_destroy(&attr);
 		return -1;
 	}
 	pthread_setname_np(g_thr_id, "accept");
 	if (g_listener_ssl_port > 0) {
-		if(0 != pthread_create(&g_ssl_thr_id,
-			&attr, thread_work_ssl_func, NULL)) {
-			printf("[listener]: fail to create listener thread\n");
+		ret = pthread_create(&g_ssl_thr_id, &attr, thread_work_ssl_func, nullptr);
+		if (ret != 0) {
+			printf("[listener]: failed to create listener thread: %s\n", strerror(ret));
 			pthread_attr_destroy(&attr);
 			return -2;
 		}

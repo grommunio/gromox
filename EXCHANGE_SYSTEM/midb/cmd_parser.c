@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "double_list.h"
 #include "common_util.h"
@@ -112,9 +113,10 @@ int cmd_parser_run()
 	g_notify_stop = FALSE;
 
 	for (i=0; i<g_threads_num; i++) {
-		if (0 != pthread_create(&g_thread_ids[i], &thr_attr,
-			thread_work_func, NULL)) {
-			printf("[cmd_parser]: fail to create pool thread\n");
+		int ret = pthread_create(&g_thread_ids[i], &thr_attr,
+		          thread_work_func, nullptr);
+		if (ret != 0) {
+			printf("[cmd_parser]: failed to create pool thread: %s\n", strerror(ret));
 			goto FAILURE_EXIT;
 		}
 		char buf[32];

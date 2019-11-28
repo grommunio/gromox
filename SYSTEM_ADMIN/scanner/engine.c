@@ -882,8 +882,9 @@ int engine_run()
 	}
 	list_file_free(pfile);
 	
-	if (0 != pthread_create(&g_backup_id, NULL, backup_work_func, NULL)) {
-		printf("[engine]: fail to create mysql backup thread\n");
+	int ret = pthread_create(&g_backup_id, nullptr, backup_work_func, nullptr);
+	if (ret != 0) {
+		printf("[engine]: failed to create mysql backup thread: %s\n", strerror(ret));
 		return -2;
 	}
 	pthread_setname_np(g_backup_id, "backup");

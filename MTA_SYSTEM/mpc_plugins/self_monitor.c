@@ -103,9 +103,10 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
         }
 		g_notify_stop = FALSE;
 		pthread_attr_init(&attr);
-		if(0 != pthread_create(&g_thread_id, &attr, thread_work_func, NULL)) {
+		int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+		if (ret != 0) {
 			pthread_attr_destroy(&attr);
-			printf("[self_monitor]: fail to create thread\n");
+			printf("[self_monitor]: failed to create thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_thread_id, "self_monitor");

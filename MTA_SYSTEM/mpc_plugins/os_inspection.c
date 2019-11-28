@@ -120,9 +120,10 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		
 		g_notify_stop = FALSE;
-		if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
+		int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+		if (ret != 0) {
 			g_notify_stop = TRUE;
-			printf("[os_inspection]: fail to create thread\n");
+			printf("[os_inspection]: failed to create thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 		pthread_setname_np(g_thread_id, "osinspect");

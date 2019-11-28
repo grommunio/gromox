@@ -568,7 +568,8 @@ static void	list_ui_modify_list(const char *domain, const char *keyword,
 	if (i < item_num) {
 		fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 		if (-1 == fd) {
-			system_log_info("[list_ui]: fail to create %s", temp_path);
+			system_log_info("[list_ui]: failed to create %s: %s",
+				temp_path, strerror(errno));
 			list_file_free(pfile);
 			return;
 		}
@@ -635,7 +636,8 @@ static void list_ui_remove_item(const char *domain, const char *keyword)
 	}
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[list_ui]: fail to create %s", temp_path);
+		system_log_info("[list_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}

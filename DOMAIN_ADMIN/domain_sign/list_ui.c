@@ -431,8 +431,8 @@ int list_ui_run()
 		sprintf(temp_path, "%s/%s.%s", g_sign_path, charset, type);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
-			system_log_info("[list_ui]: fail to create list file for %s\n",
-				temp_path);
+			system_log_info("[list_ui]: failed to create list file %s: %s",
+				temp_path, strerror(errno));
 			list_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_INTERNAL", language));
 			return 0;
 		}

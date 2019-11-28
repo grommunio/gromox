@@ -149,8 +149,9 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 
 		g_notify_stop = FALSE;
-		if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-			printf("[cdner_caching]: fail to create cdner scan thread\n");
+		int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+		if (ret != 0) {
+			printf("[cdner_caching]: failed to create cdner scan thread: %s\n", strerror(ret));
 			g_notify_stop = TRUE;
 			return FALSE;
 		}

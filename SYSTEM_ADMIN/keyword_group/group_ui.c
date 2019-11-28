@@ -623,7 +623,8 @@ static void	group_ui_add_keyword(const char *keyword, int group_index)
 	}
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[group_ui]: fail to create %s", temp_path);
+		system_log_info("[group_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}
@@ -673,7 +674,8 @@ static void group_ui_remove_keyword(int keyword_index, int group_index)
 	item_num = list_file_get_item_num(pfile);
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[group_ui]: fail to create %s", temp_path);
+		system_log_info("[group_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}
@@ -756,7 +758,8 @@ static void group_ui_remove_group(int group_index)
 	item_num = list_file_get_item_num(pfile);
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[group_ui]: fail to create %s", temp_path);
+		system_log_info("[group_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}

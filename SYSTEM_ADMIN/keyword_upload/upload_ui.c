@@ -334,8 +334,8 @@ int upload_ui_run()
 			return 0;
 		}
 		if (-1 == fd) {
-			system_log_info("[upload_ui]: fail to create list file for %s\n",
-				temp_buff);
+			system_log_info("[upload_ui]: failed to create list file for %s: %s\n",
+				temp_buff, strerror(errno));
 			upload_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_REQUEST",
 				language));
 			return 0;

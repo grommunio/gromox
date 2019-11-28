@@ -1,6 +1,7 @@
 #ifndef _H_PLUGIN_
 #define _H_PLUGIN_
 
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "rpc_types.h"
 #include "ndr.h"

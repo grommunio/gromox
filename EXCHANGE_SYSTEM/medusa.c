@@ -203,7 +203,7 @@ void start_service()
 	/* obtain a new process group */
 	sid = setsid();
 	if (sid < 0) {
-        printf("fail to create new session ID\n");
+		printf("failed to create new session ID: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 	for (fd=getdtablesize(); fd>=0; fd--) {

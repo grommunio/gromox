@@ -1,3 +1,4 @@
+#include <string.h>
 #include <unistd.h>
 #include <gromox/flusher_common.h>
 #include <stdio.h>
@@ -35,9 +36,10 @@ BOOL FLH_LibMain(int reason, void** ppdata, char* path)
 		set_flush_ID(0); /* must set the last flush ID */
         /* create a thread to get context from queues */
         pthread_attr_init(&attr);
-        if (0 != pthread_create(&g_flushing_thread, &attr, thread_work_func, 
-            NULL)){
-            printf("[sample flusher]: fail to create thread\n");
+		int ret = pthread_create(&g_flushing_thread, &attr,
+		          thread_work_func, nullptr);
+		if (ret != 0) {
+			printf("[sample flusher]: failed to create thread: %s\n", strerror(ret));
             return FALSE;
         }
 		pthread_setname_np(g_flushing_thread, "flusher");

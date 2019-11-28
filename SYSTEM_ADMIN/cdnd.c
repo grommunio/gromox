@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
@@ -335,7 +336,7 @@ int main(int argc, const char **argv)
 	/* create a socket */
 	sockd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockd == -1) {
-        printf("[system]: fail to create socket for listening\n");
+		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
 		return 3;
 	}
 	optval = -1;
@@ -462,7 +463,8 @@ int main(int argc, const char **argv)
 	g_notify_stop = FALSE;
 	signal(SIGTERM, term_handler);
 	
-	if (0 != pthread_create(&scan_thrid, NULL, scan_work_func, NULL)) {
+	int ret = pthread_create(&scan_thrid, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
 		close(sockd);
 		str_hash_free(g_user_hash);
 		while ((pnode = double_list_get_from_head(&g_midb_list)) != NULL) {
@@ -485,12 +487,14 @@ int main(int argc, const char **argv)
 		pthread_mutex_destroy(&g_connection_lock);
 		pthread_mutex_destroy(&g_hash_lock);
 		pthread_mutex_destroy(&g_user_lock);
-		printf("[system]: fail to create accept thread\n");
+		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		return 10;
 	}
 	pthread_setname_np(scan_thrid, "scan");
 	
-	if (0 != pthread_create(&accept_thrid, NULL, accept_work_func, (void*)(long)sockd)) {
+	ret = pthread_create(&accept_thrid, nullptr, accept_work_func,
+	      reinterpret_cast(void *, static_cast(intptr_t, sockd)));
+	if (ret != 0) {
 		g_notify_stop = TRUE;
 		close(sockd);
 		pthread_join(scan_thrid, NULL);
@@ -525,7 +529,7 @@ int main(int argc, const char **argv)
 		pthread_mutex_destroy(&g_connection_lock);
 		pthread_mutex_destroy(&g_hash_lock);
 		pthread_mutex_destroy(&g_user_lock);
-		printf("[system]: fail to create accept thread\n");
+		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		return 11;
 	}
 	pthread_setname_np(accept_thrid, "accept");
@@ -536,9 +540,10 @@ int main(int argc, const char **argv)
 			continue;
 		}
 		psync->node.pdata = psync;
-		if (0 != pthread_create(&psync->thr_id, NULL, sync_work_func, NULL)) {
+		ret = pthread_create(&psync->thr_id, nullptr, sync_work_func, nullptr);
+		if (ret != 0) {
 			free(psync);
-			printf("[system]: fail to create sync thread\n");
+			printf("[system]: failed to create sync thread: %s\n", strerror(ret));
 			continue;
 		}
 		char buf[32];

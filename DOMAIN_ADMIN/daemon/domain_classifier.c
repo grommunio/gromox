@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <string.h>
 #include <libHX/string.h>
 #include "domain_classifier.h"
 #include "util.h"
@@ -76,7 +77,7 @@ int domain_classifier_run()
 	}
 	g_hash_table = str_hash_init(g_table_size, sizeof(FILE*), NULL);
 	if (NULL == g_hash_table) {
-		printf("[domain_classifier]: fail to create hash table\n");
+		printf("[domain_classifier]: failed to create hash table: %s\n", strerror(errno));
 		return -5;
 	}
 

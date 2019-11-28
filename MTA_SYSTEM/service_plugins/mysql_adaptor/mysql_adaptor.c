@@ -1,3 +1,5 @@
+#include <string.h>
+#include <gromox/defs.h>
 #include "cdner_agent.h"
 #include "mysql_adaptor.h"
 #include "uncheck_domains.h"
@@ -139,9 +141,10 @@ int mysql_adaptor_run()
 	}
 	
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_thread_id, NULL, thread_work_func, NULL)) {
+	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
+	if (ret != 0) {
 		g_notify_stop = TRUE;
-		printf("[mysql_adaptor]: fail to create scanning thread\n");
+		printf("[mysql_adaptor]: failed to create scanning thread: %s\n", strerror(ret));
 		return -2;
 	}
 	pthread_setname_np(g_thread_id, "sqladap/thread");

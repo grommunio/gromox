@@ -1,4 +1,5 @@
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
@@ -304,8 +305,9 @@ int ab_tree_run()
 		return -3;
 	}
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[exchange_nsp]: fail to create scanning thread\n");
+	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[exchange_nsp]: failed to create scanning thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return -4;
 	}

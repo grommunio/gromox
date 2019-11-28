@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <unistd.h>
+#include <gromox/defs.h>
 #include "log_plugin.h"
 #include "config_file.h"
 #include "util.h"
@@ -116,9 +118,10 @@ int log_plugin_run()
 	}
 	g_notify_stop = FALSE;
 	pthread_attr_init(&attr);
-	if(0 != pthread_create(&g_thread_id, &attr, thread_work_func, NULL)) {
+	int ret = pthread_create(&g_thread_id, &attr, thread_work_func, nullptr);
+	if (ret != 0) {
 		pthread_attr_destroy(&attr);
-		printf("[log_plugin]: fail to create thread\n");
+		printf("[log_plugin]: failed to create thread: %s\n", strerror(ret));
 		return -3;
 	}
 	pthread_setname_np(g_thread_id, "log_plugin");
@@ -473,7 +476,8 @@ static BOOL log_plugin_flush_log()
 	snprintf(filename, 256, "%s%s.%s", g_file_name, time_str, g_file_postfix);
 	filename[sizeof(filename) - 1] = '\0';	
 	if (NULL == (file_ptr = fopen(filename, "a+"))) {
-		printf("[log_plugin]: fail to create log file %s\n", filename);
+		printf("[log_plugin]: failed to create log file %s: %s\n",
+		       filename, strerror(errno));
 	} else {
 		fd = fileno(file_ptr);
 		written_bytes = write(fd, g_log_buf_ptr, g_current_size);

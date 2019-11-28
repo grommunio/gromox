@@ -628,8 +628,9 @@ int exmdb_client_run()
 	if (0 == g_conn_num) {
 		return 0;
 	}
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[exmdb_provider]: fail to create proxy scan thread\n");
+	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[exmdb_provider]: failed to create proxy scan thread: %s\n", strerror(ret));
 		g_notify_stop = TRUE;
 		return 9;
 	}

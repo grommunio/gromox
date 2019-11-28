@@ -1,3 +1,5 @@
+#include <string.h>
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "double_list.h"
 #include "contexts_pool.h"
@@ -80,8 +82,9 @@ int threads_pool_run()
 	}
 	/* list is also protected by g_threads_pool_data_lock */
 	g_notify_stop = FALSE;
-	if (0 != pthread_create(&g_scan_id, NULL, scan_work_func, NULL)) {
-		printf("[threads_pool]: fail to create scan thread\n");
+	int ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
+	if (ret != 0) {
+		printf("[threads_pool]: failed to create scan thread: %s\n", strerror(ret));
 		lib_buffer_free(g_threads_data_buff);
 		g_threads_data_buff = NULL;
 		return -2;
@@ -95,9 +98,9 @@ int threads_pool_run()
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
 		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-		if (0 != pthread_create(&pdata->id, &attr,
-			thread_work_func, (void*)pdata)) {
-			printf("[threads_pool]: fail to create a pool thread\n");
+		ret = pthread_create(&pdata->id, &attr, thread_work_func, pdata);
+		if (ret != 0) {
+			printf("[threads_pool]: failed to create a pool thread: %s\n", strerror(ret));
 		} else {
 			char buf[32];
 			snprintf(buf, sizeof(buf), "ep_pool/%u", i);

@@ -1202,11 +1202,12 @@ int main(int argc, const char **argv)
 			continue;
 		}
 		pthread->node.pdata = pthread;
-		if (0 != pthread_create(&pthread->thr_id, NULL, thread_work_func,
-			(void*)pitem[i].slave)) {
+		int ret = pthread_create(&pthread->thr_id, nullptr,
+		          thread_work_func, pitem[i].slave);
+		if (ret != 0) {
 			free(pthread);
-			printf("[system]: fail to create thread for %s\n",
-				pitem[i].slave);
+			printf("[system]: failed to create thread for %s: %s\n",
+			       pitem[i].slave, strerror(ret));
 			continue;
 		}
 		char buf[32];
@@ -1220,10 +1221,12 @@ int main(int argc, const char **argv)
 		printf("[system]: fail to allocate memory for %s\n", mysql_path);	
 	} else {
 		pthread->node.pdata = pthread;
-		if (0 != pthread_create(&pthread->thr_id, NULL, thread_work_func,
-			(void*)mysql_path)) {
+		int ret = pthread_create(&pthread->thr_id, nullptr,
+		          thread_work_func, mysql_path);
+		if (ret != 0) {
 			free(pthread);
-			printf("[system]: fail to create thread for %s\n", mysql_path);
+			printf("[system]: failed to create thread for %s: %s\n",
+				mysql_path, strerror(ret));
 		} else {
 			pthread_setname_np(pthread->thr_id, "worker/+");
 			double_list_append_as_tail(&g_thread_list, &pthread->node);

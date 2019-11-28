@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <unistd.h>
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "scheduler.h"
 #include "list_file.h"
@@ -163,10 +164,13 @@ int scheduler_run()
 	for (pnode=double_list_get_head(&g_smtp_list); pnode!=NULL;
 		pnode=double_list_get_after(&g_smtp_list, pnode)) {
 		psmtp_unit = (SMTP_UNIT*)pnode->pdata;
-		if (0 != pthread_create(&psmtp_unit->tid, NULL, smtp_work_func,
-			psmtp_unit)) {
-			printf("[scheduler]: fail to create monitor thread for SMTP "
-				"service %s:%d\n", psmtp_unit->dest_ip, psmtp_unit->dest_port);
+		int ret = pthread_create(&psmtp_unit->tid, nullptr,
+		          smtp_work_func, psmtp_unit);
+		if (ret != 0) {
+			printf("[scheduler]: failed to create monitor thread "
+			       "for SMTP service %s:%d: %s\n",
+			       psmtp_unit->dest_ip, psmtp_unit->dest_port,
+			       strerror(ret));
 			continue;
 		}
 		pthread_setname_np(psmtp_unit->tid, "smtpmon");
@@ -174,10 +178,13 @@ int scheduler_run()
 	for (pnode=double_list_get_head(&g_pop3_list); pnode!=NULL;
 		pnode=double_list_get_after(&g_pop3_list, pnode)) {
 		ppop3_unit = (POP3_UNIT*)pnode->pdata;
-		if (0 != pthread_create(&ppop3_unit->tid, NULL, pop3_work_func,
-			ppop3_unit)) {
-			printf("[scheduler]: fail to create monitor thread for POP3 "
-				"service %s:%d\n", ppop3_unit->dest_ip, ppop3_unit->dest_port);
+		int ret = pthread_create(&ppop3_unit->tid, nullptr,
+		          pop3_work_func, ppop3_unit);
+		if (ret != 0) {
+			printf("[scheduler]: failed to create monitor thread "
+			       "for POP3 service %s:%d: %s\n",
+			       ppop3_unit->dest_ip, ppop3_unit->dest_port,
+			       strerror(errno));
 			continue;
 		}
 		pthread_setname_np(ppop3_unit->tid, "pop3mon");

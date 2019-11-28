@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <gromox/paths.h>
@@ -338,11 +339,12 @@ int transporter_run()
 		(g_data_ptr + i)->wait_on_event = TRUE;
 		pthread_attr_init(&attr);
 		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-        if (0 != pthread_create(&(g_data_ptr + i)->id, &attr,
-                    thread_work_func, g_data_ptr + i)){
+		int ret = pthread_create(&g_data_ptr[i].id, &attr, thread_work_func, g_data_ptr + i);
+		if (ret != 0) {
 			transporter_collect_hooks();
 			transporter_collect_resource();
-            printf("[transporter]: fail to create transport thread [%d]\n", i);
+			printf("[transporter]: failed to create transport thread %d: %s\n",
+			       i, strerror(ret));
 			return -10;
         }
 		char buf[32];
@@ -353,11 +355,12 @@ int transporter_run()
     }
 	/* create the scanning thread */
 	pthread_attr_init(&attr);
-	if (0 != pthread_create(&g_scan_id, &attr, scan_work_func, NULL)) {
+	int ret = pthread_create(&g_scan_id, &attr, scan_work_func, nullptr);
+	if (ret != 0) {
 		g_notify_stop = TRUE;
 		transporter_collect_hooks();
 		transporter_collect_resource();
-        printf("[transporter]: fail to create scanner thread\n");
+		printf("[transporter]: failed to create scanner thread: %s\n", strerror(ret));
 		return -11;
 	}
 	pthread_setname_np(g_scan_id, "xprt/scan");

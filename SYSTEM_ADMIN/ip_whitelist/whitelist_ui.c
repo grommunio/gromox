@@ -615,7 +615,8 @@ static void	whitelist_ui_modify_list(const char *ip, int type, const char *memo)
 	if (i < item_num) {
 		fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 		if (-1 == fd) {
-			system_log_info("[whitelist_ui]: fail to create %s", temp_path);
+			system_log_info("[whitelist_ui]: failed to create %s: %s",
+				temp_path, strerror(errno));
 			list_file_free(pfile);
 			return;
 		}
@@ -698,7 +699,8 @@ static void whitelist_ui_remove_item(const char *ip)
 	}
 	fd = open(temp_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
-		system_log_info("[whitelist_ui]: fail to create %s", temp_path);
+		system_log_info("[whitelist_ui]: failed to create %s: %s",
+			temp_path, strerror(errno));
 		list_file_free(pfile);
 		return;
 	}
