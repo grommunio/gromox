@@ -23,6 +23,7 @@ Makefile.in
 /config.*
 /configure
 /libtool
+/stamp-h1
 
 /adaptor
 /admin_archive
