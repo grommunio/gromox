@@ -737,7 +737,6 @@ CMD_PROCESSING:
 							remove(pcontext->file_path);
 							pcontext->file_path[0] = '\0';
 						}
-						/*IMAP_CODE_2180000: BAD command not support or parameter error */
 						imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1,
 											&string_length);
 						string_length = snprintf(reply_buff, 1024, "%s %s",
@@ -782,7 +781,6 @@ CMD_PROCESSING:
 				
 				
 				if (argc < 2 || strlen(argv[0]) >= 32) {
-					/* IMAP_CODE_2180000: BAD command not support or parameter error */
 					imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 					if (argc <= 0 || strlen(argv[0]) >= 32) {
 						string_length = snprintf(reply_buff, 1024, "* %s", imap_reply_str);
@@ -817,8 +815,6 @@ CMD_PROCESSING:
 			pcontext->literal_ptr = NULL;
 			pcontext->literal_len = 0;
 			pcontext->command_len = 0;
-			
-			/* IMAP_CODE_2180000: BAD command not support or parameter error */
 			imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1,
 								&string_length);
 			if (NULL != pcontext->connection.ssl) {
@@ -1620,7 +1616,6 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontex
         return imap_cmd_parser_uid_expunge(argc, argv, pcontext);
     /*========================================================================*/
     } else {
-		/*IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(reply_buff, 1024, "%s %s", argv[0], imap_reply_str);
         if (NULL != pcontext->connection.ssl) {

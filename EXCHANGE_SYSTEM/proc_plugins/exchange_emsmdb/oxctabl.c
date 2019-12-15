@@ -182,7 +182,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		}
 		type = psort_criteria->psort[i].type;
 		if (type & 0x1000) {
-			/* do not support multivalue property
+			/* we do not support multivalue property
 				without multivalue instances */
 			if (0 == (type & 0x2000)) {
 				return EC_NOT_SUPPORTED;

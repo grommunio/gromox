@@ -64,7 +64,7 @@ static IMAP_RETURN_CODE g_default_code_table[] = {
 	{2170029, "OK ID completed"},
 	{2170030, "OK UID EXPUNGE completed"},
 
-	{2180000, "BAD command not support or parameter error"},
+	{2180000, "BAD command not supported or parameter error"},
 	{2180001, "BAD TLS negotiation only begin in not authenticated state"},
 	{2180002, "BAD must issue a STARTTLS command first"},
 	{2180003, "BAD cannot relogin in authenticated state"},

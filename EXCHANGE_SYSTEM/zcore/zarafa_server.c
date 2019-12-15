@@ -4096,7 +4096,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		}
 		type = psortset->psort[i].type;
 		if (type & 0x1000) {
-			/* do not support multivalue property
+			/* we do not support multivalue property
 				without multivalue instances */
 			if (0 == (type & 0x2000)) {
 				zarafa_server_put_user_info(pinfo);

@@ -676,7 +676,7 @@ PROC_BEGIN:
 				}
 				break;
 			case CONDITION_BCC:
-				/* do not support BCC field in mail digest,
+				/* we do not support BCC field in mail digest,
 					BCC should not recorded in mail head */
 				break;
 			case CONDITION_BEFORE:

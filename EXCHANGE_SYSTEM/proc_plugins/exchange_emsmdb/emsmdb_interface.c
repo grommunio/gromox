@@ -630,7 +630,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	}
 	
 	/* just like EXCHANGE 2010 or later, we do
-		not support session contxts linking */
+		not support session context linking */
 	if (0xFFFFFFFF == cxr_link) {
 		*ptimestamp = emsmdb_interface_get_timestamp();
 	}

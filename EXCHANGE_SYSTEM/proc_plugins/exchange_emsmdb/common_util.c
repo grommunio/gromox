@@ -1574,7 +1574,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		common_util_set_propvals(ppropvals, &propval);
 		break;
 	default:
-		/* do not support other address types */
+		/* we do not support other address types */
 		return FALSE;
 	}
 	tmp_columns.count = prow->count;

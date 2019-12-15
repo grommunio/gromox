@@ -852,7 +852,7 @@ static BOOL fastupctx_object_record_marker(
 		free(pnode->pdata);
 		return TRUE;
 	case FXERRORINFO:
-		/* not support this feature */
+		/* we do not support this feature */
 		return FALSE;
 	default:
 		return FALSE;

@@ -1474,7 +1474,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	const char *imap_reply_str;
 	
 	if (NULL != pcontext->connection.ssl) {
-		/*IMAP_CODE_2180000: BAD command not support or parameter error */
+		/* IMAP_CODE_2180000: BAD command not supported or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -1483,7 +1483,7 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (FALSE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS)) {
-		/*IMAP_CODE_2180000: BAD command not support or parameter error */
+		/* IMAP_CODE_2180000 */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -1528,7 +1528,6 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (3 != argc || 0 != strcasecmp(argv[2], "LOGIN")) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -1683,7 +1682,6 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (4 != argc || strlen(argv[2]) > 255 || strlen(argv[3]) > 255) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
@@ -1781,7 +1779,6 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (2 != argc) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -1823,7 +1820,6 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
 		FALSE == imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
 		argv[2], temp_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
@@ -1925,7 +1921,6 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024 ||
 		FALSE == imap_cmd_parser_imapfolder_to_sysfolder(pcontext->lang,
 		argv[2], temp_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
@@ -2024,7 +2019,6 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -2190,7 +2184,6 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], encoded_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
@@ -2275,7 +2268,6 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->lang, argv[2], encoded_name) ||
 		FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[3], encoded_name1)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
@@ -2375,7 +2367,6 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| (FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name))) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
@@ -2445,7 +2436,6 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (argc < 3 || 0 == strlen(argv[2]) || strlen(argv[2]) >= 1024
 		|| (FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name))) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -2519,7 +2509,6 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 4 || (0 == strcasecmp(argv[2], "(SPECIAL-USE)") && argc < 5)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -2529,7 +2518,6 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (0 != strcasecmp(argv[2], "(SPECIAL-USE)")) {
 		if (strlen(argv[2]) + strlen(argv[3]) >= 1024) {
-			/* IMAP_CODE_2180000: BAD command not support or parameter error */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180000, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -2628,8 +2616,6 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_BREAK;
 	} else {
 		if (strlen(argv[3]) + strlen(argv[4]) >= 1024) {
-			/* IMAP_CODE_2180000: BAD command
-			not support or parameter error */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180000, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -2705,7 +2691,6 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 4) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -2714,7 +2699,6 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (strlen(argv[2]) + strlen(argv[3]) >= 1024) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -2848,7 +2832,6 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 4) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -2857,7 +2840,6 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (strlen(argv[2]) + strlen(argv[3]) >= 1024) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -2990,7 +2972,6 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		|| FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name) || '(' != argv[3][0]
 		|| ')' != argv[3][strlen(argv[3]) - 1]) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -3001,7 +2982,6 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	temp_argc = parse_imap_args(argv[3] + 1,
 		strlen(argv[3]) - 2, temp_argv, sizeof(temp_argv));
 	if (-1 == temp_argc) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -3071,8 +3051,6 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			string_length += snprintf(buff + string_length,
 				1024 - string_length, "UNSEEN %d", unseen);
 		} else {
-			/* IMAP_CODE_2180000: BAD command
-			not support or parameter error */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180000, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -3129,7 +3107,6 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		|| strlen(argv[2]) >= 1024 || FALSE ==
 		imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -3161,8 +3138,6 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
 			- 2, temp_argv, sizeof(temp_argv)))) {
-			/* IMAP_CODE_2180000: BAD command
-			not support or parameter error */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180000, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -3180,7 +3155,6 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			} else if (0 == strcasecmp(temp_argv[i], "\\Draft")) {
 				b_draft = TRUE;
 			} else {
-				/* IMAP_CODE_2180000: BAD command not support or parameter error */
 				imap_reply_str = resource_get_imap_code(
 					IMAP_CODE_2180000, 1, &string_length);
 				string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
@@ -3330,7 +3304,6 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		|| strlen(argv[2]) >= 1024 || FALSE ==
 		imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[2], temp_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -3359,8 +3332,6 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
 			- 2, temp_argv, sizeof(temp_argv)))) {
-			/* IMAP_CODE_2180000: BAD command
-			not support or parameter error */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180000, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -3375,8 +3346,6 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				0 == strcasecmp(temp_argv[i], "\\Draft")) {
 				/* do nothing */
 			} else {
-				/* IMAP_CODE_2180000: BAD command
-				not support or parameter error */
 				imap_reply_str = resource_get_imap_code(
 					IMAP_CODE_2180000, 1, &string_length);
 				string_length = snprintf(buff, 1024,
@@ -3885,7 +3854,6 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	if (argc < 3 || argc > 1024) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -4052,7 +4020,6 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	return DISPATCH_BREAK;
 FETCH_PARAM_ERR:
-	/* IMAP_CODE_2180000: BAD command not support or parameter error */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2180000, 1, &string_length);
 	string_length = snprintf(buff, 1024,
@@ -4092,7 +4059,6 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		0 != strcasecmp(argv[3], "+FLAGS") && 0 != strcasecmp(argv[3],
 		"+FLAGS.SILENT") && 0 != strcasecmp(argv[3], "-FLAGS") &&
 		0 != strcasecmp(argv[3], "-FLAGS.SILENT"))) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -4104,7 +4070,6 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (-1 == (temp_argc = parse_imap_args(
 			argv[4] + 1, strlen(argv[4]) - 2, temp_argv,
 			sizeof(temp_argv)/sizeof(char*)))) {
-			/* IMAP_CODE_2180000: BAD command not support or parameter error */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180000, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -4138,7 +4103,6 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		} else if (0 == strcasecmp(temp_argv[i], "\\Draft")) {
 			flag_bits |= FLAG_DRAFT;
 		} else {
-			/* IMAP_CODE_2180007: BAD one or more flags not supported */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180007, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -4237,7 +4201,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    sequence_nodes, argv[2]) || strlen(argv[3]) == 0 || strlen(argv[3])
 		>= 1024 || FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[3], temp_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -4388,7 +4351,6 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	
 	if (argc < 3 || argc > 1024) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -4570,7 +4532,6 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	return DISPATCH_BREAK;
 	
 UID_FETCH_PARAM_ERR:
-	/* IMAP_CODE_2180000: BAD command not support or parameter error */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2180000, 1, &string_length);
 	string_length = snprintf(buff, 1024,
@@ -4611,7 +4572,6 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		0 != strcasecmp(argv[4], "+FLAGS") && 0 != strcasecmp(argv[4],
 		"+FLAGS.SILENT") && 0 != strcasecmp(argv[4], "-FLAGS") &&
 		0 != strcasecmp(argv[4], "-FLAGS.SILENT"))) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -4623,7 +4583,6 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		if (-1 == (temp_argc = parse_imap_args(
 			argv[5] + 1, strlen(argv[5]) - 2, temp_argv,
 			sizeof(temp_argv)/sizeof(char*)))) {
-			/* IMAP_CODE_2180000: BAD command not support or parameter error */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180000, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -4657,7 +4616,6 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		} else if (0 == strcasecmp(temp_argv[i], "\\Draft")) {
 			flag_bits |= FLAG_DRAFT;
 		} else {
-			/* IMAP_CODE_2180007: BAD one or more flags not supported */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2180007, 1, &string_length);
 			string_length = snprintf(buff, 1024,
@@ -4755,7 +4713,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	    sequence_nodes, argv[3]) || 0 == strlen(argv[4]) || strlen(argv[4])
 		>= 1024 || FALSE == imap_cmd_parser_imapfolder_to_sysfolder(
 		pcontext->lang, argv[4], temp_name)) {
-		/* IMAP_CODE_2180000: BAD command not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
@@ -4919,8 +4876,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
 	    sequence_nodes, argv[3])) {
-		/* IMAP_CODE_2180000: BAD command
-		not support or parameter error */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180000, 1, &string_length);
 		string_length = snprintf(buff, 1024,
