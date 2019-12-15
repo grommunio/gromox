@@ -264,8 +264,8 @@ RETRYING:
 
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
-		snprintf(reason, length, "user \"%s\" not exists, please check if "
-			"it is right composed", username);
+		snprintf(reason, length, "user \"%s\" does not exist; check if "
+			"it is properly composed", username);
 		return FALSE;
 	}
 	
