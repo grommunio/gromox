@@ -2349,8 +2349,8 @@ BOOL exmdb_client_load_embedded_instance(
 	return TRUE;
 }
 
-BOOL exmdb_client_get_embeded_cn(const char *dir,
-	uint32_t instance_id, uint64_t **ppcn)
+BOOL exmdb_client_get_embedded_cn(const char *dir, uint32_t instance_id,
+    uint64_t **ppcn)
 {
 	BOOL b_result;
 	BOOL b_private;
@@ -2359,17 +2359,17 @@ BOOL exmdb_client_get_embeded_cn(const char *dir,
 	
 	if (TRUE == exmdb_client_check_local(dir, &b_private)) {
 		exmdb_server_build_environment(TRUE, b_private, dir);
-		b_result = exmdb_server_get_embeded_cn(dir, instance_id, ppcn);
+		b_result = exmdb_server_get_embedded_cn(dir, instance_id, ppcn);
 		exmdb_server_free_environment();
 		return b_result;
 	}
-	request.call_id = CALL_ID_GET_EMBEDED_CN;
+	request.call_id = CALL_ID_GET_EMBEDDED_CN;
 	request.dir = (void*)dir;
-	request.payload.get_embeded_cn.instance_id = instance_id;
+	request.payload.get_embedded_cn.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*ppcn = response.payload.get_embeded_cn.pcn;
+	*ppcn = response.payload.get_embedded_cn.pcn;
 	return TRUE;
 }
 

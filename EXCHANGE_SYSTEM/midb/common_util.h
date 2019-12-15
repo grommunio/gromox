@@ -84,7 +84,7 @@ typedef struct _EXMDB_ITEM {
 #define CALL_ID_CHECK_MESSAGE_DELETED									0x38
 #define CALL_ID_LOAD_MESSAGE_INSTANCE									0x39
 #define CALL_ID_LOAD_EMBEDDED_INSTANCE									0x3a
-#define CALL_ID_GET_EMBEDED_CN											0x3b
+#define CALL_ID_GET_EMBEDDED_CN											0x3b
 #define CALL_ID_RELOAD_MESSAGE_INSTANCE									0x3c
 #define CALL_ID_CLEAR_MESSAGE_INSTANCE									0x3d
 #define CALL_ID_READ_MESSAGE_INSTANCE									0x3e
@@ -481,9 +481,9 @@ typedef struct _REQ_LOAD_EMBEDDED_INSTANCE {
 	uint32_t attachment_instance_id;
 } REQ_LOAD_EMBEDDED_INSTANCE;
 
-typedef struct _REQ_GET_EMBEDED_CN {
+typedef struct _REQ_GET_EMBEDDED_CN {
 	uint32_t instance_id;
-} REQ_GET_EMBEDED_CN;
+} REQ_GET_EMBEDDED_CN;
 
 typedef struct _REQ_RELOAD_MESSAGE_INSTANCE {
 	uint32_t instance_id;
@@ -861,7 +861,7 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_CHECK_MESSAGE_DELETED check_message_deleted;
 	REQ_LOAD_MESSAGE_INSTANCE load_message_instance;
 	REQ_LOAD_EMBEDDED_INSTANCE load_embedded_instance;
-	REQ_GET_EMBEDED_CN get_embeded_cn;
+	REQ_GET_EMBEDDED_CN get_embedded_cn;
 	REQ_RELOAD_MESSAGE_INSTANCE reload_message_instance;
 	REQ_CLEAR_MESSAGE_INSTANCE clear_message_instance;
 	REQ_READ_MESSAGE_INSTANCE read_message_instance;
@@ -1161,9 +1161,9 @@ typedef struct _RESP_LOAD_EMBEDDED_INSTANCE {
 	uint32_t instance_id;
 } RESP_LOAD_EMBEDDED_INSTANCE;
 
-typedef struct _RESP_GET_EMBEDED_CN {
+typedef struct _RESP_GET_EMBEDDED_CN {
 	uint64_t *pcn;
-} RESP_GET_EMBEDED_CN;
+} RESP_GET_EMBEDDED_CN;
 
 typedef struct _RESP_RELOAD_MESSAGE_INSTANCE {
 	BOOL b_result;
@@ -1401,7 +1401,7 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_CHECK_MESSAGE_DELETED check_message_deleted;
 	RESP_LOAD_MESSAGE_INSTANCE load_message_instance;
 	RESP_LOAD_EMBEDDED_INSTANCE load_embedded_instance;
-	RESP_GET_EMBEDED_CN get_embeded_cn;
+	RESP_GET_EMBEDDED_CN get_embedded_cn;
 	RESP_RELOAD_MESSAGE_INSTANCE reload_message_instance;
 	RESP_READ_MESSAGE_INSTANCE read_message_instance;
 	RESP_WRITE_MESSAGE_INSTANCE write_message_instance;

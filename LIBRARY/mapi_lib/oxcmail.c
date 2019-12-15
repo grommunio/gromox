@@ -3206,8 +3206,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					pcontent + content_len + 1) &&
 					NULL != (pmsg = oxvcard_import(
 					&vcard, pmime_enum->get_propids))) {
-					attachment_content_set_embeded_internal(
-										pattachment, pmsg);
+					attachment_content_set_embedded_internal(pattachment, pmsg);
 					propval.proptag = PROP_TAG_ATTACHMETHOD;
 					propval.pvalue = &tmp_int32;
 					tmp_int32 = ATTACH_METHOD_EMBEDDED;
@@ -3299,7 +3298,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			}
 			mail_free(&mail);
 			free(pcontent);
-			attachment_content_set_embeded_internal(pattachment, pmsg);
+			attachment_content_set_embedded_internal(pattachment, pmsg);
 			return;
 		}
 		mail_free(&mail);

@@ -238,10 +238,7 @@ BOOL (*exmdb_client_load_message_instance)(const char *dir,
 BOOL (*exmdb_client_load_embedded_instance)(const char *dir,
 	BOOL b_new, uint32_t attachment_instance_id,
 	uint32_t *pinstance_id);
-
-BOOL (*exmdb_client_get_embeded_cn)(const char *dir,
-	uint32_t instance_id, uint64_t **ppcn);
-
+BOOL (*exmdb_client_get_embedded_cn)(const char *dir, uint32_t instance_id, uint64_t **ppcn);
 BOOL (*exmdb_client_reload_message_instance)(const char *dir,
 	uint32_t instance_id, BOOL *pb_result);
 
@@ -877,11 +874,10 @@ int exmdb_client_run()
 			"\"exmdb_client_load_embedded_instance\" service\n");
 		return -2;
 	}
-	exmdb_client_get_embeded_cn =
-		query_service("exmdb_client_get_embeded_cn");
-	if (NULL == exmdb_client_get_embeded_cn) {
+	exmdb_client_get_embedded_cn = query_service("exmdb_client_get_embedded_cn");
+	if (exmdb_client_get_embedded_cn == nullptr) {
 		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_embeded_cn\" service\n");
+		       "\"exmdb_client_get_embedded_cn\" service\n");
 		return -2;
 	}
 	exmdb_client_reload_message_instance =

@@ -215,11 +215,9 @@ BOOL message_object_check_orignal_touched(
 			return FALSE;
 		}
 	} else {
-		if (FALSE == exmdb_client_get_embeded_cn(
-			logon_object_get_dir(pmessage->plogon),
-			pmessage->instance_id, &pchange_num)) {
+		if (!exmdb_client_get_embedded_cn(logon_object_get_dir(pmessage->plogon),
+		    pmessage->instance_id, &pchange_num))
 			return FALSE;	
-		}
 	}
 	if (NULL == pchange_num) {
 		/* if cannot find PROP_TAG_CHANGENUMBER, it

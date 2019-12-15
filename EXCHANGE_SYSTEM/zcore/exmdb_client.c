@@ -1960,19 +1960,19 @@ BOOL exmdb_client_load_embedded_instance(
 	return TRUE;
 }
 
-BOOL exmdb_client_get_embeded_cn(const char *dir,
-	uint32_t instance_id, uint64_t **ppcn)
+BOOL exmdb_client_get_embedded_cn(const char *dir, uint32_t instance_id,
+    uint64_t **ppcn)
 {
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
 	
-	request.call_id = CALL_ID_GET_EMBEDED_CN;
+	request.call_id = CALL_ID_GET_EMBEDDED_CN;
 	request.dir = (void*)dir;
-	request.payload.get_embeded_cn.instance_id = instance_id;
+	request.payload.get_embedded_cn.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*ppcn = response.payload.get_embeded_cn.pcn;
+	*ppcn = response.payload.get_embedded_cn.pcn;
 	return TRUE;
 }
 

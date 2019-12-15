@@ -237,10 +237,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 BOOL exmdb_server_load_embedded_instance(const char *dir,
 	BOOL b_new, uint32_t attachment_instance_id,
 	uint32_t *pinstance_id);
-
-BOOL exmdb_server_get_embeded_cn(const char *dir,
-	uint32_t instance_id, uint64_t **ppcn);
-
+extern BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id, uint64_t **ppcn);
 BOOL exmdb_server_reload_message_instance(
 	const char *dir, uint32_t instance_id, BOOL *pb_result);
 

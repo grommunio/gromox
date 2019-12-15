@@ -491,8 +491,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			exmdb_client_load_message_instance);
 		register_service("exmdb_client_load_embedded_instance",
 			exmdb_client_load_embedded_instance);
-		register_service("exmdb_client_get_embeded_cn",
-			exmdb_client_get_embeded_cn);
+		register_service("exmdb_client_get_embedded_cn", exmdb_client_get_embedded_cn);
 		register_service("exmdb_client_reload_message_instance",
 			exmdb_client_reload_message_instance);
 		register_service("exmdb_client_clear_message_instance",

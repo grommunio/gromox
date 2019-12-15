@@ -385,8 +385,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
-			attachment_content_set_embeded_internal(
-							pattachment, pmsgctnt1);
+			attachment_content_set_embedded_internal(pattachment, pmsgctnt1);
 		}
 		sqlite3_reset(pstmt1);
 	}
@@ -679,8 +678,8 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 }
 
 /* get PROP_TAG_CHANGENUMBER from embedded message */
-BOOL exmdb_server_get_embeded_cn(const char *dir,
-	uint32_t instance_id, uint64_t **ppcn)
+BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
+    uint64_t **ppcn)
 {
 	DB_ITEM *pdb;
 	INSTANCE_NODE *pinstance;
@@ -1771,8 +1770,7 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
-			attachment_content_set_embeded_internal(
-					pinstance->pcontent, pmsgctnt);
+			attachment_content_set_embedded_internal(pinstance->pcontent, pmsgctnt);
 		}
 	}
 	db_engine_put_db(pdb);
@@ -1979,8 +1977,7 @@ BOOL exmdb_server_flush_instance(const char *dir,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		attachment_content_set_embeded_internal(
-			pinstance1->pcontent, pmsgctnt);
+		attachment_content_set_embedded_internal(pinstance1->pcontent, pmsgctnt);
 		db_engine_put_db(pdb);
 		*pb_result = TRUE;
 		return TRUE;
@@ -4449,7 +4446,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 			return FALSE;
 		}
 		tpropval_array_remove_propval(&pembedded->proplist, PROP_TAG_MID);
-		attachment_content_set_embeded_internal(pattachment, pembedded);
+		attachment_content_set_embedded_internal(pattachment, pembedded);
 		if (FALSE == attachment_list_append_internal(
 			pattachments, pattachment)) {
 			attachment_content_free(pattachment);
@@ -4483,7 +4480,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		return FALSE;
 	}
 	tpropval_array_remove_propval(&pembedded->proplist, PROP_TAG_MID);
-	attachment_content_set_embeded_internal(pattachment, pembedded);
+	attachment_content_set_embedded_internal(pattachment, pembedded);
 	if (FALSE == attachment_list_append_internal(
 		pattachments, pattachment)) {
 		attachment_content_free(pattachment);

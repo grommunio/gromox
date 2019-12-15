@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "exmdb_ext.h"
 #include "rop_util.h"
 #include "idset.h"
@@ -1176,11 +1177,10 @@ static int exmdb_ext_push_load_embedded_instance_request(
 		ppayload->load_embedded_instance.attachment_instance_id);
 }
 
-static int exmdb_ext_push_get_embeded_cn_request(
-	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
+static int exmdb_ext_push_get_embedded_cn_request(EXT_PUSH *pext,
+    const REQUEST_PAYLOAD *ppayload)
 {
-	return ext_buffer_push_uint32(pext,
-		ppayload->get_embeded_cn.instance_id);
+	return ext_buffer_push_uint32(pext, ppayload->get_embedded_cn.instance_id);
 }
 
 static int exmdb_ext_push_reload_message_instance_request(
@@ -2543,9 +2543,8 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 		status = exmdb_ext_push_load_embedded_instance_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_EMBEDED_CN:
-		status = exmdb_ext_push_get_embeded_cn_request(
-						&ext_push, &prequest->payload);
+	case CALL_ID_GET_EMBEDDED_CN:
+		status = exmdb_ext_push_get_embedded_cn_request(&ext_push, &prequest->payload);
 		break;
 	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_reload_message_instance_request(
@@ -3335,8 +3334,8 @@ static int exmdb_ext_pull_load_embedded_instance_response(
 		&ppayload->load_embedded_instance.instance_id);
 }
 
-static int exmdb_ext_pull_get_embeded_cn_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_ext_pull_get_embedded_cn_response(EXT_PULL *pext,
+    RESPONSE_PAYLOAD *ppayload)
 {
 	int status;
 	uint8_t tmp_byte;
@@ -3346,16 +3345,13 @@ static int exmdb_ext_pull_get_embeded_cn_response(
 		return status;
 	}
 	if (0 == tmp_byte) {
-		ppayload->get_embeded_cn.pcn = NULL;
+		ppayload->get_embedded_cn.pcn = nullptr;
 		return EXT_ERR_SUCCESS;
 	} else {
-		ppayload->get_embeded_cn.pcn =
-			common_util_alloc(sizeof(uint64_t));
-		if (NULL == ppayload->get_embeded_cn.pcn) {
+		ppayload->get_embedded_cn.pcn = common_util_alloc(sizeof(uint64_t));
+		if (ppayload->get_embedded_cn.pcn == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		return ext_buffer_pull_uint64(pext,
-			ppayload->get_embeded_cn.pcn);
+		return ext_buffer_pull_uint64(pext, ppayload->get_embedded_cn.pcn);
 	}
 }
 
@@ -4014,9 +4010,8 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	case CALL_ID_LOAD_EMBEDDED_INSTANCE:
 		return exmdb_ext_pull_load_embedded_instance_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_GET_EMBEDED_CN:
-		return exmdb_ext_pull_get_embeded_cn_response(
-						&ext_pull, &presponse->payload);
+	case CALL_ID_GET_EMBEDDED_CN:
+		return exmdb_ext_pull_get_embedded_cn_response(&ext_pull, &presponse->payload);
 	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_reload_message_instance_response(
 								&ext_pull, &presponse->payload);

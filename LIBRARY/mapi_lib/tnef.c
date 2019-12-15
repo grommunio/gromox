@@ -1981,8 +1981,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 							message_content_free(pmsg);
 							return NULL;
 						}
-						attachment_content_set_embeded_internal(
-							pattachment, pembedded);
+						attachment_content_set_embedded_internal(pattachment, pembedded);
 					} else {
 						((BINARY*)ptnef_propval->pvalue)->cb -= 16;
 						memmove(((BINARY*)ptnef_propval->pvalue)->pb,

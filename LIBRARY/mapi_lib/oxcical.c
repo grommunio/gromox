@@ -3477,7 +3477,7 @@ static BOOL oxcical_import_internal(
 				int_hash_free(phash);
 				return FALSE;
 			}
-			attachment_content_set_embeded_internal(pattachment, pembedded);
+			attachment_content_set_embedded_internal(pattachment, pembedded);
 			propval.proptag = PROP_TAG_MESSAGECLASS;
 			propval.pvalue  = const_cast(char *, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}");
 			if (FALSE == tpropval_array_set_propval(
@@ -3681,7 +3681,7 @@ static BOOL oxcical_import_events(
 		if (NULL == pembedded) {
 			return FALSE;
 		}
-		attachment_content_set_embeded_internal(pattachment, pembedded);
+		attachment_content_set_embedded_internal(pattachment, pembedded);
 		propval.proptag = PROP_TAG_MESSAGECLASS;
 		propval.pvalue  = const_cast(char *, "IPM.Appointment");
 		if (FALSE == tpropval_array_set_propval(

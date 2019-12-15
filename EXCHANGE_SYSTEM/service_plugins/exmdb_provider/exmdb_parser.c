@@ -449,10 +449,10 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.load_embedded_instance.b_new,
 			prequest->payload.load_embedded_instance.attachment_instance_id,
 			&presponse->payload.load_embedded_instance.instance_id);
-	case CALL_ID_GET_EMBEDED_CN:
-		return exmdb_server_get_embeded_cn(prequest->dir,
-			prequest->payload.get_embeded_cn.instance_id,
-			&presponse->payload.get_embeded_cn.pcn);
+	case CALL_ID_GET_EMBEDDED_CN:
+		return exmdb_server_get_embedded_cn(prequest->dir,
+		       prequest->payload.get_embedded_cn.instance_id,
+		       &presponse->payload.get_embedded_cn.pcn);
 	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
 		return exmdb_server_reload_message_instance(prequest->dir,
 			prequest->payload.reload_message_instance.instance_id,

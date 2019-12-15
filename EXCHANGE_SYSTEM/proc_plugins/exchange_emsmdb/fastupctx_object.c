@@ -814,7 +814,7 @@ static BOOL fastupctx_object_record_marker(
 			}
 			message_content_set_attachments_internal(
 							pmsgctnt, pattachments);
-			attachment_content_set_embeded_internal(
+			attachment_content_set_embedded_internal(
 				((MARKER_NODE*)pnode->pdata)->data.pelement, pmsgctnt);
 		}
 		pmarker = malloc(sizeof(MARKER_NODE));

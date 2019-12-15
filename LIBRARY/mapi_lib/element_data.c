@@ -32,8 +32,8 @@ TPROPVAL_ARRAY* attachment_content_get_proplist(
 	return &pattachment->proplist;
 }
 
-void attachment_content_set_embeded_internal(
-	ATTACHMENT_CONTENT *pattachment, MESSAGE_CONTENT *pembedded)
+void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *pattachment,
+    MESSAGE_CONTENT *pembedded)
 {
 	if (NULL != pattachment->pembedded) {
 		message_content_free(pattachment->pembedded);
