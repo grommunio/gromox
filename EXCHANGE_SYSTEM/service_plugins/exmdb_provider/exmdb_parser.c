@@ -965,7 +965,7 @@ static void *thread_work_func(void *pparam)
 						}
 					}
 				} else {
-					tmp_byte = RESPONSE_CODE_CONNECT_UNCOMPLETE;
+					tmp_byte = RESPONSE_CODE_CONNECT_INCOMPLETE;
 				}
 			} else {
 				if (FALSE == exmdb_parser_dispatch(&request, &response)) {
