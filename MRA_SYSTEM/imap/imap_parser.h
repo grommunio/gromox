@@ -107,7 +107,7 @@ typedef struct _IMAP_CONTEXT{
 	size_t           write_offset;
 	time_t           selected_time;
 	char             selected_folder[1024];
-	BOOL             b_readonly;                /* is selected folder read only, this is for examin command */
+	BOOL b_readonly; /* is selected folder read only, this is for the examine command */
 	BOOL             b_modify;
 	MEM_FILE         f_flags;
 	char             tag_string[32];

@@ -1982,7 +1982,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			"* OK [UNSEEN %d] message %d is first unseen\r\n"
 			"* OK [UIDVALIDITY %u] UIDs valid\r\n"
 			"* OK [UIDNEXT %d] predicted next UID\r\n"
-			"%s OK [READ-ONLY] EXAMIN completed\r\n", 
+			"%s OK [READ-ONLY] EXAMINE completed\r\n",
 			exists, recent, firstunseen, firstunseen,
 			(unsigned int)uidvalid, uidnext, argv[0]);
 	} else {
@@ -1993,7 +1993,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			"* %d RECENT\r\n"
 			"* OK [UIDVALIDITY %u] UIDs valid\r\n"
 			"* OK [UIDNEXT %d] predicted next UID\r\n"
-			"%s OK [READ-ONLY] EXAMIN completed\r\n", 
+			"%s OK [READ-ONLY] EXAMINE completed\r\n",
 			exists, recent, (unsigned int)uidvalid, uidnext, argv[0]);
 	}
 	imap_parser_safe_write(pcontext, buff, string_length);
