@@ -175,7 +175,7 @@ supervisor.cfg(5gx) \(em configuration file for the supervisor service
 timer(8gx)
 .IP \(bu 4
 timer.cfg(5gx) \(em configuration file for the timer service
-.SH Default sockets
+.SH Listening sockets
 .IP \(bu 4
 /run/gromox/alock.sock \(em alock(8gx)
 .IP \(bu 4
@@ -205,9 +205,11 @@ timer.cfg(5gx) \(em configuration file for the timer service
 .IP \(bu 4
 127.0.0.1:4455 \(em imap(8gx) management console
 .IP \(bu 4
-127.0.0.1:5000 \(em http(8gx) exmdb service
+127.0.0.1:5000 \(em exmdb_provider(4gx) plugin inside http(8gx)
 .IP \(bu 4
 127.0.0.1:5555 \(em midb(8gx) service
+.IP \(bu 4
+*:5556 \(em cidb(8gx) service
 .IP \(bu 4
 127.0.0.1:5566 \(em smtp(8gx) management console
 .IP \(bu 4
@@ -216,6 +218,10 @@ timer.cfg(5gx) \(em configuration file for the timer service
 127.0.0.1:7777 \(em locker(8gx) service
 .IP \(bu 4
 127.0.0.1:7788 \(em pop3(8gx) management console
+.IP \(bu 4
+*:8000 \(em relay_agent(4gx) hook plugin inside delivery(8gx)
+.IP \(bu 4
+*:8888 \(em multiple_retrying(4gx) service plugin
 .IP \(bu 4
 127.0.0.1:8899 \(em http(8gx) management console
 .IP \(bu 4
@@ -230,3 +236,10 @@ timer.cfg(5gx) \(em configuration file for the timer service
 127.0.0.1:22222 \(em pad(8gx) service
 .IP \(bu 4
 127.0.0.1:33333 \(em event(8gx) service
+.IP \(bu 4
+*:44444 \(em rsyncd(8gx) service
+.SH Connections to external services
+.IP \(bu 4
+*:9312: from cidb(8gx) to a Sphinx search engine
+.IP \(bu 4
+*:10001: from cdner_agent(4gx) to ...
