@@ -1,0 +1,32 @@
+.TH exmdb_provider 4gx "" "Gromox" "Gromox user reference"
+.SH Description
+.PP
+exmdb_provider is a service plugin for http(8gx). It listens on (by default)
+port 5000 for exmdb RPCs, a Gromox-specific protocol.
+.SH Network protocol
+.PP
+The transmissions on the socket are simple concatenations of protocol data
+units built using the NDR format. The PDU length is present within the PDU
+itself near the start.
+.PP
+.in +4n
+.EX
+{
+	leuint32_t length;
+	char pdu[];
+}
+.EE
+.in
+.PP
+.in +4n
+.EX
+pdu := {
+	uint8_t call_id;
+	string directory;
+	switch (call_id) {
+		...
+	}
+}
+.SH See also
+.PP
+\fBgromox\fP(7), \fBexmdb_provider.cfg\fP(5gx), \fBhttp\fP(8gx)

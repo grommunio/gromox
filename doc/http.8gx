@@ -2,6 +2,11 @@
 .SH Synopsis
 .PP
 \fBhttp\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+http(8gx) is a trivial HTTP server. It understands the special HTTP methods as
+used by RPC-over-HTTP protocol as used by Outlook, it can serve files verbatim,
+or forward requests to a FastCGI server such as php-fpm(8) or fcgi_cgi(8gx).
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -10,6 +15,61 @@ specified, /etc/gromox/http.cfg will be read if it exists.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH URI processing
+.IP \(bu 4
+If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA,
+the data stream is fed to the exchange_emsmdb(4gx) plugin.
+.IP \(bu 4
+Otherwise, HPM plugins such as proxy(4gx) are consulted whether any of them
+will handle the request. The order depends on the HPM plugin list (cf.
+http.cfg(5gx):\fBhpm_plugin_list\fP).
+.IP \(bu 4
+Otherwise, the FastCGI module (built-in) is consulted whether it wants
+to handle the request.
+.IP \(bu 4
+Otherwise, the standard file handler with built-in caching, is used.
+.SH File serving
+.PP
+The filemap that specifies how URIs are handled is located at
+\fIdata_file_path\fP/cache.txt, whereby data_file_path is the eponymous
+directive from the config file.
+.PP
+Each line in this file consists of 3 columns separated by whitespace:
+.IP \(bu 4
+Domain or wildcard to match the HTTP Host: header with.
+.IP \(bu 4
+URI path (prefix) to match
+.IP \(bu 4
+Target directory within the filesystem
+.SH FastCGI
+.PP
+The filemap that specifies how URIs are handled is located at
+\fIdata_file_path\fP/fastcgi.txt, whereby data_file_path is the eponymous
+directive from the config file.
+.PP
+Each line in this file consists of 7 columns separated by whitespace:
+.IP \(bu 4
+Domain or wildcard to match the HTTP Host: header with.
+.IP \(bu 4
+URI path (prefix) to match
+.IP \(bu 4
+Target directory within the filesystem
+.IP \(bu 4
+File suffix (without dot) to match on, e.g. \fIphp\fP.
+.IP \(bu 4
+A file to use as the default file for a directory (similar to Apache httpd's
+DirectoryIndex).
+.IP \(bu 4
+A set of headers, separated by the pipe symbol \fB|\fP, which should be
+forwarded to the CGI handler. In absence of any desired extra headers, a single
+pipe can be used to fill the column.
+.IP \(bu 4
+An AF_LOCAL socket path to make the FastCGI request to.
+.SH RPC-over-HTTP
+.PP
+RPC-over-HTTP utilizes two special HTTP methods, RPC_IN_DATA and RPC_OUT_DATA.
+These requests can, similarly to HTTP CONNECT, be very long-lived. The RPC data
+stream is handled by the included exchange_emsmdb(4gx) plugin.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBhttp.cfg\fP(5gx)

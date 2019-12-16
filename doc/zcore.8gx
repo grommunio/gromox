@@ -2,6 +2,11 @@
 .SH Synopsis
 .PP
 \fBzcore\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+zcore is a bridge process (proxy) between mapi(4gx) and exmdb_provider(4gx). It
+listens on /run/gromox/zcore.sock (hardcoded) for zcore RPCs, a Gromox-specific
+protocol. It issues exmdb RPCs to exmdb_provider(4gx).
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -13,6 +18,48 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Network protocol
+.PP
+The transmissions on the zcore socket are simple concatenations of protocol
+data units built using the NDR format. The PDU length is present within the PDU
+itself near the start.
+.PP
+.in +4n
+.EX
+{
+	leuint32_t length;
+	char pdu[];
+}
+.EE
+.in
+.PP
+.in +4n
+.EX
+pdu := {
+	uint8_t call_id;
+	string directory;
+	switch (call_id) {
+		...
+	}
+}
+.SH Store lookup
+.PP
+zcore determines the store path for a user from the user database, which may be
+provided by a service plugin like mysql_adaptor(4gx).
+.PP
+The filemap that specifies how paths are handled is located at
+\fIdata_file_path\fP/exmdb_list.txt, whereby data_file_path is the eponymous
+directive from the config file.
+.PP
+Each line in this file consists of 4 columns separated by whitespace:
+.IP \(bu 4
+A portion of the store path to match on
+.IP \(bu 4
+The type of store ("private" or "public")
+.IP \(bu 4
+IPv4 address of the server running exmdb_provider(4gx)
+.IP \(bu 4
+The TCP port number of the server
 .SH See also
 .PP
 \fBgromox\fP(7), \fBzcore.cfg\fP(5gx)

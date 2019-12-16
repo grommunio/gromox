@@ -20,17 +20,22 @@ Default: \fI/usr/lib/gromox\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
 .PP
-Default: (empty; use built-in plugin list)
+Default: (unspecified)
 .SS block_interval_auths
+.PP
+The amount of time a user is blocked from connecting to the service after too
+many failed logins.
 .PP
 Default: \fI1 minute\fP
 .SS block_interval_sessions
 .PP
-Default: \fI1minute\fP
+The amount of time a source IP address is blocked from connecting to the
+service because it tried to queue too many messages.
+.PP
+Default: \fI1 minute\fP
 .SS config_file_path
 .PP
-Path specifying the directory which contains configuration overrides for
-instances of service plugins run by smtp.
+Directory where plugin instances will look for their configuration overrides.
 .PP
 Default: \fI/etc/gromox/smtp\fP
 .SS console_server_ip
@@ -40,7 +45,7 @@ The IPv4 address to expose the management console frontend on.
 Default: \fI127.0.0.1\fP
 .SS console_server_port
 .PP
-The TCP port to expose the management console frontend on.
+The TCP port number to expose the management console frontend on.
 .PP
 Default: \fI5566\fP
 .SS context_average_mem
@@ -54,13 +59,16 @@ Default: \fI2M\fP
 Default: \fI200\fP
 .SS data_file_path
 .PP
+Directory where plugin instances will look for their data files.
+.PP
 Default: \fI/usr/share/gromox/smtp\fP
 .SS default_domain
 .PP
-Default: (empty)
+Default: (system domainname)
 .SS domain_list_valid
 .PP
-Default: \fItrue\fP
+Default: \fIfalse\fP if server mode is 0 (incoming), \fItrue\fP otherwise
+.PP
 .SS flusher_plugin_path
 .PP
 Filename of a flusher plugin to load and use. (Only one can be in use at any
@@ -69,7 +77,7 @@ time.)
 Default: \fIlibmtaflh_message_enqueue.so\fP
 .SS host_id
 .PP
-Default: (hostname of the system)
+Default: (system hostname)
 .SS listen_port
 .PP
 The TCP port to export the SMTP protocol service on.
@@ -79,15 +87,19 @@ Default: \fI25\fP
 .PP
 The TCP port to expose the implicit-TLS SMTP protocol service on.
 .PP
-Default: (empty)
+Default: (unset)
 .SS mail_max_length
+.PP
+Maximum permitted length of a message.
 .PP
 Default: \fI64M\fP
 .SS running_identity
 .PP
 An unprivileged user account to switch the process to after startup.
 .PP
-Default: (retain identity)
+Default: \fIgromox\fP
+.PP
+To inhibit the switch, assign the empty value.
 .SS service_plugin_ignore_errors
 .PP
 If set to yes, service plugins that fail to load on startup are ignored. If set
@@ -99,7 +111,7 @@ Default: \fIno\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
 .PP
-Default: (empty; use built-in plugin list)
+Default: (unspecified)
 .SS service_plugin_path
 .PP
 Path to a secondary directory where service plugins will be loaded from if a
@@ -108,28 +120,50 @@ primary search in standard directories (as per ld.so(8)) was unsuccessful.
 Default: \fI/usr/lib/gromox\fP
 .SS smtp_auth_times
 .PP
+The number of login tries a user is allowed before the account is blocked.
+.PP
 Default: \fI3\fP
 .SS smtp_certificate_passwd
 .PP
-Default: (empty)
+The password to unlock TLS certificates.
+.PP
+Default: (unset)
 .SS smtp_certificate_path
 .PP
-Default: (empty)
+Filesystem path to a certificate file for use with encrypted connection. The
+complete certificate chain should be present (as there is no other config
+directive to pull CA certs in).
+.PP
+Default: (unset)
 .SS smtp_conn_timeout
 .PP
-Default: \fI3minutes\fP
+If an SMTP connection stalls for the given period, the connection is
+terminated.
+.PP
+Default: \fI3 minutes\fP
 .SS smtp_force_starttls
+.PP
+This flag controls whether clients must utilize TLS, either by way of implicit
+TLS (cf. \fBlisten_ssl_port\fP), or through the STARTTLS command.
 .PP
 Default: \fIfalse\fP
 .SS smtp_max_mail_num
 .PP
+The maximum number of messages that a client is allowed to queue within one
+connection before its source IP address is blocked.
+.PP
 Default: \fI10\fP
 .SS smtp_need_auth
+.PP
+This flag controls whether SMTP connections require authentication at all
+times.
 .PP
 Default: \fIfalse\fP
 .SS smtp_private_key_path
 .PP
-Default: (empty)
+Filesystem path to the key file needed to unlock the TLS certificate.
+.PP
+Default: (unset)
 .SS smtp_running_mode
 .PP
 Possible values: \fI0\fP (outbound), \fI1\fP (inbound), \fI2\fP (mixed)
@@ -137,14 +171,24 @@ Possible values: \fI0\fP (outbound), \fI1\fP (inbound), \fI2\fP (mixed)
 Default: \fI2\fP
 .SS smtp_support_pipeline
 .PP
+This flag controls the offering of the PIPELINING extension (RFC 2920) to
+clients.
+.PP
 Default: \fIfalse\fP
 .SS smtp_support_starttls
+.PP
+This flag controls the offering of the STARTTLS extension (RFC 3027) to
+clients.
 .PP
 Default: \fIfalse\fP
 .SS thread_charge_num
 .PP
+The maximum number of connections that each thread is allowed to process.
+.PP
 Default: \fI40\fP
 .SS thread_init_num
+.PP
+The minimum number of client processing threads to keep around.
 .PP
 Default: \fI1\fP
 .SH See also

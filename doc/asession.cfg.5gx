@@ -22,7 +22,7 @@ The IPv4 address for contacting the \fBsession\fP(8gx) service.
 Default: \fI127.0.0.1\fP
 .SS session_listen_port
 .PP
-The TCP port for contacting the session service.
+The TCP port number for contacting the session service.
 .PP
 Default: \fI9999\fP
 .SH See also

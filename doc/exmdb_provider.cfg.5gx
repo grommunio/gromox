@@ -1,0 +1,8 @@
+.TH exmdb_provider.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBexmdb_provider.cfg\fP \(em configuration file for the exmdb_provider service
+plugin
+.SH See also
+.PP
+\fBgromox\fP(7), \fBexmdb_provider\fP(4gx)

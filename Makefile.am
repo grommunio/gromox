@@ -1532,14 +1532,20 @@ man_MANS = \
 	doc/apollo.8gx doc/archive.8gx doc/asensor.8gx doc/asensor.cfg.5gx \
 	doc/asession.8gx doc/asession.cfg.5gx doc/athena.8gx \
 	doc/bl_delete.8gx doc/cdnd.8gx doc/cdnd.cfg.5gx doc/cidb.8gx \
-	doc/cidb.cfg.5gx doc/da_daemon.8gx doc/delivery.8gx doc/digest.8gx \
-	doc/event.8gx doc/event.cfg.5gx doc/fcgi_cgi.8gx doc/gromox.7 \
+	doc/cidb.cfg.5gx doc/da_daemon.8gx doc/delivery.8gx \
+	doc/delivery.cfg.5gx doc/digest.8gx \
+	doc/event.8gx doc/event.cfg.5gx \
+	doc/exchange_emsmdb.4gx doc/exchange_emsmdb.cfg.5gx \
+	doc/exchange_nsp.4gx doc/exchange_nsp.cfg.5gx doc/exchange_rfr.4gx \
+	doc/exmdb_provider.4gx doc/exmdb_provider.cfg.5gx \
+	doc/fcgi_cgi.8gx doc/gromox.7 \
 	doc/gromox-agent.target.8gx doc/gromox-archive.target.8gx \
 	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/herculiz.8gx doc/http.8gx \
 	doc/http.cfg.5gx doc/imap.8gx doc/imap.cfg.5gx doc/locker.8gx \
-	doc/locker.cfg.5gx doc/medusa.8gx doc/midb.8gx doc/midb.cfg.5gx \
+	doc/locker.cfg.5gx doc/mapi.4gx \
+	doc/medusa.8gx doc/midb.8gx doc/midb.cfg.5gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/monitor.8gx doc/monitor.cfg.5gx doc/pad.8gx doc/pad.cfg.5gx \
 	doc/pandora.8gx doc/pop3.8gx doc/pop3.cfg.5gx doc/posidon.8gx \

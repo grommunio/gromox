@@ -1,0 +1,9 @@
+.TH exchange_emsmdb 4gx "" "Gromox" "Gromox user reference"
+.SH Description
+.PP
+exchange_emsmdb is a processing plugin for http(8gx) which handles the Wire
+Format Protocol (Outlook/Exchange RPCs). See the MS-OXCRPC specification for
+details.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBexchange_emsmdb.cfg\fP(5gx), \fBhttp\fP(8gx)

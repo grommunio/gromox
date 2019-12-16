@@ -5,14 +5,16 @@
 .SH Directives
 .SS block_interval_auths
 .PP
+The amount of time a user is blocked from connecting to the service after too
+many failed logins.
+.PP
 Default: \fI1 minute\fP
 .SS cdn_cache_path
 .PP
 Default: \fI/var/lib/gromox/cdn\fP
 .SS config_file_path
 .PP
-Path specifying the directory which contains configuration overrides for
-instances of service plugins run by pop3.
+Directory where plugin instances will look for their configuration overrides.
 .PP
 Default: \fI/etc/gromox/pop3\fP
 .SS console_server_ip
@@ -22,7 +24,7 @@ The IPv4 address to expose the management console frontend on.
 Default: \fI127.0.0.1\fP
 .SS console_server_port
 .PP
-The TCP port to expose the management console frontend on.
+The TCP port number to expose the management console frontend on.
 .PP
 Default: \fI7788\fP
 .SS context_average_mem
@@ -41,15 +43,15 @@ Default: \fI2M\fP
 Default: \fI200\fP
 .SS data_file_path
 .PP
-Path contianing data files for service plugins.
+Directory where plugin instances will look for their data files.
 .PP
-Default: \fI/usr/share/gromox\fP
+Default: \fI/usr/share/gromox/pop3\fP
 .SS default_domain
 .PP
-Default: (empty)
+Default: (system domainname)
 .SS host_id
 .PP
-Default: (hostname)
+Default: (system hostname)
 .SS listen_port
 .PP
 The TCP port to expose the POP3 protocol service on. (The IP address is fixed
@@ -61,38 +63,58 @@ Default: \fI110\fP
 The TCP port to expose implicit-TLS POP3 protocol service (POP3S) on. (The IP
 address is fixed to the wildcard address.)
 .PP
-Default: (empty)
+Default: (unset)
 .SS pop3_auth_times
+.PP
+The number of login tries a user is allowed before the account is blocked.
 .PP
 Default: \fI3\fP
 .SS pop3_certificate_passwd
 .PP
-Default: (empty)
+The password to unlock TLS certificates.
+.PP
+Default: (unset)
 .SS pop3_certificate_path
 .PP
-Default: (empty)
+Filesystem path to a certificate file for use with encrypted connection. The
+complete certificate chain should be present (as there is no other config
+directive to pull CA certs in).
+.PP
+Default: (unset)
 .SS pop3_conn_timeout
 .PP
-Default: \fI3minutes\fP
+If a POP3 connection stalls for the given period, the connection is terminated.
+.PP
+Default: \fI3 minutes\fP
 .SS pop3_force_stls
+.PP
+This flag controls whether clients must utilize TLS, either by way of implicit
+TLS (cf. \fBlisten_ssl_port\fP), or through the STLS command.
 .PP
 Default: \fIfalse\fP
 .SS pop3_private_key_path
 .PP
-Default: (empty)
+Filesystem path to the key file needed to unlock the TLS certificate.
+.PP
+Default: (unset)
 .SS pop3_return_code_path
 .PP
-Location of the pop3_code.txt file.
+Path to the protocol error string translation file.
 .PP
-Default: (empty)
+Default: \fI/usr/share/gromox/pop3/pop3_code.txt.
 .SS pop3_support_stls
+.PP
+This flag controls the offering of the STARTTLS extension/STLS command (RFC
+2595) to clients.
 .PP
 Default: \fIfalse\fP
 .SS running_identity
 .PP
 An unprivileged user account to switch the process to after startup.
 .PP
-Default: (retain identity)
+Default: \fIgromox\fP
+.PP
+To inhibit the switch, assign the empty value.
 .SS service_plugin_ignore_errors
 .PP
 If set to yes, service plugins that fail to load on startup are ignored. If set
@@ -104,7 +126,7 @@ Default: \fIno\fP
 Path to a text file which lists the filenames of service plugins to load,
 one per line.
 .PP
-Default: (empty; use built-in plugin list)
+Default: (unspecified)
 .SS service_plugin_path
 .PP
 Path to a secondary directory where service plugins will be loaded from if a
@@ -113,8 +135,12 @@ primary search in standard directories (as per ld.so(8)) was unsuccessful.
 Default: \fI/usr/lib/gromox\fP
 .SS thread_charge_num
 .PP
+The maximum number of connections that each thread is allowed to process.
+.PP
 Default: \fI40\fP
 .SS thread_init_num
+.PP
+The minimum number of client processing threads to keep around.
 .PP
 Default: \fI1\fP
 .SH See also

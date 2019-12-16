@@ -26,7 +26,7 @@ The IPv4 address for contacting the \fBlocker\fP(8gx) service.
 Default: \fI127.0.0.1\fP
 .SS locker_listen_port
 .PP
-The TCP port for contacting the locker service.
+The TCP port number for contacting the locker service.
 .PP
 Default: \fI5555\fP
 .SH See also

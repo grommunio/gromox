@@ -5,6 +5,7 @@
  */
 #include <errno.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "resource.h"
 #include "config_file.h"
 #include "single_list.h"
@@ -376,7 +377,7 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
     int total, index, native_code, len;
 	const char *filename = resource_get_string("IMAP_RETURN_CODE_PATH");
 	if (NULL == filename) {
-		return -1;
+		filename = PKGDATADIR "/imap/imap_code.txt";
 	}
     if (NULL == (file_ptr = fopen(filename, "r"))) {
         printf("[resource]: can not open imap return table file  %s\n",
@@ -658,7 +659,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 	single_list_init(&temp_list);
 	const char *filename = resource_get_string("IMAP_LANG_PATH");
 	if (NULL == filename) {
-		return -1;
+		filename = PKGDATADIR "/imap/imap_lang.txt";
 	}
     if (NULL == (file_ptr = fopen(filename, "r"))) {
         printf("[resource]: can not open imap lang table file  %s\n",

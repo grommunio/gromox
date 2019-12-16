@@ -12,7 +12,6 @@ specified, /etc/gromox/smtp.cfg will be read if it exists.
 .TP
 \fB\-?\fP
 Display option summary.
-.TP
 .SH See also
 .PP
 \fBgromox\fP(7), \fBsmtp.cfg\fP(5gx)

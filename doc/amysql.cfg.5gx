@@ -20,7 +20,7 @@ The hostname/IP address for contacting the SQL server.
 Default: \fIlocalhost\fP
 .SS mysql_port
 .PP
-The TCP port for contacting the SQL server.
+The TCP port number for contacting the SQL server.
 .PP
 Default: \fI3306\fP
 .SS mysql_username

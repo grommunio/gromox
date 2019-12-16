@@ -1,0 +1,9 @@
+.TH exchange_nsp 4gx "" "Gromox" "Gromox user reference"
+.SH Description
+.PP
+exchange_nsp is a processing plugin for http(8gx) which handles the Exchange
+Server Name Service Provider Interface Protocol. See the MS-OXNSPI
+specification for details.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBexchange_nsp.cfg\fP(5gx), \fBhttp\fP(8gx)
