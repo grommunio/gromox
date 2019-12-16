@@ -105,12 +105,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		list_file_free(pfile);
 		if (FALSE == register_service("mime_to_extension", mime_to_extension)) {
-			printf("[mime_extension]: fail to register"
+			printf("[mime_extension]: failed to register"
 				" \"mime_to_extension\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("extension_to_mime", extension_to_mime)) {
-			printf("[mime_extension]: fail to register"
+			printf("[mime_extension]: failed to register"
 				" \"extension_to_mime\" service\n");
 			return FALSE;
 		}

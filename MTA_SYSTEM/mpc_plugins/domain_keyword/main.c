@@ -80,7 +80,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		register_talk(domain_keyword_console_talk);
         if (FALSE == register_hook(domain_keyword_process)) {
-			printf("[domain_keyword]: fail to register the hook function\n");
+			printf("[domain_keyword]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

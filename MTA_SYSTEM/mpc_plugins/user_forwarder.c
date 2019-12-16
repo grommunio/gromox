@@ -27,7 +27,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
         if (FALSE == register_hook(forwarder_process)) {
-			printf("[user_forwarder]: fail to register the hook function\n");
+			printf("[user_forwarder]: failed to register the hook function\n");
             return FALSE;
         }
 		printf("[user_forwarder]: plugin is loaded into system\n");

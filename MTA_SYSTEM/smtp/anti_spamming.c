@@ -293,7 +293,7 @@ int anti_spamming_load_library(const char* path)
  *		func	the statistic function
  *	@return
  *		TRUE	OK to register the function
- *		FALSE	fail to register function
+ *		FALSE	failed to register function
  */
 static BOOL anti_spamming_register_statistic(STATISTIC_FUNCTION func)
 {
@@ -345,7 +345,7 @@ static BOOL anti_spamming_register_statistic(STATISTIC_FUNCTION func)
  *		  func	  the filter function
  *	  @return
  *		  TRUE	  OK to register the function
- *		  FALSE	  fail to register function
+ *		  FALSE	  failed to register function
  */
 static BOOL anti_spamming_register_filter(char* type, FILTER_FUNCTION func)
 {
@@ -431,7 +431,7 @@ static BOOL anti_spamming_register_filter(char* type, FILTER_FUNCTION func)
  *		func	the auditor function
  *	@return
  *		TRUE	OK to register the function
- *		FALSE	fail to register function
+ *		FALSE	failed to register function
  */
 static BOOL anti_spamming_register_auditor(AUDITOR_FUNCTION func)
 {
@@ -480,7 +480,7 @@ static BOOL anti_spamming_register_auditor(AUDITOR_FUNCTION func)
  *		func	the judge function
  *	@return
  *		TRUE	OK to register the function
- *		FALSE	fail to register function
+ *		FALSE	failed to register function
  */
 static BOOL anti_spamming_register_judge(JUDGE_FUNCTION func)
 {
@@ -1284,7 +1284,7 @@ void anti_spamming_free()
  *		  talk	  function for talking
  *	  @return
  *		  TRUE	  ok to register
- *		  FALSE	  fail to register
+ *		  FALSE	  failed to register
  */
 static BOOL anti_spamming_register_talk(TALK_MAIN talk)
 {

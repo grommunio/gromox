@@ -23,7 +23,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
        
 		if (FALSE == register_talk(log_plugin_console_talk)) {
-			printf("[log_plugin]: fail to register console talk\n");
+			printf("[log_plugin]: failed to register console talk\n");
 			return FALSE;
 		}
 		/* get the plugin name from system api */
@@ -94,7 +94,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (FALSE == register_service("log_info", log_plugin_log_info)) {
-			printf("[log_plugin]: fail to register \"log_info\" service\n");
+			printf("[log_plugin]: failed to register \"log_info\" service\n");
 			return FALSE;
 		}
 		return TRUE;

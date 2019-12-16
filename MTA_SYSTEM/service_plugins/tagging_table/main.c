@@ -26,7 +26,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		if (FALSE == register_talk(tagging_table_console_talk)) {
-			printf("[tagging_table]: fail to register console talk\n");
+			printf("[tagging_table]: failed to register console talk\n");
 			return FALSE;
 		}
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
@@ -55,7 +55,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (FALSE == register_service("check_tagging", tagging_table_check)) {
-			printf("[tagging_table]: fail to register \"check_tagging\" "
+			printf("[tagging_table]: failed to register \"check_tagging\" "
 				"service\n");
 			return FALSE;
 		}

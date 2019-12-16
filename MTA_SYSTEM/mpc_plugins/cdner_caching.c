@@ -157,7 +157,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		pthread_setname_np(g_scan_id, "cdncache/scan");
 		if (FALSE == register_hook(mail_hook)) {
-			printf("[cdner_caching]: fail to register the hook function\n");
+			printf("[cdner_caching]: failed to register the hook function\n");
 			return FALSE;
 		}
 

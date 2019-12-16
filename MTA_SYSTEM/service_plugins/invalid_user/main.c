@@ -27,7 +27,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		if (FALSE == register_talk(invalid_user_console_talk)) {
-			printf("[invalid_user]: fail to register console talk\n");
+			printf("[invalid_user]: failed to register console talk\n");
 			return FALSE;
 		}
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
@@ -69,7 +69,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (FALSE == register_service("check_user", invalid_user_check)) {
-			printf("[invalid_user]: fail to register \"check_user\" service\n");
+			printf("[invalid_user]: failed to register \"check_user\" service\n");
 			return FALSE;
 		}
 		return TRUE;

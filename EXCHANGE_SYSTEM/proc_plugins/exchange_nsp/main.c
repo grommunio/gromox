@@ -112,12 +112,12 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		pendpoint1 = register_endpoint("*", 6001);
 		if (NULL == pendpoint1) {
-			printf("[exchange_nsp]: fail to register endpoint with port 6001\n");
+			printf("[exchange_nsp]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
 		pendpoint2 = register_endpoint("*", 6004);
 		if (NULL == pendpoint2) {
-			printf("[exchange_nsp]: fail to register endpoint with port 6004\n");
+			printf("[exchange_nsp]: failed to register endpoint with port 6004\n");
 			return FALSE;
 		}
 		strcpy(interface.name, "exchangeNSP");
@@ -130,7 +130,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		interface.reclaim = NULL;
 		if (FALSE == register_interface(pendpoint1, &interface) ||
 			FALSE == register_interface(pendpoint2, &interface)) {
-			printf("[exchange_nsp]: fail to register interface\n");
+			printf("[exchange_nsp]: failed to register interface\n");
 			return FALSE;
 		}
 		if (0 != common_util_run()) {

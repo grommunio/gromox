@@ -29,7 +29,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
        
 		if (FALSE == register_talk(dns_adaptor_console_talk)) {
-			printf("[dns_adaptor]: fail to register console talk\n");
+			printf("[dns_adaptor]: failed to register console talk\n");
 			return FALSE;
 		}
 		/* get the plugin name from system api */
@@ -84,20 +84,20 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		if (FALSE == register_service("dns_query_A",
 			dns_adaptor_query_A)) {
-			printf("[dns_adaptor]: fail to register \"dns_query_A\""
+			printf("[dns_adaptor]: failed to register \"dns_query_A\""
 					"service\n");
 			return FALSE;
 
 		}
 		if (FALSE == register_service("dns_query_MX",
 			dns_adaptor_query_MX)) {
-			printf("[dns_adaptor]: fail to register \"dns_query_MX\""
+			printf("[dns_adaptor]: failed to register \"dns_query_MX\""
 					"service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("dns_check_local",
 			inbound_ips_check_local)) {
-			printf("[dns_adaptor]: fail to register \"dns_check_local\""
+			printf("[dns_adaptor]: failed to register \"dns_check_local\""
 					"service\n");
 			return FALSE;
 		}

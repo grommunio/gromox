@@ -50,12 +50,12 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			FALSE == register_service("auth_process", service_auth_process) ||
 			FALSE == register_service("auth_retrieve", service_auth_retrieve)||
 			FALSE == register_service("auth_clear", service_auth_clear)) {
-            printf("[service_auth]: fail to register auth services\n");
+			printf("[service_auth]: failed to register auth services\n");
 			service_auth_stop();
             return FALSE;
         }
         if (FALSE == register_talk(console_talk)) {
-            printf("[service_auth]: fail to register console_talk\n");
+			printf("[service_auth]: failed to register console_talk\n");
 			service_auth_stop();
             return FALSE;
         }

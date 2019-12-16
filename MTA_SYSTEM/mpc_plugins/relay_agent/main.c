@@ -238,7 +238,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		register_talk(console_talk);
         if (FALSE == register_hook(mail_hook)) {
-			printf("[relay_agent]: fail to register the hook function\n");
+			printf("[relay_agent]: failed to register the hook function\n");
 			relay_agent_stop();
 			relay_agent_free();
 			relay_bridge_stop();

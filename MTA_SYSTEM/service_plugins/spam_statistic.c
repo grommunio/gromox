@@ -79,11 +79,11 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(g_table_path, "%s/%s.txt", get_data_path(), file_name);
 		g_list = list_file_init(g_table_path, "%s:256");
         if (FALSE == register_talk(console_talk)) {
-			printf("[sample]: fail to register console talk\n");
+			printf("[sample]: failed to register console talk\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("spam_statistic", spam_statistic)) {
-			printf("[spam_statistic]: fail to register service function\n");
+			printf("[spam_statistic]: failed to register service function\n");
 			return FALSE;
 		}
 		return TRUE;

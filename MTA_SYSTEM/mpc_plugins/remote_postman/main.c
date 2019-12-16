@@ -251,7 +251,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		register_talk(remote_postman_console_talk);
 		if (FALSE == register_remote(remote_postman_hook)) {
-			printf("[remote_postman]: fail to register the hook function\n");
+			printf("[remote_postman]: failed to register the hook function\n");
 			return FALSE;
 		}
 		return TRUE;

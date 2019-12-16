@@ -109,7 +109,7 @@ int AS_LibMain(int reason, void **ppdata)
 		list_file_free(plist_file);
         /* invoke register_auditor for registering auditor of mime head */
         if (FALSE == register_auditor(header_filter)) {
-			printf("[header_filter]: fail to register auditor function\n");
+			printf("[header_filter]: failed to register auditor function\n");
             return FALSE;
         }
         return TRUE;

@@ -59,7 +59,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		register_talk(domain_monitor_console_talk);
         if (FALSE == register_hook(domain_monitor_process)) {
-			printf("[domain_monitor]: fail to register the hook function\n");
+			printf("[domain_monitor]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

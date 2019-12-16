@@ -25,11 +25,11 @@ BOOL FLH_LibMain(int reason, void** ppdata, char* path)
 		LINK_API(ppdata);
 
         if (FALSE == register_cancel(cancel_flushing)) {
-            printf("[sample flusher]: fail to register cancel flushing\n");
+			printf("[sample flusher]: failed to register cancel flushing\n");
             return FALSE;
         }
         if (FALSE == register_talk(console_talk)) {
-            printf("[sample flusher]: fail to register console talk\n");
+			printf("[sample flusher]: failed to register console talk\n");
             return FALSE;
         }
 

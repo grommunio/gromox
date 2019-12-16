@@ -50,12 +50,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		if (FALSE == register_service("lang_to_charset",
 			table_query)) {
-			printf("[lang_charset]: fail to register \"lang_to_charset\" service\n");
+			printf("[lang_charset]: failed to register \"lang_to_charset\" service\n");
 			return FALSE;
 		}
 		
 		if (FALSE == register_talk(console_talk)) {
-			printf("[lang_charset]: fail to register console talk\n", file_name);
+			printf("[lang_charset]: failed to register console talk\n", file_name);
 			return FALSE;
 		}
 		

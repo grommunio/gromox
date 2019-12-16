@@ -192,23 +192,23 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		list_file_free(pfile);
 		if (FALSE == register_service("verify_cpid", verify_cpid)) {
-			printf("[ms_locale]: fail to register \"verify_cpid\" service\n");
+			printf("[ms_locale]: failed to register \"verify_cpid\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("cpid_to_charset", cpid_to_charset)) {
-			printf("[ms_locale]: fail to register \"cpid_to_charset\" service\n");
+			printf("[ms_locale]: failed to register \"cpid_to_charset\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("charset_to_cpid", charset_to_cpid)) {
-			printf("[ms_locale]: fail to register \"charset_to_cpid\" service\n");
+			printf("[ms_locale]: failed to register \"charset_to_cpid\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("ltag_to_lcid", ltag_to_lcid)) {
-			printf("[ms_locale]: fail to register \"ltag_to_lcid\" service\n");
+			printf("[ms_locale]: failed to register \"ltag_to_lcid\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("lcid_to_ltag", lcid_to_ltag)) {
-			printf("[ms_locale]: fail to register \"lcid_to_ltag\" service\n");
+			printf("[ms_locale]: failed to register \"lcid_to_ltag\" service\n");
 			return FALSE;
 		}
 		printf("[ms_locale]: plugin is loaded into system\n");

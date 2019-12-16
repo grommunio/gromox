@@ -621,7 +621,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		register_service("pass_service", common_util_pass_service);
 		
 		if (FALSE == register_talk(console_talk)) {
-			printf("[exmdb_provider]: fail to register console talk\n");
+			printf("[exmdb_provider]: failed to register console talk\n");
 			return FALSE;
 		}
 		

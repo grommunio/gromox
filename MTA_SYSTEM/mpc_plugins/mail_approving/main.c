@@ -80,7 +80,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		register_talk(mail_approving_console_talk);
         if (FALSE == register_hook(mail_approving_process)) {
-			printf("[mail_approving]: fail to register the hook function\n");
+			printf("[mail_approving]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

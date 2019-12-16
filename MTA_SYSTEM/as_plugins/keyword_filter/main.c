@@ -216,7 +216,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
             return FALSE;
         }
         if (FALSE == register_talk(console_talk)) {
-			printf("[keyword_filter]: fail to register talk function\n");
+			printf("[keyword_filter]: failed to register talk function\n");
         }
         return TRUE;
     case PLUGIN_FREE:

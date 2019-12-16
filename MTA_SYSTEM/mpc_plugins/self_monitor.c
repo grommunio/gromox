@@ -98,7 +98,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		msg.msg_tick = cur_time/180;
 		msgsnd(g_monitor_id, &msg, sizeof(int), IPC_NOWAIT);
         if (FALSE == register_hook(monitor_hook)) {
-			printf("[self_monitor]: fail to register the hook function\n");
+			printf("[self_monitor]: failed to register the hook function\n");
             return FALSE;
         }
 		g_notify_stop = FALSE;

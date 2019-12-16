@@ -146,7 +146,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			return FALSE;
 		}
 		if (FALSE == register_service("auth_login", mysql_adaptor_login)) {
-			printf("[mysql_adaptor]: fail to register \"auth_login\" service\n");
+			printf("[mysql_adaptor]: failed to register \"auth_login\" service\n");
 			return FALSE;
 		}
 		register_talk(console_talk);

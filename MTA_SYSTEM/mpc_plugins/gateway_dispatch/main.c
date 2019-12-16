@@ -196,7 +196,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
         }
 		register_talk(gateway_dispatch_console_talk);
         if (FALSE == register_local(gateway_dispatch_hook)) {
-			printf("[gateway_dispatch]: fail to register the hook function\n");
+			printf("[gateway_dispatch]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

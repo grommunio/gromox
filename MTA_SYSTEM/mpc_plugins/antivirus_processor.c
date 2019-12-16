@@ -66,7 +66,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		pthread_mutex_init(&g_id_lock, NULL);
 
         if (FALSE == register_hook(antivirus_hook)) {
-			printf("[antivirus_processor]: fail to register the hook function\n");
+			printf("[antivirus_processor]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

@@ -147,175 +147,175 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 		if (FALSE == register_service("auth_login",
 			mysql_adaptor_login)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 							"\"auth_login\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("set_password",
 			mysql_adaptor_setpasswd)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"set_password\" service\n");
 			return FALSE;	
 		}
 		if (FALSE == register_service("get_username_from_id",
 			mysql_adaptor_get_username_from_id)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 				" \"get_username_from_id\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_id_from_username",
 			mysql_adaptor_get_id_from_username)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 				" \"get_id_from_username\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_id_from_maildir",
 			mysql_adaptor_get_id_from_maildir)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 				" \"get_id_from_maildir\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_user_displayname",
 			mysql_adaptor_get_user_displayname)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 				" \"get_user_displayname\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_user_privilege_bits",
 			mysql_adaptor_get_user_privilege_bits)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 				"\"get_user_privilege_bits\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_user_lang",
 			mysql_adaptor_get_user_lang)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"get_user_lang\" service\n");
 			return FALSE;	
 		}
 		if (FALSE == register_service("set_user_lang",
 			mysql_adaptor_set_user_lang)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"set_user_lang\" service\n");
 			return FALSE;	
 		}
 		if (FALSE == register_service("get_timezone",
 			mysql_adaptor_get_timezone)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"get_timezone\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("set_timezone",
 			mysql_adaptor_set_timezone)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"set_timezone\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_maildir",
 			mysql_adaptor_get_maildir)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"get_maildir\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_domainname_from_id",
 			mysql_adaptor_get_domainname_from_id)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 				"\"get_domainname_from_id\" service\n");
 			return FALSE;	
 		}
 		if (FALSE == register_service("get_homedir",
 			mysql_adaptor_get_homedir)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"get_homedir\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_homedir_by_id",
 			mysql_adaptor_get_homedir_by_id)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 					"\"get_homedir_by_id\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_id_from_homedir",
 			mysql_adaptor_get_id_from_homedir)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 				" \"get_id_from_homedir\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_user_ids",
 			mysql_adaptor_get_user_ids)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 						" \"get_user_ids\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_domain_ids",
 			mysql_adaptor_get_domain_ids)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 						"\"get_domain_ids\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_mlist_ids",
 			mysql_adaptor_get_mlist_ids)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 						"\"get_mlist_ids\" service\n");
 			return FALSE;	
 		}
 		if (FALSE == register_service("get_org_domains",
 			mysql_adaptor_get_org_domains)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 					" \"get_org_domains\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_domain_info",
 			mysql_adaptor_get_domain_info)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 					" \"get_domain_info\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("check_same_org",
 			mysql_adaptor_check_same_org)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 						"\"check_same_org\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_domain_groups",
 			mysql_adaptor_get_domain_groups)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 					"\"get_domain_groups\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_group_classes",
 			mysql_adaptor_get_group_classes)) {
-			printf("[mysql_adaptor]: fail to register "
+			printf("[mysql_adaptor]: failed to register "
 					"\"get_group_classes\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_sub_classes",
 			mysql_adaptor_get_sub_classes)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 					" \"get_sub_classes\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_class_users",
 			mysql_adaptor_get_class_users)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 					" \"get_class_users\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_group_users",
 			mysql_adaptor_get_group_users)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 					" \"get_group_users\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_domain_users",
 			mysql_adaptor_get_domain_users)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 					" \"get_domain_users\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("check_mlist_include",
 			mysql_adaptor_check_mlist_include)) {
-			printf("[mysql_adaptor]: fail to register"
+			printf("[mysql_adaptor]: failed to register"
 				" \"check_mlist_include\" service\n");
 			return FALSE;
 		}

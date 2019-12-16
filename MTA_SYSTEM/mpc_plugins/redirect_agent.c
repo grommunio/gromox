@@ -24,7 +24,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
             return FALSE;
 		}
         if (FALSE == register_hook(mail_hook)) {
-			printf("[redirect_agent]: fail to register the hook function\n");
+			printf("[redirect_agent]: failed to register the hook function\n");
             return FALSE;
         }
 		printf("[redirect_agent]: plugin is loaded into system\n");

@@ -150,7 +150,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 		if (FALSE == register_service("install_event_stub",
 			install_event_stub)) {
-			printf("[event_proxy]: fail to register install_event_stub\n");
+			printf("[event_proxy]: failed to register install_event_stub\n");
 		}
 		
 		return TRUE;

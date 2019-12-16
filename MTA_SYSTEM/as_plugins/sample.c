@@ -42,7 +42,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
             return FALSE;
         }
         if (FALSE == register_talk(console_talk)) {
-            log_info(0, "fail to register console talk in plugin XXX\n");
+			log_info(0, "failed to register console talk in plugin XXX\n");
         }
         return TRUE;
     case PLUGIN_FREE:

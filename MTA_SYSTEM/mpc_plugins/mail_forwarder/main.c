@@ -59,7 +59,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		register_talk(mail_forwarder_console_talk);
         if (FALSE == register_hook(mail_forwarder_process)) {
-			printf("[mail_forwarder]: fail to register the hook function\n");
+			printf("[mail_forwarder]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

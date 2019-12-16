@@ -14,7 +14,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     case PLUGIN_INIT:
 		LINK_API(ppdata);	
         if (FALSE == register_hook(mail_hook)) {
-			printf("[spam_tagging]: fail to register tagging hook\n");
+			printf("[spam_tagging]: failed to register tagging hook\n");
             return FALSE;
         }
         return TRUE;

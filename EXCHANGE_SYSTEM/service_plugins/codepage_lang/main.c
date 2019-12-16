@@ -24,7 +24,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		if (FALSE == register_talk(console_talk)) {
-			printf("[codepage_lang]: fail to register console talk\n");
+			printf("[codepage_lang]: failed to register console talk\n");
 			return FALSE;
 		}
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
@@ -34,7 +34,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (FALSE == register_service("get_lang", codepage_lang_get_lang)) {
-			printf("[codepage_lang]: fail to register \"get_lang\" service\n");
+			printf("[codepage_lang]: failed to register \"get_lang\" service\n");
 			return FALSE;
 		}
 		return TRUE;

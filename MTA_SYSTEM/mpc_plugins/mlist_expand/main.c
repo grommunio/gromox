@@ -40,7 +40,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 
         if (FALSE == register_hook(expand_process)) {
-			printf("[mlist_expand]: fail to register the hook function\n");
+			printf("[mlist_expand]: failed to register the hook function\n");
             return FALSE;
         }
 

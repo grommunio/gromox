@@ -87,7 +87,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
         }
 		register_talk(domain_subsystem_console_talk);
         if (FALSE == register_hook(domain_subsystem_hook)) {
-			printf("[domain_subsystem]: fail to register the hook function\n");
+			printf("[domain_subsystem]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

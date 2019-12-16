@@ -65,7 +65,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
 		register_talk(console_talk);
         if (FALSE == register_hook(collector_hook)) {
-			printf("[mailbox_collector]: fail to register the hook function\n");
+			printf("[mailbox_collector]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

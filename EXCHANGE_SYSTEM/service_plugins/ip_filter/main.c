@@ -33,7 +33,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		if (FALSE == register_talk(ip_filter_console_talk)) {
-			printf("[%s]: fail to register console talk\n", file_name);
+			printf("[%s]: failed to register console talk\n", file_name);
 			return FALSE;
 		}
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
@@ -118,21 +118,21 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		if (NULL != judge_name &&
 			FALSE == register_service(judge_name, ip_filter_judge)) {
-			printf("[%s]: fail to register \"%s\" service\n", file_name,
+			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					judge_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
 		if (NULL != query_name &&
 			FALSE == register_service(query_name, ip_filter_query)) {
-			printf("[%s]: fail to register \"%s\" service\n", file_name,
+			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					query_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
 		if (NULL != add_name &&
 			FALSE==register_service(add_name,ip_filter_add_ip_into_temp_list)) {
-			printf("[%s]: fail to register \"%s\" service\n", file_name,
+			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					add_name);
 			config_file_free(pfile);
 			return FALSE;

@@ -177,12 +177,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			FALSE == register_service("cdn_check", check_cdn_user) ||
 			FALSE == register_service("cdn_auth", auth_cdn_user) ||
 			FALSE == register_service("cdn_create", create_cdn_user)) {
-			printf("[cdner_agent]: fail to register services\n");
+			printf("[cdner_agent]: failed to register services\n");
 			return FALSE;
 		}
 
 		if (FALSE == register_talk(console_talk)) {
-			printf("[cdner_agent]: fail to register console talk\n");
+			printf("[cdner_agent]: failed to register console talk\n");
 			return FALSE;
 		}
 

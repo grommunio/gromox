@@ -62,12 +62,12 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		pendpoint1 = register_endpoint("*", 6001);
 		if (NULL == pendpoint1) {
-			printf("[exchange_rfr]: fail to register endpoint with port 6001\n");
+			printf("[exchange_rfr]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
 		pendpoint2 = register_endpoint("*", 6002);
 		if (NULL == pendpoint2) {
-			printf("[exchange_rfr]: fail to register endpoint with port 6002\n");
+			printf("[exchange_rfr]: failed to register endpoint with port 6002\n");
 			return FALSE;
 		}
 		strcpy(interface.name, "exchangeRFR");
@@ -80,7 +80,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		interface.reclaim = NULL;
 		if (FALSE == register_interface(pendpoint1, &interface) ||
 			FALSE == register_interface(pendpoint2, &interface)) {
-			printf("[exchange_rfr]: fail to register interface\n");
+			printf("[exchange_rfr]: failed to register interface\n");
 			return FALSE;
 		}
 		printf("[exchange_rfr]: plugin is loaded into system\n");

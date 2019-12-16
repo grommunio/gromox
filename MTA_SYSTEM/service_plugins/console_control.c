@@ -102,7 +102,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		config_file_free(pfile);
 		if (FALSE == register_service(service_name, console_server_control)) {
-			printf("[%s]: fail to register \"%s\" service\n", file_name,
+			printf("[%s]: failed to register \"%s\" service\n", file_name,
 				service_name);
 			return FALSE;
 		}

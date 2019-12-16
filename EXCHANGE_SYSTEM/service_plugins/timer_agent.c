@@ -144,15 +144,15 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		pthread_setname_np(g_scan_id, "timer_agent");
 		if (FALSE == register_service("add_timer", add_timer)) {
-			printf("[timer_agent]: fail to register add_timer\n");
+			printf("[timer_agent]: failed to register add_timer\n");
 		}
 		
 		if (FALSE == register_service("cancel_timer", cancel_timer)) {
-			printf("[timer_agent]: fail to register cancel_timer\n");
+			printf("[timer_agent]: failed to register cancel_timer\n");
 		}
 		
         if (FALSE == register_talk(console_talk)) {
-			printf("[timer_agent]: fail to register console talk\n");
+			printf("[timer_agent]: failed to register console talk\n");
 			return FALSE;
 		}
 		return TRUE;

@@ -76,7 +76,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
         if (FALSE == register_hook(keyword_hook)) {
-			printf("[anonymous_keyword]: fail to register the hook function\n");
+			printf("[anonymous_keyword]: failed to register the hook function\n");
             return FALSE;
         }
 		register_talk(console_talk);

@@ -30,7 +30,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		if (FALSE == register_talk(multiple_retrying_console_talk)) {
-			printf("[multiple_retrying]: fail to register console talk\n");
+			printf("[multiple_retrying]: failed to register console talk\n");
 			return FALSE;
 		}
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
@@ -140,7 +140,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (FALSE == register_service("check_retrying", proxy_retrying_check)) {
-			printf("[multiple_retrying]: fail to register \"check_retrying\" "
+			printf("[multiple_retrying]: failed to register \"check_retrying\" "
 				"service\n");
 			return FALSE;
 		}

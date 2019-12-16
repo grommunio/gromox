@@ -84,7 +84,7 @@ int AS_LibMain(int reason, void **ppdata)
 
         /* invoke register_auditor for registering auditor of mime head */
         if (FALSE == register_auditor(subject_auditor)) {
-			printf("[subject_auditor]: fail to register auditor function\n");
+			printf("[subject_auditor]: failed to register auditor function\n");
             return FALSE;
         }
         return TRUE;

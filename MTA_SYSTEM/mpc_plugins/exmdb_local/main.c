@@ -242,7 +242,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		register_talk(exmdb_local_console_talk);
         if (FALSE == register_local(exmdb_local_hook)) {
-			printf("[exmdb_local]: fail to register the hook function\n");
+			printf("[exmdb_local]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

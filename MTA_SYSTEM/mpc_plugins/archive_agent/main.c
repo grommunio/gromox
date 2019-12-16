@@ -150,7 +150,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		register_talk(console_talk);
 		
 		if (FALSE == register_hook(archive_process)) {
-			printf("[archive_agent]: fail to register the hook function\n");
+			printf("[archive_agent]: failed to register the hook function\n");
 			return FALSE;
 		}
 		return TRUE;

@@ -60,7 +60,7 @@ int AS_LibMain(int reason, void **ppdata)
 		}
 		/* invoke register_filter for registering all type of mime paragraph*/
 		if (FALSE == register_filter(NULL, interception_filter)) {
-			printf("[precise_interception]: fail to register the filter "
+			printf("[precise_interception]: failed to register the filter "
 				"function\n");
 			return FALSE;
 		}

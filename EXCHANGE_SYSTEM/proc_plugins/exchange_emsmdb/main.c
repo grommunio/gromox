@@ -237,7 +237,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		/* host can include wildcard */
 		pendpoint = register_endpoint("*", 6001);
 		if (NULL == pendpoint) {
-			printf("[exchange_emsmdb]: fail to register endpoint with port 6001\n");
+			printf("[exchange_emsmdb]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
 		strcpy(interface_emsmdb.name, "exchangeEMSMDB");
@@ -249,7 +249,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		interface_emsmdb.unbind = exchange_emsmdb_unbind;
 		interface_emsmdb.reclaim = NULL;
 		if (FALSE == register_interface(pendpoint, &interface_emsmdb)) {
-			printf("[exchange_emsmdb]: fail to register emsmdb interface\n");
+			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
 			return FALSE;
 		}
 		strcpy(interface_async_emsmdb.name, "exchangeAsyncEMSMDB");
@@ -261,7 +261,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		interface_async_emsmdb.unbind = NULL;
 		interface_async_emsmdb.reclaim = exchange_async_emsmdb_reclaim;
 		if (FALSE == register_interface(pendpoint, &interface_async_emsmdb)) {
-			printf("[exchange_emsmdb]: fail to register emsmdb interface\n");
+			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
 			return FALSE;
 		}
 		bounce_producer_init(resource_path, separator);

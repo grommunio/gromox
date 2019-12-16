@@ -172,12 +172,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		pthread_setname_np(g_scan_id, "midb_agent");
 		if (FALSE == register_service("check_full", check_full)) {
-			printf("[midb_agent]: fail to register services\n");
+			printf("[midb_agent]: failed to register services\n");
 			return FALSE;
 		}
 
 		if (FALSE == register_talk(console_talk)) {
-			printf("[midb_agent]: fail to register console talk\n");
+			printf("[midb_agent]: failed to register console talk\n");
 			return FALSE;
 		}
 

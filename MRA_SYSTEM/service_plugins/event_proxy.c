@@ -146,19 +146,19 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pthread_setname_np(g_scan_id, "event_proxy");
 
 		if (FALSE == register_service("broadcast_event", broadcast_event)) {
-			printf("[event_proxy]: fail to register broadcast_event\n");
+			printf("[event_proxy]: failed to register broadcast_event\n");
 		}
 		
 		if (FALSE == register_service("broadcast_select", broadcast_select)) {
-			printf("[event_proxy]: fail to register broadcast_select\n");
+			printf("[event_proxy]: failed to register broadcast_select\n");
 		}
 		
 		if (FALSE == register_service("broadcast_unselect", broadcast_unselect)) {
-			printf("[event_proxy]: fail to register broadcast_unselect\n");
+			printf("[event_proxy]: failed to register broadcast_unselect\n");
 		}
 		
         if (FALSE == register_talk(console_talk)) {
-			printf("[event_proxy]: fail to register console talk\n");
+			printf("[event_proxy]: failed to register console talk\n");
 			return FALSE;
 		}
 		return TRUE;

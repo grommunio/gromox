@@ -17,13 +17,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	case PLUGIN_INIT:
 		LINK_API(ppdata);
         if (FALSE == register_talk(console_talk)) {
-			printf("[sample]: fail to register console talk\n");
+			printf("[sample]: failed to register console talk\n");
 			return FALSE;
 		}
 		for (i=0; i<100; i++) {
 			sprintf(tmp, "foo%d", i);
 			if (FALSE == register_service(tmp, foo)) {
-				printf("[sample]: fail to register foo\n");
+				printf("[sample]: failed to register foo\n");
 			}
 		}
 		return TRUE;

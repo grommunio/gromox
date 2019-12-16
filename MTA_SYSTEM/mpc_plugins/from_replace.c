@@ -57,7 +57,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
         if (FALSE == register_hook(mail_hook)) {
-			printf("[from_replace]: fail to register the hook function\n");
+			printf("[from_replace]: failed to register the hook function\n");
             return FALSE;
         }
 		register_talk(console_talk);

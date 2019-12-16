@@ -30,7 +30,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		}
 		register_talk(domain_mailbox_console_talk);
         if (FALSE == register_hook(domain_mailbox_hook)) {
-			printf("[domain_mailbox]: fail to register the hook function\n");
+			printf("[domain_mailbox]: failed to register the hook function\n");
             return FALSE;
         }
         return TRUE;

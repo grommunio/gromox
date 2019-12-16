@@ -97,7 +97,7 @@ int AS_LibMain(int reason, void **ppdata, char *path)
         if (FALSE == register_filter(NULL , attach_name_filter)) {
 			free(g_context_list);
 			g_context_list = NULL;
-			printf("[attach_wildcard]: fail to register filter function\n");
+			printf("[attach_wildcard]: failed to register filter function\n");
             return FALSE;
         }
 		register_talk(console_talk);

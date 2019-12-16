@@ -17,7 +17,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
         if (FALSE == register_hook(spam_complain_process)) {
-			printf("[spam_complain]: fail to register the hook function\n");
+			printf("[spam_complain]: failed to register the hook function\n");
             return FALSE;
         }
 		printf("[spam_complain]: plugin is loaded into system\n");

@@ -29,7 +29,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
        
 		if (FALSE == register_talk(ip_table_console_talk)) {
-			printf("[%s]: fail to register console talk\n", file_name);
+			printf("[%s]: failed to register console talk\n", file_name);
 			return FALSE;
 		}
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
@@ -63,21 +63,21 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		if (NULL != query_name && FALSE == register_service(query_name,
 			ip_table_query)) {
-			printf("[%s]: fail to register \"%s\" service\n", file_name,
+			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					query_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
 		if (NULL != add_name && FALSE == register_service(add_name,
 			ip_table_add)) {
-			printf("[%s]: fail to register \"%s\" service\n", file_name,
+			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					add_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
 		if (NULL != remove_name && FALSE == register_service(remove_name,
 			ip_table_remove)) {
-			printf("[%s]: fail to register \"%s\" service\n", file_name,
+			printf("[%s]: failed to register \"%s\" service\n", file_name,
 				remove_name);
 			config_file_free(pfile);
 			return FALSE;

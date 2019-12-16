@@ -63,7 +63,7 @@ BOOL FLH_LibMain(int reason, void** ppdata)
         config_file_free(pfile);
 		register_talk(message_enqueue_console_talk);
         if (FALSE == register_cancel(message_enqueue_cancel)) {
-            printf("[message_enqueue]: fail to register cancel flushing\n");
+			printf("[message_enqueue]: failed to register cancel flushing\n");
             return FALSE;
         }
 		set_flush_ID(message_enqueue_retrieve_flush_ID());

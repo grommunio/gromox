@@ -28,7 +28,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
        
 		if (FALSE == register_talk(ip_container_console_talk)) {
-			printf("[ip_container]: fail to register console talk\n");
+			printf("[ip_container]: failed to register console talk\n");
 			return FALSE;
 		}
 		sprintf(tmp_path, "%s/%s.cfg", get_config_path(), file_name);
@@ -56,13 +56,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (FALSE == register_service("ip_container_add", ip_container_add)) {
-			printf("[ip_container]: fail to register \"ip_container_add\" "
+			printf("[ip_container]: failed to register \"ip_container_add\" "
 				"service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("ip_container_remove",
 			ip_container_remove)) {
-			printf("[ip_container]: fail to register \"ip_container_remove\" "
+			printf("[ip_container]: failed to register \"ip_container_remove\" "
 				"service\n");
 			return FALSE;
 		}
