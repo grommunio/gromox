@@ -16,6 +16,7 @@ saved_CXXFLAGS="$CXXFLAGS"
 saved_LDFLAGS="$LDFLAGS"
 saved_LIBS="$LIBS"
 
+my_CFLAGS="-Wall -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
@@ -29,6 +30,26 @@ AS_IF([test -n "$cxxmode"], [
 	my_CXXFLAGS="$my_CXXFLAGS -std=$cxxmode"
 	AC_MSG_RESULT([$cxxmode])
 ])
+
+AC_ARG_WITH([asan], AS_HELP_STRING([--with-asan], [Activate Address Sanitizer]),
+	[
+	my_CFLAGS="$my_CFLAGS -fsanitize=address"
+	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=address"
+	])
+dnl fvis is non-conforming and (rightfully) triggers ubsan warnings;
+dnl hence we disable fvis as a workaround.
+NO_VSYM=""
+AC_ARG_WITH([ubsan], AS_HELP_STRING([--with-ubsan], [Activate Undefined Behavior Sanitizer]),
+	[
+	my_CFLAGS="$my_CFLAGS -fsanitize=undefined"
+	my_CXXFLAGS="$my_CXXFLAGS -fsanitize=undefined"
+	NO_VSYM=1],
+	[
+	my_CFLAGS="$my_CFLAGS -fvisibility=hidden"
+	my_CXXFLAGS="$my_CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
+	])
+AC_SUBST([NO_VSYM])
+
 
 AC_ARG_WITH([unitdir],
 	[AS_HELP_STRING([--with-unitdir=PATH], [Path to systemd service unit directory])],
@@ -90,6 +111,7 @@ AS_IF([test "$with_php" != "no"], [
 	LIBS="$saved_LIBS"
 ])
 
+AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
 AH_TEMPLATE([PROJECT_VERSION], [])
 AC_DEFINE([PROJECT_VERSION], [PACKAGE_VERSION]) dnl for now

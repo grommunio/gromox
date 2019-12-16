@@ -1,0 +1,11 @@
+{
+global:
+	AS_LibMain;
+	FLH_LibMain;
+	HPM_LibMain;
+	HOOK_LibMain;
+	PROC_LibMain;
+	SVC_LibMain;
+local:
+	*;
+};
