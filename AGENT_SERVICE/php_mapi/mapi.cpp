@@ -256,9 +256,7 @@ zend_module_entry mapi_module_entry = {
     STANDARD_MODULE_PROPERTIES
 };
 
-#ifdef COMPILE_DL_MAPI
 ZEND_GET_MODULE(mapi)
-#endif
 
 static char name_mapi_session[] = "MAPI Session";
 static char name_mapi_table[] = "MAPI Table";
