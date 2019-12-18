@@ -217,9 +217,6 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	if (NULL == equal_ptr) {
 		return;
 	}
-	if ('\0' == *(equal_ptr + 1)) {
-		return;
-	}
 	if (NULL != sharp_ptr && sharp_ptr < equal_ptr) {
 		return;
 	}
@@ -230,9 +227,8 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	equal_ptr ++;
 	HX_strrtrim(temp_buf);
 	HX_strltrim(equal_ptr);
-	if (0 == strlen(temp_buf) || 0 == strlen(equal_ptr)) {
+	if (strlen(temp_buf) == 0)
 		return;
-	}
 	index = cfg->num_entries;
 	cfg->num_entries ++;
 	cfg->config_table[index].is_touched = FALSE;
