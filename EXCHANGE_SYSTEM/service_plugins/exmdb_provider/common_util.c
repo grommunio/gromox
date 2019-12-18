@@ -4199,6 +4199,7 @@ BOOL common_util_set_properties(int table_type,
 					*(uint8_t*)ppropvals->ppropval[i].pvalue);
 				continue;
 			case PROP_TAG_MESSAGEFLAGS:
+				/* XXX: Why no SQL update? */
 				*(uint32_t*)ppropvals->ppropval[i].pvalue &=
 											~MESSAGE_FLAG_READ;
 				*(uint32_t*)ppropvals->ppropval[i].pvalue &=

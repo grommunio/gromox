@@ -2285,7 +2285,7 @@ static BOOL message_rectify_message(const char *account,
 	static const uint8_t fake_true = 1;
 	static const uint8_t fake_false;
 	static const uint32_t fake_int32;
-	static const uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED;
+	static uint32_t fake_flags = MESSAGE_FLAG_UNMODIFIED; /* modified by common_util_set_properties */
 	
 	pmsgctnt1->proplist.count = 0;
 	pmsgctnt1->proplist.ppropval = common_util_alloc(sizeof(
