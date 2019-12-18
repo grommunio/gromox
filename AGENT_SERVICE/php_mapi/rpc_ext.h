@@ -976,10 +976,18 @@ typedef struct _RPC_RESPONSE {
 	RESPONSE_PAYLOAD payload;
 } RPC_RESPONSE;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	BINARY *pbin_out);
 
 zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	RPC_RESPONSE *presponse);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* _H_RPC_EXT_ */

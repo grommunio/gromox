@@ -3,6 +3,10 @@
 #include "php.h"
 #include "types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 zend_bool utf16_to_utf8(const char *src,
 	size_t src_len, char *dst, size_t len);
 
@@ -61,5 +65,9 @@ zend_bool znotification_array_to_php(
 
 zend_bool php_to_propname_array(zval *pzval_names,
 	zval *pzval_guids, PROPNAME_ARRAY *ppropnames TSRMLS_DC);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* _H_TYPE_CONVERSION_ */

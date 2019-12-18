@@ -9,6 +9,10 @@
 #	include <stdint.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 uint32_t zarafa_client_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession);
 
@@ -280,5 +284,9 @@ uint32_t zarafa_client_setpasswd(const char *username,
 uint32_t zarafa_client_linkmessage(GUID hsession,
 	BINARY search_entryid, BINARY message_entryid);
 extern uint32_t zarafa_client_checksession(GUID);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* _H_ZARAFA_CLIENT_ */
