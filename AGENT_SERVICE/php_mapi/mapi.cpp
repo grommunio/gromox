@@ -795,10 +795,8 @@ ZEND_FUNCTION(mapi_createoneoff)
 {
 	long flags;
 	char *ptype;
-	int type_len;
-	int name_len;
+	size_t type_len = 0, name_len = 0, address_len = 0;
 	char *paddress;
-	int address_len;
 	PUSH_CTX push_ctx;
 	char *pdisplayname;
 	ONEOFF_ENTRYID tmp_entry;
@@ -846,7 +844,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_parseoneoff)
 {
-	int cbentryid;
+	size_t cbentryid = 0;
 	char *pentryid;
 	PULL_CTX pull_ctx;
 	ONEOFF_ENTRYID oneoff_entry;
@@ -878,19 +876,15 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_logon_zarafa)
 {
 	long flags;
-	int wa_len;
-	int misc_len;
+	size_t wa_len = 0, misc_len = 0;
+	size_t server_len = 0, sslcert_len = 0, sslpass_len = 0;
+	size_t username_len = 0, password_len = 0;
 	char *server;
 	char *sslcert;
 	char *sslpass;
 	char *username;
 	char *password;
-	int server_len;
-	int sslcert_len;
-	int sslpass_len;
 	uint32_t result;
-	int username_len;
-	int password_len;
 	char *wa_version;
 	char *misc_version;
 	MAPI_RESOURCE *presource;
@@ -945,8 +939,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 	char *username;
 	char *password;
 	uint32_t result;
-	int username_len;
-	int password_len;
+	size_t username_len = 0, password_len = 0;
 	zval **ppzmethod;
 	zval **ppzserver_vars;
 	MAPI_RESOURCE *presource;
@@ -1007,6 +1000,7 @@ ZEND_FUNCTION(mapi_openentry)
 {
 	long flags;
 	BINARY entryid;
+	size_t eid_size = 0;
 	uint32_t result;
 	zval *pzresource;
 	uint32_t hobject;
@@ -1016,11 +1010,12 @@ ZEND_FUNCTION(mapi_openentry)
 	
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|sl",
-		&pzresource, &entryid.pb, &entryid.cb, &flags) == FAILURE
+	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
@@ -1103,6 +1098,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 {
 	long flags;
 	BINARY entryid;
+	size_t eid_size = 0;
 	uint32_t result;
 	zval *pzresource;
 	uint32_t hobject;
@@ -1114,11 +1110,12 @@ ZEND_FUNCTION(mapi_ab_openentry)
 	entryid.cb = 0;
 	entryid.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|sl",
-		&pzresource, &entryid.pb, &entryid.cb, &flags) == FAILURE
+	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_addressbook,
 		le_mapi_addressbook);
@@ -1299,6 +1296,7 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_openmsgstore)
 {
 	BINARY entryid;
+	size_t eid_size = 0;
 	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
@@ -1306,11 +1304,12 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	MAPI_RESOURCE *presource;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-		"rs", &pzresource, &entryid.pb, &entryid.cb) ==
+	    "rs", &pzresource, &entryid.pb, &eid_size) ==
 		FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
@@ -1345,7 +1344,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_openprofilesection)
 {
-	int uidlen;
+	size_t uidlen = 0;
 	FLATUID *puid;
 	uint32_t result;
 	uint32_t hobject;
@@ -1715,9 +1714,8 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 {
 	int flags;
 	char *pfname;
-	int name_len;
+	size_t name_len = 0, comment_len = 0;
 	char *pcomment;
-	int comment_len;
 	uint32_t result;
 	long folder_type;
 	uint32_t hobject;
@@ -1777,17 +1775,19 @@ ZEND_FUNCTION(mapi_folder_deletefolder)
 {
 	long flags;
 	BINARY entryid;
+	size_t eid_size = 0;
 	uint32_t result;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
 	
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs|l",
-		&pzresource, &entryid.pb, &entryid.cb, &flags) == FAILURE
+	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
@@ -1853,7 +1853,7 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 {
 	long flags;
 	char *pname;
-	int name_len;
+	size_t name_len = 0, eid_size = 0;
 	BINARY entryid;
 	uint32_t result;
 	zval *pzvalsrcfolder;
@@ -1863,12 +1863,13 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 	
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rsr|sl",
-		&pzvalsrcfolder, &entryid.pb, &entryid.cb, &pzvaldstfolder,
+	    &pzvalsrcfolder, &entryid.pb, &eid_size, &pzvaldstfolder,
 		&pname, &name_len, &flags) == FAILURE || NULL == pzvalsrcfolder ||
 		NULL == entryid.pb || 0 == entryid.cb || NULL == pzvaldstfolder) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(psrcfolder, MAPI_RESOURCE*,
 		&pzvalsrcfolder, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != psrcfolder->type) {
@@ -1904,7 +1905,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_msgstore_createentryid)
 {
-	int dn_len;
+	size_t dn_len = 0;
 	BINARY entryid;
 	char *mailboxdn;
 	uint32_t result;
@@ -1946,6 +1947,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 {
 	long flags;
 	BINARY entryid;
+	size_t eid_size = 0;
 	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
@@ -1957,11 +1959,12 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 	entryid.cb = 0;
 	entryid.pb = NULL;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-		"r|sl", &pzresource, &entryid.pb, &entryid.cb,
+	    "r|sl", &pzresource, &entryid.pb, &eid_size,
 		&flags) == FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
@@ -2002,6 +2005,7 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 {
 	BINARY entryid;
+	size_t skey_size = 0, skmsg_size = 0;
 	uint32_t result;
 	zval *pzresource;
 	BINARY *pmessage_key;
@@ -2012,13 +2016,15 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	sourcekey_message.cb = 0;
 	sourcekey_message.pb = NULL;
 	if (!zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs|s",
-		&pzresource, &sourcekey_folder.pb, &sourcekey_folder.cb,
-		&sourcekey_message.pb, &sourcekey_message.cb) == FAILURE
+	    &pzresource, &sourcekey_folder.pb, &skey_size,
+	    &sourcekey_message.pb, &skmsg_size) == FAILURE
 		|| NULL == pzresource || NULL == sourcekey_folder.pb ||
 		0 == sourcekey_folder.cb) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	sourcekey_folder.cb = skey_size;
+	sourcekey_message.cb = skmsg_size;
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
@@ -2050,6 +2056,7 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_msgstore_advise)
 {
 	BINARY entryid;
+	size_t eid_size = 0;
 	uint32_t result;
 	uint32_t sub_id;
 	long event_mask;
@@ -2060,12 +2067,13 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 	MAPI_RESOURCE *pstore;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-		"rslr", &pzresource, &entryid.pb, &entryid.cb,
+	    "rslr", &pzresource, &entryid.pb, &eid_size,
 		&event_mask, &pzressink) == FAILURE || NULL ==
 		pzresource) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
@@ -3102,16 +3110,18 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_stream_write)
 {
 	zval *pzresource;
+	size_t dblk_size = 0;
 	BINARY data_block;
 	uint32_t written_len;
 	STREAM_OBJECT *pstream;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs",
-		&pzresource, &data_block.pb, &data_block.cb) == FAILURE
+	    &pzresource, &data_block.pb, &dblk_size) == FAILURE
 		|| NULL == pzresource) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	data_block.cb = dblk_size;
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresource, -1, name_stream, le_stream);
 	written_len = stream_object_write(pstream,
@@ -3177,7 +3187,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 {
 	int	type;
 	long flags;
-	int guidlen;
+	size_t guidlen = 0;
 	void *pvalue;
 	long proptag;
 	char *guidstr;
@@ -3790,7 +3800,7 @@ ZEND_FUNCTION(mapi_openproperty)
 {
 	int type;
 	int flags;
-	int guidlen;
+	size_t guidlen = 0;
 	long proptag;
 	void *pvalue;
 	char *guidstr;
@@ -4257,7 +4267,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	pid_t pid;
 	int status;
 	int offset;
-	int rtflen;
+	size_t rtflen = 0;
 	int bufflen;
 	int readlen;
 	char *pbuff;
@@ -4750,18 +4760,20 @@ ZEND_FUNCTION(mapi_getuseravailability)
 	long endtime;
 	long starttime;
 	BINARY entryid;
+	size_t eid_size = 0;
 	uint32_t result;
 	zval *pzresource;
 	char *presult_string;
 	MAPI_RESOURCE *psession;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rsll",
-		&pzresource, &entryid.pb, &entryid.cb, &starttime, &endtime)
+	    &pzresource, &entryid.pb, &eid_size, &starttime, &endtime)
 		== FAILURE || NULL == pzresource || NULL == entryid.pb ||
 		0 == entryid.cb) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	entryid.cb = eid_size;
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
@@ -5714,7 +5726,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 {
-	int cbstring;
+	size_t cbstring = 0;
 	char *szstring;
 	BINARY eml_bin;
 	uint32_t result;
@@ -5760,7 +5772,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_icaltomapi)
 {
-	int cbstring;
+	size_t cbstring = 0;
 	char *szstring;
 	BINARY ical_bin;
 	uint32_t result;
@@ -5846,7 +5858,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_vcftomapi)
 {
-	int cbstring;
+	size_t cbstring = 0;
 	char *szstring;
 	BINARY vcf_bin;
 	uint32_t result;
@@ -5949,7 +5961,7 @@ ZEND_FUNCTION(mapi_enable_exceptions)
 ZEND_FUNCTION(mapi_feature)
 {
 	int i;
-	int cbfeature;
+	size_t cbfeature = 0;
 	const char *szfeature;
 	static const char *const features[] =
 		{"LOGONFLAGS", "NOTIFICATIONS",
@@ -6050,7 +6062,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	BINARY entryid;
 	char *username;
 	uint32_t result;
-	int username_len;
+	size_t username_len = 0;
 	char *pdisplay_name;
 	uint32_t privilege_bits;
 	
@@ -6085,11 +6097,9 @@ ZEND_FUNCTION(nsp_setuserpasswd)
 {
 	char *username;
 	uint32_t result;
-	int username_len;
+	size_t username_len = 0, old_passwd_len = 0, new_passwd_len = 0;
 	char *old_passwd;
 	char *new_passwd;
-	int old_passwd_len;
-	int new_passwd_len;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"sss", &username, &username_len, &old_passwd,
@@ -6116,19 +6126,22 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_linkmessage)
 {
 	uint32_t result;
+	size_t srcheid_size = 0, msgeid_size = 0;
 	zval *pzresource;
 	BINARY search_entryid;
 	BINARY message_entryid;
 	MAPI_RESOURCE *psession;
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|ss",
-		&pzresource, &search_entryid.pb, &search_entryid.cb,
-		&message_entryid.pb, &message_entryid.cb) == FAILURE
+	    &pzresource, &search_entryid.pb, &srcheid_size,
+	    &message_entryid.pb, &msgeid_size) == FAILURE
 		|| NULL == pzresource || NULL == search_entryid.pb ||
 		NULL == message_entryid.pb) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		goto THROW_EXCEPTION;
 	}
+	search_entryid.cb = srcheid_size;
+	message_entryid.cb = msgeid_size;
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
