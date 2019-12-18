@@ -6,6 +6,7 @@ global:
 	HOOK_LibMain;
 	PROC_LibMain;
 	SVC_LibMain;
+	get_module;
 local:
 	*;
 };

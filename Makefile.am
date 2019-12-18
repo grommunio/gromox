@@ -1518,6 +1518,7 @@ titan_LDADD = ${HX_LIBS}
 mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
 mapi_la_SOURCES = AGENT_SERVICE/php_mapi/ext_pack.c AGENT_SERVICE/php_mapi/mapi.cpp AGENT_SERVICE/php_mapi/rpc_ext.c AGENT_SERVICE/php_mapi/type_conversion.cpp AGENT_SERVICE/php_mapi/zarafa_client.cpp
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
+EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 # tests
 noinst_PROGRAMS = tests/getmxbyname
