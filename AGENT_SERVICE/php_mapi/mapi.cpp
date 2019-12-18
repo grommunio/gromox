@@ -1911,7 +1911,7 @@ ZEND_FUNCTION(mapi_msgstore_createentryid)
 	uint32_t result;
 	zval *pzresource;
 	
-	if (!zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rs", &pzresource, &mailboxdn, &dn_len) == FAILURE
 		|| NULL == mailboxdn || '\0' == mailboxdn[0]) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
@@ -2015,7 +2015,7 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	
 	sourcekey_message.cb = 0;
 	sourcekey_message.pb = NULL;
-	if (!zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs|s",
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs|s",
 	    &pzresource, &sourcekey_folder.pb, &skey_size,
 	    &sourcekey_message.pb, &skmsg_size) == FAILURE
 		|| NULL == pzresource || NULL == sourcekey_folder.pb ||
@@ -4474,7 +4474,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	BINARY_ARRAY *pentryid_array;
 	
 	flags = 0;
-	if (!zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "raal",
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "raal",
 		&pzresource, &pzrestriction, &pzfolderlist, &flags) ==
 		FAILURE || NULL == pzresource) {
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
