@@ -142,6 +142,8 @@ int main(int argc, const char **argv)
 
 	user_name = resource_get_string("RUNNING_IDENTITY");
 	if (user_name == NULL)
+		user_name = "gromox";
+	if (*user_name == '\0')
 		printf("[system]: running identity will not be changed\n");
 	else
 		printf("[system]: running identity of process will be %s\n", user_name);
@@ -319,19 +321,19 @@ int main(int argc, const char **argv)
     printf("[console_server]: console server port is %d\n",
 		console_server_port);
 	
-    if (NULL != user_name) {
+	if (*user_name != '\0') {
         puser_pass = getpwnam(user_name);
         if (NULL == puser_pass) {
-            printf("[system]: no such user %s\n", user_name);
+			printf("[system]: no such user \"%s\"\n", user_name);
             goto EXIT_PROGRAM;
         }
         
         if (0 != setgid(puser_pass->pw_gid)) {
-            printf("[system]: can not run group of %s\n", user_name);
+			printf("[system]: can not run group of \"%s\"\n", user_name);
             goto EXIT_PROGRAM;
         }
         if (0 != setuid(puser_pass->pw_uid)) {
-            printf("[system]: can not run as %s\n", user_name);
+			printf("[system]: can not run as \"%s\"\n", user_name);
             goto EXIT_PROGRAM;
         }
     }

@@ -135,7 +135,7 @@ int main(int argc, const char **argv)
 	int i, len;
 	int listenfd;
 	int thread_num;
-	char *str_value;
+	const char *str_value;
 	CONNECTION *pconn;
 	char cs_path[256];
 	char username[256];
@@ -184,7 +184,9 @@ int main(int argc, const char **argv)
 		printf("[system]: lf will be converted to crlf\n");
 	}
 	str_value = config_file_get_value(pconfig, "FCGI_RUNNING_IDENTITY");
-	if (NULL == str_value) {
+	if (str_value == nullptr)
+		str_value = "gromox";
+	if (*str_value == '\0') {
 		username[0] = '\0';
 		printf("[system]: running identity will not be changed\n");
 	} else {
@@ -231,16 +233,16 @@ int main(int argc, const char **argv)
 	if ('\0' != username[0]) {
 		puser_pass = getpwnam(username);
 		if (NULL == puser_pass) {
-			printf("[system]: no such user %s\n", username);
+			printf("[system]: no such user \"%s\"\n", username);
 			return 3;
 		}
 
 		if (0 != setgid(puser_pass->pw_gid)) {
-			printf("[system]: can not run group of %s\n", username);
+			printf("[system]: can not run group of \"%s\"\n", username);
 			return 3;
 		}
 		if (0 != setuid(puser_pass->pw_uid)) {
-			printf("[system]: can not run as %s\n", username);
+			printf("[system]: can not run as \"%s\"\n", username);
 			return 3;
 		}
 	}
