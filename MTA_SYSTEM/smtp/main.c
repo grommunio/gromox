@@ -251,17 +251,17 @@ int main(int argc, const char **argv)
 		printf("[system]: running identity of process will be %s\n", user_name);
 
 	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
-		context_num = 200;
+		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
 	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		thread_charge_num = 40; 
+		thread_charge_num = 20;
 		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
 		if (thread_charge_num < 4) {
-			thread_charge_num = 40;	
+			thread_charge_num = 20;	
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		} else if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
@@ -272,7 +272,7 @@ int main(int argc, const char **argv)
 		thread_charge_num);
 	
 	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
-		thread_init_num = 1; 
+		thread_init_num = 5;
 		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	if (thread_init_num * thread_charge_num > context_num) {
@@ -389,8 +389,8 @@ int main(int argc, const char **argv)
  
 	str_val = resource_get_string("SMTP_SUPPORT_PIPELINE");
 	if (str_val == NULL) {
-		smtp_support_pipeline = FALSE;
-		resource_set_string("SMTP_SUPPORT_PIPELINE", "FALSE");
+		smtp_support_pipeline = true;
+		resource_set_string("SMTP_SUPPORT_PIPELINE", "true");
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			smtp_support_pipeline = FALSE;
@@ -525,7 +525,7 @@ int main(int argc, const char **argv)
 	printf("[smtp]: maximum mail length is %s\n", temp_buff);
 
 	if (!resource_get_integer("SMTP_MAX_MAIL_NUM", &smtp_max_mail_num)) {
-		smtp_max_mail_num = 10; 
+		smtp_max_mail_num = 100;
 		resource_set_integer("SMTP_MAX_MAIL_NUM", smtp_max_mail_num);
 	}
 	printf("[smtp]: maximum mails number for one session is %d\n",

@@ -157,8 +157,8 @@ int main(int argc, const char **argv)
 
 	str_val = resource_get_string("DOMAIN_LIST_VALID");
 	if (str_val == NULL) {
-		resource_set_string("DOMAIN_LIST_VALID", "FALSE");
-		domainlist_valid = FALSE;
+		resource_set_string("DOMAIN_LIST_VALID", "true");
+		domainlist_valid = true;
 	} else {
 		if (0 == strcasecmp(str_val, "FALSE")) {
 			domainlist_valid = FALSE;
@@ -176,11 +176,11 @@ int main(int argc, const char **argv)
 	}
 
 	if (!resource_get_integer("WORK_THREADS_MIN", &threads_min)) {
-        threads_min = 4; 
+		threads_min = 16;
 		resource_set_integer("WORK_THREADS_MIN", threads_min);
     } else {
 		if (threads_min <= 0) {
-			threads_min = 4; 
+			threads_min = 16;
 			resource_set_integer("WORK_THREADS_MIN", threads_min);
 		}
 	}
@@ -243,8 +243,8 @@ int main(int argc, const char **argv)
  
 	str_val = resource_get_string("DEQUEUE_MAXIMUM_MEM");
 	if (str_val == NULL) {
-        max_mem = 128*1024*1024; 
-		resource_set_string("DEQUEUE_MAXIMUM_MEM", "128M");
+		max_mem = 1UL << 30;
+		resource_set_string("DEQUEUE_MAXIMUM_MEM", "1024M");
     } else {
 		max_mem = atobyte(str_val);
 		if (max_mem <= 0) {
