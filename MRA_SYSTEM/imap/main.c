@@ -129,17 +129,17 @@ int main(int argc, const char **argv)
 		printf("[system]: running identity of process will be %s\n", user_name);
 
 	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
-		context_num = 200;
+		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
 	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		thread_charge_num = 40; 
+		thread_charge_num = 20;
 		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
 		if (thread_charge_num < 4) {
-			thread_charge_num = 40;	
+			thread_charge_num = 20;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		} else if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
@@ -150,7 +150,7 @@ int main(int argc, const char **argv)
 		thread_charge_num);
 	
 	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
-		thread_init_num = 1; 
+		thread_init_num = 5;
 		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	if (thread_init_num * thread_charge_num > context_num) {
@@ -225,7 +225,7 @@ int main(int argc, const char **argv)
  
 	str_val = resource_get_string("IMAP_AUTOLOGOUT_TIME");
 	if (str_val == NULL) {
-		autologout_time = 180;
+		autologout_time = 1800;
 		resource_set_string("IMAP_AUTOLOGOUT_TIME", "30minutes");
 	} else {
 		autologout_time = atoitvl(str_val);
@@ -238,11 +238,11 @@ int main(int argc, const char **argv)
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
 	if (!resource_get_integer("IMAP_AUTH_TIMES", &imap_auth_times)) {
-		imap_auth_times = 3; 
+		imap_auth_times = 10;
 		resource_set_integer("IMAP_AUTH_TIMES", imap_auth_times);
 	} else {
 		if (imap_auth_times <= 0) {
-			imap_auth_times = 3;
+			imap_auth_times = 10;
 			resource_set_integer("IMAP_AUTH_TIMES", imap_auth_times);
 		}
 	}
@@ -319,6 +319,10 @@ int main(int argc, const char **argv)
 	if (listen_ssl_port > 0) {
 		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
 	}
+
+	str_val = resource_get_string("default_lang");
+	if (str_val == nullptr)
+		resource_set_string("default_lang", "en");
 
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {

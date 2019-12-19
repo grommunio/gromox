@@ -129,17 +129,17 @@ int main(int argc, const char **argv)
 		printf("[system]: running identity of process will be %s\n", user_name);
 
 	if (!resource_get_integer("CONTEXT_NUM", &context_num)) {
-		context_num = 200;
+		context_num = 400;
 		resource_set_integer("CONTEXT_NUM", context_num);
 	}
 	printf("[system]: total contexts number is %d\n", context_num);
 
 	if (!resource_get_integer("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		thread_charge_num = 40; 
+		thread_charge_num = 20;
 		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	} else {
 		if (thread_charge_num < 4) {
-			thread_charge_num = 40;	
+			thread_charge_num = 20;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		} else if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
@@ -150,7 +150,7 @@ int main(int argc, const char **argv)
 		thread_charge_num);
 	
 	if (!resource_get_integer("THREAD_INIT_NUM", &thread_init_num)) {
-		thread_init_num = 1; 
+		thread_init_num = 5;
 		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
 	if (thread_init_num * thread_charge_num > context_num) {
@@ -168,8 +168,8 @@ int main(int argc, const char **argv)
 
 	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
 	if (str_val == NULL) {
-		context_aver_mem = 4;
-		resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
+		context_aver_mem = 8;
+		resource_set_string("CONTEXT_AVERAGE_MEM", "512K");
 	} else {
 		context_aver_mem = atobyte(str_val)/(64*1024);
 		if (context_aver_mem <= 1) {
@@ -197,7 +197,7 @@ int main(int argc, const char **argv)
 	printf("[pop3]: context maximum memory is %s\n", temp_buff);
 
 	if (!resource_get_integer("CONTEXT_AVERAGE_UNITS", &context_aver_units)) {
-		context_aver_units = 1024;
+		context_aver_units = 5000;
 		resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_units);
 	} else {
 		if (context_aver_units < 256) {
@@ -222,11 +222,11 @@ int main(int argc, const char **argv)
 	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
  
 	if (!resource_get_integer("POP3_AUTH_TIMES", &pop3_auth_times)) {
-		pop3_auth_times = 3; 
+		pop3_auth_times = 10;
 		resource_set_integer("POP3_AUTH_TIMES", pop3_auth_times);
 	} else {
 		if (pop3_auth_times <= 0) {
-			pop3_auth_times = 3;
+			pop3_auth_times = 10;
 			resource_set_integer("POP3_AUTH_TIMES", pop3_auth_times);
 		}
 	}
