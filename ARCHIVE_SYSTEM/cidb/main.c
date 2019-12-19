@@ -197,8 +197,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "MYSQL_TMP_TABLE_SIZE");
 	if (NULL == str_value) {
-		tmptbl_size = 16*1024*1024;
-		config_file_set_value(pconfig, "MYSQL_TMP_TABLE_SIZE", "16M");
+		tmptbl_size = 1UL << 30;
+		config_file_set_value(pconfig, "MYSQL_TMP_TABLE_SIZE", "1G");
 	} else {
 		tmptbl_size = atobyte(str_value);
 		if (tmptbl_size < 16*1024*1024 || tmptbl_size > 4096*1024*1024UL) {
@@ -225,7 +225,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "VALID_DAYS");
 	if (NULL == str_value) {
-		valid_days = 0;
+		valid_days = 365;
 	} else {
 		valid_days = atoi(str_value);
 		if (valid_days < 0) {
