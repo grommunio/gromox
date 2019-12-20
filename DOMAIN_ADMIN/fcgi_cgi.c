@@ -4,7 +4,8 @@
 #include <sys/wait.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
-#include <gromox/defs.h>
+#include <libHX/string.h>
+#include <gromox/paths.h>
 #include "double_list.h"
 #include "config_file.h"
 #include "ndr.h"
@@ -158,12 +159,12 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	str_value = config_file_get_value(pconfig, "FCGI_UNIX_PATH");
-	if (NULL == str_value) {
-		printf("[system]: fail to get FCGI_UNIX_PATH in config file");
-		config_file_free(pconfig);
-		return 2;
+	if (str_value == nullptr) {
+		HX_strlcpy(cs_path, PKGRUNDIR "/fcgi_cgi.sock", sizeof(cs_path));
+		config_file_set_value(pconfig, "fcgi_unix_path", cs_path);
+	} else {
+		HX_strlcpy(cs_path, str_value, sizeof(cs_path));
 	}
-	strncpy(cs_path, str_value, sizeof(cs_path));
 	str_value = config_file_get_value(pconfig, "FCGI_THREAD_NUM");
 	if (NULL == str_value) {
 		thread_num = 20;
