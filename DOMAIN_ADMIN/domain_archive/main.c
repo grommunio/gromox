@@ -110,7 +110,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "BACKUP_VALID_DAYS");
 	if (NULL == str_value) {
-		valid_days = 90;
+		valid_days = 365;
 	} else {
 		valid_days = atoi(str_value);
 		if (valid_days < 1) {

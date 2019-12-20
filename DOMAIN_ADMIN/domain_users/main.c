@@ -148,7 +148,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "MAXIMUM_MAILDIR_FILES");
 	if (NULL == str_value) {
-		max_file = 5000;
+		max_file = 2000000;
 	} else {
 		max_file = atoi(str_value);
 		if (max_file <= 0) {
