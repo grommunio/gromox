@@ -4,7 +4,7 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/paths.h>
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>
@@ -142,7 +142,7 @@ int main(int argc, const char **argv)
 	char CS_PATH[256];
 	str_value = config_file_get_value(pconfig, "asensor_listen");
 	if (str_value == NULL) {
-		HX_strlcpy(CS_PATH, "/run/gromox/asensor.sock", sizeof(CS_PATH));
+		HX_strlcpy(CS_PATH, PKGRUNDIR "/asensor.sock", sizeof(CS_PATH));
 		config_file_set_value(pconfig, "asensor_listen", CS_PATH);
 	} else {
 		HX_strlcpy(CS_PATH, str_value, sizeof(CS_PATH));

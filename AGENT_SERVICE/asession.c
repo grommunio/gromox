@@ -4,7 +4,7 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/paths.h>
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>
@@ -143,7 +143,7 @@ int main(int argc, const char **argv)
 	char CS_PATH[256];
 	str_value = config_file_get_value(pconfig, "asession_listen");
 	if (str_value == NULL) {
-		HX_strlcpy(CS_PATH, "/run/gromox/asession.sock", sizeof(CS_PATH));
+		HX_strlcpy(CS_PATH, PKGRUNDIR "/asession.sock", sizeof(CS_PATH));
 		config_file_set_value(pconfig, "asession_listen", CS_PATH);
 	} else {
 		HX_strlcpy(CS_PATH, str_value, sizeof(CS_PATH));
