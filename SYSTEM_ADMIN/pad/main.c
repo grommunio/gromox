@@ -257,20 +257,20 @@ int main(int argc, const char **argv)
 
 
 	if (0 != system_log_run()) {
-		printf("[system]: fail to run system log\n");
+		printf("[system]: failed to run system log\n");
 		return 3;
 	}
 
 	if (0 != midb_client_run()) {
 		system_log_stop();
-		printf("[system]: fail to run midb client\n");
+		printf("[system]: failed to run midb client\n");
 		return 4;
 	}
 
 	if (0 != data_source_run()) {
 		midb_client_stop();
 		system_log_stop();
-		printf("[system]: fail to run data source\n");
+		printf("[system]: failed to run data source\n");
 		return 5;
 	}
 
@@ -278,7 +278,7 @@ int main(int argc, const char **argv)
 		data_source_stop();
 		midb_client_stop();
 		system_log_stop();
-		printf("[system]: fail to run command parser\n");
+		printf("[system]: failed to run command parser\n");
 		return 5;
 	}
 
@@ -287,7 +287,7 @@ int main(int argc, const char **argv)
 		data_source_stop();
 		midb_client_stop();
 		system_log_stop();
-		printf("[system]: fail to run exec sched\n");
+		printf("[system]: failed to run exec sched\n");
 		return 6;
 	}
 

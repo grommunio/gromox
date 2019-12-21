@@ -74,18 +74,18 @@ void ip_filter_free()
 int ip_filter_run()
 {
     if (0 != grey_list_run()) {
-        ip_filter_echo("fail to run grey list");
+		ip_filter_echo("failed to run grey list");
         return -1;
     }
     
     /* initialize the audit-list filter */
     if (0 != audit_filter_run()) {
-        ip_filter_echo("fail to run audit");
+		ip_filter_echo("failed to run audit");
         grey_list_stop();
         return -2;
     }
     if (0 != temp_list_run()) {
-        ip_filter_echo("fail to run temporary list");
+		ip_filter_echo("failed to run temporary list");
         grey_list_stop();
         audit_filter_stop();
         return -3;

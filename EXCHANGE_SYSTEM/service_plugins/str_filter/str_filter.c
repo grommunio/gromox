@@ -74,18 +74,18 @@ void str_filter_free()
 int str_filter_run()
 {
     if (0 != grey_list_run()) {
-        str_filter_echo("fail to run grey list");
+		str_filter_echo("failed to run grey list");
         return -1;
     }
     
     /* initialize the audit-list filter */
     if (0 != audit_filter_run()) {
-        str_filter_echo("fail to run audit");
+		str_filter_echo("failed to run audit");
         grey_list_stop();
         return -2;
     }
     if (0 != temp_list_run()) {
-        str_filter_echo("fail to run temporary list");
+		str_filter_echo("failed to run temporary list");
         grey_list_stop();
         audit_filter_stop();
         return -3;

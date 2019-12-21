@@ -52,7 +52,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		mail_forwarder_init(tmp_path, str_subject, get_host_ID(), growing_num);
 		if (0 != mail_forwarder_run()) {
-			printf("[mail_forwarder]: fail to run mail forwarder\n");
+			printf("[mail_forwarder]: failed to run mail forwarder\n");
 			config_file_free(pfile);
 			return FALSE;
 		}

@@ -72,7 +72,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		pthread_mutex_init(&g_id_lock, NULL);
 		anonymous_keyword_init(charset_path, keyword_path);
 		if (0 != anonymous_keyword_run()) {
-			printf("[anonymous_keyword]: fail to run keyword engine\n");
+			printf("[anonymous_keyword]: failed to run keyword engine\n");
 			return FALSE;
 		}
         if (FALSE == register_hook(keyword_hook)) {

@@ -142,7 +142,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		config_file_free(pfile);
 		
 		if (0 != mysql_adaptor_run()) {
-			printf("[mysql_adaptor]: fail to run mysql adaptor\n");
+			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("auth_login", mysql_adaptor_login)) {

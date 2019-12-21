@@ -13,7 +13,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
 		spam_complain_init();
 		if (0 != spam_complain_run()) {
-			printf("[spam_complain]: fail to run spam complain\n");
+			printf("[spam_complain]: failed to run spam complain\n");
 			return FALSE;
 		}
         if (FALSE == register_hook(spam_complain_process)) {

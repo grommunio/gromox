@@ -112,7 +112,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		ip_filter_init(file_name, config_path, audit_max, audit_interval, 
 				audit_times, temp_list_size, list_path, growing_num);
 		if (0 != ip_filter_run()) {
-			printf("[%s]: fail to run the module\n", file_name);
+			printf("[%s]: failed to run the module\n", file_name);
 			config_file_free(pfile);
 			return FALSE;
 		}

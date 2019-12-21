@@ -72,7 +72,7 @@ int media_migrator_run()
 
 	pcollect = data_source_collect_init();
 	if (NULL == pcollect) {
-		system_log_info("[media_migrator]: fail to run media "
+		system_log_info("[media_migrator]: failed to run media "
 			"migration, allocate memory error");
 		return 0;
 	}
@@ -172,7 +172,7 @@ IMMIGRATE_USERS:
 
 	pcollect = data_source_collect_init();
 	if (NULL == pcollect) {
-		system_log_info("[media_migrator]: fail to run media "
+		system_log_info("[media_migrator]: failed to run media "
 			"emigration, allocate memory error");
 		return 0;
 	}

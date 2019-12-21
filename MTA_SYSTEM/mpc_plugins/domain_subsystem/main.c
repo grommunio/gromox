@@ -82,7 +82,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		
 		if (0 != domain_subsystem_run()) {
-			printf("[domain_subsystem]: fail to run domain subsystem\n");
+			printf("[domain_subsystem]: failed to run domain subsystem\n");
             return FALSE;
         }
 		register_talk(domain_subsystem_console_talk);

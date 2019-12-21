@@ -271,26 +271,26 @@ int main(int argc, const char **argv)
 
 
 	if (0 != system_log_run()) {
-		printf("[system]: fail to run system log\n");
+		printf("[system]: failed to run system log\n");
 		return 3;
 	}
 	
 
 	if (0 != listener_run()) {
-		printf("[system]: fail to run listener\n");
+		printf("[system]: failed to run listener\n");
 		return 4;
 	}
 
 	if (0 != cmd_parser_run()) {
 		listener_stop();
-		printf("[system]: fail to run command parser\n");
+		printf("[system]: failed to run command parser\n");
 		return 5;
 	}
 	
 	if (0 != mysql_pool_run()) {
 		cmd_parser_stop();
 		listener_stop();
-		printf("[system]: fail to run mysql pool\n");
+		printf("[system]: failed to run mysql pool\n");
 		return 6;
 	}
 
@@ -298,7 +298,7 @@ int main(int argc, const char **argv)
 		mysql_pool_stop();
 		cmd_parser_stop();
 		listener_stop();
-		printf("[system]: fail to run classify engine\n");
+		printf("[system]: failed to run classify engine\n");
 		return 7;
 	}
 

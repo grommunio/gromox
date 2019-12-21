@@ -273,31 +273,31 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		asyncemsmdb_interface_init(async_num);
 		rop_processor_init(average_handles, ping_interval);
 		if (0 != bounce_producer_run()) {
-			printf("[exchange_emsmdb]: fail to run bounce producer\n");
+			printf("[exchange_emsmdb]: failed to run bounce producer\n");
 			return FALSE;
 		}
 		if (0 != common_util_run()) {
-			printf("[exchange_emsmdb]: fail to run common util\n");
+			printf("[exchange_emsmdb]: failed to run common util\n");
 			return FALSE;
 		}
 		if (0 != exmdb_client_run()) {
-			printf("[exchange_emsmdb]: fail to run exmdb client\n");
+			printf("[exchange_emsmdb]: failed to run exmdb client\n");
 			return FALSE;
 		}
 		if (0 != msgchg_grouping_run()) {
-			printf("[exchange_emsmdb]: fail to run msgchg grouping\n");
+			printf("[exchange_emsmdb]: failed to run msgchg grouping\n");
 			return FALSE;
 		}
 		if (0 != emsmdb_interface_run()) {
-			printf("[exchange_emsmdb]: fail to run emsmdb interface\n");
+			printf("[exchange_emsmdb]: failed to run emsmdb interface\n");
 			return FALSE;
 		}
 		if (0 != asyncemsmdb_interface_run()) {
-			printf("[exchange_emsmdb]: fail to run asyncemsmdb interface\n");
+			printf("[exchange_emsmdb]: failed to run asyncemsmdb interface\n");
 			return FALSE;
 		}
 		if (0 != rop_processor_run()) {
-			printf("[exchange_emsmdb]: fail to run rop processor\n");
+			printf("[exchange_emsmdb]: failed to run rop processor\n");
 			return FALSE;
 		}
 		printf("[exchange_emsmdb]: plugin is loaded into system\n");

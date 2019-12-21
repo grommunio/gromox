@@ -52,7 +52,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s", get_data_path(), file_name);
 		domain_monitor_init(tmp_path, str_subject, growing_num);
 		if (0 != domain_monitor_run()) {
-			printf("[domain_monitor]: fail to run mail forwarder\n");
+			printf("[domain_monitor]: failed to run mail forwarder\n");
 			config_file_free(pfile);
 			return FALSE;
 		}

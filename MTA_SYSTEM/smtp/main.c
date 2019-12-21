@@ -670,7 +670,7 @@ int main(int argc, const char **argv)
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
-		printf("[system]: fail to run service\n"); 
+		printf("[system]: failed to run service\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("---------------------------- service plugins end"
@@ -685,7 +685,7 @@ int main(int argc, const char **argv)
 	
 	system_services_init();
 	if (0 != system_services_run()) { 
-		printf("[system]: fail to run system service\n"); 
+		printf("[system]: failed to run system service\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run system service OK\n");
@@ -755,7 +755,7 @@ int main(int argc, const char **argv)
 		smtp_force_starttls, certificate_path, cb_passwd, private_key_path);  
  
 	if (0 != smtp_parser_run()) { 
-		printf("[system]: fail to run smtp parser\n"); 
+		printf("[system]: failed to run smtp parser\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run smtp parser OK\n");
@@ -773,7 +773,7 @@ int main(int argc, const char **argv)
 		thread_charge_num, smtp_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 
-		printf("[system]: fail to run contexts pool\n"); 
+		printf("[system]: failed to run contexts pool\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run contexts pool OK\n");
@@ -787,7 +787,7 @@ int main(int argc, const char **argv)
 	flusher_init(flusher_plugin_path, context_num);
 																			
 	if (0 != flusher_run()) {
-		printf("[system]: fail to run flusher\n");
+		printf("[system]: failed to run flusher\n");
 		goto EXIT_PROGRAM;
 	} else {
 		printf("[system]: run flusher OK\n");
@@ -801,7 +801,7 @@ int main(int argc, const char **argv)
 	console_server_init(console_server_ip, console_server_port);
 
 	if (0 != console_server_run()) {
-		printf("[system]: fail to run console server\n");
+		printf("[system]: failed to run console server\n");
 		goto EXIT_PROGRAM;
 	} else {
 		printf("[system]: run console server OK\n");
@@ -821,7 +821,7 @@ int main(int argc, const char **argv)
 	if (0 != anti_spamming_run()) { 
 		printf("------------------------- anti-spamming plugins end"
 		   "-------------------------\n");
-		printf("[system]: fail to run anti-spamming \n"); 
+		printf("[system]: failed to run anti-spamming\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("------------------------- anti-spamming plugins end"
@@ -838,7 +838,7 @@ int main(int argc, const char **argv)
 
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
-		printf("[system]: fail to run threads pool\n");
+		printf("[system]: failed to run threads pool\n");
 		goto EXIT_PROGRAM;
 	} else {
 		printf("[system]: run threads pool OK\n");

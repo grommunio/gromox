@@ -409,7 +409,7 @@ int main(int argc, const char **argv)
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
-		printf("[system]: fail to run service\n"); 
+		printf("[system]: failed to run service\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("---------------------------- service plugins end"
@@ -424,7 +424,7 @@ int main(int argc, const char **argv)
 	
 	system_services_init();
 	if (0 != system_services_run()) { 
-		printf("[system]: fail to run system service\n"); 
+		printf("[system]: failed to run system service\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run system service OK\n");
@@ -468,7 +468,7 @@ int main(int argc, const char **argv)
 		private_key_path, cdn_cache_path);  
  
 	if (0 != pop3_parser_run()) { 
-		printf("[system]: fail to run pop3 parser\n"); 
+		printf("[system]: failed to run pop3 parser\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run pop3 parser OK\n");
@@ -486,7 +486,7 @@ int main(int argc, const char **argv)
 		thread_charge_num, pop3_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 
-		printf("[system]: fail to run contexts pool\n"); 
+		printf("[system]: failed to run contexts pool\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run contexts pool OK\n");
@@ -500,7 +500,7 @@ int main(int argc, const char **argv)
 	console_server_init(console_server_ip, console_server_port);
 
 	if (0 != console_server_run()) {
-		printf("[system]: fail to run console server\n");
+		printf("[system]: failed to run console server\n");
 		goto EXIT_PROGRAM;
 	} else {
 		printf("[system]: run console server OK\n");
@@ -517,7 +517,7 @@ int main(int argc, const char **argv)
 
 	threads_pool_register_event_proc(pop3_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
-		printf("[system]: fail to run threads pool\n");
+		printf("[system]: failed to run threads pool\n");
 		goto EXIT_PROGRAM;
 	} else {
 		printf("[system]: run threads pool OK\n");

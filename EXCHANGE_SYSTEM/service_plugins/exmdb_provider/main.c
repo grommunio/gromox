@@ -346,27 +346,27 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		exmdb_client_init(connection_num, threads_num, list_path);
 		
 		if (0 != common_util_run()) {
-			printf("[exmdb_provider]: fail to run common util\n");
+			printf("[exmdb_provider]: failed to run common util\n");
 			return FALSE;
 		}
 		if (0 != bounce_producer_run()) {
-			printf("[exmdb_provider]: fail to run bounce producer\n");
+			printf("[exmdb_provider]: failed to run bounce producer\n");
 			return FALSE;
 		}
 		if (0 != db_engine_run()) {
-			printf("[exmdb_provider]: fail to run db engine\n");
+			printf("[exmdb_provider]: failed to run db engine\n");
 			return FALSE;
 		}
 		if (0 != exmdb_server_run()) {
-			printf("[exmdb_provider]: fail to run exmdb server\n");
+			printf("[exmdb_provider]: failed to run exmdb server\n");
 			return FALSE;
 		}
 		if (0 != exmdb_parser_run()) {
-			printf("[exmdb_provider]: fail to run exmdb parser\n");
+			printf("[exmdb_provider]: failed to run exmdb parser\n");
 			return FALSE;
 		}
 		if (0 != exmdb_listener_run()) {
-			printf("[exmdb_provider]: fail to run exmdb listener\n");
+			printf("[exmdb_provider]: failed to run exmdb listener\n");
 			return FALSE;
 		}
 		if (0 != exmdb_listener_trigger_accept()) {
@@ -374,7 +374,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (0 != exmdb_client_run()) {
-			printf("[exmdb_provider]: fail to run exmdb client\n");
+			printf("[exmdb_provider]: failed to run exmdb client\n");
 			return FALSE;
 		}
 

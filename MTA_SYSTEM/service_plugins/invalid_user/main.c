@@ -65,7 +65,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		invalid_user_init(tmp_path, table_size, valid_interval);
 		if (0 != invalid_user_run()) {
-			printf("[invalid_user]: fail to run the module\n");
+			printf("[invalid_user]: failed to run the module\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("check_user", invalid_user_check)) {

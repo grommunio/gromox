@@ -191,7 +191,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		
 		if (0 != gateway_dispatch_run()) {
-			printf("[gateway_dispatch]: fail to run gateway dispatch\n");
+			printf("[gateway_dispatch]: failed to run gateway dispatch\n");
             return FALSE;
         }
 		register_talk(gateway_dispatch_console_talk);

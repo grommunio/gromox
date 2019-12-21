@@ -109,7 +109,7 @@ void console_server_free()
  *  start the console server
  *    @return
  *         0            run successfully
- *        <>0			fail to run the module        
+ *        <>0		failed to run the module
  */
 int console_server_run()
 {

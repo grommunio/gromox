@@ -83,11 +83,11 @@ int main(int argc, const char **argv)
 	config_file_free(pconfig);
 	
 	if (0 != url_downloader_run()) {
-		printf("[system]: fail to run url downloader\n");
+		printf("[system]: failed to run url downloader\n");
 		return 1;
 	}
 	if (0 != file_operation_run()) {
-		printf("[system]: fail to run file operation\n");
+		printf("[system]: failed to run file operation\n");
 		return 2;
 	}
 	if (0 != processing_engine_run()) {

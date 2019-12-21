@@ -534,7 +534,7 @@ int main(int argc, const char **argv)
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
-		printf("[system]: fail to run service\n"); 
+		printf("[system]: failed to run service\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("---------------------------- service plugins end"
@@ -549,7 +549,7 @@ int main(int argc, const char **argv)
 	
 	system_services_init();
 	if (0 != system_services_run()) { 
-		printf("[system]: fail to run system service\n"); 
+		printf("[system]: failed to run system service\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run system service OK\n");
@@ -621,7 +621,7 @@ int main(int argc, const char **argv)
 	mod_rewrite_init(rewrite_list_path);
 	
 	if (0 != mod_rewrite_run()) {
-		printf("[system]: fail to run mod rewrite\n"); 
+		printf("[system]: failed to run mod rewrite\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run mod rewrite OK\n");
@@ -637,7 +637,7 @@ int main(int argc, const char **argv)
 		fastcgi_max_size, fastcgi_exec_timeout); 
  
 	if (0 != mod_fastcgi_run()) { 
-		printf("[system]: fail to run mod fastcgi\n"); 
+		printf("[system]: failed to run mod fastcgi\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run mod fastcgi OK\n");
@@ -651,7 +651,7 @@ int main(int argc, const char **argv)
 	mod_cache_init(context_num, cache_list_path);
 	
 	if (0 != mod_cache_run()) {
-		printf("[system]: fail to run mod cache\n"); 
+		printf("[system]: failed to run mod cache\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run mod cache OK\n");
@@ -667,7 +667,7 @@ int main(int argc, const char **argv)
 		certificate_path, cb_passwd, private_key_path);  
  
 	if (0 != http_parser_run()) { 
-		printf("[system]: fail to run http parser\n"); 
+		printf("[system]: failed to run http parser\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run http parser OK\n");
@@ -685,7 +685,7 @@ int main(int argc, const char **argv)
 		thread_charge_num, http_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 
-		printf("[system]: fail to run contexts pool\n"); 
+		printf("[system]: failed to run contexts pool\n");
 		goto EXIT_PROGRAM; 
 	} else {
 		printf("[system]: run contexts pool OK\n");
@@ -699,7 +699,7 @@ int main(int argc, const char **argv)
 	console_server_init(console_server_ip, console_server_port);
 
 	if (0 != console_server_run()) {
-		printf("[system]: fail to run console server\n");
+		printf("[system]: failed to run console server\n");
 		goto EXIT_PROGRAM;
 	} else {
 		printf("[system]: run console server OK\n");
@@ -716,7 +716,7 @@ int main(int argc, const char **argv)
 
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
-		printf("[system]: fail to run threads pool\n");
+		printf("[system]: failed to run threads pool\n");
 		goto EXIT_PROGRAM;
 	} else {
 		printf("[system]: run threads pool OK\n");

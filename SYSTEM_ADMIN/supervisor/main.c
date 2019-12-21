@@ -103,15 +103,15 @@ int main(int argc, const char **argv)
 		supervise_interval);
 	
 	if (0 != message_run()) {
-		printf("[system]: fail to run message\n");
+		printf("[system]: failed to run message\n");
 		return 2;
 	}
 	if (0 != smtp_run()) {
-		printf("[system]: fail to run smtp\n");
+		printf("[system]: failed to run smtp\n");
 		return 3;
 	}
 	if (0 != pop3_run()) {
-		printf("[system]: fail to run pop3\n");
+		printf("[system]: failed to run pop3\n");
 		return 4;
 	}
 	if (0 != scheduler_run()) {

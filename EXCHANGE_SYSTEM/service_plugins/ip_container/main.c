@@ -52,7 +52,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		ip_container_init(2*get_context_num(), max_num);
 		if (0 != ip_container_run()) {
-			printf("[ip_container]: fail to run the module\n");
+			printf("[ip_container]: failed to run the module\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("ip_container_add", ip_container_add)) {

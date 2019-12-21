@@ -30,7 +30,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		codepage_lang_init(tmp_path);
 		if (0 != codepage_lang_run()) {
-			printf("[codepage_lang]: fail to run the module\n");
+			printf("[codepage_lang]: failed to run the module\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("get_lang", codepage_lang_get_lang)) {

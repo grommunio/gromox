@@ -78,7 +78,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		retrying_table_init(tmp_path, table_size, min_interval, valid_interval);
 		if (0 != retrying_table_run()) {
-			printf("[retrying_table]: fail to run the module\n");
+			printf("[retrying_table]: failed to run the module\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("check_retrying", retrying_table_check)) {

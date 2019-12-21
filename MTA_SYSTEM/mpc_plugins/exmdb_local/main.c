@@ -217,27 +217,27 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			charset, timezone, propnames_path);
 		
 		if (0 != net_failure_run()) {
-			printf("[exmdb_local]: fail to run net failure\n");
+			printf("[exmdb_local]: failed to run net failure\n");
 			return FALSE;
 		}
 		if (0 != bounce_producer_run()) {
-			printf("[exmdb_local]: fail to run bounce producer\n");
+			printf("[exmdb_local]: failed to run bounce producer\n");
 			return FALSE;
 		}
 		if (0 != bounce_audit_run()) {
-			printf("[exmdb_local]: fail to run bounce audit\n");
+			printf("[exmdb_local]: failed to run bounce audit\n");
 			return FALSE;
 		}
 		if (0 != cache_queue_run()) {
-			printf("[exmdb_local]: fail to run cache queue\n");
+			printf("[exmdb_local]: failed to run cache queue\n");
 			return FALSE;
 		}
 		if (0 != exmdb_client_run()) {
-			printf("[exmdb_local]: fail to run exmdb client\n");
+			printf("[exmdb_local]: failed to run exmdb client\n");
 			return FALSE;
 		}
 		if (0 != exmdb_local_run()) {
-			printf("[exmdb_local]: fail to run exmdb local\n");
+			printf("[exmdb_local]: failed to run exmdb local\n");
 			return FALSE;
 		}
 		register_talk(exmdb_local_console_talk);

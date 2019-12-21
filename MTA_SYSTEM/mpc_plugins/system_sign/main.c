@@ -30,7 +30,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s", get_data_path(), file_name);
 		message_sign_init(temp_path);
 		if (0 != message_sign_run()) {
-			printf("[system_sign]: fail to run message sign\n");
+			printf("[system_sign]: failed to run message sign\n");
 			return FALSE;
 		}
         if (FALSE == register_hook(sign_hook)) {

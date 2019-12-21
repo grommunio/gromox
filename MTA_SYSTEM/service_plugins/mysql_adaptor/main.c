@@ -192,20 +192,20 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		config_file_free(pfile);
 
 		if (0 != cdner_agent_run()) {
-			printf("[mysql_adaptor]: fail to run cdner agent\n");
+			printf("[mysql_adaptor]: failed to run cdner agent\n");
 			return FALSE;
 		}
 		
 		if (0 != uncheck_domains_run()) {
-			printf("[mysql_adaptor]: fail to run uncheck domains\n");
+			printf("[mysql_adaptor]: failed to run uncheck domains\n");
 			return FALSE;
 		}
 		if (0 != mysql_adaptor_run()) {
-			printf("[mysql_adaptor]: fail to run mysql adaptor\n");
+			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;
 		}
 		if (0 != service_auth_run()) {
-			printf("[mysql_adaptor]: fail to run service auth\n");
+			printf("[mysql_adaptor]: failed to run service auth\n");
 			return FALSE;
 		}
         if (FALSE == register_service("auth_ehlo", service_auth_ehlo) ||

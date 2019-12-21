@@ -52,7 +52,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s", get_data_path(), file_name);
 		group_monitor_init(tmp_path, str_subject, growing_num);
 		if (0 != group_monitor_run()) {
-			printf("[group_monitor]: fail to run group monitor\n");
+			printf("[group_monitor]: failed to run group monitor\n");
 			config_file_free(pfile);
 			return FALSE;
 		}

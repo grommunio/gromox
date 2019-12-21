@@ -22,15 +22,15 @@ void multiple_retrying_init(const char *config_path, const char *list_path,
 int multiple_retrying_run()
 {
 	if (0 != retrying_table_run()) {
-		printf("[multiple_retrying]: fail to run the module retrying table\n");
+		printf("[multiple_retrying]: failed to run the module retrying table\n");
 		return -1;
 	}
 	if (0 != stub_retrying_run()) {
-		printf("[multiple_retrying]: fail to run the module stub retrying\n");
+		printf("[multiple_retrying]: failed to run the module stub retrying\n");
 		return -2;
 	}
 	if (0 != proxy_retrying_run()) {
-		printf("[multiple_retrying]: fail to run the module proxy retrying\n");
+		printf("[multiple_retrying]: failed to run the module proxy retrying\n");
 		return -3;
 	}
 	return 0;

@@ -88,11 +88,11 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		message_insulation_init(config_path, queue_path, scan_interval,
 			on_valid_interval, anon_valid_interval);
 		if (0 != bounce_producer_run()) {
-			printf("[message_insulation]: fail to run bounce producer\n");
+			printf("[message_insulation]: failed to run bounce producer\n");
 			return FALSE;
 		}
 		if (0 != message_insulation_run()) {
-			printf("[message_insulation]: fail to run message insulation\n");
+			printf("[message_insulation]: failed to run message insulation\n");
 			return FALSE;
 		}
 		register_talk(message_insulation_console_talk);

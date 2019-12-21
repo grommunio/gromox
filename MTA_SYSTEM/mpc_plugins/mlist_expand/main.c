@@ -35,7 +35,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(resource_path, "%s/mlist_bounce", get_data_path());
 		bounce_producer_init(resource_path, ";");
 		if (0 != bounce_producer_run()) {
-			printf("[mlist_expand]: fail to run bounce producer\n");
+			printf("[mlist_expand]: failed to run bounce producer\n");
 			return FALSE;
 		}
 

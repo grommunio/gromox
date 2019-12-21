@@ -99,19 +99,19 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		esmtp_auth_init(retrying_times);
 		service_auth_init(get_context_num(), user_login_auth);
 		if (0 != auth_cache_run()) {
-			printf("[esmtp_auth]: fail to run auth cache module\n");
+			printf("[esmtp_auth]: failed to run auth cache module\n");
 			return FALSE;
 		}
 		if (0 != host_list_run()) {
-			printf("[esmtp_auth]: fail to run host list module\n");
+			printf("[esmtp_auth]: failed to run host list module\n");
 			return FALSE;
 		}
 		if (0 != esmtp_auth_run()) {
-			printf("[esmtp_auth]: fail to run esmtp auth module\n");
+			printf("[esmtp_auth]: failed to run esmtp auth module\n");
 			return FALSE;
 		}
 		if (0 != service_auth_run()) {
-			printf("[service_auth]: fail to run service auth module\n");
+			printf("[service_auth]: failed to run service auth module\n");
 			return FALSE;
 		}
         if (FALSE == register_service("auth_ehlo", service_auth_ehlo) ||

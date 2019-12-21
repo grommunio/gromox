@@ -301,36 +301,36 @@ int main(int argc, const char **argv)
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {
-		printf("[system]: fail to run system log\n");
+		printf("[system]: failed to run system log\n");
 		return 2;
 	}
 	
 	if (0 != smtp_run()) {
-		printf("[system]: fail to run smtp\n");
+		printf("[system]: failed to run smtp\n");
 		return 3;
 	}
 	
 	if (0 != message_run()) {
-		printf("[system]: fail to run message\n");
+		printf("[system]: failed to run message\n");
 		return 4;
 	}
 	if (0 != data_source_run()) {
-		printf("[system]: fail to run data source\n");
+		printf("[system]: failed to run data source\n");
 		return 5;
 	}
 
 	if (0 != locker_client_run()) {
-		printf("[system]: fail to run locker client\n");
+		printf("[system]: failed to run locker client\n");
 		return 6;
 	}
 
 	if (0 != midb_client_run()) {
-		printf("[system]: fail to run midb client\n");
+		printf("[system]: failed to run midb client\n");
 		return 7;
 	}
 
 	if (0 != engine_run()) {
-		printf("[system]: fail to run engine\n");
+		printf("[system]: failed to run engine\n");
 		return 8;
 	}
 	

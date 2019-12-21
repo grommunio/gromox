@@ -43,7 +43,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		
 		service_auth_init(get_context_num(), user_login_auth);
 		if (0 != service_auth_run()) {
-			printf("[service_auth]: fail to run module\n");
+			printf("[service_auth]: failed to run module\n");
 			return FALSE;
 		}
         if (FALSE == register_service("auth_ehlo", service_auth_ehlo) ||

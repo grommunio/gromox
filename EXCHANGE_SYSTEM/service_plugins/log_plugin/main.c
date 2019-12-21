@@ -90,7 +90,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		log_plugin_init(tmp_path, log_file_name, log_level, files_num,
 			cache_size);
 		if (0 != log_plugin_run()) {
-			printf("[log_plugin]: fail to run log plugin\n");
+			printf("[log_plugin]: failed to run log plugin\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("log_info", log_plugin_log_info)) {

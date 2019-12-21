@@ -80,7 +80,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s.txt", get_data_path(), file_name);
 		site_protection_init(temp_path);
 		if (0 != site_protection_run()) {
-			printf("[site_protection]: fail to run the site_protection\n");
+			printf("[site_protection]: failed to run the site_protection\n");
 			return FALSE;
 		}
         /* invoke register_auditor for registering auditor of mail head */

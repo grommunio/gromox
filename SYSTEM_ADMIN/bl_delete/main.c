@@ -48,7 +48,7 @@ int main(int argc, const char **argv)
 	midb_client_init("../data/midb_list.txt");
 	if (0 != midb_client_run()) {
 		fclose(fp);
-		printf("fail to run midb client\n");
+		printf("failed to run midb client\n");
 		return 2;
 	}
 

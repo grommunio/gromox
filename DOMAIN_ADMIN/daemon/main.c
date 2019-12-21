@@ -168,27 +168,27 @@ int main(int argc, const char **argv)
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {
-		printf("[system]: fail to run system log\n");
+		printf("[system]: failed to run system log\n");
 		return 1;
 	}
 	if (0 != log_flusher_run()) {
-		printf("[system]: fail to run log flusher\n");
+		printf("[system]: failed to run log flusher\n");
 		return 2;
 	}
 	if (0 != smtp_sender_run()) {
-		printf("[system]: fail to run smtp sender\n");
+		printf("[system]: failed to run smtp sender\n");
 		return 3;
 	}
 	if (0 != data_source_run()) {
-		printf("[system]: fail to run data source\n");
+		printf("[system]: failed to run data source\n");
 		return 4;
 	}
 	if (0 != domain_classifier_run()) {
-		printf("[system]: fail to run domain classifier\n");
+		printf("[system]: failed to run domain classifier\n");
 		return 5;
 	}
 	if (0 != item_sorter_run()) {
-		printf("[system]: fail to run item sorter\n");
+		printf("[system]: failed to run item sorter\n");
 		return 6;
 	}
 	item_sorter_stop();

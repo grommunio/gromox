@@ -73,13 +73,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		dns_adaptor_init(tmp_path, capacity, interval);
 		if (0 != dns_adaptor_run()) {
-			printf("[dns_adaptor]: fail to run the dns-adaptor module\n");
+			printf("[dns_adaptor]: failed to run the dns-adaptor module\n");
 			return FALSE;
 		}
 		sprintf(tmp_path, "%s/inbound_ips.txt", get_data_path());
 		inbound_ips_init(tmp_path);
 		if (0 != inbound_ips_run()) {
-			printf("[dns_adaptor]: fail to run module inbound-ips\n");
+			printf("[dns_adaptor]: failed to run module inbound-ips\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("dns_query_A",

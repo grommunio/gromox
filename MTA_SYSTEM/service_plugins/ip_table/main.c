@@ -57,7 +57,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		ip_table_init(file_name, tmp_path, growing_num);
 		if (0 != ip_table_run()) {
-			printf("[%s]: fail to run the module\n", file_name);
+			printf("[%s]: failed to run the module\n", file_name);
 			config_file_free(pfile);
 			return FALSE;
 		}

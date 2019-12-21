@@ -54,7 +54,7 @@ int AS_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s", get_data_path(), file_name);
 		precise_interception_init(temp_path);
 		if (0 != precise_interception_run()) {
-			printf("[precise_interception]: fail to run precise "
+			printf("[precise_interception]: failed to run precise "
 				"interception\n");
 			return FALSE;
 		}

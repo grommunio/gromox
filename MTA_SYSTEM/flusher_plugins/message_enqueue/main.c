@@ -56,7 +56,7 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 
         message_enqueue_init(queue_path, tape_units);
         if (0 != message_enqueue_run()) {
-            printf("[message_enqueue]: fail to run the module\n");
+			printf("[message_enqueue]: failed to run the module\n");
 			config_file_free(pfile);
             return FALSE;
         }

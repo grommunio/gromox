@@ -346,7 +346,7 @@ int main(int argc, const char **argv)
     if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
-        printf("[system]: fail to run service\n"); 
+		printf("[system]: failed to run service\n");
         goto EXIT_PROGRAM; 
     } else {
 		printf("---------------------------- service plugins end"
@@ -361,7 +361,7 @@ int main(int argc, const char **argv)
 	
     system_services_init();
     if (0 != system_services_run()) { 
-        printf("[system]: fail to run system service\n"); 
+		printf("[system]: failed to run system service\n");
         goto EXIT_PROGRAM; 
     } else {
         printf("[system]: run system service OK\n");
@@ -376,7 +376,7 @@ int main(int argc, const char **argv)
     message_dequeue_init(dequeue_path, tape_size, max_mem);
  
     if (0 != message_dequeue_run()) { 
-        printf("[system]: fail to run message dequeue\n"); 
+		printf("[system]: failed to run message dequeue\n");
         goto EXIT_PROGRAM; 
     } else {
         printf("[system]: run message dequeue OK\n");
@@ -391,7 +391,7 @@ int main(int argc, const char **argv)
     console_server_init(console_server_ip, console_server_port);
 
     if (0 != console_server_run()) {
-        printf("[system]: fail to run console server\n");
+		printf("[system]: failed to run console server\n");
         goto EXIT_PROGRAM;
     } else {
         printf("[system]: run console server OK\n");
@@ -412,7 +412,7 @@ int main(int argc, const char **argv)
     if (0 != transporter_run()) { 
 		printf(" ---------------------------- mpc plugins end"
 			"-----------------------------\n");
-        printf("[system]: fail to run transporter\n"); 
+		printf("[system]: failed to run transporter\n");
         goto EXIT_PROGRAM; 
     } else {
 		printf("----------------------------- mpc plugins end"

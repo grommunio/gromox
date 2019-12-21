@@ -246,7 +246,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pfile);
 		
 		if (0 != remote_postman_run()) {
-			printf("[remote_postman]: fail to run remote postman\n");
+			printf("[remote_postman]: failed to run remote postman\n");
 			return FALSE;
 		}
 		register_talk(remote_postman_console_talk);

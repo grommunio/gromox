@@ -236,7 +236,7 @@ int main(int argc, const char **argv)
 	
 	exmdb_client_init(EXMDB_CONN_NUM, EVENT_THREAD_NUM, list_path);
 	if (0 != exmdb_client_run()) {
-		printf("[system]: fail to run exmdb_client\n");
+		printf("[system]: failed to run exmdb_client\n");
 		return 3;
 	}
 	exmdb_client_register_proc(event_proc);

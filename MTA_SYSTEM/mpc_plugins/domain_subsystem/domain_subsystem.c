@@ -35,12 +35,12 @@ int domain_subsystem_run()
 {
 	
 	if (0 != address_list_run()) {
-		printf("[domain_subsystem]: fail to run address list\n");
+		printf("[domain_subsystem]: failed to run address list\n");
 		return -1;
 	}
 	
 	if (0 != smtp_clone_run()) {
-        printf("[domain_subsystem]: fail to run smtp deliverer\n");
+		printf("[domain_subsystem]: failed to run smtp deliverer\n");
         return -2;
     }
 

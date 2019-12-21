@@ -68,12 +68,12 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s", get_data_path(), file_name);
 		domain_keyword_init(tmp_path, growing_num, dm_host);
 		if (0 != bounce_producer_run()) {
-			printf("[domain_keyword]: fail to run bounce producer\n");
+			printf("[domain_keyword]: failed to run bounce producer\n");
 			config_file_free(pfile);
 			return FALSE;
 		}
 		if (0 != domain_keyword_run()) {
-			printf("[domain_keyword]: fail to run domain keyword\n");
+			printf("[domain_keyword]: failed to run domain keyword\n");
 			config_file_free(pfile);
 			return FALSE;
 		}

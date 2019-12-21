@@ -51,7 +51,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
 		tagging_table_init(tmp_path, growing_num);
 		if (0 != tagging_table_run()) {
-			printf("[tagging_table]: fail to run the module\n");
+			printf("[tagging_table]: failed to run the module\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("check_tagging", tagging_table_check)) {

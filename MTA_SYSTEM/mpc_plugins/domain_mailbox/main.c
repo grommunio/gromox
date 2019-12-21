@@ -25,7 +25,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		domain_mailbox_init(tmp_path);
 		
 		if (0 != domain_mailbox_run()) {
-			printf("[domain_mailbox]: fail to run module\n");
+			printf("[domain_mailbox]: failed to run module\n");
             return FALSE;
 		}
 		register_talk(domain_mailbox_console_talk);

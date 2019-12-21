@@ -164,26 +164,26 @@ int main(int argc, const char **argv)
 	config_file_free(pconfig);
 	
 	if (0 != file_operation_run()) {
-		printf("[system]: fail to run file operation\n");
+		printf("[system]: failed to run file operation\n");
 		return 2;
 	}
 
 	if (0 != system_log_run()) {
-		printf("[system]: fail to run system log\n");
+		printf("[system]: failed to run system log\n");
 		return 3;
 	}
 	
 	if (0 != gateway_control_run()) {
-		printf("[system]: fail to run gateway control\n");
+		printf("[system]: failed to run gateway control\n");
 		return 4;
 	}
 	if (0 != data_source_run()) {
-		printf("[system]: fail to run data source\n");
+		printf("[system]: failed to run data source\n");
 		return 5;
 	}
 
 	if (0 != engine_run()) {
-		printf("[system]: fail to run engine\n");
+		printf("[system]: failed to run engine\n");
 		return 6;
 	}
 	

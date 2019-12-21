@@ -68,12 +68,12 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(tmp_path, "%s/%s", get_data_path(), file_name);
 		mail_approving_init(tmp_path, growing_num, dm_host);
 		if (0 != bounce_producer_run()) {
-			printf("[mail_approving]: fail to run bounce producer\n");
+			printf("[mail_approving]: failed to run bounce producer\n");
 			config_file_free(pfile);
 			return FALSE;
 		}
 		if (0 != mail_approving_run()) {
-			printf("[mail_approving]: fail to run mail approving\n");
+			printf("[mail_approving]: failed to run mail approving\n");
 			config_file_free(pfile);
 			return FALSE;
 		}

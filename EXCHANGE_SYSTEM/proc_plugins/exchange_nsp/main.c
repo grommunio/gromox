@@ -134,16 +134,16 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (0 != common_util_run()) {
-			printf("[exchange_nsp]: fail to run common util\n");
+			printf("[exchange_nsp]: failed to run common util\n");
 			return FALSE;
 		}
 		if (0 != ab_tree_run()) {
-			printf("[exchange_nsp]: fail to run address book tree\n");
+			printf("[exchange_nsp]: failed to run address book tree\n");
 			return FALSE;
 		}
 		nsp_interface_init(b_check);
 		if (0 != nsp_interface_run()) {
-			printf("[exchange_nsp]: fail to run nsp interface\n");
+			printf("[exchange_nsp]: failed to run nsp interface\n");
 			return FALSE;
 		}
 		printf("[exchange_nsp]: plugin is loaded into system\n");

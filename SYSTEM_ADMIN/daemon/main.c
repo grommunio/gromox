@@ -258,59 +258,59 @@ int main(int argc, const char **argv)
 	password_cleaner_init(now_time);
 	media_migrator_init(area_path);
 	if (0 != system_log_run()) {
-		printf("[system]: fail to run system log\n");
+		printf("[system]: failed to run system log\n");
 		return 1;
 	}
 	if (0 != file_operation_run()) {
-		printf("[system]: fail to run file operation\n");
+		printf("[system]: failed to run file operation\n");
 		return 2;
 	}
 	if (0 != smtp_sender_run()) {
-		printf("[system]: fail to run smtp sender\n");
+		printf("[system]: failed to run smtp sender\n");
 		return 3;
 	}
 	if (0 != midb_client_run()) {
-		printf("[system]: fail to run midb client\n");
+		printf("[system]: failed to run midb client\n");
 		return 4;
 	}
 	if (0 != log_flusher_run()) {
-		printf("[system]: fail to run log flusher\n");
+		printf("[system]: failed to run log flusher\n");
 		return 5;
 	}
 	if (0 != message_run()) {
-		printf("[system]: fail to run message\n");
+		printf("[system]: failed to run message\n");
 		return 6;
 	}
 	if (0 != locker_client_run()) {
-		printf("[system]: fail to run locker client\n");
+		printf("[system]: failed to run locker client\n");
 		return 7;
 	}
 	if (0 != data_source_run()) {
-		printf("[system]: fail to run data source\n");
+		printf("[system]: failed to run data source\n");
 		return 8;
 	}
 	if (0 != log_analyzer_run()) {
-		printf("[system]: fail to run domain classifier\n");
+		printf("[system]: failed to run domain classifier\n");
 		return 9;
 	}
 	if (0 != keyword_cleaning_run()) {
-		printf("[system]: fail to run keyword cleaning\n");
+		printf("[system]: failed to run keyword cleaning\n");
 		return 10;
 	}
 	if (0 != auto_backup_run()) {
-		printf("[system]: fail to run config backup\n");
+		printf("[system]: failed to run config backup\n");
 		return 11;
 	}
 	if (0 != domain_cleaner_run()) {
-		printf("[system]: fail to run domain cleaner\n");
+		printf("[system]: failed to run domain cleaner\n");
 		return 12;
 	}
 	if (0 != media_migrator_run()) {
-		printf("[system]: fail to run media migrator\n");
+		printf("[system]: failed to run media migrator\n");
 		return 13;
 	}
 	if (0 != password_cleaner_run()) {
-		printf("[system]: fail to run password cleaner\n");
+		printf("[system]: failed to run password cleaner\n");
 		return 14;
 	}
 

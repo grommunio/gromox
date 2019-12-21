@@ -472,19 +472,19 @@ int main(int argc, const char **argv)
 	listener_init();
 
 	if (0 != service_run()) {
-		printf("[system]: fail to run service\n");
+		printf("[system]: failed to run service\n");
 		return 3;
 	}
 	
 	if (0 != system_services_run()) {
-		printf("[system]: fail to run system services\n");
+		printf("[system]: failed to run system services\n");
 		return 4;
 	}
 	
 	if (0 != common_util_run()) {
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run common util\n");
+		printf("[system]: failed to run common util\n");
 		return 5;
 	}
 	
@@ -492,7 +492,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run bounce producer\n");
+		printf("[system]: failed to run bounce producer\n");
 		return 6;
 	}
 	
@@ -501,7 +501,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run msgchg grouping\n");
+		printf("[system]: failed to run msgchg grouping\n");
 		return 7;
 	}
 	
@@ -511,7 +511,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run address book tree\n");
+		printf("[system]: failed to run address book tree\n");
 		return 8;
 	}
 	
@@ -522,7 +522,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run rpc parser\n");
+		printf("[system]: failed to run rpc parser\n");
 		return 9;
 	}
 
@@ -534,7 +534,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run zarafa server\n");
+		printf("[system]: failed to run zarafa server\n");
 		return 10;
 	}
 	
@@ -547,7 +547,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run exmdb client\n");
+		printf("[system]: failed to run exmdb client\n");
 		return 11;
 	}
 	
@@ -561,7 +561,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run console server\n");
+		printf("[system]: failed to run console server\n");
 		return 12;
 	}
 	
@@ -576,7 +576,7 @@ int main(int argc, const char **argv)
 		common_util_stop();
 		system_services_stop();
 		service_stop();
-		printf("[system]: fail to run listener\n");
+		printf("[system]: failed to run listener\n");
 		return 13;
 	}
 	
