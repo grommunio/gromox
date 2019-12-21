@@ -219,19 +219,19 @@ int main(int argc, const char **argv)
 
 	g_threads_num ++;
 
-	str_value = config_file_get_value(pconfig, "SENSOR_LIFE_CIRCLE");
+	str_value = config_file_get_value(pconfig, "SENSOR_LIFECYCLE");
 	if (NULL == str_value) {
 		g_max_interval = 300;
-		config_file_set_value(pconfig, "SENSOR_LIFE_CIRCLE", "5minutes");
+		config_file_set_value(pconfig, "SENSOR_LIFECYCLE", "5minutes");
 	} else {
 		g_max_interval = atoitvl(str_value);
 		if (g_max_interval < 30) {
 			g_max_interval = 30;
-			config_file_set_value(pconfig, "SENSOR_LIFE_CIRCLE", "30seconds");
+			config_file_set_value(pconfig, "SENSOR_LIFECYCLE", "30seconds");
 		}
 	}
 	itvltoa(g_max_interval, temp_buff);
-	printf("[system]: sensor item life circle is %s\n", temp_buff);
+	printf("[system]: sensor item lifecycle is %s\n", temp_buff);
 	config_file_free(pconfig);
 	
 	exmdb_client_init(EXMDB_CONN_NUM, EVENT_THREAD_NUM, list_path);
