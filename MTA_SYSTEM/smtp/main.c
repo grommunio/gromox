@@ -586,7 +586,7 @@ int main(int argc, const char **argv)
 
 	flusher_plugin_path = resource_get_string("FLUSHER_PLUGIN_PATH");
 	if (flusher_plugin_path == NULL) {
-		flusher_plugin_path = "libmtaflh_message_enqueue.so";
+		flusher_plugin_path = PKGLIBDIR "/libmtaflh_message_enqueue.so";
 		resource_set_string("FLUSHER_PLUGIN_PATH", flusher_plugin_path);
 	}
 	printf("[flusher]: flusher plugin path %s\n", flusher_plugin_path);
