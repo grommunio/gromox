@@ -100,8 +100,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "PAD_LISTEN_IP");
 	if (NULL == str_value) {
-		listen_ip[0] = '\0';
-		printf("[system]: listen ipaddr is ANY\n");
+		HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
+		printf("[system]: listen ipaddr is 127.0.0.1\n");
 	} else {
 		strncpy(listen_ip, str_value, 16);
 		printf("[system]: listen ipaddr is %s\n", listen_ip);

@@ -131,8 +131,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "SESSION_LISTEN_IP");
 	if (NULL == str_value) {
-		listen_ip[0] = '\0';
-		printf("[system]: listen ipaddr is ANY\n");
+		HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
+		printf("[system]: listen ipaddr is 127.0.0.1\n");
 	} else {
 		strncpy(listen_ip, str_value, 16);
 		g_list_path[0] = '\0';
@@ -167,8 +167,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "MAX_SESSIONS_PER_ITEM");
 	if (NULL == str_value) {
-		g_item_num = 5;
-		config_file_set_value(pconfig, "MAX_SESSIONS_PER_ITEM", "5");
+		g_item_num = 20;
+		config_file_set_value(pconfig, "MAX_SESSIONS_PER_ITEM", "20");
 	} else {
 		g_item_num = atoi(str_value);
 		if (g_item_num <= 0) {
