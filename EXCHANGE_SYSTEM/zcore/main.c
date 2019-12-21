@@ -373,7 +373,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "ZARAFA_THREADS_NUM");
 	if (NULL == str_value) {
-		threads_num = 50;
+		threads_num = 100;
 		config_file_set_value(pconfig, "ZARAFA_THREADS_NUM", "100");
 	} else {
 		threads_num = atoi(str_value);
@@ -392,7 +392,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "USER_TABLE_SIZE");
 	if (NULL == str_value) {
-		table_size = 3000;
+		table_size = 5000;
 		config_file_set_value(pconfig, "USER_TABLE_SIZE", "5000");
 	} else {
 		table_size = atoi(str_value);
