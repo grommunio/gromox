@@ -1204,7 +1204,6 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
-	zval_ptr_dtor(&pzrowset);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
@@ -2205,15 +2204,10 @@ ZEND_FUNCTION(mapi_sink_timedwait)
 		goto RETURN_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pznotifications, 0, 0);
-	zval_ptr_dtor(&pznotifications);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 RETURN_EXCEPTION:
 	sleep(1);
-	zval_ptr_dtor(&pznotifications);
-	array_init(&pznotifications);
-	RETVAL_ZVAL(&pznotifications, 0, 0);
-	zval_ptr_dtor(&pznotifications);
 }
 
 ZEND_FUNCTION(mapi_table_queryallrows)
@@ -2275,7 +2269,6 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
-	zval_ptr_dtor(&pzrowset);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
@@ -2335,7 +2328,6 @@ ZEND_FUNCTION(mapi_table_queryrows)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
-	zval_ptr_dtor(&pzrowset);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
@@ -4176,7 +4168,6 @@ ZEND_FUNCTION(mapi_getprops)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzpropvals, 0, 0);
-	zval_ptr_dtor(&pzpropvals);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
@@ -4448,8 +4439,6 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 	add_assoc_zval(return_value, "restriction", &pzrestriction);
 	add_assoc_zval(return_value, "folderlist", &pzfolderlist);
 	add_assoc_long(return_value, "searchstate", search_state);
-	zval_ptr_dtor(&pzrestriction);
-	zval_ptr_dtor(&pzfolderlist);
 	MAPI_G(hr) = EC_SUCCESS;
 	return;
 THROW_EXCEPTION:
