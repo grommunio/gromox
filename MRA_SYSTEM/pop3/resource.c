@@ -5,6 +5,7 @@
  */
 #include <errno.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "resource.h"
 #include "config_file.h"
 #include "util.h"
@@ -281,7 +282,7 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable)
     int total, index, native_code, len;
 	const char *filename = resource_get_string("POP3_RETURN_CODE_PATH");
 	if (NULL == filename) {
-		return -1;
+		filename = PKGDATADIR "/pop3/pop3_code.txt";
 	}
     if (NULL == (file_ptr = fopen(filename, "r"))) {
         printf("[resource]: can not open pop3 error table file  %s\n",
