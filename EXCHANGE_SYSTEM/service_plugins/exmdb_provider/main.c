@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/exsvc_common.h>
 #include "exmdb_listener.h"
@@ -133,8 +134,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "LISTEN_IP");
 		if (NULL == str_value) {
-			listen_ip[0] = '\0';
-			printf("[exmdb_provider]: listen ipaddr is ANY\n");
+			HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
+			printf("[exmdb_provider]: listen ipaddr is 127.0.0.1\n");
 		} else {
 			strncpy(listen_ip, str_value, 16);
 			printf("[exmdb_provider]: listen ipaddr is %s\n", listen_ip);
