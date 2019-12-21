@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -90,7 +91,7 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 { 
     size_t tape_size, max_mem; 
-    int threads_min, threads_max;
+	int retcode = EXIT_FAILURE, threads_min, threads_max;
 	int free_contexts, mime_ratio;
     const char *dequeue_path, *mpc_plugin_path, *service_plugin_path; 
     const char *console_server_ip, *user_name, *str_val, *admin_mb;
@@ -425,7 +426,7 @@ int main(int argc, const char **argv)
     func_ptr    = (STOP_FUNC)transporter_stop;
     vstack_push(&stop_stack, (void*)&func_ptr);
 
-    
+	retcode = EXIT_SUCCESS;
     printf("[system]: DELIVERY APP is now running\n");
     while (FALSE == g_notify_stop) {
         sleep(3);
@@ -441,7 +442,7 @@ EXIT_PROGRAM:
 
     vstack_free(&stop_stack);
     vstack_allocator_free(allocator);
-    return 0;
+	return retcode;
 } 
 
 static void term_handler(int signo)

@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -53,8 +54,7 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 { 
- 
-	int listen_port, listen_ssl_port;
+	int retcode = EXIT_FAILURE, listen_port, listen_ssl_port;
 	int autologout_time, context_aver_mitem;
 	int context_num, context_aver_mem, context_max_mem;
 	int imap_auth_times, imap_conn_timeout;
@@ -534,6 +534,7 @@ int main(int argc, const char **argv)
 		goto EXIT_PROGRAM;
 	}
 	
+	retcode = EXIT_SUCCESS;
 	printf("[system]: IMAP DAEMON is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(3);
@@ -550,7 +551,7 @@ EXIT_PROGRAM:
 
 	vstack_free(&stop_stack);
 	vstack_allocator_free(allocator);
-	return 0;
+	return retcode;
 } 
 
 static void term_handler(int signo)

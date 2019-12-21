@@ -82,7 +82,7 @@ int main(int argc, const char **argv)
 	LIB_BUFFER *allocator;
 	uint64_t hpm_max_size;
 	size_t max_request_mem;
-	int block_interval_auth;
+	int retcode = EXIT_FAILURE, block_interval_auth;
 	int console_server_port;
 	uint64_t hpm_cache_size;
 	int fastcgi_exec_timeout;
@@ -732,6 +732,7 @@ int main(int argc, const char **argv)
 		goto EXIT_PROGRAM;
 	}
 	
+	retcode = EXIT_SUCCESS;
 	printf("[system]: HTTP DAEMON is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(3);
@@ -748,7 +749,7 @@ EXIT_PROGRAM:
 
 	vstack_free(&stop_stack);
 	vstack_allocator_free(allocator);
-	return 0;
+	return retcode;
 } 
 
 static void term_handler(int signo)

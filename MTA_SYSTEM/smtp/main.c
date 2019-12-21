@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -170,8 +171,7 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 { 
- 
-	int listen_port, listen_ssl_port;
+	int retcode = EXIT_FAILURE, listen_port, listen_ssl_port;
 	int context_num, smtp_running_mode; 
 	size_t max_mail_len;
 	size_t context_aver_mem, context_max_mem;
@@ -854,6 +854,7 @@ int main(int argc, const char **argv)
 		goto EXIT_PROGRAM;
 	}
 	
+	retcode = EXIT_SUCCESS;
 	printf("[system]: SMTP DAEMON is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(3);
@@ -870,7 +871,7 @@ EXIT_PROGRAM:
 
 	vstack_free(&stop_stack);
 	vstack_allocator_free(allocator);
-	return 0;
+	return retcode;
 } 
 
 static void term_handler(int signo)

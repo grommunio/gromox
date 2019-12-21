@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
@@ -53,7 +54,7 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 { 
-	int context_num, context_aver_units;
+	int retcode = EXIT_FAILURE, context_num, context_aver_units;
 	size_t context_max_mem;
 	size_t context_aver_mem;
 	int listen_port, listen_ssl_port;
@@ -533,6 +534,7 @@ int main(int argc, const char **argv)
 		goto EXIT_PROGRAM;
 	}
 	
+	retcode = EXIT_SUCCESS;
 	printf("[system]: POP3 DAEMON is now running\n");
 	while (FALSE == g_notify_stop) {
 		sleep(3);
@@ -549,7 +551,7 @@ EXIT_PROGRAM:
 
 	vstack_free(&stop_stack);
 	vstack_allocator_free(allocator);
-	return 0;
+	return retcode;
 } 
 
 static void term_handler(int signo)
