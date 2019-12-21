@@ -1243,6 +1243,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_USERNAME:
+		pinfo = zarafa_server_get_info();
 		*ppvalue = pinfo->username;
 		return TRUE;
 	case PROP_TAG_USERENTRYID:
