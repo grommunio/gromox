@@ -184,7 +184,7 @@ zend_bool php_to_proptag_array(zval *pzval,
 
 static void *php_to_propval(zval *entry, uint16_t proptype)
 {
-	int j, k;
+	int j = 0;
 	void *pvalue;
 	char *pstring;
 	zval *data_entry;
@@ -609,7 +609,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				*static_cast<uint32_t *>(pblock->pdata) = zval_get_long(data_entry);
 				break;
 			case ACTION_TYPE_OP_FORWARD:
-			case ACTION_TYPE_OP_DELEGATE:
+			case ACTION_TYPE_OP_DELEGATE: {
 				data_entry = zend_hash_find(paction_hash, str_adrlist.get());
 				if (data_entry == nullptr || Z_TYPE_P(data_entry) != IS_ARRAY)
 					return NULL;
@@ -631,6 +631,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 					pblock->pdata)->pblock) {
 					return NULL;
 				}
+				int k = 0;
 				ZEND_HASH_FOREACH_VAL(precipient_hash, data_entry) {
 					if (!php_to_tpropval_array(data_entry,
 						&tmp_propvals TSRMLS_CC)) {
@@ -644,6 +645,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 					++k;
 				} ZEND_HASH_FOREACH_END();
 				break;
+			}
 			case ACTION_TYPE_OP_TAG:
 				data_entry = zend_hash_find(paction_hash, str_proptag.get());
 				if (data_entry == nullptr)
