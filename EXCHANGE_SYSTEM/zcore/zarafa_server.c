@@ -3,6 +3,7 @@
 #include <sys/wait.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "util.h"
 #include "guid.h"
 #include "rpc_ext.h"
@@ -7742,13 +7743,11 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		close(pipes_out[1]);
 		strcpy(tool_path, common_util_get_freebusy_path());
 		ptoken = strrchr(tool_path, '/');
-		*ptoken = '\0';
-		ptoken ++;
-		sprintf(tool_command, "./%s", ptoken);
-		chdir(tool_path);
-		argv[0] = tool_command;
+		if (ptoken != nullptr)
+			++ptoken;
+		argv[0] = ptoken;
 		argv[1] = NULL;
-		execve(tool_command, argv, NULL);
+		execve(tool_path, argv, NULL);
 		_exit(-1);
 	} else if (pid < 0) {
 		close(pipes_in[0]);
