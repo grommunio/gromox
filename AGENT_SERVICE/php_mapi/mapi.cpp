@@ -3789,7 +3789,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_openproperty)
 {
-	int type;
+	int type = -1;
 	int flags;
 	size_t guidlen = 0;
 	long proptag;
@@ -3829,8 +3829,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(guidstr), sizeof(GUID));
 		ext_pack_pull_guid(&pull_ctx, &iid_guid);
 	}
-	{
-	auto type = Z_RES_TYPE_P(pzresource);
+	type = Z_RES_TYPE_P(pzresource);
 	if (type == le_mapi_message) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
@@ -3862,7 +3861,6 @@ ZEND_FUNCTION(mapi_openproperty)
 	} else {
 		MAPI_G(hr) = EC_NOT_SUPPORTED;
 		goto THROW_EXCEPTION;
-	}
 	}
 	if (0 == memcmp(&iid_guid, &IID_IStream, sizeof(GUID))) {
 		switch (proptag & 0xFFFF) {
