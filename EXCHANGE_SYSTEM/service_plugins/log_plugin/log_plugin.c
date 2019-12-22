@@ -226,6 +226,16 @@ static void* thread_work_func(void *arg)
 				0 == strcmp(direntp->d_name, "..")) {
 				continue;
 			}
+			snprintf(temp_path, sizeof(temp_path), "%s/%s", g_log_dir, direntp->d_name);
+			if (strncmp(g_file_name, temp_path, strlen(g_file_name)) != 0)
+				continue;
+			if (strlen(direntp->d_name) <= strlen(g_file_postfix) + 1)
+				continue;
+			const char *p = direntp->d_name + strlen(direntp->d_name) - strlen(g_file_postfix) - 1;
+			if (*p != '.')
+				continue;
+			if (strcmp(p + 1, g_file_postfix) != 0)
+				continue;
 			should_delete = TRUE;
 			for (i=0; i<g_files_num; i++) {
 				sprintf(temp_path, "%s/%s", g_log_dir, direntp->d_name);
@@ -235,6 +245,7 @@ static void* thread_work_func(void *arg)
 				}
 			}
 			if (TRUE == should_delete) {
+				printf("[log_plugin]: removing old logfile %s\n", temp_path);
 				remove(temp_path);
 			}
 		}
