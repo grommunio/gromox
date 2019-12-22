@@ -799,13 +799,6 @@ static FCGI_CGI start_cgi(RECORD_PARAMS *pparams)
 				pparams->name_vals[i].value.length + 1] = '\0';
 		}
 		envp[i] = NULL;
-		strcpy(dir, path);
-		ptoken = strrchr(dir, '/');
-		if (NULL == ptoken) {
-			exit(-1);
-		}
-		*ptoken = '\0';
-		chdir(dir);
 		args[0] = path;
 		args[1] = NULL;
 		execve(path, args, envp);
