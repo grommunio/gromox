@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 #include <cstdint>
+#include <gromox/paths.h>
 #include "php.h"
 #include "php_mapi.h"
 #include "ext_pack.h"
@@ -15,8 +16,6 @@
 #include "Zend/zend_exceptions.h"
 #include <sys/wait.h>
 #include "ext.hpp"
-
-#define TOOLS_PATH									"/var/pandora/tools"
 
 #define PR_ATTACH_DATA_OBJ                          0x3701000D
 #define PR_CONTENTS_SYNCHRONIZER					0x662D000D
@@ -4294,10 +4293,9 @@ ZEND_FUNCTION(mapi_decompressrtf)
 		dup2(pipes_out[1], 1);
 		close(pipes_in[0]);
 		close(pipes_out[1]);
-		chdir(TOOLS_PATH);
-		args[0] = const_cast<char *>("./rtf2html");
+		args[0] = const_cast<char *>("rtf2html");
 		args[1] = NULL;
-		execv("./rtf2html", args);
+		execv(PKGLIBEXECDIR "/rtf2html", args);
 		_exit(-1);
 	 case -1:
 		close(pipes_in[0]);
