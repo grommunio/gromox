@@ -207,7 +207,7 @@ cd /var/medusa/config
 #config autodiscover and EWS
 cd /var/medusa/php/config
 #edit config.ini set hostname=autodiscover hostname under section "exchange"
-#set /u-data=proxy hostname (normally same as autodiscover hostname) under section "http-porxy"
+#set /u-data=proxy hostname (normally same as autodiscover hostname) under section "http-proxy"
 
 #start all steep services
 systemctl start medusa apollo herculiz pandora athena posidon

@@ -183,7 +183,7 @@ function get_default_hostname()
 function get_http_proxy($dir, $host_name)
 {
 	$config = get_app_config();
-	$http_proxy = $config['http-porxy'];
+	$http_proxy = $config['http-proxy'];
 	if (!isset($http_proxy)) {
 		return $host_name;
 	}
