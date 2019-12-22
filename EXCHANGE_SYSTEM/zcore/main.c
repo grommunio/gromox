@@ -337,7 +337,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "FREEBUSY_TOOL_PATH");
 	if (NULL == str_value) {
-		str_value = "/var/pandora/tools/freebusy";
+		str_value = PKGLIBEXECDIR "/freebusy";
 	}
 	common_util_init(org_name, host_name, charset, timezone, mime_num,
 		max_rcpt, max_mail, max_length, max_rule_len, smtp_ip, smtp_port,

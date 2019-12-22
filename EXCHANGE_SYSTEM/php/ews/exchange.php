@@ -286,17 +286,15 @@ class ExchangeWebServices {
 		require_once "../lib/conf.php";
 		$appconf = get_app_config();
 		if (!$appconf['system']['freebusy']) {
-			$fb_dir = "/var/pandora/tools";
+			$fb_prog = "/usr/libexec/gromox/freebusy";
 		} else {
-			$fb_dir = $appconf['system']['freebusy'];
+			$fb_prog = $appconf['system']['freebusy'];
 		}
-		chdir($fb_dir);
-		$cwd = $fb_dir;
 		$descriptorspec = array(
 		   0 => array("pipe", "r"),
 		   1 => array("pipe", "w"),
 		   2 => array("file", "/tmp/ews_err.txt", "a"));
-		$process = proc_open('./freebusy', $descriptorspec, $pipes, $cwd, NULL);
+		$process = proc_open($fb_prog, $descriptorspec, $pipes, $cwd, NULL);
 		$fbresults = array();
 		if (is_resource($process)) {
 			fwrite($pipes[0], $cookie);

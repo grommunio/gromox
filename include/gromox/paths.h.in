@@ -10,6 +10,7 @@
 #define PKGSYSCONFSMTPDIR PKGSYSCONFDIR "/smtp"
 #define PKGSYSCONFZCOREDIR PKGSYSCONFDIR "/zcore"
 #define PKGLIBDIR "/usr/lib/gromox"
+#define PKGLIBEXECDIR "/usr/libexec/gromox"
 #define PKGDATADIR "/usr/share/gromox"
 #define PKGDATAAGENTDIR PKGDATADIR "/agent"
 #define PKGDATAARCHIVEDIR PKGDATADIR "/archive"
