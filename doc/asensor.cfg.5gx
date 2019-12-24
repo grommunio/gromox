@@ -10,11 +10,9 @@ Path of the AF_LOCAL socket where alock will listen for connections.
 Default: \fI/run/kopano/asensor.sock\fP
 .SS sensor_connection_num
 .PP
-The number of connections that will be made to the sensor service. The value
-is clamped to the range 10..100. One additional connection is made on top of
-this.
+The number of connections that will be made to the sensor service.
 .PP
-Default: \fI10\fP
+Default: \fI5\fP
 .SS sensor_listen_ip
 .PP
 The IPv4 address for contacting the \fBsensor\fP(8gx) service.

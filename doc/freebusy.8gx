@@ -1,0 +1,7 @@
+.TH freebusy 8gx "" "Gromox" "Gromox user reference"
+.SH Synopsis
+.PP
+\fBfreebusy\fP \(em helper utility for freebusy actions
+.SH Files
+.IP \(bu 4
+/usr/share/gromox/agent/exmdb_list.txt: exmdb multiserver map

@@ -14,6 +14,9 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+/usr/share/gromox/agent/cpid.txt: codepage number <-> name definition table
 .SH See also
 .PP
 \fBgromox\fP(7)

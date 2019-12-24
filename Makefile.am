@@ -1538,7 +1538,7 @@ man_MANS = \
 	doc/exchange_emsmdb.4gx doc/exchange_emsmdb.cfg.5gx \
 	doc/exchange_nsp.4gx doc/exchange_nsp.cfg.5gx doc/exchange_rfr.4gx \
 	doc/exmdb_provider.4gx doc/exmdb_provider.cfg.5gx \
-	doc/fcgi_cgi.8gx doc/gromox.7 \
+	doc/fcgi_cgi.8gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-agent.target.8gx doc/gromox-archive.target.8gx \
 	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \

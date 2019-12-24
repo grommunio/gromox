@@ -13,6 +13,9 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/cidb_acl.txt
 .SH See also
 .PP
 \fBgromox\fP(7), \fBcidb.cfg\fP(5gx)

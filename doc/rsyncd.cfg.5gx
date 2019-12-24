@@ -3,6 +3,24 @@
 .PP
 \fBrsyncd.cfg\fP \(em configuration file for the rsyncd service
 .SH Directives
+.SS ca_path
+.PP
+Default: (unset) (must be set)
+.SS certificate_path
+.PP
+Default: (unset) (must be set)
+.SS certificate_passwd
+.PP
+Default: (unset) (must be set)
+.SS rsync_listen_port
+.PP
+The TCP port number to expose the rsyncd service on. (The IP address is fixed
+to the wildcard address.)
+.PP
+Default: \fI44444\fP
+.SS private_key_path
+.PP
+Default: (unset) (must be set)
 .SH See also
 .PP
 \fBgromox\fP(7), \fBrsyncd\fP(8gx)

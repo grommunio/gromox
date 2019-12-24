@@ -12,7 +12,7 @@ Default: \fI/run/kopano/amysql.sock\fP
 .PP
 The number of connections to establish with the MySQL/MariaDB server.
 .PP
-Default: \fI10\fP
+Default: \fI5\fP
 .SS mysql_host
 .PP
 The hostname/IP address for contacting the SQL server.

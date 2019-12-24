@@ -10,10 +10,9 @@ Path of the AF_LOCAL socket where alock will listen for connections.
 Default: \fI/run/kopano/alock.sock\fP
 .SS locker_connection_num
 .PP
-The number of connections that will be made to the locker service. The value is
-clamped to the range 10..100. One additional connection is made on top of this.
+The number of connections that will be made to the locker service.
 .PP
-Default: \fI10\fP
+Default: \fI5\fP
 .SS locker_interval
 .PP
 Timeout in seconds for conversing with the locker service. The value is clamped to the range 10..180.

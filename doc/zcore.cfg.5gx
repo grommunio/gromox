@@ -93,7 +93,7 @@ SMTP server IPv4 address to contact for outgoing mail.
 Default: \fI127.0.0.1\fP
 .SS smtp_server_port
 .PP
-SMTP server TCP port to contact for outgoing mail.
+SMTP server TCP port number to contact for outgoing mail.
 .PP
 Default: \fI25\fP
 .SS submit_command

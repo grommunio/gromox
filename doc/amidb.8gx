@@ -18,6 +18,9 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/midb_list.txt: midb multiserver map
 .SH See also
 .PP
 \fBgromox\fP(7), \fBamidb.cfg\fP(5gx), \fBmidb\fP(8gx)

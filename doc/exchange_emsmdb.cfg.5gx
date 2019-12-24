@@ -33,12 +33,12 @@ Default: \fI256\fP
 Default: \fI;\fP (semicolon)
 .SS smtp_server_ip
 .PP
-SMTP server IPv4 address to contact for outgoing mail.
+SMTP server IPv4 address to connect to for outgoing mail.
 .PP
 Default: \fI127.0.0.1\fP
 .SS smtp_server_port
 .PP
-SMTP server TCP port to contact for outgoing mail.
+SMTP server TCP port number to connect to for outgoing mail.
 .PP
 Default: \fI25\fP
 .SS submit_command

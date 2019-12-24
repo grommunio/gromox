@@ -10,13 +10,12 @@ Path of the AF_LOCAL socket where amidb will listen for connections.
 Default: \fI/run/gromox/amidb.sock\fP
 .SS data_file_path
 .PP
-Path to the directory containing \fBmidb_list.txt\fP.
+Directory for additional files.
 .PP
-Default: \fI/etc/gromox\fP
+Default: \fI/usr/share/gromox/agent\fP
 .SS midb_connection_num
 .PP
-The number of connections to make to the midb service. One additional
-connection is made on top of this.
+The number of connections to make to the midb service.
 .PP
 Default: \fI5\fP
 .SH See also

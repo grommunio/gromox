@@ -60,6 +60,20 @@ The type of store ("private" or "public")
 IPv4 address of the server running exmdb_provider(4gx)
 .IP \(bu 4
 The TCP port number of the server
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/exmdb_list.txt: exmdb multiserver map
+.IP \(bu 4
+\fIdata_file_path\fP/folder_lang.txt: Translations for essential folders in a
+message store.
+.IP \(bu 4
+\fIdata_file_path\fP/langmap.txt: Mapping between translation names and
+libc locale names.
+.IP \(bu 4
+\fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
+.IP \(bu 4
+\fIdata_file_path\fP/notify_bounce/: A directory with translation files for
+various bounce notifications.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBzcore.cfg\fP(5gx)
