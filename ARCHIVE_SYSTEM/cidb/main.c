@@ -234,7 +234,7 @@ int main(int argc, const char **argv)
 	}
 	
 	if (0 == valid_days) {
-		printf("[system]: achived mails will never be deleted\n");
+		printf("[system]: archived mails will never be deleted\n");
 	} else {
 		printf("[system]: archived mails will be deleted after %d days\n",
 			valid_days);
