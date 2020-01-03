@@ -13,6 +13,23 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fI/alias_addresses.txt
+.IP \(bu 4
+\fIdata_file_path\fI/alias_domains.txt
+.IP \(bu 4
+\fIdata_file_path\fI/backup_list.txt
+.IP \(bu 4
+\fIdata_file_path\fI/console_table.txt
+.IP \(bu 4
+\fIdata_file_path\fI/domain_list.txt
+.IP \(bu 4
+\fIdata_file_path\fI/domain_subsystem.txt
+.IP \(bu 4
+\fIdata_file_path\fI/mailbox_collector.txt
+.IP \(bu 4
+\fIdata_file_path\fI/uncheck_domains.txt
 .SH See also
 .PP
 \fBgromox\fP(7), \fBadaptor.cfg\fP(5gx)

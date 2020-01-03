@@ -76,7 +76,7 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		HX_strlcpy(log_path, PKGLOGDIR "/athena_log.txt", sizeof(log_path));
+		HX_strlcpy(log_path, PKGLOGDIR "/sa.log", sizeof(log_path));
 		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
 		strcpy(log_path, str_value);

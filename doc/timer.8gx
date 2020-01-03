@@ -13,6 +13,11 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/timer.txt
+.IP \(bu 4
+\fIdata_file_path\fP/timer_acl.txt
 .SH See also
 .PP
 \fBgromox\fP(7), \fBtimer.cfg\fP(5gx)

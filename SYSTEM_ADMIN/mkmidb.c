@@ -61,9 +61,9 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	umask(0);
-	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/athena.cfg");
+	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/sa.cfg");
 	if (NULL == pconfig) {
-		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/athena.cfg", strerror(errno));
+		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/sa.cfg", strerror(errno));
 		return 2;
 	}
 

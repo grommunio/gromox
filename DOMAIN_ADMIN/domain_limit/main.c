@@ -30,7 +30,7 @@ int main(int argc, const char **argv)
 	CONFIG_FILE *pconfig;
 
 	umask(0);
-	HX_strlcpy(temp_path, PKGSYSCONFDIR "/posidon.cfg", sizeof(temp_path));
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/da.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return 1;
@@ -44,7 +44,7 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		str_value = PKGLOGDIR "/posidon_log.txt";
+		str_value = PKGLOGDIR "/da.log";
 	}
 	system_log_init(str_value);
 	snprintf(temp_path, sizeof(temp_path), "%s/console_table.txt", data_path);
@@ -105,11 +105,11 @@ int main(int argc, const char **argv)
 	
 	mount_path = config_file_get_value(pconfig, "GATEWAY_MOUNT_PATH");
 	if (NULL == mount_path) {
-		mount_path = "../gateway";
+		mount_path = PKGSTATEGATEWAYDIR;
 	}
 	str_value = config_file_get_value(pconfig, "LOGO_LINK");
 	if (NULL == str_value) {
-		str_value = "http://www.gridware.com.cn";
+		str_value = DFL_LOGOLINK;
 	}
 	snprintf(lang_path, sizeof(lang_path), "%s/domain_limit", data_path);
 	limit_ui_init(mount_path, str_value, lang_path);

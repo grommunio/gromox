@@ -3,6 +3,38 @@
 .PP
 \fBsensor.cfg\fP \(em configuration file for the sensor service
 .SH Directives
+.SS data_file_path
+.PP
+Directory where plugin instances will look for their data files.
+.PP
+Default: \fI/usr/share/gromox/sa\fP
+.SS sensor_lifecycle
+.PP
+Default: \fI5 minutes\fP
+.SS sensor_listen_any
+.PP
+Flag that controls whether to bind to 0.0.0.0 (false), or event_listen_ip
+(true).
+.PP
+Default: \fIfalse\fP
+.SS sensor_listen_ip
+.PP
+The IPv4 address for exposing the sensor service on.
+.PP
+Default: \fI127.0.0.1\fP
+.SS sensor_listen_port
+.PP
+The TCP port number for exposing the sensor service on.
+.PP
+Default: \fI11111\fP
+.SS sensor_table_size
+.PP
+Default: \fI3000\fP
+.SS sensor_threads_num
+.PP
+The minimum number of client processing threads to keep around.
+.PP
+Default: \fI20\fP
 .SH See also
 .PP
 \fBgromox\fP(7), \fBsensor\fP(8gx)

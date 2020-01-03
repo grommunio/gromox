@@ -23,7 +23,7 @@ int main(int argc, const char **argv)
 	int timeout;
 	CONFIG_FILE *pconfig;
 
-	HX_strlcpy(temp_path, PKGSYSCONFDIR "/athena.cfg", sizeof(temp_path));
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/sa.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		return 1;
@@ -42,7 +42,7 @@ int main(int argc, const char **argv)
 	}
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		str_value = PKGLOGDIR "/athena_log.txt";
+		str_value = PKGLOGDIR "/sa.log";
 	}
 	system_log_init(str_value);
 	snprintf(temp_path, sizeof(temp_path), "%s/console_table.txt", data_path);
@@ -61,7 +61,7 @@ int main(int argc, const char **argv)
 	acl_control_init(temp_path, acl_path, timeout);
 	str_value = config_file_get_value(pconfig, "LOGO_LINK");
 	if (NULL == str_value) {
-		str_value = "http://www.gridware.com.cn";
+		str_value = DFL_LOGOLINK;
 	}
 	snprintf(temp_path, sizeof(temp_path), "%s/control.msg", token_path);
 	snprintf(lang_path, sizeof(lang_path), "%s/system_setup", data_path);

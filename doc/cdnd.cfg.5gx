@@ -5,7 +5,7 @@
 .SH Directives
 .SS cdnd_listen_port
 .PP
-The TCP port number to expose the CDND service on. (The IP address is fixed
+The TCP port number to expose the cdnd service on. (The IP address is fixed
 to the wildcard address.)
 .PP
 Default: \fI10000\fP

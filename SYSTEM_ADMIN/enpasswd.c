@@ -79,9 +79,9 @@ int main(int argc, const char **argv)
 	}
 	list_file_free(plist);
 	close(fd);
-	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/athena.cfg");
+	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/sa.cfg");
 	if (NULL == pconfig) {
-		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/athena.cfg", strerror(errno));
+		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/sa.cfg", strerror(errno));
 		return 5;
 	}
 

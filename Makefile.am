@@ -1532,13 +1532,14 @@ man_MANS = \
 	doc/apollo.8gx doc/archive.8gx doc/asensor.8gx doc/asensor.cfg.5gx \
 	doc/asession.8gx doc/asession.cfg.5gx doc/athena.8gx \
 	doc/bl_delete.8gx doc/cdnd.8gx doc/cdnd.cfg.5gx doc/cidb.8gx \
-	doc/cidb.cfg.5gx doc/da_daemon.8gx doc/delivery.8gx \
+	doc/cidb.cfg.5gx doc/da.cfg.5gx doc/da_daemon.8gx \
+	doc/delivery.8gx \
 	doc/delivery.cfg.5gx doc/digest.8gx \
 	doc/event.8gx doc/event.cfg.5gx \
 	doc/exchange_emsmdb.4gx doc/exchange_emsmdb.cfg.5gx \
 	doc/exchange_nsp.4gx doc/exchange_nsp.cfg.5gx doc/exchange_rfr.4gx \
 	doc/exmdb_provider.4gx doc/exmdb_provider.cfg.5gx \
-	doc/fcgi_cgi.8gx doc/freebusy.8gx doc/gromox.7 \
+	doc/fcgi_cgi.8gx doc/fcgi_cgi.cfg.5gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-agent.target.8gx doc/gromox-archive.target.8gx \
 	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
@@ -1550,11 +1551,11 @@ man_MANS = \
 	doc/monitor.8gx doc/monitor.cfg.5gx doc/pad.8gx doc/pad.cfg.5gx \
 	doc/pandora.8gx doc/pop3.8gx doc/pop3.cfg.5gx doc/posidon.8gx \
 	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncd.cfg.5gx doc/rsyncer.8gx \
-	doc/rsyncer.cfg.5gx doc/rtf2html.1gx doc/sa_daemon.8gx \
-	doc/sa_daemon.cfg.5gx doc/scanner.8gx doc/scanner.cfg.5gx \
+	doc/rsyncer.cfg.5gx doc/rtf2html.1gx doc/sa.cfg.5gx \
+	doc/sa_daemon.8gx doc/scanner.8gx doc/scanner.cfg.5gx \
 	doc/sendmail.8gx doc/sensor.8gx doc/sensor.cfg.5gx doc/session.8gx \
 	doc/session.cfg.5gx doc/smtp.8gx doc/smtp.cfg.5gx doc/supervisor.8gx \
-	doc/supervisor.cfg.5gx doc/synchronizer.8gx doc/synchronizer.cfg.5gx \
+	doc/supervisor.cfg.5gx doc/synchronizer.8gx \
 	doc/timer.8gx doc/timer.cfg.5gx doc/titan.8gx doc/zcore.8gx \
 	doc/zcore.cfg.5gx
 

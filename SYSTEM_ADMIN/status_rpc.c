@@ -49,7 +49,7 @@ int main(int argc, const char **argv)
 	CONFIG_FILE *pconfig;
 	CONSOLE_ITEM *pconsole;
 	
-	HX_strlcpy(temp_path, PKGSYSCONFDIR "/athena.cfg", sizeof(temp_path));
+	HX_strlcpy(temp_path, PKGSYSCONFDIR "/sa.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {
 		printf("Content-Type:text/html\n\n");

@@ -3,6 +3,62 @@
 .PP
 \fBpad.cfg\fP \(em configuration file for the pad service
 .SH Directives
+.SS data_file_path
+.PP
+Directory for additional files.
+.PP
+Default: \fI/usr/share/gromox/sa\fP
+.SS log_file_path
+.PP
+Default: \fI/var/log/gromox/sa.log\fP
+.SS mysql_dbname
+.PP
+Default: \fIemail\fP
+.SS mysql_host
+.PP
+The hostname/IP address for contacting the SQL server.
+.PP
+Default: \fIlocalhost\fP
+.SS mysql_password
+.PP
+Default: (unset)
+.SS mysql_port
+.PP
+The TCP port number for contacting the SQL server.
+.PP
+Default: \fI3306\fP
+.SS mysql_username
+.PP
+Default: (unset)
+.SS pad_comm_threads_num
+.PP
+Default: \fI5\fP
+.SS pad_listen_ip
+.PP
+The IPv4 address for exposing the pad service on.
+.PP
+Default: \fI127.0.0.1\fP
+.SS pad_listen_port
+.PP
+The TCP port number for exposing the pad service on.
+.PP
+Default: \fI22222\fP
+.SS pad_pop_internal
+.PP
+Default: \fI10 minutes\fP
+.SS pad_proc_threads_num
+.PP
+Default: \fI10\fP
+.SS sensor_listen_ip
+.PP
+The IPv4 address for contacting the sensor(8gx) service.
+.PP
+Default: \fI127.0.0.1\fP
+.SS sensor_list_port
+.PP
+The TCP port number for contacting the sensor(8gx) service.
+.PP
+Default: \fI11111\fP
 .SH See also
 .PP
 \fBgromox\fP(7), \fBpad\fP(8gx)

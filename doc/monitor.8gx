@@ -13,6 +13,11 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Files
+.IP \(bu 4
+\fIdata_file_path\fP/console_table.txt
+.IP \(bu 4
+\fItoken_file_path\fP/token/monitor.shm
 .SH See also
 .PP
 \fBgromox\fP(7), \fBmonitor.cfg\fP(5gx)

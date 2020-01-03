@@ -59,8 +59,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "GATEWAY_MOUNT_PATH");
 	if (NULL == str_value) {
-		strcpy(mount_path, "../gateway");
-		config_file_set_value(pconfig, "GATEWAY_MOUNT_PATH", "../gateway");
+		strcpy(mount_path, PKGSTATEGATEWAYDIR);
+		config_file_set_value(pconfig, "GATEWAY_MOUNT_PATH", mount_path);
 	} else {
 		strcpy(mount_path, str_value);
 	}

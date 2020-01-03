@@ -164,7 +164,7 @@ int auto_backup_run()
 	sprintf(dst_file, "%s/data_files/xmailer_blacklist.txt", g_backup_path);
 	file_operation_copy_file(src_file, dst_file);
 
-	sprintf(dst_file, "%s/data_files/athena.cfg", g_backup_path);
+	sprintf(dst_file, "%s/data_files/sa.cfg", g_backup_path);
 	file_operation_copy_file(g_config_path, dst_file);
 	
 	

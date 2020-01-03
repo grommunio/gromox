@@ -15,4 +15,4 @@ Output version information and exit.
 Display option summary.
 .SH See also
 .PP
-\fBgromox\fP(7), \fBposidon.cfg\fP(5gx)
+\fBgromox\fP(7), \fBfcgi_cgi.cfg\fP(5gx)

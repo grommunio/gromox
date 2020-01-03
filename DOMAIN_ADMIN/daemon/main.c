@@ -87,7 +87,7 @@ int main(int argc, const char **argv)
 	printf("[system]: file cache size is %d\n", cache_size);
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
 	if (NULL == str_value) {
-		HX_strlcpy(log_path, PKGLOGDIR "/posidon_log.txt", sizeof(log_path));
+		HX_strlcpy(log_path, PKGLOGDIR "/da.log", sizeof(log_path));
 		config_file_set_value(pconfig, "LOG_FILE_PATH", log_path);
 	} else {
 		strcpy(log_path, str_value);
@@ -95,7 +95,7 @@ int main(int argc, const char **argv)
 	printf("[system]: log path is %s\n", log_path);
 	str_value = config_file_get_value(pconfig, "LOGO_LINK");
 	if (NULL == str_value) {
-		strcpy(url_link, "http://www.gridware.com.cn");
+		strcpy(url_link, DFL_LOGOLINK);
 		config_file_set_value(pconfig, "LOGO_LINK", url_link);
 	} else {
 		strcpy(url_link, str_value);

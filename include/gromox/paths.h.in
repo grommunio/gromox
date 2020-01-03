@@ -29,3 +29,4 @@
 #define PKGSTATEGATEWAYDIR PKGSTATEDIR "/gateway"
 #define PKGSTATEQUEUEDIR PKGSTATEDIR "/queue"
 #define PKGLOGDIR "/var/log/gromox"
+#define DFL_LOGOLINK "https://gromox.com/"

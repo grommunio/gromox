@@ -1208,7 +1208,7 @@ XMAILER_LIST:
 	file_operation_broadcast(temp_file, "data/smtp/xmailer_filter.txt");
 
 SYSTEM_SETUP:
-	sprintf(src_file, "%s/data_files/athena.cfg", g_backup_path);
+	sprintf(src_file, "%s/data_files/sa.cfg", g_backup_path);
 	file_operation_copy_file(src_file, g_config_path);
 	pconfig = config_file_init2(NULL, g_config_path);
 	if (NULL == pconfig) {
@@ -1776,7 +1776,7 @@ static void backup_ui_backup_file()
 	sprintf(dst_file, "%s/data_files/xmailer_blacklist.txt", g_backup_path);
 	file_operation_copy_file(src_file, dst_file);
 
-	sprintf(dst_file, "%s/data_files/athena.cfg", g_backup_path);
+	sprintf(dst_file, "%s/data_files/sa.cfg", g_backup_path);
 	file_operation_copy_file(g_config_path, dst_file);
 	
 	strftime(temp_buff, 256, "%Y-%m-%d-%H-%M-%S", localtime(&now_time));

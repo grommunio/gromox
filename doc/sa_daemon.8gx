@@ -15,4 +15,4 @@ Output version information and exit.
 Display option summary.
 .SH See also
 .PP
-\fBgromox\fP(7), \fBsa_daemon.cfg\fP(5gx)
+\fBgromox\fP(7), \fBsa.cfg\fP(5gx)

@@ -5,6 +5,7 @@
  */
 #include <errno.h>
 #include <libHX/string.h>
+#include <gromox/paths.h>
 #include "resource.h"
 #include "config_file.h"
 #include "util.h"
@@ -15,7 +16,7 @@
 #define MAX_FILE_LINE_LEN       1024
 
 static SMTP_ERROR_CODE g_default_smtp_error_code_table[] = {
-    { 2172001, "214 Help availble on http://www.gridware.com.cn" },
+	{2172001, "214 Help availble on " DFL_LOGOLINK},
     { 2172002, "220 <domain> Service ready" },
     { 2172003, "221 <domain> Good-bye" },
     { 2172004, "235 Authentication ok, go ahead" },
