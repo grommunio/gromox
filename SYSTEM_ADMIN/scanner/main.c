@@ -56,8 +56,7 @@ int main(int argc, const char **argv)
 	char mysql_host[256];
 	CONFIG_FILE *pconfig;
 	char backup_path[256];
-	BOOL freetime_scanning;
-	BOOL parellel_scanning;
+	BOOL freetime_scanning, parallel_scanning;
 	char admin_mailbox[256];
 	char default_domain[256];
 	char background_path[256];
@@ -150,17 +149,17 @@ int main(int argc, const char **argv)
 	
 	str_value = config_file_get_value(pconfig, "PARELLEL_SCANNING");
 	if (NULL == str_value) {
-		parellel_scanning = FALSE;
+		parallel_scanning = false;
 		config_file_set_value(pconfig, "PARELLEL_SCANNING", "FALSE");
 	} else {
 		if (0 == strcasecmp(str_value, "TRUE") ||
 			0 == strcasecmp(str_value, "ON")) {
-			parellel_scanning = TRUE;
+			parallel_scanning = true;
 		} else if (0 == strcasecmp(str_value, "FALSE")
 			|| 0 == strcasecmp(str_value, "OFF")) {
-			parellel_scanning = FALSE;
+			parallel_scanning = false;
 		} else {
-			parellel_scanning = FALSE;
+			parallel_scanning = false;
 			config_file_set_value(pconfig, "PARELLEL_SCANNING", "FALSE");
 		}
 	}
@@ -296,7 +295,7 @@ int main(int argc, const char **argv)
 	midb_client_init(midb_path);
 	
 	engine_init(area_path, log_days, valid_days, default_domain,
-		admin_mailbox, db_name, backup_path, parellel_scanning,
+		admin_mailbox, db_name, backup_path, parallel_scanning,
 		freetime_scanning);
 	config_file_free(pconfig);
 	
