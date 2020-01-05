@@ -73,7 +73,6 @@ int domain_classifier_run()
 	}
 	if (TRUE == b_limit && 0 != setrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[domain_classifier]: fail to modify file limit\n");
-		return -4;
 	}
 	g_hash_table = str_hash_init(g_table_size, sizeof(FILE*), NULL);
 	if (NULL == g_hash_table) {

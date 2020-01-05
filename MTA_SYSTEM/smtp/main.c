@@ -642,7 +642,6 @@ int main(int argc, const char **argv)
 		rl.rlim_max = context_num + 128;
 		if (0 != setrlimit(RLIMIT_NOFILE, &rl)) {
 			printf("[system]: fail to set file limitation\n");
-			goto EXIT_PROGRAM;
 		}
 		printf("[system]: set file limitation to %d\n", context_num + 128);
 	}
