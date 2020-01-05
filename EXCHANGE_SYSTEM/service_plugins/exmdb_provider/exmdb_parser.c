@@ -832,6 +832,7 @@ static void *thread_work_func(void *pparam)
 	b_private = FALSE; /* whatever for connect request */
 	memset(resp_buff, 0, 5);
 	pconnection = (EXMDB_CONNECTION*)pparam;
+	pthread_setname_np(pconnection->thr_id, "exmdb_parser");
 	pbuff = NULL;
 	offset = 0;
 	buff_len = 0;
@@ -1016,7 +1017,6 @@ void exmdb_parser_put_connection(EXMDB_CONNECTION *pconnection)
 		free(pconnection);
 		return;
 	}
-	pthread_setname_np(pconnection->thr_id, "exmdb_parser");
 }
 
 ROUTER_CONNECTION* exmdb_parser_get_router(const char *remote_id)
