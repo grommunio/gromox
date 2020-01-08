@@ -152,8 +152,17 @@ static void *accept_work_func(void *param)
 			continue;
         }
 		fcntl(sockd2, F_SETFL, O_NONBLOCK);
-		if (FALSE == stub_retrying_check_allowing(
-			inet_ntoa(peer_name.sin_addr))) {
+
+		char client_hostip[16];
+		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &peer_name),
+		          addrlen, client_hostip, sizeof(client_hostip),
+		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			printf("getnameinfo: %s\n", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
+		if (!stub_retrying_check_allowing(client_hostip)) {
 			multiple_retrying_writeline_timeout(sockd2, "Access Deny!", 1);
 			close(sockd2);
 			continue;

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include <gromox/defs.h>
 #include "common_types.h"
 #include "list_file.h"
@@ -164,7 +165,14 @@ static void *thread_work_func(void *param)
 		if (-1 == sockd) {
 			continue;
 		}
-		strcpy(client_hostip, inet_ntoa(peer_name.sin_addr));
+		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &peer_name),
+		          addrlen, client_hostip, sizeof(client_hostip),
+		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			printf("getnameinfo: %s\n", gai_strerror(ret));
+			close(sockd);
+			continue;
+		}
 		if ('\0' != g_list_path[0]) {
 			for (pnode=double_list_get_head(&g_acl_list); NULL!=pnode;
 				pnode=double_list_get_after(&g_acl_list, pnode)) {

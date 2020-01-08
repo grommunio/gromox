@@ -630,9 +630,14 @@ static void *accept_work_func(void *param)
 		if (-1 == sockd2) {
 			continue;
 		}
-
-		strcpy(client_hostip, inet_ntoa(peer_name.sin_addr));
-
+		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &peer_name),
+		          addrlen, client_hostip, sizeof(client_hostip),
+		          nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);
+		if (ret != 0) {
+			printf("getnameinfo: %s\n", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
 		for (pnode=double_list_get_head(&g_acl_list); NULL!=pnode;
 			pnode=double_list_get_after(&g_acl_list, pnode)) {
 			pacl = (ACL_ITEM*)pnode->pdata;

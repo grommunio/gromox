@@ -185,7 +185,7 @@ static void* thread_work_func(void* arg)
 	int sockd2, client_port;
 	int string_length, len, flag;
 	struct sockaddr_in fact_addr, client_peer;
-	char client_hostip[16], server_hostip[16];
+	char client_hostip[16], client_txtport[16], server_hostip[16];
 	SMTP_CONTEXT *pcontext;
 	const char *smtp_reply_str, *smtp_reply_str2, *host_ID;
 	char buff[1024];
@@ -201,16 +201,31 @@ static void* thread_work_func(void* arg)
 		if (-1 == sockd2) {
 			continue;
 		}
+		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &client_peer),
+		          addrlen, client_hostip, sizeof(client_hostip),
+		          client_txtport, sizeof(client_txtport),
+		          NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			printf("getnameinfo: %s\n", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
 		addrlen = sizeof(fact_addr); 
-		int ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
+		ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
 		if (ret != 0) {
 			printf("getsockname: %s\n", strerror(errno));
 			close(sockd2);
 			continue;
 		}
-		strcpy(client_hostip, inet_ntoa(client_peer.sin_addr));
-		strcpy(server_hostip, inet_ntoa(fact_addr.sin_addr));
-		client_port=ntohs(client_peer.sin_port);
+		ret = getnameinfo(reinterpret_cast(struct sockaddr *, &fact_addr),
+		      addrlen, server_hostip, sizeof(server_hostip),
+		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			printf("getnameinfo: %s\n", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
+		client_port = strtoul(client_txtport, nullptr, 0);
 		system_services_log_info(0, "new connection %s:%d is now incoming", 
 					client_hostip, client_port);
 		fcntl(sockd2, F_SETFL, O_NONBLOCK);
@@ -309,7 +324,7 @@ static void* thread_work_ssl_func(void* arg)
 	int sockd2, client_port;
 	int string_length, len, flag;
 	struct sockaddr_in fact_addr, client_peer;
-	char client_hostip[16], server_hostip[16];
+	char client_hostip[16], client_txtport[16], server_hostip[16];
 	SMTP_CONTEXT *pcontext;
 	const char *smtp_reply_str, *smtp_reply_str2, *host_ID;
 	char buff[1024];
@@ -325,16 +340,31 @@ static void* thread_work_ssl_func(void* arg)
 		if (-1 == sockd2) {
 			continue;
 		}
+		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &client_peer),
+		          addrlen, client_hostip, sizeof(client_hostip),
+		          client_txtport, sizeof(client_txtport),
+		          NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			printf("getnameinfo: %s\n", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
 		addrlen = sizeof(fact_addr); 
-		int ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
+		ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
 		if (ret != 0) {
 			printf("getsockname: %s\n", strerror(errno));
 			close(sockd2);
 			continue;
 		}
-		strcpy(client_hostip, inet_ntoa(client_peer.sin_addr));
-		strcpy(server_hostip, inet_ntoa(fact_addr.sin_addr));
-		client_port=ntohs(client_peer.sin_port);
+		ret = getnameinfo(reinterpret_cast(struct sockaddr *, &fact_addr),
+		      addrlen, server_hostip, sizeof(server_hostip),
+		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
+		if (ret != 0) {
+			printf("getnameinfo: %s\n", gai_strerror(ret));
+			close(sockd2);
+			continue;
+		}
+		client_port = strtoul(client_txtport, nullptr, 0);
 		system_services_log_info(0, "ssl new connection %s:%d is now incoming", 
 					client_hostip, client_port);
 		fcntl(sockd2, F_SETFL, O_NONBLOCK);
