@@ -20,9 +20,9 @@
 #define ADDRESS_TYPE_NORMAL					0
 #define ADDRESS_TYPE_ALIAS					1
 #define ADDRESS_TYPE_MLIST					2
-/* composd value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_ROOM */
+/* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_ROOM */
 #define ADDRESS_TYPE_ROOM					4
-/* composd value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_EQUIPMENT */
+/* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_EQUIPMENT */
 #define ADDRESS_TYPE_EQUIPMENT				5
 
 #define BASE_STATUS_CONSTRUCTING			0
