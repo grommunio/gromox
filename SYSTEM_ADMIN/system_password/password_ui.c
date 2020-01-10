@@ -169,12 +169,12 @@ int password_ui_run()
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {
-		system_log_info("[password_ui]: fail to get REQUEST_METHOD environment!");
+		system_log_info("[password_ui]: $REQUEST_METHOD is unset");
 		return -2;
 	}
 	remote_ip = getenv("REMOTE_ADDR");
 	if (NULL == remote_ip) {
-		system_log_info("[password_ui]: fail to get REMOTE_ADDR environment!");
+		system_log_info("[password_ui]: $REMOTE_ADDR is unset");
 		return -3;
 	}
 	if (0 == strcmp(request, "POST")) {
@@ -276,8 +276,7 @@ int password_ui_run()
 	} else if (0 == strcmp(request, "GET")) {
 		query = getenv("QUERY_STRING");
 		if (NULL == query) {
-			system_log_info("[password_ui]: fail to get QUERY_STRING "
-					"environment!");
+			system_log_info("[password_ui]: $QUERY_STRING is unset");
 			password_ui_error_html(lang_resource_get(g_lang_resource,"ERROR_REQUEST",language));
 			return 0;
 		} else {
@@ -355,8 +354,7 @@ static BOOL password_ui_get_self(char *url_buff, int length)
 	script = getenv("SCRIPT_NAME");
 	https = getenv("HTTPS");
 	if (NULL == host || NULL == script) {
-		system_log_info("[password_ui]: fail to get "
-			"HTTP_HOST or SCRIPT_NAME environment!");
+		system_log_info("[password_ui]: $HTTP_HOST or $SCRIPT_NAME is unset");
 		return FALSE;
 	}
 	if (NULL == https || 0 != strcasecmp(https, "ON")) {

@@ -869,7 +869,7 @@ int list_ui_run()
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {
-		system_log_info("[list_ui]: fail to get REQUEST_METHOD environment!");
+		system_log_info("[list_ui]: $REQUEST_METHOD is unset");
 		return -1;
 	}
 	if (0 == strcmp(request, "POST")) {
@@ -1395,8 +1395,7 @@ int list_ui_run()
 	} else if (0 == strcmp(request, "GET")) {
 		query = getenv("QUERY_STRING");
 		if (NULL == query) {
-			system_log_info("[list_ui]: fail to get QUERY_STRING "
-					"environment!");
+			system_log_info("[list_ui]: $QUERY_STRING is unset");
 			list_ui_error_html(lang_resource_get(
 				g_lang_resource, "ERROR_REQUEST", language));
 			return 0;
@@ -1579,8 +1578,7 @@ static BOOL list_ui_get_self(char *url_buff, int length)
 	script = getenv("SCRIPT_NAME");
 	https = getenv("HTTPS");
 	if (NULL == host || NULL == script) {
-		system_log_info("[ui_main]: fail to get HTTP_HOST or SCRIPT_NAME "
-				"environment!");
+		system_log_info("[ui_main]: $HTTP_HOST or $SCRIPT_NAME is unset");
 		return FALSE;
 	}
 	if (NULL == https || 0 != strcasecmp(https, "ON")) {

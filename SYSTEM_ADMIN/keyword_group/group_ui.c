@@ -197,13 +197,12 @@ int group_ui_run()
 	}
 	request = getenv("REQUEST_METHOD");
 	if (NULL == request) {
-		system_log_info("[group_ui]: fail to get REQUEST_METHOD"
-			" environment!");
+		system_log_info("[group_ui]: $REQUEST_METHOD is unset");
 		return -2;
 	}
 	remote_ip = getenv("REMOTE_ADDR");
 	if (NULL == remote_ip) {
-		system_log_info("[group_ui]: fail to get REMOTE_ADDR environment!");
+		system_log_info("[group_ui]: $REMOTE_ADDR is unset");
 		return -3;
 	}
 	if (0 == strcmp(request, "GET")) {
@@ -393,8 +392,7 @@ static BOOL group_ui_get_self(char *url_buff, int length)
 	script = getenv("SCRIPT_NAME");
 	https = getenv("HTTPS");
 	if (NULL == host || NULL == script) {
-		system_log_info("[group_ui]: fail to get "
-			"HTTP_HOST or SCRIPT_NAME environment!");
+		system_log_info("[group_ui]: $HTTP_HOST or $SCRIPT_NAME is unset");
 		return FALSE;
 	}
 	if (NULL == https || 0 != strcasecmp(https, "ON")) {

@@ -821,7 +821,7 @@ void stop_service()
 	}
 	pid = atoi(str);
 	if (0 == pid) {
-		printf("fail to get athena's pid\n");
+		printf("failed to get athena's pid\n");
 		exit(EXIT_FAILURE);
 	}
 	kill(pid, SIGTERM);
