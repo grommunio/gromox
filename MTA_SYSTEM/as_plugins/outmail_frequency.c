@@ -45,23 +45,20 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		
 		check_virtual = query_service("check_virtual_mailbox");
 		if (NULL == check_virtual) {
-			printf("[outmail_frequency]: fail to get \"check_virtual_mailbox\" "
-				"service\n");
+			printf("[outmail_frequency]: failed to get service \"check_virtual_mailbox\"\n");
 			return FALSE;
 		}
 		outmail_frequency_audit = (OUTMAIL_FREQUENCY_AUDIT)query_service(
 								"outmail_frequency_audit");
 		if (NULL == outmail_frequency_audit) {
-			printf("[outmail_frequency]: fail to get "
-					"\"outmail_frequency_audit\" service\n");
+			printf("[outmail_frequency]: failed to get service \"outmail_frequency_audit\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		domain_whitelist_query =  (WHITELIST_QUERY)query_service(
 									"domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[outmail_frequency]: fail to get "
-				"\"domain_whitelist_query\" service\n");
+			printf("[outmail_frequency]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		strcpy(file_name, get_plugin_name());

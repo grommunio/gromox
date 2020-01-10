@@ -111,74 +111,74 @@ int exmdb_local_run()
 	
 	exmdb_local_check_domain = query_service("check_domain");
 	if (NULL == exmdb_local_check_domain) {
-		printf("[exmdb_local]: fail to get \"check_domain\" service\n");
+		printf("[exmdb_local]: failed to get service \"check_domain\"\n");
 		return -1;
 	}
 	exmdb_local_get_user_info = query_service("get_user_info");
 	if (NULL == exmdb_local_get_user_info) {
-		printf("[exmdb_local]: fail to get \"get_user_info\" service\n");
+		printf("[exmdb_local]: failed to get service \"get_user_info\"\n");
 		return -1;
 	}
 	exmdb_local_spam_statistic = query_service("spam_statistic");
 	
 	exmdb_local_get_lang = query_service("get_user_lang");
 	if (NULL == exmdb_local_get_lang) {
-		printf("[exmdb_local]: fail to get \"get_user_lang\" service\n");
+		printf("[exmdb_local]: failed to get service \"get_user_lang\"\n");
 		return -1;
 	}
 	exmdb_local_get_timezone = query_service("get_user_timezone");
 	if (NULL == exmdb_local_get_timezone) {
-		printf("[exmdb_local]: fail to get \"get_user_timezone\" service\n");
+		printf("[exmdb_local]: failed to get service \"get_user_timezone\"\n");
 		return -1;
 	}
 	exmdb_local_check_same_org2 = query_service("check_same_org2");
 	if (NULL == exmdb_local_check_same_org2) {
-		printf("[exmdb_local]: fail to get \"check_same_org2\" service\n");
+		printf("[exmdb_local]: failed to get service \"check_same_org2\"\n");
 		return -1;
 	}
 	exmdb_local_lang_to_charset = query_service("lang_to_charset");
 	if (NULL == exmdb_local_lang_to_charset) {
-		printf("[exmdb_local]: fail to get \"lang_to_charset\" service\n");
+		printf("[exmdb_local]: failed to get service \"lang_to_charset\"\n");
 		return -1;
 	}
 	exmdb_local_ltag_to_lcid = query_service("ltag_to_lcid");
 	if (NULL == exmdb_local_ltag_to_lcid) {
-		printf("[exmdb_local]: fail to get \"ltag_to_lcid\" service\n");
+		printf("[exmdb_local]: failed to get service \"ltag_to_lcid\"\n");
 		return -1;
 	}
 	exmdb_local_lcid_to_ltag = query_service("lcid_to_ltag");
 	if (NULL == exmdb_local_ltag_to_lcid) {
-		printf("[exmdb_local]: fail to get \"lcid_to_ltag\" service\n");
+		printf("[exmdb_local]: failed to get service \"lcid_to_ltag\"\n");
 		return -1;
 	}
 	exmdb_local_charset_to_cpid = query_service("charset_to_cpid");
 	if (NULL == exmdb_local_charset_to_cpid) {
-		printf("[exmdb_local]: fail to get \"charset_to_cpid\" service\n");
+		printf("[exmdb_local]: failed to get service \"charset_to_cpid\"\n");
 		return -1;
 	}
 	exmdb_local_cpid_to_charset = query_service("cpid_to_charset");
 	if (NULL == exmdb_local_cpid_to_charset) {
-		printf("[exmdb_local]: fail to get \"cpid_to_charset\" service\n");
+		printf("[exmdb_local]: failed to get service \"cpid_to_charset\"\n");
 		return -1;
 	}
 	exmdb_local_mime_to_extension = query_service("mime_to_extension");
 	if (NULL == exmdb_local_mime_to_extension) {
-		printf("[exmdb_local]: fail to get \"mime_to_extension\" service\n");
+		printf("[exmdb_local]: failed to get service \"mime_to_extension\"\n");
 		return -1;
 	}
 	exmdb_local_extension_to_mime = query_service("extension_to_mime");
 	if (NULL == exmdb_local_extension_to_mime) {
-		printf("[exmdb_local]: fail to get \"extension_to_mime\" service\n");
+		printf("[exmdb_local]: failed to get service \"extension_to_mime\"\n");
 		return -1;
 	}
 	exmdb_local_get_user_ids = query_service("get_user_ids");
 	if (NULL == exmdb_local_get_user_ids) {
-		printf("[exmdb_local]: fail to get \"get_user_ids\" service\n");
+		printf("[exmdb_local]: failed to get service \"get_user_ids\"\n");
 		return -1;
 	}
 	exmdb_local_get_username = query_service("get_username");
 	if (NULL == exmdb_local_get_username) {
-		printf("[exmdb_local]: fail to get \"get_username\" service\n");
+		printf("[exmdb_local]: failed to get service \"get_username\"\n");
 		return -1;
 	}
 	if (FALSE == oxcmail_init_library(g_org_name,

@@ -23,12 +23,12 @@ int system_services_run()
 {
 	system_services_log_info = service_query("log_info", "system");
 	if (NULL == system_services_log_info) {
-		printf("[system_services]: fail to get \"log_info\" service\n");
+		printf("[system_services]: failed to get service \"log_info\"\n");
 		return -1;
 	}
 	system_services_check_domain = service_query("check_domain", "system");
 	if (NULL == system_services_check_domain) {
-		printf("[system_services]: fail to get \"check_domain\" service\n");
+		printf("[system_services]: failed to get service \"check_domain\"\n");
 		return -2;
 	}
 	return 0;

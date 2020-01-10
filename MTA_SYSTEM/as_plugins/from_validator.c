@@ -34,21 +34,18 @@ BOOL AS_LibMain(int reason, void **ppdata)
     case PLUGIN_INIT:
 		LINK_API(ppdata);
 		if (NULL == check_domain) {
-			printf("[from_validator]: fail to get \"check_domain\" "
-				"service\n");
+			printf("[from_validator]: failed to get service \"check_domain\"\n");
 			return FALSE;
 		}
 		check_user = (CHECKING_USER)query_service("check_user");
 		if (NULL == check_user) {
-			printf("[from_validator]: fail to get \"check_user\" "
-				"service\n");
+			printf("[from_validator]: failed to get service \"check_user\"\n");
 			return FALSE;
 		}
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 				            "ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[from_validator]: fail to get \"ip_whitelist_query\" "
-					"service\n");
+			printf("[from_validator]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

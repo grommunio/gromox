@@ -783,26 +783,22 @@ int nsp_interface_run()
 {
 	get_domain_ids = query_service("get_domain_ids");
 	if (NULL == get_domain_ids) {
-		printf("[exchange_nsp]: fail to get"
-			" \"get_domain_ids\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_domain_ids\"\n");
 		return -1;
 	}
 	get_maildir = query_service("get_maildir");
 	if (NULL == get_maildir) {
-		printf("[exchange_nsp]: fail to get"
-				" \"get_maildir\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_maildir\"\n");
 		return -1;
 	}
 	get_id_from_username = query_service("get_id_from_username");
 	if (NULL == get_id_from_username) {
-		printf("[exchange_nsp]: fail to get "
-			"\"get_id_from_username\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_id_from_username\"\n");
 		return -1;
 	}
 	verify_cpid = query_service("verify_cpid");
 	if (NULL == verify_cpid) {
-		printf("[exchange_nsp]: fail to get"
-				" \"verify_cpid\" service\n");
+		printf("[exchange_nsp]: failed to get service \"verify_cpid\"\n");
 		return -1;
 	}
 	return 0;

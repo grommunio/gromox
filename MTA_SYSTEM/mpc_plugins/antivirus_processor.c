@@ -49,7 +49,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		check_virus = query_service("check_virus");
 		if (NULL == check_virus) {
-			printf("[antivirus_processor]: fail to get \"check_virus\" service\n");
+			printf("[antivirus_processor]: failed to get service \"check_virus\"\n");
 			return FALSE;
 
 		}

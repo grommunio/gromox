@@ -139,22 +139,22 @@ int bounce_producer_run()
 
 	bounce_producer_check_domain = query_service("check_domain");
 	if (NULL == bounce_producer_check_domain) {
-		printf("[mlist_expand]: fail to get \"check_domain\" service\n");
+		printf("[mlist_expand]: failed to get service \"check_domain\"\n");
 		return -1;
 	}
 	bounce_producer_get_lang = query_service("get_user_lang");
 	if (NULL == bounce_producer_get_lang) {
-		printf("[mlist_expand]: fail to get \"get_user_lang\" service\n");
+		printf("[mlist_expand]: failed to get service \"get_user_lang\"\n");
 		return -2;
 	}
 	bounce_producer_get_timezone = query_service("get_user_timezone");
 	if (NULL == bounce_producer_get_timezone) {
-		printf("[mlist_expand]: fail to get \"get_user_timezone\" service\n");
+		printf("[mlist_expand]: failed to get service \"get_user_timezone\"\n");
 		return -3;
 	}
 	bounce_producer_lang_to_charset = query_service("lang_to_charset");
 	if (NULL == bounce_producer_lang_to_charset) {
-		printf("[mlist_expand]: fail to get \"lang_to_charset\" service\n");
+		printf("[mlist_expand]: failed to get service \"lang_to_charset\"\n");
 		return -4;
 	}
 

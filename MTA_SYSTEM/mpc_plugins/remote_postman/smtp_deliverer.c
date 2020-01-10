@@ -90,22 +90,19 @@ int smtp_deliverer_run()
 	smtp_deliverer_destination_audit = 
 		(DESTINATION_AUDIT)query_service("destination_audit");
 	if (NULL == smtp_deliverer_destination_audit) {
-		printf("[remote_postman]: fail to get"
-			" \"destination_audit\" service\n");
+		printf("[remote_postman]: failed to get service \"destination_audit\"\n");
 		return -1;
 	}
 	smtp_deliverer_destination_query =
 		(DESTINATION_QUERY)query_service("destination_query");
 	if (NULL == smtp_deliverer_destination_query) {
-		printf("[remote_postman]: fail to get "
-			"\"destination_query\" service\n");
+		printf("[remote_postman]: failed to get service \"destination_query\"\n");
 		return -2;
 	}
 	smtp_deliverer_hello_mx_query =
 		(HELLO_MX_QUERY)query_service("hello_mx_query");
 	if (NULL == smtp_deliverer_hello_mx_query) {
-		printf("[remote_postman]: fail to get"
-			" \"hello_mx_query\" service\n");
+		printf("[remote_postman]: failed to get service \"hello_mx_query\"\n");
 		return -3;
 	}
 	smtp_deliverer_dns_query_A =

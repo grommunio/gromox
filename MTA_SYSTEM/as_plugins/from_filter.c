@@ -33,8 +33,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		from_filter_query = (FROM_FILTER_QUERY)query_service(
 							  "from_filter_query");
 		if (NULL == from_filter_query) {
-			printf("[from_filter]: fail to get \"from_filter_query\" "
-					"service\n");
+			printf("[from_filter]: failed to get service \"from_filter_query\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

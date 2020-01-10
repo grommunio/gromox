@@ -34,67 +34,67 @@ int system_services_run()
 {
 	system_services_get_user_lang = service_query("get_user_lang", "system");
 	if (NULL == system_services_get_user_lang) {
-		printf("[system_services]: fail to get \"get_user_lang\" service\n");
+		printf("[system_services]: failed to get service \"get_user_lang\"\n");
 		return -1;
 	}
 	system_services_get_timezone = service_query("get_timezone", "system");
 	if (NULL == system_services_get_timezone) {
-		printf("[system_services]: fail to get \"get_timezone\" service\n");
+		printf("[system_services]: failed to get service \"get_timezone\"\n");
 		return -2;
 	}
 	system_services_get_username_from_id = service_query("get_username_from_id", "system");
 	if (NULL == system_services_get_username_from_id) {
-		printf("[system_services]: fail to get \"get_username_from_id\" service\n");
+		printf("[system_services]: failed to get service \"get_username_from_id\"\n");
 		return -3;
 	}
 	system_services_get_id_from_username = service_query("get_id_from_username", "system");
 	if (NULL == system_services_get_id_from_username) {
-		printf("[system_services]: fail to get \"get_id_from_username\" service\n");
+		printf("[system_services]: failed to get service \"get_id_from_username\"\n");
 		return -4;
 	}
 	system_services_get_user_ids = service_query("get_user_ids", "system");
 	if (NULL == system_services_get_user_ids) {
-		printf("[system_services]: fail to get \"get_user_ids\" service\n");
+		printf("[system_services]: failed to get service \"get_user_ids\"\n");
 		return -5;
 	}
 	system_services_lang_to_charset = service_query("lang_to_charset", "system");
 	if (NULL == system_services_lang_to_charset) {
-		printf("[system_services]: fail to get \"lang_to_charset\" service\n");
+		printf("[system_services]: failed to get service \"lang_to_charset\"\n");
 		return -6;
 	}
 	system_services_cpid_to_charset = service_query("cpid_to_charset", "system");
 	if (NULL == system_services_cpid_to_charset) {
-		printf("[system_services]: fail to get \"cpid_to_charset\" service\n");
+		printf("[system_services]: failed to get service \"cpid_to_charset\"\n");
 		return -7;
 	}
 	system_services_charset_to_cpid = service_query("charset_to_cpid", "system");
 	if (NULL == system_services_charset_to_cpid) {
-		printf("[system_services]: fail to get \"charset_to_cpid\" service\n");
+		printf("[system_services]: failed to get service \"charset_to_cpid\"\n");
 		return -8;
 	}
 	system_services_lcid_to_ltag = service_query("lcid_to_ltag", "system");
 	if (NULL == system_services_lcid_to_ltag) {
-		printf("[system_services]: fail to get \"lcid_to_ltag\" service\n");
+		printf("[system_services]: failed to get service \"lcid_to_ltag\"\n");
 		return -9;
 	}
 	system_services_ltag_to_lcid = service_query("ltag_to_lcid", "system");
 	if (NULL == system_services_ltag_to_lcid) {
-		printf("[system_services]: fail to get \"ltag_to_lcid\" service\n");
+		printf("[system_services]: failed to get service \"ltag_to_lcid\"\n");
 		return -10;
 	}
 	system_services_mime_to_extension = service_query("mime_to_extension", "system");
 	if (NULL == system_services_mime_to_extension) {
-		printf("[system_services]: fail to get \"mime_to_extension\" service\n");
+		printf("[system_services]: failed to get service \"mime_to_extension\"\n");
 		return -11;
 	}
 	system_services_extension_to_mime = service_query("extension_to_mime", "system");
 	if (NULL == system_services_extension_to_mime) {
-		printf("[system_services]: fail to get \"extension_to_mime\" service\n");
+		printf("[system_services]: failed to get service \"extension_to_mime\"\n");
 		return -12;
 	}
 	system_services_broadcast_event = service_query("broadcast_event", "system");
 	if (NULL == system_services_broadcast_event) {
-		printf("[system_services]: fail to get \"broadcast_event\" service\n");
+		printf("[system_services]: failed to get service \"broadcast_event\"\n");
 		return -13;
 	}
 	return 0;

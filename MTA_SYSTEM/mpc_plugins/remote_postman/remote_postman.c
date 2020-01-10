@@ -68,7 +68,7 @@ int remote_postman_run()
 {
 	single_rcpt_query = (SINGLE_RCPT_QUERY)query_service("single_rcpt_query");
 	if (NULL == single_rcpt_query) {
-		printf("[remote_postman]: fail to get \"single_rcpt_query\" service\n");
+		printf("[remote_postman]: failed to get service \"single_rcpt_query\"\n");
 		return -1;
 	}
 	if (0 != files_allocator_run()) {

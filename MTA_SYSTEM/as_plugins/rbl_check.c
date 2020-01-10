@@ -41,44 +41,39 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
 		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
 		if (NULL == check_retrying) {
-			printf("[dns_rbl]: fail to get \"check_retrying\" service\n");
+			printf("[dns_rbl]: failed to get service \"check_retrying\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[dns_rbl]: fail to get \"check_tagging\" service\n");
+			printf("[dns_rbl]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 							"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[dns_rbl]: fail to get "
-				"\"ip_whitelist_query\" service\n");
+			printf("[dns_rbl]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		domain_whitelist_query = (WHITELIST_QUERY)query_service(
 				                "domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[dns_rbl]: fail to get "
-				"\"domain_whitelist_query\" service\n");
+			printf("[dns_rbl]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		dns_rbl_judge = query_service("dns_rbl_judge");
 		if (NULL == dns_rbl_judge) {
-			printf("[dns_rbl]: fail to get "
-				"\"dns_rbl_judge\" service\n");
+			printf("[dns_rbl]: failed to get service \"dns_rbl_judge\"\n");
 			return FALSE;
 		}
 		rbl_cache_query = query_service("rbl_cache_query");
 		if (NULL == rbl_cache_query) {
-			printf("[dns_rbl]: fail to get "
-				"\"rbl_cache_query\" service\n");
+			printf("[dns_rbl]: failed to get service \"rbl_cache_query\"\n");
 			return FALSE;
 		}
 		rbl_cache_add = query_service("rbl_cache_add");
 		if (NULL == rbl_cache_add) {
-			printf("[dns_rbl]: fail to get "
-				"\"rbl_cache_add\" service\n");
+			printf("[dns_rbl]: failed to get service \"rbl_cache_add\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

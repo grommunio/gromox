@@ -34,13 +34,12 @@ int AS_LibMain(int reason, void **ppdata)
 		boundary_list_query = (BOUNDARY_LIST_QUERY)query_service(
 								"boundary_list_query");
 		if (NULL == boundary_list_query) {
-			printf("[boundary_filter]: fail to get \"boundary_list_query\" "
-					"service\n");
+			printf("[boundary_filter]: failed to get service \"boundary_list_query\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[boundary_filter]: fail to get \"check_tagging\" service\n");
+			printf("[boundary_filter]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

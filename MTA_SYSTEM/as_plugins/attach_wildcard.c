@@ -51,13 +51,12 @@ int AS_LibMain(int reason, void **ppdata, char *path)
         ip_whitelist_query = (WHITELIST_QUERY)query_service(
 				             "ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[attach_wildcard]: fail to get "
-					"\"ip_whitelist_query\" service\n");
+			printf("[attach_wildcard]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[attach_wildcard]: fail to get \"check_tagging\" service\n");
+			printf("[attach_wildcard]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

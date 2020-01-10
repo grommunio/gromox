@@ -35,15 +35,13 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 								"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[inbound_auth]: fail to get "
-					"\"ip_whitelist_query\" service\n");
+			printf("[inbound_auth]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		domain_whitelist_query = (WHITELIST_QUERY)query_service(
 									"domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[inbound_auth]: fail to get "
-					"\"domain_whitelist_query\" service\n");
+			printf("[inbound_auth]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		strcpy(file_name, get_plugin_name());

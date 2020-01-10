@@ -45,7 +45,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 
 		check_user = (CHECK_USER)query_service("check_user");
 		if (NULL == check_user) {
-			printf("[mailbox_collector]: fail to get \"check_user\" service\n");
+			printf("[mailbox_collector]: failed to get service \"check_user\"\n");
 			return FALSE;
 		}
 		/* get the plugin name from system api */

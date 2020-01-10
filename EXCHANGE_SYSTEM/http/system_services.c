@@ -29,46 +29,45 @@ int system_services_run()
 {
 	system_services_judge_ip = service_query("ip_filter_judge", "system");
 	if (NULL == system_services_judge_ip) {
-		printf("[system_services]: fail to get \"ip_filter_judge\" service\n");
+		printf("[system_services]: failed to get service \"ip_filter_judge\"\n");
 		return -1;
 	}
 	system_services_container_add_ip = service_query("ip_container_add",
 												"system");
 	if (NULL == system_services_container_add_ip) {
-		printf("[system_services]: fail to get \"ip_container_add\" service\n");
+		printf("[system_services]: failed to get service \"ip_container_add\"\n");
 		return -2;
 	}
 	system_services_container_remove_ip = service_query("ip_container_remove",
 												"system");
 	if (NULL == system_services_container_remove_ip) {
-		printf("[system_services]: fail to get \"ip_container_remove\" "
-			"service\n");
+		printf("[system_services]: failed to get service \"ip_container_remove\"\n");
 		return -3;
 	}
 	system_services_log_info = service_query("log_info", "system");
 	if (NULL == system_services_log_info) {
-		printf("[system_services]: fail to get \"log_info\" service\n");
+		printf("[system_services]: failed to get service \"log_info\"\n");
 		return -4;
 	}
 	system_services_judge_user = service_query("user_filter_judge", "system");
 	if (NULL == system_services_judge_user) {
-		printf("[system_services]: fail to get \"user_filter_judge\" service\n");
+		printf("[system_services]: failed to get service \"user_filter_judge\"\n");
 		return -5;
 	}
 	system_services_add_user_into_temp_list = service_query("user_filter_add", 
 												"system");
 	if (NULL == system_services_add_user_into_temp_list) {
-		printf("[system_services]: fail to get \"user_filter_add\" service\n");
+		printf("[system_services]: failed to get service \"user_filter_add\"\n");
 		return -6;
 	}
 	system_services_auth_login = service_query("auth_login", "system");
 	if (NULL == system_services_auth_login) {
-		printf("[system_services]: fail to get \"auth_login\" service\n");
+		printf("[system_services]: failed to get service \"auth_login\"\n");
 		return -7;
 	}
 	system_services_extension_to_mime = service_query("extension_to_mime", "system");
 	if (NULL == system_services_extension_to_mime) {
-		printf("[system_services]: fail to get \"extension_to_mime\" service\n");
+		printf("[system_services]: failed to get service \"extension_to_mime\"\n");
 		return -8;
 	}
 	return 0;

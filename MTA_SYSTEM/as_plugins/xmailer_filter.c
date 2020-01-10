@@ -52,34 +52,30 @@ int AS_LibMain(int reason, void **ppdata)
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 								"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[xmailer_filter]: fail to get \"ip_whitelist_query\" "
-				"service\n");
+			printf("[xmailer_filter]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		domain_whitelist_query = (WHITELIST_QUERY)query_service(
 									"domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[xmailer_filter]: fail to get \"domain_whitelist_query\" "
-					"service\n");
+			printf("[xmailer_filter]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		pthread_rwlock_init(&g_reload_lock, NULL);
 		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
 		if (NULL == check_retrying) {
-			printf("[xmailer_filter]: fail to get \"check_retrying\" "
-					"service\n");
+			printf("[xmailer_filter]: failed to get service \"check_retrying\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[xmailer_filter]: fail to get \"check_tagging\" service\n");
+			printf("[xmailer_filter]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		outmail_limitation_audit = (OUTMAIL_LIMITATION_AUDIT)query_service(
 				                    "outmail_limitation_audit");
 		if (NULL == outmail_limitation_audit) {
-			printf("[xmailer_filter]: fail to get "
-					"\"outmail_limitation_audit\" service\n");
+			printf("[xmailer_filter]: failed to get service \"outmail_limitation_audit\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

@@ -90,39 +90,36 @@ int gateway_dispatch_run()
 							"gateway_norcpt_audit");
 	dns_query_A = (DNS_QUERY)query_service("dns_query_A");
 	if (NULL == dns_query_A) {
-		printf("[gateway_dispatch]: fail to get \"dns_query_A\" service\n");
+		printf("[gateway_dispatch]: failed to get service \"dns_query_A\"\n");
 		return -1;
 	}
 	
 	dns_query_MX = (DNS_QUERY)query_service("dns_query_MX");
 	if (NULL == dns_query_MX) {
-		printf("[gateway_dispatch]: fail to get \"dns_query_MX\" service\n");
+		printf("[gateway_dispatch]: failed to get service \"dns_query_MX\"\n");
 		return -2;
 	}
 
 	dns_check_local = (CHECK_LOCAL)query_service("dns_check_local");
 	if (NULL == dns_check_local) {
-		printf("[gateway_dispatch]: fail to get \"dns_check_local\" service\n");
+		printf("[gateway_dispatch]: failed to get service \"dns_check_local\"\n");
 		return -3;
 	}
 	
 	if (NULL == gateway_nouser_audit) {
-		printf("[gateway_dispatch]: fail to get \"gateway_nouser_audit\" "
-				"service\n");
+		printf("[gateway_dispatch]: failed to get service \"gateway_nouser_audit\"\n");
 		return -4;
 	}
 	
 	if (NULL == gateway_norcpt_audit) {
-		printf("[gateway_dispatch]: fail to get \"gateway_norcpt_audit\" "
-				"service\n");
+		printf("[gateway_dispatch]: failed to get service \"gateway_norcpt_audit\"\n");
 		return -5;
 	}
 	
 	smtp_console_control = (CONSOLE_CONTROL)query_service(
 							"smtp_console_control");
 	if (NULL == smtp_console_control) {
-		printf("gateway_dispatch]: fail to get \"smtp_console_control\" "
-				"service\n");
+		printf("gateway_dispatch]: failed to get service \"smtp_console_control\"\n");
 		return -6;
 	}
 	

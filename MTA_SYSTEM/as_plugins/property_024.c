@@ -35,7 +35,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[property_024]: fail to get \"check_tagging\" service\n");
+			printf("[property_024]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

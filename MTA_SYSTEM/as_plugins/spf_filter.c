@@ -41,15 +41,13 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		ip_whitelist_query = (WHITELIST_QUERY)
 			query_service("ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[spf_filter]: fail to get "
-				"\"ip_whitelist_query\" service\n");
+			printf("[spf_filter]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		domain_whitelist_query = (WHITELIST_QUERY)
 			query_service("domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[spf_filter]: fail to get "
-				"\"domain_whitelist_query\" service\n");
+			printf("[spf_filter]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

@@ -36,12 +36,12 @@ int AS_LibMain(int reason, void **ppdata)
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
 		if (NULL == check_retrying) {
-			printf("[base64_encoding]: fail to get \"check_retrying\" service\n");
+			printf("[base64_encoding]: failed to get service \"check_retrying\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[base64_encoding]: fail to get \"check_tagging\" service\n");
+			printf("[base64_encoding]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		strcpy(file_name, get_plugin_name());

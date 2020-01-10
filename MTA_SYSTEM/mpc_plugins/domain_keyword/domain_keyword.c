@@ -96,8 +96,7 @@ int domain_keyword_run()
 
 	domain_keyword_get_homedir = query_service("get_domain_homedir");
 	if (NULL == domain_keyword_get_homedir) {
-		printf("[domain_keyword]: fail to get "
-			"\"get_domain_homedir\" service\n");
+		printf("[domain_keyword]: failed to get service \"get_domain_homedir\"\n");
 		return -1;
 	}
 

@@ -32,8 +32,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		forbidden_rcpt_query = (FORBIDDEN_RCPT_QUERY)query_service(
 			"forbidden_rcpt_query");
 		if (NULL == forbidden_rcpt_query) {
-			printf("[rcpt_filter]: fail to get \"forbidden_rcpt_query\" "
-				"service\n");
+			printf("[rcpt_filter]: failed to get service \"forbidden_rcpt_query\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

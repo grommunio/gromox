@@ -96,7 +96,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		if (NULL == backup_list_check) {
 			domain_list_check = query_service("check_domain");
 			if (NULL == domain_list_check) {
-				printf("[archive_agent]: fail to get \"check_domain\" service\n");
+				printf("[archive_agent]: failed to get service \"check_domain\"\n");
 				return FALSE;
 			}
 		}

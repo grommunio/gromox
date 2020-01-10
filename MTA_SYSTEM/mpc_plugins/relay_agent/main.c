@@ -72,25 +72,24 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		relay_domains_query = (RELAY_DOMAINS_QUERY)query_service(
 								"relay_domains_query");
 		if (NULL == relay_domains_query) {
-			printf("[relay_agent]: fail to get \"relay_domains_query\" "
-					"service\n");
+			printf("[relay_agent]: failed to get service \"relay_domains_query\"\n");
             return FALSE;
 		}
 		dns_query_A = (DNS_QUERY)query_service("dns_query_A");
 		if (NULL == dns_query_A) {
-			printf("[relay_agent]: fail to get \"dns_query_A\" service\n");
+			printf("[relay_agent]: failed to get service \"dns_query_A\"\n");
 			return FALSE;
 		}
 
 		dns_query_MX = (DNS_QUERY)query_service("dns_query_MX");
 		if (NULL == dns_query_MX) {
-			printf("[relay_agent]: fail to get \"dns_query_MX\" service\n");
+			printf("[relay_agent]: failed to get service \"dns_query_MX\"\n");
 			return FALSE;
 		}
 
 		dns_check_local = (CHECK_LOCAL)query_service("dns_check_local");
 		if (NULL == dns_check_local) {
-			printf("[relay_agent]: fail to get \"dns_check_local\" service\n");
+			printf("[relay_agent]: failed to get service \"dns_check_local\"\n");
 			return FALSE;
 		}
 		

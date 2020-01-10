@@ -2769,8 +2769,7 @@ int common_util_run()
 	}
 	common_util_lang_to_charset = query_service("lang_to_charset");
 	if (NULL == common_util_lang_to_charset) {
-		printf("[exchange_emsmdb]: fail to get"
-			" \"lang_to_charset\" service\n");
+		printf("[exchange_emsmdb]: failed to get service \"lang_to_charset\"\n");
 		return -1;
 	}
 	common_util_cpid_to_charset = query_service("cpid_to_charset");
@@ -2799,29 +2798,27 @@ int common_util_run()
 	}
 	common_util_verify_cpid = query_service("verify_cpid");
 	if (NULL == common_util_verify_cpid) {
-		printf("[exchange_emsmdb]: fail to get \"verify_cpid\" service\n");
+		printf("[exchange_emsmdb]: failed to get service \"verify_cpid\"\n");
 		return -1;
 	}
 	common_util_add_timer = query_service("add_timer");
 	if (NULL == common_util_add_timer) {
-		printf("[exchange_emsmdb]: fail to get \"add_timer\" service\n");
+		printf("[exchange_emsmdb]: failed to get service \"add_timer\"\n");
 		return -1;
 	}
 	common_util_cancel_timer = query_service("cancel_timer");
 	if (NULL == common_util_cancel_timer) {
-		printf("[exchange_emsmdb]: fail to get \"cancel_timer\" service\n");
+		printf("[exchange_emsmdb]: failed to get service \"cancel_timer\"\n");
 		return -1;
 	}
 	common_util_mime_to_extension = query_service("mime_to_extension");
 	if (NULL == common_util_mime_to_extension) {
-		printf("[exchange_emsmdb]: fail to get"
-			" \"mime_to_extension\" service\n");
+		printf("[exchange_emsmdb]: failed to get service \"mime_to_extension\"\n");
 		return -1;
 	}
 	common_util_extension_to_mime = query_service("extension_to_mime");
 	if (NULL == common_util_extension_to_mime) {
-		printf("[exchange_emsmdb]: fail to get"
-			" \"extension_to_mime\" service\n");
+		printf("[exchange_emsmdb]: failed to get service \"extension_to_mime\"\n");
 		return -1;
 	}
 	if (FALSE == oxcmail_init_library(g_org_name,

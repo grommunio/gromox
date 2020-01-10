@@ -42,22 +42,19 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		inmail_frequency_audit = (INMAIL_FREQUENCY_AUDIT)query_service(
 								"inmail_frequency_audit");
 		if (NULL == inmail_frequency_audit) {
-			printf("[inmail_frequency]: fail to get "
-					"\"inmail_frequency_audit\" service\n");
+			printf("[inmail_frequency]: failed to get service \"inmail_frequency_audit\"\n");
 			return FALSE;
 		}
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 								"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[inmail_frequency]: fail to get \"ip_whitelist_query\" "
-					"service\n");
+			printf("[inmail_frequency]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		domain_whitelist_query = (WHITELIST_QUERY)query_service(
 									"domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[inmail_frequency]: fail to get \"domain_whitelist_query\" "
-					"service\n");
+			printf("[inmail_frequency]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

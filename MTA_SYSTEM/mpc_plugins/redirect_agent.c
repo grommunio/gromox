@@ -19,8 +19,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		redirect_domains_query = (REDIRECT_DOMAINS_QUERY)query_service(
 								"redirect_domains_query");
 		if (NULL == redirect_domains_query) {
-			printf("[redirect_agent]: fail to get \"redirect_domains_query\" "
-				"service\n");
+			printf("[redirect_agent]: failed to get service \"redirect_domains_query\"\n");
             return FALSE;
 		}
         if (FALSE == register_hook(mail_hook)) {

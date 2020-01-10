@@ -40,13 +40,12 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		domain_whitelist_query = (WHITELIST_QUERY)query_service(
 									"domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[anti_enum]: fail to get \"domain_whitelist_query\" "
-				"service\n");
+			printf("[anti_enum]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[anti_enum]: fail to get \"check_tagging\" service\n");
+			printf("[anti_enum]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		strcpy(file_name, get_plugin_name());

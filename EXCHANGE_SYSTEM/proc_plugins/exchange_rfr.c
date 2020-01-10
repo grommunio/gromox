@@ -57,7 +57,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
 		get_id_from_username = query_service("get_id_from_username");
 		if (NULL == get_id_from_username) {
-			printf("[exchange_rfr]: fail to get \"get_id_from_username\" service\n");
+			printf("[exchange_rfr]: failed to get service \"get_id_from_username\"\n");
 			return FALSE;
 		}
 		pendpoint1 = register_endpoint("*", 6001);

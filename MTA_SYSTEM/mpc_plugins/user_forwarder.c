@@ -22,8 +22,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
 		get_forward_address = query_service("get_forward_address");
 		if (NULL == get_forward_address) {
-			printf("[user_forwarder]: fail to get \"get_forward_address\" "
-				"service\n");
+			printf("[user_forwarder]: failed to get service \"get_forward_address\"\n");
 			return FALSE;
 		}
         if (FALSE == register_hook(forwarder_process)) {

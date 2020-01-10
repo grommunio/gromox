@@ -72,7 +72,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
 		check_domain_list = query_service("check_domain");
 		if (NULL == check_domain_list) {
-			printf("[cdner_caching]: fail to get \"check_domain\" service\n");
+			printf("[cdner_caching]: failed to get service \"check_domain\"\n");
 			return FALSE;
 		}
 

@@ -396,7 +396,7 @@ int common_util_run()
 {
 	cpid_to_charset = query_service("cpid_to_charset");
 	if (NULL == cpid_to_charset) {
-		printf("[exchange_nsp]: fail to get \"cpid_to_charset\" service\n");
+		printf("[exchange_nsp]: failed to get service \"cpid_to_charset\"\n");
 		return -1;
 	}
 	g_server_guid = guid_random_new();

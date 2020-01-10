@@ -96,28 +96,25 @@ int group_monitor_run()
 
 	monitor_domains_check = query_service("monitor_domains_check");
 	if (NULL == monitor_domains_check) {
-		printf("[group_monitor]: fail to get \"monitor_domains_check\" "
-			"service\n");
+		printf("[group_monitor]: failed to get service \"monitor_domains_check\"\n");
 		return -1;
 	}
 	
 	monitor_domains_add = query_service("monitor_domains_add");
 	if (NULL == monitor_domains_add) {
-		printf("[group_monitor]: fail to get \"monitor_domains_add\" "
-			"service\n");
+		printf("[group_monitor]: failed to get service \"monitor_domains_add\"\n");
 		return -2;
 	}
 	
 	monitor_domains_remove = query_service("monitor_domains_remove");
 	if (NULL == monitor_domains_remove) {
-		printf("[group_monitor]: fail to get \"monitor_domains_remove\" "
-			"service\n");
+		printf("[group_monitor]: failed to get service \"monitor_domains_remove\"\n");
 		return -3;
 	}
 	
 	get_group_name = query_service("get_user_groupname");
 	if (NULL == get_group_name) {
-		printf("[group_monitor]: fail to get \"get_group_name\" service\n");
+		printf("[group_monitor]: failed to get service \"get_group_name\"\n");
 		return -4;
 	}
 	

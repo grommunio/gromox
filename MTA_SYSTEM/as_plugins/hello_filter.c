@@ -36,19 +36,18 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
 		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
 		if (NULL == check_retrying) {
-			printf("[hello_filter]: fail to get \"check_retrying\" service\n");
+			printf("[hello_filter]: failed to get service \"check_retrying\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[hello_filter]: fail to get \"check_tagging\" service\n");
+			printf("[hello_filter]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 				            "ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[hello_filter]: fail to get \"ip_whitelist_query\" "
-					"service\n");
+			printf("[hello_filter]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

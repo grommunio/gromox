@@ -86,8 +86,7 @@ int mail_approving_run()
 	
 	mail_approving_get_homedir = query_service("get_domain_homedir");
 	if (NULL == mail_approving_get_homedir) {
-		printf("[mail_approving]: fail to get "
-			"\"get_domain_homedir\" service\n");
+		printf("[mail_approving]: failed to get service \"get_domain_homedir\"\n");
 		return -1;
 	}
 

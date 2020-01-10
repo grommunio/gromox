@@ -235,56 +235,47 @@ int ab_tree_run()
 	
 	get_org_domains = query_service("get_org_domains");
 	if (NULL == get_org_domains) {
-		printf("[exchange_nsp]: fail to get"
-			" \"get_org_domains\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_org_domains\"\n");
 		return -1;
 	}
 	get_domain_info = query_service("get_domain_info");
 	if (NULL == get_domain_info) {
-		printf("[exchange_nsp]: fail to get"
-			" \"get_domain_info\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_domain_info\"\n");
 		return -1;
 	}
 	get_domain_groups = query_service("get_domain_groups");
 	if (NULL == get_domain_groups) {
-		printf("[exchange_nsp]: fail to get "
-			"\"get_domain_groups\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_domain_groups\"\n");
 		return -1;
 	}
 	get_group_classes = query_service("get_group_classes");
 	if (NULL == get_group_classes) {
-		printf("[exchange_nsp]: fail to get "
-			"\"get_group_classes\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_group_classes\"\n");
 		return -1;
 	}
 	get_sub_classes = query_service("get_sub_classes");
 	if (NULL == get_sub_classes) {
-		printf("[exchange_nsp]: fail to get"
-			" \"get_sub_classes\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_sub_classes\"\n");
 		return -1;
 	}
 	get_class_users = query_service("get_class_users");
 	if (NULL == get_class_users) {
-		printf("[exchange_nsp]: fail to get"
-			" \"get_class_users\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_class_users\"\n");
 		return -1;
 	}
 	get_group_users = query_service("get_group_users");
 	if (NULL == get_group_users) {
-		printf("[exchange_nsp]: fail to get"
-			" \"get_group_users\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_group_users\"\n");
 		return -1;
 	}
 	get_domain_users = query_service("get_domain_users");
 	if (NULL == get_domain_users) {
-		printf("[exchange_nsp]: fail to get "
-			"\"get_domain_users\" service\n");
+		printf("[exchange_nsp]: failed to get service \"get_domain_users\"\n");
 		return -1;
 	}
 	get_mlist_ids = query_service("get_mlist_ids");
 	if (NULL == get_mlist_ids) {
-		printf("exchange_nsp]: fail to get"
-			" \" get_mlist_ids\" service\n");
+		printf("exchange_nsp]: failed to get service \"get_mlist_ids\"\n");
 		return -1;
 	}
 	get_lang = query_service("get_lang");

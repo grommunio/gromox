@@ -79,42 +79,36 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		LINK_API(ppdata);
 		check_retrying = (CHECK_RETRYING)query_service("check_retrying");
 		if (NULL == check_retrying) {
-			printf("[content_filter]: fail to get "
-					"\"check_retrying\" service\n");
+			printf("[content_filter]: failed to get service \"check_retrying\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[content_filter]: fail to get "
-					"\"check_tagging\" service\n");
+			printf("[content_filter]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 							"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[content_filter]: fail to get "
-				"\"ip_whitelist_query\" service\n");
+			printf("[content_filter]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		domain_whitelist_query = (WHITELIST_QUERY)
 			query_service("domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[content_filter]: fail to get "
-				"\"domain_whitelist_query\" service\n");
+			printf("[content_filter]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		from_filter_query = (STRING_FILTER_QUERY)
 				query_service("from_filter_query");
 		if (NULL == from_filter_query) {
-			printf("[content_filter]: fail to get "
-				"\"from_filter_query\" service\n");
+			printf("[content_filter]: failed to get service \"from_filter_query\"\n");
 			return FALSE;
 		}
 		domain_filter_query = (STRING_FILTER_QUERY)
 				query_service("domain_filter_query");
 		if (NULL == domain_filter_query) {
-			printf("[content_filter]: fail to get "
-				"\"domain_filter_query\" service\n");
+			printf("[content_filter]: failed to get service \"domain_filter_query\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)

@@ -33,8 +33,7 @@ int AS_LibMain(int reason, void **ppdata)
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 							"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[auth_whitelist]: fail to get \"ip_whitelist_query\" "
-					"service\n");
+			printf("[auth_whitelist]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 
 		}

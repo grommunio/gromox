@@ -38,13 +38,12 @@ int AS_LibMain(int reason, void **ppdata)
         domain_whitelist_query = (WHITELIST_QUERY)query_service(
                                  "domain_whitelist_query");
         if (NULL == domain_whitelist_query) {
-            printf("[subject_dots]: fail to get \"domain_whitelist_query\" "
-                    "service\n");
+            printf("[subject_dots]: failed to get service \"domain_whitelist_query\"\n");
             return FALSE;
         }
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[subject_dots]: fail to get \"check_tagging\" service\n");
+			printf("[subject_dots]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

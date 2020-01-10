@@ -53,35 +53,30 @@ BOOL AS_LibMain(int reason, void **ppdata)
 		ip_whitelist_query = (WHITELIST_QUERY)query_service(
 								"ip_whitelist_query");
 		if (NULL == ip_whitelist_query) {
-			printf("[special_protection]: fail to get "
-				"\"ip_whitelist_query\" service\n");
+			printf("[special_protection]: failed to get service \"ip_whitelist_query\"\n");
 			return FALSE;
 		}
 		domain_whitelist_query = (WHITELIST_QUERY)query_service(
 									"domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[special_protection]: fail to get "
-				"\"domain_whitelist_query\" service\n");
+			printf("[special_protection]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		special_protection_audit = (SPECIAL_PROTECTION_AUDIT)query_service(
 									"special_protection_audit");
 		if (NULL == special_protection_audit) {
-			printf("[special_protection]: fail to get "
-					"\"special_protection_audit\" service\n");
+			printf("[special_protection]: failed to get service \"special_protection_audit\"\n");
 			return FALSE;
 		}
 		protection_ip_audit = (SPECIAL_PROTECTION_AUDIT)query_service(
 								"protection_ip_audit");
 		if (NULL == protection_ip_audit) {
-			printf("[special_protection]: fail to get "
-					"\"protection_ip_audit\" service\n");
+			printf("[special_protection]: failed to get service \"protection_ip_audit\"\n");
 			return FALSE;
 		}
 		check_tagging = (CHECK_TAGGING)query_service("check_tagging");
 		if (NULL == check_tagging) {
-			printf("[special_protection]: fail to get "
-					"\"check_tagging\" service\n");
+			printf("[special_protection]: failed to get service \"check_tagging\"\n");
 			return FALSE;
 		}
 		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");

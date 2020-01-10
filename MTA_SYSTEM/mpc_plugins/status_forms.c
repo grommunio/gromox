@@ -176,8 +176,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
 		smtp_console_control = query_service("smtp_console_control");
 		if (NULL == smtp_console_control) {
-			printf("[status_forms]: fail to get service "
-				"\"smtp_console_control\"\n");
+			printf("[status_forms]: failed to get service \"smtp_console_control\"\n");
 			return FALSE;
 		}
 		

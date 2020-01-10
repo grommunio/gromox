@@ -35,8 +35,7 @@ int AS_LibMain(int reason, void **ppdata)
 		domain_whitelist_query = (WHITELIST_QUERY)query_service(
 									"domain_whitelist_query");
 		if (NULL == domain_whitelist_query) {
-			printf("[scamming_filter]: fail to get "
-				"\"domain_whitelist_query\" service\n");
+			printf("[scamming_filter]: failed to get service \"domain_whitelist_query\"\n");
 			return FALSE;
 		}
 		strcpy(file_name, get_plugin_name());
