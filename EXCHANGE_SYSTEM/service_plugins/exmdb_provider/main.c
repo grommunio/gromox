@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <libHX/string.h>
 #include "bounce_producer.h"
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "exmdb_listener.h"
 #include "exmdb_client.h"
 #include "exmdb_server.h"

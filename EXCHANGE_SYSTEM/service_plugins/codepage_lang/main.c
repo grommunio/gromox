@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "codepage_lang.h"
 #include <stdio.h>
 #include <string.h>

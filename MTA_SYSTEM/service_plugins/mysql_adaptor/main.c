@@ -1,5 +1,5 @@
 #include <errno.h>
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include "service_auth.h"
 #include "mysql_adaptor.h"
 #include "uncheck_domains.h"

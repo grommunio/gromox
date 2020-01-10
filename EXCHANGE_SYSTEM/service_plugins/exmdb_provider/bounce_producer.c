@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include "bounce_producer.h"
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "common_util.h"
 #include "single_list.h"
 #include "mail_func.h"

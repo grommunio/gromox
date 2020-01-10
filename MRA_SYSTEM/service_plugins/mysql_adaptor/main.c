@@ -1,5 +1,5 @@
 #include <errno.h>
-#include <gromox/mrasvc_common.h>
+#include <gromox/svc_common.h>
 #include "mysql_adaptor.h"
 #include "util.h"
 #include "config_file.h"

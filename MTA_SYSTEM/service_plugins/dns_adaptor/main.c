@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include "dns_adaptor.h"
 #include "inbound_ips.h"
 #include "config_file.h"

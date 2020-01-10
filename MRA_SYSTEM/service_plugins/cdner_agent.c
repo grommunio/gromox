@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include <gromox/mrasvc_common.h>
+#include <gromox/svc_common.h>
 #include "util.h"
 #include "single_list.h"
 #include "array.h"

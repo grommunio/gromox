@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include "invalid_user.h"
 #include "config_file.h"
 #include "util.h"

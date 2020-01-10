@@ -1,4 +1,4 @@
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include "util.h"
 #include "double_list.h"
 #include "cdner_agent.h"

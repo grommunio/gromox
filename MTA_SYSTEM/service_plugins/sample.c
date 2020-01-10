@@ -1,5 +1,5 @@
 #include <stdbool.h>
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include <stdio.h>
 #include <string.h>
 

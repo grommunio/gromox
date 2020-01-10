@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "ip_table.h"
 #include "config_file.h"
 #include <stdio.h>

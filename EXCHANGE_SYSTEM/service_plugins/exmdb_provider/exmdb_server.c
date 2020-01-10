@@ -1,4 +1,4 @@
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "lib_buffer.h"

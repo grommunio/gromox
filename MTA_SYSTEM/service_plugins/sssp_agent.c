@@ -1,7 +1,7 @@
 /* plugin for the Sophs Simple Scanning Protocol (run by savdid(8)) */
 #include <stdbool.h>
 #include <libHX/string.h>
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include "util.h"
 #include "config_file.h"
 #include "double_list.h"

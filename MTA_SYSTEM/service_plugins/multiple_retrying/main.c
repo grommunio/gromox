@@ -1,6 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include "multiple_retrying.h"
 #include "proxy_retrying.h"
 #include "config_file.h"

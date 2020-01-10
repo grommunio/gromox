@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <gromox/mtasvc_common.h>
+#include <gromox/svc_common.h>
 #include "util.h"
 #include "mail_func.h"
 #include "config_file.h"

@@ -2,7 +2,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "bounce_producer.h"
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "exmdb_client.h"

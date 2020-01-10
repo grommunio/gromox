@@ -10,7 +10,7 @@
 #include "common_util.h"
 #include "exmdb_server.h"
 #include "alloc_context.h"
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>

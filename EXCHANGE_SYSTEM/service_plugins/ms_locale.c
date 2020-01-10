@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <libHX/string.h>
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "list_file.h"
 #include "int_hash.h"
 #include "str_hash.h"

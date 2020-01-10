@@ -1,6 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>

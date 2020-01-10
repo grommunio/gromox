@@ -1,6 +1,6 @@
 #include <stdbool.h>
 #include <string.h>
-#include <gromox/exsvc_common.h>
+#include <gromox/svc_common.h>
 #include <stdio.h>
 
 static void console_talk(int argc, char **argv, char *result, int length);
