@@ -15,9 +15,9 @@ void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
 extern int mysql_adaptor_run(void);
 extern int mysql_adaptor_stop(void);
 extern void mysql_adaptor_free(void);
-BOOL mysql_adaptor_login(const char *username, const char *password,
-	char *maildir, char *lang, char *reason, int length);
-	
+extern BOOL mysql_adaptor_login_exch(const char *username, const char *password, char *maildir, char *lang, char *reason, int length);
+extern BOOL mysql_adaptor_login_pop3(const char *username, const char *password, char *maildir, char *lang, char *reason, int length);
+extern BOOL mysql_adaptor_login_smtp(const char *username, const char *password, char *reason, int length);
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password);
 
@@ -44,9 +44,8 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);
 BOOL mysql_adaptor_get_maildir(const char *username, char *maildir);
 
 BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname);
-
-BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir);
-
+extern BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir);
+extern BOOL mysql_adaptor_get_domain_homedir(const char *domainname, char *homedir);
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir);
 
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id);
@@ -85,6 +84,14 @@ BOOL mysql_adaptor_check_mlist_include(
 int mysql_adaptor_get_param(int param);
 
 void mysql_adaptor_set_param(int param, int value);
-
+extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
+extern BOOL mysql_adaptor_check_user(const char *username, char *path);
+extern BOOL mysql_adaptor_check_virtual(const char *username, const char *from, BOOL *pb_expanded, MEM_FILE *pfile);
+extern BOOL mysql_adaptor_get_forward(const char *username, int *ptype, char *destination);
+extern BOOL mysql_adaptor_get_groupname(const char *username, char *groupname);
+extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int *presult, MEM_FILE *pfile);
+extern BOOL mysql_adaptor_get_user_info(const char *username, char *maildir, char *lang, char *timezone);
+extern BOOL mysql_adaptor_get_username(int user_id, char *username);
+extern void mysql_adaptor_disable_smtp(const char *username);
 
 #endif

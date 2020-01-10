@@ -59,15 +59,16 @@ static DOUBLE_LIST      g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static PLUG_ENTITY		*g_cur_plug;
 static int				g_context_num;
-static const char *const *g_plugin_names;
+static const char *const *g_plugin_names, *g_program_identifier;
 
 /*
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-void service_init(int context_num, const char *plugin_path,
+void service_init(const char *prog_id, int context_num, const char *plugin_path,
     const char *config_path, const char *data_path, const char *const *names)
 {
+	g_program_identifier = prog_id;
 	g_context_num = context_num;
 	strcpy(g_init_path, plugin_path);
 	strcpy(g_config_path, config_path);
@@ -338,6 +339,8 @@ static void* service_query_service(const char *service)
 	if (0 == strcmp(service, "get_host_ID")) {
 		return service_get_host_ID;
 	}
+	if (strcmp(service, "_program_identifier") == 0)
+		return const_cast(char *, g_program_identifier);
 	return NULL;
 }
 

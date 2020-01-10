@@ -147,9 +147,9 @@ int bounce_producer_run()
 		printf("[mlist_expand]: failed to get service \"get_user_lang\"\n");
 		return -2;
 	}
-	bounce_producer_get_timezone = query_service("get_user_timezone");
+	bounce_producer_get_timezone = query_service("get_timezone");
 	if (NULL == bounce_producer_get_timezone) {
-		printf("[mlist_expand]: failed to get service \"get_user_timezone\"\n");
+		printf("[mlist_expand]: failed to get service \"get_timezone\"\n");
 		return -3;
 	}
 	bounce_producer_lang_to_charset = query_service("lang_to_charset");

@@ -43,7 +43,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libexsvc_lang_charset.so",
 	"libexsvc_mime_extension.so",
 	"libexsvc_ms_locale.so",
-	"libexsvc_mysql_adaptor.so",
+	"libgxsvc_mysql_adaptor.so",
 	NULL,
 };
 
@@ -348,7 +348,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	service_init(threads_num, service_path, config_path, data_path,
+	service_init("midb", threads_num, service_path, config_path, data_path,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
 	system_services_init();
 	

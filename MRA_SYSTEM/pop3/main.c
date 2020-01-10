@@ -43,7 +43,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmrasvc_ip_filter.so",
 	"libmrasvc_log_plugin.so",
 	"libmrasvc_midb_agent.so",
-	"libmrasvc_mysql_adaptor.so",
+	"libgxsvc_mysql_adaptor.so",
 	"libmrasvc_user_filter.so",
 	NULL,
 };
@@ -401,7 +401,7 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
-	service_init(context_num, service_plugin_path,
+	service_init("pop3", context_num, service_plugin_path,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"

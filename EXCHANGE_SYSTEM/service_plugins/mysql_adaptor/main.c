@@ -1,6 +1,9 @@
 #include <errno.h>
 #include <gromox/svc_common.h>
+#include "cdner_agent.h"
 #include "mysql_adaptor.h"
+#include "../../../MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.h"
+#include "uncheck_domains.h"
 #include "util.h"
 #include "config_file.h"
 #include <string.h>
@@ -13,6 +16,12 @@ static char g_config_path[256];
 
 static void console_talk(int argc, char **argv, char *result, int length);
 
+static bool is_mta()
+{
+	const char *i = query_service("_program_identifier");
+	return strcmp(i, "smtp") == 0 || strcmp(i, "delivery") == 0;
+}
+
 BOOL SVC_LibMain(int reason, void** ppdata)
 {
 	CONFIG_FILE  *pfile;
@@ -20,10 +29,11 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 	char config_path[256];
 	char uncheck_path[256];
 	char temp_buff[128];
-	char *str_value, *psearch;
+	char *str_value, *psearch, cdner_host_ip[16];
 	char mysql_host[256], mysql_user[256];
 	char *mysql_passwd, db_name[256]; 
 	int conn_num, scan_interval, mysql_port, timeout;
+	int cdner_conn_num, cdner_host_port;
 
     switch(reason) {
     case PLUGIN_INIT:
@@ -137,19 +147,72 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 				timeout);
 		}
 		
+		str_value = config_file_get_value(pfile, "CDNER_CONNECTION_NUM");
+		if (str_value == nullptr) {
+			cdner_conn_num = 0;
+		} else {
+			cdner_conn_num = atoi(str_value);
+			if (cdner_conn_num < 0 || cdner_conn_num > 20)
+				cdner_conn_num = 0;
+		}
+		if (cdner_conn_num == 0)
+			printf("[mysql_adaptor]: cdner agent is switched off\n");
+		else
+			printf("[mysql_adaptor]: cdner connection number is %d\n", cdner_conn_num);
+
+		str_value = config_file_get_value(pfile, "CDNER_HOST_IP");
+		if (str_value == nullptr)
+			strcpy(cdner_host_ip, "127.0.0.1");
+		else
+			strcpy(cdner_host_ip, str_value);
+		if (cdner_conn_num > 0)
+			printf("[mysql_adaptor]: cdner host is %s\n", cdner_host_ip);
+
+		str_value = config_file_get_value(pfile, "CDNER_HOST_PORT");
+		if (str_value == nullptr) {
+			cdner_host_port = 10001;
+			config_file_set_value(pfile, "CDNER_HOST_PORT", "10001");
+		} else {
+			cdner_host_port = atoi(str_value);
+			if (cdner_host_port <= 0) {
+				cdner_host_port = 10001;
+				config_file_set_value(pfile, "CDNER_HOST_PORT", "10001");
+			}
+		}
+		if (cdner_conn_num > 0)
+			printf("[mysql_adaptor]: cdner port is %d\n", cdner_host_port);
+
+		cdner_agent_init(cdner_conn_num, cdner_host_ip, cdner_host_port);
+		uncheck_domains_init(uncheck_path);
 		mysql_adaptor_init(conn_num, scan_interval, mysql_host,
 			mysql_port, mysql_user, mysql_passwd, db_name, timeout);
+		if (is_mta())
+			service_auth_init(get_context_num(), mysql_adaptor_login_smtp);
 		config_file_free(pfile);
 		
+		if (cdner_agent_run() != 0) {
+			printf("[mysql_adaptor]: failed to run cdner agent\n");
+			return false;
+		}
+		if (uncheck_domains_run() != 0) {
+			printf("[mysql_adaptor]: failed to run uncheck domains\n");
+			return false;
+		}
 		if (0 != mysql_adaptor_run()) {
 			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("auth_login",
-			mysql_adaptor_login)) {
-			printf("[mysql_adaptor]: failed to register "
-							"\"auth_login\" service\n");
+		if (is_mta() && service_auth_run() != 0) {
+			printf("[mysql_adaptor]: failed to run service auth\n");
+			return false;
+		}
+		if (FALSE == register_service("auth_login_exch", mysql_adaptor_login_exch)) {
+			printf("[mysql_adaptor]: failed to register \"auth_login_exch\" service\n");
 			return FALSE;
+		}
+		if (FALSE == register_service("auth_login_pop3", mysql_adaptor_login_pop3)) {
+			printf("[mysql_adaptor]: failed to register \"auth_login_pop3\" service\n");
+			return false;
 		}
 		if (FALSE == register_service("set_password",
 			mysql_adaptor_setpasswd)) {
@@ -228,6 +291,10 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			printf("[mysql_adaptor]: failed to register"
 						" \"get_homedir\" service\n");
 			return FALSE;
+		}
+		if (FALSE == register_service("get_domain_homedir", mysql_adaptor_get_domain_homedir)) {
+			printf("[mysql_adaptor]: failed to register service \"get_domain_homedir\"\n");
+			return false;
 		}
 		if (FALSE == register_service("get_homedir_by_id",
 			mysql_adaptor_get_homedir_by_id)) {
@@ -318,6 +385,49 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			printf("[mysql_adaptor]: failed to register"
 				" \"check_mlist_include\" service\n");
 			return FALSE;
+		}
+		if (!register_service("check_same_org2", mysql_adaptor_check_same_org2)) {
+			printf("[mysql_adaptor]: failed to register service \"check_same_org2\"\n");
+			return false;
+		}
+		if (!register_service("check_user", mysql_adaptor_check_user)) {
+			printf("[mysql_adaptor]: failed to register service \"check_user\"\n");
+			return false;
+		}
+		if (!register_service("check_virtual_mailbox", mysql_adaptor_check_virtual)) {
+			printf("[mysql_adaptor]: failed to register service \"check_virtual_mailbox\"\n");
+			return false;
+		}
+		if (!register_service("get_forward_address", mysql_adaptor_get_forward)) {
+			printf("[mysql_adaptor]: failed to register service \"get_forward_address\"\n");
+			return false;
+		}
+		if (!register_service("get_user_groupname", mysql_adaptor_get_groupname)) {
+			printf("[mysql_adaptor]: failed to register service \"get_groupname\"\n");
+			return false;
+		}
+		if (!register_service("get_mail_list", mysql_adaptor_get_mlist)) {
+			printf("[mysql_adaptor]: failed to register service \"get_mail_list\"\n");
+			return false;
+		}
+		if (!register_service("get_user_info", mysql_adaptor_get_user_info)) {
+			printf("[mysql_adaptor]: failed to register service \"get_user_info\"\n");
+			return false;
+		}
+		if (!register_service("get_username", mysql_adaptor_get_username)) {
+			printf("[mysql_adaptor]: failed to register service \"get_user_name\"\n");
+			return false;
+		}
+		if (!register_service("disable_smtp", mysql_adaptor_disable_smtp)) {
+			printf("[mysql_adaptor]: failed to register service \"disable_smtp\"\n");
+			return false;
+		}
+		if (!register_service("auth_ehlo", service_auth_ehlo) ||
+		    !register_service("auth_process", service_auth_process) ||
+		    !register_service("auth_retrieve", service_auth_retrieve)||
+		    !register_service("auth_clear", service_auth_clear)) {
+			printf("[mysql_adaptor]: failed to register auth services\n");
+			return false;
 		}
 		register_talk(console_talk);
         return TRUE;

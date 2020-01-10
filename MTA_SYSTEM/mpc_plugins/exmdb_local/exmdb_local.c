@@ -126,9 +126,9 @@ int exmdb_local_run()
 		printf("[exmdb_local]: failed to get service \"get_user_lang\"\n");
 		return -1;
 	}
-	exmdb_local_get_timezone = query_service("get_user_timezone");
+	exmdb_local_get_timezone = query_service("get_timezone");
 	if (NULL == exmdb_local_get_timezone) {
-		printf("[exmdb_local]: failed to get service \"get_user_timezone\"\n");
+		printf("[exmdb_local]: failed to get service \"get_timezone\"\n");
 		return -1;
 	}
 	exmdb_local_check_same_org2 = query_service("check_same_org2");

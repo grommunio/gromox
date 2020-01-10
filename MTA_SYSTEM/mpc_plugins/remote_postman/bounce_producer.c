@@ -143,7 +143,7 @@ int bounce_producer_run()
 {
 
 	bounce_producer_get_lang = query_service("get_user_lang");
-	bounce_producer_get_timezone = query_service("get_user_timezone");
+	bounce_producer_get_timezone = query_service("get_timezone");
 	bounce_producer_lang_to_charset = query_service("lang_to_charset");
 
 	single_list_init(&g_resource_list);

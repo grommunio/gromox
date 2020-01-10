@@ -72,7 +72,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_mime_extension.so",
 	"libmtasvc_monitor_domains.so",
 	"libmtasvc_ms_locale.so",
-	"libmtasvc_mysql_adaptor.so",
+	"libgxsvc_mysql_adaptor.so",
 	"libmtasvc_relay_domains.so",
 	"libmtasvc_remote_delivery_audit.so",
 	"libmtasvc_remote_delivery_forbidden.so",
@@ -339,7 +339,7 @@ int main(int argc, const char **argv)
         }
     }
 
-	service_init(threads_max + free_contexts, service_plugin_path,
+	service_init("delivery", threads_max + free_contexts, service_plugin_path,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"

@@ -63,7 +63,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libexsvc_log_plugin.so",
 	"libexsvc_mime_extension.so",
 	"libexsvc_ms_locale.so",
-	"libexsvc_mysql_adaptor.so",
+	"libgxsvc_mysql_adaptor.so",
 	"libexsvc_timer_agent.so",
 	"libexsvc_user_filter.so",
 	NULL,
@@ -525,7 +525,7 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
-	service_init(context_num, service_plugin_path,
+	service_init("http", context_num, service_plugin_path,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"

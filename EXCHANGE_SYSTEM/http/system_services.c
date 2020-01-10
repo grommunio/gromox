@@ -60,9 +60,9 @@ int system_services_run()
 		printf("[system_services]: failed to get service \"user_filter_add\"\n");
 		return -6;
 	}
-	system_services_auth_login = service_query("auth_login", "system");
+	system_services_auth_login = service_query("auth_login_exch", "system");
 	if (NULL == system_services_auth_login) {
-		printf("[system_services]: failed to get service \"auth_login\"\n");
+		printf("[system_services]: failed to get service \"auth_login_exch\"\n");
 		return -7;
 	}
 	system_services_extension_to_mime = service_query("extension_to_mime", "system");
@@ -87,7 +87,7 @@ int system_services_stop()
 	service_release("log_info", "system");
 	service_release("user_filter_judge", "system");
 	service_release("user_filer_add", "system");
-	service_release("auth_login", "system");
+	service_release("auth_login_exch", "system");
 	service_release("extension_to_mime", "system");
 	return 0;
 }

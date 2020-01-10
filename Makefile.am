@@ -174,7 +174,6 @@ mta_plugins = \
 	libmtasvc_monitor_domains.la \
 	libmtasvc_ms_locale.la \
 	libmtasvc_multiple_retrying.la \
-	libmtasvc_mysql_adaptor.la \
 	libmtasvc_outmail_frequency_audit.la \
 	libmtasvc_outmail_limitation_audit.la \
 	libmtasvc_protection_ip_audit.la \
@@ -348,7 +347,6 @@ noinst_DATA += \
 	libmtasvc_monitor_domains.ldd \
 	libmtasvc_ms_locale.la \
 	libmtasvc_multiple_retrying.la \
-	libmtasvc_mysql_adaptor.la \
 	libmtasvc_outmail_frequency_audit.ldd \
 	libmtasvc_outmail_limitation_audit.ldd \
 	libmtasvc_protection_ip_audit.ldd \
@@ -376,7 +374,6 @@ mra_plugins = \
 	libmrasvc_ip_filter.la \
 	libmrasvc_log_plugin.la \
 	libmrasvc_midb_agent.la \
-	libmrasvc_mysql_adaptor.la \
 	libmrasvc_sample.la \
 	libmrasvc_user_filter.la
 noinst_DATA += \
@@ -387,7 +384,6 @@ noinst_DATA += \
 	libmrasvc_ip_filter.ldd \
 	libmrasvc_log_plugin.ldd \
 	libmrasvc_midb_agent.ldd \
-	libmrasvc_mysql_adaptor.ldd \
 	libmrasvc_sample.ldd \
 	libmrasvc_user_filter.ldd
 exchange_progs = http medusa midb zcore
@@ -401,7 +397,6 @@ exchange_plugins = \
 	libexsvc_log_plugin.la \
 	libexsvc_mime_extension.la \
 	libexsvc_ms_locale.la \
-	libexsvc_mysql_adaptor.la \
 	libexsvc_sample.la \
 	libexsvc_user_filter.la \
 	libexsvc_timer_agent.la \
@@ -410,7 +405,8 @@ exchange_plugins = \
 	libexproc_exchange_rfr.la \
 	libexproc_sample.la \
 	libexhpm_proxy.la \
-	libexhpm_sample.la
+	libexhpm_sample.la \
+	libgxsvc_mysql_adaptor.la
 noinst_DATA += \
 	libexsvc_codepage_lang.ldd \
 	libexsvc_event_proxy.ldd \
@@ -421,7 +417,6 @@ noinst_DATA += \
 	libexsvc_log_plugin.ldd \
 	libexsvc_mime_extension.ldd \
 	libexsvc_ms_locale.ldd \
-	libexsvc_mysql_adaptor.ldd \
 	libexsvc_sample.ldd \
 	libexsvc_user_filter.ldd \
 	libexsvc_timer_agent.ldd \
@@ -430,7 +425,8 @@ noinst_DATA += \
 	libexproc_exchange_rfr.ldd \
 	libexproc_sample.ldd \
 	libexhpm_proxy.ldd \
-	libexhpm_sample.ldd
+	libexhpm_sample.ldd \
+	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = alock amidb amysql asensor asession digest freebusy pandora rtf2html
 domain_admin_progs = da_daemon domain_approve domain_archive domain_binput domain_classes domain_folders domain_groups domain_info domain_keyword domain_limit domain_log domain_main domain_mlists domain_monitor domain_setup domain_sign domain_statistic domain_users fcgi_cgi group_archive group_binput group_classes group_clists group_info group_log group_main group_monitor group_users posidon synchronizer
 system_admin_progs = adaptor admin_archive admin_insulation admin_log admin_main archiver_list area_list areadb athena bl_delete boundary_blacklist cdnd sa_daemon daily_statistic daily_status dispasswd dns_table domain_blacklist domain_list domain_mailbox domain_whitelist dynamic_dnslist enpasswd event forward_table from_blacklist from_replace ip_blacklist ip_whitelist ipdomain_table keyword_group keyword_statistic keyword_upload locker mensual_statistic message_sign mkmidb mkprivate mkpublic monitor org_list pad pop_porting rcpt_blacklist rebuild relay_allow relay_domains relay_table rsyncd rsyncer scanner sendmail sensor session single_rcpt status_rpc supervising_list supervising_statistic supervisor synchronization_rpc system_backup system_info system_password system_setup system_users tagging_whitelist timer userinfo xmailer_blacklist
@@ -1077,10 +1073,6 @@ libmtasvc_multiple_retrying_la_SOURCES = MTA_SYSTEM/service_plugins/multiple_ret
 libmtasvc_multiple_retrying_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_multiple_retrying_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_multiple_retrying_la_DEPENDENCIES = ${default_sym}
-libmtasvc_mysql_adaptor_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c MTA_SYSTEM/service_plugins/mysql_adaptor/cdner_agent.c MTA_SYSTEM/service_plugins/mysql_adaptor/main.c MTA_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c MTA_SYSTEM/service_plugins/mysql_adaptor/uncheck_domains.c
-libmtasvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
-EXTRA_libmtasvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
 libmtasvc_outmail_frequency_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
 libmtasvc_outmail_frequency_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
 libmtasvc_outmail_frequency_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
@@ -1187,10 +1179,6 @@ libmrasvc_midb_agent_la_SOURCES = MRA_SYSTEM/service_plugins/midb_agent.c
 libmrasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
-libmrasvc_mysql_adaptor_la_SOURCES = MRA_SYSTEM/service_plugins/mysql_adaptor/main.c MRA_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c
-libmrasvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
-libmrasvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la
-EXTRA_libmrasvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
 libmrasvc_sample_la_SOURCES = ${libexsvc_sample_la_SOURCES}
 libmrasvc_sample_la_LDFLAGS = ${libexsvc_sample_la_LDFLAGS}
 libmrasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
@@ -1243,10 +1231,6 @@ libexsvc_ms_locale_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ms_locale.c
 libexsvc_ms_locale_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_ms_locale_la_LIBADD = ${HX_LIBS} libgromox_common.la
 EXTRA_libexsvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libexsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c
-libexsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la
-EXTRA_libexsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
 libexsvc_sample_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/sample.c
 libexsvc_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_user_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/str_filter/main.c EXCHANGE_SYSTEM/service_plugins/str_filter/str_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/temp_list.c
@@ -1279,6 +1263,10 @@ libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexhpm_proxy_la_DEPENDENCIES = ${default_sym}
 libexhpm_sample_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/sample.c
 libexhpm_sample_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/cdner_agent.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/uncheck_domains.c MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
+libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la
+EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
 
 # AGENT_SERVICE
 amidb_SOURCES = AGENT_SERVICE/amidb.c

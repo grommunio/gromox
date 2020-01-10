@@ -152,7 +152,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_mail_from_audit.so",
 	"libmtasvc_mail_subject_audit.so",
 	"libmtasvc_midb_agent.so",
-	"libmtasvc_mysql_adaptor.so",
+	"libgxsvc_mysql_adaptor.so",
 	"libmtasvc_outmail_frequency_audit.so",
 	"libmtasvc_outmail_limitation_audit.so",
 	"libmtasvc_protection_ip_audit.so",
@@ -661,7 +661,7 @@ int main(int argc, const char **argv)
 			goto EXIT_PROGRAM;
 		}
 	}
-	service_init(context_num, service_plugin_path,
+	service_init("smtp", context_num, service_plugin_path,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"

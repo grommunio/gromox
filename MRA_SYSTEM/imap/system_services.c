@@ -92,9 +92,9 @@ int system_services_run()
 		printf("[system_services]: failed to get service \"user_filter_add\"\n");
 		return -6;
 	}
-	system_services_auth_login = service_query("auth_login", "system");
+	system_services_auth_login = service_query("auth_login_pop3", "system");
 	if (NULL == system_services_auth_login) {
-		printf("[system_services]: failed to get service \"auth_login\"\n");
+		printf("[system_services]: failed to get service \"auth_login_pop3\"\n");
 		return -7;
 	}
 	
@@ -302,7 +302,7 @@ int system_services_stop()
 	service_release("user_filer_add", "system");
 	service_release("log_info", "system");
 	service_release("info_user", "system");
-	service_release("auth_login", "system");
+	service_release("auth_login_pop3", "system");
 	service_release("get_mail_id", "system");
 	service_release("get_mail_uid", "system");
 	service_release("summary_folder", "system");

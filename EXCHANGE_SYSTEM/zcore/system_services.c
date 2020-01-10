@@ -166,11 +166,9 @@ int system_services_run()
 		printf("[system_services]: failed to get service \"extension_to_mime\"\n");
 		return -17;
 	}
-	system_services_auth_login = service_query(
-						"auth_login", "system");
+	system_services_auth_login = service_query("auth_login_exch", "system");
 	if (NULL == system_services_auth_login) {
-		printf("[system_services]: fail to "
-			"get \"auth_login\" service\n");
+		printf("[system_services]: fail to get the \"auth_login_exch\" service\n");
 		return -18;
 	}
 	system_services_get_user_displayname = service_query(
