@@ -69,7 +69,7 @@ BOOL idset_register_mapping(IDSET *pset,
 		}
 	}
 	pset->mapping = mapping;
-	return true;
+	return TRUE;
 }
 
 void idset_clear(IDSET *pset)

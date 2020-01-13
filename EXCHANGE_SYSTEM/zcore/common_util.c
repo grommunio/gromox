@@ -760,7 +760,7 @@ BOOL common_util_build_environment()
 	alloc_context_init(&pctx->allocator);
 	pctx->clifd = -1;
 	pthread_setspecific(g_env_key, pctx);
-	return true;
+	return TRUE;
 }
 
 void common_util_free_environment()

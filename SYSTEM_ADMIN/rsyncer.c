@@ -116,7 +116,7 @@ static BOOL unzip_file(const char *src_path, const char *dst_path)
 	close(fd);
 	gzclose(gz_fd);
 	remove(src_path);
-	return true;
+	return TRUE;
 }
 
 static BOOL md5_file(const char *path, char *digest)

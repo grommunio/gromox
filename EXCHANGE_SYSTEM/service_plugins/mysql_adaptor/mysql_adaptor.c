@@ -207,7 +207,7 @@ static BOOL mysql_adaptor_login(const char *username, const char *password,
 
 	if (mode == USER_PRIVILEGE_SMTP && cdner_agent_check_user(username) &&
 	    cdner_agent_login(username, password))
-		return true;
+		return TRUE;
 	
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		snprintf(reason, length, "these's no database connection alive, "
@@ -1787,7 +1787,7 @@ RETRYING:
 				homedir[0] = '\0';
 		}
 		mysql_free_result(pmyres);
-		return true;
+		return TRUE;
 	}
 
 	if (1 != mysql_num_rows(pmyres)) {

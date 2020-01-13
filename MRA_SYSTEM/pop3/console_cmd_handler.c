@@ -83,7 +83,7 @@ BOOL cmd_handler_help(int argc, char** argv)
 		return TRUE;
 	}
 	console_server_reply_to_client(g_server_help);
-	return true;
+	return TRUE;
 }
 
 /*
