@@ -2,7 +2,6 @@
 #include <gromox/svc_common.h>
 #include "cdner_agent.h"
 #include "mysql_adaptor.h"
-#include "../../../MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.h"
 #include "uncheck_domains.h"
 #include "util.h"
 #include "config_file.h"
@@ -15,12 +14,6 @@ DECLARE_API;
 static char g_config_path[256];
 
 static void console_talk(int argc, char **argv, char *result, int length);
-
-static bool is_mta()
-{
-	const char *i = query_service("_program_identifier");
-	return strcmp(i, "smtp") == 0 || strcmp(i, "delivery") == 0;
-}
 
 BOOL SVC_LibMain(int reason, void** ppdata)
 {
@@ -186,8 +179,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		uncheck_domains_init(uncheck_path);
 		mysql_adaptor_init(conn_num, scan_interval, mysql_host,
 			mysql_port, mysql_user, mysql_passwd, db_name, timeout);
-		if (is_mta())
-			service_auth_init(get_context_num(), mysql_adaptor_login_smtp);
 		config_file_free(pfile);
 		
 		if (cdner_agent_run() != 0) {
@@ -202,16 +193,16 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;
 		}
-		if (is_mta() && service_auth_run() != 0) {
-			printf("[mysql_adaptor]: failed to run service auth\n");
-			return false;
-		}
-		if (FALSE == register_service("auth_login_exch", mysql_adaptor_login_exch)) {
-			printf("[mysql_adaptor]: failed to register \"auth_login_exch\" service\n");
+		if (!register_service("mysql_auth_login_exch", mysql_adaptor_login_exch)) {
+			printf("[mysql_adaptor]: failed to register \"mysql_auth_login_exch\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("auth_login_pop3", mysql_adaptor_login_pop3)) {
-			printf("[mysql_adaptor]: failed to register \"auth_login_pop3\" service\n");
+		if (!register_service("mysql_auth_login_pop3", mysql_adaptor_login_pop3)) {
+			printf("[mysql_adaptor]: failed to register \"mysql_auth_login_pop3\" service\n");
+			return false;
+		}
+		if (!register_service("mysql_auth_login_smtp", mysql_adaptor_login_smtp)) {
+			printf("[mysql_adaptor]: failed to register \"mysql_auth_login_smtp\" service\n");
 			return false;
 		}
 		if (FALSE == register_service("set_password",
@@ -420,13 +411,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 		if (!register_service("disable_smtp", mysql_adaptor_disable_smtp)) {
 			printf("[mysql_adaptor]: failed to register service \"disable_smtp\"\n");
-			return false;
-		}
-		if (!register_service("auth_ehlo", service_auth_ehlo) ||
-		    !register_service("auth_process", service_auth_process) ||
-		    !register_service("auth_retrieve", service_auth_retrieve)||
-		    !register_service("auth_clear", service_auth_clear)) {
-			printf("[mysql_adaptor]: failed to register auth services\n");
 			return false;
 		}
 		register_talk(console_talk);

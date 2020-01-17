@@ -406,6 +406,7 @@ exchange_plugins = \
 	libexproc_sample.la \
 	libexhpm_proxy.la \
 	libexhpm_sample.la \
+	libgxsvc_authn_mysql.la \
 	libgxsvc_mysql_adaptor.la
 noinst_DATA += \
 	libexsvc_codepage_lang.ldd \
@@ -426,6 +427,7 @@ noinst_DATA += \
 	libexproc_sample.ldd \
 	libexhpm_proxy.ldd \
 	libexhpm_sample.ldd \
+	libgxsvc_authn_mysql.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = alock amidb amysql asensor asession digest freebusy rtf2html
 domain_admin_progs = da_daemon fcgi_cgi synchronizer
@@ -1264,7 +1266,11 @@ libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexhpm_proxy_la_DEPENDENCIES = ${default_sym}
 libexhpm_sample_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/sample.c
 libexhpm_sample_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/cdner_agent.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/uncheck_domains.c MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
+libgxsvc_authn_mysql_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/authn_mysql.cpp MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
+libgxsvc_authn_mysql_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_authn_mysql_la_LIBADD = libgromox_common.la
+EXTRA_libgxsvc_authn_mysql_la_DEPENDENCIES = ${default_sym}
+libgxsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/cdner_agent.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/uncheck_domains.c
 libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la
 EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
