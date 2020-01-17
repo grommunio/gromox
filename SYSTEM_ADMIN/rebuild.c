@@ -402,7 +402,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	
-	if (0 != stat("../doc/sqlite3_common.txt", &node_stat)) {
+	if (0 != stat(PKGDATASADIR "/doc/sqlite3_common.txt", &node_stat)) {
 		printf("can not find store template"
 			" file \"sqlite3_common.txt\"\n");	
 		return 2;
@@ -413,7 +413,7 @@ int main(int argc, const char **argv)
 	}
 	str_size = node_stat.st_size;
 	
-	if (0 != stat("../doc/sqlite3_private.txt", &node_stat)) {
+	if (0 != stat(PKGDATASADIR "/doc/sqlite3_private.txt", &node_stat)) {
 		printf("can not find store template "
 			"file \"sqlite3_private.txt\"\n");	
 		return 4;
@@ -429,7 +429,7 @@ int main(int argc, const char **argv)
 		printf("fail to allocate memory\n");
 		return 6;
 	}
-	fd = open("../doc/sqlite3_common.txt", O_RDONLY);
+	fd = open(PKGDATASADIR "/doc/sqlite3_common.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_common.txt\" for reading\n");
 		free(sql_string);
@@ -443,7 +443,7 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 	close(fd);
-	fd = open("../doc/sqlite3_private.txt", O_RDONLY);
+	fd = open(PKGDATASADIR "/doc/sqlite3_private.txt", O_RDONLY);
 	if (-1 == fd) {
 		printf("fail to open \"sqlite3_private.txt\" for reading\n");
 		free(sql_string);

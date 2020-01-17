@@ -240,14 +240,14 @@ BOOL exmdb_tool_create(const char *dir, int domain_id, uint64_t max_size)
 	if (max_size > 0x7FFFFFFF) {
 		max_size = 0x7FFFFFFF;
 	}
-	if (0 != stat("../doc/sqlite3_common.txt", &node_stat)) {
+	if (0 != stat(PKGDATASADIR "/doc/sqlite3_common.txt", &node_stat)) {
 		return FALSE;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
 		return FALSE;
 	}
 	str_size = node_stat.st_size;
-	if (0 != stat("../doc/sqlite3_public.txt", &node_stat)) {
+	if (0 != stat(PKGDATASADIR "/doc/sqlite3_public.txt", &node_stat)) {
 		return FALSE;
 	}
 	if (0 == S_ISREG(node_stat.st_mode)) {
@@ -259,7 +259,7 @@ BOOL exmdb_tool_create(const char *dir, int domain_id, uint64_t max_size)
 	if (NULL == sql_string) {
 		return FALSE;
 	}
-	fd = open("../doc/sqlite3_common.txt", O_RDONLY);
+	fd = open(PKGDATASADIR "/doc/sqlite3_common.txt", O_RDONLY);
 	if (-1 == fd) {
 		free(sql_string);
 		return FALSE;
@@ -270,7 +270,7 @@ BOOL exmdb_tool_create(const char *dir, int domain_id, uint64_t max_size)
 		return FALSE;
 	}
 	close(fd);
-	fd = open("../doc/sqlite3_public.txt", O_RDONLY);
+	fd = open(PKGDATASADIR "/doc/sqlite3_public.txt", O_RDONLY);
 	if (-1 == fd) {
 		free(sql_string);
 		return FALSE;
