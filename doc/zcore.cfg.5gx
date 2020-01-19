@@ -71,7 +71,7 @@ Default: \fI;\fP (semicolon)
 .SS service_plugin_ignore_errors
 .PP
 If set to yes, service plugins that fail to load on startup are ignored. If set
-to no, the daemon will exist if any plugin cannot be loaded.
+to no, the daemon will exit if any plugin cannot be loaded.
 .PP
 Default: \fIno\fP
 .SS service_plugin_list
