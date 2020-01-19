@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <gromox/svc_common.h>
 #include "list_file.h"
@@ -46,7 +47,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
 		k_shm = ftok(temp_path, 1);
 		if (-1 == k_shm) {
-			printf("[spam_statistic]: cannot open key for shared memory\n");
+			printf("[spam_statistic]: ftok %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
 		}
 		shm_id = shmget(k_shm, 2*sizeof(int)*SPAM_TABLE_SIZE + 
@@ -59,12 +60,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			new_created = FALSE;
 		}
 		if (-1 == shm_id) {
-			printf("[spam_statistic]: failed to get or create shared memory\n");
+			printf("[spam_statistic]: shmget: %s\n", strerror(errno));
 			return FALSE;
 		}
 		g_shm_begin = shmat(shm_id, NULL, 0);
 		if ((void*)-1 == g_shm_begin) {
-			printf("[spam_statistic]: failed to attach shared memory\n");
+			printf("[spam_statistic]: shmat: %s\n", strerror(errno));
 			g_shm_begin = NULL;
 			return FALSE;
 		}

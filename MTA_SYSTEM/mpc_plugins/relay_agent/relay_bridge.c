@@ -91,13 +91,13 @@ int relay_bridge_run()
 	
 	k_msg = ftok(g_token_path, TOKEN_MESSAGE_QUEUE);
 	if (-1 == k_msg) {
-		printf("[relay_agent]: cannot open key for message queue\n");
+		printf("[relay_agent]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return -1;
 	}
 	/* get the message queue */
 	g_msg_id = msgget(k_msg, 0);
 	if (-1 == g_msg_id) {
-		printf("[relay_agent]: fail to get message queue\n");
+		printf("[relay_agent]: msgget: %s\n", strerror(errno));
 		return -2;
 	}
 

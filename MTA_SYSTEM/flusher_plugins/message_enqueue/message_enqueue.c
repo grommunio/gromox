@@ -6,6 +6,7 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
+#include <errno.h>
 #include <string.h>
 #include "common_types.h"
 #include "message_enqueue.h"
@@ -98,12 +99,12 @@ int message_enqueue_run()
 	sprintf(name, "%s/token.ipc", g_path);
     k_msg = ftok(name, TOKEN_MESSAGE_QUEUE);
     if (-1 == k_msg) {
-        printf("[message_enqueue]: cannot open key for message queue\n");
+		printf("[message_enqueue]: ftok %s: %s\n", name, strerror(errno));
         return -2;
     }
     k_shm = ftok(name, TOKEN_SHARE_MEMORY);
     if (-1 == k_shm) {
-		printf("[message_enqueue]: cannot open key for shared memory\n");
+		printf("[message_enqueue]: ftok %s: %s\n", name, strerror(errno));
         return -3;
     }
 	if (TRUE == g_with_tape) {
@@ -111,12 +112,12 @@ int message_enqueue_run()
 		/* open or create shared memory for tape */
 		g_shm_id = shmget(k_shm, size, 0666|IPC_CREAT);
 		if (-1 == g_shm_id) {
-			printf("[message_enqueue]: failed to get or create shared memory\n");
+			printf("[message_enqueue]: shmget: %s\n", strerror(errno));
 			return -4;
 		}
     	g_tape_begin = shmat(g_shm_id, NULL, 0);
     	if ((void*)-1 == g_tape_begin) {
-			printf("[message_enqueue]: failed to attach shared memory\n");
+			printf("[message_enqueue]: shmat: %s\n", strerror(errno));
         	g_tape_begin = NULL;
         	return -5;
 		}
@@ -124,7 +125,7 @@ int message_enqueue_run()
     /* create the message queue */
     g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
     if (-1 == g_msg_id) {
-        printf("[message_enqueue]: fail to get or create message queue\n");
+		printf("[message_enqueue]: msgget: %s\n", strerror(errno));
         shmdt(g_tape_begin);
         g_tape_begin = NULL;
         return -6;

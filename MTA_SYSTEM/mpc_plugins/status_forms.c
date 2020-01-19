@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
@@ -128,7 +129,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(temp_path, "%s/%s.cfg", get_config_path(), file_name);
 		k_shm = ftok(temp_path, 1);
 		if (-1 == k_shm) {
-			printf("[status_forms]: cannot open key for shared memory\n");
+			printf("[status_forms]: ftok %s: %s\n", temp_path, strerror(errno));
 			return FALSE;
 		}
 		shm_id = shmget(k_shm, 2*sizeof(double)*24 + sizeof(int)*24 +
@@ -145,12 +146,12 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			new_created = FALSE;
 		}
 		if (-1 == shm_id) {
-			printf("[status_forms]: failed to get or create shared memory\n");
+			printf("[status_forms]: shmget: %s\n", strerror(errno));
 			return FALSE;
 		}
 		g_shm_begin = shmat(shm_id, NULL, 0);
 		if ((void*)-1 == g_shm_begin) {
-			printf("[status_forms]: failed to attach shared memory\n");
+			printf("[status_forms]: shmat: %s\n", strerror(errno));
 			g_shm_begin = NULL;
 			return FALSE;
 		}

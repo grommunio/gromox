@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "config_file.h"
@@ -70,20 +71,20 @@ int main(int argc, const char **argv)
 	config_file_free(pconfig);
 	k_shm = ftok(temp_path, 1);
 	if (-1 == k_shm) {
-		printf("Content-Type:text/html\n\n");
-		printf("Cannot init token file %s\n", temp_path);
+		printf("Content-Type: text/plain\n\n");
+		printf("ftok %s: %s\n", temp_path, strerror(errno));
 		exit(0);
 	}
 	shm_id = shmget(k_shm, SHARE_MEMORY_SIZE, 0666);
 	if (-1 == shm_id) {
-		printf("Content-Type:text/html\n\n");
-		printf("Cannot open shared memory\n");
+		printf("Content-Type: text/plain\n\n");
+		printf("shmget: %s\n", strerror(errno));
 		exit(0);
 	}
 	shm_begin = shmat(shm_id, NULL, 0);
 	if (NULL == shm_begin) {
-		printf("Content-Type:text/html\n\n");
-		printf("Failed to attach shared memory\n");
+		printf("Content-Type: text/plain\n\n");
+		printf("shmat: %s\n", strerror(errno));
 		exit(0);
 	}
 	total_num = *shm_begin;

@@ -1790,7 +1790,7 @@ static void backup_ui_restart_supervisor()
 
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[backup_ui]: cannot open key for control\n");
+		system_log_info("[backup_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
@@ -1809,7 +1809,7 @@ static void backup_ui_restart_adaptor()
 
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[backup_ui]: cannot open key for control\n");
+		system_log_info("[backup_ui]: ftok %s: %s\n", strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
@@ -1828,7 +1828,7 @@ static void backup_ui_restart_scanner()
 
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[backup_ui]: cannot open key for control\n");
+		system_log_info("[backup_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
@@ -1847,7 +1847,7 @@ static void backup_ui_restart_locker()
 
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[backup_ui]: cannot open key for control\n");
+		system_log_info("[backup_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);

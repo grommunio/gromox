@@ -758,7 +758,7 @@ static void	list_ui_add_item(int type, const char *master,
 	close(fd);
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[list_ui]: cannot open key for control\n");
+		system_log_info("[list_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
@@ -816,7 +816,7 @@ static void list_ui_remove_item(const char *master)
 	remove(temp_path);
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[list_ui]: cannot open key for control\n");
+		system_log_info("[list_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);

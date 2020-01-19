@@ -209,12 +209,12 @@ int message_dequeue_run()
     sprintf(name, "%s/token.ipc", g_path);
     k_msg = ftok(name, TOKEN_MESSAGE_QUEUE);
     if (-1 == k_msg) {
-        printf("[message_dequeue]: cannot open key for message queue\n");
+		printf("[message_dequeue]: ftok %s: %s\n", name, strerror(errno));
         return -2;
     }
     k_shm = ftok(name, TOKEN_SHARE_MEMORY);
     if (-1 == k_shm) {
-		printf("[message_dequeue]: cannot open key for shared memory\n");
+		printf("[message_dequeue]: ftok %s: %s\n", name, strerror(errno));
         return -3;
     }
 	if (TRUE == g_with_tape) {
@@ -222,12 +222,12 @@ int message_dequeue_run()
 		/* open or create shared memory for tape */
         g_shm_id = shmget(k_shm, size, 0666|IPC_CREAT);
         if (-1 == g_shm_id) {
-			printf("[message_enqueue]: failed to get or create shared memory\n");
+			printf("[message_enqueue]: shmget: %s\n", strerror(errno));
             return -4;
         }
 		g_tape_begin = shmat(g_shm_id, NULL, 0);
         if ((void*)-1 == g_tape_begin) {
-			printf("[message_enqueue]: failed to attach shared memory\n");
+			printf("[message_enqueue]: shmat: %s\n", strerror(errno));
             g_tape_begin = NULL;
             return -5;
         }
@@ -235,7 +235,7 @@ int message_dequeue_run()
 	/* create the message queue */
 	g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
 	if (-1 == g_msg_id) {
-		printf("[message_dequeue]: fail to get or create message queue\n");
+		printf("[message_dequeue]: msgget: %s\n", strerror(errno));
 		message_dequeue_collect_resource();
 		return -6;
 	}

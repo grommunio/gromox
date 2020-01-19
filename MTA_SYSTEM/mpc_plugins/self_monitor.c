@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
@@ -85,12 +86,12 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		sprintf(token_path, "%s/token.ipc", get_queue_path());
 		k_msg = ftok(token_path, TOKEN_MONITOR_QUEUE);
 		if (-1 == k_msg) {
-			printf("[self_monitor]: cannot open key for monitor queue\n");
+			printf("[self_monitor]: ftok %s: %s\n", token_path, strerror(errno));
 			return FALSE;
 		}
 		g_monitor_id = msgget(k_msg, 0666|IPC_CREAT);
 		if (-1 == g_monitor_id) {
-			printf("[self_monitor]: fail to get or create monitor queue\n");
+			printf("[self_monitor]: msgget: %s\n", strerror(errno));
 			return FALSE;
 		}
 		msg.msg_type = 1;

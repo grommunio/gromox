@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <libHX/string.h>
 #include "setup_ui.h"
 #include "lang_resource.h"
@@ -1995,7 +1996,7 @@ static void setup_ui_set_mailbox(const char *mailbox)
 
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[setup_ui]: cannot open key for control\n");
+		system_log_info("[setup_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
@@ -2025,7 +2026,7 @@ static void setup_ui_set_mysql(const char *path)
 
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[setup_ui]: cannot open key for control\n");
+		system_log_info("[setup_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
@@ -2157,7 +2158,7 @@ static void setup_ui_set_log_days(int days)
 	
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[setup_ui]: cannot open key for control\n");
+		system_log_info("[setup_ui]: ftok %s: %s\n", g_token_path, strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
@@ -2187,7 +2188,7 @@ static void setup_ui_set_backup_days(int days)
 	
 	k_ctrl = ftok(g_token_path, TOKEN_CONTROL);
 	if (-1 == k_ctrl) {
-		system_log_info("[setup_ui]: cannot open key for control\n");
+		system_log_info("[setup_ui]: ftok %s: %s\n", strerror(errno));
 		return;
 	}
 	ctrl_id = msgget(k_ctrl, 0666);
