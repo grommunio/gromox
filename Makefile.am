@@ -433,6 +433,7 @@ dacgidir = ${pkglibexecdir}/da
 dacgi_PROGRAMS = domain_approve domain_archive domain_binput domain_classes domain_folders domain_groups domain_info domain_keyword domain_limit domain_log domain_main domain_mlists domain_monitor domain_setup domain_sign domain_statistic domain_users group_archive group_binput group_classes group_clists group_info group_log group_main group_monitor group_users
 system_admin_progs = adaptor athena cdnd sa_daemon event locker monitor pad rsyncd rsyncer scanner sensor session supervisor timer
 system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
+pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 sacgidir = ${pkglibexecdir}/sa
 sacgi_PROGRAMS = admin_archive admin_insulation admin_log admin_main archiver_list area_list boundary_blacklist daily_statistic daily_status dns_table domain_blacklist domain_list domain_mailbox domain_whitelist dynamic_dnslist forward_table from_blacklist from_replace ip_blacklist ip_whitelist ipdomain_table keyword_group keyword_statistic keyword_upload mensual_statistic message_sign org_list rcpt_blacklist relay_allow relay_domains relay_table single_rcpt status_rpc supervising_list supervising_statistic synchronization_rpc system_backup system_info system_password system_setup system_users tagging_whitelist xmailer_blacklist
 
