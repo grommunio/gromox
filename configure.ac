@@ -16,7 +16,7 @@ saved_CXXFLAGS="$CXXFLAGS"
 saved_LDFLAGS="$LDFLAGS"
 saved_LIBS="$LIBS"
 
-my_CFLAGS="-Wall -Wwrite-strings"
+my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
