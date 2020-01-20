@@ -33,14 +33,12 @@ Makefile.in
 /alock
 /amidb
 /amysql
-/apollo
 /archive
 /archiver_list
 /area_list
 /areadb
 /asensor
 /asession
-/athena
 /bl_delete
 /boundary_blacklist
 /cdnd
@@ -91,7 +89,6 @@ Makefile.in
 /group_main
 /group_monitor
 /group_users
-/herculiz
 /http
 /imap
 /ip_blacklist
@@ -101,7 +98,6 @@ Makefile.in
 /keyword_statistic
 /keyword_upload
 /locker
-/medusa
 /mensual_statistic
 /message_sign
 /midb
@@ -112,10 +108,8 @@ Makefile.in
 /monitor
 /org_list
 /pad
-/pandora
 /pop3
 /pop_porting
-/posidon
 /rcpt_blacklist
 /rebuild
 /relay_allow
@@ -144,7 +138,6 @@ Makefile.in
 /system_users
 /tagging_whitelist
 /timer
-/titan
 /userinfo
 /xmailer_blacklist
 /zcore

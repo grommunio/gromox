@@ -18,7 +18,7 @@ unit_services = system/gromox-adaptor.service system/gromox-alock.service system
 unit_targets = system/gromox-agent.target system/gromox-archive.target system/gromox-da.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
-mta_system = delivery smtp herculiz
+mta_system = delivery smtp
 mta_plugins = \
 	libmtapas_address_checker.la \
 	libmtapas_anti_enum.la \
@@ -365,7 +365,7 @@ noinst_DATA += \
 	libmtasvc_sssp_agent.la \
 	libmtasvc_tagging_table.ldd \
 	libmtasvc_user_filter.ldd
-mra_system = apollo pop3 imap
+mra_system = pop3 imap
 mra_plugins = \
 	libmrasvc_cdner_agent.la \
 	libmrasvc_event_proxy.la \
@@ -386,7 +386,7 @@ noinst_DATA += \
 	libmrasvc_midb_agent.ldd \
 	libmrasvc_sample.ldd \
 	libmrasvc_user_filter.ldd
-exchange_progs = http medusa midb zcore
+exchange_progs = http midb zcore
 exchange_plugins = \
 	libexsvc_codepage_lang.la \
 	libexsvc_event_proxy.la \
@@ -427,17 +427,17 @@ noinst_DATA += \
 	libexhpm_proxy.ldd \
 	libexhpm_sample.ldd \
 	libgxsvc_mysql_adaptor.ldd
-agent_service_progs = alock amidb amysql asensor asession digest freebusy pandora rtf2html
-domain_admin_progs = da_daemon fcgi_cgi posidon synchronizer
+agent_service_progs = alock amidb amysql asensor asession digest freebusy rtf2html
+domain_admin_progs = da_daemon fcgi_cgi synchronizer
 dacgidir = ${pkglibexecdir}/da
 dacgi_PROGRAMS = domain_approve domain_archive domain_binput domain_classes domain_folders domain_groups domain_info domain_keyword domain_limit domain_log domain_main domain_mlists domain_monitor domain_setup domain_sign domain_statistic domain_users group_archive group_binput group_classes group_clists group_info group_log group_main group_monitor group_users
-system_admin_progs = adaptor athena cdnd sa_daemon event locker monitor pad rsyncd rsyncer scanner sensor session supervisor timer
+system_admin_progs = adaptor cdnd sa_daemon event locker monitor pad rsyncd rsyncer scanner sensor session supervisor timer
 system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 sacgidir = ${pkglibexecdir}/sa
 sacgi_PROGRAMS = admin_archive admin_insulation admin_log admin_main archiver_list area_list boundary_blacklist daily_statistic daily_status dns_table domain_blacklist domain_list domain_mailbox domain_whitelist dynamic_dnslist forward_table from_blacklist from_replace ip_blacklist ip_whitelist ipdomain_table keyword_group keyword_statistic keyword_upload mensual_statistic message_sign org_list rcpt_blacklist relay_allow relay_domains relay_table single_rcpt status_rpc supervising_list supervising_statistic synchronization_rpc system_backup system_info system_password system_setup system_users tagging_whitelist xmailer_blacklist
 
-archiver_system_progs = archive cidb migrator titan
+archiver_system_progs = archive cidb migrator
 
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h
@@ -464,8 +464,6 @@ libgromox_webkit_la_SOURCES = LIBRARY/webkit_lib/request_parser.c LIBRARY/webkit
 libgromox_webkit_la_LIBADD = ${HX_LIBS} libgromox_common.la
 
 # MTA_SYSTEM
-herculiz_SOURCES = MTA_SYSTEM/herculiz.c
-herculiz_LDADD = ${HX_LIBS}
 delivery_SOURCES = MRA_SYSTEM/imap/service.c MTA_SYSTEM/delivery_app/console_server.c MTA_SYSTEM/delivery_app/console_cmd_handler.c MTA_SYSTEM/delivery_app/main.c MTA_SYSTEM/delivery_app/message_dequeue.c MTA_SYSTEM/delivery_app/resource.c MTA_SYSTEM/delivery_app/system_services.c MTA_SYSTEM/delivery_app/transporter.c
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 smtp_SOURCES = MRA_SYSTEM/imap/service.c MTA_SYSTEM/smtp/anti_spamming.c MTA_SYSTEM/smtp/blocks_allocator.c MTA_SYSTEM/smtp/bndstack_allocator.c MTA_SYSTEM/smtp/console_server.c MTA_SYSTEM/smtp/console_cmd_handler.c MTA_SYSTEM/smtp/flusher.c MTA_SYSTEM/smtp/listener.c MTA_SYSTEM/smtp/main.c MTA_SYSTEM/smtp/resource.c MTA_SYSTEM/smtp/smtp_parser.c MTA_SYSTEM/smtp/smtp_cmd_handler.c MTA_SYSTEM/smtp/system_services.c
@@ -1156,8 +1154,6 @@ pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c MRA_SYSTEM/imap/service.c
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 imap_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c MRA_SYSTEM/imap/console_server.c MRA_SYSTEM/imap/console_cmd_handler.c MRA_SYSTEM/imap/imap_parser.c MRA_SYSTEM/imap/imap_cmd_parser.c MRA_SYSTEM/imap/listener.c MRA_SYSTEM/imap/main.c MRA_SYSTEM/imap/resource.c MRA_SYSTEM/imap/service.c MRA_SYSTEM/imap/system_services.c
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la
-apollo_SOURCES = MRA_SYSTEM/apollo.c
-apollo_LDADD = ${HX_LIBS}
 libmrasvc_cdner_agent_la_SOURCES = MRA_SYSTEM/service_plugins/cdner_agent.c
 libmrasvc_cdner_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_cdner_agent_la_LIBADD = -lcrypt -lpthread libgromox_common.la
@@ -1196,8 +1192,6 @@ EXTRA_libmrasvc_user_filter_la_DEPENDENCIES = ${default_sym}
 # EXCHANGE_SYSTEM
 http_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/console_server.c EXCHANGE_SYSTEM/http/console_cmd_handler.c EXCHANGE_SYSTEM/http/hpm_processor.c EXCHANGE_SYSTEM/http/http_parser.c EXCHANGE_SYSTEM/http/listener.c EXCHANGE_SYSTEM/http/main.c EXCHANGE_SYSTEM/http/mod_cache.c EXCHANGE_SYSTEM/http/mod_fastcgi.c EXCHANGE_SYSTEM/http/mod_rewrite.c EXCHANGE_SYSTEM/http/pdu_processor.c EXCHANGE_SYSTEM/http/pdu_ndr.c EXCHANGE_SYSTEM/http/resource.c EXCHANGE_SYSTEM/http/service.c EXCHANGE_SYSTEM/http/system_services.c
 http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la libgromox_webkit.la
-medusa_SOURCES = EXCHANGE_SYSTEM/medusa.c
-medusa_LDADD = ${HX_LIBS}
 midb_SOURCES = EXCHANGE_SYSTEM/midb/cmd_parser.c EXCHANGE_SYSTEM/midb/common_util.c EXCHANGE_SYSTEM/midb/console_server.c EXCHANGE_SYSTEM/midb/console_cmd_handler.c EXCHANGE_SYSTEM/midb/exmdb_ext.c EXCHANGE_SYSTEM/midb/exmdb_client.c EXCHANGE_SYSTEM/midb/listener.c EXCHANGE_SYSTEM/midb/mail_engine.c EXCHANGE_SYSTEM/midb/main.c EXCHANGE_SYSTEM/midb/service.c EXCHANGE_SYSTEM/midb/system_services.c
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 zcore_SOURCES = EXCHANGE_SYSTEM/midb/service.c EXCHANGE_SYSTEM/zcore/ab_tree.c EXCHANGE_SYSTEM/zcore/bounce_producer.c EXCHANGE_SYSTEM/zcore/common_util.c EXCHANGE_SYSTEM/zcore/console_server.c EXCHANGE_SYSTEM/zcore/console_cmd_handler.c EXCHANGE_SYSTEM/zcore/exmdb_ext.c EXCHANGE_SYSTEM/zcore/exmdb_client.c EXCHANGE_SYSTEM/zcore/listener.c EXCHANGE_SYSTEM/zcore/main.c EXCHANGE_SYSTEM/zcore/msgchg_grouping.c EXCHANGE_SYSTEM/zcore/table_object.c EXCHANGE_SYSTEM/zcore/object_tree.c EXCHANGE_SYSTEM/zcore/message_object.c EXCHANGE_SYSTEM/zcore/icsdownctx_object.c EXCHANGE_SYSTEM/zcore/folder_object.c EXCHANGE_SYSTEM/zcore/container_object.c EXCHANGE_SYSTEM/zcore/user_object.c EXCHANGE_SYSTEM/zcore/store_object.c EXCHANGE_SYSTEM/zcore/icsupctx_object.c EXCHANGE_SYSTEM/zcore/ics_state.c EXCHANGE_SYSTEM/zcore/attachment_object.c EXCHANGE_SYSTEM/zcore/rpc_parser.c EXCHANGE_SYSTEM/zcore/rpc_ext.c EXCHANGE_SYSTEM/zcore/system_services.c EXCHANGE_SYSTEM/zcore/zarafa_server.c
@@ -1290,14 +1284,10 @@ digest_SOURCES = AGENT_SERVICE/digest.c
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 freebusy_SOURCES = AGENT_SERVICE/freebusy.c
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
-pandora_SOURCES = AGENT_SERVICE/pandora.c
-pandora_LDADD = ${HX_LIBS}
 rtf2html_SOURCES = AGENT_SERVICE/rtf2html.c
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 
 # DOMAIN_ADMIN
-posidon_SOURCES = DOMAIN_ADMIN/posidon.c
-posidon_LDADD = ${HX_LIBS}
 fcgi_cgi_SOURCES = DOMAIN_ADMIN/fcgi_cgi.c
 fcgi_cgi_LDADD = -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_rpc.la
 da_daemon_SOURCES = DOMAIN_ADMIN/daemon/data_source.c DOMAIN_ADMIN/daemon/domain_classifier.c DOMAIN_ADMIN/daemon/item_sorter.c DOMAIN_ADMIN/daemon/log_flusher.c DOMAIN_ADMIN/daemon/main.c DOMAIN_ADMIN/daemon/smtp_sender.c LIBRARY/system_log.c
@@ -1376,8 +1366,6 @@ area_list_SOURCES = LIBRARY/acl_control.c LIBRARY/system_log.c SYSTEM_ADMIN/area
 area_list_LDADD = ${HX_LIBS} libgromox_common.la libgromox_webkit.la
 areadb_SOURCES = SYSTEM_ADMIN/areadb.c
 areadb_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-athena_SOURCES = SYSTEM_ADMIN/athena.c
-athena_LDADD = ${HX_LIBS}
 bl_delete_SOURCES = SYSTEM_ADMIN/bl_delete/midb_client.c SYSTEM_ADMIN/bl_delete/main.c
 bl_delete_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_webkit.la
 boundary_blacklist_SOURCES = LIBRARY/acl_control.c LIBRARY/system_log.c SYSTEM_ADMIN/boundary_blacklist/blacklist_ui.c SYSTEM_ADMIN/boundary_blacklist/main.c SYSTEM_ADMIN/boundary_blacklist/reload_control.c
@@ -1506,8 +1494,6 @@ cidb_SOURCES = ARCHIVE_SYSTEM/cidb/classify_engine.c ARCHIVE_SYSTEM/cidb/sphinxc
 cidb_LDADD = -lpthread -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
 migrator_SOURCES = ARCHIVE_SYSTEM/migrator.c
 migrator_LDADD = ${HX_LIBS}
-titan_SOURCES = ARCHIVE_SYSTEM/titan.c
-titan_LDADD = ${HX_LIBS}
 
 # php_mapi
 mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
@@ -1524,8 +1510,8 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 man_MANS = \
 	doc/adaptor.8gx doc/adaptor.cfg.5gx doc/alock.8gx doc/alock.cfg.5gx \
 	doc/amidb.8gx doc/amidb.cfg.5gx doc/amysql.8gx doc/amysql.cfg.5gx \
-	doc/apollo.8gx doc/archive.8gx doc/asensor.8gx doc/asensor.cfg.5gx \
-	doc/asession.8gx doc/asession.cfg.5gx doc/athena.8gx \
+	doc/archive.8gx doc/asensor.8gx doc/asensor.cfg.5gx \
+	doc/asession.8gx doc/asession.cfg.5gx \
 	doc/bl_delete.8gx doc/cdnd.8gx doc/cdnd.cfg.5gx doc/cidb.8gx \
 	doc/cidb.cfg.5gx doc/da.cfg.5gx doc/da_daemon.8gx \
 	doc/delivery.8gx \
@@ -1538,20 +1524,19 @@ man_MANS = \
 	doc/gromox-agent.target.8gx doc/gromox-archive.target.8gx \
 	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
-	doc/gromox-sa.target.8gx doc/herculiz.8gx doc/http.8gx \
+	doc/gromox-sa.target.8gx doc/http.8gx \
 	doc/http.cfg.5gx doc/imap.8gx doc/imap.cfg.5gx doc/locker.8gx \
-	doc/locker.cfg.5gx doc/mapi.4gx \
-	doc/medusa.8gx doc/midb.8gx doc/midb.cfg.5gx \
+	doc/locker.cfg.5gx doc/mapi.4gx doc/midb.8gx doc/midb.cfg.5gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/monitor.8gx doc/monitor.cfg.5gx doc/pad.8gx doc/pad.cfg.5gx \
-	doc/pandora.8gx doc/pop3.8gx doc/pop3.cfg.5gx doc/posidon.8gx \
+	doc/pop3.8gx doc/pop3.cfg.5gx \
 	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncd.cfg.5gx doc/rsyncer.8gx \
 	doc/rsyncer.cfg.5gx doc/rtf2html.1gx doc/sa.cfg.5gx \
 	doc/sa_daemon.8gx doc/scanner.8gx doc/scanner.cfg.5gx \
 	doc/sendmail.8gx doc/sensor.8gx doc/sensor.cfg.5gx doc/session.8gx \
 	doc/session.cfg.5gx doc/smtp.8gx doc/smtp.cfg.5gx doc/supervisor.8gx \
 	doc/supervisor.cfg.5gx doc/synchronizer.8gx \
-	doc/timer.8gx doc/timer.cfg.5gx doc/titan.8gx doc/zcore.8gx \
+	doc/timer.8gx doc/timer.cfg.5gx doc/zcore.8gx \
 	doc/zcore.cfg.5gx
 
 include/gromox/paths.h: include/gromox/paths.h.in

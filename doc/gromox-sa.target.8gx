@@ -9,7 +9,6 @@ gromox\-sa.target \(em system administration service group unit for systemd
 .SH Description
 .PP
 gromox\-sa.target is a unit for starting/stopping units as a group.
-It replaces the functionality previously provided by athena(8gx).
 .SH See also
 .PP
 \fBgromox\fP(7), \fBadaptor\fP(8gx), \fBcdnd\fP(8gx), \fBevent\fP(8gx),

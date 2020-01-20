@@ -9,7 +9,6 @@ gromox\-mta.target \(em Mail transfer agent service group unit for systemd
 .SH Description
 .PP
 gromox\-mta.target is a unit for starting/stopping units as a group.
-It replaces the functionality previously provided by herculiz(8gx).
 .SH See also
 .PP
 \fBgromox\fP(7), \fBdelivery\fP(8gx), \fBsmtp\fP(8gx)

@@ -9,7 +9,6 @@ gromox\-mra.target \(em Mail retrieval agent service group unit for systemd
 .SH Description
 .PP
 gromox\-mra.target is a unit for starting/stopping units as a group.
-It replaces the functionality previously provided by apollo(8gx).
 .SH See also
 .PP
 \fBgromox\fP(7), \fBimap\fP(8gx), \fBpop3\fP(8gx)
