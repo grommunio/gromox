@@ -1,6 +1,4 @@
-#ifndef _H_AUX_TYPES_
-#define _H_AUX_TYPES_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -267,6 +265,3 @@ typedef struct _AUX_INFO {
 	uint16_t rhe_flags;
 	DOUBLE_LIST aux_list;
 } AUX_INFO;
-
-
-#endif /* _H_AUX_TYPES_ */

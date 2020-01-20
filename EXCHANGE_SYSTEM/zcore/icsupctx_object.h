@@ -1,5 +1,4 @@
-#ifndef _H_ICSUPCTX_OBJECT_
-#define _H_ICSUPCTX_OBJECT_
+#pragma once
 #include "folder_object.h"
 #include "mapi_types.h"
 #include "ics_state.h"
@@ -26,5 +25,3 @@ STORE_OBJECT* icsupctx_object_get_store(ICSUPCTX_OBJECT *pctx);
 uint8_t icsupctx_object_get_type(ICSUPCTX_OBJECT *pctx);
 
 uint64_t icsupctx_object_get_parent_folder_id(ICSUPCTX_OBJECT *pctx);
-
-#endif /* _H_ICSUPCTX_OBJECT_ */

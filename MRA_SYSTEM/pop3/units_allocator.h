@@ -1,5 +1,4 @@
-#ifndef _H_UNIT_ALLOCATOR_
-#define _H_UNIT_ALLOCATOR_
+#pragma once
 #include "array.h"
 
 typedef struct _MSG_UNIT {
@@ -14,5 +13,3 @@ extern int units_allocator_run(void);
 extern int units_allocator_stop(void);
 extern void units_allocator_free(void);
 extern LIB_BUFFER *units_allocator_get_allocator(void);
-
-#endif

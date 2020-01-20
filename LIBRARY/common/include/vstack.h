@@ -1,5 +1,4 @@
-#ifndef _H_VSTACK_
-#define _H_VSTACK_
+#pragma once
 #include "lib_buffer.h"
 #include "single_list.h"
 
@@ -37,6 +36,3 @@ void vstack_clear(VSTACK* pvstack);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /*_H_VSTACK_ */
-

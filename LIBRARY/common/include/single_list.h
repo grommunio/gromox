@@ -1,5 +1,4 @@
-#ifndef _H_SINGLE_LIST_
-#define _H_SINGLE_LIST_
+#pragma once
 #include "common_types.h"
 
 typedef struct _SINGLE_LIST_NODE {
@@ -42,4 +41,3 @@ size_t  single_list_get_nodes_num(SINGLE_LIST* plist);
 #ifdef __cplusplus
 }
 #endif
-#endif /* _H_SINGLE_LIST_ */

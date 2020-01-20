@@ -1,6 +1,4 @@
-#ifndef _H_SYSTEM_SERVICES_
-#define _H_SYSTEM_SERVICES_
-
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 #include "xarray.h"
@@ -52,5 +50,3 @@ extern void (*system_services_broadcast_event)(const char*);
 extern void (*system_services_broadcast_select)(const char*, const char*);
 extern void (*system_services_broadcast_unselect)(const char*, const char*);
 extern void (*system_services_log_info)(int, const char *, ...);
-
-#endif /* _H_SYSTEM_SERVICES_ */

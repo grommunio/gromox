@@ -1,6 +1,4 @@
-#ifndef _H_PLUGIN_
-#define _H_PLUGIN_
-
+#pragma once
 #include "mem_file.h"
 #include "common_types.h"
 #include <openssl/ssl.h>
@@ -153,5 +151,3 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc"); \
 	rpc_new_environment = (NEW_ENVIRONMENT)query_service("rpc_new_environment"); \
 	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment")
-	
-#endif

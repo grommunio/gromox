@@ -1,5 +1,4 @@
-#ifndef _H_IP_RANGE_
-#define _H_IP_RANGE_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -18,5 +17,3 @@ void ip_range_set_param(int param, int val);
 int ip_range_get_param(int param);
 extern const char *ip_range_country(void);
 extern const char *ip_range_url(void);
-
-#endif

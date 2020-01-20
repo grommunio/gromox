@@ -1,5 +1,4 @@
-#ifndef _H_EMSMDB_NDR_
-#define _H_EMSMDB_NDR_
+#pragma once
 #include "emsmdb_interface.h"
 
 
@@ -118,6 +117,3 @@ int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
 
 int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
 	const ECDOASYNCCONNECTEX_OUT *r);
-
-#endif /* _H_EMSMDB_NDR_ */
-

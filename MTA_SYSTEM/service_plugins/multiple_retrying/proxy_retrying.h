@@ -1,5 +1,4 @@
-#ifndef _H_PROXY_RETRYING_
-#define _H_PROXY_RETRYING_
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 
@@ -19,5 +18,3 @@ extern void proxy_retrying_free(void);
 int proxy_retrying_get_param(int param);
 
 void proxy_retrying_set_param(int param, int value);
-
-#endif

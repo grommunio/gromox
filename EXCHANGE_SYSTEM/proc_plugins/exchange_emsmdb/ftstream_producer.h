@@ -1,5 +1,4 @@
-#ifndef _H_FTSTREAM_PRODUCER_
-#define _H_FTSTREAM_PRODUCER_
+#pragma once
 #include "mapi_types.h"
 #include "double_list.h"
 #include "logon_object.h"
@@ -97,5 +96,3 @@ BOOL ftstream_producer_write_hierarchysync(
 	const FOLDER_CHANGES *pfldchgs,
 	const TPROPVAL_ARRAY *pdels,
 	const TPROPVAL_ARRAY *pstate);
-
-#endif /* _H_FTSTREAM_PRODUCER_ */

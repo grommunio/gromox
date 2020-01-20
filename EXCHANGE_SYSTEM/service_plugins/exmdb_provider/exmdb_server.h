@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_SERVER_
-#define _H_EXMDB_SERVER_
+#pragma once
 #include "mapi_types.h"
 #include "element_data.h"
 #include "alloc_context.h"
@@ -465,5 +464,3 @@ BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 void exmdb_server_register_proc(void *pproc);
 
 BOOL exmdb_server_unload_store(const char *dir);
-
-#endif /* _H_EXMDB_SERVER_ */

@@ -1,5 +1,4 @@
-#ifndef _H_DOMAIN_CLASSIFIER_
-#define _H_DOMAIN_CLASSIFIER_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 #include <sys/socket.h>
@@ -40,5 +39,3 @@ void domain_classifier_init(time_t now_time, const char *orignal_path,
 extern int domain_classifier_run(void);
 extern int domain_classifier_stop(void);
 extern void domain_classifier_free(void);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _H_MIME_
-#define _H_MIME_
+#pragma once
 #include "stream.h"
 #include "mem_file.h"
 #include "simple_tree.h"
@@ -124,6 +123,4 @@ size_t mime_get_children_num(MIME *pmime);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

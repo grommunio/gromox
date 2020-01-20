@@ -1,6 +1,4 @@
-#ifndef _H_TYPES_
-#define _H_TYPES_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -495,5 +493,3 @@ typedef struct _STATE_ARRAY {
 
 #define ICS_TYPE_CONTENTS							1
 #define ICS_TYPE_HIERARCHY							2
-
-#endif /* _H_TYPES_ */

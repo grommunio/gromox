@@ -1,5 +1,4 @@
-#ifndef _H_TEMP_LIST_
-#define _H_TEMP_LIST_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -19,6 +18,3 @@ BOOL temp_list_remove_ip(const char *ip);
 BOOL temp_list_dump(const char *path);
 
 BOOL temp_list_echo(const char *str, time_t *puntil);
-
-
-#endif /* _H_TEMP_LIST_ */

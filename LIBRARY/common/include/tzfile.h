@@ -1,6 +1,4 @@
-#ifndef TZFILE_H
-
-#define TZFILE_H
+#pragma once
 
 /*
 ** This file is in the public domain, so clarified as of
@@ -172,5 +170,3 @@ struct tzhead {
 */
 
 #define isleap_sum(a, b)	isleap((a) % 400 + (b) % 400)
-
-#endif /* !defined TZFILE_H */

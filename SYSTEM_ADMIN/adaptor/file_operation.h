@@ -1,5 +1,4 @@
-#ifndef _H_FILE_OPERATION_
-#define _H_FILE_OPERATION_
+#pragma once
 #include <fcntl.h>
 
 enum {
@@ -21,5 +20,3 @@ void file_operation_copy_monitor(const char *src_file, const char *dst_file);
 void file_operation_transfer(const char *src_file, const char *dst_file);
 extern int file_operation_stop(void);
 extern void file_operation_free(void);
-
-#endif

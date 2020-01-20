@@ -1,5 +1,4 @@
-#ifndef _H_RETRYING_TABLE_
-#define _H_RETRYING_TABLE_
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 
@@ -18,6 +17,3 @@ extern int retrying_table_get_valid(void);
 void retrying_table_set_param(int param, int value);
 
 int retrying_table_get_param(int param);
-
-
-#endif /* end of _H_RETRYING_TABLE_ */

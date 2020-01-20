@@ -1,6 +1,4 @@
-#ifndef _H_TRANSPORTER_
-#define _H_TRANSPORTER_
-
+#pragma once
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
@@ -34,5 +32,3 @@ int transporter_get_param(int param);
 
 void transporter_validate_domainlist(BOOL b_valid);
 extern BOOL transporter_domainlist_valid(void);
-
-#endif /* _H_TRANSPORTER_ */

@@ -1,5 +1,4 @@
-#ifndef _H_ICSUPCTX_OBJECT_
-#define _H_ICSUPCTX_OBJECT_
+#pragma once
 #include "folder_object.h"
 #include "mapi_types.h"
 #include "ics_state.h"
@@ -39,5 +38,3 @@ ICS_STATE* icsupctx_object_get_state(ICSUPCTX_OBJECT *pctx);
 BOOL icsupctx_object_check_started(ICSUPCTX_OBJECT *pctx);
 
 void icsupctx_object_mark_started(ICSUPCTX_OBJECT *pctx);
-
-#endif /* _H_ICSUPCTX_OBJECT_ */

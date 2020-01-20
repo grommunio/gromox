@@ -1,5 +1,4 @@
-#ifndef _H_MAPI_TYPES_
-#define _H_MAPI_TYPES_
+#pragma once
 #include "proptags.h"
 #include "common_types.h"
 #include "double_list.h"
@@ -1744,5 +1743,3 @@ typedef BOOL (*USERNAME_TO_ENTRYID)(const char*, const char*, BINARY*, int*);
 typedef BOOL (*ENTRYID_TO_USERNAME)(const BINARY*, void*(*)(size_t), char*);
 
 typedef BOOL (*ESSDN_TO_USERNAME)(const char*, char*);
-
-#endif /* _H_MAPI_TYPES_ */

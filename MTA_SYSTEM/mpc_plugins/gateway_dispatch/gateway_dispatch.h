@@ -1,6 +1,4 @@
-#ifndef _H_GATEWAY_DISPATCH_
-#define _H_GATEWAY_DISPATCH_
-
+#pragma once
 #include <gromox/hook_common.h>
 
 enum {
@@ -38,6 +36,3 @@ int gateway_dispatch_get_param(int param);
 
 void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 	int length);
-
-
-#endif /* _H_GATEWAY_DISPATCH_ */

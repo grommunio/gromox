@@ -1,6 +1,4 @@
-#ifndef _H_IMAP_PARSER_
-#define _H_IMAP_PARSER_
-
+#pragma once
 #include "common_types.h"
 #include "contexts_pool.h"
 #include "xarray.h"
@@ -164,6 +162,3 @@ extern LIB_BUFFER *imap_parser_get_xpool(void);
 extern LIB_BUFFER *imap_parser_get_dpool(void);
 extern int imap_parser_get_sequence_ID(void);
 extern void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...);
-
-#endif
-

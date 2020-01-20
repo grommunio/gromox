@@ -1,5 +1,4 @@
-#ifndef _H_ASSOC_ARRAY_
-#define _H_ASSOC_ARRAY_
+#pragma once
 #include "str_hash.h"
 
 
@@ -39,5 +38,3 @@ void assoc_array_foreach(ASSOC_ARRAY *parray,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_ASSOC_ARRAY_ */

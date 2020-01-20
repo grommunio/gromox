@@ -1,5 +1,4 @@
-#ifndef _H_ESMTP_AUTH_
-#define _H_ESMTP_AUTH_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -16,5 +15,3 @@ extern void esmtp_auth_free(void);
 int esmtp_auth_get_param(int param);
 
 void esmtp_auth_set_param(int param, int value);
-
-#endif

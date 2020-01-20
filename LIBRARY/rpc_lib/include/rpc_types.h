@@ -1,6 +1,4 @@
-#ifndef _H_RPC_TYPES_
-#define _H_RPC_TYPES_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -17,5 +15,3 @@ typedef struct _SYNTAX_ID {
 	GUID uuid;
 	uint32_t version;
 } SYNTAX_ID;
-
-#endif /* _H_RPC_TYPES_ */

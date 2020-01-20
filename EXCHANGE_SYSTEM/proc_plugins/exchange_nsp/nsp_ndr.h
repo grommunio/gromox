@@ -1,5 +1,4 @@
-#ifndef _H_NSP_NDR_
-#define _H_NSP_NDR_
+#pragma once
 #include "nsp_types.h"
 #include "ndr.h"
 
@@ -312,8 +311,3 @@ int nsp_ndr_push_nspiresolvenames(NDR_PUSH *pndr, const NSPIRESOLVENAMES_OUT *r)
 int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r);
 
 int nsp_ndr_push_nspiresolvenamesw(NDR_PUSH *pndr, const NSPIRESOLVENAMESW_OUT *r);
-
-
-
-
-#endif /* _H_NSP_NDR_ */

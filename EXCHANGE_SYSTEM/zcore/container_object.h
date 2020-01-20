@@ -1,6 +1,4 @@
-#ifndef _H_CONTAINER_OBJECT_
-#define _H_CONTAINER_OBJECT_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -72,5 +70,3 @@ void container_object_get_user_table_all_proptags(
 BOOL container_object_query_user_table(
 	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset);
-
-#endif /* _H_CONTAINER_OBJECT_ */

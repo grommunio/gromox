@@ -1,5 +1,4 @@
-#ifndef _H_EID_ARRAY_
-#define _H_EID_ARRAY_
+#pragma once
 #include "mapi_types.h"
 
 #ifdef __cplusplus
@@ -23,5 +22,3 @@ void eid_array_remove(EID_ARRAY *parray, uint64_t eid);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_EID_ARRAY_ */

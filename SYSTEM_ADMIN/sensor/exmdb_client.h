@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_CLIENT_
-#define _H_EXMDB_CLIENT_
+#pragma once
 #include "mapi_types.h"
 #include "element_data.h"
 
@@ -19,5 +18,3 @@ BOOL exmdb_client_unsubscribe_notification(
 	const char *dir, uint32_t sub_id);
 
 void exmdb_client_register_proc(void *pproc);
-
-#endif /* _H_EXMDB_CLIENT_ */

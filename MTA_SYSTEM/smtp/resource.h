@@ -1,5 +1,4 @@
-#ifndef _H_RESOURCE_
-#define _H_RESOURCE_
+#pragma once
 #include "common_types.h"
 
 typedef struct _SMTP_ERROR_CODE {
@@ -95,5 +94,3 @@ extern BOOL resource_set_integer(const char *key, int value);
 extern BOOL resource_set_string(const char *key, const char *value);
 char* resource_get_smtp_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_smtp_code_table(void);
-
-#endif /* _H_RESOURCE_ */

@@ -1,6 +1,4 @@
-#ifndef _H_TIMEZONE_
-#define _H_TIMEZONE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <ctime>
 #else
@@ -24,5 +22,3 @@ time_t tz_mktime(const struct state* const sp, struct tm* const tmp);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_TIMEZONE_ */

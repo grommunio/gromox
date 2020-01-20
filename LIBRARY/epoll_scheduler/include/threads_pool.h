@@ -1,5 +1,4 @@
-#ifndef _H_THREADS_POOL_
-#define _H_THREADS_POOL_
+#pragma once
 
 enum{
 	THREADS_POOL_MIN_NUM,
@@ -44,6 +43,4 @@ extern void threads_pool_wakeup_all_threads(void);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

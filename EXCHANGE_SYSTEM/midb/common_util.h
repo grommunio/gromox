@@ -1,5 +1,4 @@
-#ifndef _H_COMMON_UTIL_
-#define _H_COMMON_UTIL_
+#pragma once
 #include "common_types.h"
 #include "element_data.h"
 
@@ -1489,5 +1488,3 @@ BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
 
 BOOL common_util_get_propname(
 	uint16_t propid, PROPERTY_NAME **pppropname);
-
-#endif /* _H_COMMON_UTIL_ */

@@ -1,5 +1,4 @@
-#ifndef _H_CLASSIFY_ENGINE_
-#define _H_CLASSIFY_ENGINE_
+#pragma once
 #include <time.h>
 
 void classify_engine_init(char *storage_path, int valid_days,
@@ -8,5 +7,3 @@ extern int classify_engine_run(void);
 void classify_engine_clean(time_t cut_time);
 extern int classify_engine_stop(void);
 extern void classify_engine_free(void);
-
-#endif

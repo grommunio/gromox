@@ -1,5 +1,4 @@
-#ifndef _H_ELEMENT_DATA_
-#define _H_ELEMENT_DATA_
+#pragma once
 #include "mapi_types.h"
 
 struct _ATTACHMENT_CONTENT;
@@ -147,5 +146,3 @@ void property_groupinfo_free_internal(PROPERTY_GROUPINFO *pgpinfo);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_ELEMENT_DATA_ */

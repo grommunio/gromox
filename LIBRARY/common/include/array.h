@@ -1,5 +1,4 @@
-#ifndef _H_ARRAY_
-#define _H_ARRAY_
+#pragma once
 #include "lib_buffer.h"
 #include "single_list.h"
 
@@ -37,6 +36,3 @@ void array_clear(ARRAY* parray);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /*_H_ARRAY_ */
-

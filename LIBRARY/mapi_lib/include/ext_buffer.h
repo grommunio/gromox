@@ -1,5 +1,4 @@
-#ifndef _H_EXT_BUFFER_
-#define _H_EXT_BUFFER_
+#pragma once
 #include "mapi_types.h"
 #include "element_data.h"
 
@@ -394,5 +393,3 @@ int ext_buffer_push_message_content(
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_EXT_BUFFER_ */

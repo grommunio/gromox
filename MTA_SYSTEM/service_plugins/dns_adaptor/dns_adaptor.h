@@ -1,5 +1,4 @@
-#ifndef _H_DNS_ADAPTOR_
-#define _H_DNS_ADAPTOR_
+#pragma once
 #include "common_types.h"
 #include "vstack.h"
 #include <time.h>
@@ -18,6 +17,3 @@ BOOL dns_adaptor_query_MX(char* mx_name, VSTACK* pstack);
 BOOL dns_adaptor_query_A(char* domain, VSTACK* pstack);
 
 void dns_adaptor_console_talk(int argc, char **argv, char *result, int length);
-
-#endif /* _H_DNS_ADAPTOR_ */
-

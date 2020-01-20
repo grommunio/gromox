@@ -1,5 +1,4 @@
-#ifndef _H_RESOURCE_
-#define _H_RESOURCE_
+#pragma once
 #include "common_types.h"
 
 typedef struct _IMAP_RETURN_CODE {
@@ -117,5 +116,3 @@ extern BOOL resource_get_digest_integer(const char *src, const char *tag, long *
 extern void resource_set_digest_string(char *src, int length, const char *tag, const char *value);
 extern void resource_set_digest_integer(char *src, int length, const char *tag, long value);
 extern const char *resource_get_error_string(int errno);
-
-#endif /* _H_RESOURCE_ */

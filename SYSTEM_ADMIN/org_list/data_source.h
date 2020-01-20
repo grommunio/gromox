@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -56,5 +55,3 @@ void data_source_remove_domain(int domain_id, int org_id);
 void data_source_add_org(const char *memo);
 
 void data_source_remove_org(int org_id);
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef _H_DOUBLE_LIST_
-#define _H_DOUBLE_LIST_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstddef>
 #else
@@ -93,6 +91,4 @@ DOUBLE_LIST_NODE* double_list_get_tail(DOUBLE_LIST *plist);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

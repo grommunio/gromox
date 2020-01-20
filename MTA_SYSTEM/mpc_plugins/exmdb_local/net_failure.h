@@ -1,5 +1,4 @@
-#ifndef _H_NET_FAILURE_
-#define _H_NET_FAILURE_
+#pragma once
 
 enum{
 	NET_FAILURE_OK,
@@ -22,5 +21,3 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 int net_failure_get_param(int param);
 
 void net_failure_set_param(int param, int val);
-
-#endif /* _H_NET_FAILURE_ */

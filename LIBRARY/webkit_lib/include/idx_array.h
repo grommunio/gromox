@@ -1,5 +1,4 @@
-#ifndef _H_IDX_ARRAY_
-#define _H_IDX_ARRAY_
+#pragma once
 #include "single_list.h"
 
 
@@ -26,6 +25,3 @@ size_t idx_array_get_capacity(IDX_ARRAY *);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /*_H_IDX_ARRAY_ */
-

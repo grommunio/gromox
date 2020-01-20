@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -148,5 +147,3 @@ BOOL data_source_num_domain(int *pnum);
 
 BOOL data_source_domain_password(const char *domainname, const char *encryt_pw,
 	int *presult);
-
-#endif

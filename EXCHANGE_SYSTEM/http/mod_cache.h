@@ -1,5 +1,4 @@
-#ifndef _H_MOD_CACHE_
-#define _H_MOD_CACHE_
+#pragma once
 #include "common_types.h"
 
 struct _HTTP_CONTEXT;
@@ -19,6 +18,3 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp);
 BOOL mod_cache_check_responded(HTTP_CONTEXT *phttp);
 
 BOOL mod_cache_read_response(HTTP_CONTEXT *phttp);
-
-#endif /* _H_MOD_CACHE_ */
-

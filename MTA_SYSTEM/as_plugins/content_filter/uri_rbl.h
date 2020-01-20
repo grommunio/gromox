@@ -1,5 +1,4 @@
-#ifndef _H_URI_RBL_
-#define _H_URI_RBL_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -17,6 +16,3 @@ BOOL uri_rbl_check_cctld(const char *domain);
 BOOL uri_rbl_judge(const char *uri, char *answer_buff, int answer_len);
 extern BOOL uri_rbl_refresh(void);
 const char* uri_rbl_get_dns(int param);
-
-#endif
-

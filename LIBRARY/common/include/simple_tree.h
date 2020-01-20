@@ -1,5 +1,4 @@
-#ifndef _H_SIMPLE_TREE_
-#define _H_SIMPLE_TREE_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -110,6 +109,3 @@ void simple_tree_free(SIMPLE_TREE *ptree);
 #ifdef __cplusplus
 }
 #endif
-
-#endif
-

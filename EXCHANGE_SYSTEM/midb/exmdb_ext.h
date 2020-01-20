@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_EXT_
-#define _H_EXMDB_EXT_
+#pragma once
 #include "common_util.h"
 #include "ext_buffer.h"
 
@@ -17,5 +16,3 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 
 int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	DB_NOTIFY_DATAGRAM *pnotify);
-
-#endif /* _H_EXMDB_EXT_ */

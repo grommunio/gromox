@@ -1,5 +1,4 @@
-#ifndef _H_COOKIE_PARSER_
-#define _H_COOKIE_PARSER_
+#pragma once
 #include "assoc_array.h"
 
 #define COOKIE_PARSER			ASSOC_ARRAY
@@ -21,7 +20,3 @@ void cookie_parser_free(COOKIE_PARSER *pparser);
 #ifdef __cplusplus
 }
 #endif
-
-
-#endif
-

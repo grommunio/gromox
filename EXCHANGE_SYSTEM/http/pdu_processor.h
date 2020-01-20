@@ -1,6 +1,4 @@
-#ifndef _H_PDU_PROCESSOR_
-#define _H_PDU_PROCESSOR_
-
+#pragma once
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
@@ -191,5 +189,3 @@ void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
 extern BOOL pdu_processor_rpc_new_environment(void);
 extern void pdu_processor_rpc_free_environment(void);
-
-#endif /* _H_PDU_PROCESSOR_ */

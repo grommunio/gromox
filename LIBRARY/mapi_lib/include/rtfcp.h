@@ -1,5 +1,4 @@
-#ifndef _H_RTFCP_
-#define _H_RTFCP_
+#pragma once
 #include "mapi_types.h"
 
 
@@ -14,6 +13,3 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_RTFCP_ */
-

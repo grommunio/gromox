@@ -1,5 +1,4 @@
-#ifndef _H_TNET_
-#define _H_TNET_
+#pragma once
 #include "element_data.h"
 #include "ext_buffer.h"
 
@@ -20,5 +19,3 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_TNET_ */

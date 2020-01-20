@@ -1,5 +1,4 @@
-#ifndef _H_EXT_PACK_
-#define _H_EXT_PACK_
+#pragma once
 #include "types.h"
 #include "php.h"
 
@@ -223,5 +222,3 @@ zend_bool ext_pack_push_znotification_array(
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* _H_EXT_PACK_ */

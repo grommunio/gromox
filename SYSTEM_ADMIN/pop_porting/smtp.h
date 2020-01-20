@@ -1,5 +1,4 @@
-#ifndef _H_SMTP_
-#define _H_SMTP_
+#pragma once
 #include "common_types.h"
 
 typedef struct _SMTP_SESSION {
@@ -13,5 +12,3 @@ BOOL smtp_send(SMTP_SESSION *psession, const char *from, const char *rcpt,
 	const char *message);
 
 void smtp_free(SMTP_SESSION *psession);
-
-#endif

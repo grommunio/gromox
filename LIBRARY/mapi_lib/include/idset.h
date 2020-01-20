@@ -1,5 +1,4 @@
-#ifndef _H_IDSET_
-#define _H_IDSET_
+#pragma once
 #include "mapi_types.h"
 #include "double_list.h"
 
@@ -57,5 +56,3 @@ BOOL idset_enum_repl(IDSET *pset, uint16_t replid,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_IDSET_ */

@@ -1,6 +1,4 @@
-#ifndef _H_CMD_PARSER_
-#define _H_CMD_PARSER_
-
+#pragma once
 #include "double_list.h"
 #include <pthread.h>
 
@@ -22,5 +20,3 @@ extern CONNECTION *cmd_parser_get_connection(void);
 void cmd_parser_put_connection(CONNECTION *pconnection);
 
 void cmd_parser_register_command(const char *command, COMMAND_HANDLER handler);
-
-#endif

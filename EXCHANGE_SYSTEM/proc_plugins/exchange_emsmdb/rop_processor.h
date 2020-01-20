@@ -1,6 +1,4 @@
-#ifndef _H_ROP_PROCESSOR_
-#define _H_ROP_PROCESSOR_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #	include <ctime>
@@ -48,6 +46,3 @@ void rop_processor_release_object_handle(void *plogmap,
 	uint8_t logon_id, uint32_t obj_handle);
 	
 LOGON_OBJECT* rop_processor_get_logon_object(void *plogmap, uint8_t logon_id);
-
-
-#endif /* _H_ROP_PROCESSOR_ */

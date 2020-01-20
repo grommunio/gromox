@@ -1,5 +1,4 @@
-#ifndef _H_STORE_OBJECT_
-#define _H_STORE_OBJECT_
+#pragma once
 #include "element_data.h"
 #include "mapi_types.h"
 #include "str_hash.h"
@@ -76,5 +75,3 @@ BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 	
 BOOL store_object_get_permissions(STORE_OBJECT *pstore,
 	struct _PERMISSION_SET *pperm_set);
-
-#endif /* _H_STORE_OBJECT_ */

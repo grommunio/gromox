@@ -1,5 +1,4 @@
-#ifndef _H_MESSAGE_
-#define _H_MESSAGE_
+#pragma once
 
 #define MESSAGE_BUFF_SIZE       64*1024
 
@@ -18,5 +17,3 @@ extern int message_stop(void);
 extern void message_free(void);
 void message_make(char *buff, int type, const char *language,
 	const char *str_domain_user, const char *admin_mailbox);
-
-#endif

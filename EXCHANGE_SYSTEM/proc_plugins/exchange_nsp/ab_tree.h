@@ -1,6 +1,4 @@
-#ifndef _H_AB_TREE_
-#define _H_AB_TREE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #	include <ctime>
@@ -98,5 +96,3 @@ void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode,
 void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length);
 
 int ab_tree_get_guid_base_id(GUID guid);
-
-#endif /* _H_AB_TREE_ */

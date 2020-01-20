@@ -1,4 +1,4 @@
-#ifndef _H_ACL_CONTROL_
+#pragma once
 #include "common_types.h"
 
 #define ACL_PRIVILEGE_IGNORE		-1
@@ -28,5 +28,3 @@ void acl_control_remove(const char *session);
 void acl_control_clear(const char *name);
 extern int acl_control_stop(void);
 extern void acl_control_free(void);
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef _H_COMMON_TYPES_
-#define _H_COMMON_TYPES_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstddef>
 #	include <cstdint>
@@ -41,5 +39,3 @@ typedef struct _DATA_BLOB {
 	};
 	uint32_t length;
 } DATA_BLOB;
-
-#endif

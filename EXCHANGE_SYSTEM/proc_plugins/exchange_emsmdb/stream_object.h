@@ -1,5 +1,4 @@
-#ifndef _H_STREAM_OBJECT_
-#define _H_STREAM_OBJECT_
+#pragma once
 #include "mapi_types.h"
 
 #define MAX_LENGTH_FOR_FOLDER						64*1024
@@ -52,5 +51,3 @@ BOOL stream_object_copy(STREAM_OBJECT *pstream_dst,
 BOOL stream_object_commit(STREAM_OBJECT *pstream);
 
 void stream_object_free(STREAM_OBJECT *pstream);
-
-#endif /* _H_STREAM_OBJECT_ */

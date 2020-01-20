@@ -1,5 +1,4 @@
-#ifndef _H_PDU_NDR_
-#define _H_PDU_NDR_
+#pragma once
 #include "ndr.h"
 
 
@@ -325,5 +324,3 @@ int pdu_ndr_pull_ncacnpkt(NDR_PULL *pndr, DCERPC_NCACN_PACKET *pkt);
 void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt);
 
 int pdu_ndr_push_ncacnpkt(NDR_PUSH *pndr, DCERPC_NCACN_PACKET *pkt);
-
-#endif /* _H_PDU_NDR_ */

@@ -1,6 +1,4 @@
-#ifndef _H_DB_ENGINE_
-#define _H_DB_ENGINE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -182,5 +180,3 @@ void db_engine_begin_batch_mode(DB_ITEM *pdb);
 void db_engine_commit_batch_mode(DB_ITEM *pdb);
 
 void db_engine_cancel_batch_mode(DB_ITEM *pdb);
-	
-#endif /* _H_DB_ENGINE_ */

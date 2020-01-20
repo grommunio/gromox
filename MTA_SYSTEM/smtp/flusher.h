@@ -1,6 +1,4 @@
-#ifndef _H_FLUSHER_
-#define _H_FLUSHER_
-
+#pragma once
 #include "plugin.h"
 #include "smtp_parser.h"
 
@@ -34,5 +32,3 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext);
 void flusher_cancel(SMTP_CONTEXT *pcontext);
 
 void flusher_console_talk(int argc, char** argv, char* reason, int len);
-
-#endif

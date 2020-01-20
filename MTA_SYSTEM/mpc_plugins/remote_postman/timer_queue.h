@@ -1,6 +1,4 @@
-#ifndef _H_TIMER_QUEUE_
-#define _H_TIMER_QUEUE_
-
+#pragma once
 #include "bounce_producer.h"
 #include <time.h>
 #include <gromox/hook_common.h>
@@ -27,6 +25,3 @@ BOOL timer_queue_put(MESSAGE_CONTEXT *pcontext, time_t original_time,
 int timer_queue_get_param(int param);
 
 void timer_queue_set_param(int param, int val);
-
-#endif /* _H_TIMER_QUEUE_ */
-

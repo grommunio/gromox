@@ -1,6 +1,4 @@
-#ifndef _H_SERVICE_
-#define _H_SERVICE_
-
+#pragma once
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
@@ -26,5 +24,3 @@ void service_enum_plugins(ENUM_PLUGINS enum_func);
 void service_enum_dependency(const char *plugin, ENUM_PLUGINS enum_func);
 
 void service_enum_reference(const char *module, ENUM_PLUGINS enum_func);
-
-#endif /* _H_SERVICE_ */

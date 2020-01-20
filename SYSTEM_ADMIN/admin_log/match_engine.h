@@ -1,5 +1,4 @@
-#ifndef _H_MATCH_ENGINE_
-#define _H_MATCH_ENGINE_
+#pragma once
 #include "single_list.h"
 #include <time.h>
 
@@ -35,7 +34,3 @@ int match_engine_collect_forward(MATCH_COLLECT *pcollect);
 
 BOOL match_engine_match(time_t start_time, time_t end_time, const char *ip,
 	const char *from, const char *to, MATCH_COLLECT *pcollect);
-
-
-#endif
-

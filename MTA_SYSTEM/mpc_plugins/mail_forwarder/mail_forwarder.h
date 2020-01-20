@@ -1,6 +1,4 @@
-#ifndef _H_MAIL_FORWARDER_
-#define _H_MAIL_FORWARDER_
-
+#pragma once
 #include <gromox/hook_common.h>
 
 void mail_forwarder_init(const char *path, const char *subject,
@@ -11,6 +9,3 @@ extern int mail_forwarder_stop(void);
 extern void mail_forwarder_free(void);
 void mail_forwarder_console_talk(int argc, char **argv, char *result,
 	int length);
-
-#endif
-

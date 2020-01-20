@@ -1,5 +1,4 @@
-#ifndef _H_SEARCH_ENGINE_
-#define _H_SEARCH_ENGINE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <sys/socket.h>
@@ -61,7 +60,3 @@ int search_engine_collect_forward(SEARCH_COLLECT *pcollect);
 BOOL search_engine_search(const char *domain, const char *ip, const char *from,
 	const char *rcpt, time_t start_point, time_t end_point,
 	SEARCH_COLLECT *pcollect);
-
-
-
-#endif

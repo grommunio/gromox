@@ -1,6 +1,4 @@
-#ifndef _H_ENDIAN_MACRO_
-#define _H_ENDIAN_MACRO_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -50,5 +48,3 @@
 /* Alignment macros. */
 #define ALIGN4(p,base) ((p) + ((4 - (PTR_DIFF((p), (base)) & 3)) & 3))
 #define ALIGN2(p,base) ((p) + ((2 - (PTR_DIFF((p), (base)) & 1)) & 1))
-
-#endif /* _H_ENDIAN_MACRO_ */

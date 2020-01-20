@@ -1,6 +1,4 @@
-#ifndef PHP_MAPI_H
-#define PHP_MAPI_H 1
-
+#pragma once
 #ifdef ZTS
 #include "TSRM.h"
 #endif
@@ -176,5 +174,3 @@ ZEND_FUNCTION(mapi_linkmessage);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry
-
-#endif

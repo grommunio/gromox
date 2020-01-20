@@ -1,6 +1,4 @@
-#ifndef _H_MESSAGE_
-#define _H_MESSAGE_
-
+#pragma once
 #define MESSAGE_BUFF_SIZE		64*1024
 
 
@@ -10,5 +8,3 @@ extern int message_run(void);
 extern void message_stop(void);
 extern void message_free(void);
 void message_alarm_message(char *buff, const char *area, const char *to);
-
-#endif

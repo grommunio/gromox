@@ -1,5 +1,4 @@
-#ifndef _H_IP4_HASH_TABLE_
-#define _H_IP4_HASH_TABLE_
+#pragma once
 #include "lib_buffer.h"
 #include "double_list.h"
 
@@ -76,5 +75,3 @@ int ip4_hash_iter_forward(IP4_HASH_ITER *piter);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_IP4_HASH_TABLE_ */

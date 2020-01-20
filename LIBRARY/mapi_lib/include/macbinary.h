@@ -1,6 +1,4 @@
-#ifndef _H_MACBINARY_
-#define _H_MACBINARY_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #	include <ctime>
@@ -76,5 +74,3 @@ int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_MACBINARY_ */

@@ -1,5 +1,4 @@
-#ifndef _H_PCL_
-#define _H_PCL_
+#pragma once
 #include "mapi_types.h"		
 
 #ifdef __cplusplus
@@ -22,5 +21,3 @@ uint32_t pcl_compare(const PCL *ppcl1, const PCL *ppcl2);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_PCL_ */

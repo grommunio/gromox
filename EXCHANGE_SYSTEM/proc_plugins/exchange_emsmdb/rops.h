@@ -1,5 +1,4 @@
-#ifndef _H_ROP_
-#define _H_ROP_
+#pragma once
 #include "mapi_types.h"
 #include "ext_buffer.h"
 
@@ -537,5 +536,3 @@ uint32_t rop_registernotification(
 	uint8_t logon_id, uint32_t hin, uint32_t *phout);
 
 void rop_release(void *plogmap, uint8_t logon_id, uint32_t hin);
-
-#endif /* _H_ROP_ */

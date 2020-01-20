@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_CLIENT_
-#define _H_EXMDB_CLIENT_
+#pragma once
 #include "mapi_types.h"
 #include "element_data.h"
 
@@ -506,5 +505,3 @@ extern BOOL (*exmdb_client_check_contact_address)(
 
 extern BOOL (*exmdb_client_get_public_folder_unread_count)(const char *dir,
 	const char *username, uint64_t folder_id, uint32_t *pcount);
-
-#endif /* _H_EXMDB_CLIENT_ */

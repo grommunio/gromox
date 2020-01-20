@@ -1,5 +1,4 @@
-#ifndef _H_FIFO_
-#define _H_FIFO_
+#pragma once
 #include "lib_buffer.h"
 #include "single_list.h"
 
@@ -40,6 +39,3 @@ BOOL fifo_is_empty(FIFO* pfifo);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /*_H_FIFO_ */
-

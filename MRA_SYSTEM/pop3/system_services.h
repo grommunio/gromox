@@ -1,6 +1,4 @@
-#ifndef _H_SYSTEM_SERVICES_
-#define _H_SYSTEM_SERVICES_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -30,5 +28,3 @@ extern int (*system_services_check_cdn_user)(const char*);
 extern int (*system_services_create_cdn_user)(const char*);
 extern void (*system_services_broadcast_event)(const char*);
 extern void (*system_services_log_info)(int, const char *, ...);
-
-#endif /* _H_SYSTEM_SERVICES_ */

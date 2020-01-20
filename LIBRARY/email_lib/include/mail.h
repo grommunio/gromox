@@ -1,5 +1,4 @@
-#ifndef _H_MAIL_
-#define _H_MAIL_
+#pragma once
 #include "mime.h"
 #include "stream.h"
 #include "mime_pool.h"
@@ -99,6 +98,3 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_MAIL_ */
-

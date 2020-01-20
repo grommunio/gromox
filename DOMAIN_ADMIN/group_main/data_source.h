@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -12,5 +11,3 @@ extern void data_source_free(void);
 BOOL data_source_info_group(const char *groupname, int *pgroup_status,
 	char *password_buff, char *path_buff, BOOL *presult);
 BOOL data_source_get_homedir(const char *domainname, char *path_buff);
-
-#endif

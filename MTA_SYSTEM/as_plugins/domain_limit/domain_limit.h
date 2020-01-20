@@ -1,5 +1,4 @@
-#ifndef _H_DOMAIN_LIMIT_
-#define _H_DOMAIN_LIMIT_
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 
@@ -9,5 +8,3 @@ BOOL domain_limit_check(const char *from, MEM_FILE *pf_rcpt_to);
 extern int domain_limit_stop(void);
 extern void domain_limit_free(void);
 void domain_limit_console_talk(int argc, char **argv, char *result, int length);
-
-#endif /* _H_DOMAIN_LIMIT_ */

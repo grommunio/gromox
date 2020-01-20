@@ -1,6 +1,4 @@
-#ifndef _H_MIDB_CLIENT_
-#define _H_MIDB_CLIENT_
-
+#pragma once
 #include "common_types.h"
 
 void midb_client_init(const char *list_path);
@@ -11,6 +9,3 @@ BOOL midb_client_ckfl(const char *maildir);
 
 BOOL midb_client_insert(const char *maildir,
 	const char *folder, const char *mid_string);
-
-
-#endif

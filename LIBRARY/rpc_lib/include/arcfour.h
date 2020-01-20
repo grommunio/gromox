@@ -1,6 +1,4 @@
-#ifndef _H_ARCFOUR_
-#define _H_ARCFOUR_
-
+#pragma once
 #include "rpc_types.h"
 
 typedef struct _ARCFOUR_STATE {
@@ -26,5 +24,3 @@ void arcfour_destroy(ARCFOUR_STATE *pstate);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_ARCFOUR_ */

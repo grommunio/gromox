@@ -1,5 +1,4 @@
-#ifndef _H_REQUEST_PARSER_
-#define _H_REQUEST_PARSER_
+#pragma once
 #include "assoc_array.h"
 #include "idx_array.h"
 
@@ -24,7 +23,3 @@ void request_parser_free(REQUEST_PARSER *pparser);
 #ifdef __cplusplus
 }
 #endif
-
-
-#endif
-

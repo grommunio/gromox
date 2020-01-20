@@ -1,5 +1,4 @@
-#ifndef _H_FILE_OPERATION_
-#define _H_FILE_OPERATION_
+#pragma once
 #include <fcntl.h>
 
 enum {
@@ -17,5 +16,3 @@ int file_operation_compare(const char *file1, const char *file2);
 void file_operation_broadcast(const char *src_file, const char *dst_file);
 extern int file_operation_stop(void);
 extern void file_operation_free(void);
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef _H_MESSAGE_ENQUEUE_
-#define _H_MESSAGE_ENQUEUE_
-
+#pragma once
 #include <gromox/flusher_common.h>
 
 enum{
@@ -26,6 +24,3 @@ void message_enqueue_cancel(FLUSH_ENTITY *pentity);
 extern int message_enqueue_retrieve_flush_ID(void);
 void message_enqueue_console_talk(int argc, char **argv, char *result,
 	int length);
-
-#endif
-

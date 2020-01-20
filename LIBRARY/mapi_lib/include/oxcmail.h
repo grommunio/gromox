@@ -1,5 +1,4 @@
-#ifndef _H_OXCMAIL_
-#define _H_OXCMAIL_
+#pragma once
 #include "element_data.h"
 #include "ext_buffer.h"
 #include "mail.h"
@@ -31,5 +30,3 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_OXCMAIL_ */

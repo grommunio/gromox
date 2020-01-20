@@ -1,5 +1,4 @@
-#ifndef _H_POP3_
-#define _H_POP3_
+#pragma once
 
 enum {
 	POP3_RETRIEVE_OK,
@@ -19,6 +18,3 @@ extern void pop3_free(void);
 int pop3_retrieve_message(const char *ip, int port, const char *username,
 	const char *password, int message_type, int check_id, char *last_command, 
 	char *last_response);
-
-
-#endif

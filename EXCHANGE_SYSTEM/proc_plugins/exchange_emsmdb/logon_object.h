@@ -1,5 +1,4 @@
-#ifndef _H_LOGON_OBJECT_
-#define _H_LOGON_OBJECT_
+#pragma once
 #include "element_data.h"
 #include "mapi_types.h"
 #include "str_hash.h"
@@ -78,5 +77,3 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 
 BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
 	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);
-
-#endif /* _H_LOGON_OBJECT_ */

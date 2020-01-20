@@ -1,5 +1,4 @@
-#ifndef _H_URI_CACHE_
-#define _H_URI_CACHE_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -20,5 +19,3 @@ BOOL uri_cache_dump_black(const char *path);
 void uri_cache_set_param(int type, int value);
 
 int uri_cache_get_param(int type);
-
-#endif /* _H_URI_CACHE_ */

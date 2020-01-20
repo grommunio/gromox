@@ -1,6 +1,4 @@
-#ifndef _H_NDR_
-#define _H_NDR_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -169,5 +167,3 @@ int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_NDR_ */

@@ -1,5 +1,4 @@
-#ifndef _H_DATA_EXTRACTOR_
-#define _H_DATA_EXTRACTOR_
+#pragma once
 
 typedef struct _STATUS_ITEM {
 	int		cpu;
@@ -12,5 +11,3 @@ extern int data_extractor_run(void);
 int data_extractor_retrieve(const char *console_ip, STATUS_ITEM *items);
 extern int data_extractor_stop(void);
 extern void data_extractor_free(void);
-
-#endif

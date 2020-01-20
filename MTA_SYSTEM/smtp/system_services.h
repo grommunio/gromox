@@ -1,6 +1,4 @@
-#ifndef _H_SYSTEM_SERVICES_
-#define _H_SYSTEM_SERVICES_
-
+#pragma once
 #include "common_types.h"
 
 enum{
@@ -32,5 +30,3 @@ extern BOOL (*system_services_auth_retrieve)(int, char*, int);
 extern void (*system_services_auth_clear)(int);
 extern void (*system_services_etrn_process)(const char*, int, char*, int);
 extern void (*system_services_vrfy_process)(const char*, int, char*, int);
-
-#endif /* _H_SYSTEM_SERVICES_ */

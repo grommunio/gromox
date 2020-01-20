@@ -1,5 +1,4 @@
-#ifndef _OXVCARD_H_
-#define _OXVCARD_H_
+#pragma once
 #include "element_data.h"
 #include "vcard.h"
 
@@ -10,6 +9,3 @@ MESSAGE_CONTENT* oxvcard_import(
 
 BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	VCARD *pvcard, GET_PROPIDS get_propids);
-
-
-#endif /* _OXVCARD_H_ */

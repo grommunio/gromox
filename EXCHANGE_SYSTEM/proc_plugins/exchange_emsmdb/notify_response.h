@@ -1,5 +1,4 @@
-#ifndef _H_NOTIFY_RESPONSE_
-#define _H_NOTIFY_RESPONSE_
+#pragma once
 #include "mapi_types.h"
 #include "processor_types.h"
 
@@ -13,5 +12,3 @@ BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 
 void notify_response_content_table_row_event_to_change(
 	NOTIFY_RESPONSE *pnotify);
-
-#endif /* _H_NOTIFY_RESPONSE_ */

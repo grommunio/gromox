@@ -1,5 +1,4 @@
-#ifndef _H_UPLOAD_UI_
-#define _H_UPLOAD_UI_
+#pragma once
 
 void upload_ui_init(const char *list_path, int max_file, const char *url_link,
 	const char *host, int port, const char *user, const char *password,
@@ -7,6 +6,3 @@ void upload_ui_init(const char *list_path, int max_file, const char *url_link,
 extern int upload_ui_run(void);
 extern int upload_ui_stop(void);
 extern void upload_ui_free(void);
-
-#endif
-

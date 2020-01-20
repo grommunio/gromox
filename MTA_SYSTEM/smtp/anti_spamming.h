@@ -1,6 +1,4 @@
-#ifndef _H_ANTI_SPAMMING_
-#define _H_ANTI_SPAMMING_
-
+#pragma once
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
@@ -79,6 +77,3 @@ void anti_spamming_enum_plugins(ENUM_PLUGINS enum_func);
 void anti_spamming_threads_event_proc(int action);
 extern int anti_spamming_stop(void);
 extern void anti_spamming_free(void);
-
-#endif
-

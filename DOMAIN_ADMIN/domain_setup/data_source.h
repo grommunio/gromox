@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -17,5 +16,3 @@ BOOL data_source_set_password(const char *domainname, const char *password);
 BOOL data_source_get_homedir(const char *domainname, char *path_buff);
 
 BOOL data_source_info_domain(const char *domainname, int *pprivilege_bits);
-
-#endif

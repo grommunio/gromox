@@ -1,5 +1,4 @@
-#ifndef _H_BACKUP_UI_
-#define _H_BACKUP_UI_
+#pragma once
 
 void backup_ui_init(const char *backup_path, const char *config_path,
 	const char *data_path, const char *mount_path, const char *token_path,
@@ -7,6 +6,3 @@ void backup_ui_init(const char *backup_path, const char *config_path,
 extern int backup_ui_run(void);
 extern int backup_ui_stop(void);
 extern void backup_ui_free(void);
-
-#endif
-

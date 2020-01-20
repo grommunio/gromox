@@ -1,6 +1,4 @@
-#ifndef _H_UTIL_
-#define _H_UTIL_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -88,7 +86,4 @@ extern bool parse_bool(const char *s);
 
 #ifdef __cplusplus
 }
-#endif
-
-
 #endif

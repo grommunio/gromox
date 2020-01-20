@@ -1,5 +1,4 @@
-#ifndef _H_VUSER_
-#define _H_VUSER_
+#pragma once
 
 enum {
 	VUSER_OK,
@@ -17,5 +16,3 @@ void vuser_init(VUSER *puser, const char *username);
 int vuser_work(VUSER *puser);
 
 void vuser_free(VUSER *puser);
-
-#endif

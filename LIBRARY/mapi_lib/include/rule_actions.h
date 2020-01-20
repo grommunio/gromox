@@ -1,5 +1,4 @@
-#ifndef _H_RULE_ACTIONS_
-#define _H_RULE_ACTIONS_
+#pragma once
 #include "mapi_types.h"
 
 #ifdef __cplusplus
@@ -15,5 +14,3 @@ uint32_t rule_actions_size(const RULE_ACTIONS *r);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_RULE_ACTIONS_ */

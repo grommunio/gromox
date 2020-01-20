@@ -1,5 +1,4 @@
-#ifndef _H_BACKEND_LIST_
-#define _H_BACKEND_LIST_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -21,5 +20,3 @@ void backend_list_enum_invalid(BACKEND_LIST_ENUM_FUNC enum_func);
 int backend_list_get_param(int param);
 
 void backend_list_set_param(int param, int value);
-
-#endif /* _H_BACKEND_LIST_ */

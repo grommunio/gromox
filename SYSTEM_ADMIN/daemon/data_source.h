@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -95,5 +94,3 @@ BOOL data_source_make_outofdate(const char *domainname);
 BOOL data_source_status_media(const char *domainname, int status);
 
 BOOL data_source_update_userpasswd(const char *username, const char *password);
-
-#endif

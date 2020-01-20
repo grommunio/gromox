@@ -1,6 +1,4 @@
-#ifndef _H_MATCH_ENGINE_
-#define _H_MATCH_ENGINE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -58,6 +56,3 @@ BOOL message_lookup_search(int server_id, const char *charset,
 
 BOOL message_lookup_match(int server_id, uint64_t mail_id,
 	char *path, char *digest);
-
-#endif
-

@@ -1,5 +1,4 @@
-#ifndef _H_BOUNCE_PRODUCER_
-#define _H_BOUNCE_PRODUCER_
+#pragma once
 #include "mail.h"
 #include "element_data.h"
 
@@ -16,5 +15,3 @@ extern void bounce_producer_free(void);
 extern BOOL bounce_producer_refresh(void);
 BOOL bounce_producer_make(const char *username,
 	MESSAGE_CONTENT *pbrief, int bounce_type, MAIL *pmail);
-
-#endif /* _H_BOUNCE_PRODUCER_ */

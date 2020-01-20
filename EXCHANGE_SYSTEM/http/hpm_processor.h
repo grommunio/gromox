@@ -1,6 +1,4 @@
-#ifndef _H_HPM_PROCESSOR_
-#define _H_HPM_PROCESSOR_
-
+#pragma once
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
@@ -65,5 +63,3 @@ int hpm_processor_receive(HTTP_CONTEXT *phttp,
 	char *pbuff, int length);
 
 void hpm_processor_enum_plugins(ENUM_PLUGINS enum_func);
-
-#endif /* _H_HPM_PROCESSOR_ */

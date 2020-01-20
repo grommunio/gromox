@@ -1,6 +1,4 @@
-#ifndef _H_AB_TREE_
-#define _H_AB_TREE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #	include <ctime>
@@ -103,5 +101,3 @@ BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids);
-
-#endif /* _H_AB_TREE_ */

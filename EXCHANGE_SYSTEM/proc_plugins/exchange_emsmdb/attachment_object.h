@@ -1,5 +1,4 @@
-#ifndef _H_ATTACHMENT_OBJECT_
-#define _H_ATTACHMENT_OBJECT_
+#pragma once
 #include "message_object.h"
 
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
@@ -69,5 +68,3 @@ BOOL attachment_object_copy_properties(
 	ATTACHMENT_OBJECT *pattachment, ATTACHMENT_OBJECT *pattachment_src,
 	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force,
 	BOOL *pb_cycle, PROBLEM_ARRAY *pproblems);
-
-#endif /* _H_ATTACHMENT_OBJECT_ */

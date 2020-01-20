@@ -1,5 +1,4 @@
-#ifndef _H_CDNER_AGENT_
-#define _H_CDNER_AGENT_
+#pragma once
 #include "common_types.h"
 
 
@@ -19,5 +18,3 @@ BOOL cdner_agent_check_user(const char *username);
 BOOL cdner_agent_login(const char *username, const char *password);
 
 void cdner_agent_create_user(const char *username);
-
-#endif

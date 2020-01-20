@@ -1,6 +1,4 @@
-#ifndef _H_SERVICE_COMMON_
-#define _H_SERVICE_COMMON_
-
+#pragma once
 #include <gromox/defs.h>
 #include "common_types.h"
 
@@ -56,6 +54,3 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc")
-
-#endif /* _H_SERVICE_COMMON_ */
-

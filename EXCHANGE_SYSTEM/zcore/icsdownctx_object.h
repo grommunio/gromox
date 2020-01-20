@@ -1,5 +1,4 @@
-#ifndef _H_ICSDOWNCTX_OBJECT_
-#define _H_ICSDOWNCTX_OBJECT_
+#pragma once
 #include "mem_file.h"
 #include "ics_state.h"
 #include "mapi_types.h"
@@ -53,5 +52,3 @@ BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 
 BOOL icsdownctx_object_sync_readstates(
 	ICSDOWNCTX_OBJECT *pctx, STATE_ARRAY *pstates);
-
-#endif /* _H_ICSDOWNCTX_OBJECT_ */

@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -35,6 +34,3 @@ extern void data_source_free(void);
 BOOL data_source_group_info(const char *groupname, char *grouptitle,
 	time_t *pcreate_day, int *pmax_size, int *pactual_size, int *pmax_user,
 	int *pactual_user, int *palias_num, int *pprivilege_bits);
-
-
-#endif

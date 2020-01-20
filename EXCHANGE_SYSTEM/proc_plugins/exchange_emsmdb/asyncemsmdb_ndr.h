@@ -1,5 +1,4 @@
-#ifndef _H_ASYNCEMSMDB_NDR_
-#define _H_ASYNCEMSMDB_NDR_
+#pragma once
 #include "emsmdb_interface.h"
 #include <gromox/proc_common.h>
 
@@ -18,5 +17,3 @@ int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr,
 	
 int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
 	const ECDOASYNCWAITEX_OUT *r);
-
-#endif /* _H_ASYNCEMSMDB_NDR_ */

@@ -1,6 +1,4 @@
-#ifndef _H_LIST_FILE_
-#define _H_LIST_FILE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdio>
 #else
@@ -25,6 +23,3 @@ void list_file_free(LIST_FILE* list_file);
 void* list_file_get_list(LIST_FILE* list_file);
 
 int list_file_get_item_num(LIST_FILE* list_file);
-
-#endif /* _H_LIST_FILE_ */
-

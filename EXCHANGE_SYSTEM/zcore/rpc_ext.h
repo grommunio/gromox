@@ -1,6 +1,4 @@
-#ifndef _H_RPC_EXT_
-#define _H_RPC_EXT_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -893,5 +891,3 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 
 BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	BINARY *pbin_out);
-
-#endif /* _H_RPC_EXT_ */

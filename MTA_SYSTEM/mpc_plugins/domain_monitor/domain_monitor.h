@@ -1,6 +1,4 @@
-#ifndef _H_DOMAIN_MONITOR_
-#define _H_DOMAIN_MONITOR_
-
+#pragma once
 #include <gromox/hook_common.h>
 
 void domain_monitor_init(const char *root_path, const char *subject,
@@ -11,6 +9,3 @@ extern int domain_monitor_stop(void);
 extern void domain_monitor_free(void);
 void domain_monitor_console_talk(int argc, char **argv, char *result,
 	int length);
-
-#endif
-

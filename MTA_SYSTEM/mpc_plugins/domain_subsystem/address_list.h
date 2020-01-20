@@ -1,5 +1,4 @@
-#ifndef _H_ADDRESS_LIST_
-#define _H_ADDRESS_LIST_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -15,5 +14,3 @@ extern int address_list_stop(void);
 extern void address_list_free(void);
 BOOL address_list_query(const char *domain, char *ip, int *port);
 extern int address_list_refresh(void);
-
-#endif

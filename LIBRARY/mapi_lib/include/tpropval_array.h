@@ -1,5 +1,4 @@
-#ifndef _H_TPROPVAL_ARRAY_
-#define _H_TPROPVAL_ARRAY_
+#pragma once
 #include "mapi_types.h"
 
 #ifdef __cplusplus
@@ -28,5 +27,3 @@ TPROPVAL_ARRAY* tpropval_array_dup(TPROPVAL_ARRAY *parray);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_TPROPVAL_ARRAY_ */

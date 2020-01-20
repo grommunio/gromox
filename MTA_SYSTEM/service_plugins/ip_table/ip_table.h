@@ -1,5 +1,4 @@
-#ifndef _H_IP_TABLE_
-#define _H_IP_TABLE_
+#pragma once
 #include "common_types.h"
 #include <fcntl.h>
 
@@ -18,5 +17,3 @@ BOOL ip_table_remove(const char* ip);
 void ip_table_console_talk(int argc, char **argv, char *result, int length);
 
 void ip_table_echo(const char *format, ...);
-
-#endif /* _H_IP_TABLE_ */

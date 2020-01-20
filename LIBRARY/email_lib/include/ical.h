@@ -1,6 +1,4 @@
-#ifndef _H_ICAL_
-#define _H_ICAL_
-
+#pragma once
 #ifdef __cplusplus
 #	include <ctime>
 #else
@@ -249,5 +247,3 @@ BOOL ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_ICAL_ */

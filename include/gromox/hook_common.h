@@ -1,6 +1,4 @@
-#ifndef _H_PLUGIN_
-#define _H_PLUGIN_
-
+#pragma once
 #include <gromox/defs.h>
 #include "common_types.h"
 #include "mem_file.h"
@@ -119,6 +117,3 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	throw_context = (THROW_CONTEXT)query_service("throw_context"); \
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
-	
-#endif
-

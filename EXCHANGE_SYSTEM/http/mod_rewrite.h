@@ -1,5 +1,4 @@
-#ifndef _H_MOD_REWRITE_
-#define _H_MOD_REWRITE_
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 
@@ -9,5 +8,3 @@ extern void mod_rewrite_stop(void);
 extern void mod_rewrite_free(void);
 BOOL mod_rewrite_process(const char *uri_buff,
 	int uri_len, MEM_FILE *pf_request_uri);
-
-#endif /* _H_MOD_REWRITE_ */

@@ -1,6 +1,4 @@
-#ifndef _H_IMAP_CMD_PARSER_
-#define _H_IMAP_CMD_PARSER_
-
+#pragma once
 #include "imap_parser.h"
 
 /* enumeration for the return value of imap_parser_dispatch_cmd */
@@ -85,5 +83,3 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext);
 
 int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _H_BACKUP_UI_
-#define _H_BACKUP_UI_
+#pragma once
 #include "common_types.h"
 
 void backup_ui_init(int valid_days, const char *url_link,
@@ -7,6 +6,3 @@ void backup_ui_init(int valid_days, const char *url_link,
 extern int backup_ui_run(void);
 extern int backup_ui_stop(void);
 extern void backup_ui_free(void);
-
-#endif
-

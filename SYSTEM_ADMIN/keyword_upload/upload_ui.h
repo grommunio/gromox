@@ -1,5 +1,4 @@
-#ifndef _H_UPLOAD_UI_
-#define _H_UPLOAD_UI_
+#pragma once
 
 void upload_ui_init(const char *charset_path, const char *subject_path,
 	const char *from_path, const char *to_path, const char *cc_path,
@@ -8,6 +7,3 @@ void upload_ui_init(const char *charset_path, const char *subject_path,
 extern int upload_ui_run(void);
 extern int upload_ui_stop(void);
 extern void upload_ui_free(void);
-
-#endif
-

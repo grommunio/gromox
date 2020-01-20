@@ -1,5 +1,4 @@
-#ifndef _H_FASTDOWNCTX_OBJECT_
-#define _H_FASTDOWNCTX_OBJECT_
+#pragma once
 #include "ftstream_producer.h"
 #include "ics_state.h"
 
@@ -46,5 +45,3 @@ void fastdownctx_object_free(FASTDOWNCTX_OBJECT *pctx);
 BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
 	void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal);
-
-#endif /* _H_FASTDOWNCTX_OBJECT_ */

@@ -1,5 +1,4 @@
-#ifndef _H_FTSTREAM_PARSER_
-#define _H_FTSTREAM_PARSER_
+#pragma once
 #include "mapi_types.h"
 #include "logon_object.h"
 
@@ -26,5 +25,3 @@ BOOL ftstream_parser_write_buffer(
 BOOL ftstream_parser_process(FTSTREAM_PARSER *pstream,
 	RECORD_MARKER record_marker, RECORD_PROPVAL record_propval,
 	void *pparam);
-
-#endif /* _H_FTSTREAM_PARSER_ */

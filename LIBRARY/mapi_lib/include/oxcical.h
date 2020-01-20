@@ -1,5 +1,4 @@
-#ifndef _OXCICAL_H_
-#define _OXCICAL_H_
+#pragma once
 #include "element_data.h"
 #include "ext_buffer.h"
 #include "ical.h"
@@ -15,6 +14,3 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ICAL *pical,
 	ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username,
 	LCID_TO_LTAG lcid_to_ltag);
-
-
-#endif /* _OXCICAL_H_ */

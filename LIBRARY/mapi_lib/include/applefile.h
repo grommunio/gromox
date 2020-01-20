@@ -1,6 +1,4 @@
-#ifndef _H_APPLEFILE_
-#define _H_APPLEFILE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #	include <ctime>
@@ -246,5 +244,3 @@ int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_APPLEFILE_ */

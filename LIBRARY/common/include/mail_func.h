@@ -1,9 +1,7 @@
 /*
  * Email Address Kids Lib Header
  */
-#ifndef _H_MAIL_FUNC_
-#define _H_MAIL_FUNC_
-
+#pragma once
 #ifdef __cplusplus
 #	include <ctime>
 #else
@@ -84,6 +82,3 @@ int plain_to_html(char *rbuf, int len);
 #ifdef __cplusplus
 }
 #endif
-
-#endif
-

@@ -1,5 +1,4 @@
-#ifndef _H_DOMAIN_KEYWORD_
-#define _H_DOMAIN_KEYWORD_
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 
@@ -10,5 +9,3 @@ BOOL domain_keyword_check(const char *from, MEM_FILE *pf_rcpt_to,
 extern int domain_keyword_stop(void);
 extern void domain_keyword_free(void);
 void domain_keyword_console_talk(int argc, char **argv, char *result, int length);
-
-#endif /* _H_DOMAIN_KEYWORD_ */

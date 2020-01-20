@@ -1,5 +1,4 @@
-#ifndef _H_MULTIPLE_RETRYING_
-#define _H_MULTIPLE_RETRYING_
+#pragma once
 #include "common_types.h"
 
 void multiple_retrying_init(const char *config_path, const char *list_path,
@@ -16,5 +15,3 @@ BOOL multiple_retrying_writeline_timeout(int sockd, const char *buff,
 
 void multiple_retrying_console_talk(int argc, char **argv,
 	char *result, int length);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _H_EXEC_SCHED_
-#define _H_EXEC_SCHED_
+#pragma once
 #include "common_types.h"
 
 
@@ -10,6 +9,3 @@ extern int exec_sched_stop(void);
 BOOL exec_sched_add(const char *username);
 
 BOOL exec_sched_remove(const char *username);
-
-
-#endif /* _H_EXEC_SCHED_ */

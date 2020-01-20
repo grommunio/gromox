@@ -1,5 +1,4 @@
-#ifndef _H_ZARAFA_SERVER_
-#define _H_ZARAFA_SERVER_
+#pragma once
 #include "mapi_types.h"
 #include "common_util.h"
 #include "object_tree.h"
@@ -304,5 +303,3 @@ uint32_t zarafa_server_setpasswd(const char *username,
 
 uint32_t zarafa_server_linkmessage(GUID hsession,
 	BINARY search_entryid, BINARY message_entryid);
-
-#endif /* _H_ZARAFA_CLIENT_ */

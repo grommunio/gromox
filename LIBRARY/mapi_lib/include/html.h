@@ -1,5 +1,4 @@
-#ifndef _H_HTML_
-#define _H_HTML_
+#pragma once
 #include "element_data.h"
 
 #ifdef __cplusplus
@@ -15,6 +14,3 @@ BOOL html_to_rtf(const char *pbuff_in, size_t length,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_HTML_ */
-

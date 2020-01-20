@@ -1,5 +1,4 @@
-#ifndef _H_MESSAGE_
-#define _H_MESSAGE_
+#pragma once
 
 #define MESSAGE_BUFF_SIZE		64*1024
 
@@ -36,5 +35,3 @@ void message_supervising(char *buff, int message_type, int id);
 
 void message_alarm_message(char *buff, int type, const char *command,
 	const char *response, const char *ip, int port, const char *to);
-
-#endif

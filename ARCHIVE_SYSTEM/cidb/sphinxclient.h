@@ -8,11 +8,7 @@
 // have received a copy of the LGPL license along with this program; if you
 // did not, you can find it at http://www.gnu.org/
 //
-
-
-#ifndef _sphinxclient_
-#define _sphinxclient_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -256,6 +252,3 @@ void						sphinx_status_destroy			( char ** status, int num_rows, int num_cols )
 #ifdef	__cplusplus
 }
 #endif
-
-#endif // _sphinxclient_
-

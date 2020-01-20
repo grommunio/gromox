@@ -1,5 +1,4 @@
-#ifndef _H_EMSMDB_INTERFACE_
-#define _H_EMSMDB_INTERFACE_
+#pragma once
 #include "common_types.h"
 #include <gromox/proc_common.h>
 #include "mapi_types.h"
@@ -88,5 +87,3 @@ void emsmdb_interface_remove_subscription_notify(
 
 void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	uint32_t notify_id, const DB_NOTIFY *pdb_notify);
-
-#endif /* _H_EMSMDB_INTERFACE_ */

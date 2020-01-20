@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_PARSER_
-#define _H_EXMDB_PARSER_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <pthread.h>
@@ -46,5 +45,3 @@ ROUTER_CONNECTION* exmdb_parser_get_router(const char *remote_id);
 void exmdb_parser_put_router(ROUTER_CONNECTION *pconnection);
 
 BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection);
-
-#endif	/* _H_EXMDB_PARSER_ */

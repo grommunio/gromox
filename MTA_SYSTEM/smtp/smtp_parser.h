@@ -1,6 +1,4 @@
-#ifndef _H_SMTP_PARSER_
-#define _H_SMTP_PARSER_
-
+#pragma once
 #include "common_types.h"
 #include "contexts_pool.h"
 #include "stream.h"
@@ -228,6 +226,3 @@ int smtp_parser_threads_event_proc(int action);
 
 void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
-
-#endif
-

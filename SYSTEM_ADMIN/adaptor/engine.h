@@ -1,5 +1,4 @@
-#ifndef _H_ENGINE_
-#define _H_ENGINE_
+#pragma once
 #include "common_types.h"
 
 void engine_init(const char *mount_path, const char *domainlist_path,
@@ -9,5 +8,3 @@ void engine_init(const char *mount_path, const char *domainlist_path,
 extern int engine_run(void);
 extern int engine_stop(void);
 extern void engine_free(void);
-
-#endif

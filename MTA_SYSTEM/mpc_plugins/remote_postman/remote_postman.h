@@ -1,6 +1,4 @@
-#ifndef _H_REMOTE_POSTMAN_
-#define _H_REMOTE_POSTMAN_
-
+#pragma once
 #include <gromox/hook_common.h>
 
 void remote_postman_init(int max_thr, int files_num,
@@ -16,6 +14,3 @@ BOOL remote_postman_hook(MESSAGE_CONTEXT *pcontext);
 
 void remote_postman_console_talk(int argc,
 	char **argv, char *result, int length);
-
-
-#endif /* _H_REMOTE_POSTMAN_ */

@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -109,5 +108,3 @@ BOOL data_source_remove_group(const char *groupname, int *presult);
 BOOL data_source_get_group_list(const char *domainname, DATA_COLLECT *pcollect);
 
 BOOL data_source_get_group_users(const char *groupname, DATA_COLLECT *pcollect);
-
-#endif

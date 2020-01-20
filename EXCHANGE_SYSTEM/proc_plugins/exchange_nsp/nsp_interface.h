@@ -1,5 +1,4 @@
-#ifndef _H_NSP_INTERFACE_
-#define _H_NSP_INTERFACE_
+#pragma once
 #include "nsp_types.h"
 #include "simple_tree.h"
 
@@ -70,5 +69,3 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
-	
-#endif /* _H_NSP_INTERFACE_ */

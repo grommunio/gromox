@@ -1,6 +1,4 @@
-#ifndef _H_CLONE_QUEUE_
-#define _H_CLONE_QUEUE_
-
+#pragma once
 #include <time.h>
 #include <gromox/hook_common.h>
 
@@ -18,6 +16,3 @@ BOOL clone_queue_put(MESSAGE_CONTEXT *pcontext, time_t original_time);
 int clone_queue_get_param(int param);
 
 void clone_queue_set_param(int param, int val);
-
-#endif /* _H_CLONE_QUEUE_ */
-

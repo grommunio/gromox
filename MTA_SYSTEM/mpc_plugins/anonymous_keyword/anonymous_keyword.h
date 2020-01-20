@@ -1,5 +1,4 @@
-#ifndef _H_ANONYMOUS_KEYWORD_
-#define _H_ANONYMOUS_KEYWORD_
+#pragma once
 #include "common_types.h"
 
 typedef void (*ENUM_GROUP)(const char *, int);
@@ -14,5 +13,3 @@ BOOL anonymous_keyword_match(const char *charset, const char *buff,
 void anonymous_keyword_enum_group(ENUM_GROUP enum_func);
 extern BOOL anonymous_keyword_refresh(void);
 extern void anonymous_keyword_clear_statistic(void);
-
-#endif

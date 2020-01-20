@@ -1,5 +1,4 @@
-#ifndef _H_DSN_
-#define _H_DSN_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 
@@ -48,5 +47,3 @@ void dsn_free(DSN *pdsn);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_DSN_ */

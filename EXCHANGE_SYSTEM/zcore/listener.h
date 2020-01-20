@@ -1,9 +1,6 @@
-#ifndef _H_LISTENER_
-#define _H_LISTENER_
+#pragma once
 
 extern void listener_init(void);
 extern int listener_run(const char *sockpath);
 extern int listener_stop(void);
 extern void listener_free(void);
-
-#endif /* _H_LISTENER_ */

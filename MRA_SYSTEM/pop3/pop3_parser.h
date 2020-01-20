@@ -1,6 +1,4 @@
-#ifndef _H_POP3_PARSER_
-#define _H_POP3_PARSER_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -89,6 +87,3 @@ int pop3_parser_threads_event_proc(int action);
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);
 extern void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *format, ...);
 extern char *pop3_parser_cdn_path(void);
-
-#endif
-

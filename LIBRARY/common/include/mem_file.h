@@ -1,6 +1,4 @@
-#ifndef _H_MEM_FILE_
-#define _H_MEM_FILE_
-
+#pragma once
 #include "common_types.h"
 #include "lib_buffer.h"
 #include "double_list.h"
@@ -62,6 +60,4 @@ size_t mem_file_copy(MEM_FILE *pfile_src, MEM_FILE *pfile_dst);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

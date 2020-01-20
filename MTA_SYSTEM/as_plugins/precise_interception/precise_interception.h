@@ -1,5 +1,4 @@
-#ifndef _H_PRECISE_INTERCEPTION_
-#define _H_PRECISE_INTERCEPTION_
+#pragma once
 #include "common_types.h"
 
 void precise_interception_init(const char *path);
@@ -10,6 +9,3 @@ BOOL precise_interception_judge(const char* ptr, int length);
 
 void precise_interception_console_talk(int argc, char **argv, char *result,
 	int length);
-
-
-#endif /* _H_PRECISE_INTERCEPTION_ */

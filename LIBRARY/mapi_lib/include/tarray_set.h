@@ -1,5 +1,4 @@
-#ifndef _H_TARRAY_SET_
-#define _H_TARRAY_SET_
+#pragma once
 #include "mapi_types.h"
 
 #ifdef __cplusplus
@@ -18,5 +17,3 @@ TARRAY_SET* tarray_set_dup(TARRAY_SET *pset);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_TARRAY_SET_ */

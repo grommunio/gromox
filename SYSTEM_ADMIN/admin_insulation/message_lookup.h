@@ -1,5 +1,4 @@
-#ifndef _H_MATCH_ENGINE_
-#define _H_MATCH_ENGINE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -38,7 +37,3 @@ int message_lookup_collect_forward(LOOKUP_COLLECT *pcollect);
 
 BOOL message_lookup_match(char *from, char *to, const char *reason,
 	LOOKUP_COLLECT *pcollect);
-
-
-#endif
-

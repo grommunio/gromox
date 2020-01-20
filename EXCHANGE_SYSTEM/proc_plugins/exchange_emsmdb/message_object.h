@@ -1,5 +1,4 @@
-#ifndef _H_MESSAGE_OBJECT_
-#define _H_MESSAGE_OBJECT_
+#pragma once
 #include "ics_state.h"
 #include "mapi_types.h"
 #include "double_list.h"
@@ -127,5 +126,3 @@ BOOL message_object_copy_attachments(MESSAGE_OBJECT *pmessage,
 
 BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint8_t read_flag, BOOL *pb_changed);
-
-#endif /* _H_MESSAGE_OBJECT_ */

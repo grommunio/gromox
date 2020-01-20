@@ -1,5 +1,4 @@
-#ifndef _H_COMMON_UTIL_
-#define _H_COMMON_UTIL_
+#pragma once
 #include "mail.h"
 #include "common_types.h"
 #include "element_data.h"
@@ -1761,5 +1760,3 @@ uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment);
 
 unsigned int common_util_get_param(int param);
-
-#endif /* _H_COMMON_UTIL_ */

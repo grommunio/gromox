@@ -1,6 +1,4 @@
-#ifndef _H_CONFIG_FILE_
-#define _H_CONFIG_FILE_
-
+#pragma once
 #include "common_types.h"
 
 typedef struct _CONFIG_ENTRY {
@@ -34,6 +32,3 @@ BOOL config_file_save(CONFIG_FILE* cfg_file);
 #ifdef __cplusplus
 }
 #endif
-
-
-#endif /* _H_CONFIG_FILE_ */

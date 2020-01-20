@@ -1,5 +1,4 @@
-#ifndef _H_XARRAY_
-#define _H_XARRAY_
+#pragma once
 #include "lib_buffer.h"
 #include "double_list.h"
 
@@ -55,6 +54,3 @@ void xarray_clear(XARRAY* pxarray);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /*_H_XARRAY_ */
-

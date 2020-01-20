@@ -1,5 +1,4 @@
-#ifndef _H_ROP_EXT_
-#define _H_ROP_EXT_
+#pragma once
 #include "ext_buffer.h"
 #include "processor_types.h"
 
@@ -22,5 +21,3 @@ int rop_ext_push_notify_response(EXT_PUSH *pext,
 
 int rop_ext_push_pending_response(EXT_PUSH *pext,
 	const PENDING_RESPONSE *r);
-
-#endif /* _H_ROP_EXT_ */

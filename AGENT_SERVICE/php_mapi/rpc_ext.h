@@ -1,5 +1,4 @@
-#ifndef _H_RPC_EXT_
-#define _H_RPC_EXT_
+#pragma once
 #include "ext_pack.h"
 
 #define CALL_ID_LOGON								0x00
@@ -989,5 +988,3 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* _H_RPC_EXT_ */

@@ -1,5 +1,4 @@
-#ifndef _H_VCARD_
-#define _H_VCARD_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 
@@ -61,5 +60,3 @@ VCARD_LINE* vcard_new_simple_line(const char *name, const char *value);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_VCARD_ */

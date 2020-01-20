@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -10,6 +9,3 @@ extern int data_source_run(void);
 extern int data_source_stop(void);
 extern void data_source_free(void);
 BOOL data_source_get_homedir(const char *domainname, char *path_buff);
-
-
-#endif

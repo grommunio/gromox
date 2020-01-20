@@ -1,5 +1,4 @@
-#ifndef _H_MYSQL_ADAPTOR_
-#define _H_MYSQL_ADAPTOR_
+#pragma once
 #include "mem_file.h"
 
 enum {
@@ -93,5 +92,3 @@ extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int 
 extern BOOL mysql_adaptor_get_user_info(const char *username, char *maildir, char *lang, char *timezone);
 extern BOOL mysql_adaptor_get_username(int user_id, char *username);
 extern void mysql_adaptor_disable_smtp(const char *username);
-
-#endif

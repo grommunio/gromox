@@ -1,5 +1,4 @@
-#ifndef _H_STR_TABLE_
-#define _H_STR_TABLE_
+#pragma once
 #include "common_types.h"
 #include <fcntl.h>
 
@@ -19,5 +18,3 @@ BOOL str_table_remove(const char* str);
 void str_table_console_talk(int argc, char **argv, char *result, int length);
 
 void str_table_echo(const char *format, ...);
-
-#endif /* _H_STR_TABLE_ */

@@ -1,5 +1,4 @@
-#ifndef _H_BINHEX_
-#define _H_BINHEX_
+#pragma once
 #include "mapi_types.h"
 
 typedef struct _BINHEX {
@@ -27,5 +26,3 @@ BINARY* binhex_serialize(const BINHEX *pbinhex);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_BINHEX_ */

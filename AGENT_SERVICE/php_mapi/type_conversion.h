@@ -1,5 +1,4 @@
-#ifndef _H_TYPE_CONVERSION_
-#define _H_TYPE_CONVERSION_
+#pragma once
 #include "php.h"
 #include "types.h"
 
@@ -69,5 +68,3 @@ zend_bool php_to_propname_array(zval *pzval_names,
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* _H_TYPE_CONVERSION_ */

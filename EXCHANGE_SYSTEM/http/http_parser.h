@@ -1,6 +1,4 @@
-#ifndef _H_HTTP_PARSER_
-#define _H_HTTP_PARSER_
-
+#pragma once
 #include "mod_fastcgi.h"
 #include "common_types.h"
 #include "contexts_pool.h"
@@ -173,6 +171,3 @@ void http_parser_vconnection_async_reply(const char *host,
 
 void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive);
 extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...);
-
-#endif
-

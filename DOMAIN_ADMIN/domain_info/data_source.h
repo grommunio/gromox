@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -44,6 +43,3 @@ BOOL data_source_domain_info(const char *domainname, time_t *pcreate_day,
 	time_t *pend_day, int *pmax_size, int *pactual_size, int *pmax_user,
 	int *pactual_user, int *palias_num, int *pgroup_num, int *pmlist_num,
 	int *pprivilege_bits);
-
-
-#endif

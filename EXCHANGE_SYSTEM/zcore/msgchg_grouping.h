@@ -1,6 +1,4 @@
-#ifndef _H_MSGCHG_GROUPING_
-#define _H_MSGCHG_GROUPING_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -17,5 +15,3 @@ PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 	STORE_OBJECT *pstore, uint32_t group_id);
 extern int msgchg_grouping_stop(void);
 extern void msgchg_grouping_free(void);
-
-#endif /* _H_MSGCHG_GROUPING_ */

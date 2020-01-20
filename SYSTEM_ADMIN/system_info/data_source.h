@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 
 void data_source_init(const char *host, int port, const char *user,
@@ -12,7 +11,3 @@ BOOL data_source_system_info(int *preal_domains, int *pbackup, int *pmonitor,
 	int *poutofdate, int *pdeleted, int *psuspend, int *pgroups,
 	int *palloc_addresses, int *preal_addresses, int *palias_address,
 	int *pmlists, long *ptotal_space);
-
-
-
-#endif

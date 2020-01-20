@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_EXT_
-#define _H_EXMDB_EXT_
+#pragma once
 #include "ext_buffer.h"
 
 #define CALL_ID_CONNECT													0x00
@@ -87,5 +86,3 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 
 int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 	EXT_BUFFER_ALLOC auto_alloc, DB_NOTIFY_DATAGRAM *pnotify);
-
-#endif /* _H_EXMDB_EXT_ */

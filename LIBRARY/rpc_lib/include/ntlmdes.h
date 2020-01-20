@@ -1,6 +1,4 @@
-#ifndef _H_NTLMDES_
-#define _H_NTLMDES_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -32,5 +30,3 @@ void sam_rid_crypt(unsigned int rid, const uint8_t *in, uint8_t *out, int forw);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_NTLMDES_ */

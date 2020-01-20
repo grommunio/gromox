@@ -1,6 +1,4 @@
-#ifndef _H_BOUNCE_PRODUCER_
-#define _H_BOUNCE_PRODUCER_
-
+#pragma once
 #include <time.h>
 #include <gromox/hook_common.h>
 
@@ -11,5 +9,3 @@ extern void bounce_producer_free(void);
 extern BOOL bounce_producer_refresh(void);
 void bounce_producer_make(MESSAGE_CONTEXT *pcontext,
 	time_t original_time, MAIL *pmail);
-
-#endif

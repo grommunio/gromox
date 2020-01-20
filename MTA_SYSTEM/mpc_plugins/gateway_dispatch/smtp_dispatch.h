@@ -1,6 +1,4 @@
-#ifndef _H_SMTP_DISPATCH_
-#define _H_SMTP_DISPATCH_
-
+#pragma once
 #include <gromox/hook_common.h>
 
 enum{
@@ -19,6 +17,3 @@ int smtp_dispatch_process(MESSAGE_CONTEXT *pcontext,
 	char *dest_ip, char *response_line, int length);
 extern void smtp_dispatch_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
 extern BOOL smtp_dispatch_has_maskstring(void);
-
-#endif /* _H_SMTP_DISPATCH_ */
-

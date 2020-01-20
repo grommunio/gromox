@@ -1,6 +1,4 @@
-#ifndef _H_BOUNCE_PRODUCER_
-#define _H_BOUNCE_PRODUCER_
-
+#pragma once
 #include <gromox/hook_common.h>
 
 enum{
@@ -18,5 +16,3 @@ extern void bounce_producer_free(void);
 extern BOOL bounce_producer_refresh(void);
 void bounce_producer_make(const char *from, const char *rcpt,
 	MAIL *pmail_original, int bounce_type, MAIL *pmail);
-
-#endif

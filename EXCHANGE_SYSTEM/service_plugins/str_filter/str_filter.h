@@ -1,6 +1,4 @@
-#ifndef _H_STR_FILTER
-#define _H_STR_FILTER
-
+#pragma once
 #include "common_types.h"
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
@@ -24,5 +22,3 @@ BOOL str_filter_add_string_into_temp_list(char* str, int interval);
 void str_filter_console_talk(int argc, char **argv, char *result, int length);
 
 void str_filter_echo(const char *format, ...);
-
-#endif

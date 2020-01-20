@@ -1,5 +1,4 @@
-#ifndef _H_CONTEXTS_POOL_
-#define _H_CONTEXTS_POOL_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <sys/time.h>
@@ -69,6 +68,4 @@ int contexts_pool_get_param(int type);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

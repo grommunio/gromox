@@ -1,6 +1,4 @@
-#ifndef _H_PROPVAL_
-#define _H_PROPVAL_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -24,5 +22,3 @@ BOOL propval_compare_relop(uint8_t relop,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_PROPVAL_ */

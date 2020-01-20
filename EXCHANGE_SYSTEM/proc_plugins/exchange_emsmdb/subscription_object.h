@@ -1,5 +1,4 @@
-#ifndef _H_SUBSCRIPTION_OBJECT_
-#define _H_SUBSCRIPTION_OBJECT_
+#pragma once
 #include "emsmdb_interface.h"
 #include "logon_object.h"
 
@@ -21,5 +20,3 @@ void subscription_object_set_handle(
 	SUBSCRIPTION_OBJECT *psub, uint32_t handle);
 	
 void subscription_object_free(SUBSCRIPTION_OBJECT *psub);
-
-#endif /* _H_SUBSCRIPTION_OBJECT_ */

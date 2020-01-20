@@ -1,6 +1,4 @@
-#ifndef _H_LZXPRESS_
-#define _H_LZXPRESS_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -20,5 +18,3 @@ uint32_t lzxpress_decompress(const uint8_t *input, uint32_t input_size,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_LZXPRESS_ */

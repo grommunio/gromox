@@ -1,5 +1,4 @@
-#ifndef _H_UNCHECK_DOMAINS_
-#define _H_UNCHECK_DOMAINS_
+#pragma once
 #include "common_types.h"
 
 enum{
@@ -15,5 +14,3 @@ extern int uncheck_domains_run(void);
 extern int uncheck_domains_stop(void);
 BOOL uncheck_domains_query(const char* domain);
 extern int uncheck_domains_refresh(void);
-
-#endif

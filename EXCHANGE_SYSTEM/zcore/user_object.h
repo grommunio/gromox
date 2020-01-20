@@ -1,6 +1,4 @@
-#ifndef _H_USER_OBJECT_
-#define _H_USER_OBJECT_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -22,5 +20,3 @@ BOOL user_object_check_valid(USER_OBJECT *puser);
 
 BOOL user_object_get_properties(USER_OBJECT *puser,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-
-#endif /* _H_USER_OBJECT_ */

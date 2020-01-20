@@ -1,5 +1,4 @@
-#ifndef _H_MJSON_
-#define _H_MJSON_
+#pragma once
 #include "simple_tree.h"
 #include "lib_buffer.h"
 #include "mime_pool.h"
@@ -174,7 +173,3 @@ MJSON_MIME *mjson_get_mime(MJSON *pjson, const char *id);
 #ifdef __cplusplus
 }
 #endif
-
-
-#endif /* _H_MAIL_ */
-

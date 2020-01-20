@@ -1,5 +1,4 @@
-#ifndef _H_FLUSH_COMMON_
-#define _H_FLUSH_COMMON_
+#pragma once
 #include <sys/time.h>
 #include <gromox/defs.h>
 #include "common_types.h"
@@ -141,6 +140,3 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
     get_extra_value = (GET_EXTRA_TAGVAL)query_service("get_extra_value"); \
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
-	
-#endif /* _H_FLUSH_COMMON_ */
-

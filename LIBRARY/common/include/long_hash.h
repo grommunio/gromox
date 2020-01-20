@@ -1,5 +1,4 @@
-#ifndef _H_LONG_HASH_TABLE_
-#define _H_LONG_HASH_TABLE_
+#pragma once
 #include "lib_buffer.h"
 #include "double_list.h"
 
@@ -76,5 +75,3 @@ int long_hash_iter_forward(LONG_HASH_ITER *piter);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_LONG_HASH_TABLE_ */

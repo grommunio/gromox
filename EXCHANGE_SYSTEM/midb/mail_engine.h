@@ -1,5 +1,4 @@
-#ifndef _H_MAIL_ENGINE_
-#define _H_MAIL_ENGINE_
+#pragma once
 
 enum {
 	MIDB_TABLE_SIZE,
@@ -14,5 +13,3 @@ extern int mail_engine_run(void);
 extern int mail_engine_stop(void);
 extern void mail_engine_free(void);
 int mail_engine_get_param(int param);
-
-#endif

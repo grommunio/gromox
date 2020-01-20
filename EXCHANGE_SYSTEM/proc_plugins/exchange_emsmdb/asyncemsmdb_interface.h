@@ -1,5 +1,4 @@
-#ifndef _H_ASYNCEMSMDB_INTERFACE_
-#define _H_ASYNCEMSMDB_INTERFACE_
+#pragma once
 #include "asyncemsmdb_ndr.h"
 
 void asyncemsmdb_interface_init(int threads_num);
@@ -12,5 +11,3 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 void asyncemsmdb_interface_reclaim(uint32_t async_id);
 
 void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr);
-	
-#endif /* _H_ASYNCEMSMDB_INTERFACE_ */

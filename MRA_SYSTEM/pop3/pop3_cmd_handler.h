@@ -1,6 +1,4 @@
-#ifndef _POP3_CMD_HANDLER_
-#define _POP3_CMD_HANDLER_
-
+#pragma once
 #include "pop3_parser.h"
 
 /* enumeration for the return value of pop3_parser_dispatch_cmd */
@@ -52,5 +50,3 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 
 int pop3_cmd_handler_else(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext);
-
-#endif

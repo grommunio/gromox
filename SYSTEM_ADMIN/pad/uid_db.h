@@ -1,5 +1,4 @@
-#ifndef _H_UID_DB_
-#define _H_UID_DB_
+#pragma once
 #include "pop3.h"
 #include "list_file.h"
 
@@ -20,5 +19,3 @@ void uid_db_free(UID_DB *pdb);
 BOOL uid_db_update(UID_DB *pdb, POP3_SESSION *psession);
 
 BOOL uid_db_check(UID_DB *pdb, POP3_SESSION *psession);
-
-#endif

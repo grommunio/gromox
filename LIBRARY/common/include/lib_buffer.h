@@ -1,6 +1,4 @@
-#ifndef _H_LIB_BUFFER_
-#define _H_LIB_BUFFER_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdlib>
 #	include <cstring>
@@ -49,6 +47,3 @@ size_t lib_buffer_get_param(LIB_BUFFER* m_buf, PARAM_TYPE type);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_LIB_BUFFER_ */
-

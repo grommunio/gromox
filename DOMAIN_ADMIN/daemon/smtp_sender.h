@@ -1,5 +1,4 @@
-#ifndef _H_SMTP_SENDER_
-#define _H_SMTP_SENDER_
+#pragma once
 #include "common_types.h"
 
 extern void smtp_sender_init(void);
@@ -8,5 +7,3 @@ void smtp_sender_send(const char *sender, const char *address,
 	const char *pbuff, int size);
 extern int smtp_sender_stop(void);
 extern void smtp_sender_free(void);
-
-#endif

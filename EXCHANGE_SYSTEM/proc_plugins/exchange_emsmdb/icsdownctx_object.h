@@ -1,5 +1,4 @@
-#ifndef _H_ICSDOWNCTX_OBJECT_
-#define _H_ICSDOWNCTX_OBJECT_
+#pragma once
 #include "mem_file.h"
 #include "ics_state.h"
 #include "mapi_types.h"
@@ -61,5 +60,3 @@ void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx);
 BOOL icsdownctx_object_get_buffer(ICSDOWNCTX_OBJECT *pctx,
 	void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal);
-
-#endif /* _H_ICSDOWNCTX_OBJECT_ */

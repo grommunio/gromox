@@ -1,6 +1,4 @@
-#ifndef _SMTP_CMD_HANDLER_
-#define _SMTP_CMD_HANDLER_
-
+#pragma once
 #include "smtp_parser.h"
 
 /* enumeration for the return value of smtp_parser_dispatch_cmd */
@@ -51,5 +49,3 @@ int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
 
 int smtp_cmd_handler_else(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);
-
-#endif

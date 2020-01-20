@@ -1,6 +1,4 @@
-#ifndef _H_OBJECT_TREE_
-#define _H_OBJECT_TREE_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -51,5 +49,3 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 
 BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-
-#endif /* _H_OBJECT_TREE_ */

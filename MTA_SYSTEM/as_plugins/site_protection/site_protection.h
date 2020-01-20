@@ -1,5 +1,4 @@
-#ifndef _SITE_PROTECTION_H_
-#define _SITE_PROTECTION_H_
+#pragma once
 
 enum {
 	SITE_PROTECTION_NONE,
@@ -16,6 +15,3 @@ int site_protection_verify(char* domain, char* ip);
 
 void site_protection_console_talk(int argc, char **argv, char *result,
 	int length);
-
-#endif
-

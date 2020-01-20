@@ -1,5 +1,4 @@
-#ifndef _H_DATA_EXTRACTOR_
-#define _H_DATA_EXTRACTOR_
+#pragma once
 #include <time.h>
 
 #define SPAM_TAG_LEN        128
@@ -16,5 +15,3 @@ void data_extractor_retrieve(const char *console_ip,
 	STATISTIC_ITEM *pdelivery_item, int *delivery_num, time_t *delivery_time);
 extern int data_extractor_stop(void);
 extern void data_extractor_free(void);
-
-#endif

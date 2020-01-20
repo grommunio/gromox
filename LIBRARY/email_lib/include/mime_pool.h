@@ -1,5 +1,4 @@
-#ifndef _H_MIME_POOL_
-#define _H_MIME_POOL_
+#pragma once
 #include "single_list.h"
 #include "lib_buffer.h"
 #include "mime.h"
@@ -34,7 +33,4 @@ void mime_pool_put(MIME *pmime);
 
 #ifdef __cplusplus
 }
-#endif
-
-
 #endif

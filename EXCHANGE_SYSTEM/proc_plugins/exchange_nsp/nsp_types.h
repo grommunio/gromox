@@ -1,6 +1,4 @@
-#ifndef _H_NSP_TYPES_
-#define _H_NSP_TYPES_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -317,6 +315,3 @@ typedef struct _EPHEMERAL_ENTRYID {
 	uint32_t display_type;	/* must match one of the existing display type value */
 	uint32_t mid;			/* mid of this object	*/
 } EPHEMERAL_ENTRYID;
-
-#endif /* _H_NSP_TYPES_ */
-

@@ -1,5 +1,4 @@
-#ifndef _H_PROCESSOR_TYPES_
-#define _H_PROCESSOR_TYPES_
+#pragma once
 #include "mapi_types.h"
 
 typedef struct _LOGON_REQUEST {
@@ -1199,5 +1198,3 @@ typedef struct _ROP_BUFFER {
 	uint8_t hnum;
 	uint32_t *phandles;
 } ROP_BUFFER;
-
-#endif /* _H_PROCESSOR_TYPES_ */

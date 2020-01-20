@@ -1,6 +1,4 @@
-#ifndef _H_CODEPAGE_LANG_
-#define _H_CODEPAGE_LANG_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #else
@@ -15,5 +13,3 @@ extern void codepage_lang_free(void);
 BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 	char *value, int len);
 extern BOOL codepage_lang_reload(void);
-
-#endif /* _H_CODEPAGE_LANG_ */

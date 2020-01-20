@@ -1,6 +1,4 @@
-#ifndef _H_MESSAGE_DEQUEUE_
-#define _H_MESSAGE_DEQUEUE_
-
+#pragma once
 #include "common_types.h"
 #include "single_list.h"
 
@@ -51,5 +49,3 @@ void message_dequeue_put(MESSAGE *pmessage);
 int message_dequeue_get_param(int param);
 
 void message_dequeue_save(MESSAGE *pmessage);
-
-#endif

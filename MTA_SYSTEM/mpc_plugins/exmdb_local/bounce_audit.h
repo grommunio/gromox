@@ -1,5 +1,4 @@
-#ifndef _H_BOUNCE_AUDIT_
-#define _H_BOUNCE_AUDIT_
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -17,5 +16,3 @@ extern int bounce_audit_run(void);
 extern int bounce_audit_stop(void);
 extern void bounce_audit_free(void);
 BOOL bounce_audit_check(const char *audit_string);
-
-#endif /* _H_BOUNCE_AUDIT_ */

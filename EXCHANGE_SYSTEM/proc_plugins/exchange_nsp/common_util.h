@@ -1,5 +1,4 @@
-#ifndef _H_COMMON_UTIL_
-#define _H_COMMON_UTIL_
+#pragma once
 #include "nsp_types.h"
 
 #define HANDLE_EXCHANGE_NSP				1
@@ -118,6 +117,3 @@ extern void common_util_init(void);
 extern int common_util_run(void);
 extern int common_util_stop(void);
 extern void common_util_free(void);
-
-#endif /* _H_COMMON_UTIL_ */
- 

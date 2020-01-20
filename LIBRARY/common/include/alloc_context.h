@@ -1,5 +1,4 @@
-#ifndef _H_ALLOC_CONTEXT_
-#define _H_ALLOC_CONTEXT_
+#pragma once
 #include "double_list.h"
 
 
@@ -16,5 +15,3 @@ void* alloc_context_alloc(ALLOC_CONTEXT *pcontext, size_t size);
 void alloc_context_free(ALLOC_CONTEXT *pcontext);
 
 size_t alloc_context_get_total(ALLOC_CONTEXT *pcontext);
-
-#endif /* _H_ALLOC_CONTEXT_ */

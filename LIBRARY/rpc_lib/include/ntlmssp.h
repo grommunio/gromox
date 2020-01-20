@@ -1,5 +1,4 @@
-#ifndef _H_NTLMSSP_
-#define _H_NTLMSSP_
+#pragma once
 #include "arcfour.h"
 #include "rpc_types.h"
 #include "common_types.h"
@@ -160,5 +159,3 @@ void ntlmssp_destroy(NTLMSSP_CTX *pntlmssp);
 #ifdef __cplusplus
 }
 #endif
-
-#endif  /* _H_NTLMSSP_ */

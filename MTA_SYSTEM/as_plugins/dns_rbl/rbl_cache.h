@@ -1,5 +1,4 @@
-#ifndef _H_RBL_CACHE_
-#define _H_RBL_CACHE_
+#pragma once
 #include "common_types.h"
 
 enum {
@@ -31,5 +30,3 @@ BOOL rbl_cache_dump_black(const char *path);
 void rbl_cache_set_param(int type, int value);
 
 int rbl_cache_get_param(int type);
-
-#endif /* _H_RBL_CACHE_ */

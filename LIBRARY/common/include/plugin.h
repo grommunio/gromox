@@ -2,9 +2,7 @@
  *  define the constant for plugin's return value load, unload, reload, 
  *  console talk actions.
  */
-
-#ifndef _H_PLUGIN_
-#define _H_PLUGIN_
+#pragma once
 #include "common_types.h"
 
 /* enumeration for indicate the ation of plugin_main function */
@@ -56,5 +54,3 @@ enum{
 typedef BOOL (*PLUGIN_MAIN)(int, void**);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void (*ENUM_PLUGINS)(const char*);
-
-#endif

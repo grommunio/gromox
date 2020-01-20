@@ -1,5 +1,4 @@
-#ifndef _H_APPLE_UTIL_
-#define _H_APPLE_UTIL_
+#pragma once
 #include "binhex.h"
 #include "macbinary.h"
 #include "applefile.h"
@@ -25,5 +24,3 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_APPLE_UTIL_ */

@@ -1,6 +1,4 @@
-#ifndef _H_LANG_RESOURCE_
-#define _H_LANG_RESOURCE_
-
+#pragma once
 #include "single_list.h"
 #include "double_list.h"
 #include "assoc_array.h"
@@ -31,7 +29,4 @@ const char* lang_resource_get(LANG_RESOURCE *presource, const char *tag,
 
 #ifdef __cplusplus
 }
-#endif
-
-
 #endif

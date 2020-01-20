@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -82,5 +81,3 @@ BOOL data_source_get_class_list(const char *domainname, DATA_COLLECT *pcollect);
 
 BOOL data_source_get_childrent_list(const char *domainname, int class_id,
 	DATA_COLLECT *pcollect);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _H_COMMON_UTIL_
-#define _H_COMMON_UTIL_
+#pragma once
 #include "logon_object.h"
 #include "mapi_types.h"
 #include "mem_file.h"
@@ -242,5 +241,3 @@ extern const char *common_util_get_submit_command(void);
 extern uint32_t common_util_get_ftstream_id(void);
 extern MIME_POOL *common_util_get_mime_pool(void);
 extern void common_util_log_info(int level, const char *format, ...);
-
-#endif /* _H_COMMON_UTIL_ */

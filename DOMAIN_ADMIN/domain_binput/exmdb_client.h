@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_CLIENT_
-#define _H_EXMDB_CLIENT_
+#pragma once
 #include "mapi_types.h"
 
 void exmdb_client_init(const char *list_path);
@@ -11,5 +10,3 @@ BOOL exmdb_client_set_store_properties(const char *dir,
 	PROBLEM_ARRAY *pproblems);
 
 BOOL exmdb_client_unload_store(const char *dir);
-
-#endif

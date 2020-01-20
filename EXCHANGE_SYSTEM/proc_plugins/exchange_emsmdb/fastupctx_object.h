@@ -1,5 +1,4 @@
-#ifndef _H_FASTUPCTX_OBJECT_
-#define _H_FASTUPCTX_OBJECT_
+#pragma once
 #include "ftstream_parser.h"
 #include "element_data.h"
 
@@ -28,5 +27,3 @@ void fastupctx_object_free(FASTUPCTX_OBJECT *pctx);
 
 BOOL fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
 	const BINARY *ptransfer_data);
-
-#endif /* _H_FASTUPCTX_OBJECT_ */

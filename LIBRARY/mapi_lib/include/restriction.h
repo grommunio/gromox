@@ -1,5 +1,4 @@
-#ifndef _H_RESTRICTION_
-#define _H_RESTRICTION_
+#pragma once
 #include "mapi_types.h"
 
 #ifdef __cplusplus
@@ -15,5 +14,3 @@ uint32_t restriction_size(const RESTRICTION *r);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_RESTRICTION_ */

@@ -1,5 +1,4 @@
-#ifndef _H_MYSQL_POOL_
-#define _H_MYSQL_POOL_
+#pragma once
 #include "double_list.h"
 #include <mysql/mysql.h>
 
@@ -28,5 +27,3 @@ void mysql_pool_put_connection(MYSQL_CONNECTION *pconnection, BOOL b_alive);
 int mysql_pool_get_param(int param);
 
 void mysql_pool_encode_squote(const char *in, char *out);
-
-#endif

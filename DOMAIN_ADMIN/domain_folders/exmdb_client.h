@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_CLIENT_
-#define _H_EXMDB_CLIENT_
+#pragma once
 #include "mapi_types.h"
 
 void exmdb_client_init(const char *list_path);
@@ -22,5 +21,3 @@ BOOL exmdb_client_add_folder_owner(const char *dir,
 
 BOOL exmdb_client_remove_folder_owner(const char *dir,
 	uint64_t folder_id, uint64_t member_id);
-
-#endif

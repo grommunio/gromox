@@ -1,6 +1,4 @@
-#ifndef _H_GREY_LIST_
-#define _H_GREY_LIST_
-
+#pragma once
 #include "common_types.h"
 
 enum{
@@ -29,5 +27,3 @@ BOOL grey_list_remove_ip(const char *ip);
 BOOL grey_list_dump(const char *path);
 
 BOOL grey_list_echo(const char *ip, int *ptimes, int *pinterval);
-
-#endif /* _H_GREY_LIST_ */

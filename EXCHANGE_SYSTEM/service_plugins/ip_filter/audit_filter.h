@@ -1,6 +1,4 @@
-#ifndef _H_AUDIT_FILTER_
-#define _H_AUDIT_FILTER_
-
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
@@ -26,5 +24,3 @@ BOOL audit_filter_echo(const char *ip, time_t *pfirst_access,
 BOOL audit_filter_dump(const char *path);
 
 BOOL audit_filter_remove_ip(const char *ip);
-
-#endif /* _H_AUDIT_FILTER_ */

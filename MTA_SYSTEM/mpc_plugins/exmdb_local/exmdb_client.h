@@ -1,5 +1,4 @@
-#ifndef _H_EXMDB_CLIENT_
-#define _H_EXMDB_CLIENT_
+#pragma once
 #include "element_data.h"
 
 
@@ -26,5 +25,3 @@ int exmdb_client_check_contact_address(const char *dir,
 BOOL exmdb_client_get_exmdb_information(
 	const char *dir, char *ip_addr, int *pport,
 	int *pconn_num, int *palive_conn);
-
-#endif /* _H_EXMDB_CLIENT_ */

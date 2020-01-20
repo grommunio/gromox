@@ -1,6 +1,4 @@
-#ifndef _H_RELAY_AGENT_
-#define _H_RELAY_AGENT_
-
+#pragma once
 #include <gromox/hook_common.h>
 
 #define RESPONSE_CONNECT_ACCEPT     1
@@ -51,6 +49,3 @@ extern BOOL relay_agent_refresh_table(void);
 int relay_agent_get_param(int param);
 
 void relay_agent_set_param(int param, int value);
-
-#endif /* _H_RELAY_AGENT_ */
-

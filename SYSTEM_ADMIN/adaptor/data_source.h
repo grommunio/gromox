@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 
@@ -62,5 +61,3 @@ BOOL data_source_get_uncheckusr_list(DATA_COLLECT *pcollect);
 BOOL data_source_get_subsystem_list(DATA_COLLECT *pcollect);
 
 BOOL data_source_get_monitor_groups(DATA_COLLECT *pcollect);
-
-#endif

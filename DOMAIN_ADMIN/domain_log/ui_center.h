@@ -1,5 +1,4 @@
-#ifndef _H_UI_CENTER_
-#define _H_UI_CENTER_
+#pragma once
 #include "common_types.h"
 
 void ui_center_init(int valid_days, const char *url_link,
@@ -7,6 +6,3 @@ void ui_center_init(int valid_days, const char *url_link,
 extern int ui_center_run(void);
 extern int ui_center_stop(void);
 extern void ui_center_free(void);
-
-#endif
-

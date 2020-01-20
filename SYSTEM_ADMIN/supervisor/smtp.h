@@ -1,5 +1,4 @@
-#ifndef _H_SMTP_
-#define _H_SMTP_
+#pragma once
 
 enum {
 	SMTP_SEND_OK = 0,
@@ -24,5 +23,3 @@ int smtp_send_outbound(const char *ip, int port, const char *username,
 	char *last_command, char *last_response);
 
 void smtp_send_message(const char *from, const char *rcpt, const char *message);
-
-#endif

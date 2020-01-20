@@ -1,5 +1,4 @@
-#ifndef _H_INBOUND_IPS_
-#define _H_INBOUND_IPS_
+#pragma once
 #include "common_types.h"
 
 void inbound_ips_init(const char *path);
@@ -8,5 +7,3 @@ BOOL inbound_ips_check_local(const char *domain);
 extern BOOL inbound_ips_refresh(void);
 extern int inbound_ips_stop(void);
 extern void inbound_ips_free(void);
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef _H_SYSTEM_SERVICES_
-#define _H_SYSTEM_SERVICES_
-
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 #include "xarray.h"
@@ -25,4 +23,3 @@ extern uint32_t (*system_services_ltag_to_lcid)(const char*);
 extern const char* (*system_services_mime_to_extension)(const char*);
 extern const char* (*system_services_extension_to_mime)(const char*);
 extern void (*system_services_broadcast_event)(const char*);
-#endif /* _H_SYSTEM_SERVICES_ */

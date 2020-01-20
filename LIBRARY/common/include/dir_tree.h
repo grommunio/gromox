@@ -1,5 +1,4 @@
-#ifndef _H_DIR_TREE_
-#define _H_DIR_TREE_
+#pragma once
 #include "simple_tree.h"
 #include "lib_buffer.h"
 #include "mem_file.h"
@@ -66,9 +65,3 @@ void dir_tree_free(DIR_TREE *ptree);
 #ifdef __cplusplus
 }
 #endif
-
-
-
-
-#endif
-

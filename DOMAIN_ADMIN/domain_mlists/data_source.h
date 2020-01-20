@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -114,5 +113,3 @@ BOOL data_source_get_groups(const char *domainname, DATA_COLLECT *pcollect);
 BOOL data_source_get_classes(const char *domainname, DATA_COLLECT *pcollect);
 
 BOOL data_source_info_mlist(const char *listname, int *plist_privilege);
-
-#endif

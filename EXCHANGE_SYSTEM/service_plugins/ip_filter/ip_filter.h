@@ -1,6 +1,4 @@
-#ifndef _H_IP_FILTER
-#define _H_IP_FILTER
-
+#pragma once
 #include "common_types.h"
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
@@ -24,5 +22,3 @@ BOOL ip_filter_add_ip_into_temp_list(char *ip, int interval);
 void ip_filter_console_talk(int argc, char **argv, char *result, int length);
 
 void ip_filter_echo(const char *format, ...);
-
-#endif

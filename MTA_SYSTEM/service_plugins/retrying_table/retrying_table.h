@@ -1,5 +1,4 @@
-#ifndef _H_RETRYING_TABLE_
-#define _H_RETRYING_TABLE_
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 
@@ -12,5 +11,3 @@ extern int retrying_table_stop(void);
 extern void retrying_table_free(void);
 void retrying_table_console_talk(int argc, char **argv,
 	char *result, int length);
-
-#endif /* end of _H_RETRYING_TABLE_ */

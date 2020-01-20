@@ -1,5 +1,4 @@
-#ifndef _H_ICS_STATE_
-#define _H_ICS_STATE_
+#pragma once
 #include "mapi_types.h"
 #include "logon_object.h"
 
@@ -27,5 +26,3 @@ BOOL ics_state_append_idset(ICS_STATE *pstate,
 TPROPVAL_ARRAY* ics_state_serialize(ICS_STATE *pstate);
 
 void ics_state_free(ICS_STATE *pstate);
-
-#endif /* _H_ICS_STATE_ */

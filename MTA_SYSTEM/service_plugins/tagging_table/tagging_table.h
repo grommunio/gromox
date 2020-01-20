@@ -1,5 +1,4 @@
-#ifndef _H_TAGGING_TABLE_
-#define _H_TAGGING_TABLE_
+#pragma once
 #include "common_types.h"
 #include "mem_file.h"
 #include <fcntl.h>
@@ -13,5 +12,3 @@ BOOL tagging_table_check(const char *from, MEM_FILE *pfile);
 extern int tagging_table_stop(void);
 extern void tagging_table_free(void);
 void tagging_table_console_talk(int argc, char **argv, char *result, int length);
-
-#endif /* end of _H_TAGGING_TABLE_ */

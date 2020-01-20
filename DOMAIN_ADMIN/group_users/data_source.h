@@ -1,5 +1,4 @@
-#ifndef _H_DATA_SOURCE_
-#define _H_DATA_SOURCE_
+#pragma once
 #include "common_types.h"
 #include "double_list.h"
 #include <time.h>
@@ -176,5 +175,3 @@ BOOL data_source_get_domain_privilege(const char *domainname, int *pprivilege);
 
 BOOL data_source_check_domain_migration(const char *domainname,
 	BOOL *pb_migrating, char *media_area);
-
-#endif

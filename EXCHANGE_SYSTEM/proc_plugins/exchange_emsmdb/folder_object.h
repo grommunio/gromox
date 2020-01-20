@@ -1,5 +1,4 @@
-#ifndef _H_FOLDER_OBJECT_
-#define _H_FOLDER_OBJECT_
+#pragma once
 #include "mapi_types.h"
 #include "logon_object.h"
 
@@ -36,5 +35,3 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 
 BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);
-
-#endif /* _H_FOLDER_OBJECT_ */

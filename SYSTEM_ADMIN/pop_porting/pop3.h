@@ -1,5 +1,4 @@
-#ifndef _H_POP3_
-#define _H_POP3_
+#pragma once
 #include "common_types.h"
 
 typedef struct _POP3_SESSION {
@@ -20,6 +19,3 @@ BOOL pop3_list(POP3_SESSION *psession, int *pnum);
 BOOL pop3_retr(POP3_SESSION *psession, int n, char *pbuff, int size);
 
 void pop3_free(POP3_SESSION *psession);
-
-
-#endif

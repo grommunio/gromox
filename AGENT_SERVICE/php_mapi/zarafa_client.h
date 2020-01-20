@@ -1,5 +1,4 @@
-#ifndef _H_ZARAFA_CLIENT_
-#define _H_ZARAFA_CLIENT_
+#pragma once
 #include "php.h"
 #include "types.h"
 
@@ -288,5 +287,3 @@ extern uint32_t zarafa_client_checksession(GUID);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* _H_ZARAFA_CLIENT_ */

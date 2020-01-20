@@ -1,5 +1,4 @@
-#ifndef _H_BOUNCE_PRODUCER_
-#define _H_BOUNCE_PRODUCER_
+#pragma once
 #include "mail.h"
 #include <sqlite3.h>
 
@@ -24,5 +23,3 @@ BOOL bounce_producer_make_content(const char *from,
 BOOL bounce_producer_make(const char *from, const char *rcpt,
 	sqlite3 *psqlite, uint64_t message_id, int bounce_type,
 	MAIL *pmail);
-
-#endif /* _H_BOUNCE_PRODUCER_ */

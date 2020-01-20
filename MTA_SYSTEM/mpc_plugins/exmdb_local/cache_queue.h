@@ -1,6 +1,4 @@
-#ifndef _H_CACHE_QUEUE_
-#define _H_CACHE_QUEUE_
-
+#pragma once
 #include "bounce_producer.h"
 #include <time.h>
 #include <gromox/hook_common.h>
@@ -20,5 +18,3 @@ BOOL cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 int cache_queue_get_param(int param);
 
 void cache_queue_set_param(int param, int val);
-
-#endif /* _H_CACHE_QUEUE_ */

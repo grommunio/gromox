@@ -1,5 +1,4 @@
-#ifndef _H_TABLE_OBJECT_
-#define _H_TABLE_OBJECT_
+#pragma once
 #include "store_object.h"
 #include "mapi_types.h"
 
@@ -103,5 +102,3 @@ BOOL table_object_store_state(TABLE_OBJECT *ptable,
 
 BOOL table_object_restore_state(TABLE_OBJECT *ptable,
 	uint32_t state_id, uint32_t *pindex);
-
-#endif /* _H_TABLE_OBJECT_ */

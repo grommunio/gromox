@@ -1,6 +1,4 @@
-#ifndef _H_ROP_UTIL_
-#define _H_ROP_UTIL_
-
+#pragma once
 #ifdef __cplusplus
 #	include <ctime>
 #else
@@ -51,5 +49,3 @@ void rop_util_free_binary(BINARY *pbin);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_ROP_UTIL_ */

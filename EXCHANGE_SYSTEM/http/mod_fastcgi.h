@@ -1,6 +1,4 @@
-#ifndef _H_MOD_FASTCGI_
-#define _H_MOD_FASTCGI_
-
+#pragma once
 #ifdef __cplusplus
 #	include <cstdint>
 #	include <ctime>
@@ -65,5 +63,3 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp);
 int mod_fastcgi_check_response(HTTP_CONTEXT *phttp);
 
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp);
-
-#endif /* _H_MOD_FASTCGI_ */

@@ -1,5 +1,4 @@
-#ifndef _H_SORTORDER_SET_
-#define _H_SORTORDER_SET_
+#pragma once
 #include "mapi_types.h"
 
 #ifdef __cplusplus
@@ -13,5 +12,3 @@ SORTORDER_SET* sortorder_set_dup(const SORTORDER_SET *pset);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_SORTORDER_SET_ */

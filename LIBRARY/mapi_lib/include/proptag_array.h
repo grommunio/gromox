@@ -1,5 +1,4 @@
-#ifndef _H_PROPTAG_ARRAY_
-#define _H_PROPTAG_ARRAY_
+#pragma once
 #include "mapi_types.h"
 
 #ifdef __cplusplus
@@ -28,5 +27,3 @@ BOOL proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _H_PROPTAG_ARRAY_ */
