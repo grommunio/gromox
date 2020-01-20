@@ -37,7 +37,7 @@ typedef struct _COMMAND_ENTRY {
 
 DECLARE_API;
 
-static void singnal_restart(void);
+static void signal_restart(void);
 static void install_command(void);
 static void update_log(const char *format, ...);
 
@@ -218,7 +218,7 @@ static BOOL update_hook(MESSAGE_CONTEXT *pcontext)
 	}
 	if ('\0' == return_address[0]) {
 		if (TRUE == g_should_restart) {
-            singnal_restart();
+			signal_restart();
         }
         return TRUE;
 	}
@@ -228,7 +228,7 @@ static BOOL update_hook(MESSAGE_CONTEXT *pcontext)
 		printf("[system_updater]: fail to get a context for report update "
 			"result\n");
 		if (TRUE == g_should_restart) {
-			singnal_restart();
+			signal_restart();
 		}
 		return TRUE;
 	}
@@ -237,7 +237,7 @@ static BOOL update_hook(MESSAGE_CONTEXT *pcontext)
 		printf("[system_updater]: fail to add mail head\n");
 		put_context(presult_context);
 		if (TRUE == g_should_restart) {
-			singnal_restart();
+			signal_restart();
 		}
 		return TRUE;
 	}
@@ -264,7 +264,7 @@ static BOOL update_hook(MESSAGE_CONTEXT *pcontext)
 		printf("[system_updater]: throw context fail");
 	}
 	if (TRUE == g_should_restart) {
-		singnal_restart();
+		signal_restart();
 	}
 	return TRUE;
 }
@@ -290,7 +290,7 @@ static void update_log(const char *format, ...)
 	g_log_offset += 2;
 }
 
-static void singnal_restart()
+static void signal_restart(void)
 {
 	int fd, read_len, pid;
 	char pid_content[16];
