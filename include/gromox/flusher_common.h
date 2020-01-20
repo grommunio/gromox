@@ -140,3 +140,5 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
     get_extra_value = (GET_EXTRA_TAGVAL)query_service("get_extra_value"); \
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
+
+extern BOOL FLH_LibMain(int reason, void **ptrs);

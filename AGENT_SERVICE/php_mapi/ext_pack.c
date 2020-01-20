@@ -1161,7 +1161,7 @@ zend_bool ext_pack_pull_rule_data(PULL_CTX *pctx, RULE_DATA *r)
 	return ext_pack_pull_tpropval_array(pctx, &r->propvals);
 }
 
-zend_bool ext_pack_pull_rule_list(PULL_CTX *pctx, RULE_LIST *r)
+static zend_bool ext_pack_pull_rule_list(PULL_CTX *pctx, RULE_LIST *r)
 {
 	int i;
 	
@@ -1864,8 +1864,8 @@ zend_bool ext_pack_push_restriction(PUSH_CTX *pctx, const RESTRICTION *r)
 	return 0;
 }
 
-zend_bool ext_pack_push_movecopy_action(
-	PUSH_CTX *pctx, const MOVECOPY_ACTION *r)
+static zend_bool ext_pack_push_movecopy_action(PUSH_CTX *pctx,
+    const MOVECOPY_ACTION *r)
 {
 	if (!ext_pack_push_binary(pctx, &r->store_eid)) {
 		return 0;
@@ -2012,8 +2012,8 @@ zend_bool ext_pack_push_rule_actions(
 	return 1;
 }
 
-zend_bool ext_pack_push_propval(PUSH_CTX *pctx,
-	uint16_t type, const void *pval)
+static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
+    const void *pval)
 {
 	/* convert multi-value instance into single value */
 	if (0x3000 == (type & 0x3000)) {

@@ -203,3 +203,5 @@ extern CHECKING_FUNCTION check_relay;
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	check_relay = (CHECKING_FUNCTION)query_service("check_relay")
+
+extern BOOL AS_LibMain(int reason, void **ptrs);

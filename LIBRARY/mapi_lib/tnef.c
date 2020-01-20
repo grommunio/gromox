@@ -1286,7 +1286,7 @@ static BOOL tnef_convert_to_propname(char *tag_string,
 	return FALSE;
 }
 
-void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash)
+static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash)
 {
 	int i;
 	uint16_t propid;
@@ -1312,8 +1312,8 @@ void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash)
 	}
 }
 
-char* tnef_duplicate_string_to_unicode(
-	const char *charset, const char *pstring)
+static char *tnef_duplicate_string_to_unicode(const char *charset,
+    const char *pstring)
 {
 	char *pstr_out;
 	
@@ -1328,8 +1328,8 @@ char* tnef_duplicate_string_to_unicode(
 	return pstr_out;
 }
 
-STRING_ARRAY* tnef_duplicate_string_array_to_unicode(
-	const char *charset, STRING_ARRAY *parray)
+static STRING_ARRAY *tnef_duplicate_string_array_to_unicode(const char *charset,
+    STRING_ARRAY *parray)
 {
 	int i;
 	STRING_ARRAY *parray_out;

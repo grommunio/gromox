@@ -322,7 +322,7 @@ void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 	free(pctx);
 }
 
-BOOL icsdownctx_object_check_started(ICSDOWNCTX_OBJECT *pctx)
+static BOOL icsdownctx_object_check_started(ICSDOWNCTX_OBJECT *pctx)
 {
 	return pctx->b_started;
 }

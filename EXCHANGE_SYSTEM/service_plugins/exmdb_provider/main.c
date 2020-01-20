@@ -26,7 +26,7 @@ DECLARE_API;
  *		result [out]			buffer for retriving result
  *		length					result buffer length
  */
-void console_talk(int argc, char **argv, char *result, int length)
+static void console_talk(int argc, char **argv, char *result, int length)
 {
 	char help_string[] = "250 exmdb provider help information:\r\n"
 						 "\t%s unload <maildir>\r\n"

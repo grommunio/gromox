@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <mysql/mysql.h>
-
+#include "exmdb_tool.h"
 
 enum {
 	RES_ID_IPM,

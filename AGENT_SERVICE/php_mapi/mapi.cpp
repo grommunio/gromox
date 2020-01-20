@@ -255,7 +255,10 @@ zend_module_entry mapi_module_entry = {
     STANDARD_MODULE_PROPERTIES
 };
 
-ZEND_GET_MODULE(mapi)
+BEGIN_EXTERN_C()
+	ZEND_DLEXPORT zend_module_entry *get_module();
+	ZEND_GET_MODULE(mapi)
+END_EXTERN_C()
 
 static char name_mapi_session[] = "MAPI Session";
 static char name_mapi_table[] = "MAPI Table";

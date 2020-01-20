@@ -49,7 +49,7 @@ void data_source_collect_free(DATA_COLLECT *pcollect)
 	free(pcollect);
 }
 
-void data_source_collect_clear(DATA_COLLECT *pcollect)
+static void data_source_collect_clear(DATA_COLLECT *pcollect)
 {
 	DOUBLE_LIST_NODE *pnode;
 

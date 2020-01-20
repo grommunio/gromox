@@ -11,6 +11,7 @@
 #include "config_file.h"
 #include "data_source.h"
 #include "midb_client.h"
+#include "password_cleaner.h"
 
 static int password_cleaner_daysofmonth(int year, int month);
 

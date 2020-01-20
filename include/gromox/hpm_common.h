@@ -151,3 +151,5 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc"); \
 	rpc_new_environment = (NEW_ENVIRONMENT)query_service("rpc_new_environment"); \
 	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment")
+
+extern BOOL HPM_LibMain(int reason, void **ptrs);

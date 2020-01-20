@@ -4167,8 +4167,8 @@ int ext_buffer_push_store_entryid(EXT_PUSH *pext, const STORE_ENTRYID *r)
 	return ext_buffer_push_string(pext, r->pmailbox_dn);
 }
 
-int ext_buffer_push_movecopy_action(
-	EXT_PUSH *pext, const MOVECOPY_ACTION *r)
+static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
+    const MOVECOPY_ACTION *r)
 {
 	int status;
 	uint32_t offset;

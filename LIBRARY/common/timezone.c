@@ -1232,6 +1232,7 @@ struct tm *tz_localtime_r(const struct state* const sp,
 	return localsub(sp, timep, 0L, tmp);
 }
 
+#ifdef ALL_STATE
 /*
 ** gmtsub is to gmtime as localsub is to localtime.
 */
@@ -1272,6 +1273,7 @@ static struct tm* gmtsub(const time_t* const timep,
 #endif /* defined TM_ZONE */
 	return result;
 }
+#endif
 
 /*
 ** Return the number of leap years through the end of the given year

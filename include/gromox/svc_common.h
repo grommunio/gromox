@@ -54,3 +54,5 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc")
+
+extern BOOL SVC_LibMain(int reason, void **ptrs);

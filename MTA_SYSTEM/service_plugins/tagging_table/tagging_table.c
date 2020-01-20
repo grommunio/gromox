@@ -252,7 +252,7 @@ static BOOL tagging_table_add(const char* str)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL tagging_table_remove(const char* str)
+static BOOL tagging_table_remove(const char* str)
 {
 	int i, j;
 	int fd, string_len;

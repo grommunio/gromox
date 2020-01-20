@@ -17,6 +17,7 @@
 #include <sqlite3.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "exmdb_tool.h"
 
 static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;

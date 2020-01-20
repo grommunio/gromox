@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <string.h>
+#include "listener.h"
 
 typedef struct _ACL_ITEM {
 	DOUBLE_LIST_NODE node;

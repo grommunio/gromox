@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <resolv.h>
 #include <libHX/misc.h>
+#include <gromox/resolv.h>
 
 struct mx_entry {
 	uint16_t prio;

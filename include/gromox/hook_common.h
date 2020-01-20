@@ -117,3 +117,5 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	throw_context = (THROW_CONTEXT)query_service("throw_context"); \
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
+
+extern BOOL HOOK_LibMain(int reason, void **ptrs);

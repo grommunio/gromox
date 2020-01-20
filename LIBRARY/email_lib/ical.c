@@ -671,7 +671,7 @@ static size_t ical_serialize_value_string(char *pbuff,
 	return offset;
 }
 
-size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
+static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	char *out_buff, size_t max_length)
 {
 	size_t offset;

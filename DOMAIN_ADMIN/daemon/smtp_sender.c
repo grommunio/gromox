@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "smtp_sender.h"
 
 #define MAXPACKET			8192 /* max size of packet */
 #define MAXBUF				256          

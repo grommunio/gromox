@@ -2,6 +2,7 @@
 #include "endian_macro.h"
 #include <string.h>
 #include <stdlib.h>
+#include "rtfcp.h"
 
 #define	RTF_COMPRESSED			0x75465a4c
 #define	RTF_UNCOMPRESSED		0x414c454d
@@ -117,7 +118,7 @@ static uint32_t g_crc_table[] = {
 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-uint32_t rtfcp_crc(uint8_t *ptr, uint32_t count)
+static uint32_t rtfcp_crc(uint8_t *ptr, uint32_t count)
 {
 	uint32_t i;
 	uint32_t crc;

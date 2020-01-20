@@ -146,3 +146,5 @@ extern ASYNC_REPLY async_reply;
 	rpc_new_environment = (NEW_ENVIRONMENT)query_service("rpc_new_environment"); \
 	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment"); \
 	async_reply = (ASYNC_REPLY)query_service("async_reply")
+
+extern BOOL PROC_LibMain(int reason, void **ptrs);

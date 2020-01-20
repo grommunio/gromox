@@ -879,8 +879,7 @@ sphinx_bool sphinx_set_select ( sphinx_client * client, const char * select_list
 	return SPH_TRUE;
 }
 
-
-void set_bit ( int * flags, int bit, sphinx_bool enable )
+static void set_bit(int *flags, int bit, sphinx_bool enable)
 {
 	int bit_mask = 1<<bit;
 	if ( enable )

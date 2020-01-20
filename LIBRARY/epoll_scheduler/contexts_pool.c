@@ -29,7 +29,7 @@ static int (*contexts_pool_get_context_socket)(void *pcontext);
 
 static struct timeval (*contexts_pool_get_context_timestamp)(void *pcontext);
 
-void context_init(SCHEDULE_CONTEXT *pcontext)
+static void context_init(SCHEDULE_CONTEXT *pcontext)
 {
 	if (NULL == pcontext) {
 		debug_info("[contexts_pool]: pcontext is NULL in context_init!\n");
@@ -39,7 +39,7 @@ void context_init(SCHEDULE_CONTEXT *pcontext)
 	pcontext->node.pdata = pcontext;
 }
 
-void context_free(SCHEDULE_CONTEXT *pcontext)
+static void context_free(SCHEDULE_CONTEXT *pcontext)
 {
 	if (NULL == pcontext) {
 		debug_info("[contexts_pool]: pcontext is NULL in context_free!\n");

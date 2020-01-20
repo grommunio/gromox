@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <time.h>
+#include "exmdb_client.h"
 
 #define SOCKET_TIMEOUT								60
 
@@ -697,9 +698,8 @@ void exmdb_client_free()
 	double_list_free(&g_server_list);
 }
 
-BOOL exmdb_client_create_folder_by_properties(
-	int sockd, const char *dir, uint32_t cpid,
-	const TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id)
+static BOOL exmdb_client_create_folder_by_properties(int sockd, const char *dir,
+    uint32_t cpid, const TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id)
 {
 	BINARY tmp_bin;
 	CREATE_FOLDER_BY_PROPERTIES_REQUEST request;

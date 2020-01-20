@@ -46,7 +46,7 @@
 
 #include <string.h>
 #include <stdint.h>
-
+#include "ntlmdes.h"
 
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 

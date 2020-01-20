@@ -481,27 +481,6 @@ size_t mjson_get_mail_length(MJSON *pjson)
 	return pjson->size;
 }
 
-/*
- *	get depth of tree object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-int mjson_get_depth(MJSON *pjson)
-{
-        int ret_val;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_depth");
-		return -1;
-	}
-#endif
-	ret_val = -1;
-	simple_tree_enum_from_node(simple_tree_get_root(&pjson->tree),
-	mjson_enum_depth, &ret_val);
-	return ret_val;
-}
-
 static void mjson_enum_depth(SIMPLE_TREE_NODE *pnode, void *param)
 {
 	int depth;
@@ -641,23 +620,6 @@ const char* mjson_get_mail_inreply(MJSON *pjson)
 	}
 #endif
 	return pjson->inreply;
-}
-
-/*
- *	get mail subject from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjsonl_get_mail_subject(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_subject");
-		return NULL;
-	}
-#endif
-	return pjson->subject;
-
 }
 
 /*

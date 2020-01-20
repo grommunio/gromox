@@ -1,7 +1,6 @@
 #include "dir_tree.h"
 
-
-void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
+static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 {
 	DIR_NODE *pdir;
 

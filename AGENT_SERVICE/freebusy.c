@@ -622,7 +622,7 @@ static void cache_connection(const char *dir, int sockd)
 	}
 }
 
-void free_connections()
+static void free_connections(void)
 {
 	EXMDB_NODE *pexnode;
 	DOUBLE_LIST_NODE *pnode;

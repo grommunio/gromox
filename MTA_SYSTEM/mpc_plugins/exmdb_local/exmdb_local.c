@@ -423,9 +423,8 @@ static void* exmdb_local_alloc(size_t size)
 	return alloc_context_alloc(pctx, size);
 }
 
-BOOL exmdb_local_get_propids(
-	const PROPNAME_ARRAY *ppropnames,
-	PROPID_ARRAY *ppropids)
+static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
+    PROPID_ARRAY *ppropids)
 {
 	int i;
 	uint16_t *ppropid;
