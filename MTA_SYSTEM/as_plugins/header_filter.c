@@ -29,7 +29,7 @@ static CHECK_TAGGING check_tagging;
 static char g_return_string[1024];
 static DOUBLE_LIST g_field_list;
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	char *pitem;
 	int i, item_num;

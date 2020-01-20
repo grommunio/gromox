@@ -23,7 +23,7 @@ static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length);
 
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {	
 	char file_name[256];
 	char temp_path[256];

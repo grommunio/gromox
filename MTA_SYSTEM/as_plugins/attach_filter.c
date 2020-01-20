@@ -36,9 +36,7 @@ static char **g_attachment_list;
 
 static char g_return_reason[1024];
 
-
-
-int AS_LibMain(int reason, void **ppdata, char *path)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	int len;
 	char *ptoken;

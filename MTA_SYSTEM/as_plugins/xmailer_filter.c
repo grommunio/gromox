@@ -40,7 +40,7 @@ static int xmailer_filter(int context_ID, MAIL_ENTITY *pmail,
 
 static void console_talk(int argc, char **argv, char *result, int length);
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	CONFIG_FILE *pconfig_file;
 	char file_name[256], temp_path[256];

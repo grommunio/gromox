@@ -20,7 +20,7 @@ static SPAM_STATISTIC spam_statistic;
 
 static char g_return_string[1024];
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	CONFIG_FILE *pconfig_file;
 	char file_name[256], temp_path[256];

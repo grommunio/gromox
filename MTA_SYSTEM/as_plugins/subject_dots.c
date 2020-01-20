@@ -25,7 +25,7 @@ static int g_pattern_len;
 static char g_pattern_string[128];
 static char g_return_string[1024];
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	CONFIG_FILE *pconfig_file;
 	char file_name[256], temp_path[256];

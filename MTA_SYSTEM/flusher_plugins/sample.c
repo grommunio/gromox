@@ -16,7 +16,7 @@ static BOOL             g_notify_stop;
 
 DECLARE_API;
 
-BOOL FLH_LibMain(int reason, void** ppdata, char* path)
+BOOL FLH_LibMain(int reason, void **ppdata)
 {
     pthread_attr_t  attr;
 

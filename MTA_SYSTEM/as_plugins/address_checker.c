@@ -29,7 +29,7 @@ DECLARE_API;
 static int envelop_judge(int context_ID, ENVELOP_INFO *penvelop,
 	CONNECTION *pconnection, char *reason, int length);
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
     CONFIG_FILE *pconfig_file;
     char file_name[256], temp_path[256];

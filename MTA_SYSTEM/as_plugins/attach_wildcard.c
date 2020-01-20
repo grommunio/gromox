@@ -37,8 +37,7 @@ static pthread_rwlock_t g_list_lock;
 
 static LIST_FILE *g_wildcard_list;
 
-
-int AS_LibMain(int reason, void **ppdata, char *path)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	char file_name[256];
 	char temp_path[256];

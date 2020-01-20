@@ -30,7 +30,7 @@ static int plain_filter(int action, int context_ID,
 static int html_filter(int action, int context_ID,
 	MAIL_BLOCK* mail_blk,  char* reason, int length);
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {	
 	CONFIG_FILE *pconfig_file;
 	char file_name[256], temp_path[256];

@@ -23,7 +23,7 @@ static char g_return_reason[1024];
 static int head_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length);
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {	
 	CONFIG_FILE *pconfig_file;
 	char file_name[256], temp_path[256];

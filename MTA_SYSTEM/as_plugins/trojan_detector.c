@@ -21,7 +21,7 @@ static char g_return_string[1024];
 static int xmailer_filter(int context_ID, MAIL_ENTITY *pmail,
 	CONNECTION *pconnection, char *reason, int length);
 
-int AS_LibMain(int reason, void **ppdata)
+BOOL AS_LibMain(int reason, void **ppdata)
 {
 	char *psearch;
 	char *str_value;
