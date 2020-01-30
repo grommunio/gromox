@@ -293,6 +293,7 @@ static BOOL precise_interception_refresh()
 			++count;
 		}
 		closedir(dirp);
+		dirp = NULL;
 	} else if (errno != ENOENT) {
 		printf("[precise_interception]: could not open directory %s: %s\n",
 			g_path, strerror(errno));
@@ -303,6 +304,7 @@ static BOOL precise_interception_refresh()
 	if (NULL == phash) {
 		return FALSE;
 	}
+	dirp = opendir(g_path);
 	if (dirp != NULL) {
 	seekdir(dirp, 0);
 	while ((direntp = readdir(dirp)) != NULL) {
