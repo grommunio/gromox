@@ -394,6 +394,95 @@ class ExchangeWebServices {
 		}
 		$soap_out = $xml->asXML();
 	}
+
+	function GetMailTips($SendingAs, $Recipients, $MailTipsRequested) {
+		global $soap_out;
+		error_log("GetMailTips()" . print_r($SendingAs, 1) . print_r($Recipients, 1) . print_r($MailTipsRequested, 1));
+
+		$xml = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><soap:Envelope></soap:Envelope>');
+		$xml->addAttribute('xmlns:xmlns:soap', 'http://schemas.xmlsoap.org/soap/envelope/');
+		$xml->addAttribute('xmlns:xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+		$xml->addAttribute('xmlns:xmlns:xsd', 'http://www.w3.org/2001/XMLSchema');
+		$Header = $xml->addChild('soap:soap:Header');
+		$ServerVersionInfo = $Header->addChild('t:t:ServerVersionInfo');
+		/* 15.00.0847.4040 */
+		$ServerVersionInfo->addAttribute('MajorVersion', '15');
+		$ServerVersionInfo->addAttribute('MinorVersion', '0');
+		$ServerVersionInfo->addAttribute('MajorBuildNumber', '847');
+		$ServerVersionInfo->addAttribute('MinorBuildNumber', '4040');
+		$ServerVersionInfo->addAttribute('xmlns:xmlns:t', 'http://schemas.microsoft.com/exchange/services/2006/types');
+		$Body = $xml->addChild('soap:soap:Body');
+
+		$GetMailTipsResponse = $Body->addChild('GetMailTipsResponse');
+		$GetMailTipsResponse->addAttribute('ResponseClass', 'Success');
+		$GetMailTipsResponse->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+		$GetMailTipsResponse->addChild('ResponseCode', 'NoError');
+		$ResponseMessages = $GetMailTipsResponse->addChild('ResponseMessages');
+		$MailTipsResponseMessageType = $ResponseMessages->addChild('MailTipsResponseMessageType');
+		$MailTipsResponseMessageType->addAttribute('ResponseClass', 'Success');
+		$MailTipsResponseMessageType->addChild('ResponseCode', 'NoError');
+
+		$MailTips = $MailTipsResponseMessageType->addChild('m:MailTips');
+		$MailTips->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+
+		$RecipientAddress= $MailTips->addChild('t:RecipientAddress');
+		$RecipientAddress->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+		$RecipientAddress->addChild('t:Name', "");
+		$RecipientAddress->addChild('t:EmailAddress', $Recipients->Mailbox->EmailAddress);
+		$RecipientAddress->addChild('t:RoutingType', $Recipients->Mailbox->RoutingType);
+
+		$PendingMailTips= $MailTips->addChild('t:PendingMailTips');
+		$PendingMailTips->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+
+		#$CustomMailTip= $MailTips->addChild('t:CustomMailTip', "A custom message regarding this recipient.");
+		#$CustomMailTip->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+
+		# TODO implement other requested types
+		# OutOfOfficeMessage MailboxFullStatus CustomMailTip ExternalMemberCount TotalMemberCount MaxMessageSize DeliveryRestriction ModerationStatus InvalidRecipient
+		#if (in_array('OutOfOfficeMessage', $MailTipsRequestedArray)) {
+		#}
+
+		error_log($xml->asXML(), 0);
+		$soap_out = $xml->asXML();
+
+	}
+
+	function GetServiceConfiguration($ActingAs, $RequestedConfiguration) {
+		global $soap_out;
+		error_log("GetServiceConfiguration()" . print_r($ActingAs, 1). print_r($RequestedConfiguration, 1));
+
+		$xml = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><soap:Envelope></soap:Envelope>');
+		$xml->addAttribute('xmlns:xmlns:soap', 'http://schemas.xmlsoap.org/soap/envelope/');
+		$xml->addAttribute('xmlns:xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+		$xml->addAttribute('xmlns:xmlns:xsd', 'http://www.w3.org/2001/XMLSchema');
+		$Header = $xml->addChild('soap:soap:Header');
+		$ServerVersionInfo = $Header->addChild('t:t:ServerVersionInfo');
+		/* 15.00.0847.4040 */
+		$ServerVersionInfo->addAttribute('MajorVersion', '15');
+		$ServerVersionInfo->addAttribute('MinorVersion', '0');
+		$ServerVersionInfo->addAttribute('MajorBuildNumber', '847');
+		$ServerVersionInfo->addAttribute('MinorBuildNumber', '4040');
+		$ServerVersionInfo->addAttribute('xmlns:xmlns:t', 'http://schemas.microsoft.com/exchange/services/2006/types');
+		$Body = $xml->addChild('soap:soap:Body');
+
+		$GetServiceConfigurationResponse = $Body->addChild('GetServiceConfigurationResponse');
+		$GetServiceConfigurationResponse->addAttribute('ResponseClass', 'Success');
+		$GetServiceConfigurationResponse->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+		$GetServiceConfigurationResponse->addChild('ResponseCode', 'NoError');
+		$ResponseMessages = $GetServiceConfigurationResponse->addChild('ResponseMessages');
+		$ServiceConfigurationResponseMessageType = $ResponseMessages->addChild('ServiceConfigurationResponseMessageType');
+		$ServiceConfigurationResponseMessageType->addAttribute('ResponseClass', 'Success');
+		$ServiceConfigurationResponseMessageType->addChild('ResponseCode', 'NoError');
+
+		$MailTipsConfiguration = $ServiceConfigurationResponseMessageType->addChild('m:MailTipsConfiguration');
+		$MailTipsConfiguration->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+		$MailTipsEnabled= $MailTipsConfiguration->addChild('t:MailTipsEnabled', 'false');
+		$MailTipsEnabled->addAttribute('xmlns', 'http://schemas.microsoft.com/exchange/services/2006/messages');
+
+		error_log($xml->asXML(), 0);
+		$soap_out = $xml->asXML();
+	}
+
 };
 
 if (!isset($_SERVER['REMOTE_USER'])) {
