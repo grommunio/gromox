@@ -6450,7 +6450,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	folder_id = icsupctx_object_get_parent_folder_id(pctx);
 	if (FALSE == b_new) {
 		pbin = common_util_get_propvals(pproplist, PROP_TAG_SOURCEKEY);
-		if (22 != pbin->cb) {
+		if (pbin == nullptr || pbin->cb != 22) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_INVALID_PARAMETER;
 		}
