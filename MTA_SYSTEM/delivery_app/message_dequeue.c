@@ -65,10 +65,6 @@ static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size);
 static void message_dequeue_put_to_free(MESSAGE *pmessage);
 
 static void message_dequeue_put_to_used(MESSAGE *pmessage);
-
-static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
-	char *in_buff);
-
 static void message_dequeue_load_from_mess(int mess);
 
 static void message_dequeue_load_from_tape(int pos);
@@ -367,17 +363,16 @@ void message_dequeue_free()
  *		in_buff [in]			buffer of mail message
  */
 static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
-	char *in_buff)
+    const char *in_buff)
 {
 	pmessage->begin_address = in_buff;
 	pmessage->mail_begin = in_buff + sizeof(size_t);
-	pmessage->mail_length = *((size_t*)in_buff);
-	pmessage->flush_ID = *((int*)(in_buff + sizeof(size_t) +
-						  pmessage->mail_length));
-	pmessage->bound_type = *(int*)(in_buff + sizeof(size_t) + sizeof(int) +
-                          pmessage->mail_length);
-	pmessage->is_spam = *(int*)(in_buff + +sizeof(size_t) + 2*sizeof(int) +
-                          pmessage->mail_length);
+	memcpy(&pmessage->mail_length, in_buff, sizeof(size_t));
+	memcpy(&pmessage->flush_ID, in_buff + sizeof(size_t) + pmessage->mail_length, sizeof(int));
+	memcpy(&pmessage->bound_type, in_buff + sizeof(size_t) + sizeof(int) + pmessage->mail_length, sizeof(int));
+	int z;
+	memcpy(&z, in_buff + sizeof(size_t) + 2 * sizeof(int) + pmessage->mail_length, sizeof(int));
+	pmessage->is_spam = z;
 	pmessage->envelop_from = in_buff + sizeof(size_t) + 3*sizeof(int) +
                          	 pmessage->mail_length;
 	pmessage->envelop_rcpt = pmessage->envelop_from +
