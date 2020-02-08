@@ -1116,9 +1116,8 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	pfolder = icsupctx_object_get_parent_object(pctx);
 	folder_id = folder_object_get_id(pfolder);
 	pbin = ppropvals->ppropval[0].pvalue;
-	if (22 != pbin->cb) {
+	if (pbin == nullptr || pbin->cb != 22)
 		return EC_INVALID_PARAMETER;
-	}
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return EC_ERROR;
 	}
@@ -1469,9 +1468,8 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		}
 	} else {
 		pbin = phichyvals->ppropval[0].pvalue;
-		if (22 != pbin->cb) {
+		if (pbin == nullptr || pbin->cb != 22)
 			return EC_INVALID_PARAMETER;
-		}
 		if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 			return EC_ERROR;
 		}
@@ -1503,9 +1501,8 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return EC_NOT_SUPPORTED;
 	}
 	pbin = phichyvals->ppropval[1].pvalue;
-	if (22 != pbin->cb) {
+	if (pbin != nullptr || pbin->cb != 22)
 		return EC_INVALID_PARAMETER;
-	}
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return EC_ERROR;
 	}

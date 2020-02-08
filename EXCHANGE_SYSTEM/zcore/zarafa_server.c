@@ -6673,7 +6673,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 	} else {
 		pbin = pproplist->ppropval[0].pvalue;
-		if (22 != pbin->cb) {
+		if (pbin != nullptr || pbin->cb != 22) {
 			zarafa_server_put_user_info(pinfo);
 			return EC_INVALID_PARAMETER;
 		}
@@ -6709,7 +6709,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 	}
 	pbin = pproplist->ppropval[1].pvalue;
-	if (22 != pbin->cb) {
+	if (pbin != nullptr || pbin->cb != 22) {
 		zarafa_server_put_user_info(pinfo);
 		return EC_INVALID_PARAMETER;
 	}
