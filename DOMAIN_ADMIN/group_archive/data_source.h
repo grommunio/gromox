@@ -1,4 +1,4 @@
-#pragma onec
+#pragma once
 #include "common_types.h"
 #include <time.h>
 
