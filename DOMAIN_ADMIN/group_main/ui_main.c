@@ -434,7 +434,7 @@ static void ui_main_main_html(const char *group, const char *session)
 {
 	struct tm *ptm;
 	time_t cur_time;
-	char *language;
+	const char *language = nullptr;
 	char url_buff[1024];
 	char date_buff[256];
 	

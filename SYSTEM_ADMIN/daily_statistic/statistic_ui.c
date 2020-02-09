@@ -351,7 +351,7 @@ static void statistic_ui_main_html(const char *session, const char *console)
 	time_t cur_time;
 	time_t smtp_time;
 	time_t delivery_time;
-	char *language;
+	const char *language = nullptr;
 	LIST_FILE *pfile;
 	char tf_buff[128];
 	char tt_buff[128];

@@ -455,7 +455,7 @@ static void list_ui_main_html(const char *session)
 	int item_num;
 	BOOL b_added;
 	char *pitem;
-	char *language;
+	const char *language = nullptr;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char temp_buff[1024];

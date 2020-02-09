@@ -2,6 +2,7 @@
  */ 
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "smtp_cmd_handler.h"
 #include "system_services.h"
 #include "anti_spamming.h"
@@ -769,7 +770,7 @@ int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
     int string_length;
-    const char* smtp_reply_str;
+	const char *smtp_reply_str = nullptr;
 	char reply_string[1024];
     
     if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){

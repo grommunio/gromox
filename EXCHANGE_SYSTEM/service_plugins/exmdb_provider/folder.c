@@ -121,7 +121,7 @@ BOOL exmdb_server_set_folder_by_class(const char *dir,
 		*pb_result = TRUE;
 		return TRUE;
 	}
-	sprintf(sql_string, "SELECT folder_id FROM folders WHERE"
+	sql_len = sprintf(sql_string, "SELECT folder_id FROM folders WHERE"
 		" folder_id=%llu", rop_util_get_gc_value(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {

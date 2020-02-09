@@ -394,7 +394,7 @@ static void list_ui_main_html(const char *session)
 	int files, homes, space;
 	char *plast;
 	char *ptoken;
-	char *language;
+	const char *language = nullptr;
 	char *pdb_storage;
 	char temp_buff[1024];
 	char temp_path[256];

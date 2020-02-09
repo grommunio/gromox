@@ -1333,8 +1333,7 @@ static void setup_ui_error_alert(const char *error_string)
 static void setup_ui_main_html(const char *session)
 {
 	int i, option;
-	char *language;
-	const char *str_value, *str_times, *str_intvl;
+	const char *str_value, *str_times, *str_intvl, *language = nullptr;
 	char url_buff[1024];
 	char str_submit[64];
 	

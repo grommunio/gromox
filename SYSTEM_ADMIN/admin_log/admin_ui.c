@@ -567,7 +567,7 @@ static void admin_ui_error_html(const char *error_string)
 static void admin_ui_search_html(const char *session)
 {
 	int i;
-	char *language;
+	const char *language = nullptr;
 	char time_buff[64];
 	char url_buff[1024];
 	time_t current_time;
@@ -642,7 +642,7 @@ static void admin_ui_result_html(const char *session, const char *ip,
 	const char *from, const char *to, time_t start_point, time_t end_point)
 {
 	int i;
-	char *language;
+	const char *language = nullptr;
 	char temp_buff[64];
 	char url_buff[1024];
 	MATCH_COLLECT *pcollection;

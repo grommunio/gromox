@@ -1558,6 +1558,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
 		if (0 != stat(temp_path, &node_stat)) {
+			buff_len = strlen(pvalue);
 			pbuff = common_util_alloc(buff_len + 256);
 			if (NULL == pbuff) {
 				return FALSE;
@@ -1608,6 +1609,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
 		if (0 != stat(temp_path, &node_stat)) {
+			buff_len = strlen(pvalue);
 			pbuff = common_util_alloc(buff_len + 256);
 			if (NULL == pbuff) {
 				return FALSE;

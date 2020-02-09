@@ -2232,10 +2232,8 @@ static void upload_ui_error_xls(DOUBLE_LIST *plist)
 
 static void upload_ui_main_html(const char *domainname, const char *session)
 {
-	char *language;
 	char url_buff[1024];
-	const char *str_submit;
-	
+	const char *str_submit, *language = nullptr;
 	
 	if (FALSE == upload_ui_get_self(url_buff, 1024)) {
 		upload_ui_error_html(lang_resource_get(

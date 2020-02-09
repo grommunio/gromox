@@ -400,7 +400,7 @@ static void limit_ui_main_html(const char *domain, const char *session)
 	int fd;
 	int i;
 	int item_num;
-	char *language;
+	const char *language = nullptr;
 	LIST_FILE *pfile;
 	CONFIG_FILE *pconfig;
 	char *str_value;

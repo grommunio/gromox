@@ -385,7 +385,7 @@ static void list_ui_error_html(const char *error_string)
 
 static void list_ui_main_html(const char *session)
 {
-	char *language;
+	const char *language = nullptr;
 	ORG_ITEM *porg;
 	char url_buff[1024];
 	char temp_buff[128];

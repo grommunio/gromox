@@ -245,7 +245,7 @@ static void statistic_ui_main_html(const char *session)
 {
 	int i;
 	int item_num;
-	char *language;
+	const char *language = nullptr;
 	LIST_FILE *pfile;
 	char temp_buff[1024];
 	STATISTIC_ITEM *pitem;

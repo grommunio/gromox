@@ -473,7 +473,7 @@ static void list_ui_main_html(const char *session)
 {
 	int item_num;
 	int i;
-	char *language;
+	const char *language = nullptr;
 	char url_buff[1024];
 	LIST_FILE *pfile;
 	ARCHIVE_ITEM *pitem;

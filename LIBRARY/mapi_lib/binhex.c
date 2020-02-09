@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "util.h"
 #include "binhex.h"
 #include "endian_macro.h"
@@ -409,7 +410,7 @@ static BOOL binhex_write_stream(BINHEXT_STREAM *pstream,
 
 static BOOL binhex_init_write_stat(WRITE_STAT *pstat)
 {
-	void *ptr;
+	void *ptr = nullptr;
 	
 	if (FALSE == binhex_stream_init(&pstat->stream)) {
 		return FALSE;

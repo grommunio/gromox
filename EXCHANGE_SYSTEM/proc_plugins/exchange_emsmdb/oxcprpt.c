@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "rops.h"
 #include "propval.h"
 #include "common_util.h"
@@ -225,7 +226,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	int i;
 	uint32_t cpid;
 	void *pobject;
-	BOOL b_unicode;
+	BOOL b_unicode = false;
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY proptags;

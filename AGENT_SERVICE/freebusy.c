@@ -1744,8 +1744,7 @@ static BOOL get_freebusy(const char *dir)
 	BOOL b_private;
 	BOOL b_meeting;
 	char *psubject;
-	BOOL b_private1;
-	BOOL b_meeting1;
+	BOOL b_private1 = false, b_meeting1;
 	char *psubject1;
 	BOOL b_reminder;
 	char *plocation;

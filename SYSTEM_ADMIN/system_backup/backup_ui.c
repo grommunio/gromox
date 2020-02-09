@@ -436,7 +436,7 @@ static void backup_ui_error_html(const char *error_string)
 static void backup_ui_main_html(const char *session)
 {
 	DIR *dirp;
-	char *language;
+	const char *language = nullptr;
 	char url_buff[1024];
 	char temp_buff[1024];
 	struct tm temp_tm;

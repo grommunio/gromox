@@ -598,7 +598,7 @@ static void list_ui_main_html(const char *session)
 	int type;
 	int i;
 	int item_num;
-	char *language;
+	const char *language = nullptr;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char item_type[256];

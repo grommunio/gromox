@@ -2271,12 +2271,12 @@ RETRYING:
 		return FALSE;
 	}
 	
-	if (ADDRESS_TYPE_MLIST != atoi(myrow[0])) {
+	myrow = mysql_fetch_row(pmyres);
+	if (myrow == nullptr || strtol(myrow[0], nullptr, 0) != ADDRESS_TYPE_MLIST) {
 		mysql_free_result(pmyres);
 		return FALSE;
 	}
 	
-	myrow = mysql_fetch_row(pmyres);
 	*pdomain_id = atoi(myrow[1]);
 	*pgroup_id = atoi(myrow[2]);
 	mysql_free_result(pmyres);

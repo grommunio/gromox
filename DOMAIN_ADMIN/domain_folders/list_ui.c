@@ -393,7 +393,7 @@ static void list_ui_error_html(const char *error_string)
 static void list_ui_main_html(const char *domain, const char *session)
 {
 	int i;
-	const char *language;
+	const char *language = nullptr;
 	time_t tmp_time;
 	uint64_t folder_id;
 	char temp_buff[256];
@@ -487,7 +487,7 @@ static BOOL list_ui_add_folder(const char *domain,
 static void list_ui_remove_folder(const char *domain, uint64_t folder_id)
 {
 	BOOL b_result;
-	char *language;
+	const char *language = nullptr;
 	char domain_path[256];
 
 	if (FALSE == data_source_get_homedir(domain, domain_path, NULL)) {

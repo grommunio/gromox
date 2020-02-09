@@ -364,7 +364,7 @@ static void statistic_ui_main_html(const char *domain, const char *session,
 	int total_normal;
 	int total_outgoing;
 	time_t cur_time;
-	char *language;
+	const char *language = nullptr;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char temp_path[256];

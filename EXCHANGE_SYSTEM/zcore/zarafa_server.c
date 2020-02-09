@@ -6396,9 +6396,8 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	USER_INFO *pinfo;
 	uint8_t mapi_type;
 	uint64_t folder_id;
-	uint32_t tag_access;
 	uint64_t message_id;
-	uint32_t permission;
+	uint32_t permission, tag_access = 0;
 	STORE_OBJECT *pstore;
 	ICSUPCTX_OBJECT *pctx;
 	MESSAGE_OBJECT *pmessage;

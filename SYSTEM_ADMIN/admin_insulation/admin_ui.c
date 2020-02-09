@@ -485,7 +485,7 @@ static void admin_ui_error_html(const char *error_string)
 
 static void admin_ui_search_html(const char *session)
 {
-	char *language;
+	const char *language = nullptr;
 	char url_buff[1024];
 	
 	if (FALSE == admin_ui_get_self(url_buff, 1024)) {

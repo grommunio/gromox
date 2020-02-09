@@ -392,7 +392,7 @@ static void password_ui_error_html(const char *error_string)
 
 static void password_ui_change_html(const char *session)
 {
-	char *language;
+	const char *language = nullptr;
 	char url_buff[1024];
 	
 	if (FALSE == password_ui_get_self(url_buff, 1024)) {

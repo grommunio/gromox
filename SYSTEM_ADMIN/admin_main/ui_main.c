@@ -374,7 +374,7 @@ static void ui_main_main_html(const char *session, BOOL b_ext)
 {
 	time_t cur_time;
 	struct tm *ptm;
-	char *language;
+	const char *language = nullptr;
 	char url_buff[1024];
 	char date_buff[256];
 	
@@ -659,7 +659,7 @@ static void ui_main_error_html(const char *error_string)
 
 static void ui_main_login_html()
 {
-	char *language;
+	const char *language = nullptr;
 	char url_buff[1024];
 	
 	if (FALSE == ui_main_get_self(url_buff, 1024)) {

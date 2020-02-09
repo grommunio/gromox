@@ -551,9 +551,8 @@ static void upload_ui_main_html(const char *session)
 {
 	int i, item_num;
 	char *pitem;
-	char *language;
 	char url_buff[1024];
-	const char *str_submit;
+	const char *str_submit, *language = nullptr;
 	LIST_FILE *plist;
 	
 	

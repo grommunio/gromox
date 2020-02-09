@@ -1073,10 +1073,9 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	int object_type;
 	EMSMDB_INFO *pinfo;
 	uint64_t folder_id;
-	uint32_t tag_access;
 	uint64_t message_id;
-	uint32_t permission;
-	DCERPC_INFO rpc_info;
+	uint32_t permission, tag_access = 0;
+	DCERPC_INFO rpc_info = {};
 	LOGON_OBJECT *plogon;
 	uint32_t tmp_proptag;
 	ICSUPCTX_OBJECT *pctx;

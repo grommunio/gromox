@@ -439,7 +439,7 @@ static void group_ui_main_html(const char *session)
 	int keyword_index;
 	int group_index;
 	struct tm *ptm;
-	char *language;
+	const char *language = nullptr;
 	LIST_FILE *pfile;
 	char url_buff[1024];
 	char temp_buff[128];

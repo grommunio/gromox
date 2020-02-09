@@ -66,8 +66,7 @@ int main(int argc, const char **argv)
 	int smtp_port;
 	int proxy_num;
 	int max_length;
-	int table_size;
-	int threads_num;
+	int table_size, threads_num = 0;
 	const char *str_value;
 	char smtp_ip[16];
 	int max_item_num;

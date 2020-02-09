@@ -1349,8 +1349,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	PROPTAG_ARRAY *pproptags, PROPROW_SET **pprows)
 {
 	int total;
-	int i, row;
-	int base_id;
+	int base_id, row;
 	AB_BASE *pbase;
 	uint32_t result;
 	uint32_t last_row;
@@ -1439,7 +1438,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	if (NULL != ptable) {
 		row = 0;
 		tmp_minid = 0;
-		for (i=0; i<ptable->cvalues; i++) {
+		for (int i = 0; i < ptable->cvalues; ++i) {
 			pnode1 = ab_tree_minid_to_node(pbase, ptable->pproptag[i]);
 			if (NULL == pnode1) {
 				continue;
@@ -1503,7 +1502,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		if (0 == pstat->container_id) {
 			for (psnode=single_list_get_head(pgal_list); NULL!=psnode;
 				psnode=single_list_get_after(pgal_list, psnode),row++) {
-				if (i < start_pos) {
+				if (row < start_pos) {
 					continue;
 				}
 				ab_tree_get_display_name(psnode->pdata,
