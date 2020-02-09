@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdint.h>
 #include <libHX/string.h>
 #include "html.h"

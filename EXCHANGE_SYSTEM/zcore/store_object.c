@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <ctype.h>
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
