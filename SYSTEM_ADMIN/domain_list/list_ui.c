@@ -40,14 +40,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill search result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -59,7 +59,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
 function DeleteItem(domain) {if (confirm('%s')) location.href='%s?session=%s&type=remove&domainname=' + domain;}\n\
 function EditItem(domain) {location.href='%s?session=%s&type=edit&domainname=' + domain;}\n\
 function RestoreItem(domain) {location.href='%s?session=%s&type=restore&domainname=' + domain;}\n\
-</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\"%s\">%s</A>&nbsp;&nbsp;&nbsp;&nbsp\n\
 <A href=\"%s\">%s</A>&nbsp;&nbsp;&nbsp;&nbsp;<A href=\"%s\">%s</A></TD></TR>\n\
 <TR><TD noWrap align=left height=23>"
@@ -71,7 +71,7 @@ function RestoreItem(domain) {location.href='%s?session=%s&type=restore&domainna
 <A href=\"%s\">%s</A>&nbsp;&nbsp;<A href=\"%s\" %s>%s</A>&nbsp;&nbsp;\n\
 <A href=\"%s\" %s>%s</A>&nbsp;&nbsp;<A href=\"%s\">%s</A></TD></TR>\n\
 </TBODY></TABLE><BR><BR>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle \n\
@@ -83,7 +83,7 @@ background=\"../data/picture/di2.gif\">"
 #define HTML_RESULT_7	\
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_RESULT_8	\
@@ -92,7 +92,7 @@ src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
 #define HTML_SEARCH_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}\n\
 $(function(){$(\"#create_min\").datepicker({\n\
@@ -127,7 +127,7 @@ name=searchpattern method=post action="
 #define HTML_SEARCH_6	\
 "><INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"search\" name=\"type\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" \n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" \n\
 border=0><TBODY><TR><TD></TD><TD vAlign=center>%s</TD>\n\
 <TD vAlign=center><SPAN><INPUT type=\"text\" size=40 name=domainname />\n\
 </SPAN></TD></TR><TR><TD></TD><TD vAlign=center>%s</TD>\n\
@@ -232,7 +232,7 @@ if (searchpattern.tel.value.length >= 64) {\n\
 #define HTML_ADD_5 \
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}\n\
 $(function(){$(\"#create_day\").datepicker({\n\
@@ -255,7 +255,7 @@ todayText:[%s]\n\
 #define HTML_ALIAS_5 \
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\"%s\">%s</A>&nbsp;&nbsp;&nbsp;&nbsp;\n\
 <A href=\"%s\">%s</A>&nbsp;&nbsp;&nbsp;&nbsp;<A href=\"%s\">%s</A>\n\
 </TD></TR></TBODY></TABLE><BR><BR><BR><BR><BR>\n\
@@ -264,7 +264,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
 #define HTML_EDIT_5 \
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}\n\
 $(function(){$(\"#create_day\").datepicker({\n\
@@ -287,7 +287,7 @@ todayText:[%s]\n\
 #define HTML_ADD_6	\
 "><INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"add\" name=\"type\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" size=40 name=domainname /></SPAN></TD></TR>\n\
 <TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
@@ -306,7 +306,7 @@ name=max_user /></SPAN></TD></TR><TR><TD></TD><TD vAlign=center>%s</TD>\n\
 #define HTML_ALIAS_6	\
 "><INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"alias\" name=\"type\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" size=40 name=domainname /></SPAN></TD></TR>\n\
 <TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
@@ -334,7 +334,7 @@ return true;\" /></TD></TR></TBODY></TABLE></FORM></TBODY></TABLE></TD></TR>\n\
 #define HTML_EDIT_6	\
 "><INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"edit\" name=\"type\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" value=\"%s\" size=40 name=domainname \n\
 readonly=\"readonly\"/></SPAN></TD></TR>\n\
@@ -356,7 +356,7 @@ name=title /></SPAN></TD></TR>\n"
 #define HTML_EDIT_OUTOFDATE_6	\
 "><INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"edit\" name=\"type\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" value=\"%s\" size=40 name=domainname \n\
 readonly=\"readonly\"/></SPAN><INPUT type=hidden value=\"nochange\" name=media />\
@@ -574,7 +574,7 @@ return true;\" /></TD></TR></FORM><TR><TD></TD><TD vAlign=center>%s</TD>\n\
 #define HTML_PASSWORD_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}</SCRIPT>\n\
 <TR><TD align=right><A href=\"javascript:BackTo()\">%s</A></TD></TR>\n\
@@ -585,7 +585,7 @@ function BackTo() {window.history.back();}</SCRIPT>\n\
 "><INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"password\" name=\"type\" />\n\
 <INPUT type=hidden value=\"%s\" name=\"domainname\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR class=ItemRandpasswd><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"password\" value=\"%s\" name=new_password />&nbsp;&nbsp;%s:%s</SPAN></TD></TR>\n\
 <TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\

@@ -28,14 +28,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill status result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -43,7 +43,7 @@ background=\"../data/picture/di1.gif\"><A href=\""
 #define HTML_MAIN_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR><BR><BR>\n\
-<BR><BR><TABLE cellSpacing=1 cellPadding=1 width=\"75%\" border=0><TBODY>\n\
+<BR><BR><TABLE cellSpacing=1 cellPadding=1 width=\"75%%\" border=0><TBODY>\n\
 <TR class=ItemEven><TD>%s</TD><TD>%s</TD></TR>\n\
 <TR class=ItemOdd><TD>%s</TD><TD>%s</TD></TR>\n\
 <TR class=%s><TD>%s</TD><TD>%s</TD></TR>\n\

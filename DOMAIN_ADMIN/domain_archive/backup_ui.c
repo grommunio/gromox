@@ -38,14 +38,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill search result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -53,7 +53,7 @@ background=\"../data/picture/di1.gif\"><A href=\""
 #define HTML_RESULT_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\""
 
 /* fill search URL link here */
@@ -78,7 +78,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
 
 #define HTML_SEARCH_8	\
 " name=session><BR><BR><TABLE class=SearchTable cellSpacing=0 cellPadding=2 \n\
-width=\"100%\" border=0><TBODY><TR><TD></TD><TD vAlign=center>\n"
+width=\"100%%\" border=0><TBODY><TR><TD></TD><TD vAlign=center>\n"
 
 /* fill mailbox tag here */
 

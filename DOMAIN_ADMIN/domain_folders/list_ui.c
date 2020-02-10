@@ -35,14 +35,14 @@
 <META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill list title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -75,7 +75,7 @@ name=folder /></TD></TR><TR><TD></TD><TD>%s:</TD><TD>\n\
 <TR><TD></TD><TD></TD><TD><INPUT type=submit tabindex=4 value=\"%s\" onclick=\"\n\
 if (0 == opeform.folder.value.length) {return false;} return true;\" \n\
 /></TD></TR><TR><TD colSpan=3>%s</TD></TR></TABLE></FORM>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"90%\"\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"90%%\"\n\
 border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle background=\"../data/picture/di2.gif\">"
@@ -85,7 +85,7 @@ border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 #define HTML_MAIN_7	\
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_MAIN_8	\
@@ -94,7 +94,7 @@ src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
 #define HTML_PERMISSION_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\"%s?domain=%s&session=%s\">%s</A>\n\
 </TD></TR></TBODY></TABLE><SCRIPT language=\"JavaScript\">\n\
 function DeleteItem(member) {location.href='%s?domain=%s&session=%s\
@@ -110,7 +110,7 @@ function DeleteItem(member) {location.href='%s?domain=%s&session=%s\
 size=30 name=username /><INPUT style=\"display:none\">\n\
 </TD></TR><TR><TD></TD><TD></TD><TD><INPUT type=submit tabindex=2 \n\
 value=\"  %s  \" /></TD></TR></TABLE></FORM>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"90%\"\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"90%%\"\n\
 border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle background=\"../data/picture/di2.gif\">"
@@ -120,7 +120,7 @@ border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 #define HTML_PERMISSION_7 \
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_PERMISSION_8 \

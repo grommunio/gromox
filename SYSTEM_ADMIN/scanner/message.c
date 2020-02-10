@@ -43,16 +43,16 @@ A:hover {COLOR: #0000ff; TEXT-DECORATION: underline}\r\n\
 <META content=\"MSHTML 6.00.2900.2912\" name=GENERATOR></HEAD>\r\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\r\n\
 marginheight=\"0\" marginwidth=\"0\">\r\n\
-<CENTER><TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0><TBODY>\r\n\
+<CENTER><TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0><TBODY>\r\n\
 <TR><TD noWrap align=middle background=\r\n\
 \"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\" height=55>\r\n\
 <SPAN class=AlarmTitle>Mail system scanner alarm</SPAN>\r\n\
-<TD vAlign=bottom noWrap width=\"22%\"\r\n\
+<TD vAlign=bottom noWrap width=\"22%%\"\r\n\
 background=\"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\"><A\r\n\
 href=\"%s\" target=_blank><IMG height=48\r\n\
 src=\"cid:001901c695cb$9bc53450$6601a8c0@herculiz\" width=195 align=right\r\n\
 border=0></A></TD></TR></TBODY></TABLE><BR>\r\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0> <TBODY><TR>\r\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0> <TBODY><TR>\r\n\
 <P></P><BR><P></P><BR><P></P><BR><BR>\r\n"
 
 /* content */

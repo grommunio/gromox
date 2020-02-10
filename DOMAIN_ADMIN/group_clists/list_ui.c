@@ -33,14 +33,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill mlist title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -51,9 +51,9 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
 <SCRIPT language=\"JavaScript\">\n\
 function DeleteItem(listname) {if (confirm('%s')) location.href='%s?group=%s&session=%s&type=remove&listname=' + listname;}\n\
 function EditItem(listname) {location.href='%s?group=%s&session=%s&type=edit&listname=' + listname;}\n\
-</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\"%s\">%s</A></TD></TR>\n\
-</TBODY></TABLE><BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%\" \n\
+</TBODY></TABLE><BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%%\" \n\
 border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle \n\
@@ -64,7 +64,7 @@ background=\"../data/picture/di2.gif\">"
 #define HTML_RESULT_6	\
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_RESULT_7	\
@@ -73,7 +73,7 @@ src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
 #define HTML_EDIT_5 \
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\"%s?group=%s&session=%s\">%s</A></TD></TR>\n\
 </TBODY></TABLE><BR><BR><FORM class=SearchForm name=editform \n\
 method=get action="
@@ -83,7 +83,7 @@ method=get action="
 <INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"edit-privil\" name=type />\n\
 <INPUT type=hidden value=\"%s\" name=listname />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"radio\" name=privilege value=\"0\" %s/>%s&nbsp;&nbsp;&nbsp;\n\
 <INPUT type=\"radio\" name=privilege value=\"1\" %s/>%s&nbsp;&nbsp;&nbsp;\n\
@@ -99,7 +99,7 @@ method=get action="
 #define HTML_ADD_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}</SCRIPT>\n\
 <TR><TD align=right><A href=\"javascript:BackTo()\">%s</A></TD></TR>\n\
@@ -111,7 +111,7 @@ method=get action="
 "><INPUT type=hidden value=%s name=group />\n\
 <INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"add-class\" name=type />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=text value=\"\" name=listname></TD></TR>\n\
 <TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
@@ -164,7 +164,7 @@ return true;\"/>\n\
 #define HTML_SPECIFIED_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\"%s?group=%s&session=%s&type=edit&listname=%s\">%s</A>\n\
 </TD></TR></TBODY></TABLE><SCRIPT language=\"JavaScript\">\n\
 function DeleteItem(address) {location.href='%s?group=%s&session=%s&type=del-spec&listname=%s&address=' + address;}\n\
@@ -180,7 +180,7 @@ size=30 name=address /><INPUT style=\"display:none\">\n\
 </TD></TR><TR><TD></TD><TD></TD><TD>\n\
 <INPUT type=submit tabindex=2 value=\"  %s  \" />\n\
 </TD></TR><TR><TD colSpan=3>%s</TD></TR></TABLE></FORM>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"90%\"\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"90%%\"\n\
 border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle background=\"../data/picture/di2.gif\">"
@@ -190,7 +190,7 @@ border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 #define HTML_SPECIFIED_7 \
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_SPECIFIED_8 \

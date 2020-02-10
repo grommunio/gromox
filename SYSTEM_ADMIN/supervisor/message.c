@@ -37,7 +37,7 @@ A:hover {COLOR: #0000ff; TEXT-DECORATION: underline}\r\n\
 <META content=\"MSHTML 6.00.2900.2912\" name=GENERATOR></HEAD>\r\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\r\n\
 marginheight=\"0\" marginwidth=\"0\">\r\n<CENTER><BR>\r\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0> <TBODY><TR>\r\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0> <TBODY><TR>\r\n\
 <TD><P></P><BR><P></P><BR><P></P><BR><BR>\r\n"
 
 /* content */

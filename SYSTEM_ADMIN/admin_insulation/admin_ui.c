@@ -34,14 +34,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill search result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -54,7 +54,7 @@ function ActivateItem(path) {\n\
 dummy_window.location.href='%s?session=%s&message=' + path;}\n\
 function DownloadItem(path) {\n\
 dummy_window.location.href='%s?session=%s&message=' + path;}\n\
-</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\""
 
 /* fill search URL link here */
@@ -71,7 +71,7 @@ dummy_window.location.href='%s?session=%s&message=' + path;}\n\
 #define HTML_RESULT_8	\
 "<iframe src=\"\" style=\"display:none\" width=\"0\" height=\"0\" name=\"dummy_window\"></iframe>\n\
 </TD></TR></TBODY></TABLE><BR><BR>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle background=\"../data/picture/di2.gif\">"
@@ -81,7 +81,7 @@ dummy_window.location.href='%s?session=%s&message=' + path;}\n\
 #define HTML_RESULT_9	\
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_RESULT_10	\
@@ -98,7 +98,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
 
 #define HTML_SEARCH_7	\
 " name=session><TABLE class=SearchTable cellSpacing=0 cellPadding=2 \n\
-width=\"100%\" border=0><TBODY><TR><TD></TD><TD vAlign=center>\n"
+width=\"100%%\" border=0><TBODY><TR><TD></TD><TD vAlign=center>\n"
 
 /* fill recipient domain or address tag here */
 

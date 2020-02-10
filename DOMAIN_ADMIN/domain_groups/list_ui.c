@@ -36,14 +36,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill search result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -54,9 +54,9 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
 <SCRIPT language=\"JavaScript\">\n\
 function DeleteItem(groupname) {if (confirm('%s')) location.href='%s?domain=%s&session=%s&type=remove&groupname=' + groupname;}\n\
 function EditItem(groupname) {location.href='%s?domain=%s&session=%s&type=edit&groupname=' + groupname;}\n\
-</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right><A href=\"%s\">%s</A></TD></TR></TBODY></TABLE>\n\
-<BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\n\
+<BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle \n\
@@ -67,7 +67,7 @@ background=\"../data/picture/di2.gif\">"
 #define HTML_RESULT_6	\
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_RESULT_7	\
@@ -77,7 +77,7 @@ src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
 #define HTML_ADD_EDIT_5 \
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}</SCRIPT>\n\
 <TR><TD align=right><A href=\"javascript:BackTo()\">%s</A></TD></TR>\n\
@@ -88,7 +88,7 @@ method=post action="
 "><INPUT type=hidden value=%s name=domain />\n\
 <INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"add\" name=\"type\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" size=40 name=title /></SPAN></TD></TR>\n\
 <TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
@@ -110,7 +110,7 @@ name=max_user /></SPAN><INPUT type=hidden value=\"\" name=privilege_bits />"
 "><INPUT type=hidden value=%s name=domain />\n\
 <INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"edit\" name=\"type\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" size=40 value=\"%s\" name=title /></SPAN></TD></TR>\n\
 <TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\

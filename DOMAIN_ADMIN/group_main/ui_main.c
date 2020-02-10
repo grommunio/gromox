@@ -37,14 +37,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill search result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -59,7 +59,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
 #define HTML_LOGIN_6	\
 " target=_parent name=session>\n<BR><BR><BR><BR><BR><BR>\n\
 <TABLE class=LoginTable cellSpacing=0 cellPadding=2 align=left \n\
-width=\"60%\" border=0><TBODY><TR><TD align=right>\n"
+width=\"60%%\" border=0><TBODY><TR><TD align=right>\n"
 
 /* fill group label here */
 
@@ -110,11 +110,11 @@ content=\"text/html; charset=%s\">\n\
 <META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0 \n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><IMG src=\"../data/picture/contents.gif\">\n\
 </TD></TR></TBODY></TABLE><BR><BR><BR>\n\
-<TABLE cellSpacing=5 cellPadding=2 width=\"100%\" border=0><TBODY>"
+<TABLE cellSpacing=5 cellPadding=2 width=\"100%%\" border=0><TBODY>"
 
 #define HTML_LEFT_ITEM_INFO	\
 "<TR><TD align=left width=48><A title=\"%s\" \n\

@@ -150,7 +150,7 @@ dropshadow(color=#000000,offx=2,offy=2); COLOR: #0b77d3; TEXT-ALIGN: center}\r\n
 "\">\r\n<META content=\"MSHTML 6.00.2900.2912\" name=GENERATOR></HEAD>\r\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\r\n\
 marginheight=\"0\" marginwidth=\"0\">\r\n\
-<CENTER><TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0><TBODY>\r\n\
+<CENTER><TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0><TBODY>\r\n\
 <TR><TD noWrap align=middle background=\r\n\
 \"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\" height=55>\r\n\
 <SPAN class=ReportTitle>"
@@ -158,7 +158,7 @@ marginheight=\"0\" marginwidth=\"0\">\r\n\
 /* fill content title here */
 
 #define HTML_05	\
-"</SPAN>\r\n<TD vAlign=bottom noWrap width=\"22%\"\r\n\
+"</SPAN>\r\n<TD vAlign=bottom noWrap width=\"22%%\"\r\n\
 background=\"cid:001501c695cb$9bc2ea60$6601a8c0@herculiz\"><A\r\n\
 href=\"%s\" target=_blank><IMG height=48\r\n\
 src=\"cid:001901c695cb$9bc53450$6601a8c0@herculiz\" width=195 align=right\r\n\
@@ -166,7 +166,7 @@ border=0></A></TD></TR></TBODY></TABLE><BR>\r\n"
 
 
 #define HTML_TABLE_1	\
-"<TABLE cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
@@ -183,56 +183,56 @@ width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 #define HTML_LINK_END			"</a>"
 
 #define HTML_TABLE_NORMAL	\
-"<TABLE id=table_normal cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_normal cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 \"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_TABLE_OUTGOING	\
-"<TABLE id=table_outgoing cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_outgoing cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 \"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_TABLE_INSULATION	\
-"<TABLE id=table_insulation cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_insulation cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 \"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_TABLE_RETRYING	\
-"<TABLE id=table_retrying cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_retrying cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 \"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_TABLE_TIMEOUT	\
-"<TABLE id=table_timeout cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_timeout cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 \"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_TABLE_NOUSER	\
-"<TABLE id=table_nouser cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_nouser cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 \"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_TABLE_VIRUS	\
-"<TABLE id=table_virus cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_virus cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 \"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_TABLE_SPAM	\
-"<TABLE id=table_spam cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\r\n\
+"<TABLE id=table_spam cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\r\n\
 <TBODY><TD background=\"cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001701c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
@@ -245,13 +245,13 @@ width=3></TD><TD class=TableTitle noWrap align=middle background=\r\n\
 cid:001601c695cb$9bc53450$6601a8c0@herculiz\">\r\n\
 <IMG height=30 src=\"cid:001801c695cb$9bc53450$6601a8c0@herculiz\"\r\n\
 width=3></TD></TR><TR bgColor=#bfbfbf><TD colSpan=4><TABLE cellSpacing=1\r\n\
-cellPadding=2 width=\"100%\" border=0><TBODY>"
+cellPadding=2 width=\"100%%\" border=0><TBODY>"
 
 #define HTML_TABLE_2_END	\
 "</TBODY></TABLE></TD></TR></TBODY></TABLE><BR>"
 
 #define HTML_TABLE_PERCENTAGE	\
-"<TABLE width=\"90%\" border=0 cellpadding=1 cellspacing=1><TR>\r\n\
+"<TABLE width=\"90%%\" border=0 cellpadding=1 cellspacing=1><TR>\r\n\
 <TD height=\"23\" align=\"left\" nowrap>"
 
 #define HTML_TABLE_PERCENTAGE_END	\
@@ -278,11 +278,11 @@ cellPadding=2 width=\"100%\" border=0><TBODY>"
 #define HTML_CHART_1    "<IMG src=\"cid:000501c695cb$9bc53450$6601a8c0@herculiz\">"
 
 #define HTML_STATISTIC_1		\
-"<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0> <TBODY><TR>\r\n\
+"<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0> <TBODY><TR>\r\n\
 <TD noWrap align=left height=23></TD></TR></TBODY></TABLE><BR>\r\n\
 <A name=General_Statistics></A>\r\n\
-<TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0><TBODY>\r\n\
-<TABLE class=ChartTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\r\n\
+<TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0><TBODY>\r\n\
+<TABLE class=ChartTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\r\n\
 <TBODY><TR><TD align=middle><CENTER>\r\n\
 <TABLE><TBODY><TR vAlign=bottom><TD>&nbsp;</TD>\r\n"
 

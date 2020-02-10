@@ -37,14 +37,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill whitelist title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -69,7 +69,7 @@ name=xmailer /></TD></TR><TR><TD></TD><TD>%s</TD><TD>\
 <TR><TD></TD><TD></TD><TD><INPUT type=submit tabindex=3 value=\"%s\" onclick=\
 \"if(opeform.xmailer.value == 0) {return false;} else {return true;}\" \
 />\n\
-</TD></TR></TABLE></FORM><TABLE cellSpacing=0 cellPadding=0 width=\"90%\"\n\
+</TD></TR></TABLE></FORM><TABLE cellSpacing=0 cellPadding=0 width=\"90%%\"\n\
 border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle background=\"../data/picture/di2.gif\">"
@@ -79,7 +79,7 @@ border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 #define HTML_MAIN_7	\
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_MAIN_8	\
@@ -96,7 +96,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR>\n\
 #define HTML_LOGIN_6	\
 " name=session>\n<BR><BR><BR><BR><BR><BR>\n\
 <TABLE class=LoginTable cellSpacing=0 cellPadding=2 align=left \n\
-width=\"60%\" border=0><TBODY><TR><TD align=right>\n"
+width=\"60%%\" border=0><TBODY><TR><TD align=right>\n"
 
 
 /* fill password lable here */

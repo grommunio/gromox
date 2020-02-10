@@ -36,14 +36,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill table title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -97,7 +97,7 @@ for (i=0; i<str_array.length; i++) {\n\
 }\n\
 return true;\" /></TD></TR>\n\
 </TABLE></FORM><TABLE cellSpacing=0 cellPadding=0 \n\
-width=\"90%\" border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
+width=\"90%%\" border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle background=\"../data/picture/di2.gif\">"
 
@@ -106,12 +106,12 @@ width=\"90%\" border=0><TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 #define HTML_MAIN_7 \
 "</TD><TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_MAIN_8	\
 "</TBODY></TABLE></TD></TR></TBODY></TABLE><P></P><BR>\n\
-<TABLE width=\"90%\" border=0 cellpadding=1 cellspacing=1><TR>\n\
+<TABLE width=\"90%%\" border=0 cellpadding=1 cellspacing=1><TR>\n\
 <TD height=\"23\" align=\"left\" nowrap>\n"
 
 #define HTML_MAIN_9	"</TD></TR></TABLE><P></P><BR></CENTER></BODY></HTML>"

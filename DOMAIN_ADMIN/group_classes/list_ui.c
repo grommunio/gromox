@@ -33,14 +33,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill search result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -53,34 +53,34 @@ function ViewClass(class_id) {location.href='%s?group=%s&session=%s&type=view-cl
 function UnlinkClass(class_id, child_id) {if (confirm('%s')) location.href='%s?group=%s&session=%s&type=unlink-class&class_id=' + class_id +'&child_id=' + child_id;}\n\
 function RenameClass(class_id, parent_id) {location.href='%s?group=%s&session=%s&type=rename-class&class_id=' + class_id + '&parent_id=' + parent_id;}\n\
 function UnlinkUser(class_id, username) {if (confirm('%s')) location.href='%s?group=%s&session=%s&type=unlink-user&class_id=' + class_id + '&username=' + username;}\n\
-</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+</SCRIPT><TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD align=right>\n"
 
 
 #define HTML_RESULT_6_1	\
 "<A href=\"%s\">%s</A>&nbsp;&nbsp;&nbsp;&nbsp;<A href=\"%s\">%s</A>\n\
 &nbsp;&nbsp;&nbsp;&nbsp;<A href=\"%s\">%s</A></TD></TR></TBODY></TABLE>\n\
-<BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\n\
+<BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle \n\
 background=\"../data/picture/di2.gif\">%s</TD>\n\
 <TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_RESULT_6_2	\
 "<A href=\"%s\">%s</A>&nbsp;&nbsp;&nbsp;&nbsp;<A href=\"%s\">%s</A>\n\
 </TD></TR></TBODY></TABLE>\n\
-<BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%\" border=0>\n\
+<BR><BR><TABLE cellSpacing=0 cellPadding=0 width=\"90%%\" border=0>\n\
 <TBODY><TR><TD background=\"../data/picture/di2.gif\">\n\
 <IMG height=30 src=\"../data/picture/kl.gif\" width=3></TD>\n\
 <TD class=TableTitle noWrap align=middle \n\
 background=\"../data/picture/di2.gif\">%s</TD>\n\
 <TD align=right background=\"../data/picture/di2.gif\"><IMG height=30\n\
 src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
-<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%\" border=0>\n\
+<TD colSpan=5><TABLE cellSpacing=1 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY>"
 
 #define HTML_RESULT_7	\
@@ -89,7 +89,7 @@ src=\"../data/picture/kr.gif\" width=3></TD></TR><TR bgColor=#bfbfbf>\n\
 #define HTML_LINK_CLASS_5	\
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}</SCRIPT>\n\
 <TR><TD align=right><A href=\"javascript:BackTo()\">%s</A></TD></TR>\n\
@@ -98,7 +98,7 @@ method=get action=\"%s\"><INPUT type=hidden value=%s name=group />\n\
 <INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"link-class\" name=\"type\" />\n\
 <INPUT type=hidden value=\"%d\" name=\"class_id\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <SELECT name=child_id>\n"
 
@@ -111,7 +111,7 @@ method=get action=\"%s\"><INPUT type=hidden value=%s name=group />\n\
 #define HTML_LINK_USER_5 \
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}</SCRIPT>\n\
 <TR><TD align=right><A href=\"javascript:BackTo()\">%s</A></TD></TR>\n\
@@ -120,7 +120,7 @@ method=get action=\"%s\"><INPUT type=hidden value=%s name=group />\n\
 <INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"link-user\" name=\"type\" />\n\
 <INPUT type=hidden value=%d name=\"class_id\" />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" size=40 name=username /></SPAN></TD></TR>\n\
 <TR><TD colSpan=3></TD><TD><INPUT value=\"    %s    \" type=submit\n\
@@ -140,7 +140,7 @@ if (apos > 0 && username.value.substring(apos, \n\
 #define HTML_ADD_RENAME_5 \
 "\" target=_blank><IMG height=48 src=\"../data/picture/logo_bb.gif\"\n\
 width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR>\n\
-<TABLE cellSpacing=1 cellPadding=1 width=\"90%\" border=0>\n\
+<TABLE cellSpacing=1 cellPadding=1 width=\"90%%\" border=0>\n\
 <TBODY><SCRIPT type=\"text/javascript\" language=\"javascript\">\n\
 function BackTo() {window.history.back();}</SCRIPT>\n\
 <TR><TD align=right><A href=\"javascript:BackTo()\">%s</A></TD></TR>\n\
@@ -152,7 +152,7 @@ method=get action="
 <INPUT type=hidden value=%s name=session />\n\
 <INPUT type=hidden value=\"add-class\" name=\"type\" />\n\
 <INPUT type=hidden value=%d name=class_id />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" size=40 name=classname /></SPAN></TD></TR>\n\
 <TR><TD colSpan=3></TD><TD><INPUT value=\"    %s    \" type=submit \n\
@@ -169,7 +169,7 @@ onclick=\"if (0 == classname.value.length || classname.value.length >= 32) {\n\
 <INPUT type=hidden value=\"rename-class\" name=\"type\" />\n\
 <INPUT type=hidden value=%d name=class_id />\n\
 <INPUT type=hidden value=%d name=parent_id />\n\
-<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%\" border=0>\n\
+<TABLE class=SearchTable cellSpacing=0 cellPadding=2 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD></TD><TD vAlign=center>%s</TD><TD vAlign=center><SPAN>\n\
 <INPUT type=\"text\" size=40 name=classname /></SPAN></TD></TR>\n\
 <TR><TD colSpan=3></TD><TD><INPUT value=\"    %s    \" type=submit \n\

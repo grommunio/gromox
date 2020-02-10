@@ -34,14 +34,14 @@
 "\"><META content=\"MSHTML 6.00.2900.2963\" name=GENERATOR></HEAD>\n\
 <BODY bottomMargin=0 leftMargin=0 topMargin=0 rightMargin=0\n\
 marginheight=\"0\" marginwidth=\"0\"><CENTER>\n\
-<TABLE cellSpacing=0 cellPadding=0 width=\"100%\" border=0>\n\
+<TABLE cellSpacing=0 cellPadding=0 width=\"100%%\" border=0>\n\
 <TBODY><TR><TD noWrap align=middle background=\"../data/picture/di1.gif\"\n\
 height=55><SPAN class=ReportTitle> "
 
 /* fill statistic result title here */
 
 #define HTML_COMMON_4	\
-"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%\"\n\
+"</SPAN></TD><TD vAlign=bottom noWrap width=\"22%%\"\n\
 background=\"../data/picture/di1.gif\"><A href=\""
 
 /* fill logo url link here */
@@ -59,7 +59,7 @@ value=\"  %s  \" /></TD></TR></TBODY></TABLE><BR>%s</FORM>"
 
 #define HTML_MAIN_7	\
 "<FORM method=post action=%s enctype=\"multipart/form-data\">\n\
-<TABLE width=\"75%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%\">%s</TD><TD>\n\
+<TABLE width=\"75%%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%%\">%s</TD><TD>\n\
 <INPUT type=hidden name=\"session\" value=\"%s\" />\n\
 <INPUT type=file name=\"subject_keyword\" /></TD><TD>\n\
 <INPUT type=submit value=\"  %s  \" /></TD></TR>\n\
@@ -67,7 +67,7 @@ value=\"  %s  \" /></TD></TR></TBODY></TABLE><BR>%s</FORM>"
 
 #define HTML_MAIN_8	\
 "<FORM method=post action=%s enctype=\"multipart/form-data\">\n\
-<TABLE width=\"75%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%\">%s</TD><TD>\n\
+<TABLE width=\"75%%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%%\">%s</TD><TD>\n\
 <INPUT type=hidden name=\"session\" value=\"%s\" />\n\
 <INPUT type=file name=\"from_keyword\" /></TD><TD>\n\
 <INPUT type=submit value=\"  %s  \" /></TD></TR>\n\
@@ -75,7 +75,7 @@ value=\"  %s  \" /></TD></TR></TBODY></TABLE><BR>%s</FORM>"
 
 #define HTML_MAIN_9	\
 "<FORM method=post action=%s enctype=\"multipart/form-data\">\n\
-<TABLE width=\"75%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%\">%s</TD><TD>\n\
+<TABLE width=\"75%%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%%\">%s</TD><TD>\n\
 <INPUT type=hidden name=\"session\" value=\"%s\" />\n\
 <INPUT type=file name=\"to_keyword\" /></TD><TD>\n\
 <INPUT type=submit value=\"  %s  \" /></TD></TR>\n\
@@ -83,7 +83,7 @@ value=\"  %s  \" /></TD></TR></TBODY></TABLE><BR>%s</FORM>"
 
 #define HTML_MAIN_10	\
 "<FORM method=post action=%s enctype=\"multipart/form-data\">\n\
-<TABLE width=\"75%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%\">%s</TD><TD>\n\
+<TABLE width=\"75%%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%%\">%s</TD><TD>\n\
 <INPUT type=hidden name=\"session\" value=\"%s\" />\n\
 <INPUT type=file name=\"cc_keyword\" /></TD><TD>\n\
 <INPUT type=submit value=\"  %s  \" /></TD></TR>\n\
@@ -91,7 +91,7 @@ value=\"  %s  \" /></TD></TR></TBODY></TABLE><BR>%s</FORM>"
 
 #define HTML_MAIN_11	\
 "<FORM method=post action=%s enctype=\"multipart/form-data\">\n\
-<TABLE width=\"75%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%\">%s</TD><TD>\n\
+<TABLE width=\"75%%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%%\">%s</TD><TD>\n\
 <INPUT type=hidden name=\"session\" value=\"%s\" />\n\
 <INPUT type=file name=\"content_keyword\" /></TD><TD>\n\
 <INPUT type=submit value=\"  %s  \" /></TD></TR>\n\
@@ -99,7 +99,7 @@ value=\"  %s  \" /></TD></TR></TBODY></TABLE><BR>%s</FORM>"
 
 #define HTML_MAIN_12	\
 "<FORM method=post action=%s enctype=\"multipart/form-data\">\n\
-<TABLE width=\"75%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%\">%s</TD><TD>\n\
+<TABLE width=\"75%%\"><TBODY><TR bgColor=#d9d9d9><TD width=\"30%%\">%s</TD><TD>\n\
 <INPUT type=hidden name=\"session\" value=\"%s\" />\n\
 <INPUT type=file name=\"attachment_keyword\" /></TD><TD>\n\
 <INPUT type=submit value=\"  %s  \" /></TD></TR>\n\
