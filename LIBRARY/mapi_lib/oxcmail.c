@@ -5909,7 +5909,8 @@ EXPORT_CONTENT_CLASS:
 			if (NULL != pvalue1) {
 				pvalue = pvalue1 + 1;
 			}
-			snprintf(tmp_field, 1024, "InfoPathForm.%s", pvalue);
+			snprintf(tmp_field, 1024, "InfoPathForm.%s",
+			         static_cast(const char *, pvalue));
 			if (FALSE == mime_set_field(phead,
 				"Content-Class", tmp_field)) {
 				return FALSE;
@@ -6042,7 +6043,9 @@ EXPORT_CONTENT_CLASS:
 	pvalue1 = tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_NORMALIZEDSUBJECT);
 	if (NULL != pvalue && NULL != pvalue1) {
-		snprintf(tmp_buff, MIME_FIELD_LEN, "%s%s", pvalue, pvalue1);
+		snprintf(tmp_buff, MIME_FIELD_LEN, "%s%s",
+		         static_cast(const char *, pvalue),
+		         static_cast(const char *, pvalue1));
 		if (oxcmail_encode_mime_string(pskeleton->charset,
 			tmp_buff, tmp_field, sizeof(tmp_field)) > 0) {
 			if (FALSE == mime_set_field(phead,
@@ -6492,7 +6495,8 @@ EXPORT_CONTENT_CLASS:
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_BODYCONTENTID);
 	if (NULL != pvalue) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "<%s>", pvalue);
+		snprintf(tmp_buff, sizeof(tmp_buff), "<%s>",
+		         static_cast(const char *, pvalue));
 		if (FALSE == mime_set_field(phead,
 			"Content-ID", tmp_buff)) {
 			return FALSE;
@@ -7125,7 +7129,8 @@ static BOOL oxcmail_export_attachment(
 				&pattachment->proplist,
 				PROP_TAG_ATTACHCONTENTID);
 	if (NULL != pvalue) {
-		snprintf(tmp_field, sizeof(tmp_field), "<%s>", pvalue);
+		snprintf(tmp_field, sizeof(tmp_field), "<%s>",
+		         static_cast(const char *, pvalue));
 		if (FALSE == mime_set_field(pmime,
 			"Content-ID", tmp_field)) {
 			return FALSE;

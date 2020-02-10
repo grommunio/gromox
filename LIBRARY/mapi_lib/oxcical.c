@@ -4371,7 +4371,7 @@ static BOOL oxcical_export_recipient_table(
 		if (FALSE == ical_append_paramval(piparam, partstat)) {
 			return FALSE;
 		}
-		sprintf(tmp_value, "MAILTO:%s", pvalue);
+		snprintf(tmp_value, sizeof(tmp_value), "MAILTO:%s", static_cast(const char *, pvalue));
 		pivalue = ical_new_value(NULL);
 		if (NULL == pivalue) {
 			return FALSE;
@@ -5675,7 +5675,8 @@ EXPORT_VEVENT:
 			}
 		}
 		if (NULL != pvalue) {
-			sprintf(tmp_buff1, "MAILTO:%s", pvalue);
+			snprintf(tmp_buff1, sizeof(tmp_buff1), "MAILTO:%s",
+			         static_cast(const char *, pvalue));
 			piline = ical_new_simple_line("ORGANIZER", tmp_buff1);
 			if (NULL == piline) {
 				return FALSE;

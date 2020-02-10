@@ -2246,10 +2246,12 @@ BOOL common_util_send_mail(MAIL *pmail,
 		pnode=double_list_get_after(prcpt_list, pnode)) {
 		if (NULL == strchr(pnode->pdata, '@')) {
 			command_len = sprintf(last_command,
-				"rcpt to:<%s@none>\r\n", pnode->pdata);
+				"rcpt to:<%s@none>\r\n",
+				static_cast(const char *, pnode->pdata));
 		} else {
 			command_len = sprintf(last_command,
-				"rcpt to:<%s>\r\n", pnode->pdata);
+				"rcpt to:<%s>\r\n",
+				static_cast(const char *, pnode->pdata));
 		}
 		if (FALSE == common_util_send_command(
 			sockd, last_command, command_len)) {

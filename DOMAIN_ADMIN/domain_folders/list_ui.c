@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "list_ui.h"
 #include "mapi_types.h"
 #include <gromox/system_log.h>
@@ -461,8 +462,8 @@ static void list_ui_main_html(const char *domain, const char *session)
 					"DATE_FORMAT", language), localtime(&tmp_time));
 		folder_id = rop_util_get_gc_value(*(uint64_t*)
 			folder_list.pparray[i]->ppropval[0].pvalue);
-		printf(HTML_TBITEM_NORMAL, folder_list.pparray[i]->ppropval[1].pvalue,
-			folder_list.pparray[i]->ppropval[2].pvalue, temp_buff, folder_id,
+		printf(HTML_TBITEM_NORMAL, static_cast(const char *, folder_list.pparray[i]->ppropval[1].pvalue),
+		       static_cast(const char *, folder_list.pparray[i]->ppropval[2].pvalue), temp_buff, folder_id,
 			lang_resource_get(g_lang_resource, "EDIT_LABEL", language), folder_id,
 			lang_resource_get(g_lang_resource, "DELETE_LABEL", language));
 	}
@@ -547,7 +548,7 @@ static void list_ui_permission_html(const char *domain,
 			0xFFFFFFFFFFFFFFFF == *(uint64_t*)permission_list.pparray[i]->ppropval[0].pvalue) {
 			continue;	
 		}
-		printf(HTML_USERITEM_NORMAL, permission_list.pparray[i]->ppropval[1].pvalue,
+		printf(HTML_USERITEM_NORMAL, static_cast(const char *, permission_list.pparray[i]->ppropval[1].pvalue),
 			*(uint64_t*)permission_list.pparray[i]->ppropval[0].pvalue,
 			lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 	}

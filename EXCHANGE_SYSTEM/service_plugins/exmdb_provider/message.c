@@ -3777,8 +3777,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		return FALSE;
 	}
 	mime_set_field(pmime, "X-Auto-Response-Suppress", "All");
-	pvalue = strchr(from_address, '@');
-	sprintf(tmp_buff, "auto-reply@%s", pvalue == NULL ? "system.mail" : ++pvalue);
+	const char *pvalue2 = strchr(from_address, '@');
+	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	double_list_init(&tmp_list);
 	if (FALSE == common_util_recipients_to_list(
 		pmsgctnt->children.prcpts, &tmp_list)) {
@@ -3842,8 +3842,9 @@ static BOOL message_bounce_message(const char *from_address,
 		mail_free(&imail);
 		return FALSE;
 	}
-	pvalue = strchr(account, '@') + 1;
-	sprintf(tmp_buff, "postmaster@%s", pvalue);
+	const char *pvalue2 = strchr(account, '@');
+	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
+	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	common_util_send_mail(&imail, tmp_buff, &tmp_list);
 	mail_free(&imail);
 	return TRUE;
@@ -4035,10 +4036,11 @@ static BOOL message_forward_message(const char *from_address,
 		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
 			pnode=double_list_get_after(&rcpt_list, pnode)) {
 			if (0 == offset) {
-				offset = sprintf(tmp_buff, "<%s>", pnode->pdata);
+				offset = sprintf(tmp_buff, "<%s>", static_cast(const char *, pnode->pdata));
 			} else {
 				offset += snprintf(tmp_buff + offset,
-					64*1024 - offset, ", <%s>", pnode->pdata);
+				          64 * 1024 - offset, ", <%s>",
+				          static_cast(const char *, pnode->pdata));
 			}
 			mime_append_field(pmime, "Delivered-To", pnode->pdata);
 		}

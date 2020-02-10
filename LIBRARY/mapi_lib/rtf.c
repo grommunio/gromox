@@ -1,4 +1,5 @@
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "rtf.h"
 #include "util.h"
@@ -2448,7 +2449,7 @@ static int rtf_cmd_field(RTF_READER *preader,
 							}
 							if (NULL != pword4 && NULL != pword4->pdata) {
 								tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
-									TAG_HYPERLINK_BEGIN, pword4->pdata);
+									TAG_HYPERLINK_BEGIN, static_cast(const char *, pword4->pdata));
 								if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 									&preader->ext_push, tmp_buff, tmp_len)) {
 									return CMD_RESULT_ERROR;

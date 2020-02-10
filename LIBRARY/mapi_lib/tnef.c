@@ -3065,7 +3065,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_FROM;
 			attribute.lvl = LVL_MESSAGE;
-			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s", pvalue1, pvalue2);
+			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
+			         static_cast(const char *, pvalue1),
+			         static_cast(const char *, pvalue2));
 			tmp_addr.displayname = pvalue;
 			tmp_addr.address = tmp_buff;
 			attribute.pvalue = &tmp_addr;
@@ -3183,7 +3185,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_OWNER;
 			attribute.lvl = LVL_MESSAGE;
-			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s", pvalue1, pvalue2);
+			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
+			         static_cast(const char *, pvalue1),
+			         static_cast(const char *, pvalue2));
 			tmp_addr.displayname = pvalue;
 			tmp_addr.address = tmp_buff;
 			attribute.pvalue = &tmp_addr;
@@ -3208,7 +3212,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_OWNER;
 			attribute.lvl = LVL_MESSAGE;
-			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s", pvalue1, pvalue2);
+			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
+			         static_cast(const char *, pvalue1),
+			         static_cast(const char *, pvalue2));
 			tmp_addr.displayname = pvalue;
 			tmp_addr.address = tmp_buff;
 			attribute.pvalue = &tmp_addr;
@@ -3229,7 +3235,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 		attribute.attr_id = ATTRIBUTE_ID_SENTFOR;
 		attribute.lvl = LVL_MESSAGE;
-		snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s", pvalue1, pvalue2);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
+		         static_cast(const char *, pvalue1),
+		         static_cast(const char *, pvalue2));
 		tmp_addr.displayname = pvalue;
 		tmp_addr.address = tmp_buff;
 		attribute.pvalue = &tmp_addr;

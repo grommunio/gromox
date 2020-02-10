@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include "bounce_producer.h"
 #include <gromox/proc_common.h>
 #include "common_util.h"
@@ -654,8 +655,8 @@ BOOL bounce_producer_make(const char *username,
 			mime_to[out_len] = ' ';
 			out_len ++;
 		}
-		snprintf(mime_to + out_len,
-			sizeof(mime_to) - out_len, "<%s>", pvalue);
+		snprintf(mime_to + out_len, sizeof(mime_to) - out_len, "<%s>",
+		         static_cast(const char *, pvalue));
 	}
 	if ('\0' != mime_to[0]) {
 		mime_set_field(pmime, "To", mime_to);

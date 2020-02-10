@@ -1565,7 +1565,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				return FALSE;
 			}
 			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
-							"\tcharset=\"utf-8\"\r\n\r\n%s", pvalue);
+			           "\tcharset=\"utf-8\"\r\n\r\n%s",
+			           static_cast(const char *, pvalue));
 		} else {
 			buff_len = node_stat.st_size;
 			fd = open(temp_path, O_RDONLY);
@@ -1589,7 +1590,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				buff_len = strlen(pbuff);
 			} else {
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
-								"\tcharset=\"utf-8\"\r\n\r\n%s", pvalue);
+				           "\tcharset=\"utf-8\"\r\n\r\n%s",
+				           static_cast(const char *, pvalue));
 			}
 		}
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
@@ -1616,7 +1618,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				return FALSE;
 			}
 			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
-					"charset=\"utf-8\"\r\nSubject: %s\r\n\r\n", pvalue);
+			           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
+			           static_cast(const char *, pvalue));
 		} else {
 			buff_len = node_stat.st_size;
 			pbuff = common_util_alloc(buff_len + strlen(pvalue) + 16);
@@ -1640,10 +1643,12 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			ptoken = strstr(ptoken, "\r\n\r\n");
 			if (NULL == ptoken) {
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
-						"charset=\"utf-8\"\r\nSubject: %s\r\n\r\n", pvalue);
+				           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
+				           static_cast(const char *, pvalue));
 			} else {
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
-					"charset=\"utf-8\"\r\nSubject: %s%s", pvalue, ptoken);
+				           "charset=\"utf-8\"\r\nSubject: %s%s",
+				           static_cast(const char *, pvalue), ptoken);
 			}
 		}
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);

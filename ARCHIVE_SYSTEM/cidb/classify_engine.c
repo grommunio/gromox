@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "util.h"
 #include "mail_func.h"
@@ -1322,7 +1323,8 @@ static DOUBLE_LIST* classify_engine_cl_match(const char *charset,
 				break;
 			case CONDITION_PRIORITY:
 				length += snprintf(sql_string3 + length, 1024 - length,
-							" mails.priority=%ld", pconnode->pstatment);
+				          " mails.priority=%ld",
+				          static_cast(const char *, pconnode->pstatment));
 				break;
 			}
 		}
@@ -1343,17 +1345,18 @@ static DOUBLE_LIST* classify_engine_cl_match(const char *charset,
 			switch (pconnode->condition) {
 			case CONDITION_UNIT:
 				length += snprintf(sql_string1 + length, 1024 - length,
-							" envelopes.unit='%s'", pconnode->pstatment);
+				          " envelopes.unit='%s'",
+				          static_cast(const char *, pconnode->pstatment));
 				break;
 			case CONDITION_SENDER:
 				length += snprintf(sql_string1 + length, 1024 - length,
 							" envelopes.unit='%s' AND envelopes.bound=0",
-							pconnode->pstatment);
+				          static_cast(const char *, pconnode->pstatment));
 				break;
 			case CONDITION_RCPT:
 				length += snprintf(sql_string1 + length, 1024 - length,
 							" envelopes.unit='%s' AND envelopes.bound=1",
-							pconnode->pstatment);
+				          static_cast(const char *, pconnode->pstatment));
 				break;
 			}
 			
@@ -1793,10 +1796,7 @@ static void classify_engine_calculate_path(char *path)
 	num1 = temp_id % VDIR_PER_PARTITION + 1;
 	
 	num2 = temp_id / VDIR_PER_PARTITION % SUBDIR_PER_VDIR + 1;
-	
-	snprintf(path, 128, "/%s/v%d/%d", pnode->pdata, num1, num2);
-	
-	
+	snprintf(path, 128, "/%s/v%d/%d", static_cast(const char *, pnode->pdata), num1, num2);
 }
 
 

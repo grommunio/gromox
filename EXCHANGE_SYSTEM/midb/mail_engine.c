@@ -1,4 +1,5 @@
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "util.h"
@@ -6603,7 +6604,9 @@ REQUERY_FOLDER:
 		if (tmp_len + strlen(decoded_name) >= 511) {
 			return FALSE;
 		}
-		tmp_len = sprintf(temp_name, "%s/%s", decoded_name, pvalue);
+		snprintf(temp_name, sizeof(temp_name), "%s/%s",
+		         decoded_name, static_cast(const char *, pvalue));
+		tmp_len = strlen(temp_name);
 	}
 	encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
 	sprintf(sql_string, "INSERT INTO folders (folder_id, parent_fid, "
@@ -6758,7 +6761,9 @@ static void mail_engine_move_notification_folder(
 		if (tmp_len + strlen(decoded_name) >= 511) {
 			return;
 		}
-		tmp_len = sprintf(temp_name, "%s/%s", decoded_name, pvalue);
+		snprintf(temp_name, sizeof(temp_name), "%s/%s",
+		         decoded_name, static_cast(const char *, pvalue));
+		tmp_len = strlen(temp_name);
 	}
 	encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
 	sprintf(sql_string, "UPDATE folders SET parent_fid=%llu, name='%s' "

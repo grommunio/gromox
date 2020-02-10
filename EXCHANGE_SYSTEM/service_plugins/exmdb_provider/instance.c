@@ -2272,12 +2272,12 @@ static BOOL instance_get_message_display_recipients(
 			continue;
 		}
 		if (0 == offset) {
-			offset = snprintf(tmp_buff,
-				sizeof(tmp_buff), "%s", pvalue);
+			offset = snprintf(tmp_buff, sizeof(tmp_buff), "%s",
+			         static_cast(const char *, pvalue));
 		} else {
 			offset += snprintf(tmp_buff + offset,
-						sizeof(tmp_buff) - offset,
-						"; %s", pvalue);
+			          sizeof(tmp_buff) - offset, "; %s",
+			          static_cast(const char *, pvalue));
 		}
 	}
 	if  (0 == offset) {
