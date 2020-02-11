@@ -659,7 +659,7 @@ void mail_approving_console_talk(int argc, char **argv, char *result,
 				snprintf(temp_path1, 256, "%s/_approving/done/%s",
 					homedir, temp_buff);
 				rename(temp_path, temp_path1);
-				snprintf(result, length, "250 mail is denyed");
+				snprintf(result, length, "250 mail is denied");
 			}
 			return;
 		}
