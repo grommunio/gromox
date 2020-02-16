@@ -2219,7 +2219,7 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	sql_len = sprintf(sql_string, "SELECT proptag, propval "
 		"FROM message_properties WHERE (message_id=%llu AND"
 		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		message_id, PROP_TAG_BODY, PROP_TAG_BODY_STRING8);
+		message_id, PROP_TAG_BODY, message_id, PROP_TAG_BODY_STRING8);
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -2287,7 +2287,7 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 		"FROM message_properties WHERE (message_id=%llu AND"
 		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
 		message_id, PROP_TAG_TRANSPORTMESSAGEHEADERS,
-		PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+		message_id, PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
