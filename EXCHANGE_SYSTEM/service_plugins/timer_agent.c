@@ -204,8 +204,8 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	if (2 == argc && 0 == strcmp("info", argv[1])) {
 		snprintf(result, length,
 			"250 timer agent information:\r\n"
-			"\ttotal timer connections    %d\r\n"
-			"\talive timer connections    %d",
+			"\ttotal timer connections    %zu\r\n"
+			"\talive timer connections    %zu",
 			double_list_get_nodes_num(&g_back_list) +
 			double_list_get_nodes_num(&g_lost_list),
 			double_list_get_nodes_num(&g_back_list));

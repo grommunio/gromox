@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include "media_migrator.h"
 #include "data_source.h"
 #include <gromox/locker_client.h>
@@ -12,6 +13,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#define LLD(x) static_cast(long long, (x))
 
 #define DEF_MODE                S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
@@ -309,7 +311,8 @@ static void media_migrator_free_mediadir(const char *dir)
 
 	time(&cur_time);
 	sprintf(temp_path, "%s/../vinfo", dir);
-	sprintf(temp_path1, "%s/../vinfo.%d", dir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../vinfo.%lld",
+	         dir, LLD(cur_time));
 	fd = open(temp_path, O_RDONLY);
 	
 	if (-1 == fd) {
@@ -334,7 +337,8 @@ static void media_migrator_free_mediadir(const char *dir)
 	rename(temp_path1, temp_path);
 	
 	sprintf(temp_path, "%s/../../pinfo", dir);
-	sprintf(temp_path1, "%s/../../pinfo.%d", dir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../../pinfo.%lld",
+	         dir, LLD(cur_time));
 	fd = open(temp_path, O_RDONLY);
 
 	if (-1 == fd) {
@@ -563,8 +567,8 @@ static BOOL media_migrator_allocate_mediadir(const char *media_area,
 	v_index = i;
 	
 	time(&cur_time);
-	sprintf(temp_path, "%s/v%d/vinfo.%d", pleast_area->master,
-		mini_vdir, cur_time);
+	snprintf(temp_path, sizeof(temp_path), "%s/v%d/vinfo.%lld",
+	         pleast_area->master, mini_vdir, LLD(cur_time));
 	sprintf(temp_path1, "%s/v%d/vinfo", pleast_area->master, mini_vdir);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 != fd) {
@@ -573,7 +577,8 @@ static BOOL media_migrator_allocate_mediadir(const char *media_area,
 		close(fd);
 		rename(temp_path, temp_path1);
 	}
-	sprintf(temp_path, "%s/pinfo.%d", pleast_area->master, cur_time);
+	snprintf(temp_path, sizeof(temp_path), "%s/pinfo.%lld",
+	         pleast_area->master, LLD(cur_time));
 	sprintf(temp_path1, "%s/pinfo", pleast_area->master);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 != fd) {

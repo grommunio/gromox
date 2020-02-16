@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "domain_cleaner.h"
 #include "data_source.h"
@@ -231,7 +232,8 @@ static void domain_cleaner_free_dir(const char *dir)
 	
 	time(&cur_time);
 	sprintf(temp_path, "%s/../vinfo", dir);
-	sprintf(temp_path1, "%s/../vinfo.%d", dir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../vinfo.%lld",
+	         dir, static_cast(long long, cur_time));
 	fd = open(temp_path, O_RDONLY);
 	
 	if (-1 == fd) {
@@ -256,7 +258,8 @@ static void domain_cleaner_free_dir(const char *dir)
 	rename(temp_path1, temp_path);
 	
 	sprintf(temp_path, "%s/../../pinfo", dir);
-	sprintf(temp_path1, "%s/../../pinfo.%d", dir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../../pinfo.%lld",
+	         dir, static_cast(long long, cur_time));
 	fd = open(temp_path, O_RDONLY);
 
 	if (-1 == fd) {

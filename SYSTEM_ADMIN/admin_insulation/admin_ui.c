@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "admin_ui.h"
 #include <gromox/system_log.h>
@@ -663,7 +664,7 @@ static void admin_ui_download_message(const char *temp_path)
 	close(fd);
 	time(&cur_time);
 	printf("Content-Type:application/x-download\n");
-	printf("Content-Disposition:attachment;filename=\"%d.eml\"\n\n", cur_time);
+	printf("Content-Disposition:attachment;filename=\"%lld.eml\"\n\n", static_cast(long long, cur_time));
 	puts(pbuff);
 	free(pbuff);
 	return;

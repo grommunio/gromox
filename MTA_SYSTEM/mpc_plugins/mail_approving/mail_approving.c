@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "mail_approving.h"
 #include "bounce_producer.h"
@@ -630,8 +631,9 @@ void mail_approving_console_talk(int argc, char **argv, char *result,
 					fd = open(temp_path, O_WRONLY|O_APPEND);
 					if (-1 != fd) {
 						time(&cur_time);
-						len = snprintf(temp_buff1, 1024, "\t%d", cur_time);
-						write(fd, temp_buff1, len);
+						snprintf(temp_buff1, sizeof(temp_buff1), "\t%lld",
+						         static_cast(long long, cur_time));
+						write(fd, temp_buff1, strlen(temp_buff1));
 						close(fd);
 					}
 					snprintf(temp_path, 256, "%s/_approving/todo/%s",
@@ -650,8 +652,9 @@ void mail_approving_console_talk(int argc, char **argv, char *result,
 				fd = open(temp_path, O_WRONLY|O_APPEND);
 				if (-1 != fd) {
 					time(&cur_time);
-					len = snprintf(temp_buff1, 1024, "\t%d", cur_time);
-					write(fd, temp_buff1, len);
+					snprintf(temp_buff1, sizeof(temp_buff1), "\t%lld",
+					         static_cast(long long, cur_time));
+					write(fd, temp_buff1, strlen(temp_buff1));
 					close(fd);
 				}
 				snprintf(temp_path, 256, "%s/_approving/todo/%s",
@@ -845,7 +848,7 @@ static void mail_approving_produce_session(const char *tag, char *session)
 	
 	time(&cur_time);
 	/* fill 'g' if length is too short */
-	sprintf(temp_time, "%x", cur_time);
+	sprintf(temp_time, "%llx", static_cast(unsigned long long, cur_time));
 	if (strlen(tag) >= 16) {
 		memcpy(temp_name, tag, 16);
 	} else {

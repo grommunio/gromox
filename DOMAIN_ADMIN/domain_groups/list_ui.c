@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "list_ui.h"
 #include "lang_resource.h"
@@ -1361,7 +1362,8 @@ static void list_ui_free_dir(BOOL b_media, const char *maildir)
 
 	time(&cur_time);
 	sprintf(temp_path, "%s/../vinfo", maildir);
-	sprintf(temp_path1, "%s/../vinfo.%d", maildir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../vinfo.%lld",
+	         maildir, static_cast(long long, cur_time));
 	fd = open(temp_path, O_RDONLY);
 	
 	if (-1 == fd) {
@@ -1389,7 +1391,8 @@ static void list_ui_free_dir(BOOL b_media, const char *maildir)
 	rename(temp_path1, temp_path);
 	
 	sprintf(temp_path, "%s/../../pinfo", maildir);
-	sprintf(temp_path1, "%s/../../pinfo.%d", maildir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../../pinfo.%lld",
+	         maildir, static_cast(long long, cur_time));
 	fd = open(temp_path, O_RDONLY);
 
 	if (-1 == fd) {

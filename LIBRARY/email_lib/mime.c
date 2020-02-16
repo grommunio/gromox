@@ -5,6 +5,7 @@
  * its own buffer
  */
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "mail.h"
 #include "mime.h"
@@ -2438,7 +2439,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 			encoding_buff)) {
 			buff_len += snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\","
-						"\"encoding\":\"8bit\",\"head\":%d,\"begin\":%d,",
+						"\"encoding\":\"8bit\",\"head\":%zu,\"begin\":%zu,",
 						id_string, content_type, head_offset, *poffset);
 		} else {
 			tmp_len = strlen(encoding_buff);
@@ -2451,7 +2452,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 			HX_strltrim(encoding_buff);
 			buff_len += snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\","
-						"\"encoding\":\"%s\",\"head\":%d,\"begin\":%d,",
+						"\"encoding\":\"%s\",\"head\":%zu,\"begin\":%zu,",
 						id_string, content_type, encoding_buff, head_offset,
 						*poffset);
 		}
@@ -2481,8 +2482,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 		*pcount += 1;
 
 		buff_len += snprintf(pbuff + buff_len, length - buff_len,
-					"\"length\":%d", content_len);
-
+		            "\"length\":%zu", content_len);
 		if (buff_len >= length - 1) {
 			return -1;
 		}
@@ -2718,8 +2718,8 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 		HX_strrtrim(content_type);
 		HX_strltrim(content_type);
 		buff_len += snprintf(pbuff + buff_len, length - buff_len, 
-						"{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%d,"
-						"\"begin\":%d, \"length\":%d}", id_string,
+						"{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%zu,"
+						"\"begin\":%zu, \"length\":%zu}", id_string,
 						content_type, head_offset, *poffset,
 						head_offset + mime_get_length(pmime) - *poffset);
 		if (buff_len >= length - 1) {

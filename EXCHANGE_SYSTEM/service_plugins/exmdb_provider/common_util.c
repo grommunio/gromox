@@ -22,6 +22,9 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <iconv.h>
+#define UI(x) static_cast(unsigned int, (x))
+#define LLD(x) static_cast(long long, (x))
+#define LLU(x) static_cast(unsigned long long, (x))
 
 #define SERVICE_ID_LANG_TO_CHARSET							1
 #define SERVICE_ID_CPID_TO_CHARSET							2
@@ -499,15 +502,15 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 		max_eid = cur_eid + ALLOCATED_EID_RANGE;
 		sqlite3_finalize(pstmt);
 		sprintf(sql_string, "INSERT INTO allocated_eids"
-			" VALUES (%llu, %llu, %lu, 1)", cur_eid + 1,
-			max_eid, time(NULL));
+			" VALUES (%llu, %llu, %lld, 1)",
+		        LLU(cur_eid + 1), LLU(max_eid), LLD(time(nullptr)));
 		if (SQLITE_OK != sqlite3_exec(psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			return FALSE;
 		}
 		sprintf(sql_string, "UPDATE configurations SET"
 			" config_value=%llu WHERE config_id=%u",
-			max_eid, CONFIG_ID_MAXIMUM_EID);
+			LLU(max_eid), CONFIG_ID_MAXIMUM_EID);
 		if (SQLITE_OK != sqlite3_exec(psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			return FALSE;
@@ -517,7 +520,7 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 	}
 	sprintf(sql_string, "UPDATE configurations SET"
 		" config_value=%llu WHERE config_id=%u",
-		cur_eid, CONFIG_ID_CURRENT_EID);
+		LLU(cur_eid), CONFIG_ID_CURRENT_EID);
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
@@ -536,7 +539,7 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT cur_eid, max_eid "
-			"FROM folders WHERE folder_id=%llu", folder_id);
+	          "FROM folders WHERE folder_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -565,16 +568,16 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 		max_eid = *peid + ALLOCATED_EID_RANGE;
 		cur_eid = *peid + 1;
 		sprintf(sql_string, "INSERT INTO allocated_eids"
-			" VALUES (%llu, %llu, %lu, 1)", cur_eid,
-			max_eid, time(NULL));
+			" VALUES (%llu, %llu, %llu, 1)", LLU(cur_eid),
+			LLU(max_eid), LLD(time(nullptr)));
 		if (SQLITE_OK != sqlite3_exec(psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			return FALSE;
 		}
 	}
 	sprintf(sql_string, "UPDATE folders SET cur_eid=%llu,"
-		" max_eid=%llu WHERE folder_id=%llu", cur_eid,
-		max_eid, folder_id);
+		" max_eid=%llu WHERE folder_id=%llu", LLU(cur_eid),
+		LLU(max_eid), LLU(folder_id));
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
@@ -668,7 +671,7 @@ BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	sql_len = sprintf(sql_string, "SELECT range_begin,"
 				" range_end FROM allocated_eids WHERE "
 				"range_begin<=%llu AND range_end>=%llu",
-				eid_val, eid_val);
+				LLU(eid_val), LLU(eid_val));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -837,7 +840,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		break;
 	case FOLDER_PROPERTIES_TABLE:
 		sprintf(sql_string, "SELECT proptag FROM "
-			"folder_properties WHERE folder_id=%llu", id);
+		        "folder_properties WHERE folder_id=%llu", LLU(id));
 		proptags[i++] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
 		proptags[i++] = PROP_TAG_CONTENTCOUNT;
 		proptags[i++] = PROP_TAG_MESSAGESIZEEXTENDED;
@@ -856,7 +859,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		break;
 	case MESSAGE_PROPERTIES_TABLE:
 		sprintf(sql_string, "SELECT proptag FROM "
-			"message_properties WHERE message_id=%llu", id);
+		        "message_properties WHERE message_id=%llu", LLU(id));
 		proptags[i++] = PROP_TAG_MID;
 		proptags[i++] = PROP_TAG_MESSAGESIZE;
 		proptags[i++] = PROP_TAG_ASSOCIATED;
@@ -870,11 +873,11 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		break;
 	case RECIPIENT_PROPERTIES_TABLE:
 		sprintf(sql_string, "SELECT proptag FROM "
-			"recipients_properties WHERE recipient_id=%llu", id);
+		        "recipients_properties WHERE recipient_id=%llu", LLU(id));
 		break;
 	case ATTACHMENT_PROPERTIES_TABLE:
 		sprintf(sql_string, "SELECT proptag FROM "
-			"attachment_properties WHERE attachment_id=%llu", id);
+		        "attachment_properties WHERE attachment_id=%llu", LLU(id));
 		proptags[i++] = PROP_TAG_RECORDKEY;
 		break;
 	}
@@ -1010,7 +1013,7 @@ static uint32_t common_util_calculate_childcount(
 	
 	count = 0;
 	sql_len = sprintf(sql_string, "SELECT folder_id FROM "
-				"folders WHERE parent_id=%llu", folder_id);
+	          "folders WHERE parent_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;
@@ -1033,11 +1036,11 @@ static BOOL common_util_check_subfolders(
 	
 	if (TRUE == exmdb_server_check_private()) {
 		sql_len = sprintf(sql_string, "SELECT folder_id FROM "
-					"folders WHERE parent_id=%llu", folder_id);
+		          "folders WHERE parent_id=%llu", LLU(folder_id));
 	} else {
 		sql_len = sprintf(sql_string, "SELECT folder_id FROM"
 			" folders WHERE parent_id=%llu AND is_deleted=0",
-			folder_id);
+			LLU(folder_id));
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
@@ -1070,7 +1073,7 @@ static char* common_util_calculate_folder_path(
 	while (TRUE) {
 		sql_len = sprintf(sql_string, "SELECT propval FROM"
 				" folder_properties WHERE proptag=%u AND "
-				"folder_id=%llu", PROP_TAG_DISPLAYNAME, tmp_fid);
+				"folder_id=%llu", PROP_TAG_DISPLAYNAME, LLU(tmp_fid));
 		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 			sql_string, sql_len, &pstmt, NULL)) {
 			return NULL;
@@ -1094,7 +1097,7 @@ static char* common_util_calculate_folder_path(
 			break;
 		}
 		sql_len = sprintf(sql_string, "SELECT parent_id FROM "
-				"folders WHERE folder_id=%llu", tmp_fid);
+		          "folders WHERE folder_id=%llu", LLU(tmp_fid));
 		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 			sql_string, sql_len, &pstmt, NULL)) {
 			return NULL;
@@ -1237,36 +1240,36 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 				" FROM messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id"
-				" AND messages.is_associated=0", folder_id);
+				" AND messages.is_associated=0", LLU(folder_id));
 		} else {
 			sql_len = sprintf(sql_string, "SELECT count(*)"
 				" FROM messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id"
-				" AND messages.is_associated=1", folder_id);
+				" AND messages.is_associated=1", LLU(folder_id));
 		}
 	} else {
 		if (TRUE == exmdb_server_check_private()) {
 			if (FALSE == b_associated) {
 				sql_len = sprintf(sql_string, "SELECT count(*)"
 						" FROM messages WHERE parent_fid=%llu "
-						"AND is_associated=0", folder_id);
+						"AND is_associated=0", LLU(folder_id));
 			} else {
 				sql_len = sprintf(sql_string, "SELECT count(*)"
 						" FROM messages WHERE parent_fid=%llu "
-						"AND is_associated=1", folder_id);
+						"AND is_associated=1", LLU(folder_id));
 			}
 		} else {
 			if (FALSE == b_associated) {
 				sql_len = sprintf(sql_string, "SELECT count(*)"
 						" FROM messages WHERE parent_fid=%llu "
 						"AND is_deleted=0 AND is_associated=0",
-						folder_id);
+						LLU(folder_id));
 			} else {
 				sql_len = sprintf(sql_string, "SELECT count(*)"
 						" FROM messages WHERE parent_fid=%llu "
 						"AND is_deleted=0 AND is_associated=1",
-						folder_id);
+						LLU(folder_id));
 			}
 		}
 	}
@@ -1302,11 +1305,11 @@ uint32_t common_util_get_folder_unread_count(
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id AND "
 				"messages.read_state=0 AND messages.is_associated=0",
-				folder_id);
+				LLU(folder_id));
 		} else {
 			sql_len = sprintf(sql_string, "SELECT count(*)"
 				" FROM messages WHERE parent_fid=%llu AND "
-				"read_state=0 AND is_associated=0", folder_id);
+				"read_state=0 AND is_associated=0", LLU(folder_id));
 		}
 		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 			sql_string, sql_len, &pstmt, NULL)) {
@@ -1326,7 +1329,7 @@ uint32_t common_util_get_folder_unread_count(
 	}
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM messages WHERE"
 				" parent_fid=%llu AND is_deleted=0 AND is_associated=0",
-				folder_id);
+				LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;
@@ -1341,7 +1344,7 @@ uint32_t common_util_get_folder_unread_count(
 				" JOIN messages ON read_states.username=?"
 				" AND messages.parent_fid=%llu AND "
 				"messages.message_id=read_states.message_id"
-				" AND messages.is_associated=0", folder_id);
+				" AND messages.is_associated=0", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;
@@ -1375,37 +1378,37 @@ static uint64_t common_util_get_folder_message_size(
 				"messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id",
-				folder_id);
+				LLU(folder_id));
 		} else if (TRUE == b_normal) {
 			sql_len = sprintf(sql_string, "SELECT "
 				"sum(messages.message_size) FROM "
 				"messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id"
-				" AND messages.is_associated=0", folder_id);
+				" AND messages.is_associated=0", LLU(folder_id));
 		} else if (TRUE == b_associated) {
 			sql_len = sprintf(sql_string, "SELECT "
 				"sum(messages.message_size) FROM "
 				"messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id"
-				" AND messages.is_associated=1", folder_id);
+				" AND messages.is_associated=1", LLU(folder_id));
 		} else {
 			return 0;
 		}
 	} else {
 		if (TRUE == b_normal && TRUE == b_associated) {
 			sql_len = sprintf(sql_string, "SELECT sum(message_size) "
-				"FROM messages WHERE parent_fid=%llu", folder_id);
+			          "FROM messages WHERE parent_fid=%llu", LLU(folder_id));
 		} else if (TRUE == b_normal) {
 			sql_len = sprintf(sql_string, "SELECT sum(message_size) "
 						"FROM messages WHERE parent_fid=%llu AND "
-						"is_associated=0", folder_id);
+						"is_associated=0", LLU(folder_id));
 						
 		} else if (TRUE == b_associated) {
 			sql_len = sprintf(sql_string, "SELECT sum(message_size) "
 						"FROM messages WHERE parent_fid=%llu AND "
-						"is_associated=1", folder_id);
+						"is_associated=1", LLU(folder_id));
 		} else {
 			return 0;
 		}
@@ -1436,7 +1439,7 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite,
 			return TRUE;
 		}
 		sql_len = sprintf(sql_string, "SELECT is_search "
-			"FROM folders WHERE folder_id=%llu", folder_id);
+		          "FROM folders WHERE folder_id=%llu", LLU(folder_id));
 		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 			sql_string, sql_len, &pstmt, NULL)) {
 			return FALSE;
@@ -1469,7 +1472,7 @@ static BOOL common_util_check_folder_rules(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM "
-				"rules WHERE folder_id=%llu", folder_id);
+	          "rules WHERE folder_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -1528,7 +1531,7 @@ static uint64_t common_util_get_message_size(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT message_size FROM "
-				"messages WHERE message_id=%llu", message_id);
+	          "messages WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;
@@ -1551,7 +1554,7 @@ uint64_t common_util_get_folder_parent_fid(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT parent_id FROM "
-				"folders WHERE folder_id=%llu", folder_id);
+	          "folders WHERE folder_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;
@@ -1577,7 +1580,7 @@ static uint64_t common_util_get_folder_changenum(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT change_number FROM "
-				"folders WHERE folder_id=%llu", folder_id);
+	          "folders WHERE folder_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;
@@ -1602,7 +1605,7 @@ BOOL common_util_get_folder_by_name(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT folder_id "
-		"FROM folders WHERE parent_id=%llu", parent_id);
+	          "FROM folders WHERE parent_id=%llu", LLU(parent_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -1759,7 +1762,7 @@ BOOL common_util_check_message_associated(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT is_associated FROM "
-				"messages WHERE message_id=%llu", message_id);
+	          "messages WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -1786,7 +1789,7 @@ static BOOL common_util_check_message_named_properties(
 	
 	sql_len = sprintf(sql_string, "SELECT proptag"
 				" FROM message_properties WHERE "
-				"message_id=%llu", message_id);
+				"message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -1809,7 +1812,7 @@ static BOOL common_util_check_message_has_attachments(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM "
-		"attachments WHERE message_id=%llu", message_id);
+	          "attachments WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -1842,7 +1845,7 @@ static BOOL common_util_check_message_read(
 		}
 		sql_len = sprintf(sql_string, "SELECT message_id"
 				" FROM read_states WHERE username=? AND "
-				"message_id=%llu", message_id);
+				"message_id=%llu", LLU(message_id));
 		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 			sql_string, sql_len, &pstmt, NULL)) {
 			return FALSE;
@@ -1857,7 +1860,7 @@ static BOOL common_util_check_message_read(
 		}
 	}
 	sql_len = sprintf(sql_string, "SELECT read_state FROM "
-				"messages WHERE message_id=%llu", message_id);
+	          "messages WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -1884,7 +1887,7 @@ static uint64_t common_util_get_message_changenum(
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT change_number FROM "
-				"messages WHERE message_id=%llu", message_id);
+	          "messages WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;
@@ -2136,7 +2139,7 @@ static BOOL common_util_get_message_display_recipients(
 		break;
 	}
 	sql_len = sprintf(sql_string, "SELECT recipient_id FROM"
-			" recipients WHERE message_id=%llu", message_id);
+	          " recipients WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -2219,7 +2222,8 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	sql_len = sprintf(sql_string, "SELECT proptag, propval "
 		"FROM message_properties WHERE (message_id=%llu AND"
 		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		message_id, PROP_TAG_BODY, message_id, PROP_TAG_BODY_STRING8);
+		LLU(message_id), PROP_TAG_BODY,
+		LLU(message_id), PROP_TAG_BODY_STRING8);
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -2231,7 +2235,7 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	proptag1 = sqlite3_column_int64(pstmt, 0);
 	cid = sqlite3_column_int64(pstmt, 1);
 	sqlite3_finalize(pstmt);
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
@@ -2286,8 +2290,8 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	sql_len = sprintf(sql_string, "SELECT proptag, propval "
 		"FROM message_properties WHERE (message_id=%llu AND"
 		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		message_id, PROP_TAG_TRANSPORTMESSAGEHEADERS,
-		message_id, PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+		LLU(message_id), PROP_TAG_TRANSPORTMESSAGEHEADERS,
+		LLU(message_id), PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -2299,7 +2303,7 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	proptag1 = sqlite3_column_int64(pstmt, 0);
 	cid = sqlite3_column_int64(pstmt, 1);
 	sqlite3_finalize(pstmt);
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
@@ -2352,7 +2356,7 @@ static void* common_util_get_message_cid_value(
 	}
 	sql_len = sprintf(sql_string, "SELECT propval FROM "
 		"message_properties WHERE message_id=%llu AND "
-		"proptag=%u", message_id, proptag);
+		"proptag=%u", LLU(message_id), UI(proptag));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -2363,7 +2367,7 @@ static void* common_util_get_message_cid_value(
 	}
 	cid = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
@@ -2413,7 +2417,7 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	}
 	sql_len = sprintf(sql_string, "SELECT propval FROM "
 		"attachment_properties WHERE attachment_id=%llu"
-		" AND proptag=%u", attachment_id, proptag);
+		" AND proptag=%u", LLU(attachment_id), UI(proptag));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -2424,7 +2428,7 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	}
 	cid = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
@@ -3646,7 +3650,7 @@ static void common_util_set_folder_changenum(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	sprintf(sql_string, "UPDATE folders SET change_number=%llu"
-		" WHERE folder_id=%llu", change_num, folder_id);
+	        " WHERE folder_id=%llu", LLU(change_num), LLU(folder_id));
 	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
 }
 
@@ -3656,7 +3660,7 @@ static void common_util_set_message_changenum(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	sprintf(sql_string, "UPDATE messages SET change_number=%llu"
-		" WHERE message_id=%llu", change_num, message_id);
+	        " WHERE message_id=%llu", LLU(change_num), LLU(message_id));
 	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
 }
 
@@ -3672,21 +3676,21 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		sprintf(sql_string, "UPDATE message_properties "
 			"SET propval=propval|%u WHERE message_id=%llu"
 			" AND proptag=%u", MESSAGE_FLAG_EVERREAD,
-			message_id, PROP_TAG_MESSAGEFLAGS);
+			LLU(message_id), PROP_TAG_MESSAGEFLAGS);
 	} else {
 		sprintf(sql_string, "UPDATE message_properties "
 			"SET propval=propval&(~%u) WHERE message_id=%llu"
 			" AND proptag=%u", MESSAGE_FLAG_EVERREAD,
-			message_id, PROP_TAG_MESSAGEFLAGS);
+			LLU(message_id), PROP_TAG_MESSAGEFLAGS);
 	}
 	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
 	if (TRUE == exmdb_server_check_private()) {
 		if (0 == is_read) {
 			sprintf(sql_string, "UPDATE messages SET "
-				"read_state=0 WHERE message_id=%llu", message_id);
+				"read_state=0 WHERE message_id=%llu", LLU(message_id));
 		} else {
 			sprintf(sql_string, "UPDATE messages SET "
-				"read_state=1 WHERE message_id=%llu", message_id);
+				"read_state=1 WHERE message_id=%llu", LLU(message_id));
 		}
 		sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
 		return;
@@ -3697,11 +3701,11 @@ void common_util_set_message_read(sqlite3 *psqlite,
 	}
 	if (0 != is_read) {
 		sql_len = sprintf(sql_string, "REPLACE INTO "
-			"read_states VALUES (%llu, ?)", message_id);
+			"read_states VALUES (%llu, ?)", LLU(message_id));
 	} else {
 		sql_len = sprintf(sql_string, "DELETE FROM "
 			"read_states WHERE message_id=%llu AND "
-			"username=?", message_id);
+			"username=?", LLU(message_id));
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
@@ -3720,7 +3724,7 @@ static BOOL common_util_update_message_cid(sqlite3 *psqlite,
 	char sql_string[256];
 	
 	sql_len = sprintf(sql_string, "REPLACE INTO message_properties"
-					" VALUES (%llu, %u, ?)", message_id, proptag);
+	          " VALUES (%llu, %u, ?)", LLU(message_id), UI(proptag));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -3802,7 +3806,7 @@ static BOOL common_util_set_message_body(
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
@@ -3866,7 +3870,7 @@ static BOOL common_util_set_message_header(
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
@@ -3912,7 +3916,7 @@ static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
@@ -3941,7 +3945,7 @@ static BOOL common_util_update_attachment_cid(sqlite3 *psqlite,
 	char sql_string[256];
 	
 	sql_len = sprintf(sql_string, "REPLACE INTO attachment_properties"
-					" VALUES (%llu, %u, ?)", attachment_id, proptag);
+	          " VALUES (%llu, %u, ?)", LLU(attachment_id), UI(proptag));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -3974,7 +3978,7 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
@@ -4047,19 +4051,19 @@ BOOL common_util_set_properties(int table_type,
 		break;
 	case FOLDER_PROPERTIES_TABLE:
 		sql_len = sprintf(sql_string, "REPLACE INTO "
-			"folder_properties VALUES (%llu, ?, ?)", id);
+		          "folder_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
 	case MESSAGE_PROPERTIES_TABLE:
 		sql_len = sprintf(sql_string, "REPLACE INTO "
-			"message_properties VALUES (%llu, ?, ?)", id);
+		          "message_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
 	case RECIPIENT_PROPERTIES_TABLE:
 		sql_len = sprintf(sql_string, "REPLACE INTO "
-			"recipients_properties VALUES (%llu, ?, ?)", id);
+		          "recipients_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
 	case ATTACHMENT_PROPERTIES_TABLE:
 		sql_len = sprintf(sql_string, "REPLACE INTO "
-			"attachment_properties VALUES (%llu, ?, ?)", id);
+		          "attachment_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
@@ -4692,17 +4696,17 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 	case FOLDER_PROPERTIES_TABLE:
 		sql_len = sprintf(sql_string, "DELETE FROM "
 			"folder_properties WHERE folder_id=%llu"
-			" AND proptag=?", id);
+			" AND proptag=?", LLU(id));
 		break;
 	case MESSAGE_PROPERTIES_TABLE:
 		sql_len = sprintf(sql_string, "DELETE FROM "
 			"message_properties WHERE message_id=%llu"
-			" AND proptag=?", id);
+			" AND proptag=?", LLU(id));
 		break;
 	case ATTACHMENT_PROPERTIES_TABLE:
 		sql_len = sprintf(sql_string, "DELETE FROM "
 			"attachment_properties WHERE attachment_id=%llu"
-			" AND proptag=?", id);
+			" AND proptag=?", LLU(id));
 		break;
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
@@ -4799,39 +4803,39 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		return TRUE;
 	case PROP_TAG_RULESEQUENCE:
 		sql_len = sprintf(sql_string, "SELECT sequence"
-			" FROM rules WHERE rule_id=%llu", rule_id);
+		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULESTATE:
 		sql_len = sprintf(sql_string, "SELECT state "
-			"FROM rules WHERE rule_id=%llu", rule_id);
+		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULENAME:
 		sql_len = sprintf(sql_string, "SELECT name "
-			"FROM rules WHERE rule_id=%llu", rule_id);
+		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULEPROVIDER:
 		sql_len = sprintf(sql_string, "SELECT provider"
-			" FROM rules WHERE rule_id=%llu", rule_id);
+		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULELEVEL:
 		sql_len = sprintf(sql_string, "SELECT level "
-			"FROM rules WHERE rule_id=%llu", rule_id);
+		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULEUSERFLAGS:
 		sql_len = sprintf(sql_string, "SELECT user_flags "
-				"FROM rules WHERE rule_id=%llu", rule_id);
+		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULEPROVIDERDATA:
 		sql_len = sprintf(sql_string, "SELECT provider_data"
-				" FROM rules WHERE rule_id=%llu", rule_id);
+		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULECONDITION:
 		sql_len = sprintf(sql_string, "SELECT condition "
-				"FROM rules WHERE rule_id=%llu", rule_id);
+		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	case PROP_TAG_RULEACTIONS:
 		sql_len = sprintf(sql_string, "SELECT actions "
-			"FROM rules WHERE rule_id=%llu", rule_id);
+		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
 	default:
 		*ppvalue = NULL;
@@ -4941,7 +4945,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		sql_len = sprintf(sql_string, "SELECT username FROM"
-			" permissions WHERE member_id=%llu", member_id);
+		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
 	case PROP_TAG_MEMBERNAME:
 		if (0 == member_id) {
@@ -4952,7 +4956,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		sql_len = sprintf(sql_string, "SELECT username FROM"
-			" permissions WHERE member_id=%llu", member_id);
+		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
 	case PROP_TAG_MEMBERID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
@@ -4964,7 +4968,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		sql_len = sprintf(sql_string, "SELECT username FROM"
-			" permissions WHERE member_id=%llu", member_id);
+		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
 	case PROP_TAG_MEMBERRIGHTS:
 		if (0 == member_id) {
@@ -4977,7 +4981,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 					CONFIG_ID_ANONYMOUS_PERMISSION);
 		} else {
 			sql_len = sprintf(sql_string, "SELECT permission FROM "
-					"permissions WHERE member_id=%llu", member_id);
+			          "permissions WHERE member_id=%llu", LLU(member_id));
 		}
 		break;
 	default:
@@ -5307,7 +5311,7 @@ BOOL common_util_check_folder_permission(
 	*ppermission = 0;
 	sql_len = snprintf(sql_string, 1024, "SELECT permission"
 				" FROM permissions WHERE folder_id=%llu AND"
-				" username=?", folder_id);
+				" username=?", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -5324,7 +5328,7 @@ BOOL common_util_check_folder_permission(
 	} else {
 		if (NULL != username && '\0' != username[0]) {
 			sql_len = sprintf(sql_string, "SELECT username, permission"
-					" FROM permissions WHERE folder_id=%llu", folder_id);
+			          " FROM permissions WHERE folder_id=%llu", LLU(folder_id));
 			if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 				sql_string, sql_len, &pstmt1, NULL)) {
 				sqlite3_finalize(pstmt);
@@ -5454,7 +5458,7 @@ BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 	char sql_string[256];
 	
 	sql_len = sprintf(sql_string, "SELECT parent_fid FROM"
-			" messages WHERE message_id=%llu", message_id);
+	          " messages WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;	
@@ -5517,7 +5521,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM "
-		"search_scopes WHERE folder_id=%llu", folder_id);
+	          "search_scopes WHERE folder_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -5533,7 +5537,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "SELECT included_fid FROM"
-		" search_scopes WHERE folder_id=%llu", folder_id);
+	          " search_scopes WHERE folder_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -5731,11 +5735,11 @@ static BOOL common_util_evaluate_msgsubs_restriction(
 	if (PROP_TAG_MESSAGERECIPIENTS == proptag) {
 		table_type = RECIPIENT_PROPERTIES_TABLE;
 		sql_len = sprintf(sql_string, "SELECT recipient_id FROM "
-				"recipients WHERE message_id=%llu", message_id);
+				"recipients WHERE message_id=%llu", LLU(message_id));
 	} else {
 		table_type = ATTACHMENT_PROPERTIES_TABLE;
 		sql_len = sprintf(sql_string, "SELECT attachment_id FROM"
-				" attachments WHERE message_id=%llu", message_id);
+				" attachments WHERE message_id=%llu", LLU(message_id));
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
@@ -6246,7 +6250,7 @@ BOOL common_util_check_search_result(sqlite3 *psqlite,
 	
 	sql_len = sprintf(sql_string, "SELECT message_id FROM"
 				" search_result WHERE folder_id=%llu AND "
-				"message_id=%llu", folder_id, message_id);
+				"message_id=%llu", LLU(folder_id), LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -6269,7 +6273,7 @@ BOOL common_util_get_mid_string(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "SELECT mid_string FROM"
-			" messages WHERE message_id=%llu", message_id);
+	          " messages WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -6300,7 +6304,7 @@ BOOL common_util_set_mid_string(sqlite3 *psqlite,
 	char sql_string[128];
 	
 	sql_len = sprintf(sql_string, "UPDATE messages set "
-		"mid_string=? WHERE message_id=%llu", message_id);
+	          "mid_string=? WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -6399,11 +6403,11 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (TRUE == b_private) {
 		sql_len = sprintf(sql_string, "SELECT is_associated, message_size,"
 			" read_state, mid_string FROM messages WHERE message_id=%llu",
-			message_id);
+		          LLU(message_id));
 	} else {
 		sql_len = sprintf(sql_string, "SELECT is_associated, "
 			"message_size FROM messages WHERE message_id=%llu",
-			message_id);
+		          LLU(message_id));
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
@@ -6422,7 +6426,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			mid_string[0] = '\0';
 		} else {
 			strcpy(mid_string1, sqlite3_column_text(pstmt, 3));
-			snprintf(mid_string, 128, "%ld.%d.%s", time(NULL),
+			snprintf(mid_string, 128, "%lld.%d.%s", LLD(time(nullptr)),
 					common_util_sequence_ID(), get_host_ID());
 			sprintf(tmp_path, "%s/eml/%s",
 				exmdb_server_get_dir(), mid_string);
@@ -6445,8 +6449,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			sql_len = sprintf(sql_string, "INSERT INTO messages (message_id, "
 					"parent_fid, parent_attid, is_associated, change_number, "
 					"read_state, message_size, mid_string) VALUES (%llu, %llu,"
-					" NULL, %d, %llu, %d, %u, ?)", *pdst_mid, parent_id,
-					is_associated, change_num, read_state, message_size);
+					" NULL, %d, %llu, %d, %u, ?)", LLU(*pdst_mid), LLU(parent_id),
+					is_associated, LLU(change_num), read_state, message_size);
 			if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 				sql_string, sql_len, &pstmt, NULL)) {
 				return FALSE;
@@ -6464,8 +6468,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		} else {
 			sprintf(sql_string, "INSERT INTO messages (message_id, parent_fid,"
 				" parent_attid, is_associated, change_number, message_size) "
-				"VALUES (%llu, %llu, NULL, %d, %llu, %u)", *pdst_mid,
-				parent_id, is_associated, change_num, message_size);
+				"VALUES (%llu, %llu, NULL, %d, %llu, %u)", LLU(*pdst_mid),
+				LLU(parent_id), is_associated, LLU(change_num), message_size);
 			if (SQLITE_OK != sqlite3_exec(psqlite,
 				sql_string, NULL, NULL, NULL)) {
 				return FALSE;
@@ -6474,8 +6478,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	} else {
 		sprintf(sql_string, "INSERT INTO messages (message_id, parent_fid,"
 			" parent_attid, is_associated, change_number, message_size) "
-			"VALUES (%llu, NULL, %llu, %d, %llu, %u)", *pdst_mid,
-			parent_id, 0, change_num, message_size);
+			"VALUES (%llu, NULL, %llu, %d, %llu, %u)", LLU(*pdst_mid),
+			LLU(parent_id), 0, LLU(change_num), message_size);
 		if (SQLITE_OK != sqlite3_exec(psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			return FALSE;
@@ -6483,20 +6487,20 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	}
 	sprintf(sql_string, "INSERT INTO message_properties (message_id,"
 			" proptag, propval) SELECT %llu, proptag, propval FROM "
-			"message_properties WHERE message_id=%llu", *pdst_mid,
-			message_id);
+			"message_properties WHERE message_id=%llu",
+			LLU(*pdst_mid), LLU(message_id));
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "SELECT recipient_id FROM"
-			" recipients WHERE message_id=%llu", message_id);
+	          " recipients WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "INSERT INTO recipients"
-				" (message_id) VALUES (%llu)", *pdst_mid);
+	          " (message_id) VALUES (%llu)", LLU(*pdst_mid));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt1, NULL)) {
 		sqlite3_finalize(pstmt);
@@ -6534,13 +6538,13 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	sqlite3_finalize(pstmt1);
 	sqlite3_finalize(pstmt2);
 	sql_len = sprintf(sql_string, "SELECT attachment_id FROM"
-			" attachments WHERE message_id=%llu", message_id);
+	          " attachments WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "INSERT INTO attachments"
-				" (message_id) VALUES (%llu)", *pdst_mid);
+	          " (message_id) VALUES (%llu)", LLU(*pdst_mid));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt1, NULL)) {
 		sqlite3_finalize(pstmt);
@@ -6871,7 +6875,7 @@ BOOL common_util_check_folder_id(sqlite3 *psqlite,
 	char sql_string[256];
 	
 	sql_len = sprintf(sql_string, "SELECT folder_id "
-		"FROM folders WHERE folder_id=%llu", folder_id);
+	          "FROM folders WHERE folder_id=%llu", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -6893,7 +6897,7 @@ BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	sprintf(sql_string, "UPDATE folder_properties"
 		" SET propval=propval+%u WHERE proptag=%u"
 		" AND folder_id=%llu", del_count,
-		PROP_TAG_DELETEDCOUNTTOTAL, folder_id);
+		PROP_TAG_DELETEDCOUNTTOTAL, LLU(folder_id));
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
@@ -7408,7 +7412,7 @@ static uint32_t common_util_get_cid_string_length(uint32_t cid)
 	struct stat node_stat;
 	
 	dir = exmdb_server_get_dir();
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	if (0 != stat(path, &node_stat)) {
 		return 0;
 	}
@@ -7431,7 +7435,7 @@ static uint32_t common_util_get_cid_length(uint64_t cid)
 	struct stat node_stat;
 	
 	dir = exmdb_server_get_dir();
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	if (0 != stat(path, &node_stat)) {
 		return 0;
 	}

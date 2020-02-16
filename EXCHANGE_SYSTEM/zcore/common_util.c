@@ -578,7 +578,7 @@ void common_util_exmdb_locinfo_to_string(
 {
 	
 	sprintf(loc_string, "%d:%d:%llx", (int)type,
-			db_id, rop_util_get_gc_value(eid));
+	        db_id, static_cast(unsigned long long, rop_util_get_gc_value(eid)));
 }
 
 BOOL common_util_exmdb_locinfo_from_string(

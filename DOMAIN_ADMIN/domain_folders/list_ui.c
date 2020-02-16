@@ -463,8 +463,10 @@ static void list_ui_main_html(const char *domain, const char *session)
 		folder_id = rop_util_get_gc_value(*(uint64_t*)
 			folder_list.pparray[i]->ppropval[0].pvalue);
 		printf(HTML_TBITEM_NORMAL, static_cast(const char *, folder_list.pparray[i]->ppropval[1].pvalue),
-		       static_cast(const char *, folder_list.pparray[i]->ppropval[2].pvalue), temp_buff, folder_id,
-			lang_resource_get(g_lang_resource, "EDIT_LABEL", language), folder_id,
+		       static_cast(const char *, folder_list.pparray[i]->ppropval[2].pvalue), temp_buff,
+		       static_cast(unsigned long long, folder_id),
+		       lang_resource_get(g_lang_resource, "EDIT_LABEL", language),
+		       static_cast(unsigned long long, folder_id),
 			lang_resource_get(g_lang_resource, "DELETE_LABEL", language));
 	}
 	printf(HTML_MAIN_8);
@@ -531,9 +533,9 @@ static void list_ui_permission_html(const char *domain,
 	printf(g_logo_link);
 	printf(HTML_PERMISSION_5, url_buff, domain, session,
 		lang_resource_get(g_lang_resource, "BACK_TO_MAIN", language),
-		url_buff, domain, session, folder_id);
+		url_buff, domain, session, static_cast(unsigned long long, folder_id));
 	printf(url_buff);
-	printf(HTML_PERMISSION_6, domain, session, folder_id,
+	printf(HTML_PERMISSION_6, domain, session, static_cast(unsigned long long, folder_id),
 		lang_resource_get(g_lang_resource, "MAIN_USERNAME", language),
 		lang_resource_get(g_lang_resource, "ADD_LABEL", language));
 	printf(lang_resource_get(g_lang_resource, "PERMISSION_TABLE_TITLE", language));
@@ -549,7 +551,7 @@ static void list_ui_permission_html(const char *domain,
 			continue;	
 		}
 		printf(HTML_USERITEM_NORMAL, static_cast(const char *, permission_list.pparray[i]->ppropval[1].pvalue),
-			*(uint64_t*)permission_list.pparray[i]->ppropval[0].pvalue,
+		       static_cast(unsigned long long, *static_cast(uint64_t *, permission_list.pparray[i]->ppropval[0].pvalue)),
 			lang_resource_get(g_lang_resource,"DELETE_LABEL", language));
 	}
 	printf(HTML_PERMISSION_8);

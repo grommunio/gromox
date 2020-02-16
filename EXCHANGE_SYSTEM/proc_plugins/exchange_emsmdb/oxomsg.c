@@ -436,8 +436,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		snprintf(command_buff, 1024, "%s %s %llu",
 			common_util_get_submit_command(),
 			logon_object_get_account(plogon),
-			rop_util_get_gc_value(
-				message_object_get_id(pmessage)));
+			static_cast(unsigned long long, rop_util_get_gc_value(
+				message_object_get_id(pmessage))));
 		timer_id = common_util_add_timer(
 			command_buff, deferred_time);
 		if (0 == timer_id) {

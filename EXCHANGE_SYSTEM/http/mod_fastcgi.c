@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "contexts_pool.h"
 #include "threads_pool.h"
@@ -1081,7 +1082,8 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		}
 	}
 	if (FALSE == phttp->pfast_context->b_chunked) {
-		sprintf(tmp_buff, "%llu", phttp->pfast_context->content_length);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
+		         static_cast(unsigned long long, phttp->pfast_context->content_length));
 		status = mod_fastcgi_push_name_value(
 			&ndr_push, "CONTENT_LENGTH", tmp_buff);
 		if (NDR_ERR_SUCCESS != status) {
@@ -1091,7 +1093,8 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		if (0 != fstat(phttp->pfast_context->cache_fd, &node_stat)) {
 			return FALSE;
 		}
-		sprintf(tmp_buff, "%llu", (uint64_t)node_stat.st_size);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
+		         static_cast(unsigned long long, node_stat.st_size));
 		status = mod_fastcgi_push_name_value(
 			&ndr_push, "CONTENT_LENGTH", tmp_buff);
 		if (NDR_ERR_SUCCESS != status) {

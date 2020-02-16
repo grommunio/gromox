@@ -59,7 +59,7 @@ width=195 align=right border=0></A></TD></TR></TBODY></TABLE><BR><BR><BR><BR>\n\
 <TR class=ItemEven><TD>%s</TD><TD>%d</TD></TR>\n\
 <TR class=ItemOdd><TD>%s</TD><TD>%d</TD></TR>\n\
 <TR class=ItemEven><TD>%s</TD><TD>%d</TD></TR>\n\
-<TR class=ItemOdd><TD>%s</TD><TD>%d%c</TD></TR>\n\
+<TR class=ItemOdd><TD>%s</TD><TD>%ld%c</TD></TR>\n\
 </TBODY></TABLE><BR></CENTER></BODY></HTML>"
 
 #define HTML_ERROR_5    \

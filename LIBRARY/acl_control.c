@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <time.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <gromox/acl_control.h>
 #include <gromox/system_log.h>
 #include "list_file.h"
@@ -144,7 +145,7 @@ BOOL acl_control_produce(const char *username, const char *ip, char *session)
 		}
 	}
 	temp_addr[8] = '\0';
-	sprintf(temp_time, "%x", cur_time);
+	snprintf(temp_time, sizeof(temp_time), "%llx", static_cast(unsigned long long, cur_time));
 	if (strlen(username) >= 16) {
 		memcpy(temp_name, username, 16);
 	} else {

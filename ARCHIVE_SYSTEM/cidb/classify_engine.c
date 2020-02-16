@@ -23,7 +23,8 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
+#define LLD(x) static_cast(long long, (x))
+#define LLU(x) static_cast(unsigned long long, (x))
 
 #define MJSON_ALLOC_NUM			3000
 
@@ -158,12 +159,13 @@ static int classify_engine_asrch(int argc, char **argv, int sockd)
 		return 2;	
 	}
 
-    offset = sprintf(list_buff, "TRUE %d\r\n",
-				double_list_get_nodes_num(presult));
+	snprintf(list_buff, sizeof(list_buff), "TRUE %zu\r\n",
+	         double_list_get_nodes_num(presult));
+	offset = strlen(list_buff);
 	while ((pnode = double_list_get_from_head(presult)) != NULL) {
 		presnode = (RESULT_NODE*)pnode->pdata;
-        offset += snprintf(list_buff + offset, 256*1024 - offset,
-					"%lld\r\n", presnode->mail_id);
+		offset += snprintf(list_buff + offset, 256 * 1024 - offset,
+		          "%lld\r\n", LLD(presnode->mail_id));
 		if (offset > 256*1023) {
 			write(sockd, list_buff, offset);
 			offset = 0;
@@ -306,7 +308,7 @@ static int classify_engine_ainst(int argc, char **argv, int sockd)
 		classify_engine_encode_squote(pdomain + 1, temp_string);
 		snprintf(sql_string, 1024, "INSERT INTO envelopes "
 			"(unit, mail_id, bound) VALUES ('%s', %lld, 0)",
-			temp_string, mail_id);
+			temp_string, LLD(mail_id));
 		if (0 != mysql_query(pconnection->pmysql, sql_string)) {
 			mysql_pool_put_connection(pconnection, FALSE);
 			return 2;
@@ -316,7 +318,7 @@ static int classify_engine_ainst(int argc, char **argv, int sockd)
 	classify_engine_encode_squote(envelop_buff, temp_string);
 	snprintf(sql_string, 1024, "INSERT INTO envelopes "
 		"(unit, mail_id, bound) VALUES ('%s', %lld, 0)",
-		temp_string, mail_id);
+		temp_string, LLD(mail_id));
 	if (0 != mysql_query(pconnection->pmysql, sql_string)) {
 		mysql_pool_put_connection(pconnection, FALSE);
 		return 2;
@@ -343,7 +345,7 @@ static int classify_engine_ainst(int argc, char **argv, int sockd)
 				classify_engine_encode_squote(pdomain + 1, temp_string);
 				snprintf(sql_string, 1024, "INSERT INTO envelopes "
 					"(unit, mail_id, bound) VALUES ('%s', %lld, 1)",
-					temp_string, mail_id);
+					temp_string, LLD(mail_id));
 				if (0 != mysql_query(pconnection->pmysql, sql_string)) {
 					mysql_pool_put_connection(pconnection, FALSE);
 					return 2;
@@ -365,7 +367,7 @@ static int classify_engine_ainst(int argc, char **argv, int sockd)
 			classify_engine_encode_squote(punit, temp_string);
 			snprintf(sql_string, 1024, "INSERT INTO envelopes "
 				"(unit, mail_id, bound) VALUES ('%s', %lld, 1)",
-				temp_string, mail_id);
+				temp_string, LLD(mail_id));
 			if (0 != mysql_query(pconnection->pmysql, sql_string)) {
 				mysql_pool_put_connection(pconnection, FALSE);
 				return 2;
@@ -410,7 +412,7 @@ static int classify_engine_ainst(int argc, char **argv, int sockd)
 					mysql_free_result(pmyres);
 					snprintf(sql_string, 1024, "INSERT INTO refs "
 						"(ref_id, mail_id) VALUES (%lld, %lld)",
-						mail_id, temp_id);
+						LLD(mail_id), LLD(temp_id));
 					mysql_query(pconnection->pmysql, sql_string);
 				} else {
 					mysql_free_result(pmyres);
@@ -423,10 +425,8 @@ static int classify_engine_ainst(int argc, char **argv, int sockd)
 	}
 
 	mysql_pool_put_connection(pconnection, TRUE);
-
-	offset = sprintf(temp_string, "TRUE %lld %s\r\n", mail_id, temp_path);
-
-	write(sockd, temp_string, offset);
+	snprintf(temp_string, sizeof(temp_string), "TRUE %lld %s\r\n", LLD(mail_id), temp_path);
+	write(sockd, temp_string, strlen(temp_string));
 	return 0;
 }
 
@@ -451,7 +451,7 @@ static int classify_engine_amtch(int argc, char **argv, int sockd)
 	}
 
 	sprintf(sql_string, "SELECT path, digest FROM mails "
-		"WHERE id=%lld", mail_id);
+	        "WHERE id=%lld", LLD(mail_id));
 	pconnection = mysql_pool_get_connection();
 	if (NULL == pconnection) {
 		return 2;
@@ -1292,39 +1292,39 @@ static DOUBLE_LIST* classify_engine_cl_match(const char *charset,
 			case CONDITION_SIZE:
 				if (0 == ((uint64_t*)pconnode->pstatment)[0]) {
 					length += snprintf(sql_string3 + length, 1024 - length,
-								" mails.size <= %lu",
-								((uint64_t*)pconnode->pstatment)[1]);
+					          " mails.size <= %llu",
+					          LLU(static_cast(uint64_t *, pconnode->pstatment)[1]));
 				} else if (-1 == ((uint64_t*)pconnode->pstatment)[1]) {
 					length += snprintf(sql_string3 + length, 1024 - length,
-								" mails.size >= %lu",
-								((uint64_t*)pconnode->pstatment)[0]);
+					          " mails.size >= %llu",
+					          LLU(static_cast(uint64_t *, pconnode->pstatment)[0]));
 				} else {
 					length += snprintf(sql_string3 + length, 1024 - length,
-								" mails.size BETWEEN %lu AND %lu",
-								((uint64_t*)pconnode->pstatment)[0],
-								((uint64_t*)pconnode->pstatment)[1]);
+					          " mails.size BETWEEN %llu AND %llu",
+					          LLU(static_cast(uint64_t *, pconnode->pstatment)[0]),
+					          LLU(static_cast(uint64_t *, pconnode->pstatment)[1]));
 				}
 				break;
 			case CONDITION_ID:
 				if (0 == ((uint64_t*)pconnode->pstatment)[0]) {
 					length += snprintf(sql_string3 + length, 1024 - length,
-								" mails.id <= %lu",
-								((uint64_t*)pconnode->pstatment)[1]);
+					          " mails.id <= %llu",
+					          LLU(static_cast(uint64_t *, pconnode->pstatment)[1]));
 				} else if (-1 == ((uint64_t*)pconnode->pstatment)[1]) {
 					length += snprintf(sql_string3 + length, 1024 - length,
-								" mails.id >= %lu",
-								((uint64_t*)pconnode->pstatment)[0]);
+					          " mails.id >= %llu",
+					          LLU(static_cast(uint64_t *, pconnode->pstatment)[0]));
 				} else {
 					length += snprintf(sql_string3 + length, 1024 - length,
 								" mails.id BETWEEN %llu AND %llu",
-								((uint64_t*)pconnode->pstatment)[0],
-								((uint64_t*)pconnode->pstatment)[1]);
+								LLU(static_cast(uint64_t *, pconnode->pstatment)[0]),
+								LLU(static_cast(uint64_t *, pconnode->pstatment)[1]));
 				}
 				break;
 			case CONDITION_PRIORITY:
 				length += snprintf(sql_string3 + length, 1024 - length,
-				          " mails.priority=%ld",
-				          static_cast(const char *, pconnode->pstatment));
+				          " mails.priority=%lld",
+				          LLD(static_cast(int64_t *, pconnode->pstatment)[0]));
 				break;
 			}
 		}
@@ -1542,7 +1542,7 @@ static DOUBLE_LIST* classify_engine_cl_match(const char *charset,
 				}
 				sprintf(sql_string, "SELECT DISTINCT ref_id FROM refs WHERE "
 					"mail_id=%lld UNION SELECT DISTINCT mail_id FROM refs "
-					"WHERE ref_id=%lld", ref_id, ref_id);
+					"WHERE ref_id=%lld", LLD(ref_id), LLD(ref_id));
 				if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 					NULL == (pmyres = mysql_store_result(
 					pconnection->pmysql))) {
@@ -1639,15 +1639,15 @@ HEADER_MATCH:
 				continue;
 			}
 			sprintf(sql_string, "SELECT path FROM mails WHERE id=%lld",
-				presnode->mail_id);
+				LLD(presnode->mail_id));
 			if (0 != mysql_query(pconnection->pmysql, sql_string) &&
 				NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
 				mysql_pool_put_connection(pconnection, FALSE);
 				goto NEXT_LOOP;
 			}
 			myrow = mysql_fetch_row(pmyres);
-			snprintf(temp_path, 256, "%s/%lld", myrow[0],
-				presnode->mail_id);
+			snprintf(temp_path, sizeof(temp_path), "%s/%lld", myrow[0],
+			         LLD(presnode->mail_id));
 			mysql_free_result(pmyres);
 			mysql_pool_put_connection(pconnection, TRUE);
 			
@@ -1684,14 +1684,14 @@ static BOOL classify_engine_create_results0(MYSQL *pmysql, uint64_t ref_id)
 
 	sprintf(sql_string, "INSERT INTO tmp_results0 (id) "
 		"(SELECT ref_id FROM refs WHERE mail_id=%lld)",
-		ref_id);
+		LLU(ref_id));
 	if (0 != mysql_query(pmysql, sql_string)) {
 		return FALSE;
 	}
 
 	sprintf(sql_string, "INSERT INTO tmp_results0 (id) "
 		"(SELECT mail_id FROM refs WHERE ref_id=%lld)",
-		ref_id);
+		LLU(ref_id));
 	if (0 != mysql_query(pmysql, sql_string)) {
 		return FALSE;
 	}

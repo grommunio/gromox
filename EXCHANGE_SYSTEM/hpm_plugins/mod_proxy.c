@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include "double_list.h"
 #include <gromox/hpm_common.h>
 #include "list_file.h"
@@ -491,7 +492,7 @@ static BOOL proxy_proc(int context_id,
 		}
 	}
 	offset += sprintf(tmp_buff + offset,
-		"Content-Length: %llu\r\n", length);
+	          "Content-Length: %llu\r\n", static_cast(unsigned long long, length));
 	if (offset >= sizeof(tmp_buff)) {
 		close(pcontext->sockd);
 		pcontext->sockd = -1;

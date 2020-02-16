@@ -15,7 +15,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
-
+#define UI(x) static_cast(unsigned int, (x))
+#define LLU(x) static_cast(unsigned long long, (x))
 
 #define PROP_TAG_BODY_UNSPECIFIED						0x10000000
 #define PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED	0x007D0000
@@ -57,7 +58,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	sql_len = sprintf(sql_string, "SELECT message_id FROM"
-			" messages WHERE message_id=%llu", message_id);
+	          " messages WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -95,8 +96,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PROP_TAG_BODY_STRING8:
 			sql_len = sprintf(sql_string, "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
-				" OR (message_id=%llu AND proptag=%u)", message_id,
-				PROP_TAG_BODY, message_id, PROP_TAG_BODY_STRING8);
+				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
+				PROP_TAG_BODY, LLU(message_id), PROP_TAG_BODY_STRING8);
 			if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 				sql_string, sql_len, &pstmt, NULL)) {
 				message_content_free(pmsgctnt);
@@ -126,7 +127,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PROP_TAG_RTFCOMPRESSED:
 			sql_len = sprintf(sql_string, "SELECT propval FROM "
 				"message_properties WHERE message_id=%llu AND "
-				"proptag=%u", message_id, proptags.pproptag[i]);
+				"proptag=%u", LLU(message_id), UI(proptags.pproptag[i]));
 			if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 				sql_string, sql_len, &pstmt, NULL)) {
 				message_content_free(pmsgctnt);
@@ -155,8 +156,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
 			sql_len = sprintf(sql_string, "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
-				" OR (message_id=%llu AND proptag=%u)", message_id,
-				PROP_TAG_TRANSPORTMESSAGEHEADERS, message_id,
+				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
+				PROP_TAG_TRANSPORTMESSAGEHEADERS, LLU(message_id),
 				PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
 			if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 				sql_string, sql_len, &pstmt, NULL)) {
@@ -204,7 +205,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	message_content_set_rcpts_internal(pmsgctnt, prcpts);
 	sql_len = sprintf(sql_string, "SELECT recipient_id FROM"
-			" recipients WHERE message_id=%llu", message_id);
+	          " recipients WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		message_content_free(pmsgctnt);
@@ -272,7 +273,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	}
 	message_content_set_attachments_internal(pmsgctnt, pattachments);
 	sql_len = sprintf(sql_string, "SELECT attachment_id FROM "
-			"attachments WHERE message_id=%llu", message_id);
+	          "attachments WHERE message_id=%llu", LLU(message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		message_content_free(pmsgctnt);
@@ -327,7 +328,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			case PROP_TAG_ATTACHDATAOBJECT:
 				sql_len = sprintf(sql_string, "SELECT propval FROM "
 					"attachment_properties WHERE attachment_id=%llu AND"
-					" proptag=%u", attachment_id, proptags.pproptag[i]);
+					" proptag=%u", static_cast(unsigned long long, attachment_id),
+					static_cast(unsigned int, proptags.pproptag[i]));
 				if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 					sql_string, sql_len, &pstmt2, NULL)) {
 					sqlite3_finalize(pstmt);
@@ -853,7 +855,7 @@ static void* instance_read_cid_content(uint64_t cid, uint32_t *plen)
 	struct stat node_stat;
 	
 	dir = exmdb_server_get_dir();
-	sprintf(path, "%s/cid/%llu", dir, cid);
+	snprintf(path, sizeof(path), "%s/cid/%llu", dir, static_cast(unsigned long long, cid));
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}

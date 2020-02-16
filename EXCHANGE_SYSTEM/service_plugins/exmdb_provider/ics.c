@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "db_engine.h"
@@ -319,12 +320,12 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sql_len = sprintf(sql_string, "SELECT message_id,"
 			" change_number, is_associated, message_size,"
 			" read_state, read_cn FROM messages WHERE "
-			"parent_fid=%llu", fid_val);
+			"parent_fid=%llu", static_cast(unsigned long long, fid_val));
 	} else {
 		sql_len = sprintf(sql_string, "SELECT message_id,"
 			" change_number, is_associated, message_size "
 			"FROM messages WHERE parent_fid=%llu AND "
-			"is_deleted=0", fid_val);
+			"is_deleted=0", static_cast(unsigned long long, fid_val));
 	}
 	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {

@@ -1,5 +1,6 @@
 /* plugin for the Sophs Simple Scanning Protocol (run by savdid(8)) */
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/svc_common.h>
 #include "util.h"
@@ -461,7 +462,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		snprintf(result, length,
 		"250 agent information of sssp:\r\n"
 		"\ttotal connections       %d\r\n"
-		"\tavailable connections   %d",
+		"\tavailable connections   %zu",
 		g_conn_num, double_list_get_nodes_num(&g_connection_list));
 		result[length - 1] = '\0';
 		return;

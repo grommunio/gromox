@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "admin_ui.h"
 #include "data_source.h"
@@ -24,6 +25,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#define LLU(x) static_cast(unsigned long long, (x))
 
 #define HTML_COMMON_1	\
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n\
@@ -1684,13 +1686,13 @@ static void admin_ui_result_html(const char *session, int page_index)
 			strftime(time_buff, 64, lang_resource_get(g_lang_resource,
 				"ITEM_TIME_FORMAT", language), localtime(&rtime));
 			if (0 == i%2) {
-				printf(HTML_TBITEM_ODD, tmp_item.server_id, tmp_item.mail_id,
+				printf(HTML_TBITEM_ODD, tmp_item.server_id, LLU(tmp_item.mail_id),
 					time_buff, from, to, subject, tmp_item.server_id,
-					tmp_item.mail_id);
+					LLU(tmp_item.mail_id));
 			} else {
-				printf(HTML_TBITEM_EVEN, tmp_item.server_id, tmp_item.mail_id,
+				printf(HTML_TBITEM_EVEN, tmp_item.server_id, LLU(tmp_item.mail_id),
 					time_buff, from, to, subject, tmp_item.server_id,
-					tmp_item.mail_id);
+					LLU(tmp_item.mail_id));
 			}
 		}
 		
@@ -1838,7 +1840,7 @@ static BOOL admin_ui_insert_mail(int seq_id, int server_id,
 	
 	time(&now_time);
 	sprintf(file_name, "%ld.%d.archive", now_time, seq_id);
-	snprintf(temp_path, 255, "%s/%lld", msg_path, mail_id);
+	snprintf(temp_path, sizeof(temp_path), "%s/%lld", msg_path, static_cast(long long, mail_id));
 	if (0 != stat(temp_path, &node_stat) ||
 		0 == S_ISREG(node_stat.st_mode)) {
 		return FALSE;

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "whitelist_ui.h"
 #include "lang_resource.h"
@@ -20,6 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#define LLD(x) static_cast(long long, (x))
 
 #define HTML_COMMON_1	\
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n\
@@ -533,14 +535,14 @@ static void	whitelist_ui_modify_list(const char *address, const char *memo)
 				continue;
 			}
 			whitelist_ui_encode_line(pitem[j].memo, temp_memo);
-			len = sprintf(temp_line, "%s\t%d\t%s\n", pitem[j].address,
-					pitem[j].time, temp_memo);
-			write(fd, temp_line, len);
-
+			snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n",
+			         pitem[j].address, LLD(pitem[j].time), temp_memo);
+			write(fd, temp_line, strlen(temp_line));
 		}
 		whitelist_ui_encode_line(memo, temp_memo);
-		len = sprintf(temp_line, "%s\t%d\t%s\n", address, cur_time, temp_memo);
-		write(fd, temp_line, len);
+		snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n",
+		         address, LLD(cur_time), temp_memo);
+		write(fd, temp_line, strlen(temp_line));
 		close(fd);
 		list_file_free(pfile);
 		remove(g_list_path);
@@ -555,8 +557,9 @@ static void	whitelist_ui_modify_list(const char *address, const char *memo)
 			return;
 		}
 		whitelist_ui_encode_line(memo, temp_memo);
-		len = sprintf(temp_line, "%s\t%d\t%s\n", address, cur_time, temp_memo);
-		write(fd, temp_line, len);
+		snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n",
+		         address, LLD(cur_time), temp_memo);
+		write(fd, temp_line, strlen(temp_line));
 		close(fd);
 		whitelist_ui_broadcast_list();
 		reload_control_notify();
@@ -597,9 +600,9 @@ static void whitelist_ui_remove_item(const char *address)
 			continue;
 		}
 		whitelist_ui_encode_line(pitem[j].memo, temp_memo);
-		len = sprintf(temp_line, "%s\t%d\t%s\n", pitem[j].address,
-				pitem[j].time, temp_memo);
-		write(fd, temp_line, len);
+		snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n", pitem[j].address,
+		         LLD(pitem[j].time), temp_memo);
+		write(fd, temp_line, strlen(temp_line));
 	}
 	close(fd);
 	list_file_free(pfile);

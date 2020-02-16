@@ -1067,7 +1067,8 @@ static void *engine_scan_partition(PARTITION_ITEM *ppartition)
 	}
 	time(&cur_time);
 	snprintf(temp_path, 255, "%s/pinfo", ppartition->master);
-	snprintf(temp_path1, 255, "%s/pinfo.%d", ppartition->master, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/pinfo.%lld",
+	         ppartition->master, static_cast(long long, cur_time));
 	fd = open(temp_path, O_RDONLY);
 	if (-1 != fd) {
 		len = read(fd, temp_buff, 1024);

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "list_file.h"
@@ -390,7 +391,7 @@ static BOOL archive_process(MESSAGE_CONTEXT *pcontext)
 				mail_id = atoll(temp_buff + 5);
 				strncpy(path, ptoken + 1, 128);
 				snprintf(temp_path, 256, "%s%s/%lld", pback->psvr->prefix,
-					path, mail_id);
+					path, static_cast(long long, mail_id));
 				fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 				if (-1 != fd) {
 					mail_to_file(pmail, fd);
@@ -740,7 +741,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 				snprintf(result, length,
 				"250 agent information of cidb(prefix:%s ip:%s port:%d):\r\n"
 				"\ttotal connections       %d\r\n"
-				"\tavailable connections   %d",
+				"\tavailable connections   %zu",
 				pserver->prefix, pserver->ip_addr, pserver->port,
 				g_conn_num, double_list_get_nodes_num(&pserver->conn_list));
 				result[length - 1] = '\0';

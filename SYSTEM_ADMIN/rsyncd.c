@@ -604,7 +604,8 @@ static void *thread_work_func(void *param)
 				continue;
 			}
 
-			offset = sprintf(pbuff, "TRUE gzip %d\r\n", node_stat.st_size);
+			offset = sprintf(pbuff, "TRUE gzip %llu\r\n",
+			         static_cast(unsigned long long, node_stat.st_size));
 			if (node_stat.st_size != read(fd, pbuff + offset,
 				node_stat.st_size)) {
 				close(fd);

@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "backup_ui.h"
 #include "lang_resource.h"
@@ -693,7 +694,7 @@ static BOOL backup_ui_insert_mail(int seq_id, int server_id,
 	
 	time(&now_time);
 	sprintf(file_name, "%ld.%d.archive", now_time, seq_id);
-	snprintf(temp_path, 255, "%s/%lld", msg_path, mail_id);
+	snprintf(temp_path, sizeof(temp_path), "%s/%lld", msg_path, static_cast(long long, mail_id));
 	if (0 != stat(temp_path, &node_stat) ||
 		0 == S_ISREG(node_stat.st_mode)) {
 		return FALSE;

@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <gromox/paths.h>
 #include "config_file.h"
 #include "ext_buffer.h"
@@ -18,6 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "exmdb_tool.h"
+#define LLU(x) static_cast(unsigned long long, (x))
 
 static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
@@ -46,8 +48,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	g_last_eid += ALLOCATED_EID_RANGE;
 	max_eid = g_last_eid;
 	sprintf(sql_string, "INSERT INTO allocated_eids"
-			" VALUES (%llu, %llu, %lu, 1)", cur_eid,
-			max_eid, time(NULL));
+	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
+	        LLU(max_eid), static_cast(long long, time(nullptr)));
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
@@ -78,7 +80,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	g_last_art ++;
 	art_num = g_last_art;
 	sql_len = sprintf(sql_string, "INSERT INTO "
-		"folder_properties VALUES (%llu, ?, ?)", folder_id);
+	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;

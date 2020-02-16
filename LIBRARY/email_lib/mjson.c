@@ -1677,14 +1677,14 @@ FETCH_STRUCTURE_LOOP:
 			
 			if (0 == stat(temp_path, &node_stat)) {
 				offset += snprintf(buff + offset, length - offset,
-							" %d", node_stat.st_size);
+				          " %llu", reinterpret_cast(unsigned long long, node_stat.st_size));
 			} else {
 				memcpy(buff + offset, " NIL", 4);
 				offset += 4;
 			}
 		} else {
 			offset += snprintf(buff + offset, length - offset,
-						" %d", pmime->length);
+			          " %zu", pmime->length);
 		}
 					
 		if (0 == strcasecmp(ctype, "TEXT")) {

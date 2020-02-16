@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <gromox/svc_common.h>
 #include "util.h"
 #include "single_list.h"
@@ -3589,7 +3590,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 				snprintf(result, length,
 				"250 agent information of midb(mp:%s ip:%s port:%d):\r\n"
 				"\ttotal connections       %d\r\n"
-				"\tavailable connections   %d",
+				"\tavailable connections   %zu",
 				pserver->prefix, pserver->ip_addr, pserver->port,
 				g_conn_num, double_list_get_nodes_num(&pserver->conn_list));
 				result[length - 1] = '\0';

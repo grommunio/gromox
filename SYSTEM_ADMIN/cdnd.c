@@ -1030,7 +1030,8 @@ static void *thread_work_func(void *param)
 				continue;
 			}
 
-			offset = sprintf(pbuff, "TRUE gzip %d\r\n", node_stat.st_size);
+			offset = sprintf(pbuff, "TRUE gzip %llu\r\n",
+			         static_cast(unsigned long long, node_stat.st_size));
 			if (node_stat.st_size != read(fd, pbuff + offset,
 				node_stat.st_size)) {
 				close(fd);
@@ -1066,8 +1067,9 @@ static void *thread_work_func(void *param)
 				continue;
 			}
 
-			len = snprintf(buff, 1024, "TRUE %d %d\r\n", puser->version,
-					puser->phash->item_num);
+			snprintf(buff, sizeof(buff), "TRUE %d %zu\r\n",
+			         puser->version, puser->phash->item_num);
+			len = strlen(buff);
 			
 			iter = str_hash_iter_init(puser->phash);
 			for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);

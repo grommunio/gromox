@@ -590,7 +590,7 @@ static void* thread_work_func(void* arg)
 				message_dequeue_load_from_mess(msg.msg_content);
 				break;
 			default:
-				printf("[message_dequeue]: unknown message queue type %d, "
+				printf("[message_dequeue]: unknown message queue type %ld, "
 					"should be MESSAGE_TAPE or MESSAGE_MESS\n", msg.msg_type);
 			}
 			continue;

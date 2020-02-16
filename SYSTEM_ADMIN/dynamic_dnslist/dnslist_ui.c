@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "dnslist_ui.h"
 #include <gromox/system_log.h>
@@ -20,6 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#define LLD(x) static_cast(long long, (x))
 
 #define HTML_COMMON_1	\
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n\
@@ -522,14 +524,15 @@ static void	dnslist_ui_modify_list(const char *domain, const char *memo)
 				continue;
 			}
 			dnslist_ui_encode_line(pitem[j].memo, temp_memo);
-			len = sprintf(temp_line, "%s\t%d\t%s\n", pitem[j].domain,
-					pitem[j].time, temp_memo);
-			write(fd, temp_line, len);
+			snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n",
+			         pitem[j].domain, LLD(pitem[j].time), temp_memo);
+			write(fd, temp_line, strlen(temp_line));
 
 		}
 		dnslist_ui_encode_line(memo, temp_memo);
-		len = sprintf(temp_line, "%s\t%d\t%s\n", domain, cur_time, temp_memo);
-		write(fd, temp_line, len);
+		snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n",
+		         domain, LLD(cur_time), temp_memo);
+		write(fd, temp_line, strlen(temp_line));
 		close(fd);
 		list_file_free(pfile);
 		remove(g_list_path);
@@ -544,8 +547,9 @@ static void	dnslist_ui_modify_list(const char *domain, const char *memo)
 			return;
 		}
 		dnslist_ui_encode_line(memo, temp_memo);
-		len = sprintf(temp_line, "%s\t%d\t%s\n", domain, cur_time, temp_memo);
-		write(fd, temp_line, len);
+		snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n",
+		         domain, LLD(cur_time), temp_memo);
+		write(fd, temp_line, strlen(temp_line));
 		close(fd);
 		dnslist_ui_broadcast_list();
 		reload_control_notify();
@@ -586,9 +590,9 @@ static void dnslist_ui_remove_item(const char *domain)
 			continue;
 		}
 		dnslist_ui_encode_line(pitem[j].memo, temp_memo);
-		len = sprintf(temp_line, "%s\t%d\t%s\n", pitem[j].domain,
-				pitem[j].time, temp_memo);
-		write(fd, temp_line, len);
+		snprintf(temp_line, sizeof(temp_line), "%s\t%lld\t%s\n",
+		         pitem[j].domain, LLD(pitem[j].time), temp_memo);
+		write(fd, temp_line, strlen(temp_line));
 	}
 	close(fd);
 	list_file_free(pfile);

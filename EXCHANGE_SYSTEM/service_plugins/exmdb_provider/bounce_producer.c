@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include "bounce_producer.h"
 #include <gromox/svc_common.h>
 #include "common_util.h"
@@ -396,7 +397,7 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 	offset = 0;
 	b_first = FALSE;
 	sql_len = sprintf(sql_string, "SELECT attachment_id FROM "
-			"attachments WHERE message_id=%llu", message_id);
+	          "attachments WHERE message_id=%llu", static_cast(unsigned long long, message_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return 0;

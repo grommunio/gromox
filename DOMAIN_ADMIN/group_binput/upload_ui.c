@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "util.h"
 #include "midb_tool.h"
@@ -25,7 +26,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <mysql/mysql.h>
-
+#define LLD(x) static_cast(long long, (x))
 
 #define HTML_COMMON_1	\
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n\
@@ -2594,8 +2595,8 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 	v_index = i;
 	
 	time(&cur_time);
-	sprintf(temp_path, "%s/v%d/vinfo.%d", pleast_area->master,
-		mini_vdir, cur_time);
+	snprintf(temp_path, sizeof(temp_path), "%s/v%d/vinfo.%lld",
+	         pleast_area->master, mini_vdir, LLD(cur_time));
 	sprintf(temp_path1, "%s/v%d/vinfo", pleast_area->master, mini_vdir);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 != fd) {
@@ -2604,7 +2605,8 @@ static BOOL upload_ui_allocate_dir(const char *media_area,
 		close(fd);
 		rename(temp_path, temp_path1);
 	}
-	sprintf(temp_path, "%s/pinfo.%d", pleast_area->master, cur_time);
+	snprintf(temp_path, sizeof(temp_path), "%s/pinfo.%lld",
+	         pleast_area->master, LLD(cur_time));
 	sprintf(temp_path1, "%s/pinfo", pleast_area->master);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 != fd) {
@@ -2709,7 +2711,8 @@ static void upload_ui_free_dir(BOOL b_media, const char *maildir)
 
 	time(&cur_time);
 	sprintf(temp_path, "%s/../vinfo", maildir);
-	sprintf(temp_path1, "%s/../vinfo.%d", maildir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../vinfo.%lld",
+	         maildir, LLD(cur_time));
 	fd = open(temp_path, O_RDONLY);
 	
 	if (-1 == fd) {
@@ -2737,7 +2740,8 @@ static void upload_ui_free_dir(BOOL b_media, const char *maildir)
 	rename(temp_path1, temp_path);
 	
 	sprintf(temp_path, "%s/../../pinfo", maildir);
-	sprintf(temp_path1, "%s/../../pinfo.%d", maildir, cur_time);
+	snprintf(temp_path1, sizeof(temp_path1), "%s/../../pinfo.%lld",
+	         maildir, LLD(cur_time));
 	fd = open(temp_path, O_RDONLY);
 
 	if (-1 == fd) {

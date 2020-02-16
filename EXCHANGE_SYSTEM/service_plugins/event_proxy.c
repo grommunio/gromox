@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <gromox/svc_common.h>
 #include "double_list.h"
 #include "config_file.h"
@@ -198,8 +199,8 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	if (2 == argc && 0 == strcmp("info", argv[1])) {
 		snprintf(result, length,
 			"250 event agent information:\r\n"
-			"\ttotal event connections    %d\r\n"
-			"\talive event connections    %d",
+			"\ttotal event connections    %zu\r\n"
+			"\talive event connections    %zu",
 			double_list_get_nodes_num(&g_back_list) +
 			double_list_get_nodes_num(&g_lost_list),
 			double_list_get_nodes_num(&g_back_list));

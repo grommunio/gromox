@@ -4910,8 +4910,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 			snprintf(command_buff, 1024, "%s %s %llu",
 				common_util_get_submit_command(),
 				store_object_get_account(pstore),
-				rop_util_get_gc_value(
-					message_object_get_id(pmessage)));
+				static_cast(unsigned long long, rop_util_get_gc_value(
+					message_object_get_id(pmessage))));
 			timer_id = system_services_add_timer(
 					command_buff, deferred_time);
 			if (0 == timer_id) {

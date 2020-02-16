@@ -1,3 +1,5 @@
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "list_file.h"
@@ -472,8 +474,10 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
 	sqlite3_finalize(pstmt);
 	sql_len = sprintf(sql_string, "INSERT INTO allocated_eids "
-		"VALUES (%llu, %llu, %lu, 0)", tmp_eid, tmp_eid + count,
-		time(NULL));
+	          "VALUES (%llu, %llu, %lld, 0)",
+	          static_cast(unsigned long long, tmp_eid),
+	          static_cast(unsigned long long, tmp_eid + count),
+	          static_cast(long long, time(nullptr)));
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		db_engine_put_db(pdb);

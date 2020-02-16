@@ -944,7 +944,7 @@ static void produce_session(const char *tag, char *session)
 	
 	time(&cur_time);
 	/* fill 'g' if length is too short */
-	sprintf(temp_time, "%x", cur_time);
+	snprintf(temp_time, sizeof(temp_time), "%llx", static_cast(unsigned long long, cur_time));
 	if (strlen(tag) >= 16) {
 		memcpy(temp_name, tag, 16);
 	} else {

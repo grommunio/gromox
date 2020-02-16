@@ -1,3 +1,5 @@
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "config_file.h"
 #include "ext_buffer.h"
 #include "mapi_types.h"
@@ -18,6 +20,8 @@
 #include <sys/types.h>
 #include <mysql/mysql.h>
 #include "exmdb_tool.h"
+#define LLD(x) static_cast(long long, (x))
+#define LLU(x) static_cast(unsigned long long, (x))
 
 enum {
 	RES_ID_IPM,
@@ -68,8 +72,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	g_last_eid += ALLOCATED_EID_RANGE;
 	max_eid = g_last_eid;
 	sprintf(sql_string, "INSERT INTO allocated_eids"
-			" VALUES (%llu, %llu, %lu, 1)", cur_eid,
-			max_eid, time(NULL));
+			" VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
+			LLU(max_eid), LLD(time(nullptr)));
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
@@ -100,7 +104,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	g_last_art ++;
 	art_num = g_last_art;
 	sql_len = sprintf(sql_string, "INSERT INTO "
-		"folder_properties VALUES (%llu, ?, ?)", folder_id);
+	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -280,7 +284,7 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	g_last_art ++;
 	art_num = g_last_art;
 	sql_len = sprintf(sql_string, "INSERT INTO "
-		"folder_properties VALUES (%llu, ?, ?)", folder_id);
+	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
 	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
 		sql_string, sql_len, &pstmt, NULL)) {
 		return FALSE;
@@ -772,7 +776,7 @@ BOOL exmdb_tool_create(const char *dir, uint64_t max_size,
 		return FALSE;	
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
-		"username, permission) VALUES (%llu, 'default', %u)",
+		"username, permission) VALUES (%u, 'default', %u)",
 		PRIVATE_FID_CALENDAR, PERMISSION_FREEBUSYSIMPLE);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
 	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_JOURNAL,
@@ -908,7 +912,7 @@ BOOL exmdb_tool_create(const char *dir, uint64_t max_size,
 		return FALSE;
 	}
 	sprintf(tmp_sql, "INSERT INTO permissions (folder_id, "
-		"username, permission) VALUES (%llu, 'default', %u)",
+		"username, permission) VALUES (%u, 'default', %u)",
 		PRIVATE_FID_LOCAL_FREEBUSY, PERMISSION_FREEBUSYSIMPLE);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
 	csql_string = "INSERT INTO configurations VALUES (?, ?)";

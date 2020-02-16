@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <gromox/hook_common.h>
 #include "double_list.h"
 #include "config_file.h"
@@ -278,7 +279,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 			pmail = pcontext->pmail;
 		}
 
-		length = snprintf(buff, 1024, "CACHE %s %d\r\n",
+		length = snprintf(buff, 1024, "CACHE %s %ld\r\n",
 					rcpt_to, mail_get_length(pmail));
 		if (length != write(pback->sockd, buff, length)) {
 			if (NULL != pcontext1) {

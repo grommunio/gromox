@@ -970,7 +970,7 @@ long atoitvl(const char *string)
 char* bytetoa(uint64_t byte, char *string)
 {
 	if (byte < 1024) {
-		sprintf(string, "%d", byte);
+		sprintf(string, "%llu", reinterpret_cast(unsigned long long, byte));
 	} else if (byte >= 1024 && byte < 1024*1024) {
 		sprintf(string, "%4.1lfK", (double)byte/1024);
 	} else if (byte >= 1024*1024 && byte < 1024*1024*1024) {

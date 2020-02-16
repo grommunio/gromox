@@ -1,3 +1,5 @@
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "vuser.h"
 #include "pop3.h"
 #include "uid_db.h"
@@ -121,8 +123,9 @@ int vuser_work(VUSER *puser)
 		count = 0;
 		for (puid=pop3_uidl_head(&session); NULL!=puid;
 			puid=pop3_uidl_next(&session)) {
-			snprintf(mid_string, 127, "%d.%d.pad.%d.%u", time(NULL),
-				puid->id, i + 1, pthread_self());
+			snprintf(mid_string, sizeof(mid_string), "%lld.%d.pad.%d.%llu",
+			         static_cast(long long, time(nullptr)),
+			         puid->id, i + 1, static_cast(unsigned long long, pthread_self()));
 			sprintf(temp_path, "%s/eml/%s", mailbox_path, mid_string);
 			if (TRUE == pop3_retr(&session, puid, temp_path)) {
 				if (TRUE == midb_client_insert(

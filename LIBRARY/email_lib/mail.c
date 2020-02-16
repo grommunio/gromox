@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "mail.h"
 #include "util.h"
@@ -791,7 +792,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 		goto PARSE_FAILURE;
 	} else {
 		buff_len += tmp_len;
-		buff_len += sprintf(pbuff + buff_len, "],\"size\":%d", *poffset);
+		buff_len += sprintf(pbuff + buff_len, "],\"size\":%zu", *poffset);
 		return 1;
 	}
 	

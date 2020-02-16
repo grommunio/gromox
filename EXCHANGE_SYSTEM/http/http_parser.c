@@ -743,7 +743,7 @@ CONTEXT_PROCESSING:
 						"Keep-Alive: timeout=%d\r\n"
 						"Connection: Keep-Alive\r\n"
 						"Content-Type: text/plain; charset=ascii\r\n"
-						"Content-Length: %d\r\n"
+						"Content-Length: %zu\r\n"
 						"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
 						"\r\n%s\r\n", dstring,
 						resource_get_string("HOST_ID"),

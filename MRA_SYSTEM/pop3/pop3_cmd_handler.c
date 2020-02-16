@@ -2,6 +2,7 @@
  * collection of functions for handling the pop3 command
  */ 
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "pop3_cmd_handler.h"
 #include "system_services.h"
@@ -387,8 +388,9 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 		return DISPATCH_CONTINUE;
 	}
 	
-	string_length = sprintf(temp_buff, "+OK %d %llu\r\n",
-						pcontext->total_mail, pcontext->total_size);
+	snprintf(temp_buff, sizeof(temp_buff), "+OK %d %llu\r\n",
+	         pcontext->total_mail, static_cast(unsigned long long, pcontext->total_size));
+	string_length = strlen(temp_buff);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, temp_buff, string_length);
 	} else {

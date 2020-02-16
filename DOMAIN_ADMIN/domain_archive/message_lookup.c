@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <libHX/defs.h>
 #include "message_lookup.h"
 #include "list_file.h"
 #include "util.h"
@@ -12,7 +13,7 @@
 #include <netinet/in.h>
 #include <net/if.h>
 #include <netdb.h>
-
+#define LLD(x) static_cast(long long, (x))
 
 #define SOCKET_TIMEOUT		60
 
@@ -390,71 +391,71 @@ BOOL message_lookup_search(int server_id, const char *charset,
 	if (NULL != atime) {
 		if (0 == atime->begin) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" ATIME LE %lld", atime->end);
+			          " ATIME LE %lld", LLD(atime->end));
 		} else if (-1 == atime->end) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" ATIME GE %lld", atime->begin);
+			          " ATIME GE %lld", LLD(atime->begin));
 		} else {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" ATIME %lld %lld", atime->begin, atime->end);
+			          " ATIME %lld %lld", LLD(atime->begin), LLD(atime->end));
 		}
 	}
 	
 	if (NULL != rtime) {
 		if (0 == rtime->begin) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" RTIME LE %lld", rtime->end);
+			          " RTIME LE %lld", LLD(rtime->end));
 		} else if (-1 == rtime->end) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" RTIME GE %lld", rtime->begin);
+			          " RTIME GE %lld", LLD(rtime->begin));
 		} else {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" RTIME %lld %lld", rtime->begin, rtime->end);
+			          " RTIME %lld %lld", LLD(rtime->begin), LLD(rtime->end));
 		}
 	}
 	
 	if (NULL != ctime) {
 		if (0 == ctime->begin) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" CTIME LE %lld", ctime->end);
+			          " CTIME LE %lld", LLD(ctime->end));
 		} else if (-1 == ctime->end) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" CTIME GE %lld", ctime->begin);
+			          " CTIME GE %lld", LLD(ctime->begin));
 		} else {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" CTIME %lld %lld", ctime->begin, ctime->end);
+			          " CTIME %lld %lld", LLD(ctime->begin), LLD(ctime->end));
 		}
 	}
 	
 	if (NULL != size) {
 		if (0 == size->begin) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" SIZE LE %lld", size->end);
+			          " SIZE LE %lld", LLD(size->end));
 		} else if (-1 == size->end) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" SIZE GE %lld", size->begin);
+			          " SIZE GE %lld", LLD(size->begin));
 		} else {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" SIZE %lld %lld", size->begin, size->end);
+			          " SIZE %lld %lld", LLD(size->begin), LLD(size->end));
 		}
 	}
 	
 	if (NULL != id) {
 		if (0 == id->begin) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" ID LE %lld", id->end);
+			          " ID LE %lld", LLD(id->end));
 		} else if (-1 == id->end) {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" ID GE %lld", id->begin);
+			          " ID GE %lld", LLD(id->begin));
 		} else {
 			length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-						" ID %lld %lld", id->begin, id->end);
+			          " ID %lld %lld", LLD(id->begin), LLD(id->end));
 		}
 	}
 	
 	if (NULL != reference) {
 		length += snprintf(cmd_buff + length, sizeof(cmd_buff) - length,
-					" REFERENCE %lld", *reference);
+		          " REFERENCE %lld", LLD(*reference));
 	}
 	
 	if (NULL != header) {
@@ -525,8 +526,8 @@ BOOL message_lookup_match(int server_id, uint64_t mail_id,
 	}
 	
 	pitem = (CIDB_HOST*)list_file_get_list(pfile);
-	
-	length = snprintf(cmd_buff, 1024, "A-MTCH %lld\r\n", mail_id);
+	snprintf(cmd_buff, sizeof(cmd_buff), "A-MTCH %lld\r\n", LLD(mail_id));
+	length = strlen(cmd_buff);
 	sockd = message_lookup_connect_cidb(pitem[server_id].ip,
 				pitem[server_id].port);
 	strcpy(path, pitem[server_id].prefix);
