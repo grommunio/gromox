@@ -1643,7 +1643,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	NDR_PUSH ndr;
 	uint32_t flags;
 	DATA_BLOB creds2;
-	char creds2_buff[16];
+	uint8_t creds2_buff[16];
 	uint32_t payload_length;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	char ndr_buff[DCERPC_BASE_MARSHALL_SIZE];

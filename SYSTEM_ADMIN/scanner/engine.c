@@ -25,6 +25,7 @@
 #include "data_source.h"
 #include "midb_client.h"
 #include <gromox/locker_client.h>
+#define S2A(x) reinterpret_cast(const char *, (x))
 
 #define TYPE_USER_AREA			0
 #define TYPE_DOMAIN_AREA		1
@@ -354,7 +355,7 @@ static void engine_clean_eml_and_ext(const char *path)
 		return;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		mid_string = sqlite3_column_text(pstmt, 0);
+		mid_string = S2A(sqlite3_column_text(pstmt, 0));
 		sprintf(tmp_path, "%s/eml/%s", path, mid_string);
 		if (0 != stat(tmp_path, &node_stat)) {
 			midb_client_rewrite_eml(path, mid_string);
@@ -474,7 +475,7 @@ static BOOL engine_clean_and_calculate_maildir(
 		if (SQLITE_OK == sqlite3_prepare_v2(psqlite,
 			"PRAGMA integrity_check", -1, &pstmt, NULL )) {
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
-				presult = sqlite3_column_text(pstmt, 0);
+				presult = S2A(sqlite3_column_text(pstmt, 0));
 				if (NULL == presult || 0 != strcmp(presult, "ok")) {
 					b_corrupt = TRUE;
 				}
@@ -506,7 +507,7 @@ static BOOL engine_clean_and_calculate_maildir(
 		if (SQLITE_OK == sqlite3_prepare_v2(psqlite,
 			"PRAGMA integrity_check", -1, &pstmt, NULL )) {
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
-				presult = sqlite3_column_text(pstmt, 0);
+				presult = S2A(sqlite3_column_text(pstmt, 0));
 				if (NULL == presult || 0 != strcmp(presult, "ok")) {
 					b_corrupt = TRUE;
 				}
@@ -582,7 +583,7 @@ static BOOL engine_clean_and_calculate_homedir(
 		if (SQLITE_OK == sqlite3_prepare_v2(psqlite,
 			"PRAGMA integrity_check", -1, &pstmt, NULL )) {
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
-				presult = sqlite3_column_text(pstmt, 0);
+				presult = S2A(sqlite3_column_text(pstmt, 0));
 				if (NULL == presult || 0 != strcmp(presult, "ok")) {
 					b_corrupt = TRUE;
 				}

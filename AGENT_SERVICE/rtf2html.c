@@ -71,7 +71,7 @@ int main(int argc, const char **argv)
 			}
 		}
 	}
-	rtf_bin.pb = pbuff;
+	rtf_bin.pv = pbuff;
 	rtf_bin.cb = offset;
 	pbuff = malloc(8*buff_len + 1024*1024);
 	if (NULL == pbuff) {

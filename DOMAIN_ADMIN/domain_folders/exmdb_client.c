@@ -1007,7 +1007,7 @@ BOOL exmdb_client_create_folder(const char *dir, int domain_id,
 	rop_util_value_to_gc(change_num, xid.xid.local_id);
 	ext_buffer_push_init(&ext_push, tmp_buff, sizeof(tmp_buff), 0);
 	ext_buffer_push_xid(&ext_push, 22, &xid.xid);
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pv = tmp_buff;
 	tmp_bin.cb = ext_push.offset;
 	propval_buff[7].proptag = PROP_TAG_CHANGEKEY;
 	propval_buff[7].pvalue = &tmp_bin;

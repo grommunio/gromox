@@ -475,7 +475,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	uint32_t limit, uint32_t cpid, uint32_t lcid_string,
 	uint32_t lcid_sort, uint32_t cxr_link, uint16_t cnvt_cps,
 	uint32_t *pmax_polls, uint32_t *pmax_retry, uint32_t *pretry_delay,
-	uint16_t *pcxr, uint8_t *pdn_prefix, uint8_t *pdisplayname,
+	uint16_t *pcxr, char *pdn_prefix, char *pdisplayname,
 	const uint16_t pclient_vers[3], uint16_t pserver_vers[3],
 	uint16_t pbest_vers[3], uint32_t *ptimestamp, const uint8_t *pauxin,
 	uint32_t cb_auxin, uint8_t *pauxout, uint32_t *pcb_auxout)

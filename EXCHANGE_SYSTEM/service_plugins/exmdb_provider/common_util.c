@@ -25,6 +25,7 @@
 #define UI(x) static_cast(unsigned int, (x))
 #define LLD(x) static_cast(long long, (x))
 #define LLU(x) static_cast(unsigned long long, (x))
+#define S2A(x) reinterpret_cast(const char *, (x))
 
 #define SERVICE_ID_LANG_TO_CHARSET							1
 #define SERVICE_ID_CPID_TO_CHARSET							2
@@ -1063,8 +1064,7 @@ static char* common_util_calculate_folder_path(
 	BOOL b_private;
 	uint64_t tmp_fid;
 	sqlite3_stmt *pstmt;
-	char sql_string[128];
-	uint8_t temp_path[4096];
+	char sql_string[128], temp_path[4096];
 	
 	memset(temp_path, 0, 4096);
 	len = 0;
@@ -5008,7 +5008,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			sqlite3_finalize(pstmt);
 			return TRUE;
 		}
-		pusername = sqlite3_column_text(pstmt, 0);
+		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0]) {
 			*(int64_t*)(*ppvalue) = -1;
 		} else if (0 == strcasecmp(pusername, "default")) {
@@ -5026,7 +5026,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	}
 	switch (proptag) {
 	case PROP_TAG_ENTRYID:
-		pusername = sqlite3_column_text(pstmt, 0);
+		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0] || 0 == strcasecmp(pusername, "default")) {
 			*ppvalue = const_cast(BINARY *, &fake_bin);
 			sqlite3_finalize(pstmt);
@@ -5035,7 +5035,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		*ppvalue = common_util_username_to_addressbook_entryid(pusername);
 		break;
 	case PROP_TAG_MEMBERNAME:
-		pusername = sqlite3_column_text(pstmt, 0);
+		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0]) {
 			*ppvalue = const_cast(char *, "default");
 			sqlite3_finalize(pstmt);
@@ -5335,8 +5335,7 @@ BOOL common_util_check_folder_permission(
 				return FALSE;
 			}
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
-				if (TRUE == common_util_check_mlist_include(
-					sqlite3_column_text(pstmt1, 0), username)) {
+				if (common_util_check_mlist_include(S2A(sqlite3_column_text(pstmt1, 0)), username) == TRUE) {
 					*ppermission = sqlite3_column_int64(pstmt1, 1);
 					sqlite3_finalize(pstmt1);
 					sqlite3_finalize(pstmt);
@@ -6287,7 +6286,7 @@ BOOL common_util_get_mid_string(sqlite3 *psqlite,
 		*ppmid_string = NULL;
 		return TRUE;
 	}
-	*ppmid_string = common_util_dup(sqlite3_column_text(pstmt, 0));
+	*ppmid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
 	if (NULL == *ppmid_string) {
 		sqlite3_finalize(pstmt);
 		return FALSE;
@@ -6425,7 +6424,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		if (SQLITE_NULL == sqlite3_column_type(pstmt, 3)) {
 			mid_string[0] = '\0';
 		} else {
-			strcpy(mid_string1, sqlite3_column_text(pstmt, 3));
+			HX_strlcpy(mid_string1, S2A(sqlite3_column_text(pstmt, 3)), sizeof(mid_string1));
 			snprintf(mid_string, 128, "%lld.%d.%s", LLD(time(nullptr)),
 					common_util_sequence_ID(), get_host_ID());
 			sprintf(tmp_path, "%s/eml/%s",
@@ -6813,7 +6812,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			sqlite3_reset(pstmt);
 			goto NOT_FOUND_PROPNAME;
 		}
-		strcpy(temp_name, sqlite3_column_text(pstmt, 0));
+		HX_strlcpy(temp_name, S2A(sqlite3_column_text(pstmt, 0)), sizeof(temp_name));
 		sqlite3_reset(pstmt);
 		if (0 != strncasecmp(temp_name, "GUID=", 5)) {
 			goto NOT_FOUND_PROPNAME;

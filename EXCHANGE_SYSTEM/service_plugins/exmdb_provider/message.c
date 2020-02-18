@@ -3755,12 +3755,12 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			pvalue = common_util_get_propvals(
 				&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE);
 			if (NULL != pvalue && 1200 != *(uint32_t*)pvalue) {
-				tmp_bin.pb = common_util_convert_copy(
+				tmp_bin.pc = common_util_convert_copy(
 					FALSE, *(uint32_t*)pvalue, tmp_buff);
 			} else {
-				tmp_bin.pb = tmp_buff;
+				tmp_bin.pc = tmp_buff;
 			}
-			tmp_bin.cb = strlen(tmp_bin.pb);
+			tmp_bin.cb = strlen(tmp_bin.pc);
 			common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		}
 	}
@@ -4715,7 +4715,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							&pmsgctnt->proplist, &propval);
 					}
 					searchkey_bin.cb = strlen(essdn_buff) + 1;
-					searchkey_bin.pb = essdn_buff;
+					searchkey_bin.pv = essdn_buff;
 					propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGSEARCHKEY;
 					propval.pvalue = &searchkey_bin;
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
@@ -5168,7 +5168,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							&pmsgctnt->proplist, &propval);
 					}
 					searchkey_bin.cb = strlen(essdn_buff) + 1;
-					searchkey_bin.pb = essdn_buff;
+					searchkey_bin.pv = essdn_buff;
 					propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGSEARCHKEY;
 					propval.pvalue = &searchkey_bin;
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
@@ -5435,7 +5435,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			display_name[0] = '\0';
 		}
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
-		searchkey_bin.pb = essdn_buff;
+		searchkey_bin.pv = essdn_buff;
 		propval.proptag = PROP_TAG_RECEIVEDBYSEARCHKEY;
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);

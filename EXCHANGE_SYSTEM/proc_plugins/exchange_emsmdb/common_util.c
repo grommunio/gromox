@@ -1438,8 +1438,8 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	if (NULL != pvalue) {
 		if (0 == strcasecmp(pvalue, "EX")) {
 			prow->flags |= RECIPIENT_ROW_TYPE_X500DN;
-			/* point to a byte and the value is 0, not a real string! */
-			prow->pprefix_used = const_cast(char *, "");
+			static const uint8_t dummy_zero;
+			prow->pprefix_used = const_cast(uint8_t *, &dummy_zero);
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_DISPLAYTYPE);
 			if (NULL == pvalue) {

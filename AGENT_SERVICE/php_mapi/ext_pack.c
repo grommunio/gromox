@@ -212,10 +212,9 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 	}
 	max_len = pctx->data_size - pctx->offset;
 	for (i=0; i<max_len-1; i+=2) {
-		if (0 == *(pctx->data + pctx->offset + i) &&
-			0 == *(pctx->data + pctx->offset + i + 1)) {
+		if (pctx->sdata[pctx->offset+i] == '\0' &&
+		    pctx->sdata[pctx->offset+i+1] == '\0')
 			break;
-		}
 	}
 	if (i >= max_len - 1) {
 		return 0;
@@ -1454,7 +1453,7 @@ zend_bool ext_pack_push_advance(PUSH_CTX *pctx, uint32_t size)
 	return 1;
 }
 
-zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const uint8_t *pdata, uint32_t n)
+zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n)
 {
 	if (!ext_pack_push_check_overflow(pctx, n)) {
 		return 0;

@@ -1247,7 +1247,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 static BOOL mime_read_mutlipart_content(MIME *pmime,
 	char *out_buff, size_t *plength)
 {
-	char *ptr;
+	void *ptr;
 	size_t offset, tmp_len;
 	unsigned int buff_size;
 	size_t tmp_size;
@@ -1446,9 +1446,9 @@ BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
 BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 {
 	STREAM tmp_stream;
-	char *ptr, *pbuff;
+	void *ptr;
 	int encoding_type;
-	char encoding[256];
+	char encoding[256], *pbuff;
 	size_t mail_len, size;
 	LIB_BUFFER *pallocator;
 	size_t i, offset, max_length, tmp_len;

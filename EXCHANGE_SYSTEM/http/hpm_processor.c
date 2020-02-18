@@ -656,7 +656,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 {
 	int size;
 	int tmp_len;
-	char *pbuff;
+	void *pbuff;
 	char *ptoken;
 	int context_id;
 	char tmp_buff[1024];

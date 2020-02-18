@@ -347,7 +347,7 @@ BOOL string_from_utf8(const char *charset,
 	return TRUE;
 }
 
-int utf8_to_utf16le(const char *src, char *dst, size_t len)
+int utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
@@ -369,8 +369,7 @@ int utf8_to_utf16le(const char *src, char *dst, size_t len)
 	}
 }
 
-BOOL utf16le_to_utf8(const char *src,
-	size_t src_len, char *dst, size_t len)
+BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len)
 {
 	char *pin, *pout;
 	iconv_t conv_id;

@@ -70,9 +70,7 @@ void stream_try_mark_eom(STREAM *pstream);
 int stream_has_eom(STREAM *pstream);
 
 void stream_split_eom(STREAM *pstream, STREAM *pstream_second);
-
-char* stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize);
-
+extern void *stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize);
 unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset);
 
 unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset);
@@ -80,9 +78,7 @@ unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset);
 unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset);
 
 unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset);
-
-char* stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize);
-
+extern void *stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize);
 void stream_reset_reading(STREAM *pstream);
 
 size_t stream_get_total_length(STREAM *pstream);

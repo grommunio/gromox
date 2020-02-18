@@ -3,13 +3,19 @@
 #include "php.h"
 
 typedef struct _PULL_CTX {
-	const uint8_t *data;
+	union {
+		const void *data;
+		const char *sdata;
+	};
 	uint32_t data_size;
 	uint32_t offset;
 } PULL_CTX;
 
 typedef struct _PUSH_CTX {
-	uint8_t *data;
+	union {
+		void *data;
+		char *sdata;
+	};
 	uint32_t alloc_size;
 	uint32_t offset;
 } PUSH_CTX;
@@ -109,10 +115,7 @@ zend_bool ext_pack_push_init(PUSH_CTX *pctx);
 void ext_pack_push_free(PUSH_CTX *pctx);
 
 zend_bool ext_pack_push_advance(PUSH_CTX *pctx, uint32_t size);
-
-zend_bool ext_pack_push_bytes(PUSH_CTX *pctx,
-	const uint8_t *pdata, uint32_t n);
-
+extern zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n);
 zend_bool ext_pack_push_uint8(PUSH_CTX *pctx, uint8_t v);
 
 zend_bool ext_pack_push_int16(PUSH_CTX *pctx, int16_t v);

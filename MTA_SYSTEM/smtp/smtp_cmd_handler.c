@@ -550,7 +550,6 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
     const char* smtp_reply_str;
     char buff[1024], reply_buf[1200];
     STREAM stream;
-    char *pbuff, *pbuff2;
     int size, size_copied;
 	int size2, size2_used;
 	int judge_result;
@@ -608,7 +607,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
     smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2173003,1,&string_length);
     pcontext->last_cmd = T_DATA_CMD;
     size = STREAM_BLOCK_SIZE;
-    pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
+	void *pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
     if (NULL == pbuff) {
         /* clear stream, all envelop imformation is recorded in mail.envelop */
         stream_clear(&pcontext->stream);
@@ -622,7 +621,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
         /* fill the new stream the data after "data" command */
         stream_init(&stream, blocks_allocator_get_allocator());
         size2 = STREAM_BLOCK_SIZE;
-        pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
+		void *pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
         /*
          * do not need to check the pbuff pointer because it will never
          * be NULL because of stream's characteristic

@@ -925,7 +925,7 @@ NEXT_LOOP:
 			goto FREE_CONNECTION;
 		}
     }
-	stdstream.data = tmp_buff;
+	stdstream.vdata = tmp_buff;
 	while (TRUE == read_stdstream(fcgi_cgi, tmp_buff, &tmp_len, &type)) {
 		stdstream.length = tmp_len;
 		ndr_push_init(&ndr_push, ndr_buff, sizeof(ndr_buff),

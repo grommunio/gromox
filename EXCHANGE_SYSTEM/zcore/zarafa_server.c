@@ -1022,8 +1022,8 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		return zarafa_server_openstoreentry(hsession,
 			handle, entryid, flags, pmapi_type, phobject);
 	}
-	if (0 == strncmp(entryid.pb, "/exmdb=", 7)) {
-		strncpy(essdn, entryid.pb, sizeof(essdn));
+	if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
+		HX_strlcpy(essdn, entryid.pc, sizeof(essdn));
 	} else if (TRUE == common_util_parse_addressbook_entryid(
 		entryid, &address_type, essdn) &&
 		0 == strncmp(essdn, "/exmdb=", 7) &&
@@ -1128,8 +1128,8 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			}
 			break;
 		}
-		if (0 == strncmp(entryid.pb, "/exmdb=", 7)) {
-			strncpy(essdn, entryid.pb, sizeof(essdn));
+		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
+			HX_strlcpy(essdn, entryid.pc, sizeof(essdn));
 		} else if (TRUE == common_util_parse_addressbook_entryid(
 			entryid, &address_type, essdn) &&
 			0 == strncmp(essdn, "/exmdb=", 7) &&

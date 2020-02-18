@@ -31,7 +31,7 @@ static BOOL (*get_id_from_username)(const char *username, int *puser_id);
 
 static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	BOOL b_ephid, uint32_t codepage, uint32_t proptag,
-	PROPERTY_VALUE *pprop, char *pbuff)
+	PROPERTY_VALUE *pprop, void *pbuff)
 {
 	int minid;
 	int temp_len;
@@ -72,12 +72,11 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ADDRESSBOOKOBJECTGUID:
 		ab_tree_node_to_guid(pnode, &temp_guid);
 		if (NULL == pbuff) {
-			pprop->value.bin.pb = ndr_stack_alloc(NDR_STACK_OUT, 16);
-			if (NULL == pprop->value.bin.pb) {
+			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
+			if (pprop->value.bin.pv == nullptr)
 				return MAPI_E_NOT_ENOUGH_MEMORY;
-			}
 		} else {
-			pprop->value.bin.pb = pbuff;
+			pprop->value.bin.pv = const_cast(void *, pbuff);
 		}
 		common_util_guid_to_binary(&temp_guid, &pprop->value.bin);
 		break;
@@ -199,16 +198,15 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		pprop->value.bin.cb = strlen(dn) + 4;
 		if (NULL == pbuff) {
-			pprop->value.bin.pb = ndr_stack_alloc(
+			pprop->value.bin.pc = ndr_stack_alloc(
 				NDR_STACK_OUT, pprop->value.bin.cb);
-			if (NULL == pprop->value.bin.pb) {
+			if (pprop->value.bin.pc == nullptr)
 				return MAPI_E_NOT_ENOUGH_MEMORY;
-			}
 		} else {
-			pprop->value.bin.pb = pbuff;
+			pprop->value.bin.pc = pbuff;
 		}
-		sprintf(pprop->value.bin.pb, "EX:%s", dn);
-		HX_strupper(pprop->value.bin.pb);
+		sprintf(pprop->value.bin.pc, "EX:%s", dn);
+		HX_strupper(pprop->value.bin.pc);
 		break;
 	case PROP_TAG_INSTANCEKEY:
 		if (NULL == pbuff) {
@@ -3117,8 +3115,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			tmp_mid |= ((uint32_t)pentry_ids->pbin[i].pb[31]) << 24;
 			ptnode = ab_tree_minid_to_node(pbase, tmp_mid);
 		} else {
-			ptnode = ab_tree_dn_to_node(pbase,
-				pentry_ids->pbin[i].pb + 28);
+			ptnode = ab_tree_dn_to_node(pbase, pentry_ids->pbin[i].pc + 28);
 		}
 		if (NULL == ptnode) {
 			continue;
@@ -3403,13 +3400,12 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		break;
 	case PROP_TAG_SEARCHKEY:
 		pprop->value.bin.cb = strlen(paddress) + 5;
-		pprop->value.bin.pb = ndr_stack_alloc(
+		pprop->value.bin.pc = ndr_stack_alloc(
 			NDR_STACK_OUT, pprop->value.bin.cb);
-		if (NULL == pprop->value.bin.pb) {
+		if (pprop->value.bin.pc == nullptr)
 			return MAPI_E_NOT_ENOUGH_MEMORY;
-		}
-		sprintf(pprop->value.bin.pb, "SMTP:%s", paddress);
-		HX_strupper(pprop->value.bin.pb);
+		sprintf(pprop->value.bin.pc, "SMTP:%s", paddress);
+		HX_strupper(pprop->value.bin.pc);
 		break;
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:

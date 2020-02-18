@@ -63,7 +63,7 @@ static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	search_bin.cb = snprintf(search_buff, 1024, "EX:%s", essdn_buff) + 1;
-	search_bin.pb = search_buff;
+	search_bin.pv = search_buff;
 	propval_buff[6].proptag = PROP_TAG_SENDEREMAILADDRESS;
 	propval_buff[6].pvalue = essdn_buff;
 	propval_buff[7].proptag = PROP_TAG_SENDERNAME;
@@ -91,7 +91,7 @@ static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 		strcpy(tmp_display1, tmp_display);
 	}
 	search_bin1.cb = snprintf(search_buff1, 1024, "EX:%s", essdn_buff1) + 1;
-	search_bin1.pb = search_buff1;
+	search_bin1.pv = search_buff1;
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;

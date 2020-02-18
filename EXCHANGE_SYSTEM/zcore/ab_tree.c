@@ -2033,12 +2033,11 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)pvalue)->cb = strlen(dn) + 4;
-		((BINARY*)pvalue)->pb = common_util_alloc(((BINARY*)pvalue)->cb);
-		if (NULL == ((BINARY*)pvalue)->pb) {
+		static_cast(BINARY *, pvalue)->pc = common_util_alloc(static_cast(BINARY *, pvalue)->cb);
+		if (static_cast(BINARY *, pvalue)->pc == nullptr)
 			return FALSE;
-		}
-		sprintf(((BINARY*)pvalue)->pb, "EX:%s", dn);
-		HX_strupper(static_cast(BINARY *, pvalue)->pb);
+		sprintf(static_cast(BINARY *, pvalue)->pc, "EX:%s", dn);
+		HX_strupper(static_cast(BINARY *, pvalue)->pc);
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_INSTANCEKEY:

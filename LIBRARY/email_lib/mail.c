@@ -1405,7 +1405,8 @@ BOOL mail_copy_children_to_slibling(MAIL *pmail_dst, MIME *pmime_dst,
 BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 {
 	unsigned int size;
-	char *ptr, *pbuff;
+	void *ptr;
+	char *pbuff;
 	STREAM tmp_stream;
 	LIB_BUFFER *pallocator;
 	size_t offset, mail_len;

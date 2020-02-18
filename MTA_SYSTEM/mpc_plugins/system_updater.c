@@ -322,7 +322,6 @@ static BOOL do_update(MAIL *pmail)
 {
 	MIME *pmime;
 	char line[1024];
-	char *ptr;
 	size_t length;
 	int blk_length;
 	int copy_result;
@@ -367,7 +366,7 @@ static BOOL do_update(MAIL *pmail)
 	}
 	stream_init(&stream, pallocator);
 	blk_length = STREAM_BLOCK_SIZE;
-	ptr = stream_getbuffer_for_writing(&stream, &blk_length);
+	void *ptr = stream_getbuffer_for_writing(&stream, &blk_length);
 	length = blk_length;
 	if (FALSE == mime_read_content(pmime, ptr, &length)) {
 		update_log("fail to read script");

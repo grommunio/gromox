@@ -288,7 +288,7 @@ static BOOL stream_append_node(STREAM *pstream)
  *		  psize [in,out]  for retrieving the size of buffer
  *	  @return			  address of buffer	   
  */
-char* stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize)
+void *stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pstream || NULL == psize) {
@@ -423,7 +423,7 @@ unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset)
  *	  @return
  *		  the address of buffer
  */
-char* stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize)
+void *stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize)
 {
 	char *ret_ptr;
 #ifdef _DEBUG_UMTA
@@ -835,7 +835,7 @@ unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size)
  */
 int stream_dump(STREAM *pstream, int fd)
 {
-	char	*pbuff;
+	void *pbuff;
 	ssize_t wr_result;
 	unsigned int size = STREAM_BLOCK_SIZE;
 
@@ -892,7 +892,6 @@ unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset)
 
 int stream_write(STREAM *pstream, const void *pbuff, size_t size)
 {
-	char *pstream_buff;
 	unsigned int buff_size, actual_size;
 	size_t offset;
 
@@ -906,7 +905,7 @@ int stream_write(STREAM *pstream, const void *pbuff, size_t size)
 	offset = 0;
 	while (offset < size) {
 		buff_size = STREAM_BLOCK_SIZE;
-		pstream_buff = stream_getbuffer_for_writing(pstream, &buff_size);
+		void *pstream_buff = stream_getbuffer_for_writing(pstream, &buff_size);
 		actual_size = (size - offset > buff_size)?buff_size:(size - offset);
 		memcpy(pstream_buff, pbuff + offset, actual_size);
 		stream_forward_writing_ptr(pstream, actual_size);
@@ -1091,7 +1090,7 @@ void stream_split_eom(STREAM *pstream, STREAM *pstream_second)
 {
 	size_t blocks, i, fake_pos;
 	unsigned int size;
-	char *pbuff;
+	void *pbuff;
 	STREAM fake_stream;
 	DOUBLE_LIST_NODE *pnode;
 	

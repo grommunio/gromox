@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/paths.h>
 #include "list_file.h"
@@ -276,7 +277,7 @@ static int connect_exmdb(const char *dir)
 		close(sockd);
 		return -1;
 	}
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pv = tmp_buff;
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		close(sockd);
 		return -1;
@@ -673,7 +674,7 @@ int main(int argc, const char **argv)
 	if (SQLITE_OK == sqlite3_prepare_v2(
 		psqlite, csql_string, -1, &pstmt, NULL )) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
-			presult = sqlite3_column_text(pstmt, 0);
+			presult = reinterpret_cast(const char *, sqlite3_column_text(pstmt, 0));
 			if (NULL == presult || 0 != strcmp(presult, "ok")) {
 				printf("new database is still "
 					"malformed, can not be fixed!\n");

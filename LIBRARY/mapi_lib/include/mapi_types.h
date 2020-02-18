@@ -198,7 +198,7 @@ typedef struct _STORE_ENTRYID {
 	/* emsmdb.dll
 	   45.4D.53.4D.44.42.2E.44.4C.4C.00.00.00.00
 	*/ 
-	uint8_t dll_name[14];
+	char dll_name[14];
 	uint32_t wrapped_flags;
 	/* Mailbox Store object:
 		1B.55.FA.20.AA.66.11.CD.9B.C8.00.AA.00.2F.C4.5A

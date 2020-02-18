@@ -1603,7 +1603,7 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 			sqlite3_finalize(pstmt1);
 			return FALSE;
 		}
-		pusername = sqlite3_column_text(pstmt1, 1);
+		pusername = reinterpret_cast(const char *, sqlite3_column_text(pstmt1, 1));
 		if ('\0' == pusername[0]) {
 			b_anonymous = TRUE;
 		} else if (0 == strcasecmp("default", pusername)) {

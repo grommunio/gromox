@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "endian_macro.h"
 #include "exmdb_client.h"
 #include "double_list.h"
@@ -293,9 +294,8 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	int process_id;
 	BINARY tmp_bin;
 	char remote_id[128];
-	char tmp_buff[1024];
 	const char *str_host;
-	uint8_t response_code;
+	uint8_t response_code, tmp_buff[1024];
 	CONNECT_REQUEST request;
 	struct sockaddr_in servaddr;
 	
@@ -679,7 +679,7 @@ int exmdb_client_delivery_message(const char *dir,
 	BINARY tmp_bin;
 	uint32_t result;
 	REMOTE_CONN *pconn;
-	char tmp_buff[1024];
+	uint8_t tmp_buff[1024];
 	DELIVERY_MESSAGE_REQUEST request;
 	
 	request.dir = dir;
@@ -729,7 +729,7 @@ int exmdb_client_check_contact_address(const char *dir,
 {
 	BINARY tmp_bin;
 	REMOTE_CONN *pconn;
-	char tmp_buff[1024];
+	uint8_t tmp_buff[1024];
 	CHECK_CONTACT_ADDRESS_REQUEST request;
 	
 	request.dir = dir;

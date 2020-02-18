@@ -367,7 +367,7 @@ int smtp_parser_threads_event_proc(int action)
 
 int smtp_parser_process(SMTP_CONTEXT *pcontext)
 {
-	char *pbuff, *line, reply_buf[1024];
+	char *line, reply_buf[1024];
 	int actual_read, ssl_errno;
 	int size = READ_BUFFER_SIZE, line_length;
 	struct timeval current_time;
@@ -408,7 +408,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 			stream_clear(&pcontext->stream);
 			size = STREAM_BLOCK_SIZE;
-			pbuff = stream_getbuffer_for_writing(&pcontext->stream, &size);
+			void *pbuff = stream_getbuffer_for_writing(&pcontext->stream, &size);
 			/* 
 			 * do not need to check the pbuff pointer because it will never
 			 * be NULL because of stream's characteristic
@@ -536,7 +536,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 
 	/*========================================================================*/
 	/* read buffer from socket into stream */
-	pbuff = stream_getbuffer_for_writing(&pcontext->stream, &size);
+	void *pbuff = stream_getbuffer_for_writing(&pcontext->stream, &size);
 	if (NULL == pbuff) {
 		smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174016, 1,
 						 &string_length);
@@ -861,8 +861,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 static BOOL smtp_parser_pass_auditor_filter(SMTP_CONTEXT *pcontext,
 	BOOL is_whole, char *reason, int length)
 {
-	char *pbuff, *smtp_reply_str;
-	char *ptls_buf, *parsed_buf;
+	char *ptls_buf, *parsed_buf, *smtp_reply_str;
 	const char *boundary_string; 
 	MIME_FIELD mime_field;
 	int audit_result, size;
@@ -881,7 +880,7 @@ static BOOL smtp_parser_pass_auditor_filter(SMTP_CONTEXT *pcontext,
 		/* retrieve mime head information from buffer */
 		size = STREAM_BLOCK_SIZE;
 		current_offset = 0;
-		pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
+		char *pbuff = static_cast(char *, stream_getbuffer_for_reading(&pcontext->stream, &size));
 		while (current_offset < size && (parsed_length=parse_mime_field(pbuff + 
 			  current_offset, size - current_offset, &mime_field))) {
 			/* check if mime head is over */

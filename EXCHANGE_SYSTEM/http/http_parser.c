@@ -368,19 +368,17 @@ static int http_parser_reconstruct_stream(
 {
 	int size;
 	int size1;
-	char *pbuff;
-	char *pbuff1;
 	int size1_used;
 	int size_copied;
 	
 	stream_init(pstream_dst, blocks_allocator_get_allocator());
 	size = STREAM_BLOCK_SIZE;
-	pbuff = stream_getbuffer_for_reading(pstream_src, &size);
+	void *pbuff = stream_getbuffer_for_reading(pstream_src, &size);
 	if (NULL == pbuff) {
 		return 0;
 	}
 	size1 = STREAM_BLOCK_SIZE;
-	pbuff1 = stream_getbuffer_for_writing(pstream_dst, &size1);
+	void *pbuff1 = stream_getbuffer_for_writing(pstream_dst, &size1);
 	/*
 	 * do not need to check the pbuff pointer because it will
 	 * never be NULL because of stream's characteristic
@@ -428,7 +426,7 @@ int http_parser_process(HTTP_CONTEXT *pcontext)
 {
 	int result;
 	char *line;
-	char *pbuff;
+	void *pbuff;
 	int tmp_len;
 	int tmp_len1;
 	char *ptoken;

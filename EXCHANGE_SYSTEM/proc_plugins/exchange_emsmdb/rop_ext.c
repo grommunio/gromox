@@ -4298,8 +4298,8 @@ int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int rop_ext_make_rpc_ext(const uint8_t *pbuff_in, uint32_t in_len,
-	const ROP_BUFFER *prop_buff, uint8_t *pbuff_out, uint32_t *pout_len)
+int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
+    const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len)
 {
 	int i;
 	int status;

@@ -386,8 +386,7 @@ static BOOL proxy_preproc(int context_id)
 	return TRUE;
 }
 
-static int read_header(PROXY_CONTEXT *pcontext,
-	uint8_t *pbuff, int length)
+static int read_header(PROXY_CONTEXT *pcontext, void *pbuff, int length)
 {
 	int offset;
 	int tv_msec;

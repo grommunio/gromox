@@ -81,7 +81,7 @@ typedef struct _HTTP_CONTEXT {
 	int					sched_stat;
 	STREAM				stream_in;			/* stream for reading */
 	STREAM				stream_out;			/* stream for writing */
-	char				*write_buff;
+	void *write_buff;
 	int					write_offset;
 	int					write_length;
 	BOOL				b_close;			/* Connection MIME Header for indicating closing */

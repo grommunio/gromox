@@ -4,10 +4,7 @@
 
 
 int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r);
-
-int rop_ext_make_rpc_ext(const uint8_t *pbuff_in, uint32_t in_len,
-	const ROP_BUFFER *prop_buff, uint8_t *pbuff_out, uint32_t *pout_len);
-
+extern int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len, const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len);
 void rop_ext_set_rhe_flag_last(uint8_t *pdata, uint32_t last_offset);
 
 int rop_ext_push_rop_response(EXT_PUSH *pext,

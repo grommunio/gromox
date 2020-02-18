@@ -694,7 +694,7 @@ static int connect_exmdb(const char *dir)
 		close(sockd);
 		return -1;
 	}
-	tmp_bin.pb = tmp_buff;
+	tmp_bin.pv = tmp_buff;
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		close(sockd);
 		return -1;
@@ -1639,7 +1639,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			"\x74\xC5\xB7\x10\x1A\x82\xE0\x08", 16);
 		globalobjectid.creationtime = rop_util_unix_to_nttime(cur_time);
 		globalobjectid.data.cb = 16;
-		globalobjectid.data.pb = tmp_buff1;
+		globalobjectid.data.pv = tmp_buff1;
 		guid = guid_random_new();
 		ext_buffer_push_init(&ext_push, tmp_buff1, 16, 0);
 		ext_buffer_push_guid(&ext_push, &guid);

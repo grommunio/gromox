@@ -5,6 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "pcl.h"
 #include "ical.h"
 #include "util.h"
@@ -277,7 +278,7 @@ BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	search_bin.cb = snprintf(search_buff, 1024, "EX:%s", essdn_buff) + 1;
-	search_bin.pb = search_buff;
+	search_bin.pv = search_buff;
 	propval_buff[6].proptag = PROP_TAG_SENDEREMAILADDRESS;
 	propval_buff[6].pvalue = essdn_buff;
 	propval_buff[7].proptag = PROP_TAG_SENDERNAME;
@@ -305,7 +306,7 @@ BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 		strcpy(tmp_display1, tmp_display);
 	}
 	search_bin1.cb = snprintf(search_buff1, 1024, "EX:%s", essdn_buff1) + 1;
-	search_bin1.pb = search_buff1;
+	search_bin1.pv = search_buff1;
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
@@ -3332,7 +3333,7 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 	
 	pinfo = zarafa_server_get_info();
 	mail_init(&imail, g_mime_pool);
-	if (FALSE == mail_retrieve(&imail, peml_bin->pb, peml_bin->cb)) {
+	if (!mail_retrieve(&imail, peml_bin->pc, peml_bin->cb)) {
 		mail_free(&imail);
 		return NULL;
 	}
@@ -3388,11 +3389,8 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 	}
 	ical_free(&ical);
 	pical_bin->cb = strlen(tmp_buff);
-	pical_bin->pb = common_util_dup(tmp_buff);
-	if (NULL == pical_bin->pb) {
-		return FALSE;
-	}
-	return TRUE;
+	pical_bin->pc = common_util_dup(tmp_buff);
+	return pical_bin->pc != nullptr ? TRUE : FALSE;
 }
 
 MESSAGE_CONTENT* common_util_ical_to_message(
@@ -3457,13 +3455,12 @@ BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
 		vcard_free(&vcard);
 		return FALSE;
 	}
-	if (FALSE == vcard_serialize(&vcard,
-		pvcf_bin->pb, VCARD_MAX_BUFFER_LEN)) {
+	if (!vcard_serialize(&vcard, pvcf_bin->pc, VCARD_MAX_BUFFER_LEN)) {
 		vcard_free(&vcard);
 		return FALSE;	
 	}
 	vcard_free(&vcard);
-	pvcf_bin->cb = strlen(pvcf_bin->pb);
+	pvcf_bin->cb = strlen(pvcf_bin->pc);
 	return TRUE;
 }
 	

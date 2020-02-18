@@ -259,7 +259,7 @@ void mod_fastcgi_free()
 }
 
 static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
-    const uint8_t *pname, const uint8_t *pvalue)
+    const char *pname, const char *pvalue)
 {
 	int status;
 	uint32_t tmp_len;
@@ -286,11 +286,11 @@ static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_array_uint8(pndr, pname, name_len);
+	status = ndr_push_array_uint8(pndr, reinterpret_cast(const uint8_t *, pname), name_len);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_array_uint8(pndr, pvalue, val_len);
+	return ndr_push_array_uint8(pndr, reinterpret_cast(const uint8_t *, pvalue), val_len);
 }
 
 static int mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
@@ -401,7 +401,7 @@ static int mod_fastcgi_push_params_end(NDR_PUSH *pndr)
 }
 
 static int mod_fastcgi_push_stdin(NDR_PUSH *pndr,
-	uint8_t *pbuff, uint16_t length)
+    const void *pbuff, uint16_t length)
 {
 	int status;
 	
@@ -1112,7 +1112,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 {
 	int tmp_len;
-	char *pbuff;
+	void *pbuff;
 	int cli_sockd;
 	int ndr_length;
 	int context_id;
@@ -1276,7 +1276,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 {
 	int size;
 	int tmp_len;
-	char *pbuff;
+	void *pbuff;
 	char *ptoken;
 	char tmp_buff[1024];
 	
@@ -1406,7 +1406,7 @@ CHUNK_BEGIN:
 }
 
 static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
-	uint8_t *pbuff, int length)
+    void *pbuff, int length)
 {
 	int offset;
 	int tv_msec;
@@ -1422,7 +1422,7 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 			return FALSE;
 		}
 		read_len = read(pfast_context->cli_sockd,
-				pbuff + offset, length - offset);
+				static_cast(char *, pbuff) + offset, length - offset);
 		if (read_len <= 0) {
 			return FALSE;
 		}
@@ -1463,20 +1463,15 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 {
 	int tmp_len;
-	uint8_t *pbody;
 	time_t cur_time;
-	uint8_t *ptoken;
-	uint8_t *ptoken1;
 	struct tm tmp_tm;
 	NDR_PULL ndr_pull;
-	char dstring[128];
+	char dstring[128], tmp_buff[80000], response_buff[65536];
+	char status_line[1024], *pbody, *ptoken, *ptoken1;
 	RECORD_HEADER header;
 	uint8_t header_buff[8];
-	uint8_t tmp_buff[80000];
 	uint32_t response_offset;
 	FCGI_STDSTREAM std_stream;
-	uint8_t status_line[1024];
-	uint8_t response_buff[65536];
 	FCGI_ENDREQUESTBODY end_request;
 	
 	if (TRUE == phttp->pfast_context->b_header &&
