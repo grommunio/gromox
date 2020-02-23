@@ -32,6 +32,7 @@ if (0 != strcasecmp($_SERVER['REQUEST_METHOD'], "POST")) {
 }
 
 $xml_in = file_get_contents("php://input");
+error_log("Autodiscover Request:\n" . $xml_in, 0);
 $xml_request = simplexml_load_string($xml_in);
 
 if (0 != strcasecmp($xml_request->getName(), "Autodiscover")) {
@@ -226,8 +227,9 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$publicfolder->addChild('SmtpAddress', 'public.folder.root' . substr($email_address, strpos($email_address, "@")));
 	}
 }
-header("Content-Type: text/xml; charset=utf-8");
+error_log("Autodiscover Response:\n" . $Autodiscover->asXML(), 0);
 
+header("Content-Type: text/xml; charset=utf-8");
 print $Autodiscover->asXML();
 
 exit;
