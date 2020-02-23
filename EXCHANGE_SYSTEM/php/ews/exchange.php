@@ -496,10 +496,13 @@ $server = new SoapServer(NULL, array('uri' => $_SERVER['PHP_SELF']));
 
 $server->setClass('ExchangeWebServices'); 
 $server->addFunction(SOAP_FUNCTIONS_ALL);
-$server->handle();
-header_remove('Content-Length');
-ob_end_clean();
-ob_start();
-echo $soap_out;
 
+ob_start();
+$server->handle();
+ob_end_clean();
+
+error_log("EWS response:\n" . $soap_out, 0);
+$len=strlen($soap_out);
+header("Content-Length: ".$len);
+echo $soap_out;
 ?>
