@@ -147,7 +147,7 @@ mkdir /var/tls
 /var/medusa/midb.cfg
 /var/medusa/zcore.cfg
 /var/herculiz/config/delivery/exmdb_local.cfg
-#also change orgnization of section "exchange" in /var/medusa/php/config/config.ini
+#also change organization of section "exchange" in /var/medusa/php/config/config.ini
 
 #if you want to modify DEFAULT_TIMEZONE, please find them in below files and set to the same value!
 /var/medusa/config/midb.cfg

@@ -42,10 +42,10 @@ function username_to_essdn($info)
 	if (!isset($db_config)) {
 		die("cannot find [exchange] section in config file");
 	}
-	if (!isset($db_config['orgnization'])) {
-		die("cannot find orgnization under [exchange] in config file");
+	if (!isset($db_config['organization'])) {
+		die("cannot find organization under [exchange] in config file");
 	}
-	$essdn = "/o=" . $db_config['orgnization'] . "/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=";
+	$essdn = "/o=" . $db_config['organization'] . "/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=";
 	$int_bytes = pack("V", $info['did']);
 	$essdn .= bin2hex($int_bytes);
 	$int_bytes = pack("V", $info['uid']);
@@ -96,10 +96,10 @@ function publicfolder_to_essdn($info)
 	if (!isset($db_config)) {
 		die("cannot find [exchange] section in config file");
 	}
-	if (!isset($db_config['orgnization'])) {
-		die("cannot find orgnization under [exchange] in config file");
+	if (!isset($db_config['organization'])) {
+		die("cannot find organization under [exchange] in config file");
 	}
-	$essdn = "/o=" . $db_config['orgnization'] . "/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=";
+	$essdn = "/o=" . $db_config['organization'] . "/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=";
 	$int_bytes = pack("V", $info['did']);
 	$essdn .= bin2hex($int_bytes);
 	$essdn .= "00000000-public.folder.root";
@@ -155,10 +155,10 @@ function get_server_dn($server_name)
 	if (!isset($db_config)) {
 		die("cannot find [exchange] section in config file");
 	}
-	if (!isset($db_config['orgnization'])) {
-		die("cannot find orgnization under [exchange] in config file");
+	if (!isset($db_config['organization'])) {
+		die("cannot find organization under [exchange] in config file");
 	}
-	$essdn = "/o=" . $db_config['orgnization'] . "/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn=" . $server_name;
+	$essdn = "/o=" . $db_config['organization'] . "/ou=Exchange Administrative Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers/cn=" . $server_name;
 	return $essdn;
 }
 
