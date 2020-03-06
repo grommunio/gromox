@@ -8,6 +8,10 @@
 #include "array.h"
 #include "single_list.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void system_services_init(void);
 extern int system_services_run(void);
 extern int system_services_stop(void);
@@ -28,3 +32,7 @@ extern int (*system_services_check_cdn_user)(const char*);
 extern int (*system_services_create_cdn_user)(const char*);
 extern void (*system_services_broadcast_event)(const char*);
 extern void (*system_services_log_info)(int, const char *, ...);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

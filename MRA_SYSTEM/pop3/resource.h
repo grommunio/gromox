@@ -37,6 +37,10 @@ enum {
     POP3_CODE_COUNT
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void resource_init(const char *cfg1, const char *cfg2);
 extern void resource_free(void);
 extern int resource_run(void);
@@ -48,3 +52,7 @@ extern BOOL resource_set_integer(const char *key, int value);
 extern BOOL resource_set_string(const char *key, const char *value);
 char* resource_get_pop3_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_pop3_code_table(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

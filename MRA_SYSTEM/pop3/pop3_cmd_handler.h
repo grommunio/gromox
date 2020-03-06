@@ -9,6 +9,10 @@ enum{
 	DISPATCH_LIST
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int pop3_cmd_handler_capa(const char *cmd_line, int line_length,
 	POP3_CONTEXT *pcontext);
 
@@ -50,3 +54,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 
 int pop3_cmd_handler_else(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
