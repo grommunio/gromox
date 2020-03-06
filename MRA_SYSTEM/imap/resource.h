@@ -97,6 +97,10 @@ enum {
 	IMAP_CODE_2200010
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void resource_init(const char *cfg1, const char *cfg2);
 extern void resource_free(void);
 extern int resource_run(void);
@@ -116,3 +120,7 @@ extern BOOL resource_get_digest_integer(const char *src, const char *tag, long *
 extern void resource_set_digest_string(char *src, int length, const char *tag, const char *value);
 extern void resource_set_digest_integer(char *src, int length, const char *tag, long value);
 extern const char *resource_get_error_string(int errno);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
