@@ -8,6 +8,10 @@ typedef struct _ALLOC_CONTEXT {
 	size_t total;
 } ALLOC_CONTEXT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void alloc_context_init(ALLOC_CONTEXT *pcontext);
 
 void* alloc_context_alloc(ALLOC_CONTEXT *pcontext, size_t size);
