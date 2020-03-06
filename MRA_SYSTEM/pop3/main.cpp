@@ -6,6 +6,7 @@
 #include <libHX/option.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include "config_file.h"
 #include "listener.h" 
 #include "resource.h" 
@@ -18,7 +19,6 @@
 #include "service.h" 
 #include "system_services.h"
 #include "util.h"
-#include "vstack.h"
 #include "lib_buffer.h"
 #include <pwd.h>
 #include <stdio.h>
@@ -28,11 +28,13 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+using namespace gromox;
+
 BOOL g_notify_stop = FALSE;
 static char *opt_config_file;
 
 static struct HXoption g_options_table[] = {
-	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -47,8 +49,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmrasvc_user_filter.so",
 	NULL,
 };
-
-typedef void (*STOP_FUNC)();
 
 static void term_handler(int signo);
 
@@ -70,12 +70,7 @@ int main(int argc, const char **argv)
 	struct passwd *puser_pass;
 	const char *str_val;
 	char temp_buff[256];
-	LIB_BUFFER *allocator;
-	VSTACK stop_stack;
-	STOP_FUNC *stop, func_ptr;
 
-	allocator = vstack_allocator_init(sizeof(STOP_FUNC), 50, FALSE);    
-	vstack_init(&stop_stack, allocator, sizeof(STOP_FUNC), 50);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	signal(SIGPIPE, SIG_IGN);
@@ -83,12 +78,10 @@ int main(int argc, const char **argv)
 	resource_init(opt_config_file, config_default_path("pop3.cfg"));
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	}
-	func_ptr    = (STOP_FUNC)resource_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)resource_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_1 = make_scope_success(resource_free);
+	auto cleanup_2 = make_scope_success(resource_stop);
 	
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 110; 
@@ -321,10 +314,10 @@ int main(int argc, const char **argv)
 	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
-		service_plugin_list = const_cast(const char *const *, read_file_by_line(str_value));
+		service_plugin_list = const_cast<const char *const *>(read_file_by_line(str_value));
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
@@ -362,19 +355,16 @@ int main(int argc, const char **argv)
 																			
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: listener start OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)listener_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)listener_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_3 = make_scope_success(listener_free);
+	auto cleanup_4 = make_scope_success(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	}
 	if (rl.rlim_cur < 2*context_num + 128 ||
 		rl.rlim_max < 2*context_num + 128) {
@@ -389,16 +379,16 @@ int main(int argc, const char **argv)
 		puser_pass = getpwnam(user_name);
 		if (NULL == puser_pass) {
 			printf("[system]: no such user \"%s\"\n", user_name);
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 		
 		if (0 != setgid(puser_pass->pw_gid)) {
 			printf("[system]: can not run group of \"%s\"\n", user_name);
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 		if (0 != setuid(puser_pass->pw_uid)) {
 			printf("[system]: can not run as \"%s\"\n", user_name);
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 	service_init("pop3", context_num, service_plugin_path,
@@ -410,57 +400,45 @@ int main(int argc, const char **argv)
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
 		printf("[system]: failed to run service\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
 		printf("[system]: run service OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)service_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)service_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_5 = make_scope_success(service_free);
+	auto cleanup_6 = make_scope_success(service_stop);
 	
 	system_services_init();
 	if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run system service OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)system_services_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)system_services_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_7 = make_scope_success(system_services_free);
+	auto cleanup_8 = make_scope_success(system_services_stop);
 
 	units_allocator_init(context_num * context_aver_units);
 	if (0 != units_allocator_run()) { 
 		printf("[system]: can not run units allocator\n"); 
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run units allocator OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)units_allocator_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)units_allocator_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_9 = make_scope_success(units_allocator_free);
+	auto cleanup_10 = make_scope_success(units_allocator_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     
  
 	if (0 != blocks_allocator_run()) { 
 		printf("[system]: can not run blocks allocator\n"); 
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run blocks allocator OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)blocks_allocator_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)blocks_allocator_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_11 = make_scope_success(blocks_allocator_free);
+	auto cleanup_12 = make_scope_success(blocks_allocator_stop);
 
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_stls,
@@ -469,68 +447,54 @@ int main(int argc, const char **argv)
  
 	if (0 != pop3_parser_run()) { 
 		printf("[system]: failed to run pop3 parser\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run pop3 parser OK\n");
 	}
-																	  
-	func_ptr    = (STOP_FUNC)pop3_parser_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)pop3_parser_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_13 = make_scope_success(pop3_parser_free);
+	auto cleanup_14 = make_scope_success(pop3_parser_stop);
 	
 	contexts_pool_init(pop3_parser_get_contexts_list(),  
 		context_num, sizeof(POP3_CONTEXT),
-		(void*)pop3_parser_get_context_socket,
-		(void*)pop3_parser_get_context_timestamp,
+		reinterpret_cast<int (*)(void *)>(pop3_parser_get_context_socket),
+		reinterpret_cast<timeval (*)(void *)>(pop3_parser_get_context_timestamp),
 		thread_charge_num, pop3_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 
 		printf("[system]: failed to run contexts pool\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run contexts pool OK\n");
 	}
-	func_ptr    = (STOP_FUNC)contexts_pool_free; 
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)contexts_pool_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
- 
+	auto cleanup_15 = make_scope_success(contexts_pool_free);
+	auto cleanup_16 = make_scope_success(contexts_pool_stop);
 
 	console_server_init(console_server_ip, console_server_port);
 
 	if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run console server OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)console_server_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-
-	func_ptr    = (STOP_FUNC)console_server_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-
+	auto cleanup_17 = make_scope_success(console_server_free);
+	auto cleanup_18 = make_scope_success(console_server_stop);
 	
-	threads_pool_init(thread_init_num, (void*)pop3_parser_process);
-
+	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(pop3_parser_process));
 	threads_pool_register_event_proc(pop3_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
 		printf("[system]: failed to run threads pool\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run threads pool OK\n");
 	}
-	func_ptr    = (STOP_FUNC)threads_pool_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)threads_pool_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_19 = make_scope_success(threads_pool_free);
+	auto cleanup_20 = make_scope_success(threads_pool_stop);
 
 	/* accept the connection */
 	if (0 != listerner_trigger_accept()) {
 		printf("[system]: fail trigger accept\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	}
 	
 	retcode = EXIT_SUCCESS;
@@ -539,17 +503,6 @@ int main(int argc, const char **argv)
 		sleep(3);
 	}
 	listener_stop_accept();
-	
-EXIT_PROGRAM:
-
-	while (FALSE == vstack_is_empty(&stop_stack)) {
-		stop = vstack_get_top(&stop_stack);
-		(*stop)();
-		vstack_pop(&stop_stack);
-	}
-
-	vstack_free(&stop_stack);
-	vstack_allocator_free(allocator);
 	return retcode;
 } 
 
