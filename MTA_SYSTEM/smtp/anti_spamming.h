@@ -47,6 +47,10 @@ typedef int (*AUDITOR_FUNCTION)(int, MAIL_ENTITY*, CONNECTION*, char*, int);
 typedef int (*FILTER_FUNCTION)(int, int, MAIL_BLOCK*, char*, int);
 typedef int (*STATISTIC_FUNCTION)(int, MAIL_WHOLE*, CONNECTION*, char*, int);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void anti_spamming_init(const char *path, const char *const *names, bool ignerr);
 extern int anti_spamming_run(void);
 int anti_spamming_unload_library(const char* path);
@@ -77,3 +81,7 @@ void anti_spamming_enum_plugins(ENUM_PLUGINS enum_func);
 void anti_spamming_threads_event_proc(int action);
 extern int anti_spamming_stop(void);
 extern void anti_spamming_free(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -8,6 +8,10 @@ enum{
 
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void system_services_init(void);
 extern int system_services_run(void);
 extern int system_services_stop(void);
@@ -30,3 +34,7 @@ extern BOOL (*system_services_auth_retrieve)(int, char*, int);
 extern void (*system_services_auth_clear)(int);
 extern void (*system_services_etrn_process)(const char*, int, char*, int);
 extern void (*system_services_vrfy_process)(const char*, int, char*, int);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
