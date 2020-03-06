@@ -126,6 +126,10 @@ typedef struct _RPC_OUT_CHANNEL {
 	int					channel_stat;
 } RPC_OUT_CHANNEL;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void http_parser_init(int context_num, unsigned int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,
@@ -171,3 +175,7 @@ void http_parser_vconnection_async_reply(const char *host,
 
 void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive);
 extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

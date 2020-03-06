@@ -133,6 +133,10 @@ typedef struct _BLOB_NODE {
 	DATA_BLOB blob;
 } BLOB_NODE;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void pdu_processor_init(int connection_num, int connection_ratio,
 	const char *netbios_name, const char *dns_name, const char *dns_domain,
 	BOOL header_signing, size_t max_request_mem, const char *plugins_path,
@@ -189,3 +193,7 @@ void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
 extern BOOL pdu_processor_rpc_new_environment(void);
 extern void pdu_processor_rpc_free_environment(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -43,6 +43,10 @@ struct _HTTP_CONTEXT;
 
 typedef struct _HTTP_CONTEXT HTTP_CONTEXT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void mod_fastcgi_init(int context_num, const char *list_path,
 	uint64_t cache_size, uint64_t max_size, int exec_timeout);
 extern int mod_fastcgi_run(void);
@@ -63,3 +67,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp);
 int mod_fastcgi_check_response(HTTP_CONTEXT *phttp);
 
 BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
