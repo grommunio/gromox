@@ -38,6 +38,10 @@ typedef struct _MESSAGE {
 	char				*envelop_rcpt;		/* envelop rcpt to */
 } MESSAGE;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void message_dequeue_init(const char *path, int tapse_units,
 	size_t max_memory);
 extern int message_dequeue_run(void);
@@ -49,3 +53,7 @@ void message_dequeue_put(MESSAGE *pmessage);
 int message_dequeue_get_param(int param);
 
 void message_dequeue_save(MESSAGE *pmessage);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
