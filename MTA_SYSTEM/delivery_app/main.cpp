@@ -6,6 +6,7 @@
 #include <libHX/option.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include "config_file.h"
 #include "message_dequeue.h" 
 #include "console_server.h" 
@@ -14,7 +15,6 @@
 #include "lib_buffer.h"
 #include "resource.h" 
 #include "service.h" 
-#include "vstack.h"
 #include "util.h"
 #include <sys/types.h>
 #include <signal.h>
@@ -22,10 +22,12 @@
 #include <stdio.h>
 #include <pwd.h>
 
+using namespace gromox;
+
 BOOL g_notify_stop = FALSE;
 static char *opt_config_file;
 static struct HXoption g_options_table[] = {
-	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -99,12 +101,7 @@ int main(int argc, const char **argv)
     int console_server_port; 
     struct passwd *puser_pass;
 	BOOL domainlist_valid;
-    LIB_BUFFER *allocator;
-    VSTACK stop_stack;
-    STOP_FUNC *stop, func_ptr;
 
-    allocator    = vstack_allocator_init(sizeof(STOP_FUNC), 50, FALSE);    
-    vstack_init(&stop_stack, allocator, sizeof(STOP_FUNC), 50);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
     signal(SIGPIPE, SIG_IGN);
@@ -112,12 +109,10 @@ int main(int argc, const char **argv)
 	resource_init(opt_config_file, config_default_path("delivery.cfg"));
     if (0 != resource_run()) { 
         printf("[system]: fail to load resource\n"); 
-        goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
     }
-    func_ptr    = (STOP_FUNC)resource_free;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-    func_ptr    = (STOP_FUNC)resource_stop;
-    vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_1 = make_scope_success(resource_free);
+	auto cleanup_2 = make_scope_success(resource_stop);
 
 	str_val = resource_get_string("HOST_ID");
 	if (str_val == NULL) {
@@ -265,10 +260,10 @@ int main(int argc, const char **argv)
 	const char *str_value = resource_get_string("MPC_PLUGIN_LIST");
 	const char *const *mpc_plugin_list = NULL;
 	if (str_value != NULL) {
-		mpc_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		mpc_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
 		if (mpc_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 	str_value = resource_get_string("MPC_PLUGIN_IGNORE_ERRORS");
@@ -284,10 +279,10 @@ int main(int argc, const char **argv)
 	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
-		service_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
@@ -326,16 +321,16 @@ int main(int argc, const char **argv)
         puser_pass = getpwnam(user_name);
         if (NULL == puser_pass) {
 			printf("[system]: no such user \"%s\"\n", user_name);
-            goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
         }
         
         if (0 != setgid(puser_pass->pw_gid)) {
 			printf("[system]: can not run group of \"%s\"\n", user_name);
-            goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
         }
         if (0 != setuid(puser_pass->pw_uid)) {
 			printf("[system]: can not run as \"%s\"\n", user_name);
-            goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
         }
     }
 
@@ -348,61 +343,46 @@ int main(int argc, const char **argv)
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
 		printf("[system]: failed to run service\n");
-        goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
     } else {
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
         printf("[system]: run service OK\n");
     }
+	auto cleanup_3 = make_scope_success(service_free);
+	auto cleanup_4 = make_scope_success(service_stop);
 
-    func_ptr    = (STOP_FUNC)service_free;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-    func_ptr    = (STOP_FUNC)service_stop;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-	
     system_services_init();
     if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
-        goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
     } else {
         printf("[system]: run system service OK\n");
     }
+	auto cleanup_5 = make_scope_success(system_services_free);
+	auto cleanup_6 = make_scope_success(system_services_stop);
 
-    func_ptr    = (STOP_FUNC)system_services_free;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-    func_ptr    = (STOP_FUNC)system_services_stop;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-
-                            
     message_dequeue_init(dequeue_path, tape_size, max_mem);
  
     if (0 != message_dequeue_run()) { 
 		printf("[system]: failed to run message dequeue\n");
-        goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
     } else {
         printf("[system]: run message dequeue OK\n");
     }
-                                                                      
-    func_ptr    = (STOP_FUNC)message_dequeue_free;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-    func_ptr    = (STOP_FUNC)message_dequeue_stop;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-	
+	auto cleanup_7 = make_scope_success(message_dequeue_free);
+	auto cleanup_8 = make_scope_success(message_dequeue_stop);
 
     console_server_init(console_server_ip, console_server_port);
 
     if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");
-        goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
     } else {
         printf("[system]: run console server OK\n");
     }
-
-    func_ptr    = (STOP_FUNC)console_server_free;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-
-    func_ptr    = (STOP_FUNC)console_server_stop;
-    vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_9 = make_scope_success(console_server_free);
+	auto cleanup_10 = make_scope_success(console_server_stop);
 
     transporter_init(mpc_plugin_path, mpc_plugin_list != NULL ?
 		mpc_plugin_list : g_dfl_mpc_plugins, threads_min, threads_max,
@@ -414,34 +394,20 @@ int main(int argc, const char **argv)
 		printf(" ---------------------------- mpc plugins end"
 			"-----------------------------\n");
 		printf("[system]: failed to run transporter\n");
-        goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
     } else {
 		printf("----------------------------- mpc plugins end"
 			"-----------------------------\n");
         printf("[system]: run transporter OK\n");
     }
-
-    func_ptr    = (STOP_FUNC)transporter_free;
-    vstack_push(&stop_stack, (void*)&func_ptr);
-    func_ptr    = (STOP_FUNC)transporter_stop;
-    vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_11 = make_scope_success(transporter_free);
+	auto cleanup_12 = make_scope_success(transporter_stop);
 
 	retcode = EXIT_SUCCESS;
     printf("[system]: DELIVERY APP is now running\n");
     while (FALSE == g_notify_stop) {
         sleep(3);
     }
-    
-EXIT_PROGRAM:
-
-    while (FALSE == vstack_is_empty(&stop_stack)) {
-        stop = vstack_get_top(&stop_stack);
-        (*stop)();
-        vstack_pop(&stop_stack);
-    }
-
-    vstack_free(&stop_stack);
-    vstack_allocator_free(allocator);
 	return retcode;
 } 
 
