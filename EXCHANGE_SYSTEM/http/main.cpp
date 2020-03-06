@@ -5,9 +5,9 @@
 #include <libHX/option.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include "config_file.h"
 #include "util.h"
-#include "vstack.h"
 #include "service.h"
 #include "listener.h"
 #include "resource.h"
@@ -33,11 +33,13 @@
 
 #define PDU_PROCESSOR_RATIO			10
 
+using namespace gromox;
+
 BOOL g_notify_stop = FALSE;
 static char *opt_config_file;
 
 static struct HXoption g_options_table[] = {
-	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -69,17 +71,13 @@ static const char *const g_dfl_svc_plugins[] = {
 	NULL,
 };
 
-typedef void (*STOP_FUNC)();
-
 static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 {
 	struct rlimit rl;
-	VSTACK stop_stack;
 	const char *str_val;
 	char temp_buff[256];
-	LIB_BUFFER *allocator;
 	uint64_t hpm_max_size;
 	size_t max_request_mem;
 	int retcode = EXIT_FAILURE, block_interval_auth;
@@ -87,7 +85,6 @@ int main(int argc, const char **argv)
 	uint64_t hpm_cache_size;
 	int fastcgi_exec_timeout;
 	uint64_t fastcgi_max_size;
-	STOP_FUNC *stop, func_ptr;
 	struct passwd *puser_pass;
 	char cache_list_path[256];
 	char rewrite_list_path[256];
@@ -105,10 +102,6 @@ int main(int argc, const char **argv)
 	int thread_init_num, thread_charge_num, http_support_ssl;
 	const char *certificate_path, *cb_passwd, *private_key_path;
 	
-	
-
-	allocator = vstack_allocator_init(sizeof(STOP_FUNC), 50, FALSE);    
-	vstack_init(&stop_stack, allocator, sizeof(STOP_FUNC), 50);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	signal(SIGPIPE, SIG_IGN);
@@ -117,12 +110,10 @@ int main(int argc, const char **argv)
  
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	}
-	func_ptr    = (STOP_FUNC)resource_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)resource_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_1 = make_scope_success(resource_free);
+	auto cleanup_2 = make_scope_success(resource_stop);
 	
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 80; 
@@ -337,10 +328,10 @@ int main(int argc, const char **argv)
 	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *proc_plugin_list = NULL;
 	if (str_value != NULL) {
-		proc_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		proc_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
 		if (proc_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
@@ -356,10 +347,10 @@ int main(int argc, const char **argv)
 	str_value = resource_get_string("HPM_PLUGIN_LIST");
 	const char *const *hpm_plugin_list = NULL;
 	if (str_value != NULL) {
-		hpm_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		hpm_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
 		if (hpm_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 	str_value = resource_get_string("HPM_PLUGIN_IGNORE_ERRORS");
@@ -403,10 +394,10 @@ int main(int argc, const char **argv)
 	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
-		service_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -486,19 +477,16 @@ int main(int argc, const char **argv)
 																			
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: listener start OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)listener_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)listener_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_3 = make_scope_success(listener_free);
+	auto cleanup_4 = make_scope_success(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	}
 	if (rl.rlim_cur < 5*context_num + 256 ||
 		rl.rlim_max < 5*context_num + 256) {
@@ -513,16 +501,16 @@ int main(int argc, const char **argv)
 		puser_pass = getpwnam(user_name);
 		if (NULL == puser_pass) {
 			printf("[system]: no such user \"%s\"\n", user_name);
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 		
 		if (0 != setgid(puser_pass->pw_gid)) {
 			printf("[system]: can not run group of \"%s\"\n", user_name);
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 		if (0 != setuid(puser_pass->pw_uid)) {
 			printf("[system]: can not run as \"%s\"\n", user_name);
-			goto EXIT_PROGRAM;
+			return EXIT_FAILURE;
 		}
 	}
 	service_init("http", context_num, service_plugin_path,
@@ -534,45 +522,35 @@ int main(int argc, const char **argv)
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
 		printf("[system]: failed to run service\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
 		printf("[system]: run service OK\n");
 	}
+	auto cleanup_5 = make_scope_success(service_free);
+	auto cleanup_6 = make_scope_success(service_stop);
 
-	func_ptr    = (STOP_FUNC)service_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)service_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	
 	system_services_init();
 	if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run system service OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)system_services_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)system_services_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-
+	auto cleanup_7 = make_scope_success(system_services_free);
+	auto cleanup_8 = make_scope_success(system_services_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     
  
 	if (0 != blocks_allocator_run()) { 
 		printf("[system]: can not run blocks allocator\n"); 
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run blocks allocator OK\n");
 	}
-
-	func_ptr    = (STOP_FUNC)blocks_allocator_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)blocks_allocator_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_9 = make_scope_success(blocks_allocator_free);
+	auto cleanup_10 = make_scope_success(blocks_allocator_stop);
 
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem, proc_plugin_path,
@@ -584,18 +562,15 @@ int main(int argc, const char **argv)
 		printf("----------------------------- proc plugins end "
 		   "-----------------------------\n");
 		printf("[system]: can not run pdu processor\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("----------------------------- proc plugins end "
 		   "-----------------------------\n");
 		printf("[system run pdu processor OK\n");
 	}
-	
-	func_ptr	= (STOP_FUNC)pdu_processor_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr	= (STOP_FUNC)pdu_processor_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	
+	auto cleanup_11 = make_scope_success(pdu_processor_free);
+	auto cleanup_12 = make_scope_success(pdu_processor_stop);
+
 	hpm_processor_init(context_num, hpm_plugin_path,
 		hpm_plugin_list != NULL ? hpm_plugin_list : g_dfl_hpm_plugins,
 		hpm_cache_size, hpm_max_size, hpmplug_ignerr);
@@ -605,61 +580,49 @@ int main(int argc, const char **argv)
 		printf("----------------------------- hpm plugins end "
 		   "-----------------------------\n");
 		printf("[system]: can not run hpm processor\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("----------------------------- hpm plugins end "
 		   "-----------------------------\n");
 		printf("[system run hpm processor OK\n");
 	}
-	
-	func_ptr	= (STOP_FUNC)hpm_processor_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr	= (STOP_FUNC)hpm_processor_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	
+	auto cleanup_13 = make_scope_success(hpm_processor_free);
+	auto cleanup_14 = make_scope_success(hpm_processor_stop);
+
 	mod_rewrite_init(rewrite_list_path);
 	
 	if (0 != mod_rewrite_run()) {
 		printf("[system]: failed to run mod rewrite\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run mod rewrite OK\n");
 	}
-	
-	func_ptr    = (STOP_FUNC)mod_rewrite_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)mod_rewrite_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	
+	auto cleanup_15 = make_scope_success(mod_rewrite_free);
+	auto cleanup_16 = make_scope_success(mod_rewrite_stop);
+
 	mod_fastcgi_init(context_num,
 		fastcgi_list_path, fastcgi_cache_size,
 		fastcgi_max_size, fastcgi_exec_timeout); 
  
 	if (0 != mod_fastcgi_run()) { 
 		printf("[system]: failed to run mod fastcgi\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run mod fastcgi OK\n");
 	}
-																	  
-	func_ptr    = (STOP_FUNC)mod_fastcgi_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)mod_fastcgi_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	
+	auto cleanup_17 = make_scope_success(mod_fastcgi_free);
+	auto cleanup_18 = make_scope_success(mod_fastcgi_stop);
+
 	mod_cache_init(context_num, cache_list_path);
 	
 	if (0 != mod_cache_run()) {
 		printf("[system]: failed to run mod cache\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run mod cache OK\n");
 	}
-	
-	func_ptr    = (STOP_FUNC)mod_cache_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)mod_cache_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_19 = make_scope_success(mod_cache_free);
+	auto cleanup_20 = make_scope_success(mod_cache_stop);
 
 	http_parser_init(context_num, http_conn_timeout,
 		http_auth_times, block_interval_auth, http_support_ssl,
@@ -667,68 +630,54 @@ int main(int argc, const char **argv)
  
 	if (0 != http_parser_run()) { 
 		printf("[system]: failed to run http parser\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run http parser OK\n");
 	}
-																	  
-	func_ptr    = (STOP_FUNC)http_parser_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)http_parser_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	
+	auto cleanup_21 = make_scope_success(http_parser_free);
+	auto cleanup_22 = make_scope_success(http_parser_stop);
+
 	contexts_pool_init(http_parser_get_contexts_list(),
 		context_num, sizeof(HTTP_CONTEXT),
-		(void*)http_parser_get_context_socket,
-		(void*)http_parser_get_context_timestamp,
+		reinterpret_cast<int (*)(void *)>(http_parser_get_context_socket),
+		reinterpret_cast<timeval (*)(void *)>(http_parser_get_context_timestamp),
 		thread_charge_num, http_conn_timeout); 
  
 	if (0 != contexts_pool_run()) { 
 		printf("[system]: failed to run contexts pool\n");
-		goto EXIT_PROGRAM; 
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run contexts pool OK\n");
 	}
-	func_ptr    = (STOP_FUNC)contexts_pool_free; 
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)contexts_pool_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
- 
+	auto cleanup_23 = make_scope_success(contexts_pool_free);
+	auto cleanup_24 = make_scope_success(contexts_pool_stop);
  
 	console_server_init(console_server_ip, console_server_port);
 
 	if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run console server OK\n");
 	}
+	auto cleanup_25 = make_scope_success(console_server_free);
+	auto cleanup_26 = make_scope_success(console_server_stop);
 
-	func_ptr    = (STOP_FUNC)console_server_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-
-	func_ptr    = (STOP_FUNC)console_server_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-
-	
-	threads_pool_init(thread_init_num, (void*)http_parser_process);
-
+	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(http_parser_process));
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
 		printf("[system]: failed to run threads pool\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run threads pool OK\n");
 	}
-	func_ptr    = (STOP_FUNC)threads_pool_free;
-	vstack_push(&stop_stack, (void*)&func_ptr);
-	func_ptr    = (STOP_FUNC)threads_pool_stop;
-	vstack_push(&stop_stack, (void*)&func_ptr);
+	auto cleanup_27 = make_scope_success(threads_pool_free);
+	auto cleanup_28 = make_scope_success(threads_pool_stop);
 
 	/* accept the connection */
 	if (0 != listerner_trigger_accept()) {
 		printf("[system]: fail trigger accept\n");
-		goto EXIT_PROGRAM;
+		return EXIT_FAILURE;
 	}
 	
 	retcode = EXIT_SUCCESS;
@@ -737,17 +686,6 @@ int main(int argc, const char **argv)
 		sleep(3);
 	}
 	listener_stop_accept();
-	
-EXIT_PROGRAM:
-
-	while (FALSE == vstack_is_empty(&stop_stack)) {
-		stop = vstack_get_top(&stop_stack);
-		(*stop)();
-		vstack_pop(&stop_stack);
-	}
-
-	vstack_free(&stop_stack);
-	vstack_allocator_free(allocator);
 	return retcode;
 } 
 
