@@ -73,8 +73,7 @@ BOOL esmtp_auth_login(const char *username, const char *password, char *reason,
 	size_t encode_len;
 	size_t command_len;
 	int	times, port;
-	int sockd, opt, auth_type, ireason;
-	int val_opt, opt_len;
+	int sockd, opt, auth_type, ireason, val_opt;
 	struct sockaddr_in servaddr;
 	struct timeval tv;
 	fd_set myset;
@@ -113,7 +112,7 @@ RECONNECT:
 			FD_ZERO(&myset);
 			FD_SET(sockd, &myset);
 			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
+				socklen_t opt_len = sizeof(int);
 				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
 					&opt_len) >= 0) {
 					if (0 == val_opt) {

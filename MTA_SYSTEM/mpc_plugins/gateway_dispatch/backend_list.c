@@ -185,8 +185,7 @@ void backend_list_invalid_unit(const char *ip, int port)
 
 static void* thread_work_func(void *arg)
 {
-	int i, sockd, opt;
-	int val_opt, opt_len;
+	int i, sockd, opt, val_opt;
 	struct timeval tv;
 	BOOL b_connected;
 	fd_set myset;
@@ -231,7 +230,7 @@ static void* thread_work_func(void *arg)
 					FD_ZERO(&myset);
 					FD_SET(sockd, &myset);
 					if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-						opt_len = sizeof(int);
+						socklen_t opt_len = sizeof(int);
 						if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
 							&opt_len) >= 0 && 0 == val_opt) {
 							b_connected = TRUE;

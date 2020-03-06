@@ -59,7 +59,7 @@ int pop3_retrieve_message(const char *ip, int port, const char *username,
 	char *pcrlf, *plast, *pspace;
 	char list_buff[RETRIEVE_BUFSIZE];
 	int id, size, command_len;
-	int sockd, opt, val_opt, opt_len;
+	int sockd, opt, val_opt;
 	struct sockaddr_in servaddr;
 	struct timeval tv;
 	fd_set myset;
@@ -88,7 +88,7 @@ int pop3_retrieve_message(const char *ip, int port, const char *username,
 			FD_ZERO(&myset);
 			FD_SET(sockd, &myset);
 			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
+				socklen_t opt_len = sizeof(int);
 				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
 					&opt_len) >= 0) {
 					if (0 == val_opt) {

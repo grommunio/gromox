@@ -40,9 +40,8 @@ void pop3_init(POP3_SESSION *psession, const char *ip, int port,
 BOOL pop3_login(POP3_SESSION *psession)
 {
 	BOOL b_connected;
-	int sockd, opt;
+	int sockd, opt, val_opt;
 	int command_len;
-	int val_opt, opt_len;
 	struct sockaddr_in servaddr;
 	struct timeval tv;
 	fd_set myset;
@@ -72,7 +71,7 @@ BOOL pop3_login(POP3_SESSION *psession)
 			FD_ZERO(&myset);
 			FD_SET(sockd, &myset);
 			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
+				socklen_t opt_len = sizeof(int);
 				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
 					&opt_len) >= 0) {
 					if (0 == val_opt) {

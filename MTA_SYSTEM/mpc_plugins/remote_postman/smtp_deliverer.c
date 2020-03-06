@@ -324,7 +324,7 @@ static int smtp_deliverer_send_mail(
 	CONNECTION connection;
 	char command_line[1024];
 	char *ptr, *pbegin, *pend;
-	int	opt, val_opt, opt_len;
+	int opt, val_opt;
 	struct sockaddr_in servaddr;
 	BOOL b_connected, rcpt_success;
 	int command_len, mail_len, reason;
@@ -361,7 +361,7 @@ static int smtp_deliverer_send_mail(
 			FD_SET(connection.sockd, &myset);
 			if (select(connection.sockd + 1,
 				NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
+				socklen_t opt_len = sizeof(int);
 				if (getsockopt(connection.sockd, SOL_SOCKET,
 					SO_ERROR, &val_opt, &opt_len) >= 0) {
 					if (0 == val_opt) {

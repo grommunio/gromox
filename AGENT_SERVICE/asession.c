@@ -306,14 +306,14 @@ int main(int argc, const char **argv)
 static void* accept_work_func(void *param)
 {
 	FRONT_CONN *pfront;
-	int len, clifd, listenfd;
+	int clifd, listenfd;
     struct sockaddr_un unix_addr;
 
 
 	listenfd = (int)(long)param;
 
 	while (0 == g_notify_stop) {
-		len = sizeof(unix_addr);
+		socklen_t len = sizeof(unix_addr);
 	    memset(&unix_addr, 0, sizeof(unix_addr));
 		clifd = accept(listenfd, (struct sockaddr*)&unix_addr, &len);
 		if (-1 == clifd) {

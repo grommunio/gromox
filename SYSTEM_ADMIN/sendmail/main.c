@@ -90,7 +90,7 @@ int main(int argc, const char **argv)
 	struct sockaddr_in servaddr;
 	char temp_field[MIME_FIELD_LEN];
 	int smtp_port, res_val, command_len;
-	int fd, sockd, opt, val_opt, opt_len;
+	int fd, sockd, opt, val_opt;
 	
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
@@ -227,7 +227,7 @@ int main(int argc, const char **argv)
 			FD_ZERO(&myset);
 			FD_SET(sockd, &myset);
 			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
+				socklen_t opt_len = sizeof(int);
 				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
 					&opt_len) >= 0) {
 					if (0 == val_opt) {

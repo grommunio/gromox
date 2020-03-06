@@ -77,7 +77,7 @@ void smtp_send_message(const char *from, const char *rcpt, const char *message)
 	char response_line[1024];
 	int size, i, times, num;
 	int command_len, sockd, opt;
-	int port, val_opt, opt_len;
+	int port, val_opt;
 	struct sockaddr_in servaddr;
 	struct in_addr ip_addr;
 	char **mx_buff = NULL;
@@ -151,7 +151,7 @@ SENDING_RETRY:
 			FD_ZERO(&myset);
 			FD_SET(sockd, &myset);
 			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
+				socklen_t opt_len = sizeof(int);
 				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
 					&opt_len) >= 0) {
 					if (0 == val_opt) {

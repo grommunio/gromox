@@ -52,8 +52,7 @@ BOOL smtp_send(SMTP_SESSION *psession, const char *from, const char *rcpt,
 	char command_line[1024];
 	char response_line[1024];
 	int size, times;
-	int command_len, sockd, opt;
-	int val_opt, opt_len;
+	int command_len, sockd, opt, val_opt;
 	struct sockaddr_in servaddr;
 	struct timeval tv;
 	fd_set myset;
@@ -89,7 +88,7 @@ SENDING_RETRY:
 			FD_ZERO(&myset);
 			FD_SET(sockd, &myset);
 			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
+				socklen_t opt_len = sizeof(int);
 				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
 					&opt_len) >= 0) {
 					if (0 == val_opt) {

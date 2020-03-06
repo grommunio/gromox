@@ -225,7 +225,7 @@ static void *thread_work_func(void *argp)
 	struct timeval tv;
 	CONSOLE_NODE *pconsole;
 	DOUBLE_LIST_NODE *pnode;
-	int sock, client_len, client_fd;
+	int sock, client_fd;
 	struct sockaddr_in client_peer;
 
 	sock = (int)(long)argp;
@@ -237,7 +237,7 @@ static void *thread_work_func(void *argp)
 		if (select(sock + 1, &myset, NULL, NULL, &tv) <= 0) {
 			continue;
 		}
-		client_len = sizeof(client_peer);
+		socklen_t client_len = sizeof(client_peer);
 		memset(&client_peer, 0, client_len);
 		client_fd = accept(sock, (SA*)&client_peer, &client_len);
 		if (client_fd <= 0) {
