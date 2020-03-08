@@ -1,4 +1,6 @@
 #include <libHX/defs.h>
+#include <gromox/defs.h>
+#include "config_file.h"
 #include "double_list.h"
 #include "service.h"
 #include "vstack.h"
@@ -37,6 +39,8 @@ typedef struct _SERVICE_ENTRY{
 	struct _PLUG_ENTITY	*plib;	
 	DOUBLE_LIST			list_reference;
 } SERVICE_ENTRY;
+
+extern CONFIG_FILE *g_config_file;
 
 static int service_get_version(void);
 static void* service_query_service(const char *service);
@@ -398,7 +402,10 @@ static int service_get_context_num()
  */
 static const char* service_get_host_ID()
 {
-	return "midb";
+	const char *ret_value = config_file_get_value(g_config_file, "HOST_ID");
+	if (ret_value == nullptr)
+		ret_value = "localhost";
+	return ret_value;
 }
 
 /*

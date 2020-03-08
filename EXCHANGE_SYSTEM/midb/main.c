@@ -28,6 +28,7 @@
 #include <sys/resource.h>
 
 BOOL g_notify_stop = FALSE;
+CONFIG_FILE *g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 
@@ -88,7 +89,7 @@ int main(int argc, const char **argv)
 	}
 	umask(0);	
 	signal(SIGPIPE, SIG_IGN);
-	pconfig = config_file_init2(opt_config_file, config_default_path("midb.cfg"));
+	g_config_file = pconfig = config_file_init2(opt_config_file, config_default_path("midb.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
