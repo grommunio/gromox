@@ -31,6 +31,7 @@
 #include <sys/resource.h>
 
 BOOL g_notify_stop = FALSE;
+CONFIG_FILE *g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 
@@ -100,7 +101,7 @@ int main(int argc, const char **argv)
 	}
 	umask(0);	
 	signal(SIGPIPE, SIG_IGN);
-	pconfig = config_file_init2(opt_config_file, config_default_path("zcore.cfg"));
+	g_config_file = pconfig = config_file_init2(opt_config_file, config_default_path("zcore.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
@@ -184,7 +185,8 @@ int main(int argc, const char **argv)
 	
 	msgchg_grouping_init(grouping_path);
 	service_init("zcore", threads_num, service_path, config_path, data_path,
-		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins);
+		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
+		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")));
 	
 	str_value = config_file_get_value(pconfig, "ADDRESS_TABLE_SIZE");
 	if (NULL == str_value) {

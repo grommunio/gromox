@@ -289,16 +289,16 @@ int main(int argc, const char **argv)
 	bool svcplug_ignerr = parse_bool(str_value);
 	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
 
-	str_val = resource_get_string("CONFIG_FILE_PATH");
+	const char *config_dir = str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = PKGSYSCONFDELIVERYDIR;
+		config_dir = str_val = PKGSYSCONFDELIVERYDIR;
 		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 
-	str_val = resource_get_string("DATA_FILE_PATH");
+	const char *data_dir = str_val = resource_get_string("DATA_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = PKGDATADELIVERYDIR;
+		data_dir = str_val = PKGDATADELIVERYDIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	printf("[system]: data files path is %s\n", str_val);
@@ -335,6 +335,7 @@ int main(int argc, const char **argv)
     }
 
 	service_init("delivery", threads_max + free_contexts, service_plugin_path,
+		config_dir, data_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"

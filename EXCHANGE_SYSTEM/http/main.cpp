@@ -400,16 +400,16 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	str_val = resource_get_string("CONFIG_FILE_PATH");
+	const char *config_dir = str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = PKGSYSCONFHTTPDIR;
+		config_dir = str_val = PKGSYSCONFHTTPDIR;
 		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
-	str_val = resource_get_string("DATA_FILE_PATH");
+	const char *data_dir = str_val = resource_get_string("DATA_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = PKGDATAHTTPDIR;
+		data_dir = str_val = PKGDATAHTTPDIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	sprintf(fastcgi_list_path, "%s/fastcgi.txt", str_val);
@@ -512,7 +512,7 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init("http", context_num, service_plugin_path,
+	service_init("http", context_num, service_plugin_path, config_dir, data_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"

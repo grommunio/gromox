@@ -594,16 +594,16 @@ int main(int argc, const char **argv)
 	}
 	printf("[flusher]: flusher plugin path %s\n", flusher_plugin_path);
 
-	str_val = resource_get_string("CONFIG_FILE_PATH");
+	const char *config_dir = str_val = resource_get_string("CONFIG_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = PKGSYSCONFSMTPDIR;
+		config_dir = str_val = PKGSYSCONFSMTPDIR;
 		resource_set_string("CONFIG_FILE_PATH", str_val);
 	}
 	printf("[system]: config files path is %s\n", str_val);
 	
-	str_val = resource_get_string("DATA_FILE_PATH");
+	const char *data_dir = str_val = resource_get_string("DATA_FILE_PATH");
 	if (str_val == NULL) {
-		str_val = PKGDATASMTPDIR;
+		data_dir = str_val = PKGDATASMTPDIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
 	printf("[system]: data files path is %s\n", str_val);
@@ -661,7 +661,7 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init("smtp", context_num, service_plugin_path,
+	service_init("smtp", context_num, service_plugin_path, config_dir, data_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
 	printf("--------------------------- service plugins begin"

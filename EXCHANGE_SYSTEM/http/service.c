@@ -1,7 +1,10 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/paths.h>
-#include "pdu_processor.h"
+#ifdef HTTP
+#	include "pdu_processor.h"
+#endif
 #include "double_list.h"
 #include "resource.h"
 #include "service.h"
@@ -57,7 +60,7 @@ static const char *service_get_data_path(void);
 static int service_get_context_num(void);
 static const char *service_get_host_ID(void);
 
-static char             g_init_path[256];
+static char g_init_path[256], g_config_dir[256], g_data_dir[256];
 static DOUBLE_LIST      g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static PLUG_ENTITY		*g_cur_plug;
@@ -69,12 +72,15 @@ static bool g_ign_loaderr;
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-void service_init(const char *prog_id, int context_num, const char *path,
-    const char *const *names, bool ignerr)
+void service_init(const char *prog_id, int context_num, const char *plugin_dir,
+    const char *config_dir, const char *data_dir, const char *const *names,
+    bool ignerr)
 {
 	g_program_identifier = prog_id;
 	g_context_num = context_num;
-	strcpy(g_init_path, path);
+	HX_strlcpy(g_init_path, plugin_dir, sizeof(g_init_path));
+	HX_strlcpy(g_config_dir, config_dir, sizeof(g_config_dir));
+	HX_strlcpy(g_data_dir, data_dir, sizeof(g_data_dir));
 	g_plugin_names = names;
 	g_ign_loaderr = ignerr;
 }
@@ -343,9 +349,11 @@ static void* service_query_service(const char *service)
 	if (0 == strcmp(service, "get_host_ID")) {
 		return service_get_host_ID;
 	}
+#ifdef HTTP
 	if (0 == strcmp(service, "ndr_stack_alloc")) {
 		return pdu_processor_ndr_stack_alloc;
 	}
+#endif
 	if (strcmp(service, "_program_identifier") == 0)
 		return const_cast(char *, g_program_identifier);
 	return NULL;
@@ -365,6 +373,9 @@ static const char* service_get_plugin_name()
 	if (strncmp(g_cur_plug->file_name, "libgxsvc_", 9) == 0 ||
 	    strncmp(g_cur_plug->file_name, "libexsvc_", 9) == 0)
 		return g_cur_plug->file_name + 9;
+	if (strncmp(g_cur_plug->file_name, "libmrasvc_", 10) == 0 ||
+	    strncmp(g_cur_plug->file_name, "libmtasvc_", 10) == 0)
+		return g_cur_plug->file_name + 10;
 	return g_cur_plug->file_name;
 }
 
@@ -375,11 +386,7 @@ static const char* service_get_plugin_name()
  */
 static const char* service_get_config_path()
 {
-	const char *ret_value = resource_get_string("CONFIG_FILE_PATH");
-	if (NULL == ret_value) {
-		ret_value = PKGSYSCONFDIR;
-	}
-	return ret_value;
+	return g_config_dir;
 }
 
 /*
@@ -389,11 +396,7 @@ static const char* service_get_config_path()
  */
 static const char* service_get_data_path()
 {
-	const char *ret_value = resource_get_string("DATA_FILE_PATH");
-	if (NULL == ret_value) {
-		ret_value =	"../data";
-	}
-	return ret_value;
+	return g_data_dir;
 }
 
 /*

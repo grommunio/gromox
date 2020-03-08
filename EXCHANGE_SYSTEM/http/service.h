@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-extern void service_init(const char *prog_id, int context_num, const char *path, const char *const *names, bool ignerr);
+extern void service_init(const char *prog_id, int context_num, const char *plugin_path, const char *config_path, const char *data_path, const char *const *plugins, bool ignerr);
 extern void service_free(void);
 extern int service_run(void);
 extern int service_stop(void);
