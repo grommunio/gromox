@@ -467,10 +467,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_integer("SMTP_MAX_MAIL_NUM", value);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(SMTP_MAX_MAILS, value);
 		console_server_reply_to_client("250 max-mails set OK");
 		return TRUE;
@@ -482,10 +478,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("MAIL_MAX_LENGTH", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(MAX_MAIL_LENGTH, value);
 		console_server_reply_to_client("250 mail-length set OK");
 		return TRUE;   
@@ -496,10 +488,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("SMTP_CONN_TIMEOUT", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(SMTP_SESSION_TIMEOUT, value);
 		console_server_reply_to_client("250 time-out set OK");
 		return TRUE;                           
@@ -515,10 +503,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("SMTP_NEED_AUTH", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(SMTP_NEED_AUTH, need_auth);
 		console_server_reply_to_client("250 need-auth set OK");
 		return TRUE;
@@ -534,10 +518,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("SMTP_SUPPORT_PIPELINE", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(SMTP_SUPPORT_PIPELINE, support_pipeline);
 		console_server_reply_to_client("250 support-pipeline set OK");
 		return TRUE;
@@ -558,10 +538,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("SMTP_FORCE_STARTTLS", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(SMTP_FORCE_STARTTLS, necessary_tls);
 		console_server_reply_to_client("250 force-tls set OK");
 		return TRUE;
@@ -574,10 +550,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_integer("SMTP_AUTH_TIMES", value);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(MAX_AUTH_TIMES, value);
 		console_server_reply_to_client("250 auth-times set OK");
 		return TRUE;
@@ -589,10 +561,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("BLOCK_INTERVAL_AUTHS", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(BLOCK_TIME_EXCEED_AUTHS, value);
 		console_server_reply_to_client("250 block-interval-auth set OK");
 		return TRUE;
@@ -604,10 +572,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("BLOCK_INTERVAL_SESSIONS", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		smtp_parser_set_param(BLOCK_TIME_EXCEED_SESSIONS, value);
 		console_server_reply_to_client("250 block-interval-sessions set OK");
 		return TRUE;
@@ -648,21 +612,13 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "default-domain")) {
 		resource_set_string("DEFAULT_DOMAIN", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-		} else {
-			console_server_reply_to_client("250 default domain set OK");
-		}
+		console_server_reply_to_client("250 default domain set OK");
 		return TRUE;
 	}
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "domain-list")) {
 		if (0 == strcasecmp(argv[3], "TRUE")) {
 			resource_set_string("DOMAIN_LIST_VALID", "TRUE");
-			if (FALSE == resource_save()) {
-				console_server_reply_to_client("550 fail to save config file");
-				return TRUE;
-			}
 			smtp_parser_validate_domainlist(TRUE);
 			console_server_reply_to_client("250 domain-list valid set OK");
 			return TRUE;
@@ -673,10 +629,6 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 				return TRUE;
 			}
 			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
-			if (FALSE == resource_save()) {
-				console_server_reply_to_client("550 fail to save config file");
-				return TRUE;
-			}
 			smtp_parser_validate_domainlist(FALSE);
 			console_server_reply_to_client("250 domain-list invalid set OK");
 			return TRUE;

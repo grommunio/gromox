@@ -274,10 +274,6 @@ BOOL cmd_handler_pop3_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("POP3_CONN_TIMEOUT", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		pop3_parser_set_param(POP3_SESSION_TIMEOUT, value);
 		console_server_reply_to_client("250 time-out set OK");
 		return TRUE;                           
@@ -289,10 +285,6 @@ BOOL cmd_handler_pop3_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_integer("POP3_AUTH_TIMES", value);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		pop3_parser_set_param(MAX_AUTH_TIMES, value);
 		console_server_reply_to_client("250 auth-times set OK");
 		return TRUE;
@@ -304,10 +296,6 @@ BOOL cmd_handler_pop3_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("BLOCK_INTERVAL_AUTHS", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		pop3_parser_set_param(BLOCK_AUTH_FAIL, value);
 		console_server_reply_to_client("250 block-interval-auth set OK");
 		return TRUE;
@@ -328,10 +316,6 @@ BOOL cmd_handler_pop3_control(int argc, char** argv)
 			return TRUE;
 		}
 		resource_set_string("POP3_FORCE_STLS", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-			return TRUE;
-		}
 		pop3_parser_set_param(POP3_FORCE_STLS, necessary_tls);
 		console_server_reply_to_client("250 force-tls set OK");
 		return TRUE;
@@ -373,11 +357,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "default-domain")) {
 		resource_set_string("DEFAULT_DOMAIN", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-		} else {
-			console_server_reply_to_client("250 default domain set OK");
-		}
+		console_server_reply_to_client("250 default domain set OK");
 		return TRUE;
 	}
 

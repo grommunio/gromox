@@ -294,22 +294,14 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "default-domain")) {
 		resource_set_string("DEFAULT_DOMAIN", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-		} else {
-			console_server_reply_to_client("250 default domain set OK");
-		}
+		console_server_reply_to_client("250 default domain set OK");
 		return TRUE;
 	}
 
 	if (4 == argc && 0 == strcmp(argv[1], "set") &&
 		0 == strcmp(argv[2], "admin-mailbox")) {
 		resource_set_string("ADMIN_MAILBOX", argv[3]);
-		if (FALSE == resource_save()) {
-			console_server_reply_to_client("550 fail to save config file");
-		} else {
-			console_server_reply_to_client("250 administrator's mailbox set OK");
-		}
+		console_server_reply_to_client("250 administrator's mailbox set OK");
 		return TRUE;
 	}
 
@@ -317,19 +309,11 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		0 == strcmp(argv[2], "domain-list")) {
 		if (0 == strcasecmp(argv[3], "TRUE")) {
 			resource_set_string("DOMAIN_LIST_VALID", "TRUE");
-			if (FALSE == resource_save()) {
-				console_server_reply_to_client("550 fail to save config file");
-				return TRUE;
-			}
 			transporter_validate_domainlist(TRUE);
 			console_server_reply_to_client("250 domain-list valid set OK");
 			return TRUE;
 		} else if (0 == strcasecmp(argv[3], "FALSE")) {
 			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
-			if (FALSE == resource_save()) {
-				console_server_reply_to_client("550 fail to save config file");
-				return TRUE;
-			}
 			transporter_validate_domainlist(FALSE);
 			console_server_reply_to_client("250 domain-list invalid set OK");
 			return TRUE;
