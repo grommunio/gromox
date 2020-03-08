@@ -7,7 +7,6 @@
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "resource.h"
-#include "config_file.h"
 #include "single_list.h"
 #include "util.h"
 #include <string.h>
@@ -120,8 +119,6 @@ static IMAP_RETURN_CODE g_default_code_table[] = {
 
 
 /* private global variables */
-static char *g_cfg_filename, *g_cfg_filename2;
-CONFIG_FILE *g_config_file;
 static IMAP_RETURN_CODE *g_return_code_table, *g_def_code_table;
 static pthread_rwlock_t g_return_table_lock;
 static SINGLE_LIST* g_lang_list;
@@ -138,8 +135,6 @@ static BOOL resource_load_imap_lang_list(void);
 void resource_init(const char *c1, const char *c2)
 {
 	g_lang_list = NULL;
-	g_cfg_filename  = HX_strdup(c1);
-	g_cfg_filename2 = HX_strdup(c2);
     pthread_rwlock_init(&g_return_table_lock, NULL);
 }
 
@@ -147,14 +142,6 @@ void resource_free()
 {   
     /* to avoid memory leak because of not stop */
     pthread_rwlock_destroy(&g_return_table_lock);
-    if (NULL != g_config_file) {
-        config_file_free(g_config_file);
-        g_config_file = NULL;
-    }
-	free(g_cfg_filename);
-	free(g_cfg_filename2);
-	g_cfg_filename  = NULL;
-	g_cfg_filename2 = NULL;
 }
 
 int resource_run()
@@ -166,13 +153,6 @@ int resource_run()
         printf("[resource]: fail to allocate default code table\n" );
         return -1;
     }
-	g_config_file = config_file_init2(g_cfg_filename, g_cfg_filename2);
-	if (g_cfg_filename != NULL && g_config_file == NULL) {
-		printf("[resource]: config_file_init %s: %s\n", g_cfg_filename, strerror(errno));
-        free(g_def_code_table);
-        return -2;
-    }
-
 	if (FALSE == resource_load_imap_lang_list()) {
 		printf("[resource]: fail to load imap lang\n");
 		return -3;
@@ -198,12 +178,6 @@ int resource_run()
 int resource_stop()
 {
 	SINGLE_LIST_NODE *pnode;
-
-    if (NULL != g_config_file) {
-        config_file_free(g_config_file);
-        g_config_file = NULL;
-    }
-
     if (NULL != g_def_code_table) {
         free(g_def_code_table);
         g_def_code_table = NULL;
