@@ -100,7 +100,7 @@ int service_run()
 	double_list_init(&g_list_service);
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = service_load_library(*i);
-		if (ret != PLUGIN_LOAD_OK)
+		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
 			return -1;
 	}
 	return 0;
