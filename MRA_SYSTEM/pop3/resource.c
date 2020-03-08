@@ -124,16 +124,6 @@ int resource_stop()
     return 0;
 }
 
-BOOL resource_save()
-{
-	if (NULL == g_config_file) {
-		debug_info("[resource]: error: config file not initialized or init failed, but"
-                    " it is now being used");
-		return FALSE;
-	}
-	return config_file_save(g_config_file);
-}
-
 /*
  *  construct a pop3 error code table, which is as the below table
  *

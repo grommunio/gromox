@@ -112,7 +112,6 @@ extern void resource_init(const char *cfg1, const char *cfg2);
 extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
-extern BOOL resource_save(void);
 extern const char *resource_get_imap_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_imap_code_table(void);
 char** resource_get_folder_strings(const char*lang);

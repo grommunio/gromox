@@ -52,7 +52,6 @@ extern void resource_init(const char *cfg1, const char *cfg2);
 extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
-extern BOOL resource_save(void);
 char* resource_get_pop3_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_pop3_code_table(void);
 
