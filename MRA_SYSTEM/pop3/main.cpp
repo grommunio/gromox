@@ -31,6 +31,7 @@
 using namespace gromox;
 
 BOOL g_notify_stop = FALSE;
+CONFIG_FILE *g_config_file;
 static char *opt_config_file;
 
 static struct HXoption g_options_table[] = {
@@ -75,6 +76,13 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, term_handler);
+	g_config_file = config_file_init2(opt_config_file, config_default_path("pop3.cfg"));
+	if (opt_config_file != nullptr && g_config_file == nullptr) {
+		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		return EXIT_FAILURE;
+	}
+	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
+
 	resource_init(opt_config_file, config_default_path("pop3.cfg"));
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 
