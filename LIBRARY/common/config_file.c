@@ -4,6 +4,7 @@
  *
  */
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "config_file.h"
@@ -398,3 +399,18 @@ BOOL config_file_save(CONFIG_FILE* cfg_file)
 	}
 }
 
+BOOL config_file_get_int(CONFIG_FILE *cf, const char *key, int *value)
+{
+	const char *v = config_file_get_value(cf, key);
+	if (v == nullptr)
+		return FALSE;
+	*value = atoi(v);
+	return TRUE;
+}
+
+BOOL config_file_set_int(CONFIG_FILE *cf, const char *key, int value)
+{
+	char buf[HXSIZEOF_Z32];
+	itoa(value, buf, sizeof(buf));
+	return config_file_set_value(cf, key, buf);
+}
