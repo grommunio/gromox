@@ -25,6 +25,7 @@
 using namespace gromox;
 
 BOOL g_notify_stop = FALSE;
+CONFIG_FILE *g_config_file;
 static char *opt_config_file;
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -106,13 +107,12 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
     signal(SIGPIPE, SIG_IGN);
     signal(SIGTERM, term_handler);
-	resource_init(opt_config_file, config_default_path("delivery.cfg"));
-    if (0 != resource_run()) { 
-        printf("[system]: fail to load resource\n"); 
+	g_config_file = config_file_init2(opt_config_file, config_default_path("delivery.cfg"));
+	if (opt_config_file != nullptr && g_config_file == nullptr) {
+		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;
-    }
-	auto cleanup_1 = make_scope_success(resource_free);
-	auto cleanup_2 = make_scope_success(resource_stop);
+	}
+	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
 
 	str_val = resource_get_string("HOST_ID");
 	if (str_val == NULL) {
