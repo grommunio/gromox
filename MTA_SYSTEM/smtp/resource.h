@@ -1,5 +1,10 @@
 #pragma once
+#include "config_file.h"
 #include "common_types.h"
+#define resource_get_string(k) config_file_get_value(g_config_file, (k))
+#define resource_set_string(k, v) config_file_set_value(g_config_file, (k), (v))
+#define resource_get_integer(k, vp) config_file_get_int(g_config_file, (k), (vp))
+#define resource_set_integer(k, v) config_file_set_int(g_config_file, (k), (v))
 
 typedef struct _SMTP_ERROR_CODE {
     int     code;
@@ -87,15 +92,13 @@ enum {
 extern "C" {
 #endif
 
+extern CONFIG_FILE *g_config_file;
+
 extern void resource_init(const char *cfg1, const char *cfg2);
 extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
 extern BOOL resource_save(void);
-extern BOOL resource_get_integer(const char *key, int *value);
-extern const char *resource_get_string(const char *key);
-extern BOOL resource_set_integer(const char *key, int value);
-extern BOOL resource_set_string(const char *key, const char *value);
 char* resource_get_smtp_code(int code_type, int n, int *len);
 extern BOOL resource_refresh_smtp_code_table(void);
 

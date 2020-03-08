@@ -47,7 +47,7 @@ static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
 
 /* private global variables */
 static char *g_cfg_filename, *g_cfg_filename2;
-static CONFIG_FILE *g_config_file;
+CONFIG_FILE *g_config_file;
 static POP3_ERROR_CODE *g_error_code_table, *g_def_code_table;
 static pthread_rwlock_t g_error_table_lock;
 
@@ -132,130 +132,6 @@ BOOL resource_save()
 		return FALSE;
 	}
 	return config_file_save(g_config_file);
-}
-
-/*
- *  get a specified integer value that match the key
- *
- *  @param
- *      key             key that describe the integer value
- *      value [out]     pointer to the integer value
- *
- *  @return
- *      TRUE        success
- *      FALSE       fail
- */
-BOOL resource_get_integer(const char *key, int *value)
-{
-    char *pvalue    = NULL;     /* string value of the mapped key */
-
-	if (key == NULL) {
-        debug_info("[resource]: invalid param resource_get_integer");
-        return FALSE;
-    }
-
-    if (NULL == g_config_file) {
-		debug_info("[resource]: error: config file not initialized or init failed, but"
-                    " it is now being used");
-        return FALSE;
-    }
-	pvalue = config_file_get_value(g_config_file, key);
-    if (NULL == pvalue) {
-        debug_info("[resource]: no value map to the key in "
-                    "resource_get_integer");
-        return FALSE;
-    }
-    *value = atoi(pvalue);
-    return TRUE;
-}
-
-/*
- *  set the specified integer that match the key
- *
- *  @param
- *      key             key that describe the integer value
- *      value           the new value
- *
- *  @return
- *      TRUE        success
- *      FALSE       fail
- */
-BOOL resource_set_integer(const char *key, int value)
-{
-    char m_buf[32];             /* buffer to hold the int string  */
-
-	if (key == NULL) {
-        debug_info("[resource]: invalid param in resource_set_integer");
-        return FALSE;
-    }
-
-    if (NULL == g_config_file) {
-		debug_info("[resource]: error: config file not initialized or init failed, but"
-                    " it is now being used");
-        return FALSE;
-    }
-    itoa(value, m_buf, 10);
-	return config_file_set_value(g_config_file, key, m_buf);
-}
-
-/*
- *  set the specified string that match the key
- *
- *  @param
- *      key             key that describe the string value
- *      value [out]     the string value
- *
- *  @return
- *      TRUE        success
- *      FALSE       fail
- */
-BOOL resource_set_string(const char *key, const char *value)
-{
-	if (key == NULL) {
-        debug_info("[resource]: invalid param in resource_set_string");
-        return FALSE;
-    }
-
-    if (NULL == g_config_file) {
-		debug_info("[resource]: error: config file not initialized or init failed, but"
-                    " it is now being used");
-        return FALSE;
-    }
-	return config_file_set_value(g_config_file, key, value);
-}
-
-/*
- *  get a specified string value that match the key
- *
- *  @param
- *      key             key that describe the string value
- *      value [out]     pointer to the string value
- *
- *  @return
- *      TRUE        success
- *      FALSE       fail
- */
-const char *resource_get_string(const char *key)
-{
-    const char *pvalue  = NULL;     /* string value of the mapped key */
-
-	if (key == NULL) {
-        debug_info("[resource]: invalid param in resource_get_string");
-        return NULL;
-    }
-
-    if (NULL == g_config_file) {
-		debug_info("[resource]: error: config file not initialized or init failed, but"
-                    " it is now being used");
-        return NULL;
-    }
-	pvalue = config_file_get_value(g_config_file, key);
-    if (NULL == pvalue) {
-        debug_info("[resource]: no value map to the key in "
-                    "resource_get_string");
-        return NULL;
-    }
-    return pvalue;
 }
 
 /*
