@@ -126,10 +126,9 @@ int service_stop()
 		return -1;
 	}
 	vstack_init(&stack, pallocator, 256, 1024);
-	for (pnode=double_list_get_tail(&g_list_plug); NULL!=pnode;
-		 pnode=double_list_get_before(&g_list_plug, pnode)) {
+	for (pnode = double_list_get_head(&g_list_plug); pnode != nullptr;
+	     pnode = double_list_get_after(&g_list_plug, pnode))
 		vstack_push(&stack, ((PLUG_ENTITY*)(pnode->pdata))->file_name);
-	}
 	while (FALSE == vstack_is_empty(&stack)) {
 		service_unload_library(vstack_get_top(&stack));
 		vstack_pop(&stack);
