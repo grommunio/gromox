@@ -86,15 +86,6 @@ void service_init(const char *prog_id, int context_num, const char *plugin_dir,
 }
 
 /*
- *  service module's destruct function
- */
-void service_free()
-{
-	g_init_path[0] = '\0';
-	g_plugin_names = NULL;
-}
-
-/*
  *  run the module
  *  @return 
  *      0       success
@@ -143,6 +134,8 @@ int service_stop()
 	vstack_allocator_free(pallocator);
 	double_list_free(&g_list_plug);
 	double_list_free(&g_list_service);
+	g_init_path[0] = '\0';
+	g_plugin_names = NULL;
 	return 0;
 }
 

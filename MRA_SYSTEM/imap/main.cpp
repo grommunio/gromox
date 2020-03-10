@@ -426,7 +426,6 @@ int main(int argc, const char **argv)
 		   "----------------------------\n");
 		printf("[system]: run service OK\n");
 	}
-	auto cleanup_5 = make_scope_success(service_free);
 	auto cleanup_6 = make_scope_success(service_stop);
 	
 	system_services_init();
