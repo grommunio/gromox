@@ -515,6 +515,11 @@ int main(int argc, const char **argv)
 	service_init("http", context_num, service_plugin_path, config_dir, data_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr);
+	if (!service_register_service("ndr_stack_alloc",
+	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc))) {
+		printf("service_register ndr_stack_alloc failed\n");
+		return EXIT_FAILURE;
+	}
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 

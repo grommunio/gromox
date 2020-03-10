@@ -2,9 +2,6 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
-#ifdef HTTP
-#	include "pdu_processor.h"
-#endif
 #include "double_list.h"
 #include "resource.h"
 #include "service.h"
@@ -48,9 +45,6 @@ typedef struct _SERVICE_ENTRY{
 
 static int service_get_version(void);
 static void* service_query_service(const char *service);
-
-static BOOL service_register_service(char* func_name, void* addr);
-
 static BOOL service_register_talk(TALK_MAIN talk);
 
 static BOOL service_unregister_talk(TALK_MAIN talk);
@@ -67,6 +61,7 @@ static PLUG_ENTITY		*g_cur_plug;
 static int				g_context_num;
 static const char *const *g_plugin_names, *g_program_identifier;
 static bool g_ign_loaderr;
+static PLUG_ENTITY g_system_image;
 
 /*
  *  init the service module with the path specified where
@@ -83,6 +78,11 @@ void service_init(const char *prog_id, int context_num, const char *plugin_dir,
 	HX_strlcpy(g_data_dir, data_dir, sizeof(g_data_dir));
 	g_plugin_names = names;
 	g_ign_loaderr = ignerr;
+
+	double_list_init(&g_list_plug);
+	double_list_init(&g_list_service);
+	g_system_image.node.pdata = &g_system_image;
+	double_list_init(&g_system_image.list_service);
 }
 
 /*
@@ -93,8 +93,6 @@ void service_init(const char *prog_id, int context_num, const char *plugin_dir,
  */
 int service_run()
 {
-	double_list_init(&g_list_plug);
-	double_list_init(&g_list_service);
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = service_load_library(*i);
 		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK)
@@ -342,14 +340,9 @@ static void* service_query_service(const char *service)
 	if (0 == strcmp(service, "get_host_ID")) {
 		return service_get_host_ID;
 	}
-#ifdef HTTP
-	if (0 == strcmp(service, "ndr_stack_alloc")) {
-		return pdu_processor_ndr_stack_alloc;
-	}
-#endif
 	if (strcmp(service, "_program_identifier") == 0)
 		return const_cast(char *, g_program_identifier);
-	return NULL;
+	return service_query(service, "untracked");
 }
 
 /*
@@ -424,7 +417,7 @@ static const char* service_get_host_ID()
  *  @return
  *      TRUE or FALSE
  */
-static BOOL service_register_service(char* func_name, void* addr)
+BOOL service_register_service(const char *func_name, void *addr)
 {
 	 DOUBLE_LIST_NODE *pnode;
 	 SERVICE_ENTRY *pservice;
@@ -433,9 +426,9 @@ static BOOL service_register_service(char* func_name, void* addr)
 		return FALSE;
 	}
 	/*check if register service is invoked only in SVC_LibMain(PLUGIN_INIT,..)*/
-	if (NULL == g_cur_plug) {
-		return FALSE;
-	}
+	PLUG_ENTITY *plug = g_cur_plug;
+	if (plug == nullptr)
+		plug = &g_system_image;
 
 	/* check if the service is already registered in service list */
 	for (pnode=double_list_get_head(&g_list_service); NULL!=pnode;
@@ -456,12 +449,12 @@ static BOOL service_register_service(char* func_name, void* addr)
 	pservice->node_service.pdata	= pservice;
 	pservice->node_lib.pdata		= pservice;
 	pservice->service_addr			= addr;
-	pservice->plib					= g_cur_plug;
+	pservice->plib = plug;
 	double_list_init(&pservice->list_reference);
 	strcpy(pservice->service_name, func_name);
 	double_list_append_as_tail(&g_list_service, &pservice->node_service);
 	/* append also the service into service list */
-	double_list_append_as_tail(&g_cur_plug->list_service, &pservice->node_lib);
+	double_list_append_as_tail(&plug->list_service, &pservice->node_lib);
 	return TRUE;
 }
 

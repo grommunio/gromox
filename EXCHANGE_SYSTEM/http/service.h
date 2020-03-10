@@ -27,6 +27,7 @@ void service_enum_plugins(ENUM_PLUGINS enum_func);
 void service_enum_dependency(const char *plugin, ENUM_PLUGINS enum_func);
 
 void service_enum_reference(const char *module, ENUM_PLUGINS enum_func);
+extern BOOL service_register_service(const char *func_name, void *addr);
 
 #ifdef __cplusplus
 } /* extern "C" */
