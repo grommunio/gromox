@@ -1796,7 +1796,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	char username[256];
 	uint32_t permission;
 	uint8_t provider_uid[16];
-	STORE_ENTRYID store_entryid;
+	STORE_ENTRYID store_entryid = {};
 	
 	ext_buffer_pull_init(&ext_pull, entryid.pb,
 		entryid.cb, common_util_alloc, EXT_FLAG_UTF16);
@@ -3380,7 +3380,7 @@ uint32_t zarafa_server_getstoreentryid(
 	EXT_PUSH ext_push;
 	char username[256];
 	char tmp_buff[1024];
-	STORE_ENTRYID store_entryid;
+	STORE_ENTRYID store_entryid = {};
 	
 	if (0 == strncasecmp(mailbox_dn, "/o=", 3)) {
 		if (FALSE == common_util_essdn_to_username(

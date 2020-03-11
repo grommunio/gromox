@@ -2679,7 +2679,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	char tmp_buff[1024];
-	STORE_ENTRYID store_entryid;
+	STORE_ENTRYID store_entryid = {};
 	
 	store_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_STORE,
