@@ -1517,7 +1517,7 @@ man_MANS = \
 	doc/adaptor.8gx doc/adaptor.cfg.5gx doc/alock.8gx doc/alock.cfg.5gx \
 	doc/amidb.8gx doc/amidb.cfg.5gx doc/amysql.8gx doc/amysql.cfg.5gx \
 	doc/archive.8gx doc/asensor.8gx doc/asensor.cfg.5gx \
-	doc/asession.8gx doc/asession.cfg.5gx \
+	doc/asession.8gx doc/asession.cfg.5gx doc/authn_mysql.4gx \
 	doc/bl_delete.8gx doc/cdnd.8gx doc/cdnd.cfg.5gx doc/cidb.8gx \
 	doc/cidb.cfg.5gx doc/da.cfg.5gx doc/da_daemon.8gx \
 	doc/delivery.8gx \
@@ -1534,7 +1534,9 @@ man_MANS = \
 	doc/http.cfg.5gx doc/imap.8gx doc/imap.cfg.5gx doc/locker.8gx \
 	doc/locker.cfg.5gx doc/mapi.4gx doc/midb.8gx doc/midb.cfg.5gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
-	doc/monitor.8gx doc/monitor.cfg.5gx doc/pad.8gx doc/pad.cfg.5gx \
+	doc/monitor.8gx doc/monitor.cfg.5gx \
+	doc/mysql_adaptor.4gx doc/mysql_adaptor.cfg.5gx \
+	doc/pad.8gx doc/pad.cfg.5gx \
 	doc/pop3.8gx doc/pop3.cfg.5gx \
 	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncd.cfg.5gx doc/rsyncer.8gx \
 	doc/rsyncer.cfg.5gx doc/rtf2html.1gx doc/sa.cfg.5gx \
