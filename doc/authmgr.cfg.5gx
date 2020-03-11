@@ -1,0 +1,15 @@
+.TH authmgr.cfg 5gx "" "Gromox" "Gromox user reference"
+.SH Name
+.PP
+\fBauthmgr.cfg\fP \(em configuration file for the authmgr service plugin
+.SH Directives
+.SS auth_method
+.PP
+Authentications will be passed to one of the available adaptor plugins.
+.PP
+Default: \fImysql\fP
+.PP
+Available: mysql, ldap
+.SH See also
+.PP
+\fBgromox\fP(7), \fBauthmgr\fP(4gx)

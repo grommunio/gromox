@@ -407,6 +407,7 @@ exchange_plugins = \
 	libexhpm_proxy.la \
 	libexhpm_sample.la \
 	libgxsvc_authmgr.la \
+	libgxsvc_ldap_adaptor.la \
 	libgxsvc_mysql_adaptor.la
 noinst_DATA += \
 	libexsvc_codepage_lang.ldd \
@@ -428,6 +429,7 @@ noinst_DATA += \
 	libexhpm_proxy.ldd \
 	libexhpm_sample.ldd \
 	libgxsvc_authmgr.ldd \
+	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 domain_admin_progs = da_daemon fcgi_cgi synchronizer
@@ -1270,6 +1272,10 @@ libgxsvc_authmgr_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/authmgr.cpp MTA_SY
 libgxsvc_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_authmgr_la_LIBADD = libgromox_common.la
 EXTRA_libgxsvc_authmgr_la_DEPENDENCIES = ${default_sym}
+libgxsvc_ldap_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ldap_adaptor.cpp
+libgxsvc_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_ldap_adaptor_la_LIBADD = libgromox_common.la -lldap_r
+EXTRA_libgxsvc_ldap_adaptor_la_DEPENDENCIES = ${default_sym}
 libgxsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/cdner_agent.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.c EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/uncheck_domains.c
 libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la
@@ -1505,7 +1511,7 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 # doc
 man_MANS = \
 	doc/adaptor.8gx doc/adaptor.cfg.5gx \
-	doc/archive.8gx doc/authmgr.4gx \
+	doc/archive.8gx doc/authmgr.4gx doc/authmgr.cfg.5gx \
 	doc/bl_delete.8gx doc/cdnd.8gx doc/cdnd.cfg.5gx doc/cidb.8gx \
 	doc/cidb.cfg.5gx doc/da.cfg.5gx doc/da_daemon.8gx \
 	doc/delivery.8gx \
@@ -1519,7 +1525,8 @@ man_MANS = \
 	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
-	doc/http.cfg.5gx doc/imap.8gx doc/imap.cfg.5gx doc/locker.8gx \
+	doc/http.cfg.5gx doc/imap.8gx doc/imap.cfg.5gx \
+	doc/ldap_adaptor.4gx doc/ldap_adaptor.cfg.5gx doc/locker.8gx \
 	doc/locker.cfg.5gx doc/mapi.4gx doc/midb.8gx doc/midb.cfg.5gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/monitor.8gx doc/monitor.cfg.5gx \

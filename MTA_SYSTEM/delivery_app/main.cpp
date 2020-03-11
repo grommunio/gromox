@@ -75,6 +75,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_mime_extension.so",
 	"libmtasvc_monitor_domains.so",
 	"libmtasvc_ms_locale.so",
+	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",
 	"libgxsvc_authmgr.so",
 	"libmtasvc_relay_domains.so",

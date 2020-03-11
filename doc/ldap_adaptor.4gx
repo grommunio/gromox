@@ -1,0 +1,8 @@
+.TH ldap_adaptor 4gx "" "Gromox" "Gromox user reference"
+.SH Description
+.PP
+ldap_adaptor is a service plugin that facilitates querying an LDAP directory
+server.
+.SH See also
+.PP
+\fBgromox\fP(7), \fBauthmgr\fP(4gx), \fBldap_adaptor.cfg\fP(5gx)

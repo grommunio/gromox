@@ -168,6 +168,20 @@ supervisor.cfg(5gx) \(em configuration file for the supervisor service
 timer(8gx)
 .IP \(bu 4
 timer.cfg(5gx) \(em configuration file for the timer service
+.SH Service plugins
+.IP \(bu 4
+authmgr(4gx) \(em demultiplexer for authentication requests
+.IP \(bu 4
+authmgr.cfg(5gx) \(em configuration file for authmgr
+.IP \(bu 4
+ldap_adaptor(4gx) \(em LDAP connector for user metadata and authentication
+.IP \(bu 4
+ldap_adaptor.cfg(5gx) \(em configuration file for ldap_adaptor
+.IP \(bu 4
+mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
+authentication
+.IP \(bu 4
+mysql_adaptor.cfg(5gx) \(em configuration file for mysql_adaptor
 .SH Listening sockets
 .IP \(bu 4
 /run/gromox/fcgi_cgi.sock \(em fcgi_cgi(8gx)

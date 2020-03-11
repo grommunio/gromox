@@ -155,6 +155,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_mail_from_audit.so",
 	"libmtasvc_mail_subject_audit.so",
 	"libmtasvc_midb_agent.so",
+	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",
 	"libgxsvc_authmgr.so",
 	"libmtasvc_outmail_frequency_audit.so",

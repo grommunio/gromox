@@ -66,6 +66,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libexsvc_log_plugin.so",
 	"libexsvc_mime_extension.so",
 	"libexsvc_ms_locale.so",
+	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",
 	"libgxsvc_authmgr.so",
 	"libexsvc_timer_agent.so",

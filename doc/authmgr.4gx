@@ -6,4 +6,5 @@ e.g. mysql_adaptor. The libgxsvc_mysql_adaptor.so plugin needs to be loaded in
 advance.
 .SH See also
 .PP
-\fBgromox\fP(7), \fBmysql_adaptor\fP(4gx)
+\fBgromox\fP(7), \fBauthmgr.cfg\fP(5gx), \fBldap_adaptor\fP(4gx),
+\fBmysql_adaptor\fP(4gx)
