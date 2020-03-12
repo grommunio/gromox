@@ -80,6 +80,10 @@ typedef BOOL (*NEW_ENVIRONMENT)(void);
 typedef void (*FREE_ENVIRONMENT)(void);
 typedef void (*LOG_INFO)(int, const char *, ...);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;
 extern TALK_REGISTRATION register_talk, unregister_talk;
@@ -152,4 +156,8 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	rpc_new_environment = (NEW_ENVIRONMENT)query_service("rpc_new_environment"); \
 	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment")
 
-extern BOOL HPM_LibMain(int reason, void **ptrs);
+extern GX_EXPORT BOOL HPM_LibMain(int reason, void **ptrs);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

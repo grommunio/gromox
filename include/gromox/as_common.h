@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "mem_file.h"
 
@@ -121,6 +122,10 @@ typedef BOOL (*CHECKING_FUNCTION)(char*);
 /* is domain list valid, if TRUE, check_domain will functionate */
 typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;
 extern JUDGE_REGISTRATION register_judge, unregister_judge;
@@ -204,4 +209,8 @@ extern CHECKING_FUNCTION check_relay;
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	check_relay = (CHECKING_FUNCTION)query_service("check_relay")
 
-extern BOOL AS_LibMain(int reason, void **ptrs);
+extern GX_EXPORT BOOL AS_LibMain(int reason, void **ptrs);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
