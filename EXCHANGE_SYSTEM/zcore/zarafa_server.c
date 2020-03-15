@@ -6422,6 +6422,13 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 			b_fai = FALSE;
 		}
 	}
+	/*
+	 * If there is no sourcekey, it is a new message. That is how
+	 * grammm-sync creates new items coming from mobile devices.
+	 */
+	pbin = common_util_get_propvals(pproplist, PROP_TAG_SOURCEKEY);
+	if (pbin == nullptr)
+		flags |= SYNC_NEW_MESSAGE;
 	if (flags & SYNC_NEW_MESSAGE) {
 		b_new = TRUE;
 	} else {
