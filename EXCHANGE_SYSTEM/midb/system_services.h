@@ -5,6 +5,10 @@
 #include "double_list.h"
 #include "single_list.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void system_services_init(void);
 extern int system_services_run(void);
 extern int system_services_stop(void);
@@ -23,3 +27,7 @@ extern uint32_t (*system_services_ltag_to_lcid)(const char*);
 extern const char* (*system_services_mime_to_extension)(const char*);
 extern const char* (*system_services_extension_to_mime)(const char*);
 extern void (*system_services_broadcast_event)(const char*);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

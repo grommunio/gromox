@@ -7,6 +7,10 @@ enum {
 	LOST_PROXY_CONNECTIONS
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int exmdb_client_get_param(int param);
 
 void exmdb_client_init(int conn_num,
@@ -452,3 +456,7 @@ BOOL exmdb_client_check_contact_address(const char *dir,
 BOOL exmdb_client_unload_store(const char *dir);
 
 void exmdb_client_register_proc(void *pproc);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
