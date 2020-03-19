@@ -7,6 +7,7 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include "util.h"
 #include "service.h"
 #include "listener.h"
@@ -27,14 +28,16 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 
+using namespace gromox;
+
 BOOL g_notify_stop = FALSE;
 CONFIG_FILE *g_config_file;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
-	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
-	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -95,6 +98,7 @@ int main(int argc, const char **argv)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}
+	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
 
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
 	if (NULL == str_value) {
@@ -107,7 +111,7 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
-		service_plugin_list = const_cast(const char * const *, read_file_by_line(str_value));
+		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return 2;
