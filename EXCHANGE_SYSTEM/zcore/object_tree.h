@@ -17,6 +17,10 @@ typedef struct _OBJECT_TREE {
 	SIMPLE_TREE tree;
 } OBJECT_TREE;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 OBJECT_TREE* object_tree_create(const char *maildir);
 
 void object_tree_free(OBJECT_TREE *ptree);
@@ -49,3 +53,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 
 BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

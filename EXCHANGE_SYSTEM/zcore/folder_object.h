@@ -11,6 +11,10 @@ typedef struct _FOLDER_OBJECT {
 	uint32_t tag_access;
 } FOLDER_OBJECT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 FOLDER_OBJECT* folder_object_create(STORE_OBJECT *pstore,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access);
 
@@ -45,3 +49,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 	const PERMISSION_SET *pperm_set);
 BOOL folder_object_updaterules(FOLDER_OBJECT *, uint32_t flags, const RULE_LIST *);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -27,6 +27,9 @@ typedef struct _MESSAGE_OBJECT {
 	PROPTAG_ARRAY *premoved_proptags;
 } MESSAGE_OBJECT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 	BOOL b_new, uint32_t cpid, uint64_t message_id,
@@ -122,3 +125,7 @@ BOOL message_object_copy_attachments(MESSAGE_OBJECT *pmessage,
 
 BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint8_t read_flag, BOOL *pb_changed);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

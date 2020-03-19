@@ -32,6 +32,10 @@ typedef struct _CONTAINER_OBJECT {
 	} contents;
 } CONTAINER_OBJECT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue);
 
@@ -70,3 +74,7 @@ void container_object_get_user_table_all_proptags(
 BOOL container_object_query_user_table(
 	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

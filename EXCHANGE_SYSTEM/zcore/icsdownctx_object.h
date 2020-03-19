@@ -23,6 +23,9 @@ typedef struct _ICSDOWNCTX_OBJECT {
 	uint32_t eid_pos;
 } ICSDOWNCTX_OBJECT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 ICSDOWNCTX_OBJECT* icsdownctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type);
@@ -52,3 +55,7 @@ BOOL icsdownctx_object_sync_deletions(ICSDOWNCTX_OBJECT *pctx,
 
 BOOL icsdownctx_object_sync_readstates(
 	ICSDOWNCTX_OBJECT *pctx, STATE_ARRAY *pstates);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

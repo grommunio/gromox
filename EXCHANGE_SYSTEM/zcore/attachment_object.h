@@ -14,6 +14,10 @@ typedef struct _ATTACHMENT_OBJECT {
 	uint32_t attachment_num;
 } ATTACHMENT_OBJECT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ATTACHMENT_OBJECT* attachment_object_create(
 	MESSAGE_OBJECT *pparent, uint32_t attachment_num);
 
@@ -55,3 +59,7 @@ BOOL attachment_object_copy_properties(
 STORE_OBJECT* attachment_object_get_store(ATTACHMENT_OBJECT *pattachment);
 
 BOOL attachment_object_check_writable(ATTACHMENT_OBJECT *pattachment);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
