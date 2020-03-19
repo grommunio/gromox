@@ -12,6 +12,10 @@ typedef struct _CONNECTION {
 
 typedef int (*COMMAND_HANDLER)(int argc, char** argv, int sockd);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void cmd_parser_init(int threads_num, int timeout);
 extern int cmd_parser_run(void);
 extern int cmd_parser_stop(void);
@@ -20,3 +24,7 @@ extern CONNECTION *cmd_parser_get_connection(void);
 void cmd_parser_put_connection(CONNECTION *pconnection);
 
 void cmd_parser_register_command(const char *command, COMMAND_HANDLER handler);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

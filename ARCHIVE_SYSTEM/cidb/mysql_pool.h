@@ -14,6 +14,9 @@ typedef struct _MYSQL_CONNECTION {
 	MYSQL *pmysql;
 } MYSQL_CONNECTION;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void mysql_pool_init(int conn_num, int scan_interval, const char *host,
 	int port, const char *user, const char *password, const char *db_name,
@@ -27,3 +30,7 @@ void mysql_pool_put_connection(MYSQL_CONNECTION *pconnection, BOOL b_alive);
 int mysql_pool_get_param(int param);
 
 void mysql_pool_encode_squote(const char *in, char *out);
+
+#ifdef	__cplusplus
+} /* extern "C" */
+#endif
