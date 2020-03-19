@@ -333,7 +333,6 @@ int main(int argc, const char **argv)
 		}
 	}
 	printf("[system]: console server port is %d\n", console_port);
-	config_file_free(pconfig);
 	
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
