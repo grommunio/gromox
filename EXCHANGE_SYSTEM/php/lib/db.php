@@ -119,4 +119,21 @@ function get_domain_info_by_id($domain_id)
 	return array('homedir'=>$row[0], 'did'=>$row[1], 'domain'=>$row[2]);
 }
 
+function get_domains()
+{
+	$db_conn = get_db_connection();
+
+	$sql_string = "SELECT domainname FROM domains";
+	$results = $db_conn->query($sql_string);
+	if (!$results) {
+		die("fail to query database: " . $db_conn->error);
+	}
+	$domains = array();
+	for ($i = 0; $i < mysqli_num_rows($results); ++$i) {
+		$row = $results->fetch_row();
+		$domains[] = $row[0];
+	}
+	return $domains;
+}
+
 ?>
