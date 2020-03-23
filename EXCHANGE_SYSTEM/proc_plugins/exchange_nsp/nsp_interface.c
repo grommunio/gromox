@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "nsp_interface.h"
@@ -2996,14 +2997,6 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	}
 	ab_tree_put_base(pbase);
 	return MAPI_E_SUCCESS;
-}
-
-int nsp_interface_get_templateinfo(NSPI_HANDLE handle,
-	uint32_t flags, uint32_t type, char *pdn, uint32_t codepage,
-	uint32_t locale_id, PROPERTY_ROW **ppdata)
-{
-	*ppdata = NULL;
-	return MAPI_E_NO_SUPPORT;
 }
 
 int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
