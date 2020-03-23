@@ -446,7 +446,7 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 		pabnode->node_type = NODE_TYPE_EQUIPMENT;
 		break;
 	default:
-		pabnode->node_type = NODE_TYPE_PERSOPN;
+		pabnode->node_type = NODE_TYPE_PERSON;
 		break;
 	}
 	mem_file_read(pfile_user, &user_id, sizeof(int));
@@ -1187,7 +1187,7 @@ static int ab_tree_node_to_rpath(SIMPLE_TREE_NODE *pnode,
 	case NODE_TYPE_CLASS:
 		len = sprintf(temp_buff, "c%d", pabnode->id);
 		break;
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 		len = sprintf(temp_buff, "p%d", pabnode->id);
 		break;
 	case NODE_TYPE_MLIST:
@@ -1344,7 +1344,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		pnode = *ppnode;
 	}
 	switch (pabnode->node_type) {
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		id = pabnode->id;
@@ -1574,7 +1574,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 		mem_file_read(&fake_file, str_dname, temp_len);
 		str_dname[temp_len] = '\0';
 		break;
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		mem_file_read(&fake_file, &temp_len, sizeof(int));
@@ -1651,7 +1651,7 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value)
 	
 	value[0] = '\0';
 	pabnode = (AB_NODE*)pnode;
-	if (pabnode->node_type != NODE_TYPE_PERSOPN &&
+	if (pabnode->node_type != NODE_TYPE_PERSON &&
 		pabnode->node_type != NODE_TYPE_ROOM &&
 		pabnode->node_type != NODE_TYPE_EQUIPMENT &&
 		pabnode->node_type != NODE_TYPE_REMOTE) {

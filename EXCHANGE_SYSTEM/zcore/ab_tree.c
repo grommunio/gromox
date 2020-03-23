@@ -392,7 +392,7 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 		pabnode->node_type = NODE_TYPE_EQUIPMENT;
 		break;
 	default:
-		pabnode->node_type = NODE_TYPE_PERSOPN;
+		pabnode->node_type = NODE_TYPE_PERSON;
 		break;
 	}
 	mem_file_read(pfile_user, &user_id, sizeof(int));
@@ -1126,7 +1126,7 @@ static int ab_tree_node_to_rpath(SIMPLE_TREE_NODE *pnode,
 	case NODE_TYPE_CLASS:
 		len = sprintf(temp_buff, "c%d", pabnode->id);
 		break;
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 		len = sprintf(temp_buff, "p%d", pabnode->id);
 		break;
 	case NODE_TYPE_MLIST:
@@ -1361,7 +1361,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 			guid.node[2], guid.node[3],
 			guid.node[4], guid.node[5]);
 		break;
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		id = pabnode->id;
@@ -1492,7 +1492,7 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 		mem_file_read(&fake_file, str_dname, temp_len);
 		str_dname[temp_len] = '\0';
 		break;
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		mem_file_read(&fake_file, &temp_len, sizeof(int));
@@ -1565,7 +1565,7 @@ static void ab_tree_get_user_info(
 	
 	value[0] = '\0';
 	pabnode = (AB_NODE*)pnode;
-	if (pabnode->node_type != NODE_TYPE_PERSOPN &&
+	if (pabnode->node_type != NODE_TYPE_PERSON &&
 		pabnode->node_type != NODE_TYPE_ROOM &&
 		pabnode->node_type != NODE_TYPE_EQUIPMENT &&
 		pabnode->node_type != NODE_TYPE_REMOTE) {
@@ -2076,7 +2076,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_TITLE:
-		if (NODE_TYPE_PERSOPN == node_type) {
+		if (node_type == NODE_TYPE_PERSON) {
 			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
 			if ('\0' == dn[0]) {
 				*ppvalue = NULL;
@@ -2099,7 +2099,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_NICKNAME:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -2117,7 +2117,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	case PROP_TAG_PRIMARYTELEPHONENUMBER:
 	case PROP_TAG_BUSINESSTELEPHONENUMBER:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -2134,7 +2134,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_MOBILETELEPHONENUMBER:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -2151,7 +2151,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_HOMEADDRESSSTREET:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -2168,7 +2168,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_COMMENT:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -2239,7 +2239,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_SMTPADDRESS:
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (NODE_TYPE_PERSOPN == node_type ||
+		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
@@ -2261,7 +2261,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES:
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (NODE_TYPE_PERSOPN == node_type ||
+		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
@@ -2299,7 +2299,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (node_type == NODE_TYPE_MLIST) {
 			ab_tree_get_mlist_info(pnode, NULL, dn, NULL);
-		} else if (node_type == NODE_TYPE_PERSOPN) {
+		} else if (node_type == NODE_TYPE_PERSON) {
 			ab_tree_get_user_info(pnode, USER_CREATE_DAY, dn);
 		} else {
 			*ppvalue = NULL;
@@ -2312,7 +2312,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_THUMBNAILPHOTO:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -2382,7 +2382,7 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	switch(ab_tree_get_node_type(pnode)) {
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;

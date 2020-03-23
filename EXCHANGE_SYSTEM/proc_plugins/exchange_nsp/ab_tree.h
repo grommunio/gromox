@@ -16,7 +16,7 @@
 #define NODE_TYPE_GROUP						0x82
 #define NODE_TYPE_CLASS						0x83
 #define NODE_TYPE_REMOTE					0x0
-#define NODE_TYPE_PERSOPN					0x1
+#define NODE_TYPE_PERSON					0x1
 #define NODE_TYPE_MLIST						0x2
 #define NODE_TYPE_ROOM						0x3
 #define NODE_TYPE_EQUIPMENT					0x4

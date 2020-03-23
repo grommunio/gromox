@@ -52,7 +52,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE:
 	case PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE_STRING8:
 		if (NODE_TYPE_ROOM != node_type &&
-			NODE_TYPE_PERSOPN != node_type &&
+		    node_type != NODE_TYPE_PERSON &&
 			NODE_TYPE_EQUIPMENT != node_type) {
 			return MAPI_E_NOT_FOUND;
 		}
@@ -225,7 +225,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		pprop->value.bin.pb[3] = (minid >> 24) & 0xFF;
 		break;
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
-		if (node_type != NODE_TYPE_PERSOPN &&
+		if (node_type != NODE_TYPE_PERSON &&
 			node_type != NODE_TYPE_EQUIPMENT &&
 			node_type != NODE_TYPE_ROOM) {
 			return MAPI_E_NOT_FOUND;
@@ -248,7 +248,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		break;
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
-		if (node_type != NODE_TYPE_PERSOPN &&
+		if (node_type != NODE_TYPE_PERSON &&
 			node_type != NODE_TYPE_EQUIPMENT &&
 			node_type != NODE_TYPE_ROOM) {
 			return MAPI_E_NOT_FOUND;
@@ -273,7 +273,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				pprop->value.pstr, temp_len);
 		break;
 	case PROP_TAG_TITLE:
-		if (NODE_TYPE_PERSOPN == node_type) {
+		if (node_type == NODE_TYPE_PERSON) {
 			ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
 			if ('\0' == dn[0]) {
 				return MAPI_E_NOT_FOUND;
@@ -305,9 +305,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		break;
 	case PROP_TAG_TITLE_STRING8:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_JOB_TITLE, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -326,9 +325,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				pprop->value.pstr, temp_len);
 		break;
 	case PROP_TAG_NICKNAME:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -345,9 +343,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		break;
 	case PROP_TAG_NICKNAME_STRING8:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_NICK_NAME, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -367,9 +364,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		break;
 	case PROP_TAG_PRIMARYTELEPHONENUMBER:
 	case PROP_TAG_BUSINESSTELEPHONENUMBER:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -387,9 +383,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		break;
 	case PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8:
 	case PROP_TAG_BUSINESSTELEPHONENUMBER_STRING8:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_BUSINESS_TEL, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -407,9 +402,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			dn, pprop->value.pstr, temp_len);
 		break;
 	case PROP_TAG_MOBILETELEPHONENUMBER:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -426,9 +420,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		break;
 	case PROP_TAG_MOBILETELEPHONENUMBER_STRING8:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_MOBILE_TEL, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -446,9 +439,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				pprop->value.pstr, temp_len);
 		break;
 	case PROP_TAG_HOMEADDRESSSTREET:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -465,9 +457,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		break;
 	case PROP_TAG_HOMEADDRESSSTREET_STRING8:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_HOME_ADDRESS, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -485,9 +476,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				pprop->value.pstr, temp_len);
 		break;
 	case PROP_TAG_COMMENT:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_COMMENT, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -504,9 +494,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		break;
 	case PROP_TAG_COMMENT_STRING8:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_COMMENT, dn);
 		if ('\0' == dn[0]) {
 			return MAPI_E_NOT_FOUND;
@@ -628,7 +617,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_SMTPADDRESS_STRING8:
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (NODE_TYPE_PERSOPN == node_type ||
+		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
@@ -653,7 +642,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8:
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (NODE_TYPE_PERSOPN == node_type ||
+		} else if (node_type == NODE_TYPE_PERSON ||
 			NODE_TYPE_EQUIPMENT == node_type ||
 			NODE_TYPE_ROOM == node_type) {
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
@@ -715,19 +704,17 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			"ncacn_http:%s", rpc_info.ep_host);
 		break;
 	case PROP_TAG_CREATIONTIME:
-		if (node_type == NODE_TYPE_MLIST) {
+		if (node_type == NODE_TYPE_MLIST)
 			ab_tree_get_mlist_info(pnode, NULL, dn, NULL);
-		} else if (node_type == NODE_TYPE_PERSOPN) {
+		else if (node_type == NODE_TYPE_PERSON)
 			ab_tree_get_user_info(pnode, USER_CREATE_DAY, dn);
-		} else {
+		else
 			return MAPI_E_NOT_FOUND;
-		}
 		common_util_day_to_filetime(dn, &pprop->value.ftime);
 		break;
 	case PROP_TAG_THUMBNAILPHOTO:
-		if (node_type != NODE_TYPE_PERSOPN) {
+		if (node_type != NODE_TYPE_PERSON)
 			return MAPI_E_NOT_FOUND;
-		}
 		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn);
 		strcat(dn, "/config/portrait.jpg");
 		if (FALSE == common_util_load_file(dn, &pprop->value.bin)) {
@@ -2240,14 +2227,13 @@ static int nsp_interface_get_default_proptags(int node_type,
 	case NODE_TYPE_GROUP:
 	case NODE_TYPE_CLASS:
 		return MAPI_E_INVALID_OBJECT;
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
-		if (NODE_TYPE_PERSOPN == node_type) {
+		if (node_type == NODE_TYPE_PERSON)
 			pproptags->cvalues = 31;
-		} else {
+		else
 			pproptags->cvalues = 30;
-		}
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_OUT,
 						sizeof(uint32_t)*pproptags->cvalues);
 		if (NULL == pproptags->pproptag) {
@@ -2305,9 +2291,8 @@ static int nsp_interface_get_default_proptags(int node_type,
 		pproptags->pproptag[27] = PROP_TAG_TEMPLATEID;
 		pproptags->pproptag[28] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
 		pproptags->pproptag[29] = PROP_TAG_CREATIONTIME;
-		if (NODE_TYPE_PERSOPN == node_type) {
+		if (node_type == NODE_TYPE_PERSON)
 			pproptags->pproptag[30] = PROP_TAG_THUMBNAILPHOTO;
-		}
 		break;
 	case NODE_TYPE_MLIST:
 		pproptags->cvalues = 21;
@@ -3066,7 +3051,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		goto EXIT_MOD_LINKATT;
 	}
 	switch (ab_tree_get_node_type(ptnode)) {
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
 		break;
@@ -3303,7 +3288,7 @@ static BOOL nsp_interface_resolve_node(SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	switch(ab_tree_get_node_type(pnode)) {
-	case NODE_TYPE_PERSOPN:
+	case NODE_TYPE_PERSON:
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn);
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
