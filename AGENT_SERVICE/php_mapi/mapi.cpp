@@ -5332,6 +5332,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	presource->type = MAPI_MESSAGE;
 	presource->hsession = pctx->hsession;
 	presource->hobject = hobject;
+	ZVAL_DEREF(pzresmessage);
 	ZEND_REGISTER_RESOURCE(pzresmessage, presource, le_mapi_message);
 	RETVAL_TRUE;
 	MAPI_G(hr) = EC_SUCCESS;
