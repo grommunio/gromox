@@ -54,7 +54,7 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable);
 
 static int resource_parse_pop3_line(char* dest, char* src_str, int len);
 
-void resource_init(const char *c1, const char *c2)
+void resource_init(void)
 {
     pthread_rwlock_init(&g_error_table_lock, NULL);
 }

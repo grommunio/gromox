@@ -84,7 +84,7 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
 
-	resource_init(opt_config_file, config_default_path("pop3.cfg"));
+	resource_init();
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 
 		return EXIT_FAILURE;

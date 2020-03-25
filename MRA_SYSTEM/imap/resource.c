@@ -132,7 +132,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist);
 static int resource_parse_imap_line(char* dest, char* src_str, int len);
 static BOOL resource_load_imap_lang_list(void);
 
-void resource_init(const char *c1, const char *c2)
+void resource_init(void)
 {
 	g_lang_list = NULL;
     pthread_rwlock_init(&g_return_table_lock, NULL);
