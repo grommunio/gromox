@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 
 #ifdef __cplusplus
 extern "C" {

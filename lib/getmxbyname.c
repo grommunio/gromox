@@ -77,6 +77,7 @@ static int getmx_extract_rr(unsigned char *answer, size_t answ_size,
 		memcpy(e, buf, strlen(buf) + 1);
 		memcpy(e + strlen(buf) + 1, rdata, sizeof(uint16_t));
 	}
+	mxlist[0][current] = nullptr;
 	return current;
 }
 
