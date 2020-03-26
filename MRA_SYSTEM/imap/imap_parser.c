@@ -309,6 +309,7 @@ int imap_parser_run()
 int imap_parser_stop()
 {
 	int i;
+	system_services_install_event_stub(nullptr);
 
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
