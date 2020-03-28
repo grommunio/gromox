@@ -121,7 +121,7 @@ extern BOOL resource_get_digest_string(const char *src, const char *tag, char *b
 extern BOOL resource_get_digest_integer(const char *src, const char *tag, long *pinteger);
 extern void resource_set_digest_string(char *src, int length, const char *tag, const char *value);
 extern void resource_set_digest_integer(char *src, int length, const char *tag, long value);
-extern const char *resource_get_error_string(int errno);
+extern const char *resource_get_error_string(int);
 
 #ifdef __cplusplus
 } /* extern "C" */

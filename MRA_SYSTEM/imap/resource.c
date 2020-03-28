@@ -3,7 +3,6 @@
  *  programmer to set and get the configuration dynamicly
  *
  */
-#include <errno.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "resource.h"
@@ -650,9 +649,8 @@ char** resource_get_folder_strings(const char*lang)
 	return NULL;
 }
 
-const char *resource_get_error_string(int errno)
+const char *resource_get_error_string(int code)
 {
 	int temp_len;
-	
-	return resource_get_imap_code(IMAP_CODE_2200000 + errno, 1, &temp_len);
+	return resource_get_imap_code(IMAP_CODE_2200000 + code, 1, &temp_len);
 }
