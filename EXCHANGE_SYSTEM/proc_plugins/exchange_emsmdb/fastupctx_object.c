@@ -1112,6 +1112,5 @@ gxerr_t fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
 	}
 	return ftstream_parser_process(pctx->pstream,
 	       fastupctx_object_record_marker,
-	       fastupctx_object_record_propval, pctx) == TRUE ?
-	       GXERR_SUCCESS : GXERR_CALL_FAILED;
+	       fastupctx_object_record_propval, pctx);
 }

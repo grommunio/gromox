@@ -906,9 +906,8 @@ static BOOL ftstream_parser_truncate_fd(
 	return TRUE;
 }
 
-BOOL ftstream_parser_process(FTSTREAM_PARSER *pstream,
-	RECORD_MARKER record_marker, RECORD_PROPVAL record_propval,
-	void *pparam)
+gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
+    RECORD_MARKER record_marker, RECORD_PROPVAL record_propval, void *pparam)
 {
 	int len;
 	void *pvalue;
@@ -925,7 +924,7 @@ BOOL ftstream_parser_process(FTSTREAM_PARSER *pstream,
 		case FTSTREAM_PARSER_READ_OK:
 			if (0 != marker) {
 				if (FALSE == record_marker(pparam, marker)) {
-					return FALSE;
+					return GXERR_CALL_FAILED;
 				}
 				break;
 			}
@@ -944,13 +943,14 @@ BOOL ftstream_parser_process(FTSTREAM_PARSER *pstream,
 				}
 			}
 			if (FALSE == record_propval(pparam, &propval)) {
-				return FALSE;
+				return GXERR_CALL_FAILED;
 			}
 			break;
 		case FTSTREAM_PARSER_READ_CONTINUE:
-			return ftstream_parser_truncate_fd(pstream);
+			return ftstream_parser_truncate_fd(pstream) == TRUE ?
+			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		default:
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	}
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "mapi_types.h"
 #include "logon_object.h"
 
@@ -21,7 +22,4 @@ void ftstream_parser_free(FTSTREAM_PARSER *pstream);
 BOOL ftstream_parser_write_buffer(
 	FTSTREAM_PARSER *pstream,
 	const BINARY *ptransfer_data);
-
-BOOL ftstream_parser_process(FTSTREAM_PARSER *pstream,
-	RECORD_MARKER record_marker, RECORD_PROPVAL record_propval,
-	void *pparam);
+extern gxerr_t ftstream_parser_process(FTSTREAM_PARSER *, RECORD_MARKER, RECORD_PROPVAL, void *param);
