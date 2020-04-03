@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "emsmdb_interface.h"
 #include "message_object.h"
 #include "rop_processor.h"
@@ -11,9 +12,8 @@
 #include "rops.h"
 #include <stdio.h>
 
-
-static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
-	const char *representing_username)
+static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
+    const char *representing_username)
 {
 	BINARY *pentryid;
 	uint64_t nt_time;
@@ -53,14 +53,14 @@ static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
 	propval_buff[5].pvalue  = const_cast(char *, "EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (FALSE == common_util_get_user_displayname(account, tmp_display)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pentryid = common_util_username_to_addressbook_entryid(account);
 	if (NULL == pentryid) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	search_bin.cb = snprintf(search_buff, 1024, "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
@@ -75,16 +75,16 @@ static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	if (0 != strcasecmp(account, representing_username)) {
 		if (FALSE == common_util_username_to_essdn(
 			representing_username, essdn_buff1)) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		if (FALSE == common_util_get_user_displayname(
 			representing_username, tmp_display1)) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		pentryid = common_util_username_to_addressbook_entryid(
 										representing_username);
 		if (NULL == pentryid) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	} else {
 		strcpy(essdn_buff1, essdn_buff);
@@ -106,9 +106,10 @@ static BOOL oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[15].pvalue = &search_bin1;
 	if (FALSE == message_object_set_properties(
 		pmessage, &tmp_propvals, &tmp_problems)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
-	return message_object_save(pmessage);
+	return message_object_save(pmessage) == TRUE ?
+	       GXERR_SUCCESS : GXERR_CALL_FAILED;
 }
 
 static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
@@ -300,9 +301,9 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 			return EC_ACCESS_DENIED;
 		}
 	}
-	if (FALSE == oxomsg_rectify_message(pmessage, username)) {
-		return EC_ERROR;
-	}
+	gxerr_t err = oxomsg_rectify_message(pmessage, username);
+	if (err != GXERR_SUCCESS)
+		return gxerr_to_hresult(err);
 	
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;
@@ -733,9 +734,9 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 			return EC_ACCESS_DENIED;
 		}
 	}
-	if (FALSE == oxomsg_rectify_message(pmessage, username)) {
-		return EC_ERROR;
-	}
+	gxerr_t err = oxomsg_rectify_message(pmessage, username);
+	if (err != GXERR_SUCCESS)
+		return gxerr_to_hresult(err);
 	*pppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
 	if (NULL != *pppropvals) {
 		proptags.count = 7;
