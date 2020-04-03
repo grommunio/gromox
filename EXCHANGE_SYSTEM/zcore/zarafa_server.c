@@ -2489,11 +2489,12 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 				folder_id != folder_object_get_id(psrc_folder)) {
 				continue;
 			}
-			if (FALSE == common_util_remote_copy_message(
-				pstore, message_id, pstore1,
-				folder_object_get_id(pdst_folder))) {
+			gxerr_t err = common_util_remote_copy_message(pstore,
+			              message_id, pstore1,
+			              folder_object_get_id(pdst_folder));
+			if (err != GXERR_SUCCESS) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ERROR;
+				return gxerr_to_hresult(err);
 			}
 			if (FALSE == b_copy) {
 				if (TRUE == b_guest) {

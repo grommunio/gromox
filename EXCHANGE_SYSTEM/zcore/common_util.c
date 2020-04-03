@@ -2821,9 +2821,8 @@ BOOL common_util_convert_to_zrule_data(
 	return TRUE;
 }
 
-BOOL common_util_remote_copy_message(
-	STORE_OBJECT *pstore, uint64_t message_id,
-	STORE_OBJECT *pstore1, uint64_t folder_id1)
+gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
+    uint64_t message_id, STORE_OBJECT *pstore1, uint64_t folder_id1)
 {
 	XID tmp_xid;
 	BINARY *pbin;
@@ -2844,10 +2843,10 @@ BOOL common_util_remote_copy_message(
 	if (FALSE == exmdb_client_read_message(
 		store_object_get_dir(pstore), username,
 		pinfo->cpid, message_id, &pmsgctnt)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (NULL == pmsgctnt) {
-		return TRUE;
+		return GXERR_SUCCESS;
 	}
 	common_util_remove_propvals(
 		&pmsgctnt->proplist, PROP_TAG_CONVERSATIONID);
@@ -2885,7 +2884,7 @@ BOOL common_util_remote_copy_message(
 		&pmsgctnt->proplist, PROP_TAG_STORERECORDKEY);
 	if (FALSE == exmdb_client_allocate_cn(
 		store_object_get_dir(pstore), &change_num)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
@@ -2900,7 +2899,7 @@ BOOL common_util_remote_copy_message(
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	propval.proptag = PROP_TAG_CHANGEKEY;
 	propval.pvalue = pbin;
@@ -2910,7 +2909,7 @@ BOOL common_util_remote_copy_message(
 	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	if (FALSE == exmdb_client_write_message(
@@ -2918,9 +2917,9 @@ BOOL common_util_remote_copy_message(
 		store_object_get_account(pstore1),
 		pinfo->cpid, folder_id1, pmsgctnt,
 		&b_result) || FALSE == b_result) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
-	return TRUE;
+	return GXERR_SUCCESS;
 }
 
 static BOOL common_util_create_folder(
@@ -3156,11 +3155,10 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 		return GXERR_CALL_FAILED;
 	}
 	for (i=0; i<pmessage_ids->count; i++) {
-		if (FALSE == common_util_remote_copy_message(
-			pstore, pmessage_ids->pids[i], pstore1,
-			new_fid)) {
-			return GXERR_CALL_FAILED;
-		}
+		gxerr_t err = common_util_remote_copy_message(pstore,
+		              pmessage_ids->pids[i], pstore1, new_fid);
+		if (err != GXERR_SUCCESS)
+			return err;
 	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {	
 		username = pinfo->username;
