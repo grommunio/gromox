@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "attachment_object.h"
 #include "proptag_array.h"
 #include "exmdb_client.h"
@@ -133,7 +134,7 @@ uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment)
 	return pattachment->pparent->cpid;
 }
 
-BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment)
+gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 {
 	BOOL b_result;
 	uint64_t nt_time;
@@ -142,7 +143,7 @@ BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 	
 	if (FALSE == pattachment->b_writable ||
 		FALSE == pattachment->b_touched) {
-		return TRUE;
+		return GXERR_SUCCESS;
 	}
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = &tmp_propval;
@@ -151,22 +152,22 @@ BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 	tmp_propval.pvalue = &nt_time;
 	if (FALSE == attachment_object_set_properties(
 		pattachment, &tmp_propvals)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	if (FALSE == exmdb_client_flush_instance(
 		store_object_get_dir(pattachment->pparent->pstore),
 		pattachment->instance_id, NULL, &b_result)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	if (FALSE == b_result) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;
 	proptag_array_append(pattachment->pparent->pchanged_proptags,
 									PROP_TAG_MESSAGEATTACHMENTS);
-	return TRUE;
+	return GXERR_SUCCESS;
 }
 
 BOOL attachment_object_get_all_proptags(

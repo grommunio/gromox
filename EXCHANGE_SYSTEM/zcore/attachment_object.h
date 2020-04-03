@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "message_object.h"
 
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
@@ -34,9 +35,7 @@ uint32_t attachment_object_get_attachment_num(
 uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment);
 
 uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment);
-
-BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment);
-
+extern gxerr_t attachment_object_save(ATTACHMENT_OBJECT *);
 BOOL attachment_object_get_all_proptags(
 	ATTACHMENT_OBJECT *pattachment, PROPTAG_ARRAY *pproptags);
 
