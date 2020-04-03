@@ -923,9 +923,9 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 			pstream, &marker, &propval)) {
 		case FTSTREAM_PARSER_READ_OK:
 			if (0 != marker) {
-				if (FALSE == record_marker(pparam, marker)) {
-					return GXERR_CALL_FAILED;
-				}
+				gxerr_t err = record_marker(pparam, marker);
+				if (err != GXERR_SUCCESS)
+					return err;
 				break;
 			}
 			proptype = propval.proptag & 0xFFFF;

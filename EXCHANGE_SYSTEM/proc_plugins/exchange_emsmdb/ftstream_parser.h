@@ -4,7 +4,7 @@
 #include "logon_object.h"
 
 struct _FASTUPCTX_OBJECT;
-typedef BOOL (*RECORD_MARKER)(struct _FASTUPCTX_OBJECT *, uint32_t);
+typedef gxerr_t (*RECORD_MARKER)(struct _FASTUPCTX_OBJECT *, uint32_t);
 typedef BOOL (*RECORD_PROPVAL)(struct _FASTUPCTX_OBJECT *, const TAGGED_PROPVAL *);
 
 typedef struct _FTSTREAM_PARSER {
