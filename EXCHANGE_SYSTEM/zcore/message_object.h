@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "ics_state.h"
 #include "mapi_types.h"
 #include "double_list.h"
@@ -57,9 +58,7 @@ uint32_t message_object_get_tag_access(MESSAGE_OBJECT *pmessage);
 STORE_OBJECT* message_object_get_store(MESSAGE_OBJECT *pmessage);
 
 void message_object_free(MESSAGE_OBJECT *pmessage);
-
-BOOL message_object_save(MESSAGE_OBJECT *pmessage);
-
+extern gxerr_t message_object_save(MESSAGE_OBJECT *);
 BOOL message_object_reload(MESSAGE_OBJECT *pmessage);
 
 BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,

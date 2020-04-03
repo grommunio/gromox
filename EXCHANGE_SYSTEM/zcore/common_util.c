@@ -323,8 +323,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 		pmessage, &tmp_propvals)) {
 		return GXERR_CALL_FAILED;
 	}
-	return message_object_save(pmessage) == TRUE ?
-	       GXERR_SUCCESS : GXERR_CALL_FAILED;
+	return message_object_save(pmessage);
 }
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,

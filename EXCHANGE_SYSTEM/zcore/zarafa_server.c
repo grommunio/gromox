@@ -5900,9 +5900,10 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 			zarafa_server_put_user_info(pinfo);
 			return EC_OBJECT_MODIFIED;
 		}
-		if (FALSE == message_object_save(pobject)) {
+		gxerr_t err = message_object_save(pobject);
+		if (err != GXERR_SUCCESS) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;
+			return gxerr_to_hresult(err);
 		}
 		zarafa_server_put_user_info(pinfo);
 		return EC_SUCCESS;

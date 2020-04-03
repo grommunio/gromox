@@ -411,7 +411,7 @@ STORE_OBJECT* message_object_get_store(MESSAGE_OBJECT *pmessage)
 	return pmessage->pstore;
 }
 
-BOOL message_object_save(MESSAGE_OBJECT *pmessage)
+gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 {
 	int i;
 	BOOL b_new;
@@ -436,19 +436,19 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	
 	if (FALSE == pmessage->b_new &&
 		FALSE == pmessage->b_touched) {
-		return TRUE;	
+		return GXERR_SUCCESS;
 	}
 	dir = store_object_get_dir(pmessage->pstore);
 	pinfo = zarafa_server_get_info();
 	if (FALSE == exmdb_client_allocate_cn(
 		dir, &pmessage->change_num)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	
 	if (FALSE == exmdb_client_get_instance_property(
 		dir, pmessage->instance_id, PROP_TAG_ASSOCIATED,
 		&pvalue)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 		b_fai = FALSE;
@@ -458,14 +458,14 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL)*8);
 	if (NULL == tmp_propvals.ppropval) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
 								PROP_TAG_LOCALCOMMITTIME;
 	pvalue = common_util_alloc(sizeof(uint64_t));
 	if (NULL == pvalue) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	*(uint64_t*)pvalue = rop_util_current_nttime();
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
@@ -485,7 +485,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 									PROP_TAG_LASTMODIFIERNAME;
 		pvalue = common_util_alloc(1024);
 		if (NULL == pvalue) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		if (FALSE == system_services_get_user_displayname(
 			pinfo->username, pvalue) || '\0' == ((char*)pvalue)[0]) {
@@ -500,7 +500,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	pvalue = common_util_username_to_addressbook_entryid(
 										pinfo->username);
 	if (NULL == pvalue) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
 	tmp_propvals.count ++;
@@ -509,10 +509,10 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 		if (FALSE == exmdb_client_get_instance_property(dir,
 			pmessage->instance_id, PROP_TAG_PREDECESSORCHANGELIST,
 			(void**)&pbin_pcl)) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		if (FALSE == pmessage->b_new && NULL == pbin_pcl) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		if (TRUE == store_object_check_private(pmessage->pstore)) {
 			tmp_xid.guid = rop_util_make_user_guid(
@@ -526,7 +526,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 										PROP_TAG_CHANGEKEY;
 		pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 		if (NULL == pbin_changekey) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 											pbin_changekey;
@@ -534,7 +534,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 		
 		pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 		if (NULL == pbin_pcl) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
 							PROP_TAG_PREDECESSORCHANGELIST;
@@ -544,7 +544,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	
 	if (FALSE == message_object_set_properties_internal(
 		pmessage, FALSE, &tmp_propvals)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	
 	/* change number of embedding message is used for message
@@ -555,21 +555,21 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	tmp_propval.pvalue = &pmessage->change_num;
 	if (FALSE == exmdb_client_set_instance_property(dir,
 		pmessage->instance_id, &tmp_propval, &result)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	
 	if (FALSE == exmdb_client_flush_instance(
 		dir, pmessage->instance_id,
 		store_object_get_account(pmessage->pstore),
 		&b_result) || FALSE == b_result) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	b_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
 	pmessage->b_touched = FALSE;
 	if (0 == pmessage->message_id) {
 		pmessage->pembedding->b_touched = TRUE;
-		return TRUE;
+		return GXERR_SUCCESS;
 	}
 	
 	if (NULL != pmessage->pstate) {
@@ -587,7 +587,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	if (0 == pmessage->message_id || TRUE == b_fai) {
 		proptag_array_clear(pmessage->pchanged_proptags);
 		proptag_array_clear(pmessage->premoved_proptags);
-		return TRUE;
+		return GXERR_SUCCESS;
 	}
 	
 	if (TRUE == b_new) {
@@ -595,46 +595,46 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 	}
 	if (FALSE == exmdb_client_get_message_group_id(
 		dir, pmessage->message_id, &pgroup_id)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	if (NULL == pgroup_id) {
 		pgpinfo = store_object_get_last_property_groupinfo(
 											pmessage->pstore);
 		if (NULL == pgpinfo) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		if (FALSE == exmdb_client_set_message_group_id(
 			dir, pmessage->message_id, pgpinfo->group_id)) {
-			return FALSE;	
+			return GXERR_CALL_FAILED;
 		}
 	}  else {
 		pgpinfo = store_object_get_property_groupinfo(
 						pmessage->pstore, *pgroup_id);
 		if (NULL == pgpinfo) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	}
 	
 	if (FALSE == exmdb_client_mark_modified(
 		dir, pmessage->message_id)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	
 	pindices = proptag_array_init();
 	if (NULL == pindices) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pungroup_proptags = proptag_array_init();
 	if (NULL == pungroup_proptags) {
 		proptag_array_free(pindices);
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	/* always mark PROP_TAG_MESSAGEFLAGS as changed */
 	if (FALSE == proptag_array_append(
 		pmessage->pchanged_proptags, PROP_TAG_MESSAGEFLAGS)) {
 		proptag_array_free(pindices);
 		proptag_array_free(pungroup_proptags);
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
 		if (FALSE == property_groupinfo_get_partial_index(pgpinfo,
@@ -643,13 +643,13 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 				pmessage->pchanged_proptags->pproptag[i])) {
 				proptag_array_free(pindices);
 				proptag_array_free(pungroup_proptags);
-				return FALSE;
+				return GXERR_CALL_FAILED;
 			}
 		} else {
 			if (FALSE == proptag_array_append(pindices, tmp_index)) {
 				proptag_array_free(pindices);
 				proptag_array_free(pungroup_proptags);
-				return FALSE;
+				return GXERR_CALL_FAILED;
 			}
 		}
 	}
@@ -663,7 +663,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 			if (FALSE == proptag_array_append(pindices, tmp_index)) {
 				proptag_array_free(pindices);
 				proptag_array_free(pungroup_proptags);
-				return FALSE;
+				return GXERR_CALL_FAILED;
 			}
 		}
 	}
@@ -672,7 +672,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 		pindices, pungroup_proptags)) {
 		proptag_array_free(pindices);
 		proptag_array_free(pungroup_proptags);
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	proptag_array_free(pindices);
 	proptag_array_free(pungroup_proptags);
@@ -687,7 +687,7 @@ BOOL message_object_save(MESSAGE_OBJECT *pmessage)
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
 	}
-	return TRUE;
+	return GXERR_SUCCESS;
 	
 SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
@@ -697,7 +697,7 @@ SAVE_FULL_CHANGE:
 	if (FALSE == exmdb_client_save_change_indices(
 		dir, pmessage->message_id, pmessage->change_num,
 		&tmp_indices, (PROPTAG_ARRAY*)&tmp_indices)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
@@ -708,7 +708,7 @@ SAVE_FULL_CHANGE:
 			pmessage->cpid, pmessage->folder_id,
 			pmessage->message_id);
 	}
-	return TRUE;
+	return GXERR_SUCCESS;
 }
 
 BOOL message_object_reload(MESSAGE_OBJECT *pmessage)
