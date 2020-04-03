@@ -21,7 +21,7 @@ int main(int argc, const char **argv)
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
 	
-
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (2 != argc) {
 		printf("usage: %s address\n", argv[0]);
 		return 1;

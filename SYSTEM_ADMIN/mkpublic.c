@@ -266,6 +266,7 @@ int main(int argc, const char **argv)
 	struct stat node_stat;
 	char mysql_string[1024];
 	
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {

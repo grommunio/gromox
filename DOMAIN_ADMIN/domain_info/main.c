@@ -27,6 +27,7 @@ int main(int argc, const char **argv)
 	char *mysql_passwd;
 	char db_name[256];
 
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	HX_strlcpy(temp_path, PKGSYSCONFDIR "/da.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);
 	if (NULL == pconfig) {

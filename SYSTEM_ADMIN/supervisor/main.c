@@ -42,6 +42,7 @@ int main(int argc, const char **argv)
 	char temp_buff[128];
 	int supervise_interval;
 
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {

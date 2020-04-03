@@ -28,6 +28,7 @@ int main(int argc, const char **argv)
 	int timeout;
 	CONFIG_FILE *pconfig;
 
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	HX_strlcpy(config_path, PKGSYSCONFDIR "/sa.cfg", sizeof(config_path));
 	pconfig = config_file_init2(NULL, config_path);
 	if (NULL == pconfig) {

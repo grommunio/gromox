@@ -72,6 +72,7 @@ int main(int argc, const char **argv)
 	const char *str_val;
 	char temp_buff[256];
 
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	signal(SIGPIPE, SIG_IGN);

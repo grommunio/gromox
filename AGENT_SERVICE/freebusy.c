@@ -2330,6 +2330,7 @@ int main(int argc, const char **argv)
 	const char *pstddayofweek;
 	const char *pdtldayofweek;
 	
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	double_list_init(&g_exmdb_list);
 	plist = list_file_init3(PKGDATAAGENTDIR "/exmdb_list.txt", "%s:256%s:16%s:16%d", false);
 	if (NULL == plist) {

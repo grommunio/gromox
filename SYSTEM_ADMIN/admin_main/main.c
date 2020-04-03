@@ -22,6 +22,7 @@ int main(int argc, const char **argv)
 	char acl_path[256];
 	CONFIG_FILE *pconfig;
 
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	umask(0);
 	HX_strlcpy(temp_path, PKGSYSCONFDIR "/sa.cfg", sizeof(temp_path));
 	pconfig = config_file_init2(NULL, temp_path);

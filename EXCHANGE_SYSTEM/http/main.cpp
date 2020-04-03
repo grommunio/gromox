@@ -104,6 +104,7 @@ int main(int argc, const char **argv)
 	int thread_init_num, thread_charge_num, http_support_ssl;
 	const char *certificate_path, *cb_passwd, *private_key_path;
 	
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	signal(SIGPIPE, SIG_IGN);

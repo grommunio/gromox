@@ -30,7 +30,7 @@ int main(int argc, const char **argv)
 	char mysql_user[256];
 	char sql_string[1024];
 	
-	
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (2 != argc) {
 		printf("usage: %s address\n", argv[0]);
 		return 1;

@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <gromox/defs.h>
 
 int main(int argc, const char **argv)
 {
@@ -23,7 +24,7 @@ int main(int argc, const char **argv)
 	POP3_SESSION pop_session;
 	SMTP_SESSION smtp_session;
 	
-
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (4 != argc) {
 		printf("%s pop_addr:port smtp_addr:port <list file>\n", argv[0]);
 		return 1;

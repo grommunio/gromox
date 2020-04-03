@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <libHX/option.h>
+#include <gromox/defs.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -98,6 +99,7 @@ int main(int argc, const char **argv)
 {
 	struct stat node_stat;
 
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {

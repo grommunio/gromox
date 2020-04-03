@@ -3,6 +3,7 @@
 #endif
 #include <string.h>
 #include <libHX/option.h>
+#include <gromox/defs.h>
 #include "mail.h"
 #include "mail_func.h"
 #include "util.h"
@@ -48,6 +49,7 @@ int main(int argc, const char **argv)
 	char *ptoken;
 	struct stat node_stat;
 	
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {

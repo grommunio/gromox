@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <libHX/option.h>
+#include <gromox/defs.h>
 #include <stdlib.h>
 #include "midb_client.h"
 
@@ -26,6 +27,7 @@ int main(int argc, const char **argv)
 	char temp_line[1024];
 	char temp_buff[4096];
 
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {

@@ -3,6 +3,7 @@
 #endif
 #include <libHX/ctype_helper.h>
 #include <libHX/option.h>
+#include <gromox/defs.h>
 #include "single_list.h"
 #include "util.h"
 #include "mail.h"
@@ -92,6 +93,7 @@ int main(int argc, const char **argv)
 	int smtp_port, res_val, command_len;
 	int fd, sockd, opt, val_opt;
 	
+	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
