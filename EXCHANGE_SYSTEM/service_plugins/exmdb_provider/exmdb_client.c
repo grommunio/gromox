@@ -3798,10 +3798,8 @@ BOOL exmdb_client_write_message(const char *dir, const char *account,
 	
 	if (TRUE == exmdb_client_check_local(dir, &b_private)) {
 		exmdb_server_build_environment(TRUE, b_private, dir);
-		BOOL b2 = FALSE;
 		BOOL b_result = exmdb_server_write_message(dir, account, cpid,
-		                folder_id, pmsgctnt, &b2);
-		*pe_result = b2 == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+		                folder_id, pmsgctnt, pe_result);
 		exmdb_server_free_environment();
 		return b_result;
 	}
@@ -3814,8 +3812,7 @@ BOOL exmdb_client_write_message(const char *dir, const char *account,
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*pe_result = response.payload.write_message.b_result == TRUE ?
-	             GXERR_SUCCESS : GXERR_CALL_FAILED;
+	*pe_result = response.payload.write_message.e_result;
 	return TRUE;
 }
 

@@ -1340,7 +1340,7 @@ typedef struct _RESP_DELIVERY_MESSAGE {
 } RESP_DELIVERY_MESSAGE;
 
 typedef struct _RESP_WRITE_MESSAGE {
-	BOOL b_result;
+	gxerr_t e_result;
 } RESP_WRITE_MESSAGE;
 
 typedef struct _RESP_READ_MESSAGE {

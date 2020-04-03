@@ -702,7 +702,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.write_message.cpid,
 			prequest->payload.write_message.folder_id,
 			prequest->payload.write_message.pmsgctnt,
-			&presponse->payload.write_message.b_result);
+			&presponse->payload.write_message.e_result);
 	case CALL_ID_READ_MESSAGE:
 		return exmdb_server_read_message(prequest->dir,
 			prequest->payload.read_message.username,

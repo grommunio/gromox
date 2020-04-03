@@ -2906,8 +2906,7 @@ BOOL exmdb_client_write_message(const char *dir, const char *account,
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*pe_result = response.payload.write_message.b_result == TRUE ?
-	             GXERR_SUCCESS : GXERR_CALL_FAILED;
+	*pe_result = response.payload.write_message.e_result;
 	return TRUE;
 }
 

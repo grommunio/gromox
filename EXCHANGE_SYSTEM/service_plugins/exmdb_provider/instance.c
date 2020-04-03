@@ -2060,10 +2060,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	}
 	db_engine_put_db(pdb);
 	common_util_set_tls_var(pmsgctnt);
-	BOOL b2 = FALSE;
 	BOOL b_result = exmdb_server_write_message(dir, account, 0, folder_id,
-	                pmsgctnt, &b2);
-	*pe_result = b2 == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+	                pmsgctnt, pe_result);
 	common_util_set_tls_var(NULL);
 	message_content_free(pmsgctnt);
 	return b_result;

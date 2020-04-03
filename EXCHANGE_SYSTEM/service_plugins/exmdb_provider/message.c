@@ -5542,9 +5542,9 @@ BOOL exmdb_server_delivery_message(const char *dir,
 
 /* create or cover message under folder, if message exists
 	in somewhere except the folder, result will be FALSE */
-BOOL exmdb_server_write_message(const char *dir,
-	const char *account, uint32_t cpid, uint64_t folder_id,
-	const MESSAGE_CONTENT *pmsgctnt, BOOL *pb_result)
+BOOL exmdb_server_write_message(const char *dir, const char *account,
+    uint32_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
+    gxerr_t *pe_result)
 {
 	DB_ITEM *pdb;
 	BOOL b_exist;
@@ -5557,7 +5557,7 @@ BOOL exmdb_server_write_message(const char *dir,
 	
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_CHANGENUMBER)) {
-		*pb_result = FALSE;
+		*pe_result = GXERR_CALL_FAILED;
 		return TRUE;
 	}
 	b_exist = FALSE;
@@ -5574,7 +5574,7 @@ BOOL exmdb_server_write_message(const char *dir,
 	if (TRUE == common_util_check_msgsize_overflow(pdb->psqlite) ||
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		db_engine_put_db(pdb);
-		*pb_result = FALSE;
+		*pe_result = GXERR_CALL_FAILED;
 		return TRUE;	
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
@@ -5588,7 +5588,7 @@ BOOL exmdb_server_write_message(const char *dir,
 			b_exist = TRUE;
 			if (fid_val != fid_val1) {
 				db_engine_put_db(pdb);
-				*pb_result = FALSE;
+				*pe_result = GXERR_CALL_FAILED;
 				return TRUE;
 			}
 		}
@@ -5608,10 +5608,10 @@ BOOL exmdb_server_write_message(const char *dir,
 	}
 	if (0 == mid_val) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		*pb_result = FALSE;
+		*pe_result = GXERR_CALL_FAILED;
 	} else {
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-		*pb_result = TRUE;
+		*pe_result = GXERR_SUCCESS;
 	}
 	if (TRUE == b_exist) {
 		db_engine_proc_dynmaic_event(pdb, cpid,

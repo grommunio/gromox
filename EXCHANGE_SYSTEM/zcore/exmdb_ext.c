@@ -3673,8 +3673,7 @@ static int exmdb_ext_pull_delivery_message_response(
 static int exmdb_ext_pull_write_message_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_bool(pext,
-		&ppayload->write_message.b_result);
+	return ext_buffer_pull_uint32(pext, &ppayload->write_message.e_result);
 }
 
 static int exmdb_ext_pull_read_message_response(
