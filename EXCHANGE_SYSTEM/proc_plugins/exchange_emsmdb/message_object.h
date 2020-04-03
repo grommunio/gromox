@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "ics_state.h"
 #include "mapi_types.h"
 #include "double_list.h"
@@ -57,9 +58,7 @@ void message_object_set_open_flags(
 	MESSAGE_OBJECT *pmessage, uint8_t open_flags);
 
 void message_object_free(MESSAGE_OBJECT *pmessage);
-
-BOOL message_object_save(MESSAGE_OBJECT *pmessage);
-
+extern gxerr_t message_object_save(MESSAGE_OBJECT *);
 BOOL message_object_reload(MESSAGE_OBJECT *pmessage);
 
 PROPTAG_ARRAY* message_object_get_rcpt_columns(MESSAGE_OBJECT *pmessage);

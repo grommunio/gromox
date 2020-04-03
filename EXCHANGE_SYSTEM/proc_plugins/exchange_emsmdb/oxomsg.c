@@ -108,8 +108,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 		pmessage, &tmp_propvals, &tmp_problems)) {
 		return GXERR_CALL_FAILED;
 	}
-	return message_object_save(pmessage) == TRUE ?
-	       GXERR_SUCCESS : GXERR_CALL_FAILED;
+	return message_object_save(pmessage);
 }
 
 static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
