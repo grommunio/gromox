@@ -6,6 +6,7 @@
 typedef enum {
 	GXERR_SUCCESS = 0,
 	GXERR_CALL_FAILED,
+	GXERR_OVER_QUOTA,
 } gxerr_t;
 
 #ifdef __cplusplus

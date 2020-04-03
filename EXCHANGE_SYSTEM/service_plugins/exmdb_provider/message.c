@@ -5574,7 +5574,7 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	if (TRUE == common_util_check_msgsize_overflow(pdb->psqlite) ||
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		db_engine_put_db(pdb);
-		*pe_result = GXERR_CALL_FAILED;
+		*pe_result = GXERR_OVER_QUOTA;
 		return TRUE;	
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
