@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "attachment_object.h"
 #include "fastupctx_object.h"
 #include "emsmdb_interface.h"
@@ -1098,18 +1099,19 @@ static BOOL fastupctx_object_record_propval(
 	}
 }
 
-BOOL fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
-	const BINARY *ptransfer_data)
+gxerr_t fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
+    const BINARY *ptransfer_data)
 {
 	/* check if the fast stream is marked as ended */
 	if (TRUE == pctx->b_ended) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (FALSE == ftstream_parser_write_buffer(
 		pctx->pstream, ptransfer_data)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	return ftstream_parser_process(pctx->pstream,
 	       fastupctx_object_record_marker,
-	       fastupctx_object_record_propval, pctx);
+	       fastupctx_object_record_propval, pctx) == TRUE ?
+	       GXERR_SUCCESS : GXERR_CALL_FAILED;
 }

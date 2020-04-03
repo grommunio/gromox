@@ -392,10 +392,9 @@ uint32_t rop_fasttransferdestputbuffer(
 	if (OBJECT_TYPE_FASTUPCTX != object_type) {
 		return EC_NOT_SUPPORTED;
 	}
-	if (FALSE == fastupctx_object_write_buffer(
-		pobject, ptransfer_data)) {
-		return EC_ERROR;
-	}
+	gxerr_t err = fastupctx_object_write_buffer(pobject, ptransfer_data);
+	if (err != GXERR_SUCCESS)
+		return gxerr_to_hresult(err);
 	*pused_size = ptransfer_data->cb;
 	return EC_SUCCESS;
 }

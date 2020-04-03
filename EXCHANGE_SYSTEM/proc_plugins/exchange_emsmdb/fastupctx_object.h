@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "ftstream_parser.h"
 #include "element_data.h"
 
@@ -24,6 +25,4 @@ FASTUPCTX_OBJECT* fastupctx_object_create(
 	LOGON_OBJECT *plogon, void *pobject, int root_element);
 
 void fastupctx_object_free(FASTUPCTX_OBJECT *pctx);
-
-BOOL fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
-	const BINARY *ptransfer_data);
+extern gxerr_t fastupctx_object_write_buffer(FASTUPCTX_OBJECT *, const BINARY *transfer_data);
