@@ -942,9 +942,9 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 					propval.pvalue = pvalue;
 				}
 			}
-			if (FALSE == record_propval(pparam, &propval)) {
-				return GXERR_CALL_FAILED;
-			}
+			gxerr_t err = record_propval(pparam, &propval);
+			if (err != GXERR_SUCCESS)
+				return err;
 			break;
 		case FTSTREAM_PARSER_READ_CONTINUE:
 			return ftstream_parser_truncate_fd(pstream) == TRUE ?

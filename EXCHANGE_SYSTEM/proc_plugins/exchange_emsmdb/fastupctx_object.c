@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <gromox/defs.h>
 #include "attachment_object.h"
 #include "fastupctx_object.h"
@@ -991,8 +992,8 @@ static BOOL fastupctx_object_del_props(
 	return TRUE;
 }
 
-static BOOL fastupctx_object_record_propval(
-	FASTUPCTX_OBJECT *pctx, const TAGGED_PROPVAL *ppropval)
+static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
+    const TAGGED_PROPVAL *ppropval)
 {
 	BOOL b_result;
 	uint32_t last_marker;
@@ -1007,13 +1008,14 @@ static BOOL fastupctx_object_record_propval(
 		case PROP_TAG_FOLDERASSOCIATEDCONTENTS:
 		case PROP_TAG_CONTAINERHIERARCHY:
 			return fastupctx_object_del_props(pctx,
-					*(uint32_t*)ppropval->pvalue);
+			       *static_cast(uint32_t *, ppropval->pvalue)) == TRUE ?
+			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		default:
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	case META_TAG_DNPREFIX:
 	case META_TAG_ECWARNING:
-		return TRUE;
+		return GXERR_SUCCESS;
 	case META_TAG_NEWFXFOLDER:
 	case META_TAG_INCRSYNCGROUPID:
 	case META_TAG_INCREMENTALSYNCMESSAGEPARTIAL:
@@ -1027,7 +1029,7 @@ static BOOL fastupctx_object_record_propval(
 	case META_TAG_IDSETEXPIRED:
 	case META_TAG_IDSETREAD:
 	case META_TAG_IDSETUNREAD:
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pnode = double_list_get_tail(&pctx->marker_stack);
 	if (NULL != pnode) {
@@ -1039,41 +1041,44 @@ static BOOL fastupctx_object_record_propval(
 		if (NEWATTACH == last_marker || (0 == last_marker &&
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element)) {
 			if (PROP_TAG_ATTACHDATAOBJECT != ppropval->proptag) {
-				return FALSE;
+				return GXERR_CALL_FAILED;
 			}
 		} else {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	}
 	switch (last_marker) {
 	case 0:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_FOLDERCONTENT:
-			return tpropval_array_set_propval(
-					pctx->pproplist, ppropval);
+			return tpropval_array_set_propval(pctx->pproplist, ppropval) == TRUE ?
+			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			return exmdb_client_set_instance_property(
 					logon_object_get_dir(pctx->pstream->plogon),
 					message_object_get_instance_id(pctx->pobject),
-					ppropval, &b_result);
+					ppropval, &b_result) == TRUE ?
+					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
 			return exmdb_client_set_instance_property(
 					logon_object_get_dir(pctx->pstream->plogon),
 					attachment_object_get_instance_id(pctx->pobject),
-					ppropval, &b_result);
+					ppropval, &b_result) == TRUE ?
+					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGELIST:
 		case ROOT_ELEMENT_TOPFOLDER:
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	case STARTTOPFLD:
 	case STARTSUBFLD:
-		return tpropval_array_set_propval(
-					pctx->pproplist, ppropval);
+		return tpropval_array_set_propval(pctx->pproplist, ppropval) == TRUE ?
+		       GXERR_SUCCESS : GXERR_CALL_FAILED;
 	case STARTMESSAGE:
 	case STARTFAIMSG:
 		return tpropval_array_set_propval(((MARKER_NODE*)
-				pnode->pdata)->data.pelement, ppropval);
+				pnode->pdata)->data.pelement, ppropval) == TRUE ?
+				GXERR_SUCCESS : GXERR_CALL_FAILED;
 	case STARTEMBED:
 	case NEWATTACH:
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
@@ -1081,21 +1086,25 @@ static BOOL fastupctx_object_record_propval(
 			return exmdb_client_set_instance_property(
 					logon_object_get_dir(pctx->pstream->plogon),
 					((MARKER_NODE*)pnode->pdata)->data.instance_id,
-					ppropval, &b_result);
+					ppropval, &b_result) == TRUE ?
+					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		} else {
 			return tpropval_array_set_propval(((MARKER_NODE*)
-					pnode->pdata)->data.pelement, ppropval);
+					pnode->pdata)->data.pelement, ppropval) == TRUE ?
+					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
 	case STARTRECIP:
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
-			return tpropval_array_set_propval(pctx->pproplist, ppropval);
+			return tpropval_array_set_propval(pctx->pproplist, ppropval) == TRUE ?
+			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		} else {
 			return tpropval_array_set_propval(((MARKER_NODE*)
-					pnode->pdata)->data.pelement, ppropval);
+					pnode->pdata)->data.pelement, ppropval) == TRUE ?
+					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
 	default:
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 }
 
