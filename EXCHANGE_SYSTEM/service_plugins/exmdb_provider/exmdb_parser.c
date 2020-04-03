@@ -499,7 +499,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 		return exmdb_server_flush_instance(prequest->dir,
 			prequest->payload.flush_instance.instance_id,
 			prequest->payload.flush_instance.account,
-			&presponse->payload.flush_instance.b_result);
+			&presponse->payload.flush_instance.e_result);
 	case CALL_ID_UNLOAD_INSTANCE:
 		return exmdb_server_unload_instance(prequest->dir,
 			prequest->payload.unload_instance.instance_id);

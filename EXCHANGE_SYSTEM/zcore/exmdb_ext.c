@@ -3444,8 +3444,7 @@ static int exmdb_ext_pull_write_attachment_instance_response(
 static int exmdb_ext_pull_flush_instance_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_bool(pext,
-		&ppayload->flush_instance.b_result);
+	return ext_buffer_pull_uint32(pext, &ppayload->flush_instance.e_result);
 }
 
 static int exmdb_ext_pull_get_instance_all_proptags_response(

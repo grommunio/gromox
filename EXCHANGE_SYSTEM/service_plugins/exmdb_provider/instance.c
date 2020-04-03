@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "exmdb_server.h"
@@ -1834,14 +1835,13 @@ BOOL exmdb_server_delete_message_instance_attachment(
 }
 
 /* account must be available when it is a normal message instance */ 
-BOOL exmdb_server_flush_instance(const char *dir,
-	uint32_t instance_id, const char *account, BOOL *pb_result)
+BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
+    const char *account, gxerr_t *pe_result)
 {
 	int i;
 	DB_ITEM *pdb;
 	void *pvalue;
 	BINARY *pbin;
-	BOOL b_result;
 	uint32_t *pcpid;
 	uint64_t folder_id;
 	char tmp_buff[1024];
@@ -1939,7 +1939,7 @@ BOOL exmdb_server_flush_instance(const char *dir,
 			}
 		}
 		db_engine_put_db(pdb);
-		*pb_result = TRUE;
+		*pe_result = GXERR_SUCCESS;
 		return TRUE;
 	}
 	if ((pinstance->change_mask & CHANGE_MASK_HTML) &&
@@ -1981,7 +1981,7 @@ BOOL exmdb_server_flush_instance(const char *dir,
 		}
 		attachment_content_set_embedded_internal(pinstance1->pcontent, pmsgctnt);
 		db_engine_put_db(pdb);
-		*pb_result = TRUE;
+		*pe_result = GXERR_SUCCESS;
 		return TRUE;
 	}
 	pmsgctnt = message_content_dup(pinstance->pcontent);
@@ -2060,8 +2060,10 @@ BOOL exmdb_server_flush_instance(const char *dir,
 	}
 	db_engine_put_db(pdb);
 	common_util_set_tls_var(pmsgctnt);
-	b_result = exmdb_server_write_message(dir,
-		account, 0, folder_id, pmsgctnt, pb_result);
+	BOOL b2 = FALSE;
+	BOOL b_result = exmdb_server_write_message(dir, account, 0, folder_id,
+	                pmsgctnt, &b2);
+	*pe_result = b2 == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 	common_util_set_tls_var(NULL);
 	message_content_free(pmsgctnt);
 	return b_result;

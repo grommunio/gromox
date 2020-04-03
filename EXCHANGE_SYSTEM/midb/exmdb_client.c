@@ -1949,8 +1949,7 @@ BOOL exmdb_client_flush_instance(const char *dir, uint32_t instance_id,
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*pe_result = response.payload.flush_instance.b_result == TRUE ?
-	             GXERR_SUCCESS : GXERR_CALL_FAILED;
+	*pe_result = response.payload.flush_instance.e_result;
 	return TRUE;
 }
 	

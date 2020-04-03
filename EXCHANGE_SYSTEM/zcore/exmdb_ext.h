@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "common_util.h"
 #include "ext_buffer.h"
 
@@ -1188,7 +1189,7 @@ typedef struct _RESP_WRITE_ATTACHMENT_INSTANCE {
 } RESP_WRITE_ATTACHMENT_INSTANCE;
 
 typedef struct _RESP_FLUSH_INSTANCE {
-	BOOL b_result;
+	gxerr_t e_result;
 } RESP_FLUSH_INSTANCE;
 
 typedef struct _RESP_GET_INSTANCE_ALL_PROPTAGS {
