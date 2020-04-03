@@ -229,8 +229,8 @@ BOOL common_util_check_delegate_permission_ex(
 	return common_util_check_delegate_permission(account, maildir);
 }
 
-BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
-	const char *representing_username)
+gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
+    const char *representing_username)
 {
 	BINARY *pentryid;
 	uint64_t nt_time;
@@ -267,15 +267,15 @@ BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
 	propval_buff[5].pvalue  = const_cast(char *, "EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (FALSE == system_services_get_user_displayname(
 		account, tmp_display)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pentryid = common_util_username_to_addressbook_entryid(account);
 	if (NULL == pentryid) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	search_bin.cb = snprintf(search_buff, 1024, "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
@@ -290,16 +290,16 @@ BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	if (0 != strcasecmp(account, representing_username)) {
 		if (FALSE == common_util_username_to_essdn(
 			representing_username, essdn_buff1)) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		if (FALSE == system_services_get_user_displayname(
 			representing_username, tmp_display1)) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 		pentryid = common_util_username_to_addressbook_entryid(
 										representing_username);
 		if (NULL == pentryid) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	} else {
 		strcpy(essdn_buff1, essdn_buff);
@@ -321,9 +321,10 @@ BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[15].pvalue = &search_bin1;
 	if (FALSE == message_object_set_properties(
 		pmessage, &tmp_propvals)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
-	return message_object_save(pmessage);
+	return message_object_save(pmessage) == TRUE ?
+	       GXERR_SUCCESS : GXERR_CALL_FAILED;
 }
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,

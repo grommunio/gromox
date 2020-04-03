@@ -4,6 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "store_object.h"
 #include "message_object.h"
@@ -376,10 +377,7 @@ BOOL common_util_check_delegate_permission(
 
 BOOL common_util_check_delegate_permission_ex(
 	const char *account, const char *account_representing);
-
-BOOL common_util_rectify_message(MESSAGE_OBJECT *pmessage,
-	const char *representing_username);
-
+extern gxerr_t common_util_rectify_message(MESSAGE_OBJECT *, const char *representing_username);
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 
