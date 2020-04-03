@@ -2826,7 +2826,6 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	XID tmp_xid;
 	BINARY *pbin;
 	BINARY *pbin1;
-	BOOL b_result;
 	USER_INFO *pinfo;
 	uint64_t change_num;
 	const char *username;
@@ -2911,13 +2910,11 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 		return GXERR_CALL_FAILED;
 	}
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	if (FALSE == exmdb_client_write_message(
-		store_object_get_dir(pstore1),
-		store_object_get_account(pstore1),
-		pinfo->cpid, folder_id1, pmsgctnt,
-		&b_result) || FALSE == b_result) {
-		return GXERR_CALL_FAILED;
-	}
+	gxerr_t e_result = GXERR_CALL_FAILED;
+	if (!exmdb_client_write_message(store_object_get_dir(pstore1),
+	    store_object_get_account(pstore1), pinfo->cpid, folder_id1,
+	    pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
+		return e_result;
 	return GXERR_SUCCESS;
 }
 

@@ -2890,9 +2890,9 @@ BOOL exmdb_client_delivery_message(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_client_write_message(const char *dir,
-	const char *account, uint32_t cpid, uint64_t folder_id,
-	const MESSAGE_CONTENT *pmsgctnt, BOOL *pb_result)
+BOOL exmdb_client_write_message(const char *dir, const char *account,
+    uint32_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
+    gxerr_t *pe_result)
 {
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
@@ -2906,7 +2906,8 @@ BOOL exmdb_client_write_message(const char *dir,
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*pb_result = response.payload.write_message.b_result;
+	*pe_result = response.payload.write_message.b_result == TRUE ?
+	             GXERR_SUCCESS : GXERR_CALL_FAILED;
 	return TRUE;
 }
 

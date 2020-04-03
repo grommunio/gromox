@@ -411,11 +411,7 @@ BOOL exmdb_client_delivery_message(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,
 	const char *pdigest, uint32_t *presult);
-
-BOOL exmdb_client_write_message(const char *dir,
-	const char *account, uint32_t cpid, uint64_t folder_id,
-	const MESSAGE_CONTENT *pmsgctnt, BOOL *pb_result);
-
+extern BOOL exmdb_client_write_message(const char *dir, const char *account, uint32_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *, gxerr_t *);
 BOOL exmdb_client_read_message(const char *dir, const char *username,
 	uint32_t cpid, uint64_t message_id, MESSAGE_CONTENT **ppmsgctnt);
 

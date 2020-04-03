@@ -3748,7 +3748,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	int user_id;
 	BINARY *pbin;
 	char lang[32];
-	BOOL b_result;
 	uint32_t cpid;
 	IDB_ITEM *pidb;
 	uint8_t b_read;
@@ -3953,9 +3952,10 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (0 == cpid) {
 		cpid = 1252;
 	}
-	if (FALSE == exmdb_client_write_message(argv[1], username,
-		cpid, rop_util_make_eid_ex(1, folder_id), pmsgctnt, &b_result)
-		|| FALSE == b_result) {
+	gxerr_t e_result = GXERR_CALL_FAILED;
+	if (!exmdb_client_write_message(argv[1], username, cpid,
+	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
+	    e_result != GXERR_SUCCESS) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -4268,7 +4268,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	int user_id;
 	BINARY *pbin;
 	char lang[32];
-	BOOL b_result;
 	uint32_t cpid;
 	int flags_len;
 	IDB_ITEM *pidb;
@@ -4505,9 +4504,10 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (0 == cpid) {
 		cpid = 1252;
 	}
-	if (FALSE == exmdb_client_write_message(argv[1], username,
-		cpid, rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &b_result)
-		|| FALSE == b_result) {
+	gxerr_t e_result = GXERR_CALL_FAILED;
+	if (!exmdb_client_write_message(argv[1], username, cpid,
+	    rop_util_make_eid_ex(1, folder_id1), pmsgctnt, &e_result) ||
+	    e_result != GXERR_SUCCESS) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}

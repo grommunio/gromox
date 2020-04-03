@@ -3788,19 +3788,20 @@ BOOL exmdb_client_delivery_message(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_client_write_message(const char *dir,
-	const char *account, uint32_t cpid, uint64_t folder_id,
-	const MESSAGE_CONTENT *pmsgctnt, BOOL *pb_result)
+BOOL exmdb_client_write_message(const char *dir, const char *account,
+    uint32_t cpid, uint64_t folder_id, const MESSAGE_CONTENT *pmsgctnt,
+    gxerr_t *pe_result)
 {
-	BOOL b_result;
 	BOOL b_private;
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
 	
 	if (TRUE == exmdb_client_check_local(dir, &b_private)) {
 		exmdb_server_build_environment(TRUE, b_private, dir);
-		b_result = exmdb_server_write_message(dir,
-			account, cpid, folder_id, pmsgctnt, pb_result);
+		BOOL b2 = FALSE;
+		BOOL b_result = exmdb_server_write_message(dir, account, cpid,
+		                folder_id, pmsgctnt, &b2);
+		*pe_result = b2 == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 		exmdb_server_free_environment();
 		return b_result;
 	}
@@ -3813,7 +3814,8 @@ BOOL exmdb_client_write_message(const char *dir,
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*pb_result = response.payload.write_message.b_result;
+	*pe_result = response.payload.write_message.b_result == TRUE ?
+	             GXERR_SUCCESS : GXERR_CALL_FAILED;
 	return TRUE;
 }
 

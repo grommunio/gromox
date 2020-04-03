@@ -305,7 +305,6 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	XID tmp_xid;
 	BINARY *pbin;
 	BINARY *pbin1;
-	BOOL b_result;
 	EMSMDB_INFO *pinfo;
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
@@ -390,13 +389,11 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 		return GXERR_CALL_FAILED;
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
-	if (FALSE == exmdb_client_write_message(
-		logon_object_get_dir(pctx->pstream->plogon),
-		logon_object_get_account(pctx->pstream->plogon),
-		pinfo->cpid, folder_id, pctx->pmsgctnt,
-		&b_result) || FALSE == b_result) {
-		return GXERR_CALL_FAILED;
-	}
+	gxerr_t e_result = GXERR_CALL_FAILED;
+	if (!exmdb_client_write_message(logon_object_get_dir(pctx->pstream->plogon),
+	    logon_object_get_account(pctx->pstream->plogon), pinfo->cpid,
+	    folder_id, pctx->pmsgctnt, &e_result) || e_result != GXERR_SUCCESS)
+		return e_result;
 	return GXERR_SUCCESS;
 }
 
