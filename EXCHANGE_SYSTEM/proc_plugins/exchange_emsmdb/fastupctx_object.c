@@ -299,8 +299,8 @@ static BOOL fastupctx_object_empty_folder(
 	return TRUE;
 }
 
-static BOOL fastupctx_object_write_message(
-	FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
+static gxerr_t
+fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 {
 	XID tmp_xid;
 	BINARY *pbin;
@@ -349,13 +349,13 @@ static BOOL fastupctx_object_write_message(
 	if (FALSE == exmdb_client_allocate_cn(
 		logon_object_get_dir(pctx->pstream->plogon),
 		&change_num)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	if (FALSE == tpropval_array_set_propval(
 		pproplist, &propval)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (TRUE == logon_object_check_private(
 		pctx->pstream->plogon)) {
@@ -370,24 +370,24 @@ static BOOL fastupctx_object_write_message(
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	propval.proptag = PROP_TAG_CHANGEKEY;
 	propval.pvalue = pbin;
 	if (FALSE == tpropval_array_set_propval(
 		pproplist, &propval)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pbin1 = tpropval_array_get_propval(pproplist,
 				PROP_TAG_PREDECESSORCHANGELIST);
 	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (FALSE == tpropval_array_set_propval(
 		pproplist, &propval)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_write_message(
@@ -395,9 +395,9 @@ static BOOL fastupctx_object_write_message(
 		logon_object_get_account(pctx->pstream->plogon),
 		pinfo->cpid, folder_id, pctx->pmsgctnt,
 		&b_result) || FALSE == b_result) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
-	return TRUE;
+	return GXERR_SUCCESS;
 }
 
 static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
@@ -588,7 +588,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		pmarker->marker = marker;
 		pmarker->data.pelement = pctx->pmsgctnt;
 		break;
-	case ENDMESSAGE:
+	case ENDMESSAGE: {
 		if (STARTMESSAGE != last_marker &&
 			STARTFAIMSG != last_marker) {
 			return GXERR_CALL_FAILED;
@@ -600,12 +600,13 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		double_list_remove(&pctx->marker_stack, pnode);
 		free(pnode->pdata);
 		folder_id = fastupctx_object_get_last_folder(pctx);
-		if (FALSE == fastupctx_object_write_message(pctx, folder_id)) {
-			return GXERR_CALL_FAILED;
-		}
+		gxerr_t err = fastupctx_object_write_message(pctx, folder_id);
+		if (err != GXERR_SUCCESS)
+			return err;
 		message_content_free(pctx->pmsgctnt);
 		pctx->pmsgctnt = NULL;
 		return GXERR_SUCCESS;
+	}
 	case STARTRECIP:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_MESSAGECONTENT:
