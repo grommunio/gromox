@@ -512,11 +512,7 @@ BOOL common_util_convert_to_zrule_data(STORE_OBJECT *, TPROPVAL_ARRAY *);
 BOOL common_util_remote_copy_message(
 	STORE_OBJECT *pstore, uint64_t message_id,
 	STORE_OBJECT *pstore1, uint64_t folder_id1);
-
-BOOL common_util_remote_copy_folder(
-	STORE_OBJECT *pstore, uint64_t folder_id,
-	STORE_OBJECT *pstore1, uint64_t folder_id1,
-	const char *new_name);
+extern gxerr_t common_util_remote_copy_folder(STORE_OBJECT *s0, uint64_t folder_id, STORE_OBJECT *s1, uint64_t folder_id1, const char *new_name);
 extern const uint8_t *common_util_get_muidecsab(void);
 extern const uint8_t *common_util_get_muidzcsab(void);
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);

@@ -3316,11 +3316,12 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 				}
 			}
 		}
-		if (FALSE == common_util_remote_copy_folder(pstore,
-			folder_id, pstore1, folder_object_get_id(pdst_folder),
-			new_name)) {
+		gxerr_t err = common_util_remote_copy_folder(pstore, folder_id,
+		              pstore1, folder_object_get_id(pdst_folder),
+		              new_name);
+		if (err != GXERR_SUCCESS) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ERROR;	
+			return gxerr_to_hresult(err);
 		}
 		if (FALSE == b_copy) {
 			if (FALSE == exmdb_client_empty_folder(
@@ -4793,9 +4794,10 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 			return EC_ACCESS_DENIED;
 		}
 	}
-	if (FALSE == common_util_rectify_message(pmessage, username)) {
+	gxerr_t err = common_util_rectify_message(pmessage, username);
+	if (err != GXERR_SUCCESS) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ERROR;
+		return gxerr_to_hresult(err);
 	}
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;

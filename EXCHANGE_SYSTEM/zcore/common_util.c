@@ -3098,10 +3098,8 @@ static EID_ARRAY* common_util_load_folder_messages(
 	return pmessage_ids;
 }
 
-BOOL common_util_remote_copy_folder(
-	STORE_OBJECT *pstore, uint64_t folder_id,
-	STORE_OBJECT *pstore1, uint64_t folder_id1,
-	const char *new_name)
+gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
+    STORE_OBJECT *pstore1, uint64_t folder_id1, const char *new_name)
 {
 	int i;
 	uint64_t new_fid;
@@ -3121,12 +3119,12 @@ BOOL common_util_remote_copy_folder(
 	if (FALSE == exmdb_client_get_folder_all_proptags(
 		store_object_get_dir(pstore), folder_id,
 		&tmp_proptags)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (FALSE == exmdb_client_get_folder_properties(
 		store_object_get_dir(pstore), 0, folder_id,
 		&tmp_proptags, &tmp_propvals)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	if (NULL != new_name) {
 		propval.proptag = PROP_TAG_DISPLAYNAME;
@@ -3135,7 +3133,7 @@ BOOL common_util_remote_copy_folder(
 	}
 	if (FALSE == common_util_create_folder(pstore1,
 		folder_id1, &tmp_propvals, &new_fid)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	pinfo = zarafa_server_get_info();
 	if (FALSE == store_object_check_owner_mode(pstore)) {
@@ -3143,11 +3141,11 @@ BOOL common_util_remote_copy_folder(
 		if (FALSE == exmdb_client_check_folder_permission(
 			store_object_get_dir(pstore), folder_id,
 			username, &permission)) {
-			return FALSE;	
+			return GXERR_CALL_FAILED;
 		}
 		if (0 == (permission & PERMISSION_READANY) &&
 			0 == (permission & PERMISSION_FOLDEROWNER)) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	} else {
 		username = NULL;
@@ -3155,13 +3153,13 @@ BOOL common_util_remote_copy_folder(
 	pmessage_ids = common_util_load_folder_messages(
 						pstore, folder_id, username);
 	if (NULL == pmessage_ids) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	for (i=0; i<pmessage_ids->count; i++) {
 		if (FALSE == common_util_remote_copy_message(
 			pstore, pmessage_ids->pids[i], pstore1,
 			new_fid)) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
 	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {	
@@ -3173,7 +3171,7 @@ BOOL common_util_remote_copy_folder(
 		store_object_get_dir(pstore), folder_id,
 		username, TABLE_FLAG_NONOTIFICATIONS, NULL,
 		&table_id, &row_count)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
@@ -3182,7 +3180,7 @@ BOOL common_util_remote_copy_folder(
 		store_object_get_dir(pstore), NULL, 0,
 		table_id, &tmp_proptags, 0, row_count,
 		&tmp_set)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;
 	}
 	exmdb_client_unload_table(
 		store_object_get_dir(pstore), table_id);
@@ -3190,15 +3188,14 @@ BOOL common_util_remote_copy_folder(
 		pfolder_id = common_util_get_propvals(
 			tmp_set.pparray[i], PROP_TAG_FOLDERID);
 		if (NULL == pfolder_id) {
-			return FALSE;
+			return GXERR_CALL_FAILED;
 		}
-		if (FALSE == common_util_remote_copy_folder(
-			pstore, *pfolder_id, pstore1, new_fid,
-			NULL)) {
-			return FALSE;
-		}
+		gxerr_t err = common_util_remote_copy_folder(pstore,
+		              *pfolder_id, pstore1, new_fid, nullptr);
+		if (err != GXERR_SUCCESS)
+			return err;
 	}
-	return TRUE;
+	return GXERR_SUCCESS;
 }
 
 const uint8_t *common_util_get_muidecsab(void)
