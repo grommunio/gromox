@@ -2,9 +2,9 @@
 #include "mapi_types.h"
 #include "logon_object.h"
 
-
-typedef BOOL (*RECORD_MARKER)(void*, uint32_t);
-typedef BOOL (*RECORD_PROPVAL)(void*, const TAGGED_PROPVAL*);
+struct _FASTUPCTX_OBJECT;
+typedef BOOL (*RECORD_MARKER)(struct _FASTUPCTX_OBJECT *, uint32_t);
+typedef BOOL (*RECORD_PROPVAL)(struct _FASTUPCTX_OBJECT *, const TAGGED_PROPVAL *);
 
 typedef struct _FTSTREAM_PARSER {
 	int fd;

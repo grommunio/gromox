@@ -1110,6 +1110,6 @@ BOOL fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
 		return FALSE;
 	}
 	return ftstream_parser_process(pctx->pstream,
-			(RECORD_MARKER)fastupctx_object_record_marker,
-			(RECORD_PROPVAL)fastupctx_object_record_propval, pctx);
+	       fastupctx_object_record_marker,
+	       fastupctx_object_record_propval, pctx);
 }
