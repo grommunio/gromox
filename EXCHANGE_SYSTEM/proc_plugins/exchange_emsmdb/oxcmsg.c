@@ -1103,9 +1103,9 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 		SAVE_FLAG_FORCESAVE != save_flags) {
 		return EC_ACCESS_DENIED;
 	}
-	if (FALSE == attachment_object_save(pattachment)) {
-		return EC_ERROR;
-	}
+	gxerr_t err = attachment_object_save(pattachment);
+	if (err != GXERR_SUCCESS)
+		return gxerr_to_hresult(err);
 	switch (save_flags) {
 	case SAVE_FLAG_KEEPOPENREADWRITE:
 	case SAVE_FLAG_FORCESAVE:

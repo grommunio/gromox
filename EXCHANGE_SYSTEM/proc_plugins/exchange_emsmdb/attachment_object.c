@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "attachment_object.h"
 #include "proptag_array.h"
 #include "exmdb_client.h"
@@ -146,7 +147,7 @@ uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment)
 	return pattachment->pparent->cpid;
 }
 
-BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment)
+gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 {
 	BOOL b_result;
 	uint64_t nt_time;
@@ -155,34 +156,34 @@ BOOL attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (FALSE == pattachment->b_touched) {
-		return TRUE;
+		return GXERR_SUCCESS;
 	}
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = &tmp_propval;
 	if (FALSE == attachment_object_flush_streams(pattachment)) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	tmp_propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	nt_time = rop_util_current_nttime();
 	tmp_propval.pvalue = &nt_time;
 	if (FALSE == attachment_object_set_properties(
 		pattachment, &tmp_propvals, &tmp_problems)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;	
 	}
 	if (FALSE == exmdb_client_flush_instance(
 		logon_object_get_dir(pattachment->pparent->plogon),
 		pattachment->instance_id, NULL, &b_result)) {
-		return FALSE;	
+		return GXERR_CALL_FAILED;	
 	}
 	if (FALSE == b_result) {
-		return FALSE;
+		return GXERR_CALL_FAILED;
 	}
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;
 	proptag_array_append(pattachment->pparent->pchanged_proptags,
 									PROP_TAG_MESSAGEATTACHMENTS);
-	return TRUE;
+	return GXERR_SUCCESS;
 }
 
 BOOL attachment_object_append_stream_object(
