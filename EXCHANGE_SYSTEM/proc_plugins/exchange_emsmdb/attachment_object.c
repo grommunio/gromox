@@ -149,7 +149,6 @@ uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment)
 
 gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 {
-	BOOL b_result;
 	uint64_t nt_time;
 	PROBLEM_ARRAY tmp_problems;
 	TAGGED_PROPVAL tmp_propval;
@@ -170,14 +169,10 @@ gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 		pattachment, &tmp_propvals, &tmp_problems)) {
 		return GXERR_CALL_FAILED;	
 	}
-	if (FALSE == exmdb_client_flush_instance(
-		logon_object_get_dir(pattachment->pparent->plogon),
-		pattachment->instance_id, NULL, &b_result)) {
-		return GXERR_CALL_FAILED;	
-	}
-	if (FALSE == b_result) {
-		return GXERR_CALL_FAILED;
-	}
+	gxerr_t e_result = GXERR_CALL_FAILED;
+	if (!exmdb_client_flush_instance(logon_object_get_dir(pattachment->pparent->plogon),
+	    pattachment->instance_id, NULL, &e_result) || e_result != GXERR_SUCCESS)
+		return e_result;
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;

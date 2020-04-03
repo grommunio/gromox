@@ -1936,8 +1936,8 @@ BOOL exmdb_client_delete_message_instance_attachment(
 	return TRUE;
 }
 
-BOOL exmdb_client_flush_instance(const char *dir,
-	uint32_t instance_id, const char *account, BOOL *pb_result)
+BOOL exmdb_client_flush_instance(const char *dir, uint32_t instance_id,
+    const char *account, gxerr_t *pe_result)
 {
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
@@ -1949,7 +1949,8 @@ BOOL exmdb_client_flush_instance(const char *dir,
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*pb_result = response.payload.flush_instance.b_result;
+	*pe_result = response.payload.flush_instance.b_result == TRUE ?
+	             GXERR_SUCCESS : GXERR_CALL_FAILED;
 	return TRUE;
 }
 	

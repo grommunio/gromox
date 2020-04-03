@@ -403,7 +403,6 @@ static BOOL fastupctx_object_write_message(
 static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
     uint32_t marker)
 {
-	BOOL b_result;
 	uint32_t tmp_id;
 	uint32_t tmp_num;
 	uint8_t tmp_byte;
@@ -749,12 +748,11 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
-			if (FALSE == exmdb_client_flush_instance(
-				logon_object_get_dir(pctx->pstream->plogon),
-				((MARKER_NODE*)pnode->pdata)->data.instance_id,
-				NULL, &b_result) || FALSE == b_result) {
-				return GXERR_CALL_FAILED;
-			}
+			gxerr_t e_result = GXERR_CALL_FAILED;
+			if (!exmdb_client_flush_instance(logon_object_get_dir(pctx->pstream->plogon),
+			    static_cast(MARKER_NODE *, pnode->pdata)->data.instance_id,
+			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
+				return e_result;
 			if (FALSE == exmdb_client_unload_instance(
 				logon_object_get_dir(pctx->pstream->plogon),
 				((MARKER_NODE*)pnode->pdata)->data.instance_id)) {
@@ -838,12 +836,11 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		}
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
-			if (FALSE == exmdb_client_flush_instance(
-				logon_object_get_dir(pctx->pstream->plogon),
-				((MARKER_NODE*)pnode->pdata)->data.instance_id,
-				NULL, &b_result) || FALSE == b_result) {
-				return GXERR_CALL_FAILED;
-			}
+			gxerr_t e_result = GXERR_CALL_FAILED;
+			if (!exmdb_client_flush_instance(logon_object_get_dir(pctx->pstream->plogon),
+			    static_cast(MARKER_NODE *, pnode->pdata)->data.instance_id,
+			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
+				return e_result;
 			if (FALSE == exmdb_client_unload_instance(
 				logon_object_get_dir(pctx->pstream->plogon),
 				((MARKER_NODE*)pnode->pdata)->data.instance_id)) {

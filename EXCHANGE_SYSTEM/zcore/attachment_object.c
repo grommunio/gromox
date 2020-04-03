@@ -136,7 +136,6 @@ uint32_t attachment_object_get_cpid(ATTACHMENT_OBJECT *pattachment)
 
 gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 {
-	BOOL b_result;
 	uint64_t nt_time;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -154,14 +153,10 @@ gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 		pattachment, &tmp_propvals)) {
 		return GXERR_CALL_FAILED;
 	}
-	if (FALSE == exmdb_client_flush_instance(
-		store_object_get_dir(pattachment->pparent->pstore),
-		pattachment->instance_id, NULL, &b_result)) {
-		return GXERR_CALL_FAILED;
-	}
-	if (FALSE == b_result) {
-		return GXERR_CALL_FAILED;
-	}
+	gxerr_t e_result = GXERR_CALL_FAILED;
+	if (!exmdb_client_flush_instance(store_object_get_dir(pattachment->pparent->pstore),
+	    pattachment->instance_id, nullptr, &e_result) || e_result != GXERR_SUCCESS)
+		return e_result;
 	pattachment->b_new = FALSE;
 	pattachment->b_touched = FALSE;
 	pattachment->pparent->b_touched = TRUE;

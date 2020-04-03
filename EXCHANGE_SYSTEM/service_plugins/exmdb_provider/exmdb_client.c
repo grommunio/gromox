@@ -2618,18 +2618,19 @@ BOOL exmdb_client_delete_message_instance_attachment(
 	return TRUE;
 }
 
-BOOL exmdb_client_flush_instance(const char *dir,
-	uint32_t instance_id, const char *account, BOOL *pb_result)
+BOOL exmdb_client_flush_instance(const char *dir, uint32_t instance_id,
+    const char *account, gxerr_t *pe_result)
 {
-	BOOL b_result;
 	BOOL b_private;
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
 	
 	if (TRUE == exmdb_client_check_local(dir, &b_private)) {
 		exmdb_server_build_environment(TRUE, b_private, dir);
-		b_result = exmdb_server_flush_instance(
-			dir, instance_id, account, pb_result);
+		BOOL b2 = FALSE;
+		BOOL b_result = exmdb_server_flush_instance(dir, instance_id,
+		                account, &b2);
+		*pe_result = b2 == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 		exmdb_server_free_environment();
 		return b_result;
 	}
@@ -2640,7 +2641,8 @@ BOOL exmdb_client_flush_instance(const char *dir,
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
-	*pb_result = response.payload.flush_instance.b_result;
+	*pe_result = response.payload.flush_instance.b_result == TRUE ?
+	             GXERR_SUCCESS : GXERR_CALL_FAILED;
 	return TRUE;
 }
 	

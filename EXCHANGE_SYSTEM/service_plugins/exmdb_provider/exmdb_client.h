@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "mapi_types.h"
 #include "element_data.h"
 
@@ -261,10 +262,7 @@ BOOL exmdb_client_write_attachment_instance(const char *dir,
 BOOL exmdb_client_delete_message_instance_attachment(
 	const char *dir, uint32_t message_instance_id,
 	uint32_t attachment_num);
-
-BOOL exmdb_client_flush_instance(const char *dir,
-	uint32_t instance_id, const char *account, BOOL *pb_result);
-	
+extern BOOL exmdb_client_flush_instance(const char *dir, uint32_t instance_id, const char *account, gxerr_t *);
 BOOL exmdb_client_unload_instance(
 	const char *dir, uint32_t instance_id);
 

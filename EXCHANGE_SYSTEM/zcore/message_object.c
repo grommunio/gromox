@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "attachment_object.h"
 #include "system_services.h"
 #include "message_object.h"
@@ -418,7 +419,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	BOOL b_fai;
 	XID tmp_xid;
 	void *pvalue;
-	BOOL b_result;
 	const char *dir;
 	uint32_t result;
 	USER_INFO *pinfo;
@@ -558,12 +558,12 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		return GXERR_CALL_FAILED;
 	}
 	
-	if (FALSE == exmdb_client_flush_instance(
-		dir, pmessage->instance_id,
-		store_object_get_account(pmessage->pstore),
-		&b_result) || FALSE == b_result) {
-		return GXERR_CALL_FAILED;
-	}
+	gxerr_t e_result = GXERR_CALL_FAILED;
+	if (!exmdb_client_flush_instance(dir, pmessage->instance_id,
+	    store_object_get_account(pmessage->pstore), &e_result) ||
+	    e_result != GXERR_SUCCESS)
+		return e_result;
+
 	b_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
 	pmessage->b_touched = FALSE;
