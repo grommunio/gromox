@@ -3,6 +3,7 @@
 #endif
 #include <errno.h>
 #include <libHX/option.h>
+#include <gromox/database.h>
 #include <gromox/paths.h>
 #include "config_file.h"
 #include <time.h>
@@ -222,9 +223,7 @@ int main(int argc, const char **argv)
 	free(sql_string);
 	
 	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		csql_string, strlen(csql_string), &pstmt, NULL)) {
-		printf("fail to prepare sql statement\n");
+	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;

@@ -3,6 +3,7 @@
 #endif
 #include <libHX/defs.h>
 #include <libHX/option.h>
+#include <gromox/database.h>
 #include <gromox/paths.h>
 #include "list_file.h"
 #include "ext_buffer.h"
@@ -672,8 +673,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	csql_string = "PRAGMA integrity_check";
-	if (SQLITE_OK == sqlite3_prepare_v2(
-		psqlite, csql_string, -1, &pstmt, NULL )) {
+	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			presult = reinterpret_cast(const char *, sqlite3_column_text(pstmt, 0));
 			if (NULL == presult || 0 != strcmp(presult, "ok")) {

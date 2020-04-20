@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>
+#include <gromox/database.h>
 #include <gromox/paths.h>
 #include "config_file.h"
 #include "ext_buffer.h"
@@ -71,10 +72,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sql_len = sprintf(sql_string, "INSERT INTO folders "
 				"(folder_id, parent_id, change_number, "
 				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
-	}
 	sqlite3_bind_int64(pstmt, 1, folder_id);
 	if (0 == parent_id) {
 		sqlite3_bind_null(pstmt, 2);
@@ -93,10 +92,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	art_num = g_last_art;
 	sql_len = sprintf(sql_string, "INSERT INTO "
 	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
-	}
 	sqlite3_bind_int64(pstmt, 1, PROP_TAG_DELETEDCOUNTTOTAL);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
@@ -487,9 +484,7 @@ int main(int argc, const char **argv)
 	pline = list_file_get_list(pfile);
 	
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		csql_string, strlen(csql_string), &pstmt, NULL)) {
-		printf("fail to prepare sql statement\n");
+	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		list_file_free(pfile);
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
@@ -514,17 +509,13 @@ int main(int argc, const char **argv)
 	sqlite3_finalize(pstmt);
 	
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		csql_string, strlen(csql_string), &pstmt, NULL)) {
-		printf("fail to prepare sql statement\n");
+	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
 	}
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		csql_string, strlen(csql_string), &pstmt, NULL)) {
-		printf("fail to prepare sql statement\n");
+	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;
@@ -631,9 +622,7 @@ int main(int argc, const char **argv)
 	}
 	
 	csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		csql_string, strlen(csql_string), &pstmt, NULL)) {
-		printf("fail to prepare sql statement\n");
+	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		sqlite3_shutdown();
 		return 9;

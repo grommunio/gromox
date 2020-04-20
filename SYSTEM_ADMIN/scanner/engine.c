@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <gromox/database.h>
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
@@ -156,8 +157,7 @@ static void engine_clean_cid(const char *path)
 	}
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "INSERT INTO cids VALUES (?)");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
 	}
@@ -173,8 +173,7 @@ static void engine_clean_cid(const char *path)
 		" %u, %u, %u, %u)", PROP_TAG_TRANSPORTMESSAGEHEADERS,
 		PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8, PROP_TAG_BODY,
 		PROP_TAG_BODY_STRING8, PROP_TAG_RTFCOMPRESSED, PROP_TAG_HTML);
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite1,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite1, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_close(psqlite1);
@@ -195,8 +194,7 @@ static void engine_clean_cid(const char *path)
 	sql_len = sprintf(sql_string, "SELECT propval FROM "
 		"attachment_properties WHERE proptag IN (%u, %u)",
 		PROP_TAG_ATTACHDATABINARY, PROP_TAG_ATTACHDATAOBJECT);
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite1,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite1, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_close(psqlite1);
@@ -218,8 +216,7 @@ static void engine_clean_cid(const char *path)
 	sqlite3_finalize(pstmt);
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "SELECT cid FROM cids WHERE cid=?");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
 	}
@@ -279,8 +276,7 @@ static void engine_clean_eml_and_ext(const char *path)
 	}
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "INSERT INTO mid_strings VALUES (?)");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
 	}
@@ -296,8 +292,7 @@ static void engine_clean_eml_and_ext(const char *path)
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "SELECT mid_string "
 				"FROM mid_strings WHERE mid_string=?");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
 	}
@@ -349,8 +344,7 @@ static void engine_clean_eml_and_ext(const char *path)
 	closedir(dirp);
 	sqlite3_finalize(pstmt);
 	sql_len = sprintf(sql_string, "SELECT mid_string FROM mid_strings");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
 	}
@@ -472,8 +466,7 @@ static BOOL engine_clean_and_calculate_maildir(
 	if (SQLITE_OK == sqlite3_open_v2(tmp_path,
 		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
 		b_corrupt = FALSE;
-		if (SQLITE_OK == sqlite3_prepare_v2(psqlite,
-			"PRAGMA integrity_check", -1, &pstmt, NULL )) {
+		if (!gx_sql_prep(psqlite, "PRAGMA integrity_check", &pstmt)) {
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
 				presult = S2A(sqlite3_column_text(pstmt, 0));
 				if (NULL == presult || 0 != strcmp(presult, "ok")) {
@@ -504,8 +497,7 @@ static BOOL engine_clean_and_calculate_maildir(
 	if (SQLITE_OK == sqlite3_open_v2(tmp_path,
 		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
 		b_corrupt = FALSE;
-		if (SQLITE_OK == sqlite3_prepare_v2(psqlite,
-			"PRAGMA integrity_check", -1, &pstmt, NULL )) {
+		if (!gx_sql_prep(psqlite, "PRAGMA integrity_check", &pstmt)) {
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
 				presult = S2A(sqlite3_column_text(pstmt, 0));
 				if (NULL == presult || 0 != strcmp(presult, "ok")) {
@@ -580,8 +572,7 @@ static BOOL engine_clean_and_calculate_homedir(
 	if (SQLITE_OK == sqlite3_open_v2(tmp_path,
 		&psqlite, SQLITE_OPEN_READWRITE, NULL)) {
 		b_corrupt = FALSE;
-		if (SQLITE_OK == sqlite3_prepare_v2(psqlite,
-			"PRAGMA integrity_check", -1, &pstmt, NULL )) {
+		if (!gx_sql_prep(psqlite, "PRAGMA integrity_check", &pstmt)) {
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
 				presult = S2A(sqlite3_column_text(pstmt, 0));
 				if (NULL == presult || 0 != strcmp(presult, "ok")) {

@@ -1,5 +1,5 @@
 #include <libHX/defs.h>
-#include <gromox/defs.h>
+#include <gromox/database.h>
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "list_file.h"
@@ -47,8 +47,7 @@ BOOL exmdb_server_get_all_named_propids(
 	}
 	sql_len = sprintf(sql_string, "SELECT "
 			"count(*) FROM named_properties");
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -73,8 +72,7 @@ BOOL exmdb_server_get_all_named_propids(
 	}
 	sql_len = sprintf(sql_string, "SELECT"
 		" propid FROM named_properties");
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -190,8 +188,7 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	guid_to_string(&guid, guid_string, 64);
 	sql_len = sprintf(sql_string, "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -335,8 +332,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	*ppermission = 0;
 	sql_len = sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -347,8 +343,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	sqlite3_finalize(pstmt);
 	sql_len = sprintf(sql_string, "SELECT "
 		"username, permission FROM permissions");
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -425,8 +420,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 				"range_end, is_system FROM allocated_eids"
 				" WHERE allocate_time>=%lu",
 				time(NULL) - ALLOCATION_INTERVAL);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -461,8 +455,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT "
 		"max(range_end) FROM allocated_eids");
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -708,8 +701,7 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	proptags[2] |= PROPVAL_TYPE_WSTRING;
 	sql_len = sprintf(sql_string, "SELECT folder_id"
 				" FROM folders WHERE parent_id=?");
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -722,8 +714,7 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		" AND message_properties.propval=?"
 		" LIMIT 1", proptags[0], proptags[1],
 		proptags[2]);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt2, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt2)) {
 		sqlite3_finalize(pstmt1);
 		db_engine_put_db(pdb);
 		return FALSE;

@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <gromox/database.h>
 #include "proptag_array.h"
 #include "sortorder_set.h"
 #include "exmdb_server.h"
@@ -57,10 +58,8 @@ static BOOL table_sum_table_count(DB_ITEM *pdb,
 	
 	sql_len = sprintf(sql_string, "SELECT "
 			"count(idx) FROM t%u", table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 		return FALSE;
-	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		return FALSE;
@@ -83,10 +82,8 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 		if (NULL == username) {
 			sql_len = sprintf(sql_string, "SELECT count(*) FROM"
 			          " folders WHERE parent_id=%llu", LLU(folder_id));
-			if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-				sql_string, sql_len, &pstmt, NULL)) {
+			if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 				return 0;
-			}
 			if (SQLITE_ROW != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return 0;
@@ -96,10 +93,8 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 			count = 0;
 			sql_len = sprintf(sql_string, "SELECT folder_id FROM "
 			          "folders WHERE parent_id=%llu", LLU(folder_id));
-			if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-				sql_string, sql_len, &pstmt, NULL)) {
+			if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 				return 0;
-			}
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
 				if (FALSE == common_util_check_folder_permission(
 					psqlite, sqlite3_column_int64(pstmt, 0),
@@ -118,10 +113,8 @@ static uint32_t table_sum_hierarchy(sqlite3 *psqlite,
 		count = 0;
 		sql_len = sprintf(sql_string, "SELECT folder_id FROM "
 		          "folders WHERE parent_id=%llu", LLU(folder_id));
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 			return 0;
-		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			if (NULL != username) {
 				if (FALSE == common_util_check_folder_permission(
@@ -174,10 +167,8 @@ static BOOL table_load_hierarchy(sqlite3 *psqlite,
 				LLU(folder_id));
 		}
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 		return FALSE;
-	}
 	while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 		folder_id1 = sqlite3_column_int64(pstmt1, 0);
 		if (NULL != username) {
@@ -333,8 +324,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "INSERT INTO t%u (folder_id,"
 					" depth) VALUES (?, ?)", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		if (NULL != ptnode->prestriction) {
 			restriction_free(ptnode->prestriction);
 		}
@@ -414,8 +404,7 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 			sql_len += sprintf(sql_string + sql_len, "is_deleted=1)");
 		}
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -542,10 +531,8 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 					sizeof(sql_string) - sql_len, " DESC");
 			}
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 			return FALSE;
-		}
 		bind_index = 1;
 		for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
 			pnode=double_list_get_after(pcondition_list, pnode),i++) {
@@ -654,10 +641,8 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		sql_len += snprintf(sql_string + sql_len,
 			sizeof(sql_string) - sql_len, " DESC");
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
-	}
 	bind_index = 1;
 	for (i=0,pnode=double_list_get_head(pcondition_list); NULL!=pnode;
 		pnode=double_list_get_after(pcondition_list, pnode),i++) {
@@ -804,10 +789,8 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	} else {
 		sql_len = sprintf(sql_string, "SELECT is_search FROM"
 		          " folders WHERE folder_id=%llu", LLU(fid_val));
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 			return FALSE;
-		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
 			return TRUE;
@@ -1040,18 +1023,14 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 		sql_string[sql_len] = ')';
 		sql_len ++;
 		sql_string[sql_len] = '\0';
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt1, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 			goto LOAD_CONTENT_FAIL;
-		}
 	} else {
 		sql_len = sprintf(sql_string, "INSERT INTO t%u (inst_id,"
 			" prev_id, row_type, depth, inst_num, idx) VALUES "
 			"(?, ?, %u, 0, 0, ?)", table_id, CONTENT_ROW_MESSAGE);
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt1, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1))
 			goto LOAD_CONTENT_FAIL;
-		}
 	}
 	if (TRUE == exmdb_server_check_private()) {
 		if (table_flags & TABLE_FLAG_SOFTDELETES) {
@@ -1155,10 +1134,8 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			}
 		}
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 		goto LOAD_CONTENT_FAIL;
-	}
 	last_row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		mid_val = sqlite3_column_int64(pstmt, 0);
@@ -1376,16 +1353,12 @@ BIND_NULL_INSTANCE:
 			"(inst_id, row_type, row_stat, parent_id, depth, "
 			"count, inst_num, value, extremum, prev_id) VALUES"
 			" (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", table_id);
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 			goto LOAD_CONTENT_FAIL;
-		}
 		sql_len = sprintf(sql_string, "UPDATE t%u SET"
 				" unread=? WHERE row_id=?", table_id);
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt1, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1))
 			goto LOAD_CONTENT_FAIL;
-		}
 		double_list_init(&value_list);
 		if (FALSE == table_load_content(pdb,
 			psqlite, psorts, 0, 0, &value_list, pstmt,
@@ -1404,16 +1377,12 @@ BIND_NULL_INSTANCE:
 			sql_len = sprintf(sql_string, "SELECT row_id,"
 				" row_type, row_stat, depth, prev_id FROM"
 				" t%u ORDER BY row_id", table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				goto LOAD_CONTENT_FAIL;
-			}
 			sql_len = sprintf(sql_string, "UPDATE t%u SET "
 					"idx=? WHERE row_id=?", table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt1, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1))
 				goto LOAD_CONTENT_FAIL;
-			}
 			i = 1;
 			prev_id = 0;
 			while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -1584,10 +1553,8 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 	
 	sql_len = sprintf(sql_string, "SELECT member_id, username"
 	          " FROM permissions WHERE folder_id=%llu", LLU(folder_id));
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 		return FALSE;
-	}
 	b_default = FALSE;
 	b_anonymous = FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt1)) {
@@ -1697,8 +1664,7 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	ptnode->table_flags = table_flags;
 	sql_len = sprintf(sql_string, "INSERT INTO t%u "
 		"(member_id) VALUES (?)", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		if (NULL != ptnode->remote_id) {
 			free(ptnode->remote_id);
 		}
@@ -1925,10 +1891,8 @@ static BOOL table_load_rules(sqlite3 *psqlite, uint64_t folder_id,
 	
 	sql_len = sprintf(sql_string, "SELECT rule_id FROM "
 	          "rules WHERE folder_id=%llu", LLU(folder_id));
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 		return FALSE;
-	}
 	while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 		rule_id = sqlite3_column_int64(pstmt1, 0);
 		if (NULL != prestriction) {
@@ -2026,8 +1990,7 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "INSERT INTO t%u "
 		"(rule_id) VALUES (?)", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		if (NULL != ptnode->prestriction) {
 			restriction_free(ptnode->prestriction);
 		}
@@ -2385,8 +2348,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -2482,24 +2444,21 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
 			sql_len = sprintf(sql_string, "SELECT parent_id FROM"
 					" t%u WHERE row_id=?", ptnode->table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt1, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			sql_len = sprintf(sql_string, "SELECT value FROM"
 					" t%u WHERE row_id=?", ptnode->table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt2, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
 				db_engine_put_db(pdb);
@@ -2630,8 +2589,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -2711,8 +2669,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3111,8 +3068,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				" idx, depth FROM t%u WHERE idx<=%u ORDER BY"
 				" idx DESC", table_id, start_pos + 1);
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3194,24 +3150,21 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				" WHERE idx<=%u ORDER BY idx DESC", table_id,
 				start_pos + 1);
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
 			sql_len = sprintf(sql_string, "SELECT parent_id FROM"
 					" t%u WHERE row_id=?", ptnode->table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt1, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			sql_len = sprintf(sql_string, "SELECT value FROM"
 					" t%u WHERE row_id=?", ptnode->table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt2, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
 				db_engine_put_db(pdb);
@@ -3328,8 +3281,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					" idx FROM t%u WHERE idx<=%u ORDER BY"
 					" idx DESC", table_id, start_pos + 1);
 		}
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3452,8 +3404,7 @@ BOOL exmdb_server_locate_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {		
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -3524,8 +3475,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		}
 		sql_len = sprintf(sql_string, "SELECT depth FROM t%u"
 		          " WHERE folder_id=%llu", table_id, LLU(folder_id));
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3597,8 +3547,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		sql_len = sprintf(sql_string, "SELECT * FROM t%u"
 					" WHERE inst_id=%llu AND inst_num=%u",
 					table_id, LLU(inst_id), inst_num);
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3612,16 +3561,14 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
 			sql_len = sprintf(sql_string, "SELECT parent_id FROM"
 					" t%u WHERE row_id=?", ptnode->table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt1, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			sql_len = sprintf(sql_string, "SELECT value FROM"
 					" t%u WHERE row_id=?", ptnode->table_id);
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-				sql_string, sql_len, &pstmt2, NULL)) {
+			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
 				db_engine_put_db(pdb);
@@ -3761,8 +3708,7 @@ BOOL exmdb_server_mark_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {		
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -3842,16 +3788,14 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		}
 		sql_len = sprintf(sql_string, "SELECT "
 			"folder_id FROM t%u", ptnode->table_id);
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {		
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			int_hash_free(phash);
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sql_len = sprintf(sql_string, "SELECT proptag "
 			"FROM folder_properties WHERE folder_id=?");
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-			sql_string, sql_len, &pstmt1, NULL)) {
+		if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 			sqlite3_finalize(pstmt);
 			int_hash_free(phash);
 			db_engine_put_db(pdb);
@@ -3905,16 +3849,14 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		}
 		sql_len = sprintf(sql_string, "SELECT inst_id,"
 				" row_type FROM t%u", ptnode->table_id);
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {		
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 			int_hash_free(phash);
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		sql_len = sprintf(sql_string, "SELECT proptag "
 			"FROM message_properties WHERE message_id=?");
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-			sql_string, sql_len, &pstmt1, NULL)) {
+		if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 			sqlite3_finalize(pstmt);
 			int_hash_free(phash);
 			db_engine_put_db(pdb);
@@ -4145,8 +4087,7 @@ BOOL exmdb_server_expand_table(const char *dir,
 	sql_len = sprintf(sql_string, "SELECT row_id, row_type, "
 			"row_stat, depth, idx FROM t%u WHERE inst_id=%llu"
 			" AND inst_num=0", ptnode->table_id, LLU(inst_id));
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -4171,8 +4112,7 @@ BOOL exmdb_server_expand_table(const char *dir,
 	sqlite3_finalize(pstmt);
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM"
 			" t%u WHERE parent_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -4187,8 +4127,7 @@ BOOL exmdb_server_expand_table(const char *dir,
 	} else {
 		sql_len = sprintf(sql_string, "SELECT row_id, row_stat "
 				"FROM t%u WHERE parent_id=?", ptnode->table_id);
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-			sql_string, sql_len, &pstmt1, NULL)) {
+		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -4219,15 +4158,13 @@ BOOL exmdb_server_expand_table(const char *dir,
 	sql_len = sprintf(sql_string, "SELECT row_id "
 		"FROM t%u WHERE idx>%u ORDER BY idx DESC",
 		ptnode->table_id, idx);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "UPDATE t%u SET idx=idx+%u"
 			" WHERE row_id=?", ptnode->table_id, *prow_count);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -4247,15 +4184,13 @@ BOOL exmdb_server_expand_table(const char *dir,
 	sqlite3_finalize(pstmt1);
 	sql_len = sprintf(sql_string, "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -4319,8 +4254,7 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	sql_len = sprintf(sql_string, "SELECT row_id, row_type, "
 		"row_stat, depth, idx FROM t%u WHERE inst_id=%llu AND"
 		" inst_num=0", ptnode->table_id, LLU(inst_id));
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -4355,15 +4289,13 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	sql_len = sprintf(sql_string, "SELECT row_id, "
 			"depth, prev_id FROM t%u WHERE idx>%u "
 			"ORDER BY idx ASC", ptnode->table_id, idx);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -4504,8 +4436,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			"state_info WHERE folder_id=? AND table_flags=? "
 			"AND sorts IS NULL");
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -4533,8 +4464,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	if (0 == *pstate_id) {
 		sql_len = sprintf(sql_string, "INSERT INTO state_info"
 			"(folder_id, table_flags, sorts) VALUES (?, ?, ?)");
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 			sqlite3_close(psqlite);
 			db_engine_put_db(pdb);
@@ -4664,8 +4594,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT row_id, inst_id,"
 			" row_stat, depth FROM t%u", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
 		db_engine_put_db(pdb);
@@ -4680,8 +4609,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	sql_string[sql_len] = ')';
 	sql_len ++;
 	sql_string[sql_len] = '\0';
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		sqlite3_close(psqlite);
@@ -4690,8 +4618,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT parent_id FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt2, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -4701,8 +4628,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT value FROM"
 			" t%u WHERE row_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt3, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt3)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_finalize(pstmt2);
@@ -4901,8 +4827,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	sql_len = sprintf(sql_string, "SELECT folder_id, table_flags,"
 			" sorts, message_id, inst_num, header_id, header_stat"
 			" FROM state_info WHERE state_id=%u", state_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		db_engine_put_db(pdb);
 		return FALSE;	
@@ -4953,8 +4878,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	sql_len = sprintf(sql_string, "SELECT row_id, "
 		"row_stat, depth FROM t%u WHERE row_type=%u",
 		ptnode->table_id, CONTENT_ROW_HEADER);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
@@ -4963,8 +4887,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "UPDATE t%u SET "
 		"row_stat=? WHERE row_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt1);
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
@@ -5005,8 +4928,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	/* end of resetting table */
 	sql_len = sprintf(sql_string, "SELECT * FROM"
 			" s%u ORDER BY ROWID ASC", state_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
@@ -5015,8 +4937,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT row_id FROM t%u WHERE"
 			" parent_id=? AND value IS NULL", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_close(psqlite);
 		sqlite3_exec(pdb->tables.psqlite,
@@ -5026,8 +4947,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT row_id FROM t%u WHERE"
 				" parent_id=? AND value=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt2, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_close(psqlite);
@@ -5038,8 +4958,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "UPDATE t%u SET "
 		"row_stat=? WHERE row_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt3, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt3)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_finalize(pstmt2);
@@ -5134,16 +5053,14 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
 	}
 	sql_len = sprintf(sql_string, "UPDATE t%u SET"
 		" idx=? WHERE row_id=?", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(pdb->tables.psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
@@ -5176,10 +5093,8 @@ RESTORE_POSITION:
 		sql_len = sprintf(sql_string, "SELECT idx FROM t%u WHERE"
 		          " row_id=%llu", ptnode->table_id, LLU(row_id1));
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->tables.psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 		db_engine_put_db(pdb);
-	}
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		*pposition = sqlite3_column_int64(pstmt, 0) - 1;
 	} else {

@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <gromox/database.h>
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "db_engine.h"
@@ -90,8 +91,7 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 		return TRUE;
 	}
 	sql_len = sprintf(sql_string, "INSERT INTO id_vals VALUES (?)");
-	if (SQLITE_OK != sqlite3_prepare_v2(pcache->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pcache->psqlite, sql_string, &pstmt)) {
 		ics_free_idset_cache(pcache);
 		return FALSE;
 	}
@@ -139,10 +139,8 @@ static BOOL ics_hint_idset_cache(IDSET_CACHE *pcache, uint64_t id_val)
 	if (NULL == pcache->pstmt) {
 		sql_len = sprintf(sql_string, "SELECT "
 			"id_val FROM id_vals WHERE id_val=?");
-		if (SQLITE_OK != sqlite3_prepare_v2(pcache->psqlite,
-			sql_string, sql_len, &pcache->pstmt, NULL)) {
+		if (!gx_sql_prep(pcache->psqlite, sql_string, &pcache->pstmt))
 			return FALSE;
-		}
 	}
 	sqlite3_reset(pcache->pstmt);
 	sqlite3_bind_int64(pcache->pstmt, 1, id_val);
@@ -327,52 +325,38 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			"FROM messages WHERE parent_fid=%llu AND "
 			"is_deleted=0", static_cast(unsigned long long, fid_val));
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 		goto QUERY_FAILURE;
-	}
 	if (TRUE == b_ordered) {
 		sql_len = sprintf(sql_string, "INSERT INTO changes VALUES (?, ?, ?)");
 	} else {
 		sql_len = sprintf(sql_string, "INSERT INTO changes VALUES (?)");
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt1))
 		goto QUERY_FAILURE;
-	}
 	sql_len = sprintf(sql_string, "INSERT INTO existence VALUES (?)");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt2, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt2))
 		goto QUERY_FAILURE;
-	}
 	if (NULL != pread) {
 		if (FALSE == b_private) {
 			sql_len = sprintf(sql_string, "SELECT read_cn FROM "
 					"read_cns WHERE message_id=? AND username=?");
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-				sql_string, sql_len, &pstmt4, NULL)) {
+			if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt4))
 				goto QUERY_FAILURE;
-			}
 			sql_len = sprintf(sql_string, "SELECT message_id FROM "
 					"read_states WHERE message_id=? AND username=?");
-			if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-				sql_string, sql_len, &pstmt5, NULL)) {
+			if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt5))
 				goto QUERY_FAILURE;
-			}
 		}
 		sql_len = sprintf(sql_string, "INSERT INTO reads VALUES (?, ?)");
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt3, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt3))
 			goto QUERY_FAILURE;
-		}
 	}
 	if (TRUE == b_ordered) {
 		sql_len = sprintf(sql_string, "SELECT propval FROM "
 			"message_properties WHERE proptag=? AND message_id=?");
-		if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-			sql_string, sql_len, &pstmt6, NULL)) {
+		if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt6))
 			goto QUERY_FAILURE;
-		}
 	}
 	*plast_cn = 0;
 	*plast_readcn = 0;
@@ -535,8 +519,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	}
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM changes");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
 		ics_free_idset_cache(&cache);
@@ -572,8 +555,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	} else {
 		sql_len = sprintf(sql_string, "SELECT message_id FROM changes");
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
 		ics_free_idset_cache(&cache);
@@ -600,8 +582,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	sqlite3_finalize(pstmt);
 	sql_len = sprintf(sql_string, "SELECT message_id"
 				" FROM existence WHERE message_id=?");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
 		ics_free_idset_cache(&cache);
@@ -609,8 +590,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	sql_len = sprintf(sql_string, "SELECT message_id"
 				" FROM messages WHERE message_id=?");
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
@@ -691,8 +671,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	eid_array_free(enum_param.pnolonger_mids);
 	db_engine_put_db(pdb);
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM existence");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		ics_free_idset_cache(&cache);
 		return FALSE;
@@ -717,8 +696,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		}
 		sql_len = sprintf(sql_string, "SELECT message_id"
 			" FROM existence ORDER BY message_id DESC");
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_close(psqlite);
 			ics_free_idset_cache(&cache);
 			return FALSE;
@@ -733,8 +711,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	if (NULL != pread) {
 		sql_len = sprintf(sql_string, "SELECT count(*) FROM reads");
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_close(psqlite);
 			ics_free_idset_cache(&cache);
 			return FALSE;
@@ -770,8 +747,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		}
 		sql_len = sprintf(sql_string, "SELECT "
 			"message_id, read_state FROM reads");
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_close(psqlite);
 			ics_free_idset_cache(&cache);
 			return FALSE;
@@ -991,8 +967,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			"change_number FROM folders WHERE parent_id=?"
 			" AND is_deleted=0");
 	}
-	if (SQLITE_OK != sqlite3_prepare_v2(pdb->psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
 		return FALSE;
@@ -1000,8 +975,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "INSERT INTO"
 			" changes (folder_id) VALUES (?)");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt1, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt1)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -1009,8 +983,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		return FALSE;
 	}
 	sql_len = sprintf(sql_string, "INSERT INTO existence VALUES (?)");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt2, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt2)) {
 		sqlite3_finalize(pstmt);
 		sqlite3_finalize(pstmt1);
 		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1037,8 +1010,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	}
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM changes");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
 		return FALSE;
@@ -1065,8 +1037,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	sql_len = sprintf(sql_string, "SELECT folder_id"
 					" FROM changes ORDER BY idx ASC");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
 		sqlite3_close(psqlite);
@@ -1122,8 +1093,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	db_engine_put_db(pdb);
 	sql_len = sprintf(sql_string, "SELECT count(*) FROM existence");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
@@ -1145,8 +1115,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		}
 		sql_len = sprintf(sql_string, "SELECT folder_id"
 			" FROM existence ORDER BY folder_id DESC");
-		if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-			sql_string, sql_len, &pstmt, NULL)) {
+		if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 			sqlite3_close(psqlite);
 			return FALSE;
 		}
@@ -1169,8 +1138,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		(REPLIST_ENUM)ics_enum_hierarchy_replist);
 	sql_len = sprintf(sql_string, "SELECT folder_id"
 				" FROM existence WHERE folder_id=?");
-	if (SQLITE_OK != sqlite3_prepare_v2(psqlite,
-		sql_string, sql_len, &pstmt, NULL)) {
+	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return FALSE;
 	}
