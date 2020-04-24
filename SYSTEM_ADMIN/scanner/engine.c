@@ -132,7 +132,6 @@ static void engine_get_dirsize(const char *path,
 static void engine_clean_cid(const char *path)
 {
 	DIR *dirp;
-	int sql_len;
 	time_t tmp_time;
 	sqlite3 *psqlite;
 	sqlite3 *psqlite1;
@@ -156,7 +155,7 @@ static void engine_clean_cid(const char *path)
 		return;
 	}
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	sql_len = sprintf(sql_string, "INSERT INTO cids VALUES (?)");
+	sprintf(sql_string, "INSERT INTO cids VALUES (?)");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
@@ -168,7 +167,7 @@ static void engine_clean_cid(const char *path)
 		sqlite3_close(psqlite);
 		return;
 	}
-	sql_len = sprintf(sql_string, "SELECT propval FROM"
+	sprintf(sql_string, "SELECT propval FROM"
 		" message_properties WHERE proptag IN (%u, %u,"
 		" %u, %u, %u, %u)", PROP_TAG_TRANSPORTMESSAGEHEADERS,
 		PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8, PROP_TAG_BODY,
@@ -191,7 +190,7 @@ static void engine_clean_cid(const char *path)
 		}
 	}
 	sqlite3_finalize(pstmt1);
-	sql_len = sprintf(sql_string, "SELECT propval FROM "
+	sprintf(sql_string, "SELECT propval FROM "
 		"attachment_properties WHERE proptag IN (%u, %u)",
 		PROP_TAG_ATTACHDATABINARY, PROP_TAG_ATTACHDATAOBJECT);
 	if (!gx_sql_prep(psqlite1, sql_string, &pstmt1)) {
@@ -215,7 +214,7 @@ static void engine_clean_cid(const char *path)
 	sqlite3_close(psqlite1);
 	sqlite3_finalize(pstmt);
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	sql_len = sprintf(sql_string, "SELECT cid FROM cids WHERE cid=?");
+	sprintf(sql_string, "SELECT cid FROM cids WHERE cid=?");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
@@ -251,7 +250,6 @@ static void engine_clean_cid(const char *path)
 static void engine_clean_eml_and_ext(const char *path)
 {
 	DIR *dirp;
-	int sql_len;
 	time_t tmp_time;
 	sqlite3 *psqlite;
 	char tmp_path[256];
@@ -275,7 +273,7 @@ static void engine_clean_eml_and_ext(const char *path)
 		return;
 	}
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	sql_len = sprintf(sql_string, "INSERT INTO mid_strings VALUES (?)");
+	sprintf(sql_string, "INSERT INTO mid_strings VALUES (?)");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;
@@ -290,7 +288,7 @@ static void engine_clean_eml_and_ext(const char *path)
 	}
 	sqlite3_finalize(pstmt);
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	sql_len = sprintf(sql_string, "SELECT mid_string "
+	sprintf(sql_string, "SELECT mid_string "
 				"FROM mid_strings WHERE mid_string=?");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
@@ -343,7 +341,7 @@ static void engine_clean_eml_and_ext(const char *path)
 	}
 	closedir(dirp);
 	sqlite3_finalize(pstmt);
-	sql_len = sprintf(sql_string, "SELECT mid_string FROM mid_strings");
+	sprintf(sql_string, "SELECT mid_string FROM mid_strings");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt)) {
 		sqlite3_close(psqlite);
 		return;

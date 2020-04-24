@@ -31,7 +31,6 @@ BOOL exmdb_server_ping_store(const char *dir)
 BOOL exmdb_server_get_all_named_propids(
 	const char *dir, PROPID_ARRAY *ppropids)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	int total_count;
 	sqlite3_stmt *pstmt;
@@ -45,7 +44,7 @@ BOOL exmdb_server_get_all_named_propids(
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT "
+	sprintf(sql_string, "SELECT "
 			"count(*) FROM named_properties");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -70,7 +69,7 @@ BOOL exmdb_server_get_all_named_propids(
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT"
+	sprintf(sql_string, "SELECT"
 		" propid FROM named_properties");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -168,7 +167,6 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 BOOL exmdb_server_get_mapping_replid(const char *dir,
 	GUID guid, BOOL *pb_found, uint16_t *preplid)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char guid_string[64];
@@ -186,7 +184,7 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 		return FALSE;
 	}
 	guid_to_string(&guid, guid_string, 64);
-	sql_len = sprintf(sql_string, "SELECT replid FROM "
+	sprintf(sql_string, "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -309,7 +307,6 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	const char *username, uint32_t *ppermission)
 {
 	int i;
-	int sql_len;
 	char *pitem;
 	int item_num;
 	DB_ITEM *pdb;
@@ -330,7 +327,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		return FALSE;
 	}
 	*ppermission = 0;
-	sql_len = sprintf(sql_string, "SELECT permission "
+	sprintf(sql_string, "SELECT permission "
 				"FROM permissions WHERE username=?");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -341,7 +338,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		*ppermission |= sqlite3_column_int64(pstmt, 0);
 	}
 	sqlite3_finalize(pstmt);
-	sql_len = sprintf(sql_string, "SELECT "
+	sprintf(sql_string, "SELECT "
 		"username, permission FROM permissions");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -400,7 +397,6 @@ BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
 BOOL exmdb_server_allocate_ids(const char *dir,
 	uint32_t count, uint64_t *pbegin_eid)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	uint64_t tmp_eid;
 	uint64_t range_end;
@@ -416,7 +412,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT range_begin, "
+	sprintf(sql_string, "SELECT range_begin, "
 				"range_end, is_system FROM allocated_eids"
 				" WHERE allocate_time>=%lu",
 				time(NULL) - ALLOCATION_INTERVAL);
@@ -453,7 +449,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 		*pbegin_eid = 0;
 		return TRUE;
 	}
-	sql_len = sprintf(sql_string, "SELECT "
+	sprintf(sql_string, "SELECT "
 		"max(range_end) FROM allocated_eids");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -466,7 +462,7 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	}
 	tmp_eid = sqlite3_column_int64(pstmt, 0) + 1;
 	sqlite3_finalize(pstmt);
-	sql_len = sprintf(sql_string, "INSERT INTO allocated_eids "
+	sprintf(sql_string, "INSERT INTO allocated_eids "
 	          "VALUES (%llu, %llu, %lld, 0)",
 	          static_cast(unsigned long long, tmp_eid),
 	          static_cast(unsigned long long, tmp_eid + count),
@@ -649,7 +645,6 @@ static BOOL table_check_address_in_contact_folder(
 BOOL exmdb_server_check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	uint32_t lids[3];
 	uint32_t proptags[3];
@@ -699,13 +694,13 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	proptags[2] = propids.ppropid[2];
 	proptags[2] <<= 16;
 	proptags[2] |= PROPVAL_TYPE_WSTRING;
-	sql_len = sprintf(sql_string, "SELECT folder_id"
+	sprintf(sql_string, "SELECT folder_id"
 				" FROM folders WHERE parent_id=?");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT messages.message_id"
+	sprintf(sql_string, "SELECT messages.message_id"
 		" FROM messages JOIN message_properties ON "
 		"messages.message_id=message_properties.message_id "
 		"WHERE parent_fid=? AND (message_properties.proptag=%u"

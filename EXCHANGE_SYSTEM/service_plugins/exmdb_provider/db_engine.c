@@ -96,7 +96,6 @@ static void db_engine_notify_content_table_modify_row(
 
 static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 {
-	int sql_len;
 	EXT_PULL ext_pull;
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
@@ -105,7 +104,7 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 	LONGLONG_ARRAY tmp_fids;
 	RESTRICTION tmp_restriction;
 	
-	sql_len = sprintf(sql_string, "SELECT folder_id,"
+	sprintf(sql_string, "SELECT folder_id,"
 		" search_flags, search_criteria FROM folders"
 		" WHERE is_search=1");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
@@ -393,7 +392,6 @@ static BOOL db_engine_search_folder(const char *dir,
 {
 	int i;
 	int count;
-	int sql_len;
 	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
@@ -407,7 +405,7 @@ static BOOL db_engine_search_folder(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT is_search "
+	sprintf(sql_string, "SELECT is_search "
 	          "FROM folders WHERE folder_id=%llu", LLU(scope_fid));
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -419,11 +417,11 @@ static BOOL db_engine_search_folder(const char *dir,
 		return TRUE;
 	}
 	if (0 == sqlite3_column_int64(pstmt, 0)) {
-		sql_len = sprintf(sql_string, "SELECT message_id FROM"
+		sprintf(sql_string, "SELECT message_id FROM"
 		          " messages WHERE parent_fid=%llu",
 		          reinterpret_cast(unsigned long long, scope_fid));
 	} else {
-		sql_len = sprintf(sql_string, "SELECT message_id FROM"
+		sprintf(sql_string, "SELECT message_id FROM"
 		          " search_result WHERE folder_id=%llu",
 		          reinterpret_cast(unsigned long long, scope_fid));
 	}
@@ -492,7 +490,6 @@ static BOOL db_engine_search_folder(const char *dir,
 static BOOL db_engine_load_folder_decendant(const char *dir,
 	BOOL b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
 {
-	int sql_len;
 	DB_ITEM *pdb;
 	sqlite3_stmt *pstmt;
 	char sql_string[128];
@@ -505,7 +502,7 @@ static BOOL db_engine_load_folder_decendant(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	sql_len = sprintf(sql_string, "SELECT folder_id FROM "
+	sprintf(sql_string, "SELECT folder_id FROM "
 	          "folders WHERE parent_id=%llu", LLU(folder_id));
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 		db_engine_put_db(pdb);
@@ -1033,7 +1030,6 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	int i;
-	int sql_len;
 	BOOL b_exist;
 	BOOL b_included;
 	BOOL b_included1;
@@ -1070,10 +1066,10 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 						continue;
 					}
 					if (FOLDER_TYPE_SEARCH == folder_type) {
-						sql_len = sprintf(sql_string, "SELECT message_id "
+						sprintf(sql_string, "SELECT message_id "
 						          "FROM search_result WHERE folder_id=%llu", LLU(id3));
 					} else {
-						sql_len = sprintf(sql_string, "SELECT message_id "
+						sprintf(sql_string, "SELECT message_id "
 						          "FROM messages WHERE parent_fid=%llu", LLU(id3));
 					}
 					if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
@@ -1542,7 +1538,6 @@ static void db_engine_notify_content_table_add_row(
 	int i, j;
 	int result;
 	BOOL b_fai;
-	int sql_len;
 	BOOL b_read;
 	BOOL b_break;
 	void *pvalue;
@@ -1648,7 +1643,7 @@ static void db_engine_notify_content_table_add_row(
 			}
 		}
 		if (NULL == ptable->psorts) {
-			sql_len = sprintf(sql_string, "SELECT "
+			sprintf(sql_string, "SELECT "
 				"count(*) FROM t%u", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				continue;
@@ -1668,7 +1663,7 @@ static void db_engine_notify_content_table_add_row(
 					"%u, 0, 0, 1)", ptable->table_id, LLU(message_id),
 					CONTENT_ROW_MESSAGE);
 			} else {
-				sql_len = sprintf(sql_string, "SELECT row_id, inst_id "
+				sprintf(sql_string, "SELECT row_id, inst_id "
 						"FROM t%u WHERE idx=%u", ptable->table_id, idx);
 				if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 					continue;
@@ -1727,7 +1722,7 @@ static void db_engine_notify_content_table_add_row(
 					goto ADD_CONTENT_ROW_FAIL;
 				}
 			}
-			sql_len = sprintf(sql_string, "SELECT row_id, inst_id,"
+			sprintf(sql_string, "SELECT row_id, inst_id,"
 				" idx FROM t%u ORDER BY idx ASC", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				continue;
@@ -1948,14 +1943,14 @@ static void db_engine_notify_content_table_add_row(
 			}
 			sqlite3_exec(pdb->tables.psqlite,
 				"BEGIN TRANSACTION", NULL, NULL, NULL);
-			sql_len = sprintf(sql_string, "SELECT row_id, inst_id, "
+			sprintf(sql_string, "SELECT row_id, inst_id, "
 				"value FROM t%u WHERE prev_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
-			sql_len = sprintf(sql_string, "INSERT INTO t%u (inst_id, "
+			sprintf(sql_string, "INSERT INTO t%u (inst_id, "
 				"row_type, row_stat, parent_id, depth, count, unread,"
 				" inst_num, value, extremum, prev_id) VALUES (?, ?, "
 				"?, ?, ?, ?, ?, ?, ?, ?, ?)", ptable->table_id);
@@ -1966,7 +1961,7 @@ static void db_engine_notify_content_table_add_row(
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
-			sql_len = sprintf(sql_string, "UPDATE t%u SET "
+			sprintf(sql_string, "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
@@ -1977,7 +1972,7 @@ static void db_engine_notify_content_table_add_row(
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT * FROM"
+			sprintf(sql_string, "SELECT * FROM"
 				" t%u WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt3)) {
 				sqlite3_finalize(pstmt);
@@ -1991,7 +1986,7 @@ static void db_engine_notify_content_table_add_row(
 				continue;
 			}
 			if (0 != ptable->extremum_tag) {
-				sql_len = sprintf(sql_string, "UPDATE t%u SET "
+				sprintf(sql_string, "UPDATE t%u SET "
 					"extremum=? WHERE row_id=?", ptable->table_id);
 				if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt4)) {
 					sqlite3_finalize(pstmt);
@@ -2370,14 +2365,14 @@ MATCH_SUB_HEADER:
 					"ROLLBACK", NULL, NULL, NULL);
 				goto ADD_CONTENT_ROW_FAIL;
 			}
-			sql_len = sprintf(sql_string, "SELECT row_id, row_stat"
+			sprintf(sql_string, "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
 				goto ADD_CONTENT_ROW_FAIL;
 			}
-			sql_len = sprintf(sql_string, "UPDATE t%u SET"
+			sprintf(sql_string, "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_exec(pdb->tables.psqlite,
@@ -2418,7 +2413,7 @@ MATCH_SUB_HEADER:
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
 			} else {
-				sql_len = sprintf(sql_string, "SELECT * FROM"
+				sprintf(sql_string, "SELECT * FROM"
 						" t%u WHERE idx=?", ptable->table_id);
 				if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 					sqlite3_finalize(pstmt3);
@@ -2830,7 +2825,6 @@ void db_engine_notify_link_creation(DB_ITEM *pdb,
 static void db_engine_notify_hierarchy_table_add_row(
 	DB_ITEM *pdb, uint64_t parent_id, uint64_t folder_id)
 {
-	int sql_len;
 	uint32_t idx;
 	uint32_t depth;
 	BOOL b_included;
@@ -2888,7 +2882,7 @@ static void db_engine_notify_hierarchy_table_add_row(
 		if ((ptable->table_flags & TABLE_FLAG_DEPTH) &&
 			ptable->folder_id != parent_id) {
 			if (NULL == pstmt) {
-				sql_len = sprintf(sql_string, "SELECT parent_id "
+				sprintf(sql_string, "SELECT parent_id "
 								"FROM folders WHERE folder_id=?");
 				if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt)) {
 					pstmt = NULL;
@@ -2913,7 +2907,7 @@ static void db_engine_notify_hierarchy_table_add_row(
 			if (0 == depth) {
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT idx FROM t%u"
+			sprintf(sql_string, "SELECT idx FROM t%u"
 						" WHERE folder_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1))
 				continue;
@@ -2995,7 +2989,7 @@ APPEND_END_OF_TABLE:
 			if (1 == idx) {
 				padded_row->after_folder_id = 0;
 			} else {
-				sql_len = sprintf(sql_string, "SELECT folder_id FROM "
+				sprintf(sql_string, "SELECT folder_id FROM "
 					"t%u WHERE idx=%u", ptable->table_id, idx - 1);
 				if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1))
 					continue;
@@ -3105,7 +3099,6 @@ static void* db_engine_get_extremum_value(DB_ITEM *pdb,
 	uint64_t parent_id, uint8_t table_sort)
 {
 	int result;
-	int sql_len;
 	BOOL b_first;
 	void *pvalue;
 	void *pvalue1;
@@ -3113,7 +3106,7 @@ static void* db_engine_get_extremum_value(DB_ITEM *pdb,
 	sqlite3_stmt *pstmt;
 	char sql_string[256];
 	
-	sql_len = sprintf(sql_string, "SELECT inst_id FROM t%u "
+	sprintf(sql_string, "SELECT inst_id FROM t%u "
 				"WHERE parent_id=%llu", table_id, LLU(parent_id));
 	if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 		return NULL;
@@ -3151,7 +3144,6 @@ static void db_engine_notify_content_table_delete_row(
 	DB_ITEM *pdb, uint64_t folder_id, uint64_t message_id)
 {
 	int result;
-	int sql_len;
 	BOOL b_index;
 	BOOL b_break;
 	uint32_t idx;
@@ -3197,11 +3189,11 @@ static void db_engine_notify_content_table_delete_row(
 			continue;
 		}
 		if (0 == ptable->instance_tag) {
-			sql_len = sprintf(sql_string, "SELECT row_id "
+			sprintf(sql_string, "SELECT row_id "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=0",
 				ptable->table_id, LLU(message_id));
 		} else {
-			sql_len = sprintf(sql_string, "SELECT row_id"
+			sprintf(sql_string, "SELECT row_id"
 							" FROM t%u WHERE inst_id=%llu",
 							ptable->table_id, LLU(message_id));
 		}
@@ -3240,7 +3232,7 @@ static void db_engine_notify_content_table_delete_row(
 			datagram1.db_notify.pdata = pmodified_row;
 		}
 		if (NULL == ptable->psorts || 0 == ptable->psorts->ccategories) {
-			sql_len = sprintf(sql_string, "SELECT row_id, idx,"
+			sprintf(sql_string, "SELECT row_id, idx,"
 					" prev_id FROM t%u WHERE inst_id=%llu AND "
 					"inst_num=0", ptable->table_id, LLU(message_id));
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
@@ -3316,11 +3308,11 @@ static void db_engine_notify_content_table_delete_row(
 		b_resorted = FALSE;
 		double_list_init(&tmp_list);
 		if (0 == ptable->instance_tag) {
-			sql_len = sprintf(sql_string, "SELECT * FROM t%u"
+			sprintf(sql_string, "SELECT * FROM t%u"
 						" WHERE inst_id=%llu AND inst_num=0",
 						ptable->table_id, LLU(message_id));
 		} else {
-			sql_len = sprintf(sql_string, "SELECT * FROM t%u "
+			sprintf(sql_string, "SELECT * FROM t%u "
 						"WHERE inst_id=%llu", ptable->table_id,
 						LLU(message_id));
 		}
@@ -3354,25 +3346,25 @@ static void db_engine_notify_content_table_delete_row(
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(pdb->tables.psqlite,
 			"BEGIN TRANSACTION", NULL, NULL, NULL);
-		sql_len = sprintf(sql_string, "SELECT * FROM"
+		sprintf(sql_string, "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 			continue;
-		sql_len = sprintf(sql_string, "DELETE FROM t%u "
+		sprintf(sql_string, "DELETE FROM t%u "
 					"WHERE row_id=?", ptable->table_id);
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 			sqlite3_finalize(pstmt);
 			continue;
 		}
 		if (0 != ptable->extremum_tag) {
-			sql_len = sprintf(sql_string, "UPDATE t%u SET "
+			sprintf(sql_string, "UPDATE t%u SET "
 				"extremum=? WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
 				continue;
 			}
-			sql_len = sprintf(sql_string, "UPDATE t%u SET "
+			sprintf(sql_string, "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt3)) {
 				sqlite3_finalize(pstmt);
@@ -3380,7 +3372,7 @@ static void db_engine_notify_content_table_delete_row(
 				sqlite3_finalize(pstmt2);
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT row_id, inst_id, "
+			sprintf(sql_string, "SELECT row_id, inst_id, "
 				"extremum FROM t%u WHERE prev_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt4)) {
 				sqlite3_finalize(pstmt);
@@ -3602,14 +3594,14 @@ static void db_engine_notify_content_table_delete_row(
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT row_id, row_stat"
+			sprintf(sql_string, "SELECT row_id, row_stat"
 					" FROM t%u WHERE prev_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt)) {
 				sqlite3_exec(pdb->tables.psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
-			sql_len = sprintf(sql_string, "UPDATE t%u SET"
+			sprintf(sql_string, "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_exec(pdb->tables.psqlite,
@@ -3684,11 +3676,11 @@ static void db_engine_notify_content_table_delete_row(
 			if (0 == double_list_get_nodes_num(&notify_list)) {
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT * FROM"
+			sprintf(sql_string, "SELECT * FROM"
 					" t%u WHERE idx=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				continue;
-			sql_len = sprintf(sql_string, "SELECT * FROM "
+			sprintf(sql_string, "SELECT * FROM "
 					"t%u WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
@@ -3884,7 +3876,6 @@ static void db_engine_notify_hierarchy_table_delete_row(
 	DB_ITEM *pdb, uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
-	int sql_len;
 	BOOL b_included;
 	TABLE_NODE *ptable;
 	sqlite3_stmt *pstmt;
@@ -3913,7 +3904,7 @@ static void db_engine_notify_hierarchy_table_delete_row(
 				continue;
 			}
 		}
-		sql_len = sprintf(sql_string, "SELECT idx FROM t%u "
+		sprintf(sql_string, "SELECT idx FROM t%u "
 			"WHERE folder_id=%llu", ptable->table_id, LLU(folder_id));
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 			continue;	
@@ -4039,7 +4030,6 @@ static void db_engine_notify_content_table_modify_row(
 {
 	int i, j;
 	int result;
-	int sql_len;
 	int row_type;
 	BOOL b_error;
 	uint32_t idx;
@@ -4084,11 +4074,11 @@ static void db_engine_notify_content_table_modify_row(
 			continue;
 		}
 		if (0 == ptable->instance_tag) {
-			sql_len = sprintf(sql_string, "SELECT count(*) "
+			sprintf(sql_string, "SELECT count(*) "
 				"FROM t%u WHERE inst_id=%llu AND inst_num=0",
 				ptable->table_id, LLU(message_id));
 		} else {
-			sql_len = sprintf(sql_string, "SELECT count(*)"
+			sprintf(sql_string, "SELECT count(*)"
 							" FROM t%u WHERE inst_id=%llu",
 							ptable->table_id, LLU(message_id));
 		}
@@ -4123,7 +4113,7 @@ static void db_engine_notify_content_table_modify_row(
 			pmodified_row->row_folder_id = row_folder_id;
 			pmodified_row->row_message_id = message_id;
 			pmodified_row->row_instance = 0;
-			sql_len = sprintf(sql_string, "SELECT idx FROM "
+			sprintf(sql_string, "SELECT idx FROM "
 					"t%u WHERE inst_id=%llu AND inst_num=0",
 					ptable->table_id, LLU(message_id));
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
@@ -4138,7 +4128,7 @@ static void db_engine_notify_content_table_modify_row(
 				pmodified_row->after_row_id = 0;
 				pmodified_row->after_folder_id = 0;
 			} else {
-				sql_len = sprintf(sql_string, "SELECT inst_id FROM "
+				sprintf(sql_string, "SELECT inst_id FROM "
 					"t%u WHERE idx=%u", ptable->table_id, idx - 1);
 				if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 					continue;
@@ -4181,7 +4171,7 @@ static void db_engine_notify_content_table_modify_row(
 			if (i < ptable->psorts->count) {
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT idx FROM "
+			sprintf(sql_string, "SELECT idx FROM "
 					"t%u WHERE inst_id=%llu AND inst_num=0",
 					ptable->table_id, LLU(message_id));
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
@@ -4192,7 +4182,7 @@ static void db_engine_notify_content_table_modify_row(
 			}
 			idx = sqlite3_column_int64(pstmt, 0);
 			sqlite3_finalize(pstmt);
-			sql_len = sprintf(sql_string, "SELECT inst_id"
+			sprintf(sql_string, "SELECT inst_id"
 				" FROM t%u WHERE idx=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				continue;
@@ -4341,7 +4331,7 @@ static void db_engine_notify_content_table_modify_row(
 				} else {
 					multi_num = 1;
 				}
-				sql_len = sprintf(sql_string, "SELECT value, "
+				sprintf(sql_string, "SELECT value, "
 						"inst_num FROM t%u WHERE inst_id=%llu",
 						ptable->table_id, LLU(message_id));
 				if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
@@ -4416,11 +4406,11 @@ static void db_engine_notify_content_table_modify_row(
 			if (i < ptable->psorts->count) {
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT parent_id, value "
+			sprintf(sql_string, "SELECT parent_id, value "
 						"FROM t%u WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				continue;
-			sql_len = sprintf(sql_string, "SELECT row_id, prev_id,"
+			sprintf(sql_string, "SELECT row_id, prev_id,"
 						" extremum FROM t%u WHERE inst_id=%llu AND"
 						" inst_num=?", ptable->table_id, LLU(message_id));
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
@@ -4483,7 +4473,7 @@ static void db_engine_notify_content_table_modify_row(
 					break;
 				}
 				if (0 != ptable->extremum_tag) {
-					sql_len = sprintf(sql_string, "SELECT extremum FROM t%u"
+					sprintf(sql_string, "SELECT extremum FROM t%u"
 					          " WHERE row_id=%llu", ptable->table_id, LLU(parent_id));
 					if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 						b_error = TRUE;
@@ -4524,7 +4514,7 @@ static void db_engine_notify_content_table_modify_row(
 					if (prev_id <= 0) {
 						inst_id = 0;
 					} else {
-						sql_len = sprintf(sql_string, "SELECT inst_id FROM"
+						sprintf(sql_string, "SELECT inst_id FROM"
 						          " t%u WHERE row_id=%lld", ptable->table_id, LLD(prev_id));
 						if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 							b_error = TRUE;
@@ -4538,7 +4528,7 @@ static void db_engine_notify_content_table_modify_row(
 						inst_id = sqlite3_column_int64(pstmt2, 0);
 						sqlite3_finalize(pstmt2);
 					}
-					sql_len = sprintf(sql_string, "SELECT inst_id FROM t%u"
+					sprintf(sql_string, "SELECT inst_id FROM t%u"
 					          " WHERE prev_id=%llu", ptable->table_id, LLU(row_id1));
 					if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt2)) {
 						b_error = TRUE;
@@ -4705,11 +4695,11 @@ static void db_engine_notify_content_table_modify_row(
 			if (TRUE == b_error) {
 				continue;
 			}
-			sql_len = sprintf(sql_string, "SELECT * FROM"
+			sprintf(sql_string, "SELECT * FROM"
 					" t%u WHERE idx=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				continue;
-			sql_len = sprintf(sql_string, "SELECT * FROM "
+			sprintf(sql_string, "SELECT * FROM "
 					"t%u WHERE row_id=?", ptable->table_id);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt1)) {
 				sqlite3_finalize(pstmt);
@@ -4907,7 +4897,6 @@ static void db_engine_notify_hierarchy_table_modify_row(
 	DB_ITEM *pdb, uint64_t parent_id, uint64_t folder_id)
 {
 	int idx;
-	int sql_len;
 	BOOL b_included;
 	TABLE_NODE *ptable;
 	sqlite3_stmt *pstmt;
@@ -4943,7 +4932,7 @@ static void db_engine_notify_hierarchy_table_modify_row(
 				continue;
 			}
 		}
-		sql_len = sprintf(sql_string, "SELECT idx FROM t%u "
+		sprintf(sql_string, "SELECT idx FROM t%u "
 		          "WHERE folder_id=%llu", ptable->table_id, LLU(folder_id));
 		if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 			continue;
@@ -4985,7 +4974,7 @@ static void db_engine_notify_hierarchy_table_modify_row(
 				if (1 == idx) {
 					padded_row->after_folder_id = 0;
 				} else {
-					sql_len = sprintf(sql_string, "SELECT "
+					sprintf(sql_string, "SELECT "
 						"folder_id FROM t%u WHERE idx=%u",
 						ptable->table_id, idx - 1);
 					if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
@@ -5084,7 +5073,7 @@ static void db_engine_notify_hierarchy_table_modify_row(
 		if (1 == idx) {
 			pmodified_row->after_folder_id = 0;
 		} else {
-			sql_len = sprintf(sql_string, "SELECT folder_id FROM "
+			sprintf(sql_string, "SELECT folder_id FROM "
 				"t%u WHERE idx=%u", ptable->table_id, idx - 1);
 			if (!gx_sql_prep(pdb->tables.psqlite, sql_string, &pstmt))
 				continue;

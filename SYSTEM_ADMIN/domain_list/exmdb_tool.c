@@ -31,7 +31,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	const char *pdisplayname, const char *pcontainer_class)
 {
 	PCL *ppcl;
-	int sql_len;
 	BINARY *pbin;
 	SIZED_XID xid;
 	time_t cur_time;
@@ -57,7 +56,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	}
 	g_last_cn ++;
 	change_num = g_last_cn;
-	sql_len = sprintf(sql_string, "INSERT INTO folders "
+	sprintf(sql_string, "INSERT INTO folders "
 				"(folder_id, parent_id, change_number, "
 				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
@@ -78,7 +77,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	sqlite3_finalize(pstmt);
 	g_last_art ++;
 	art_num = g_last_art;
-	sql_len = sprintf(sql_string, "INSERT INTO "
+	sprintf(sql_string, "INSERT INTO "
 	          "folder_properties VALUES (%llu, ?, ?)", LLU(folder_id));
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
