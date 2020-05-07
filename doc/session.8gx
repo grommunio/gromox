@@ -18,4 +18,4 @@ Display option summary.
 \fIdata_file_path\fP/session_acl.txt
 .SH See also
 .PP
-\fBgromox\fP(7), \fBasession\fP(8gx), \fBsession.cfg\fP(5gx)
+\fBgromox\fP(7), \fBsession.cfg\fP(5gx)

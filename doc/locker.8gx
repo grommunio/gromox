@@ -18,4 +18,4 @@ Display option summary.
 \fIdata_file_path\fP/locker_acl.txt
 .SH See also
 .PP
-\fBgromox\fP(7), \fBlocker.cfg\fP(5gx), \fBalocker\fP(8gx)
+\fBgromox\fP(7), \fBlocker.cfg\fP(5gx)

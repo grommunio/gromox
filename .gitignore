@@ -30,15 +30,10 @@ Makefile.in
 /admin_insulation
 /admin_log
 /admin_main
-/alock
-/amidb
-/amysql
 /archive
 /archiver_list
 /area_list
 /areadb
-/asensor
-/asession
 /bl_delete
 /boundary_blacklist
 /cdnd

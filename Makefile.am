@@ -14,8 +14,8 @@ default_SYFLAGS = -Wl,--version-script=${default_sym}
 plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS${NO_VSYM}}
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-alock.service system/gromox-amidb.service system/gromox-amysql.service system/gromox-asensor.service system/gromox-asession.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-da_daemon.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-synchronizer.service system/gromox-timer.service system/gromox-zcore.service
-unit_targets = system/gromox-agent.target system/gromox-archive.target system/gromox-da.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
+unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-da_daemon.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-synchronizer.service system/gromox-timer.service system/gromox-zcore.service
+unit_targets = system/gromox-archive.target system/gromox-da.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
 mta_system = delivery smtp
@@ -429,7 +429,7 @@ noinst_DATA += \
 	libexhpm_sample.ldd \
 	libgxsvc_authn_mysql.ldd \
 	libgxsvc_mysql_adaptor.ldd
-agent_service_progs = alock amidb amysql asensor asession digest freebusy rtf2html
+agent_service_progs = digest freebusy rtf2html
 domain_admin_progs = da_daemon fcgi_cgi synchronizer
 dacgidir = ${pkglibexecdir}/da
 dacgi_PROGRAMS = domain_approve domain_archive domain_binput domain_classes domain_folders domain_groups domain_info domain_keyword domain_limit domain_log domain_main domain_mlists domain_monitor domain_setup domain_sign domain_statistic domain_users group_archive group_binput group_classes group_clists group_info group_log group_main group_monitor group_users
@@ -1276,16 +1276,6 @@ libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_com
 EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
 
 # AGENT_SERVICE
-amidb_SOURCES = AGENT_SERVICE/amidb.c
-amidb_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
-amysql_SOURCES = AGENT_SERVICE/amysql.c
-amysql_LDADD = -lcrypt -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
-asession_SOURCES = AGENT_SERVICE/asession.c
-asession_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
-alock_SOURCES = AGENT_SERVICE/alock.c
-alock_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
-asensor_SOURCES = AGENT_SERVICE/asensor.c
-asensor_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 digest_SOURCES = AGENT_SERVICE/digest.c
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 freebusy_SOURCES = AGENT_SERVICE/freebusy.c
@@ -1514,10 +1504,8 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 
 # doc
 man_MANS = \
-	doc/adaptor.8gx doc/adaptor.cfg.5gx doc/alock.8gx doc/alock.cfg.5gx \
-	doc/amidb.8gx doc/amidb.cfg.5gx doc/amysql.8gx doc/amysql.cfg.5gx \
-	doc/archive.8gx doc/asensor.8gx doc/asensor.cfg.5gx \
-	doc/asession.8gx doc/asession.cfg.5gx doc/authn_mysql.4gx \
+	doc/adaptor.8gx doc/adaptor.cfg.5gx \
+	doc/archive.8gx doc/authn_mysql.4gx \
 	doc/bl_delete.8gx doc/cdnd.8gx doc/cdnd.cfg.5gx doc/cidb.8gx \
 	doc/cidb.cfg.5gx doc/da.cfg.5gx doc/da_daemon.8gx \
 	doc/delivery.8gx \
@@ -1527,7 +1515,7 @@ man_MANS = \
 	doc/exchange_nsp.4gx doc/exchange_nsp.cfg.5gx doc/exchange_rfr.4gx \
 	doc/exmdb_provider.4gx doc/exmdb_provider.cfg.5gx \
 	doc/fcgi_cgi.8gx doc/fcgi_cgi.cfg.5gx doc/freebusy.8gx doc/gromox.7 \
-	doc/gromox-agent.target.8gx doc/gromox-archive.target.8gx \
+	doc/gromox-archive.target.8gx \
 	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
