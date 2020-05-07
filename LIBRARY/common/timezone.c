@@ -168,7 +168,9 @@ static const char* getsecs(const char *strp, long *secsp);
 static const char* getoffset(const char *strp, long *offsetp);
 static const char* getrule(const char *strp, struct rule *rulep);
 static void gmtload(struct state* const sp);
+#ifdef ALL_STATE
 static struct tm* gmtsub(const time_t *timep, long offset, struct tm *tmp);
+#endif
 static struct tm *localsub(const struct state *const sp,
 	const time_t *timep, long offset, struct tm *tmp);
 static int increment_overflow(int *number, int delta);

@@ -622,20 +622,6 @@ static void cache_connection(const char *dir, int sockd)
 	}
 }
 
-static void free_connections(void)
-{
-	EXMDB_NODE *pexnode;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&g_exmdb_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_exmdb_list, pnode)) {
-		pexnode = (EXMDB_NODE*)pnode->pdata;
-		if (-1 != pexnode->sockd) {
-			close(pexnode->sockd);
-		}
-	}
-}
-
 static int connect_exmdb(const char *dir)
 {
 	int sockd;

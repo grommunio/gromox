@@ -683,12 +683,6 @@ static zend_bool rpc_ext_push_seekrow_request(
 	return ext_pack_push_int32(pctx, ppayload->seekrow.seek_rows);
 }
 
-static zend_bool rpc_ext_pull_seekrow_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
-{
-	return ext_pack_pull_int32(pctx, &ppayload->seekrow.sought_rows);
-}
-
 static zend_bool rpc_ext_push_sorttable_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {

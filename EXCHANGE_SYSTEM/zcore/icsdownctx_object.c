@@ -322,11 +322,6 @@ void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx)
 	free(pctx);
 }
 
-static BOOL icsdownctx_object_check_started(ICSDOWNCTX_OBJECT *pctx)
-{
-	return pctx->b_started;
-}
-
 BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 	BOOL *pb_found, BOOL *pb_new, TPROPVAL_ARRAY *pproplist)
 {

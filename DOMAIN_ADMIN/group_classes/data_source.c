@@ -53,20 +53,6 @@ void data_source_collect_free(DATA_COLLECT *pcollect)
 	free(pcollect);
 }
 
-static void data_source_collect_clear(DATA_COLLECT *pcollect)
-{
-	DOUBLE_LIST_NODE *pnode;
-
-	if (NULL == pcollect) {
-		return;
-	}
-	while ((pnode = double_list_get_from_head(&pcollect->list)) != NULL) {
-		free(pnode->pdata);
-		free(pnode);
-	}
-	pcollect->pnode = NULL;
-}
-
 int data_source_collect_total(DATA_COLLECT *pcollect)
 {
 	return double_list_get_nodes_num(&pcollect->list);

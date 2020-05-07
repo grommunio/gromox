@@ -1160,29 +1160,6 @@ zend_bool ext_pack_pull_rule_data(PULL_CTX *pctx, RULE_DATA *r)
 	return ext_pack_pull_tpropval_array(pctx, &r->propvals);
 }
 
-static zend_bool ext_pack_pull_rule_list(PULL_CTX *pctx, RULE_LIST *r)
-{
-	int i;
-	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
-	if (0 == r->count) {
-		r->prule = NULL;
-		return 1;
-	}
-	r->prule = emalloc(sizeof(RULE_DATA)*r->count);
-	if (NULL == r->prule) {
-		return 0;
-	}
-	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_rule_data(pctx, &r->prule[i])) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
 zend_bool ext_pack_pull_oneoff_entryid(PULL_CTX *pctx, ONEOFF_ENTRYID *r)
 {
 	if (!ext_pack_pull_uint32(pctx, &r->flags)) {

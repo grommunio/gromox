@@ -69,9 +69,6 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode);
 static void mjson_enum_id(SIMPLE_TREE_NODE *pnode, void *param);
 
 static void mjson_enum_none(SIMPLE_TREE_NODE *pnode, void *param);
-
-static void mjson_enum_depth(SIMPLE_TREE_NODE *pnode, void *param);
-
 static BOOL mjson_record_value(MJSON *pjson, char *tag,
 	char *value, int length);
 
@@ -454,7 +451,7 @@ static void mjson_enum_none(SIMPLE_TREE_NODE *pnode, void *param)
 	
 #ifdef _DEBUG_UMTA
     if (NULL == pnode || NULL == param) {
-        debug_info("[mail]: NULL pointer in mjson_enum_depth");
+		debug_info("[mail]: NULL pointer in mjson_enum_none");
         return;
     }
 #endif
@@ -480,23 +477,6 @@ size_t mjson_get_mail_length(MJSON *pjson)
 
 	return pjson->size;
 }
-
-static void mjson_enum_depth(SIMPLE_TREE_NODE *pnode, void *param)
-{
-	int depth;
-
-#ifdef _DEBUG_UMTA
-    if (NULL == pnode || NULL == param) {
-        debug_info("[mail]: NULL pointer in mjson_enum_depth");
-        return;
-    }
-#endif
-	depth = simple_tree_node_get_depth(pnode);
-	if (*(int*)param < depth) {
-		*(int*)param = depth;
-	}
-}
-
 
 void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param)
 {
