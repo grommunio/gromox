@@ -159,6 +159,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);
+		printf("[ms_locale]: lcid.txt contains %d items\n", item_num);
 		pitem = list_file_get_list(pfile);
 		g_lcid_hash = int_hash_init(item_num + 1, 32, NULL);
 		if (NULL == g_lcid_hash) {
@@ -191,6 +192,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			}
 		}
 		list_file_free(pfile);
+		printf("[ms_locale]: loaded %zu locale IDs\n", g_lcid_hash->item_num);
+		printf("[ms_locale]: loaded %zu locale names\n", g_ltag_hash->item_num);
 		if (FALSE == register_service("verify_cpid", verify_cpid)) {
 			printf("[ms_locale]: failed to register \"verify_cpid\" service\n");
 			return FALSE;
