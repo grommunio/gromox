@@ -1688,12 +1688,16 @@ static void output_event(time_t start_time, time_t end_time,
 	}
 	printf("\"BusyType\":\"%s\", ", tmp_buff);
 	printf("\"ID\":\"%s\", ", uid);
-	encode64(subject, strlen(subject),
-		tmp_buff, sizeof(tmp_buff), &tmp_len);
-	printf("\"Subject\":\"%s\", ", tmp_buff);
-	encode64(location, strlen(location),
-		tmp_buff, sizeof(tmp_buff), &tmp_len);
-	printf("\"Location\":\"%s\", ", tmp_buff);
+	if (subject != nullptr) {
+		encode64(subject, strlen(subject),
+		         tmp_buff, sizeof(tmp_buff), &tmp_len);
+		printf("\"Subject\":\"%s\", ", tmp_buff);
+	}
+	if (location != nullptr) {
+		encode64(location, strlen(location),
+		         tmp_buff, sizeof(tmp_buff), &tmp_len);
+		printf("\"Location\":\"%s\", ", tmp_buff);
+	}
 	if (TRUE == b_meeting) {
 		printf("\"IsMeeting\":true, ");
 	} else {
