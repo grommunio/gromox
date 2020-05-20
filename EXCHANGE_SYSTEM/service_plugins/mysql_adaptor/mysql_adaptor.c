@@ -41,12 +41,6 @@
 #define MLIST_RESULT_PRIVIL_INTERNAL	3
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
 
-#define USER_PRIVILEGE_POP3_IMAP		0x1
-#define USER_PRIVILEGE_SMTP				0x2
-#define USER_PRIVILEGE_CHGPASSWD		0x4
-#define USER_PRIVILEGE_PUBADDR			0x8
-
-
 typedef struct _CONNECTION_NODE {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST_NODE node_temp;
@@ -187,7 +181,7 @@ void mysql_adaptor_free()
 	pthread_mutex_destroy(&g_crypt_lock);
 }
 
-static BOOL mysql_adaptor_login(const char *username, const char *password,
+BOOL mysql_adaptor_login(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
 {
 	int i, j, k;
@@ -441,28 +435,6 @@ RETRYING:
 			return FALSE;
 		}
 	}
-}
-
-BOOL mysql_adaptor_login_exch(const char *username, const char *password,
-	char *maildir, char *lang, char *reason, int length)
-{
-	return mysql_adaptor_login(username, password, maildir, lang,
-	       reason, length, 0);
-}
-
-BOOL mysql_adaptor_login_pop3(const char *username, const char *password,
-	char *maildir, char *lang, char *reason, int length)
-{
-	return mysql_adaptor_login(username, password, maildir, lang,
-	       reason, length, USER_PRIVILEGE_POP3_IMAP);
-}
-
-BOOL mysql_adaptor_login_smtp(const char *username, const char *password,
-    char *reason, int length)
-{
-	char maildir[256], lang[32];
-	return mysql_adaptor_login(username, password, maildir, lang,
-	       reason, length, USER_PRIVILEGE_SMTP);
 }
 
 BOOL mysql_adaptor_setpasswd(const char *username,

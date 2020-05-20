@@ -7,6 +7,13 @@ enum {
 	MYSQL_ADAPTOR_ALIVECONN_NUMBER
 };
 
+enum {
+	USER_PRIVILEGE_POP3_IMAP = 1 << 0,
+	USER_PRIVILEGE_SMTP = 1 << 1,
+	USER_PRIVILEGE_CHGPASSWD = 1 << 2,
+	USER_PRIVILEGE_PUBADDR = 1 << 3,
+};
+
 void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
 	int port, const char *user, const char *password, const char *db_name,
 	int timeout);
@@ -14,9 +21,7 @@ void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
 extern int mysql_adaptor_run(void);
 extern int mysql_adaptor_stop(void);
 extern void mysql_adaptor_free(void);
-extern BOOL mysql_adaptor_login_exch(const char *username, const char *password, char *maildir, char *lang, char *reason, int length);
-extern BOOL mysql_adaptor_login_pop3(const char *username, const char *password, char *maildir, char *lang, char *reason, int length);
-extern BOOL mysql_adaptor_login_smtp(const char *username, const char *password, char *reason, int length);
+extern BOOL mysql_adaptor_login(const char *username, const char *password, char *maildir, char *lang, char *reason, int length, unsigned int mode);
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password);
 

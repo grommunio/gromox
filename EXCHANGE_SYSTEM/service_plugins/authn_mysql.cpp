@@ -5,6 +5,7 @@
 #include "../../MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.h"
 
 DECLARE_API;
+static decltype(mysql_adaptor_login) *fptr_mysql_login;
 
 static bool is_mta()
 {
@@ -12,26 +13,46 @@ static bool is_mta()
 	return strcmp(i, "smtp") == 0 || strcmp(i, "delivery") == 0;
 }
 
+static BOOL login_exch(const char *username, const char *password,
+	char *maildir, char *lang, char *reason, int length)
+{
+	return fptr_mysql_login(username, password, maildir, lang,
+	       reason, length, 0);
+}
+
+static BOOL login_pop3(const char *username, const char *password,
+	char *maildir, char *lang, char *reason, int length)
+{
+	return fptr_mysql_login(username, password, maildir, lang,
+	       reason, length, USER_PRIVILEGE_POP3_IMAP);
+}
+
+static BOOL login_smtp(const char *username, const char *password,
+    char *reason, int length)
+{
+	char maildir[256], lang[32];
+	return fptr_mysql_login(username, password, maildir, lang,
+	       reason, length, USER_PRIVILEGE_SMTP);
+}
+
 BOOL SVC_LibMain(int reason, void **datap)
 {
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(datap);
-		auto aexch = reinterpret_cast<decltype(mysql_adaptor_login_exch) *>(query_service("mysql_auth_login_exch"));
-		auto apop  = reinterpret_cast<decltype(mysql_adaptor_login_pop3) *>(query_service("mysql_auth_login_pop3"));
-		auto asmtp = reinterpret_cast<decltype(mysql_adaptor_login_smtp) *>(query_service("mysql_auth_login_smtp"));
-		if (aexch == nullptr || apop == nullptr || asmtp == nullptr) {
+		fptr_mysql_login = reinterpret_cast<decltype(fptr_mysql_login)>(query_service("mysql_auth_login"));
+		if (fptr_mysql_login == nullptr) {
 			printf("[authn_mysql]: mysql_adaptor plugin not loaded yet\n");
 			return false;
 		}
 		if (is_mta())
-			service_auth_init(get_context_num(), asmtp);
+			service_auth_init(get_context_num(), login_smtp);
 		if (is_mta() && service_auth_run() != 0) {
 			printf("[authn_mysql]: failed to run service auth\n");
 			return false;
 		}
-		if (!register_service("auth_login_exch", reinterpret_cast<void *>(aexch)) ||
-		    !register_service("auth_login_pop3", reinterpret_cast<void *>(apop)) ||
+		if (!register_service("auth_login_exch", reinterpret_cast<void *>(login_exch)) ||
+		    !register_service("auth_login_pop3", reinterpret_cast<void *>(login_pop3)) ||
 		    !register_service("auth_ehlo", reinterpret_cast<void *>(service_auth_ehlo)) ||
 		    !register_service("auth_process", reinterpret_cast<void *>(service_auth_process)) ||
 		    !register_service("auth_retrieve", reinterpret_cast<void *>(service_auth_retrieve)) ||
