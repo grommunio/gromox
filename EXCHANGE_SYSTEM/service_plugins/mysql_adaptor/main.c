@@ -193,8 +193,12 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;
 		}
-		if (!register_service("mysql_auth_login", mysql_adaptor_login)) {
-			printf("[mysql_adaptor]: failed to register \"mysql_auth_login\" service\n");
+		if (!register_service("mysql_auth_meta", mysql_adaptor_meta)) {
+			printf("[mysql_adaptor]: failed to register \"mysql_auth_meta\" service\n");
+			return FALSE;
+		}
+		if (!register_service("mysql_auth_login2", mysql_adaptor_login2)) {
+			printf("[mysql_adaptor]: failed to register \"mysql_auth_login2\" service\n");
 			return FALSE;
 		}
 		if (FALSE == register_service("set_password",

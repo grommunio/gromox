@@ -181,7 +181,7 @@ void mysql_adaptor_free()
 	pthread_mutex_destroy(&g_crypt_lock);
 }
 
-static BOOL mysql_adaptor_meta(const char *username, const char *password,
+BOOL mysql_adaptor_meta(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode,
     char *encrypt_passwd, size_t encrypt_size)
 {
@@ -456,15 +456,11 @@ static BOOL verify_password(const char *username, const char *password,
 		return FALSE;
 }
 
-BOOL mysql_adaptor_login(const char *username, const char *password,
-     char *maildir, char *lang, char *reason, int length, unsigned int mode)
+BOOL mysql_adaptor_login2(const char *username, const char *password,
+    char *encrypt_passwd, size_t encrypt_size, char *reason,
+    int length, unsigned int mode)
 {
-	char encrypt_passwd[40];
-	BOOL ret = mysql_adaptor_meta(username, password, maildir, lang,
-	           reason, length, mode, encrypt_passwd,
-	           sizeof(encrypt_passwd));
-	if (ret == FALSE)
-		return FALSE;
+	BOOL ret;
 	if (*encrypt_passwd == '\0')
 		ret = firsttime_password(username, password, encrypt_passwd,
 		      reason, length, mode);

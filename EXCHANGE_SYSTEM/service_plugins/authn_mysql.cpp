@@ -5,7 +5,8 @@
 #include "../../MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.h"
 
 DECLARE_API;
-static decltype(mysql_adaptor_login) *fptr_mysql_login;
+static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
+static decltype(mysql_adaptor_login2) *fptr_mysql_login;
 
 static bool is_mta()
 {
@@ -13,17 +14,28 @@ static bool is_mta()
 	return strcmp(i, "smtp") == 0 || strcmp(i, "delivery") == 0;
 }
 
+static BOOL login_gen(const char *username, const char *password,
+    char *maildir, char *lang, char *reason, int length, unsigned int mode)
+{
+	char ep[40];
+	auto ret = fptr_mysql_meta(username, password, maildir, lang, reason,
+	           length, mode, ep, sizeof(ep));
+	if (ret == FALSE)
+		return FALSE;
+	return fptr_mysql_login(username, password, ep, sizeof(ep),
+	       reason, length, mode);
+}
+
 static BOOL login_exch(const char *username, const char *password,
 	char *maildir, char *lang, char *reason, int length)
 {
-	return fptr_mysql_login(username, password, maildir, lang,
-	       reason, length, 0);
+	return login_gen(username, password, maildir, lang, reason, length, 0);
 }
 
 static BOOL login_pop3(const char *username, const char *password,
 	char *maildir, char *lang, char *reason, int length)
 {
-	return fptr_mysql_login(username, password, maildir, lang,
+	return login_gen(username, password, maildir, lang,
 	       reason, length, USER_PRIVILEGE_POP3_IMAP);
 }
 
@@ -31,7 +43,7 @@ static BOOL login_smtp(const char *username, const char *password,
     char *reason, int length)
 {
 	char maildir[256], lang[32];
-	return fptr_mysql_login(username, password, maildir, lang,
+	return login_gen(username, password, maildir, lang,
 	       reason, length, USER_PRIVILEGE_SMTP);
 }
 
@@ -40,7 +52,12 @@ BOOL SVC_LibMain(int reason, void **datap)
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(datap);
-		fptr_mysql_login = reinterpret_cast<decltype(fptr_mysql_login)>(query_service("mysql_auth_login"));
+		fptr_mysql_meta = reinterpret_cast<decltype(fptr_mysql_meta)>(query_service("mysql_auth_meta"));
+		if (fptr_mysql_meta == nullptr) {
+			printf("[authn_mysql]: mysql_adaptor plugin not loaded yet\n");
+			return false;
+		}
+		fptr_mysql_login = reinterpret_cast<decltype(fptr_mysql_login)>(query_service("mysql_auth_login2"));
 		if (fptr_mysql_login == nullptr) {
 			printf("[authn_mysql]: mysql_adaptor plugin not loaded yet\n");
 			return false;
