@@ -5,4 +5,4 @@ mysql_adaptor is a service plugin for integrating mail accounts from
 a MySQL/MariaDB database.
 .SH See also
 .PP
-\fBgromox\fP(7), \fBauthn_mysql\fP(4gx), \fBmysql_adaptor.cfg\fP(5gx)
+\fBgromox\fP(7), \fBauthmgr\fP(4gx), \fBmysql_adaptor.cfg\fP(5gx)

@@ -47,7 +47,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmrasvc_log_plugin.so",
 	"libmrasvc_midb_agent.so",
 	"libgxsvc_mysql_adaptor.so",
-	"libgxsvc_authn_mysql.so",
+	"libgxsvc_authmgr.so",
 	"libmrasvc_user_filter.so",
 	NULL,
 };

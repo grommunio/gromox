@@ -76,7 +76,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_monitor_domains.so",
 	"libmtasvc_ms_locale.so",
 	"libgxsvc_mysql_adaptor.so",
-	"libgxsvc_authn_mysql.so",
+	"libgxsvc_authmgr.so",
 	"libmtasvc_relay_domains.so",
 	"libmtasvc_remote_delivery_audit.so",
 	"libmtasvc_remote_delivery_forbidden.so",

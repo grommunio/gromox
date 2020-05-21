@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
 #include <cstdio>
 #include <gromox/svc_common.h>
 #include "common_types.h"
@@ -54,18 +55,18 @@ BOOL SVC_LibMain(int reason, void **datap)
 		LINK_API(datap);
 		fptr_mysql_meta = reinterpret_cast<decltype(fptr_mysql_meta)>(query_service("mysql_auth_meta"));
 		if (fptr_mysql_meta == nullptr) {
-			printf("[authn_mysql]: mysql_adaptor plugin not loaded yet\n");
+			printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
 			return false;
 		}
 		fptr_mysql_login = reinterpret_cast<decltype(fptr_mysql_login)>(query_service("mysql_auth_login2"));
 		if (fptr_mysql_login == nullptr) {
-			printf("[authn_mysql]: mysql_adaptor plugin not loaded yet\n");
+			printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
 			return false;
 		}
 		if (is_mta())
 			service_auth_init(get_context_num(), login_smtp);
 		if (is_mta() && service_auth_run() != 0) {
-			printf("[authn_mysql]: failed to run service auth\n");
+			printf("[authmgr]: failed to run service auth\n");
 			return false;
 		}
 		if (!register_service("auth_login_exch", reinterpret_cast<void *>(login_exch)) ||
@@ -74,7 +75,7 @@ BOOL SVC_LibMain(int reason, void **datap)
 		    !register_service("auth_process", reinterpret_cast<void *>(service_auth_process)) ||
 		    !register_service("auth_retrieve", reinterpret_cast<void *>(service_auth_retrieve)) ||
 		    !register_service("auth_clear", reinterpret_cast<void *>(service_auth_clear))) {
-			printf("[authn_mysql]: failed to register auth services\n");
+			printf("[authmgr]: failed to register auth services\n");
 			return false;
 		}
 		return TRUE;

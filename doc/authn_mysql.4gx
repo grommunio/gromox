@@ -1,9 +1,0 @@
-.TH authn_mysql 4gx "" "Gromox" "Gromox user reference"
-.SH Description
-.PP
-authn_mysql is a service plugin that offers mail account authentication through
-mysql_adaptor. The libgxsvc_mysql_adaptor.so plugin needs to be loaded in
-advance.
-.SH See also
-.PP
-\fBgromox\fP(7), \fBmysql_adaptor\fP(4gx)
