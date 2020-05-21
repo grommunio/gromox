@@ -181,22 +181,18 @@ void mysql_adaptor_free()
 	pthread_mutex_destroy(&g_crypt_lock);
 }
 
-BOOL mysql_adaptor_login(const char *username, const char *password,
-    char *maildir, char *lang, char *reason, int length, unsigned int mode)
+static BOOL mysql_adaptor_meta(const char *username, const char *password,
+    char *maildir, char *lang, char *reason, int length, unsigned int mode,
+    char *encrypt_passwd, size_t encrypt_size)
 {
-	int i, j, k;
+	int i;
 	int temp_type;
 	int temp_status;
-	int rows, rows1;
-	char *pdomain, *pat;
 	char temp_name[512];
 	char sql_string[1024];
-	char encrypt_passwd[40];
-	char virtual_address[256];
-	MYSQL *pmysql;
-	MYSQL_ROW myrow, myrow1;
+	MYSQL_ROW myrow;
 	DOUBLE_LIST_NODE *pnode;
-	MYSQL_RES *pmyres, *pmyres1;
+	MYSQL_RES *pmyres;
 	CONNECTION_NODE *pconnection;
 
 	if (mode == USER_PRIVILEGE_SMTP && cdner_agent_check_user(username) &&
@@ -316,15 +312,20 @@ RETRYING:
 		return false;
 	}
 
-	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
+	strncpy(encrypt_passwd, myrow[0], encrypt_size);
 	strcpy(maildir, myrow[4]);
 	if (NULL != lang) {
 		strcpy(lang, myrow[5]);
 	}
-	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
+	encrypt_passwd[encrypt_size-1] = '\0';
 	mysql_free_result(pmyres);
+	return TRUE;
+}
 
-	if ('\0' == encrypt_passwd[0]) {
+static BOOL firsttime_password(const char *username, const char *password,
+    char *encrypt_passwd, char *reason, int length, unsigned int mode)
+{
+		const char *pdomain;
 		pdomain = strchr(username, '@');
 		if (NULL == pdomain) {
 			strncpy(reason, "domain name should be included!", length);
@@ -336,6 +337,7 @@ RETRYING:
 		strcpy(encrypt_passwd, md5_crypt_wrapper(password));
 		pthread_mutex_unlock(&g_crypt_lock);
 
+		MYSQL *pmysql;
 		pmysql = mysql_init(NULL);
 		if (NULL == pmysql) {
 			strncpy(reason, "database error, please try later!", length);
@@ -354,6 +356,7 @@ RETRYING:
 			return FALSE;
 		}
 
+		char sql_string[1024], temp_name[512];
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 			"username='%s'", encrypt_passwd, temp_name);
 		if (0 != mysql_query(pmysql, sql_string)) {
@@ -362,6 +365,7 @@ RETRYING:
 			return FALSE;
 		}
 
+		MYSQL_RES *pmyres, *pmyres1;
 		snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
 			"mainname='%s'", temp_name);
 		if (0 != mysql_query(pmysql, sql_string) ||
@@ -381,10 +385,15 @@ RETRYING:
 			strncpy(reason, "database error, please try later!", length);
 			return FALSE;
 		}
+		size_t rows, rows1, k;
 		rows = mysql_num_rows(pmyres);
 		rows1 = mysql_num_rows(pmyres1);
 
 		for (k=0; k<rows1; k++) {
+			char virtual_address[256];
+			MYSQL_ROW myrow1;
+			char *pat;
+
 			myrow1 = mysql_fetch_row(pmyres1);
 			strcpy(virtual_address, username);
 			pat = strchr(virtual_address, '@') + 1;
@@ -395,7 +404,10 @@ RETRYING:
 			mysql_query(pmysql, sql_string);
 		}
 
+		size_t j;
 		for (j=0; j<rows; j++) {
+			MYSQL_ROW myrow;
+
 			myrow = mysql_fetch_row(pmyres);
 			mysql_adaptor_encode_squote(myrow[0], temp_name);
 			snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
@@ -403,7 +415,11 @@ RETRYING:
 			mysql_query(pmysql, sql_string);
 
 			mysql_data_seek(pmyres1, 0);
+			size_t k;
 			for (k=0; k<rows1; k++) {
+				char virtual_address[256], *pat;
+				MYSQL_ROW myrow1;
+
 				myrow1 = mysql_fetch_row(pmyres1);
 				strcpy(virtual_address, myrow[0]);
 				pat = strchr(virtual_address, '@') + 1;
@@ -420,8 +436,11 @@ RETRYING:
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
 		return TRUE;
+}
 
-	} else {
+static BOOL verify_password(const char *username, const char *password,
+    const char *encrypt_passwd, char *reason, int length, unsigned int mode)
+{
 		pthread_mutex_lock(&g_crypt_lock);
 		if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
 			if (mode == USER_PRIVILEGE_SMTP)
@@ -434,7 +453,25 @@ RETRYING:
 				"and retry");
 			return FALSE;
 		}
-	}
+		return FALSE;
+}
+
+BOOL mysql_adaptor_login(const char *username, const char *password,
+     char *maildir, char *lang, char *reason, int length, unsigned int mode)
+{
+	char encrypt_passwd[40];
+	BOOL ret = mysql_adaptor_meta(username, password, maildir, lang,
+	           reason, length, mode, encrypt_passwd,
+	           sizeof(encrypt_passwd));
+	if (ret == FALSE)
+		return FALSE;
+	if (*encrypt_passwd == '\0')
+		ret = firsttime_password(username, password, encrypt_passwd,
+		      reason, length, mode);
+	else
+		ret = verify_password(username, password, encrypt_passwd, reason,
+		      length, mode);
+	return ret;
 }
 
 BOOL mysql_adaptor_setpasswd(const char *username,
