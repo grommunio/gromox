@@ -107,7 +107,6 @@ mta_plugins = \
 	libmtapas_rbl_check.la \
 	libmtapas_rcpt_filter.la \
 	libmtapas_rcpt_limit.la \
-	libmtapas_sample.la \
 	libmtapas_scamming_filter.la \
 	libmtapas_site_protection.la \
 	libmtapas_special_protection.la \
@@ -117,7 +116,6 @@ mta_plugins = \
 	libmtapas_trojan_detector.la \
 	libmtapas_xmailer_filter.la \
 	libmtaflh_message_enqueue.la \
-	libmtaflh_sample.la \
 	libmtahook_alias_translator.la \
 	libmtahook_anonymous_keyword.la \
 	libmtahook_antivirus_processor.la \
@@ -142,7 +140,6 @@ mta_plugins = \
 	libmtahook_relay_agent.la \
 	libmtahook_remote_postman.la \
 	libmtahook_report_forms.la \
-	libmtahook_sample.la \
 	libmtahook_self_monitor.la \
 	libmtahook_spam_complain.la \
 	libmtahook_spam_tagging.la \
@@ -183,7 +180,6 @@ mta_plugins = \
 	libmtasvc_remote_delivery_forbidden.la \
 	libmtasvc_remote_mx_hello.la \
 	libmtasvc_retrying_table.la \
-	libmtasvc_sample.la \
 	libmtasvc_service_auth.la \
 	libmtasvc_single_rcpt.la \
 	libmtasvc_smtp_console_control.la \
@@ -280,7 +276,6 @@ noinst_DATA += \
 	libmtapas_rbl_check.ldd \
 	libmtapas_rcpt_filter.ldd \
 	libmtapas_rcpt_limit.ldd \
-	libmtapas_sample.ldd \
 	libmtapas_scamming_filter.ldd \
 	libmtapas_site_protection.ldd \
 	libmtapas_special_protection.ldd \
@@ -290,7 +285,6 @@ noinst_DATA += \
 	libmtapas_trojan_detector.ldd \
 	libmtapas_xmailer_filter.ldd \
 	libmtaflh_message_enqueue.ldd \
-	libmtaflh_sample.ldd \
 	libmtahook_alias_translator.ldd \
 	libmtahook_anonymous_keyword.ldd \
 	libmtahook_antivirus_processor.ldd \
@@ -315,7 +309,6 @@ noinst_DATA += \
 	libmtahook_relay_agent.ldd \
 	libmtahook_remote_postman.ldd \
 	libmtahook_report_forms.ldd \
-	libmtahook_sample.ldd \
 	libmtahook_self_monitor.ldd \
 	libmtahook_spam_complain.ldd \
 	libmtahook_spam_tagging.ldd \
@@ -356,7 +349,6 @@ noinst_DATA += \
 	libmtasvc_remote_delivery_forbidden.ldd \
 	libmtasvc_remote_mx_hello.ldd \
 	libmtasvc_retrying_table.la \
-	libmtasvc_sample.la \
 	libmtasvc_service_auth.la \
 	libmtasvc_single_rcpt.ldd \
 	libmtasvc_smtp_console_control.ldd \
@@ -374,7 +366,6 @@ mra_plugins = \
 	libmrasvc_ip_filter.la \
 	libmrasvc_log_plugin.la \
 	libmrasvc_midb_agent.la \
-	libmrasvc_sample.la \
 	libmrasvc_user_filter.la
 noinst_DATA += \
 	libmrasvc_cdner_agent.ldd \
@@ -384,7 +375,6 @@ noinst_DATA += \
 	libmrasvc_ip_filter.ldd \
 	libmrasvc_log_plugin.ldd \
 	libmrasvc_midb_agent.ldd \
-	libmrasvc_sample.ldd \
 	libmrasvc_user_filter.ldd
 exchange_progs = http midb zcore
 exchange_plugins = \
@@ -397,15 +387,12 @@ exchange_plugins = \
 	libexsvc_log_plugin.la \
 	libexsvc_mime_extension.la \
 	libexsvc_ms_locale.la \
-	libexsvc_sample.la \
 	libexsvc_user_filter.la \
 	libexsvc_timer_agent.la \
 	libexproc_exchange_emsmdb.la \
 	libexproc_exchange_nsp.la \
 	libexproc_exchange_rfr.la \
-	libexproc_sample.la \
 	libexhpm_proxy.la \
-	libexhpm_sample.la \
 	libgxsvc_authmgr.la \
 	libgxsvc_ldap_adaptor.la \
 	libgxsvc_mysql_adaptor.la
@@ -419,15 +406,12 @@ noinst_DATA += \
 	libexsvc_log_plugin.ldd \
 	libexsvc_mime_extension.ldd \
 	libexsvc_ms_locale.ldd \
-	libexsvc_sample.ldd \
 	libexsvc_user_filter.ldd \
 	libexsvc_timer_agent.ldd \
 	libexproc_exchange_emsmdb.ldd \
 	libexproc_exchange_nsp.ldd \
 	libexproc_exchange_rfr.ldd \
-	libexproc_sample.ldd \
 	libexhpm_proxy.ldd \
-	libexhpm_sample.ldd \
 	libgxsvc_authmgr.ldd \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_mysql_adaptor.ldd
@@ -818,8 +802,6 @@ libmtapas_rcpt_limit_la_SOURCES = MTA_SYSTEM/as_plugins/rcpt_limit.c
 libmtapas_rcpt_limit_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtapas_rcpt_limit_la_LIBADD = libgromox_common.la
 EXTRA_libmtapas_rcpt_limit_la_DEPENDENCIES = ${default_sym}
-libmtapas_sample_la_SOURCES = MTA_SYSTEM/as_plugins/sample.c
-libmtapas_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtapas_scamming_filter_la_SOURCES = MTA_SYSTEM/as_plugins/scamming_filter.c
 libmtapas_scamming_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtapas_scamming_filter_la_LIBADD = libgromox_common.la
@@ -856,10 +838,6 @@ libmtaflh_message_enqueue_la_SOURCES = MTA_SYSTEM/flusher_plugins/message_enqueu
 libmtaflh_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtaflh_message_enqueue_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmtaflh_message_enqueue_la_DEPENDENCIES = ${default_sym}
-libmtaflh_sample_la_SOURCES = MTA_SYSTEM/flusher_plugins/sample.c
-libmtaflh_sample_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtaflh_sample_la_LIBADD = -lpthread
-EXTRA_libmtaflh_sample_la_DEPENDENCIES = ${default_sym}
 libmtahook_alias_translator_la_SOURCES = MTA_SYSTEM/mpc_plugins/alias_translator/main.c
 libmtahook_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -956,8 +934,6 @@ libmtahook_report_forms_la_SOURCES = MTA_SYSTEM/mpc_plugins/report_forms.c
 libmtahook_report_forms_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_report_forms_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_report_forms_la_DEPENDENCIES = ${default_sym}
-libmtahook_sample_la_SOURCES = MTA_SYSTEM/mpc_plugins/sample.c
-libmtahook_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_self_monitor_la_SOURCES = MTA_SYSTEM/mpc_plugins/self_monitor.c
 libmtahook_self_monitor_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_self_monitor_la_LIBADD = -lpthread libgromox_common.la
@@ -1130,8 +1106,6 @@ libmtasvc_retrying_table_la_SOURCES = MTA_SYSTEM/service_plugins/retrying_table/
 libmtasvc_retrying_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_retrying_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_retrying_table_la_DEPENDENCIES = ${default_sym}
-libmtasvc_sample_la_SOURCES = MTA_SYSTEM/service_plugins/sample.c
-libmtasvc_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_service_auth_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c MTA_SYSTEM/service_plugins/service_auth/main.c
 libmtasvc_service_auth_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_service_auth_la_LIBADD = libgromox_common.la
@@ -1186,8 +1160,6 @@ libmrasvc_midb_agent_la_SOURCES = MRA_SYSTEM/service_plugins/midb_agent.c
 libmrasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
-libmrasvc_sample_la_SOURCES = ${libexsvc_sample_la_SOURCES}
-libmrasvc_sample_la_LDFLAGS = ${libexsvc_sample_la_LDFLAGS}
 libmrasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
 libmrasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
 libmrasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
@@ -1236,8 +1208,6 @@ libexsvc_ms_locale_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ms_locale.c
 libexsvc_ms_locale_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_ms_locale_la_LIBADD = ${HX_LIBS} libgromox_common.la
 EXTRA_libexsvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libexsvc_sample_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/sample.c
-libexsvc_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_user_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/str_filter/main.c EXCHANGE_SYSTEM/service_plugins/str_filter/str_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/temp_list.c
 libexsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -1258,16 +1228,10 @@ libexproc_exchange_rfr_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/exchange_rfr.c
 libexproc_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libexproc_exchange_rfr_la_DEPENDENCIES = ${default_sym}
-libexproc_sample_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/sample.c
-libexproc_sample_la_LDFLAGS = ${plugin_LDFLAGS}
-libexproc_sample_la_LIBADD = libgromox_common.la
-EXTRA_libexproc_sample_la_DEPENDENCIES = ${default_sym}
 libexhpm_proxy_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/mod_proxy.c
 libexhpm_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexhpm_proxy_la_DEPENDENCIES = ${default_sym}
-libexhpm_sample_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/sample.c
-libexhpm_sample_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_authmgr_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/authmgr.cpp MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
 libgxsvc_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_authmgr_la_LIBADD = libgromox_common.la
