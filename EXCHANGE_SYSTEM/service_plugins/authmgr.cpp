@@ -72,11 +72,14 @@ static BOOL authmgr_init()
 	}
 
 	if (ldap) {
+		auto fload = reinterpret_cast<bool (*)()>(query_service("ldap_adaptor_load"));
 		fptr_login = reinterpret_cast<decltype(fptr_login)>(query_service("ldap_auth_login2"));
-		if (fptr_login == nullptr) {
+		if (fload == nullptr || fptr_login == nullptr) {
 			printf("[authmgr]: ldap_adaptor plugin not loaded yet\n");
 			return false;
 		}
+		if (!fload())
+			return false;
 	} else {
 		fptr_login = reinterpret_cast<decltype(fptr_login)>(query_service("mysql_auth_login2"));
 		if (fptr_login == nullptr) {

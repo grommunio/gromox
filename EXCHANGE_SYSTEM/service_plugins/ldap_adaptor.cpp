@@ -161,7 +161,7 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
 	return FALSE;
 }
 
-static bool ldap_adaptor_init()
+static bool ldap_adaptor_load()
 {
 	/* get the plugin name from system api */
 	g_config_path = get_config_path() + "/ldap_adaptor.cfg"s;
@@ -205,10 +205,6 @@ static bool ldap_adaptor_init()
 		g_conn_pool.put(std::move(ld));
 	}
 
-	if (!register_service("ldap_auth_login2", reinterpret_cast<void *>(ldap_adaptor_login2))) {
-		printf("[ldap_adaptor]: failed to register \"auth_login_exch\" service\n");
-		return false;
-	}
 	return true;
 }
 
@@ -222,7 +218,15 @@ BOOL SVC_LibMain(int reason, void **ppdata) try
 		return false;
 
 	LINK_API(ppdata);
-	return ldap_adaptor_init() ? TRUE : FALSE;
+	if (!register_service("ldap_adaptor_load", reinterpret_cast<void *>(ldap_adaptor_load))) {
+		printf("[ldap_adaptor]: failed to register \"ldap_adaptor_load\" service\n");
+		return false;
+	}
+	if (!register_service("ldap_auth_login2", reinterpret_cast<void *>(ldap_adaptor_login2))) {
+		printf("[ldap_adaptor]: failed to register \"auth_login_exch\" service\n");
+		return false;
+	}
+	return TRUE;
 } catch (...) {
 	return false;
 }
