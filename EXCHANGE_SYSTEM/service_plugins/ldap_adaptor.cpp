@@ -45,6 +45,8 @@ static std::mutex g_conn_mtx;
 static bool g_use_tls;
 static resource_pool<twoconn> g_conn_pool;
 
+static constexpr const char *no_attrs[] = {nullptr};
+
 /**
  * Make sure the response has exactly one entry and at most
  * one optional informational search trailer.
@@ -84,18 +86,17 @@ static ldap_ptr make_conn()
 	}
 
 	/* debug: test connection */
-	constexpr const char *attrs[] = {"dn", nullptr};
 	ldap_msg msg;
-	ret = ldap_search_ext_s(ld.get(), g_search_base.c_str(), LDAP_SCOPE_BASE,
-	      nullptr, const_cast<char **>(attrs), true, nullptr, nullptr,
+	ret = ldap_search_ext_s(ld.get(), "", LDAP_SCOPE_BASE, nullptr,
+	      const_cast<char **>(no_attrs), true, nullptr, nullptr,
 	      nullptr, 1, &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
-		printf("[ldap_adaptor]: ldap_search_base \"%s\" not found: %s\n",
-		       g_search_base.c_str(), ldap_err2string(ret));
+		printf("[ldap_adaptor]: ldap rootDSE query: %s\n",
+		       ldap_err2string(ret));
 		return nullptr;
 	}
 	if (!validate_response(ld.get(), msg.get())) {
-		printf("[ldap_adaptor]: unexpected result from search base\n");
+		printf("[ldap_adaptor]: unexpected result from rootDSE\n");
 		return nullptr;
 	}
 	return ld;
@@ -110,12 +111,11 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
 		return FALSE;
 
 	ldap_msg msg;
-	static constexpr const char *attrs[] = {nullptr};
 	std::unique_ptr<char, stdlib_free> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
 	auto ret = ldap_search_ext_s(ld.meta.get(), g_search_base.c_str(),
-	           LDAP_SCOPE_SUBTREE, filter.c_str(), const_cast<char **>(attrs),
+	           LDAP_SCOPE_SUBTREE, filter.c_str(), const_cast<char **>(no_attrs),
 	           true, nullptr, nullptr, nullptr, 2, &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
 		printf("[ldap_adaptor]: search with filter %s: %s\n",
