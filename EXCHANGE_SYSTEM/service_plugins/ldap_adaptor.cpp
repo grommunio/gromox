@@ -64,6 +64,8 @@ static bool validate_response(LDAP *ld, LDAPMessage *result)
 	return ldap_next_message(ld, msg) == nullptr;
 }
 
+static constexpr const char *zero_attrs[] = {nullptr};
+
 static ldap_ptr make_conn()
 {
 	ldap_ptr ld;
@@ -161,6 +163,35 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
 	return FALSE;
 }
 
+static bool ldap_adaptor_load_base()
+{
+	twoconn ld = g_conn_pool.get_wait();
+	if (ld.meta == nullptr || ld.bind == nullptr)
+		return false;
+
+	ldap_msg msg;
+	auto ret = ldap_search_ext_s(ld.meta.get(), nullptr,
+	           LDAP_SCOPE_BASE, nullptr, const_cast<char **>(zero_attrs),
+	           true, nullptr, nullptr, nullptr, 1, &unique_tie(msg));
+	if (ret != LDAP_SUCCESS) {
+		printf("[ldap_adaptor]: base lookup: %s\n", ldap_err2string(ret));
+		return false;
+	}
+	if (!validate_response(ld.meta.get(), msg.get())) {
+		printf("[ldap_adaptor]: base lookup: no good result\n");
+		return false;
+	}
+	auto firstmsg = ldap_first_message(ld.meta.get(), msg.get());
+	if (firstmsg == nullptr)
+		return false;
+	auto dn = ldap_get_dn(ld.meta.get(), firstmsg);
+	if (dn == nullptr)
+		return false;
+	g_search_base = dn;
+	printf("[ldap_adaptor]: discovered base \"%s\"\n", g_search_base.c_str());
+	return true;
+}
+
 static bool ldap_adaptor_load()
 {
 	/* get the plugin name from system api */
@@ -185,14 +216,6 @@ static bool ldap_adaptor_load()
 	g_ldap_host = val != nullptr ? val : "";
 	printf("[ldap_adaptor]: hostlist is \"%s\"\n", g_ldap_host.c_str());
 
-	val = config_file_get_value(pfile, "ldap_search_base");
-	g_search_base = val != nullptr ? val : "";
-	printf("[ldap_adaptor]: search base is \"%s\"\n", g_search_base.c_str());
-	if (g_search_base.size() == 0) {
-		printf("[ldap_adaptor]: search base is not allowed to be empty\n");
-		return false;
-	}
-
 	val = config_file_get_value(pfile, "ldap_mail_attr");
 	g_mail_attr = val != nullptr ? val : "mail";
 	printf("[ldap_adaptor]: ldap mail attribute is \"%s\"\n", g_mail_attr.c_str());
@@ -205,6 +228,10 @@ static bool ldap_adaptor_load()
 		g_conn_pool.put(std::move(ld));
 	}
 
+	val = config_file_get_value(pfile, "ldap_search_base");
+	g_search_base = val != nullptr ? val : "";
+	if (g_search_base.size() == 0 && !ldap_adaptor_load_base())
+		return false;
 	return true;
 }
 
