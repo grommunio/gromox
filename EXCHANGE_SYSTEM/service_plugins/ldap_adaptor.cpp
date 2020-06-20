@@ -41,6 +41,7 @@ enum {
 DECLARE_API;
 
 static std::string g_config_path, g_ldap_host, g_search_base, g_mail_attr;
+static std::string g_bind_user, g_bind_pass;
 static std::mutex g_conn_mtx;
 static bool g_use_tls;
 static resource_pool<twoconn> g_conn_pool;
@@ -87,19 +88,15 @@ static ldap_ptr make_conn()
 		}
 	}
 
-	/* debug: test connection */
-	ldap_msg msg;
-	ret = ldap_search_ext_s(ld.get(), "", LDAP_SCOPE_BASE, nullptr,
-	      const_cast<char **>(no_attrs), true, nullptr, nullptr,
-	      nullptr, 1, &unique_tie(msg));
+	struct berval cred;
+	cred.bv_val = const_cast<char *>(g_bind_pass.c_str());
+	cred.bv_len = g_bind_pass.size();
+	ret = ldap_sasl_bind_s(ld.get(), g_bind_user.size() == 0 ? nullptr : g_bind_user.c_str(),
+	      LDAP_SASL_SIMPLE, &cred, nullptr, nullptr, nullptr);
 	if (ret != LDAP_SUCCESS) {
-		printf("[ldap_adaptor]: ldap rootDSE query: %s\n",
-		       ldap_err2string(ret));
-		return nullptr;
-	}
-	if (!validate_response(ld.get(), msg.get())) {
-		printf("[ldap_adaptor]: unexpected result from rootDSE\n");
-		return nullptr;
+		printf("[ldap_adaptor]: bind as \"%s\": %s\n",
+		       g_bind_user.c_str(), ldap_err2string(ret));
+		return {};
 	}
 	return ld;
 }
@@ -215,6 +212,13 @@ static bool ldap_adaptor_load()
 	val = config_file_get_value(pfile, "ldap_host");
 	g_ldap_host = val != nullptr ? val : "";
 	printf("[ldap_adaptor]: hostlist is \"%s\"\n", g_ldap_host.c_str());
+
+	val = config_file_get_value(pfile, "ldap_bind_user");
+	if (val != nullptr)
+		g_bind_user = val;
+	val = config_file_get_value(pfile, "ldap_bind_pass");
+	if (val != nullptr)
+		g_bind_pass = val;
 
 	val = config_file_get_value(pfile, "ldap_mail_attr");
 	g_mail_attr = val != nullptr ? val : "mail";

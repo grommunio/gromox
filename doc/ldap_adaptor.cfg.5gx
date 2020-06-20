@@ -16,6 +16,18 @@ Default: (same as data_connections)
 Number of LDAP connections to keep active to the server for metadata lookup.
 .PP
 Default: \fI4\fP
+.SS ldap_bind_user
+.PP
+Specifies the default bind DN to use when performing general LDAP operations,
+i.e. searches. The bind DN must be specified as a Distinguished Name in LDAP
+format.
+.PP
+Default: (unset)
+.SS ldap_bind_pass
+.PP
+Password for Simple Authentication of ldap_bind_user.
+.PP
+Default: (unset)
 .SS ldap_host
 .PP
 Whitespace-separated RFC 2255-style set of LDAP URIs that specify protocol
