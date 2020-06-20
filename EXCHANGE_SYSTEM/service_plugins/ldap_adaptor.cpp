@@ -222,11 +222,19 @@ static bool ldap_adaptor_load()
 	config_file_free(pfile);
 
 	for (unsigned int i = 0; i < conn_num; ++i) {
-		twoconn ld{make_conn(), make_conn()};
-		if (ld.meta == nullptr || ld.bind == nullptr)
-			continue;
+		twoconn ld;
+		ld.meta = make_conn();
+		if (ld.meta == nullptr)
+			/*
+			 * If we cannot create a connection, trying again
+			 * likely won't make it better.
+			 */
+			break;
+		ld.bind = make_conn();
 		g_conn_pool.put(std::move(ld));
 	}
+	if (g_conn_pool.size() == 0)
+		return FALSE;
 
 	val = config_file_get_value(pfile, "ldap_search_base");
 	g_search_base = val != nullptr ? val : "";

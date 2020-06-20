@@ -22,6 +22,7 @@ template<typename Tp> class resource_pool {
 		m_cv.notify_one();
 	}
 	void clear() { m_list.clear(); }
+	size_t size() const { return m_list.size(); }
 	private:
 	std::mutex m_mtx;
 	std::condition_variable m_cv;
