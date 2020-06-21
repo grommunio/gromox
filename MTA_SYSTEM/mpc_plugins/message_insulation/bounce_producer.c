@@ -14,7 +14,6 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <iconv.h>
 #include <time.h>
 
 enum{

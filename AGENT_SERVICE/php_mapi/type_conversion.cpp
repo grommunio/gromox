@@ -1,5 +1,4 @@
 #include "type_conversion.h"
-#include <iconv.h>
 #include "ext.hpp"
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
 

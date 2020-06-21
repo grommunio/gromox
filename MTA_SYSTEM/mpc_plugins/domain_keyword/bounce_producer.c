@@ -13,7 +13,6 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <iconv.h>
 
 enum{
 	TAG_BEGIN,

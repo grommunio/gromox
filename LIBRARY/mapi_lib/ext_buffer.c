@@ -3,8 +3,6 @@
 #include "util.h"
 #include <stdlib.h>
 #include <string.h>
-#include <iconv.h>
-
 
 #define EXT_SVAL(pext, ofs)			SVAL(pext->data,ofs)
 #define EXT_IVAL(pext, ofs)			IVAL(pext->data,ofs)
