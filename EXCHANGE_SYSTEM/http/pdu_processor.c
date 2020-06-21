@@ -17,7 +17,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <dlfcn.h>
-#include <dirent.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>

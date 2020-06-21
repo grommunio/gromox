@@ -15,7 +15,6 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <dlfcn.h>
-#include <dirent.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

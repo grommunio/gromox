@@ -28,7 +28,6 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <sqlite3.h>
 #include <pthread.h>
 #include <sys/stat.h>

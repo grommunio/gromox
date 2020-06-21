@@ -19,7 +19,6 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <dirent.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>

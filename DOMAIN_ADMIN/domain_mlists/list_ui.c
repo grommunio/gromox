@@ -7,7 +7,6 @@
 #include "list_file.h"
 #include "util.h"
 #include "double_list.h"
-#include <dirent.h>
 #include <iconv.h>
 #include <time.h>
 #include <stdio.h>

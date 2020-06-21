@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <dlfcn.h>
 #include <stdio.h>
-#include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
 
