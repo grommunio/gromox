@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <crypt.h>
 #include <fcntl.h>
 #include <iconv.h>
 #include <time.h>
