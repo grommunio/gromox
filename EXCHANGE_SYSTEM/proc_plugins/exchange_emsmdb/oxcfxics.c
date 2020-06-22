@@ -5,6 +5,7 @@
 #include "rop_util.h"
 #include "eid_array.h"
 #include "common_util.h"
+#include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include "exmdb_client.h"
 #include "folder_object.h"
