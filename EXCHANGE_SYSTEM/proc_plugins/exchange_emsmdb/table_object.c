@@ -30,28 +30,25 @@ static void table_object_set_table_id(
 	dir = logon_object_get_dir(ptable->plogon);
 	if (0 != ptable->table_id) {
 		exmdb_client_unload_table(dir, ptable->table_id);
-		if (ROP_ID_GETCONTENTSTABLE == ptable->rop_id || 
-			ROP_ID_GETHIERARCHYTABLE == ptable->rop_id) {
+		if (ptable->rop_id == ropGetContentsTable ||
+		    ptable->rop_id == ropGetHierarchyTable)
 			emsmdb_interface_remove_table_notify(
 							dir, ptable->table_id);
-		}
 	}
 	if (0 != table_id) {
-		if (ROP_ID_GETCONTENTSTABLE == ptable->rop_id || 
-			ROP_ID_GETHIERARCHYTABLE == ptable->rop_id) {
+		if (ptable->rop_id == ropGetContentsTable ||
+		    ptable->rop_id == ropGetHierarchyTable)
 			emsmdb_interface_add_table_notify(
 				dir, table_id, ptable->handle,
 				ptable->logon_id, &ptable->cxh.guid);
-		}
 	}
 	ptable->table_id = table_id;
 }
 
 BOOL table_object_check_loaded(TABLE_OBJECT *ptable)
 {
-	if (ROP_ID_GETATTACHMENTTABLE == ptable->rop_id) {
+	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
-	}
 	if (0 == ptable->table_id) {
 		return FALSE;
 	} else {
@@ -68,14 +65,13 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	DCERPC_INFO rpc_info;
 	const char *username;
 	
-	if (ROP_ID_GETATTACHMENTTABLE == ptable->rop_id) {
+	if (ptable->rop_id == ropGetAttachmentTable)
 		return TRUE;
-	}
 	if (0 != ptable->table_id) {
 		return TRUE;
 	}
 	switch (ptable->rop_id) {
-	case ROP_ID_GETHIERARCHYTABLE:
+	case ropGetHierarchyTable:
 		rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER == logon_object_get_mode(ptable->plogon)) {
 			username = NULL;
@@ -90,7 +86,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			return FALSE;
 		}
 		break;
-	case ROP_ID_GETCONTENTSTABLE:
+	case ropGetContentsTable:
 		rpc_info = get_rpc_info();
 		pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
@@ -121,7 +117,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			return FALSE;
 		}
 		break;
-	case ROP_ID_GETPERMISSIONSTABLE:
+	case ropGetPermissionsTable:
 		if (FALSE == exmdb_client_load_permission_table(
 			logon_object_get_dir(ptable->plogon),
 			folder_object_get_id(ptable->pparent_obj),
@@ -129,7 +125,7 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			return FALSE;
 		}
 		break;
-	case ROP_ID_GETRULESTABLE:
+	case ropGetRulesTable:
 		if (FALSE == exmdb_client_load_rule_table(
 			logon_object_get_dir(ptable->plogon),
 			folder_object_get_id(ptable->pparent_obj),
@@ -177,7 +173,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 	} else {
 		row_needed = -1 * row_count;
 	}
-	if (ROP_ID_GETATTACHMENTTABLE == ptable->rop_id) {
+	if (ptable->rop_id == ropGetAttachmentTable) {
 		return message_object_query_attachment_table(
 			ptable->pparent_obj, ptable->pcolumns,
 			ptable->position, row_needed, pset);
@@ -321,7 +317,7 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 	uint16_t num;
 	uint32_t total_rows;
 	
-	if (ROP_ID_GETATTACHMENTTABLE == ptable->rop_id) {
+	if (ptable->rop_id == ropGetAttachmentTable) {
 		num = 0;
 		message_object_get_attachments_num(ptable->pparent_obj, &num);
 		return num;
@@ -489,10 +485,9 @@ void table_object_reset(TABLE_OBJECT *ptable)
 BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 	PROPTAG_ARRAY *pcolumns)
 {
-	if (ROP_ID_GETATTACHMENTTABLE == ptable->rop_id) {
+	if (ptable->rop_id == ropGetAttachmentTable)
 		return message_object_get_attachment_table_all_proptags(
 								ptable->pparent_obj, pcolumns);
-	}
 	return exmdb_client_get_table_all_proptags(
 			logon_object_get_dir(ptable->plogon),
 			ptable->table_id, pcolumns);

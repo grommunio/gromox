@@ -1280,7 +1280,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 		return EC_ERROR;	
 	}
 	ptable = table_object_create(plogon, pfolder,
-				table_flags, ROP_ID_GETHIERARCHYTABLE, logon_id);
+	         table_flags, ropGetHierarchyTable, logon_id);
 	if (NULL == ptable) {
 		return EC_OUT_OF_MEMORY;
 	}
@@ -1372,7 +1372,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 		*prow_count = 1; /* arbitrary value */
 	}
 	ptable = table_object_create(plogon, pfolder,
-		table_flags, ROP_ID_GETCONTENTSTABLE, logon_id);
+	         table_flags, ropGetContentsTable, logon_id);
 	if (NULL == ptable) {
 		return EC_OUT_OF_MEMORY;
 	}

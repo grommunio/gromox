@@ -1323,7 +1323,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 		return EC_NOT_SUPPORTED;
 	}
 	ptable = table_object_create(plogon, pmessage, table_flags,
-							ROP_ID_GETATTACHMENTTABLE, logon_id);
+	         ropGetAttachmentTable, logon_id);
 	if (NULL == ptable) {
 		return EC_OUT_OF_MEMORY;
 	}

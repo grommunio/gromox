@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
@@ -1229,7 +1230,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		free(pnode);
 		return;
 	}
-	((ROP_RESPONSE*)pnode->pdata)->rop_id = ROP_ID_NOTIFY;
+	static_cast(ROP_RESPONSE *, pnode->pdata)->rop_id = ropRegisterNotify;
 	((ROP_RESPONSE*)pnode->pdata)->hindex = 0; /* ignore by system */
 	((ROP_RESPONSE*)pnode->pdata)->result = 0; /* ignore by system */
 	((ROP_RESPONSE*)pnode->pdata)->ppayload =

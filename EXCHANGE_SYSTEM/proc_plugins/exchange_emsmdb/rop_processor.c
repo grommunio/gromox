@@ -1,4 +1,5 @@
 #include <string.h>
+#include <libHX/defs.h>
 #include "subscription_object.h"
 #include "fastdownctx_object.h"
 #include "attachment_object.h"
@@ -561,14 +562,12 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			/* disable compression when RopReadStream
 				RopFastTransferSourceGetBuffer success.
 				in many cases, lzxpress will make buffer inflate! */
-			if (ROP_ID_READSTREAM == ((ROP_REQUEST*)pnode->pdata)->rop_id
-				|| ROP_ID_FASTTRANSFERSOURCEGETBUFFER ==
-				((ROP_REQUEST*)pnode->pdata)->rop_id) {
+			if (static_cast(ROP_REQUEST *, pnode->pdata)->rop_id == ropReadStream ||
+			    static_cast(ROP_REQUEST *, pnode->pdata)->rop_id == ropFastTransferSourceGetBuffer)
 				prop_buff->rhe_flags &= ~RHE_FLAG_COMPRESSED;
-			}
 			break;
 		case EC_BUFFER_TOO_SMALL:
-			((ROP_RESPONSE*)pnode1->pdata)->rop_id = ROP_ID_BUFFERTOOSMALL;
+			static_cast(ROP_RESPONSE *, pnode1->pdata)->rop_id = ropBufferTooSmall;
 			((ROP_RESPONSE*)pnode1->pdata)->ppayload =
 				common_util_alloc(sizeof(BUFFERTOOSMALL_RESPONSE));
 			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
@@ -591,7 +590,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		if (0 != pemsmdb_info->upctx_ref) {
 			b_icsup = TRUE;	
 		}
-		/* some ROPs do not have response, for example ROP_ID_RELEASE */
+		/* some ROPs do not have response, for example ropRelease */
 		if (NULL == pnode1->pdata) {
 			continue;
 		}
@@ -604,14 +603,13 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			double_list_append_as_tail(presponse_list, pnode1);
 			break;
 		case EXT_ERR_BUFSIZE:
-			if (ROP_ID_GETPROPERTIESALL ==
-				((ROP_REQUEST*)pnode->pdata)->rop_id) {
+			if (static_cast(ROP_REQUEST *, pnode->pdata)->rop_id == ropGetPropertiesAll) {
 				/* MS-OXCPRPT 3.2.5.2, fail to whole RPC */
 				if (pnode == double_list_get_head(&prop_buff->rop_list)) {
 					return EC_SERVER_OOM;
 				}
 			}
-			((ROP_RESPONSE*)pnode1->pdata)->rop_id = ROP_ID_BUFFERTOOSMALL;
+			static_cast(ROP_RESPONSE *, pnode1->pdata)->rop_id = ropBufferTooSmall;
 			((ROP_RESPONSE*)pnode1->pdata)->ppayload =
 				common_util_alloc(sizeof(BUFFERTOOSMALL_RESPONSE));
 			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
@@ -775,7 +773,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	double_list_free(&response_list);
 	double_list_init(&response_list);
 	
-	if (ROP_ID_QUERYROWS == presponse->rop_id) {
+	if (presponse->rop_id == ropQueryRows) {
 		if (QUERY_ROWS_FLAGS_ENABLEPACKEDBUFFERS ==
 			((QUERYROWS_REQUEST*)prequest->ppayload)->flags) {
 			goto PROC_SUCCESS;
@@ -812,7 +810,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			}
 			presponse = (ROP_RESPONSE*)pnode1->pdata;
-			if (ROP_ID_QUERYROWS != presponse->rop_id ||
+			if (presponse->rop_id != ropQueryRows ||
 				EC_SUCCESS != presponse->result) {
 				break;
 			}
@@ -820,7 +818,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			offset += tmp_cb;
 			count ++;
 		}
-	} else if (ROP_ID_READSTREAM == presponse->rop_id) {
+	} else if (presponse->rop_id == ropReadStream) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (EC_SUCCESS == presponse->result &&
 			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
@@ -839,7 +837,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			}
 			presponse = (ROP_RESPONSE*)pnode1->pdata;
-			if (ROP_ID_READSTREAM != presponse->rop_id ||
+			if (presponse->rop_id != ropReadStream ||
 				EC_SUCCESS != presponse->result) {
 				break;
 			}
@@ -847,7 +845,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			offset += tmp_cb;
 			count ++;
 		}
-	} else if (ROP_ID_FASTTRANSFERSOURCEGETBUFFER == presponse->rop_id) {
+	} else if (presponse->rop_id == ropFastTransferSourceGetBuffer) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
 		while (EC_SUCCESS == presponse->result &&
 			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
@@ -870,7 +868,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 				break;
 			}
 			presponse = (ROP_RESPONSE*)pnode1->pdata;
-			if (ROP_ID_FASTTRANSFERSOURCEGETBUFFER != presponse->rop_id
+			if (presponse->rop_id != ropFastTransferSourceGetBuffer
 				|| EC_SUCCESS != presponse->result) {
 				break;
 			}

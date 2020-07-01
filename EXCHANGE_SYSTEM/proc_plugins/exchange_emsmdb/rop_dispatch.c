@@ -22,7 +22,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	if (prequest->hindex >= hnum) {
 		return EC_INVALID_OBJECT;
 	}
-	if (ROP_ID_RELEASE == prequest->rop_id) {
+	if (prequest->rop_id == ropRelease) {
 		rop_release(pemsmdb_info->plogmap,
 			prequest->logon_id, phandles[prequest->hindex]);
 		*ppresponse = NULL;
@@ -36,7 +36,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	(*ppresponse)->ppayload = NULL;
 	
 	switch (prequest->rop_id) {
-	case ROP_ID_LOGON:
+	case ropLogon:
 		(*ppresponse)->hindex = prequest->hindex;
 		perr_response = common_util_alloc(sizeof(LOGON_REDIRECT_RESPONSE));
 		if (NULL == perr_response) {
@@ -94,7 +94,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			(*ppresponse)->ppayload = perr_response;
 		}
 		break;
-	case ROP_ID_GETRECEIVEFOLDER:
+	case ropGetReceiveFolder:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETRECEIVEFOLDER_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -106,14 +106,14 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETRECEIVEFOLDER_RESPONSE*)(*ppresponse)->ppayload)->pstr_class,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETRECEIVEFOLDER:
+	case ropSetReceiveFolder:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_setreceivefolder(
 			((SETRECEIVEFOLDER_REQUEST*)prequest->ppayload)->folder_id,
 			((SETRECEIVEFOLDER_REQUEST*)prequest->ppayload)->pstr_class,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETRECEIVEFOLDERTABLE:
+	case ropGetReceiveFolderTable:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETRECEIVEFOLDERTABLE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -123,7 +123,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETRECEIVEFOLDERTABLE_RESPONSE*)(*ppresponse)->ppayload)->rows,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETSTORESTAT:
+	case ropGetStoreState:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSTORESTAT_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -133,7 +133,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETSTORESTAT_RESPONSE*)(*ppresponse)->ppayload)->stat,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETOWNINGSERVERS:
+	case ropGetOwningServers:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETOWNINGSERVERS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -144,7 +144,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETOWNINGSERVERS_RESPONSE*)(*ppresponse)->ppayload)->ghost,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_PUBLICFOLDERISGHOSTED:
+	case ropPublicFolderIsGhosted:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(PUBLICFOLDERISGHOSTED_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -155,7 +155,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((PUBLICFOLDERISGHOSTED_RESPONSE*)(*ppresponse)->ppayload)->pghost,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_LONGTERMIDFROMID:
+	case ropLongTermIdFromId:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(LONGTERMIDFROMID_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -166,7 +166,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((LONGTERMIDFROMID_RESPONSE*)(*ppresponse)->ppayload)->long_term_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_IDFROMLONGTERMID:
+	case ropIdFromLongTermId:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(IDFROMLONGTERMID_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -177,7 +177,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((IDFROMLONGTERMID_RESPONSE*)(*ppresponse)->ppayload)->id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETPERUSERLONGTERMIDS:
+	case ropGetPerUserLongTermIds:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPERUSERLONGTERMIDS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -188,7 +188,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETPERUSERLONGTERMIDS_RESPONSE*)(*ppresponse)->ppayload)->ids,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETPERUSERGUID:
+	case ropGetPerUserGuid:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPERUSERGUID_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -199,7 +199,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETPERUSERGUID_RESPONSE*)(*ppresponse)->ppayload)->guid,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_READPERUSERINFORMATION:
+	case ropReadPerUserInformation:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(READPERUSERINFORMATION_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -214,7 +214,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((READPERUSERINFORMATION_RESPONSE*)(*ppresponse)->ppayload)->data,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_WRITEPERUSERINFORMATION:
+	case ropWritePerUserInformation:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_writeperuserinformation(
 			&((WRITEPERUSERINFORMATION_REQUEST*)prequest->ppayload)->long_folder_id,
@@ -224,7 +224,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((WRITEPERUSERINFORMATION_REQUEST*)prequest->ppayload)->pguid,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_OPENFOLDER:
+	case ropOpenFolder:
 		if (((OPENFOLDER_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -241,7 +241,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_CREATEFOLDER:
+	case ropCreateFolder:
 		if (((CREATEFOLDER_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -264,7 +264,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_DELETEFOLDER:
+	case ropDeleteFolder:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEFOLDER_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -276,7 +276,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((DELETEFOLDER_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETSEARCHCRITERIA:
+	case ropSetSearchCriteria:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_setsearchcriteria(
 			((SETSEARCHCRITERIA_REQUEST*)prequest->ppayload)->pres,
@@ -284,7 +284,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((SETSEARCHCRITERIA_REQUEST*)prequest->ppayload)->search_flags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETSEARCHCRITERIA:
+	case ropGetSearchCriteria:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSEARCHCRITERIA_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -300,7 +300,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETSEARCHCRITERIA_RESPONSE*)(*ppresponse)->ppayload)->search_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_MOVECOPYMESSAGES:
+	case ropMoveCopyMessages:
 		if (((MOVECOPYMESSAGES_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -328,7 +328,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			(*ppresponse)->ppayload = perr_response;
 		}
 		break;
-	case ROP_ID_MOVEFOLDER:
+	case ropMoveFolder:
 		if (((MOVEFOLDER_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -357,7 +357,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			(*ppresponse)->ppayload = perr_response;
 		}
 		break;
-	case ROP_ID_COPYFOLDER:
+	case ropCopyFolder:
 		if (((COPYFOLDER_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -387,7 +387,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			(*ppresponse)->ppayload = perr_response;
 		}
 		break;
-	case ROP_ID_EMPTYFOLDER:
+	case ropEmptyFolder:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(EMPTYFOLDER_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -399,7 +399,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((EMPTYFOLDER_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_HARDDELETEMESSAGESANDSUBFOLDERS:
+	case ropHardDeleteMessagesAndSubfolders:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(EMPTYFOLDER_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -411,7 +411,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_DELETEMESSAGES:
+	case ropDeleteMessages:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEMESSAGES_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -424,7 +424,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((DELETEMESSAGES_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_HARDDELETEMESSAGES:
+	case ropHardDeleteMessages:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(HARDDELETEMESSAGES_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -437,7 +437,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((HARDDELETEMESSAGES_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETHIERARCHYTABLE:
+	case ropGetHierarchyTable:
 		if (((GETHIERARCHYTABLE_REQUEST*)prequest->ppayload)->hindex > hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -452,7 +452,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_GETCONTENTSTABLE:
+	case ropGetContentsTable:
 		if (((GETCONTENTSTABLE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -467,7 +467,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_SETCOLUMNS:
+	case ropSetColumns:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETCOLUMNS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -479,7 +479,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SETCOLUMNS_RESPONSE*)(*ppresponse)->ppayload)->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SORTTABLE:
+	case ropSortTable:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SORTTABLE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -491,7 +491,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SORTTABLE_RESPONSE*)(*ppresponse)->ppayload)->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_RESTRICT:
+	case ropRestrict:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(RESTRICT_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -503,7 +503,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((RESTRICT_RESPONSE*)(*ppresponse)->ppayload)->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_QUERYROWS:
+	case ropQueryRows:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYROWS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -532,7 +532,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((QUERYROWS_RESPONSE*)(*ppresponse)->ppayload)->bin_rows.cb = ext_push.offset;
 		}
 		break;
-	case ROP_ID_ABORT:
+	case ropAbort:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(ABORT_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -542,7 +542,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((ABORT_RESPONSE*)(*ppresponse)->ppayload)->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETSTATUS:
+	case ropGetStatus:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSTATUS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -552,7 +552,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETSTATUS_RESPONSE*)(*ppresponse)->ppayload)->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_QUERYPOSITION:
+	case ropQueryPosition:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYPOSITION_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -563,7 +563,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((QUERYPOSITION_RESPONSE*)(*ppresponse)->ppayload)->denominator,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SEEKROW:
+	case ropSeekRow:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYPOSITION_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -577,7 +577,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SEEKROW_RESPONSE*)(*ppresponse)->ppayload)->offset_sought,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SEEKROWBOOKMARK:
+	case ropSeekRowBookmark:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SEEKROWBOOKMARK_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -592,14 +592,14 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SEEKROWBOOKMARK_RESPONSE*)(*ppresponse)->ppayload)->offset_sought,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SEEKROWFRACTIONAL:
+	case ropSeekRowFractional:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_seekrowfractional(
 			((SEEKROWFRACTIONAL_REQUEST*)prequest->ppayload)->numerator,
 			((SEEKROWFRACTIONAL_REQUEST*)prequest->ppayload)->denominator,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_CREATEBOOKMARK:
+	case ropCreateBookmark:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(CREATEBOOKMARK_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -609,7 +609,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((CREATEBOOKMARK_RESPONSE*)(*ppresponse)->ppayload)->bookmark,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_QUERYCOLUMNSALL:
+	case ropQueryColumnsAll:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYCOLUMNSALL_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -619,7 +619,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((QUERYCOLUMNSALL_RESPONSE*)(*ppresponse)->ppayload)->proptags, 
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_FINDROW:
+	case ropFindRow:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(FINDROW_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -635,18 +635,18 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((FINDROW_RESPONSE*)(*ppresponse)->ppayload)->pcolumns,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_FREEBOOKMARK:
+	case ropFreeBookmark:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_freebookmark(
 			&((FREEBOOKMARK_REQUEST*)prequest->ppayload)->bookmark,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_RESETTABLE:
+	case ropResetTable:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_resettable(pemsmdb_info->plogmap,
 			prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_EXPANDROW:
+	case ropExpandRow:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(EXPANDROW_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -673,7 +673,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((EXPANDROW_RESPONSE*)(*ppresponse)->ppayload)->bin_rows.cb = ext_push.offset;
 		}
 		break;
-	case ROP_ID_COLLAPSEROW:
+	case ropCollapseRow:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(COLLAPSEROW_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -684,7 +684,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((COLLAPSEROW_RESPONSE*)(*ppresponse)->ppayload)->collapsed_count,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETCOLLAPSESTATE:
+	case ropGetCollapseState:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETCOLLAPSESTATE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -696,7 +696,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETCOLLAPSESTATE_RESPONSE*)(*ppresponse)->ppayload)->collapse_state,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETCOLLAPSESTATE:
+	case ropSetCollapseState:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETCOLLAPSESTATE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -707,7 +707,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SETCOLLAPSESTATE_RESPONSE*)(*ppresponse)->ppayload)->bookmark,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_OPENMESSAGE:
+	case ropOpenMessage:
 		if (((OPENMESSAGE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -731,7 +731,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			 pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			 phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_CREATEMESSAGE:
+	case ropCreateMessage:
 		if (((CREATEMESSAGE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -748,7 +748,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_SAVECHANGESMESSAGE:
+	case ropSaveChangesMessage:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SAVECHANGESMESSAGE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -762,13 +762,13 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((SAVECHANGESMESSAGE_REQUEST*)prequest->ppayload)->hindex]);
 		break;
-	case ROP_ID_REMOVEALLRECIPIENTS:
+	case ropRemoveAllRecipients:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_removeallrecipients(
 			((REMOVEALLRECIPIENTS_REQUEST*)prequest->ppayload)->reserved,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_MODIFYRECIPIENTS:
+	case ropModifyRecipients:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_modifyrecipients(
 			&((MODIFYRECIPIENTS_REQUEST*)prequest->ppayload)->proptags,
@@ -776,7 +776,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((MODIFYRECIPIENTS_REQUEST*)prequest->ppayload)->prow,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_READRECIPIENTS:
+	case ropReadRecipients:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(READRECIPIENTS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -803,7 +803,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((READRECIPIENTS_RESPONSE*)(*ppresponse)->ppayload)->bin_recipients.cb = ext_push.offset;
 		}
 		break;
-	case ROP_ID_RELOADCACHEDINFORMATION:
+	case ropReloadCachedInformation:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(RELOADCACHEDINFORMATION_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -820,7 +820,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((RELOADCACHEDINFORMATION_RESPONSE*)(*ppresponse)->ppayload)->precipient_row,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETMESSAGESTATUS:
+	case ropSetMessageStatus:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETMESSAGESTATUS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -833,7 +833,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SETMESSAGESTATUS_RESPONSE*)(*ppresponse)->ppayload)->message_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETMESSAGESTATUS:
+	case ropGetMessageStatus:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETMESSAGESTATUS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -844,7 +844,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETMESSAGESTATUS_RESPONSE*)(*ppresponse)->ppayload)->message_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETREADFLAGS:
+	case ropSetReadFlags:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETREADFLAGS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -857,7 +857,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SETREADFLAGS_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETMESSAGEREADFLAG:
+	case ropSetMessageReadFlag:
 		if (((SETMESSAGEREADFLAG_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -877,7 +877,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((SETMESSAGEREADFLAG_REQUEST*)prequest->ppayload)->hindex]);
 		break;
-	case ROP_ID_OPENATTACHMENT:
+	case ropOpenAttachment:
 		if (((OPENATTACHMENT_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -888,7 +888,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_CREATEATTACHMENT:
+	case ropCreateAttachment:
 		if (((CREATEATTACHMENT_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -902,13 +902,13 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_DELETEATTACHMENT:
+	case ropDeleteAttachment:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_deleteattachment(
 			((DELETEATTACHMENT_REQUEST*)prequest->ppayload)->attachment_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SAVECHANGESATTACHMENT:
+	case ropSaveChangesAttachment:
 		if (((SAVECHANGESATTACHMENT_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -918,7 +918,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((SAVECHANGESATTACHMENT_REQUEST*)prequest->ppayload)->hindex]);
 		break;
-	case ROP_ID_OPENEMBEDDEDMESSAGE:
+	case ropOpenEmbeddedMessage:
 		if (((OPENEMBEDDEDMESSAGE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -942,7 +942,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_GETATTACHMENTTABLE:
+	case ropGetAttachmentTable:
 		if (((GETATTACHMENTTABLE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -952,7 +952,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_GETVALIDATTACHMENTS:
+	case ropGetValidAttachments:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETVALIDATTACHMENTS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -962,20 +962,20 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETVALIDATTACHMENTS_RESPONSE*)(*ppresponse)->ppayload)->attachment_ids,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SUBMITMESSAGE:
+	case ropSubmitMessage:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_submitmessage(
 			((SUBMITMESSAGE_REQUEST*)(prequest->ppayload))->submit_flags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_ABORTSUBMIT:
+	case ropAbortSubmit:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_abortsubmit(
 			((ABORTSUBMIT_REQUEST*)(prequest->ppayload))->folder_id,
 			((ABORTSUBMIT_REQUEST*)(prequest->ppayload))->message_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETADDRESSTYPES:
+	case ropGetAddressTypes:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETADDRESSTYPES_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -985,19 +985,19 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETADDRESSTYPES_RESPONSE*)(*ppresponse)->ppayload)->address_types,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETSPOOLER:
+	case ropSetSpooler:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_setspooler(
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SPOOLERLOCKMESSAGE:
+	case ropSpoolerLockMessage:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_spoolerlockmessage(
 			((SPOOLERLOCKMESSAGE_REQUEST*)prequest->ppayload)->message_id,
 			((SPOOLERLOCKMESSAGE_REQUEST*)prequest->ppayload)->lock_stat,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_TRANSPORTSEND:
+	case ropTransportSend:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(TRANSPORTSEND_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1007,7 +1007,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((TRANSPORTSEND_RESPONSE*)(*ppresponse)->ppayload)->ppropvals,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_TRANSPORTNEWMAIL:
+	case ropTransportNewMail:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_transportnewmail(
 			((TRANSPORTNEWMAIL_REQUEST*)prequest->ppayload)->message_id,
@@ -1016,7 +1016,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((TRANSPORTNEWMAIL_REQUEST*)prequest->ppayload)->message_flags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETTRANSPORTFOLDER:
+	case ropGetTransportFolder:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETTRANSPORTFOLDER_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1026,7 +1026,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETTRANSPORTFOLDER_RESPONSE*)(*ppresponse)->ppayload)->folder_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_OPTIONSDATA:
+	case ropOptionsData:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(OPTIONSDATA_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1041,7 +1041,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((OPTIONSDATA_RESPONSE*)(*ppresponse)->ppayload)->pfile_name,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETPROPERTYIDSFROMNAMES:
+	case ropGetPropertyIdsFromNames:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTYIDSFROMNAMES_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1053,7 +1053,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETPROPERTYIDSFROMNAMES_RESPONSE*)(*ppresponse)->ppayload)->propids,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETNAMESFROMPROPERTYIDS:
+	case ropGetNamesFromPropertyIds:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETNAMESFROMPROPERTYIDS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1064,7 +1064,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETNAMESFROMPROPERTYIDS_RESPONSE*)(*ppresponse)->ppayload)->propnames,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETPROPERTIESSPECIFIC:
+	case ropGetPropertiesSpecific:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTIESSPECIFIC_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1079,7 +1079,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETPROPERTIESSPECIFIC_RESPONSE*)(*ppresponse)->ppayload)->row,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETPROPERTIESALL:
+	case ropGetPropertiesAll:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTIESALL_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1091,7 +1091,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETPROPERTIESALL_RESPONSE*)(*ppresponse)->ppayload)->propvals,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETPROPERTIESLIST:
+	case ropGetPropertiesLIst:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETPROPERTIESLIST_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1101,7 +1101,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETPROPERTIESLIST_RESPONSE*)(*ppresponse)->ppayload)->proptags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETPROPERTIES:
+	case ropSetProperties:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETPROPERTIES_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1112,7 +1112,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SETPROPERTIES_RESPONSE*)(*ppresponse)->ppayload)->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETPROPERTIESNOREPLICATE:
+	case ropSetPropertiesNoReplicate:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SETPROPERTIESNOREPLICATE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1123,7 +1123,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SETPROPERTIESNOREPLICATE_RESPONSE*)(*ppresponse)->ppayload)->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_DELETEPROPERTIES:
+	case ropDeleteProperties:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEPROPERTIES_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1134,7 +1134,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((DELETEPROPERTIES_RESPONSE*)(*ppresponse)->ppayload)->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_DELETEPROPERTIESNOREPLICATE:
+	case ropDeletePropertiesNoReplicate:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(DELETEPROPERTIESNOREPLICATE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1145,7 +1145,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((DELETEPROPERTIESNOREPLICATE_RESPONSE*)(*ppresponse)->ppayload)->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_QUERYNAMEDPROPERTIES:
+	case ropQueryNamedProperties:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(QUERYNAMEDPROPERTIES_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1157,7 +1157,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((QUERYNAMEDPROPERTIES_RESPONSE*)(*ppresponse)->ppayload)->propidnames,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_COPYPROPERTIES:
+	case ropCopyProperties:
 		if (((COPYPROPERTIES_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1182,7 +1182,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				((COPYPROPERTIES_REQUEST*)prequest->ppayload)->hindex;
 		}
 		break;
-	case ROP_ID_COPYTO:
+	case ropCopyTo:
 		if (((COPYTO_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1208,7 +1208,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				((COPYPROPERTIES_REQUEST*)prequest->ppayload)->hindex;
 		}
 		break;
-	case ROP_ID_PROGRESS:
+	case ropProgress:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(PROGRESS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1222,7 +1222,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&rop_id, &partial_completion, pemsmdb_info->plogmap,
 			prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_OPENSTREAM:
+	case ropOpenStream:
 		if (((OPENSTREAM_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1238,7 +1238,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_READSTREAM:
+	case ropReadStream:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(READSTREAM_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1250,7 +1250,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((READSTREAM_RESPONSE*)(*ppresponse)->ppayload)->data,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_WRITESTREAM:
+	case ropWriteStream:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(WRITESTREAM_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1261,12 +1261,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((WRITESTREAM_RESPONSE*)(*ppresponse)->ppayload)->written_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_COMMITSTREAM:
+	case ropCommitStream:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_commitstream(
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETSTREAMSIZE:
+	case ropGetStreamSize:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETSTREAMSIZE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1276,13 +1276,13 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((GETSTREAMSIZE_RESPONSE*)(*ppresponse)->ppayload)->stream_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETSTREAMSIZE:
+	case ropSetStreamSize:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_setstreamsize(
 			((SETSTREAMSIZE_REQUEST*)prequest->ppayload)->stream_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SEEKSTREAM:
+	case ropSeekStream:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SEEKSTREAM_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1294,7 +1294,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SEEKSTREAM_RESPONSE*)(*ppresponse)->ppayload)->new_pos,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_COPYTOSTREAM:
+	case ropCopyToStream:
 		if (((COPYTOSTREAM_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1321,7 +1321,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			(*ppresponse)->ppayload = perr_response;
 		}
 		break;
-	case ROP_ID_LOCKREGIONSTREAM:
+	case ropLockRegionStream:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_lockregionstream(
 			((LOCKREGIONSTREAM_REQUEST*)prequest->ppayload)->region_offset,
@@ -1329,7 +1329,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((LOCKREGIONSTREAM_REQUEST*)prequest->ppayload)->lock_flags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_UNLOCKREGIONSTREAM:
+	case ropUnlockRegionStream:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_unlockregionstream(
 			((UNLOCKREGIONSTREAM_REQUEST*)prequest->ppayload)->region_offset,
@@ -1337,7 +1337,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((UNLOCKREGIONSTREAM_REQUEST*)prequest->ppayload)->lock_flags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_WRITEANDCOMMITSTREAM:
+	case ropWriteAndCommitStream:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(WRITEANDCOMMITSTREAM_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1348,7 +1348,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((WRITEANDCOMMITSTREAM_RESPONSE*)(*ppresponse)->ppayload)->written_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_CLONESTREAM:
+	case ropCloneStream:
 		if (((CLONESTREAM_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1357,7 +1357,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_MODIFYPERMISSIONS:
+	case ropModifyPermissions:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_modifypermissions(
 			((MODIFYPERMISSIONS_REQUEST*)prequest->ppayload)->flags,
@@ -1365,7 +1365,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((MODIFYPERMISSIONS_REQUEST*)prequest->ppayload)->prow,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETPERMISSIONSTABLE:
+	case ropGetPermissionsTable:
 		if (((GETPERMISSIONSTABLE_REQUEST*)prequest->ppayload)->hindex > hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1375,7 +1375,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_MODIFYRULES:
+	case ropModifyRules:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_modifyrules(
 			((MODIFYRULES_REQUEST*)prequest->ppayload)->flags,
@@ -1383,7 +1383,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((MODIFYRULES_REQUEST*)prequest->ppayload)->prow,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETRULESTABLE:
+	case ropGetRulesTable:
 		if (((GETRULESTABLE_REQUEST*)prequest->ppayload)->hindex > hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1393,14 +1393,14 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_UPDATEDEFERREDACTIONMESSAGES:
+	case ropUpdateDeferredActionMessages:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_updatedeferredactionmessages(
 			&((UPDATEDEFERREDACTIONMESSAGES_REQUEST*)prequest->ppayload)->server_entry_id,
 			&((UPDATEDEFERREDACTIONMESSAGES_REQUEST*)prequest->ppayload)->client_entry_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_FASTTRANSFERDESTCONFIGURE:
+	case ropFastTransferDestinationConfigure:
 		if (((FASTTRANSFERDESTCONFIGURE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1411,7 +1411,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_FASTTRANSFERDESTPUTBUFFER:
+	case ropFastTransferDestinationPutBuffer:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(FASTTRANSFERDESTPUTBUFFER_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1426,7 +1426,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((FASTTRANSFERDESTPUTBUFFER_RESPONSE*)(*ppresponse)->ppayload)->used_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_FASTTRANSFERSOURCEGETBUFFER:
+	case ropFastTransferSourceGetBuffer:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(FASTTRANSFERSOURCEGETBUFFER_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1445,7 +1445,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return EC_BUFFER_TOO_SMALL;
 		}
 		break;
-	case ROP_ID_FASTTRANSFERSOURCECOPYFOLDER:
+	case ropFastTransferSourceCopyFolder:
 		if (((FASTTRANSFERSOURCECOPYFOLDER_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1456,7 +1456,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_FASTTRANSFERSOURCECOPYMESSAGES:
+	case ropFastTransferSourceCopyMessages:
 		if (((FASTTRANSFERSOURCECOPYMESSAGES_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1468,7 +1468,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_FASTTRANSFERSOURCECOPYTO:
+	case ropFastTransferSourceCopyTo:
 		if (((FASTTRANSFERSOURCECOPYTO_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1481,7 +1481,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_FASTTRANSFERSOURCECOPYPROPERTIES:
+	case ropFastTransferSourceCopyProperties:
 		if (((FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1494,13 +1494,13 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_TELLVERSION:
+	case ropTellVersion:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_tellversion(
 			((TELLVERSION_REQUEST*)prequest->ppayload)->version,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SYNCCONFIGURE:
+	case ropSynchronizationConfigure:
 		if (((SYNCCONFIGURE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1515,7 +1515,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_SYNCIMPORTMESSAGECHANGE:
+	case ropSynchronizationImportMessageChange:
 		if (((SYNCIMPORTMESSAGECHANGE_REQUEST*)prequest->ppayload)->hindex > hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1531,14 +1531,14 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_SYNCIMPORTREADSTATECHANGES:
+	case ropSynchronizationImportReadStateChanges:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_syncimportreadstatechanges(
 			((SYNCIMPORTREADSTATECHANGES_REQUEST*)prequest->ppayload)->count,
 			((SYNCIMPORTREADSTATECHANGES_REQUEST*)prequest->ppayload)->pread_stat,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SYNCIMPORTHIERARCHYCHANGE:
+	case ropSynchronizationImportHierarchyChange:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SYNCIMPORTHIERARCHYCHANGE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1550,14 +1550,14 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SYNCIMPORTHIERARCHYCHANGE_RESPONSE*)(*ppresponse)->ppayload)->folder_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SYNCIMPORTDELETES:
+	case ropSynchronizationImportDeletes:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_syncimportdeletes(
 			((SYNCIMPORTDELETES_REQUEST*)prequest->ppayload)->flags,
 			&((SYNCIMPORTDELETES_REQUEST*)prequest->ppayload)->propvals,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SYNCIMPORTMESSAGEMOVE:
+	case ropSynchronizationImportMessageMove:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(SYNCIMPORTMESSAGEMOVE_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1572,7 +1572,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((SYNCIMPORTMESSAGEMOVE_RESPONSE*)(*ppresponse)->ppayload)->message_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SYNCOPENCOLLECTOR:
+	case ropSynchronizationOpenCollector:
 		if (((SYNCOPENCOLLECTOR_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1582,7 +1582,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_SYNCGETTRANSFERSTATE:
+	case ropSynchronizationGetTransferState:
 		if (((SYNCGETTRANSFERSTATE_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}
@@ -1591,32 +1591,32 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles + (*ppresponse)->hindex);
 		break;
-	case ROP_ID_SYNCUPLOADSTATESTREAMBEGIN:
+	case ropSynchronizationUploadStateStreamBegin:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_syncuploadstatestreambegin(
 			((SYNCUPLOADSTATESTREAMBEGIN_REQUEST*)prequest->ppayload)->proptag_stat,
 			((SYNCUPLOADSTATESTREAMBEGIN_REQUEST*)prequest->ppayload)->buffer_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SYNCUPLOADSTATESTREAMCONTINUE:
+	case ropSynchronizationUploadStateStreamContinue:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_syncuploadstatestreamcontinue(
 			&((SYNCUPLOADSTATESTREAMCONTINUE_REQUEST*)prequest->ppayload)->stream_data,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SYNCUPLOADSTATESTREAMEND:
+	case ropSynchronizationUploadStateStreamEnd:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_syncuploadstatestreamend(
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_SETLOCALREPLICAMIDSETDELETED:
+	case ropSetLocalReplicaMidsetDeleted:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_setlocalreplicamidsetdeleted(
 			((SETLOCALREPLICAMIDSETDELETED_REQUEST*)prequest->ppayload)->count,
 			((SETLOCALREPLICAMIDSETDELETED_REQUEST*)prequest->ppayload)->prange,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_GETLOCALREPLICAIDS:
+	case ropGetLocalReplicaIds:
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->ppayload = common_util_alloc(sizeof(GETLOCALREPLICAIDS_RESPONSE));
 		if (NULL == (*ppresponse)->ppayload) {
@@ -1628,7 +1628,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			((GETLOCALREPLICAIDS_RESPONSE*)(*ppresponse)->ppayload)->global_count,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
-	case ROP_ID_REGISTERNOTIFICATION:
+	case ropRegisterNotification:
 		if (((REGISTERNOTIFICATION_REQUEST*)prequest->ppayload)->hindex >= hnum) {
 			return EC_INVALID_OBJECT;
 		}

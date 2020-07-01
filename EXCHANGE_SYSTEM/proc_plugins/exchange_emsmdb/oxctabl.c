@@ -63,7 +63,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		type = pproptags->pproptag[i] & 0xFFFF;
 		if (type & 0x1000) {
 			if (type & 0x2000) {
-				if (ROP_ID_GETCONTENTSTABLE !=
+				if (ropGetContentsTable !=
 					table_object_get_rop_id(ptable)) {
 					return EC_NOT_SUPPORTED;	
 				}
@@ -140,9 +140,8 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return EC_NOT_SUPPORTED;
 	}
-	if (ROP_ID_GETCONTENTSTABLE != table_object_get_rop_id(ptable)) {
+	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
 		return EC_NOT_SUPPORTED;
-	}
 	b_max = FALSE;
 	b_multi_inst = FALSE;
 	for (i=0; i<psort_criteria->ccategories; i++) {
@@ -269,9 +268,9 @@ uint32_t rop_restrict(uint8_t res_flags,
 		return EC_NOT_SUPPORTED;
 	}
 	switch (table_object_get_rop_id(ptable)) {
-	case ROP_ID_GETHIERARCHYTABLE:
-	case ROP_ID_GETCONTENTSTABLE:
-	case ROP_ID_GETRULESTABLE:
+	case ropGetHierarchyTable:
+	case ropGetContentsTable:
+	case ropGetRulesTable:
 		break;
 	default:
 		return EC_NOT_SUPPORTED;
@@ -326,7 +325,7 @@ uint32_t rop_queryrows(uint8_t flags,
 		b_forward = TRUE;
 	}
 	if (table_object_get_rop_id(ptable)
-		== ROP_ID_GETCONTENTSTABLE &&
+		== ropGetContentsTable &&
 		row_count > MAXIMUM_CONTENT_ROWS) {
 		row_count = MAXIMUM_CONTENT_ROWS;
 	}
@@ -522,8 +521,8 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		return EC_NOT_SUPPORTED;
 	}
 	switch (table_object_get_rop_id(ptable)) {
-	case ROP_ID_GETCONTENTSTABLE:
-	case ROP_ID_GETHIERARCHYTABLE:
+	case ropGetContentsTable:
+	case ropGetHierarchyTable:
 		break;
 	default:
 		return EC_NOT_SUPPORTED;
@@ -589,8 +588,8 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 		return EC_NOT_SUPPORTED;
 	}
 	switch (table_object_get_rop_id(ptable)) {
-	case ROP_ID_GETCONTENTSTABLE:
-	case ROP_ID_GETHIERARCHYTABLE:
+	case ropGetContentsTable:
+	case ropGetHierarchyTable:
 		break;
 	default:
 		return EC_NOT_SUPPORTED;
@@ -660,9 +659,9 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		return EC_NOT_SUPPORTED;
 	}
 	switch (table_object_get_rop_id(ptable)) {
-	case ROP_ID_GETCONTENTSTABLE:
-	case ROP_ID_GETHIERARCHYTABLE:
-	case ROP_ID_GETRULESTABLE:
+	case ropGetContentsTable:
+	case ropGetHierarchyTable:
+	case ropGetRulesTable:
 		break;
 	default:
 		return EC_NOT_SUPPORTED;
@@ -681,9 +680,8 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	*pbookmark_invisible = 0;
 	switch (seek_pos) {
 	case SEEK_POS_CUSTOM:
-		if (ROP_ID_GETRULESTABLE == table_object_get_rop_id(ptable)) {
+		if (table_object_get_rop_id(ptable) == ropGetRulesTable)
 			return EC_NOT_SUPPORTED;
-		}
 		if (pbookmark->cb != sizeof(uint32_t)) {
 			return EC_INVALID_BOOKMARK;
 		}
@@ -749,8 +747,8 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 		return EC_NOT_SUPPORTED;
 	}
 	switch (table_object_get_rop_id(ptable)) {
-	case ROP_ID_GETCONTENTSTABLE:
-	case ROP_ID_GETHIERARCHYTABLE:
+	case ropGetContentsTable:
+	case ropGetHierarchyTable:
 		break;
 	default:
 		return EC_NOT_SUPPORTED;
@@ -801,9 +799,8 @@ uint32_t rop_expandrow(uint16_t max_count,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return EC_NOT_SUPPORTED;
 	}
-	if (ROP_ID_GETCONTENTSTABLE != table_object_get_rop_id(ptable)) {
+	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
 		return EC_NOT_SUPPORTED;
-	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
 	}
@@ -867,9 +864,8 @@ uint32_t rop_collapserow(uint64_t category_id,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return EC_NOT_SUPPORTED;
 	}
-	if (ROP_ID_GETCONTENTSTABLE != table_object_get_rop_id(ptable)) {
+	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
 		return EC_NOT_SUPPORTED;
-	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
 	}
@@ -910,7 +906,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return EC_NOT_SUPPORTED;
 	}
-	if (ROP_ID_GETCONTENTSTABLE !=
+	if (ropGetContentsTable !=
 		table_object_get_rop_id(ptable)) {
 		return EC_NOT_SUPPORTED;
 	}
@@ -947,7 +943,7 @@ uint32_t rop_setcollapsestate(
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return EC_NOT_SUPPORTED;
 	}
-	if (ROP_ID_GETCONTENTSTABLE !=
+	if (ropGetContentsTable !=
 		table_object_get_rop_id(ptable)) {
 		return EC_NOT_SUPPORTED;
 	}

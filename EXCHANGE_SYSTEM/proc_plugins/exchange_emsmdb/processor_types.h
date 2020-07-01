@@ -1043,138 +1043,138 @@ typedef struct _BUFFERTOOSMALL_RESPONSE {
 
 /* end of rop request and response structure */
 
-
-#define ROP_ID_RELEASE								0x01
-#define ROP_ID_OPENFOLDER							0x02
-#define ROP_ID_OPENMESSAGE							0x03
-#define ROP_ID_GETHIERARCHYTABLE					0x04
-#define ROP_ID_GETCONTENTSTABLE						0x05
-#define ROP_ID_CREATEMESSAGE						0x06
-#define ROP_ID_GETPROPERTIESSPECIFIC				0x07
-#define ROP_ID_GETPROPERTIESALL						0x08
-#define ROP_ID_GETPROPERTIESLIST					0x09
-#define ROP_ID_SETPROPERTIES						0x0A
-#define ROP_ID_DELETEPROPERTIES						0x0B
-#define ROP_ID_SAVECHANGESMESSAGE					0x0C
-#define ROP_ID_REMOVEALLRECIPIENTS					0x0D
-#define ROP_ID_MODIFYRECIPIENTS						0x0E
-#define ROP_ID_READRECIPIENTS						0x0F
-#define ROP_ID_RELOADCACHEDINFORMATION				0x10
-#define ROP_ID_SETMESSAGEREADFLAG					0x11
-#define ROP_ID_SETCOLUMNS							0x12
-#define ROP_ID_SORTTABLE							0x13
-#define ROP_ID_RESTRICT								0x14
-#define ROP_ID_QUERYROWS							0x15
-#define ROP_ID_GETSTATUS							0x16
-#define ROP_ID_QUERYPOSITION						0x17
-#define ROP_ID_SEEKROW								0x18
-#define ROP_ID_SEEKROWBOOKMARK						0x19
-#define ROP_ID_SEEKROWFRACTIONAL					0x1A
-#define ROP_ID_CREATEBOOKMARK						0x1B
-#define ROP_ID_CREATEFOLDER							0x1C
-#define ROP_ID_DELETEFOLDER							0x1D
-#define ROP_ID_DELETEMESSAGES						0x1E
-#define ROP_ID_GETMESSAGESTATUS						0x1F
-#define ROP_ID_SETMESSAGESTATUS						0x20
-#define ROP_ID_GETATTACHMENTTABLE					0x21
-#define ROP_ID_OPENATTACHMENT						0x22
-#define ROP_ID_CREATEATTACHMENT						0x23
-#define ROP_ID_DELETEATTACHMENT						0x24
-#define ROP_ID_SAVECHANGESATTACHMENT				0x25
-#define ROP_ID_SETRECEIVEFOLDER						0x26
-#define ROP_ID_GETRECEIVEFOLDER						0x27
-#define ROP_ID_REGISTERNOTIFICATION					0x29
-#define ROP_ID_NOTIFY								0x2A
-#define ROP_ID_OPENSTREAM							0x2B
-#define ROP_ID_READSTREAM							0x2C
-#define ROP_ID_WRITESTREAM							0x2D
-#define ROP_ID_SEEKSTREAM							0x2E
-#define ROP_ID_SETSTREAMSIZE						0x2F
-#define ROP_ID_SETSEARCHCRITERIA					0x30
-#define ROP_ID_GETSEARCHCRITERIA					0x31
-#define ROP_ID_SUBMITMESSAGE						0x32
-#define ROP_ID_MOVECOPYMESSAGES						0x33
-#define ROP_ID_ABORTSUBMIT							0x34
-#define ROP_ID_MOVEFOLDER							0x35
-#define ROP_ID_COPYFOLDER							0x36
-#define ROP_ID_QUERYCOLUMNSALL						0x37
-#define ROP_ID_ABORT								0x38
-#define ROP_ID_COPYTO								0x39
-#define ROP_ID_COPYTOSTREAM							0x3A
-#define ROP_ID_CLONESTREAM							0x3B
-#define ROP_ID_GETPERMISSIONSTABLE					0x3E
-#define ROP_ID_GETRULESTABLE						0x3F
-#define ROP_ID_MODIFYPERMISSIONS					0x40
-#define ROP_ID_MODIFYRULES							0x41
-#define ROP_ID_GETOWNINGSERVERS						0x42
-#define ROP_ID_LONGTERMIDFROMID						0x43
-#define ROP_ID_IDFROMLONGTERMID						0x44
-#define ROP_ID_PUBLICFOLDERISGHOSTED				0x45
-#define ROP_ID_OPENEMBEDDEDMESSAGE					0x46
-#define ROP_ID_SETSPOOLER							0x47
-#define ROP_ID_SPOOLERLOCKMESSAGE					0x48
-#define ROP_ID_GETADDRESSTYPES						0x49
-#define ROP_ID_TRANSPORTSEND						0x4A
-#define ROP_ID_FASTTRANSFERSOURCECOPYMESSAGES		0x4B
-#define ROP_ID_FASTTRANSFERSOURCECOPYFOLDER			0x4C
-#define ROP_ID_FASTTRANSFERSOURCECOPYTO				0x4D
-#define ROP_ID_FASTTRANSFERSOURCEGETBUFFER			0x4E
-#define ROP_ID_FINDROW								0x4F
-#define ROP_ID_PROGRESS								0x50
-#define ROP_ID_TRANSPORTNEWMAIL						0x51
-#define ROP_ID_GETVALIDATTACHMENTS					0x52
-#define ROP_ID_FASTTRANSFERDESTCONFIGURE			0x53
-#define ROP_ID_FASTTRANSFERDESTPUTBUFFER			0x54
-#define ROP_ID_GETNAMESFROMPROPERTYIDS				0x55
-#define ROP_ID_GETPROPERTYIDSFROMNAMES				0x56
-#define ROP_ID_UPDATEDEFERREDACTIONMESSAGES			0x57
-#define ROP_ID_EMPTYFOLDER							0x58
-#define ROP_ID_EXPANDROW							0x59
-#define ROP_ID_COLLAPSEROW							0x5A
-#define ROP_ID_LOCKREGIONSTREAM						0x5B
-#define ROP_ID_UNLOCKREGIONSTREAM					0x5C
-#define ROP_ID_COMMITSTREAM							0x5D
-#define ROP_ID_GETSTREAMSIZE						0x5E
-#define ROP_ID_QUERYNAMEDPROPERTIES					0x5F
-#define ROP_ID_GETPERUSERLONGTERMIDS				0x60
-#define ROP_ID_GETPERUSERGUID						0x61
-#define ROP_ID_READPERUSERINFORMATION				0x63
-#define ROP_ID_WRITEPERUSERINFORMATION				0x64
-#define ROP_ID_SETREADFLAGS							0x66
-#define ROP_ID_COPYPROPERTIES						0x67
-#define ROP_ID_GETRECEIVEFOLDERTABLE				0x68
-#define ROP_ID_FASTTRANSFERSOURCECOPYPROPERTIES		0x69
-#define ROP_ID_GETCOLLAPSESTATE						0x6B
-#define ROP_ID_SETCOLLAPSESTATE						0x6C
-#define ROP_ID_GETTRANSPORTFOLDER					0x6D
-#define ROP_ID_PENDING								0x6E
-#define ROP_ID_OPTIONSDATA							0x6F
-#define ROP_ID_SYNCCONFIGURE						0x70
-#define ROP_ID_SYNCIMPORTMESSAGECHANGE				0x72
-#define ROP_ID_SYNCIMPORTHIERARCHYCHANGE			0x73
-#define ROP_ID_SYNCIMPORTDELETES					0x74
-#define ROP_ID_SYNCUPLOADSTATESTREAMBEGIN			0x75
-#define ROP_ID_SYNCUPLOADSTATESTREAMCONTINUE		0x76
-#define ROP_ID_SYNCUPLOADSTATESTREAMEND				0x77
-#define ROP_ID_SYNCIMPORTMESSAGEMOVE				0x78
-#define ROP_ID_SETPROPERTIESNOREPLICATE				0x79
-#define ROP_ID_DELETEPROPERTIESNOREPLICATE			0x7A
-#define ROP_ID_GETSTORESTAT							0x7B
-#define ROP_ID_SYNCOPENCOLLECTOR					0x7E
-#define ROP_ID_GETLOCALREPLICAIDS					0x7F
-#define ROP_ID_SYNCIMPORTREADSTATECHANGES			0x80
-#define ROP_ID_RESETTABLE							0x81
-#define ROP_ID_SYNCGETTRANSFERSTATE					0x82
-#define ROP_ID_TELLVERSION							0x86
-#define ROP_ID_FREEBOOKMARK							0x89
-#define ROP_ID_WRITEANDCOMMITSTREAM					0x90
-#define ROP_ID_HARDDELETEMESSAGES					0x91
-#define ROP_ID_HARDDELETEMESSAGESANDSUBFOLDERS		0x92
-#define ROP_ID_SETLOCALREPLICAMIDSETDELETED			0x93
-#define ROP_ID_BACKOFF								0xF9
-#define ROP_ID_LOGON								0xFE
-#define ROP_ID_BUFFERTOOSMALL						0xFF
-
+enum {
+	ropRelease = 0x01,
+	ropOpenFolder = 0x02,
+	ropOpenMessage = 0x03,
+	ropGetHierarchyTable = 0x04,
+	ropGetContentsTable = 0x05,
+	ropCreateMessage = 0x06,
+	ropGetPropertiesSpecific = 0x07,
+	ropGetPropertiesAll = 0x08,
+	ropGetPropertiesLIst = 0x09,
+	ropSetProperties = 0x0A,
+	ropDeleteProperties = 0x0B,
+	ropSaveChangesMessage = 0x0C,
+	ropRemoveAllRecipients = 0x0D,
+	ropModifyRecipients = 0x0E,
+	ropReadRecipients = 0x0F,
+	ropReloadCachedInformation = 0x10,
+	ropSetMessageReadFlag = 0x11,
+	ropSetColumns = 0x12,
+	ropSortTable = 0x13,
+	ropRestrict = 0x14,
+	ropQueryRows = 0x15,
+	ropGetStatus = 0x16,
+	ropQueryPosition = 0x17,
+	ropSeekRow = 0x18,
+	ropSeekRowBookmark = 0x19,
+	ropSeekRowFractional = 0x1A,
+	ropCreateBookmark = 0x1B,
+	ropCreateFolder = 0x1C,
+	ropDeleteFolder = 0x1D,
+	ropDeleteMessages = 0x1E,
+	ropGetMessageStatus = 0x1F,
+	ropSetMessageStatus = 0x20,
+	ropGetAttachmentTable = 0x21,
+	ropOpenAttachment = 0x22,
+	ropCreateAttachment = 0x23,
+	ropDeleteAttachment = 0x24,
+	ropSaveChangesAttachment = 0x25,
+	ropSetReceiveFolder = 0x26,
+	ropGetReceiveFolder = 0x27,
+	ropRegisterNotification = 0x29,
+	ropRegisterNotify = 0x2A,
+	ropOpenStream = 0x2B,
+	ropReadStream = 0x2C,
+	ropWriteStream = 0x2D,
+	ropSeekStream = 0x2E,
+	ropSetStreamSize = 0x2F,
+	ropSetSearchCriteria = 0x30,
+	ropGetSearchCriteria = 0x31,
+	ropSubmitMessage = 0x32,
+	ropMoveCopyMessages = 0x33,
+	ropAbortSubmit = 0x34,
+	ropMoveFolder = 0x35,
+	ropCopyFolder = 0x36,
+	ropQueryColumnsAll = 0x37,
+	ropAbort = 0x38,
+	ropCopyTo = 0x39,
+	ropCopyToStream = 0x3A,
+	ropCloneStream = 0x3B,
+	ropGetPermissionsTable = 0x3E,
+	ropGetRulesTable = 0x3F,
+	ropModifyPermissions = 0x40,
+	ropModifyRules = 0x41,
+	ropGetOwningServers = 0x42,
+	ropLongTermIdFromId = 0x43,
+	ropIdFromLongTermId = 0x44,
+	ropPublicFolderIsGhosted = 0x45,
+	ropOpenEmbeddedMessage = 0x46,
+	ropSetSpooler = 0x47,
+	ropSpoolerLockMessage = 0x48,
+	ropGetAddressTypes = 0x49,
+	ropTransportSend = 0x4A,
+	ropFastTransferSourceCopyMessages = 0x4B,
+	ropFastTransferSourceCopyFolder = 0x4C,
+	ropFastTransferSourceCopyTo = 0x4D,
+	ropFastTransferSourceGetBuffer = 0x4E,
+	ropFindRow = 0x4F,
+	ropProgress = 0x50,
+	ropTransportNewMail = 0x51,
+	ropGetValidAttachments = 0x52,
+	ropFastTransferDestinationConfigure = 0x53,
+	ropFastTransferDestinationPutBuffer = 0x54,
+	ropGetNamesFromPropertyIds = 0x55,
+	ropGetPropertyIdsFromNames = 0x56,
+	ropUpdateDeferredActionMessages = 0x57,
+	ropEmptyFolder = 0x58,
+	ropExpandRow = 0x59,
+	ropCollapseRow = 0x5A,
+	ropLockRegionStream = 0x5B,
+	ropUnlockRegionStream = 0x5C,
+	ropCommitStream = 0x5D,
+	ropGetStreamSize = 0x5E,
+	ropQueryNamedProperties = 0x5F,
+	ropGetPerUserLongTermIds = 0x60,
+	ropGetPerUserGuid = 0x61,
+	ropReadPerUserInformation = 0x63,
+	ropWritePerUserInformation = 0x64,
+	ropSetReadFlags = 0x66,
+	ropCopyProperties = 0x67,
+	ropGetReceiveFolderTable = 0x68,
+	ropFastTransferSourceCopyProperties = 0x69,
+	ropGetCollapseState = 0x6B,
+	ropSetCollapseState = 0x6C,
+	ropGetTransportFolder = 0x6D,
+	ropPending = 0x6E,
+	ropOptionsData = 0x6F,
+	ropSynchronizationConfigure = 0x70,
+	ropSynchronizationImportMessageChange = 0x72,
+	ropSynchronizationImportHierarchyChange = 0x73,
+	ropSynchronizationImportDeletes = 0x74,
+	ropSynchronizationUploadStateStreamBegin = 0x75,
+	ropSynchronizationUploadStateStreamContinue = 0x76,
+	ropSynchronizationUploadStateStreamEnd = 0x77,
+	ropSynchronizationImportMessageMove = 0x78,
+	ropSetPropertiesNoReplicate = 0x79,
+	ropDeletePropertiesNoReplicate = 0x7A,
+	ropGetStoreState = 0x7B,
+	ropSynchronizationOpenCollector = 0x7E,
+	ropGetLocalReplicaIds = 0x7F,
+	ropSynchronizationImportReadStateChanges = 0x80,
+	ropResetTable = 0x81,
+	ropSynchronizationGetTransferState = 0x82,
+	ropTellVersion = 0x86,
+	ropFreeBookmark = 0x89,
+	ropWriteAndCommitStream = 0x90,
+	ropHardDeleteMessages = 0x91,
+	ropHardDeleteMessagesAndSubfolders = 0x92,
+	ropSetLocalReplicaMidsetDeleted = 0x93,
+	ropBackoff = 0xF9,
+	ropLogon = 0xFE,
+	ropBufferTooSmall = 0xFF,
+};
 
 typedef struct _ROP_REQUEST {
 	uint8_t rop_id;

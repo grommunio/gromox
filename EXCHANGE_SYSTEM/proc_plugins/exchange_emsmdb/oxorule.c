@@ -105,7 +105,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 		return EC_NOT_SUPPORTED;
 	}
 	ptable = table_object_create(plogon, pfolder,
-			flags, ROP_ID_GETRULESTABLE, logon_id);
+	         flags, ropGetRulesTable, logon_id);
 	if (NULL == ptable) {
 		return EC_OUT_OF_MEMORY;
 	}
