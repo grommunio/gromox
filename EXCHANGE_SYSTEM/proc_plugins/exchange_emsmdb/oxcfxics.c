@@ -1499,7 +1499,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return EC_NOT_SUPPORTED;
 	}
 	pbin = phichyvals->ppropval[1].pvalue;
-	if (pbin != nullptr || pbin->cb != 22)
+	if (pbin == nullptr || pbin->cb != 22)
 		return EC_INVALID_PARAMETER;
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return EC_ERROR;
