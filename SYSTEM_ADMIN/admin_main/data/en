@@ -4,12 +4,12 @@ ERROR_REQUEST			request\ error!
 ERROR_AUTH				bad\ password
 ERROR_INTERNAL			internal\ error!
 BACK_LABEL				relogin
-LOGIN_HTML_TITLE		steep\ mail\ system
+LOGIN_HTML_TITLE		Gromox\ mail\ system
 USERNAME				username
 PASSWORD				password
 LOGIN_LABEL				login
 EXTENDED_MENU			dynamic\ menu\ support
-MAIN_HTML_TITLE			steep\ mail\ system
+MAIN_HTML_TITLE			Gromox\ mail\ system
 MENU_QUERY				administration\ query
 MENU_ADMIN_LOG			log\ search
 MENU_ADMIN_ARCHIVE		mail\ archive\ search

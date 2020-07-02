@@ -17,7 +17,6 @@ ZEND_END_MODULE_GLOBALS(mapi)
 #define MAPI_G(v) (mapi_globals.v)
 #endif
 
-#define PHP_MAPI_VERSION "steep-1.0"
 #define PHP_MAPI_EXTNAME "mapi"
 
 PHP_MINIT_FUNCTION(mapi);

@@ -789,7 +789,7 @@ BOOL container_object_fetch_special_property(
 		if (SPECIAL_CONTAINER_GAL == special_type) {
 			*ppvalue = const_cast(char *, "Global Address List");
 		} else {
-			*ppvalue = const_cast(char *, "Steep Contact Folders");
+			*ppvalue = const_cast(char *, "Gromox Contact Folders");
 		}
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKISMASTER:
