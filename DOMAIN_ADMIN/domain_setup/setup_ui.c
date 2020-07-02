@@ -693,11 +693,11 @@ int setup_ui_run()
 		if (0 != stat(temp_path, &node_stat)) {
 			mkdir(temp_path, 0777);
 		}
-		snprintf(temp_path, 255, "%s/%s/steep-webapp", g_app_path, domain);
+		snprintf(temp_path, 255, "%s/%s/webapp", g_app_path, domain);
 		if (0 != stat(temp_path, &node_stat)) {
 			mkdir(temp_path, 0777);
 		}
-		snprintf(temp_path, 255, "%s/%s/steep-webapp/tmp_theme.zip", g_app_path, domain);
+		snprintf(temp_path, 255, "%s/%s/webapp/tmp_theme.zip", g_app_path, domain);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);	
 		if (-1 == fd) {
 			system_log_info("[upload_ui]: fail to "
@@ -1672,8 +1672,8 @@ static BOOL setup_ui_unzip(const char *domain)
 	char tmp_path1[256];
 	const char *args[] = {"unzip", NULL, NULL, NULL, NULL};
 	
-	snprintf(tmp_path, 255, "%s/%s/steep-webapp/tmp", g_app_path, domain);
-	snprintf(tmp_path1, 255, "%s/%s/steep-webapp/tmp_theme.zip", g_app_path, domain);
+	snprintf(tmp_path, 255, "%s/%s/webapp/tmp", g_app_path, domain);
+	snprintf(tmp_path1, 255, "%s/%s/webapp/tmp_theme.zip", g_app_path, domain);
 	pid = fork();
 	if (0 == pid) {
 		args[1] = tmp_path1;
@@ -1701,9 +1701,9 @@ static void setup_ui_set_theme(const char *domain)
 	
 	language = getenv("HTTP_ACCEPT_LANGUAGE");
 	charset = lang_resource_get(g_lang_resource,"CHARSET", language);
-	sprintf(temp_path, "%s/%s/steep-webapp/theme", g_app_path, domain);
+	sprintf(temp_path, "%s/%s/webapp/theme", g_app_path, domain);
 	setup_ui_remove_inode(temp_path);
-	snprintf(temp_path, 255, "%s/%s/steep-webapp/tmp_theme.zip", g_app_path, domain);
+	snprintf(temp_path, 255, "%s/%s/webapp/tmp_theme.zip", g_app_path, domain);
 	if (0 != stat(temp_path, &node_stat)) {
 		system_log_info("[upload_ui]: fail to stat "
 				"uploaded zip file %s\n", temp_path);
@@ -1725,26 +1725,26 @@ static void setup_ui_set_theme(const char *domain)
 			lang_resource_get(g_lang_resource,"MSGERR_UNSAVED", language));
 		return;
 	}
-	sprintf(temp_path1, "%s/%s/steep-webapp/tmp/theme", g_app_path, domain);
+	sprintf(temp_path1, "%s/%s/webapp/tmp/theme", g_app_path, domain);
 	if (0 != stat(temp_path1, &node_stat) || 0 == S_ISDIR(node_stat.st_mode)) {
-		sprintf(temp_path, "%s/%s/steep-webapp/tmp", g_app_path, domain);
+		sprintf(temp_path, "%s/%s/webapp/tmp", g_app_path, domain);
 		setup_ui_remove_inode(temp_path);
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
 			lang_resource_get(g_lang_resource,"MSGERR_THEMEERR", language));
 	}
-	sprintf(temp_path1, "%s/%s/steep-webapp/tmp/theme/css/theme.css", g_app_path, domain);
+	sprintf(temp_path1, "%s/%s/webapp/tmp/theme/css/theme.css", g_app_path, domain);
 	if (0 != stat(temp_path1, &node_stat) || 0 == S_ISREG(node_stat.st_mode)) {
-		sprintf(temp_path, "%s/%s/steep-webapp/tmp", g_app_path, domain);
+		sprintf(temp_path, "%s/%s/webapp/tmp", g_app_path, domain);
 		setup_ui_remove_inode(temp_path);
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_FAIL, charset,
 			lang_resource_get(g_lang_resource,"MSGERR_CSSERR", language));
 	}
-	sprintf(temp_path1, "%s/%s/steep-webapp/tmp/theme", g_app_path, domain);
-	sprintf(temp_path, "%s/%s/steep-webapp/theme", g_app_path, domain);
+	sprintf(temp_path1, "%s/%s/webapp/tmp/theme", g_app_path, domain);
+	sprintf(temp_path, "%s/%s/webapp/theme", g_app_path, domain);
 	if (0 == rename(temp_path1, temp_path)) {
-		sprintf(temp_path, "%s/%s/steep-webapp/tmp", g_app_path, domain);
+		sprintf(temp_path, "%s/%s/webapp/tmp", g_app_path, domain);
 		setup_ui_remove_inode(temp_path);
 		printf("Content-Type:text/html;charset=%s\n\n", charset);
 		printf(HTML_ACTIVE_OK, charset,

@@ -1,7 +1,7 @@
-#domain(asterisk supported)		uri_path			directory
-*								/data/css			/var/posidon/data/css
-*								/data/script		/var/posidon/data/script
-*								/data/picture		/var/posidon/data/picture
-*								/html				/var/posidon/html
-*								/webapp				/var/steep-webapp
-*								/					/var/webmail/public
+#domain(asterisk supported) uri_path directory
+* /data/css /usr/share/gromox/da/css
+* /data/script /usr/share/gromox/da/script
+* /data/picture /usr/share/gromox/da/picture
+* /html /usr/share/gromox/da/html
+* /webapp /usr/share/webapp
+* / /srv/www/htdocs
