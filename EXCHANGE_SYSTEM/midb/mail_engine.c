@@ -6001,7 +6001,7 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 		return 3;
 	}
 	sprintf(sql_string, "SELECT folder_id, recent, "
-		"read, unsent, flagged, replied, forwarded, deleted, "
+		"read, unsent, flagged, replied, forwarded, deleted "
 		"FROM messages WHERE mid_string=?");
 	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt)) {
 		mail_engine_put_idb(pidb);
