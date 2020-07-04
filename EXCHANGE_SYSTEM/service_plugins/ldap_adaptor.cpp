@@ -70,7 +70,8 @@ static constexpr const char *zero_attrs[] = {nullptr};
 static ldap_ptr make_conn()
 {
 	ldap_ptr ld;
-	auto ret = ldap_initialize(&unique_tie(ld), nullptr); //g_ldap_host.c_str());
+	auto host = g_ldap_host.c_str();
+	auto ret = ldap_initialize(&unique_tie(ld), *host == '\0' ? nullptr : host);
 	if (ret != LDAP_SUCCESS)
 		return {};
 	static constexpr int version = LDAP_VERSION3;
