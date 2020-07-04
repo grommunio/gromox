@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "rops.h"
 #include "rop_util.h"
 #include "common_util.h"
@@ -45,7 +46,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	if (0x0FFF == cpid) {
 		pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
-			return EC_ERROR;
+			return ecError;
 		}
 		cpid = pinfo->cpid;
 	}
@@ -54,7 +55,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
@@ -67,7 +68,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	if (FALSE == exmdb_client_check_message(
 		logon_object_get_dir(plogon), folder_id,
 		message_id, &b_exist)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == b_exist) {
 		return EC_NOT_FOUND;
@@ -76,12 +77,12 @@ uint32_t rop_openmessage(uint16_t cpid,
 		logon_object_get_dir(plogon), NULL, 0,
 		message_id, PROP_TAG_FOLDERID, &pvalue) ||
 		NULL == pvalue) {
-		return EC_ERROR;
+		return ecError;
 	}
 	folder_id = *(uint64_t*)pvalue;
 	if (FALSE == exmdb_client_check_message_deleted(
 		logon_object_get_dir(plogon), message_id, &b_del)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (TRUE == b_del && 0 == (open_mode_flags &
 		OPEN_MODE_FLAG_OPENSOFTDELETE)) {
@@ -97,7 +98,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	if (FALSE == exmdb_client_check_folder_permission(
 		logon_object_get_dir(plogon), folder_id,
 		rpc_info.username, &permission)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (0 == (permission & PERMISSION_READANY) &&
 		0 == (permission & PERMISSION_FOLDERVISIBLE) &&
@@ -111,7 +112,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	if (FALSE == exmdb_client_check_message_owner(
 		logon_object_get_dir(plogon), message_id,
 		rpc_info.username, &b_owner)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (TRUE == b_owner || (permission & PERMISSION_READANY)) {
 		tag_access |= TAG_ACCESS_READ;
@@ -152,7 +153,7 @@ PERMISSION_CHECK:
 	if (FALSE == message_object_get_properties(
 		pmessage, 0, &proptags, &propvals)) {
 		message_object_free(pmessage);
-		return EC_ERROR;	
+		return ecError;
 	}
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
@@ -182,7 +183,7 @@ PERMISSION_CHECK:
 	if (FALSE == message_object_get_recipient_num(
 		pmessage, precipient_count)) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	pcolumns = message_object_get_rcpt_columns(pmessage);
 	*precipient_columns = *pcolumns;
@@ -195,7 +196,7 @@ PERMISSION_CHECK:
 	if (FALSE == message_object_read_recipients(
 		pmessage, 0, rcpt_num, &rcpts)) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	*prow_count = rcpts.count;
 	if (rcpts.count > 0) {
@@ -218,7 +219,7 @@ PERMISSION_CHECK:
 		logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
 	if (*phout < 0) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -247,7 +248,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	if (0x0FFF == cpid) {
 		pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
-			return EC_ERROR;
+			return ecError;
 		}
 		cpid = pinfo->cpid;
 	}
@@ -256,7 +257,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
@@ -271,7 +272,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATE)) {
@@ -293,7 +294,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 	if (FALSE == logon_object_get_properties(
 		plogon, &tmp_proptags, &tmp_propvals)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_PROHIBITSENDQUOTA);
@@ -335,7 +336,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	if (FALSE == exmdb_client_allocate_message_id(
 		logon_object_get_dir(plogon), folder_id,
 		*ppmessage_id)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	pmessage = message_object_create(plogon, TRUE, cpid,
 				**ppmessage_id, &folder_id, tag_access,
@@ -350,13 +351,13 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	if (FALSE == message_object_init_message(pmessage, b_fai, cpid)) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 		logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
 	if (*phout < 0) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -398,7 +399,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
 		if (FALSE == message_object_check_orignal_touched(
 			pmessage, &b_touched)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (TRUE == b_touched) {
 			return EC_OBJECT_MODIFIED;
@@ -409,11 +410,11 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	tmp_proptag = PROP_TAG_MID;
 	if (FALSE == message_object_get_properties(
 		pmessage, 0, &proptags, &propvals)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 	if (NULL == pvalue) {
-		return EC_ERROR;
+		return ecError;
 	}
 	*pmessage_id = *(uint64_t*)pvalue;
 	gxerr_t err = message_object_save(pmessage);
@@ -485,7 +486,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
-		return EC_ERROR;
+		return ecError;
 	}
 	tmp_set.count = count;
 	tmp_set.pparray = common_util_alloc(sizeof(TPROPVAL_ARRAY*)*count);
@@ -514,7 +515,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 		tmp_set.pparray[i] = ppropvals;
 	}
 	if (FALSE == message_object_set_rcpts(pmessage, &tmp_set)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -540,7 +541,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 	}
 	if (FALSE == message_object_read_recipients(
 		pmessage, row_id, 0xFE, &tmp_set)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (0 == tmp_set.count) {
 		return EC_NOT_FOUND;
@@ -598,7 +599,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	if (FALSE == message_object_get_properties(
 		pmessage, 0, &proptags, &propvals)) {
 		message_object_free(pmessage);
-		return EC_ERROR;	
+		return ecError;
 	}
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
@@ -627,13 +628,13 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	}
 	if (FALSE == message_object_get_recipient_num(
 		pmessage, precipient_count)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pcolumns = message_object_get_rcpt_columns(pmessage);
 	*precipient_columns = *pcolumns;
 	if (FALSE == message_object_read_recipients(
 		pmessage, 0, 0xFE, &rcpts)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	*prow_count = rcpts.count;
 	*pprecipient_row = common_util_alloc(
@@ -666,7 +667,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
@@ -681,7 +682,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0,
 		message_id, PROP_TAG_MESSAGESTATUS, &pvalue)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == pvalue) {
 		return EC_NOT_FOUND;
@@ -698,7 +699,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	if (FALSE == exmdb_client_set_message_property(
 		logon_object_get_dir(plogon), NULL, 0, message_id,
 		&propval, &result)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	return result;
 }
@@ -713,7 +714,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
@@ -725,7 +726,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0,
 		message_id, PROP_TAG_MESSAGESTATUS, &pvalue)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == pvalue) {
 		return EC_NOT_FOUND;
@@ -883,7 +884,7 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
@@ -919,7 +920,7 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hresponse, &object_type)) {
@@ -935,7 +936,7 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 	}
 	if (FALSE == message_object_set_readflag(
 		pmessage, read_flags, &b_changed)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (FALSE == b_changed) {
 		*pread_change = 0;
@@ -956,7 +957,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pmessage = rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type);
@@ -979,7 +980,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	pattachment = attachment_object_create(
 			pmessage, attachment_id, flags);
 	if (NULL == pattachment) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == attachment_object_get_instance_id(pattachment)) {
 		attachment_object_free(pattachment);
@@ -989,7 +990,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 					hin, OBJECT_TYPE_ATTACHMENT, pattachment);
 	if (*phout < 0) {
 		attachment_object_free(pattachment);
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -1005,7 +1006,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pmessage = rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type);
@@ -1022,7 +1023,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	pattachment = attachment_object_create(pmessage,
 		ATTACHMENT_NUM_INVALID, OPEN_MODE_FLAG_READWRITE);
 	if (NULL == pattachment) {
-		return EC_ERROR;
+		return ecError;
 	}
 	*pattachment_id = attachment_object_get_attachment_num(pattachment);
 	if (ATTACHMENT_NUM_INVALID == *pattachment_id) {
@@ -1031,13 +1032,13 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	}
 	if (FALSE == attachment_object_init_attachment(pattachment)) {
 		attachment_object_free(pattachment);
-		return EC_ERROR;
+		return ecError;
 	}
 	*phout = rop_processor_add_object_handle(plogmap, logon_id,
 					hin, OBJECT_TYPE_ATTACHMENT, pattachment);
 	if (*phout < 0) {
 		attachment_object_free(pattachment);
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -1063,7 +1064,7 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 	}
 	if (FALSE == message_object_delele_attachment(
 		pmessage, attachment_id)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -1142,7 +1143,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	if (0x0FFF == cpid) {
 		pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
-			return EC_ERROR;
+			return ecError;
 		}
 		cpid = pinfo->cpid;
 	}
@@ -1151,7 +1152,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pattachment = rop_processor_get_object(plogmap,
 					logon_id, hin, &object_type);
@@ -1170,7 +1171,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 				cpid, 0, pattachment, tag_access,
 				open_embedded_flags, NULL);
 	if (NULL == pmessage) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == message_object_get_instance_id(pmessage)) {
 		if (0 == (OPEN_EMBEDDED_FLAG_CREATE & open_embedded_flags)) {
@@ -1185,12 +1186,12 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 					cpid, 0, pattachment, tag_access,
 					OPEN_MODE_FLAG_READWRITE, NULL);
 		if (NULL == pmessage) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (FALSE == message_object_init_message(
 			pmessage, FALSE, cpid)) {
 			message_object_free(pmessage);
-			return EC_ERROR;
+			return ecError;
 		}
 		proptags.count = 1;
 		proptags.pproptag = proptag_buff;
@@ -1198,19 +1199,19 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		if (FALSE == message_object_get_properties(
 			pmessage, 0, &proptags, &propvals)) {
 			message_object_free(pmessage);
-			return EC_ERROR;	
+			return ecError;
 		}
 		pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 		if (NULL == pvalue) {
 			message_object_free(pmessage);
-			return EC_ERROR;
+			return ecError;
 		}
 		*pmessage_id = *(uint64_t*)pvalue;
 		*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
 		if (*phout < 0) {
 			message_object_free(pmessage);
-			return EC_ERROR;
+			return ecError;
 		}
 		*phas_named_properties = 0;
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
@@ -1233,12 +1234,12 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	if (FALSE == message_object_get_properties(
 		pmessage, 0, &proptags, &propvals)) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 	if (NULL == pvalue) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	*pmessage_id = *(uint64_t*)pvalue;
 	pvalue = common_util_get_propvals(&propvals,
@@ -1269,14 +1270,14 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	if (FALSE == message_object_get_recipient_num(
 		pmessage, precipient_count)) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	pcolumns = message_object_get_rcpt_columns(pmessage);
 	*precipient_columns = *pcolumns;
 	if (FALSE == message_object_read_recipients(
 		pmessage, 0, 0xFE, &rcpts)) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	*prow_count = rcpts.count;
 	*pprecipient_row = common_util_alloc(
@@ -1297,7 +1298,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage);
 	if (*phout < 0) {
 		message_object_free(pmessage);
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -1312,7 +1313,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -1331,7 +1332,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
 	if (*phout < 0) {
 		table_object_free(ptable);
-		return EC_ERROR;
+		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
 	return EC_SUCCESS;

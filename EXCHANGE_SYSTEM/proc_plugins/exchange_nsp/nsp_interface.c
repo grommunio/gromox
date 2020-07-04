@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
@@ -833,7 +834,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
 	if (FALSE == get_domain_ids(pdomain, &domain_id, &org_id)) {
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
 		memset(&phandle->guid, 0, sizeof(GUID));
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	phandle->handle_type = HANDLE_EXCHANGE_NSP;
 	if (0 == org_id) {
@@ -844,7 +845,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase) {
 		memset(&phandle->guid, 0, sizeof(GUID));
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	phandle->guid = pbase->guid;
 	ab_tree_put_base(pbase);
@@ -1022,7 +1023,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase || (TRUE == g_session_check &&
@@ -1030,7 +1031,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		if (NULL != pbase) {
 			ab_tree_put_base(pbase);
 		}
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	if (0 == pstat->container_id) {
 		pgal_list = &pbase->gal_list;
@@ -1176,7 +1177,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
@@ -1191,7 +1192,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		if (NULL != pbase) {
 			ab_tree_put_base(pbase);
 		}
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	
 	if (NULL == ptable) {
@@ -1361,18 +1362,18 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		if (PROP_TAG_DISPLAYNAME != ptarget->proptag &&
 			PROP_TAG_DISPLAYNAME_STRING8 != ptarget->proptag) {
 			*pprows = NULL;
-			return MAPI_E_CALL_FAILED;
+			return ecError;
 		}
 	} else if (SORT_TYPE_PHONETICDISPLAYNAME == pstat->sort_type) {
 		if (PROP_TAG_ADDRESSBOOKPHONETICDISPLAYNAME != ptarget->proptag
 			&& PROP_TAG_ADDRESSBOOKPHONETICDISPLAYNAME_STRING8 != 
 			ptarget->proptag) {
 			*pprows = NULL;
-			return MAPI_E_CALL_FAILED;
+			return ecError;
 		}
 	} else {
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	if (NULL == pproptags) {
 		pproptags = ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY));
@@ -1403,7 +1404,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
@@ -1418,7 +1419,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL != pbase) {
 			ab_tree_put_base(pbase);
 		}
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	
 	if (NULL != ptable) {
@@ -1503,7 +1504,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					if (MAPI_E_SUCCESS != nsp_interface_fetch_row(
 						psnode->pdata, TRUE, pstat->codepage,
 						pproptags, prow)) {
-						result = MAPI_E_CALL_FAILED;
+						result = ecError;
 						goto EXIT_SEEK_ENTRIES;
 					}
 					break;
@@ -1535,7 +1536,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					}
 					if (MAPI_E_SUCCESS != nsp_interface_fetch_row(
 						pnode1, TRUE, pstat->codepage, pproptags, prow)) {
-						result = MAPI_E_CALL_FAILED;
+						result = ecError;
 						goto EXIT_SEEK_ENTRIES;
 					}
 					break;
@@ -1898,7 +1899,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	*ppoutmids = common_util_proptagarray_init();
 	if (NULL == *ppoutmids) {
@@ -1928,7 +1929,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		*ppoutmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	
 	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES == pstat->container_id) {
@@ -1939,7 +1940,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff);
 		if (FALSE == get_maildir(temp_buff, maildir)) {
-			result = MAPI_E_CALL_FAILED;
+			result = ecError;
 			goto EXIT_GET_MATCHES;
 		}
 		sprintf(temp_path, "%s/config/delegates.txt", maildir);
@@ -2122,7 +2123,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*ppoutmids = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase || (TRUE == g_session_check &&
@@ -2131,7 +2132,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 			ab_tree_put_base(pbase);
 		}
 		*ppoutmids = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	count = 0;
 	b_found = FALSE;
@@ -2184,7 +2185,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*ppoutmids = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	*ppoutmids = ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY));
 	if (NULL == *ppoutmids) {
@@ -2205,7 +2206,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 			ab_tree_put_base(pbase);
 		}
 		*ppoutmids = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	for (i=0; i<pnames->count; i++) {
 		if (NULL == pnames->ppstrings[i]) {
@@ -2393,7 +2394,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*ppproptags = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	if (0 == mid) {
 		*ppproptags = NULL;
@@ -2415,7 +2416,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 			ab_tree_put_base(pbase);
 		}
 		*ppproptags = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	pnode = ab_tree_minid_to_node(pbase, mid);
 	if (NULL == pnode) {
@@ -2478,7 +2479,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	if (CODEPAGE_UNICODE == pstat->codepage) {
 		b_unicode = TRUE;
@@ -2502,7 +2503,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			ab_tree_put_base(pbase);
 		}
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	
 	if (pstat->cur_rec <= 0x10) {
@@ -2644,7 +2645,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase || (TRUE == g_session_check &&
@@ -2652,7 +2653,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL != pbase) {
 			ab_tree_put_base(pbase);
 		}
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	
 	pos1 = -1;
@@ -2695,7 +2696,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	
 	if (-1 == pos1 || -1 == pos2) {
-		result = MAPI_E_CALL_FAILED;
+		result = ecError;
 		goto EXIT_COMPARE_MIDS;
 	}
 	*presult = pos2 - pos1;
@@ -2867,7 +2868,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	has_child = nsp_interface_has_child(pnode);
 	container_id = ab_tree_get_node_minid(pnode);
 	if (0 == container_id) {
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	ab_tree_get_display_name(pnode, codepage, str_dname);
 	if (FALSE == nsp_interface_build_specialtable(
@@ -2899,7 +2900,7 @@ static uint32_t nsp_interface_get_tree_specialtables(
 	
 	pnode = simple_tree_get_root(ptree);
 	if (NULL == pnode) {
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	return nsp_interface_get_specialtables_from_node(
 			pnode, NULL, b_unicode, codepage, prows);
@@ -2946,7 +2947,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	
 	(*pversion) ++;
@@ -2982,7 +2983,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 			ab_tree_put_base(pbase);
 		}
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	for (pnode=single_list_get_head(&pbase->list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->list, pnode)) {
@@ -3027,7 +3028,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	rpc_info = get_rpc_info();
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase || (TRUE == g_session_check &&
@@ -3035,7 +3036,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		if (NULL != pbase) {
 			ab_tree_put_base(pbase);
 		}
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	double_list_init(&tmp_list);
 	ptnode = ab_tree_minid_to_node(pbase, mid);
@@ -3058,7 +3059,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		goto EXIT_MOD_LINKATT;
 	}
 	if (FALSE == get_maildir(username, maildir)) {
-		result = MAPI_E_CALL_FAILED;
+		result = ecError;
 		goto EXIT_MOD_LINKATT;
 	}
 	sprintf(temp_path, "%s/config/delegates.txt", maildir);
@@ -3135,7 +3136,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (item_num != double_list_get_nodes_num(&tmp_list)) {
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 == fd) {
-			result = MAPI_E_CALL_FAILED;
+			result = ecError;
 			goto EXIT_MOD_LINKATT;
 		}
 		for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
@@ -3464,7 +3465,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*ppmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	if (NULL == pproptags) {
 		pproptags = ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY));
@@ -3513,7 +3514,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		}
 		*ppmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_CALL_FAILED;
+		return ecError;
 	}
 	
 	if (0 == pstat->container_id) {

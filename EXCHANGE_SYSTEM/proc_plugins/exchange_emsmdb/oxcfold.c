@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rops.h"
 #include "rop_util.h"
 #include "common_util.h"
@@ -30,7 +31,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == rop_processor_get_object(plogmap,
 		logon_id, hin, &object_type)) {
@@ -58,7 +59,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	}
 	if (FALSE == exmdb_client_check_folder_id(
 		logon_object_get_dir(plogon), folder_id, &b_exist)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (FALSE == b_exist) {
 		return EC_NOT_FOUND;
@@ -66,7 +67,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	if (FALSE == logon_object_check_private(plogon)) {
 		if (FALSE == exmdb_client_check_folder_deleted(
 			logon_object_get_dir(plogon), folder_id, &b_del)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (TRUE == b_del && 0 == (open_flags &
 			OPEN_FOLDER_FLAG_OPENSOFTDELETED)) {
@@ -76,7 +77,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	if (FALSE == exmdb_client_get_folder_property(
 		logon_object_get_dir(plogon), 0, folder_id,
 		PROP_TAG_FOLDERTYPE, &pvalue) || NULL == pvalue) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	type = *(uint32_t*)pvalue;
 	rpc_info = get_rpc_info();
@@ -88,7 +89,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == permission) {
 			fid_val = rop_util_get_gc_value(folder_id);
@@ -127,7 +128,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	if (FALSE == exmdb_client_get_folder_property(
 		logon_object_get_dir(plogon), 0, folder_id,
 		PROP_TAG_HASRULES, &pvalue)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (NULL == pvalue) {
 		*phas_rules = 0;
@@ -143,7 +144,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
 	if (*phout < 0) {
 		folder_object_free(pfolder);
-		return EC_ERROR;
+		return ecError;
 	}
 	*ppghost = NULL;
 	return EC_SUCCESS;
@@ -203,7 +204,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon) &&
 		FOLDER_TYPE_SEARCH == folder_type) {
@@ -231,7 +232,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pparent),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
@@ -242,13 +243,13 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		logon_object_get_dir(plogon),
 		folder_object_get_id(pparent),
 		folder_name, &folder_id)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 != folder_id) {
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(plogon), 0, folder_id,
 			PROP_TAG_FOLDERTYPE, &pvalue) || NULL == pvalue) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == open_existing || folder_type != *(uint32_t*)pvalue) {
 			return EC_DUPLICATE_NAME;
@@ -257,7 +258,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		parent_id = folder_object_get_id(pparent);
 		if (FALSE == exmdb_client_allocate_cn(
 			logon_object_get_dir(plogon), &change_num)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		tmp_type = folder_type;
 		last_time = rop_util_current_nttime();
@@ -300,10 +301,10 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		if (FALSE == exmdb_client_create_folder_by_properties(
 			logon_object_get_dir(plogon), pinfo->cpid,
 			&tmp_propvals, &folder_id)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (0 == folder_id) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 			pentryid = common_util_username_to_addressbook_entryid(
@@ -328,7 +329,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 			if (FALSE == exmdb_client_update_folder_permission(
 				logon_object_get_dir(plogon), folder_id,
 				FALSE, 1, &permission_row)) {
-				return EC_ERROR;
+				return ecError;
 			}
 		}
 	}
@@ -344,7 +345,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
 	if (*phout < 0) {
 		folder_object_free(pfolder);
-		return EC_ERROR;
+		return ecError;
 	}
 	*pfolder_id = folder_id;
 	*pis_existing = 0; /* just like exchange 2010 or later */
@@ -384,7 +385,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	 if (TRUE == logon_object_check_private(plogon)) {
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
@@ -403,7 +404,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			return EC_ACCESS_DENIED;
@@ -413,7 +414,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 	if (FALSE == exmdb_client_check_folder_id(
 		logon_object_get_dir(plogon), folder_id,
 		&b_exist)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == b_exist) {
 		*ppartial_completion = 0;
@@ -440,7 +441,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(plogon), 0, folder_id,
 			PROP_TAG_FOLDERTYPE, &pvalue)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (NULL == pvalue) {
 			*ppartial_completion = 0;
@@ -454,7 +455,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		if (FALSE == exmdb_client_empty_folder(
 			logon_object_get_dir(plogon), pinfo->cpid, username,
 			folder_id, b_hard, b_normal, b_fai, b_sub, &b_partial)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (TRUE == b_partial) {
 			/* failure occurs, stop deleting folder */
@@ -466,7 +467,7 @@ DELETE_FOLDER:
 	if (FALSE == exmdb_client_delete_folder(
 		logon_object_get_dir(plogon), pinfo->cpid,
 		folder_id, b_hard, &b_done)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == b_done) {
 		*ppartial_completion = 0;
@@ -502,7 +503,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
 		return EC_NOT_SUPPORTED;
@@ -523,7 +524,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			return EC_ACCESS_DENIED;
@@ -534,7 +535,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			&search_status, NULL, NULL)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (SEARCH_STATUS_NOT_INITIALIZED == search_status) {
 			return EC_NOT_INITIALIZED;
@@ -555,7 +556,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			if (FALSE == exmdb_client_check_folder_permission(
 				logon_object_get_dir(plogon), pfolder_ids->pll[i],
 				rpc_info.username, &permission)) {
-				return EC_ERROR;	
+				return ecError;
 			}
 			if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 				0 == (permission & PERMISSION_READANY)) {
@@ -566,7 +567,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	if (NULL != pres) {
 		if (FALSE == common_util_convert_restriction(
 			TRUE, (RESTRICTION*)pres)) {
-			return EC_ERROR;
+			return ecError;
 		}
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
@@ -574,7 +575,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 		logon_object_get_dir(plogon), pinfo->cpid,
 		folder_object_get_id(pfolder), search_flags,
 		pres, pfolder_ids, &b_result)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (FALSE == b_result) {
 		return EC_SEARCH_SCOPE_VIOLATED;
@@ -594,7 +595,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
 		return EC_NOT_SUPPORTED;
@@ -619,11 +620,11 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 		logon_object_get_dir(plogon),
 		folder_object_get_id(pfolder),
 		psearch_flags, ppres, pfolder_ids)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == use_unicode && NULL != ppres && NULL != *ppres) {
 		if (FALSE == common_util_convert_restriction(FALSE, *ppres)) {
-			return EC_ERROR;
+			return ecError;
 		}
 	}
 	return EC_SUCCESS;
@@ -672,7 +673,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	ids.count = pmessage_ids->count;
 	ids.pids = pmessage_ids->pll;
@@ -687,7 +688,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pdst_folder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_CREATE)) {
 			return EC_ACCESS_DENIED;
@@ -704,7 +705,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 		folder_object_get_id(psrc_folder),
 		folder_object_get_id(pdst_folder),
 		b_copy, &ids, &b_partial)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == b_partial) {
 		*ppartial_completion = 1;
@@ -759,7 +760,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pnew_name,
@@ -786,7 +787,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			return EC_ACCESS_DENIED;
@@ -795,7 +796,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pdst_folder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
@@ -808,20 +809,20 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	if (FALSE == exmdb_client_check_folder_cycle(
 		logon_object_get_dir(plogon), folder_id,
 		folder_object_get_id(pdst_folder), &b_cycle)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == b_cycle) {
 		return EC_FOLDER_CYCLE;
 	}
 	if (FALSE == exmdb_client_allocate_cn(
 		logon_object_get_dir(plogon), &change_num)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == exmdb_client_get_folder_property(
 		logon_object_get_dir(plogon), 0,
 		folder_id, PROP_TAG_PREDECESSORCHANGELIST,
 		(void**)&pbin_pcl) || NULL == pbin_pcl) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == logon_object_check_private(plogon)) {
 		tmp_xid.guid = rop_util_make_user_guid(
@@ -833,11 +834,11 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
 	if (NULL == pbin_changekey) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 	if (NULL == pbin_pcl) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_movecopy_folder(
@@ -847,7 +848,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		folder_object_get_id(psrc_parent),
 		folder_id, folder_object_get_id(pdst_folder),
 		new_name, FALSE, &b_exist, &b_partial)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == b_exist) {
 		return EC_DUPLICATE_NAME;
@@ -871,7 +872,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	if (FALSE == exmdb_client_set_folder_properties(
 		logon_object_get_dir(plogon), 0, folder_id,
 		&propvals, &problems)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -913,7 +914,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pnew_name,
@@ -940,7 +941,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), folder_id,
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_READANY)) {
 			return EC_ACCESS_DENIED;
@@ -949,7 +950,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pdst_folder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
@@ -962,7 +963,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	if (FALSE == exmdb_client_check_folder_cycle(
 		logon_object_get_dir(plogon), folder_id,
 		folder_object_get_id(pdst_folder), &b_cycle)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (TRUE == b_cycle) {
 		return EC_FOLDER_CYCLE;
@@ -975,7 +976,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		folder_object_get_id(psrc_parent), folder_id,
 		folder_object_get_id(pdst_folder), new_name,
 		TRUE, &b_exist, &b_partial)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == b_exist) {
 		return EC_DUPLICATE_NAME;
@@ -1014,7 +1015,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == want_delete_associated) {
 		b_fai = FALSE;
@@ -1037,7 +1038,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_DELETEANY) &&
 			0 == (permission & PERMISSION_DELETEOWNED)) {
@@ -1050,7 +1051,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 		logon_object_get_dir(plogon), pinfo->cpid,
 		username, folder_object_get_id(pfolder),
 		b_hard, TRUE, b_fai, TRUE, &b_partial)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == b_partial) {
 		*ppartial_completion = 1;
@@ -1112,7 +1113,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -1120,7 +1121,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if ((permission & PERMISSION_DELETEANY) ||
 			(permission & PERMISSION_FOLDEROWNER)) {
@@ -1141,7 +1142,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 			logon_object_get_account_id(plogon), pinfo->cpid,
 			username, folder_object_get_id(pfolder), &ids,
 			b_hard, &b_partial)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (TRUE == b_partial) {
 			*ppartial_completion = 1;
@@ -1154,14 +1155,14 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	ids.count = 0;
 	ids.pids = common_util_alloc(sizeof(uint64_t)*pmessage_ids->count);
 	if (NULL == ids.pids) {
-		return EC_ERROR;
+		return ecError;
 	}
 	for (i=0; i<pmessage_ids->count; i++) {
 		if (NULL != username) {
 			if (FALSE == exmdb_client_check_message_owner(
 				logon_object_get_dir(plogon), pmessage_ids->pll[i],
 				username, &b_owner)) {
-				return EC_ERROR;
+				return ecError;
 			}
 			if (FALSE == b_owner) {
 				b_partial = TRUE;
@@ -1175,7 +1176,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		if (FALSE == exmdb_client_get_message_properties(
 			logon_object_get_dir(plogon), NULL, 0,
 			pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		pbrief = NULL;
 		pvalue = common_util_get_propvals(&tmp_propvals,
@@ -1187,7 +1188,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 				if (FALSE == exmdb_client_get_message_brief(
 					logon_object_get_dir(plogon), pinfo->cpid,
 					pmessage_ids->pll[i], &pbrief)) {
-					return EC_ERROR;
+					return ecError;
 				}
 			}
 		}
@@ -1204,7 +1205,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		logon_object_get_account_id(plogon),
 		pinfo->cpid, username, folder_object_get_id(pfolder),
 		&ids, b_hard, &b_partial1)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (TRUE == b_partial || TRUE == b_partial1) {
 		*ppartial_completion = 1;
@@ -1253,7 +1254,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pfolder = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
@@ -1277,7 +1278,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 		logon_object_get_dir(plogon),
 		folder_object_get_id(pfolder),
 		username, b_depth, prow_count)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	ptable = table_object_create(plogon, pfolder,
 	         table_flags, ropGetHierarchyTable, logon_id);
@@ -1288,7 +1289,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
 	if (*phout < 0) {
 		table_object_free(ptable);
-		return EC_ERROR;
+		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
 	return EC_SUCCESS;
@@ -1310,7 +1311,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pfolder = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
@@ -1355,7 +1356,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 				logon_object_get_dir(plogon),
 				folder_object_get_id(pfolder),
 				rpc_info.username, &permission)) {
-				return EC_ERROR;
+				return ecError;
 			}
 			if (0 == (permission & PERMISSION_READANY) &&
 				0 == (permission & PERMISSION_FOLDEROWNER)) {
@@ -1366,7 +1367,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			b_fai, b_deleted, prow_count)) {
-			return EC_ERROR;
+			return ecError;
 		}
 	} else {
 		*prow_count = 1; /* arbitrary value */
@@ -1380,7 +1381,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
 	if (*phout < 0) {
 		table_object_free(ptable);
-		return EC_ERROR;
+		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
 	return EC_SUCCESS;

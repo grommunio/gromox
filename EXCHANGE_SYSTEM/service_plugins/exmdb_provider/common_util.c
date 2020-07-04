@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "pcl.h"
 #include "util.h"
 #include "guid.h"
@@ -3894,8 +3895,7 @@ BOOL common_util_set_properties(int table_type,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = 
-												EC_ERROR;
+			pproblems->pproblem[pproblems->count].err = ecError;
 			pproblems->count ++;
 			continue;
 		}
@@ -4076,8 +4076,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = 
-														EC_ERROR;
+					pproblems->pproblem[pproblems->count].err = ecError;
 					pproblems->count ++;
 				}
 				continue;
@@ -4110,8 +4109,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = 
-														EC_ERROR;
+					pproblems->pproblem[pproblems->count].err = ecError;
 					pproblems->count ++;
 				}
 				continue;
@@ -4144,8 +4142,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = 
-														EC_ERROR;
+					pproblems->pproblem[pproblems->count].err = ecError;
 					pproblems->count ++;
 				}
 				continue;
@@ -4191,8 +4188,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = 
-														EC_ERROR;
+					pproblems->pproblem[pproblems->count].err = ecError;
 					pproblems->count ++;
 				}
 				continue;
@@ -4475,8 +4471,7 @@ BOOL common_util_set_properties(int table_type,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = 
-												EC_ERROR;
+			pproblems->pproblem[pproblems->count].err = ecError;
 			pproblems->count ++;
 		}
 	}

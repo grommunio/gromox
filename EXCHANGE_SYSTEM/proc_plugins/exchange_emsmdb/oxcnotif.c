@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rops.h"
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -45,7 +46,7 @@ uint32_t rop_registernotification(
 		logon_id, hin, OBJECT_TYPE_SUBSCRIPTION, psub);
 	if (*phout < 0) {
 		subscription_object_free(psub);
-		return EC_ERROR;
+		return ecError;
 	}
 	subscription_object_set_handle(psub, *phout);
 	return EC_SUCCESS;

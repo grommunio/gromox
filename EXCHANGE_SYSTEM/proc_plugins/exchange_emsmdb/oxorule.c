@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rops.h"
 #include "rop_util.h"
 #include "ext_buffer.h"
@@ -29,7 +30,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -45,7 +46,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			return EC_ACCESS_DENIED;
@@ -60,14 +61,14 @@ uint32_t rop_modifyrules(uint8_t flags,
 		if (FALSE == exmdb_client_empty_folder_rule(
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder))) {
-			return EC_ERROR;	
+			return ecError;
 		}
 	}
 	for (i=0; i<count; i++) {
 		for (j=0; j<prow[i].propvals.count; j++) {
 			if (FALSE == common_util_convert_tagged_propval(
 				TRUE, prow[i].propvals.ppropval + j)) {
-				return EC_ERROR;	
+				return ecError;
 			}
 		}
 	}
@@ -75,7 +76,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 		logon_object_get_dir(plogon),
 		folder_object_get_id(pfolder),
 		count, prow, &b_exceed)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (TRUE == b_exceed) {
 		return EC_OUT_OF_MEMORY;
@@ -94,7 +95,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -113,7 +114,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
 	if (*phout < 0) {
 		table_object_free(ptable);
-		return EC_ERROR;
+		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
 	return EC_SUCCESS;
@@ -145,7 +146,7 @@ uint32_t rop_updatedeferredactionmessages(
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
 		return EC_NOT_SUPPORTED;
@@ -156,7 +157,7 @@ uint32_t rop_updatedeferredactionmessages(
 		if (FALSE == exmdb_client_check_folder_permission(
 			logon_object_get_dir(plogon), fid_deferred,
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_EDITANY)) {
 			return EC_ACCESS_DENIED;
@@ -174,7 +175,7 @@ uint32_t rop_updatedeferredactionmessages(
 		logon_object_get_dir(plogon), 0, fid_deferred,
 		NULL, TABLE_FLAG_NONOTIFICATIONS, &restriction,
 		NULL, &table_id, &row_count)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	
 	proptags.count = 1;
@@ -185,7 +186,7 @@ uint32_t rop_updatedeferredactionmessages(
 		logon_object_get_dir(plogon), NULL,
 		0, table_id, &proptags, 0, row_count,
 		&tmp_set)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	exmdb_client_unload_table(
 		logon_object_get_dir(plogon), table_id);

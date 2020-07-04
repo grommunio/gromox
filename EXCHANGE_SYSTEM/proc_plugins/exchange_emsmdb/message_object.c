@@ -1378,7 +1378,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static const uint32_t err_code = EC_ERROR;
+	static const uint32_t err_code = ecError;
 	static const uint32_t lcid_default = 0x0409;
 	
 	ppropvals->ppropval = common_util_alloc(

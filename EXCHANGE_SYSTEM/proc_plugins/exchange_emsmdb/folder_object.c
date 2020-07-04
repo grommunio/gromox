@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "emsmdb_interface.h"
 #include "tpropval_array.h"
 #include "folder_object.h"
@@ -630,7 +631,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static const uint32_t err_code = EC_ERROR;
+	static const uint32_t err_code = ecError;
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {

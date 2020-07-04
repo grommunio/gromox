@@ -370,7 +370,7 @@ BOOL attachment_object_get_properties(
 	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static const uint32_t err_code = EC_ERROR;
+	static const uint32_t err_code = ecError;
 	
 	ppropvals->ppropval = common_util_alloc(
 		sizeof(TAGGED_PROPVAL)*pproptags->count);

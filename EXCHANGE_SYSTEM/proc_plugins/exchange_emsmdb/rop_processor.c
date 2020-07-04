@@ -1,5 +1,6 @@
 #include <string.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "subscription_object.h"
 #include "fastdownctx_object.h"
 #include "attachment_object.h"
@@ -709,7 +710,7 @@ NEXT_NOTIFY:
 MAKE_RPC_EXT:
 	if (EXT_ERR_SUCCESS != rop_ext_make_rpc_ext(ext_buff,
 		ext_push.offset, prop_buff, pbuff, pbuff_len)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	return EC_SUCCESS;
 }

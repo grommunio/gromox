@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "emsmdb_interface.h"
 #include "msgchg_grouping.h"
 #include "logon_object.h"
@@ -919,7 +920,7 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 	EMSMDB_INFO *pinfo;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
-	static const uint32_t err_code = EC_ERROR;
+	static const uint32_t err_code = ecError;
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {

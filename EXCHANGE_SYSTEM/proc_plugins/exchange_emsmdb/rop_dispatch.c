@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "emsmdb_interface.h"
 #include "rop_dispatch.h"
 #include "common_util.h"
@@ -1645,7 +1646,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	default:
 		debug_info("[exchange_emsmdb]: rop 0x%.2x not implemented!\n",
 			prequest->rop_id);
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }

@@ -9,6 +9,10 @@ typedef enum {
 	GXERR_OVER_QUOTA,
 } gxerr_t;
 
+enum {
+	ecError = 0x80004005,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif

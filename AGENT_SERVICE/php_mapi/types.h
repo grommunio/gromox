@@ -7,7 +7,6 @@
 
 #define EC_SUCCESS									0x00000000
 #define EC_DISK_FULL 0x4
-#define EC_ERROR									0x80004005
 #define EC_RPC_FAIL									0x80040115
 #define EC_ACCESS_DENIED							0x80070005
 #define EC_STREAM_ACCESS_DENIED						0x80030005

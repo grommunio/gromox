@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 #include <cstdint>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include "php.h"
 #include "php_mapi.h"
@@ -828,7 +829,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	tmp_entry.pmail_address = paddress;
 	ext_pack_push_init(&push_ctx);
 	if (!ext_pack_push_oneoff_entryid(&push_ctx, &tmp_entry)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		ext_pack_push_free(&push_ctx);
 		goto THROW_EXCEPTION;
 	}
@@ -858,7 +859,7 @@ ZEND_FUNCTION(mapi_parseoneoff)
 	}
 	ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(pentryid), cbentryid);
 	if (!ext_pack_pull_oneoff_entryid(&pull_ctx, &oneoff_entry)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	array_init(return_value);
@@ -1191,7 +1192,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_tarray_set(pzarray, &cond_set TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_resolvename(
@@ -1202,7 +1203,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 		goto THROW_EXCEPTION;
 	}
 	if (!tarray_set_to_php(&result_set, &pzrowset TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -1594,7 +1595,7 @@ ZEND_FUNCTION(mapi_folder_deletemessages)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_binary_array(pzarray, &entryid_array TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_deletemessages(
@@ -1646,7 +1647,7 @@ ZEND_FUNCTION(mapi_folder_copymessages)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_binary_array(pzarray, &entryid_array TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_copymessages(
@@ -1690,7 +1691,7 @@ ZEND_FUNCTION(mapi_folder_setreadflags)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_binary_array(pzarray, &entryid_array TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_setreadflags(
@@ -2202,7 +2203,7 @@ ZEND_FUNCTION(mapi_sink_timedwait)
 	}
 	if (!znotification_array_to_php(&notifications,
 		&pznotifications TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto RETURN_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pznotifications, 0, 0);
@@ -2243,7 +2244,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	}
 	if (NULL != pzrestriction) {
 		if (!php_to_restriction(pzrestriction, &restriction TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		prestriction = &restriction;
@@ -2252,7 +2253,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	}
 	if (NULL != pzproptags) {
 		if (!php_to_proptag_array(pzproptags, &proptags TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		pproptags = &proptags;
@@ -2267,7 +2268,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 		goto THROW_EXCEPTION;
 	}
 	if (!tarray_set_to_php(&rowset, &pzrowset TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -2311,7 +2312,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 	}
 	if (NULL != pzproptags) {
 		if (!php_to_proptag_array(pzproptags, &proptags TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		pproptags = &proptags;
@@ -2326,7 +2327,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 		goto THROW_EXCEPTION;
 	}
 	if (!tarray_set_to_php(&rowset, &pzrowset TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
@@ -2363,7 +2364,7 @@ ZEND_FUNCTION(mapi_table_setcolumns)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_proptag_array(pzproptags, &proptags TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_setcolumns(
@@ -2447,7 +2448,7 @@ ZEND_FUNCTION(mapi_table_sort)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_sortorder_set(pzsortarray, &sortcriteria TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_sorttable(ptable->hsession,
@@ -2527,7 +2528,7 @@ ZEND_FUNCTION(mapi_table_restrict)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_restriction(pzrestrictarray, &restriction TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_restricttable(
@@ -2575,7 +2576,7 @@ ZEND_FUNCTION(mapi_table_findrow)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_restriction(pzrestrictarray, &restriction TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_findrow(ptable->hsession,
@@ -2745,7 +2746,7 @@ ZEND_FUNCTION(mapi_message_modifyrecipients)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_tarray_set(pzadrlist, &rcpt_list TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_modifyrecipients(
@@ -2998,7 +2999,7 @@ ZEND_FUNCTION(mapi_stream_read)
 		&pzresource, -1, name_stream, le_stream);
 	pbuff = stream_object_read(pstream, wanted_bytes, &actual_bytes);
 	if (NULL == pbuff) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_STRINGL(static_cast<const char *>(pbuff), actual_bytes);
@@ -3029,7 +3030,7 @@ ZEND_FUNCTION(mapi_stream_seek)
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresource, -1, name_stream, le_stream);
 	if (!stream_object_seek(pstream, flags, seek_offset)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
@@ -3058,7 +3059,7 @@ ZEND_FUNCTION(mapi_stream_setsize)
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresource, -1, name_stream, le_stream);
 	if (!stream_object_set_length(pstream, newsize)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
@@ -3163,7 +3164,7 @@ ZEND_FUNCTION(mapi_stream_create)
 	
 	pstream = stream_object_create();
 	if (NULL == pstream) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
@@ -3437,7 +3438,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 	}
 	if (!php_to_propname_array(pznames,
 		pzguids, &propnames TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getnamedpropids(
@@ -3520,7 +3521,7 @@ ZEND_FUNCTION(mapi_setprops)
 	}
 	}
 	if (!php_to_tpropval_array(pzpropvals, &propvals TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_setpropvals(probject->hsession,
@@ -3618,7 +3619,7 @@ ZEND_FUNCTION(mapi_copyto)
 	} else {
 		if (!php_to_proptag_array(pzexcludeprops,
 			&exclude_proptags TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		pexclude_proptags = &exclude_proptags;
@@ -3770,7 +3771,7 @@ ZEND_FUNCTION(mapi_deleteprops)
 	}
 	}
 	if (!php_to_proptag_array(pzproptags, &proptags TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_deletepropvals(probject->hsession,
@@ -4149,7 +4150,7 @@ ZEND_FUNCTION(mapi_getprops)
 	if(NULL != pztagarray) {
 		if (!php_to_proptag_array(pztagarray,
 			&proptags TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		pproptags = &proptags;
@@ -4164,7 +4165,7 @@ ZEND_FUNCTION(mapi_getprops)
 	}
 	if (!tpropval_array_to_php(&propvals,
 		&pzpropvals TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzpropvals, 0, 0);
@@ -4204,7 +4205,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 			goto THROW_EXCEPTION;
 		}
 	if (!php_to_proptag_array(pzarray, &proptags TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	propids.count = proptags.count;
@@ -4274,13 +4275,13 @@ ZEND_FUNCTION(mapi_decompressrtf)
 		goto THROW_EXCEPTION;
 	}
 	if (-1 == pipe(pipes_in)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	if (-1 == pipe(pipes_out)) {
 		close(pipes_in[0]);
 		close(pipes_in[1]);
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	pid = fork();
@@ -4303,7 +4304,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 		close(pipes_in[1]);
 		close(pipes_out[0]);
 		close(pipes_out[1]);
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	default:
 		close(pipes_in[0]);
@@ -4431,7 +4432,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		prestriction, &pzrestriction TSRMLS_CC)
 		|| !binary_array_to_php(&entryid_array,
 		&pzfolderlist TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	array_init(return_value);
@@ -4479,7 +4480,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	} else {
 		if (!php_to_restriction(pzrestriction,
 			&restriction TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		prestriction = &restriction;
@@ -4489,7 +4490,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	} else {
 		if (!php_to_binary_array(pzfolderlist,
 			&entryid_array TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		pentryid_array = &entryid_array;
@@ -4535,7 +4536,7 @@ ZEND_FUNCTION(mapi_folder_modifyrules)
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_rule_list(pzrows, &rule_list TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_modifyrules(pfolder->hsession,
@@ -4846,7 +4847,7 @@ ZEND_FUNCTION(mapi_exportchanges_config)
 		&pzresstream, -1, name_stream, le_stream);
 	if (NULL != pzrestrict && Z_TYPE_P(pzrestrict) == IS_ARRAY) {
 		if (!php_to_restriction(pzrestrict, &restriction TSRMLS_CC)) {
-			MAPI_G(hr) = EC_ERROR;
+			MAPI_G(hr) = ecError;
 			goto THROW_EXCEPTION;
 		}
 		prestriction = &restriction;
@@ -4896,7 +4897,7 @@ static zend_bool import_message_change(zval *pztarget_obj,
 	ZVAL_STRING(&pzvalfuncname, "ImportMessageChange");
 	if (call_user_function(NULL, pztarget_obj, &pzvalfuncname,
 	    &pzvalreturn, 3, pzvalargs TSRMLS_CC) == FAILURE) {
-		hresult = EC_ERROR;
+		hresult = ecError;
 	} else {
 		hresult = zval_get_long(&pzvalreturn);
 	}
@@ -5058,7 +5059,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				goto THROW_EXCEPTION;
 			}
 			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, 0, &bins)) {
-				MAPI_G(hr) = EC_ERROR;
+				MAPI_G(hr) = ecError;
 				goto THROW_EXCEPTION;
 			}
 			result = zarafa_client_syncdeletions(pctx->hsession,
@@ -5068,7 +5069,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				goto THROW_EXCEPTION;
 			}
 			if (bins.count > 0 && !import_message_deletion(&pctx->pztarget_obj, SYNC_SOFT_DELETE, &bins)) {
-				MAPI_G(hr) = EC_ERROR;
+				MAPI_G(hr) = ecError;
 				goto THROW_EXCEPTION;
 			}
 			result = zarafa_client_syncreadstatechanges(
@@ -5078,7 +5079,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				goto THROW_EXCEPTION;
 			}
 			if (states.count > 0 && !import_readstate_change(&pctx->pztarget_obj, &states)) {
-				MAPI_G(hr) = EC_ERROR;
+				MAPI_G(hr) = ecError;
 				goto THROW_EXCEPTION;
 			}
 		} else {
@@ -5089,7 +5090,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 				goto THROW_EXCEPTION;
 			}
 			if (bins.count > 0 && !import_folder_deletion(&pctx->pztarget_obj, &bins)) {
-				MAPI_G(hr) = EC_ERROR;
+				MAPI_G(hr) = ecError;
 				goto THROW_EXCEPTION;
 			}
 		}
@@ -5113,7 +5114,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			}
 			if (!import_message_change(&pctx->pztarget_obj,
 				&propvals, flags)) {
-				MAPI_G(hr) = EC_ERROR;
+				MAPI_G(hr) = ecError;
 				goto THROW_EXCEPTION;
 			}
 		} else {
@@ -5129,7 +5130,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			}
 			if (!import_folder_change(&pctx->pztarget_obj,
 				&propvals)) {
-				MAPI_G(hr) = EC_ERROR;
+				MAPI_G(hr) = ecError;
 				goto THROW_EXCEPTION;
 			}
 		}
@@ -5315,7 +5316,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
     ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importcontentschanges, le_mapi_importcontentschanges);
 	if (!php_to_tpropval_array(pzresprops, &propvals TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
     result = zarafa_client_importmessage(pctx->hsession,
@@ -5366,7 +5367,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 		name_mapi_importcontentschanges,
 		le_mapi_importcontentschanges);
 	if (!php_to_binary_array(pzresmessages, &message_bins)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	if (SYNC_SOFT_DELETE & flags) {
@@ -5409,7 +5410,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importcontentschanges, le_mapi_importcontentschanges);
 	if (!php_to_state_array(pzresreadstates, &message_states TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_importreadstates(
@@ -5536,7 +5537,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 		name_mapi_importhierarchychanges,
 		le_mapi_importhierarchychanges);
 	if (!php_to_tpropval_array(pzresprops, &propvals TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_importfolder(
@@ -5576,7 +5577,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
 		name_mapi_importhierarchychanges, le_mapi_importhierarchychanges);
 	if (!php_to_binary_array(pzresfolders, &folder_bins TSRMLS_CC)) {
-		MAPI_G(hr) = EC_ERROR;
+		MAPI_G(hr) = ecError;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_importdeletion(

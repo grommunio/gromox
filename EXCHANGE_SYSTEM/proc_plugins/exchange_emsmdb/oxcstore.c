@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rops.h"
 #include "rop_util.h"
 #include "common_util.h"
@@ -53,11 +54,11 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 			return EC_LOGIN_PERM;
 		}
 		if (FALSE == common_util_get_maildir(username, maildir)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (FALSE == exmdb_client_check_mailbox_permission(maildir,
 			rpc_info.username, &permission)) {
-			return EC_ERROR;
+			return ecError;
 		}
 		if (PERMISSION_NONE == permission) {
 			return EC_LOGIN_PERM;
@@ -82,11 +83,11 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 	proptag_buff[1] = PROP_TAG_OUTOFOFFICESTATE;
 	if (FALSE == exmdb_client_get_store_properties(
 		maildir, 0, &proptags, &propvals)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	pvalue = common_util_get_propvals(&propvals, PROP_TAG_STORERECORDKEY);
 	if (NULL == pvalue) {
-		return EC_ERROR;
+		return ecError;
 	}
 	*pmailbox_guid = rop_util_binary_to_guid(pvalue);
 	pvalue = common_util_get_propvals(&propvals, PROP_TAG_OUTOFOFFICESTATE);
@@ -145,7 +146,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 					plogmap, logon_id, plogon);
 	if (handle < 0) {
 		logon_object_free(plogon);
-		return EC_ERROR;
+		return ecError;
 	}
 	*phout = handle;
 	return EC_SUCCESS;
@@ -191,7 +192,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 			}
 			if (FALSE == common_util_get_domain_ids(
 				pdomain1, &domain_id1, &org_id1)) {
-				return EC_ERROR;	
+				return ecError;
 			}
 			if (org_id != org_id1) {
 				return EC_LOGIN_FAILURE;
@@ -201,7 +202,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		}
 	}
 	if (FALSE == common_util_get_homedir_by_id(domain_id, homedir)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	/* like EXCHANGE 2013 or later, we only
 		return four folder_ids to client */
@@ -235,10 +236,10 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	
 	if (FALSE == exmdb_client_get_store_property(
 		homedir, 0, PROP_TAG_STORERECORDKEY, &pvalue)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (NULL == pvalue) {
-		return EC_ERROR;
+		return ecError;
 	}
 	mailbox_guid = rop_util_binary_to_guid(pvalue);
 	
@@ -253,7 +254,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 					plogmap, logon_id, plogon);
 	if (handle < 0) {
 		logon_object_free(plogon);
-		return EC_ERROR;
+		return ecError;
 	}
 	*phout = handle;
 	return EC_SUCCESS;
@@ -286,7 +287,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	if (FALSE == exmdb_client_get_folder_by_class(
 		logon_object_get_dir(plogon), pstr_class,
 		pfolder_id, *ppstr_explicit)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -304,7 +305,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		return EC_INVALID_PARAMETER;
 	}
 	if ('\0' == pstr_class[0] && 0 == folder_id) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == strcasecmp(pstr_class, "IPM") ||
 		0 == strcasecmp(pstr_class, "REPORT.IPM")) {
@@ -324,7 +325,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		if (FALSE == exmdb_client_get_folder_property(
 			logon_object_get_dir(plogon), 0, folder_id,
 			PROP_TAG_FOLDERTYPE, &pvalue)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (NULL == pvalue) {
 			return EC_NOT_FOUND;
@@ -339,7 +340,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	if (FALSE == exmdb_client_set_folder_by_class(
 		logon_object_get_dir(plogon),
 		folder_id, pstr_class, &b_result)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (FALSE == b_result) {
 		return EC_NOT_FOUND;
@@ -373,7 +374,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	}
 	if (FALSE == exmdb_client_get_folder_class_table(
 		logon_object_get_dir(plogon), &class_table)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == class_table.count) {
 		return EC_NO_RECEIVE_FOLDER;
@@ -432,7 +433,7 @@ uint32_t rop_getowningservers(
 		if (FALSE == exmdb_client_get_mapping_guid(
 			logon_object_get_dir(plogon), replid,
 			&b_found, &guid)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (FALSE == b_found) {
 			return EC_NOT_FOUND;
@@ -524,7 +525,7 @@ uint32_t rop_longtermidfromid(uint64_t id,
 			if (FALSE == exmdb_client_get_mapping_guid(
 				logon_object_get_dir(plogon), replid,
 				&b_found, &plong_term_id->guid)) {
-				return EC_ERROR;	
+				return ecError;
 			}
 			if (FALSE == b_found) {
 				return EC_NOT_FOUND;
@@ -575,7 +576,7 @@ uint32_t rop_idfromlongtermid(
 			if (FALSE == exmdb_client_get_mapping_replid(
 				logon_object_get_dir(plogon),
 				plong_term_id->guid, &b_found, &replid)) {
-				return EC_ERROR;
+				return ecError;
 			}
 			if (FALSE == b_found) {
 				return EC_NOT_FOUND;

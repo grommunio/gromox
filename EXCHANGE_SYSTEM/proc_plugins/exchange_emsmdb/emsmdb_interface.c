@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
 #include "emsmdb_interface.h"
 #include "notify_response.h"
@@ -687,7 +688,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		*pcb_auxout = 0;
 		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
-		return EC_ERROR;
+		return ecError;
 	}
 	rpc_info = get_rpc_info();
 	if (0 != strcasecmp(phandle->username, rpc_info.username)) {
@@ -708,7 +709,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		*pcb_auxout = 0;
 		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
-		return EC_ERROR;
+		return ecError;
 	}
 	time(&phandle->last_time);
 	pthread_setspecific(g_handle_key, (const void*)phandle);

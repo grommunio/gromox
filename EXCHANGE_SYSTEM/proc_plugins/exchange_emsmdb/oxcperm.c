@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rops.h"
 #include "rop_util.h"
 #include "common_util.h"
@@ -24,7 +25,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -50,7 +51,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			return EC_ACCESS_DENIED;
@@ -60,7 +61,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 		if (FALSE == exmdb_client_empty_folder_permission(
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder))) {
-			return EC_ERROR;
+			return ecError;
 		}
 	}
 	if (0 == count) {
@@ -69,7 +70,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	if (FALSE == exmdb_client_update_folder_permission(
 		logon_object_get_dir(plogon), folder_id,
 		b_freebusy, count, prow)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -86,7 +87,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -102,7 +103,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 			logon_object_get_dir(plogon),
 			folder_object_get_id(pfolder),
 			rpc_info.username, &permission)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_FOLDERVISIBLE)) {
@@ -118,7 +119,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
 	if (*phout < 0) {
 		table_object_free(ptable);
-		return EC_ERROR;
+		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
 	return EC_SUCCESS;

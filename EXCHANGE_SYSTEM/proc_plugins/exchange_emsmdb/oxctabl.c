@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rops.h"
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -278,7 +279,7 @@ uint32_t rop_restrict(uint8_t res_flags,
 	if (NULL != pres) {
 		if (FALSE == common_util_convert_restriction(
 			TRUE, (RESTRICTION*)pres)) {
-			return EC_ERROR;	
+			return ecError;
 		}
 	}
 	if (FALSE == table_object_set_restriction(ptable, pres)) {
@@ -317,7 +318,7 @@ uint32_t rop_queryrows(uint8_t flags,
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (0 == forward_read) {
 		b_forward = FALSE;
@@ -331,7 +332,7 @@ uint32_t rop_queryrows(uint8_t flags,
 	}
 	if (FALSE == table_object_query_rows(ptable,
 		b_forward, row_count, &tmp_set)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (0 == tmp_set.count) {
 		*pcount = 0;
@@ -421,7 +422,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator,
 		return EC_NOT_SUPPORTED;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	*pnumerator = table_object_get_position(ptable);
 	*pdenominator = table_object_get_total(ptable);
@@ -446,7 +447,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		return EC_NOT_SUPPORTED;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	switch (seek_pos) {
 	case SEEK_POS_BEGIN:
@@ -566,7 +567,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 		return EC_NOT_SUPPORTED;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	position = numerator * table_object_get_total(ptable) / denominator;
 	table_object_set_position(ptable, position);
@@ -598,7 +599,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pb = common_util_alloc(sizeof(uint32_t));
@@ -607,7 +608,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 	}
 	if (FALSE == table_object_create_bookmark(
 		ptable, (uint32_t*)pbookmark->pb)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -627,10 +628,10 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags,
 		return EC_NOT_SUPPORTED;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == table_object_get_all_columns(ptable, pproptags)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -670,7 +671,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (flags & FIND_ROW_FLAG_BACKWARD) {
 		b_forward = FALSE;
@@ -706,12 +707,12 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	if (NULL != pres) {
 		if (FALSE == common_util_convert_restriction(
 			TRUE, (RESTRICTION*)pres)) {
-			return EC_ERROR;
+			return ecError;
 		}
 	}
 	if (FALSE == table_object_match_row(ptable,
 		b_forward, pres, &position, &propvals)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	*ppcolumns = (PROPTAG_ARRAY*)table_object_get_columns(ptable);
 	if (position < 0) {
@@ -805,11 +806,11 @@ uint32_t rop_expandrow(uint16_t max_count,
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == table_object_expand(ptable, category_id,
 		&b_found, &position, pexpanded_count)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (FALSE == b_found) {
 		return EC_NOT_FOUND;
@@ -827,7 +828,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 	table_object_set_position(ptable, position + 1);
 	if (FALSE == table_object_query_rows(ptable, TRUE, max_count, &tmp_set)) {
 		table_object_set_position(ptable, old_position);
-		return EC_ERROR;
+		return ecError;
 	}
 	table_object_set_position(ptable, old_position);
 	for (i=0; i<tmp_set.count; i++) {
@@ -870,11 +871,11 @@ uint32_t rop_collapserow(uint64_t category_id,
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	if (FALSE == table_object_collapse(ptable, category_id,
 		&b_found, &position, pcollapsed_count)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	if (FALSE == b_found) {
 		return EC_NOT_FOUND;
@@ -914,7 +915,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pcollapse_state->cb = sizeof(uint32_t);
 	pcollapse_state->pb = common_util_alloc(sizeof(uint32_t));
@@ -923,7 +924,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 	}
 	if (FALSE == table_object_store_state(ptable, row_id,
 		row_instance, (uint32_t*)pcollapse_state->pb)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
@@ -954,7 +955,7 @@ uint32_t rop_setcollapsestate(
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
-		return EC_ERROR;
+		return ecError;
 	}
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pb = common_util_alloc(sizeof(uint32_t));
@@ -964,7 +965,7 @@ uint32_t rop_setcollapsestate(
 	if (FALSE == table_object_restore_state(
 		ptable, *(uint32_t*)pcollapse_state->pb,
 		(uint32_t*)pbookmark->pb)) {
-		return EC_ERROR;	
+		return ecError;
 	}
 	return EC_SUCCESS;
 }
