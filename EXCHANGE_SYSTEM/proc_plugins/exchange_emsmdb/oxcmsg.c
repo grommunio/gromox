@@ -312,7 +312,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		total_size = *(uint64_t*)pvalue;
 	}
 	if (max_quota > 0 && total_size > max_quota) {
-		return EC_QUOTA_EXCEEDED;
+		return ecQuotaExceeded;
 	}
 	total_mail = 0;
 	pvalue = common_util_get_propvals(&tmp_propvals,
@@ -327,7 +327,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	if (total_mail > common_util_get_param(
 		COMMON_UTIL_MAX_MESSAGE)) {
-		return EC_QUOTA_EXCEEDED;
+		return ecQuotaExceeded;
 	}
 	*ppmessage_id = common_util_alloc(sizeof(uint64_t));
 	if (NULL == *ppmessage_id) {
@@ -402,7 +402,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 			return ecError;
 		}
 		if (TRUE == b_touched) {
-			return EC_OBJECT_MODIFIED;
+			return ecObjectModified;
 		}
 	}
 	proptags.count = 1;
@@ -560,7 +560,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 		}
 	}
 	if (0 == i) {
-		return EC_BUFFER_TOO_SMALL;
+		return ecBufferTooSmall;
 	}
 	*pcount = i;
 	return ecSuccess;
@@ -1028,7 +1028,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	*pattachment_id = attachment_object_get_attachment_num(pattachment);
 	if (ATTACHMENT_NUM_INVALID == *pattachment_id) {
 		attachment_object_free(pattachment);
-		return EC_ATTACHMENT_EXCEEDED;
+		return ecMaxAttachmentExceeded;
 	}
 	if (FALSE == attachment_object_init_attachment(pattachment)) {
 		attachment_object_free(pattachment);
@@ -1343,5 +1343,5 @@ uint32_t rop_getvalidattachments(LONG_ARRAY *pattachment_ids,
 {
 	/* just like exchange 2010 or later,
 		we do not implement this rop */
-	return EC_NOT_IMPLEMENTED;
+	return NotImplemented;
 }

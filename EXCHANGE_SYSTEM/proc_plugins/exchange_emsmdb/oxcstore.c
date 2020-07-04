@@ -37,21 +37,21 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
 		pdomain = strchr(rpc_info.username, '@');
 		if (NULL == pdomain) {
-			return EC_UNKNOWN_USER;
+			return ecUnknownUser;
 		}
 		pdomain ++;
 		common_util_domain_to_essdn(pdomain, pessdn);
-		return EC_WRONG_SERVER;
+		return ecWrongServer;
 	}
 	if (FALSE == common_util_essdn_to_username(pessdn, username)) {
-		return EC_UNKNOWN_USER;
+		return ecUnknownUser;
 	}
 	if (FALSE == common_util_get_id_from_username(username, &user_id)) {
-		return EC_UNKNOWN_USER;
+		return ecUnknownUser;
 	}
 	if (0 != strcasecmp(username, rpc_info.username)) {
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE) {
-			return EC_LOGIN_PERM;
+			return ecLoginPerm;
 		}
 		if (FALSE == common_util_get_maildir(username, maildir)) {
 			return ecError;
@@ -61,7 +61,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 			return ecError;
 		}
 		if (PERMISSION_NONE == permission) {
-			return EC_LOGIN_PERM;
+			return ecLoginPerm;
 		}
 		*presponse_flags = RESPONSE_FLAG_RESERVED;
 		if (permission & PERMISSION_SENDAS) {
@@ -178,11 +178,11 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	rpc_info = get_rpc_info();
 	pdomain = strchr(rpc_info.username, '@');
 	if (NULL == pdomain) {
-		return EC_UNKNOWN_USER;
+		return ecUnknownUser;
 	}
 	pdomain ++;
 	if (FALSE == common_util_get_domain_ids(pdomain, &domain_id, &org_id)) {
-		return EC_UNKNOWN_USER;
+		return ecUnknownUser;
 	}
 	if (NULL != pessdn) {
 		pdomain1 = common_util_essdn_to_domain(pessdn);
@@ -377,7 +377,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 		return ecError;
 	}
 	if (0 == class_table.count) {
-		return EC_NO_RECEIVE_FOLDER;
+		return ecNoReceiveFolder;
 	}
 	prows->count = class_table.count;
 	prows->prows = common_util_alloc(sizeof(PROPERTY_ROW)*class_table.count);
@@ -398,7 +398,7 @@ uint32_t rop_getstorestat(uint32_t *pstat,
 {
 	/* just like EXCHANGE 2010 or later,
 		we do not implement this rop */
-	return EC_NOT_IMPLEMENTED;
+	return NotImplemented;
 }
 
 uint32_t rop_getowningservers(

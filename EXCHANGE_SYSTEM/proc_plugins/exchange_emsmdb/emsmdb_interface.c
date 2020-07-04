@@ -546,7 +546,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	rpc_info = get_rpc_info();
 	
 	if (flags & FLAG_PRIVILEGE_ADMIN) {
-		result = EC_LOGIN_PERM;
+		result = ecLoginPerm;
 		goto CONNECT_FAILURE;
 	}
 	
@@ -563,7 +563,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		goto CONNECT_FAILURE;
 	}
 	if ('\0' == username) {
-		result = EC_UNKNOWN_USER;
+		result = ecUnknownUser;
 		goto CONNECT_FAILURE;
 	}
 	if (0 != strcasecmp(username, rpc_info.username)) {
@@ -589,7 +589,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		result = ecRpcFailed;
 		goto CONNECT_FAILURE;
 	} else if (cb_auxin > 0x1008) {
-		result = EC_BAD_STUB_DATA;
+		result = RPC_X_BAD_STUB_DATA;
 		goto CONNECT_FAILURE;
 	}
 	
@@ -678,7 +678,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		*pcb_auxout = 0;
 		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
-		return EC_BAD_STUB_DATA;
+		return RPC_X_BAD_STUB_DATA;
 	}
 	gettimeofday(&first_time, NULL);
 	phandle = emsmdb_interface_get_handle_data(pcxh);

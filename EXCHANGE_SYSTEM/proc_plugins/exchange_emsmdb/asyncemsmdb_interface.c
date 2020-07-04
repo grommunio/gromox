@@ -162,7 +162,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	pwait = lib_buffer_get(g_wait_allocator);
 	if (NULL == pwait) {
 		pout->flags_out = 0;
-		pout->result = EC_ASYNC_WAIT_REJECT;
+		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
 	rpc_info = get_rpc_info();
@@ -171,7 +171,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		0 != strcasecmp(rpc_info.username, pwait->username)) {
 		lib_buffer_put(g_wait_allocator, pwait);
 		pout->flags_out = 0;
-		pout->result = EC_ASYNC_WAIT_REJECT;
+		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
 	if (TRUE == emsmdb_interface_check_notify(&pin->acxh)) {
@@ -197,7 +197,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 			pthread_mutex_unlock(&g_async_lock);
 			lib_buffer_put(g_wait_allocator, pwait);
 			pout->flags_out = 0;
-			pout->result = EC_ASYNC_WAIT_REJECT;
+			pout->result = ecRejected;
 			return DISPATCH_SUCCESS;
 		}
 	}
@@ -208,7 +208,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pthread_mutex_unlock(&g_async_lock);
 		lib_buffer_put(g_wait_allocator, pwait);
 		pout->flags_out = 0;
-		pout->result = EC_ASYNC_WAIT_REJECT;
+		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
 	pthread_mutex_unlock(&g_async_lock);

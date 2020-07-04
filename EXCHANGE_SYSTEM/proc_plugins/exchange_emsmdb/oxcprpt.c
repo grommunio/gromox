@@ -704,7 +704,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	pobject_dst = rop_processor_get_object(
 		plogmap, logon_id, hdst, &dst_type);
 	if (NULL == pobject_dst) {
-		return EC_DST_NULL_OBJECT;
+		return ecDstNullObject;
 	}
 	if (dst_type != object_type) {
 		return MAPI_E_DECLINE_COPY;
@@ -1003,7 +1003,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	pobject_dst = rop_processor_get_object(
 		plogmap, logon_id, hdst, &dst_type);
 	if (NULL == pobject_dst) {
-		return EC_DST_NULL_OBJECT;
+		return ecDstNullObject;
 	}
 	if (dst_type != object_type) {
 		return MAPI_E_DECLINE_COPY;
@@ -1061,7 +1061,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 				return ecError;
 			}
 			if (TRUE == b_cycle) {
-				return EC_FOLDER_CYCLE;
+				return MAPI_E_FOLDER_CYCLE;
 			}
 			b_sub = TRUE;
 		} else {
@@ -1154,7 +1154,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			return ecError;
 		}
 		if (TRUE == b_cycle) {
-			return EC_MESSAGE_CYCLE;
+			return ecMsgCycle;
 		}
 		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
@@ -1167,7 +1167,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 			return ecError;
 		}
 		if (TRUE == b_cycle) {
-			return EC_MESSAGE_CYCLE;
+			return ecMsgCycle;
 		}
 		return ecSuccess;
 	default:
@@ -1350,7 +1350,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 	}
 	if (stream_object_get_open_flags(pstream) ==
 		OPENSTREAM_FLAG_READONLY) {
-		return EC_STREAM_ACCESS_DENIED;	
+		return STG_E_ACCESSDENIED;	
 	}
 	if (0 == pdata_bin->cb) {
 		*pwritten_size = 0;
@@ -1358,7 +1358,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 	}
 	if (stream_object_get_seek_position(pstream) >=
 		stream_object_get_max_length(pstream)) {
-		return EC_TOO_BIG;	
+		return ecTooBig;
 	}
 	*pwritten_size = stream_object_write(
 			pstream, pdata_bin->pb, pdata_bin->cb);
@@ -1366,7 +1366,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 		return ecError;
 	}
 	if (*pwritten_size < pdata_bin->cb) {
-		return EC_TOO_BIG;
+		return ecTooBig;
 	}
 	return ecSuccess;
 }
@@ -1435,7 +1435,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 		return ecNotSupported;
 	}
 	if (stream_size > stream_object_get_max_length(pstream)) {
-		return EC_TOO_BIG;
+		return ecTooBig;
 	}
 	if (FALSE == stream_object_set_length(pstream, stream_size)) {
 		return ecError;
@@ -1459,7 +1459,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 		return ecInvalidParam;
 	}
 	if (offset > 0x7FFFFFFF || offset < -0x7FFFFFFF) {
-		return EC_SEEK_ERROR;
+		return StreamSeekError;
 	}
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -1470,7 +1470,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 		return ecNotSupported;
 	}
 	if (FALSE == stream_object_seek(pstream, seek_pos, offset)) {
-		return EC_SEEK_ERROR;
+		return StreamSeekError;
 	}
 	*pnew_pos = stream_object_get_seek_position(pstream);
 	return ecSuccess;
@@ -1497,7 +1497,7 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	pdst_stream = rop_processor_get_object(plogmap,
 					logon_id, hdst, &object_type);
 	if (NULL == psrc_stream) {
-		return EC_DST_NULL_OBJECT;
+		return ecDstNullObject;
 	}
 	if (stream_object_get_open_flags(pdst_stream)
 		== OPENSTREAM_FLAG_READONLY) {
@@ -1523,7 +1523,7 @@ uint32_t rop_lockregionstream(uint64_t region_offset,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	 /* just like exchange 2010 or later */
-	 return EC_NOT_IMPLEMENTED;
+	 return NotImplemented;
 }
 
 uint32_t rop_unlockregionstream(uint64_t region_offset,
@@ -1531,7 +1531,7 @@ uint32_t rop_unlockregionstream(uint64_t region_offset,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	 /* just like exchange 2010 or later */
-	return EC_NOT_IMPLEMENTED;
+	return NotImplemented;
 }
 
 uint32_t rop_writeandcommitstream(
@@ -1539,12 +1539,12 @@ uint32_t rop_writeandcommitstream(
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	 /* just like exchange 2010 or later */
-	return EC_NOT_IMPLEMENTED;
+	return NotImplemented;
 }
 
 uint32_t rop_clonestream(void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	 /* just like exchange 2010 or later */
-	return EC_NOT_IMPLEMENTED;
+	return NotImplemented;
 }

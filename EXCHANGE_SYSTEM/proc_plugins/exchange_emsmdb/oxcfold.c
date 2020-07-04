@@ -516,7 +516,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 		return ecNotSupported;
 	}
 	if (FOLDER_TYPE_SEARCH != folder_object_get_type(pfolder)) {
-		return EC_NOT_SEARCH_FOLDER;
+		return ecNotSearchFolder;
 	}
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -538,7 +538,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			return ecError;
 		}
 		if (SEARCH_STATUS_NOT_INITIALIZED == search_status) {
-			return EC_NOT_INITIALIZED;
+			return ecNotInitialized;
 		}
 		if (0 == (search_flags & SEARCH_FLAG_RESTART) &&
 			NULL == pres && 0 == pfolder_ids->count) {
@@ -550,7 +550,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	}
 	for (i=0; i<pfolder_ids->count; i++) {
 		if (1 != rop_util_get_replid(pfolder_ids->pll[i])) {
-			return EC_SEARCH_SCOPE_VIOLATED;
+			return ecSearchFolderScopeViolation;
 		}
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 			if (FALSE == exmdb_client_check_folder_permission(
@@ -578,7 +578,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 		return ecError;
 	}
 	if (FALSE == b_result) {
-		return EC_SEARCH_SCOPE_VIOLATED;
+		return ecSearchFolderScopeViolation;
 	}
 	return ecSuccess;
 }
@@ -606,7 +606,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 		return ecNullObject;
 	}
 	if (FOLDER_TYPE_SEARCH != folder_object_get_type(pfolder)) {
-		return EC_NOT_SEARCH_FOLDER;
+		return ecNotSearchFolder;
 	}
 	if (0 == include_restriction) {
 		*ppres = NULL;
@@ -812,7 +812,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		return ecError;
 	}
 	if (TRUE == b_cycle) {
-		return EC_FOLDER_CYCLE;
+		return MAPI_E_FOLDER_CYCLE;
 	}
 	if (FALSE == exmdb_client_allocate_cn(
 		logon_object_get_dir(plogon), &change_num)) {
@@ -966,7 +966,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		return ecError;
 	}
 	if (TRUE == b_cycle) {
-		return EC_FOLDER_CYCLE;
+		return MAPI_E_FOLDER_CYCLE;
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (FALSE == exmdb_client_movecopy_folder(

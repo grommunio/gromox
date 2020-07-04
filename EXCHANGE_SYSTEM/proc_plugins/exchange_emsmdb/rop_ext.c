@@ -3891,9 +3891,8 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 	if (r->result != ecSuccess) {
 		switch (r->rop_id) {
 		case ropLogon:
-			if (EC_WRONG_SERVER == r->result) {
+			if (r->result == ecWrongServer)
 				return rop_ext_push_logon_redirect_response(pext, r->ppayload);
-			}
 			break;
 		case ropGetPropertyIdsFromNames:
 			if (r->result == ecWarnWithErrors)
@@ -3902,22 +3901,19 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 		case ropMoveCopyMessages:
 		case ropMoveFolder:
 		case ropCopyFolder:
-			if (EC_DST_NULL_OBJECT == r->result) {
+			if (r->result == ecDstNullObject)
 				return rop_ext_push_null_dest_response(pext, r->ppayload);
-			} else {
+			else
 				goto PUSH_PAYLOAD;
-			}
 			break;
 		case ropCopyProperties:
 		case ropCopyTo:
-			if (EC_DST_NULL_OBJECT == r->result) {
+			if (r->result == ecDstNullObject)
 				return ext_buffer_push_uint32(pext, *(uint8_t*)r->ppayload);
-			}
 			break;
 		case ropCopyToStream:
-			if (EC_DST_NULL_OBJECT == r->result) {
+			if (r->result == ecDstNullObject)
 				return rop_ext_push_copytostream_null_dest_response(pext, r->ppayload);
-			}
 			break;
 		case ropEmptyFolder:
 		case ropDeleteFolder:

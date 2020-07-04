@@ -1171,7 +1171,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	} else {
 		if (pproptags->cvalues > 100) {
 			*pprows = NULL;
-			return MAPI_E_TABLE_TOO_BIG;
+			return ecTableTooBig;
 		}
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
@@ -1394,7 +1394,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	} else {
 		if (pproptags->cvalues > 100) {
 			*pprows = NULL;
-			return MAPI_E_TABLE_TOO_BIG;
+			return ecTableTooBig;
 		}
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
@@ -1907,7 +1907,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		if (pproptags->cvalues > 100) {
 			*ppoutmids = NULL;
 			*pprows = NULL;
-			return MAPI_E_TABLE_TOO_BIG;
+			return ecTableTooBig;
 		}
 		*pprows = common_util_proprowset_init();
 		if (NULL == *pprows) {
@@ -2565,7 +2565,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (result != ecSuccess)
 			goto EXIT_GET_PROPS;
 	} else if (pproptags->cvalues > 100) {
-		result = MAPI_E_TABLE_TOO_BIG;
+		result = ecTableTooBig;
 		goto EXIT_GET_PROPS;
 	}
 	*pprows = common_util_propertyrow_init(NULL);
@@ -3479,7 +3479,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		if (pproptags->cvalues > 100) {
 			*ppmids = NULL;
 			*pprows = NULL;
-			return MAPI_E_TABLE_TOO_BIG;
+			return ecTableTooBig;
 		}
 	}
 	*ppmids = common_util_proptagarray_init();

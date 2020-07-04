@@ -340,7 +340,7 @@ uint32_t rop_fasttransferdestconfigure(
 			total_size = *(uint64_t*)pvalue;
 		}
 		if (max_quota > 0 && total_size > max_quota) {
-			return EC_QUOTA_EXCEEDED;
+			return ecQuotaExceeded;
 		}
 		total_mail = 0;
 		pvalue = common_util_get_propvals(&tmp_propvals,
@@ -355,7 +355,7 @@ uint32_t rop_fasttransferdestconfigure(
 		}
 		if (total_mail > common_util_get_param(
 			COMMON_UTIL_MAX_MESSAGE)) {
-			return EC_QUOTA_EXCEEDED;
+			return ecQuotaExceeded;
 		}
 	}
 	pctx = fastupctx_object_create(plogon, pobject, root_element);
@@ -462,7 +462,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 		}
 	}
 	if (0xBABE != buffer_size && len > max_rop) {
-		return EC_BUFFER_TOO_SMALL;
+		return ecBufferTooSmall;
 	}
 	if (FALSE == b_last) {
 		*ptransfer_status = TRANSFER_STATUS_PARTIAL;
@@ -2103,7 +2103,7 @@ uint32_t rop_syncimportmessagemove(
 	idset_append(pctx->pstate->pgiven, dst_mid);
 	*pmessage_id = 0;
 	if (TRUE == b_newer) {
-		return EC_NEW_CLIENT_CHANGE;
+		return SYNC_W_CLIENT_CHANGE_NEWER;
 	}
 	return ecSuccess;
 }

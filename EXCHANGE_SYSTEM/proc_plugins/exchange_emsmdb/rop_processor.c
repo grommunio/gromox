@@ -567,7 +567,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			    static_cast(ROP_REQUEST *, pnode->pdata)->rop_id == ropFastTransferSourceGetBuffer)
 				prop_buff->rhe_flags &= ~RHE_FLAG_COMPRESSED;
 			break;
-		case EC_BUFFER_TOO_SMALL:
+		case ecBufferTooSmall:
 			static_cast(ROP_RESPONSE *, pnode1->pdata)->rop_id = ropBufferTooSmall;
 			((ROP_RESPONSE*)pnode1->pdata)->ppayload =
 				common_util_alloc(sizeof(BUFFERTOOSMALL_RESPONSE));
@@ -582,7 +582,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			if (EXT_ERR_SUCCESS != rop_ext_push_rop_response(
 				&ext_push, ((ROP_REQUEST*)pnode->pdata)->logon_id,
 				pnode1->pdata)) {
-				return EC_BUFFER_TOO_SMALL;	
+				return ecBufferTooSmall;
 			}
 			goto MAKE_RPC_EXT;
 		default:
@@ -607,7 +607,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			if (static_cast(ROP_REQUEST *, pnode->pdata)->rop_id == ropGetPropertiesAll) {
 				/* MS-OXCPRPT 3.2.5.2, fail to whole RPC */
 				if (pnode == double_list_get_head(&prop_buff->rop_list)) {
-					return EC_SERVER_OOM;
+					return ecServerOOM;
 				}
 			}
 			static_cast(ROP_RESPONSE *, pnode1->pdata)->rop_id = ropBufferTooSmall;
@@ -625,7 +625,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			if (EXT_ERR_SUCCESS != rop_ext_push_rop_response(
 				&ext_push, ((ROP_REQUEST*)pnode->pdata)->logon_id,
 				pnode1->pdata)) {
-				return EC_BUFFER_TOO_SMALL;	
+				return ecBufferTooSmall;
 			}
 			goto MAKE_RPC_EXT;
 		case EXT_ERR_ALLOC:
@@ -739,7 +739,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	case EXT_ERR_ALLOC:
 		return ecMAPIOOM;
 	default:
-		return EC_RPC_FORMAT;
+		return ecRpcFormat;
 	}
 	rop_buff.rhe_flags = 0;
 	if (0 == (flags & RPCEXT2_FLAG_NOXORMAGIC)) {

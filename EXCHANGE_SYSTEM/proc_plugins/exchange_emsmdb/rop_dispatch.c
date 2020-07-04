@@ -89,7 +89,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				&((LOGON_PF_RESPONSE*)(*ppresponse)->ppayload)->per_user_guid,
 				pemsmdb_info->plogmap, prequest->logon_id, phandles + prequest->hindex);
 		}
-		if (EC_WRONG_SERVER == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecWrongServer) {
 			((LOGON_REDIRECT_RESPONSE*)perr_response)->logon_flags =
 				((LOGON_REQUEST*)prequest->ppayload)->logon_flags;
 			(*ppresponse)->ppayload = perr_response;
@@ -317,7 +317,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((MOVECOPYMESSAGES_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((MOVECOPYMESSAGES_REQUEST*)prequest->ppayload)->hindex]);
-		if (EC_DST_NULL_OBJECT == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecDstNullObject) {
 			perr_response = common_util_alloc(sizeof(NULL_DST_RESPONSE));
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
@@ -346,7 +346,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((MOVEFOLDER_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((MOVEFOLDER_REQUEST*)prequest->ppayload)->hindex]);
-		if (EC_DST_NULL_OBJECT == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecDstNullObject) {
 			perr_response = common_util_alloc(sizeof(NULL_DST_RESPONSE));
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
@@ -376,7 +376,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((COPYFOLDER_RESPONSE*)(*ppresponse)->ppayload)->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((COPYFOLDER_REQUEST*)prequest->ppayload)->hindex]);
-		if (EC_DST_NULL_OBJECT == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecDstNullObject) {
 			perr_response = common_util_alloc(sizeof(NULL_DST_RESPONSE));
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
@@ -512,7 +512,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		}
 		emsmdb_interface_get_rop_left(&max_rop);
 		if (max_rop < 0x80) {
-			return EC_BUFFER_TOO_SMALL;
+			return ecBufferTooSmall;
 		}
 		max_rop -= 0x80;
 		pdata = common_util_alloc(max_rop);
@@ -655,7 +655,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		}
 		emsmdb_interface_get_rop_left(&max_rop);
 		if (max_rop < 0x80) {
-			return EC_BUFFER_TOO_SMALL;
+			return ecBufferTooSmall;
 		}
 		max_rop -= 0x80;
 		pdata = common_util_alloc(max_rop);
@@ -785,7 +785,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		}
 		emsmdb_interface_get_rop_left(&max_rop);
 		if (max_rop < 0x80) {
-			return EC_BUFFER_TOO_SMALL;
+			return ecBufferTooSmall;
 		}
 		max_rop -= 0x80;
 		pdata = common_util_alloc(max_rop);
@@ -1174,7 +1174,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((COPYPROPERTIES_RESPONSE*)(*ppresponse)->ppayload)->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((COPYPROPERTIES_REQUEST*)prequest->ppayload)->hindex]);
-		if (EC_DST_NULL_OBJECT == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecDstNullObject) {
 			(*ppresponse)->ppayload = common_util_alloc(sizeof(uint32_t));
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
@@ -1200,7 +1200,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((COPYTO_RESPONSE*)(*ppresponse)->ppayload)->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((COPYTO_REQUEST*)prequest->ppayload)->hindex]);
-		if (EC_DST_NULL_OBJECT == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecDstNullObject) {
 			(*ppresponse)->ppayload = common_util_alloc(sizeof(uint32_t));
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
@@ -1310,7 +1310,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((COPYTOSTREAM_RESPONSE*)(*ppresponse)->ppayload)->written_bytes,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[((COPYTOSTREAM_REQUEST*)prequest->ppayload)->hindex]);
-		if (EC_DST_NULL_OBJECT == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecDstNullObject) {
 			perr_response = common_util_alloc(sizeof(COPYTOSTREAM_NULL_DEST_RESPONSE));
 			if (NULL == perr_response) {
 				return ecMAPIOOM;
@@ -1442,9 +1442,8 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((FASTTRANSFERSOURCEGETBUFFER_RESPONSE*)(*ppresponse)->ppayload)->reserved,
 			&((FASTTRANSFERSOURCEGETBUFFER_RESPONSE*)(*ppresponse)->ppayload)->transfer_data,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
-		if (EC_BUFFER_TOO_SMALL == (*ppresponse)->result) {
-			return EC_BUFFER_TOO_SMALL;
-		}
+		if ((*ppresponse)->result == ecBufferTooSmall)
+			return ecBufferTooSmall;
 		break;
 	case ropFastTransferSourceCopyFolder:
 		if (((FASTTRANSFERSOURCECOPYFOLDER_REQUEST*)prequest->ppayload)->hindex >= hnum) {

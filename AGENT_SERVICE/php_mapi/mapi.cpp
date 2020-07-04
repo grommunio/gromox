@@ -5430,7 +5430,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_importcontentschanges_importmessagemove)
 {
-	MAPI_G(hr) = EC_NOT_IMPLEMENTED;
+	MAPI_G(hr) = NotImplemented;
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr) TSRMLS_CC);

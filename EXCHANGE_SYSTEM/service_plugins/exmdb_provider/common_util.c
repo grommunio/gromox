@@ -12,6 +12,7 @@
 #include "exmdb_server.h"
 #include "alloc_context.h"
 #include <gromox/database.h>
+#include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include <sys/types.h>
 #include <arpa/inet.h>

@@ -131,7 +131,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	const PROPTAG_ARRAY *pcolumns;
 	
 	if (psort_criteria->count > MAXIMUM_SORT_COUNT) {
-		return EC_TOO_COMPLEX;
+		return ecTooComplex;
 	}
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -350,7 +350,7 @@ uint32_t rop_queryrows(uint8_t flags,
 			}
 		}
 		if (0 == i) {
-			return EC_BUFFER_TOO_SMALL;
+			return ecBufferTooSmall;
 		}
 		*pcount = i;
 	}
@@ -385,7 +385,7 @@ uint32_t rop_abort(uint8_t *ptable_status,
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
-	return EC_UNABLE_TO_ABORT;
+	return ecUnableToAbort;
 }
 
 uint32_t rop_getstatus(uint8_t *ptable_status,
@@ -814,7 +814,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 	if (FALSE == b_found) {
 		return ecNotFound;
 	} else if (position < 0) {
-		return EC_NOT_COLLAPSED;
+		return ecNotCollapsed;
 	}
 	if (0 == *pexpanded_count || 0 == max_count) {
 		*pcount = 0;
@@ -879,7 +879,7 @@ uint32_t rop_collapserow(uint64_t category_id,
 	if (FALSE == b_found) {
 		return ecNotFound;
 	} else if (position < 0) {
-		return EC_NOT_EXPANDED;
+		return ecNotExpanded;
 	} else if (0 == *pcollapsed_count) {
 		return ecSuccess;
 	}

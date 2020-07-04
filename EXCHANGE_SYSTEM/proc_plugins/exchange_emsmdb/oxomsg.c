@@ -272,7 +272,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecError;
 	}
 	if (rcpt_num > common_util_get_param(COMMON_UTIL_MAX_RCPT)) {
-		return EC_TOO_MANY_RECIPIENTS;
+		return ecTooManyRecips;
 	}
 	
 	tmp_proptags.count = 1;
@@ -514,7 +514,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		}
 		if (NULL != ptimer_id) {
 			if (FALSE == common_util_cancel_timer(*ptimer_id)) {
-				return EC_UNABLE_TO_ABORT;
+				return ecUnableToAbort;
 			}
 		}
 		if (FALSE == exmdb_client_clear_submit(
@@ -534,7 +534,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecError;
 	}
 	if (FALSE == b_exist) {
-		return EC_NOT_IN_QUEUE;
+		return ecNotInQueue;
 	}
 	/* unlink the message in spooler queue */
 	if (FALSE == exmdb_client_unlink_message(
@@ -619,7 +619,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 		return ecError;
 	}
 	if (FALSE == b_exist) {
-		return EC_NOT_IN_QUEUE;
+		return ecNotInQueue;
 	}
 	/* unlink the message in spooler queue */
 	if (FALSE == exmdb_client_unlink_message(
