@@ -224,7 +224,6 @@ static bool ldap_adaptor_load()
 	val = config_file_get_value(pfile, "ldap_mail_attr");
 	g_mail_attr = val != nullptr ? val : "mail";
 	printf("[ldap_adaptor]: ldap mail attribute is \"%s\"\n", g_mail_attr.c_str());
-	config_file_free(pfile);
 
 	for (unsigned int i = 0; i < conn_num; ++i) {
 		twoconn ld;
@@ -238,13 +237,18 @@ static bool ldap_adaptor_load()
 		ld.bind = make_conn();
 		g_conn_pool.put(std::move(ld));
 	}
-	if (g_conn_pool.size() == 0)
+	if (g_conn_pool.size() == 0) {
+		config_file_free(pfile);
 		return FALSE;
+	}
 
 	val = config_file_get_value(pfile, "ldap_search_base");
 	g_search_base = val != nullptr ? val : "";
-	if (g_search_base.size() == 0 && !ldap_adaptor_load_base())
+	if (g_search_base.size() == 0 && !ldap_adaptor_load_base()) {
+		config_file_free(pfile);
 		return false;
+	}
+	config_file_free(pfile);
 	return true;
 }
 
