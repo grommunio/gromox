@@ -20,8 +20,6 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 static int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 static void exchange_nsp_unbind(uint64_t handle);
 
-#define MAPI_E_LOGON_FAILED 0x80040111
-
 BOOL PROC_LibMain(int reason, void **ppdata)
 {
 	BOOL b_check;

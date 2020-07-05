@@ -819,7 +819,7 @@ uint32_t zarafa_server_logon(const char *username,
 		if (FALSE == system_services_auth_login(
 			username, password, maildir, lang,
 			reason, 256)) {
-			return EC_LOGIN_FAILURE;
+			return ecLoginFailure;
 		}
 	}
 	strncpy(tmp_name, username, sizeof(tmp_name));

@@ -17,6 +17,7 @@ enum {
 	ecNotSupported = 0x80040102,
 	ecInvalidObject = 0x80040108,
 	ecNotFound = 0x8004010F,
+	ecLoginFailure = 0x80040111,
 	ecRpcFailed = 0x80040115,
 	MAPI_E_UNKNOWN_CPID = 0x8004011E,
 	MAPI_E_DECLINE_COPY = 0x80040306,

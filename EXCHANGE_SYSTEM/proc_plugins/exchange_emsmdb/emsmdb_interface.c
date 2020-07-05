@@ -621,7 +621,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	if (FALSE == emsmdb_interface_create_handle(
 		rpc_info.username, client_version, client_mode,
 		cpid, lcid_string, lcid_sort, pcxr, pcxh)) {
-		result = EC_LOGIN_FAILURE;
+		result = ecLoginFailure;
 		goto CONNECT_FAILURE;
 	}
 	return ecSuccess;

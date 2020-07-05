@@ -173,7 +173,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	
 	if (0 == (open_flags & LOGON_OPEN_FLAG_PUBLIC) ||
 		open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
-		return EC_LOGIN_FAILURE;
+		return ecLoginFailure;
 	}
 	rpc_info = get_rpc_info();
 	pdomain = strchr(rpc_info.username, '@');
@@ -188,14 +188,14 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		pdomain1 = common_util_essdn_to_domain(pessdn);
 		if (NULL != pdomain1 && 0 != strcasecmp(pdomain, pdomain1)) {
 			if (0 == org_id) {
-				return EC_LOGIN_FAILURE;
+				return ecLoginFailure;
 			}
 			if (FALSE == common_util_get_domain_ids(
 				pdomain1, &domain_id1, &org_id1)) {
 				return ecError;
 			}
 			if (org_id != org_id1) {
-				return EC_LOGIN_FAILURE;
+				return ecLoginFailure;
 			}
 			domain_id = domain_id1;
 			pdomain = pdomain1;

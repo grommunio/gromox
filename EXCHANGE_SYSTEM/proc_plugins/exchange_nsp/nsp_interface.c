@@ -828,7 +828,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
 	pdomain = strchr(rpc_info.username, '@');
 	if (NULL == pdomain) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
-		return MAPI_E_LOGON_FAILED;
+		return ecLoginFailure;
 	}
 	pdomain ++;
 	if (FALSE == get_domain_ids(pdomain, &domain_id, &org_id)) {
