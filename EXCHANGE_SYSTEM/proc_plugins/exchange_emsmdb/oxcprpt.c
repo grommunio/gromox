@@ -30,7 +30,7 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -81,7 +81,7 @@ uint32_t rop_getnamesfrompropertyids(
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -120,7 +120,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (0 == want_unicode) {
 		b_unicode = FALSE;
@@ -235,7 +235,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -355,7 +355,7 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -405,7 +405,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -486,7 +486,7 @@ uint32_t rop_deleteproperties(
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -569,7 +569,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if ((query_flags & QUERY_FLAG_NOIDS) &&
 		(query_flags & QUERY_FLAG_NOSTRINGS)) {
@@ -699,7 +699,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hsrc, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	pobject_dst = rop_processor_get_object(
 		plogmap, logon_id, hdst, &dst_type);
@@ -1006,7 +1006,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hsrc, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	pobject_dst = rop_processor_get_object(
 		plogmap, logon_id, hdst, &dst_type);
@@ -1216,7 +1216,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OPENSTREAM_FLAG_CREATE == flags ||
 		OPENSTREAM_FLAG_READWRITE == flags) {
@@ -1311,7 +1311,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pstream) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
@@ -1351,7 +1351,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pstream) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
@@ -1388,7 +1388,7 @@ uint32_t rop_commitstream(void *plogmap,
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pstream) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
@@ -1416,7 +1416,7 @@ uint32_t rop_getstreamsize(uint32_t *pstream_size,
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pstream) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
@@ -1437,7 +1437,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pstream) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
@@ -1472,7 +1472,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pstream) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
@@ -1497,7 +1497,7 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	psrc_stream = rop_processor_get_object(plogmap,
 					logon_id, hsrc, &object_type);
 	if (NULL == psrc_stream) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;

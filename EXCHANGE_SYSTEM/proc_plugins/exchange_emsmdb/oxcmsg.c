@@ -59,7 +59,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type &&
 		OBJECT_TYPE_FOLDER != object_type) {
@@ -261,7 +261,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type &&
 		OBJECT_TYPE_FOLDER != object_type) {
@@ -382,7 +382,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -439,7 +439,7 @@ uint32_t rop_removeallrecipients(uint32_t reserved,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -479,7 +479,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -534,7 +534,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -586,7 +586,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -671,7 +671,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
@@ -718,7 +718,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
@@ -888,7 +888,7 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
@@ -924,12 +924,12 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hresponse, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -962,7 +962,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	pmessage = rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -1011,7 +1011,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	pmessage = rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -1053,7 +1053,7 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -1082,7 +1082,7 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 					SAVE_FLAG_FORCESAVE;
 	if (NULL == rop_processor_get_object(plogmap,
 		logon_id, hresponse, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -1090,7 +1090,7 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 	pattachment = rop_processor_get_object(plogmap,
 					logon_id, hin, &object_type);
 	if (NULL == pattachment) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
@@ -1157,7 +1157,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	pattachment = rop_processor_get_object(plogmap,
 					logon_id, hin, &object_type);
 	if (NULL == pattachment) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
@@ -1318,7 +1318,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;

@@ -272,7 +272,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	}
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -313,7 +313,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	}
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -364,7 +364,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	columns.pproptag = proptags;
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -414,7 +414,7 @@ uint32_t rop_getowningservers(
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -471,7 +471,7 @@ uint32_t rop_publicfolderisghosted(
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -504,7 +504,7 @@ uint32_t rop_longtermidfromid(uint64_t id,
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -549,7 +549,7 @@ uint32_t rop_idfromlongtermid(
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -596,7 +596,7 @@ uint32_t rop_getperuserlongtermids(const GUID *pguid,
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -617,7 +617,7 @@ uint32_t rop_getperuserguid(
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -640,7 +640,7 @@ uint32_t rop_readperuserinformation(
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;
@@ -662,7 +662,7 @@ uint32_t rop_writeperuserinformation(
 	
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecNotSupported;

@@ -35,7 +35,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pfolder) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
@@ -100,7 +100,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pfolder) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;

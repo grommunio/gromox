@@ -250,7 +250,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -701,7 +701,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pmessage) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
@@ -794,7 +794,7 @@ uint32_t rop_gettransportfolder(uint64_t *pfolder_id,
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
 		return ecNotSupported;

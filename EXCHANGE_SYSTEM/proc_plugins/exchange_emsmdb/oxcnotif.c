@@ -22,11 +22,11 @@ uint32_t rop_registernotification(
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (NULL == rop_processor_get_object(
 		plogmap, logon_id, hin, &object_type)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (0 == want_whole_store) {
 		b_whole = FALSE;

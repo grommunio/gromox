@@ -55,7 +55,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -136,7 +136,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -263,7 +263,7 @@ uint32_t rop_restrict(uint8_t res_flags,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -309,13 +309,13 @@ uint32_t rop_queryrows(uint8_t flags,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -380,7 +380,7 @@ uint32_t rop_abort(uint8_t *ptable_status,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -397,7 +397,7 @@ uint32_t rop_getstatus(uint8_t *ptable_status,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -416,7 +416,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -441,7 +441,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -516,7 +516,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -529,7 +529,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_loaded(ptable)) {
 		return EC_INVALID_BOOKMARK;
@@ -561,7 +561,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -583,7 +583,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -596,7 +596,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -622,7 +622,7 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -654,7 +654,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -668,7 +668,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -741,7 +741,7 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -754,7 +754,7 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	table_object_remove_bookmark(ptable, *(uint32_t*)pbookmark->pb);
 	return ecSuccess;
@@ -767,7 +767,7 @@ uint32_t rop_resettable(void *plogmap, uint8_t logon_id, uint32_t hin)
 	
 	ptable = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -794,7 +794,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -802,7 +802,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
 		return ecNotSupported;
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -859,7 +859,7 @@ uint32_t rop_collapserow(uint64_t category_id,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -867,7 +867,7 @@ uint32_t rop_collapserow(uint64_t category_id,
 	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
 		return ecNotSupported;
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -901,7 +901,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -911,7 +911,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -938,7 +938,7 @@ uint32_t rop_setcollapsestate(
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == ptable) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
 		return ecNotSupported;
@@ -951,7 +951,7 @@ uint32_t rop_setcollapsestate(
 		return ecInvalidParam;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;

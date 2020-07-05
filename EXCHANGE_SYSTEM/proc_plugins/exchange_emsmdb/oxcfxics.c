@@ -277,7 +277,7 @@ uint32_t rop_fasttransferdestconfigure(
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	switch (source_operation) {
 	case FAST_SOURCE_OPERATION_COPYTO:
@@ -388,7 +388,7 @@ uint32_t rop_fasttransferdestputbuffer(
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FASTUPCTX != object_type) {
 		return ecNotSupported;
@@ -420,7 +420,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX != object_type &&
 		OBJECT_TYPE_FASTDOWNCTX != object_type) {
@@ -502,7 +502,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pfolder) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
@@ -575,7 +575,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pfolder) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
@@ -675,7 +675,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type &&
 		OBJECT_TYPE_MESSAGE != object_type &&
@@ -839,7 +839,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	pobject = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type &&
 		OBJECT_TYPE_MESSAGE != object_type &&
@@ -1022,7 +1022,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pfolder) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (SYNC_TYPE_CONTENTS == SYNC_TYPE_CONTENTS) {
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -1103,7 +1103,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	pctx = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
@@ -1303,7 +1303,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	pctx = rop_processor_get_object(plogmap,
 			logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
@@ -1444,7 +1444,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	pctx = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
@@ -1754,7 +1754,7 @@ uint32_t rop_syncimportdeletes(
 	pctx = rop_processor_get_object(plogmap,
 			logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
@@ -1973,7 +1973,7 @@ uint32_t rop_syncimportmessagemove(
 	pctx = rop_processor_get_object(plogmap,
 			logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
@@ -2124,7 +2124,7 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 	pfolder = rop_processor_get_object(plogmap,
 					logon_id, hin, &object_type);
 	if (NULL == pfolder) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
@@ -2160,7 +2160,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	pobject = rop_processor_get_object(plogmap,
 					logon_id, hin, &object_type);
 	if (NULL == pobject) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		pstate = icsdownctx_object_get_state(pobject);
@@ -2204,7 +2204,7 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 	pctx = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		if (FALSE == icsdownctx_object_begin_state_stream(
@@ -2231,7 +2231,7 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 	pctx = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		if (FALSE == icsdownctx_object_continue_state_stream(
@@ -2258,7 +2258,7 @@ uint32_t rop_syncuploadstatestreamend(void *plogmap,
 	pctx = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == pctx) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		if (FALSE == icsdownctx_object_end_state_stream(pctx)) {
@@ -2292,7 +2292,7 @@ uint32_t rop_getlocalreplicaids(uint32_t count,
 	plogon = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
 	if (NULL == plogon) {
-		return EC_NULL_OBJECT;
+		return ecNullObject;
 	}
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return ecError;
