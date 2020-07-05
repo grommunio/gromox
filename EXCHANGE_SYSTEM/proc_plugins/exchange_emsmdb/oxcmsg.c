@@ -143,7 +143,7 @@ PERMISSION_CHECK:
 				cpid, message_id, &folder_id,
 				tag_access, open_mode_flags, NULL);
 	if (NULL == pmessage) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	proptags.count = 3;
 	proptags.pproptag = proptag_buff;
@@ -204,7 +204,7 @@ PERMISSION_CHECK:
 			sizeof(OPENRECIPIENT_ROW)*rcpts.count);
 		if (NULL == *pprecipient_row) {
 			message_object_free(pmessage);
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 	}
 	for (i=0; i<rcpts.count; i++) {
@@ -212,7 +212,7 @@ PERMISSION_CHECK:
 			cpid, rcpts.pparray[i], pcolumns,
 			(*pprecipient_row) + i)) {
 			message_object_free(pmessage);
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
@@ -331,7 +331,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	*ppmessage_id = common_util_alloc(sizeof(uint64_t));
 	if (NULL == *ppmessage_id) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == exmdb_client_allocate_message_id(
 		logon_object_get_dir(plogon), folder_id,
@@ -342,7 +342,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 				**ppmessage_id, &folder_id, tag_access,
 				OPEN_MODE_FLAG_READWRITE, NULL);
 	if (NULL == pmessage) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (0 == associated_flag) {
 		b_fai = FALSE;
@@ -491,25 +491,25 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 	tmp_set.count = count;
 	tmp_set.pparray = common_util_alloc(sizeof(TPROPVAL_ARRAY*)*count);
 	if (NULL == tmp_set.pparray) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	for (i=0; i<count; i++) {
 		ppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
 		if (NULL == ppropvals) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (NULL == prow[i].precipient_row) {
 			ppropvals->count = 1;
 			ppropvals->ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL));
 			if (NULL == ppropvals->ppropval) {
-				return EC_OUT_OF_MEMORY;
+				return ecMAPIOOM;
 			}
 			ppropvals->ppropval->proptag = PROP_TAG_ROWID;
 			ppropvals->ppropval->pvalue = (void*)&prow[i].row_id;
 		} else {
 			if (FALSE == common_util_modifyrecipient_to_propvals(
 				pinfo->cpid, prow + i, pproptags, ppropvals)) {
-				return EC_OUT_OF_MEMORY;	
+				return ecMAPIOOM;
 			}
 		}
 		tmp_set.pparray[i] = ppropvals;
@@ -550,7 +550,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 		if (FALSE == common_util_propvals_to_readrecipient(
 			message_object_get_cpid(pmessage), tmp_set.pparray[i],
 			message_object_get_rcpt_columns(pmessage), &tmp_row)) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		last_offset = pext->offset;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_readrecipient_row(
@@ -640,13 +640,13 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	*pprecipient_row = common_util_alloc(
 		sizeof(OPENRECIPIENT_ROW)*rcpts.count);
 	if (NULL == *pprecipient_row) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	for (i=0; i<rcpts.count; i++) {
 		if (FALSE == common_util_propvals_to_openrecipient(
 			message_object_get_cpid(pmessage), rcpts.pparray[i],
 			pcolumns, *pprecipient_row + i)) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 	}
 	return ecSuccess;
@@ -1284,14 +1284,14 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		sizeof(OPENRECIPIENT_ROW)*rcpts.count);
 	if (NULL == *pprecipient_row) {
 		message_object_free(pmessage);
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	for (i=0; i<rcpts.count; i++) {
 		if (FALSE == common_util_propvals_to_openrecipient(
 			message_object_get_cpid(pmessage), rcpts.pparray[i],
 			pcolumns, *pprecipient_row + i)) {
 			message_object_free(pmessage);
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
@@ -1326,7 +1326,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 	ptable = table_object_create(plogon, pmessage, table_flags,
 	         ropGetAttachmentTable, logon_id);
 	if (NULL == ptable) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);

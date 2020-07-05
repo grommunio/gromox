@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <gromox/defs.h>
 #include "rops.h"
 #include "propval.h"
@@ -128,7 +129,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	ptmp_proptags = common_util_trim_proptags(pproptags);
 	if (NULL == ptmp_proptags) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -181,10 +182,9 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 			propvals.ppropval[i].pvalue =
 				common_util_alloc(sizeof(uint32_t));
 			if (NULL == propvals.ppropval[i].pvalue) {
-				return EC_OUT_OF_MEMORY;
+				return ecMAPIOOM;
 			}
-			*(uint32_t*)propvals.ppropval[i].pvalue =
-									EC_OUT_OF_MEMORY;
+			*static_cast(uint32_t *, propvals.ppropval[i].pvalue) = ecMAPIOOM;
 			continue;
 		}
 		total_size += tmp_size;
@@ -204,10 +204,9 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 					propvals.ppropval[i].pvalue =
 						common_util_alloc(sizeof(uint32_t));
 					if (NULL == propvals.ppropval[i].pvalue) {
-						return EC_OUT_OF_MEMORY;
+						return ecMAPIOOM;
 					}
-					*(uint32_t*)propvals.ppropval[i].pvalue =
-											EC_OUT_OF_MEMORY;
+					*static_cast(uint32_t *, propvals.ppropval[i].pvalue) = ecMAPIOOM;
 				}
 				break;
 			}
@@ -215,7 +214,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	if (FALSE == common_util_propvals_to_row_ex(
 		cpid, b_unicode, &propvals, pproptags, prow)) {
-		return EC_OUT_OF_MEMORY;	
+		return ecMAPIOOM;
 	}
 	return ecSuccess;
 }
@@ -246,7 +245,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		}
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (FALSE == logon_object_get_properties(
 			pobject, ptmp_proptags, ppropvals)) {
@@ -260,10 +259,9 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 				ppropvals->ppropval[i].pvalue =
 					common_util_alloc(sizeof(uint32_t));
 				if (NULL == ppropvals->ppropval[i].pvalue) {
-					return EC_OUT_OF_MEMORY;
+					return ecMAPIOOM;
 				}
-				*(uint32_t*)ppropvals->ppropval[i].pvalue =
-													EC_OUT_OF_MEMORY;
+				*static_cast(uint32_t *, ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 			}
 		}
 		pinfo = emsmdb_interface_get_emsmdb_info();
@@ -279,7 +277,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		}
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (FALSE == folder_object_get_properties(
 			pobject, ptmp_proptags, ppropvals)) {
@@ -293,10 +291,9 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 				ppropvals->ppropval[i].pvalue =
 								common_util_alloc(sizeof(uint32_t));
 				if (NULL == ppropvals->ppropval[i].pvalue) {
-					return EC_OUT_OF_MEMORY;
+					return ecMAPIOOM;
 				}
-				*(uint32_t*)ppropvals->ppropval[i].pvalue =
-													EC_OUT_OF_MEMORY;
+				*static_cast(uint32_t *, ppropvals->ppropval[i].pvalue) = ecMAPIOOM;
 			}
 		}
 		pinfo = emsmdb_interface_get_emsmdb_info();
@@ -312,7 +309,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		}
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (FALSE == message_object_get_properties(pobject,
 			size_limit, ptmp_proptags, ppropvals)) {
@@ -327,7 +324,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		}
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (FALSE == attachment_object_get_properties(pobject,
 			size_limit, ptmp_proptags, ppropvals)) {
@@ -343,7 +340,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 			continue;	
 		if (FALSE == common_util_convert_unspecified(cpid,
 			b_unicode, ppropvals->ppropval[i].pvalue)) {
-			return EC_OUT_OF_MEMORY;	
+			return ecMAPIOOM;
 		}
 	}
 	return ecSuccess;
@@ -613,7 +610,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	propids.ppropid = common_util_alloc(
 		sizeof(uint16_t)*proptags.count);
 	if (NULL == propids.ppropid) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	for (i=0; i<proptags.count; i++) {
 		propid = proptags.pproptag[i] >> 16;
@@ -632,12 +629,12 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	ppropidnames->ppropid = common_util_alloc(
 				sizeof(uint16_t)*propids.count);
 	if (NULL == ppropidnames->ppropid) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	ppropidnames->ppropname = common_util_alloc(
 			sizeof(PROPERTY_NAME)*propids.count);
 	if (NULL == ppropidnames->ppropid) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == logon_object_get_named_propnames(
 		plogon, &propids, &propnames)) {
@@ -720,13 +717,13 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	proptags.pproptag = common_util_alloc(
 		sizeof(uint32_t)*pproptags->count);
 	if (NULL == proptags.pproptag) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	pproblems->count = 0;
 	pproblems->pproblem = common_util_alloc(
 		sizeof(PROPERTY_PROBLEM)*pproptags->count);
 	if (NULL == pproblems->pproblem) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	poriginal_indices = common_util_alloc(
 		sizeof(uint16_t)*pproptags->count);
@@ -1099,7 +1096,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		tmp_proptags.pproptag = common_util_alloc(
 					sizeof(uint32_t)*proptags.count);
 		if (NULL == tmp_proptags.pproptag) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (FALSE == b_force) {
 			if (FALSE == folder_object_get_all_proptags(
@@ -1336,7 +1333,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	}
 	pdata_bin->pb = common_util_alloc(buffer_size);
 	if (NULL == pdata_bin->pb) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	read_len = stream_object_read(pstream,
 				pdata_bin->pb, buffer_size);

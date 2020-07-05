@@ -139,7 +139,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 	plogon = logon_object_create(logon_flags, open_flags,
 		logon_mode, user_id, username, maildir, *pmailbox_guid);
 	if (NULL == plogon) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	/* create logon map and logon object */
 	handle = rop_processor_create_logon_item(
@@ -247,7 +247,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 				LOGON_MODE_GUEST, domain_id, pdomain,
 				homedir, mailbox_guid);
 	if (NULL == plogon) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	/* create logon map and logon object */
 	handle = rop_processor_create_logon_item(
@@ -282,7 +282,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	}
 	*ppstr_explicit = common_util_alloc(256);
 	if (NULL == *ppstr_explicit) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == exmdb_client_get_folder_by_class(
 		logon_object_get_dir(plogon), pstr_class,
@@ -382,12 +382,12 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	prows->count = class_table.count;
 	prows->prows = common_util_alloc(sizeof(PROPERTY_ROW)*class_table.count);
 	if (NULL == prows->prows) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	for (i=0; i<class_table.count; i++) {
 		if (FALSE == common_util_propvals_to_row(
 			class_table.pparray[i], &columns, prows->prows + i)) {
-			return EC_OUT_OF_MEMORY;	
+			return ecMAPIOOM;
 		}
 	}
 	return ecSuccess;
@@ -426,7 +426,7 @@ uint32_t rop_getowningservers(
 	pghost->cheap_server_count = 1;
 	pghost->ppservers = common_util_alloc(sizeof(char*));
 	if (NULL == pghost->ppservers) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 != replid) {
@@ -453,7 +453,7 @@ uint32_t rop_getowningservers(
 	}
 	pghost->ppservers[0] = common_util_alloc(256);
 	if (NULL == pghost->ppservers[0]) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	common_util_domain_to_essdn(
 		logon_object_get_account(plogon),
@@ -487,7 +487,7 @@ uint32_t rop_publicfolderisghosted(
 	}
 	*ppghost = common_util_alloc(sizeof(GHOST_SERVER));
 	if (NULL == *ppghost) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	return rop_getowningservers(folder_id,
 			*ppghost, plogmap, logon_id, hin);

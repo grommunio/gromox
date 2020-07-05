@@ -813,7 +813,7 @@ uint32_t rop_optionsdata(const char *paddress_type,
 	poptions_info->cb = 300;
 	poptions_info->pb = common_util_alloc(poptions_info->cb);
 	if (NULL == poptions_info->pb) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	memset(poptions_info->pb, 0, poptions_info->cb);
 	phelp_file->cb = 0;

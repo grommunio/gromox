@@ -55,12 +55,12 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 		return ecNotSupported;
 	auto row = *ppdata = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPERTY_ROW)));
 	if (row == nullptr)
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	row->reserved = 0;
 	row->cvalues  = 1;
 	auto val = row->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPERTY_VALUE)));
 	if (val == nullptr)
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	val->proptag  = PROP_TAG_TEMPLATEDATA;
 	val->reserved = 0;
 
@@ -122,7 +122,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 	val->value.bin.cb = sizeof(dialogbox);
 	val->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, sizeof(dialogbox));
 	if (val->value.bin.pv == nullptr)
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	memcpy(val->value.bin.pv, &dialogbox, sizeof(dialogbox));
 	return 0;
 }

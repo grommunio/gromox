@@ -552,7 +552,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
 		pnode1 = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
 		if (NULL == pnode1) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		emsmdb_interface_set_rop_left(tmp_len - ext_push.offset);
 		result = rop_dispatch(pnode->pdata,
@@ -572,7 +572,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			((ROP_RESPONSE*)pnode1->pdata)->ppayload =
 				common_util_alloc(sizeof(BUFFERTOOSMALL_RESPONSE));
 			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
-				return EC_OUT_OF_MEMORY;
+				return ecMAPIOOM;
 			}
 			((BUFFERTOOSMALL_RESPONSE*)((ROP_RESPONSE*)
 				pnode1->pdata)->ppayload)->size_needed = 0x8000;
@@ -614,7 +614,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			((ROP_RESPONSE*)pnode1->pdata)->ppayload =
 				common_util_alloc(sizeof(BUFFERTOOSMALL_RESPONSE));
 			if (NULL == ((ROP_RESPONSE*)pnode1->pdata)->ppayload) {
-				return EC_OUT_OF_MEMORY;
+				return ecMAPIOOM;
 			}
 			((BUFFERTOOSMALL_RESPONSE*)((ROP_RESPONSE*)
 				pnode1->pdata)->ppayload)->size_needed = 0x8000;
@@ -629,7 +629,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			}
 			goto MAKE_RPC_EXT;
 		case EXT_ERR_ALLOC:
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		default:
 			return EC_RPC_FAIL;
 		}
@@ -737,7 +737,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	case EXT_ERR_SUCCESS:
 		break;
 	case EXT_ERR_ALLOC:
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	default:
 		return EC_RPC_FORMAT;
 	}

@@ -51,7 +51,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 			*phas_rules = 0;
 			*ppghost = common_util_alloc(sizeof(GHOST_SERVER));
 			if (NULL == ppghost) {
-				return EC_OUT_OF_MEMORY;
+				return ecMAPIOOM;
 			}
 			return rop_getowningservers(folder_id,
 					*ppghost, plogmap, logon_id, hin);
@@ -138,7 +138,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	pfolder = folder_object_create(plogon,
 			folder_id, type, tag_access);
 	if (NULL == pfolder) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 		logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
@@ -289,13 +289,13 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[7].proptag = PROP_TAG_CHANGEKEY;
 		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
 		if (NULL == propval_buff[7].pvalue) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		propval_buff[8].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 		propval_buff[8].pvalue = common_util_pcl_append(
 							NULL, propval_buff[7].pvalue);
 		if (NULL == propval_buff[8].pvalue) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		pinfo = emsmdb_interface_get_emsmdb_info();
 		if (FALSE == exmdb_client_create_folder_by_properties(
@@ -310,7 +310,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 			pentryid = common_util_username_to_addressbook_entryid(
 												rpc_info.username);
 			if (NULL == pentryid) {
-				return EC_OUT_OF_MEMORY;
+				return ecMAPIOOM;
 			}
 			tmp_id = 1;
 			permission = PERMISSION_FOLDEROWNER|PERMISSION_READANY|
@@ -339,7 +339,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	pfolder = folder_object_create(plogon,
 		folder_id, folder_type, tag_access);
 	if (NULL == pfolder) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 		logon_id, hin, OBJECT_TYPE_FOLDER, pfolder);
@@ -1283,7 +1283,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	ptable = table_object_create(plogon, pfolder,
 	         table_flags, ropGetHierarchyTable, logon_id);
 	if (NULL == ptable) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);
@@ -1375,7 +1375,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	ptable = table_object_create(plogon, pfolder,
 	         table_flags, ropGetContentsTable, logon_id);
 	if (NULL == ptable) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);

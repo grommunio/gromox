@@ -64,7 +64,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -76,7 +76,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (pprop->value.bin.pv == nullptr)
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 		} else {
 			pprop->value.bin.pv = const_cast(void *, pbuff);
 		}
@@ -103,7 +103,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -140,7 +140,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbuff) {
 			pprop->value.bin.pb = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (NULL == pprop->value.bin.pb) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.bin.pb = pbuff;
@@ -164,7 +164,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			display_type, NULL, dn, &permeid) || FALSE ==
 			common_util_permanent_entryid_to_binary(
 			&permeid, &pprop->value.bin)) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		break;
 	case PROP_TAG_ENTRYID:
@@ -183,14 +183,14 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				display_type, NULL, dn, &permeid) || FALSE ==
 				common_util_permanent_entryid_to_binary(
 				&permeid, &pprop->value.bin)) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			common_util_set_ephemeralentryid(display_type,
 				ab_tree_get_node_minid(pnode), &ephid);
 			if (FALSE == common_util_ephemeral_entryid_to_binary(
 				&ephid, &pprop->value.bin)) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		}
 		break;
@@ -203,7 +203,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.bin.pc = ndr_stack_alloc(
 				NDR_STACK_OUT, pprop->value.bin.cb);
 			if (pprop->value.bin.pc == nullptr)
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 		} else {
 			pprop->value.bin.pc = pbuff;
 		}
@@ -214,7 +214,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbuff) {
 			pprop->value.bin.pb = ndr_stack_alloc(NDR_STACK_OUT, 4);
 			if (NULL == pprop->value.bin.pb) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.bin.pb = pbuff;
@@ -242,7 +242,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -266,7 +266,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -284,7 +284,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				pprop->value.pstr = ndr_stack_alloc(
 					NDR_STACK_OUT, strlen(dn) + 1);
 				if (NULL == pprop->value.pstr) {
-					return MAPI_E_NOT_ENOUGH_MEMORY;
+					return ecMAPIOOM;
 				}
 			} else {
 				pprop->value.pstr = pbuff;
@@ -296,7 +296,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				pprop->value.pstr = ndr_stack_alloc(
 					NDR_STACK_OUT, strlen(dn) + 1);
 				if (NULL == pprop->value.pstr) {
-					return MAPI_E_NOT_ENOUGH_MEMORY;
+					return ecMAPIOOM;
 				}
 			} else {
 				pprop->value.pstr = pbuff;
@@ -318,7 +318,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -337,7 +337,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -356,7 +356,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -376,7 +376,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -395,7 +395,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -414,7 +414,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -432,7 +432,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -451,7 +451,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -469,7 +469,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -488,7 +488,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -506,7 +506,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -523,7 +523,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -539,7 +539,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -556,7 +556,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -572,7 +572,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -589,7 +589,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -605,7 +605,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			temp_len = 2*strlen(dn) + 1;
 			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -633,7 +633,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.pstr = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.pstr = pbuff;
@@ -659,12 +659,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.string_array.ppstr =
 				ndr_stack_alloc(NDR_STACK_OUT, sizeof(char**));
 			if (NULL == pprop->value.string_array.ppstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 			pprop->value.string_array.ppstr[0] =
 				ndr_stack_alloc(NDR_STACK_OUT, strlen(dn) + 6);
 			if (NULL == pprop->value.string_array.ppstr[0]) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.string_array.ppstr = (char**)pbuff;
@@ -681,17 +681,17 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.string_array.ppstr =
 				ndr_stack_alloc(NDR_STACK_OUT, 2*sizeof(char**));
 			if (NULL == pprop->value.string_array.ppstr) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 			pprop->value.string_array.ppstr[0] =
 				ndr_stack_alloc(NDR_STACK_OUT, temp_len + 14);
 			if (NULL == pprop->value.string_array.ppstr[0]) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 			pprop->value.string_array.ppstr[1] =
 				ndr_stack_alloc(NDR_STACK_OUT, temp_len - 12);
 			if (NULL == pprop->value.string_array.ppstr[1]) {
-				return MAPI_E_NOT_ENOUGH_MEMORY;
+				return ecMAPIOOM;
 			}
 		} else {
 			pprop->value.string_array.ppstr = (char**)pbuff;
@@ -746,7 +746,7 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 	for (i=0; i<pproptags->cvalues; i++) {
 		pprop = common_util_propertyrow_enlarge(prow);
 		if (NULL == pprop) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		err_val = nsp_interface_fetch_property(pnode, b_ephid,
 				codepage, pproptags->pproptag[i], pprop, NULL);
@@ -1152,14 +1152,14 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		pproptags = ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY));
 		if (NULL == pproptags) {
 			*pprows = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		pproptags->cvalues = 7;
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_IN,
 						sizeof(uint32_t)*pproptags->cvalues);
 		if (NULL == pproptags) {
 			*pprows = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		pproptags->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
 		pproptags->pproptag[1] = PROP_TAG_OBJECTTYPE;
@@ -1182,7 +1182,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
 		*pprows = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	
 	pbase = ab_tree_get_base(base_id);
@@ -1247,7 +1247,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow || NULL ==
 						common_util_propertyrow_init(prow)) {
-						result = MAPI_E_NOT_ENOUGH_MEMORY;
+						result = ecMAPIOOM;
 						goto EXIT_QUERY_ROWS;
 					}
 					result = nsp_interface_fetch_row(psnode->pdata,
@@ -1266,7 +1266,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow || NULL ==
 						common_util_propertyrow_init(prow)) {
-						result = MAPI_E_NOT_ENOUGH_MEMORY;
+						result = ecMAPIOOM;
 						goto EXIT_QUERY_ROWS;
 					}
 					result = nsp_interface_fetch_row(pnode1,
@@ -1304,7 +1304,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_QUERY_ROWS;
 			}
 			pnode = ab_tree_minid_to_node(pbase, ptable[i]);
@@ -1375,14 +1375,14 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		pproptags = ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY));
 		if (NULL == pproptags) {
 			*pprows = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		pproptags->cvalues = 7;
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_IN,
 						sizeof(uint32_t)*pproptags->cvalues);
 		if (NULL == pproptags) {
 			*pprows = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		pproptags->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
 		pproptags->pproptag[1] = PROP_TAG_OBJECTTYPE;
@@ -1405,7 +1405,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
 		*pprows = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	
 	pbase = ab_tree_get_base(base_id);
@@ -1438,7 +1438,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				prow = common_util_proprowset_enlarge(*pprows);
 				if (NULL == prow || NULL ==
 					common_util_propertyrow_init(prow)) {
-					result = MAPI_E_NOT_ENOUGH_MEMORY;
+					result = ecMAPIOOM;
 					goto EXIT_SEEK_ENTRIES;
 				}
 				result = nsp_interface_fetch_row(pnode1, TRUE,
@@ -1493,7 +1493,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow ||
 						NULL == common_util_propertyrow_init(prow)) {
-						result = MAPI_E_NOT_ENOUGH_MEMORY;
+						result = ecMAPIOOM;
 						goto EXIT_SEEK_ENTRIES;
 					}
 					if (nsp_interface_fetch_row(psnode->pdata,
@@ -1526,7 +1526,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow ||
 						NULL == common_util_propertyrow_init(prow)) {
-						result = MAPI_E_NOT_ENOUGH_MEMORY;
+						result = ecMAPIOOM;
 						goto EXIT_SEEK_ENTRIES;
 					}
 					if (nsp_interface_fetch_row(pnode1,
@@ -1899,7 +1899,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	*ppoutmids = common_util_proptagarray_init();
 	if (NULL == *ppoutmids) {
 		*pprows = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (NULL == pproptags) {
 		*pprows = NULL;
@@ -1912,7 +1912,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		*pprows = common_util_proprowset_init();
 		if (NULL == *pprows) {
 			*ppoutmids = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 	}
 	
@@ -1961,7 +1961,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
 				list_file_free(pfile);
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
@@ -1988,7 +1988,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 					pstat->codepage, pfilter)) {
 					pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 					if (NULL == pproptag) {
-						result = MAPI_E_NOT_ENOUGH_MEMORY;
+						result = ecMAPIOOM;
 						goto EXIT_GET_MATCHES;
 					}
 					*pproptag = ab_tree_get_node_minid(psnode->pdata);
@@ -2020,7 +2020,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 					pstat->codepage, pfilter)) {
 					pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 					if (NULL == pproptag) {
-						result = MAPI_E_NOT_ENOUGH_MEMORY;
+						result = ecMAPIOOM;
 						goto EXIT_GET_MATCHES;
 					}
 					*pproptag = ab_tree_get_node_minid(pnode);
@@ -2035,7 +2035,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		    &prop_val, temp_buff) == ecSuccess) {
 			pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
@@ -2048,7 +2048,7 @@ FETCH_ROWS:
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
 			}
 			pnode = ab_tree_minid_to_node(pbase, (*ppoutmids)->pproptag[i]);
@@ -2101,18 +2101,18 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		sizeof(SORT_ITEM)*pinmids->cvalues);
 	if (NULL == parray) {
 		*ppoutmids = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	*ppoutmids = ndr_stack_alloc(
 		NDR_STACK_OUT, sizeof(PROPTAG_ARRAY));
 	if (NULL == *ppoutmids) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	(*ppoutmids)->pproptag = ndr_stack_alloc(NDR_STACK_OUT,
 						sizeof(uint32_t)*pinmids->cvalues);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -2145,7 +2145,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL == parray[count].string) {
 			ab_tree_put_base(pbase);
 			*ppoutmids = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		strcpy(parray[count].string, temp_buff);
 		count ++;
@@ -2183,13 +2183,13 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	*ppoutmids = ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY));
 	if (NULL == *ppoutmids) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	(*ppoutmids)->pproptag = ndr_stack_alloc(
 		NDR_STACK_OUT, sizeof(uint32_t)*pnames->count);
 	if (NULL == (*ppoutmids)->pproptag) {
 		*ppoutmids = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	(*ppoutmids)->cvalues = pnames->count;
 	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t)*pnames->count);
@@ -2233,7 +2233,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_OUT,
 						sizeof(uint32_t)*pproptags->cvalues);
 		if (NULL == pproptags->pproptag) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (TRUE == b_unicode) {
 			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME;
@@ -2295,7 +2295,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_OUT,
 						sizeof(uint32_t)*pproptags->cvalues);
 		if (NULL == pproptags->pproptag) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (TRUE == b_unicode) {
 			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME;
@@ -2337,7 +2337,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_OUT,
 						sizeof(uint32_t)*pproptags->cvalues);
 		if (NULL == pproptags->pproptag) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (TRUE == b_unicode) {
 			pproptags->pproptag[0] = PROP_TAG_DISPLAYNAME;
@@ -2401,7 +2401,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	}
 	*ppproptags = ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY));
 	if (NULL == *ppproptags) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase || (TRUE == g_session_check &&
@@ -2557,7 +2557,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		b_proptags = FALSE;
 		pproptags = ndr_stack_alloc(NDR_STACK_IN, sizeof(PROPTAG_ARRAY));
 		if (NULL == pproptags) {
-			result = MAPI_E_NOT_ENOUGH_MEMORY;
+			result = ecMAPIOOM;
 			goto EXIT_GET_PROPS;
 		}
 		result = nsp_interface_get_default_proptags(
@@ -2570,7 +2570,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	}
 	*pprows = common_util_propertyrow_init(NULL);
 	if (NULL == *pprows) {
-		result = MAPI_E_NOT_ENOUGH_MEMORY;
+		result = ecMAPIOOM;
 		goto EXIT_GET_PROPS;
 	}
 	/* MS-OXNSPI 3.1.4.1.7.11 */
@@ -2736,7 +2736,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 		tmp_tag &= 0xFFFF0000;
 		tmp_tag += PROPVAL_TYPE_ERROR;
 		prow->pprops[0].proptag = tmp_tag;
-		prow->pprops[0].value.err = MAPI_E_NOT_ENOUGH_MEMORY;
+		prow->pprops[0].value.err = ecMAPIOOM;
 	}
 	
 	/* PROP_TAG_CONTAINERFLAGS */
@@ -2790,7 +2790,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 			tmp_tag &= 0xFFFF0000;
 			tmp_tag += PROPVAL_TYPE_ERROR;
 			prow->pprops[4].proptag = tmp_tag;
-			prow->pprops[4].value.err = MAPI_E_NOT_ENOUGH_MEMORY;
+			prow->pprops[4].value.err = ecMAPIOOM;
 		}
 	}
 	
@@ -2809,7 +2809,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 			tmp_tag &= 0xFFFF0000;
 			tmp_tag += PROPVAL_TYPE_ERROR;
 			prow->pprops[6].proptag = tmp_tag;
-			prow->pprops[6].value.err = MAPI_E_NOT_ENOUGH_MEMORY;
+			prow->pprops[6].value.err = ecMAPIOOM;
 		}
 	}
 	return TRUE;
@@ -2845,16 +2845,16 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	ppermeid = ndr_stack_alloc(NDR_STACK_OUT,
 				sizeof(PERMANENT_ENTRYID));
 	if (NULL == ppermeid) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	ab_tree_node_to_guid(pnode, &tmp_guid);
 	if (FALSE == common_util_set_permanententryid(
 		DT_CONTAINER, &tmp_guid, NULL, ppermeid)) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	prow = common_util_proprowset_enlarge(prows);
 	if (NULL == prow) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	has_child = nsp_interface_has_child(pnode);
 	container_id = ab_tree_get_node_minid(pnode);
@@ -2866,7 +2866,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 		prow, b_unicode, codepage, has_child,
 		simple_tree_node_get_depth(pnode), container_id,
 		str_dname, ppermeid_parent, ppermeid)) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (TRUE == has_child) {
 		pnode1 = simple_tree_node_get_child(pnode);
@@ -2944,26 +2944,26 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	
 	/* build the gal root */
 	prow = common_util_proprowset_enlarge(*pprows);
 	if (NULL == prow) {
 		*pprows = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	
 	if (FALSE == common_util_set_permanententryid(
 		DT_CONTAINER, NULL, NULL, &permeid)) {
 		*pprows = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == nsp_interface_build_specialtable(prow,
 		b_unicode, codepage, FALSE, 0, 0, NULL, NULL,
 		&permeid)) {
 		*pprows = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	
 	pbase = ab_tree_get_base(base_id);
@@ -3060,13 +3060,13 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		for (i=0; i<item_num; i++) {
 			pnode = malloc(sizeof(DOUBLE_LIST_NODE));
 			if (NULL == pnode) {
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_MOD_LINKATT;
 			}
 			pnode->pdata = strdup(pitem + 256*i);
 			if (NULL == pnode->pdata) {
 				free(pnode);
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_MOD_LINKATT;
 			}
 			double_list_append_as_tail(&tmp_list, pnode);
@@ -3110,13 +3110,13 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			if (NULL == pnode) {
 				pnode = malloc(sizeof(DOUBLE_LIST_NODE));
 				if (NULL == pnode) {
-					result = MAPI_E_NOT_ENOUGH_MEMORY;
+					result = ecMAPIOOM;
 					goto EXIT_MOD_LINKATT;
 				}
 				pnode->pdata = strdup(username);
 				if (NULL == pnode->pdata) {
 					free(pnode);
-					result = MAPI_E_NOT_ENOUGH_MEMORY;
+					result = ecMAPIOOM;
 					goto EXIT_MOD_LINKATT;
 				}
 				double_list_append_as_tail(&tmp_list, pnode);
@@ -3162,14 +3162,14 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	pcolumns = ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY));
 	if (NULL == pcolumns) {
 		*ppcolumns = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	pcolumns->cvalues = 31;
 	pcolumns->pproptag = ndr_stack_alloc(NDR_STACK_OUT,
 							sizeof(uint32_t)*pcolumns->cvalues);
 	if (NULL == pcolumns->pproptag) {
 		*ppcolumns = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (TRUE == b_unicode) {
 		pcolumns->pproptag[0] = PROP_TAG_DISPLAYNAME;
@@ -3241,7 +3241,7 @@ int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL == pstr) {
 			*ppmids = NULL;
 			*pprows = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		if (-1 == common_util_to_utf8(pstat->codepage,
 			pstrs->ppstrings[i], pstr, temp_len)) {
@@ -3354,7 +3354,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		pprop->value.pstr = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		strcpy(pprop->value.pstr, paddress);
 		break;
@@ -3372,7 +3372,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		pprop->value.bin.pc = ndr_stack_alloc(
 			NDR_STACK_OUT, pprop->value.bin.cb);
 		if (pprop->value.bin.pc == nullptr)
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		sprintf(pprop->value.bin.pc, "SMTP:%s", paddress);
 		HX_strupper(pprop->value.bin.pc);
 		break;
@@ -3385,7 +3385,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		pprop->value.pstr = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		strcpy(pprop->value.pstr, paddress);
 		break;
@@ -3406,7 +3406,7 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 	for (i=0; i<pproptags->cvalues; i++) {
 		pprop = common_util_propertyrow_enlarge(prow);
 		if (NULL == pprop) {
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		err_val = nsp_interface_fetch_smtp_property(
 			paddress, pproptags->pproptag[i], pprop);
@@ -3462,7 +3462,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL == pproptags) {
 			*ppmids = NULL;
 			*pprows = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		pproptags->cvalues = 7;
 		pproptags->pproptag = ndr_stack_alloc(NDR_STACK_IN,
@@ -3470,7 +3470,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		if (NULL == pproptags) {
 			*ppmids = NULL;
 			*pprows = NULL;
-			return MAPI_E_NOT_ENOUGH_MEMORY;
+			return ecMAPIOOM;
 		}
 		pproptags->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
 		pproptags->pproptag[1] = PROP_TAG_OBJECTTYPE;
@@ -3489,12 +3489,12 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	*ppmids = common_util_proptagarray_init();
 	if (NULL == *ppmids) {
 		*pprows = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	*pprows = common_util_proprowset_init();
 	if (NULL == *pprows) {
 		*ppmids = NULL;
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+		return ecMAPIOOM;
 	}
 	pbase = ab_tree_get_base(base_id);
 	if (NULL == pbase || (TRUE == g_session_check &&
@@ -3511,7 +3511,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		for (i=0; i<pstrs->count; i++) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_RESOLVE_NAMESW;
 			}
 			if (NULL == pstrs->ppstrings[i]) {
@@ -3536,7 +3536,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 						prow = common_util_proprowset_enlarge(*pprows);
 						if (NULL == prow || NULL ==
 							common_util_propertyrow_init(prow)) {
-							result = MAPI_E_NOT_ENOUGH_MEMORY;
+							result = ecMAPIOOM;
 							goto EXIT_RESOLVE_NAMESW;
 						}
 						result = nsp_interface_fetch_smtp_row(
@@ -3553,7 +3553,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				prow = common_util_proprowset_enlarge(*pprows);
 				if (NULL == prow || NULL ==
 					common_util_propertyrow_init(prow)) {
-					result = MAPI_E_NOT_ENOUGH_MEMORY;
+					result = ecMAPIOOM;
 					goto EXIT_RESOLVE_NAMESW;
 				}
 				result = nsp_interface_fetch_row(pnode, TRUE,
@@ -3573,7 +3573,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		for (i=0; i<pstrs->count; i++) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
-				result = MAPI_E_NOT_ENOUGH_MEMORY;
+				result = ecMAPIOOM;
 				goto EXIT_RESOLVE_NAMESW;
 			}
 			if (NULL == pstrs->ppstrings[i]) {
@@ -3610,7 +3610,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				prow = common_util_proprowset_enlarge(*pprows);
 				if (NULL == prow || NULL ==
 					common_util_propertyrow_init(prow)) {
-					result = MAPI_E_NOT_ENOUGH_MEMORY;
+					result = ecMAPIOOM;
 					goto EXIT_RESOLVE_NAMESW;
 				}
 				result = nsp_interface_fetch_row(pnode2, TRUE,

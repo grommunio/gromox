@@ -111,7 +111,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		}
 	}
 	if (FALSE == table_object_set_columns(ptable, pproptags)) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	return ecSuccess;
@@ -243,7 +243,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		}
 	}
 	if (FALSE == table_object_set_sorts(ptable, psort_criteria)) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	table_object_unload(ptable);
@@ -283,7 +283,7 @@ uint32_t rop_restrict(uint8_t res_flags,
 		}
 	}
 	if (FALSE == table_object_set_restriction(ptable, pres)) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	table_object_unload(ptable);
@@ -340,7 +340,7 @@ uint32_t rop_queryrows(uint8_t flags,
 		for (i=0; i<tmp_set.count; i++) {
 			if (FALSE == common_util_propvals_to_row(tmp_set.pparray[i],
 				table_object_get_columns(ptable), &tmp_row)) {
-				return EC_OUT_OF_MEMORY;
+				return ecMAPIOOM;
 			}
 			last_offset = pext->offset;
 			if (EXT_ERR_SUCCESS != ext_buffer_push_property_row(
@@ -604,7 +604,7 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pb = common_util_alloc(sizeof(uint32_t));
 	if (NULL == pbookmark->pb) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == table_object_create_bookmark(
 		ptable, (uint32_t*)pbookmark->pb)) {
@@ -720,11 +720,11 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	table_object_set_position(ptable, position);
 	*pprow = common_util_alloc(sizeof(PROPERTY_ROW));
 	if (NULL == *pprow) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == common_util_propvals_to_row(
 		&propvals, *ppcolumns, *pprow)) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	return ecSuccess;
 }
@@ -833,7 +833,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 	for (i=0; i<tmp_set.count; i++) {
 		if (FALSE == common_util_propvals_to_row(tmp_set.pparray[i],
 			table_object_get_columns(ptable), &tmp_row)) {
-			return EC_OUT_OF_MEMORY;	
+			return ecMAPIOOM;
 		}
 		last_offset = pext->offset;
 		if (EXT_ERR_SUCCESS != ext_buffer_push_property_row(
@@ -919,7 +919,7 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 	pcollapse_state->cb = sizeof(uint32_t);
 	pcollapse_state->pb = common_util_alloc(sizeof(uint32_t));
 	if (NULL == pcollapse_state->pb) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == table_object_store_state(ptable, row_id,
 		row_instance, (uint32_t*)pcollapse_state->pb)) {
@@ -959,7 +959,7 @@ uint32_t rop_setcollapsestate(
 	pbookmark->cb = sizeof(uint32_t);
 	pbookmark->pb = common_util_alloc(sizeof(uint32_t));
 	if (NULL == pbookmark->pb) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == table_object_restore_state(
 		ptable, *(uint32_t*)pcollapse_state->pb,

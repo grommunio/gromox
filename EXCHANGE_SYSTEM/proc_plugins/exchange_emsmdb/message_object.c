@@ -1568,8 +1568,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = 
-												EC_OUT_OF_MEMORY;
+					pproblems->pproblem[pproblems->count].err = ecMAPIOOM;
 					pproblems->count ++;
 					continue;
 				}

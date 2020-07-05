@@ -906,7 +906,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -977,7 +977,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_logon(username,
@@ -1033,7 +1033,7 @@ ZEND_FUNCTION(mapi_openentry)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = mapi_type;
@@ -1080,7 +1080,7 @@ ZEND_FUNCTION(mapi_openaddressbook)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_ADDRESSBOOK;
@@ -1134,7 +1134,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = mapi_type;
@@ -1278,7 +1278,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_TABLE;
@@ -1327,7 +1327,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_STORE;
@@ -1382,7 +1382,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_PROFPROPERTY;
@@ -1445,7 +1445,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_TABLE;
@@ -1508,7 +1508,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_TABLE;
@@ -1555,7 +1555,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_MESSAGE;
@@ -1756,7 +1756,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_FOLDER;
@@ -1981,7 +1981,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = mapi_type;
@@ -2100,7 +2100,7 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 		pstore->hsession, pstore->hobject, sub_id)) {
 		zarafa_client_unadvise(pstore->hsession,
 			pstore->hobject, sub_id);
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_LONG(sub_id);
@@ -2156,7 +2156,7 @@ ZEND_FUNCTION(mapi_sink_create)
     
 	psink = notif_sink_create();
 	if (NULL == psink) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		RETVAL_FALSE;
 		if (MAPI_G(exceptions_enabled)) {
 			zend_throw_exception(MAPI_G(exception_ce),
@@ -2706,7 +2706,7 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_FOLDER;
@@ -2829,7 +2829,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_TABLE;
@@ -2875,7 +2875,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_ATTACHMENT;
@@ -2923,7 +2923,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_ATTACHMENT;
@@ -3251,7 +3251,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 	}
 	pstream = stream_object_create();
 	if (NULL == pstream) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	stream_object_set_parent(
@@ -3311,7 +3311,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_TABLE;
@@ -3396,7 +3396,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_MESSAGE;
@@ -3895,7 +3895,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		} else {
 			pstream = stream_object_create();
 			if (NULL == pstream) {
-				MAPI_G(hr) = EC_OUT_OF_MEMORY;
+				MAPI_G(hr) = ecMAPIOOM;
 				goto THROW_EXCEPTION;
 			}
 			stream_object_set_parent(
@@ -3928,7 +3928,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		}
 		presource = st_malloc<MAPI_RESOURCE>();
 		if (NULL == presource) {
-			MAPI_G(hr) = EC_OUT_OF_MEMORY;
+			MAPI_G(hr) = ecMAPIOOM;
 			goto THROW_EXCEPTION;
 		}
 		presource->type = MAPI_MESSAGE;
@@ -3961,7 +3961,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		}
 		pexporter = st_malloc<ICS_EXPORT_CTX>();
 		if (NULL == pexporter) {
-			MAPI_G(hr) = EC_OUT_OF_MEMORY;
+			MAPI_G(hr) = ecMAPIOOM;
 			goto THROW_EXCEPTION;
 		}
 		pexporter->hsession = probject->hsession;
@@ -3996,7 +3996,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		}
 		pimporter = st_malloc<ICS_IMPORT_CTX>();
 		if (NULL == pimporter) {
-			MAPI_G(hr) = EC_OUT_OF_MEMORY;
+			MAPI_G(hr) = ecMAPIOOM;
 			goto THROW_EXCEPTION;
 		}
 		pimporter->hsession = probject->hsession;
@@ -4025,7 +4025,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		}
 		pimporter = st_malloc<ICS_IMPORT_CTX>();
 		if (NULL == pimporter) {
-			MAPI_G(hr) = EC_OUT_OF_MEMORY;
+			MAPI_G(hr) = ecMAPIOOM;
 			goto THROW_EXCEPTION;
 		}
 		pimporter->hsession = probject->hsession;
@@ -4211,7 +4211,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 	propids.count = proptags.count;
 	propids.ppropid = sta_malloc<uint16_t>(proptags.count);
 	if (NULL == propids.ppropid) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	for (i=0; i<proptags.count; i++) {
@@ -4318,7 +4318,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	pbuff = sta_malloc<char>(bufflen);
 	if (NULL == pbuff) {
 		close(pipes_out[0]);
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	while ((readlen = read(pipes_out[0],
@@ -4329,7 +4329,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 			pbuff = sta_realloc<char>(pbuff, bufflen);
 			if (NULL == pbuff) {
 				close(pipes_out[0]);
-				MAPI_G(hr) = EC_OUT_OF_MEMORY;
+				MAPI_G(hr) = ecMAPIOOM;
 				goto THROW_EXCEPTION;
 			}
 		}
@@ -4375,7 +4375,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_TABLE;
@@ -4678,7 +4678,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	perm_set.count = zend_hash_num_elements(ptarget_hash);
 	perm_set.prows = sta_malloc<PERMISSION_ROW>(perm_set.count);
 	if (NULL == perm_set.prows) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 
@@ -5327,7 +5327,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_MESSAGE;
@@ -5610,7 +5610,7 @@ ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 	}
 	pctx = st_malloc<ICS_IMPORT_CTX>();
 	if (NULL == pctx) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	pctx->ics_type = ICS_TYPE_CONTENTS;
@@ -5644,7 +5644,7 @@ ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 	}
 	pctx = st_malloc<ICS_IMPORT_CTX>();
 	if (NULL == pctx) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	pctx->ics_type = ICS_TYPE_HIERARCHY;
@@ -5698,7 +5698,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	}
 	pstream = stream_object_create();
 	if (NULL == pstream) {
-		MAPI_G(hr) = EC_OUT_OF_MEMORY;
+		MAPI_G(hr) = ecMAPIOOM;
 		goto THROW_EXCEPTION;
 	}
 	stream_object_write(pstream, eml_bin.pb, eml_bin.cb);
@@ -5996,7 +5996,7 @@ ZEND_FUNCTION(kc_session_save)
 		return;	
 	}
 	if (!ext_pack_push_init(&push_ctx)) {
-		RETVAL_LONG(EC_OUT_OF_MEMORY);
+		RETVAL_LONG(ecMAPIOOM);
 		return;	
 	}
 	ext_pack_push_guid(&push_ctx, &psession->hsession);
@@ -6035,7 +6035,7 @@ ZEND_FUNCTION(kc_session_restore)
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
 	if (NULL == presource) {
-		RETVAL_LONG(EC_OUT_OF_MEMORY);
+		RETVAL_LONG(ecMAPIOOM);
 		return;
 	}
 	presource->type = MAPI_SESSION;

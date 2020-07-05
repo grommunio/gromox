@@ -79,7 +79,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 		return ecError;
 	}
 	if (TRUE == b_exceed) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	return ecSuccess;
 }
@@ -108,7 +108,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 	ptable = table_object_create(plogon, pfolder,
 	         flags, ropGetRulesTable, logon_id);
 	if (NULL == ptable) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);

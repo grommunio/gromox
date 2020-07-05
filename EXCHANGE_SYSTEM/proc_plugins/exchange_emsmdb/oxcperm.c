@@ -113,7 +113,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	ptable = table_object_create(plogon, pfolder, flags,
 	         ropGetPermissionsTable, logon_id);
 	if (NULL == ptable) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_TABLE, ptable);

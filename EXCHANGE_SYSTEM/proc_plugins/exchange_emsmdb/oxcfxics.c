@@ -441,7 +441,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	}
 	ptransfer_data->pb = common_util_alloc(len);
 	if (NULL == ptransfer_data->pb) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (OBJECT_TYPE_FASTDOWNCTX == object_type) {
 		if (FALSE == fastdownctx_object_get_buffer(
@@ -604,12 +604,12 @@ uint32_t rop_fasttransfersourcecopymessages(
 	}
 	pmids = eid_array_init();
 	if (NULL == pmids) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (FALSE == eid_array_batch_append(pmids,
 		pmessage_ids->count, pmessage_ids->pll)) {
 		eid_array_free(pmids);
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	if (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) {
 		b_chginfo = TRUE;
@@ -1569,7 +1569,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval = common_util_alloc(
 			(8 + ppropvals->count)*sizeof(TAGGED_PROPVAL));
 		if (NULL == tmp_propvals.ppropval) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 		tmp_propvals.ppropval[0].proptag = PROP_TAG_FOLDERID;
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
@@ -1685,7 +1685,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval = common_util_alloc(
 		(5 + ppropvals->count)*sizeof(TAGGED_PROPVAL));
 	if (NULL == tmp_propvals.ppropval) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	tmp_propvals.ppropval[0].proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	tmp_propvals.ppropval[0].pvalue = phichyvals->ppropval[2].pvalue;
@@ -1798,7 +1798,7 @@ uint32_t rop_syncimportdeletes(
 		message_ids.pids = common_util_alloc(
 				sizeof(uint64_t)*pbins->count);
 		if (NULL == message_ids.pids) {
-			return EC_OUT_OF_MEMORY;
+			return ecMAPIOOM;
 		}
 	}
 	for (i=0; i<pbins->count; i++) {

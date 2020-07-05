@@ -40,7 +40,7 @@ uint32_t rop_registernotification(
 	psub = subscription_object_create(plogon, logon_id,
 		notification_types, b_whole, folder_id, message_id);
 	if (NULL == psub) {
-		return EC_OUT_OF_MEMORY;
+		return ecMAPIOOM;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 		logon_id, hin, OBJECT_TYPE_SUBSCRIPTION, psub);
