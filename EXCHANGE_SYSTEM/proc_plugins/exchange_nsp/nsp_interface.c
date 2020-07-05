@@ -97,7 +97,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
 		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
-			return MAPI_E_INVALID_OBJECT;
+			return ecInvalidObject;
 		}
 		if (NULL == pbuff) {
 			pprop->value.pstr = ndr_stack_alloc(
@@ -741,7 +741,7 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 	
 	node_type = ab_tree_get_node_type(pnode);
 	if (node_type > 0x80) {
-		return MAPI_E_INVALID_OBJECT;
+		return ecInvalidObject;
 	}
 	for (i=0; i<pproptags->cvalues; i++) {
 		pprop = common_util_propertyrow_enlarge(prow);
@@ -2222,7 +2222,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	case NODE_TYPE_DOMAIN:
 	case NODE_TYPE_GROUP:
 	case NODE_TYPE_CLASS:
-		return MAPI_E_INVALID_OBJECT;
+		return ecInvalidObject;
 	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
@@ -2367,7 +2367,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		pproptags->pproptag[17] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
 		break;
 	default:
-		return MAPI_E_INVALID_OBJECT;
+		return ecInvalidObject;
 	}
 	return ecSuccess;
 }
@@ -2392,7 +2392,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (0 == mid) {
 		*ppproptags = NULL;
-		return MAPI_E_INVALID_OBJECT;
+		return ecInvalidObject;
 	}
 	if (CODEPAGE_UNICODE == codepage) {
 		b_unicode = TRUE;
@@ -2416,7 +2416,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 	if (NULL == pnode) {
 		ab_tree_put_base(pbase);
 		*ppproptags = NULL;
-		return MAPI_E_INVALID_OBJECT;
+		return ecInvalidObject;
 	}
 	if (nsp_interface_get_default_proptags(ab_tree_get_node_type(pnode),
 	    b_unicode, *ppproptags) == ecSuccess) {
@@ -3010,7 +3010,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	SIMPLE_TREE_NODE *ptnode;
 	
 	if (0 == mid) {
-		return MAPI_E_INVALID_OBJECT;
+		return ecInvalidObject;
 	}
 	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES != proptag) {
 		return ecNotSupported;
@@ -3031,7 +3031,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	double_list_init(&tmp_list);
 	ptnode = ab_tree_minid_to_node(pbase, mid);
 	if (NULL == ptnode) {
-		result = MAPI_E_INVALID_OBJECT;
+		result = ecInvalidObject;
 		goto EXIT_MOD_LINKATT;
 	}
 	switch (ab_tree_get_node_type(ptnode)) {
@@ -3040,7 +3040,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	case NODE_TYPE_EQUIPMENT:
 		break;
 	default:
-		result = MAPI_E_INVALID_OBJECT;
+		result = ecInvalidObject;
 		goto EXIT_MOD_LINKATT;
 	}
 	ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username);

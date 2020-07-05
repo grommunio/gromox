@@ -1022,7 +1022,7 @@ ZEND_FUNCTION(mapi_openentry)
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_openentry(psession->hsession,
@@ -1048,7 +1048,7 @@ ZEND_FUNCTION(mapi_openentry)
 		break;
 	default:
 		efree(presource);
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	MAPI_G(hr) = ecSuccess;
@@ -1075,7 +1075,7 @@ ZEND_FUNCTION(mapi_openaddressbook)
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
@@ -1123,7 +1123,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 		&pzresource, -1, name_mapi_addressbook,
 		le_mapi_addressbook);
 	if (MAPI_ADDRESSBOOK != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_openabentry(psession->hsession,
@@ -1152,7 +1152,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 		break;
 	default:
 		efree(presource);
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	MAPI_G(hr) = ecSuccess;
@@ -1188,7 +1188,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 		&pzresource, -1, name_mapi_addressbook,
 		le_mapi_addressbook);
 	if (MAPI_ADDRESSBOOK != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_tarray_set(pzarray, &cond_set TSRMLS_CC)) {
@@ -1233,7 +1233,7 @@ ZEND_FUNCTION(mapi_ab_getdefaultdir)
 		&pzresource, -1, name_mapi_addressbook,
 		le_mapi_addressbook);
 	if (MAPI_ADDRESSBOOK != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getabgal(psession->hsession, &entryid);
@@ -1268,7 +1268,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_loadstoretable(psession->hsession, &hobject);
@@ -1315,7 +1315,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_openstore(
@@ -1363,7 +1363,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (NULL != puid) {
@@ -1421,14 +1421,14 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_abcont) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_abcont, le_mapi_abcont);
 		if (MAPI_ABCONT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -1484,14 +1484,14 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_abcont) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_abcont, le_mapi_abcont);
 		if (MAPI_ABCONT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -1543,7 +1543,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_createmessage(
@@ -1591,7 +1591,7 @@ ZEND_FUNCTION(mapi_folder_deletemessages)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_binary_array(pzarray, &entryid_array TSRMLS_CC)) {
@@ -1637,13 +1637,13 @@ ZEND_FUNCTION(mapi_folder_copymessages)
 	ZEND_FETCH_RESOURCE(psrcfolder, MAPI_RESOURCE*,
 		&pzsrcfolder, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != psrcfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pdstfolder, MAPI_RESOURCE*,
 		&pzdstfolder, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pdstfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_binary_array(pzarray, &entryid_array TSRMLS_CC)) {
@@ -1687,7 +1687,7 @@ ZEND_FUNCTION(mapi_folder_setreadflags)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_binary_array(pzarray, &entryid_array TSRMLS_CC)) {
@@ -1743,7 +1743,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_createfolder(
@@ -1793,7 +1793,7 @@ ZEND_FUNCTION(mapi_folder_deletefolder)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_deletefolder(
@@ -1830,7 +1830,7 @@ ZEND_FUNCTION(mapi_folder_emptyfolder)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_emptyfolder(
@@ -1875,13 +1875,13 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 	ZEND_FETCH_RESOURCE(psrcfolder, MAPI_RESOURCE*,
 		&pzvalsrcfolder, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != psrcfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pdstfolder, MAPI_RESOURCE*,
 		&pzvaldstfolder, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pdstfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (0 == name_len) {
@@ -1970,7 +1970,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_openstoreentry(pstore->hsession,
@@ -2030,7 +2030,7 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (NULL == sourcekey_message.pb || 0 == sourcekey_message.cb) {
@@ -2079,7 +2079,7 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psink, NOTIF_SINK*, &pzressink,
@@ -2130,7 +2130,7 @@ ZEND_FUNCTION(mapi_msgstore_unadvise)
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_unadvise(pstore->hsession,
@@ -2239,7 +2239,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (NULL != pzrestriction) {
@@ -2307,7 +2307,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (NULL != pzproptags) {
@@ -2360,7 +2360,7 @@ ZEND_FUNCTION(mapi_table_setcolumns)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_proptag_array(pzproptags, &proptags TSRMLS_CC)) {
@@ -2405,7 +2405,7 @@ ZEND_FUNCTION(mapi_table_seekrow)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_seekrow(ptable->hsession,
@@ -2444,7 +2444,7 @@ ZEND_FUNCTION(mapi_table_sort)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_sortorder_set(pzsortarray, &sortcriteria TSRMLS_CC)) {
@@ -2483,7 +2483,7 @@ ZEND_FUNCTION(mapi_table_getrowcount)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getrowcount(
@@ -2524,7 +2524,7 @@ ZEND_FUNCTION(mapi_table_restrict)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_restriction(pzrestrictarray, &restriction TSRMLS_CC)) {
@@ -2572,7 +2572,7 @@ ZEND_FUNCTION(mapi_table_findrow)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_restriction(pzrestrictarray, &restriction TSRMLS_CC)) {
@@ -2612,7 +2612,7 @@ ZEND_FUNCTION(mapi_table_createbookmark)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_createbookmark(
@@ -2648,7 +2648,7 @@ ZEND_FUNCTION(mapi_table_freebookmark)
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_table, le_mapi_table);
 	if (MAPI_TABLE != ptable->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_freebookmark(
@@ -2687,7 +2687,7 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getreceivefolder(
@@ -2742,7 +2742,7 @@ ZEND_FUNCTION(mapi_message_modifyrecipients)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_tarray_set(pzadrlist, &rcpt_list TSRMLS_CC)) {
@@ -2781,7 +2781,7 @@ ZEND_FUNCTION(mapi_message_submitmessage)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_submitmessage(
@@ -2817,7 +2817,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_loadattachmenttable(
@@ -2863,7 +2863,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_openattachment(
@@ -2911,7 +2911,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_createattachment(
@@ -2960,7 +2960,7 @@ ZEND_FUNCTION(mapi_message_deleteattach)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_deleteattachment(
@@ -3213,35 +3213,35 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
 		if (MAPI_MESSAGE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_attachment) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_attachment, le_mapi_attachment);
 		if (MAPI_ATTACHMENT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_msgstore) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 		if (MAPI_STORE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_mailuser) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_mailuser, le_mapi_mailuser);
 		if (MAPI_MAILUSER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -3299,7 +3299,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_loadrecipienttable(
@@ -3344,7 +3344,7 @@ ZEND_FUNCTION(mapi_message_setreadflag)
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_setmessagereadflag(
@@ -3384,7 +3384,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 		&pzresource, -1, name_mapi_attachment,
 		le_mapi_attachment);
 	if (MAPI_ATTACHMENT != pattach->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_openembedded(
@@ -3433,7 +3433,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzstore, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_propname_array(pznames,
@@ -3484,35 +3484,35 @@ ZEND_FUNCTION(mapi_setprops)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
 		if (MAPI_MESSAGE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_attachment) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_attachment, le_mapi_attachment);
 		if (MAPI_ATTACHMENT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_msgstore) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 		if (MAPI_STORE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_property) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_property, le_mapi_property);
 		if (MAPI_PROFPROPERTY != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -3574,39 +3574,39 @@ ZEND_FUNCTION(mapi_copyto)
 		ZEND_FETCH_RESOURCE(psrcobject, MAPI_RESOURCE*,
 			&pzsrc, -1, name_mapi_message, le_mapi_message);
 		if (MAPI_MESSAGE != psrcobject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 		ZEND_FETCH_RESOURCE(pdstobject, MAPI_RESOURCE*,
 			&pzdst, -1, name_mapi_message, le_mapi_message);
 		if (MAPI_MESSAGE != pdstobject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
 		ZEND_FETCH_RESOURCE(psrcobject, MAPI_RESOURCE*,
 			&pzsrc, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != psrcobject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 		ZEND_FETCH_RESOURCE(pdstobject, MAPI_RESOURCE*,
 			&pzdst, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != pdstobject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_attachment) {
 		ZEND_FETCH_RESOURCE(psrcobject, MAPI_RESOURCE*,
 			&pzsrc, -1, name_mapi_attachment, le_mapi_attachment);
 		if (MAPI_ATTACHMENT != psrcobject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 		ZEND_FETCH_RESOURCE(pdstobject, MAPI_RESOURCE*,
 			&pzdst, -1, name_mapi_attachment, le_mapi_attachment);
 		if (MAPI_ATTACHMENT != pdstobject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -3662,35 +3662,35 @@ ZEND_FUNCTION(mapi_savechanges)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
 		if (MAPI_MESSAGE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_attachment) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_attachment, le_mapi_attachment);
 		if (MAPI_ATTACHMENT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_msgstore) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 		if (MAPI_STORE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_property) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_property, le_mapi_property);
 		if (MAPI_PROFPROPERTY != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -3741,28 +3741,28 @@ ZEND_FUNCTION(mapi_deleteprops)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
 		if (MAPI_MESSAGE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_attachment) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_attachment, le_mapi_attachment);
 		if (MAPI_ATTACHMENT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_msgstore) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 		if (MAPI_STORE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -3838,28 +3838,28 @@ ZEND_FUNCTION(mapi_openproperty)
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_message, le_mapi_message);
 		if (MAPI_MESSAGE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_attachment) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_attachment, le_mapi_attachment);
 		if (MAPI_ATTACHMENT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_msgstore) {
 		ZEND_FETCH_RESOURCE(probject, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 		if (MAPI_STORE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -4075,7 +4075,7 @@ ZEND_FUNCTION(mapi_getprops)
 				&pzresource, -1, name_mapi_message,
 				le_mapi_message);
 		if (MAPI_MESSAGE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
@@ -4083,7 +4083,7 @@ ZEND_FUNCTION(mapi_getprops)
 					&pzresource, -1, name_mapi_folder,
 					le_mapi_folder);
 		if (MAPI_FOLDER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_attachment) {
@@ -4091,7 +4091,7 @@ ZEND_FUNCTION(mapi_getprops)
 				&pzresource, -1, name_mapi_attachment,
 				le_mapi_attachment);
 		if (MAPI_ATTACHMENT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_msgstore) {
@@ -4099,7 +4099,7 @@ ZEND_FUNCTION(mapi_getprops)
 				&pzresource, -1, name_mapi_msgstore,
 				le_mapi_msgstore);
 		if (MAPI_STORE != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_mailuser) {
@@ -4107,7 +4107,7 @@ ZEND_FUNCTION(mapi_getprops)
 				&pzresource, -1, name_mapi_mailuser,
 				le_mapi_mailuser);
 		if (MAPI_MAILUSER != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_distlist) {
@@ -4115,7 +4115,7 @@ ZEND_FUNCTION(mapi_getprops)
 				&pzresource, -1, name_mapi_distlist,
 				le_mapi_distlist);
 		if (MAPI_DISTLIST != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_abcont) {
@@ -4123,7 +4123,7 @@ ZEND_FUNCTION(mapi_getprops)
 					&pzresource, -1, name_mapi_abcont,
 					le_mapi_abcont);
 		if (MAPI_ABCONT != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_property) {
@@ -4131,7 +4131,7 @@ ZEND_FUNCTION(mapi_getprops)
 				&pzresource, -1, name_mapi_property,
 				le_mapi_property);
 		if (MAPI_PROFPROPERTY != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_addressbook) {
@@ -4139,7 +4139,7 @@ ZEND_FUNCTION(mapi_getprops)
 			&pzresource, -1, name_mapi_addressbook,
 			le_mapi_addressbook);
 		if (MAPI_ADDRESSBOOK != probject->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -4201,7 +4201,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 	if (MAPI_STORE != pstore->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	if (!php_to_proptag_array(pzarray, &proptags TSRMLS_CC)) {
@@ -4363,7 +4363,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_loadruletable(
@@ -4415,7 +4415,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getsearchcriteria(
@@ -4472,7 +4472,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (NULL == pzrestriction) {
@@ -4532,7 +4532,7 @@ ZEND_FUNCTION(mapi_folder_modifyrules)
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_folder, le_mapi_folder);
 	if (MAPI_FOLDER != pfolder->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	if (!php_to_rule_list(pzrows, &rule_list TSRMLS_CC)) {
@@ -4583,14 +4583,14 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		ZEND_FETCH_RESOURCE(presource, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_msgstore, le_mapi_msgstore);
 		if (MAPI_STORE != presource->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else if (type == le_mapi_folder) {
 		ZEND_FETCH_RESOURCE(presource, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != presource->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -4661,7 +4661,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 		ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
 			&pzresource, -1, name_mapi_folder, le_mapi_folder);
 		if (MAPI_FOLDER != pfolder->type) {
-			MAPI_G(hr) = EC_INVALID_OBJECT;
+			MAPI_G(hr) = ecInvalidObject;
 			goto THROW_EXCEPTION;
 		}
 	} else {
@@ -4766,7 +4766,7 @@ ZEND_FUNCTION(mapi_getuseravailability)
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getuseravailability(
@@ -6135,7 +6135,7 @@ ZEND_FUNCTION(mapi_linkmessage)
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzresource, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		MAPI_G(hr) = EC_INVALID_OBJECT;
+		MAPI_G(hr) = ecInvalidObject;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_linkmessage(psession->hsession,
