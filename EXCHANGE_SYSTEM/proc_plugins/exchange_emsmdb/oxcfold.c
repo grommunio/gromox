@@ -44,7 +44,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	replid = rop_util_get_replid(folder_id);
 	if (TRUE == logon_object_check_private(plogon)) {
 		if (1 != replid) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 	} else {
 		if (1 != replid) {
@@ -187,7 +187,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	case FOLDER_TYPE_SEARCH:
 		break;
 	default:
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	pparent = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pparent) {
@@ -213,15 +213,15 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pfolder_name,
 			folder_name, sizeof(folder_name)) < 0) {
-			return EC_INVALID_PARAMETER;	
+			return ecInvalidParam;
 		}
 		if (common_util_convert_string(TRUE, pfolder_comment,
 			folder_comment, sizeof(folder_comment)) < 0) {
-			return EC_INVALID_PARAMETER;	
+			return ecInvalidParam;
 		}
 	} else {
 		if (strlen(pfolder_name) >= sizeof(folder_name)) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		strcpy(folder_name, pfolder_name);
 		strncpy(folder_comment, pfolder_comment, sizeof(folder_comment));
@@ -765,11 +765,11 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pnew_name,
 			new_name, sizeof(new_name)) < 0) {
-			return EC_INVALID_PARAMETER;	
+			return ecInvalidParam;
 		}
 	} else {
 		if (strlen(pnew_name) >= sizeof(new_name)) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		strcpy(new_name, pnew_name);
 	}
@@ -919,11 +919,11 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pnew_name,
 			new_name, sizeof(new_name)) < 0) {
-			return EC_INVALID_PARAMETER;	
+			return ecInvalidParam;
 		}
 	} else {
 		if (strlen(pnew_name) >= sizeof(new_name)) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		strcpy(new_name, pnew_name);
 	}
@@ -1250,7 +1250,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	if (table_flags & (~(TABLE_FLAG_DEPTH | TABLE_FLAG_DEFERREDERRORS |
 		TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
 		TABLE_FLAG_USEUNICODE | TABLE_FLAG_SUPPRESSNOTIFICATIONS))) {
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1334,11 +1334,11 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	}
 	if (FALSE == b_conversation && (table_flags
 		& TABLE_FLAG_CONVERSATIONMEMBERS)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (table_flags & TABLE_FLAG_ASSOCIATED) {
 		if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		b_fai = TRUE;
 	} else {

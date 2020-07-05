@@ -268,7 +268,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	LOGON_OBJECT *plogon;
 	
 	if (FALSE == common_util_check_message_class(pstr_class)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
@@ -302,7 +302,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	LOGON_OBJECT *plogon;
 	
 	if (FALSE == common_util_check_message_class(pstr_class)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if ('\0' == pstr_class[0] && 0 == folder_id) {
 		return ecError;
@@ -512,7 +512,7 @@ uint32_t rop_longtermidfromid(uint64_t id,
 	memset(plong_term_id, 0, sizeof(LONG_TERM_ID));
 	if (TRUE == logon_object_check_private(plogon)) {
 		if (1 != rop_util_get_replid(id)) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		plong_term_id->guid = rop_util_make_user_guid(
 					logon_object_get_account_id(plogon));
@@ -558,20 +558,20 @@ uint32_t rop_idfromlongtermid(
 		tmp_guid = rop_util_make_user_guid(
 					logon_object_get_account_id(plogon));
 		if (0 != memcmp(&tmp_guid, &plong_term_id->guid, sizeof(GUID))) {
-			return EC_INVALID_PARAMETER;	
+			return ecInvalidParam;
 		}
 		*pid = rop_util_make_eid(1, plong_term_id->global_counter);
 	} else {
 		domain_id = rop_util_make_domain_id(plong_term_id->guid);
 		if (-1 == domain_id) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		if (domain_id == logon_object_get_account_id(plogon)) {
 			replid = 1;
 		} else {
 			if (FALSE == common_util_check_same_org(
 				domain_id, logon_object_get_account_id(plogon))) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			if (FALSE == exmdb_client_get_mapping_replid(
 				logon_object_get_dir(plogon),

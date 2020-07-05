@@ -268,7 +268,7 @@ uint32_t rop_fasttransferdestconfigure(
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (flags & ~FAST_DEST_CONFIG_FLAG_MOVE) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -309,7 +309,7 @@ uint32_t rop_fasttransferdestconfigure(
 		root_element = ROOT_ELEMENT_TOPFOLDER;
 		break;
 	default:
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (ROOT_ELEMENT_TOPFOLDER == root_element ||
 		ROOT_ELEMENT_MESSAGELIST == root_element ||
@@ -488,12 +488,12 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
 		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
 		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if ((send_options & SEND_OPTIONS_UNICODE) &&
 		(send_options & SEND_OPTIONS_USECPID) &&
 		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -559,12 +559,12 @@ uint32_t rop_fasttransfersourcecopymessages(
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
 		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
 		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	if ((send_options & SEND_OPTIONS_UNICODE) &&
 		(send_options & SEND_OPTIONS_USECPID) &&
 		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	/* we ignore the FAST_COPY_MESSAGE_FLAG_MOVE
 	   in flags just like exchange 2010 or later */
@@ -657,16 +657,16 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
 		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
 		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	if ((send_options & SEND_OPTIONS_UNICODE) &&
 		(send_options & SEND_OPTIONS_USECPID) &&
 		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	/* just like exchange 2010 or later */
 	if (flags & FAST_COPY_TO_FLAG_MOVE) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -821,16 +821,16 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
 		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
 		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	if ((send_options & SEND_OPTIONS_UNICODE) &&
 		(send_options & SEND_OPTIONS_USECPID) &&
 		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	/* just like exchange 2010 or later */
 	if (flags & FAST_COPY_PROPERTIES_FLAG_MOVE) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -999,21 +999,21 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	
 	if (SYNC_TYPE_CONTENTS != sync_type &&
 		SYNC_TYPE_HIERARCHY != sync_type) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (send_options & ~(SEND_OPTIONS_UNICODE|
 		SEND_OPTIONS_USECPID|SEND_OPTIONS_RECOVERMODE|
 		SEND_OPTIONS_FORCEUNICODE|SEND_OPTIONS_PARTIAL|
 		SEND_OPTIONS_RESERVED1|SEND_OPTIONS_RESERVED2)) {
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	if ((send_options & SEND_OPTIONS_UNICODE) &&
 		(send_options & SEND_OPTIONS_USECPID) &&
 		(send_options & SEND_OPTIONS_RECOVERMODE)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (SYNC_TYPE_HIERARCHY == sync_type && NULL != pres) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1087,14 +1087,14 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	
 	if (import_flags & (~(IMPORT_FLAG_ASSOCIATED|
 		IMPORT_FLAG_FAILONCONFLICT))) {
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	if (4 != ppropvals->count ||
 		PROP_TAG_SOURCEKEY != ppropvals->ppropval[0].proptag ||
 		PROP_TAG_LASTMODIFICATIONTIME != ppropvals->ppropval[1].proptag ||
 		PROP_TAG_CHANGEKEY != ppropvals->ppropval[2].proptag ||
 		PROP_TAG_PREDECESSORCHANGELIST != ppropvals->ppropval[3].proptag) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1116,7 +1116,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	folder_id = folder_object_get_id(pfolder);
 	pbin = ppropvals->ppropval[0].pvalue;
 	if (pbin == nullptr || pbin->cb != 22)
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return ecError;
 	}
@@ -1128,7 +1128,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 			logon_object_get_account_id(plogon));
 	}
 	if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	message_id = rop_util_make_eid(1, tmp_xid.local_id);
 	if (FALSE == exmdb_client_check_message(
@@ -1190,11 +1190,11 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		}
 		if (IMPORT_FLAG_ASSOCIATED & import_flags) {
 			if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 		} else {
 			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 		}
 		b_new = FALSE;
@@ -1435,7 +1435,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		PROP_TAG_CHANGEKEY != phichyvals->ppropval[3].proptag ||
 		PROP_TAG_PREDECESSORCHANGELIST != phichyvals->ppropval[4].proptag ||
 		PROP_TAG_DISPLAYNAME != phichyvals->ppropval[5].proptag) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1468,7 +1468,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	} else {
 		pbin = phichyvals->ppropval[0].pvalue;
 		if (pbin == nullptr || pbin->cb != 22)
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 			return ecError;
 		}
@@ -1476,7 +1476,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			tmp_guid = rop_util_make_user_guid(
 				logon_object_get_account_id(plogon));
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 		} else {
 			tmp_guid = rop_util_make_domain_guid(
@@ -1501,7 +1501,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	}
 	pbin = phichyvals->ppropval[1].pvalue;
 	if (pbin == nullptr || pbin->cb != 22)
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 		return ecError;
 	}
@@ -1509,7 +1509,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_guid = rop_util_make_user_guid(
 			logon_object_get_account_id(plogon));
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		folder_id = rop_util_make_eid(1, tmp_xid.local_id);
 	} else {
@@ -1518,11 +1518,11 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			domain_id = rop_util_make_domain_id(tmp_xid.guid);
 			if (-1 == domain_id) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			if (FALSE == common_util_check_same_org(
 				domain_id, logon_object_get_account_id(plogon))) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			if (FALSE == exmdb_client_get_mapping_replid(
 				logon_object_get_dir(plogon),
@@ -1530,7 +1530,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 				return ecError;
 			}
 			if (FALSE == b_found) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			folder_id = rop_util_make_eid(replid, tmp_xid.local_id);
 		} else {
@@ -1745,7 +1745,7 @@ uint32_t rop_syncimportdeletes(
 	
 	if (1 != ppropvals->count || PROPVAL_TYPE_BINARY_ARRAY
 		!= (ppropvals->ppropval[0].proptag & 0xFFFF)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1803,7 +1803,7 @@ uint32_t rop_syncimportdeletes(
 	}
 	for (i=0; i<pbins->count; i++) {
 		if (22 != pbins->pbin[i].cb) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		if (FALSE == common_util_binary_to_xid(
 			pbins->pbin + i, &tmp_xid)) {
@@ -1813,7 +1813,7 @@ uint32_t rop_syncimportdeletes(
 			tmp_guid = rop_util_make_user_guid(
 				logon_object_get_account_id(plogon));
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			eid = rop_util_make_eid(1, tmp_xid.local_id);
 		} else {
@@ -1821,7 +1821,7 @@ uint32_t rop_syncimportdeletes(
 				tmp_guid = rop_util_make_domain_guid(
 					logon_object_get_account_id(plogon));
 				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-					return EC_INVALID_PARAMETER;
+					return ecInvalidParam;
 				}
 				eid = rop_util_make_eid(1, tmp_xid.local_id);
 			} else {
@@ -1830,11 +1830,11 @@ uint32_t rop_syncimportdeletes(
 				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 					domain_id = rop_util_make_domain_id(tmp_xid.guid);
 					if (-1 == domain_id) {
-						return EC_INVALID_PARAMETER;
+						return ecInvalidParam;
 					}
 					if (FALSE == common_util_check_same_org(
 						domain_id, logon_object_get_account_id(plogon))) {
-						return EC_INVALID_PARAMETER;
+						return ecInvalidParam;
 					}
 					if (FALSE == exmdb_client_get_mapping_replid(
 						logon_object_get_dir(plogon),
@@ -1842,7 +1842,7 @@ uint32_t rop_syncimportdeletes(
 						return ecError;
 					}
 					if (FALSE == b_found) {
-						return EC_INVALID_PARAMETER;
+						return ecInvalidParam;
 					}
 					eid = rop_util_make_eid(replid, tmp_xid.local_id);
 				} else {
@@ -1961,10 +1961,10 @@ uint32_t rop_syncimportmessagemove(
 	if (22 != psrc_folder_id->cb ||
 		22 != psrc_message_id->cb ||
 		22 != pdst_message_id->cb) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (pchange_number->cb < 17 || pchange_number->cb > 24) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -2002,7 +2002,7 @@ uint32_t rop_syncimportmessagemove(
 	if (0 != guid_compare(&tmp_guid, &xid_fsrc.guid) ||
 		0 != guid_compare(&tmp_guid, &xid_src.guid) ||
 		0 != guid_compare(&tmp_guid, &xid_dst.guid)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	src_fid = rop_util_make_eid(1, xid_fsrc.local_id);
 	src_mid = rop_util_make_eid(1, xid_src.local_id);

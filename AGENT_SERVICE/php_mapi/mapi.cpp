@@ -483,7 +483,7 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 	
 	if (0 == memcmp(&pstream->hsession, &GUID_NONE, sizeof(GUID))
 		|| 0 == pstream->hparent || 0 == pstream->proptag) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	switch (pstream->proptag & 0xFFFF) {
 	case PROPVAL_TYPE_BINARY:
@@ -496,7 +496,7 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 			pstream->hparent, pstream->proptag & 0xFFFF0000
 			| PROPVAL_TYPE_WSTRING, pstream->content_bin.pb);
 	default:
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 }
 
@@ -722,7 +722,7 @@ ZEND_FUNCTION(mapi_prop_type)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS()
 		TSRMLS_CC, "l", &proptag) == FAILURE) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
 	} else {
 		MAPI_G(hr) = ecSuccess;
@@ -736,7 +736,7 @@ ZEND_FUNCTION(mapi_prop_id)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS()
 		TSRMLS_CC, "l", &proptag) == FAILURE) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
 	} else {
 		MAPI_G(hr) = ecSuccess;
@@ -750,7 +750,7 @@ ZEND_FUNCTION(mapi_is_error)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS()
 		TSRMLS_CC, "l", &errcode) == FAILURE) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
 	} else {
 		MAPI_G(hr) = ecSuccess;
@@ -765,7 +765,7 @@ ZEND_FUNCTION(mapi_make_scode)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS()
 		TSRMLS_CC, "ll", &sev, &code) == FAILURE) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
 	} else {
 		if (0 == sev) {
@@ -786,7 +786,7 @@ ZEND_FUNCTION(mapi_prop_tag)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ll", &proptype, &propid) == FAILURE || propid >
 		0xFFFF || proptype > 0xFFFF) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		RETVAL_FALSE;
 	} else {
 		MAPI_G(hr) = ecSuccess;
@@ -814,7 +814,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 		"sss|l", &pdisplayname, &name_len, &ptype, &type_len,
 		&paddress, &address_len, &flags) == FAILURE ||
 		NULL == ptype || '\0' == ptype[0] || NULL == paddress) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	if (NULL == pdisplayname) {
@@ -854,7 +854,7 @@ ZEND_FUNCTION(mapi_parseoneoff)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
 		&pentryid, &cbentryid) == FAILURE || NULL == pentryid) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(pentryid), cbentryid);
@@ -901,7 +901,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 		&flags, &wa_version, &wa_len, &misc_version, &misc_len)
 		== FAILURE || NULL == username || '\0' == username[0] ||
 		NULL == password) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	presource = st_malloc<MAPI_RESOURCE>();
@@ -952,7 +952,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 		&username, &username_len, &password, &password_len, &flags)
 		== FAILURE || NULL == username || '\0' == username[0] ||
 		NULL == password) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	if ('\0' == password[0]) {
@@ -1015,7 +1015,7 @@ ZEND_FUNCTION(mapi_openentry)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|sl",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -1069,7 +1069,7 @@ ZEND_FUNCTION(mapi_openaddressbook)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
@@ -1115,7 +1115,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|sl",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -1181,7 +1181,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
@@ -1226,7 +1226,7 @@ ZEND_FUNCTION(mapi_ab_getdefaultdir)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
@@ -1262,7 +1262,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
@@ -1308,7 +1308,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 	    "rs", &pzresource, &entryid.pb, &eid_size) ==
 		FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -1357,7 +1357,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rs", &pzresource, &puid, &uidlen) == FAILURE ||
 		NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
@@ -1370,7 +1370,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 		if (0 == uidlen) {
 			puid = NULL;
 		} else if (uidlen != sizeof(FLATUID)) {
-			MAPI_G(hr) = EC_INVALID_PARAMETER;
+			MAPI_G(hr) = ecInvalidParam;
 			goto THROW_EXCEPTION;
 		}
 	}
@@ -1412,7 +1412,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -1432,7 +1432,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -1475,7 +1475,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -1495,7 +1495,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -1537,7 +1537,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -1585,7 +1585,7 @@ ZEND_FUNCTION(mapi_folder_deletemessages)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -1631,7 +1631,7 @@ ZEND_FUNCTION(mapi_folder_copymessages)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rar|l",
 		&pzsrcfolder, &pzarray, &pzdstfolder, &flags) == FAILURE ||
 		NULL == pzsrcfolder || NULL == pzarray || NULL == pzdstfolder) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psrcfolder, MAPI_RESOURCE*,
@@ -1681,7 +1681,7 @@ ZEND_FUNCTION(mapi_folder_setreadflags)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra|l", &pzresource, &pzarray, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzarray) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -1734,7 +1734,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 		&pzresource, &pfname, &name_len, &pcomment, &comment_len,
 		&flags, &folder_type) == FAILURE || NULL == pzresource ||
 		NULL == pfname || '\0' == pfname[0]) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	if (NULL == pcomment || 0 == comment_len) {
@@ -1786,7 +1786,7 @@ ZEND_FUNCTION(mapi_folder_deletefolder)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs|l",
 	    &pzresource, &entryid.pb, &eid_size, &flags) == FAILURE
 		|| NULL == pzresource || NULL == entryid.pb) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -1824,7 +1824,7 @@ ZEND_FUNCTION(mapi_folder_emptyfolder)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -1868,7 +1868,7 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 	    &pzvalsrcfolder, &entryid.pb, &eid_size, &pzvaldstfolder,
 		&pname, &name_len, &flags) == FAILURE || NULL == pzvalsrcfolder ||
 		NULL == entryid.pb || 0 == entryid.cb || NULL == pzvaldstfolder) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -1916,7 +1916,7 @@ ZEND_FUNCTION(mapi_msgstore_createentryid)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rs", &pzresource, &mailboxdn, &dn_len) == FAILURE
 		|| NULL == mailboxdn || '\0' == mailboxdn[0]) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getstoreentryid(mailboxdn, &entryid);
@@ -1963,7 +1963,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 	    "r|sl", &pzresource, &entryid.pb, &eid_size,
 		&flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -2022,7 +2022,7 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	    &sourcekey_message.pb, &skmsg_size) == FAILURE
 		|| NULL == pzresource || NULL == sourcekey_folder.pb ||
 		0 == sourcekey_folder.cb) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	sourcekey_folder.cb = skey_size;
@@ -2072,7 +2072,7 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 	    "rslr", &pzresource, &entryid.pb, &eid_size,
 		&event_mask, &pzressink) == FAILURE || NULL ==
 		pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -2124,7 +2124,7 @@ ZEND_FUNCTION(mapi_msgstore_unadvise)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl",
 		&pzresource, &sub_id) == FAILURE || NULL == pzresource
 		|| 0 == sub_id) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
@@ -2180,7 +2180,7 @@ ZEND_FUNCTION(mapi_sink_timedwait)
 	ZVAL_NULL(&pznotifications);
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl",
 		&pzressink, &tmp_time) == FAILURE || NULL == pzressink) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto RETURN_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(psink, NOTIF_SINK*, &pzressink,
@@ -2233,7 +2233,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|aa",
 		&pzresource, &pzproptags, &pzrestriction) == FAILURE ||
 		NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2301,7 +2301,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|a!ll",
 		&pzresource, &pzproptags, &start, &row_count) == FAILURE ||
 		NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2354,7 +2354,7 @@ ZEND_FUNCTION(mapi_table_setcolumns)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ra|l",
 		&pzresource, &pzproptags, &flags) == FAILURE || NULL ==
 		pzresource || NULL == pzproptags) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2399,7 +2399,7 @@ ZEND_FUNCTION(mapi_table_seekrow)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rll",
 		&pzresource, &bookmark, &row_count) == FAILURE || NULL
 		== pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2438,7 +2438,7 @@ ZEND_FUNCTION(mapi_table_sort)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ra|l",
 		&pzresource, &pzsortarray, &flags) == FAILURE || NULL ==
 		pzresource || NULL == pzsortarray) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2477,7 +2477,7 @@ ZEND_FUNCTION(mapi_table_getrowcount)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2518,7 +2518,7 @@ ZEND_FUNCTION(mapi_table_restrict)
 		&pzresource, &pzrestrictarray, &flags) == FAILURE ||
 		NULL == pzresource || NULL == pzrestrictarray || 0 ==
 		zend_hash_num_elements(Z_ARRVAL_P(pzrestrictarray))) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2566,7 +2566,7 @@ ZEND_FUNCTION(mapi_table_findrow)
 		&pzresource, &pzrestrictarray, &bookmark, &flags) == FAILURE
 		|| NULL == pzresource || NULL == pzrestrictarray || 0 ==
 		zend_hash_num_elements(Z_ARRVAL_P(pzrestrictarray))) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2606,7 +2606,7 @@ ZEND_FUNCTION(mapi_table_createbookmark)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r",
 		&pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2642,7 +2642,7 @@ ZEND_FUNCTION(mapi_table_freebookmark)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl",
 		&pzresource, &bookmark) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(ptable, MAPI_RESOURCE*,
@@ -2681,7 +2681,7 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
@@ -2736,7 +2736,7 @@ ZEND_FUNCTION(mapi_message_modifyrecipients)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rla", &pzresource, &flags, &pzadrlist) == FAILURE
 		|| NULL == pzresource || NULL == pzadrlist) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -2775,7 +2775,7 @@ ZEND_FUNCTION(mapi_message_submitmessage)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -2811,7 +2811,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -2857,7 +2857,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl",
 		&pzresource, &attach_id) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -2905,7 +2905,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;	
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -2954,7 +2954,7 @@ ZEND_FUNCTION(mapi_message_deleteattach)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl|l",
 		&pzresource, &attach_id, &flags) == FAILURE || NULL ==
 		pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -2992,7 +2992,7 @@ ZEND_FUNCTION(mapi_stream_read)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rl", &pzresource, &wanted_bytes) == FAILURE ||
 		NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
@@ -3024,7 +3024,7 @@ ZEND_FUNCTION(mapi_stream_seek)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl|l",
 		&pzresource, &seek_offset, &flags) == FAILURE || NULL ==
 		pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
@@ -3053,7 +3053,7 @@ ZEND_FUNCTION(mapi_stream_setsize)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rl", &pzresource, &newsize) == FAILURE || NULL
 		== pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
@@ -3081,7 +3081,7 @@ ZEND_FUNCTION(mapi_stream_commit)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
@@ -3113,7 +3113,7 @@ ZEND_FUNCTION(mapi_stream_write)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rs",
 	    &pzresource, &data_block.pb, &dblk_size) == FAILURE
 		|| NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	data_block.cb = dblk_size;
@@ -3140,7 +3140,7 @@ ZEND_FUNCTION(mapi_stream_stat)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
@@ -3195,7 +3195,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rl|ls", &pzresource, &proptag, &flags, &guidstr,
 		&guidlen) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	switch (proptag & 0xFFFF) {
@@ -3204,7 +3204,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 	case PROPVAL_TYPE_WSTRING:
 		break;
 	default:
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -3245,7 +3245,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -3293,7 +3293,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -3338,7 +3338,7 @@ ZEND_FUNCTION(mapi_message_setreadflag)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
@@ -3377,7 +3377,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pattach, MAPI_RESOURCE*,
@@ -3427,7 +3427,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra|a", &pzstore, &pznames, &pzguids) == FAILURE
 		|| NULL == pzstore || NULL == pznames) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
@@ -3475,7 +3475,7 @@ ZEND_FUNCTION(mapi_setprops)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra", &pzresource, &pzpropvals) == FAILURE ||
 		NULL == pzresource || NULL == pzpropvals) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -3516,7 +3516,7 @@ ZEND_FUNCTION(mapi_setprops)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -3560,14 +3560,14 @@ ZEND_FUNCTION(mapi_copyto)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "raar|l",
 		&pzsrc, &pzexcludeiids, &pzexcludeprops, &pzdst, &flags)
 		== FAILURE || NULL == pzsrc || NULL == pzdst) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
 	auto type  = Z_RES_TYPE_P(pzsrc);
 	auto type1 = Z_RES_TYPE_P(pzdst);
 	if (type != type1) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	if(type == le_mapi_message) {
@@ -3610,7 +3610,7 @@ ZEND_FUNCTION(mapi_copyto)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -3653,7 +3653,7 @@ ZEND_FUNCTION(mapi_savechanges)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -3694,7 +3694,7 @@ ZEND_FUNCTION(mapi_savechanges)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -3732,7 +3732,7 @@ ZEND_FUNCTION(mapi_deleteprops)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra", &pzresource, &pzproptags) == FAILURE ||
 		NULL == pzresource || NULL == pzproptags) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -3766,7 +3766,7 @@ ZEND_FUNCTION(mapi_deleteprops)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -3816,7 +3816,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 			"rl", &pzresource, &proptag) == FAILURE || NULL
 			== pzresource) {
-			MAPI_G(hr) = EC_INVALID_PARAMETER;
+			MAPI_G(hr) = ecInvalidParam;
 			goto THROW_EXCEPTION;
 		}
 		flags = 0;
@@ -3827,7 +3827,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			"rlsll", &pzresource, &proptag, &guidstr,
 			&guidlen, &interfaceflags, &flags) == FAILURE ||
 			NULL == pzresource || NULL == guidstr) {
-			MAPI_G(hr) = EC_INVALID_PARAMETER;
+			MAPI_G(hr) = ecInvalidParam;
 			goto THROW_EXCEPTION;
 		}
 		ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(guidstr), sizeof(GUID));
@@ -4065,7 +4065,7 @@ ZEND_FUNCTION(mapi_getprops)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r|a", &pzresource, &pztagarray) == FAILURE ||
 		NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -4195,7 +4195,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra", &pzresource, &pzarray) == FAILURE || NULL
 		== pzresource || NULL == pzarray) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstore, MAPI_RESOURCE*,
@@ -4271,7 +4271,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"s", &rtfbuffer, &rtflen) == FAILURE || NULL ==
 		rtfbuffer || 0 == rtflen) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	if (-1 == pipe(pipes_in)) {
@@ -4357,7 +4357,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -4409,7 +4409,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
 		&pzresource, &flags) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -4466,7 +4466,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "raal",
 		&pzresource, &pzrestriction, &pzfolderlist, &flags) ==
 		FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -4526,7 +4526,7 @@ ZEND_FUNCTION(mapi_folder_modifyrules)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra|l", &pzresource, &pzrows, &flags) == FAILURE
 		|| NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pfolder, MAPI_RESOURCE*,
@@ -4570,7 +4570,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rl", &pzresource, &acl_type) == FAILURE || NULL
 		== pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	if (ACCESS_TYPE_GRANT != acl_type) {
@@ -4652,7 +4652,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra", &pzresource, &pzperms) == FAILURE || NULL
 		== pzresource || NULL == pzperms) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -4671,7 +4671,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	}
 	ptarget_hash = HASH_OF(pzperms);
 	if (NULL == ptarget_hash) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	zend_hash_internal_pointer_reset(ptarget_hash);
@@ -4759,7 +4759,7 @@ ZEND_FUNCTION(mapi_getuseravailability)
 	    &pzresource, &entryid.pb, &eid_size, &starttime, &endtime)
 		== FAILURE || NULL == pzresource || NULL == entryid.pb ||
 		0 == entryid.cb) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	entryid.cb = eid_size;
@@ -4817,7 +4817,7 @@ ZEND_FUNCTION(mapi_exportchanges_config)
 		&pzexcludeprops, &buffersize) == FAILURE || NULL
 		== pzresexportchanges || NULL == pzresstream ||
 		NULL == pzresimportchanges) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	pimporter = NULL;
@@ -4836,11 +4836,11 @@ ZEND_FUNCTION(mapi_exportchanges_config)
 				-1, name_mapi_importhierarchychanges,
 				le_mapi_importhierarchychanges);
 		} else {
-			MAPI_G(hr) = EC_INVALID_PARAMETER;
+			MAPI_G(hr) = ecInvalidParam;
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
@@ -5040,7 +5040,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx, ICS_EXPORT_CTX*, &pzresource,
@@ -5164,7 +5164,7 @@ ZEND_FUNCTION(mapi_exportchanges_updatestate)
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rr",
 		&pzresexportchanges, &pzresstream) == FAILURE || NULL
 		== pzresexportchanges || NULL == pzresstream) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
     ZEND_FETCH_RESOURCE(pctx, ICS_EXPORT_CTX*, &pzresexportchanges,
@@ -5197,7 +5197,7 @@ ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 	
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r", &pzresource) == FAILURE || NULL == pzresource) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
     ZEND_FETCH_RESOURCE(pctx, ICS_EXPORT_CTX*, &pzresource,
@@ -5230,7 +5230,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_config)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rrl",
 		&pzresimport, &pzresstream, &flags) == FAILURE || NULL
 		== pzresimport || NULL == pzresstream) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
@@ -5267,7 +5267,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r|r", &pzresimport, &pzresstream) == FAILURE ||
 		NULL == pzresimport || NULL == pzresstream) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
@@ -5310,7 +5310,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 		"ralz", &pzresimport, &pzresprops, &flags,
 		&pzresmessage) == FAILURE || NULL == pzresimport
 		|| NULL == pzresprops || NULL == pzresmessage) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
     ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
@@ -5359,7 +5359,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rla",
 		&pzresimport, &flags, &pzresmessages) == FAILURE ||
 		NULL == pzresimport || NULL == pzresmessages) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx,
@@ -5404,7 +5404,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ra",
 		&pzresimport, &pzresreadstates) == FAILURE || NULL ==
 		pzresimport || NULL == pzresreadstates) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
@@ -5454,7 +5454,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_config)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rrl",
 		&pzresimport, &pzresstream, &flags) == FAILURE || NULL
 		== pzresimport || NULL == pzresstream) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
@@ -5490,7 +5490,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"r|r", &pzresimport, &pzresstream) == FAILURE ||
 		NULL == pzresimport || NULL == pzresstream) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx,
@@ -5529,7 +5529,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"ra", &pzresimport, &pzresprops) == FAILURE ||
 		NULL == pzresimport || NULL == pzresprops) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx,
@@ -5571,7 +5571,7 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rla", &pzresimport, &flags, &pzresfolders) == FAILURE
 		|| NULL == pzresimport || NULL == pzresfolders) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pctx, ICS_IMPORT_CTX*, &pzresimport, -1,
@@ -5605,7 +5605,7 @@ ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"o", &pzobject) == FAILURE || NULL == pzobject) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	pctx = st_malloc<ICS_IMPORT_CTX>();
@@ -5639,7 +5639,7 @@ ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"o", &pzobject) == FAILURE || NULL == pzobject) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	pctx = st_malloc<ICS_IMPORT_CTX>();
@@ -5680,13 +5680,13 @@ ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rrra", &pzressession, &pzresaddrbook, &pzresmessage,
 		&pzresoptions) == FAILURE || NULL == pzresmessage) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresmessage, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_messagetorfc822(
@@ -5731,13 +5731,13 @@ ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 		&pzressession, &pzresstore, &pzresaddrbook, &pzresmessage,
 		&szstring, &cbstring, &pzresoptions) == FAILURE || NULL ==
 		pzresmessage) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresmessage, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	eml_bin.pb = reinterpret_cast<uint8_t *>(szstring);
@@ -5777,13 +5777,13 @@ ZEND_FUNCTION(mapi_icaltomapi)
 		&pzressession, &pzresstore, &pzresaddrbook, &pzresmessage,
 		&szstring, &cbstring, &b_norecipients) == FAILURE || NULL
 		== pzresmessage) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresmessage, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ical_bin.pb = reinterpret_cast<uint8_t *>(szstring);
@@ -5819,13 +5819,13 @@ ZEND_FUNCTION(mapi_mapitoical)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rrra", &pzressession, &pzresaddrbook, &pzresmessage,
 		&pzresoptions) == FAILURE || NULL == pzresmessage) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;	
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresmessage, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_messagetoical(
@@ -5860,13 +5860,13 @@ ZEND_FUNCTION(mapi_vcftomapi)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rrrs",
 	    &pzressession, &pzresstore, &pzresmessage, &szstring,
 	    &cbstring) == FAILURE || NULL == pzresmessage) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresmessage, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	vcf_bin.pb = reinterpret_cast<uint8_t *>(szstring);
@@ -5902,13 +5902,13 @@ ZEND_FUNCTION(mapi_mapitovcf)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rrra", &pzressession, &pzresaddrbook, &pzresmessage,
 		&pzresoptions) == FAILURE || NULL == pzresmessage) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	ZEND_FETCH_RESOURCE(pmessage, MAPI_RESOURCE*,
 		&pzresmessage, -1, name_mapi_message, le_mapi_message);
 	if (MAPI_MESSAGE != pmessage->type) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_messagetovcf(
@@ -5986,13 +5986,13 @@ ZEND_FUNCTION(kc_session_save)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"rz", &pzres, &pzoutstr) == FAILURE || NULL ==
 		pzres || NULL == pzoutstr) {
-		RETVAL_LONG(EC_INVALID_PARAMETER);
+		RETVAL_LONG(ecInvalidParam);
 		return;	
 	}
 	ZEND_FETCH_RESOURCE(psession, MAPI_RESOURCE*,
 		&pzres, -1, name_mapi_session, le_mapi_session);
 	if (MAPI_SESSION != psession->type) {
-		RETVAL_LONG(EC_INVALID_PARAMETER);
+		RETVAL_LONG(ecInvalidParam);
 		return;	
 	}
 	if (!ext_pack_push_init(&push_ctx)) {
@@ -6018,14 +6018,14 @@ ZEND_FUNCTION(kc_session_restore)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"zz", &pzdata, &pzres) == FAILURE || NULL == pzdata
 		|| NULL == pzres || Z_TYPE_P(pzdata) != IS_STRING) {
-		RETVAL_LONG(EC_INVALID_PARAMETER);
+		RETVAL_LONG(ecInvalidParam);
 		return;
 	}
 	data_bin.pb = reinterpret_cast<uint8_t *>(Z_STRVAL_P(pzdata));
 	data_bin.cb = Z_STRLEN_P(pzdata);
 	ext_pack_pull_init(&pull_ctx, data_bin.pb, data_bin.cb);
 	if (!ext_pack_pull_guid(&pull_ctx, &hsession)) {
-		RETVAL_LONG(EC_INVALID_PARAMETER);
+		RETVAL_LONG(ecInvalidParam);
 		return;
 	}
 	result = zarafa_client_checksession(hsession);
@@ -6058,7 +6058,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 		"s", &username, &username_len) == FAILURE) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;	
 	}
 	result = zarafa_client_uinfo(username, &entryid,
@@ -6095,7 +6095,7 @@ ZEND_FUNCTION(nsp_setuserpasswd)
 		"sss", &username, &username_len, &old_passwd,
 		&old_passwd_len, &new_passwd, &new_passwd_len)
 		== FAILURE) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;	
 	}
 	result = zarafa_client_setpasswd(username, old_passwd, new_passwd);
@@ -6127,7 +6127,7 @@ ZEND_FUNCTION(mapi_linkmessage)
 	    &message_entryid.pb, &msgeid_size) == FAILURE
 		|| NULL == pzresource || NULL == search_entryid.pb ||
 		NULL == message_entryid.pb) {
-		MAPI_G(hr) = EC_INVALID_PARAMETER;
+		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
 	search_entryid.cb = srcheid_size;

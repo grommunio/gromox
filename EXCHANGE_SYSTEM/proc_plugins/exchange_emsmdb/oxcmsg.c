@@ -460,7 +460,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *ppropvals;
 	
 	if (pproptags->count >= 0x7FEF || count >= 0x7FEF) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	for (i=0; i<pproptags->count; i++) {
 		switch (pproptags->pproptag[i]) {
@@ -473,7 +473,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 		case PROP_TAG_SEARCHKEY:
 		case PROP_TAG_SENDRICHINFO:
 		case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 	}
 	pmessage = rop_processor_get_object(plogmap,

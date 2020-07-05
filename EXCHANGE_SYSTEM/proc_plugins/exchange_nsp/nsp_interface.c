@@ -1140,7 +1140,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (0 == count && NULL == ptable) {
 		*pprows = NULL;
-		return MAPI_E_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	
 	/* MS-OXNSPI 3.1.4.1.8.10 */

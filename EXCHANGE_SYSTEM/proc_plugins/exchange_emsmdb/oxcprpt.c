@@ -50,7 +50,7 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 	} else if (PROPIDS_FROM_NAMES_FLAG_GETONLY == flags) {
 		b_create = FALSE;
 	} else {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (0 == ppropnames->count &&
 		OBJECT_TYPE_LOGON == object_type) {
@@ -693,7 +693,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	/* we don't support COPY_FLAG_MOVE, just
 		like exchange 2010 or later */
 	if (copy_flags & ~(COPY_FLAG_MOVE|COPY_FLAG_NOOVERWRITE)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1000,7 +1000,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	/* we don't support COPY_FLAG_MOVE, just
 		like exchange 2010 or later */
 	if (copy_flags & ~(COPY_FLAG_MOVE|COPY_FLAG_NOOVERWRITE)) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1435,7 +1435,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 	STREAM_OBJECT *pstream;
 	
 	if (stream_size > 0x80000000) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	pstream = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -1467,7 +1467,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 	case SEEK_POS_END:
 		break;
 	default:
-		return EC_INVALID_PARAMETER;	
+		return ecInvalidParam;
 	}
 	if (offset > 0x7FFFFFFF || offset < -0x7FFFFFFF) {
 		return EC_SEEK_ERROR;

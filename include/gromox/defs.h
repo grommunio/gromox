@@ -13,6 +13,7 @@ enum {
 	ecSuccess = 0,
 	ecError = 0x80004005,
 	ecNotSupported = 0x80040102,
+	ecInvalidParam = 0x80070057,
 };
 
 #ifdef __cplusplus

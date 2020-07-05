@@ -50,7 +50,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 	const SORTORDER_SET *psorts;
 	
 	if (0 == pproptags->count) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -100,7 +100,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PROPVAL_TYPE_UNSPECIFIED:
 		case PROPVAL_TYPE_ERROR:
 		default:
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 	}
 	psorts = table_object_get_sorts(ptable);
@@ -151,7 +151,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 				psort_criteria->psort[j].propid &&
 				psort_criteria->psort[i].type ==
 				psort_criteria->psort[j].type) {
-				return EC_INVALID_PARAMETER;	
+				return ecInvalidParam;
 			}
 		}
 	}
@@ -164,7 +164,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 			PROP_TAG_INSTANCENUM == tmp_proptag ||
 			PROP_TAG_CONTENTCOUNT == tmp_proptag ||
 			PROP_TAG_CONTENTUNREADCOUNT == tmp_proptag) {
-			return EC_INVALID_PARAMETER;	
+			return ecInvalidParam;
 		}	
 		switch (psort_criteria->psort[i].table_sort) {
 		case TABLE_SORT_ASCEND:
@@ -174,11 +174,11 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case TABLE_SORT_MINIMUM_CATEGORY:
 			if (0 == psort_criteria->ccategories ||
 				psort_criteria->ccategories != i) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			break;
 		default:
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		type = psort_criteria->psort[i].type;
 		if (type & 0x1000) {
@@ -190,7 +190,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 			type &= ~0x2000;
 			/* MUST NOT contain more than one multivalue property! */
 			if (TRUE == b_multi_inst) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			b_multi_inst = TRUE;
 		}
@@ -223,14 +223,14 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PROPVAL_TYPE_UNSPECIFIED:
 		case PROPVAL_TYPE_ERROR:
 		default:
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psort_criteria->psort[i].table_sort ||
 			TABLE_SORT_MINIMUM_CATEGORY ==
 			psort_criteria->psort[i].table_sort) {
 			if (TRUE == b_max || i != psort_criteria->ccategories) {
-				return EC_INVALID_PARAMETER;
+				return ecInvalidParam;
 			}
 			b_max = TRUE;
 		}
@@ -452,7 +452,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 	switch (seek_pos) {
 	case SEEK_POS_BEGIN:
 		if (offset < 0) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		original_position = 0;
 		if (offset > table_object_get_total(ptable)) {
@@ -464,7 +464,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		break;
 	case SEEK_POS_END:
 		if (offset > 0) {
-			return EC_INVALID_PARAMETER;
+			return ecInvalidParam;
 		}
 		original_position = table_object_get_total(ptable);
 		if (table_object_get_total(ptable) + offset < 0) {
@@ -493,7 +493,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		}
 		break;
 	default:
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	*poffset_sought = table_object_get_position(ptable)
 									- original_position;
@@ -701,7 +701,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	case SEEK_POS_CURRENT:
 		break;
 	default:
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (NULL != pres) {
 		if (FALSE == common_util_convert_restriction(
@@ -948,7 +948,7 @@ uint32_t rop_setcollapsestate(
 		return ecNotSupported;
 	}
 	if (sizeof(uint32_t) != pcollapse_state->cb) {
-		return EC_INVALID_PARAMETER;
+		return ecInvalidParam;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
