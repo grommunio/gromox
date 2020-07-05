@@ -51,7 +51,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 		cpid = pinfo->cpid;
 	}
 	if (FALSE == common_util_verify_cpid(cpid)) {
-		return EC_INVALID_CODEPAGE;
+		return MAPI_E_UNKNOWN_CPID;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -253,7 +253,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		cpid = pinfo->cpid;
 	}
 	if (FALSE == common_util_verify_cpid(cpid)) {
-		return EC_INVALID_CODEPAGE;
+		return MAPI_E_UNKNOWN_CPID;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1148,7 +1148,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		cpid = pinfo->cpid;
 	}
 	if (FALSE == common_util_verify_cpid(cpid)) {
-		return EC_INVALID_CODEPAGE;
+		return MAPI_E_UNKNOWN_CPID;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {

@@ -57,7 +57,6 @@
 #define EC_EXCEEDED_SIZE							0x80040610
 #define EC_FOLDER_CYCLE								0x8004060B
 #define EC_MESSAGE_CYCLE							0x00000504
-#define EC_INVALID_CODEPAGE							0x8004011E
 #define EC_AMBIGUOUS_RECIP                          0x80040700
 #define SYNC_W_PROGRESS								0x00040820
 
