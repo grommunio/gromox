@@ -511,7 +511,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 	TABLE_OBJECT *ptable;
 	
 	if (pbookmark->cb != sizeof(uint32_t)) {
-		return EC_INVALID_BOOKMARK;
+		return ecInvalidBookmark;
 	}
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -532,11 +532,11 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		return ecNullObject;
 	}
 	if (FALSE == table_object_check_loaded(ptable)) {
-		return EC_INVALID_BOOKMARK;
+		return ecInvalidBookmark;
 	}
 	if (FALSE == table_object_retrieve_bookmark(
 		ptable, *(uint32_t*)pbookmark->pb, &b_exist)) {
-		return EC_INVALID_BOOKMARK;
+		return ecInvalidBookmark;
 	}
 	if (FALSE == b_exist) {
 		*prow_invisible = 1;
@@ -556,7 +556,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 	TABLE_OBJECT *ptable;
 	
 	if (0 == denominator) {
-		return EC_INVALID_BOOKMARK;
+		return ecInvalidBookmark;
 	}
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -684,7 +684,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		if (table_object_get_rop_id(ptable) == ropGetRulesTable)
 			return ecNotSupported;
 		if (pbookmark->cb != sizeof(uint32_t)) {
-			return EC_INVALID_BOOKMARK;
+			return ecInvalidBookmark;
 		}
 		result = rop_seekrowbookmark(pbookmark, 0, 0, pbookmark_invisible,
 				&has_soughtless, &offset_sought, plogmap, logon_id, hin);
@@ -736,7 +736,7 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 	TABLE_OBJECT *ptable;
 	
 	if (pbookmark->cb != sizeof(uint32_t)) {
-		return EC_INVALID_BOOKMARK;
+		return ecInvalidBookmark;
 	}
 	ptable = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);

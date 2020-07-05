@@ -1041,7 +1041,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 		if (NULL == pnode) {
 			ab_tree_put_base(pbase);
-			return MAPI_E_INVALID_BOOKMARK;
+			return ecInvalidBookmark;
 		}
 		nsp_interface_position_in_table(pstat,
 			pnode, &row, &last_row, &total);
@@ -1203,7 +1203,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		} else {
 			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 			if (NULL == pnode) {
-				result = MAPI_E_INVALID_BOOKMARK;
+				result = ecInvalidBookmark;
 				goto EXIT_QUERY_ROWS;
 			}
 			nsp_interface_position_in_table(pstat,
@@ -1464,7 +1464,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		} else {
 			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 			if (NULL == pnode) {
-				result = MAPI_E_INVALID_BOOKMARK;
+				result = ecInvalidBookmark;
 				goto EXIT_SEEK_ENTRIES;
 			}
 			nsp_interface_position_in_table(pstat,
@@ -1930,7 +1930,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES == pstat->container_id) {
 		pnode = ab_tree_minid_to_node(pbase, pstat->cur_rec);
 		if (NULL == pnode) {
-			result = MAPI_E_INVALID_BOOKMARK;
+			result = ecInvalidBookmark;
 			goto EXIT_GET_MATCHES;
 		}
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff);
@@ -1998,7 +1998,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		} else {
 			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 			if (NULL == pnode) {
-				result = MAPI_E_INVALID_BOOKMARK;
+				result = ecInvalidBookmark;
 				goto EXIT_GET_MATCHES;
 			}
 			nsp_interface_position_in_table(pstat,
@@ -2520,7 +2520,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		} else {
 			pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 			if (NULL == pnode) {
-				result = MAPI_E_INVALID_BOOKMARK;
+				result = ecInvalidBookmark;
 				goto EXIT_GET_PROPS;
 			}
 			nsp_interface_position_in_table(pstat,
@@ -2546,7 +2546,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 				pnode = ab_tree_minid_to_node(
 					pbase, pstat->container_id);
 				if (NULL == pnode) {
-					result = MAPI_E_INVALID_BOOKMARK;
+					result = ecInvalidBookmark;
 					goto EXIT_GET_PROPS;
 				}
 			}
@@ -2662,12 +2662,12 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	} else {
 		pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 		if (NULL == pnode) {
-			result = MAPI_E_INVALID_BOOKMARK;
+			result = ecInvalidBookmark;
 			goto EXIT_COMPARE_MIDS;
 		}
 		pnode = simple_tree_node_get_child(pnode);
 		if (NULL == pnode) {
-			result = MAPI_E_INVALID_BOOKMARK;
+			result = ecInvalidBookmark;
 			goto EXIT_COMPARE_MIDS;
 		}
 		do {
@@ -3561,7 +3561,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	} else {
 		pnode = ab_tree_minid_to_node(pbase, pstat->container_id);
 		if (NULL == pnode) {
-			result = MAPI_E_INVALID_BOOKMARK;
+			result = ecInvalidBookmark;
 			goto EXIT_RESOLVE_NAMESW;
 		}
 		nsp_interface_position_in_table(pstat,

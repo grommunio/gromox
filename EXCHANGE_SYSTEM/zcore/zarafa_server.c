@@ -4302,7 +4302,7 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 		if (FALSE == table_object_retrieve_bookmark(
 			ptable, bookmark, &b_exist)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_INVALID_BOOKMARK;
+			return ecInvalidBookmark;
 		}
 		break;
 	}
