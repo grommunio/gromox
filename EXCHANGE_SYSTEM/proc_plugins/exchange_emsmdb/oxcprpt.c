@@ -707,7 +707,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		return EC_DST_NULL_OBJECT;
 	}
 	if (dst_type != object_type) {
-		return EC_DECLINE_COPY;
+		return MAPI_E_DECLINE_COPY;
 	}
 	if (OBJECT_TYPE_FOLDER == object_type &&
 		(COPY_FLAG_MOVE & copy_flags)) {
@@ -1006,7 +1006,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		return EC_DST_NULL_OBJECT;
 	}
 	if (dst_type != object_type) {
-		return EC_DECLINE_COPY;
+		return MAPI_E_DECLINE_COPY;
 	}
 	if (OBJECT_TYPE_FOLDER == object_type &&
 		(COPY_FLAG_MOVE & copy_flags)) {

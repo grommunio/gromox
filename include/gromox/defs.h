@@ -17,6 +17,7 @@ enum {
 	ecInvalidObject = 0x80040108,
 	ecNotFound = 0x8004010F,
 	ecRpcFailed = 0x80040115,
+	MAPI_E_DECLINE_COPY = 0x80040306,
 	ecDuplicateName = 0x80040604,
 	SYNC_E_IGNORE = 0x80040801,
 	SYNC_E_CONFLICT = 0x80040802,
