@@ -555,7 +555,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	*pretry_delay = EMSMDB_PCRETRYDELAY;
 	
 	if ('\0' == puser_dn[0]) {
-		result = EC_ACCESS_DENIED;
+		result = ecAccessDenied;
 		goto CONNECT_FAILURE;
 	}
 	if (FALSE == common_util_essdn_to_username(puser_dn, username)) {
@@ -567,7 +567,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		goto CONNECT_FAILURE;
 	}
 	if (0 != strcasecmp(username, rpc_info.username)) {
-		result = EC_ACCESS_DENIED;
+		result = ecAccessDenied;
 		goto CONNECT_FAILURE;
 	}
 	if (FALSE == common_util_get_user_displayname(username, temp_buff) ||
@@ -698,7 +698,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		*pcb_auxout = 0;
 		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (phandle->username, first_time.tv_sec -
 		phandle->last_time > HANLDE_VALID_INTERVAL) {

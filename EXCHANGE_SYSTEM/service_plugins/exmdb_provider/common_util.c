@@ -3916,8 +3916,7 @@ BOOL common_util_set_properties(int table_type,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = 
-											EC_ACCESS_DENIED;
+				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
 			}
@@ -3943,8 +3942,7 @@ BOOL common_util_set_properties(int table_type,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = 
-											EC_ACCESS_DENIED;
+				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
 			case PROP_TAG_CHANGENUMBER:
@@ -4006,8 +4004,7 @@ BOOL common_util_set_properties(int table_type,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = 
-											EC_ACCESS_DENIED;
+				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
 			case PROP_TAG_CHANGENUMBER:

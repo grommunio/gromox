@@ -969,7 +969,7 @@ ZEND_FUNCTION(mapi_logon_ex)
 			auto method = zend_hash_find(Z_ARRVAL_P(server_vars), str_reqm.get());
 			if (method != nullptr && Z_TYPE_P(method) == IS_STRING &&
 			    Z_STRLEN_P(method) > 0) {
-				MAPI_G(hr) = EC_ACCESS_DENIED;
+				MAPI_G(hr) = ecAccessDenied;
 				goto THROW_EXCEPTION;
 			}
 		}

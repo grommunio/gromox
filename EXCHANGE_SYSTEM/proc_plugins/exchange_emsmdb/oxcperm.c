@@ -54,7 +54,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (MODIFY_PERMISSIONS_FLAG_REPLACEROWS & flags) {
@@ -107,7 +107,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_FOLDERVISIBLE)) {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	ptable = table_object_create(plogon, pfolder, flags,

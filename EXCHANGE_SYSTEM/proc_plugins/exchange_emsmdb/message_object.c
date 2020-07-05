@@ -1542,8 +1542,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = 
-											EC_ACCESS_DENIED;
+				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
 			} else if (PROP_TAG_EXTENDEDRULEMESSAGECONDITION
@@ -1557,8 +1556,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = 
-												EC_ACCESS_DENIED;
+					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 					pproblems->count ++;
 					continue;
 				}
@@ -1704,8 +1702,7 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count].err = 
-										EC_ACCESS_DENIED;
+			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 			pproblems->count ++;
 			continue;
 		}

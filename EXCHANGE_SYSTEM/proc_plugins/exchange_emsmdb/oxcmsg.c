@@ -103,7 +103,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	if (0 == (permission & PERMISSION_READANY) &&
 		0 == (permission & PERMISSION_FOLDERVISIBLE) &&
 		0 == (permission & PERMISSION_FOLDEROWNER)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (permission & PERMISSION_FOLDEROWNER) {
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
@@ -128,14 +128,14 @@ uint32_t rop_openmessage(uint16_t cpid,
 	
 PERMISSION_CHECK:
 	if (0 == (TAG_ACCESS_READ & tag_access)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (0 == (open_mode_flags & OPEN_MODE_FLAG_READWRITE) &&
 		0 == (TAG_ACCESS_MODIFY & tag_access)) {
 		if (open_mode_flags & OPEN_MODE_FLAG_BESTACCESS) {
 			open_mode_flags &= ~OPEN_MODE_FLAG_BESTACCESS;
 		} else {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	
@@ -276,7 +276,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATE)) {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
 		if ((permission & PERMISSION_DELETEOWNED) ||
@@ -389,12 +389,12 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	}
 	tag_access = message_object_get_tag_access(pmessage);
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	open_flags = message_object_get_open_flags(pmessage);
 	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
 		SAVE_FLAG_FORCESAVE != save_flags) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
 		if (FALSE == message_object_check_orignal_touched(
@@ -690,7 +690,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 	original_status = *(uint32_t*)pvalue;
 	new_status = message_status & status_mask;
 	if (new_status & MESSAGE_STATUS_IN_CONFLICT) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	new_status |= original_status & ~(status_mask & ~new_status);
 	*pmessage_status = new_status;
@@ -973,7 +973,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 			if (flags & OPEN_MODE_FLAG_BESTACCESS) {
 				flags &= ~OPEN_MODE_FLAG_BESTACCESS;
 			} else {
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		}
 	}
@@ -1018,7 +1018,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	}
 	tag_access = message_object_get_tag_access(pmessage);
 	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	pattachment = attachment_object_create(pmessage,
 		ATTACHMENT_NUM_INVALID, OPEN_MODE_FLAG_READWRITE);
@@ -1060,7 +1060,7 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 	}
 	tag_access = message_object_get_tag_access(pmessage);
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (FALSE == message_object_delele_attachment(
 		pmessage, attachment_id)) {
@@ -1097,12 +1097,12 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 	}
 	tag_access = attachment_object_get_tag_access(pattachment);
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	open_flags = attachment_object_get_open_flags(pattachment);
 	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
 		SAVE_FLAG_FORCESAVE != save_flags) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	gxerr_t err = attachment_object_save(pattachment);
 	if (err != GXERR_SUCCESS)
@@ -1165,7 +1165,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	tag_access = attachment_object_get_tag_access(pattachment);
 	if (0 == (tag_access & TAG_ACCESS_MODIFY) &&
 		((OPEN_EMBEDDED_FLAG_READWRITE & open_embedded_flags))) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}	
 	pmessage = message_object_create(plogon, FALSE,
 				cpid, 0, pattachment, tag_access,
@@ -1180,7 +1180,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		}
 		message_object_free(pmessage);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
-			return EC_ACCESS_DENIED;	
+			return ecAccessDenied;
 		}
 		pmessage = message_object_create(plogon, TRUE,
 					cpid, 0, pattachment, tag_access,

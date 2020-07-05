@@ -3045,7 +3045,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	}
 	ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username);
 	if (0 != strcasecmp(username, rpc_info.username)) {
-		result = MAPI_E_NO_ACCESS;
+		result = ecAccessDenied;
 		goto EXIT_MOD_LINKATT;
 	}
 	if (FALSE == get_maildir(username, maildir)) {

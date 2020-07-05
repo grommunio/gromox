@@ -244,7 +244,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	}
 	
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	
 	pmessage = rop_processor_get_object(plogmap,
@@ -259,12 +259,12 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecNotSupported;
 	}
 	if (TRUE == message_object_check_importing(pmessage)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	
 	tag_access = message_object_get_tag_access(pmessage);
 	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	
 	if (FALSE == message_object_get_recipient_num(
@@ -286,7 +286,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		&tmp_propvals, PROP_TAG_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	
 	if (FALSE == oxomsg_check_delegate(pmessage, username)) {
@@ -297,7 +297,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		strcpy(username, account);
 	} else {
 		if (FALSE == oxomsg_check_permission(account, username)) {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	gxerr_t err = oxomsg_rectify_message(pmessage, username);
@@ -350,7 +350,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	}
 	message_flags = *(uint32_t*)pvalue;
 	if (MESSAGE_FLAG_SUBMITTED & message_flags) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (message_flags & MESSAGE_FLAG_UNSENT) {
 		b_unsent = TRUE;
@@ -374,7 +374,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecError;
 	}
 	if (TRUE == b_exist) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) {
 		if (FALSE == exmdb_client_link_message(
@@ -393,7 +393,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecError;
 	}
 	if (FALSE == b_marked) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	
 	deferred_time = 0;
@@ -489,7 +489,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecNotSupported;
 	}
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (FALSE == exmdb_client_check_message(
 		logon_object_get_dir(plogon),
@@ -607,7 +607,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 		return ecNotSupported;
 	}
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (LOCK_STAT_1STFINISHED != lock_stat) {
 		return ecSuccess;
@@ -696,7 +696,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return ecNotSupported;
 	}
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	pmessage = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -710,7 +710,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return ecNotSupported;
 	}
 	if (TRUE == message_object_check_importing(pmessage)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0,
@@ -720,7 +720,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	}
 	if (NULL != pvalue && (*(uint32_t*)pvalue &
 		MESSAGE_FLAG_SUBMITTED)) {
-		return EC_ACCESS_DENIED;	
+		return ecAccessDenied;
 	}
 	if (FALSE == oxomsg_check_delegate(pmessage, username)) {
 		return ecError;
@@ -730,7 +730,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		strcpy(username, account);
 	} else {
 		if (FALSE == oxomsg_check_permission(account, username)) {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	gxerr_t err = oxomsg_rectify_message(pmessage, username);

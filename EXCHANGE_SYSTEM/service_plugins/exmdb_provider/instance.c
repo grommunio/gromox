@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <gromox/database.h>
+#include <gromox/defs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "exmdb_server.h"
@@ -1325,7 +1326,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		case PROP_TAG_DISPLAYBCC_STRING8:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag = proptag;
-			pproblems->pproblem[pproblems->count].err = EC_ACCESS_DENIED;
+			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 			pproblems->count ++;
 			continue;
 		default:
@@ -1701,7 +1702,7 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 		case PROP_TAG_RECORDKEY:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag = proptag;
-			pproblems->pproblem[pproblems->count].err = EC_ACCESS_DENIED;
+			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 			pproblems->count ++;
 			continue;
 		}
@@ -3304,8 +3305,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								pproperties->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = 
-											EC_ACCESS_DENIED;
+				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
 			case PROP_TAG_READ:
@@ -3326,8 +3326,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									pproperties->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = 
-												EC_ACCESS_DENIED;
+					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 					pproblems->count ++;
 					continue;
 				}
@@ -3515,8 +3514,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								pproperties->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = 
-											EC_ACCESS_DENIED;
+				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 				pproblems->count ++;
 				continue;
 			case PROP_TAG_ATTACHDATABINARY:

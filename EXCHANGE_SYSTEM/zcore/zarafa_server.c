@@ -1211,7 +1211,7 @@ CHECK_LOC:
 			0 == (permission & PERMISSION_FOLDERVISIBLE) &&
 			0 == (permission & PERMISSION_FOLDEROWNER)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (permission & PERMISSION_FOLDEROWNER) {
 			tag_access = TAG_ACCESS_MODIFY|
@@ -1240,7 +1240,7 @@ CHECK_LOC:
 PERMISSION_CHECK:
 		if (0 == (TAG_ACCESS_READ & tag_access)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
 			b_writable = FALSE;
@@ -2460,7 +2460,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 					b_guest = TRUE;
 				} else {
 					zarafa_server_put_user_info(pinfo);
-					return EC_ACCESS_DENIED;
+					return ecAccessDenied;
 				}
 			}
 		}
@@ -2474,7 +2474,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 			}
 			if (0 == (permission & PERMISSION_CREATE)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		}
 		for (i=0; i<pentryids->count; i++) {
@@ -2553,7 +2553,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 		}
 		if (0 == (permission & PERMISSION_CREATE)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		b_guest = TRUE;
 	} else {
@@ -2833,7 +2833,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (FALSE == exmdb_client_get_folder_by_name(
@@ -3023,13 +3023,13 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 	if (TRUE == store_object_check_private(pstore)) {
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	} else {
 		if (1 == rop_util_get_replid(folder_id) &&
 			rop_util_get_gc_value(folder_id) < PUBLIC_FID_CUSTOM) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {
@@ -3042,7 +3042,7 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		username = pinfo->username;
 	}
@@ -3164,7 +3164,7 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 	if (PRIVATE_FID_ROOT == fid_val ||
 		PRIVATE_FID_IPMSUBTREE == fid_val) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	username = NULL;
 	if (FALSE == store_object_check_owner_mode(pstore)) {
@@ -3178,7 +3178,7 @@ uint32_t zarafa_server_emptyfolder(GUID hsession,
 		if (0 == (permission & PERMISSION_DELETEANY) &&
 			0 == (permission & PERMISSION_DELETEOWNED)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		username = pinfo->username;
 	}
@@ -3264,12 +3264,12 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	if (TRUE == store_object_check_private(pstore)) {
 		if (PRIVATE_FID_ROOT == rop_util_get_gc_value(folder_id)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	} else {
 		if (PUBLIC_FID_ROOT == rop_util_get_gc_value(folder_id)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {
@@ -3281,7 +3281,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		}
 		if (0 == (permission & PERMISSION_READANY)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == exmdb_client_check_folder_permission(
 			store_object_get_dir(pstore),
@@ -3293,7 +3293,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATESUBFOLDER)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		username = pinfo->username;
 		b_guest = TRUE;
@@ -3313,7 +3313,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 				}
 				if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 					zarafa_server_put_user_info(pinfo);
-					return EC_ACCESS_DENIED;
+					return ecAccessDenied;
 				}
 			}
 		}
@@ -4745,7 +4745,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		}
 		if (0 == (permission & PERMISSION_SENDAS)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (0 == message_object_get_id(pmessage)) {
@@ -4755,7 +4755,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (TRUE == message_object_check_importing(pmessage) ||
 		FALSE == message_object_check_writable(pmessage)) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (FALSE == message_object_get_recipient_num(
 		pmessage, &rcpt_num)) {
@@ -4779,7 +4779,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	/* FAI message cannot be sent */
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (FALSE == common_util_check_delegate(pmessage, username)) {
 		zarafa_server_put_user_info(pinfo);
@@ -4792,7 +4792,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		if (FALSE == common_util_check_delegate_permission_ex(
 			account, username)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	gxerr_t err = common_util_rectify_message(pmessage, username);
@@ -4870,7 +4870,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		}
 		if (FALSE == b_marked) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		
 		deferred_time = 0;
@@ -5061,7 +5061,7 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 	}
 	if (FALSE == message_object_check_writable(pmessage)) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	pattachment = attachment_object_create(
 		pmessage, ATTACHMENT_NUM_INVALID);
@@ -5115,7 +5115,7 @@ uint32_t zarafa_server_deleteattachment(GUID hsession,
 	}
 	if (FALSE == message_object_check_writable(pmessage)) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (FALSE == message_object_delele_attachment(
 		pmessage, attach_id)) {
@@ -5161,7 +5161,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	case MAPI_STORE:
 		if (FALSE == store_object_check_owner_mode(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == store_object_set_properties(
 			pobject, ppropvals)) {
@@ -5182,7 +5182,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 			}
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		}
 		if (FALSE == folder_object_set_properties(
@@ -5195,7 +5195,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	case MAPI_MESSAGE:
 		if (FALSE == message_object_check_writable(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == message_object_set_properties(
 			pobject, ppropvals)) {
@@ -5207,7 +5207,7 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	case MAPI_ATTACHMENT:
 		if (FALSE == attachment_object_check_writable(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == attachment_object_set_properties(
 			pobject, ppropvals)) {
@@ -5396,7 +5396,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	case MAPI_STORE:
 		if (FALSE == store_object_check_owner_mode(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == store_object_remove_properties(
 			pobject, pproptags)) {
@@ -5417,7 +5417,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 			}
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		}
 		if (FALSE == folder_object_remove_properties(
@@ -5430,7 +5430,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	case MAPI_MESSAGE:
 		if (FALSE == message_object_check_writable(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == message_object_remove_properties(
 			pobject, pproptags)) {
@@ -5442,7 +5442,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	case MAPI_ATTACHMENT:
 		if (FALSE == attachment_object_check_writable(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == attachment_object_remove_properties(
 			pobject, pproptags)) {
@@ -5526,7 +5526,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	tag_access = attachment_object_get_tag_access(pattachment);
 	if ((FLAG_CREATE & flags) && FALSE == b_writable) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	pmessage = message_object_create(pstore,
 		FALSE, pinfo->cpid, 0, pattachment,
@@ -5544,7 +5544,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		message_object_free(pmessage);
 		if (FALSE == b_writable) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;	
+			return ecAccessDenied;
 		}
 		pmessage = message_object_create(pstore, TRUE,
 			pinfo->cpid, 0, pattachment, tag_access,
@@ -5711,7 +5711,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			} else {
 				if (0 == (permission & PERMISSION_READANY)) {
 					zarafa_server_put_user_info(pinfo);
-					return EC_ACCESS_DENIED;
+					return ecAccessDenied;
 				}
 				username = pinfo->username;
 			}
@@ -5724,7 +5724,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			}
 			if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		} else {
 			username = NULL;
@@ -5834,7 +5834,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	case MAPI_MESSAGE:
 		if (FALSE == message_object_check_writable(pobject_dst)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == message_object_copy_to(pobject_dst,
 			pobject, pexclude_proptags, b_force, &b_cycle)) {
@@ -5850,7 +5850,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	case MAPI_ATTACHMENT:
 		if (FALSE == attachment_object_check_writable(pobject_dst)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == attachment_object_copy_properties(pobject_dst,
 			pobject, pexclude_proptags, b_force, &b_cycle)) {
@@ -5889,7 +5889,7 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 	if (MAPI_MESSAGE == mapi_type) {
 		if (FALSE == message_object_check_writable(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == message_object_check_orignal_touched(
 			pobject, &b_touched)) {
@@ -5910,7 +5910,7 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 	} else if (MAPI_ATTACHMENT == mapi_type) {
 		if (FALSE == attachment_object_check_writable(pobject)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		gxerr_t err = attachment_object_save(pobject);
 		if (err != GXERR_SUCCESS) {
@@ -6502,7 +6502,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (TRUE == b_new) {
 			if (0 == (permission & PERMISSION_CREATE)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 			tag_access = TAG_ACCESS_READ;
 			if ((permission & PERMISSION_EDITANY) ||
@@ -6704,7 +6704,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 				store_object_get_account_id(pstore));
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		}
 		parent_id1 = rop_util_make_eid(1, tmp_xid.local_id);
@@ -6781,7 +6781,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 			}
 			if (0 == (permission & PERMISSION_CREATESUBFOLDER)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		}
 		if (FALSE == exmdb_client_get_folder_by_name(
@@ -6850,7 +6850,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (FALSE == exmdb_client_get_folder_property(
@@ -6869,7 +6869,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 		if (FALSE == store_object_check_owner_mode(pstore)) {
 			if (FALSE == exmdb_client_check_folder_permission(
@@ -6880,7 +6880,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 			}
 			if (0 == (permission & PERMISSION_CREATESUBFOLDER)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 			b_guest = TRUE;
 		} else {
@@ -7007,7 +7007,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 					username = NULL;	
 				} else if (0 == (permission & PERMISSION_DELETEOWNED)) {
 					zarafa_server_put_user_info(pinfo);
-					return EC_ACCESS_DENIED;
+					return ecAccessDenied;
 				}
 			}
 		}
@@ -7105,7 +7105,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 				}
 				if (FALSE == b_owner) {
 					zarafa_server_put_user_info(pinfo);
-					return EC_ACCESS_DENIED;
+					return ecAccessDenied;
 				}
 			} else {
 				if (FALSE == exmdb_client_check_folder_permission(
@@ -7113,7 +7113,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 					eid, username, &permission)) {
 					if (0 == (PERMISSION_FOLDEROWNER & permission))	{
 						zarafa_server_put_user_info(pinfo);
-						return EC_ACCESS_DENIED;
+						return ecAccessDenied;
 					}
 				}
 			}
@@ -7421,7 +7421,7 @@ uint32_t zarafa_server_setsearchcriteria(
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (NULL == prestriction || 0 == pfolder_array->count) {
@@ -7471,7 +7471,7 @@ uint32_t zarafa_server_setsearchcriteria(
 			if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 				0 == (permission & PERMISSION_READANY)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_ACCESS_DENIED;
+				return ecAccessDenied;
 			}
 		}
 	}
@@ -7800,7 +7800,7 @@ uint32_t zarafa_server_setpasswd(const char *username,
 {
 	if (FALSE == system_services_set_password(
 		username, passwd, new_passwd)) {
-		return EC_ACCESS_DENIED;	
+		return ecAccessDenied;
 	}
 	return ecSuccess;
 }
@@ -7847,7 +7847,7 @@ uint32_t zarafa_server_linkmessage(GUID hsession,
 	}
 	if (account_id != pinfo->user_id) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	pstore = object_tree_get_object(pinfo->ptree, handle, &mapi_type);
 	if (NULL == pstore || MAPI_STORE != mapi_type) {

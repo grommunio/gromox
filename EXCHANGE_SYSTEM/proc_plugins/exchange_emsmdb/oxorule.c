@@ -49,7 +49,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 			return ecError;
 		}
 		if (0 == (permission & PERMISSION_FOLDEROWNER)) {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	if (MODIFY_RULES_FLAG_REPLACE & flags) {
@@ -160,7 +160,7 @@ uint32_t rop_updatedeferredactionmessages(
 			return ecError;
 		}
 		if (0 == (permission & PERMISSION_EDITANY)) {
-			return EC_ACCESS_DENIED;
+			return ecAccessDenied;
 		}
 	}
 	

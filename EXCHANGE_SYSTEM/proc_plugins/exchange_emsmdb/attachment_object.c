@@ -477,8 +477,7 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = 
-										EC_ACCESS_DENIED;
+			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 			pproblems->count ++;
 			continue;
 		}
@@ -556,8 +555,7 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count].err = 
-										EC_ACCESS_DENIED;
+			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 			pproblems->count ++;
 			continue;
 		}

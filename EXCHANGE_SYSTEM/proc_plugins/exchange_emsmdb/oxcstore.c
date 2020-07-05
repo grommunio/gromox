@@ -309,7 +309,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	}
 	if (0 == strcasecmp(pstr_class, "IPM") ||
 		0 == strcasecmp(pstr_class, "REPORT.IPM")) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
@@ -335,7 +335,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		}
 	}
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
-		return EC_ACCESS_DENIED;
+		return ecAccessDenied;
 	}
 	if (FALSE == exmdb_client_set_folder_by_class(
 		logon_object_get_dir(plogon),

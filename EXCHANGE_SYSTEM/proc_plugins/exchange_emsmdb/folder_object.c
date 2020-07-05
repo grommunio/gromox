@@ -744,8 +744,7 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = 
-											EC_ACCESS_DENIED;
+			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 			pproblems->count ++;
 		} else {
 			tmp_propvals.ppropval[tmp_propvals.count] =
@@ -854,8 +853,7 @@ BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count].err = 
-										EC_ACCESS_DENIED;
+			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
 			pproblems->count ++;
 		} else {
 			tmp_proptags.pproptag[tmp_proptags.count] =
