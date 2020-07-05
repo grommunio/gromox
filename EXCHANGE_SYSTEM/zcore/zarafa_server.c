@@ -6680,7 +6680,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 		if (FALSE == b_exist) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NO_PARENT_FOLDER;
+			return SYNC_E_NO_PARENT;
 		}
 	} else {
 		pbin = pproplist->ppropval[0].pvalue;
@@ -6716,7 +6716,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 		if (NULL == pvalue) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NO_PARENT_FOLDER;
+			return SYNC_E_NO_PARENT;
 		}
 	}
 	pbin = pproplist->ppropval[1].pvalue;

@@ -4906,9 +4906,8 @@ static zend_bool import_message_change(zval *pztarget_obj,
 	zval_ptr_dtor(&pzvalargs[0]);
 	zval_ptr_dtor(&pzvalargs[1]);
 	zval_ptr_dtor(&pzvalargs[2]);
-	if (EC_IGNORE_FAILURE != hresult) {
+	if (hresult != SYNC_E_IGNORE)
 		return 0;
-	}
 	return 1;
 }
 

@@ -1229,11 +1229,11 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 			return ecError;
 		}
 		if (PCL_INCLUDE & result) {
-			return EC_IGNORE_FAILURE;
+			return SYNC_E_IGNORE;
 		} else if (PCL_CONFLICT == result) {
 			if (IMPORT_FLAG_FAILONCONFLICT & import_flags) {
 				message_object_free(pmessage);
-				return EC_SYNC_CONFLICT;
+				return SYNC_E_CONFLICT;
 			}
 		}
 	}
@@ -1463,7 +1463,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecError;
 		}
 		if (FALSE == b_exist) {
-			return EC_NO_PARENT_FOLDER;
+			return SYNC_E_NO_PARENT;
 		}
 	} else {
 		pbin = phichyvals->ppropval[0].pvalue;
@@ -1492,7 +1492,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecError;
 		}
 		if (NULL == pvalue) {
-			return EC_NO_PARENT_FOLDER;
+			return SYNC_E_NO_PARENT;
 		}
 		parent_type = *(uint32_t*)pvalue;
 	}
@@ -1620,7 +1620,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return ecError;
 	}
 	if (PCL_INCLUDE & result) {
-		return EC_IGNORE_FAILURE;
+		return SYNC_E_IGNORE;
 	}
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		if (FALSE == exmdb_client_check_folder_permission(
