@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rpc_ext.h"
 
 static zend_bool rpc_ext_push_logon_request(
@@ -1947,9 +1948,8 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	if (!ext_pack_pull_uint32(&pull_ctx, &presponse->result)) {
 		return 0;
 	}
-	if (EC_SUCCESS != presponse->result) {
+	if (presponse->result != ecSuccess)
 		return 1;
-	}
 	switch (presponse->call_id) {
 	case CALL_ID_LOGON:
 		return rpc_ext_pull_logon_response(

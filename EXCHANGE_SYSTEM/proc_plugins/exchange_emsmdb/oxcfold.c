@@ -147,7 +147,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		return ecError;
 	}
 	*ppghost = NULL;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_createfolder(uint8_t folder_type,
@@ -351,7 +351,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	*pis_existing = 0; /* just like exchange 2010 or later */
 	/* no need to set value for "phas_rules" */
 	*ppghost = NULL;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_deletefolder(uint8_t flags,
@@ -418,7 +418,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 	}
 	if (FALSE == b_exist) {
 		*ppartial_completion = 0;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	if (flags & DELETE_FOLDER_FLAG_MESSAGES) {
 		b_normal = TRUE;
@@ -445,7 +445,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		}
 		if (NULL == pvalue) {
 			*ppartial_completion = 0;
-			return EC_SUCCESS;
+			return ecSuccess;
 		}
 		if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
 			goto DELETE_FOLDER;
@@ -460,7 +460,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		if (TRUE == b_partial) {
 			/* failure occurs, stop deleting folder */
 			*ppartial_completion = 1;
-			return EC_SUCCESS;
+			return ecSuccess;
 		}
 	}
 DELETE_FOLDER:
@@ -474,7 +474,7 @@ DELETE_FOLDER:
 	} else {
 		*ppartial_completion = 1;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
@@ -545,7 +545,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 			/* stop static search folder has no meaning,
 				status of dynamic running search folder
 				cannot be changed */
-			return EC_SUCCESS;
+			return ecSuccess;
 		}
 	}
 	for (i=0; i<pfolder_ids->count; i++) {
@@ -580,7 +580,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	if (FALSE == b_result) {
 		return EC_SEARCH_SCOPE_VIOLATED;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getsearchcriteria(uint8_t use_unicode,
@@ -627,7 +627,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 			return ecError;
 		}
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
@@ -649,7 +649,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	
 	if (0 == pmessage_ids->count) {
 		*ppartial_completion = 0;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	*ppartial_completion = 1;
 	psrc_folder = rop_processor_get_object(plogmap,
@@ -712,7 +712,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	} else {
 		*ppartial_completion = 0;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_movefolder(uint8_t want_asynchronous,
@@ -874,7 +874,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		&propvals, &problems)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_copyfolder(uint8_t want_asynchronous,
@@ -986,7 +986,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	} else {
 		*ppartial_completion = 0;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 static uint32_t oxcfold_emptyfolder(BOOL b_hard,
@@ -1058,7 +1058,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	} else {
 		*ppartial_completion = 0;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_emptyfolder(uint8_t want_asynchronous,
@@ -1149,7 +1149,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		} else {
 			*ppartial_completion = 0;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	b_partial = FALSE;
 	ids.count = 0;
@@ -1212,7 +1212,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	} else {
 		*ppartial_completion = 0;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_deletemessages(uint8_t want_asynchronous,
@@ -1292,7 +1292,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getcontentstable(uint8_t table_flags,
@@ -1384,5 +1384,5 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
-	return EC_SUCCESS;
+	return ecSuccess;
 }

@@ -49,7 +49,7 @@ uint32_t rop_registernotification(
 		return ecError;
 	}
 	subscription_object_set_handle(psub, *phout);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 void rop_release(void *plogmap, uint8_t logon_id, uint32_t hin)

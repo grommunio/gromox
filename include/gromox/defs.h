@@ -10,6 +10,7 @@ typedef enum {
 } gxerr_t;
 
 enum {
+	ecSuccess = 0,
 	ecError = 0x80004005,
 };
 

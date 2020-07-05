@@ -425,7 +425,7 @@ int emsmdb_interface_disconnect(CXH *pcxh)
 {
 	emsmdb_interface_remove_handle(pcxh);
 	memset(pcxh, 0, sizeof(CXH));
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 int emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
@@ -437,7 +437,7 @@ int emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
 
 int emsmdb_interface_dummy_rpc(uint64_t hrpc)
 {
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 static BOOL emsmdb_interface_decode_version(const uint16_t pvers[3],
@@ -624,7 +624,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		result = EC_LOGIN_FAILURE;
 		goto CONNECT_FAILURE;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 	
 CONNECT_FAILURE:
 	memset(pcxh, 0, sizeof(CXH));
@@ -734,11 +734,11 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		asyncemsmdb_interface_wakeup(username, cxr);
 	}
 	pthread_setspecific(g_handle_key, NULL);
-	if (EC_SUCCESS == result) {
+	if (result == ecSuccess) {
 		*pflags = 0;
 		*pcb_auxout = 0;
 		*ptrans_time = emsmdb_interface_get_interval(first_time);
-		return EC_SUCCESS;
+		return ecSuccess;
 	} else {
 		*pflags = 0;
 		*pcb_out = 0;
@@ -752,7 +752,7 @@ int emsmdb_interface_async_connect_ex(CXH cxh, ACXH *pacxh)
 {
 	pacxh->handle_type = HANDLE_EXCHANGE_ASYNCEMSMDB;
 	pacxh->guid = cxh.guid;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc)

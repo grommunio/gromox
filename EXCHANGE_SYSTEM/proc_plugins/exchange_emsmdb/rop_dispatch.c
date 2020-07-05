@@ -27,7 +27,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		rop_release(pemsmdb_info->plogmap,
 			prequest->logon_id, phandles[prequest->hindex]);
 		*ppresponse = NULL;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	*ppresponse = common_util_alloc(sizeof(ROP_RESPONSE));
 	if (NULL == *ppresponse) {
@@ -528,7 +528,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((QUERYROWS_RESPONSE*)(*ppresponse)->ppayload)->count,
 			&ext_push, pemsmdb_info->plogmap, prequest->logon_id,
 			phandles[prequest->hindex]);
-		if (EC_SUCCESS == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecSuccess) {
 			((QUERYROWS_RESPONSE*)(*ppresponse)->ppayload)->bin_rows.pb = pdata;
 			((QUERYROWS_RESPONSE*)(*ppresponse)->ppayload)->bin_rows.cb = ext_push.offset;
 		}
@@ -669,7 +669,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((EXPANDROW_RESPONSE*)(*ppresponse)->ppayload)->expanded_count,
 			&((EXPANDROW_RESPONSE*)(*ppresponse)->ppayload)->count, &ext_push,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
-		if (EC_SUCCESS == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecSuccess) {
 			((EXPANDROW_RESPONSE*)(*ppresponse)->ppayload)->bin_rows.pb = pdata;
 			((EXPANDROW_RESPONSE*)(*ppresponse)->ppayload)->bin_rows.cb = ext_push.offset;
 		}
@@ -799,7 +799,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			&((READRECIPIENTS_RESPONSE*)(*ppresponse)->ppayload)->count,
 			&ext_push, pemsmdb_info->plogmap, prequest->logon_id,
 			phandles[prequest->hindex]);
-		if (EC_SUCCESS == (*ppresponse)->result) {
+		if ((*ppresponse)->result == ecSuccess) {
 			((READRECIPIENTS_RESPONSE*)(*ppresponse)->ppayload)->bin_recipients.pb = pdata;
 			((READRECIPIENTS_RESPONSE*)(*ppresponse)->ppayload)->bin_recipients.cb = ext_push.offset;
 		}
@@ -1648,5 +1648,5 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			prequest->rop_id);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }

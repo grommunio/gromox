@@ -149,7 +149,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 		return ecError;
 	}
 	*phout = handle;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 	
 uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
@@ -257,7 +257,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecError;
 	}
 	*phout = handle;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getreceivefolder(const char *pstr_class,
@@ -289,7 +289,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 		pfolder_id, *ppstr_explicit)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_setreceivefolder(uint64_t folder_id,
@@ -345,7 +345,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	if (FALSE == b_result) {
 		return EC_NOT_FOUND;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
@@ -390,7 +390,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 			return EC_OUT_OF_MEMORY;	
 		}
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getstorestat(uint32_t *pstat,
@@ -458,7 +458,7 @@ uint32_t rop_getowningservers(
 	common_util_domain_to_essdn(
 		logon_object_get_account(plogon),
 		pghost->ppservers[0]);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_publicfolderisghosted(
@@ -478,12 +478,12 @@ uint32_t rop_publicfolderisghosted(
 	}
 	if (TRUE == logon_object_check_private(plogon)) {
 		*ppghost = NULL;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 == replid) {
 		*ppghost = NULL;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	*ppghost = common_util_alloc(sizeof(GHOST_SERVER));
 	if (NULL == *ppghost) {
@@ -533,7 +533,7 @@ uint32_t rop_longtermidfromid(uint64_t id,
 		}	
 	}
 	rop_util_get_gc_array(id, plong_term_id->global_counter);
-	return EC_SUCCESS;
+	return ecSuccess;
 }	
 
 uint32_t rop_idfromlongtermid(
@@ -584,7 +584,7 @@ uint32_t rop_idfromlongtermid(
 		}
 		*pid = rop_util_make_eid(replid, plong_term_id->global_counter);
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getperuserlongtermids(const GUID *pguid,
@@ -603,7 +603,7 @@ uint32_t rop_getperuserlongtermids(const GUID *pguid,
 	}
 	if (TRUE == logon_object_check_private(plogon)) {
 		plong_term_ids->count = 0;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	return EC_NOT_SUPPORTED;
 }
@@ -648,7 +648,7 @@ uint32_t rop_readperuserinformation(
 	*phas_finished = 1;
 	pdata->cb = 0;
 	pdata->pb = NULL;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_writeperuserinformation(
@@ -667,5 +667,5 @@ uint32_t rop_writeperuserinformation(
 	if (OBJECT_TYPE_LOGON != object_type) {
 		return EC_NOT_SUPPORTED;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }

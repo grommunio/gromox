@@ -726,7 +726,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	default:
 		return MAPI_E_NOT_FOUND;
 	}
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }		
 
 static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
@@ -750,7 +750,7 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 		}
 		err_val = nsp_interface_fetch_property(pnode, b_ephid,
 				codepage, pproptags->pproptag[i], pprop, NULL);
-		if (MAPI_E_SUCCESS != err_val) {
+		if (err_val != ecSuccess) {
 			tmp_tag = pprop->proptag;
 			tmp_tag &= 0xFFFF0000;
 			tmp_tag += PROPVAL_TYPE_ERROR;
@@ -758,7 +758,7 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 			pprop->value.err = err_val;
 		}
 	}
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 void nsp_interface_init(BOOL b_check)
@@ -852,7 +852,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
 	if (NULL != pserver_guid) {
 		*(GUID*)pserver_guid = common_util_get_server_guid();
 	}
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved)
@@ -1083,7 +1083,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	pstat->delta = 0;
 	pstat->num_pos = row;
 	pstat->total_rec = total;
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 static void nsp_interface_make_ptyperror_row(
@@ -1210,12 +1210,12 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 				pnode, &start_pos, &last_row, &total);
 			pnode1 = simple_tree_node_get_child(pnode);
 			if (NULL == pnode1) {
-				result = MAPI_E_SUCCESS;
+				result = ecSuccess;
 				goto EXIT_QUERY_ROWS;
 			}
 		}
 		if (0 == total) {
-			result = MAPI_E_SUCCESS;
+			result = ecSuccess;
 			goto EXIT_QUERY_ROWS;
 		}
 		if (pstat->delta >= 0) {
@@ -1236,7 +1236,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 			tmp_count = count;
 		}
 		if (0 == tmp_count) {
-			result = MAPI_E_SUCCESS;
+			result = ecSuccess;
 			goto EXIT_QUERY_ROWS;
 		}
 		i = 0;
@@ -1252,9 +1252,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 					}
 					result = nsp_interface_fetch_row(psnode->pdata,
 						b_ephid, pstat->codepage, pproptags, prow);
-					if (MAPI_E_SUCCESS != result) {
+					if (result != ecSuccess)
 						goto EXIT_QUERY_ROWS;
-					}
 				}
 				i ++;
 			}
@@ -1272,9 +1271,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 					}
 					result = nsp_interface_fetch_row(pnode1,
 						b_ephid, pstat->codepage, pproptags, prow);
-					if (MAPI_E_SUCCESS != result) {
+					if (result != ecSuccess)
 						goto EXIT_QUERY_ROWS;
-					}
 				}
 				i ++;
 			} while ((pnode1 = simple_tree_node_get_slibling(pnode1)) != NULL);
@@ -1316,18 +1314,16 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 			}
 			result = nsp_interface_fetch_row(pnode,
 				b_ephid, pstat->codepage, pproptags, prow);
-			if (MAPI_E_SUCCESS != result) {
+			if (result != ecSuccess)
 				nsp_interface_make_ptyperror_row(pproptags, prow);
-			}
 		}
 	}
-	result = MAPI_E_SUCCESS;
+	result = ecSuccess;
 	
 EXIT_QUERY_ROWS:
 	ab_tree_put_base(pbase);
-	if (MAPI_E_SUCCESS != result) {
+	if (result != ecSuccess)
 		*pprows = NULL;
-	}
 	return result;
 }
 
@@ -1447,9 +1443,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				}
 				result = nsp_interface_fetch_row(pnode1, TRUE,
 							pstat->codepage, pproptags, prow);
-				if (MAPI_E_SUCCESS != result) {
+				if (result != ecSuccess)
 					nsp_interface_make_ptyperror_row(pproptags, prow);
-				}
 			}
 		}
 		
@@ -1501,9 +1496,9 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 						result = MAPI_E_NOT_ENOUGH_MEMORY;
 						goto EXIT_SEEK_ENTRIES;
 					}
-					if (MAPI_E_SUCCESS != nsp_interface_fetch_row(
-						psnode->pdata, TRUE, pstat->codepage,
-						pproptags, prow)) {
+					if (nsp_interface_fetch_row(psnode->pdata,
+					    TRUE, pstat->codepage, pproptags,
+					    prow) != ecSuccess) {
 						result = ecError;
 						goto EXIT_SEEK_ENTRIES;
 					}
@@ -1534,8 +1529,9 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 						result = MAPI_E_NOT_ENOUGH_MEMORY;
 						goto EXIT_SEEK_ENTRIES;
 					}
-					if (MAPI_E_SUCCESS != nsp_interface_fetch_row(
-						pnode1, TRUE, pstat->codepage, pproptags, prow)) {
+					if (nsp_interface_fetch_row(pnode1,
+					    TRUE, pstat->codepage, pproptags,
+					    prow) != ecSuccess) {
 						result = ecError;
 						goto EXIT_SEEK_ENTRIES;
 					}
@@ -1552,13 +1548,12 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->num_pos = row;
 	}
 	
-	result = MAPI_E_SUCCESS;
+	result = ecSuccess;
 
 EXIT_SEEK_ENTRIES:
 	ab_tree_put_base(pbase);
-	if (MAPI_E_SUCCESS != result) {
+	if (result != ecSuccess)
 		*pprows = NULL;
-	}
 	return result;
 }
 
@@ -1601,8 +1596,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		}
 		if (PROP_TAG_ANR == pfilter->res.res_property.proptag) {
-			if (MAPI_E_SUCCESS == nsp_interface_fetch_property(pnode,
-				FALSE, codepage, PROP_TAG_ACCOUNT, &prop_val, temp_buff)) {
+			if (nsp_interface_fetch_property(pnode,
+			    false, codepage, PROP_TAG_ACCOUNT,
+			    &prop_val, temp_buff) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1620,9 +1616,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 					return TRUE;
 				}
 			}
-			if (MAPI_E_SUCCESS == nsp_interface_fetch_property(
-				pnode, FALSE, codepage, PROP_TAG_DISPLAYNAME,
-				&prop_val, temp_buff)) {
+			if (nsp_interface_fetch_property(pnode,
+			    false, codepage, PROP_TAG_DISPLAYNAME,
+			    &prop_val, temp_buff) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1630,8 +1626,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 			return FALSE;
 		} else if (PROP_TAG_ANR_STRING8 == pfilter->res.res_property.proptag) {
-			if (MAPI_E_SUCCESS == nsp_interface_fetch_property(pnode, FALSE,
-				codepage, PROP_TAG_ACCOUNT_STRING8, &prop_val, temp_buff)) {
+			if (nsp_interface_fetch_property(pnode,
+			    false, codepage, PROP_TAG_ACCOUNT_STRING8,
+			    &prop_val, temp_buff) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1649,9 +1646,9 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 					return TRUE;
 				}
 			}
-			if (MAPI_E_SUCCESS == nsp_interface_fetch_property(
-				pnode, FALSE, codepage, PROP_TAG_DISPLAYNAME_STRING8,
-				&prop_val, temp_buff)) {
+			if (nsp_interface_fetch_property(pnode,
+			    false, codepage, PROP_TAG_DISPLAYNAME_STRING8,
+			    &prop_val, temp_buff) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
 					return TRUE;
@@ -1659,11 +1656,10 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 			return FALSE;
 		}
-		if (MAPI_E_SUCCESS != nsp_interface_fetch_property(pnode,
-			FALSE, codepage, pfilter->res.res_property.proptag,
-			&prop_val, temp_buff)) {
+		if (nsp_interface_fetch_property(pnode, false,
+		    codepage, pfilter->res.res_property.proptag,
+		    &prop_val, temp_buff) != ecSuccess)
 			return FALSE;
-		}
 		switch (pfilter->res.res_property.proptag & 0xFFFF) {
 		case PROPVAL_TYPE_SHORT:
 			switch (pfilter->res.res_property.relop) {
@@ -1838,11 +1834,10 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 		if (node_type > 0x80) {
 			return FALSE;
 		}
-		if (MAPI_E_SUCCESS != nsp_interface_fetch_property(pnode,
-			FALSE, codepage, pfilter->res.res_exist.proptag,
-			&prop_val, temp_buff)) {
+		if (nsp_interface_fetch_property(pnode, false,
+		    codepage, pfilter->res.res_exist.proptag,
+		    &prop_val, temp_buff) != ecSuccess)
 			return FALSE;
-		}
 		return TRUE;
 	case RESTRICTION_TYPE_SUBRESTRICTION:
 		return FALSE;
@@ -1946,7 +1941,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		sprintf(temp_path, "%s/config/delegates.txt", maildir);
 		pfile = list_file_init(temp_path, "%s:256");
 		if (NULL == pfile) {
-			result = MAPI_E_SUCCESS;
+			result = ecSuccess;
 			goto EXIT_GET_MATCHES;
 		}
 		item_num = list_file_get_item_num(pfile);
@@ -1972,7 +1967,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
 		list_file_free(pfile);
-		result = MAPI_E_SUCCESS;
+		result = ecSuccess;
 		goto FETCH_ROWS;
 	}
 	if (NULL != pfilter) {
@@ -2010,7 +2005,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				pnode, &start_pos, &last_row, &total);
 			pnode = simple_tree_node_get_child(pnode);
 			if (NULL == pnode) {
-				result = MAPI_E_SUCCESS;
+				result = ecSuccess;
 				goto EXIT_GET_MATCHES;
 			}
 			i = 0;
@@ -2035,9 +2030,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 	} else {
 		pnode = ab_tree_minid_to_node(pbase, pstat->cur_rec);
-		if (NULL != pnode && MAPI_E_SUCCESS == nsp_interface_fetch_property(
-			pnode, TRUE, pstat->codepage, pstat->container_id, &prop_val,
-			temp_buff)) {
+		if (pnode != nullptr && nsp_interface_fetch_property(pnode,
+		    TRUE, pstat->codepage, pstat->container_id,
+		    &prop_val, temp_buff) == ecSuccess) {
 			pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
 				result = MAPI_E_NOT_ENOUGH_MEMORY;
@@ -2062,17 +2057,16 @@ FETCH_ROWS:
 			}
 			result = nsp_interface_fetch_row(pnode, TRUE,
 						pstat->codepage, pproptags, prow);
-			if (MAPI_E_SUCCESS != result) {
+			if (result != ecSuccess)
 				nsp_interface_make_ptyperror_row(pproptags, prow);
-			}
 		}
 	}
 	
-	result = MAPI_E_SUCCESS;
+	result = ecSuccess;
 	
 EXIT_GET_MATCHES:
 	ab_tree_put_base(pbase);
-	if (MAPI_E_SUCCESS != result) {
+	if (result != ecSuccess) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
 	} else {
@@ -2167,7 +2161,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->num_pos = 0;
 	}
 	ab_tree_put_base(pbase);
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
@@ -2180,7 +2174,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	
 	if (NULL == pnames) {
 		*ppoutmids = NULL;
-		return MAPI_E_SUCCESS;
+		return ecSuccess;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -2218,7 +2212,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 		}
 	}
 	ab_tree_put_base(pbase);
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 static int nsp_interface_get_default_proptags(int node_type,
@@ -2375,7 +2369,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	default:
 		return MAPI_E_INVALID_OBJECT;
 	}
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 
@@ -2424,16 +2418,14 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		*ppproptags = NULL;
 		return MAPI_E_INVALID_OBJECT;
 	}
-	if (MAPI_E_SUCCESS == nsp_interface_get_default_proptags(
-		ab_tree_get_node_type(pnode), b_unicode,
-		*ppproptags)) {
+	if (nsp_interface_get_default_proptags(ab_tree_get_node_type(pnode),
+	    b_unicode, *ppproptags) == ecSuccess) {
 		count = 0;
 		for (i=0; i<(*ppproptags)->cvalues; i++) {
-			if (MAPI_E_SUCCESS != nsp_interface_fetch_property(
-				pnode, FALSE, codepage, (*ppproptags)->pproptag[i],
-				&prop_val, temp_buff)) {
+			if (nsp_interface_fetch_property(pnode,
+			    false, codepage, (*ppproptags)->pproptag[i],
+			    &prop_val, temp_buff) != ecSuccess)
 				continue;
-			}
 			if (i != count) {
 				(*ppproptags)->pproptag[count] = (*ppproptags)->pproptag[i];
 			}
@@ -2444,7 +2436,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		*ppproptags = NULL;
 	}
 	ab_tree_put_base(pbase);
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
@@ -2570,9 +2562,8 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		}
 		result = nsp_interface_get_default_proptags(
 			ab_tree_get_node_type(pnode1), b_unicode, pproptags);
-		if (MAPI_E_SUCCESS != result) {
+		if (result != ecSuccess)
 			goto EXIT_GET_PROPS;
-		}
 	} else if (pproptags->cvalues > 100) {
 		result = MAPI_E_TABLE_TOO_BIG;
 		goto EXIT_GET_PROPS;
@@ -2590,7 +2581,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		result = nsp_interface_fetch_row(pnode1, b_ephid,
 					pstat->codepage, pproptags, *pprows);
 	}
-	if (MAPI_E_SUCCESS == result) {
+	if (result == ecSuccess) {
 		if (FALSE == b_proptags) {
 			count = 0;
 			for (i=0; i<(*pprows)->cvalues; i++) {
@@ -2619,7 +2610,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	
 EXIT_GET_PROPS:
 	ab_tree_put_base(pbase);
-	if (MAPI_E_SUCCESS != result &&
+	if (result != ecSuccess &&
 		MAPI_W_ERRORS_RETURNED != result) {
 		*pprows = NULL;
 	}
@@ -2701,7 +2692,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	*presult = pos2 - pos1;
 	
-	result = MAPI_E_SUCCESS;
+	result = ecSuccess;
 	
 EXIT_COMPARE_MIDS:
 	ab_tree_put_base(pbase);
@@ -2883,13 +2874,12 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 			if (ab_tree_get_node_type(pnode1) > 0x80) {
 				result = nsp_interface_get_specialtables_from_node(
 					pnode1, ppermeid, b_unicode, codepage, prows);
-				if (MAPI_E_SUCCESS != result) {
+				if (result != ecSuccess)
 					return result;
-				}
 			}
 		} while ((pnode1 = simple_tree_node_get_slibling(pnode1)) != NULL);
 	}
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 static uint32_t nsp_interface_get_tree_specialtables(
@@ -2923,7 +2913,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	if (flags & FLAG_CREATIONTEMPLATES) {
 		*pprows = NULL;
 		/* creation of templates table */
-		return MAPI_E_SUCCESS;
+		return ecSuccess;
 	}
 
 	if (flags & FLAG_UNICODESTRINGS) {
@@ -2990,14 +2980,14 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		pdomain = pnode->pdata;
 		result = nsp_interface_get_tree_specialtables(
 			&pdomain->tree, b_unicode, codepage, *pprows);
-		if (MAPI_E_SUCCESS != result) {
+		if (result != ecSuccess) {
 			ab_tree_put_base(pbase);
 			*pprows = NULL;
 			return result;
 		}
 	}
 	ab_tree_put_base(pbase);
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
@@ -3146,7 +3136,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 		close(fd);
 	}
-	result = MAPI_E_SUCCESS;
+	result = ecSuccess;
 	
 EXIT_MOD_LINKATT:
 	ab_tree_put_base(pbase);
@@ -3234,7 +3224,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	pcolumns->pproptag[28] = PROP_TAG_TEMPLATEID;
 	pcolumns->pproptag[29] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
 	pcolumns->pproptag[30] = PROP_TAG_CREATIONTIME;
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 int nsp_interface_resolve_names(NSPI_HANDLE handle, uint32_t reserved,
@@ -3402,7 +3392,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	default:
 		return MAPI_E_NOT_FOUND;
 	}
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
@@ -3420,7 +3410,7 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 		}
 		err_val = nsp_interface_fetch_smtp_property(
 			paddress, pproptags->pproptag[i], pprop);
-		if (MAPI_E_SUCCESS != err_val) {
+		if (err_val != ecSuccess) {
 			tmp_tag = pprop->proptag;
 			tmp_tag &= 0xFFFF0000;
 			tmp_tag += PROPVAL_TYPE_ERROR;
@@ -3428,7 +3418,7 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 			pprop->value.err = err_val;
 		}
 	}
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
@@ -3551,9 +3541,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 						}
 						result = nsp_interface_fetch_smtp_row(
 							pstrs->ppstrings[i] + 6, pproptags, prow);
-						if (MAPI_E_SUCCESS != result) {
+						if (result != ecSuccess)
 							goto EXIT_RESOLVE_NAMESW;
-						}
 						*pproptag = MID_RESOLVED;
 					} else {
 						*pproptag = MID_UNRESOLVED;
@@ -3569,9 +3558,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				}
 				result = nsp_interface_fetch_row(pnode, TRUE,
 							pstat->codepage, pproptags, prow);
-				if (MAPI_E_SUCCESS != result) {
+				if (result != ecSuccess)
 					goto EXIT_RESOLVE_NAMESW;
-				}
 			}		
 		}
 	} else {
@@ -3627,17 +3615,16 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				}
 				result = nsp_interface_fetch_row(pnode2, TRUE,
 							pstat->codepage, pproptags, prow);
-				if (MAPI_E_SUCCESS != result) {
+				if (result != ecSuccess)
 					goto EXIT_RESOLVE_NAMESW;
-				}
 			}
 		}
 	}
-	result = MAPI_E_SUCCESS;
+	result = ecSuccess;
 	
 EXIT_RESOLVE_NAMESW:
 	ab_tree_put_base(pbase);
-	if (MAPI_E_SUCCESS != result) {
+	if (result != ecSuccess) {
 		*ppmids = NULL;
 		*pprows = NULL;
 	}

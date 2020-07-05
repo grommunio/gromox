@@ -383,7 +383,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 			&b_result) || FALSE == b_result) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 #endif
 	
@@ -447,7 +447,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 			logon_object_get_dir(plogon),
 			message_object_get_id(pmessage), timer_id);
 		message_object_reload(pmessage);
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	
 	if (FALSE == common_util_send_message(plogon,
@@ -459,7 +459,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	} else {
 		message_object_clear_unsent(pmessage);
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 
 SUBMIT_FAIL:
 	exmdb_client_clear_submit(logon_object_get_dir(plogon),
@@ -525,7 +525,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 			plogon, message_id, NULL)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (FALSE == exmdb_client_check_message(
@@ -542,7 +542,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		fid_spooler, message_id)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
@@ -560,7 +560,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
 	}
 	paddress_types->count = 2;
 	paddress_types->ppstr = const_cast(char **, address_types);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_setspooler(void *plogmap, uint8_t logon_id, uint32_t hin)
@@ -574,7 +574,7 @@ uint32_t rop_setspooler(void *plogmap, uint8_t logon_id, uint32_t hin)
 	if (FALSE == logon_object_check_private(plogon)) {
 		return EC_NOT_SUPPORTED;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_spoolerlockmessage(uint64_t message_id,
@@ -610,7 +610,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 		return EC_ACCESS_DENIED;
 	}
 	if (LOCK_STAT_1STFINISHED != lock_stat) {
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (FALSE == exmdb_client_check_message(
@@ -672,7 +672,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 			logon_object_get_account_id(plogon), pinfo->cpid,
 			parent_id, message_id, TRUE, &b_result);
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
@@ -765,7 +765,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		message_object_get_id(pmessage), FALSE)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_transportnewmail(uint64_t message_id,
@@ -784,7 +784,7 @@ uint32_t rop_transportnewmail(uint64_t message_id,
 		folder_id, message_flags, pstr_class)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_gettransportfolder(uint64_t *pfolder_id,
@@ -800,7 +800,7 @@ uint32_t rop_gettransportfolder(uint64_t *pfolder_id,
 		return EC_NOT_SUPPORTED;
 	}
 	*pfolder_id = rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_optionsdata(const char *paddress_type,
@@ -818,5 +818,5 @@ uint32_t rop_optionsdata(const char *paddress_type,
 	memset(poptions_info->pb, 0, poptions_info->cb);
 	phelp_file->cb = 0;
 	*ppfile_name = NULL;
-	return EC_SUCCESS;
+	return ecSuccess;
 }

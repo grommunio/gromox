@@ -559,7 +559,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				(ROP_RESPONSE**)&pnode1->pdata,
 				prop_buff->phandles, prop_buff->hnum);
 		switch (result) {
-		case EC_SUCCESS:
+		case ecSuccess:
 			/* disable compression when RopReadStream
 				RopFastTransferSourceGetBuffer success.
 				in many cases, lzxpress will make buffer inflate! */
@@ -712,7 +712,7 @@ MAKE_RPC_EXT:
 		ext_push.offset, prop_buff, pbuff, pbuff_len)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
@@ -752,9 +752,8 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	tmp_cb = *pcb_out;
 	result = rop_processor_execute_and_push(pout,
 		&tmp_cb, &rop_buff, TRUE, &response_list);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess)
 		return result;
-	}
 	offset = tmp_cb;
 	last_offset = 0;
 	count = double_list_get_nodes_num(&response_list);
@@ -780,7 +779,7 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			goto PROC_SUCCESS;
 		}
 		/* ms-oxcrpc 3.1.4.2.1.2 */
-		while (EC_SUCCESS == presponse->result &&
+		while (presponse->result == ecSuccess &&
 			*pcb_out - offset >= 0x8000 && count < MAX_ROP_PAYLOADS) {
 			if (0 != ((QUERYROWS_REQUEST*)
 				prequest->ppayload)->forward_read) {
@@ -803,25 +802,23 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess)
 				break;
-			}
 			pnode1 = double_list_get_from_head(&response_list);
 			if (NULL == pnode1) {
 				break;
 			}
 			presponse = (ROP_RESPONSE*)pnode1->pdata;
 			if (presponse->rop_id != ropQueryRows ||
-				EC_SUCCESS != presponse->result) {
+			    presponse->result != ecSuccess)
 				break;
-			}
 			last_offset = offset;
 			offset += tmp_cb;
 			count ++;
 		}
 	} else if (presponse->rop_id == ropReadStream) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
-		while (EC_SUCCESS == presponse->result &&
+		while (presponse->result == ecSuccess &&
 			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
 			if (0 == ((READSTREAM_RESPONSE*)
 				presponse->ppayload)->data.cb) {
@@ -830,25 +827,23 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess)
 				break;
-			}
 			pnode1 = double_list_get_from_head(&response_list);
 			if (NULL == pnode1) {
 				break;
 			}
 			presponse = (ROP_RESPONSE*)pnode1->pdata;
 			if (presponse->rop_id != ropReadStream ||
-				EC_SUCCESS != presponse->result) {
+			    presponse->result != ecSuccess)
 				break;
-			}
 			last_offset = offset;
 			offset += tmp_cb;
 			count ++;
 		}
 	} else if (presponse->rop_id == ropFastTransferSourceGetBuffer) {
 		/* ms-oxcrpc 3.1.4.2.1.2 */
-		while (EC_SUCCESS == presponse->result &&
+		while (presponse->result == ecSuccess &&
 			*pcb_out - offset >= 0x2000 && count < MAX_ROP_PAYLOADS) {
 			if (TRANSFER_STATUS_ERROR == 
 				((FASTTRANSFERSOURCEGETBUFFER_RESPONSE*)
@@ -861,18 +856,16 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 			tmp_cb = *pcb_out - offset;
 			result = rop_processor_execute_and_push(pout + offset,
 						&tmp_cb, &rop_buff, FALSE, &response_list);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess)
 				break;
-			}
 			pnode1 = double_list_get_from_head(&response_list);
 			if (NULL == pnode1) {
 				break;
 			}
 			presponse = (ROP_RESPONSE*)pnode1->pdata;
-			if (presponse->rop_id != ropFastTransferSourceGetBuffer
-				|| EC_SUCCESS != presponse->result) {
+			if (presponse->rop_id != ropFastTransferSourceGetBuffer ||
+			    presponse->result != ecSuccess)
 				break;
-			}
 			last_offset = offset;
 			offset += tmp_cb;
 			count ++;
@@ -882,5 +875,5 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 PROC_SUCCESS:
 	rop_ext_set_rhe_flag_last(pout, last_offset);
 	*pcb_out = offset;
-	return EC_SUCCESS;
+	return ecSuccess;
 }

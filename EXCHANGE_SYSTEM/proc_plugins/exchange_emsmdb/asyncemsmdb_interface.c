@@ -177,7 +177,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	if (TRUE == emsmdb_interface_check_notify(&pin->acxh)) {
 		lib_buffer_put(g_wait_allocator, pwait);
 		pout->flags_out = FLAG_NOTIFICATION_PENDING;
-		pout->result = EC_SUCCESS;
+		pout->result = ecSuccess;
 		return DISPATCH_SUCCESS;
 	}
 	pwait->node.pdata = pwait;
@@ -243,7 +243,7 @@ static void asyncemsmdb_interface_activate(
 		active_hpm_context(pwait->out_payload.context_id, b_pending);
 	} else {
 		if (TRUE == rpc_build_environment(pwait->async_id)) {
-			pwait->out_payload.pout->result = EC_SUCCESS;
+			pwait->out_payload.pout->result = ecSuccess;
 			if (TRUE == b_pending) {
 				pwait->out_payload.pout->flags_out =
 							FLAG_NOTIFICATION_PENDING;

@@ -536,7 +536,7 @@ static uint32_t notif_sink_timedwait(NOTIF_SINK *psink,
 	if (0 == psink->count) {
 		pnotifications->count = 0;
 		pnotifications->ppnotification = NULL;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	return zarafa_client_notifdequeue(
 		psink, timeval, pnotifications);
@@ -725,7 +725,7 @@ ZEND_FUNCTION(mapi_prop_type)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		RETVAL_FALSE;
 	} else {
-		MAPI_G(hr) = EC_SUCCESS;
+		MAPI_G(hr) = ecSuccess;
 		RETURN_LONG(proptag & 0xFFFF);
 	}
 }
@@ -739,7 +739,7 @@ ZEND_FUNCTION(mapi_prop_id)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		RETVAL_FALSE;
 	} else {
-		MAPI_G(hr) = EC_SUCCESS;
+		MAPI_G(hr) = ecSuccess;
 		RETURN_LONG(((uint32_t)proptag) >> 16);
 	}
 }
@@ -753,7 +753,7 @@ ZEND_FUNCTION(mapi_is_error)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		RETVAL_FALSE;
 	} else {
-		MAPI_G(hr) = EC_SUCCESS;
+		MAPI_G(hr) = ecSuccess;
 		RETURN_BOOL(errcode & 0x80000000);
 	}
 }
@@ -773,7 +773,7 @@ ZEND_FUNCTION(mapi_make_scode)
 		} else {
 			scode = 0x80000000 | 0x40000 | ((uint32_t)code);
 		}
-		MAPI_G(hr) = EC_SUCCESS;
+		MAPI_G(hr) = ecSuccess;
 		RETURN_LONG(scode);
 	}
 }
@@ -789,7 +789,7 @@ ZEND_FUNCTION(mapi_prop_tag)
 		MAPI_G(hr) = EC_INVALID_PARAMETER;
 		RETVAL_FALSE;
 	} else {
-		MAPI_G(hr) = EC_SUCCESS;
+		MAPI_G(hr) = ecSuccess;
 		RETURN_LONG((propid << 16) | proptype);
 	}
 }
@@ -835,7 +835,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	}
 	RETVAL_STRINGL(reinterpret_cast<const char *>(push_ctx.data), push_ctx.offset);
 	ext_pack_push_free(&push_ctx);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -866,7 +866,7 @@ ZEND_FUNCTION(mapi_parseoneoff)
 	add_assoc_string(return_value, "name", oneoff_entry.pdisplay_name);
 	add_assoc_string(return_value, "type", oneoff_entry.paddress_type);
 	add_assoc_string(return_value, "address", oneoff_entry.pmail_address);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -918,7 +918,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 			password = nullptr;
 	}
 	result = zarafa_client_logon(username, password, 0, &presource->hsession);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -926,7 +926,7 @@ ZEND_FUNCTION(mapi_logon_zarafa)
 	presource->type = MAPI_SESSION;
 	presource->hobject = 0;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -982,14 +982,14 @@ ZEND_FUNCTION(mapi_logon_ex)
 	}
 	result = zarafa_client_logon(username,
 		password, flags, &presource->hsession);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	presource->type = MAPI_SESSION;
 	presource->hobject = 0;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_session);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1027,7 +1027,7 @@ ZEND_FUNCTION(mapi_openentry)
 	}
 	result = zarafa_client_openentry(psession->hsession,
 					entryid, flags, &mapi_type, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1051,7 +1051,7 @@ ZEND_FUNCTION(mapi_openentry)
 		MAPI_G(hr) = EC_INVALID_OBJECT;
 		goto THROW_EXCEPTION;
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1087,7 +1087,7 @@ ZEND_FUNCTION(mapi_openaddressbook)
 	presource->hsession = psession->hsession;
 	presource->hobject = 0;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_addressbook);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1128,7 +1128,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 	}
 	result = zarafa_client_openabentry(psession->hsession,
 							entryid, &mapi_type, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1155,7 +1155,7 @@ ZEND_FUNCTION(mapi_ab_openentry)
 		MAPI_G(hr) = EC_INVALID_OBJECT;
 		goto THROW_EXCEPTION;
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1198,7 +1198,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 	result = zarafa_client_resolvename(
 		psession->hsession, &cond_set,
 		&result_set);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1207,7 +1207,7 @@ ZEND_FUNCTION(mapi_ab_resolvename)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
  	if (MAPI_G(exceptions_enabled)) {
@@ -1237,12 +1237,12 @@ ZEND_FUNCTION(mapi_ab_getdefaultdir)
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getabgal(psession->hsession, &entryid);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_STRINGL(reinterpret_cast<const char *>(entryid.pb), entryid.cb);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1272,7 +1272,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_loadstoretable(psession->hsession, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1285,7 +1285,7 @@ ZEND_FUNCTION(mapi_getmsgstorestable)
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1321,7 +1321,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	result = zarafa_client_openstore(
 		psession->hsession, entryid,
 		&hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1334,7 +1334,7 @@ ZEND_FUNCTION(mapi_openmsgstore)
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_msgstore);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1376,7 +1376,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 	}
 	result = zarafa_client_openpropfilesec(
 		psession->hsession, puid, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1389,7 +1389,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 	presource->hsession = psession->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_property);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1439,7 +1439,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	result = zarafa_client_loadhierarchytable(
 		probject->hsession, probject->hobject,
 		flags, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1452,7 +1452,7 @@ ZEND_FUNCTION(mapi_folder_gethierarchytable)
 	presource->hsession = probject->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1502,7 +1502,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 	result = zarafa_client_loadcontenttable(
 		probject->hsession, probject->hobject,
 		flags, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1515,7 +1515,7 @@ ZEND_FUNCTION(mapi_folder_getcontentstable)
 	presource->hsession = probject->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1549,7 +1549,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 	result = zarafa_client_createmessage(
 		pfolder->hsession, pfolder->hobject,
 		flags, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1562,7 +1562,7 @@ ZEND_FUNCTION(mapi_folder_createmessage)
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1601,12 +1601,12 @@ ZEND_FUNCTION(mapi_folder_deletemessages)
 	result = zarafa_client_deletemessages(
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1653,12 +1653,12 @@ ZEND_FUNCTION(mapi_folder_copymessages)
 	result = zarafa_client_copymessages(
 		psrcfolder->hsession, psrcfolder->hobject,
 		pdstfolder->hobject, &entryid_array, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1697,12 +1697,12 @@ ZEND_FUNCTION(mapi_folder_setreadflags)
 	result = zarafa_client_setreadflags(
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1750,7 +1750,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 		pfolder->hsession, pfolder->hobject,
 		folder_type, pfname, pcomment, flags,
 		&hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1763,7 +1763,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	presource->hsession = pfolder->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1799,12 +1799,12 @@ ZEND_FUNCTION(mapi_folder_deletefolder)
 	result = zarafa_client_deletefolder(
 		pfolder->hsession, pfolder->hobject,
 		entryid, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1836,12 +1836,12 @@ ZEND_FUNCTION(mapi_folder_emptyfolder)
 	result = zarafa_client_emptyfolder(
 		pfolder->hsession, pfolder->hobject,
 		flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1890,12 +1890,12 @@ ZEND_FUNCTION(mapi_folder_copyfolder)
 	result = zarafa_client_copyfolder(psrcfolder->hsession,
 		psrcfolder->hobject, entryid, pdstfolder->hobject,
 		pname, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1920,12 +1920,12 @@ ZEND_FUNCTION(mapi_msgstore_createentryid)
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_getstoreentryid(mailboxdn, &entryid);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_STRINGL(reinterpret_cast<const char *>(entryid.pb), entryid.cb);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -1975,7 +1975,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 	}
 	result = zarafa_client_openstoreentry(pstore->hsession,
 		pstore->hobject, entryid, flags, &mapi_type, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -1994,7 +1994,7 @@ ZEND_FUNCTION(mapi_msgstore_openentry)
 		ZEND_REGISTER_RESOURCE(return_value,
 			presource, le_mapi_message);
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2040,12 +2040,12 @@ ZEND_FUNCTION(mapi_msgstore_entryidfromsourcekey)
 	}
 	result = zarafa_client_entryidfromsourcekey(pstore->hsession,
 		pstore->hobject, sourcekey_folder, pmessage_key, &entryid);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_STRINGL(reinterpret_cast<const char *>(entryid.pb), entryid.cb);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2092,7 +2092,7 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 	result = zarafa_client_storeadvise(
 		pstore->hsession, pstore->hobject,
 		pentryid, event_mask, &sub_id);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -2104,7 +2104,7 @@ ZEND_FUNCTION(mapi_msgstore_advise)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_LONG(sub_id);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2135,12 +2135,12 @@ ZEND_FUNCTION(mapi_msgstore_unadvise)
 	}
 	result = zarafa_client_unadvise(pstore->hsession,
 							pstore->hobject, sub_id);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2163,7 +2163,7 @@ ZEND_FUNCTION(mapi_sink_create)
 				"MAPI error ", MAPI_G(hr) TSRMLS_CC);
 		}
 	} else {
-		MAPI_G(hr) = EC_SUCCESS;
+		MAPI_G(hr) = ecSuccess;
 		ZEND_REGISTER_RESOURCE(return_value, psink, le_mapi_advisesink);
 	}	
 }
@@ -2196,7 +2196,7 @@ ZEND_FUNCTION(mapi_sink_timedwait)
 		}
 		result = notif_sink_timedwait(psink,
 				tmp_time, &notifications);
-		if (EC_SUCCESS != result) {
+		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
 			goto RETURN_EXCEPTION;
 		}
@@ -2207,7 +2207,7 @@ ZEND_FUNCTION(mapi_sink_timedwait)
 		goto RETURN_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pznotifications, 0, 0);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 RETURN_EXCEPTION:
 	sleep(1);
@@ -2263,7 +2263,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 	result = zarafa_client_queryrows(ptable->hsession,
 		ptable->hobject, 0, 0x7FFFFFFF, prestriction,
 		pproptags, &rowset);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -2272,7 +2272,7 @@ ZEND_FUNCTION(mapi_table_queryallrows)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2322,7 +2322,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 	result = zarafa_client_queryrows(ptable->hsession,
 			ptable->hobject, start, row_count, NULL,
 			pproptags, &rowset);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -2331,7 +2331,7 @@ ZEND_FUNCTION(mapi_table_queryrows)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzrowset, 0, 0);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2370,12 +2370,12 @@ ZEND_FUNCTION(mapi_table_setcolumns)
 	result = zarafa_client_setcolumns(
 		ptable->hsession, ptable->hobject,
 		&proptags, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2410,12 +2410,12 @@ ZEND_FUNCTION(mapi_table_seekrow)
 	}
 	result = zarafa_client_seekrow(ptable->hsession,
 		ptable->hobject, bookmark, row_count, &rows_sought);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_LONG(rows_sought);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2453,12 +2453,12 @@ ZEND_FUNCTION(mapi_table_sort)
 	}
 	result = zarafa_client_sorttable(ptable->hsession,
 					ptable->hobject, &sortcriteria);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2489,12 +2489,12 @@ ZEND_FUNCTION(mapi_table_getrowcount)
 	result = zarafa_client_getrowcount(
 		ptable->hsession, ptable->hobject,
 		&count);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_LONG(count);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2534,12 +2534,12 @@ ZEND_FUNCTION(mapi_table_restrict)
 	result = zarafa_client_restricttable(
 		ptable->hsession, ptable->hobject,
 		&restriction, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2582,12 +2582,12 @@ ZEND_FUNCTION(mapi_table_findrow)
 	result = zarafa_client_findrow(ptable->hsession,
 			ptable->hobject, bookmark, &restriction,
 			flags, &row_idx);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_LONG(row_idx);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2618,12 +2618,12 @@ ZEND_FUNCTION(mapi_table_createbookmark)
 	result = zarafa_client_createbookmark(
 		ptable->hsession, ptable->hobject,
 		&bookmark);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_LONG(bookmark);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2654,12 +2654,12 @@ ZEND_FUNCTION(mapi_table_freebookmark)
 	result = zarafa_client_freebookmark(
 		ptable->hsession, ptable->hobject,
 		bookmark);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2693,14 +2693,14 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	result = zarafa_client_getreceivefolder(
 			pstore->hsession, pstore->hobject,
 			NULL, &entryid);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	result = zarafa_client_openstoreentry(
 		pstore->hsession, pstore->hobject,
 		entryid, 0, &mapi_type, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -2713,7 +2713,7 @@ ZEND_FUNCTION(mapi_msgstore_getreceivefolder)
 	presource->hsession = pstore->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_folder);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2752,12 +2752,12 @@ ZEND_FUNCTION(mapi_message_modifyrecipients)
 	result = zarafa_client_modifyrecipients(
 		pmessage->hsession, pmessage->hobject,
 		flags, &rcpt_list);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2786,12 +2786,12 @@ ZEND_FUNCTION(mapi_message_submitmessage)
 	}
 	result = zarafa_client_submitmessage(
 		pmessage->hsession, pmessage->hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2823,7 +2823,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 	result = zarafa_client_loadattachmenttable(
 			pmessage->hsession, pmessage->hobject,
 			&hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -2836,7 +2836,7 @@ ZEND_FUNCTION(mapi_message_getattachmenttable)
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2869,7 +2869,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 	result = zarafa_client_openattachment(
 		pmessage->hsession, pmessage->hobject,
 		attach_id, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -2882,7 +2882,7 @@ ZEND_FUNCTION(mapi_message_openattach)
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2917,7 +2917,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 	result = zarafa_client_createattachment(
 		pmessage->hsession, pmessage->hobject,
 		&hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
@@ -2930,7 +2930,7 @@ ZEND_FUNCTION(mapi_message_createattach)
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_attachment);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -2966,12 +2966,12 @@ ZEND_FUNCTION(mapi_message_deleteattach)
 	result = zarafa_client_deleteattachment(
 		pmessage->hsession, pmessage->hobject,
 		attach_id);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3003,7 +3003,7 @@ ZEND_FUNCTION(mapi_stream_read)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_STRINGL(static_cast<const char *>(pbuff), actual_bytes);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3034,7 +3034,7 @@ ZEND_FUNCTION(mapi_stream_seek)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3063,7 +3063,7 @@ ZEND_FUNCTION(mapi_stream_setsize)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3087,12 +3087,12 @@ ZEND_FUNCTION(mapi_stream_commit)
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresource, -1, name_stream, le_stream);
 	result = stream_object_commit(pstream);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3122,7 +3122,7 @@ ZEND_FUNCTION(mapi_stream_write)
 	written_len = stream_object_write(pstream,
 				data_block.pb, data_block.cb);
 	RETVAL_LONG(written_len);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3148,7 +3148,7 @@ ZEND_FUNCTION(mapi_stream_stat)
 	stream_size = stream_object_get_length(pstream);
 	array_init(return_value);
 	add_assoc_long(return_value, "cb", stream_size);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3168,7 +3168,7 @@ ZEND_FUNCTION(mapi_stream_create)
 		goto THROW_EXCEPTION;
 	}
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3259,7 +3259,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		probject->hobject, proptag);
 	result = zarafa_client_getpropval(probject->hsession,
 		probject->hobject, phptag_to_proptag(proptag), &pvalue);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -3273,7 +3273,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 	}
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3305,7 +3305,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 	result = zarafa_client_loadrecipienttable(
 		pmessage->hsession, pmessage->hobject,
 		&hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -3318,7 +3318,7 @@ ZEND_FUNCTION(mapi_message_getrecipienttable)
 	presource->hsession = pmessage->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_table);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3350,12 +3350,12 @@ ZEND_FUNCTION(mapi_message_setreadflag)
 	result = zarafa_client_setmessagereadflag(
 		pmessage->hsession, pmessage->hobject,
 		flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3390,7 +3390,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 	result = zarafa_client_openembedded(
 		pattach->hsession, pattach->hobject,
 		flags, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -3403,7 +3403,7 @@ ZEND_FUNCTION(mapi_attach_openobj)
 	presource->hsession = pattach->hsession;
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3444,7 +3444,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 	result = zarafa_client_getnamedpropids(
 		pstore->hsession, pstore->hobject,
 		&propnames, &propids);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -3453,7 +3453,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 		add_next_index_long(return_value,
 			((uint32_t)propids.ppropid[i]) << 16);
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3526,12 +3526,12 @@ ZEND_FUNCTION(mapi_setprops)
 	}
 	result = zarafa_client_setpropvals(probject->hsession,
 							probject->hobject, &propvals);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3627,12 +3627,12 @@ ZEND_FUNCTION(mapi_copyto)
 	result = zarafa_client_copyto(psrcobject->hsession,
 				psrcobject->hobject, pexclude_proptags,
 				pdstobject->hobject, flags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3703,14 +3703,14 @@ ZEND_FUNCTION(mapi_savechanges)
 	case MAPI_MESSAGE:
 		result = zarafa_client_savechanges(
 			probject->hsession, probject->hobject);
-		if (EC_SUCCESS != result) {
+		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;
 		}
 		break;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3776,12 +3776,12 @@ ZEND_FUNCTION(mapi_deleteprops)
 	}
 	result = zarafa_client_deletepropvals(probject->hsession,
 								probject->hobject, &proptags);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -3878,7 +3878,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		}
 		result = zarafa_client_getpropval(probject->hsession,
 			probject->hobject, phptag_to_proptag(proptag), &pvalue); /* memleak(pvalue) */
-		if (EC_SUCCESS != result) {
+		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;
 		}
@@ -3922,7 +3922,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		}
 		result = zarafa_client_openembedded(probject->hsession,
 							probject->hobject, flags, &hobject);
-		if (EC_SUCCESS != result) {
+		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;
 		}
@@ -3944,14 +3944,14 @@ ZEND_FUNCTION(mapi_openproperty)
 		if (PR_CONTENTS_SYNCHRONIZER == proptag) {
 			result = zarafa_client_contentsync(probject->hsession,
 									probject->hobject, &hobject);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
 		} else if (PR_HIERARCHY_SYNCHRONIZER == proptag) {
 			result = zarafa_client_hierarchysync(probject->hsession,
 										probject->hobject, &hobject);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
@@ -3990,7 +3990,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		result = zarafa_client_hierarchyimport(
 			probject->hsession, probject->hobject,
 			&hobject);
-		if (EC_SUCCESS != result) {
+		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;	
 		}
@@ -4019,7 +4019,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		result = zarafa_client_contentimport(
 			probject->hsession, probject->hobject,
 			&hobject);
-		if (EC_SUCCESS != result) {
+		if (result != ecSuccess) {
 			MAPI_G(hr) = result;
 			goto THROW_EXCEPTION;	
 		}
@@ -4038,7 +4038,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		MAPI_G(hr) = EC_NOT_SUPPORTED;
 		goto THROW_EXCEPTION;
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4159,7 +4159,7 @@ ZEND_FUNCTION(mapi_getprops)
 	}
 	result = zarafa_client_getpropvals(probject->hsession,
 				probject->hobject, pproptags, &propvals);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -4169,7 +4169,7 @@ ZEND_FUNCTION(mapi_getprops)
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_ZVAL(&pzpropvals, 0, 0);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4220,7 +4220,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 	result = zarafa_client_getpropnames(
 		pstore->hsession, pstore->hobject,
 		&propids, &propnames);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -4244,7 +4244,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 		}
 		add_assoc_zval(return_value, num_buff, pzprop);
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4337,7 +4337,7 @@ ZEND_FUNCTION(mapi_decompressrtf)
 	waitpid(pid, &status, 0);
 	close(pipes_out[0]);
 	RETVAL_STRINGL(pbuff, offset);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4369,7 +4369,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 	result = zarafa_client_loadruletable(
 		pfolder->hsession, pfolder->hobject,
 		&hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -4383,7 +4383,7 @@ ZEND_FUNCTION(mapi_folder_getrulestable)
 	presource->hobject = hobject;
 	ZEND_REGISTER_RESOURCE(return_value,
 				presource, le_mapi_table);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4422,7 +4422,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		pfolder->hsession, pfolder->hobject,
 		&entryid_array, &prestriction,
 		&search_state);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -4439,7 +4439,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 	add_assoc_zval(return_value, "restriction", &pzrestriction);
 	add_assoc_zval(return_value, "folderlist", &pzfolderlist);
 	add_assoc_long(return_value, "searchstate", search_state);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4498,12 +4498,12 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	result = zarafa_client_setsearchcriteria(
 		pfolder->hsession, pfolder->hobject,
 		flags, &entryid_array, &restriction);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4541,12 +4541,12 @@ ZEND_FUNCTION(mapi_folder_modifyrules)
 	}
 	result = zarafa_client_modifyrules(pfolder->hsession,
 					pfolder->hobject, flags, &rule_list);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4601,7 +4601,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 	result = zarafa_client_getpermissions(
 		presource->hsession, presource->hobject,
 		&perm_set);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -4620,7 +4620,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 			"state", RIGHT_NORMAL);
 		add_index_zval(return_value, i, &pzdata_value);
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4714,11 +4714,11 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 	result = zarafa_client_modifypermissions(
 		pfolder->hsession, pfolder->hobject,
 		&perm_set);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	RETVAL_TRUE;
 	return;
 THROW_EXCEPTION:
@@ -4772,7 +4772,7 @@ ZEND_FUNCTION(mapi_getuseravailability)
 	result = zarafa_client_getuseravailability(
 		psession->hsession, entryid, starttime,
 		endtime, &presult_string);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -4781,7 +4781,7 @@ ZEND_FUNCTION(mapi_getuseravailability)
 		return;
 	}
 	RETVAL_STRING(presult_string);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -4865,12 +4865,12 @@ ZEND_FUNCTION(mapi_exportchanges_config)
 	result = zarafa_client_configsync(pctx->hsession, pctx->hobject,
 			flags, stream_object_get_content(pstream), prestriction,
 			&pctx->b_changed, &pctx->total_steps);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5047,14 +5047,14 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 		-1, name_mapi_exportchanges, le_mapi_exportchanges);
 	if (0 == pctx->b_changed) {
 		RETVAL_TRUE;
-		MAPI_G(hr) = EC_SUCCESS;
+		MAPI_G(hr) = ecSuccess;
 		return;
 	}
 	if (0 == pctx->progress) {
 		if (ICS_TYPE_CONTENTS == pctx->ics_type) {
 			result = zarafa_client_syncdeletions(
 				pctx->hsession, pctx->hobject, 0, &bins);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
@@ -5064,7 +5064,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			}
 			result = zarafa_client_syncdeletions(pctx->hsession,
 						pctx->hobject, SYNC_SOFT_DELETE, &bins);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
@@ -5074,7 +5074,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			}
 			result = zarafa_client_syncreadstatechanges(
 				pctx->hsession, pctx->hobject, &states);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
@@ -5085,7 +5085,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 		} else {
 			result = zarafa_client_syncdeletions(
 				pctx->hsession, pctx->hobject, 0, &bins);
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
@@ -5103,7 +5103,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			if (EC_NOT_FOUND == result) {
 				continue;
 			}
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
@@ -5124,7 +5124,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			if (EC_NOT_FOUND == result) {
 				continue;
 			}
-			if (EC_SUCCESS != result) {
+			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
 			}
@@ -5142,7 +5142,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 		add_next_index_long(return_value, pctx->total_steps);
 		add_next_index_long(return_value, pctx->progress);
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5173,14 +5173,14 @@ ZEND_FUNCTION(mapi_exportchanges_updatestate)
 		&pzresstream, -1, name_stream, le_stream);
 	result = zarafa_client_statesync(pctx->hsession,
 						pctx->hobject, &state_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	stream_object_reset(pstream);
 	stream_object_write(pstream, state_bin.pb, state_bin.cb);
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5207,7 +5207,7 @@ ZEND_FUNCTION(mapi_exportchanges_getchangecount)
 	} else {
 		RETVAL_LONG(pctx->total_steps);
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5240,12 +5240,12 @@ ZEND_FUNCTION(mapi_importcontentschanges_config)
 	result = zarafa_client_configimport(pctx->hsession,
 					pctx->hobject, ICS_TYPE_CONTENTS,
 					stream_object_get_content(pstream));
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5276,14 +5276,14 @@ ZEND_FUNCTION(mapi_importcontentschanges_updatestate)
 		&pzresstream, -1, name_stream, le_stream);
 	result = zarafa_client_stateimport(pctx->hsession,
 							pctx->hobject, &state_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	stream_object_reset(pstream);
 	stream_object_write(pstream, state_bin.pb, state_bin.cb);
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5321,7 +5321,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	}
     result = zarafa_client_importmessage(pctx->hsession,
 			pctx->hobject, flags, &propvals, &hobject);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -5336,7 +5336,7 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagechange)
 	ZVAL_DEREF(pzresmessage);
 	ZEND_REGISTER_RESOURCE(pzresmessage, presource, le_mapi_message);
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5378,12 +5378,12 @@ ZEND_FUNCTION(mapi_importcontentschanges_importmessagedeletion)
 	result = zarafa_client_importdeletion(
 			pctx->hsession, pctx->hobject,
 			flags, &message_bins);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5416,12 +5416,12 @@ ZEND_FUNCTION(mapi_importcontentschanges_importperuserreadstatechange)
 	result = zarafa_client_importreadstates(
 				pctx->hsession, pctx->hobject,
 				&message_states);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5463,12 +5463,12 @@ ZEND_FUNCTION(mapi_importhierarchychanges_config)
 		&pzresstream, -1, name_stream, le_stream);
 	result = zarafa_client_configimport(pctx->hsession, pctx->hobject,
 				ICS_TYPE_HIERARCHY, stream_object_get_content(pstream));
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5501,14 +5501,14 @@ ZEND_FUNCTION(mapi_importhierarchychanges_updatestate)
 		&pzresstream, -1, name_stream, le_stream);
 	result = zarafa_client_stateimport(pctx->hsession,
 							pctx->hobject, &state_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	stream_object_reset(pstream);
 	stream_object_write(pstream, state_bin.pb, state_bin.cb);
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5543,12 +5543,12 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderchange)
 	result = zarafa_client_importfolder(
 			pctx->hsession, pctx->hobject,
 			&propvals);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5583,12 +5583,12 @@ ZEND_FUNCTION(mapi_importhierarchychanges_importfolderdeletion)
 	result = zarafa_client_importdeletion(
 			pctx->hsession, pctx->hobject,
 			flags, &folder_bins);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5622,7 +5622,7 @@ ZEND_FUNCTION(mapi_wrap_importcontentschanges)
 #endif
 	ZEND_REGISTER_RESOURCE(return_value,
 		pctx, le_mapi_importcontentschanges);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5656,7 +5656,7 @@ ZEND_FUNCTION(mapi_wrap_importhierarchychanges)
 #endif
 	ZEND_REGISTER_RESOURCE(return_value,
 		pctx, le_mapi_importhierarchychanges);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5692,7 +5692,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	result = zarafa_client_messagetorfc822(
 		pmessage->hsession, pmessage->hobject,
 		&eml_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -5704,7 +5704,7 @@ ZEND_FUNCTION(mapi_inetmapi_imtoinet)
 	stream_object_write(pstream, eml_bin.pb, eml_bin.cb);
 	stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5745,12 +5745,12 @@ ZEND_FUNCTION(mapi_inetmapi_imtomapi)
 	result = zarafa_client_rfc822tomessage(
 		pmessage->hsession, pmessage->hobject,
 		&eml_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5791,12 +5791,12 @@ ZEND_FUNCTION(mapi_icaltomapi)
 	result = zarafa_client_icaltomessage(
 		pmessage->hsession, pmessage->hobject,
 		&ical_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5831,12 +5831,12 @@ ZEND_FUNCTION(mapi_mapitoical)
 	result = zarafa_client_messagetoical(
 		pmessage->hsession, pmessage->hobject,
 		&ical_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_STRINGL(reinterpret_cast<const char *>(ical_bin.pb), ical_bin.cb);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5874,12 +5874,12 @@ ZEND_FUNCTION(mapi_vcftomapi)
 	result = zarafa_client_vcftomessage(
 		pmessage->hsession, pmessage->hobject,
 		&vcf_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_TRUE;
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -5914,12 +5914,12 @@ ZEND_FUNCTION(mapi_mapitovcf)
 	result = zarafa_client_messagetovcf(
 		pmessage->hsession, pmessage->hobject,
 		&vcf_bin);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;	
 	}
 	RETVAL_STRINGL(reinterpret_cast<const char *>(vcf_bin.pb), vcf_bin.cb);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -6002,7 +6002,7 @@ ZEND_FUNCTION(kc_session_save)
 	ext_pack_push_guid(&push_ctx, &psession->hsession);
 	ZVAL_STRINGL(pzoutstr, reinterpret_cast<const char *>(push_ctx.data), push_ctx.offset);
 	ext_pack_push_free(&push_ctx);
-	RETVAL_LONG(EC_SUCCESS);
+	RETVAL_LONG(ecSuccess);
 }
 
 ZEND_FUNCTION(kc_session_restore)
@@ -6029,7 +6029,7 @@ ZEND_FUNCTION(kc_session_restore)
 		return;
 	}
 	result = zarafa_client_checksession(hsession);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		RETVAL_LONG(result);
 		return;
 	}
@@ -6042,7 +6042,7 @@ ZEND_FUNCTION(kc_session_restore)
 	presource->hobject = 0;
 	presource->hsession = hsession;
 	ZEND_REGISTER_RESOURCE(pzres, presource, le_mapi_session);
-	RETVAL_LONG(EC_SUCCESS);
+	RETVAL_LONG(ecSuccess);
 }
 
 
@@ -6063,7 +6063,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	}
 	result = zarafa_client_uinfo(username, &entryid,
 		&pdisplay_name, &px500dn, &privilege_bits);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -6073,7 +6073,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	add_assoc_string(return_value, "fullname", pdisplay_name);
 	add_assoc_string(return_value, "essdn", px500dn);
 	add_assoc_long(return_value, "privilege", privilege_bits);
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {
@@ -6099,7 +6099,7 @@ ZEND_FUNCTION(nsp_setuserpasswd)
 		goto THROW_EXCEPTION;	
 	}
 	result = zarafa_client_setpasswd(username, old_passwd, new_passwd);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
@@ -6140,11 +6140,11 @@ ZEND_FUNCTION(mapi_linkmessage)
 	}
 	result = zarafa_client_linkmessage(psession->hsession,
 						search_entryid, message_entryid);
-	if (EC_SUCCESS != result) {
+	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
 	}
-	MAPI_G(hr) = EC_SUCCESS;
+	MAPI_G(hr) = ecSuccess;
 	return;
 THROW_EXCEPTION:
 	if (MAPI_G(exceptions_enabled)) {

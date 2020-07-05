@@ -58,13 +58,13 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 			logon_object_get_dir(plogon), ppropids)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	if (FALSE == logon_object_get_named_propids(
 		plogon, b_create, ppropnames, ppropids)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getnamesfrompropertyids(
@@ -91,7 +91,7 @@ uint32_t rop_getnamesfrompropertyids(
 			plogon, ppropids, ppropnames)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	default:
 		return EC_NOT_SUPPORTED;
 	}
@@ -217,7 +217,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		cpid, b_unicode, &propvals, pproptags, prow)) {
 		return EC_OUT_OF_MEMORY;	
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getpropertiesall(uint16_t size_limit,
@@ -346,7 +346,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 			return EC_OUT_OF_MEMORY;	
 		}
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
@@ -366,25 +366,25 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 			pobject, pproptags)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_FOLDER:
 		if (FALSE == folder_object_get_all_proptags(
 			pobject, pproptags)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
 		if (FALSE == message_object_get_all_proptags(
 			pobject, pproptags)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
 		if (FALSE == attachment_object_get_all_proptags(
 			pobject, pproptags)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	default:
 		return EC_NOT_SUPPORTED;	
 	}
@@ -419,7 +419,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 			pobject, ppropvals, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_FOLDER:
 		rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -437,7 +437,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 			pobject, ppropvals, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
 		tag_access = message_object_get_tag_access(pobject);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -447,7 +447,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 			pobject, ppropvals, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
 		tag_access = attachment_object_get_tag_access(pobject);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -457,7 +457,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 			pobject, ppropvals, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	default:
 		return EC_NOT_SUPPORTED;	
 	}
@@ -500,7 +500,7 @@ uint32_t rop_deleteproperties(
 			pobject, pproptags, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_FOLDER:
 		rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -518,7 +518,7 @@ uint32_t rop_deleteproperties(
 			pobject, pproptags, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
 		tag_access = message_object_get_tag_access(pobject);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -528,7 +528,7 @@ uint32_t rop_deleteproperties(
 			pobject, pproptags, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
 		tag_access = attachment_object_get_tag_access(pobject);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -538,7 +538,7 @@ uint32_t rop_deleteproperties(
 			pobject, pproptags, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	default:
 		return EC_NOT_SUPPORTED;	
 	}
@@ -579,7 +579,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 		ppropidnames->count = 0;
 		ppropidnames->ppropid = NULL;
 		ppropidnames->ppropname = NULL;
-		return EC_SUCCESS;	
+		return ecSuccess;
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
@@ -626,7 +626,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 		ppropidnames->count = 0;
 		ppropidnames->ppropid = NULL;
 		ppropidnames->ppropname = NULL;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	ppropidnames->count = 0;
 	ppropidnames->ppropid = common_util_alloc(
@@ -665,7 +665,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 								ppropidnames->ppropname[i];
 		ppropidnames->count ++;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_copyproperties(uint8_t want_asynchronous,
@@ -804,7 +804,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		pproblems->count += tmp_problems.count;
 		qsort(pproblems->pproblem, pproblems->count,
 			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
 		tag_access = message_object_get_tag_access(pobject_dst);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -898,7 +898,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		pproblems->count += tmp_problems.count;
 		qsort(pproblems->pproblem, pproblems->count,
 			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
 		tag_access = attachment_object_get_tag_access(pobject_dst);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -961,7 +961,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		pproblems->count += tmp_problems.count;
 		qsort(pproblems->pproblem, pproblems->count,
 			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
-		return EC_SUCCESS;
+		return ecSuccess;
 	default:
 		return EC_NOT_SUPPORTED;	
 	}
@@ -1147,13 +1147,13 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 				pobject_dst, &propvals, pproblems)) {
 				return ecError;
 			}
-			return EC_SUCCESS;
+			return ecSuccess;
 		}
 		if (FALSE == folder_object_set_properties(
 			pobject_dst, &propvals, pproblems)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
 		tag_access = message_object_get_tag_access(pobject_dst);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -1167,7 +1167,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		if (TRUE == b_cycle) {
 			return EC_MESSAGE_CYCLE;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
 		tag_access = attachment_object_get_tag_access(pobject_dst);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -1180,7 +1180,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		if (TRUE == b_cycle) {
 			return EC_MESSAGE_CYCLE;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	default:
 		return EC_NOT_SUPPORTED;	
 	}
@@ -1298,7 +1298,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		return ecError;
 	}
 	*pstream_size = stream_object_get_length(pstream);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_readstream(uint16_t byte_count,
@@ -1332,7 +1332,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	if (0 == buffer_size) {
 		pdata_bin->cb = 0;
 		pdata_bin->pb = NULL;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	pdata_bin->pb = common_util_alloc(buffer_size);
 	if (NULL == pdata_bin->pb) {
@@ -1341,7 +1341,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	read_len = stream_object_read(pstream,
 				pdata_bin->pb, buffer_size);
 	pdata_bin->cb = read_len;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_writestream(const BINARY *pdata_bin,
@@ -1365,7 +1365,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 	}
 	if (0 == pdata_bin->cb) {
 		*pwritten_size = 0;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	if (stream_object_get_seek_position(pstream) >=
 		stream_object_get_max_length(pstream)) {
@@ -1379,7 +1379,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 	if (*pwritten_size < pdata_bin->cb) {
 		return EC_TOO_BIG;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_commitstream(void *plogmap,
@@ -1401,10 +1401,10 @@ uint32_t rop_commitstream(void *plogmap,
 		if (FALSE == stream_object_commit(pstream)) {
 			return ecError;
 		}
-		return EC_SUCCESS;
+		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
 	case OBJECT_TYPE_ATTACHMENT:
-		return EC_SUCCESS;
+		return ecSuccess;
 	default:
 		return EC_NOT_SUPPORTED;
 	}
@@ -1425,7 +1425,7 @@ uint32_t rop_getstreamsize(uint32_t *pstream_size,
 		return EC_NOT_SUPPORTED;
 	}
 	*pstream_size = stream_object_get_length(pstream);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_setstreamsize(uint64_t stream_size,
@@ -1451,7 +1451,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 	if (FALSE == stream_object_set_length(pstream, stream_size)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_seekstream(uint8_t seek_pos,
@@ -1484,7 +1484,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 		return EC_SEEK_ERROR;
 	}
 	*pnew_pos = stream_object_get_seek_position(pstream);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_copytostream(uint64_t byte_count,
@@ -1517,7 +1517,7 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	if (0 == byte_count) {
 		*pread_bytes = 0;
 		*pwritten_bytes = 0;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	length = byte_count;
 	if (FALSE == stream_object_copy(
@@ -1526,7 +1526,7 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	}
 	*pread_bytes = length;
 	*pwritten_bytes = length;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_lockregionstream(uint64_t region_offset,

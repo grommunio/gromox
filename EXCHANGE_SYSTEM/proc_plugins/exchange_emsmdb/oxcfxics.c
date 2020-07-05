@@ -368,7 +368,7 @@ uint32_t rop_fasttransferdestconfigure(
 		fastupctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_fasttransferdestputbuffer(
@@ -397,7 +397,7 @@ uint32_t rop_fasttransferdestputbuffer(
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	*pused_size = ptransfer_data->cb;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
@@ -470,7 +470,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 		*ptransfer_status = TRANSFER_STATUS_DONE;
 	}
 	ptransfer_data->cb = len;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
@@ -536,7 +536,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_fasttransfersourcecopymessages(
@@ -633,7 +633,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
@@ -797,7 +797,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
@@ -976,13 +976,13 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_tellversion(const uint16_t *pversion,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
@@ -1054,7 +1054,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		icsdownctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncimportmessagechange(uint8_t import_flags,
@@ -1270,7 +1270,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		message_object_free(pmessage);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncimportreadstatechanges(uint16_t count,
@@ -1392,7 +1392,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		}
 		idset_append(pctx->pstate->pread, read_cn);
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
@@ -1607,7 +1607,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecError;
 		}
 		idset_append(pctx->pstate->pseen, change_num);
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	if (FALSE == exmdb_client_get_folder_property(
 		logon_object_get_dir(plogon), 0, folder_id,
@@ -1710,7 +1710,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return ecError;
 	}
 	idset_append(pctx->pstate->pseen, change_num);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncimportdeletes(
@@ -1896,7 +1896,7 @@ uint32_t rop_syncimportdeletes(
 					return ecError;
 				}
 				if (NULL == pvalue) {
-					return EC_SUCCESS;
+					return ecSuccess;
 				}
 				if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
 					goto DELETE_FOLDER;
@@ -1925,7 +1925,7 @@ DELETE_FOLDER:
 			return ecError;
 		}
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncimportmessagemove(
@@ -2105,7 +2105,7 @@ uint32_t rop_syncimportmessagemove(
 	if (TRUE == b_newer) {
 		return EC_NEW_CLIENT_CHANGE;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncopencollector(uint8_t is_content_collector,
@@ -2141,7 +2141,7 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 		icsupctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncgettransferstate(void *plogmap,
@@ -2192,7 +2192,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 		fastdownctx_object_free(pctx);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
@@ -2219,7 +2219,7 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 	} else {
 		return EC_NOT_SUPPORTED;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
@@ -2246,7 +2246,7 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 	} else {
 		return EC_NOT_SUPPORTED;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_syncuploadstatestreamend(void *plogmap,
@@ -2271,14 +2271,14 @@ uint32_t rop_syncuploadstatestreamend(void *plogmap,
 	} else {
 		return EC_NOT_SUPPORTED;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_setlocalreplicamidsetdeleted(uint32_t count,
 	const LONG_TERM_ID_RANGE *prange, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getlocalreplicaids(uint32_t count,
@@ -2313,5 +2313,5 @@ uint32_t rop_getlocalreplicaids(uint32_t count,
 			logon_object_get_account_id(plogon));
 	}
 	rop_util_get_gc_array(begin_eid, pglobal_count);
-	return EC_SUCCESS;
+	return ecSuccess;
 }

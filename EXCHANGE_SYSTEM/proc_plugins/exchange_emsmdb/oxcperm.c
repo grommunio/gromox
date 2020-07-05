@@ -65,14 +65,14 @@ uint32_t rop_modifypermissions(uint8_t flags,
 		}
 	}
 	if (0 == count) {
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	if (FALSE == exmdb_client_update_folder_permission(
 		logon_object_get_dir(plogon), folder_id,
 		b_freebusy, count, prow)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getpermissionstable(uint8_t flags,
@@ -122,5 +122,5 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
-	return EC_SUCCESS;
+	return ecSuccess;
 }

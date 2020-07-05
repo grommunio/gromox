@@ -221,7 +221,7 @@ PERMISSION_CHECK:
 		message_object_free(pmessage);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_createmessage(uint16_t cpid,
@@ -359,7 +359,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 		message_object_free(pmessage);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_savechangesmessage(uint8_t save_flags,
@@ -427,7 +427,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 		message_object_set_open_flags(pmessage, open_flags);
 		break;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_removeallrecipients(uint32_t reserved,
@@ -445,7 +445,7 @@ uint32_t rop_removeallrecipients(uint32_t reserved,
 		return EC_NOT_SUPPORTED;
 	}
 	message_object_empty_rcpts(pmessage);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
@@ -517,7 +517,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 	if (FALSE == message_object_set_rcpts(pmessage, &tmp_set)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_readrecipients(uint32_t row_id,
@@ -563,7 +563,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 		return EC_BUFFER_TOO_SMALL;
 	}
 	*pcount = i;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_reloadcachedinformation(uint16_t reserved,
@@ -649,7 +649,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 			return EC_OUT_OF_MEMORY;
 		}
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_setmessagestatus(uint64_t message_id,
@@ -732,7 +732,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 		return EC_NOT_FOUND;
 	}
 	*pmessage_status = *(uint32_t*)pvalue;
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
@@ -906,7 +906,7 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 	} else {
 		*ppartial_completion = 0;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_setmessagereadflag(uint8_t read_flags,
@@ -943,7 +943,7 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 	} else {
 		*pread_change = 1;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
@@ -992,7 +992,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		attachment_object_free(pattachment);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_createattachment(uint32_t *pattachment_id,
@@ -1040,7 +1040,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 		attachment_object_free(pattachment);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_deleteattachment(uint32_t attachment_id,
@@ -1066,7 +1066,7 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 		pmessage, attachment_id)) {
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_savechangesattachment(uint8_t save_flags,
@@ -1114,7 +1114,7 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 		attachment_object_set_open_flags(pattachment, open_flags);
 		break;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_openembeddedmessage(uint16_t cpid,
@@ -1223,7 +1223,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		*precipient_count = 0;
 		*prow_count = 0;
 		*pprecipient_row = NULL;
-		return EC_SUCCESS;
+		return ecSuccess;
 	}
 	proptags.count = 4;
 	proptags.pproptag = proptag_buff;
@@ -1300,7 +1300,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		message_object_free(pmessage);
 		return ecError;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getattachmenttable(uint8_t table_flags,
@@ -1335,7 +1335,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getvalidattachments(LONG_ARRAY *pattachment_ids,

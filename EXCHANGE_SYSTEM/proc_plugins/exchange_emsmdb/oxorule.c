@@ -81,7 +81,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 	if (TRUE == b_exceed) {
 		return EC_OUT_OF_MEMORY;
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_getrulestable(uint8_t flags,
@@ -117,7 +117,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 		return ecError;
 	}
 	table_object_set_handle(ptable, *phout);
-	return EC_SUCCESS;
+	return ecSuccess;
 }
 
 uint32_t rop_updatedeferredactionmessages(
@@ -210,5 +210,5 @@ uint32_t rop_updatedeferredactionmessages(
 			logon_object_get_dir(plogon), NULL,
 			0, *pmid, &propvals, &problems);
 	}
-	return EC_SUCCESS;
+	return ecSuccess;
 }

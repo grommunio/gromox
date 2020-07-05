@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "emsmdb_interface.h"
 #include "rop_processor.h"
 #include "logon_object.h"
@@ -3887,7 +3888,7 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (EC_SUCCESS != r->result) {
+	if (r->result != ecSuccess) {
 		switch (r->rop_id) {
 		case ropLogon:
 			if (EC_WRONG_SERVER == r->result) {

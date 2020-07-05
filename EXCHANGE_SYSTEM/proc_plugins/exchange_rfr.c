@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include "util.h"
 #include "guid.h"
@@ -41,9 +42,6 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
-
-#define MAPI_E_SUCCESS 0x00000000
-
 
 BOOL PROC_LibMain(int reason, void **ppdata)
 {
@@ -118,7 +116,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 			username[3], username[4], username[5], username[6],
 			username[7], username[8], username[9], username[10],
 			username[11], hex_string, ptoken);
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
@@ -139,7 +137,7 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
 		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn);
 	}
 	strncpy(serverfqdn, ptoken + 4, 1024);
-	return MAPI_E_SUCCESS;
+	return ecSuccess;
 }
 
 static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
