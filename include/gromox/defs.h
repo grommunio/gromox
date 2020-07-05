@@ -12,6 +12,7 @@ typedef enum {
 enum {
 	ecSuccess = 0,
 	ecNullObject = 0x000004B9,
+	ecWarnWithErrors = 0x00040380,
 	ecError = 0x80004005,
 	ecNotSupported = 0x80040102,
 	ecInvalidObject = 0x80040108,

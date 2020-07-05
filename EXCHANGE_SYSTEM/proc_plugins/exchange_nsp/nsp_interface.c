@@ -2576,7 +2576,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	/* MS-OXNSPI 3.1.4.1.7.11 */
 	if (NULL == pnode1) {
 		nsp_interface_make_ptyperror_row(pproptags, *pprows);
-		result = MAPI_W_ERRORS_RETURNED;
+		result = ecWarnWithErrors;
 	} else {
 		result = nsp_interface_fetch_row(pnode1, b_ephid,
 					pstat->codepage, pproptags, *pprows);
@@ -2599,7 +2599,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			for (i=0; i<(*pprows)->cvalues; i++) {
 				if (PROPVAL_TYPE_ERROR ==
 					((*pprows)->pprops[i].proptag & 0XFFFF)) {
-					result = MAPI_W_ERRORS_RETURNED;
+					result = ecWarnWithErrors;
 					break;
 				}
 			}
@@ -2608,10 +2608,8 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	
 EXIT_GET_PROPS:
 	ab_tree_put_base(pbase);
-	if (result != ecSuccess &&
-		MAPI_W_ERRORS_RETURNED != result) {
+	if (result != ecSuccess && result != ecWarnWithErrors)
 		*pprows = NULL;
-	}
 	return result;
 }
 

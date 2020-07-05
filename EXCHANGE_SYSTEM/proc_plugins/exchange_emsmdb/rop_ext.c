@@ -3896,9 +3896,8 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 			}
 			break;
 		case ropGetPropertyIdsFromNames:
-			if (EC_ERRORS_RETURNED == r->result) {
+			if (r->result == ecWarnWithErrors)
 				goto PUSH_PAYLOAD;
-			}
 			break;
 		case ropMoveCopyMessages:
 		case ropMoveFolder:
