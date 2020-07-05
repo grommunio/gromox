@@ -1130,7 +1130,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 				return ecError;
 			}
 			if (TRUE == b_collid) {
-				return EC_COLLIDING_NAMES;
+				return ecDuplicateName;
 			}
 			if (FALSE == folder_object_set_properties(
 				pobject_dst, &propvals, pproblems)) {

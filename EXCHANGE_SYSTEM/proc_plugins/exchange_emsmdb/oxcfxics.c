@@ -1559,7 +1559,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecError;
 		}
 		if (0 != tmp_fid) {
-			return EC_DUPLICATE_NAME;
+			return ecDuplicateName;
 		}
 		if (FALSE == exmdb_client_allocate_cn(
 			logon_object_get_dir(plogon), &change_num)) {
@@ -1671,7 +1671,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecError;
 		}
 		if (TRUE == b_exist) {
-			return EC_DUPLICATE_NAME;
+			return ecDuplicateName;
 		}
 		if (TRUE == b_partial) {
 			return ecError;

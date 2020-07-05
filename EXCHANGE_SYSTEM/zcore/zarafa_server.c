@@ -2853,7 +2853,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		if (0 == (flags & FLAG_OPEN_IF_EXISTS) ||
 			folder_type != *(uint32_t*)pvalue) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_DUPLICATE_NAME;
+			return ecDuplicateName;
 		}
 	} else {
 		parent_id = folder_object_get_id(pparent);
@@ -3370,7 +3370,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	}
 	if (TRUE == b_exist) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_DUPLICATE_NAME;
+		return ecDuplicateName;
 	}
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
@@ -5814,7 +5814,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			}
 			if (TRUE == b_collid) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_COLLIDING_NAMES;
+				return ecDuplicateName;
 			}
 			if (FALSE == folder_object_set_properties(
 				pobject_dst, &propvals)) {
@@ -6792,7 +6792,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 		if (0 != tmp_fid) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_DUPLICATE_NAME;
+			return ecDuplicateName;
 		}
 		if (FALSE == exmdb_client_allocate_cn(
 			store_object_get_dir(pstore), &change_num)) {
@@ -6898,7 +6898,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 		if (TRUE == b_exist) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_DUPLICATE_NAME;
+			return ecDuplicateName;
 		}
 		if (TRUE == b_partial) {
 			zarafa_server_put_user_info(pinfo);

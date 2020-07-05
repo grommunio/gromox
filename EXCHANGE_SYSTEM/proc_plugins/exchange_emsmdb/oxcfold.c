@@ -252,7 +252,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 			return ecError;
 		}
 		if (0 == open_existing || folder_type != *(uint32_t*)pvalue) {
-			return EC_DUPLICATE_NAME;
+			return ecDuplicateName;
 		}
 	} else {
 		parent_id = folder_object_get_id(pparent);
@@ -851,7 +851,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		return ecError;
 	}
 	if (TRUE == b_exist) {
-		return EC_DUPLICATE_NAME;
+		return ecDuplicateName;
 	}
 	if (TRUE == b_partial) {
 		*ppartial_completion = 1;
@@ -979,7 +979,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		return ecError;
 	}
 	if (TRUE == b_exist) {
-		return EC_DUPLICATE_NAME;
+		return ecDuplicateName;
 	}
 	if (TRUE == b_partial) {
 		*ppartial_completion = 1;
