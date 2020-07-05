@@ -559,7 +559,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 		goto CONNECT_FAILURE;
 	}
 	if (FALSE == common_util_essdn_to_username(puser_dn, username)) {
-		result = EC_RPC_FAIL;
+		result = ecRpcFailed;
 		goto CONNECT_FAILURE;
 	}
 	if ('\0' == username) {
@@ -572,7 +572,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	}
 	if (FALSE == common_util_get_user_displayname(username, temp_buff) ||
 		common_util_mb_from_utf8(cpid, temp_buff, pdisplayname, 1024) < 0) {
-		result = EC_RPC_FAIL;
+		result = ecRpcFailed;
 		goto CONNECT_FAILURE;
 	}
 	if ('\0' == pdisplayname[0]) {
@@ -586,7 +586,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	pbest_vers[2] = pclient_vers[2];
 	
 	if (cb_auxin > 0 && cb_auxin < 0x8) {
-		result = EC_RPC_FAIL;
+		result = ecRpcFailed;
 		goto CONNECT_FAILURE;
 	} else if (cb_auxin > 0x1008) {
 		result = EC_BAD_STUB_DATA;
@@ -670,7 +670,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		*pcb_auxout = 0;
 		*ptrans_time = 0;
 		memset(pcxh, 0, sizeof(CXH));
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (cb_auxin > 0x1008) {
 		*pflags = 0;

@@ -631,7 +631,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		case EXT_ERR_ALLOC:
 			return ecMAPIOOM;
 		default:
-			return EC_RPC_FAIL;
+			return ecRpcFailed;
 		}
 	}
 	
@@ -641,7 +641,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	while (TRUE) {
 		pnotify_list = emsmdb_interface_get_notify_list();
 		if (NULL == pnotify_list) {
-			return EC_RPC_FAIL;
+			return ecRpcFailed;
 		}
 		pnode = double_list_get_from_head(pnotify_list);
 		emsmdb_interface_put_notify_list();

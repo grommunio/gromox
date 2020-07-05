@@ -157,7 +157,7 @@ uint32_t zarafa_client_logon(const char *username,
 	request.payload.logon.password = const_cast<char *>(password);
 	request.payload.logon.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phsession = response.payload.logon.hsession;
@@ -172,7 +172,7 @@ uint32_t zarafa_client_checksession(GUID hsession)
 	request.call_id = CALL_ID_CHECKSESSION;
 	request.payload.checksession.hsession = hsession;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -186,7 +186,7 @@ uint32_t zarafa_client_uinfo(const char *username, BINARY *pentryid,
 	request.call_id = CALL_ID_UINFO;
 	request.payload.uinfo.username = const_cast<char *>(username);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess) {
 		*pentryid = response.payload.uinfo.entryid;
@@ -206,7 +206,7 @@ uint32_t zarafa_client_unloadobject(GUID hsession, uint32_t hobject)
 	request.payload.unloadobject.hsession = hsession;
 	request.payload.unloadobject.hobject = hobject;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -222,7 +222,7 @@ uint32_t zarafa_client_openentry(GUID hsession, BINARY entryid,
 	request.payload.openentry.entryid = entryid;
 	request.payload.openentry.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess) {
 		*pmapi_type = response.payload.openentry.mapi_type;
@@ -243,7 +243,7 @@ uint32_t zarafa_client_openstoreentry(GUID hsession, uint32_t hobject,
 	request.payload.openstoreentry.entryid = entryid;
 	request.payload.openstoreentry.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess) {
 		*pmapi_type = response.payload.openstoreentry.mapi_type;
@@ -262,7 +262,7 @@ uint32_t zarafa_client_openabentry(GUID hsession,
 	request.payload.openabentry.hsession = hsession;
 	request.payload.openabentry.entryid = entryid;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess) {
 		*pmapi_type = response.payload.openabentry.mapi_type;
@@ -281,7 +281,7 @@ uint32_t zarafa_client_resolvename(GUID hsession,
 	request.payload.resolvename.hsession = hsession;
 	request.payload.resolvename.pcond_set = const_cast<TARRAY_SET *>(pcond_set);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*presult_set = response.payload.resolvename.result_set;
@@ -298,7 +298,7 @@ uint32_t zarafa_client_getpermissions(GUID hsession,
 	request.payload.getpermissions.hsession = hsession;
 	request.payload.getpermissions.hobject = hobject;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pperm_set = response.payload.getpermissions.perm_set;
@@ -316,7 +316,7 @@ uint32_t zarafa_client_modifypermissions(GUID hsession,
 	request.payload.modifypermissions.hfolder = hfolder;
 	request.payload.modifypermissions.pset = const_cast<PERMISSION_SET *>(pset);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -333,7 +333,7 @@ uint32_t zarafa_client_modifyrules(GUID hsession,
 	request.payload.modifyrules.flags = flags;
 	request.payload.modifyrules.plist = const_cast<RULE_LIST *>(plist);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -346,7 +346,7 @@ uint32_t zarafa_client_getabgal(GUID hsession, BINARY *pentryid)
 	request.call_id = CALL_ID_GETABGAL;
 	request.payload.getabgal.hsession = hsession;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pentryid = response.payload.getabgal.entryid;
@@ -362,7 +362,7 @@ uint32_t zarafa_client_loadstoretable(
 	request.call_id = CALL_ID_LOADSTORETABLE;
 	request.payload.loadstoretable.hsession = hsession;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.loadstoretable.hobject;
@@ -379,7 +379,7 @@ uint32_t zarafa_client_openstore(GUID hsession,
 	request.payload.openstore.hsession = hsession;
 	request.payload.openstore.entryid = entryid;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.openstore.hobject;
@@ -396,7 +396,7 @@ uint32_t zarafa_client_openpropfilesec(GUID hsession,
 	request.payload.openpropfilesec.hsession = hsession;
 	request.payload.openpropfilesec.puid = puid;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.openpropfilesec.hobject;
@@ -414,7 +414,7 @@ uint32_t zarafa_client_loadhierarchytable(GUID hsession,
 	request.payload.loadhierarchytable.hfolder = hfolder;
 	request.payload.loadhierarchytable.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.loadhierarchytable.hobject;
@@ -432,7 +432,7 @@ uint32_t zarafa_client_loadcontenttable(GUID hsession,
 	request.payload.loadcontenttable.hfolder = hfolder;
 	request.payload.loadcontenttable.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.loadcontenttable.hobject;
@@ -449,7 +449,7 @@ uint32_t zarafa_client_loadrecipienttable(GUID hsession,
 	request.payload.loadrecipienttable.hsession = hsession;
 	request.payload.loadrecipienttable.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.loadrecipienttable.hobject;
@@ -466,7 +466,7 @@ uint32_t zarafa_client_loadruletable(GUID hsession,
 	request.payload.loadruletable.hsession = hsession;
 	request.payload.loadruletable.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.loadrecipienttable.hobject;
@@ -484,7 +484,7 @@ uint32_t zarafa_client_createmessage(GUID hsession,
 	request.payload.createmessage.hfolder = hfolder;
 	request.payload.createmessage.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.createmessage.hobject;
@@ -504,7 +504,7 @@ uint32_t zarafa_client_deletemessages(GUID hsession,
 	request.payload.deletemessages.pentryids = const_cast<BINARY_ARRAY *>(pentryids);
 	request.payload.deletemessages.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -523,7 +523,7 @@ uint32_t zarafa_client_copymessages(GUID hsession,
 	request.payload.copymessages.pentryids = const_cast<BINARY_ARRAY *>(pentryids);
 	request.payload.copymessages.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -541,7 +541,7 @@ uint32_t zarafa_client_setreadflags(GUID hsession,
 	request.payload.setreadflags.pentryids = const_cast<BINARY_ARRAY *>(pentryids);
 	request.payload.setreadflags.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -562,7 +562,7 @@ uint32_t zarafa_client_createfolder(GUID hsession,
 	request.payload.createfolder.folder_comment = const_cast<char *>(folder_comment);
 	request.payload.createfolder.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.createfolder.hobject;
@@ -581,7 +581,7 @@ uint32_t zarafa_client_deletefolder(GUID hsession,
 	request.payload.deletefolder.entryid = entryid;
 	request.payload.deletefolder.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -597,7 +597,7 @@ uint32_t zarafa_client_emptyfolder(GUID hsession,
 	request.payload.emptyfolder.hfolder = hfolder;
 	request.payload.emptyfolder.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -617,7 +617,7 @@ uint32_t zarafa_client_copyfolder(GUID hsession,
 	request.payload.copyfolder.new_name = const_cast<char *>(new_name);
 	request.payload.copyfolder.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -631,7 +631,7 @@ uint32_t zarafa_client_getstoreentryid(
 	request.call_id = CALL_ID_GETSTOREENTRYID;
 	request.payload.getstoreentryid.mailbox_dn = const_cast<char *>(mailbox_dn);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pentryid = response.payload.getstoreentryid.entryid;
@@ -651,7 +651,7 @@ uint32_t zarafa_client_entryidfromsourcekey(
 	request.payload.entryidfromsourcekey.folder_key = folder_key;
 	request.payload.entryidfromsourcekey.pmessage_key = const_cast<BINARY *>(pmessage_key);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pentryid = response.payload.entryidfromsourcekey.entryid;
@@ -671,7 +671,7 @@ uint32_t zarafa_client_storeadvise(GUID hsession,
 	request.payload.storeadvise.pentryid = const_cast<BINARY *>(pentryid);
 	request.payload.storeadvise.event_mask = event_mask;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*psub_id = response.payload.storeadvise.sub_id;
@@ -689,7 +689,7 @@ uint32_t zarafa_client_unadvise(GUID hsession,
 	request.payload.unadvise.hstore = hstore;
 	request.payload.unadvise.sub_id = sub_id;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -704,7 +704,7 @@ uint32_t zarafa_client_notifdequeue(const NOTIF_SINK *psink,
 	request.payload.notifdequeue.psink = const_cast<NOTIF_SINK *>(psink);
 	request.payload.notifdequeue.timeval = timeval;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pnotifications = response.payload.notifdequeue.notifications;
@@ -727,7 +727,7 @@ uint32_t zarafa_client_queryrows(
 	request.payload.queryrows.prestriction = const_cast<RESTRICTION *>(prestriction);
 	request.payload.queryrows.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*prowset = response.payload.queryrows.rowset;
@@ -746,7 +746,7 @@ uint32_t zarafa_client_setcolumns(GUID hsession, uint32_t htable,
 	request.payload.setcolumns.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	request.payload.setcolumns.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -764,7 +764,7 @@ uint32_t zarafa_client_seekrow(GUID hsession,
 	request.payload.seekrow.bookmark = bookmark;
 	request.payload.seekrow.seek_rows = seek_rows;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*psought_rows = response.payload.seekrow.sought_rows;
@@ -782,7 +782,7 @@ uint32_t zarafa_client_sorttable(GUID hsession,
 	request.payload.sorttable.htable = htable;
 	request.payload.sorttable.psortset = const_cast<SORTORDER_SET *>(psortset);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -797,7 +797,7 @@ uint32_t zarafa_client_getrowcount(GUID hsession,
 	request.payload.getrowcount.hsession = hsession;
 	request.payload.getrowcount.htable = htable;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pcount = response.payload.getrowcount.count;
@@ -816,7 +816,7 @@ uint32_t zarafa_client_restricttable(GUID hsession, uint32_t htable,
 	request.payload.restricttable.prestriction = const_cast<RESTRICTION *>(prestriction);
 	request.payload.restricttable.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -835,7 +835,7 @@ uint32_t zarafa_client_findrow(GUID hsession, uint32_t htable,
 	request.payload.findrow.prestriction = const_cast<RESTRICTION *>(prestriction);
 	request.payload.findrow.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*prow_idx = response.payload.findrow.row_idx;
@@ -852,7 +852,7 @@ uint32_t zarafa_client_createbookmark(GUID hsession,
 	request.payload.createbookmark.hsession = hsession;
 	request.payload.createbookmark.htable = htable;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pbookmark = response.payload.createbookmark.bookmark;
@@ -870,7 +870,7 @@ uint32_t zarafa_client_freebookmark(GUID hsession,
 	request.payload.freebookmark.htable = htable;
 	request.payload.freebookmark.bookmark = bookmark;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -886,7 +886,7 @@ uint32_t zarafa_client_getreceivefolder(GUID hsession,
 	request.payload.getreceivefolder.hstore = hstore;
 	request.payload.getreceivefolder.pstrclass = const_cast<char *>(pstrclass);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pentryid = response.payload.getreceivefolder.entryid;
@@ -905,7 +905,7 @@ uint32_t zarafa_client_modifyrecipients(GUID hsession,
 	request.payload.modifyrecipients.flags = flags;
 	request.payload.modifyrecipients.prcpt_list = const_cast<TARRAY_SET *>(prcpt_list);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -919,7 +919,7 @@ uint32_t zarafa_client_submitmessage(GUID hsession, uint32_t hmessage)
 	request.payload.submitmessage.hsession = hsession;
 	request.payload.submitmessage.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -934,7 +934,7 @@ uint32_t zarafa_client_loadattachmenttable(GUID hsession,
 	request.payload.loadattachmenttable.hsession = hsession;
 	request.payload.loadattachmenttable.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.loadattachmenttable.hobject;
@@ -952,7 +952,7 @@ uint32_t zarafa_client_openattachment(GUID hsession,
 	request.payload.openattachment.hmessage = hmessage;
 	request.payload.openattachment.attach_id = attach_id;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.openattachment.hobject;
@@ -969,7 +969,7 @@ uint32_t zarafa_client_createattachment(GUID hsession,
 	request.payload.createattachment.hsession = hsession;
 	request.payload.createattachment.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.createattachment.hobject;
@@ -987,7 +987,7 @@ uint32_t zarafa_client_deleteattachment(GUID hsession,
 	request.payload.deleteattachment.hmessage = hmessage;
 	request.payload.deleteattachment.attach_id = attach_id;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1016,7 +1016,7 @@ uint32_t zarafa_client_setpropvals(GUID hsession,
 	request.payload.setpropvals.hobject = hobject;
 	request.payload.setpropvals.ppropvals = const_cast<TPROPVAL_ARRAY *>(ppropvals);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1054,7 +1054,7 @@ uint32_t zarafa_client_getpropvals(GUID hsession,
 	request.payload.getpropvals.hobject = hobject;
 	request.payload.getpropvals.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*ppropvals = response.payload.getpropvals.propvals;
@@ -1072,7 +1072,7 @@ uint32_t zarafa_client_deletepropvals(GUID hsession,
 	request.payload.deletepropvals.hobject = hobject;
 	request.payload.deletepropvals.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1088,7 +1088,7 @@ uint32_t zarafa_client_setmessagereadflag(
 	request.payload.setmessagereadflag.hmessage = hmessage;
 	request.payload.setmessagereadflag.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1104,7 +1104,7 @@ uint32_t zarafa_client_openembedded(GUID hsession,
 	request.payload.openembedded.hattachment = hattachment;
 	request.payload.openembedded.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.openembedded.hobject;
@@ -1122,7 +1122,7 @@ uint32_t zarafa_client_getnamedpropids(GUID hsession, uint32_t hstore,
 	request.payload.getnamedpropids.hstore = hstore;
 	request.payload.getnamedpropids.ppropnames = const_cast<PROPNAME_ARRAY *>(ppropnames);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*ppropids = response.payload.getnamedpropids.propids;
@@ -1140,7 +1140,7 @@ uint32_t zarafa_client_getpropnames(GUID hsession, uint32_t hstore,
 	request.payload.getpropnames.hstore = hstore;
 	request.payload.getpropnames.ppropids = const_cast<PROPID_ARRAY *>(ppropids);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*ppropnames = response.payload.getpropnames.propnames;
@@ -1161,7 +1161,7 @@ uint32_t zarafa_client_copyto(GUID hsession, uint32_t hsrcobject,
 	request.payload.copyto.hdstobject = hdstobject;
 	request.payload.copyto.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1175,7 +1175,7 @@ uint32_t zarafa_client_savechanges(GUID hsession, uint32_t hobject)
 	request.payload.savechanges.hsession = hsession;
 	request.payload.savechanges.hobject = hobject;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1190,7 +1190,7 @@ uint32_t zarafa_client_hierarchysync(GUID hsession,
 	request.payload.hierarchysync.hsession = hsession;
 	request.payload.hierarchysync.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.hierarchysync.hobject;
@@ -1207,7 +1207,7 @@ uint32_t zarafa_client_contentsync(GUID hsession,
 	request.payload.contentsync.hsession = hsession;
 	request.payload.contentsync.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.contentsync.hobject;
@@ -1229,7 +1229,7 @@ uint32_t zarafa_client_configsync(GUID hsession,
 	request.payload.configsync.pstate = const_cast<BINARY *>(pstate);
 	request.payload.configsync.prestriction = const_cast<RESTRICTION *>(prestriction);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess) {
 		*pb_changed = response.payload.configsync.b_changed;
@@ -1248,7 +1248,7 @@ uint32_t zarafa_client_statesync(GUID hsession,
 	request.payload.statesync.hsession = hsession;
 	request.payload.statesync.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pstate = response.payload.statesync.state;
@@ -1265,7 +1265,7 @@ uint32_t zarafa_client_syncmessagechange(GUID hsession,
 	request.payload.syncmessagechange.hsession = hsession;
 	request.payload.syncmessagechange.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess) {
 		*pb_new = response.payload.syncmessagechange.b_new;
@@ -1285,7 +1285,7 @@ uint32_t zarafa_client_syncfolderchange(GUID hsession,
 	request.payload.syncfolderchange.hsession = hsession;
 	request.payload.syncfolderchange.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pproplist = response.payload.syncfolderchange.proplist;
@@ -1302,7 +1302,7 @@ uint32_t zarafa_client_syncreadstatechanges(
 	request.payload.syncreadstatechanges.hsession = hsession;
 	request.payload.syncreadstatechanges.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pstates = response.payload.syncreadstatechanges.states;
@@ -1320,7 +1320,7 @@ uint32_t zarafa_client_syncdeletions(GUID hsession,
 	request.payload.syncdeletions.hctx = hctx;
 	request.payload.syncdeletions.flags = flags;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pbins = response.payload.syncdeletions.bins;
@@ -1337,7 +1337,7 @@ uint32_t zarafa_client_hierarchyimport(GUID hsession,
 	request.payload.hierarchyimport.hsession = hsession;
 	request.payload.hierarchyimport.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.hierarchyimport.hobject;
@@ -1354,7 +1354,7 @@ uint32_t zarafa_client_contentimport(GUID hsession,
 	request.payload.contentimport.hsession = hsession;
 	request.payload.contentimport.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.contentimport.hobject;
@@ -1373,7 +1373,7 @@ uint32_t zarafa_client_configimport(GUID hsession,
 	request.payload.configimport.sync_type = sync_type;
 	request.payload.configimport.pstate = const_cast<BINARY *>(pstate);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1388,7 +1388,7 @@ uint32_t zarafa_client_stateimport(GUID hsession,
 	request.payload.stateimport.hsession = hsession;
 	request.payload.stateimport.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pstate = response.payload.stateimport.state;
@@ -1407,7 +1407,7 @@ uint32_t zarafa_client_importmessage(GUID hsession, uint32_t hctx,
 	request.payload.importmessage.flags = flags;
 	request.payload.importmessage.pproplist = const_cast<TPROPVAL_ARRAY *>(pproplist);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*phobject = response.payload.importmessage.hobject;
@@ -1425,7 +1425,7 @@ uint32_t zarafa_client_importfolder(GUID hsession,
 	request.payload.importfolder.hctx = hctx;
 	request.payload.importfolder.pproplist = const_cast<TPROPVAL_ARRAY *>(pproplist);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1442,7 +1442,7 @@ uint32_t zarafa_client_importdeletion(GUID hsession,
 	request.payload.importdeletion.flags = flags;
 	request.payload.importdeletion.pbins = const_cast<BINARY_ARRAY *>(pbins);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1458,7 +1458,7 @@ uint32_t zarafa_client_importreadstates(GUID hsession,
 	request.payload.importreadstates.hctx = hctx;
 	request.payload.importreadstates.pstates = const_cast<STATE_ARRAY *>(pstates);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1474,7 +1474,7 @@ uint32_t zarafa_client_getsearchcriteria(GUID hsession,
 	request.payload.getsearchcriteria.hsession = hsession;
 	request.payload.getsearchcriteria.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess) {
 		*pfolder_array = response.payload.getsearchcriteria.folder_array;
@@ -1499,7 +1499,7 @@ uint32_t zarafa_client_setsearchcriteria(
 	request.payload.setsearchcriteria.pfolder_array = const_cast<BINARY_ARRAY *>(pfolder_array);
 	request.payload.setsearchcriteria.prestriction = const_cast<RESTRICTION *>(prestriction);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1514,7 +1514,7 @@ uint32_t zarafa_client_messagetorfc822(GUID hsession,
 	request.payload.messagetorfc822.hsession = hsession;
 	request.payload.messagetorfc822.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*peml_bin = response.payload.messagetorfc822.eml_bin;
@@ -1532,7 +1532,7 @@ uint32_t zarafa_client_rfc822tomessage(GUID hsession,
 	request.payload.rfc822tomessage.hmessage = hmessage;
 	request.payload.rfc822tomessage.peml_bin = const_cast<BINARY *>(peml_bin);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1547,7 +1547,7 @@ uint32_t zarafa_client_messagetoical(GUID hsession,
 	request.payload.messagetoical.hsession = hsession;
 	request.payload.messagetoical.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pical_bin = response.payload.messagetoical.ical_bin;
@@ -1565,7 +1565,7 @@ uint32_t zarafa_client_icaltomessage(GUID hsession,
 	request.payload.icaltomessage.hmessage = hmessage;
 	request.payload.icaltomessage.pical_bin = const_cast<BINARY *>(pical_bin);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1580,7 +1580,7 @@ uint32_t zarafa_client_messagetovcf(GUID hsession,
 	request.payload.messagetovcf.hsession = hsession;
 	request.payload.messagetovcf.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*pvcf_bin = response.payload.messagetovcf.vcf_bin;
@@ -1598,7 +1598,7 @@ uint32_t zarafa_client_vcftomessage(GUID hsession,
 	request.payload.vcftomessage.hmessage = hmessage;
 	request.payload.vcftomessage.pvcf_bin = const_cast<BINARY *>(pvcf_bin);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1616,7 +1616,7 @@ uint32_t zarafa_client_getuseravailability(GUID hsession,
 	request.payload.getuseravailability.starttime = starttime;
 	request.payload.getuseravailability.endtime = endtime;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	if (response.result == ecSuccess)
 		*ppresult_string = response.payload.getuseravailability.result_string;
@@ -1634,7 +1634,7 @@ uint32_t zarafa_client_setpasswd(const char *username,
 	request.payload.setpasswd.passwd = const_cast<char *>(passwd);
 	request.payload.setpasswd.new_passwd = const_cast<char *>(new_passwd);
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
@@ -1650,7 +1650,7 @@ uint32_t zarafa_client_linkmessage(GUID hsession,
 	request.payload.linkmessage.search_entryid = search_entryid;
 	request.payload.linkmessage.message_entryid = message_entryid;
 	if (!zarafa_client_do_rpc(&request, &response)) {
-		return EC_RPC_FAIL;
+		return ecRpcFailed;
 	}
 	return response.result;
 }
