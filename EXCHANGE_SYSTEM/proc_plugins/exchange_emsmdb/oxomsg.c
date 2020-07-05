@@ -240,7 +240,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	}
 	
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
@@ -253,10 +253,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (0 == message_object_get_id(pmessage)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (TRUE == message_object_check_importing(pmessage)) {
 		return EC_ACCESS_DENIED;
@@ -486,7 +486,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
 		return EC_ACCESS_DENIED;
@@ -556,7 +556,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	paddress_types->count = 2;
 	paddress_types->ppstr = const_cast(char **, address_types);
@@ -572,7 +572,7 @@ uint32_t rop_setspooler(void *plogmap, uint8_t logon_id, uint32_t hin)
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	return ecSuccess;
 }
@@ -604,7 +604,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
 		return EC_ACCESS_DENIED;
@@ -693,7 +693,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
 		return EC_ACCESS_DENIED;
@@ -704,10 +704,10 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (0 == message_object_get_id(pmessage)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (TRUE == message_object_check_importing(pmessage)) {
 		return EC_ACCESS_DENIED;
@@ -797,7 +797,7 @@ uint32_t rop_gettransportfolder(uint64_t *pfolder_id,
 		return EC_NULL_OBJECT;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	*pfolder_id = rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX);
 	return ecSuccess;

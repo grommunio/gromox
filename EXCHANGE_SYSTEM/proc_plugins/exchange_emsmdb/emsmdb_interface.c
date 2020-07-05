@@ -432,7 +432,7 @@ int emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
 	uint8_t *pctx, uint16_t cb_ctx, uint32_t advise_bits, uint8_t *paddr,
 	uint16_t cb_addr, uint32_t *phnotification)
 {
-	return EC_NOT_SUPPORTED;
+	return ecNotSupported;
 }
 
 int emsmdb_interface_dummy_rpc(uint64_t hrpc)

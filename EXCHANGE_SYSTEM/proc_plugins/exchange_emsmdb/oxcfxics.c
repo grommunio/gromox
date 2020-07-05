@@ -293,18 +293,18 @@ uint32_t rop_fasttransferdestconfigure(
 			root_element = ROOT_ELEMENT_ATTACHMENTCONTENT;
 			break;
 		default:
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 		break;
 	case FAST_SOURCE_OPERATION_COPYMESSAGES:
 		if (OBJECT_TYPE_FOLDER != object_type) {
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 		root_element = ROOT_ELEMENT_MESSAGELIST;
 		break;
 	case FAST_SOURCE_OPERATION_COPYFOLDER:
 		if (OBJECT_TYPE_FOLDER != object_type) {
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 		root_element = ROOT_ELEMENT_TOPFOLDER;
 		break;
@@ -391,7 +391,7 @@ uint32_t rop_fasttransferdestputbuffer(
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FASTUPCTX != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	gxerr_t err = fastupctx_object_write_buffer(pobject, ptransfer_data);
 	if (err != GXERR_SUCCESS)
@@ -424,7 +424,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX != object_type &&
 		OBJECT_TYPE_FASTDOWNCTX != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	emsmdb_interface_get_rop_left(&max_rop);
 	max_rop -= 32;
@@ -505,7 +505,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	b_sub = FALSE;
 	if (flags & FAST_COPY_FOLDER_FLAG_MOVE ||
@@ -578,7 +578,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
 		rpc_info = get_rpc_info();
@@ -680,7 +680,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	if (OBJECT_TYPE_FOLDER != object_type &&
 		OBJECT_TYPE_MESSAGE != object_type &&
 		OBJECT_TYPE_ATTACHMENT != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
@@ -844,7 +844,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	if (OBJECT_TYPE_FOLDER != object_type &&
 		OBJECT_TYPE_MESSAGE != object_type &&
 		OBJECT_TYPE_ATTACHMENT != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
@@ -1106,10 +1106,10 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_sync_type(pctx)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
@@ -1306,10 +1306,10 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_sync_type(pctx)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	icsupctx_object_mark_started(pctx);
 	username = NULL;
@@ -1447,10 +1447,10 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (SYNC_TYPE_HIERARCHY != icsupctx_object_get_sync_type(pctx)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
@@ -1497,7 +1497,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		parent_type = *(uint32_t*)pvalue;
 	}
 	if (FOLDER_TYPE_SEARCH == parent_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pbin = phichyvals->ppropval[1].pvalue;
 	if (pbin == nullptr || pbin->cb != 22)
@@ -1642,7 +1642,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		/* MS-OXCFXICS 3.3.5.8.8 move folders
 		within public mailbox is not supported */
 		if (FALSE == logon_object_check_private(plogon)) {
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return EC_ACCESS_DENIED;
@@ -1757,7 +1757,7 @@ uint32_t rop_syncimportdeletes(
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	sync_type = icsupctx_object_get_sync_type(pctx);
 	if (SYNC_DELETES_FLAG_HARDDELETE & flags) {
@@ -1767,7 +1767,7 @@ uint32_t rop_syncimportdeletes(
 	}
 	if (SYNC_DELETES_FLAG_HIERARCHY & flags) {
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 	}
 	icsupctx_object_mark_started(pctx);
@@ -1976,10 +1976,10 @@ uint32_t rop_syncimportmessagemove(
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_sync_type(pctx)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	icsupctx_object_mark_started(pctx);
 	pfolder = icsupctx_object_get_parent_object(pctx);
@@ -2127,7 +2127,7 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (0 == is_content_collector) {
 		sync_type = SYNC_TYPE_HIERARCHY;
@@ -2173,7 +2173,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 			return ecError;
 		}
 	} else {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL == pstate) {
 		return ecError;
@@ -2217,7 +2217,7 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 			return ecError;
 		}
 	} else {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	return ecSuccess;
 }
@@ -2244,7 +2244,7 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 			return ecError;
 		}
 	} else {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	return ecSuccess;
 }
@@ -2269,7 +2269,7 @@ uint32_t rop_syncuploadstatestreamend(void *plogmap,
 			return ecError;
 		}
 	} else {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	return ecSuccess;
 }

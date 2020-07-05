@@ -818,7 +818,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
 	}
 	if (CODEPAGE_UNICODE == pstat->codepage) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	/* check if valid cpid has been supplied */
 	if (FALSE == verify_cpid(pstat->codepage)) {
@@ -1019,7 +1019,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	SIMPLE_TREE_NODE *pnode;
 	
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -1136,7 +1136,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	if (0 == count && NULL == ptable) {
 		*pprows = NULL;
@@ -1348,11 +1348,11 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	if (0 != reserved) {
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	if (SORT_TYPE_DISPLAYNAME == pstat->sort_type) {
 		if (PROP_TAG_DISPLAYNAME != ptarget->proptag &&
@@ -1875,7 +1875,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	if (SORT_TYPE_DISPLAYNAME != pstat->sort_type &&
 		SORT_TYPE_PHONETICDISPLAYNAME != pstat->sort_type &&
@@ -1883,12 +1883,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		SORT_TYPE_DISPLAYNAME_W != pstat->sort_type) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	if (0 != reserved1 || NULL != ppropname) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -2095,7 +2095,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*ppoutmids = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	parray = ndr_stack_alloc(NDR_STACK_IN,
 		sizeof(SORT_ITEM)*pinmids->cvalues);
@@ -2461,7 +2461,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	
 	if (NULL == pstat) {
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	if (flags & FLAG_EPHID) {
 		b_ephid = TRUE;
@@ -2483,7 +2483,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			if (PROPVAL_TYPE_STRING ==
 				(pproptags->pproptag[i] & 0xFFFF)) {
 				*pprows = NULL;
-				return MAPI_E_NO_SUPPORT;
+				return ecNotSupported;
 			}
 		}
 	}
@@ -2632,7 +2632,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	
 	
 	if (NULL != pstat && CODEPAGE_UNICODE == pstat->codepage) {
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -2702,7 +2702,7 @@ EXIT_COMPARE_MIDS:
 int nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
 	STAT *pstat, PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow)
 {
-	return MAPI_E_NO_SUPPORT;
+	return ecNotSupported;
 }
 
 static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
@@ -2931,7 +2931,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
 	if (FALSE == b_unicode && CODEPAGE_UNICODE == codepage) {
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	
 	base_id = ab_tree_get_guid_base_id(handle.guid);
@@ -3013,7 +3013,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		return MAPI_E_INVALID_OBJECT;
 	}
 	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES != proptag) {
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	rpc_info = get_rpc_info();
 	base_id = ab_tree_get_guid_base_id(handle.guid);
@@ -3443,7 +3443,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	if (CODEPAGE_UNICODE == pstat->codepage) {
 		*ppmids = NULL;
 		*pprows = NULL;
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	}
 	/*
 	[MS-OXNPI] 3.1.4.1.17, If the input parameter Reserved contains

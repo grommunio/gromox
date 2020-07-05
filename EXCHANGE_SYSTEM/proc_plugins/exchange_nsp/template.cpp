@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cstring>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include "nsp_interface.h"
 
@@ -51,7 +52,7 @@ int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
 {
 	*ppdata = nullptr;
 	if ((flags & (TI_TEMPLATE | TI_SCRIPT)) != TI_TEMPLATE)
-		return MAPI_E_NO_SUPPORT;
+		return ecNotSupported;
 	auto row = *ppdata = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPERTY_ROW)));
 	if (row == nullptr)
 		return MAPI_E_NOT_ENOUGH_MEMORY;

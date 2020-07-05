@@ -38,7 +38,7 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 	case OBJECT_TYPE_ATTACHMENT:
 		break;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (PROPIDS_FROM_NAMES_FLAG_GETORCREATE == flags) {
 		if (TRUE == logon_object_check_private(plogon) &&
@@ -93,7 +93,7 @@ uint32_t rop_getnamesfrompropertyids(
 		}
 		return ecSuccess;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 }
 
@@ -168,7 +168,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		cpid = attachment_object_get_cpid(pobject);
 		break;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 	total_size = 0;
 	for (i=0; i<propvals.count; i++) {
@@ -336,7 +336,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		cpid = attachment_object_get_cpid(pobject);
 		break;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 	for (i=0; i<ppropvals->count; i++) {
 		if ((ppropvals->ppropval[i].proptag & 0xFFFF) != PROPVAL_TYPE_UNSPECIFIED)
@@ -386,7 +386,7 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 		}
 		return ecSuccess;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 }
 
@@ -459,7 +459,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 		}
 		return ecSuccess;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 }
 
@@ -540,7 +540,7 @@ uint32_t rop_deleteproperties(
 		}
 		return ecSuccess;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 }
 
@@ -607,7 +607,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 		}
 		break;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 	propids.count = 0;
 	propids.ppropid = common_util_alloc(
@@ -714,7 +714,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	}
 	if (OBJECT_TYPE_FOLDER == object_type &&
 		(COPY_FLAG_MOVE & copy_flags)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	proptags.count = 0;
 	proptags.pproptag = common_util_alloc(
@@ -963,7 +963,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
 		return ecSuccess;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 }
 
@@ -1021,7 +1021,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	}
 	if (OBJECT_TYPE_FOLDER == object_type &&
 		(COPY_FLAG_MOVE & copy_flags)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (copy_flags & COPY_FLAG_NOOVERWRITE) {
 		b_force = FALSE;
@@ -1032,7 +1032,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	case OBJECT_TYPE_FOLDER:
 		/* MS-OXCPRPT 3.2.5.8, public folder not supported */
 		if (FALSE == logon_object_check_private(plogon)) {
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 		rpc_info = get_rpc_info();
 		if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -1182,7 +1182,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		}
 		return ecSuccess;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 }
 
@@ -1191,7 +1191,7 @@ uint32_t rop_progress(uint8_t want_cancel,
 	uint8_t *prop_id, uint8_t *ppartial_completion,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	return EC_NOT_SUPPORTED;
+	return ecNotSupported;
 }
 
 uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
@@ -1210,7 +1210,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	
 	/* MS-OXCPERM 3.1.4.1 */
 	if (PROP_TAG_SECURITYDESCRIPTORASXML == proptag) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1231,10 +1231,10 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	case OBJECT_TYPE_FOLDER:
 		if (FALSE == logon_object_check_private(plogon) &&
 			OPENSTREAM_FLAG_READONLY != flags) {
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 		if (PROPVAL_TYPE_BINARY != (proptag & 0xFFFF)) {
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		}
 		if (TRUE == b_write) {
 			rpc_info = get_rpc_info();
@@ -1265,7 +1265,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			}
 			return EC_NOT_FOUND;
 		default:
-			return EC_NOT_SUPPORTED;	
+			return ecNotSupported;
 		}
 		if (TRUE == b_write) {
 			if (OBJECT_TYPE_MESSAGE == object_type) {
@@ -1280,7 +1280,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		max_length = common_util_get_param(COMMON_UTIL_MAX_MAIL_LENGTH);
 		break;
 	default:
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 	pstream = stream_object_create(pobject,
 		object_type, flags, proptag, max_length);
@@ -1317,7 +1317,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (0xBABE == byte_count) {
 		buffer_size = max_byte_count;
@@ -1357,7 +1357,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (stream_object_get_open_flags(pstream) ==
 		OPENSTREAM_FLAG_READONLY) {
@@ -1394,7 +1394,7 @@ uint32_t rop_commitstream(void *plogmap,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	switch (stream_object_get_parent_type(pstream)) {
 	case OBJECT_TYPE_FOLDER:
@@ -1406,7 +1406,7 @@ uint32_t rop_commitstream(void *plogmap,
 	case OBJECT_TYPE_ATTACHMENT:
 		return ecSuccess;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 }
 
@@ -1422,7 +1422,7 @@ uint32_t rop_getstreamsize(uint32_t *pstream_size,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	*pstream_size = stream_object_get_length(pstream);
 	return ecSuccess;
@@ -1443,7 +1443,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (stream_size > stream_object_get_max_length(pstream)) {
 		return EC_TOO_BIG;
@@ -1478,7 +1478,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == stream_object_seek(pstream, seek_pos, offset)) {
 		return EC_SEEK_ERROR;
@@ -1503,7 +1503,7 @@ uint32_t rop_copytostream(uint64_t byte_count,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pdst_stream = rop_processor_get_object(plogmap,
 					logon_id, hdst, &object_type);

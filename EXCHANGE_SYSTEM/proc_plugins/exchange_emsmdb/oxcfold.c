@@ -39,7 +39,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	}
 	if (OBJECT_TYPE_LOGON != object_type &&
 		OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;	
+		return ecNotSupported;
 	}
 	replid = rop_util_get_replid(folder_id);
 	if (TRUE == logon_object_check_private(plogon)) {
@@ -194,13 +194,13 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (1 != rop_util_get_replid(folder_object_get_id(pparent))) {
 		return EC_ACCESS_DENIED;
 	}
 	if (FOLDER_TYPE_SEARCH == folder_object_get_type(pparent)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -208,7 +208,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	}
 	if (FALSE == logon_object_check_private(plogon) &&
 		FOLDER_TYPE_SEARCH == folder_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pfolder_name,
@@ -381,7 +381,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -506,14 +506,14 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pfolder = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FOLDER_TYPE_SEARCH != folder_object_get_type(pfolder)) {
 		return EC_NOT_SEARCH_FOLDER;
@@ -598,7 +598,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pfolder = rop_processor_get_object(plogmap,
 				logon_id, hin, &object_type);
@@ -658,7 +658,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pdst_folder = rop_processor_get_object(plogmap,
 					logon_id, hdst, &object_type);
@@ -666,10 +666,10 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FOLDER_TYPE_SEARCH == folder_object_get_type(pdst_folder)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -748,7 +748,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pdst_folder = rop_processor_get_object(plogmap,
 					logon_id, hdst, &object_type);
@@ -756,7 +756,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -902,7 +902,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pdst_folder = rop_processor_get_object(plogmap,
 					logon_id, hdst, &object_type);
@@ -910,7 +910,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1011,7 +1011,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1025,7 +1025,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	rpc_info = get_rpc_info();
 	if (FALSE == logon_object_check_private(plogon)) {
 		/* just like exchange 2013 or later */
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	fid_val = rop_util_get_gc_value(folder_object_get_id(pfolder));
 	if (PRIVATE_FID_ROOT == fid_val ||
@@ -1109,7 +1109,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -1261,7 +1261,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (table_flags & TABLE_FLAG_DEPTH) {
 		b_depth = TRUE;
@@ -1318,7 +1318,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	b_conversation = FALSE;
 	if (TRUE == logon_object_check_private(plogon)) {

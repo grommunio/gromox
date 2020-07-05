@@ -3863,7 +3863,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_NOT_SUPPORTED;
+		MAPI_G(hr) = ecNotSupported;
 		goto THROW_EXCEPTION;
 	}
 	if (0 == memcmp(&iid_guid, &IID_IStream, sizeof(GUID))) {
@@ -3873,7 +3873,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		case PROPVAL_TYPE_WSTRING:
 			break;
 		default:
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		result = zarafa_client_getpropval(probject->hsession,
@@ -3917,7 +3917,7 @@ ZEND_FUNCTION(mapi_openproperty)
 	} else if (0 == memcmp(&iid_guid, &IID_IMessage, sizeof(GUID))) {
 		if (type != le_mapi_attachment ||
 			PR_ATTACH_DATA_OBJ != proptag) {
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		result = zarafa_client_openembedded(probject->hsession,
@@ -3938,7 +3938,7 @@ ZEND_FUNCTION(mapi_openproperty)
 	} else if (0 == memcmp(&iid_guid,
 		&IID_IExchangeExportChanges, sizeof(GUID))) {
 		if (type != le_mapi_folder) {
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		if (PR_CONTENTS_SYNCHRONIZER == proptag) {
@@ -3956,7 +3956,7 @@ ZEND_FUNCTION(mapi_openproperty)
 				goto THROW_EXCEPTION;
 			}
 		} else {
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		pexporter = st_malloc<ICS_EXPORT_CTX>();
@@ -3980,11 +3980,11 @@ ZEND_FUNCTION(mapi_openproperty)
 	} else if (0 == memcmp(&iid_guid,
 		&IID_IExchangeImportHierarchyChanges, sizeof(GUID))) {
 		if (type != le_mapi_folder) {
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		if (PR_COLLECTOR != proptag) {
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		result = zarafa_client_hierarchyimport(
@@ -4009,11 +4009,11 @@ ZEND_FUNCTION(mapi_openproperty)
 		&IID_IExchangeImportContentsChanges,
 		sizeof(GUID))) {
 		if (type != le_mapi_folder) {
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		if (PR_COLLECTOR != proptag) {
-			MAPI_G(hr) = EC_NOT_SUPPORTED;
+			MAPI_G(hr) = ecNotSupported;
 			goto THROW_EXCEPTION;
 		}
 		result = zarafa_client_contentimport(
@@ -4035,7 +4035,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		ZEND_REGISTER_RESOURCE(return_value,
 			pimporter, le_mapi_importcontentschanges);
 	} else {
-		MAPI_G(hr) = EC_NOT_SUPPORTED;
+		MAPI_G(hr) = ecNotSupported;
 		goto THROW_EXCEPTION;
 	}
 	MAPI_G(hr) = ecSuccess;
@@ -4143,7 +4143,7 @@ ZEND_FUNCTION(mapi_getprops)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_NOT_SUPPORTED;
+		MAPI_G(hr) = ecNotSupported;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -4574,7 +4574,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		goto THROW_EXCEPTION;
 	}
 	if (ACCESS_TYPE_GRANT != acl_type) {
-		MAPI_G(hr) = EC_NOT_SUPPORTED;
+		MAPI_G(hr) = ecNotSupported;
 		goto THROW_EXCEPTION;
 	}
 	{
@@ -4594,7 +4594,7 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_NOT_SUPPORTED;
+		MAPI_G(hr) = ecNotSupported;
 		goto THROW_EXCEPTION;
 	}
 	}
@@ -4665,7 +4665,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 			goto THROW_EXCEPTION;
 		}
 	} else {
-		MAPI_G(hr) = EC_NOT_SUPPORTED;
+		MAPI_G(hr) = ecNotSupported;
 		goto THROW_EXCEPTION;
 	}
 	}

@@ -12,6 +12,7 @@ typedef enum {
 enum {
 	ecSuccess = 0,
 	ecError = 0x80004005,
+	ecNotSupported = 0x80040102,
 };
 
 #ifdef __cplusplus

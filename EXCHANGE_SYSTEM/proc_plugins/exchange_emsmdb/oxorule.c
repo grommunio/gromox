@@ -38,7 +38,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -103,7 +103,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	ptable = table_object_create(plogon, pfolder,
 	         flags, ropGetRulesTable, logon_id);
@@ -149,7 +149,7 @@ uint32_t rop_updatedeferredactionmessages(
 		return ecError;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);
 	rpc_info = get_rpc_info();

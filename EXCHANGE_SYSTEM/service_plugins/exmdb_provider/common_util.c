@@ -4460,8 +4460,7 @@ BOOL common_util_set_properties(int table_type,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = 
-										EC_NOT_SUPPORTED;
+			pproblems->pproblem[pproblems->count].err = ecNotSupported;
 			pproblems->count ++;
 			sqlite3_reset(pstmt);
 			continue;

@@ -63,7 +63,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	}
 	if (OBJECT_TYPE_LOGON != object_type &&
 		OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == exmdb_client_check_message(
 		logon_object_get_dir(plogon), folder_id,
@@ -265,7 +265,7 @@ uint32_t rop_createmessage(uint16_t cpid,
 	}
 	if (OBJECT_TYPE_LOGON != object_type &&
 		OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -385,7 +385,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	tag_access = message_object_get_tag_access(pmessage);
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
@@ -442,7 +442,7 @@ uint32_t rop_removeallrecipients(uint32_t reserved,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	message_object_empty_rcpts(pmessage);
 	return ecSuccess;
@@ -482,7 +482,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
@@ -537,7 +537,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == message_object_read_recipients(
 		pmessage, row_id, 0xFE, &tmp_set)) {
@@ -589,7 +589,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	proptags.count = 3;
 	proptags.pproptag = proptag_buff;
@@ -674,7 +674,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	/* we do not check permission because it's maybe
 		not an important property for the message.
@@ -721,7 +721,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0,
@@ -891,7 +891,7 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	b_partial = FALSE;
 	
@@ -932,7 +932,7 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == message_object_set_readflag(
 		pmessage, read_flags, &b_changed)) {
@@ -965,7 +965,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (flags & OPEN_MODE_FLAG_READWRITE) {
 		tag_access = message_object_get_tag_access(pmessage);
@@ -1014,7 +1014,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	tag_access = message_object_get_tag_access(pmessage);
 	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
@@ -1056,7 +1056,7 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	tag_access = message_object_get_tag_access(pmessage);
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
@@ -1085,7 +1085,7 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	pattachment = rop_processor_get_object(plogmap,
 					logon_id, hin, &object_type);
@@ -1093,7 +1093,7 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_ATTACHMENT != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	tag_access = attachment_object_get_tag_access(pattachment);
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
@@ -1160,7 +1160,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_ATTACHMENT != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	tag_access = attachment_object_get_tag_access(pattachment);
 	if (0 == (tag_access & TAG_ACCESS_MODIFY) &&
@@ -1321,7 +1321,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_MESSAGE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	ptable = table_object_create(plogon, pmessage, table_flags,
 	         ropGetAttachmentTable, logon_id);

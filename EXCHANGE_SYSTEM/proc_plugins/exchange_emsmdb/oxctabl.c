@@ -58,7 +58,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	for (i=0; i<pproptags->count; i++) {
 		type = pproptags->pproptag[i] & 0xFFFF;
@@ -66,7 +66,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 			if (type & 0x2000) {
 				if (ropGetContentsTable !=
 					table_object_get_rop_id(ptable)) {
-					return EC_NOT_SUPPORTED;	
+					return ecNotSupported;
 				}
 				type &= (~0x2000);
 			}
@@ -107,7 +107,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 	if (NULL != psorts) {
 		if (FALSE == oxctable_verify_columns_and_sorts(
 			pproptags, psorts)) {
-			return EC_NOT_SUPPORTED;	
+			return ecNotSupported;
 		}
 	}
 	if (FALSE == table_object_set_columns(ptable, pproptags)) {
@@ -139,10 +139,10 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	b_max = FALSE;
 	b_multi_inst = FALSE;
 	for (i=0; i<psort_criteria->ccategories; i++) {
@@ -185,7 +185,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 			/* we do not support multivalue property
 				without multivalue instances */
 			if (0 == (type & 0x2000)) {
-				return EC_NOT_SUPPORTED;
+				return ecNotSupported;
 			}
 			type &= ~0x2000;
 			/* MUST NOT contain more than one multivalue property! */
@@ -239,7 +239,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	if (TRUE == b_multi_inst && NULL != pcolumns) {
 		if (FALSE == oxctable_verify_columns_and_sorts(
 			pcolumns, psort_criteria)) {
-			return EC_NOT_SUPPORTED;	
+			return ecNotSupported;
 		}
 	}
 	if (FALSE == table_object_set_sorts(ptable, psort_criteria)) {
@@ -266,7 +266,7 @@ uint32_t rop_restrict(uint8_t res_flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	switch (table_object_get_rop_id(ptable)) {
 	case ropGetHierarchyTable:
@@ -274,7 +274,7 @@ uint32_t rop_restrict(uint8_t res_flags,
 	case ropGetRulesTable:
 		break;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL != pres) {
 		if (FALSE == common_util_convert_restriction(
@@ -312,7 +312,7 @@ uint32_t rop_queryrows(uint8_t flags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
@@ -383,7 +383,7 @@ uint32_t rop_abort(uint8_t *ptable_status,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	return EC_UNABLE_TO_ABORT;
 }
@@ -400,7 +400,7 @@ uint32_t rop_getstatus(uint8_t *ptable_status,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	return ecSuccess;
@@ -419,7 +419,7 @@ uint32_t rop_queryposition(uint32_t *pnumerator,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -444,7 +444,7 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -519,14 +519,14 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	switch (table_object_get_rop_id(ptable)) {
 	case ropGetContentsTable:
 	case ropGetHierarchyTable:
 		break;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
@@ -564,7 +564,7 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -586,14 +586,14 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	switch (table_object_get_rop_id(ptable)) {
 	case ropGetContentsTable:
 	case ropGetHierarchyTable:
 		break;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
@@ -625,7 +625,7 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (FALSE == table_object_check_to_load(ptable)) {
 		return ecError;
@@ -657,7 +657,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	switch (table_object_get_rop_id(ptable)) {
 	case ropGetContentsTable:
@@ -665,7 +665,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	case ropGetRulesTable:
 		break;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
@@ -682,7 +682,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	switch (seek_pos) {
 	case SEEK_POS_CUSTOM:
 		if (table_object_get_rop_id(ptable) == ropGetRulesTable)
-			return EC_NOT_SUPPORTED;
+			return ecNotSupported;
 		if (pbookmark->cb != sizeof(uint32_t)) {
 			return EC_INVALID_BOOKMARK;
 		}
@@ -744,14 +744,14 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	switch (table_object_get_rop_id(ptable)) {
 	case ropGetContentsTable:
 	case ropGetHierarchyTable:
 		break;
 	default:
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
@@ -770,7 +770,7 @@ uint32_t rop_resettable(void *plogmap, uint8_t logon_id, uint32_t hin)
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	table_object_reset(ptable);
 	return ecSuccess;
@@ -797,10 +797,10 @@ uint32_t rop_expandrow(uint16_t max_count,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
 	}
@@ -862,10 +862,10 @@ uint32_t rop_collapserow(uint64_t category_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (table_object_get_rop_id(ptable) != ropGetContentsTable)
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
 	}
@@ -904,11 +904,11 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (ropGetContentsTable !=
 		table_object_get_rop_id(ptable)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (NULL == table_object_get_columns(ptable)) {
 		return EC_NULL_OBJECT;
@@ -941,11 +941,11 @@ uint32_t rop_setcollapsestate(
 		return EC_NULL_OBJECT;
 	}
 	if (OBJECT_TYPE_TABLE != object_type) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (ropGetContentsTable !=
 		table_object_get_rop_id(ptable)) {
-		return EC_NOT_SUPPORTED;
+		return ecNotSupported;
 	}
 	if (sizeof(uint32_t) != pcollapse_state->cb) {
 		return EC_INVALID_PARAMETER;
