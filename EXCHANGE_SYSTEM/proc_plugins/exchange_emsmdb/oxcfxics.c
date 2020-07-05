@@ -2013,7 +2013,7 @@ uint32_t rop_syncimportmessagemove(
 		return ecError;
 	}
 	if (FALSE == b_exist) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -2051,7 +2051,7 @@ uint32_t rop_syncimportmessagemove(
 		return ecError;
 	}
 	if (NULL == pvalue) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	if (0 != *(uint8_t*)pvalue) {
 		b_fai = TRUE;

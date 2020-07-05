@@ -285,9 +285,8 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.notifdequeue.psink,
 			prequest->payload.notifdequeue.timeval,
 			&presponse->payload.notifdequeue.notifications);
-		if (EC_NOT_FOUND == presponse->result) {
+		if (presponse->result == ecNotFound)
 			return DISPATCH_CONTINUE;
-		}
 		break;
 	case CALL_ID_QUERYROWS:
 		presponse->result = zarafa_server_queryrows(

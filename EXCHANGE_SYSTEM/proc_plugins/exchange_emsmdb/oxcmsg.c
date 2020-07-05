@@ -71,7 +71,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 		return ecError;
 	}
 	if (FALSE == b_exist) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0,
@@ -86,7 +86,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	}
 	if (TRUE == b_del && 0 == (open_mode_flags &
 		OPEN_MODE_FLAG_OPENSOFTDELETE)) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	
 	tag_access = 0;
@@ -544,7 +544,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 		return ecError;
 	}
 	if (0 == tmp_set.count) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	for (i=0; i<tmp_set.count; i++) {
 		if (FALSE == common_util_propvals_to_readrecipient(
@@ -685,7 +685,7 @@ uint32_t rop_setmessagestatus(uint64_t message_id,
 		return ecError;
 	}
 	if (NULL == pvalue) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	original_status = *(uint32_t*)pvalue;
 	new_status = message_status & status_mask;
@@ -729,7 +729,7 @@ uint32_t rop_getmessagestatus(uint64_t message_id,
 		return ecError;
 	}
 	if (NULL == pvalue) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	*pmessage_status = *(uint32_t*)pvalue;
 	return ecSuccess;
@@ -984,7 +984,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	}
 	if (0 == attachment_object_get_instance_id(pattachment)) {
 		attachment_object_free(pattachment);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	*phout = rop_processor_add_object_handle(plogmap, logon_id,
 					hin, OBJECT_TYPE_ATTACHMENT, pattachment);
@@ -1176,7 +1176,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	if (0 == message_object_get_instance_id(pmessage)) {
 		if (0 == (OPEN_EMBEDDED_FLAG_CREATE & open_embedded_flags)) {
 			message_object_free(pmessage);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		message_object_free(pmessage);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {

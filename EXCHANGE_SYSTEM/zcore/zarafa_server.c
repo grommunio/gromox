@@ -930,7 +930,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 		FALSE == system_services_get_user_privilege_bits(
 		username, pprivilege_bits) || FALSE ==
 		common_util_username_to_essdn(username, x500dn)) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
@@ -1036,7 +1036,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	if (FALSE == common_util_exmdb_locinfo_from_string(
 		essdn + 7, &loc_type, &user_id, &eid)) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	switch (loc_type) {
 	case LOC_TYPE_PRIVATE_FOLDER:
@@ -1049,7 +1049,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		break;
 	default:
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	
 	handle = object_tree_get_store_handle(
@@ -1142,7 +1142,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		if (FALSE == common_util_exmdb_locinfo_from_string(
 			essdn + 7, &loc_type, &account_id, &eid)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		switch (loc_type) {
 		case LOC_TYPE_PRIVATE_FOLDER:
@@ -1165,7 +1165,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			break;
 		default:
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		if (LOC_TYPE_PRIVATE_MESSAGE == loc_type ||
 			LOC_TYPE_PUBLIC_MESSAGE == loc_type) {
@@ -1193,7 +1193,7 @@ CHECK_LOC:
 		}
 		if (TRUE == b_del && 0 == (flags & FLAG_SOFT_DELETE)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		tag_access = 0;
 		if (TRUE == store_object_check_owner_mode(pstore)) {
@@ -1272,7 +1272,7 @@ PERMISSION_CHECK:
 		}
 		if (FALSE == b_exist) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		if (FALSE == store_object_check_private(pstore)) {
 			if (FALSE == exmdb_client_check_folder_deleted(
@@ -1282,7 +1282,7 @@ PERMISSION_CHECK:
 			}
 			if (TRUE == b_del && 0 == (flags & FLAG_SOFT_DELETE)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 		}
 		if (FALSE == exmdb_client_get_folder_property(
@@ -1320,7 +1320,7 @@ PERMISSION_CHECK:
 				0 == (permission & PERMISSION_FOLDERVISIBLE) &&
 				0 == (permission & PERMISSION_FOLDEROWNER)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 			if (permission & PERMISSION_FOLDEROWNER) {
 				tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
@@ -1424,14 +1424,14 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 						&container_id.exmdb_id.folder_id) ||
 						LOC_TYPE_PRIVATE_FOLDER != loc_type) {
 						zarafa_server_put_user_info(pinfo);
-						return EC_NOT_FOUND;
+						return ecNotFound;
 					}
 					container_id.exmdb_id.b_private = TRUE;
 					type = CONTAINER_TYPE_FOLDER;
 				} else {
 					if (0 != strncmp(essdn, "/guid=", 6) || 38 != strlen(essdn)) {
 						zarafa_server_put_user_info(pinfo);
-						return EC_NOT_FOUND;
+						return ecNotFound;
 					}
 					memcpy(tmp_buff, essdn + 6, 8);
 					tmp_buff[8] = '\0';
@@ -1475,7 +1475,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 					if (NULL == pnode) {
 						ab_tree_put_base(pbase);
 						zarafa_server_put_user_info(pinfo);
-						return EC_NOT_FOUND;
+						return ecNotFound;
 					}
 					minid = ab_tree_get_node_minid(pnode);
 					ab_tree_put_base(pbase);
@@ -1495,7 +1495,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			if (FALSE == common_util_essdn_to_ids(
 				essdn, &domain_id, &user_id)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 			if (domain_id != pinfo->domain_id && FALSE ==
 				system_services_check_same_org(domain_id,
@@ -1511,7 +1511,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			if (FALSE == user_object_check_valid(pobject)) {
 				zarafa_server_put_user_info(pinfo);
 				user_object_free(pobject);
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 			if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type) {
 				*pmapi_type = MAPI_DISTLIST;
@@ -1591,7 +1591,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		case 0:
 			ab_tree_put_base(pbase);
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		case 1:
 			break;
 		default:
@@ -1607,7 +1607,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		presult_set->pparray = NULL;
 		ab_tree_put_base(pbase);
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	presult_set->pparray = common_util_alloc(sizeof(void*)
 				*single_list_get_nodes_num(&result_list));
@@ -1752,7 +1752,7 @@ uint32_t zarafa_server_getabgal(GUID hsession, BINARY *pentryid)
 		return ecError;
 	}
 	if (NULL == pvalue) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	pentryid->cb = ((BINARY*)pvalue)->cb;
 	pentryid->pb = ((BINARY*)pvalue)->pb;
@@ -1818,7 +1818,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 		if (FALSE == common_util_essdn_to_uid(
 			store_entryid.pmailbox_dn, &user_id)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		if (pinfo->user_id != user_id) {
 			if (FALSE == system_services_get_username_from_id(
@@ -1866,7 +1866,7 @@ uint32_t zarafa_server_openpropfilesec(GUID hsession,
 	ppropvals = object_tree_get_profile_sec(pinfo->ptree, guid);
 	if (NULL == ppropvals) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	*phobject = object_tree_add_object_handle(pinfo->ptree,
 				ROOT_HANDLE, MAPI_PROFPROPERTY, ppropvals);
@@ -1951,12 +1951,12 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 				folder_object_get_id(pobject),
 				pinfo->username, &permission)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 			if (0 == (permission & PERMISSION_READANY) &&
 				0 == (permission & PERMISSION_FOLDEROWNER)) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 		}
 		ptable = table_object_create(
@@ -2129,7 +2129,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 		if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 			0 == (permission & PERMISSION_CREATE)) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
 		if ((permission & PERMISSION_DELETEOWNED) ||
@@ -2282,7 +2282,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 			username = pinfo->username;
 		} else {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 	} else {
 		username = NULL;
@@ -3496,7 +3496,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 			}
 			if (FALSE == b_found) {
 				zarafa_server_put_user_info(pinfo);
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 		}
 		folder_id = rop_util_make_eid(replid, tmp_xid.local_id);
@@ -3594,7 +3594,7 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 			break;
 		default:
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		if (b_private != store_object_check_private(pstore) ||
 			account_id != store_object_get_account_id(pstore)) {
@@ -3755,7 +3755,7 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	double_list_append_as_tail(
 		&pinfo->sink_list, &psink_node->node);
 	zarafa_server_put_user_info(pinfo);
-	return EC_NOT_FOUND;
+	return ecNotFound;
 }
 
 uint32_t zarafa_server_queryrows(
@@ -4005,7 +4005,7 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 		}
 		if (FALSE == b_exist) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		original_position1 = table_object_get_position(ptable);
 		if (original_position1 + seek_rows < 0) {
@@ -4313,7 +4313,7 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 	}
 	if (position < 0) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	table_object_set_position(ptable, position);
 	zarafa_server_put_user_info(pinfo);
@@ -5023,7 +5023,7 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 	if (0 == attachment_object_get_instance_id(pattachment)) {
 		attachment_object_free(pattachment);
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	*phobject = object_tree_add_object_handle(
 		pinfo->ptree, hmessage, MAPI_ATTACHMENT,
@@ -5539,7 +5539,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		if (0 == (FLAG_CREATE & flags)) {
 			message_object_free(pmessage);
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		message_object_free(pmessage);
 		if (FALSE == b_writable) {
@@ -6125,7 +6125,7 @@ uint32_t zarafa_server_syncmessagechange(GUID hsession,
 	}
 	if (FALSE == b_found) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
@@ -6161,7 +6161,7 @@ uint32_t zarafa_server_syncfolderchange(GUID hsession,
 	}
 	if (FALSE == b_found) {
 		zarafa_server_put_user_info(pinfo);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	zarafa_server_put_user_info(pinfo);
 	return ecSuccess;
@@ -6489,7 +6489,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		}
 		if (FALSE == b_exist) {
 			zarafa_server_put_user_info(pinfo);
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 	}
 	if (FALSE == store_object_check_owner_mode(pstore)) {

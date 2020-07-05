@@ -3,6 +3,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "pcl.h"
 #include "util.h"
 #include "oxcmail.h"
@@ -1206,7 +1207,7 @@ BOOL common_util_propvals_to_row(
 {
 	int i;
 	FLAGGED_PROPVAL *pflagged_val;
-	static const uint32_t errcode = EC_NOT_FOUND;
+	static const uint32_t errcode = ecNotFound;
 	
 	for (i=0; i<pcolumns->count; i++) {
 		if (NULL == common_util_get_propvals(
@@ -1289,7 +1290,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 {
 	int i;
 	FLAGGED_PROPVAL *pflagged_val;
-	static const uint32_t errcode = EC_NOT_FOUND;
+	static const uint32_t errcode = ecNotFound;
 	
 	for (i=0; i<pcolumns->count; i++) {
 		if (NULL == common_util_get_propvals(

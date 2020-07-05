@@ -15,6 +15,7 @@ enum {
 	ecError = 0x80004005,
 	ecNotSupported = 0x80040102,
 	ecInvalidObject = 0x80040108,
+	ecNotFound = 0x8004010F,
 	ecRpcFailed = 0x80040115,
 	ecAccessDenied = 0x80070005,
 	ecMAPIOOM = 0x8007000E,

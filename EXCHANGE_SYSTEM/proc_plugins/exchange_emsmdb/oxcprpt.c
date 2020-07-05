@@ -781,8 +781,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err =
-												EC_NOT_FOUND;
+				pproblems->pproblem[pproblems->count].err = ecNotFound;
 				pproblems->count ++;
 			}
 		}
@@ -872,8 +871,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err =
-												EC_NOT_FOUND;
+				pproblems->pproblem[pproblems->count].err = ecNotFound;
 				pproblems->count ++;
 			}
 		}
@@ -934,8 +932,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err =
-												EC_NOT_FOUND;
+				pproblems->pproblem[pproblems->count].err = ecNotFound;
 				pproblems->count ++;
 			}
 		}
@@ -1255,7 +1252,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			if (PROP_TAG_ATTACHDATAOBJECT == proptag) {
 				break;
 			}
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		default:
 			return ecNotSupported;
 		}
@@ -1281,7 +1278,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	}
 	if (FALSE == stream_object_check(pstream)) {
 		stream_object_free(pstream);
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	*phout = rop_processor_add_object_handle(plogmap,
 			logon_id, hin, OBJECT_TYPE_STREAM, pstream);

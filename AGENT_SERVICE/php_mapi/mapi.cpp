@@ -1937,7 +1937,7 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_msgstore_getarchiveentryid)
 {
-	MAPI_G(hr) = EC_NOT_FOUND;
+	MAPI_G(hr) = ecNotFound;
 	if (MAPI_G(exceptions_enabled)) {
 		zend_throw_exception(MAPI_G(exception_ce),
 			"MAPI error ", MAPI_G(hr) TSRMLS_CC);
@@ -3884,7 +3884,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		}
 		if (ZEND_NUM_ARGS() == 2) {
 			if (NULL == pvalue) {
-				MAPI_G(hr) = EC_NOT_FOUND;
+				MAPI_G(hr) = ecNotFound;
 				goto THROW_EXCEPTION;
 			}
 			if (PROPVAL_TYPE_BINARY == proptag & 0xFFFF) {
@@ -5100,9 +5100,8 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			result = zarafa_client_syncmessagechange(
 				pctx->hsession, pctx->hobject, &b_new,
 				&propvals);
-			if (EC_NOT_FOUND == result) {
+			if (result == ecNotFound)
 				continue;
-			}
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;
@@ -5121,9 +5120,8 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 			result = zarafa_client_syncfolderchange(
 				pctx->hsession, pctx->hobject,
 				&propvals);
-			if (EC_NOT_FOUND == result) {
+			if (result == ecNotFound)
 				continue;
-			}
 			if (result != ecSuccess) {
 				MAPI_G(hr) = result;
 				goto THROW_EXCEPTION;

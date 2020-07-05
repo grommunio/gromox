@@ -715,7 +715,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	}
 	*ppcolumns = (PROPTAG_ARRAY*)table_object_get_columns(ptable);
 	if (position < 0) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	table_object_set_position(ptable, position);
 	*pprow = common_util_alloc(sizeof(PROPERTY_ROW));
@@ -812,7 +812,7 @@ uint32_t rop_expandrow(uint16_t max_count,
 		return ecError;
 	}
 	if (FALSE == b_found) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	} else if (position < 0) {
 		return EC_NOT_COLLAPSED;
 	}
@@ -877,7 +877,7 @@ uint32_t rop_collapserow(uint64_t category_id,
 		return ecError;
 	}
 	if (FALSE == b_found) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	} else if (position < 0) {
 		return EC_NOT_EXPANDED;
 	} else if (0 == *pcollapsed_count) {

@@ -497,7 +497,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		return ecError;
 	}
 	if (FALSE == b_exist) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	if (FALSE == exmdb_client_get_message_property(
 		logon_object_get_dir(plogon), NULL, 0, message_id,

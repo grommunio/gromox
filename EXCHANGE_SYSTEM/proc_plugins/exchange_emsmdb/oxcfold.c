@@ -62,7 +62,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		return ecError;
 	}
 	if (FALSE == b_exist) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	if (FALSE == logon_object_check_private(plogon)) {
 		if (FALSE == exmdb_client_check_folder_deleted(
@@ -71,7 +71,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		}
 		if (TRUE == b_del && 0 == (open_flags &
 			OPEN_FOLDER_FLAG_OPENSOFTDELETED)) {
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 	}
 	if (FALSE == exmdb_client_get_folder_property(
@@ -108,7 +108,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 			0 == (permission & PERMISSION_FOLDERVISIBLE) &&
 			0 == (permission & PERMISSION_FOLDEROWNER)) {
 			/* same as exchange 2013, not ecAccessDenied */
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		if (permission & PERMISSION_FOLDEROWNER) {
 			tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |

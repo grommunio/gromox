@@ -328,7 +328,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 			return ecError;
 		}
 		if (NULL == pvalue) {
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
 			return ecNotSupported;
@@ -343,7 +343,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		return ecError;
 	}
 	if (FALSE == b_result) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	return ecSuccess;
 }
@@ -436,16 +436,16 @@ uint32_t rop_getowningservers(
 			return ecError;
 		}
 		if (FALSE == b_found) {
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		domain_id = rop_util_make_domain_id(guid);
 		if (-1 == domain_id) {
-			return EC_NOT_FOUND;
+			return ecNotFound;
 		}
 		if (domain_id != logon_object_get_account_id(plogon)) {
 			if (FALSE == common_util_check_same_org(domain_id,
 				logon_object_get_account_id(plogon))) {
-				return EC_NOT_FOUND;	
+				return ecNotFound;
 			}
 		}
 	} else {
@@ -528,7 +528,7 @@ uint32_t rop_longtermidfromid(uint64_t id,
 				return ecError;
 			}
 			if (FALSE == b_found) {
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 		}	
 	}
@@ -579,7 +579,7 @@ uint32_t rop_idfromlongtermid(
 				return ecError;
 			}
 			if (FALSE == b_found) {
-				return EC_NOT_FOUND;
+				return ecNotFound;
 			}
 		}
 		*pid = rop_util_make_eid(replid, plong_term_id->global_counter);
@@ -623,7 +623,7 @@ uint32_t rop_getperuserguid(
 		return ecNotSupported;
 	}
 	if (TRUE == logon_object_check_private(plogon)) {
-		return EC_NOT_FOUND;
+		return ecNotFound;
 	}
 	return ecNotSupported;
 }
