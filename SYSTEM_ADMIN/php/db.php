@@ -27,7 +27,7 @@ function get_db_connection()
 	$dbconn = mysql_connect($config['MYSQL_HOST'] . ':' . $config['MYSQL_PORT'],
 							$config['MYSQL_USERNAME'], $config['MYSQL_PASSWORD']);
 	if (!$dbconn) {
-		die("fail to connect to database server: " . mysql_error());
+		die("Failed to connect to database server: " . mysql_error());
 	}
 	if (mysql_select_db($config['MYSQL_DBNAME'], $dbconn) == false) {
 		die("fail to select database");

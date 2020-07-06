@@ -3,7 +3,7 @@ Subject: Delivery failure, cannot connect to the destination server!
 From: "Mail Daemon"<postmaster@system>
 
 Hi,
-  I am sorry to tell you that we fail to connect the server of "<rcpt>", maybe the there was some problem of network or the destinaton server has met their problems!
+  I am sorry to tell you that we failed to connect the server of "<rcpt>". Maybe the there was some problem of network or the destinaton server has met their problems!
 
 Below is the original mail information:
    Time:    <time>

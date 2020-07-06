@@ -169,7 +169,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -321,7 +321,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -418,7 +418,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -476,7 +476,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -549,7 +549,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -734,7 +734,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -836,7 +836,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -938,7 +938,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		i ++;

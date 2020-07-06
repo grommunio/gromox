@@ -340,35 +340,35 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	close(sockd);
 	switch (response_code) {
 	case RESPONSE_CODE_ACCESS_DENY:
-		system_log_info("[exmdb_client]: fail to connect"
+		system_log_info("[exmdb_client]: Failed to connect"
 			" to %s:%d for prefix \"%s\", access denied.\n",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
 	case RESPONSE_CODE_MAX_REACHED:
-		system_log_info("[exmdb_client]: fail to connect to %s:%d for"
+		system_log_info("[exmdb_client]: Failed to connect to %s:%d for"
 			" prefix \"%s\",maximum connections reached in server!\n",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
 	case RESPONSE_CODE_LACK_MEMORY:
-		system_log_info("[exmdb_client]: fail to connect to "
+		system_log_info("[exmdb_client]: Failed to connect to "
 			"%s:%d for prefix \"%s\", server out of memory!\n",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
 	case RESPONSE_CODE_MISCONFIG_PREFIX:
-		system_log_info("[exmdb_client]: fail to connect to %s:%d "
+		system_log_info("[exmdb_client]: Failed to connect to %s:%d "
 			"for prefix \"%s\", server does not serve the prefix, "
 			"configuation file of client or server may be incorrect!",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
 	case RESPONSE_CODE_MISCONFIG_MODE:
-		system_log_info("[exmdb_client]: fail to connect to %s:%d for"
+		system_log_info("[exmdb_client]: Failed to connect to %s:%d for"
 			" prefix \"%s\", work mode with the prefix in server is"
 			"different from the mode in client, configuation file "
 			"of client or server may be incorrect!",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
 	default:
-		system_log_info("[exmdb_client]: fail to connect "
+		system_log_info("[exmdb_client]: Failed to connect "
 			"to %s:%d for prefix \"%s\", error code %d!\n",
 			pserver->ip_addr, pserver->port,
 			pserver->prefix, (int)response_code);

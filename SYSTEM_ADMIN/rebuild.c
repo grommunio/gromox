@@ -296,36 +296,36 @@ static int connect_exmdb(const char *dir)
 	}
 	switch (response_code) {
 	case RESPONSE_CODE_ACCESS_DENY:
-		fprintf(stderr, "fail to connect to %s:%d for prefix "
+		fprintf(stderr, "Failed to connect to %s:%d for prefix "
 			"\"%s\", access denied.\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
 	case RESPONSE_CODE_MAX_REACHED:
-		fprintf(stderr, "fail to connect to %s:%d for prefix"
+		fprintf(stderr, "Failed to connect to %s:%d for prefix"
 			" \"%s\",maximum connections reached in server!\n",
 			pexnode->exmdb_info.ip_addr, pexnode->exmdb_info.port,
 			pexnode->exmdb_info.prefix);
 		break;
 	case RESPONSE_CODE_LACK_MEMORY:
-		fprintf(stderr, "fail to connect to %s:%d for prefix \"%s\","
+		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			"server out of memory!\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
 	case RESPONSE_CODE_MISCONFIG_PREFIX:
-		fprintf(stderr, "fail to connect to %s:%d for prefix \"%s\","
+		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			"server does not serve the prefix, configuation file of "
 			"client or server may be incorrect!", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
 	case RESPONSE_CODE_MISCONFIG_MODE:
-		fprintf(stderr, "fail to connect to %s:%d for prefix \"%s\","
+		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			" work mode with the prefix in server is different from "
 			"the mode in client, configuation file of client or server"
 			" may be incorrect!", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
 	default:
-		fprintf(stderr, "fail to connect to %s:%d for prefix "
+		fprintf(stderr, "Failed to connect to %s:%d for prefix "
 			"\"%s\", error code %d!\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix,
 			(int)response_code);

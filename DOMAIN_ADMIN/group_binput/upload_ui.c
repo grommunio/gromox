@@ -789,7 +789,7 @@ RETRYING:
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[upload_ui]: fail to connect to "
+			system_log_info("[upload_ui]: Failed to connect to "
 				"mysql server, reason: %s", mysql_error(pmysql));
 		}
 		i ++;
@@ -919,7 +919,7 @@ static BOOL upload_ui_batch_input(const char *groupname,
 	if (NULL == (pmysql = mysql_init(NULL)) ||
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
-		system_log_info("[upload_ui]: fail to connect "
+		system_log_info("[upload_ui]: Failed to connect "
 			"mysql service, reason: %s", mysql_error(pmysql));
 		locker_client_unlock(lockd);
 		return FALSE;
@@ -1401,7 +1401,7 @@ static BOOL upload_ui_batch_delete(const char *groupname,
 	if (NULL == (pmysql = mysql_init(NULL)) ||
 		NULL == mysql_real_connect(pmysql, g_host,
 		g_user, g_password, g_db_name, g_port, NULL, 0)) {
-		system_log_info("[upload_ui]: fail to connect "
+		system_log_info("[upload_ui]: Failed to connect "
 			"mysql service, reason: %s", mysql_error(pmysql));
 		locker_client_unlock(lockd);
 		return FALSE;

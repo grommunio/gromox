@@ -157,7 +157,7 @@ BOOL data_source_query(DATA_COLLECT *pcollect)
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		return FALSE;
@@ -229,7 +229,7 @@ void data_source_add_domain(const char *domainname, int org_id)
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		return;
@@ -265,7 +265,7 @@ void data_source_remove_domain(int domain_id, int org_id)
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		return;
@@ -308,7 +308,7 @@ void data_source_add_org(const char *memo)
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		return;
@@ -342,7 +342,7 @@ void data_source_remove_org(int org_id)
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		if (NULL != pmysql) {
-			system_log_info("[data_source]: fail to connect to mysql server, "
+			system_log_info("[data_source]: Failed to connect to mysql server, "
 				"reason: %s", mysql_error(pmysql));
 		}
 		return;

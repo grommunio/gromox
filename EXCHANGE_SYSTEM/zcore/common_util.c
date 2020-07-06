@@ -2110,7 +2110,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
         /* send quit command to server */
         common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		common_util_log_info(0, "fail to connect to smtp "
+		common_util_log_info(0, "Failed to connect to SMTP. "
 			"server response is \"%s\"", last_response);
 		return FALSE;
 	}

@@ -128,7 +128,7 @@ int main(int argc, const char **argv)
 		mysql_passwd, db_name, mysql_port, NULL, 0)) {
 		mysql_close(pmysql);
 		config_file_free(pconfig);
-		printf("fail to connect database\n");
+		printf("Failed to connect to the database\n");
 		return 7;
 	}
 	config_file_free(pconfig);

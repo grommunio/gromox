@@ -117,7 +117,7 @@ int mysql_adaptor_run()
 				double_list_append_as_tail(&g_connection_list,
 					&pconnection->node);
 			} else {
-				printf("[mysql_adaptor]: fail to connect to mysql server, "
+				printf("[mysql_adaptor]: Failed to connect to mysql server, "
 					"reason: %s\n", mysql_error(pconnection->pmysql));
 				mysql_close(pconnection->pmysql);
 				pconnection->pmysql = NULL;

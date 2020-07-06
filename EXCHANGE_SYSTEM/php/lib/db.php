@@ -28,7 +28,7 @@ function get_db_connection()
 	}
 	$db_conn = mysqli_connect($db_config['host'], $db_config['username'], $db_config['password'], $db_config['dbname']);
 	if ($db_conn->connect_errno) {
-		die("fail to connect to database server: " . $db_conn->connect_error);
+		die("Failed to connect to database server: " . $db_conn->connect_error);
 	}
 	return $db_conn;
 }
