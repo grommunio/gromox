@@ -855,7 +855,7 @@ static BOOL upload_ui_batch_input(const char *domainname,
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		system_log_info("[upload_ui]: fail to connect mysql"
-				" servce, reason:%s", mysql_error(pmysql));
+				" service, reason: %s", mysql_error(pmysql));
 		locker_client_unlock(lockd);
 		return FALSE;
 	}
@@ -1315,7 +1315,7 @@ static BOOL upload_ui_batch_delete(const char *domainname,
 		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
 		g_db_name, g_port, NULL, 0)) {
 		system_log_info("[upload_ui]: fail to connect mysql"
-				" servce, reason:%s", mysql_error(pmysql));
+				" service, reason: %s", mysql_error(pmysql));
 		locker_client_unlock(lockd);
 		return FALSE;
 	}
