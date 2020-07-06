@@ -7,6 +7,10 @@ enum {
 	CDNER_ALIVE_CONNECTION
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void cdner_agent_init(int conn_num, const char *host_ip, int host_port);
 extern int cdner_agent_run(void);
 extern int cdner_agent_stop(void);
@@ -18,3 +22,7 @@ BOOL cdner_agent_check_user(const char *username);
 BOOL cdner_agent_login(const char *username, const char *password);
 
 void cdner_agent_create_user(const char *username);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

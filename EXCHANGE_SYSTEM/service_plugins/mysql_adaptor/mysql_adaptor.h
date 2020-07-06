@@ -14,6 +14,10 @@ enum {
 	USER_PRIVILEGE_PUBADDR = 1 << 3,
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
 	int port, const char *user, const char *password, const char *db_name,
 	int timeout);
@@ -98,3 +102,7 @@ extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int 
 extern BOOL mysql_adaptor_get_user_info(const char *username, char *maildir, char *lang, char *timezone);
 extern BOOL mysql_adaptor_get_username(int user_id, char *username);
 extern void mysql_adaptor_disable_smtp(const char *username);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
