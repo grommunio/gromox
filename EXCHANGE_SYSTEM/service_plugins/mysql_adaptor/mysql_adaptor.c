@@ -477,7 +477,8 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	int temp_type;
 	int temp_status;
 	int rows, rows1;
-	char *pdomain, *pat;
+	const char *pdomain;
+	char *pat;
 	char temp_name[512];
 	char sql_string[1024];
 	char encrypt_passwd[40];
@@ -4160,7 +4161,6 @@ BOOL mysql_adaptor_check_same_org2(
 BOOL mysql_adaptor_check_user(const char *username, char *path)
 {
 	int i;
-	char *pdomain;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
@@ -4168,7 +4168,7 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 
-	pdomain = strchr(username, '@');
+	const char *pdomain = strchr(username, '@');
 	if (NULL != pdomain && TRUE == uncheck_domains_query(pdomain + 1)) {
 		if (NULL != path) {
 			path[0] = '\0';
@@ -4592,7 +4592,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 	int domain_id;
 	int class_id;
 	BOOL b_chkintl, b_same;
-	char *pdomain, *pfrom_domain;
 	char *pencode_domain;
 	char temp_name[512];
 	char sql_string[1024];
@@ -4603,14 +4602,14 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 
-	pdomain = strchr(username, '@');
+	const char *pdomain = strchr(username, '@');
 	if (NULL == pdomain) {
 		*presult = MLIST_RESULT_NONE;
 		return TRUE;
 	}
 
 	pdomain++;
-	pfrom_domain = strchr(from, '@');
+	const char *pfrom_domain = strchr(from, '@');
 	if (NULL == pfrom_domain) {
 		*presult = MLIST_RESULT_NONE;
 		return TRUE;
