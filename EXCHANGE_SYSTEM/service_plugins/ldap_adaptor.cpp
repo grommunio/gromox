@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <utility>
 #include <ldap.h>
@@ -42,7 +41,6 @@ DECLARE_API;
 
 static std::string g_config_path, g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;
-static std::mutex g_conn_mtx;
 static bool g_use_tls;
 static resource_pool<twoconn> g_conn_pool;
 
