@@ -106,6 +106,7 @@ int mysql_adaptor_run()
 		pconnection->node_temp.pdata = pconnection;
 		pconnection->pmysql = mysql_init(NULL);
 		if (NULL != pconnection->pmysql) {
+			mysql_options(pconnection->pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 			if (g_timeout > 0) {
 				mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
 					&g_timeout);
@@ -195,6 +196,7 @@ static bool reco(CONNECTION_NODE *conn, int &i, const char *sql_string,
 		return true;
 	}
 
+	mysql_options(conn->pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (g_timeout > 0) {
 		mysql_options(conn->pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
 		mysql_options(conn->pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
@@ -353,6 +355,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 			return FALSE;
 		}
 
+		mysql_options(pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 		if (g_timeout > 0) {
 			mysql_options(pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
 			mysql_options(pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
@@ -583,6 +586,7 @@ RETRYING:
 		return FALSE;
 	}
 
+	mysql_options(pconnection->pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (g_timeout > 0) {
 		mysql_options(pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
 		mysql_options(pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
