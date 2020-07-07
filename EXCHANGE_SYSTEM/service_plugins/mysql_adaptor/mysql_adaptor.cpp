@@ -181,6 +181,45 @@ void mysql_adaptor_free()
 	pthread_mutex_destroy(&g_crypt_lock);
 }
 
+static bool reco(CONNECTION_NODE *conn, int &i, const char *sql_string,
+    MYSQL_RES *&pmyres, bool result_matters = true)
+{
+	mysql_close(conn->pmysql);
+	conn->pmysql = mysql_init(nullptr);
+	if (conn->pmysql == nullptr) {
+		pthread_mutex_lock(&g_list_lock);
+		double_list_append_as_tail(&g_invalid_list, &conn->node);
+		pthread_mutex_unlock(&g_list_lock);
+		++i;
+		sleep(1);
+		return true;
+	}
+
+	if (g_timeout > 0) {
+		mysql_options(conn->pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
+		mysql_options(conn->pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
+	}
+
+	if (mysql_real_connect(conn->pmysql, g_host, g_user, g_password,
+	    g_db_name, g_port, nullptr, 0) == nullptr ||
+	    mysql_query(conn->pmysql, sql_string) != 0 ||
+	    ((pmyres = mysql_store_result(conn->pmysql)) == nullptr && result_matters)) {
+		mysql_close(conn->pmysql);
+		conn->pmysql = nullptr;
+		pthread_mutex_lock(&g_list_lock);
+		double_list_append_as_tail(&g_invalid_list, &conn->node);
+		pthread_mutex_unlock(&g_list_lock);
+		++i;
+		sleep(1);
+		return true;
+	}
+	if (!result_matters) {
+		mysql_free_result(pmyres);
+		pmyres = nullptr;
+	}
+	return false;
+}
+
 BOOL mysql_adaptor_meta(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode,
     char *encrypt_passwd, size_t encrypt_size)
@@ -232,38 +271,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	
@@ -517,38 +526,8 @@ RETRYING:
 			"username='%s'", temp_name);
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host,
-			g_user, g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -719,38 +698,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -811,38 +760,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -903,38 +822,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -997,38 +886,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -1101,38 +960,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host,
-			g_user, g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -1190,38 +1019,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	
@@ -1272,40 +1071,11 @@ RETRYING:
 	snprintf(sql_string, 1024, "UPDATE users set "
 		"lang='%s' WHERE username='%s'", lang, temp_name);
 	
-	if (0 != mysql_query(pconnection->pmysql, sql_string)) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+	if (mysql_query(pconnection->pmysql, sql_string) != 0) {
+		MYSQL_RES *pmyres = nullptr;
+		if (reco(pconnection, i, sql_string, pmyres, false))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string)) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
-	
 	pthread_mutex_lock(&g_list_lock);
 	double_list_append_as_tail(&g_connection_list, &pconnection->node);
 	pthread_mutex_unlock(&g_list_lock);
@@ -1395,38 +1165,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	
@@ -1479,40 +1219,11 @@ RETRYING:
 	snprintf(sql_string, 1024, "UPDATE users set timezone='%s'"
 				" WHERE username='%s'", temp_zone, temp_name);
 	
-	if (0 != mysql_query(pconnection->pmysql, sql_string)) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+	if (mysql_query(pconnection->pmysql, sql_string) != 0) {
+		MYSQL_RES *pmyres = nullptr;
+		if (reco(pconnection, i, sql_string, pmyres, false))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string)) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
-	
 	pthread_mutex_lock(&g_list_lock);
 	double_list_append_as_tail(&g_connection_list, &pconnection->node);
 	pthread_mutex_unlock(&g_list_lock);
@@ -1562,38 +1273,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -1652,38 +1333,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -1744,38 +1395,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -1857,38 +1478,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -1949,38 +1540,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2039,38 +1600,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2143,38 +1674,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2234,38 +1735,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2331,38 +1802,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2420,38 +1861,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2513,38 +1924,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2610,38 +1991,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2708,38 +2059,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2803,38 +2124,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2897,38 +2188,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -2989,38 +2250,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -3081,38 +2312,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -3188,38 +2389,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -3372,38 +2543,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -3555,38 +2696,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	pthread_mutex_lock(&g_list_lock);
@@ -3779,38 +2890,8 @@ RETRYING:
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i ++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	
 	if (1 != mysql_num_rows(pmyres)) {
@@ -4104,38 +3185,8 @@ BOOL mysql_adaptor_check_same_org2(
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	pthread_mutex_lock(&g_list_lock);
@@ -4211,38 +3262,8 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	pthread_mutex_lock(&g_list_lock);
@@ -4311,38 +3332,8 @@ BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	pthread_mutex_lock(&g_list_lock);
@@ -4409,38 +3400,8 @@ BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	pthread_mutex_lock(&g_list_lock);
@@ -4493,38 +3454,8 @@ BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	if (1 != mysql_num_rows(pmyres)) {
@@ -4645,38 +3576,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	if (1 != mysql_num_rows(pmyres)) {
@@ -5292,38 +4193,8 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	pthread_mutex_lock(&g_list_lock);
@@ -5379,38 +4250,8 @@ BOOL mysql_adaptor_get_username(int user_id, char *username)
 
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+		if (reco(pconnection, i, sql_string, pmyres))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-				&g_timeout);
-			mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-				&g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host, g_user,
-			g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 
 	pthread_mutex_lock(&g_list_lock);
@@ -5460,40 +4301,10 @@ void mysql_adaptor_disable_smtp(const char *username)
 		" privilege_bits=privilege_bits&%u WHERE"
 		" username='%s'", ~USER_PRIVILEGE_SMTP, temp_name);
 
-	if (0 != mysql_query(pconnection->pmysql, sql_string)) {
-		/* try to reconnect mysql database */
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL == pconnection->pmysql) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(
-				&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
+	if (mysql_query(pconnection->pmysql, sql_string) != 0) {
+		MYSQL_RES *pmyres = nullptr;
+		if (reco(pconnection, i, sql_string, pmyres, false))
 			goto RETRYING;
-		}
-
-		if (g_timeout > 0) {
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-			mysql_options(pconnection->pmysql,
-				MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-		}
-
-		if (NULL == mysql_real_connect(pconnection->pmysql, g_host,
-			g_user, g_password, g_db_name, g_port, NULL, 0) ||
-			0 != mysql_query(pconnection->pmysql, sql_string)) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(
-				&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			i++;
-			sleep(1);
-			goto RETRYING;
-		}
 	}
 	pthread_mutex_lock(&g_list_lock);
 	double_list_append_as_tail(&g_connection_list, &pconnection->node);
