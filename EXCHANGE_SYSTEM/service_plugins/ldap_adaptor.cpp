@@ -104,15 +104,17 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
 {
 	struct stdlib_free { void operator()(void *p) { free(p); } };
-	twoconn ld = g_conn_pool.get_wait();
-	if (ld.meta == nullptr || ld.bind == nullptr)
-		return FALSE;
+	auto tok = g_conn_pool.get_wait();
+	if (tok.res.meta == nullptr)
+		tok.res.meta = make_conn();
+	if (tok.res.meta == nullptr)
+		return false;
 
 	ldap_msg msg;
 	std::unique_ptr<char, stdlib_free> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
-	auto ret = ldap_search_ext_s(ld.meta.get(), g_search_base.c_str(),
+	auto ret = ldap_search_ext_s(tok.res.meta.get(), g_search_base.c_str(),
 	           LDAP_SCOPE_SUBTREE, filter.c_str(), const_cast<char **>(no_attrs),
 	           true, nullptr, nullptr, nullptr, 2, &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
@@ -120,39 +122,34 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
 		       filter.c_str(), ldap_err2string(ret));
 		return FALSE;
 	}
-	if (!validate_response(ld.meta.get(), msg.get())) {
+	if (!validate_response(tok.res.meta.get(), msg.get())) {
 		printf("[ldap_adaptor]: filter %s was ambiguous\n", filter.c_str());
 		return FALSE;
 	}
 
-	auto firstmsg = ldap_first_message(ld.meta.get(), msg.get());
+	auto firstmsg = ldap_first_message(tok.res.meta.get(), msg.get());
 	if (firstmsg == nullptr)
 		return FALSE;
-	auto dn = ldap_get_dn(ld.meta.get(), firstmsg);
+	auto dn = ldap_get_dn(tok.res.meta.get(), firstmsg);
 	if (dn == nullptr)
 		return FALSE;
 
 	struct berval bv;
 	bv.bv_val = const_cast<char *>(password != nullptr ? password : "");
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = ldap_sasl_bind_s(ld.bind.get(), dn, LDAP_SASL_SIMPLE, &bv,
+	ret = ldap_sasl_bind_s(tok.res.bind.get(), dn, LDAP_SASL_SIMPLE, &bv,
 	      nullptr, nullptr, nullptr);
-	if (ret == LDAP_SUCCESS) {
-		g_conn_pool.put(std::move(ld));
+	if (ret == LDAP_SUCCESS)
 		return TRUE;
-	}
-	if (ret == LDAP_INVALID_CREDENTIALS) {
-		g_conn_pool.put(std::move(ld));
+	if (ret == LDAP_INVALID_CREDENTIALS)
 		return FALSE;
-	}
 	printf("[ldap_adaptor]: ldap_simple_bind 1 %s: %s\n", dn, ldap_err2string(ret));
-	ldap_unbind_ext(ld.bind.release(), nullptr, nullptr);
-	ld.bind = make_conn();
-	if (ld.bind == nullptr)
+	ldap_unbind_ext(tok.res.bind.release(), nullptr, nullptr);
+	tok.res.bind = make_conn();
+	if (tok.res.bind == nullptr)
 		return FALSE;
-	ret = ldap_sasl_bind_s(ld.bind.get(), dn, LDAP_SASL_SIMPLE, &bv,
+	ret = ldap_sasl_bind_s(tok.res.bind.get(), dn, LDAP_SASL_SIMPLE, &bv,
 	      nullptr, nullptr, nullptr);
-	g_conn_pool.put(std::move(ld));
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
 	printf("[ldap_adaptor]: ldap_simple_bind 2 %s: %s\n", dn, ldap_err2string(ret));
@@ -161,26 +158,28 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
 
 static bool ldap_adaptor_load_base()
 {
-	twoconn ld = g_conn_pool.get_wait();
-	if (ld.meta == nullptr || ld.bind == nullptr)
+	auto tok = g_conn_pool.get_wait();
+	if (tok.res.meta == nullptr)
+		tok.res.meta = make_conn();
+	if (tok.res.meta == nullptr)
 		return false;
 
 	ldap_msg msg;
-	auto ret = ldap_search_ext_s(ld.meta.get(), nullptr,
+	auto ret = ldap_search_ext_s(tok.res.meta.get(), nullptr,
 	           LDAP_SCOPE_BASE, nullptr, const_cast<char **>(zero_attrs),
 	           true, nullptr, nullptr, nullptr, 1, &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
 		printf("[ldap_adaptor]: base lookup: %s\n", ldap_err2string(ret));
 		return false;
 	}
-	if (!validate_response(ld.meta.get(), msg.get())) {
+	if (!validate_response(tok.res.meta.get(), msg.get())) {
 		printf("[ldap_adaptor]: base lookup: no good result\n");
 		return false;
 	}
-	auto firstmsg = ldap_first_message(ld.meta.get(), msg.get());
+	auto firstmsg = ldap_first_message(tok.res.meta.get(), msg.get());
 	if (firstmsg == nullptr)
 		return false;
-	auto dn = ldap_get_dn(ld.meta.get(), firstmsg);
+	auto dn = ldap_get_dn(tok.res.meta.get(), firstmsg);
 	if (dn == nullptr)
 		return false;
 	g_search_base = dn;
@@ -227,18 +226,13 @@ static bool ldap_adaptor_load()
 		twoconn ld;
 		ld.meta = make_conn();
 		if (ld.meta == nullptr)
-			/*
-			 * If we cannot create a connection, trying again
-			 * likely won't make it better.
-			 */
 			break;
 		ld.bind = make_conn();
+		if (ld.bind == nullptr)
+			break;
 		g_conn_pool.put(std::move(ld));
 	}
-	if (g_conn_pool.size() == 0) {
-		config_file_free(pfile);
-		return FALSE;
-	}
+	g_conn_pool.resize(conn_num);
 
 	val = config_file_get_value(pfile, "ldap_search_base");
 	g_search_base = val != nullptr ? val : "";
