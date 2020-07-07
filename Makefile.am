@@ -180,7 +180,6 @@ mta_plugins = \
 	libmtasvc_remote_delivery_forbidden.la \
 	libmtasvc_remote_mx_hello.la \
 	libmtasvc_retrying_table.la \
-	libmtasvc_service_auth.la \
 	libmtasvc_single_rcpt.la \
 	libmtasvc_smtp_console_control.la \
 	libmtasvc_spam_statistic.la \
@@ -349,7 +348,6 @@ noinst_DATA += \
 	libmtasvc_remote_delivery_forbidden.ldd \
 	libmtasvc_remote_mx_hello.ldd \
 	libmtasvc_retrying_table.la \
-	libmtasvc_service_auth.la \
 	libmtasvc_single_rcpt.ldd \
 	libmtasvc_smtp_console_control.ldd \
 	libmtasvc_spam_statistic.la \
@@ -1106,10 +1104,6 @@ libmtasvc_retrying_table_la_SOURCES = MTA_SYSTEM/service_plugins/retrying_table/
 libmtasvc_retrying_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_retrying_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_retrying_table_la_DEPENDENCIES = ${default_sym}
-libmtasvc_service_auth_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c MTA_SYSTEM/service_plugins/service_auth/main.c
-libmtasvc_service_auth_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_service_auth_la_LIBADD = libgromox_common.la
-EXTRA_libmtasvc_service_auth_la_DEPENDENCIES = ${default_sym}
 libmtasvc_spam_statistic_la_SOURCES = MTA_SYSTEM/service_plugins/spam_statistic.c
 libmtasvc_spam_statistic_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_spam_statistic_la_LIBADD = libgromox_common.la
