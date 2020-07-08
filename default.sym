@@ -7,6 +7,8 @@ global:
 	PROC_LibMain;
 	SVC_LibMain;
 	get_module;
+	pam_sm_authenticate;
+	pam_sm_setcred;
 local:
 	*;
 };

@@ -12,6 +12,10 @@ pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
 plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS${NO_VSYM}}
+pamlibdir = ${libdir}/security
+if HAVE_PAM
+pamlib_LTLIBRARIES = pam_gromox.la
+endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-da_daemon.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-synchronizer.service system/gromox-timer.service system/gromox-zcore.service
@@ -1244,6 +1248,10 @@ digest_SOURCES = AGENT_SERVICE/digest.c
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 freebusy_SOURCES = AGENT_SERVICE/freebusy.c
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
+pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
+pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp EXCHANGE_SYSTEM/http/service.c
+pam_gromox_la_LIBADD = -lpam libgromox_common.la
+pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 rtf2html_SOURCES = AGENT_SERVICE/rtf2html.c
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 
@@ -1482,7 +1490,8 @@ man_MANS = \
 	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \
 	doc/mapi.4gx doc/midb.8gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
-	doc/monitor.8gx doc/mysql_adaptor.4gx doc/pad.8gx doc/pop3.8gx \
+	doc/monitor.8gx doc/mysql_adaptor.4gx doc/pad.8gx \
+	doc/pam_gromox.8gx doc/pop3.8gx \
 	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncer.8gx doc/rtf2html.1gx \
 	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx doc/sendmail.8gx \
 	doc/sensor.8gx doc/session.8gx doc/smtp.8gx doc/supervisor.8gx \

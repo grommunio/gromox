@@ -95,6 +95,7 @@ static BOOL authmgr_init()
 	}
 	if (!register_service("auth_login_exch", reinterpret_cast<void *>(login_exch)) ||
 	    !register_service("auth_login_pop3", reinterpret_cast<void *>(login_pop3)) ||
+	    !register_service("auth_login_smtp", reinterpret_cast<void *>(login_smtp)) ||
 	    !register_service("auth_ehlo", reinterpret_cast<void *>(service_auth_ehlo)) ||
 	    !register_service("auth_process", reinterpret_cast<void *>(service_auth_process)) ||
 	    !register_service("auth_retrieve", reinterpret_cast<void *>(service_auth_retrieve)) ||

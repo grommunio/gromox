@@ -69,6 +69,9 @@ PKG_CHECK_MODULES([sqlite], [sqlite3])
 PKG_CHECK_MODULES([ssl], [libssl])
 PKG_CHECK_MODULES([xls], [libxls])
 PKG_CHECK_MODULES([zlib], [zlib])
+have_pamheader=""
+AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
+AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AC_CHECK_LIB([spf2], [SPF_debugx2], [spf_LIBS=-lspf2], [AC_MSG_ERROR([libspf2 not found])])
 AC_SUBST([spf_LIBS])
 AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[

@@ -1,0 +1,47 @@
+.TH pam_gromox 8gx "" "Gromox" "Gromox admin reference"
+.SH Synopsis
+.PP
+pam_gromox \(em a PAM plugin to authenticate with Gromox
+.SH Overview
+.PP
+This module forwards authentication requests to the Gromox service plugins
+which themselves may pick MySQL or LDAP as a backend. pam_gromox is meant to be
+used in conjunction with non-Gromox SMTP/IMAP/etc. server processes that may be
+logically located before Gromox services and serving as accelerators.
+.SH Incantation in /etc/pam.d/smtp
+.PP
+In a default installation from a Linux distribution, /etc/pam.d/smtp may
+contain a textual line like "auth required pam_unix.so" (possibly by way of
+inclusion of "common-auth"). That line needs to be replaced by.
+.nf
+auth required pam_gromox.so
+.fi
+.SH Configuration directives in /etc/gromox/pam.conf
+.SS pam_prompt
+.PP
+If pam_gromox detects the absence of a password but presence of a PAM
+conversation function, it will attempt to retrieve the password that way, and
+in doing so, will show this label just ahead of the nonechoing password prompt.
+.PP
+Default: \fIPassword: \fP
+.SS service_plugin_ignore_errors
+.PP
+If set to yes, service plugins that fail to load on startup are ignored. If set
+to no, the daemon will exit if any plugin cannot be loaded.
+.PP
+Default: \fIno\fP
+.SS service_plugin_list
+.PP
+Path to a text file which lists the filenames of service plugins to load,
+one per line.
+.PP
+Default: (unspecified)
+.SS service_plugin_path
+.PP
+Path to a secondary directory where service plugins will be loaded from if a
+primary search in standard directories (as per ld.so(8)) was unsuccessful.
+.PP
+Default: \fI/usr/lib/gromox\fP
+.SH See also
+.PP
+\fBgromox\fP(7)
