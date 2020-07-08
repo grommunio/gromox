@@ -53,7 +53,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	time(&now_time);	
-	pconfig = config_file_init2(opt_config_file, config_default_path("da_daemon.cfg"));
+	pconfig = config_file_init2(opt_config_file, config_default_path("da.cfg"));
 	if (opt_config_file != NULL && pconfig == NULL) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 1;
