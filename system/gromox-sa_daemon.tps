@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox sa_daemon service
-Documentation=man:sa_daemon(8gx) man:sa_daemon.cfg(5gx)
+Documentation=man:sa_daemon(8gx) man:sa.cfg(5gx)
 PartOf=gromox-sa.target
 
 [Service]

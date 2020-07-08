@@ -6,7 +6,7 @@
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/sa_daemon.cfg will be read if it exists.
+specified, /etc/gromox/sa.cfg will be read if it exists.
 .TP
 \fB\-\-version\fP
 Output version information and exit.
