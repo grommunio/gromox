@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox synchronizer service
-Documentation=man:synchronizer(8gx) man:synchronizer.cfg(5gx)
+Documentation=man:synchronizer(8gx)
 PartOf=gromox-da.target
 
 [Service]

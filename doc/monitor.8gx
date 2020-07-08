@@ -18,6 +18,15 @@ Display option summary.
 \fIdata_file_path\fP/console_table.txt
 .IP \(bu 4
 \fItoken_file_path\fP/token/monitor.shm
+.SH Configuration file directives
+.SS data_file_path
+.PP
+Directory where plugin instances will look for their data files.
+.PP
+Default: \fI/usr/share/gromox/sa\fP
+.SS token_file_path
+.PP
+Default: \fI/run/gromox/sa\fP
 .SH See also
 .PP
-\fBgromox\fP(7), \fBmonitor.cfg\fP(5gx)
+\fBgromox\fP(7)

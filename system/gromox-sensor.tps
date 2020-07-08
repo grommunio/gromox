@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox sensor service
-Documentation=man:sensor(8gx) man:sensor.cfg(5gx)
+Documentation=man:sensor(8gx)
 PartOf=gromox-sa.target
 
 [Service]

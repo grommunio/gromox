@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox pad service
-Documentation=man:pad(8gx) man:pad.cfg(5gx)
+Documentation=man:pad(8gx)
 PartOf=gromox-sa.target
 
 [Service]

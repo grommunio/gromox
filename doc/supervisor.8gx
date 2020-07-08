@@ -18,6 +18,21 @@ Display option summary.
 \fIdata_file_path\fP/supervising_failure.txt
 .IP \(bu 4
 \fIdata_file_path\fP/supervising_list.txt
+.SH Configuration file directives
+.SS admin_mailbox
+.PP
+Default: (unspecified)
+.SS data_file_path
+.PP
+Directory for additional files.
+.PP
+Default: \fI/usr/share/gromox/sa\fP
+.SS default_domain
+.PP
+Default: (unspecified)
+.SS supervise_internal
+.PP
+Default: \fI6 minutes\fP
 .SH See also
 .PP
-\fBgromox\fP(7), \fBsupervisor.cfg\fP(5gx)
+\fBgromox\fP(7)

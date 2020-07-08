@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox timer service
-Documentation=man:timer(8gx) man:timer.cfg(5gx)
+Documentation=man:timer(8gx)
 PartOf=gromox-sa.target
 
 [Service]

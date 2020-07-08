@@ -3,6 +3,43 @@
 .PP
 ldap_adaptor is a service plugin that facilitates querying an LDAP directory
 server.
+.SH Configuration file directives
+.SS auth_connections
+.PP
+Maximum number of LDAP connections to utilize for authentication requests.
+(Authentication cannot be run on the metadata connections.) This parameter
+has fixed value and is currently not settable.
+.PP
+Default: (same as data_connections)
+.SS data_connections
+.PP
+Number of LDAP connections to keep active to the server for metadata lookup.
+.PP
+Default: \fI4\fP
+.SS ldap_bind_user
+.PP
+Specifies the default bind DN to use when performing general LDAP operations,
+i.e. searches. The bind DN must be specified as a Distinguished Name in LDAP
+format.
+.PP
+Default: (unset)
+.SS ldap_bind_pass
+.PP
+Password for Simple Authentication of ldap_bind_user.
+.PP
+Default: (unset)
+.SS ldap_host
+.PP
+Whitespace-separated RFC 2255-style set of LDAP URIs that specify protocol
+and host.
+.PP
+Default: (libldap default, see ldap.conf(5))
+.SS ldap_mail_attr
+.PP
+Default: \fImail\fP
+.SS ldap_search_base
+.PP
+Default: (libldap default)
 .SH See also
 .PP
-\fBgromox\fP(7), \fBauthmgr\fP(4gx), \fBldap_adaptor.cfg\fP(5gx)
+\fBgromox\fP(7), \fBauthmgr\fP(4gx)

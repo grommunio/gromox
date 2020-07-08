@@ -19,6 +19,34 @@ Display option summary.
 .SH Area list
 .PP
 Each line in this file consists of 5 columns separated by whitespace.
+.SH Configuration file directives
+.SS ca_path
+.PP
+Default: (unset) (must be set)
+.SS certificate_path
+.PP
+Default: (unset) (must be set)
+.SS certificate_passwd
+.PP
+Default: (unset) (must be set)
+.SS data_file_path
+.PP
+Directory for additional data files.
+.PP
+Default: \fI/usr/share/gromox/sa\fP
+.SS mysql_backup_path
+.PP
+Default: (unset) (must be set)
+.SS rsync_host_ip
+.PP
+IPv4 address of a rsync receiver side.
+.PP
+Default: (unset) (must be set)
+.SS rsync_host_port
+.PP
+TCP port number of a rsync receiver side.
+.PP
+Default: (unset) (must be set)
 .SH See also
 .PP
-\fBgromox\fP(7), \fBrsyncer.cfg\fP(5gx)
+\fBgromox\fP(7)

@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox scanner service
-Documentation=man:scanner(8gx) man:scanner.cfg(5gx)
+Documentation=man:scanner(8gx)
 PartOf=gromox-sa.target
 
 [Service]

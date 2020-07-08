@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox session service
-Documentation=man:session(8gx) man:session.cfg(5gx)
+Documentation=man:session(8gx)
 PartOf=gromox-sa.target
 
 [Service]

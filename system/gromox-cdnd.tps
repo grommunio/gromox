@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox cdnd service
-Documentation=man:cdnd(8gx) man:cdnd.cfg(5gx)
+Documentation=man:cdnd(8gx)
 PartOf=gromox-sa.target
 
 [Service]

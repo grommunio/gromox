@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox fcgi_cgi service
-Documentation=man:fcgi_cgi(8gx) man:fcgi_cgi.cfg(5gx)
+Documentation=man:fcgi_cgi(8gx)
 PartOf=gromox-da.target
 
 [Service]

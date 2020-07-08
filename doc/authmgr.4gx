@@ -4,7 +4,14 @@
 authmgr is a service plugin that invokes mail account authentication through
 e.g. mysql_adaptor. The libgxsvc_mysql_adaptor.so plugin needs to be loaded in
 advance.
+.SH Configuration file directives
+.SS auth_method
+.PP
+Authentications will be passed to one of the available adaptor plugins.
+.PP
+Default: \fImysql\fP
+.PP
+Available: mysql, ldap
 .SH See also
 .PP
-\fBgromox\fP(7), \fBauthmgr.cfg\fP(5gx), \fBldap_adaptor\fP(4gx),
-\fBmysql_adaptor\fP(4gx)
+\fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)

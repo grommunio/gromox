@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox adaptor service
-Documentation=man:adaptor(8gx) man:adaptor.cfg(5gx)
+Documentation=man:adaptor(8gx)
 PartOf=gromox-sa.target
 
 [Service]

@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox mail spooler
-Documentation=man:delivery(8gx) man:delivery.cfg(5gx)
+Documentation=man:delivery(8gx)
 PartOf=gromox-mta.target
 
 [Service]

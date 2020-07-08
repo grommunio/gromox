@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox POP3 server
-Documentation=man:pop3(8gx) man:pop3.cfg(5gx)
+Documentation=man:pop3(8gx)
 PartOf=gromox-mra.target
 
 [Service]

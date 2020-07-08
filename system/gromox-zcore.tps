@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox zcore service
-Documentation=man:zcore(8gx) man:zcore.cfg(5gx)
+Documentation=man:zcore(8gx)
 PartOf=gromox-exch.target
 
 [Service]

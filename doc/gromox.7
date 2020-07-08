@@ -19,23 +19,19 @@ archive(8gx)
 .IP \(bu 4
 cidb(8gx)
 .IP \(bu 4
-cidb.cfg(5gx) \(em configuration file for the cidb service
-.IP \(bu 4
 gromox\-archive.target(8gx) \(em systemd target replacing titan
 .IP \(bu 4
 migrator(8gx)
 .SH Domain administration subsystem
 .IP \(bu 4
+da.cfg(5gx) \(em configuration file for domain administration CGI programs
+.IP \(bu 4
 da_daemon(8gx)
 .IP \(bu 4
 fcgi_cgi(8gx)
 .IP \(bu 4
-fcgi_cgi.cfg(5gx) \(em configuration file for the fcgi_cgi(8gx) service
-.IP \(bu 4
 gromox\-da.target(8gx) \(em domain administration service group unit for
 systemd
-.IP \(bu 4
-da.cfg(5gx) \(em configuration file for domain administration CGI programs
 .IP \(bu 4
 synchronizer(8gx)
 .SH Exchange subsystem
@@ -43,77 +39,47 @@ synchronizer(8gx)
 exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
 Protocol (Outlook/Exchange RPCs).
 .IP \(bu 4
-exchange_emsmdb.cfg(5gx) \(em configuration file for the exchange_emsmdb(4gx)
-plugin
-.IP \(bu 4
 exchange_nsp(4gx) \(em http(8gx) processing plugin for the Exchange Server Name
 Service Provider Interface Protocol.
-.IP \(bu 4
-exchange_nsp.cfg(5gx) \(em configuration file for the exchange_nsp(4gx) plugin
 .IP \(bu 4
 exchange_rfr(4gx) \(em http(8gx) processing plugin for the Address Book Name
 Service Provider Interface Referral Protocol.
 .IP \(bu 4
 exmdb_provider(4gx) \(em http(8gx) service plugin for exmdb connections
 .IP \(bu 4
-exmdb_provider.cfg(5gx) \(em configuration file for the exmdb_provider(4gx)
-plugin
-.IP \(bu 4
 http(8gx)
-.IP \(bu 4
-http.cfg(5gx) \(em configuration file for the http service
 .IP \(bu 4
 midb(8gx)
 .IP \(bu 4
-midb.cfg(5gx) \(em configuration file for the midb service
-.IP \(bu 4
 zcore(8gx)
-.IP \(bu 4
-zcore.cfg(5gx) \(em configuration file for the zcore service
 .SH Mail retrieval agent subsystem
 .IP \(bu 4
 gromox\-mra.target(8gx) \(em MRA service group unit for systemd
 .IP \(bu 4
 imap(8gx) \(em IMAP server
 .IP \(bu 4
-imap.cfg(5gx) \(em configuration file for the IMAP server
-.IP \(bu 4
 pop3(8gx) \(em POP3 server
-.IP \(bu 4
-pop3.cfg(5gx) \(em configuration file for the POP3 server
 .SH Mail transport agent subsystem
 .IP \(bu 4
 delivery(8gx)
 .IP \(bu 4
-delivery.cfg(5gx) \(em configuration file for the delivery service
-.IP \(bu 4
 gromox\-mta.target(8gx) \(em MTA service group unit for systemd
 .IP \(bu 4
 smtp(8gx) \(em SMTP server
-.IP \(bu 4
-smtp.cfg(5gx) \(em configuration file for the SMTP server
 .SH System administration subsystem
 .IP \(bu 4
 adaptor(8gx)
-.IP \(bu 4
-adaptor.cfg(5gx) \(em configuration file for the adaptor service
 .IP \(bu 4
 bl_delete(8gx)
 .IP \(bu 4
 cdnd(8gx)
 .IP \(bu 4
-cdnd.cfg(5gx) \(em configuration file for the cdnd service
-.IP \(bu 4
 event(8gx)
-.IP \(bu 4
-event.cfg(5gx) \(em configuration file for the event service
 .IP \(bu 4
 gromox\-sa.target(8gx) \(em system administration service group unit for
 systemd
 .IP \(bu 4
 locker(8gx)
-.IP \(bu 4
-locker.cfg(5gx) \(em configuration file for the locker service
 .IP \(bu 4
 mkmidb(8gx)
 .IP \(bu 4
@@ -123,21 +89,13 @@ mkpublic(8gx)
 .IP \(bu 4
 monitor(8gx)
 .IP \(bu 4
-monitor.cfg(5gx) \(em configuration file for the monitor service
-.IP \(bu 4
 pad(8gx)
-.IP \(bu 4
-pad.cfg(5gx) \(em configuration file for the pad service
 .IP \(bu 4
 rebuild(8gx)
 .IP \(bu 4
 rsyncd(8gx)
 .IP \(bu 4
-rsyncd.cfg(5gx) \(em configuration file for the rsyncd service
-.IP \(bu 4
 rsyncer(8gx)
-.IP \(bu 4
-rsyncer.cfg(5gx) \(em configuration file for the rsyncer service
 .IP \(bu 4
 sa.cfg(5gx) \(em configuration file for system administration CGI programs
 .IP \(bu 4
@@ -145,39 +103,23 @@ sa_daemon(8gx)
 .IP \(bu 4
 scanner(8gx)
 .IP \(bu 4
-scanner.cfg(5gx) \(em configuration file for the scanner service
-.IP \(bu 4
 sendmail(8gx)
 .IP \(bu 4
 sensor(8gx)
 .IP \(bu 4
-sensor.cfg(5gx) \(em configuration file for the sensor service
-.IP \(bu 4
 session(8gx)
-.IP \(bu 4
-session.cfg(5gx) \(em configuration file for the session service
 .IP \(bu 4
 supervisor(8gx)
 .IP \(bu 4
-supervisor.cfg(5gx) \(em configuration file for the supervisor service
-.IP \(bu 4
 timer(8gx)
-.IP \(bu 4
-timer.cfg(5gx) \(em configuration file for the timer service
 .SH Service plugins
 .IP \(bu 4
 authmgr(4gx) \(em demultiplexer for authentication requests
 .IP \(bu 4
-authmgr.cfg(5gx) \(em configuration file for authmgr
-.IP \(bu 4
 ldap_adaptor(4gx) \(em LDAP connector for user metadata and authentication
-.IP \(bu 4
-ldap_adaptor.cfg(5gx) \(em configuration file for ldap_adaptor
 .IP \(bu 4
 mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
 authentication
-.IP \(bu 4
-mysql_adaptor.cfg(5gx) \(em configuration file for mysql_adaptor
 .SH Listening sockets
 .IP \(bu 4
 /run/gromox/fcgi_cgi.sock \(em fcgi_cgi(8gx)

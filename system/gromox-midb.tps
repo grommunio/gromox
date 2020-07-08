@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox midb service
-Documentation=man:midb(8gx) man:midb.cfg(5gx)
+Documentation=man:midb(8gx)
 PartOf=gromox-exch.target
 
 [Service]

@@ -18,6 +18,18 @@ Display option summary.
 \fIdata_file_path\fP/area_list.txt
 .IP \(bu 4
 \fIdata_file_path\fP/cidb_list.txt
+.SH Configuration file directives
+.SS data_file_path
+.PP
+Directory for additional files.
+.PP
+Default: \fI/usr/share/gromox/da\fP
+.SS gateway_mount_path
+.PP
+Default: \fI/var/lib/gromox/gateway\fP
+.SS master_address
+.PP
+Default: (unset) (must be set)
 .SH See also
 .PP
-\fBgromox\fP(7), \fBsynchronizer.cfg\fP(5gx)
+\fBgromox\fP(7)

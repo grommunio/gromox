@@ -30,6 +30,43 @@ Display option summary.
 \fIdata_file_path\fI/mailbox_collector.txt
 .IP \(bu 4
 \fIdata_file_path\fI/uncheck_domains.txt
+.SH Configuration file directives
+.SS collector_mailbox
+.PP
+Default: (unset)
+.SS data_file_path
+.PP
+Directory for additional files.
+.PP
+Default: \fI/usr/share/gromox/sa\fP
+.SS gateway_mount_path
+.PP
+Default: \fI/var/lib/gromox/gateway\fP
+.SS limit_type
+.PP
+Default: (unset)
+.SS log_file_path
+.PP
+Default: \fI/var/log/gromox/sa.log\fP
+.SS mysql_dbname
+.PP
+Default: \fIemail\fP
+.SS mysql_host
+.PP
+The hostname/IP address for contacting the SQL server.
+.PP
+Default: \fIlocalhost\fP
+.SS mysql_password
+.PP
+Default: (unset)
+.SS mysql_port
+.PP
+The TCP port number for contacting the SQL server.
+.PP
+Default: \fI3306\fP
+.SS subsystem_address
+.PP
+Default: (unset)
 .SH See also
 .PP
-\fBgromox\fP(7), \fBadaptor.cfg\fP(5gx)
+\fBgromox\fP(7)

@@ -29,4 +29,4 @@ pdu := {
 }
 .SH See also
 .PP
-\fBgromox\fP(7), \fBexmdb_provider.cfg\fP(5gx), \fBhttp\fP(8gx)
+\fBgromox\fP(7), \fBhttp\fP(8gx)

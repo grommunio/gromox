@@ -4,6 +4,22 @@
 exchange_nsp is a processing plugin for http(8gx) which handles the Exchange
 Server Name Service Provider Interface Protocol. See the MS-OXNSPI
 specification for details.
+.SH Config file directives
+.SS cache_interval
+.PP
+Default: \fI5 minutes\fP
+.SS hash_table_size
+.PP
+Default: \fI3000\fP
+.SS max_iten_num
+.PP
+Default: \fI100000\fP
+.SS session_check
+.PP
+Default: \fIfalse\fP
+.SS x500_org_name
+.PP
+Default: (unspecified)
 .SH See also
 .PP
-\fBgromox\fP(7), \fBexchange_nsp.cfg\fP(5gx), \fBhttp\fP(8gx)
+\fBgromox\fP(7), \fBhttp\fP(8gx)

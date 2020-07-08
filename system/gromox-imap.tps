@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox IMAP server
-Documentation=man:imap(8gx) man:imap.cfg(5gx)
+Documentation=man:imap(8gx)
 PartOf=gromox-mra.target
 
 [Service]

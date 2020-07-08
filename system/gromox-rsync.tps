@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox rsync service
-Documentation=man:rsync(8gx) man:rsync.cfg(5gx)
+Documentation=man:rsync(8gx)
 PartOf=gromox-sa.target
 
 [Service]

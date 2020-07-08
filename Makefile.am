@@ -1468,37 +1468,24 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 
 # doc
 man_MANS = \
-	doc/adaptor.8gx doc/adaptor.cfg.5gx \
-	doc/archive.8gx doc/authmgr.4gx doc/authmgr.cfg.5gx \
-	doc/bl_delete.8gx doc/cdnd.8gx doc/cdnd.cfg.5gx doc/cidb.8gx \
-	doc/cidb.cfg.5gx doc/da.cfg.5gx doc/da_daemon.8gx \
+	doc/adaptor.8gx doc/archive.8gx doc/authmgr.4gx doc/bl_delete.8gx \
+	doc/cdnd.8gx doc/cidb.8gx doc/da.cfg.5gx doc/da_daemon.8gx \
 	doc/delivery.8gx \
-	doc/delivery.cfg.5gx doc/digest.8gx \
-	doc/event.8gx doc/event.cfg.5gx \
-	doc/exchange_emsmdb.4gx doc/exchange_emsmdb.cfg.5gx \
-	doc/exchange_nsp.4gx doc/exchange_nsp.cfg.5gx doc/exchange_rfr.4gx \
-	doc/exmdb_provider.4gx doc/exmdb_provider.cfg.5gx \
-	doc/fcgi_cgi.8gx doc/fcgi_cgi.cfg.5gx doc/freebusy.8gx doc/gromox.7 \
+	doc/digest.8gx doc/event.8gx doc/exchange_emsmdb.4gx \
+	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
+	doc/fcgi_cgi.8gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-archive.target.8gx \
 	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
-	doc/http.cfg.5gx doc/imap.8gx doc/imap.cfg.5gx \
-	doc/ldap_adaptor.4gx doc/ldap_adaptor.cfg.5gx doc/locker.8gx \
-	doc/locker.cfg.5gx doc/mapi.4gx doc/midb.8gx doc/midb.cfg.5gx \
+	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \
+	doc/mapi.4gx doc/midb.8gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
-	doc/monitor.8gx doc/monitor.cfg.5gx \
-	doc/mysql_adaptor.4gx doc/mysql_adaptor.cfg.5gx \
-	doc/pad.8gx doc/pad.cfg.5gx \
-	doc/pop3.8gx doc/pop3.cfg.5gx \
-	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncd.cfg.5gx doc/rsyncer.8gx \
-	doc/rsyncer.cfg.5gx doc/rtf2html.1gx doc/sa.cfg.5gx \
-	doc/sa_daemon.8gx doc/scanner.8gx doc/scanner.cfg.5gx \
-	doc/sendmail.8gx doc/sensor.8gx doc/sensor.cfg.5gx doc/session.8gx \
-	doc/session.cfg.5gx doc/smtp.8gx doc/smtp.cfg.5gx doc/supervisor.8gx \
-	doc/supervisor.cfg.5gx doc/synchronizer.8gx \
-	doc/timer.8gx doc/timer.cfg.5gx doc/zcore.8gx \
-	doc/zcore.cfg.5gx
+	doc/monitor.8gx doc/mysql_adaptor.4gx doc/pad.8gx doc/pop3.8gx \
+	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncer.8gx doc/rtf2html.1gx \
+	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx doc/sendmail.8gx \
+	doc/sensor.8gx doc/session.8gx doc/smtp.8gx doc/supervisor.8gx \
+	doc/synchronizer.8gx doc/timer.8gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in
 	sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \

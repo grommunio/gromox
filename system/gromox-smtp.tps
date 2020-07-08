@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox SMTP server
-Documentation=man:smtp(8gx) man:smtp.cfg(5gx)
+Documentation=man:smtp(8gx)
 PartOf=gromox-mta.target
 
 [Service]

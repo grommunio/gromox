@@ -18,6 +18,27 @@ Display option summary.
 \fIdata_file_path\fP/timer.txt
 .IP \(bu 4
 \fIdata_file_path\fP/timer_acl.txt
+.SH Configuration file directives
+.SS data_file_path
+.PP
+Directory where plugin instances will look for their data files.
+.PP
+Default: \fI/usr/share/gromox/sa\fP
+.SS timer_listen_ip
+.PP
+The IPv4 address for exposing the timer service on.
+.PP
+Default: \fI127.0.0.1\fP
+.SS timer_listen_port
+.PP
+The TCP port number for exposing the timer service on.
+.PP
+Default: \fI6666\fP
+.SS timer_threads_num
+.PP
+The minimum number of client processing threads to keep around.
+.PP
+Default: \fI50\fP
 .SH See also
 .PP
-\fBgromox\fP(7), \fBtimer.cfg\fP(5gx)
+\fBgromox\fP(7)

@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox event service
-Documentation=man:event(8gx) man:event.cfg(5gx)
+Documentation=man:event(8gx)
 PartOf=gromox-sa.target
 
 [Service]

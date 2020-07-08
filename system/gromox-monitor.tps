@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox monitor service
-Documentation=man:monitor(8gx) man:monitor.cfg(5gx)
+Documentation=man:monitor(8gx)
 PartOf=gromox-sa.target
 
 [Service]

@@ -74,6 +74,120 @@ libc locale names.
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: A directory with translation files for
 various bounce notifications.
+.SH Configuration file directives
+.SS address_cache_internal
+.PP
+Default: \fI5 minutes\fP
+.SS address_item_num
+.PP
+Default: \fI100000\fP
+.SS address_table_size
+.PP
+Default: \fI3000\fP
+.SS config_file_path
+.PP
+Directory where plugin instances will look for their configuration overrides.
+.PP
+Default: \fI/etc/gromox/zcore\fP
+.SS console_server_ip
+.PP
+The IPv4 address to expose the management console frontend on.
+.PP
+Default: \fI127.0.0.1\fP
+.SS console_server_port
+.PP
+The TCP port number to expose the management console frontend on.
+.PP
+Default: \fI3344\fP
+.SS data_file_path
+.PP
+Directory where plugin instances will look for their data files.
+.PP
+Default: \fI/usr/share/gromox/zcore\fP
+.SS default_charset
+.PP
+Default: \fIwindows-1252\fP
+.SS default_timezone
+.PP
+Default: \fIAsia/Shanghai\fP
+.SS freebusy_tool_path
+.PP
+Default: \fI/usr/libexec/gromox/freebusy\fP
+.SS host_id
+.PP
+Default: (system hostname)
+.SS mailbox_ping_interval
+.PP
+Default: \fI5 minutes\fP
+.SS mail_max_length
+.PP
+Default: \fI64M\fP
+.SS max_ext_rule_length
+.PP
+Default: \fI510K\fP
+.SS max_mail_num
+.PP
+Default: \fI1000000\fP
+.SS max_rcpt_num
+.PP
+Default: \fI256\fP
+.SS notify_stub_threads_num
+.PP
+Default: \fI10\fP
+.SS rpc_proxy_connection_num
+.PP
+Default: \fI10\fP
+.SS separator_for_bounce
+.PP
+Default: \fI;\fP (semicolon)
+.SS service_plugin_ignore_errors
+.PP
+If set to yes, service plugins that fail to load on startup are ignored. If set
+to no, the daemon will exit if any plugin cannot be loaded.
+.PP
+Default: \fIno\fP
+.SS service_plugin_list
+.PP
+Path to a text file which lists the filenames of service plugins to load,
+one per line.
+.PP
+Default: (unspecified)
+.SS service_plugin_path
+.PP
+Path to a secondary directory where service plugins will be loaded from if a
+primary search in standard directories (as per ld.so(8)) was unsuccessful.
+.PP
+Default: \fI/usr/lib/gromox\fP
+.SS smtp_server_ip
+.PP
+SMTP server IPv4 address to contact for outgoing mail.
+.PP
+Default: \fI127.0.0.1\fP
+.SS smtp_server_port
+.PP
+SMTP server TCP port number to contact for outgoing mail.
+.PP
+Default: \fI25\fP
+.SS submit_command
+.PP
+Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php
+.SS user_cache_interval
+.PP
+Default: \fI1 hour\fP
+.SS user_table_size
+.PP
+Default: \fI5000\fP
+.SS x500_org_name
+.PP
+Default: (unspecified)
+.SS zarafa_mime_number
+.PP
+Default: \fI4096\fP
+.SS zarafa_threads_num
+.PP
+The minimum number of client processing threads to keep around.
+.PP
+Default: \fI100\fP
 .SH See also
 .PP
-\fBgromox\fP(7), \fBzcore.cfg\fP(5gx)
+\fBgromox\fP(7)

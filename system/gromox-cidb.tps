@@ -1,6 +1,6 @@
 [Unit]
 Description=Gromox cidb service
-Documentation=man:cidb(8gx) man:cidb.cfg(5gx)
+Documentation=man:cidb(8gx)
 PartOf=gromox-archive.target
 
 [Service]

@@ -3,6 +3,40 @@
 .PP
 mysql_adaptor is a service plugin for integrating mail accounts from
 a MySQL/MariaDB database.
+.SH Configuration file directives
+.SS connection_num
+.PP
+Number of SQL connections to keep active.
+.PP
+Default: \fI8\fP
+.SS mysql_dbname
+.PP
+Default: \fIarchive\fP
+.SS mysql_host
+.PP
+The hostname/IP address for contacting the SQL server.
+.PP
+Default: \fIlocalhost\fP
+.SS mysql_password
+.PP
+Default: (unset)
+.SS mysql_port
+.PP
+The TCP port number for contacting the SQL server.
+.PP
+Default: \fI3306\fP
+.SS mysql_rdwr_timeout
+.PP
+This sets the MYSQL_OPT_READ_TIMEOUT and MYSQL_OPT_WRITE_TIMEOUT option values
+on the MySQL connection.
+.PP
+Default: \fI0\fP (no timeout)
+.SS mysql_username
+.PP
+Default: (unset)
+.SS scan_interval
+.PP
+Default: \fI1 minute\fP
 .SH See also
 .PP
-\fBgromox\fP(7), \fBauthmgr\fP(4gx), \fBmysql_adaptor.cfg\fP(5gx)
+\fBgromox\fP(7), \fBauthmgr\fP(4gx)
