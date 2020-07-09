@@ -712,7 +712,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 			strncpy(result, "250 reload attachment keywords OK", length);
 			return;
 		}
-		snprintf(result, length, "550 unkown parameter %s", argv[1]);
+		snprintf(result, length, "550 unknown parameter %s", argv[1]);
 		return;
 	}
 	snprintf(result, length, "550 invalid argument %s", argv[1]);

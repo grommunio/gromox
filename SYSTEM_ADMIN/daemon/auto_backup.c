@@ -206,7 +206,7 @@ int auto_backup_run()
 	time(&now_time);	
 	strftime(temp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", localtime(&now_time));
 	len = sprintf(pbuff + node_stat.st_size, 
-			"Received: from unknown (helo localhost) (unkown@127.0.0.1)"
+	      "Received: from unknown (helo localhost) (unknown@127.0.0.1)"
 			"\r\n\tby herculiz with SMTP\r\n");
 	len += sprintf(pbuff + node_stat.st_size + len,
 			"From: <auto-backup@system.mail>\r\n"

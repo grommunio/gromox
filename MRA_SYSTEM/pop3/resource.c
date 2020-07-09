@@ -18,7 +18,7 @@ static POP3_ERROR_CODE g_default_pop3_error_code_table[] = {
     { 2170000, "+OK" },
     { 2170001, "-ERR time out" },
     { 2170002, "-ERR line too long" },
-    { 2170003, "-ERR command unkown" },
+	{2170003, "-ERR command unknown"},
     { 2170004, "-ERR command parameter error" },
     { 2170005, "-ERR input username first" },
 	{2170006, "-ERR too many failures, user will be blocked for a while"},

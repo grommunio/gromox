@@ -353,7 +353,7 @@ static BOOL send_command(int sockd, const char *command, int command_len)
  *	@retrun
  *		SMTP_TIME_OUT			time out
  *		SMTP_TEMP_ERROR		temp fail
- *		SMTP_UNKOWN_RESPONSE	unkown fail
+ *		SMTP_UNKOWN_RESPONSE	unknown fail
  *		SMTP_PERMANENT_ERROR	permanent fail
  *		SMTP_RESPONSE_OK		OK
  */

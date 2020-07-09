@@ -408,7 +408,7 @@ const char *resource_get_imap_code(int code_type, int n, int *len)
     pthread_rwlock_unlock(&g_return_table_lock);
     debug_info("[resource]: not exits nth in resource_get_imap_code");
 	*len = 15;
-    return "unkown error!\r\n";
+	return "unknown error\r\n";
 }
 
 BOOL resource_refresh_imap_code_table()

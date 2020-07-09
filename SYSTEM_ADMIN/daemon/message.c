@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 
 #define	MESSAGE_BODY_1	\
-"Received: from unknown (helo localhost) (unkown@127.0.0.1)\r\n\
+"Received: from unknown (helo localhost) (unknown@127.0.0.1)\r\n\
 	by herculiz with SMTP\r\n\
 From: \"%s\"\r\n\
 To: "

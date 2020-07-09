@@ -234,7 +234,7 @@ void auto_response_reply(const char *user_home,
 		mime_set_content_param(pmime, "charset", charset);
 	}
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
-		"(unkown@127.0.0.1)\r\n\tby herculiz with SMTP");
+		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	mime_set_field(pmime, "From", from);
 	mime_set_field(pmime, "To", rcpt);
 	mime_set_field(pmime, "MIME-Version", "1.0");

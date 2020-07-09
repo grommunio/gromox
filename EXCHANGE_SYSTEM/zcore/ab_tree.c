@@ -1549,7 +1549,7 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 			snprintf(str_dname, 256, lang_string, title);
 			break;
 		default:
-			strcpy(str_dname, "unkown address list");
+			strcpy(str_dname, "unknown address list");
 		}
 		break;
 	}

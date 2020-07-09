@@ -1146,7 +1146,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
 		guid_to_string(&uuid, uuid_str, sizeof(uuid_str));
-		debug_info("[pdu_processor]: interface %s/%d unkown when binding\n",
+		debug_info("[pdu_processor]: interface %s/%d unknown when binding\n",
 			uuid_str, if_version);
 		/* we don't know about that interface */
 		result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
@@ -1484,7 +1484,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 						&uuid, if_version);
 		if (NULL == pinterface) {
 			guid_to_string(&uuid, uuid_str, sizeof(uuid_str));
-			debug_info("[pdu_processor]: interface %s/%d unkown when altering\n",
+			debug_info("[pdu_processor]: interface %s/%d unknown when altering\n",
 				uuid_str, if_version);
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DCERPC_BIND_REASON_ASYNTAX;

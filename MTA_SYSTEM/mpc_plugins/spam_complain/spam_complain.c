@@ -53,7 +53,7 @@ BOOL spam_complain_process(MESSAGE_CONTEXT *pcontext)
 	}
 	mime_set_content_type(pmime, "message/rfc822");
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
-		"(unkown@127.0.0.1)\r\n\tby herculiz with SMTP");
+		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	mime_set_field(pmime, "From", pbounce_context->pcontrol->from);
 	mime_set_field(pmime, "To", get_admin_mailbox());
 	mime_set_field(pmime, "Subject", "SPAM COMPLAIN MAIL");

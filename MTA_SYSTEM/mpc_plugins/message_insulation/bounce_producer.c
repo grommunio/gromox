@@ -504,7 +504,7 @@ void bounce_producer_make(MESSAGE_CONTEXT *pcontext,
 	mime_set_content_type(pmime, "multipart/report");
 	mime_set_content_param(pmime, "report-type", "delivery-status");
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
-					"(unkown@127.0.0.1)\r\n\tby herculiz with SMTP");
+		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	if (TRUE == bounce_producer_get_mail_thread_index(
 		pcontext->pmail, tmp_buff)) {
 		mime_set_field(pmime, "Thread-Index", tmp_buff);

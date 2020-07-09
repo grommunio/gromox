@@ -595,7 +595,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	mime_set_content_type(pmime, "multipart/report");
 	mime_set_content_param(pmime, "report-type", "delivery-status");
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
-					"(unkown@127.0.0.1)\r\n\tby herculiz with SMTP");
+		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	mime_set_field(pmime, "From", mime_from);
 	snprintf(tmp_buff, 256, "<%s>", from);
 	mime_set_field(pmime, "To", tmp_buff);

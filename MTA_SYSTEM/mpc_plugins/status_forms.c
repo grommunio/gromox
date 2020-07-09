@@ -343,7 +343,7 @@ static void do_statistic()
 		ptr - html_buff, MIME_ENCODING_NONE);
 
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
-							"(unkown@127.0.0.1)\r\n\tby herculiz with SMTP");
+		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	mime_set_field(pmime, "From", pcontext->pcontrol->from);
 	mime_set_field(pmime, "To", get_admin_mailbox());
 	len = sprintf(temp_buff, "Anti-spam gateway status forms from %s of ",

@@ -5204,7 +5204,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	return TRUE;
 }
 
-/* 0 means success, 1 means mailbox full, other unkown error */
+/* 0 means success, 1 means mailbox full, other unknown error */
 BOOL exmdb_server_delivery_message(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,

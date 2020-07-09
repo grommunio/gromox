@@ -244,7 +244,7 @@ static BOOL update_hook(MESSAGE_CONTEXT *pcontext)
 	sprintf(presult_context->pcontrol->from, "UPDATE-RESULT@%s", get_host_ID());
 	mem_file_writeline(&presult_context->pcontrol->f_rcpt_to, return_address);
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
-		"(unkown@127.0.0.1)\r\n\tby herculiz with SMTP");
+		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	mime_set_field(pmime, "From", presult_context->pcontrol->from);
 	mime_set_field(pmime, "To", return_address);
 	time(&cur_time);
