@@ -1,6 +1,9 @@
 /* 
  * collection of functions for handling the pop3 command
  */ 
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -44,7 +47,8 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 			"PIPELINING\r\n"
 			"UIDL\r\n"
 			"TOP\r\n"
-			"IMPLEMENTATION apollo-pop3-svr\r\n.\r\n");
+			"IMPLEMENTATION gromox-pop3-%s\r\n.\r\n",
+			PACKAGE_VERSION);
 
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, buff, string_length);
