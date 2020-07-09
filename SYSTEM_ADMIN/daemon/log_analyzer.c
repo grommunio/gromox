@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <gromox/defs.h>
 
 static char g_statistic_path[256];
 static char g_original_path[256];
@@ -106,7 +106,7 @@ int log_analyzer_run()
 			
 			/* get the process result of SMTP session */
 			if (NULL != strstr(ptr, "illegal mail is cut!") ||
-				NULL != strstr(ptr, "flushing queue permanent fail") ||
+			    strstr(ptr, "flushing queue permanent failure") != nullptr ||
 				NULL != strstr(ptr, "dubious mail is cut!")) {
 				if (TRUE == b_outgoing) {
 					out_spam_num ++;

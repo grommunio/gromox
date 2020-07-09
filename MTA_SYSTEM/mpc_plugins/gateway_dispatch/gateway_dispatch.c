@@ -521,8 +521,8 @@ void gateway_dispatch_console_talk(int argc, char **argv, char *result,
 		snprintf(result, length,
 					"250 gateway dispatch running information:\r\n"
 					"\tOK                       %d\r\n"
-					"\ttemporary fail           %d\r\n"
-					"\tpermanent fail           %d\r\n"
+					"\ttemporary failure        %d\r\n"
+					"\tpermanent failure        %d\r\n"
 					"\tno user                  %d",
 					net_failure_get_param(NET_FAILURE_OK),
 					net_failure_get_param(NET_FAILURE_TEMP),

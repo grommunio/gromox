@@ -247,7 +247,7 @@ int domain_classifier_run()
 			} else if (0 == strncmp(ptr1 + 2, "time out", 8)) {
 				item.type = LOG_ITEM_TIMEOUT;
 			} else if (0 == strncmp(ptr1 + 2, "flushing queue "
-				"permanent fail", 29)) {
+			    "permanent failure", 29)) {
 				item.type = LOG_ITEM_SPAM_VIRUS;
 			} else if (0 == strncmp(ptr1 + 2, "dubious mail is cut!", 20)) {
 				item.type = LOG_ITEM_RETRYING;

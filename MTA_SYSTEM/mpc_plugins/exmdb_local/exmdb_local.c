@@ -564,7 +564,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			put_context(pcontext1);
 		}
 		exmdb_local_log_info(pcontext, address, 8,
-			"permanent failure of getting mail digest!");
+			"permanent failure getting mail digest");
 		return DELIVERY_OPERATION_ERROR;
 	}
 	tmp_len = strlen(temp_buff);
@@ -745,8 +745,8 @@ void exmdb_local_console_talk(int argc,
 		snprintf(result, length,
 					"250 mailbox local running information:\r\n"
 					"\tOK                       %d\r\n"
-					"\ttemporary fail           %d\r\n"
-					"\tpermanent fail           %d\r\n"
+					"\ttemporary failure        %d\r\n"
+					"\tpermanent failure        %d\r\n"
 					"\tno user                  %d",
 					net_failure_get_param(NET_FAILURE_OK),
 					net_failure_get_param(NET_FAILURE_TEMP),

@@ -352,9 +352,9 @@ static BOOL send_command(int sockd, const char *command, int command_len)
  *		reason [out]			fail reason
  *	@retrun
  *		SMTP_TIME_OUT			time out
- *		SMTP_TEMP_ERROR		temp fail
- *		SMTP_UNKOWN_RESPONSE	unknown fail
- *		SMTP_PERMANENT_ERROR	permanent fail
+ *		SMTP_TEMP_ERROR		temporary failure
+ *		SMTP_UNKOWN_RESPONSE	unknown failure
+ *		SMTP_PERMANENT_ERROR	permanent failure
  *		SMTP_RESPONSE_OK		OK
  */
 static int get_response(int sockd, char *response, int response_len,

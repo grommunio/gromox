@@ -331,7 +331,7 @@ static BOOL pop3_send_command(int sockd, const char *command, int command_len)
  *		reason [out]			fail reason
  *	@retrun
  *		POP3_TIME_OUT			time out
- *		POP3_RESPONSE_ERROR		temp fail
+ *		POP3_RESPONSE_ERROR		temporary failure
  *		POP3_RETRIEVE_OK		OK
  */
 static int pop3_get_response(int sockd, char *response, int response_len)

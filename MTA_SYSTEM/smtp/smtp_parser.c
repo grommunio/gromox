@@ -462,7 +462,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 			write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
-		smtp_parser_log_info(pcontext, 8, "flushing queue permanent fail");
+		smtp_parser_log_info(pcontext, 8, "flushing queue permanent failure");
 		if (NULL != pcontext->connection.ssl) {
 			SSL_shutdown(pcontext->connection.ssl);
 			SSL_free(pcontext->connection.ssl);
