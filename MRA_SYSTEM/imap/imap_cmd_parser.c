@@ -1,6 +1,9 @@
 /* 
  * collection of functions for handling the imap command
  */ 
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -1423,10 +1426,10 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170029: OK ID completed */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2170029, 1, &string_length);
-	string_length = snprintf(buff, 1024, "* ID (\"name\" \"apollo imap\""
-				" \"vendor\" \"gridware\" \"version\" \"3.0\")\r\n%s %s",
-				argv[0], imap_reply_str);
-	imap_parser_safe_write(pcontext, buff, string_length);
+	snprintf(buff, sizeof(buff), "* ID (\"name\" \"gromox-imap\" "
+	         "version \"%s\")\r\n%s %s", PACKAGE_VERSION,
+	         argv[0], imap_reply_str);
+	imap_parser_safe_write(pcontext, buff, strlen(buff));
 	return DISPATCH_CONTINUE;
 
 }
