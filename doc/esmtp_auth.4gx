@@ -1,0 +1,21 @@
+.TH esmtp_auth 4gx "" "Gromox" "Gromox user reference"
+.SH Name
+esmtp_auth \(em SMTP authentication proxy
+.SH Description
+.PP
+esmtp_auth is a service plugin for smtp(8gx) which proxies authentication
+requests to (yet another) SMTP server. When this plugin is in use, authmgr(4gx)
+needs to be disabled.
+.SH Configuration file directives
+.SS cache_size
+.PP
+Default: \fI0\fP
+.SS retrying_times
+.PP
+Default: \fI2\fP
+.SS scan_interval
+.PP
+Default: \fI1 minute\fP
+.SH See also
+.PP
+\fBgromox\fP(7)

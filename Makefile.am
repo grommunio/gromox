@@ -1471,7 +1471,8 @@ man_MANS = \
 	doc/adaptor.8gx doc/archive.8gx doc/authmgr.4gx doc/bl_delete.8gx \
 	doc/cdnd.8gx doc/cidb.8gx doc/da.cfg.5gx doc/da_daemon.8gx \
 	doc/delivery.8gx \
-	doc/digest.8gx doc/event.8gx doc/exchange_emsmdb.4gx \
+	doc/digest.8gx doc/esmtp_auth.4gx \
+	doc/event.8gx doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
 	doc/fcgi_cgi.8gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-archive.target.8gx \
