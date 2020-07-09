@@ -54,6 +54,8 @@ Default: \fI512\fP
 Default: \fI2M\fP
 .SS context_num
 .PP
+Maximum number of concurrently active sessions.
+.PP
 Default: \fI200\fP
 .SS data_file_path
 .PP
@@ -66,6 +68,13 @@ Default: (system domainname)
 .SS default_lang
 .PP
 Default: \fIen\fP
+.SS enable_rfc2971_commands
+.PP
+RFC 2971 specifies the "ID" command with which a client can inquire the program
+name and version of the server. This is disabled by default, as it can
+facilitate potential attackers' information gathering.
+.PP
+Default: \fIno\fP
 .SS host_id
 .PP
 Default: (system hostname)

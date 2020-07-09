@@ -1423,12 +1423,17 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
-	/* IMAP_CODE_2170029: OK ID completed */
-	imap_reply_str = resource_get_imap_code(
-		IMAP_CODE_2170029, 1, &string_length);
-	snprintf(buff, sizeof(buff), "* ID (\"name\" \"gromox-imap\" "
-	         "version \"%s\")\r\n%s %s", PACKAGE_VERSION,
-	         argv[0], imap_reply_str);
+	if (parse_bool(resource_get_string("enable_rfc2971_commands"))) {
+		/* IMAP_CODE_2170029: OK ID completed */
+		imap_reply_str = resource_get_imap_code(
+			IMAP_CODE_2170029, 1, &string_length);
+		snprintf(buff, sizeof(buff), "* ID (\"name\" \"gromox-imap\" "
+		         "version \"%s\")\r\n%s %s", PACKAGE_VERSION,
+		         argv[0], imap_reply_str);
+	} else {
+		snprintf(buff, sizeof(buff), "%s %s", argv[0],
+		         resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length));
+	}
 	imap_parser_safe_write(pcontext, buff, strlen(buff));
 	return DISPATCH_CONTINUE;
 
