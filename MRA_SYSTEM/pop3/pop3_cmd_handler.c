@@ -37,23 +37,25 @@ int pop3_cmd_handler_capa(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
 	char buff[256];
-	int string_length;
 
-	string_length = sprintf(buff,
+	snprintf(buff, sizeof(buff),
 			"+OK capability list follows\r\n"
 			"STLS\r\n"
 			"TOP\r\n"
 			"USER\r\n"
 			"PIPELINING\r\n"
 			"UIDL\r\n"
-			"TOP\r\n"
-			"IMPLEMENTATION gromox-pop3-%s\r\n.\r\n",
+			"TOP\r\n");
+	if (parse_bool(resource_get_string("enable_capa_implementation")))
+		snprintf(buff + strlen(buff), sizeof(buff) - strlen(buff),
+			"IMPLEMENTATION gromox-pop3-%s\r\n",
 			PACKAGE_VERSION);
+	snprintf(buff + strlen(buff), sizeof(buff) - strlen(buff), ".\r\n");
 
 	if (NULL != pcontext->connection.ssl) {
-		SSL_write(pcontext->connection.ssl, buff, string_length);
+		SSL_write(pcontext->connection.ssl, buff, strlen(buff));
 	} else {
-		write(pcontext->connection.sockd, buff, string_length);
+		write(pcontext->connection.sockd, buff, strlen(buff));
 	}
 	return DISPATCH_CONTINUE;
 }

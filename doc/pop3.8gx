@@ -63,6 +63,13 @@ Default: \fI/usr/share/gromox/pop3\fP
 .SS default_domain
 .PP
 Default: (system domainname)
+.SS enable_capa_implementation
+.PP
+When enabled, the server will include an "IMPLEMENTATION" line in the CAPA
+response (RFC 2449 §6.9). This is disabled by default, as it can facilitate
+potential attackers' information gathering.
+.PP
+Default: \fIno\fP
 .SS host_id
 .PP
 Default: (system hostname)
