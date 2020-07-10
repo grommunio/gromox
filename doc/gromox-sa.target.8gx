@@ -1,4 +1,4 @@
-.TH gromox\-sa.target 8gx "" "Gromox" "Gromox user reference"
+.TH gromox\-sa.target 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 .PP
 gromox\-sa.target \(em system administration service group unit for systemd

@@ -1,4 +1,4 @@
-.TH delivery 8gx "" "Gromox" "Gromox user reference"
+.TH delivery 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBdelivery\fP [\fB\-c\fP \fIconfig\fP]

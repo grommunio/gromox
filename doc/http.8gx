@@ -1,4 +1,4 @@
-.TH http 8gx "" "Gromox" "Gromox user reference"
+.TH http 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBhttp\fP [\fB\-c\fP \fIconfig\fP]

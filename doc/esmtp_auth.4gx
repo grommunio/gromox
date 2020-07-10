@@ -1,4 +1,4 @@
-.TH esmtp_auth 4gx "" "Gromox" "Gromox user reference"
+.TH esmtp_auth 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
 esmtp_auth \(em SMTP authentication proxy
 .SH Description

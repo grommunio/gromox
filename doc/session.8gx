@@ -1,4 +1,4 @@
-.TH session 8gx "" "Gromox" "Gromox user reference"
+.TH session 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBsession\fP [\fB\-c\fP \fIconfig\fP]

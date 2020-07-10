@@ -1,4 +1,4 @@
-.TH sendmail 8gx "" "Gromox" "Gromox user reference"
+.TH sendmail 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBsendmail\fP [\fIoptions\fP...] \fIusername\fP \fImaildir\fP

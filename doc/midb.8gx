@@ -1,4 +1,4 @@
-.TH midb 8gx "" "Gromox" "Gromox user reference"
+.TH midb 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBmidb\fP [\fB\-c\fP \fIconfig\fP]

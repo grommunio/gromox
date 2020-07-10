@@ -1,4 +1,4 @@
-.TH rsyncer 8gx "" "Gromox" "Gromox user reference"
+.TH rsyncer 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBrsyncer\fP [\fB\-c\fP \fIconfig\fP]

@@ -1,4 +1,4 @@
-.TH sa_daemon 8gx "" "Gromox" "Gromox user reference"
+.TH sa_daemon 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBsa_daemon\fP [\fB\-c\fP \fIconfig\fP]

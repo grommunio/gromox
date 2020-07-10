@@ -1,4 +1,4 @@
-.TH fcgi_cgi 8gx "" "Gromox" "Gromox user reference"
+.TH fcgi_cgi 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBfcgi_cgi\fP [\fB\-c\fP \fIconfig\fP]

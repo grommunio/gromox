@@ -1,4 +1,4 @@
-.TH pad 8gx "" "Gromox" "Gromox user reference"
+.TH pad 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBpad\fP [\fB\-c\fP \fIconfig\fP]

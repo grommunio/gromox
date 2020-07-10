@@ -1,4 +1,4 @@
-.TH da.cfg 5gx "" "Gromox" "Gromox user reference"
+.TH da.cfg 5gx "" "Gromox" "Gromox admin reference"
 .SH Name
 .PP
 \fBda.cfg\fP \(em configuration file for the Domain Administration subsystem

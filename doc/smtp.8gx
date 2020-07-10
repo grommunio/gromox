@@ -1,4 +1,4 @@
-.TH smtp 8gx "" "Gromox" "Gromox user reference"
+.TH smtp 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 smtp \(em Gromox SMTP server
 .SH Synopsis

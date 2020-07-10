@@ -1,4 +1,4 @@
-.TH mkpublic 8gx "" "Gromox" "Gromox user reference"
+.TH mkpublic 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBmkpublic\fP \fIdomainname\fP

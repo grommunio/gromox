@@ -1,4 +1,4 @@
-.TH digest 8gx "" "Gromox" "Gromox user reference"
+.TH digest 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBdigest\fP \fImessage_file\fP

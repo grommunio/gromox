@@ -1,4 +1,4 @@
-.TH rtf2html 8gx "" "Gromox" "Gromox user reference"
+.TH rtf2html 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBrtf2html\fP \(em RTFCP to HTML converter

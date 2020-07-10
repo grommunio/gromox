@@ -1,4 +1,4 @@
-.TH bl_delete 8gx "" "Gromox" "Gromox user reference"
+.TH bl_delete 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBbl_delete\fP \fIlog_file\fP

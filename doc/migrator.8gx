@@ -1,4 +1,4 @@
-.TH migrator 8gx "" "Gromox" "Gromox user reference"
+.TH migrator 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBmigrator\fP \fIsrc-path\fP \fIdst-path\fP

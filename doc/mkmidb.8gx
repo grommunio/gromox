@@ -1,4 +1,4 @@
-.TH mkmidb 8gx "" "Gromox" "Gromox user reference"
+.TH mkmidb 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBmkmidb\fP \fIusername\fP

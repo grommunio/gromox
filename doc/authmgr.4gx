@@ -1,4 +1,4 @@
-.TH authmgr 4gx "" "Gromox" "Gromox user reference"
+.TH authmgr 4gx "" "Gromox" "Gromox admin reference"
 .SH Description
 .PP
 authmgr is a service plugin that invokes mail account authentication through

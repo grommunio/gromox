@@ -1,4 +1,4 @@
-.TH zcore 8gx "" "Gromox" "Gromox user reference"
+.TH zcore 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBzcore\fP [\fB\-c\fP \fIconfig\fP]

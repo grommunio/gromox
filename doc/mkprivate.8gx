@@ -1,4 +1,4 @@
-.TH mkprivate 8gx "" "Gromox" "Gromox user reference"
+.TH mkprivate 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBmkprivate\fP \fIusername\fP

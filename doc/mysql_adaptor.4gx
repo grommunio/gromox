@@ -1,4 +1,4 @@
-.TH mysql_adaptor 4gx "" "Gromox" "Gromox user reference"
+.TH mysql_adaptor 4gx "" "Gromox" "Gromox admin reference"
 .SH Description
 .PP
 mysql_adaptor is a service plugin for integrating mail accounts from

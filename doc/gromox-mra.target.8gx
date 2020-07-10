@@ -1,4 +1,4 @@
-.TH gromox\-mra.target 8gx "" "Gromox" "Gromox user reference"
+.TH gromox\-mra.target 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 .PP
 gromox\-mra.target \(em Mail retrieval agent service group unit for systemd

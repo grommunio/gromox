@@ -1,4 +1,4 @@
-.TH freebusy 8gx "" "Gromox" "Gromox user reference"
+.TH freebusy 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBfreebusy\fP \(em helper utility for freebusy actions

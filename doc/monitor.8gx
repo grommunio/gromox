@@ -1,4 +1,4 @@
-.TH monitor 8gx "" "Gromox" "Gromox user reference"
+.TH monitor 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBmonitor\fP [\fB\-c\fP \fIconfig\fP]

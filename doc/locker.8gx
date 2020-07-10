@@ -1,4 +1,4 @@
-.TH locker 8gx "" "Gromox" "Gromox user reference"
+.TH locker 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBlocker\fP [\fB\-c\fP \fIconfig\fP]

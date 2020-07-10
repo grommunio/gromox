@@ -1,4 +1,4 @@
-.TH archive 8gx "" "Gromox" "Gromox user reference"
+.TH archive 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBarchive\fP \fIsrc-dir\fP \fIdst-path\fP \fIcidb-host\fP:\fIport\fP

@@ -1,4 +1,4 @@
-.TH timer 8gx "" "Gromox" "Gromox user reference"
+.TH timer 8gx "" "Gromox" "Gromox admin reference"
 .SH Synopsis
 .PP
 \fBtimer\fP [\fB\-c\fP \fIconfig\fP]

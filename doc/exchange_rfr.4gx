@@ -1,4 +1,4 @@
-.TH exchange_rfr 4gx "" "Gromox" "Gromox user reference"
+.TH exchange_rfr 4gx "" "Gromox" "Gromox admin reference"
 .SH Description
 .PP
 exchange_rfr is a processing plugin for http(8gx) which handles the Address

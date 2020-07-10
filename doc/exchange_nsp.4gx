@@ -1,4 +1,4 @@
-.TH exchange_nsp 4gx "" "Gromox" "Gromox user reference"
+.TH exchange_nsp 4gx "" "Gromox" "Gromox admin reference"
 .SH Description
 .PP
 exchange_nsp is a processing plugin for http(8gx) which handles the Exchange
