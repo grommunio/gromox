@@ -69,6 +69,7 @@ zend_bool php_to_binary_array(zval *pzval,
 	if (NULL == pzval) {
 		return 0;
 	}
+	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (NULL == ptarget_hash) {
 		return 0;
@@ -125,6 +126,7 @@ zend_bool php_to_sortorder_set(zval *pzval,
 	if (NULL == pzval) {
 		return 0;
 	}
+	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (NULL == ptarget_hash) {
 		return 0;
@@ -162,6 +164,7 @@ zend_bool php_to_proptag_array(zval *pzval,
 	if (NULL == pzval) {
 		return 0;
 	}
+	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (NULL == ptarget_hash) {
 		return 0;
@@ -206,6 +209,8 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	zstrplus str_adrlist(zend_string_init("adrlist", sizeof("adrlist") - 1, 0));
 	zstrplus str_proptag(zend_string_init("proptag", sizeof("proptag") - 1, 0));
 	
+	if (entry == nullptr)
+		return nullptr;
 	switch(proptype)	{
 	case PROPVAL_TYPE_SHORT:
 		pvalue = emalloc(sizeof(uint16_t));
@@ -300,6 +305,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		break;
 	}
 	case PROPVAL_TYPE_SHORT_ARRAY:
+		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
@@ -324,6 +330,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	case PROPVAL_TYPE_LONG_ARRAY:
+		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
@@ -348,6 +355,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	case PROPVAL_TYPE_LONGLONG_ARRAY:
+		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
@@ -373,6 +381,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		break;
 	case PROPVAL_TYPE_STRING_ARRAY:
 	case PROPVAL_TYPE_WSTRING_ARRAY:
+		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
@@ -403,6 +412,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	case PROPVAL_TYPE_BINARY_ARRAY:
+		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
@@ -437,6 +447,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	case PROPVAL_TYPE_GUID_ARRAY:
+		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
@@ -468,6 +479,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		if (NULL == pvalue) {
 			return NULL;
 		}
+		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			((RULE_ACTIONS*)pvalue)->count = 0;
@@ -687,6 +699,9 @@ zend_bool php_to_tpropval_array(zval *pzval,
 	unsigned long idx;
 	HashTable *ptarget_hash;
 	
+	if (pzval == nullptr)
+		return 0;
+	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (NULL == ptarget_hash) {
 		return 0;
@@ -722,6 +737,7 @@ zend_bool php_to_tarray_set(zval *pzval, TARRAY_SET *pset TSRMLS_DC)
 	if (NULL == pzval) {
 		return 0;
 	}
+	ZVAL_DEREF(pzval);
 	if (Z_TYPE_P(pzval) != IS_ARRAY)
 		return 0;
 	ptarget_hash = HASH_OF(pzval);
@@ -763,6 +779,7 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist TSRMLS_DC)
 	if (NULL == pzval) {
 		return 0;
 	}
+	ZVAL_DEREF(pzval);
 	if (Z_TYPE_P(pzval) != IS_ARRAY)
 		return 0;
 	ptarget_hash = HASH_OF(pzval);
@@ -782,6 +799,7 @@ zend_bool php_to_rule_list(zval *pzval, RULE_LIST *plist TSRMLS_DC)
 	zval *entry;
 	size_t i = 0;
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, entry) {
+		ZVAL_DEREF(entry);
 		if (Z_TYPE_P(entry) != IS_ARRAY)
 			return 0;
 		auto data = zend_hash_find(HASH_OF(entry), str_properties.get());
@@ -817,6 +835,9 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	HashTable *pdata_hash;
 	TPROPVAL_ARRAY tmp_propvals;
 	
+	if (pzval == nullptr)
+		return 0;
+	ZVAL_DEREF(pzval);
 	pres_hash = HASH_OF(pzval);
 	if (NULL == pres_hash || zend_hash_num_elements(pres_hash) != 2) {
 		return 0;
@@ -1474,6 +1495,7 @@ zend_bool php_to_state_array(zval *pzval,
 	if (NULL == pzval) {
 		return 0;
 	}
+	ZVAL_DEREF(pzval);
 	ptarget_hash = HASH_OF(pzval);
 	if (NULL == ptarget_hash) {
 		return 0;
@@ -1489,6 +1511,7 @@ zend_bool php_to_state_array(zval *pzval,
 	}
 	i = 0;
 	ZEND_HASH_FOREACH_VAL(ptarget_hash, pentry) {
+		ZVAL_DEREF(pentry);
 		auto value_entry = zend_hash_find(HASH_OF(pentry), str_sourcekey.get());
 		if (value_entry == nullptr)
 			return 0;

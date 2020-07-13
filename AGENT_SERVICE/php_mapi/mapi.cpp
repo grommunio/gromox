@@ -4669,6 +4669,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 		goto THROW_EXCEPTION;
 	}
 	}
+	ZVAL_DEREF(pzperms);
 	ptarget_hash = HASH_OF(pzperms);
 	if (NULL == ptarget_hash) {
 		MAPI_G(hr) = ecInvalidParam;
@@ -4684,6 +4685,7 @@ ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 
 	for (i=0,j=0; i<perm_set.count; i++) {
 		auto ppzentry = zend_hash_get_current_data(ptarget_hash);
+		ZVAL_DEREF(ppzentry);
 		pdata = HASH_OF(ppzentry);
 		zend_hash_internal_pointer_reset(pdata);
 		auto value = zend_hash_find(pdata, str_userid.get());
