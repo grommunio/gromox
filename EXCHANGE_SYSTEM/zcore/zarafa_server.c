@@ -704,8 +704,7 @@ void zarafa_server_init(int table_size,
 
 int zarafa_server_run()
 {
-	g_session_table = int_hash_init(
-		g_table_size, sizeof(USER_INFO), NULL);
+	g_session_table = int_hash_init(g_table_size, sizeof(USER_INFO));
 	if (NULL == g_session_table) {
 		printf("[zarafa_server]: fail to "
 			"create session hash table\n");

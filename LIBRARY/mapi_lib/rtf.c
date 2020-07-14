@@ -614,7 +614,7 @@ static BOOL rtf_init_reader(RTF_READER *preader,
 	preader->ungot_chars[0] = -1;
 	preader->ungot_chars[1] = -1;
 	preader->ungot_chars[2] = -1;
-	preader->pfont_hash = int_hash_init(MAX_FONTS, sizeof(FONTENTRY), NULL);
+	preader->pfont_hash = int_hash_init(MAX_FONTS, sizeof(FONTENTRY));
 	if (NULL == preader->pfont_hash) {
 		return FALSE;
 	}

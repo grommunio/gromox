@@ -2350,7 +2350,6 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg,
 	INT_HASH_ITER *iter;
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
-	INT_HASH_TABLE *phash1;
 	PROPERTY_NAME *ppropname;
 	PROPNAME_ARRAY propnames;
 	
@@ -2377,7 +2376,7 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg,
 	if (FALSE == get_propids(&propnames, &propids1)) {
 		return FALSE;
 	}
-	phash1 = int_hash_init(0x1000, sizeof(uint16_t), NULL);
+	INT_HASH_TABLE *phash1 = int_hash_init(0x1000, sizeof(uint16_t));
 	if (NULL == phash1) {
 		return FALSE;
 	}
@@ -2901,7 +2900,6 @@ static BOOL oxcical_import_internal(
 	ICAL_TIME end_itime;
 	DOUBLE_LIST tmp_list;
 	uint16_t last_propid;
-	INT_HASH_TABLE *phash;
 	ICAL_TIME start_itime;
 	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
@@ -2960,7 +2958,7 @@ static BOOL oxcical_import_internal(
 	}
 	
 	last_propid = 0x8000;
-	phash = int_hash_init(0x1000, sizeof(PROPERTY_NAME), NULL);
+	INT_HASH_TABLE *phash = int_hash_init(0x1000, sizeof(PROPERTY_NAME));
 	if (NULL == phash) {
 		return FALSE;
 	}

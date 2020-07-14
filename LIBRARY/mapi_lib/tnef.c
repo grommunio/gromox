@@ -2164,8 +2164,7 @@ FETCH_PROPNAME:
 		message_content_free(pmsg);
 		return NULL;
 	}
-	
-	phash1 = int_hash_init(0x1000, sizeof(uint16_t), NULL);
+	phash1 = int_hash_init(0x1000, sizeof(uint16_t));
 	if (NULL == phash1) {
 		message_content_free(pmsg);
 		return NULL;

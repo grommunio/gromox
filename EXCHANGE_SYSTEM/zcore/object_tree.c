@@ -252,7 +252,6 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 {
 	int tmp_handle;
 	INT_HASH_ITER *iter;
-	INT_HASH_TABLE *phash;
 	OBJECT_NODE *pobjnode;
 	OBJECT_NODE *ptmphanle;
 	OBJECT_NODE **ppparent;
@@ -289,8 +288,8 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 	pobjnode->pobject = pobject;
 	if (1 != int_hash_add(pobjtree->phash,
 		pobjnode->handle, &pobjnode)) {
-		phash = int_hash_init(pobjtree->phash->capacity +
-				HGROWING_SIZE, sizeof(OBJECT_NODE*), NULL);
+		INT_HASH_TABLE *phash = int_hash_init(pobjtree->phash->capacity +
+		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
 		if (NULL == phash) {
 			free(pobjnode);
 			return INVALID_HANDLE;
@@ -326,8 +325,7 @@ OBJECT_TREE* object_tree_create(const char *maildir)
 		return NULL;
 	}
 	pobjtree->last_handle = 0;
-	pobjtree->phash = int_hash_init(HGROWING_SIZE,
-						sizeof(OBJECT_NODE*), NULL);
+	pobjtree->phash = int_hash_init(HGROWING_SIZE, sizeof(OBJECT_NODE *));
 	if (NULL == pobjtree->phash) {
 		free(pobjtree);
 		return NULL;

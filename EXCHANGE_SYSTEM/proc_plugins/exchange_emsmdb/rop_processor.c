@@ -220,8 +220,7 @@ int rop_processor_create_logon_item(void *plogmap,
 	if (NULL == plogitem) {
 		return -1;
 	}
-	plogitem->phash = int_hash_init(HGROWING_SIZE,
-						sizeof(OBJECT_NODE*), NULL);
+	plogitem->phash = int_hash_init(HGROWING_SIZE, sizeof(OBJECT_NODE *));
 	if (NULL == plogitem->phash) {
 		lib_buffer_put(g_logitem_allocator, plogitem);
 		return -2;
@@ -252,7 +251,6 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 	int tmp_handle;
 	INT_HASH_ITER *iter;
 	LOGON_ITEM *plogitem;
-	INT_HASH_TABLE *phash;
 	OBJECT_NODE *pobjnode;
 	OBJECT_NODE *ptmphanle;
 	OBJECT_NODE **ppparent;
@@ -290,8 +288,8 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 	pobjnode->type = type;
 	pobjnode->pobject = pobject;
 	if (1 != int_hash_add(plogitem->phash, pobjnode->handle, &pobjnode)) {
-		phash = int_hash_init(plogitem->phash->capacity + HGROWING_SIZE,
-					sizeof(OBJECT_NODE*), NULL);
+		INT_HASH_TABLE *phash = int_hash_init(plogitem->phash->capacity +
+		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
 		if (NULL == phash) {
 			lib_buffer_put(g_handle_allocator, pobjnode);
 			return -8;

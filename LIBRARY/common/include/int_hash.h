@@ -2,8 +2,6 @@
 #include "lib_buffer.h"
 #include "double_list.h"
 
-typedef size_t (*PINT_HASH_FUNC)(int);
-
 typedef struct _INT_HASH_ITEM {
     int         hash_key;
     size_t      map_index;
@@ -19,7 +17,6 @@ typedef struct _INT_HASH_TABLE {
     DOUBLE_LIST iter_list;
     DOUBLE_LIST*    hash_map;
     LIB_BUFFER* buf_pool;
-    PINT_HASH_FUNC  hash_func;
 } INT_HASH_TABLE, *PINT_HASH_TABLE;
 
 typedef struct _INT_HASH_ITER {
@@ -37,7 +34,7 @@ extern "C" {
  return a int, if the fun is NULL then a default hash function will
  be used
  */
-INT_HASH_TABLE* int_hash_init(size_t max_items, size_t item_size, PINT_HASH_FUNC fun);
+extern INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size);
 
 /* free the specified hash table */
 void int_hash_free(INT_HASH_TABLE* ptbl);

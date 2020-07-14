@@ -305,8 +305,7 @@ static BOOL html_init_writer(RTF_WRITER *pwriter)
 		ext_buffer_push_free(&pwriter->ext_push);
 		return FALSE;
 	}
-	pwriter->pcolor_hash = int_hash_init(
-		MAX_TABLE_ITEMS, sizeof(COLOR_NODE), NULL);
+	pwriter->pcolor_hash = int_hash_init(MAX_TABLE_ITEMS, sizeof(COLOR_NODE));
 	if (NULL == pwriter->pcolor_hash) {
 		str_hash_free(pwriter->pfont_hash);
 		ext_buffer_push_free(&pwriter->ext_push);

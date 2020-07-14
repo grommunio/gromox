@@ -234,8 +234,7 @@ int pdu_processor_run()
 	if (NULL == g_stack_allocator) {
 		return -7;
 	}
-	g_async_hash = int_hash_init(context_num*2,
-					sizeof(ASYNC_NODE*), NULL);
+	g_async_hash = int_hash_init(context_num * 2, sizeof(ASYNC_NODE *));
 	if (NULL == g_async_hash) {
 		return -8;
 	}

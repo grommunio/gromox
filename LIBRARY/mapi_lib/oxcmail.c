@@ -3465,7 +3465,6 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg,
 	INT_HASH_ITER *iter;
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
-	INT_HASH_TABLE *phash1;
 	PROPERTY_NAME *ppropname;
 	PROPNAME_ARRAY propnames;
 	
@@ -3492,7 +3491,7 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg,
 	if (FALSE == get_propids(&propnames, &propids1)) {
 		return FALSE;
 	}
-	phash1 = int_hash_init(0x1000, sizeof(uint16_t), NULL);
+	INT_HASH_TABLE *phash1 = int_hash_init(0x1000, sizeof(uint16_t));
 	if (NULL == phash1) {
 		return FALSE;
 	}
@@ -4502,7 +4501,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	PROPID_ARRAY propids;
 	const char *encoding;
 	char mime_charset[64];
-	INT_HASH_TABLE *phash;
 	MESSAGE_CONTENT *pmsg;
 	MESSAGE_CONTENT *pmsg1;
 	TAGGED_PROPVAL propval;
@@ -4538,7 +4536,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	message_content_set_rcpts_internal(pmsg, prcpts);
-	phash = int_hash_init(0x1000, sizeof(PROPERTY_NAME), NULL);
+	INT_HASH_TABLE *phash = int_hash_init(0x1000, sizeof(PROPERTY_NAME));
 	if (NULL == phash) {
 		message_content_free(pmsg);
 		return NULL;

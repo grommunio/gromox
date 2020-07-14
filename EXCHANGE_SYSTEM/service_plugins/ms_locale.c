@@ -127,7 +127,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		item_num = list_file_get_item_num(pfile);
 		pcpid_item = list_file_get_list(pfile);
-		g_cpid_hash = int_hash_init(item_num + 1, 64, NULL);
+		g_cpid_hash = int_hash_init(item_num + 1, 64);
 		if (NULL == g_cpid_hash) {
 			printf("[ms_locale]: fail to init cpid hash table\n");
 			list_file_free(pfile);
@@ -161,7 +161,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		item_num = list_file_get_item_num(pfile);
 		printf("[ms_locale]: lcid.txt contains %d items\n", item_num);
 		pitem = list_file_get_list(pfile);
-		g_lcid_hash = int_hash_init(item_num + 1, 32, NULL);
+		g_lcid_hash = int_hash_init(item_num + 1, 32);
 		if (NULL == g_lcid_hash) {
 			printf("[ms_locale]: fail to init lcid hash table\n");
 			list_file_free(pfile);

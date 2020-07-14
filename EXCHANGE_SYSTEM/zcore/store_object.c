@@ -49,10 +49,8 @@ static BOOL store_object_enlarge_propid_hash(STORE_OBJECT *pstore)
 	int tmp_id;
 	void *ptmp_value;
 	INT_HASH_ITER *iter;
-	INT_HASH_TABLE *phash;
-	
-	phash = int_hash_init(pstore->ppropid_hash->capacity
-			+ HGROWING_SIZE, sizeof(PROPERTY_NAME), NULL);
+	INT_HASH_TABLE *phash = int_hash_init(pstore->ppropid_hash->capacity +
+	                        HGROWING_SIZE, sizeof(PROPERTY_NAME));
 	if (NULL == phash) {
 		return FALSE;
 	}
@@ -100,8 +98,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 	PROPERTY_NAME tmp_name;
 	
 	if (NULL == pstore->ppropid_hash) {
-		pstore->ppropid_hash = int_hash_init(
-			HGROWING_SIZE, sizeof(PROPERTY_NAME), NULL);
+		pstore->ppropid_hash = int_hash_init(HGROWING_SIZE, sizeof(PROPERTY_NAME));
 		if (NULL == pstore->ppropid_hash) {
 			return FALSE;
 		}

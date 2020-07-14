@@ -250,8 +250,8 @@ int message_dequeue_run()
         pmessage->node.pdata = pmessage;
 		single_list_append_as_tail(&g_free_list, &pmessage->node);
 	}
-	g_mess_hash = int_hash_init(2*g_message_units + 1, sizeof(void*), NULL);
-	g_tape_hash = int_hash_init(2*g_tape_units + 1, sizeof(void*), NULL);
+	g_mess_hash = int_hash_init(2 * g_message_units + 1, sizeof(void *));
+	g_tape_hash = int_hash_init(2 * g_tape_units + 1, sizeof(void *));
 	if (NULL == g_mess_hash || NULL == g_tape_hash) {
 		printf("[message_dequeue]: fail to initialize hash table\n");
 		message_dequeue_collect_resource();

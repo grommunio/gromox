@@ -3766,7 +3766,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY:
-		phash = int_hash_init(0x1000, sizeof(int), NULL);
+		phash = int_hash_init(0x1000, sizeof(int));
 		if (NULL == phash) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -3827,7 +3827,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		db_engine_put_db(pdb);
 		return TRUE;
 	case TABLE_TYPE_CONTENT:	
-		phash = int_hash_init(0x1000, sizeof(int), NULL);
+		phash = int_hash_init(0x1000, sizeof(int));
 		if (NULL == phash) {
 			db_engine_put_db(pdb);
 			return FALSE;

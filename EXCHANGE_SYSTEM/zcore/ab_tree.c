@@ -235,7 +235,7 @@ int ab_tree_run()
 	AB_NODE *pabnode;
 	SINGLE_LIST_NODE *psnode;
 	
-	g_base_hash = int_hash_init(g_base_size, sizeof(AB_BASE*), NULL);
+	g_base_hash = int_hash_init(g_base_size, sizeof(AB_BASE *));
 	if (NULL == g_base_hash) {
 		printf("[exchange_nsp]: fail to init base hash table\n");
 		return -1;
@@ -346,18 +346,16 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
 	int tmp_id;
 	void *ptmp_value;
 	INT_HASH_ITER *iter;
-	INT_HASH_TABLE *phash;
 	
 	if (NULL == pbase->phash) {
-		pbase->phash = int_hash_init(
-			HGROWING_SIZE, sizeof(AB_NODE*), NULL);
+		pbase->phash = int_hash_init(HGROWING_SIZE, sizeof(AB_NODE *));
 		if (NULL == pbase->phash) {
 			return FALSE;
 		}
 	}
 	if (1 != int_hash_add(pbase->phash, pabnode->minid, &pabnode)) {
-		phash = int_hash_init(pbase->phash->capacity
-			+ HGROWING_SIZE, sizeof(AB_NODE*), NULL);
+		INT_HASH_TABLE *phash = int_hash_init(pbase->phash->capacity +
+		                        HGROWING_SIZE, sizeof(AB_NODE *));
 		if (NULL == phash) {
 			return FALSE;
 		}

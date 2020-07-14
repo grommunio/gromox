@@ -72,7 +72,7 @@ int asyncemsmdb_interface_run()
 		printf("[exchange_emsmdb]: fail to allocate thread id buffer\n");
 		return -1;
 	}
-	g_async_hash = int_hash_init(2*context_num, sizeof(ASYNC_WAIT*), NULL);
+	g_async_hash = int_hash_init(2 * context_num, sizeof(ASYNC_WAIT *));
 	if (NULL == g_async_hash) {
 		printf("[exchange_emsmdb]: fail to init async ID hash table\n");
 		return -2;

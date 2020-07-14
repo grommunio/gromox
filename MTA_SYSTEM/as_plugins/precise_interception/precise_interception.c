@@ -129,7 +129,6 @@ static BOOL precise_interception_add(const char *full_name)
 	char temp_path[256];
 	char dest_path[256];
 	char *ptr, *pslash;
-	INT_HASH_TABLE *phash;
 	INT_HASH_ITER *iter;
 	DOUBLE_LIST *plist, *plist_item, temp_list;
 	DOUBLE_LIST_NODE *pnode;
@@ -192,7 +191,7 @@ static BOOL precise_interception_add(const char *full_name)
 		double_list_init(&temp_list);
 		if (1 != int_hash_add(g_hash_table, node_stat.st_size, &temp_list)) {
 			hash_cap = g_hash_cap + TABLE_GROWING_NUM;
-			phash = int_hash_init(hash_cap, sizeof(DOUBLE_LIST), NULL);
+			INT_HASH_TABLE *phash = int_hash_init(hash_cap, sizeof(DOUBLE_LIST));
 			if (NULL == phash) {
 				free(pdata);
 				free(ptr);
@@ -272,7 +271,6 @@ static BOOL precise_interception_remove(const char *file_name)
 
 static BOOL precise_interception_refresh()
 {
-	INT_HASH_TABLE *phash, *phash_temp;
 	DOUBLE_LIST *plist, temp_list;
 	ATTACHMENT_DATA *pdata;
 	int fd, count, hash_cap;
@@ -300,7 +298,7 @@ static BOOL precise_interception_refresh()
 		return false;
 	}
 	hash_cap = count + TABLE_GROWING_NUM;
-	phash = int_hash_init(hash_cap, sizeof(DOUBLE_LIST), NULL);
+	INT_HASH_TABLE *phash = int_hash_init(hash_cap, sizeof(DOUBLE_LIST));
 	if (NULL == phash) {
 		return FALSE;
 	}
@@ -353,7 +351,7 @@ static BOOL precise_interception_refresh()
 	closedir(dirp);
 	}
 	pthread_rwlock_wrlock(&g_table_lock);
-	phash_temp = g_hash_table;
+	INT_HASH_TABLE *phash_temp = g_hash_table;
 	g_hash_table = phash;
 	g_hash_cap = hash_cap;
 	pthread_rwlock_unlock(&g_table_lock);

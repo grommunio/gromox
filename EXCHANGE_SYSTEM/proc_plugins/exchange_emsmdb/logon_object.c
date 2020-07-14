@@ -23,10 +23,8 @@ static BOOL logon_object_enlarge_propid_hash(
 	int tmp_id;
 	void *ptmp_value;
 	INT_HASH_ITER *iter;
-	INT_HASH_TABLE *phash;
-	
-	phash = int_hash_init(plogon->ppropid_hash->capacity + 
-				HGROWING_SIZE, sizeof(PROPERTY_NAME), NULL);
+	INT_HASH_TABLE *phash = int_hash_init(plogon->ppropid_hash->capacity +
+	                        HGROWING_SIZE, sizeof(PROPERTY_NAME));
 	if (NULL == phash) {
 		return FALSE;
 	}
@@ -75,8 +73,8 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 	PROPERTY_NAME tmp_name;
 	
 	if (NULL == plogon->ppropid_hash) {
-		plogon->ppropid_hash = int_hash_init(
-			HGROWING_SIZE, sizeof(PROPERTY_NAME), NULL);
+		plogon->ppropid_hash = int_hash_init(HGROWING_SIZE,
+		                       sizeof(PROPERTY_NAME));
 		if (NULL == plogon->ppropid_hash) {
 			return FALSE;
 		}

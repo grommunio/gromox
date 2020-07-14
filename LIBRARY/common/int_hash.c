@@ -30,7 +30,7 @@ static size_t default_int_hash_function(int);
  *	@return		
  *		a pointer that point to the hash table object
  */
-INT_HASH_TABLE* int_hash_init(size_t max_items, size_t item_size, PINT_HASH_FUNC fun)
+INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size)
 {
 	DOUBLE_LIST* p_map = NULL;
 	PINT_HASH_TABLE	 table = NULL;
@@ -70,11 +70,6 @@ INT_HASH_TABLE* int_hash_init(size_t max_items, size_t item_size, PINT_HASH_FUNC
 		free(p_map);
 		return NULL;
 
-	}
-	if (NULL == fun) {
-		table->hash_func = default_int_hash_function;
-	} else {
-		table->hash_func = fun;
 	}
 	table->hash_map		= p_map;
 	table->capacity		= max_items;
@@ -161,8 +156,7 @@ int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
 		return -3;
 	}
 
-	index = ptbl->hash_func(key) % (ptbl->entry_num);
-
+	index = default_int_hash_function(key) % ptbl->entry_num;
 	item  = (INT_HASH_ITEM *)list_node;
 	item->hash_key	= key;
 	item->map_index = index;
@@ -228,8 +222,7 @@ void* int_hash_query(INT_HASH_TABLE* ptbl, int key)
 		return NULL;
 	}
 #endif
-	index = ptbl->hash_func(key) % (ptbl->entry_num);
-
+	index = default_int_hash_function(key) % ptbl->entry_num;
 	if (NULL == ptbl->hash_map[index].phead) {
 		return NULL;
 	}
@@ -277,7 +270,7 @@ int int_hash_remove(INT_HASH_TABLE* ptbl, int key)
 		return -1;
 	}
 #endif
-	index = ptbl->hash_func(key) % (ptbl->entry_num);
+	index = default_int_hash_function(key) % ptbl->entry_num;
 	if (NULL == ptbl->hash_map[index].phead) {
 		return -2;
 	}

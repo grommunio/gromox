@@ -423,7 +423,6 @@ int item_sorter_run()
 	int retrying_num, timeout_num, total_num;
 	ITEM_DATA *item_array;
 	DIR *dirp1, *dirp2;
-	INT_HASH_TABLE *phash;
 	struct tm *ptime;
 	struct stat node_stat;
 	struct dirent *direntp1, *direntp2;
@@ -557,7 +556,7 @@ int item_sorter_run()
 			remove(temp_path);
 			item_array = (ITEM_DATA*)pbuff;
 			
-			phash = int_hash_init(array_size, 8*sizeof(int), NULL);
+			INT_HASH_TABLE *phash = int_hash_init(array_size, 8 * sizeof(int));
 			if (NULL == phash) {
 				free(pbuff);
 				free(sort_array);
