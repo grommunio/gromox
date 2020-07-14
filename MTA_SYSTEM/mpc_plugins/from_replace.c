@@ -35,7 +35,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	char *psearch;
 	char file_name[256];
 	
-    /* path conatins the config files directory */
+	/* path contains the config files directory */
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);

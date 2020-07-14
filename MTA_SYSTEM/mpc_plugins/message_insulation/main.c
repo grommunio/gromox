@@ -22,7 +22,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	int scan_interval;
 	int on_valid_interval;
 	int anon_valid_interval;
-    /* path conatins the config files directory */
+	/* path contains the config files directory */
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);

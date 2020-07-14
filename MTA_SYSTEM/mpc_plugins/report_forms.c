@@ -84,7 +84,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 {
 	pthread_attr_t attr;
 	
-    /* path conatins the config files directory */
+	/* path contains the config files directory */
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);

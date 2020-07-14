@@ -88,7 +88,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	DOUBLE_LIST_NODE *pnode;
 	
 	
-	/* path conatins the config files directory */
+	/* path contains the config files directory */
 	switch (reason) {
 	case PLUGIN_INIT:
 		LINK_API(ppdata);

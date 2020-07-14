@@ -70,7 +70,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	DCERPC_INTERFACE interface_emsmdb;
 	DCERPC_INTERFACE interface_async_emsmdb;
 	
-	/* path conatins the config files directory */
+	/* path contains the config files directory */
 	switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);

@@ -15,7 +15,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 	char *psearch, *str_val;
 	const char *str_subject;
 	int growing_num;
-    /* path conatins the config files directory */
+	/* path contains the config files directory */
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);

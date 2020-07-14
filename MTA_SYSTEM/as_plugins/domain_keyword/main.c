@@ -33,7 +33,7 @@ BOOL AS_LibMain(int reason, void **ppdata)
 	char *str_value, *psearch;
 	CONFIG_FILE *pconfig_file;
 	
-    /* path conatins the config files directory */
+	/* path contains the config files directory */
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);

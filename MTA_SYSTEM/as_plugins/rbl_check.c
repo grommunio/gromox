@@ -35,7 +35,7 @@ static CHECK_TAGGING check_tagging;
 
 BOOL AS_LibMain(int reason, void **ppdata)
 {
-	/* path conatins the config files directory */
+	/* path contains the config files directory */
 	switch (reason) {
 	case PLUGIN_INIT:
 		LINK_API(ppdata);
