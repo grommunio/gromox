@@ -123,7 +123,7 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 					}
 				}
 			}
-			indic |= 1 << (32 - (indic_bit % 32 + 1));
+			indic |= 1U << (32 - (indic_bit % 32 + 1));
 			if (length > CLASSIC_MATCH_LENGTH) {
 				if (nibble_index == 0) {
 					nibble_index = compressed_pos + sizeof(uint16_t);
@@ -162,7 +162,7 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 		}
 	} while (coding_pos < uncompressed_size);
 	
-	indic |= 1 << (32 - (indic_bit % 32 + 1));
+	indic |= 1U << (32 - (indic_bit % 32 + 1));
 	SIVAL(ptr_indic, 0, indic);
 	return compressed_pos;
 }
