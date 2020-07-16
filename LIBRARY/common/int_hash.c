@@ -13,7 +13,7 @@
 
 static size_t g_num_of_collision;
 
-static size_t default_int_hash_function(int);
+static unsigned int default_int_hash_function(unsigned int);
 
 
 /*
@@ -498,8 +498,7 @@ int int_hash_iter_remove(INT_HASH_ITER *piter)
 /*
  *	derived from hashpjw, Dragon Book P436
  */
-
-static size_t default_int_hash_function(int key)
+static unsigned int default_int_hash_function(unsigned int key)
 {
 	key += (key << 12);
 	key ^= (key >> 22);
