@@ -521,8 +521,8 @@ int ip4_hash_iter_remove(IP4_HASH_ITER *piter)
 static size_t default_string_hash_function(const char *string)
 {
 	char *ptr = (char*)string;
-	int hash = 0, len = 0;
-	len = (int)strlen(string);
+	unsigned int hash = 0;
+	int len = (int)strlen(string);
 
 	for (hash = 0; len; len--, ptr++)
 	// (31 * hash) will probably be optimized
