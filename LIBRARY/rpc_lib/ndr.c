@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <gromox/defs.h>
 #include "common_types.h"
 #include "endian_macro.h"
 #include "ndr.h"
@@ -556,6 +558,8 @@ static BOOL ndr_push_check_overflow(NDR_PUSH *pndr, uint32_t extra_size)
 
 static int ndr_push_bytes(NDR_PUSH *pndr, const void *pdata, uint32_t n)
 {
+	if (n == 0)
+		return NDR_ERR_SUCCESS;
 	if (FALSE == ndr_push_check_overflow(pndr, n)) {
 		return NDR_ERR_BUFSIZE;
 	}
@@ -796,6 +800,7 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob)
 			return status;
 		}
 	}
+	assert(blob.data != nullptr || blob.length == 0);
 	status = ndr_push_bytes(pndr, blob.data, blob.length);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
