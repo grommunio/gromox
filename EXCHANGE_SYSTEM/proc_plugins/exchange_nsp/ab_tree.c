@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "util.h"
@@ -1282,7 +1283,7 @@ void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 		return ab_tree_node_to_guid(pnode->pdata, pguid);	
 	}
 	memset(pguid, 0, sizeof(GUID));
-	pguid->time_low = pabnode->node_type << 24;
+	pguid->time_low = static_cast(unsigned int, pabnode->node_type) << 24;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
 		pguid->time_low |= pabnode->id;
 		tmp_id = ab_tree_get_minid_value(pabnode->minid);
