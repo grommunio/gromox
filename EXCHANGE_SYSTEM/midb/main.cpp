@@ -100,7 +100,7 @@ int main(int argc, const char **argv)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return 2;
 	}
-	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
+	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
 
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
 	if (NULL == str_value) {

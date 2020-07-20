@@ -115,7 +115,7 @@ int main(int argc, const char **argv)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
+	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
 
 	str_val = resource_get_string("HOST_ID");
 	if (str_val == NULL) {
@@ -353,7 +353,7 @@ int main(int argc, const char **argv)
 		   "----------------------------\n");
         printf("[system]: run service OK\n");
     }
-	auto cleanup_4 = make_scope_success(service_stop);
+	auto cleanup_4 = make_scope_exit(service_stop);
 
     system_services_init();
     if (0 != system_services_run()) { 
@@ -362,8 +362,8 @@ int main(int argc, const char **argv)
     } else {
         printf("[system]: run system service OK\n");
     }
-	auto cleanup_5 = make_scope_success(system_services_free);
-	auto cleanup_6 = make_scope_success(system_services_stop);
+	auto cleanup_5 = make_scope_exit(system_services_free);
+	auto cleanup_6 = make_scope_exit(system_services_stop);
 
     message_dequeue_init(dequeue_path, tape_size, max_mem);
  
@@ -373,8 +373,8 @@ int main(int argc, const char **argv)
     } else {
         printf("[system]: run message dequeue OK\n");
     }
-	auto cleanup_7 = make_scope_success(message_dequeue_free);
-	auto cleanup_8 = make_scope_success(message_dequeue_stop);
+	auto cleanup_7 = make_scope_exit(message_dequeue_free);
+	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
 
     console_server_init(console_server_ip, console_server_port);
 
@@ -384,8 +384,8 @@ int main(int argc, const char **argv)
     } else {
         printf("[system]: run console server OK\n");
     }
-	auto cleanup_9 = make_scope_success(console_server_free);
-	auto cleanup_10 = make_scope_success(console_server_stop);
+	auto cleanup_9 = make_scope_exit(console_server_free);
+	auto cleanup_10 = make_scope_exit(console_server_stop);
 
     transporter_init(mpc_plugin_path, mpc_plugin_list != NULL ?
 		mpc_plugin_list : g_dfl_mpc_plugins, threads_min, threads_max,
@@ -403,8 +403,8 @@ int main(int argc, const char **argv)
 			"-----------------------------\n");
         printf("[system]: run transporter OK\n");
     }
-	auto cleanup_11 = make_scope_success(transporter_free);
-	auto cleanup_12 = make_scope_success(transporter_stop);
+	auto cleanup_11 = make_scope_exit(transporter_free);
+	auto cleanup_12 = make_scope_exit(transporter_stop);
 
 	retcode = EXIT_SUCCESS;
     printf("[system]: DELIVERY APP is now running\n");

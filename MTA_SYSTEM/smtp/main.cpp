@@ -207,15 +207,15 @@ int main(int argc, const char **argv)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
+	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
 
 	resource_init();
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_1 = make_scope_success(resource_free);
-	auto cleanup_2 = make_scope_success(resource_stop);
+	auto cleanup_1 = make_scope_exit(resource_free);
+	auto cleanup_2 = make_scope_exit(resource_stop);
 	
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 25; 
@@ -632,8 +632,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: listener start OK\n");
 	}
-	auto cleanup_3 = make_scope_success(listener_free);
-	auto cleanup_4 = make_scope_success(listener_stop);
+	auto cleanup_3 = make_scope_exit(listener_free);
+	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
@@ -679,7 +679,7 @@ int main(int argc, const char **argv)
 		   "----------------------------\n");
 		printf("[system]: run service OK\n");
 	}
-	auto cleanup_6 = make_scope_success(service_stop);
+	auto cleanup_6 = make_scope_exit(service_stop);
 	
 	system_services_init();
 	if (0 != system_services_run()) { 
@@ -688,8 +688,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run system service OK\n");
 	}
-	auto cleanup_7 = make_scope_success(system_services_free);
-	auto cleanup_8 = make_scope_success(system_services_stop);
+	auto cleanup_7 = make_scope_exit(system_services_free);
+	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	files_allocator_init(context_num * 128);  
 	if (0 != files_allocator_run()) { 
@@ -698,8 +698,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run file allocator OK\n");
 	}
-	auto cleanup_9 = make_scope_success(files_allocator_free);
-	auto cleanup_10 = make_scope_success(files_allocator_stop);
+	auto cleanup_9 = make_scope_exit(files_allocator_free);
+	auto cleanup_10 = make_scope_exit(files_allocator_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);	   
  
@@ -709,8 +709,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run blocks allocator OK\n");
 	}
-	auto cleanup_11 = make_scope_success(blocks_allocator_free);
-	auto cleanup_12 = make_scope_success(blocks_allocator_stop);
+	auto cleanup_11 = make_scope_exit(blocks_allocator_free);
+	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
  
 	bndstack_allocator_init(context_num * 3); 
  
@@ -720,8 +720,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run bndstack allocator OK\n");
 	}
-	auto cleanup_13 = make_scope_success(bndstack_allocator_free);
-	auto cleanup_14 = make_scope_success(bndstack_allocator_stop);
+	auto cleanup_13 = make_scope_exit(bndstack_allocator_free);
+	auto cleanup_14 = make_scope_exit(bndstack_allocator_stop);
 	 
 	if (0 == smtp_need_auth) {
 		 smtp_auth_needed	 = FALSE;
@@ -746,8 +746,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run smtp parser OK\n");
 	}
-	auto cleanup_15 = make_scope_success(smtp_parser_free);
-	auto cleanup_16 = make_scope_success(smtp_parser_stop);
+	auto cleanup_15 = make_scope_exit(smtp_parser_free);
+	auto cleanup_16 = make_scope_exit(smtp_parser_stop);
 	
 	contexts_pool_init(smtp_parser_get_contexts_list(),	 
 		context_num, sizeof(SMTP_CONTEXT),
@@ -761,8 +761,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run contexts pool OK\n");
 	}
-	auto cleanup_17 = make_scope_success(contexts_pool_free);
-	auto cleanup_18 = make_scope_success(contexts_pool_stop);
+	auto cleanup_17 = make_scope_exit(contexts_pool_free);
+	auto cleanup_18 = make_scope_exit(contexts_pool_stop);
 
 	flusher_init(flusher_plugin_path, context_num);
 																			
@@ -772,8 +772,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run flusher OK\n");
 	}
-	auto cleanup_19 = make_scope_success(flusher_free);
-	auto cleanup_20 = make_scope_success(flusher_stop);
+	auto cleanup_19 = make_scope_exit(flusher_free);
+	auto cleanup_20 = make_scope_exit(flusher_stop);
 
 	console_server_init(console_server_ip, console_server_port);
 
@@ -783,8 +783,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run console server OK\n");
 	}
-	auto cleanup_21 = make_scope_success(console_server_free);
-	auto cleanup_22 = make_scope_success(console_server_stop);
+	auto cleanup_21 = make_scope_exit(console_server_free);
+	auto cleanup_22 = make_scope_exit(console_server_stop);
 
 	anti_spamming_init(anti_spam_path, as_plugin_list != NULL ?
 		as_plugin_list : g_dfl_as_plugins, as_ignerr);
@@ -801,8 +801,8 @@ int main(int argc, const char **argv)
 		   "-------------------------\n");
 		printf("[system]: run anti-spamming OK\n");
 	}
-	auto cleanup_23 = make_scope_success(anti_spamming_free);
-	auto cleanup_24 = make_scope_success(anti_spamming_stop);
+	auto cleanup_23 = make_scope_exit(anti_spamming_free);
+	auto cleanup_24 = make_scope_exit(anti_spamming_stop);
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(smtp_parser_process));
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);
@@ -812,8 +812,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run threads pool OK\n");
 	}
-	auto cleanup_25 = make_scope_success(threads_pool_free);
-	auto cleanup_26 = make_scope_success(threads_pool_stop);
+	auto cleanup_25 = make_scope_exit(threads_pool_free);
+	auto cleanup_26 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (0 != listerner_trigger_accept()) {

@@ -115,7 +115,7 @@ int main(int argc, const char **argv)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
+	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
 
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 80; 
@@ -483,8 +483,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: listener start OK\n");
 	}
-	auto cleanup_3 = make_scope_success(listener_free);
-	auto cleanup_4 = make_scope_success(listener_stop);
+	auto cleanup_3 = make_scope_exit(listener_free);
+	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
@@ -535,7 +535,7 @@ int main(int argc, const char **argv)
 		   "----------------------------\n");
 		printf("[system]: run service OK\n");
 	}
-	auto cleanup_6 = make_scope_success(service_stop);
+	auto cleanup_6 = make_scope_exit(service_stop);
 
 	system_services_init();
 	if (0 != system_services_run()) { 
@@ -544,8 +544,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run system service OK\n");
 	}
-	auto cleanup_7 = make_scope_success(system_services_free);
-	auto cleanup_8 = make_scope_success(system_services_stop);
+	auto cleanup_7 = make_scope_exit(system_services_free);
+	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     
  
@@ -555,8 +555,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run blocks allocator OK\n");
 	}
-	auto cleanup_9 = make_scope_success(blocks_allocator_free);
-	auto cleanup_10 = make_scope_success(blocks_allocator_stop);
+	auto cleanup_9 = make_scope_exit(blocks_allocator_free);
+	auto cleanup_10 = make_scope_exit(blocks_allocator_stop);
 
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem, proc_plugin_path,
@@ -574,8 +574,8 @@ int main(int argc, const char **argv)
 		   "-----------------------------\n");
 		printf("[system run pdu processor OK\n");
 	}
-	auto cleanup_11 = make_scope_success(pdu_processor_free);
-	auto cleanup_12 = make_scope_success(pdu_processor_stop);
+	auto cleanup_11 = make_scope_exit(pdu_processor_free);
+	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 
 	hpm_processor_init(context_num, hpm_plugin_path,
 		hpm_plugin_list != NULL ? hpm_plugin_list : g_dfl_hpm_plugins,
@@ -592,8 +592,8 @@ int main(int argc, const char **argv)
 		   "-----------------------------\n");
 		printf("[system run hpm processor OK\n");
 	}
-	auto cleanup_13 = make_scope_success(hpm_processor_free);
-	auto cleanup_14 = make_scope_success(hpm_processor_stop);
+	auto cleanup_13 = make_scope_exit(hpm_processor_free);
+	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 
 	mod_rewrite_init(rewrite_list_path);
 	
@@ -603,8 +603,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run mod rewrite OK\n");
 	}
-	auto cleanup_15 = make_scope_success(mod_rewrite_free);
-	auto cleanup_16 = make_scope_success(mod_rewrite_stop);
+	auto cleanup_15 = make_scope_exit(mod_rewrite_free);
+	auto cleanup_16 = make_scope_exit(mod_rewrite_stop);
 
 	mod_fastcgi_init(context_num,
 		fastcgi_list_path, fastcgi_cache_size,
@@ -616,8 +616,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run mod fastcgi OK\n");
 	}
-	auto cleanup_17 = make_scope_success(mod_fastcgi_free);
-	auto cleanup_18 = make_scope_success(mod_fastcgi_stop);
+	auto cleanup_17 = make_scope_exit(mod_fastcgi_free);
+	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
 
 	mod_cache_init(context_num, cache_list_path);
 	
@@ -627,8 +627,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run mod cache OK\n");
 	}
-	auto cleanup_19 = make_scope_success(mod_cache_free);
-	auto cleanup_20 = make_scope_success(mod_cache_stop);
+	auto cleanup_19 = make_scope_exit(mod_cache_free);
+	auto cleanup_20 = make_scope_exit(mod_cache_stop);
 
 	http_parser_init(context_num, http_conn_timeout,
 		http_auth_times, block_interval_auth, http_support_ssl,
@@ -640,8 +640,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run http parser OK\n");
 	}
-	auto cleanup_21 = make_scope_success(http_parser_free);
-	auto cleanup_22 = make_scope_success(http_parser_stop);
+	auto cleanup_21 = make_scope_exit(http_parser_free);
+	auto cleanup_22 = make_scope_exit(http_parser_stop);
 
 	contexts_pool_init(http_parser_get_contexts_list(),
 		context_num, sizeof(HTTP_CONTEXT),
@@ -655,8 +655,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run contexts pool OK\n");
 	}
-	auto cleanup_23 = make_scope_success(contexts_pool_free);
-	auto cleanup_24 = make_scope_success(contexts_pool_stop);
+	auto cleanup_23 = make_scope_exit(contexts_pool_free);
+	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
  
 	console_server_init(console_server_ip, console_server_port);
 
@@ -666,8 +666,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run console server OK\n");
 	}
-	auto cleanup_25 = make_scope_success(console_server_free);
-	auto cleanup_26 = make_scope_success(console_server_stop);
+	auto cleanup_25 = make_scope_exit(console_server_free);
+	auto cleanup_26 = make_scope_exit(console_server_stop);
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(http_parser_process));
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
@@ -677,8 +677,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run threads pool OK\n");
 	}
-	auto cleanup_27 = make_scope_success(threads_pool_free);
-	auto cleanup_28 = make_scope_success(threads_pool_stop);
+	auto cleanup_27 = make_scope_exit(threads_pool_free);
+	auto cleanup_28 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (0 != listerner_trigger_accept()) {

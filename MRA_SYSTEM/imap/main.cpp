@@ -83,15 +83,15 @@ int main(int argc, const char **argv)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return EXIT_FAILURE;
 	}
-	auto cleanup_0 = make_scope_success([]() { config_file_free(g_config_file); });
+	auto cleanup_0 = make_scope_exit([]() { config_file_free(g_config_file); });
 
 	resource_init();
 	if (0 != resource_run()) { 
 		printf("[system]: fail to load resource\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_1 = make_scope_success(resource_free);
-	auto cleanup_2 = make_scope_success(resource_stop);
+	auto cleanup_1 = make_scope_exit(resource_free);
+	auto cleanup_2 = make_scope_exit(resource_stop);
 	
 	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
 		listen_port = 143; 
@@ -382,8 +382,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: listener start OK\n");
 	}
-	auto cleanup_3 = make_scope_success(listener_free);
-	auto cleanup_4 = make_scope_success(listener_stop);
+	auto cleanup_3 = make_scope_exit(listener_free);
+	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
@@ -429,7 +429,7 @@ int main(int argc, const char **argv)
 		   "----------------------------\n");
 		printf("[system]: run service OK\n");
 	}
-	auto cleanup_6 = make_scope_success(service_stop);
+	auto cleanup_6 = make_scope_exit(service_stop);
 	
 	system_services_init();
 	if (0 != system_services_run()) { 
@@ -438,8 +438,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run system service OK\n");
 	}
-	auto cleanup_7 = make_scope_success(system_services_free);
-	auto cleanup_8 = make_scope_success(system_services_stop);
+	auto cleanup_7 = make_scope_exit(system_services_free);
+	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     
  
@@ -449,8 +449,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run blocks allocator OK\n");
 	}
-	auto cleanup_9 = make_scope_success(blocks_allocator_free);
-	auto cleanup_10 = make_scope_success(blocks_allocator_stop);
+	auto cleanup_9 = make_scope_exit(blocks_allocator_free);
+	auto cleanup_10 = make_scope_exit(blocks_allocator_stop);
 
 	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
 		imap_conn_timeout, autologout_time, imap_auth_times,
@@ -463,8 +463,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run imap parser OK\n");
 	}
-	auto cleanup_11 = make_scope_success(imap_parser_free);
-	auto cleanup_12 = make_scope_success(imap_parser_stop);
+	auto cleanup_11 = make_scope_exit(imap_parser_free);
+	auto cleanup_12 = make_scope_exit(imap_parser_stop);
 	
 	contexts_pool_init(imap_parser_get_contexts_list(),  
 		context_num, sizeof(IMAP_CONTEXT),
@@ -478,8 +478,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run contexts pool OK\n");
 	}
-	auto cleanup_13 = make_scope_success(contexts_pool_free);
-	auto cleanup_14 = make_scope_success(contexts_pool_stop);
+	auto cleanup_13 = make_scope_exit(contexts_pool_free);
+	auto cleanup_14 = make_scope_exit(contexts_pool_stop);
 
 	console_server_init(console_server_ip, console_server_port);
 
@@ -489,8 +489,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run console server OK\n");
 	}
-	auto cleanup_15 = make_scope_success(console_server_free);
-	auto cleanup_16 = make_scope_success(console_server_stop);
+	auto cleanup_15 = make_scope_exit(console_server_free);
+	auto cleanup_16 = make_scope_exit(console_server_stop);
 	
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(imap_parser_process));
 	threads_pool_register_event_proc(imap_parser_threads_event_proc);
@@ -500,8 +500,8 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: run threads pool OK\n");
 	}
-	auto cleanup_17 = make_scope_success(threads_pool_free);
-	auto cleanup_18 = make_scope_success(threads_pool_stop);
+	auto cleanup_17 = make_scope_exit(threads_pool_free);
+	auto cleanup_18 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (0 != listerner_trigger_accept()) {

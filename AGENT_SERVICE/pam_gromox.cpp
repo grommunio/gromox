@@ -67,7 +67,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	auto cfg = config_file_init2(nullptr, PKGSYSCONFDIR "/pam.cfg");
 	if (cfg == nullptr)
 		return PAM_AUTH_ERR;
-	auto cleanup_0 = make_scope_success([&]() { config_file_free(cfg); });
+	auto cleanup_0 = make_scope_exit([&]() { config_file_free(cfg); });
 
 	const char *username = nullptr;
 	auto ret = pam_get_user(pamh, &username, nullptr);
@@ -117,7 +117,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		svc_plugin_list, svcplug_ignerr);
 	if (service_run() != 0)
 		return PAM_AUTH_ERR;
-	auto cleanup_1 = make_scope_success(service_stop);
+	auto cleanup_1 = make_scope_exit(service_stop);
 
 	using login_t = BOOL (*)(const char *, const char *, char *, int);
 	auto fptr_login = reinterpret_cast<login_t>(service_query("auth_login_smtp", "system"));
