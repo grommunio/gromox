@@ -335,9 +335,6 @@ static void* accept_work_func(void *param)
 		if (-1 == clifd) {
 			continue;
 		}
-        len -= sizeof(unix_addr.sun_family);
-        unix_addr.sun_path[len] = '\0';
-        unlink(unix_addr.sun_path);
         pconn = (CONNECTION*)malloc(sizeof(CONNECTION));
 		if (NULL == pconn) {
 			close(clifd);
