@@ -1,5 +1,5 @@
 /*
- *    listener is a modlue, which listen a certain port and if a connection is 
+ *    listener is a module, which listen a certain port and if a connection is
  *    coming, pass the connection in connection filter module and if the
  *    connection is legal, construct a context to represent the connection and 
  *    throw it into contexts pool, or close the connection
