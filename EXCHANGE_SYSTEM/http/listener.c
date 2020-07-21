@@ -5,6 +5,7 @@
  *    throw it into contexts pool, or close the connection
  */
 #include <errno.h>
+#include <libHX/defs.h>
 #include <gromox/defs.h>
 #include "listener.h"
 #include "system_services.h"
@@ -218,7 +219,12 @@ static void* thread_work_func(void* arg)
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
-		getsockname(sockd2, (struct sockaddr*)&fact_addr, &addrlen);
+		int ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
+		if (ret != 0) {
+			printf("getsockname: %s\n", strerror(errno));
+			close(sockd2);
+			continue;
+		}
 		strcpy(client_hostip, inet_ntoa(client_peer.sin_addr));
 		strcpy(server_hostip, inet_ntoa(fact_addr.sin_addr));
 		client_port=ntohs(client_peer.sin_port);
@@ -324,7 +330,12 @@ static void* thread_work_ssl_func(void* arg)
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
-		getsockname(sockd2, (struct sockaddr*)&fact_addr, &addrlen);
+		int ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
+		if (ret != 0) {
+			printf("getsockname: %s\n", strerror(errno));
+			close(sockd2);
+			continue;
+		}
 		strcpy(client_hostip, inet_ntoa(client_peer.sin_addr));
 		strcpy(server_hostip, inet_ntoa(fact_addr.sin_addr));
 		client_port=ntohs(client_peer.sin_port);
