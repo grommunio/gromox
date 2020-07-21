@@ -29,9 +29,6 @@ static void* thread_work_func(void *param)
 		if (-1 == clifd) {
 			continue;
 		}
-		len -= sizeof(unix_addr.sun_family);
-		unix_addr.sun_path[len] = '\0';
-		unlink(unix_addr.sun_path);
 		if (FALSE == rpc_parser_activate_connection(clifd)) {
 			close(clifd);
 		}
