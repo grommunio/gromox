@@ -604,7 +604,7 @@ static void* accept_work_func(void *param)
 	int sockd, sockd2;
 	char client_hostip[16];
 	DOUBLE_LIST_NODE *pnode;
-	struct sockaddr_in peer_name;
+	struct sockaddr_storage peer_name;
 	ENQUEUE_NODE *penqueue;
 
 	sockd = (int)(long)param;

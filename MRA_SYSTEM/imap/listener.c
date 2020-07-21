@@ -184,7 +184,7 @@ static void* thread_work_func(void* arg)
 	socklen_t addrlen;
 	int sockd2, client_port;
 	int string_length, len, flag;
-	struct sockaddr_in fact_addr, client_peer;
+	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[16], client_txtport[16], server_hostip[16];
 	IMAP_CONTEXT *pcontext;
 	const char *imap_reply_str, *imap_reply_str2, *host_ID;
@@ -320,7 +320,7 @@ static void* thread_work_ssl_func(void* arg)
 	socklen_t addrlen;
 	int sockd2, client_port;
 	int string_length, len, flag;
-	struct sockaddr_in fact_addr, client_peer;
+	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[16], client_txtport[16], server_hostip[16];
 	IMAP_CONTEXT *pcontext;
 	const char *imap_reply_str, *imap_reply_str2, *host_ID;

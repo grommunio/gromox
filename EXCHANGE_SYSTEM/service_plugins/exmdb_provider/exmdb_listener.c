@@ -40,7 +40,7 @@ static void *thread_work_func(void *param)
 	socklen_t addrlen;
 	char client_hostip[16];
 	DOUBLE_LIST_NODE *pnode;
-	struct sockaddr_in peer_name;
+	struct sockaddr_storage peer_name;
 	EXMDB_CONNECTION *pconnection;
 	
 	while (NULL == common_util_lang_to_charset ||

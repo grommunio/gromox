@@ -156,8 +156,7 @@ static void *thread_work_func(void *param)
 	char client_hostip[16];
 	CONNECTION *pconnection;
 	DOUBLE_LIST_NODE *pnode;
-	struct sockaddr_in peer_name;
-
+	struct sockaddr_storage peer_name;
 
 	while (FALSE == g_notify_stop) {
 		/* wait for an incoming connection */

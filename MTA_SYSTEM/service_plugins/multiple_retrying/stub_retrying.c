@@ -140,7 +140,7 @@ static void *accept_work_func(void *param)
 	int sockd, sockd2;
 	socklen_t addrlen;
 	CONNECTION_THR *pconnection;	
-	struct sockaddr_in peer_name;
+	struct sockaddr_storage peer_name;
 	
 	sockd = (int)(long)param;
     for (;;) {

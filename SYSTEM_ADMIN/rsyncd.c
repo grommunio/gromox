@@ -316,7 +316,7 @@ static void *accept_work_func(void *param)
 	socklen_t addrlen;
 	X509 *client_cert;
 	X509_NAME *subjectName; 
-	struct sockaddr_in peer_name;
+	struct sockaddr_storage peer_name;
 	CONNECTION_NODE *pconnection;	
 
 

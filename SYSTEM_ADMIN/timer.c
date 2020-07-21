@@ -548,8 +548,7 @@ static void *accept_work_func(void *param)
 	socklen_t addrlen;
 	char client_hostip[16];
 	DOUBLE_LIST_NODE *pnode;
-	struct sockaddr_in peer_name;
-
+	struct sockaddr_storage peer_name;
 	CONNECTION_NODE *pconnection;	
 
 	sockd = (int)(long)param;

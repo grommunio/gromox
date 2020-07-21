@@ -325,7 +325,7 @@ static void* accept_work_func(void *param)
 {
 	CONNECTION *pconn;
 	int clifd, listenfd;
-    struct sockaddr_un unix_addr;
+	struct sockaddr_storage unix_addr;
 	
 	listenfd = (int)(long)param;
 	while (0 == g_notify_stop) {

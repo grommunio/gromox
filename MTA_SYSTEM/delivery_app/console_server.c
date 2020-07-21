@@ -226,7 +226,7 @@ static void *thread_work_func(void *argp)
 	CONSOLE_NODE *pconsole;
 	DOUBLE_LIST_NODE *pnode;
 	int sock, client_fd;
-	struct sockaddr_in client_peer;
+	struct sockaddr_storage client_peer;
 
 	sock = (int)(long)argp;
 	while (FALSE == g_terminate) {

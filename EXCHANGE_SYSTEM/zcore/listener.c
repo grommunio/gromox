@@ -20,7 +20,7 @@ static pthread_t g_listener_id;
 
 static void* thread_work_func(void *param)
 {
-    struct sockaddr_un unix_addr;
+	struct sockaddr_storage unix_addr;
 	
 	while (FALSE == g_notify_stop) {
 		socklen_t len = sizeof(unix_addr);
