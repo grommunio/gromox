@@ -1353,19 +1353,6 @@ int sphinx_add_query ( sphinx_client * client, const char * query, const char * 
 	return client->num_reqs-1;
 }
 
-
-static const char * sock_error ()
-{
-	return strerror ( errno );
-}
-
-
-static int sock_errno ()
-{
-	return errno;
-}
-
-
 static int sock_set_nonblocking ( int sock )
 {
 	return fcntl ( sock, F_SETFL, O_NONBLOCK );
@@ -1397,7 +1384,7 @@ static sphinx_bool net_write ( int fd, const char * bytes, int len, sphinx_clien
 
 	if ( res<0 )
 	{
-		set_error ( client, "send() error: %s", sock_error() );
+		set_error(client, "send: %s", strerror(errno));
 		return SPH_FALSE;
 	}
 
@@ -1420,10 +1407,10 @@ static sphinx_bool net_read ( int fd, char * buf, int len, sphinx_client * clien
 
 		if ( res<0 )
 		{
-			err = sock_errno();
+			err = errno;
 			if ( err==EINTR || err==EWOULDBLOCK ) // FIXME! remove non-blocking mode here; add timeout
 				continue;
-			set_error ( client, "recv(): read error (error=%s)", sock_error() );
+			set_error(client, "recv: %s", strerror(errno));
 			return SPH_FALSE;
 		}
 
@@ -1451,7 +1438,7 @@ static int net_create_inet_sock ( sphinx_client * client )
 	hp = gethostbyname ( client->host );
 	if ( !hp )
 	{
-		set_error ( client, "host name lookup failed (host=%s, error=%s)", client->host, sock_error() );
+		set_error(client, "lookup of host %s: %s", client->host, strerror(errno));
 		return -1;
 	}
 
@@ -1463,25 +1450,23 @@ static int net_create_inet_sock ( sphinx_client * client )
 	sock = (int) socket ( hp->h_addrtype, SOCK_STREAM, 0 );
 	if ( sock<0 )
 	{
-		set_error ( client, "socket() failed: %s", sock_error() );
+		set_error(client, "socket: %s", strerror(errno));
 		return -1;
 	}
 
 	if ( sock_set_nonblocking ( sock )<0 )
 	{
-		set_error ( client, "sock_set_nonblocking() failed: %s", sock_error() );
+		set_error(client, "sock_set_nonblocking: %s", strerror(errno));
 		return -1;
 	}
 
 	res = connect ( sock, (struct sockaddr*)&sa, sizeof(sa) );
 	if ( res==0 )
 		return sock;
-
-	err = sock_errno();
-
+	err = errno;
 	if ( err!=EWOULDBLOCK && err!=EINPROGRESS )
 	{
-		set_error ( client, "connect() failed: %s", sock_error() );
+		set_error(client, "connect %s: %s", client->host, strerror(errno));
 		return -1;
 	}
 
@@ -1505,24 +1490,23 @@ static int net_create_unix_sock ( sphinx_client * client )
 	sock = socket ( AF_UNIX, SOCK_STREAM, 0 );
 	if ( sock<0 )
 	{
-		set_error ( client, "UNIX socket() failed: %s", sock_error() );
+		set_error(client, "socket: %s", strerror(errno));
 		return -1;
 	}
 
 	if ( sock_set_nonblocking ( sock )<0 )
 	{
-		set_error ( client, "sock_set_nonblocking() failed: %s", sock_error() );
+		set_error(client, "sock_set_nonblocking: %s", strerror(errno));
 		return -1;
 	}
 
 	res = connect ( sock, (struct sockaddr *)&uaddr, sizeof(uaddr) );
 	if ( res==0 )
 		return sock;
-
-	err = sock_errno();
+	err = errno;
 	if ( err!=EWOULDBLOCK && err!=EINPROGRESS )
 	{
-		set_error ( client, "connect() failed: %s", sock_error() );
+		set_error(client, "connect %s: %s", client->host, strerror(errno));
 		return -1;
 	}
 
@@ -1631,7 +1615,7 @@ static sphinx_bool net_sock_eof ( int sock )
 	// got any events to read? (either normal via fds_read, or OOB via fds_except set)
 	if ( FD_ISSET ( sock, &fds_read ) || FD_ISSET ( sock, &fds_except ) )
 		if ( recv ( sock, &buf, sizeof(buf), MSG_PEEK )<=0 )
-			if ( sock_errno()!=EWOULDBLOCK )
+			if (errno != EWOULDBLOCK)
 				return SPH_TRUE;
 
 	// it seems alive
