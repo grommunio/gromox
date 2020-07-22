@@ -3,6 +3,7 @@
 #include <libHX/defs.h>
 #include "double_list.h"
 #include <gromox/hpm_common.h>
+#include <gromox/socket.h>
 #include "list_file.h"
 #include "mail_func.h"
 #include "util.h"
@@ -24,7 +25,6 @@ typedef struct _PROXY_NODE {
 	DOUBLE_LIST_NODE node;
 	char *domain;
 	char *path;
-	BOOL remote_ipaddr;
 	char *remote_host;
 	int remote_port;
 	char *remote_path;
@@ -73,7 +73,6 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 	int item_num;
 	char *ptoken;
 	char *ptoken1;
-	char tmp_ip[16];
 	int context_num;
 	LIST_FILE *pfile;
 	PROXY_NODE *pxnode;
@@ -150,7 +149,19 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 					pxnode->remote_path[tmp_len] = '\0';
 				}
 			}
-			ptoken = strchr(pxnode->remote_host, ':');
+			if (*pxnode->remote_host == '[') {
+				ptoken = strchr(pxnode->remote_host, ']');
+				if (ptoken == nullptr) {
+					printf("[mod_proxy]: missing closing square bracket near \"%s\"\n", pxnode->remote_host);
+					break;
+				}
+				size_t hlen = ptoken - (pxnode->remote_host + 1);
+				memmove(pxnode->remote_host, pxnode->remote_host + 1, hlen);
+				pxnode->remote_host[hlen] = '\0';
+				ptoken = strchr(ptoken, ':');
+			} else {
+				ptoken = strchr(pxnode->remote_host, ':');
+			}
 			if (NULL == ptoken) {
 				pxnode->remote_port = 80;
 			} else {
@@ -161,12 +172,6 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 						"destination in '%s' error", ptoken1);
 					break;
 				}
-			}
-			if (NULL != extract_ip(pxnode->remote_host, tmp_ip)
-				&& 0 == strcmp(tmp_ip, pxnode->remote_host)) {
-				pxnode->remote_ipaddr = TRUE;
-			} else {
-				pxnode->remote_ipaddr = FALSE;
 			}
 			double_list_append_as_tail(&g_proxy_list, &pxnode->node);
 		}
@@ -420,12 +425,10 @@ static int read_header(PROXY_CONTEXT *pcontext, void *pbuff, int length)
 static BOOL proxy_proc(int context_id,
 	const void *pcontent, uint64_t length)
 {
-	int ret;
 	int offset;
 	int tmp_len;
 	char *ptoken;
 	char *ptoken1;
-	char **p_addr;
 	BOOL b_connection;
 	char tmp_tag[256];
 	char tmp_uri[8192];
@@ -434,36 +437,14 @@ static BOOL proxy_proc(int context_id,
 	int tag_len, val_len;
 	HTTP_REQUEST *prequest;
 	char tmp_buff[64*1024];
-	struct in_addr ip_addr;
-	char destination_ip[16];
 	PROXY_CONTEXT *pcontext;
 	CONNECTION *pconnection;
-	struct sockaddr_in servaddr;
-	struct hostent hostinfo, *phost;
 	
 	pconnection = get_connection(context_id);
 	prequest = get_request(context_id);
 	pcontext = &g_context_list[context_id];
-	if (TRUE == pcontext->pxnode->remote_ipaddr) {
-		strcpy(destination_ip, pcontext->pxnode->remote_host);
-	} else {
-		if (0 != gethostbyname_r(pcontext->pxnode->remote_host,
-			&hostinfo, tmp_buff, 4096, &phost, &ret) ||
-			NULL == phost) {
-            return FALSE;
-        }
-		p_addr = phost->h_addr_list;
-		ip_addr.s_addr = *((unsigned int *)*p_addr);
-		strcpy(destination_ip, inet_ntoa(ip_addr));
-	}
-	pcontext->sockd = socket(AF_INET, SOCK_STREAM, 0);
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(pcontext->pxnode->remote_port);
-	inet_pton(AF_INET, destination_ip, &servaddr.sin_addr);
-	if (0 != connect(pcontext->sockd,
-		(struct sockaddr*)&servaddr,
-		sizeof(servaddr))) {
-		close(pcontext->sockd);
+	pcontext->sockd = gx_inet_connect(pcontext->pxnode->remote_host, pcontext->pxnode->remote_port, 0);
+	if (pcontext->sockd < 0) {
 		pcontext->sockd = -1;
 		return FALSE;
 	}
