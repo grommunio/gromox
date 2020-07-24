@@ -1,6 +1,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <gromox/locker_client.h>
+#include <gromox/socket.h>
 #include "common_types.h"
 #include <fcntl.h>
 #include <stdio.h>
@@ -40,22 +41,10 @@ int locker_client_stop()
 
 LOCKD locker_client_lock(const char *resource)
 {
-	int sockd, len;
 	char temp_buff[1024];
-	struct sockaddr_in servaddr;
-	
-	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_locker_port);
-	inet_pton(AF_INET, g_locker_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(g_locker_ip, g_locker_port, O_NONBLOCK);
+	if (sockd < 0)
 		return -1;
-	}
-	fcntl(sockd, F_SETFL, O_NONBLOCK);
-
 	if (FALSE == locker_client_readline_timeout(sockd, temp_buff, 1024)) {
 		close(sockd);
 		return -1;
@@ -64,7 +53,7 @@ LOCKD locker_client_lock(const char *resource)
 		close(sockd);
 		return -1;
 	}
-	len = snprintf(temp_buff, 1024, "LOCK %s\r\n", resource);
+	int len = snprintf(temp_buff, 1024, "LOCK %s\r\n", resource);
 	write(sockd, temp_buff, len);
 	
 	if (FALSE == locker_client_readline_timeout(sockd, temp_buff, 1024) ||

@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/session_client.h>
+#include <gromox/socket.h>
 #include "cookie_parser.h"
 
 #define SOCKET_TIMEOUT				30
@@ -75,22 +76,12 @@ static void session_client_enum_cookie(const char *key, void *value)
 
 BOOL session_client_check(const char *domainname, const char *session)
 {
-	int sockd, len;
 	char temp_buff[1024];
 	COOKIE_PARSER *pparser;
-	struct sockaddr_in servaddr;
-	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_session_port);
-	inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		close(sockd);
-		return FALSE;
-	}
-	fcntl(sockd, F_SETFL, O_NONBLOCK);
 
+	int sockd = gx_inet_connect(g_session_ip, g_session_port, O_NONBLOCK);
+	if (sockd < 0)
+		return FALSE;
 	if (FALSE == session_client_readline_timeout(sockd, temp_buff, 1024)) {
 		close(sockd);
 		return FALSE;
@@ -99,7 +90,7 @@ BOOL session_client_check(const char *domainname, const char *session)
 		close(sockd);
 		return FALSE;
 	}
-	len = snprintf(temp_buff, 1024, "QUERY %s %s\r\n", domainname, session);
+	int len = snprintf(temp_buff, 1024, "QUERY %s %s\r\n", domainname, session);
 	write(sockd, temp_buff, len);
 	
 	if (FALSE == session_client_readline_timeout(sockd, temp_buff, 1024) ||
@@ -120,22 +111,11 @@ BOOL session_client_check(const char *domainname, const char *session)
 BOOL session_client_update(const char *domainname,
 	const char *cookie, char *session)
 {
-	int sockd, len;
 	char temp_buff[1024];
 	COOKIE_PARSER *pparser;
-	struct sockaddr_in servaddr;
-	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_session_port);
-	inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(g_session_ip, g_session_port, O_NONBLOCK);
+	if (sockd < 0)
 		return FALSE;
-	}
-	fcntl(sockd, F_SETFL, O_NONBLOCK);
-
 	if (FALSE == session_client_readline_timeout(sockd, temp_buff, 1024)) {
 		close(sockd);
 		return FALSE;
@@ -145,7 +125,7 @@ BOOL session_client_update(const char *domainname,
 		return FALSE;
 	}
 	if ('\0' == session[0]) {
-		len = snprintf(temp_buff, 1024, "ALLOC %s\r\n", domainname);
+		int len = snprintf(temp_buff, 1024, "ALLOC %s\r\n", domainname);
 		write(sockd, temp_buff, len);
 		if (FALSE == session_client_readline_timeout(sockd, temp_buff,
 			1024) || 0 != strncasecmp(temp_buff, "TRUE ", 5)) {
@@ -157,7 +137,7 @@ BOOL session_client_update(const char *domainname,
 		session[32] = '\0';
 	}
 	if ('\0' != cookie[0]) {
-		len = snprintf(temp_buff, 1024, "SET %s %s %s\r\n",
+		int len = snprintf(temp_buff, 1024, "SET %s %s %s\r\n",
 							domainname, session, cookie);
 		write(sockd, temp_buff, len);
 		session_client_readline_timeout(sockd, temp_buff, 1024);
@@ -174,21 +154,10 @@ BOOL session_client_update(const char *domainname,
 
 BOOL session_client_remove(const char *domainname, const char *session)
 {
-	int sockd, len;
 	char temp_buff[1024];
-	struct sockaddr_in servaddr;
-	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_session_port);
-	inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(g_session_ip, g_session_port, O_NONBLOCK);
+	if (sockd < 0)
 		return FALSE;
-	}
-	fcntl(sockd, F_SETFL, O_NONBLOCK);
-
 	if (FALSE == session_client_readline_timeout(sockd, temp_buff, 1024)) {
 		close(sockd);
 		return FALSE;
@@ -197,7 +166,7 @@ BOOL session_client_remove(const char *domainname, const char *session)
 		close(sockd);
 		return FALSE;
 	}
-	len = snprintf(temp_buff, 1024, "FREE %s %s\r\nQUIT\r\n", domainname,
+	int len = snprintf(temp_buff, 1024, "FREE %s %s\r\nQUIT\r\n", domainname,
 			session);
 	write(sockd, temp_buff, len);
 	close(sockd);
