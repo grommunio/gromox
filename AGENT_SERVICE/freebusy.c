@@ -1,4 +1,5 @@
 #include <libHX/string.h>
+#include <gromox/socket.h>
 #include <gromox/paths.h>
 #include "tpropval_array.h"
 #include "cookie_parser.h"
@@ -624,7 +625,6 @@ static void cache_connection(const char *dir, int sockd)
 
 static int connect_exmdb(const char *dir)
 {
-	int sockd;
 	int prefix_len;
 	int process_id;
 	BINARY tmp_bin;
@@ -634,7 +634,6 @@ static int connect_exmdb(const char *dir)
 	uint8_t response_code;
 	CONNECT_REQUEST request;
 	DOUBLE_LIST_NODE *pnode;
-	struct sockaddr_in servaddr;
 	
 	for (pnode=double_list_get_head(&g_exmdb_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_exmdb_list, pnode)) {
@@ -655,17 +654,9 @@ static int connect_exmdb(const char *dir)
 			return pexnode->sockd;
 		}
 	}
-    sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(pexnode->exmdb_info.port);
-    inet_pton(AF_INET, pexnode->exmdb_info.ip_addr, &servaddr.sin_addr);
-    if (0 != connect(sockd,
-		(struct sockaddr*)&servaddr,
-		sizeof(servaddr))) {
-        close(sockd);
-        return -1;
-    }
+	int sockd = gx_inet_connect(pexnode->exmdb_info.ip_addr, pexnode->exmdb_info.port, 0);
+	if (sockd < 0)
+	        return -1;
 	process_id = getpid();
 	sprintf(remote_id, "freebusy:%d", process_id);
 	request.prefix = pexnode->exmdb_info.prefix;
