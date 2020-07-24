@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include "util.h"
 #include "single_list.h"
@@ -753,23 +754,13 @@ static BOOL read_line(int sockd, char *buff, int length)
 
 static int connect_cdner(const char *ip_addr, int port)
 {
-    int sockd;
     int read_len;
 	fd_set myset;
 	struct timeval tv;
     char temp_buff[1024];
-    struct sockaddr_in servaddr;
-
-
-    sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(port);
-    inet_pton(AF_INET, ip_addr, &servaddr.sin_addr);
-    if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-        close(sockd);
-        return -1;
-    }
+	int sockd = gx_inet_connect(ip_addr, port, 0);
+	if (sockd < 0)
+		return -1;
 	tv.tv_usec = 0;
 	tv.tv_sec = SOCKET_TIMEOUT;
 	FD_ZERO(&myset);
