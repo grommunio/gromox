@@ -1,5 +1,6 @@
 #include <string.h>
 #include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "relay_agent.h"
 #include "util.h"
 #include "double_list.h"
@@ -505,58 +506,14 @@ static void *thread_work_func(void *param)
 
 static int relay_agent_connect(const char *ip, int port)
 {
-	int val_opt;
-	int sockd, opt;
 	char response;
 	fd_set myset;
-	BOOL b_connected;
 	struct timeval tv;
-	struct sockaddr_in servaddr;
 	
-	/* try to connect to the destination MTA */
-	b_connected = FALSE;
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	/* set the socket to block mode */
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, opt);
-	/* end of set mode */
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		} 
-	}
-	if (FALSE == b_connected) {
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0) {
 		close(sockd);
-        return -1;
+	        return -1;
 	}
 	/* wait the socket data to be available */
 	tv.tv_sec = SOCKET_TIMEOUT;

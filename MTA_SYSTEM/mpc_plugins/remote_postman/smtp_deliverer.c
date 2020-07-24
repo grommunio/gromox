@@ -1,5 +1,6 @@
 #include <string.h>
 #include <libHX/ctype_helper.h>
+#include <gromox/socket.h>
 #include "files_allocator.h"
 #include "sender_routing.h"
 #include "smtp_deliverer.h"
@@ -315,72 +316,23 @@ static int smtp_deliverer_send_mail(
 	int length)
 {
 	long size;
-	BOOL b_data;
-	fd_set myset;
-	struct timeval tv;
+	BOOL b_data, rcpt_success;
 	char rcpt_to[256];
 	char ehlo_size[32];
 	MEM_FILE f_fail_rcpt;
 	CONNECTION connection;
 	char command_line[1024];
 	char *ptr, *pbegin, *pend;
-	int opt, val_opt;
-	struct sockaddr_in servaddr;
-	BOOL b_connected, rcpt_success;
 	int command_len, mail_len, reason;
 	
 	mem_file_seek(&pcontext->pcontrol->f_rcpt_to,
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	/* try to connect to the destination MTA */
-	b_connected = FALSE;
-	connection.sockd = socket(AF_INET, SOCK_STREAM, 0);
 	connection.ssl = NULL;
-	/* set the socket to non-block mode */
-	opt = fcntl(connection.sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(connection.sockd, F_SETFL, opt);
-	/* end of set mode */
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(25);
-	inet_pton(AF_INET, destination_ip, &servaddr.sin_addr);
-	if (0 == connect(connection.sockd,
-		(struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		b_connected = TRUE;
-		smtp_deliverer_destination_audit(destination_ip);
-		/* set socket back to block mode */
-		opt = fcntl(connection.sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(connection.sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(connection.sockd, &myset);
-			if (select(connection.sockd + 1,
-				NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(connection.sockd, SOL_SOCKET,
-					SO_ERROR, &val_opt, &opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						smtp_deliverer_destination_audit(destination_ip);
-						/* set socket back to block mode */
-						opt = fcntl(connection.sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(connection.sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		} 
-	}
-	if (FALSE == b_connected) {
-		close(connection.sockd);
+	connection.sockd = gx_inet_connect(destination_ip, 25, 0);
+	if (connection.sockd < 0) {
 		smtp_deliverer_log_info(pcontext, 8, "cannot connect"
-				" to destination server %s", destination_ip);
+			" to destination server [%s]:%hu: %s",
+			destination_ip, 25, strerror(-connection.sockd));
         return SMTP_DELIVERER_CANNOT_CONNECT;
 	}
 	/* read welcome information of MTA */

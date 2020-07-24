@@ -1,5 +1,6 @@
 #include <string.h>
 #include <unistd.h>
+#include <gromox/socket.h>
 #include "backend_list.h"
 #include "double_list.h"
 #include "list_file.h"
@@ -185,11 +186,7 @@ void backend_list_invalid_unit(const char *ip, int port)
 
 static void* thread_work_func(void *arg)
 {
-	int i, sockd, opt, val_opt;
-	struct timeval tv;
-	BOOL b_connected;
-	fd_set myset;
-	struct sockaddr_in servaddr;
+	int i;
 	BACKEND_UNIT *punit;
 	DOUBLE_LIST_NODE *phead, *ptail, *pnode;
 	DOUBLE_LIST temp_list;
@@ -209,38 +206,8 @@ static void* thread_work_func(void *arg)
 		for (pnode=phead; NULL!=pnode; pnode=double_list_get_after(
 			&g_invalid_list, pnode)) {
 			punit = (BACKEND_UNIT*)pnode;
-			sockd = socket(AF_INET, SOCK_STREAM, 0);
-			/* set the socket to block mode */
-			opt = fcntl(sockd, F_GETFL, 0);
-			opt |= O_NONBLOCK;
-			fcntl(sockd, F_SETFL, opt);
-			/* end of set mode */
-			memset(&servaddr, 0, sizeof(servaddr));
-			servaddr.sin_family = AF_INET;
-			servaddr.sin_port = htons(punit->port);
-			inet_pton(AF_INET, punit->ip, &servaddr.sin_addr);
-			b_connected = FALSE;
-			if (0 == connect(sockd, (struct sockaddr*)&servaddr,
-				sizeof(servaddr))) {
-				b_connected = TRUE;
-			} else {
-				if (EINPROGRESS == errno) {
-					tv.tv_sec = 10;
-					tv.tv_usec = 0;
-					FD_ZERO(&myset);
-					FD_SET(sockd, &myset);
-					if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-						socklen_t opt_len = sizeof(int);
-						if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-							&opt_len) >= 0 && 0 == val_opt) {
-							b_connected = TRUE;
-						}
-					}
-				}
-			}
-			if (FALSE == b_connected) {
-				close(sockd);
-			} else {
+			int sockd = gx_inet_connect(punit->ip, punit->port, 0);
+			if (sockd >= 0) {
 				write(sockd, "quit\r\n", 6);
 				close(sockd);
 				double_list_append_as_tail(&temp_list, &punit->node_temp);

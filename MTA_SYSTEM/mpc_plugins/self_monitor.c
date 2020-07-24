@@ -5,6 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <gromox/hook_common.h>
 #include <gromox/paths.h>
+#include <gromox/socket.h>
 #include "config_file.h"
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -166,19 +167,12 @@ BOOL send_message()
 {
 	char command_line[1024];
 	char response_line[1024];
-	int	i, sockd, command_len;
-	struct sockaddr_in servaddr;
+	int i, command_len;
 	
 	/* try to connect to the destination MTA */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_smtp_port);
-	inet_pton(AF_INET, "127.0.0.1", &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
-        return FALSE;
-	}
+	int sockd = gx_inet_connect("localhost", 25, 0);
+	if (sockd < 0)
+	        return FALSE;
 	/* read welcome information of MTA */
 	switch (get_response(sockd, response_line, 1024, FALSE)) {
 	case SMTP_TIME_OUT:

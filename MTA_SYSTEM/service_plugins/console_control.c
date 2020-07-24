@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+#include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include "util.h"
 #include "mail_func.h"
@@ -117,9 +118,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 static BOOL console_server_control(const char *cmdline, char *result,
 	int length)
 {
-	int sockd, cmd_len;
-	int read_len, offset;
-	struct sockaddr_in servaddr;
+	int cmd_len, read_len, offset;
 	char temp_buff[1024];
 	char command[1026];
 
@@ -128,13 +127,8 @@ static BOOL console_server_control(const char *cmdline, char *result,
 		return FALSE;
 	}
 	pthread_mutex_lock(&g_control_lock);
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_console_port);
-	inet_pton(AF_INET, g_console_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(g_console_ip, g_console_port, 0);
+	if (sockd < 0) {
 		pthread_mutex_unlock(&g_control_lock);
 		return FALSE;
 	}

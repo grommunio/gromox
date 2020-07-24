@@ -1,5 +1,6 @@
 #include <string.h>
 #include <libHX/ctype_helper.h>
+#include <gromox/socket.h>
 #include "smtp_dispatch.h"
 #include "files_allocator.h"
 #include "backend_list.h"
@@ -101,11 +102,9 @@ int smtp_dispatch_process(MESSAGE_CONTEXT *pcontext,
 {
 	char rcpt_to[256];
 	char command_line[512];
-	int sockd, port;
-	int command_len;
+	int command_len, port;
 	BOOL rcpt_success;
 	MEM_FILE f_fail_rcpt;
-	struct sockaddr_in servaddr;
 	
 	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 			MEM_FILE_SEEK_BEGIN);
@@ -120,13 +119,8 @@ int smtp_dispatch_process(MESSAGE_CONTEXT *pcontext,
 	
 	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 			MEM_FILE_SEEK_BEGIN);
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, dest_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(dest_ip, port, 0);
+	if (sockd < 0) {
 		smtp_dispatch_log_info(pcontext, 8, "cannot connect to back-end server"
 			" %s:%d", dest_ip, port);
 		strncpy(response_line, "no back-end server alive", length);

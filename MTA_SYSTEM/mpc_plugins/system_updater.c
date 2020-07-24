@@ -4,6 +4,7 @@
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include <gromox/paths.h>
+#include <gromox/socket.h>
 #include "stream.h"
 #include "util.h"
 #include "config_file.h"
@@ -604,23 +605,13 @@ static BOOL register_command(const char *cmd, COMMAND_HANDLER handler)
 static BOOL console_control(const char *ip, int port, const char *cmdline,
     char *result, int length)
 {
-	int sockd, cmd_len;
-	int read_len;
+	int cmd_len, read_len;
 	char command[1024];
-	struct sockaddr_in servaddr;
 	fd_set myset;
 	struct timeval tv;
-
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return FALSE;
-	}
-	
 	/* read welcome information */
 	do {
 		tv.tv_sec = SOCKET_TIMEOUT;

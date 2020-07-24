@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "retrying_table.h"
@@ -330,20 +331,10 @@ static void proxy_retrying_sort_array(size_t *parray, int array_num)
 
 static int proxy_retrying_connect_unit(const char *ip)
 {
-	int sockd;
 	char buff[256];
-	struct sockaddr_in servaddr;
-	
-	/* try to connect to the destination UNIT */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, g_port, 0);
+	if (sockd < 0)
 		return -1;
-	}
 	fcntl(sockd, F_SETFL, O_NONBLOCK);
 	if (FALSE == multiple_retrying_readline_timeout(sockd, buff, 256, 1)) {
 		close(sockd);
