@@ -4,6 +4,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "single_list.h"
 #include "util.h"
 #include "mail.h"
@@ -75,23 +76,19 @@ int main(int argc, const char **argv)
 	MAIL imail;
 	char *pbuff;
 	char *ptoken;
-	fd_set myset;
 	char smtp_ip[16];
 	MIME_POOL *ppool;
 	MIME *pmime_head;
 	RCPT_ITEM *pitem;
-	BOOL b_connected;
-	struct timeval tv;
 	char temp_path[256];
 	SINGLE_LIST temp_list;
 	struct stat node_stat;
 	SINGLE_LIST_NODE *pnode;
 	char last_command[1024];
 	char last_response[1024];
-	struct sockaddr_in servaddr;
 	char temp_field[MIME_FIELD_LEN];
 	int smtp_port, res_val, command_len;
-	int fd, sockd, opt, val_opt;
+	int fd;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -204,49 +201,10 @@ int main(int argc, const char **argv)
 		return 12;
 	}
 
-	
-	b_connected = FALSE;
 	/* try to connect to the destination MTA */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, opt);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(smtp_port);
-	inet_pton(AF_INET, smtp_ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		}
-	}
-	if (FALSE == b_connected) {
+	int sockd = gx_inet_connect(smtp_ip, smtp_port, 0);
+	if (sockd < 0)
 		goto EXIT_PROGRAM;
-	}
 	/* read welcome information of MTA */
 	res_val = get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {

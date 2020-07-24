@@ -30,7 +30,7 @@ value.
 Default: (unset)
 .SS locker_listen_ip
 .PP
-The IPv4 address for contacting the locker(8gx) service.
+The IPv6 address or v4-mapped address for contacting the locker(8gx) service.
 .PP
 Default: \fI127.0.0.1\fP
 .SS locker_listen_port

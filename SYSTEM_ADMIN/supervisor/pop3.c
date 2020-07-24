@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <gromox/socket.h>
 #include "common_types.h"
 #include "pop3.h"
 #include "message.h"
@@ -55,58 +56,14 @@ int pop3_retrieve_message(const char *ip, int port, const char *username,
 	const char *password, int message_type, int check_id, char *last_command,
 	char *last_response)
 {
-	BOOL b_connected;
 	char *pcrlf, *plast, *pspace;
 	char list_buff[RETRIEVE_BUFSIZE];
 	int id, size, command_len;
-	int sockd, opt, val_opt;
-	struct sockaddr_in servaddr;
-	struct timeval tv;
-	fd_set myset;
 	
-	b_connected = FALSE;
 	/* try to connect to the destination MTA */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, opt);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		}
-	}
-	if (FALSE == b_connected) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return POP3_CANNOT_CONNECT;
-	}
 	/* read welcome information of MTA */
 	switch (pop3_get_response(sockd, last_response, 1024)) {
 	case POP3_TIME_OUT:

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <gromox/socket.h>
 #include "keyword_cleaning.h"
 #include "util.h"
 #include "list_file.h"
@@ -127,20 +128,11 @@ void keyword_cleaning_free()
 
 static BOOL keyword_cleaning_send(const char *ip, int port, char *buff, int len)
 {
-	int sockd;
 	int read_len, offset;
 	char temp_buff[256];
-	struct sockaddr_in servaddr;
-
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return FALSE;
-	}
 	offset = 0;
 	memset(buff, 0, len);
 	/* read welcome information */

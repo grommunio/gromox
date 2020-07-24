@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <gromox/gateway_control.h>
+#include <gromox/socket.h>
 #include "util.h"
 #include "single_list.h"
 #include "list_file.h"
@@ -104,20 +105,11 @@ void gateway_control_free()
 
 static BOOL gateway_control_send(const char *ip, int port, const char *command)
 {
-	int sockd, cmd_len;
-	int read_len, offset;
-	struct sockaddr_in servaddr;
+	int cmd_len, read_len, offset;
 	char temp_buff[1024];
-
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return FALSE;
-	}
 	offset = 0;
 	memset(temp_buff, 0, 1024);
 	/* read welcome information */

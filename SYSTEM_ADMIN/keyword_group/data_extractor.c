@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <gromox/socket.h>
 #include "data_extractor.h"
 #include "single_list.h"
 #include "util.h"
@@ -106,19 +107,10 @@ void data_extractor_free()
 
 static BOOL data_extractor_send(const char *ip, int port, char *buff, int len)
 {
-	int sockd;
 	int read_len, offset;
-	struct sockaddr_in servaddr;
-
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return FALSE;
-	}
 	offset = 0;
 	memset(buff, 0, len);
 	/* read welcome information */

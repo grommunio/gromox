@@ -1,3 +1,4 @@
+#include <gromox/socket.h>
 #include "common_types.h"
 #include "sensor_client.h"
 #include <stdio.h>
@@ -74,21 +75,11 @@ void sensor_client_free()
 
 static int sensor_client_connect(const char *ip_addr, int port)
 {
-	int sockd;
 	int read_len;
 	char temp_buff[1024];
-	struct sockaddr_in servaddr;
-
-
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip_addr, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip_addr, port, 0);
+	if (sockd < 0)
 		return -1;
-	}
 	read_len = read(sockd, temp_buff, 1024);
 	if (read_len <= 0) {
 		close(sockd);

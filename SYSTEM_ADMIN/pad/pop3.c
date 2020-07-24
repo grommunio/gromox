@@ -1,3 +1,4 @@
+#include <gromox/socket.h>
 #include "common_types.h"
 #include "mail_func.h"
 #include "pop3.h"
@@ -45,62 +46,16 @@ void pop3_init(POP3_SESSION *psession, const char *ip, int port,
 
 BOOL pop3_login(POP3_SESSION *psession)
 {
-	BOOL b_connected;
-	int sockd, opt;
 	int command_len;
-	int val_opt, opt_len;
-	struct sockaddr_in servaddr;
-	struct timeval tv;
-	fd_set myset;
 	char last_command[1024];
 	char last_response[1024];
 
 	if (-1 != psession->sockd) {
 		return FALSE;
 	}
-	b_connected = FALSE;
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(psession->port);
-	inet_pton(AF_INET, psession->server_ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		}
-	}
-	if (FALSE == b_connected) {
-		close(sockd);
+	int sockd = gx_inet_connect(psession->server_ip, psession->port, 0);
+	if (sockd < 0)
 		return FALSE;
-	}
-	
 	/* read welcome information of MTA */
 	if (FALSE == pop3_get_response(sockd, last_response, 1024)) {
         /* send quit command to server */

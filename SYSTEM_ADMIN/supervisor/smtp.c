@@ -2,6 +2,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/misc.h>
 #include <gromox/resolv.h>
+#include <gromox/socket.h>
 #include "smtp.h"
 #include "mail_func.h"
 #include "util.h"
@@ -65,22 +66,16 @@ static int smtp_get_response(int sockd, char *response,
 
 void smtp_send_message(const char *from, const char *rcpt, const char *message)
 {
-	BOOL b_connected;
 	char **p_addr;
 	char *pdomain, ip[16];
 	char command_line[1024];
 	char response_line[1024];
 	int size, i, times, num;
-	int command_len, sockd, opt;
-	int port, val_opt;
-	struct sockaddr_in servaddr;
+	int command_len, port;
 	struct in_addr ip_addr;
 	char **mx_buff = NULL;
 	struct hostent *phost;
-	struct timeval tv;
-	fd_set myset;
 	
-	b_connected = FALSE;
 	pdomain = strchr(rcpt, '@');
 	if (NULL == pdomain) {
 		return;
@@ -124,45 +119,8 @@ SENDING_RETRY:
 		sleep(RETRYING_INTERVAL);
 	}
 	/* try to connect to the destination MTA */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, opt);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		}
-	}
-	if (FALSE == b_connected) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0) {
 		times ++;
 		if (3 == times) {
 			return;
@@ -361,57 +319,13 @@ SENDING_RETRY:
 int smtp_send_inbound(const char *ip, int port, const char *rcpt,
 	const char *message, char *last_command, char *last_response)
 {
-	BOOL b_connected;
 	int size, res_val, command_len;
-	int sockd, opt, val_opt;
-	struct sockaddr_in servaddr;
-	struct timeval tv;
-	fd_set myset;
 	
-	b_connected = FALSE;
 	size = strlen(message);
 	/* try to connect to the destination MTA */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, opt);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		}
-	}
-	if (FALSE == b_connected) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return SMTP_CANNOT_CONNECT;
-	}
 	/* read welcome information of MTA */
 	res_val = smtp_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {
@@ -546,62 +460,18 @@ int smtp_send_outbound(const char *ip, int port, const char *username,
 	const char *password, const char *rcpt, const char *message,
 	char *last_command, char *last_response)
 {
-	BOOL b_connected;
 	char temp_line[1024];
 	int user_len, pass_len;
 	int size, res_val;
 	int auth_type;
 	size_t encode_len;
 	size_t command_len;
-	int sockd, opt, val_opt;
-	struct sockaddr_in servaddr;
-	struct timeval tv;
-	fd_set myset;
 	
-	b_connected = FALSE;
 	size = strlen(message);
 	/* try to connect to the destination MTA */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, opt);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		}
-	}
-	if (FALSE == b_connected) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return SMTP_CANNOT_CONNECT;
-	}
 	/* read welcome information of MTA */
 	res_val = smtp_get_response(sockd, last_response, 1024, FALSE);
 	switch (res_val) {

@@ -7,6 +7,7 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
+#include <gromox/socket.h>
 #include "util.h"
 #include "list_file.h"
 #include "mail_func.h"
@@ -171,22 +172,9 @@ static CONNECTION connect_rsyncd(const char *ip_addr, int port)
     CONNECTION conn;
 	struct timeval tv;
     char temp_buff[1024];
-	struct timeval timeout_val;
-    struct sockaddr_in servaddr;
 
-
-    conn.sockd = socket(AF_INET, SOCK_STREAM, 0);
-	timeout_val.tv_sec = SOCKET_TIMEOUT;
-	timeout_val.tv_usec = 0;
-	setsockopt(conn.sockd, SOL_SOCKET, SO_RCVTIMEO, &timeout_val,
-		sizeof(struct timeval));
-	memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(port);
-    inet_pton(AF_INET, ip_addr, &servaddr.sin_addr);
-    if (0 != connect(conn.sockd, (struct sockaddr*)&servaddr,
-		sizeof(servaddr))) {
-        close(conn.sockd);
+	conn.sockd = gx_inet_connect(ip_addr, port, 0);
+	if (conn.sockd < 0) {
 		conn.sockd = -1;
 		conn.ssl = NULL;
         return conn;

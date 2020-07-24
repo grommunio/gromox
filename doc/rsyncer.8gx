@@ -39,7 +39,7 @@ Default: \fI/usr/share/gromox/sa\fP
 Default: (unset) (must be set)
 .SS rsync_host_ip
 .PP
-IPv4 address of a rsync receiver side.
+IPv6 address or v4-mapped address of a rsync receiver side.
 .PP
 Default: (unset) (must be set)
 .SS rsync_host_port

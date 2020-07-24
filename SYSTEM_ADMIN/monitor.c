@@ -5,6 +5,7 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
+#include <gromox/socket.h>
 #include "single_list.h"
 #include "util.h"
 #include "list_file.h"
@@ -332,21 +333,11 @@ static void* thread_work_func(void *arg)
 
 static int connect_console(const char *ip, int port)
 {
-	int sockd;
 	int offset, read_len;
 	char temp_buff[1024];
-	struct sockaddr_in servaddr;
-	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0)
 		return -1;
-	}
-	
 	offset = 0;
 	memset(temp_buff, 0, 1024);
 	/* read welcome information */
