@@ -100,23 +100,36 @@ static ldap_ptr make_conn()
 	return ld;
 }
 
+template<typename F, typename... Args>
+static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
+    decltype(func(nullptr, args...))
+{
+	if (ld == nullptr)
+		ld = make_conn();
+	if (ld == nullptr)
+		return false;
+	auto ret = func(ld.get(), args...);
+	if (ret != LDAP_SERVER_DOWN)
+		return ret;
+	ld = make_conn();
+	if (ld == nullptr)
+		return ret;
+	return func(ld.get(), args...);
+}
+
 static BOOL ldap_adaptor_login2(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
 {
 	struct stdlib_free { void operator()(void *p) { free(p); } };
 	auto tok = g_conn_pool.get_wait();
-	if (tok.res.meta == nullptr)
-		tok.res.meta = make_conn();
-	if (tok.res.meta == nullptr)
-		return false;
-
 	ldap_msg msg;
 	std::unique_ptr<char, stdlib_free> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
-	auto ret = ldap_search_ext_s(tok.res.meta.get(), g_search_base.c_str(),
-	           LDAP_SCOPE_SUBTREE, filter.c_str(), const_cast<char **>(no_attrs),
-	           true, nullptr, nullptr, nullptr, 2, &unique_tie(msg));
+	auto ret = gx_auto_retry(ldap_search_ext_s, tok.res.meta,
+	           g_search_base.c_str(), LDAP_SCOPE_SUBTREE, filter.c_str(),
+	           const_cast<char **>(no_attrs), true, nullptr, nullptr,
+	           nullptr, 2, &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
 		printf("[ldap_adaptor]: search with filter %s: %s\n",
 		       filter.c_str(), ldap_err2string(ret));
@@ -137,35 +150,19 @@ static BOOL ldap_adaptor_login2(const char *username, const char *password,
 	struct berval bv;
 	bv.bv_val = const_cast<char *>(password != nullptr ? password : "");
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = ldap_sasl_bind_s(tok.res.bind.get(), dn, LDAP_SASL_SIMPLE, &bv,
-	      nullptr, nullptr, nullptr);
+	ret = gx_auto_retry(ldap_sasl_bind_s, tok.res.bind, dn,
+	      LDAP_SASL_SIMPLE, &bv, nullptr, nullptr, nullptr);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
-	if (ret == LDAP_INVALID_CREDENTIALS)
-		return FALSE;
-	printf("[ldap_adaptor]: ldap_simple_bind 1 %s: %s\n", dn, ldap_err2string(ret));
-	ldap_unbind_ext(tok.res.bind.release(), nullptr, nullptr);
-	tok.res.bind = make_conn();
-	if (tok.res.bind == nullptr)
-		return FALSE;
-	ret = ldap_sasl_bind_s(tok.res.bind.get(), dn, LDAP_SASL_SIMPLE, &bv,
-	      nullptr, nullptr, nullptr);
-	if (ret == LDAP_SUCCESS)
-		return TRUE;
-	printf("[ldap_adaptor]: ldap_simple_bind 2 %s: %s\n", dn, ldap_err2string(ret));
+	printf("[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
 	return FALSE;
 }
 
 static bool ldap_adaptor_load_base()
 {
 	auto tok = g_conn_pool.get_wait();
-	if (tok.res.meta == nullptr)
-		tok.res.meta = make_conn();
-	if (tok.res.meta == nullptr)
-		return false;
-
 	ldap_msg msg;
-	auto ret = ldap_search_ext_s(tok.res.meta.get(), nullptr,
+	auto ret = gx_auto_retry(ldap_search_ext_s, tok.res.meta, nullptr,
 	           LDAP_SCOPE_BASE, nullptr, const_cast<char **>(zero_attrs),
 	           true, nullptr, nullptr, nullptr, 1, &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
