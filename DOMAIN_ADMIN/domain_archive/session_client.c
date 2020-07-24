@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <gromox/session_client.h>
+#include <gromox/socket.h>
 
 #define SOCKET_TIMEOUT				30
 
@@ -70,19 +71,10 @@ int session_client_stop()
 
 BOOL session_client_check(const char *domainname, const char *session)
 {
-	int sockd, len;
 	char temp_buff[1024];
-	struct sockaddr_in servaddr;
-	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_session_port);
-	inet_pton(AF_INET, g_session_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(g_session_ip, g_session_port, 0);
+	if (sockd < 0)
 		return FALSE;
-	}
 	fcntl(sockd, F_SETFL, O_NONBLOCK);
 
 	if (FALSE == session_client_readline_timeout(sockd, temp_buff, 1024)) {
@@ -93,7 +85,7 @@ BOOL session_client_check(const char *domainname, const char *session)
 		close(sockd);
 		return FALSE;
 	}
-	len = snprintf(temp_buff, 1024, "CHECK %s %s\r\n", domainname, session);
+	int len = snprintf(temp_buff, 1024, "CHECK %s %s\r\n", domainname, session);
 	write(sockd, temp_buff, len);
 	
 	if (FALSE == session_client_readline_timeout(sockd, temp_buff, 1024) ||

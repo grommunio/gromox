@@ -2,6 +2,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/misc.h>
 #include <gromox/resolv.h>
+#include <gromox/socket.h>
 #include "list_file.h"
 #include "mail_func.h"
 #include <gromox/system_log.h>
@@ -71,22 +72,16 @@ void smtp_sender_free()
 void smtp_sender_send(const char *sender, const char *address,
 	const char *pbuff, int size)
 {
-	BOOL b_connected;
 	char **p_addr;
 	char *pdomain, ip[16];
 	char command_line[1024];
 	char response_line[1024];
 	int	i, times, num;
-	int command_len, sockd, opt;
-	int port, val_opt;
-	struct sockaddr_in servaddr;
+	int command_len, sockd, port;
 	struct in_addr ip_addr;
 	char **mx_buff = NULL;
 	struct hostent *phost;
-	struct timeval tv;
-	fd_set myset;
 	
-	b_connected = FALSE;
 	pdomain = strchr(address, '@');
 	if (NULL == pdomain) {
 		return;
@@ -127,44 +122,8 @@ void smtp_sender_send(const char *sender, const char *address,
 	times = 0;
 SENDING_RETRY:
 	/* try to connect to the destination MTA */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	opt = fcntl(sockd, F_GETFL, 0);
-	opt |= O_NONBLOCK;
-	fcntl(sockd, F_SETFL, opt);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(port);
-	inet_pton(AF_INET, ip, &servaddr.sin_addr);
-	if (0 == connect(sockd, (struct sockaddr*)&servaddr,sizeof(servaddr))) {
-		b_connected = TRUE;
-		/* set socket back to block mode */
-		opt = fcntl(sockd, F_GETFL, 0);
-		opt &= (~O_NONBLOCK);
-		fcntl(sockd, F_SETFL, opt);
-		/* end of set mode */
-	} else {
-		if (EINPROGRESS == errno) {
-			tv.tv_sec = SOCKET_TIMEOUT;
-			tv.tv_usec = 0;
-			FD_ZERO(&myset);
-			FD_SET(sockd, &myset);
-			if (select(sockd + 1, NULL, &myset, NULL, &tv) > 0) {
-				socklen_t opt_len = sizeof(int);
-				if (getsockopt(sockd, SOL_SOCKET, SO_ERROR, &val_opt,
-					&opt_len) >= 0) {
-					if (0 == val_opt) {
-						b_connected = TRUE;
-						/* set socket back to block mode */
-						opt = fcntl(sockd, F_GETFL, 0);
-						opt &= (~O_NONBLOCK);
-						fcntl(sockd, F_SETFL, opt);
-						/* end of set mode */
-					}
-				}
-			}
-		}
-	}
-	if (FALSE == b_connected) {
+	sockd = gx_inet_connect(ip, port, 0);
+	if (sockd < 0) {
 		close(sockd);
 		times ++;
 		if (3 == times) {
