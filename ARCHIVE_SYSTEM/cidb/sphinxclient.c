@@ -28,7 +28,7 @@
 #include <errno.h>
 #include <sys/un.h>
 #include <sys/fcntl.h>
-
+#include <gromox/socket.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1428,51 +1428,6 @@ static sphinx_bool net_read ( int fd, char * buf, int len, sphinx_client * clien
 	}
 }
 
-
-static int net_create_inet_sock ( sphinx_client * client )
-{
-	struct hostent * hp;
-	struct sockaddr_in sa;
-	int sock, res, err;
-
-	hp = gethostbyname ( client->host );
-	if ( !hp )
-	{
-		set_error(client, "lookup of host %s: %s", client->host, strerror(errno));
-		return -1;
-	}
-
-	memset ( &sa, 0, sizeof(sa) );
-	memcpy ( &sa.sin_addr, hp->h_addr_list[0], hp->h_length );
-	sa.sin_family = hp->h_addrtype;
-	sa.sin_port = htons ( (unsigned short)client->port );
-
-	sock = (int) socket ( hp->h_addrtype, SOCK_STREAM, 0 );
-	if ( sock<0 )
-	{
-		set_error(client, "socket: %s", strerror(errno));
-		return -1;
-	}
-
-	if ( sock_set_nonblocking ( sock )<0 )
-	{
-		set_error(client, "sock_set_nonblocking: %s", strerror(errno));
-		return -1;
-	}
-
-	res = connect ( sock, (struct sockaddr*)&sa, sizeof(sa) );
-	if ( res==0 )
-		return sock;
-	err = errno;
-	if ( err!=EWOULDBLOCK && err!=EINPROGRESS )
-	{
-		set_error(client, "connect %s: %s", client->host, strerror(errno));
-		return -1;
-	}
-
-	return sock;
-}
-
 static int net_create_unix_sock ( sphinx_client * client )
 {
 	struct sockaddr_un uaddr;
@@ -1525,11 +1480,11 @@ static int net_connect_get ( sphinx_client * client )
 		return client->sock;
 
 	sock = -1;
-	if ( client->host[0]!='/' )
-	{
-		sock = net_create_inet_sock ( client );
-	} else
-	{
+	if (client->host[0] != '/') {
+		sock = gx_inet_connect(client->host, client->port, O_NONBLOCK);
+		if (sock < 0)
+			printf("connect %s:%hu: %s\n", client->host, client->port, strerror(-sock));
+	} else {
 		sock = net_create_unix_sock ( client );
 	}
 
