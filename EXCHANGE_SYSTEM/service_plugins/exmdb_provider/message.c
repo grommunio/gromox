@@ -143,7 +143,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	is_associated = sqlite3_column_int64(pstmt, 1);
 	sqlite3_finalize(pstmt);
 	if (TRUE == b_move) {
-		db_engine_proc_dynmaic_event(pdb, cpid,
+		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_DELETE_MESSAGE,
 			parent_fid, mid_val, 0);
 	}
@@ -160,7 +160,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	db_engine_proc_dynmaic_event(pdb, cpid,
+	db_engine_proc_dynamic_event(pdb, cpid,
 		DYNAMIC_EVENT_NEW_MESSAGE, fid_val, dst_val, 0);
 	if (FALSE == b_move) {
 		db_engine_notify_message_movecopy(pdb, TRUE,
@@ -432,7 +432,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 			}
 		}
 		if (FALSE == b_copy) {
-			db_engine_proc_dynmaic_event(pdb, cpid,
+			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_DELETE_MESSAGE,
 				parent_fid, tmp_val, 0);
 		}
@@ -460,7 +460,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		} else {
 			fai_size += message_size;
 		}
-		db_engine_proc_dynmaic_event(pdb, cpid,
+		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_NEW_MESSAGE,
 			dst_val, tmp_val1, 0);
 		db_engine_notify_message_movecopy(pdb, b_copy,
@@ -747,7 +747,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			}
 		}
 		del_count ++;
-		db_engine_proc_dynmaic_event(pdb, cpid,
+		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_DELETE_MESSAGE,
 			parent_fid, tmp_val, 0);
 		if (FOLDER_TYPE_SEARCH == folder_type) {
@@ -1263,7 +1263,7 @@ BOOL exmdb_server_set_message_properties(const char *dir,
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	db_engine_proc_dynmaic_event(pdb,
+	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_MODIFY_MESSAGE,
 		fid_val, mid_val, 0);
 	db_engine_notify_message_modification(
@@ -1312,7 +1312,7 @@ BOOL exmdb_server_remove_message_properties(
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	db_engine_proc_dynmaic_event(pdb,
+	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_MODIFY_MESSAGE,
 		fid_val, mid_val, 0);
 	db_engine_notify_message_modification(
@@ -1394,7 +1394,7 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	db_engine_proc_dynmaic_event(pdb,
+	db_engine_proc_dynamic_event(pdb,
 		0, DYNAMIC_EVENT_MODIFY_MESSAGE,
 		fid_val, mid_val, 0);
 	db_engine_notify_message_modification(
@@ -1920,7 +1920,7 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_proc_dynmaic_event(pdb,
+	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 		fid_val, mid_val, 0);
 	db_engine_notify_link_creation(pdb, fid_val, mid_val);
@@ -1959,7 +1959,7 @@ BOOL exmdb_server_unlink_message(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	db_engine_proc_dynmaic_event(pdb,
+	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_DELETE_MESSAGE,
 		fid_val, mid_val, 0);
 	db_engine_notify_link_deletion(pdb, fid_val, mid_val);
@@ -5455,7 +5455,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
 		pnode=double_list_get_after(&msg_list, pnode)) {
 		pmnode = (MESSAGE_NODE*)pnode->pdata;
-		db_engine_proc_dynmaic_event(
+		db_engine_proc_dynamic_event(
 			pdb, cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 			pmnode->folder_id, pmnode->message_id, 0);
 		if (message_id == pmnode->message_id) {
@@ -5545,12 +5545,12 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 		*pe_result = GXERR_SUCCESS;
 	}
 	if (TRUE == b_exist) {
-		db_engine_proc_dynmaic_event(pdb, cpid,
+		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_MODIFY_MESSAGE, fid_val, mid_val, 0);
 		db_engine_notify_message_modification(
 			pdb, fid_val, mid_val);
 	} else {
-		db_engine_proc_dynmaic_event(pdb, cpid,
+		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_NEW_MESSAGE, fid_val, mid_val, 0);
 		db_engine_notify_message_creation(
 			pdb, fid_val, mid_val);
@@ -5674,7 +5674,7 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 		if (mid_val == pmnode->message_id) {
 			continue;
 		}
-		db_engine_proc_dynmaic_event(
+		db_engine_proc_dynamic_event(
 			pdb, cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 			pmnode->folder_id, pmnode->message_id, 0);
 		db_engine_notify_message_creation(pdb,

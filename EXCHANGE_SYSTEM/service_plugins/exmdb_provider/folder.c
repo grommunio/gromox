@@ -1138,10 +1138,10 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 						*pfai_size += sqlite3_column_int64(pstmt, 2);
 					}
 				}
-				db_engine_proc_dynmaic_event(pdb, cpid,
+				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_DELETE_MESSAGE,
 					fid_val, message_id, 0);
-				db_engine_proc_dynmaic_event(pdb, cpid,
+				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_DELETE_MESSAGE,
 					parent_fid, message_id, 0);
 				db_engine_notify_link_deletion(
@@ -1226,7 +1226,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 				}
 			}
 			if (0 == is_deleted) {
-				db_engine_proc_dynmaic_event(pdb, cpid,
+				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
 					message_id, 0);
 				db_engine_notify_message_deletion(
@@ -1325,7 +1325,7 @@ static BOOL folder_empty_folder(DB_ITEM *pdb, uint32_t cpid,
 					}
 				}
 				if (0 == is_deleted) {
-					db_engine_proc_dynmaic_event(pdb, cpid,
+					db_engine_proc_dynamic_event(pdb, cpid,
 						DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
 						message_id, 0);
 					db_engine_notify_message_deletion(
@@ -1558,7 +1558,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			db_engine_proc_dynmaic_event(pdb, cpid,
+			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_DELETE_MESSAGE, fid_val,
 				sqlite3_column_int64(pstmt, 0), 0);
 		}
@@ -1999,7 +1999,7 @@ static BOOL folder_copy_search_folder(DB_ITEM *pdb,
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		db_engine_proc_dynmaic_event(pdb, cpid,
+		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_NEW_MESSAGE, last_eid,
 			sqlite3_column_int64(pstmt, 0), 0);
 	}
@@ -2111,7 +2111,7 @@ static BOOL folder_copy_folder_internal(
 						*pfai_size += message_size;
 					}
 				}
-				db_engine_proc_dynmaic_event(pdb, cpid,
+				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_NEW_MESSAGE,
 					dst_fid, message_id1, 0);
 			}
@@ -2193,7 +2193,7 @@ static BOOL folder_copy_folder_internal(
 					*pfai_size += message_size;
 				}
 			}
-			db_engine_proc_dynmaic_event(pdb, cpid,
+			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_NEW_MESSAGE, dst_fid,
 				message_id1, 0);
 		}
@@ -2256,7 +2256,7 @@ static BOOL folder_copy_folder_internal(
 						*pfai_size += message_size;
 					}
 				}
-				db_engine_proc_dynmaic_event(pdb, cpid,
+				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_NEW_MESSAGE, dst_fid,
 					message_id1, 0);
 			}
@@ -2570,7 +2570,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			return FALSE;
 		}
 		fid_val = src_val;
-		db_engine_proc_dynmaic_event(pdb,
+		db_engine_proc_dynamic_event(pdb,
 			cpid, DYNAMIC_EVENT_MOVE_FOLDER,
 			parent_val, dst_val, src_val);
 	} else {
@@ -2777,7 +2777,7 @@ static BOOL folder_clear_search_folder(DB_ITEM *pdb,
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt))
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		db_engine_proc_dynmaic_event(pdb, cpid,
+		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_DELETE_MESSAGE, folder_id,
 			sqlite3_column_int64(pstmt, 0), 0);
 	}

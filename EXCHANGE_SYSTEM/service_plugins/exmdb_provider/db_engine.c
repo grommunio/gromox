@@ -475,7 +475,7 @@ static BOOL db_engine_search_folder(const char *dir,
 				LLU(search_fid), LLU(pmessage_ids->pids[i]));
 			if (SQLITE_OK == sqlite3_exec(pdb->psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				db_engine_proc_dynmaic_event(pdb, cpid,
+				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_NEW_MESSAGE, search_fid,
 					pmessage_ids->pids[i], 0);
 			}
@@ -1026,7 +1026,7 @@ void db_engine_delete_dynamic(DB_ITEM *pdb, uint64_t folder_id)
 	}
 }
 
-void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
+void db_engine_proc_dynamic_event(DB_ITEM *pdb, uint32_t cpid,
 	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
 	int i;
@@ -1089,7 +1089,7 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 						if (TRUE == b_included) {
 							db_engine_notify_link_deletion(pdb,
 								pdynamic->folder_id, message_id);
-							db_engine_proc_dynmaic_event(pdb, cpid,
+							db_engine_proc_dynamic_event(pdb, cpid,
 								DYNAMIC_EVENT_DELETE_MESSAGE,
 								pdynamic->folder_id, message_id, 0);
 							sprintf(sql_string, "DELETE FROM search_result "
@@ -1114,7 +1114,7 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 								sql_string, NULL, NULL, NULL)) {
 								db_engine_notify_link_creation(pdb,
 									pdynamic->folder_id, message_id);
-								db_engine_proc_dynmaic_event(pdb,
+								db_engine_proc_dynamic_event(pdb,
 									cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 									pdynamic->folder_id, message_id, 0);
 							}
@@ -1161,7 +1161,7 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 					sql_string, NULL, NULL, NULL)) {
 					db_engine_notify_link_creation(pdb,
 						pdynamic->folder_id, id2);
-					db_engine_proc_dynmaic_event(pdb,
+					db_engine_proc_dynamic_event(pdb,
 						cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 						pdynamic->folder_id, id2, 0);
 				} else {
@@ -1181,7 +1181,7 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 				}
 				db_engine_notify_link_deletion(pdb,
 					pdynamic->folder_id, id2);
-				db_engine_proc_dynmaic_event(pdb, cpid,
+				db_engine_proc_dynamic_event(pdb, cpid,
 					DYNAMIC_EVENT_DELETE_MESSAGE,
 					pdynamic->folder_id, id2, 0);
 				sprintf(sql_string, "DELETE FROM search_result "
@@ -1218,7 +1218,7 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 						sql_string, NULL, NULL, NULL)) {
 						db_engine_notify_link_creation(pdb,
 							pdynamic->folder_id, id2);
-						db_engine_proc_dynmaic_event(pdb,
+						db_engine_proc_dynamic_event(pdb,
 							cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 							pdynamic->folder_id, id2, 0);
 					} else {
@@ -1231,7 +1231,7 @@ void db_engine_proc_dynmaic_event(DB_ITEM *pdb, uint32_t cpid,
 					}
 					db_engine_notify_link_deletion(pdb,
 						pdynamic->folder_id, id2);
-					db_engine_proc_dynmaic_event(pdb, cpid,
+					db_engine_proc_dynamic_event(pdb, cpid,
 						DYNAMIC_EVENT_DELETE_MESSAGE,
 						pdynamic->folder_id, id2, 0);
 					sprintf(sql_string, "DELETE FROM search_result "
