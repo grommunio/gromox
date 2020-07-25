@@ -1,4 +1,5 @@
 #include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "exmdb_client.h"
 #include "double_list.h"
 #include "common_util.h"
@@ -154,23 +155,15 @@ static BOOL exmdb_client_write_socket(int sockd, const BINARY *pbin)
 
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 {
-	int sockd;
 	int process_id;
 	BINARY tmp_bin;
 	char remote_id[128];
 	EXMDB_REQUEST request;
 	uint8_t response_code;
-	struct sockaddr_in servaddr;
-	
-    sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(pserver->port);
-    inet_pton(AF_INET, pserver->ip_addr, &servaddr.sin_addr);
-    if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-        close(sockd);
-        return -1;
-    }
+
+	int sockd = gx_inet_connect(pserver->ip_addr, pserver->port, 0);
+	if (sockd < 0)
+	        return -1;
 	process_id = getpid();
 	sprintf(remote_id, "zcore:%d", process_id);
 	if (FALSE == b_listen) {

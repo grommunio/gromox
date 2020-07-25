@@ -4,6 +4,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "pcl.h"
 #include "util.h"
 #include "oxcmail.h"
@@ -2151,23 +2152,17 @@ static int common_util_get_response(int sockd,
 BOOL common_util_send_mail(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list)
 {
-	int sockd;
 	int res_val;
 	int command_len;
 	DOUBLE_LIST_NODE *pnode;
 	char last_command[1024];
 	char last_response[1024];
-	struct sockaddr_in servaddr;
 	
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
-	memset(&servaddr, 0, sizeof(servaddr));
-	servaddr.sin_family = AF_INET;
-	servaddr.sin_port = htons(g_smtp_port);
-	inet_pton(AF_INET, g_smtp_ip, &servaddr.sin_addr);
-	if (0 != connect(sockd, (struct sockaddr*)&servaddr, sizeof(servaddr))) {
-		close(sockd);
+	int sockd = gx_inet_connect(g_smtp_ip, g_smtp_port, 0);
+	if (sockd < 0) {
 		common_util_log_info(0, "cannot connect to "
-			"smtp server %s:%d", g_smtp_ip, g_smtp_port);
+			"smtp server [%s]:%d: %s", g_smtp_ip, g_smtp_port,
+			strerror(-sockd));
 		return FALSE;
 	}
 	/* read welcome information of MTA */
