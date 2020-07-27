@@ -95,7 +95,6 @@ Makefile.in
 /supervising_statistic
 /supervisor
 /synchronization_rpc
-/synchronizer
 /system_backup
 /system_info
 /system_password

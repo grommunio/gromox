@@ -19,7 +19,7 @@ noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-da_daemon.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-synchronizer.service system/gromox-timer.service system/gromox-zcore.service
+unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-da_daemon.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-timer.service system/gromox-zcore.service
 unit_targets = system/gromox-archive.target system/gromox-da.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
@@ -419,7 +419,7 @@ noinst_DATA += \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
-domain_admin_progs = da_daemon fcgi_cgi synchronizer
+domain_admin_progs = da_daemon fcgi_cgi
 system_admin_progs = adaptor cdnd sa_daemon event locker monitor pad rsyncd rsyncer scanner sensor session supervisor timer
 system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
@@ -1259,8 +1259,6 @@ fcgi_cgi_SOURCES = DOMAIN_ADMIN/fcgi_cgi.c
 fcgi_cgi_LDADD = -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_rpc.la
 da_daemon_SOURCES = DOMAIN_ADMIN/daemon/data_source.c DOMAIN_ADMIN/daemon/domain_classifier.c DOMAIN_ADMIN/daemon/item_sorter.c DOMAIN_ADMIN/daemon/main.c LIBRARY/system_log.c SYSTEM_ADMIN/daemon/log_flusher.c SYSTEM_ADMIN/daemon/smtp_sender.c
 da_daemon_LDADD = -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_resolv.la libgromox_webkit.la
-synchronizer_SOURCES = DOMAIN_ADMIN/synchronizer/file_operation.c DOMAIN_ADMIN/synchronizer/main.c DOMAIN_ADMIN/synchronizer/processing_engine.c DOMAIN_ADMIN/synchronizer/url_downloader.c
-synchronizer_LDADD = -lresolv -lpthread ${HX_LIBS} libgromox_common.la
 
 # SYSTEM_ADMIN
 saphpdir = ${pkgdatadir}/sa
@@ -1442,7 +1440,7 @@ man_MANS = \
 	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncer.8gx doc/rtf2html.1gx \
 	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx doc/sendmail.8gx \
 	doc/sensor.8gx doc/session.8gx doc/smtp.8gx doc/supervisor.8gx \
-	doc/synchronizer.8gx doc/timer.8gx doc/zcore.8gx
+	doc/timer.8gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in
 	sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
