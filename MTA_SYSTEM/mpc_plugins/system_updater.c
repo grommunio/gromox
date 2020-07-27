@@ -980,13 +980,13 @@ static void cmd_smtp_update(int argc, char **argv)
 	struct stat node_stat;	
 	
 	if (2 != argc) {
-		update_log("command \"smtp-update\" usage should like: smtp-undate "
+		update_log("command \"smtp-update\" usage should like: smtp-update "
 			"plugin");
 		return;
 	}
 	len = strlen(argv[1]);
 	if (0 != strcmp(argv[1] + len - 4, ".pas")) {
-		update_log("unknown plugin type %s, can not be undated", argv[1]);
+		update_log("unknown plugin type %s, can not be updated", argv[1]);
 		return;
 	}
 	sprintf(plug_file, "/tmp/%s", argv[1]);
@@ -1050,12 +1050,12 @@ static void cmd_delivery_update(int argc, char **argv)
 	
 	if (2 != argc) {
 		update_log("command \"delivery-update\" usage should like: "
-			"delivery-undate plugin");
+			"delivery-update plugin");
 		return;
 	}
 	len = strlen(argv[1]);
 	if (0 != strcmp(argv[1] + len - 5, ".hook")) {
-		update_log("unknown plugin type %s, can not be undated", argv[1]);
+		update_log("unknown plugin type %s, can not be updated", argv[1]);
 		return;
 	}
 	sprintf(plug_file, "/tmp/%s", argv[1]);
