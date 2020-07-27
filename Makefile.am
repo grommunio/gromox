@@ -15,6 +15,7 @@ plugin_LDFLAGS = -avoid-version -module ${default_SYFLAGS${NO_VSYM}}
 pamlibdir = ${libdir}/security
 if HAVE_PAM
 pamlib_LTLIBRARIES = pam_gromox.la
+noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
@@ -1250,7 +1251,7 @@ freebusy_SOURCES = AGENT_SERVICE/freebusy.c
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp EXCHANGE_SYSTEM/http/service.c
-pam_gromox_la_LIBADD = -lpam libgromox_common.la
+pam_gromox_la_LIBADD = -lpam ${HX_LIBS} libgromox_common.la
 pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 rtf2html_SOURCES = AGENT_SERVICE/rtf2html.c
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
