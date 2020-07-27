@@ -1,1 +1,1 @@
-../../../as_plugins/domain_keyword/domain_keyword/charset.txt
+../../anonymous_keyword/anonymous_keyword/charset.txt

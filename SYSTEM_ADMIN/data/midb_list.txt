@@ -1,1 +1,2 @@
-../../DOMAIN_ADMIN/data/midb_list.txt
+#prefix			ip_address	port
+/u-data/		127.0.0.1	5555

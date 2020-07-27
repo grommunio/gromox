@@ -1,1 +1,1 @@
-../../DOMAIN_ADMIN/data/folder_lang.txt
+../../EXCHANGE_SYSTEM/zcore/data/folder_lang.txt

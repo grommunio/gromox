@@ -1,1 +1,4 @@
-../../../as_plugins/domain_keyword/domain_keyword/charset.txt
+gb2312
+gbk
+gb18030
+utf-8

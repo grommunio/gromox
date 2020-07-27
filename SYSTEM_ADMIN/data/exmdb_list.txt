@@ -1,1 +1,1 @@
-../../DOMAIN_ADMIN/data/exmdb_list.txt
+../../EXCHANGE_SYSTEM/http/data/exmdb_list.txt
