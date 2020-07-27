@@ -67,7 +67,6 @@ PKG_CHECK_MODULES([crypto], [libcrypto])
 PKG_CHECK_MODULES([gumbo], [gumbo])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
 PKG_CHECK_MODULES([ssl], [libssl])
-PKG_CHECK_MODULES([xls], [libxls])
 PKG_CHECK_MODULES([zlib], [zlib])
 have_pamheader=""
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])

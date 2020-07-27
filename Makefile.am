@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 ACLOCAL_AMFLAGS = -I build-aux
-AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include -I${top_srcdir}/LIBRARY/common/include -I${top_srcdir}/LIBRARY/epoll_scheduler/include -I${top_srcdir}/LIBRARY/mapi_lib/include -I${top_srcdir}/LIBRARY/webkit_lib/include -I${top_srcdir}/LIBRARY/rpc_lib/include -I${top_srcdir}/LIBRARY/email_lib/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${archive_CFLAGS} ${crypto_CFLAGS} ${ssl_CFLAGS} ${mysql_CFLAGS} ${spf2_CFLAGS} ${sqlite_CFLAGS} ${xls_CFLAGS} ${zlib_CFLAGS}
+AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include -I${top_srcdir}/LIBRARY/common/include -I${top_srcdir}/LIBRARY/epoll_scheduler/include -I${top_srcdir}/LIBRARY/mapi_lib/include -I${top_srcdir}/LIBRARY/webkit_lib/include -I${top_srcdir}/LIBRARY/rpc_lib/include -I${top_srcdir}/LIBRARY/email_lib/include ${HX_CFLAGS} ${gumbo_CFLAGS} ${archive_CFLAGS} ${crypto_CFLAGS} ${ssl_CFLAGS} ${mysql_CFLAGS} ${spf2_CFLAGS} ${sqlite_CFLAGS} ${zlib_CFLAGS}
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
