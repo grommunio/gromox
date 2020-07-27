@@ -23,9 +23,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #define SHARE_MEMORY_SIZE	64*1024
-#define STATISTIC_COMMAND	"spam_statistic.svc status\r\n"
+#define STATISTIC_COMMAND "libmtasvc_spam_statistic.so status\r\n"
 #define SYSTEM_COMMAND		"system status\r\n"
-#define STATUS_COMMAND		"status_forms.hook status\r\n"
+#define STATUS_COMMAND "libmtahook_status_forms.so status\r\n"
 #define CALCULATE_INTERVAL(a, b)	\
 		((a).tv_sec - (b).tv_sec) * 1000000 + (a).tv_usec - (b).tv_usec
 

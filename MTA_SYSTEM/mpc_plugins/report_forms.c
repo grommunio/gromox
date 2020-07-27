@@ -186,11 +186,11 @@ static void do_statistic()
 	ptr = html_buff;
 	memcpy(ptr, HTML_01, sizeof(HTML_01) - 1);
 	ptr += sizeof(HTML_01) - 1;
-	if (FALSE == smtp_console_control("spam_statistic.svc report", temp_buff,
+	if (!smtp_console_control("libmtasvc_spam_statistic.so report", temp_buff,
 		16*1024) || 0 != strncmp(temp_buff, "250 ", 4)) {
 		return;	
 	}
-	smtp_console_control("spam_statistic.svc clear", temp_response, 16*1024);
+	smtp_console_control("libmtasvc_spam_statistic.so clear", temp_response, 16 * 1024);
 	memcpy(ptr, HTML_TB_SMTP, sizeof(HTML_TB_SMTP) - 1);
 	ptr += sizeof(HTML_TB_SMTP) - 1;
 	ptr += time_extractor(temp_buff, ptr);
@@ -207,11 +207,11 @@ static void do_statistic()
 		return;
 	}
 	
-	if (FALSE == delivery_console_control("spam_statistic.svc report",
+	if (!delivery_console_control("libmtasvc_spam_statistic.so report",
 		temp_buff, 16*1024) || 0 != strncmp(temp_buff, "250 ", 4)) {
 		return;
 	}
-	delivery_console_control("spam_statistic.svc clear", temp_response, 16*1024);
+	delivery_console_control("libmtasvc_spam_statistic.so clear", temp_response, 16 * 1024);
 	delivery_num = buffer_extractor(temp_buff, items + smtp_num);
 	if (0 == delivery_num) {
 		return;

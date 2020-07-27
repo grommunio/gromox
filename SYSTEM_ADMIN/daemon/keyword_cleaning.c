@@ -13,8 +13,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#define CONTROL_COMMAND		"anonymous_keyword.hook status\r\n"
-#define CLEAN_COMMAND		"anonymous_keyword.hook clear\r\n"
+#define CONTROL_COMMAND "libmtahook_anonymous_keyword.so status\r\n"
+#define CLEAN_COMMAND "libmtahook_anonymous_keyword.so clear\r\n"
 
 typedef struct _CONSOLE_PORT {
 	char smtp_ip[16];

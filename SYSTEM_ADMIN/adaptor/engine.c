@@ -138,7 +138,7 @@ static void* thread_work_func1(void *param)
 				"data/smtp/domain_list.txt");
 			file_operation_broadcast(g_domainlist_path,
 				"data/delivery/domain_list.txt");
-			gateway_control_notify("domain_list.svc reload",
+			gateway_control_notify("libmtasvc_domain_list.so reload",
 				NOTIFY_SMTP|NOTIFY_DELIVERY);
 		}
 		
@@ -184,7 +184,7 @@ static void* thread_work_func1(void *param)
 			rename(temp_path, g_aliasaddress_path);
 			file_operation_broadcast(g_aliasaddress_path,
 				"data/delivery/alias_addresses.txt");
-			gateway_control_notify("alias_translator.hook reload addresses",
+			gateway_control_notify("libmtahook_alias_translator.so reload addresses",
 				NOTIFY_DELIVERY);
 		}
 
@@ -192,7 +192,7 @@ static void* thread_work_func1(void *param)
 			rename(temp_path1, g_aliasdomain_path);
 			file_operation_broadcast(g_aliasdomain_path,
 				"data/delivery/alias_domains.txt");
-			gateway_control_notify("alias_translator.hook reload domains",
+			gateway_control_notify("libmtahook_alias_translator.so reload domains",
 				NOTIFY_DELIVERY);
 		}
 		
@@ -224,7 +224,7 @@ static void* thread_work_func1(void *param)
 			rename(temp_path, g_backup_path);
 			file_operation_broadcast(g_backup_path,
 				"data/delivery/backup_list.txt");
-			gateway_control_notify("backup_list.svc reload",
+			gateway_control_notify("libmtasvc_backup_list.so reload",
 				NOTIFY_DELIVERY);
 		}
 
@@ -256,7 +256,7 @@ static void* thread_work_func1(void *param)
 			rename(temp_path, g_unchkusr_path);
 			file_operation_broadcast(g_unchkusr_path,
 				"data/smtp/uncheck_domains.txt");
-			gateway_control_notify("mysql_adaptor.svc reload uncheck-domains",
+			gateway_control_notify("libgxsvc_mysql_adaptor.so reload uncheck-domains",
 				NOTIFY_SMTP);
 		}
 	
@@ -290,7 +290,7 @@ static void* thread_work_func1(void *param)
 			rename(temp_path, g_collector_path);
 			file_operation_broadcast(g_collector_path,
 				"data/delivery/mailbox_collector.txt");
-			gateway_control_notify("mailbox_collector.hook reload",
+			gateway_control_notify("libmtahook_mailbox_collector.so reload",
 				NOTIFY_DELIVERY);
 		}
 		
@@ -331,7 +331,7 @@ static void* thread_work_func1(void *param)
 			rename(temp_path, g_subsystem_path);
 			file_operation_broadcast(g_subsystem_path,
 				"data/delivery/domain_subsystem.txt");
-			gateway_control_notify("domain_subsystem.hook reload",
+			gateway_control_notify("libmtahook_domain_subsystem.so reload",
 				NOTIFY_DELIVERY);
 		}
 		
@@ -436,12 +436,14 @@ static void* thread_work_func2(void *param)
 				if (1 == pdomain_item->type) {
 					sprintf(temp_path, "%s/%s/data/smtp/domain_limit/deny/%s.txt",
 						g_mount_path, direntp->d_name, pdomain_item->domainname);
-					sprintf(command_string, "domain_limit.pas add deny %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtapas_domain_limit.so add deny %s",
 						pdomain_item->domainname);
 				} else if (2 == pdomain_item->type) {
 					sprintf(temp_path, "%s/%s/data/smtp/domain_limit/allow/%s.txt",
 						g_mount_path, direntp->d_name, pdomain_item->domainname);
-					sprintf(command_string, "domain_limit.pas add allow %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtapas_domain_limit.so add allow %s",
 						pdomain_item->domainname);
 				} else {
 					continue;
@@ -492,7 +494,8 @@ static void* thread_work_func2(void *param)
 					}
 				}
 				if (FALSE == b_found) {
-					sprintf(command_string, "domain_limit.pas remove deny %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtapas_domain_limit.so remove deny %s",
 						temp_domain);
 					gateway_control_notify(command_string, NOTIFY_SMTP);			
 				}
@@ -537,7 +540,8 @@ static void* thread_work_func2(void *param)
 					}
 				}
 				if (FALSE == b_found) {
-					sprintf(command_string, "domain_limit.pas remove allow %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtapas_domain_limit.so remove allow %s",
 						temp_domain);
 					gateway_control_notify(command_string, NOTIFY_SMTP);			
 				}
@@ -583,7 +587,8 @@ static void* thread_work_func2(void *param)
 				if (1 == pdomain_item->type) {
 					sprintf(temp_path, "%s/%s/data/delivery/domain_monitor/%s.txt",
 						g_mount_path, direntp->d_name, pdomain_item->domainname);
-					sprintf(command_string, "domain_monitor.hook add %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtahook_domain_monitor.so add %s",
 						pdomain_item->domainname);
 				} else {
 					continue;
@@ -634,7 +639,8 @@ static void* thread_work_func2(void *param)
 					}
 				}
 				if (FALSE == b_found) {
-					sprintf(command_string, "domain_monitor.hook remove %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtahook_domain_monitor.so remove %s",
 						temp_domain);
 					gateway_control_notify(command_string, NOTIFY_DELIVERY);			
 				}
@@ -691,7 +697,8 @@ static void* thread_work_func2(void *param)
 				if (1 == pgroup_item->type) {
 					sprintf(temp_path, "%s/%s/data/delivery/group_monitor/%s.txt",
 						g_mount_path, direntp->d_name, pgroup_item->groupname);
-					sprintf(command_string, "group_monitor.hook add %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtahook_group_monitor.so add %s",
 						pgroup_item->groupname);
 				} else {
 					continue;
@@ -743,7 +750,8 @@ static void* thread_work_func2(void *param)
 					}
 				}
 				if (FALSE == b_found) {
-					sprintf(command_string, "group_monitor.hook remove %s",
+					snprintf(command_string, sizeof(command_string),
+						"libmtahook_group_monitor.so remove %s",
 						temp_group);
 					gateway_control_notify(command_string, NOTIFY_DELIVERY);			
 				}

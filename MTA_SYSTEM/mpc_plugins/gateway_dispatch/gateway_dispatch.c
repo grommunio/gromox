@@ -318,8 +318,9 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 		pmime = mail_get_head(pcontext->pmail);
 		if (TRUE == mime_get_field(pmime,  "X-Lasthop", tmp_ip, 16) &&
 			FALSE == gateway_nouser_audit(tmp_ip)) {
-			len = sprintf(add_command, "ip_filter.svc temp-list add %s ",
-					tmp_ip);
+			snprintf(add_command, sizeof(add_command),
+			         "libmtasvc_ip_filter.so temp-list add %s ", tmp_ip);
+			len = strlen(add_command);
 			itvltoa(g_block_interval, add_command + len);
 			smtp_console_control(add_command, reason_buff, 1024);
 			smtp_dispatch_log_info(&fake_context, 8, "ipaddr %s has sent too "
@@ -331,7 +332,8 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 			while (MEM_END_OF_FILE != mem_file_readline(
 				&fake_context.pcontrol->f_rcpt_to, rcpt_buff, 256)) {
 				if (FALSE == gateway_norcpt_audit(rcpt_buff)) {
-					sprintf(add_command, "invalid_user.svc add %s", rcpt_buff);
+					snprintf(add_command, sizeof(add_command),
+					         "libmtasvc_invalid_user.so add %s", rcpt_buff);
 					smtp_console_control(add_command, reason_buff, 1024);
 				}
 			}

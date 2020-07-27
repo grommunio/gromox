@@ -1,10 +1,6 @@
 *.bak
-*.flh
-*.hook
 *.o
-*.pas
 *.so
-*.svc
 release/
 depend.mk
 temp.mk

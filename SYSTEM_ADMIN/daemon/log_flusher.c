@@ -123,7 +123,8 @@ static BOOL log_flusher_control(const char *ip, int port)
 	}
 
 	/* send command */
-	if (22 != write(sockd, "log_plugin.svc flush\r\n", 22)) {
+	static const char command[] = "libmtasvc_log_plugin.so flush\r\n";
+	if (write(sockd, command, strlen(command)) != strlen(command)) {
 		close(sockd);
 		return FALSE;
 	}
