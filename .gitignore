@@ -74,14 +74,6 @@ Makefile.in
 /freebusy
 /from_blacklist
 /from_replace
-/group_archive
-/group_classes
-/group_clists
-/group_info
-/group_log
-/group_main
-/group_monitor
-/group_users
 /http
 /imap
 /ip_blacklist
