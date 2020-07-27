@@ -14,7 +14,6 @@ LOGIN_LABEL				login
 MAIN_HTML_TITLE			Green\ messenger\ mail\ system\ department\ administration
 ITEM_GROUP_INFO			information
 ITEM_GROUP_USERS		users\ list
-ITEM_GROUP_BINPUT		users\ batch\ operation
 ITEM_GROUP_CLASSES		user\ class\ list
 ITEM_GROUP_CLISTS		class\ mail\ list
 ITEM_GROUP_LOG			log\ search

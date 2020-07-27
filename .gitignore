@@ -48,7 +48,6 @@ Makefile.in
 /dns_table
 /domain_approve
 /domain_archive
-/domain_binput
 /domain_blacklist
 /domain_classes
 /domain_folders
@@ -76,7 +75,6 @@ Makefile.in
 /from_blacklist
 /from_replace
 /group_archive
-/group_binput
 /group_classes
 /group_clists
 /group_info

@@ -144,13 +144,6 @@ href=\"domain_users?domain=%s&session=%s\" target=basefrm>\n\
 <TD noWrap align=left><A title=\"%s\" \n\
 href=\"domain_users?domain=%s&session=%s\" target=basefrm>%s</A></TD></TR>\n"
 
-#define HTML_LEFT_ITEM_BINPUT   \
-"<TR><TD align=left width=48><A title=\"%s\" \n\
-href=\"domain_binput?domain=%s&session=%s\" target=basefrm>\n\
-<IMG src=\"../data/picture/icon_batch.jpg\" border=0></A></TD>\n\
-<TD noWrap align=left><A title=\"%s\" \n\
-href=\"domain_binput?domain=%s&session=%s\" target=basefrm>%s</A></TD></TR>\n"
-
 #define HTML_LEFT_ITEM_FOLDERS	\
 "<TR><TD align=left width=48><A title=\"%s\" \n\
 href=\"domain_folders?domain=%s&session=%s\" target=basefrm>\n\
@@ -552,11 +545,6 @@ static void ui_main_left_html(const char *domain, const char *session)
 		language), domain, session, lang_resource_get(g_lang_resource,"ITEM_DOMAIN_USERS",
 		language));
 
-	printf(HTML_LEFT_ITEM_BINPUT, lang_resource_get(g_lang_resource,"ITEM_DOMAIN_BINPUT",
-		language), domain, session, lang_resource_get(g_lang_resource,"ITEM_DOMAIN_BINPUT",
-		language), domain, session, lang_resource_get(g_lang_resource,"ITEM_DOMAIN_BINPUT",
-		language));
-		
 	printf(HTML_LEFT_ITEM_FOLDERS, lang_resource_get(g_lang_resource,"ITEM_DOMAIN_FOLDERS",
 		language), domain, session, lang_resource_get(g_lang_resource,"ITEM_DOMAIN_FOLDERS",
 		language), domain, session, lang_resource_get(g_lang_resource,"ITEM_DOMAIN_FOLDERS",

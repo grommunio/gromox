@@ -17,7 +17,6 @@ ITEM_DOMAIN_INFO		information
 ITEM_DOMAIN_CONFIG		configuration
 ITEM_DOMAIN_GROUPS		department\ list
 ITEM_DOMAIN_USERS		users\ list
-ITEM_DOMAIN_BINPUT		users\ batch\ operation
 ITEM_DOMAIN_FOLDERS		public\ folder\ list
 ITEM_DOMAIN_CLASSES		users\ class\ list
 ITEM_DOMAIN_MLISTS		mail\ address\ list

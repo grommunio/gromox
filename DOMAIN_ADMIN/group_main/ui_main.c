@@ -130,13 +130,6 @@ href=\"group_users?group=%s&session=%s\" target=basefrm>\n\
 <TD noWrap align=left><A title=\"%s\" \n\
 href=\"group_users?group=%s&session=%s\" target=basefrm>%s</A></TD></TR>\n"
 
-#define HTML_LEFT_ITEM_BINPUT	\
-"<TR><TD align=left width=48><A title=\"%s\" \n\
-href=\"group_binput?group=%s&session=%s\" target=basefrm>\n\
-<IMG src=\"../data/picture/icon_batch.jpg\" border=0></A></TD>\n\
-<TD noWrap align=left><A title=\"%s\" \n\
-href=\"group_binput?group=%s&session=%s\" target=basefrm>%s</A></TD></TR>\n"
-
 #define HTML_LEFT_ITEM_CLASSES	\
 "<TR><TD align=left width=48><A title=\"%s\" \n\
 href=\"group_classes?group=%s&session=%s\" target=basefrm>\n\
@@ -483,11 +476,6 @@ static void ui_main_left_html(const char *group, const char *session)
 		language), group, session, lang_resource_get(g_lang_resource,"ITEM_GROUP_USERS",
 		language));
 
-	printf(HTML_LEFT_ITEM_BINPUT, lang_resource_get(g_lang_resource,"ITEM_GROUP_BINPUT",
-		language), group, session, lang_resource_get(g_lang_resource,"ITEM_GROUP_BINPUT",
-		language), group, session, lang_resource_get(g_lang_resource,"ITEM_GROUP_BINPUT",
-		language));
-	
 	printf(HTML_LEFT_ITEM_CLASSES, lang_resource_get(g_lang_resource,"ITEM_GROUP_CLASSES",
 		language), group, session, lang_resource_get(g_lang_resource,"ITEM_GROUP_CLASSES",
 		language), group, session, lang_resource_get(g_lang_resource,"ITEM_GROUP_CLASSES",
