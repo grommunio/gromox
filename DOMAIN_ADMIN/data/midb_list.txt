@@ -1,1 +1,0 @@
-../../SYSTEM_ADMIN/data/midb_list.txt

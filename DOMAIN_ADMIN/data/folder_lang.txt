@@ -1,1 +1,0 @@
-../../EXCHANGE_SYSTEM/zcore/data/folder_lang.txt
