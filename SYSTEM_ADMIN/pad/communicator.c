@@ -97,7 +97,6 @@ void communicator_init(const char *listen_ip, int listen_port,
 int communicator_run()
 {
 	int i, num;
-	char *pitem;
 	ACL_ITEM *pacl;
 	LIST_FILE *plist;
 	int optval, status;
@@ -142,6 +141,7 @@ int communicator_run()
 	}
 
 	if ('\0' != g_list_path[0]) {
+		struct ipitem { char ip_addr[16]; };
 		plist = list_file_init(g_list_path, "%s:16");
 		if (NULL == plist) {
 			printf("[communicator]: Failed to read ACLs from %s: %s\n",
@@ -150,14 +150,14 @@ int communicator_run()
 			return -4;
 		}
 		num = list_file_get_item_num(plist);
-		pitem = list_file_get_list(plist);
+		const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 		for (i=0; i<num; i++) {
 			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
 			if (NULL == pacl) {
 				continue;
 			}
 			pacl->node.pdata = pacl;
-			strcpy(pacl->ip_addr, pitem + 16*i);
+			HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
 			double_list_append_as_tail(&g_acl_list, &pacl->node);
 		}
 		list_file_free(plist);

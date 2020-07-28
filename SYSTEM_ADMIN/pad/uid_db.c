@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "uid_db.h"
 #include "double_list.h"
 #include <string.h>
@@ -5,6 +6,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+struct pdbitem {
+	char uid[256];
+};
 
 static void uid_db_encode_line(const char *in, char *out);
 
@@ -101,7 +106,6 @@ BOOL uid_db_update(UID_DB *pdb, POP3_SESSION *psession)
 BOOL uid_db_check(UID_DB *pdb, POP3_SESSION *psession)
 {
 	int i, num;
-	char *pitem;
 	UID_ITEM *puid;
 	DOUBLE_LIST_NODE *pnode;
 
@@ -110,14 +114,13 @@ BOOL uid_db_check(UID_DB *pdb, POP3_SESSION *psession)
 	}
 
 	num = list_file_get_item_num(pdb->pfile);
-	pitem = list_file_get_list(pdb->pfile);
+	const struct pdbitem *pitem = reinterpret_cast(struct pdbitem *, list_file_get_list(pdb->pfile));
 	for (i=0; i<num; i++) {
 		for (pnode=double_list_get_head(&psession->uid_list); NULL!=pnode;
 			pnode=double_list_get_after(&psession->uid_list, pnode)) {
 			puid = (UID_ITEM*)pnode->pdata;
-			if (0 == strcmp(puid->uid, pitem + 256*i)) {
+			if (strcmp(puid->uid, pitem[i].uid) == 0)
 				puid->b_done = TRUE;
-			}
 		}
 	}
 	return TRUE;

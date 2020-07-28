@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include <gromox/paths.h>
 #include "list_file.h"
 #include "config_file.h"
@@ -14,7 +15,6 @@
 int main(int argc, const char **argv)
 {
 	int i, fd;
-	char *pitem;
 	int len, num;
 	MYSQL *pmysql;
 	int mysql_port;
@@ -29,6 +29,7 @@ int main(int argc, const char **argv)
 	char mysql_host[256];
 	char mysql_user[256];
 	char sql_string[1024];
+	struct pwitem { char user[128], pass[128]; };
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (2 != argc) {
@@ -43,10 +44,10 @@ int main(int argc, const char **argv)
 	
 	plist = list_file_init(PKGDATASADIR "/tmp_password.txt", "%s:128%s:128");
 	if (NULL != plist) {
-		pitem = list_file_get_list(plist);
+		const struct pwitem *pitem = reinterpret_cast(struct pwitem *, list_file_get_list(plist));
 		num = list_file_get_item_num(plist);
 		for (i=0; i<num; i++) {
-			if (0 == strcasecmp(pitem + 256*i, argv[1])) {
+			if (strcasecmp(pitem[i].user, argv[1]) == 0) {
 				list_file_free(plist);
 				printf("%s has already been disabled password, "
 					"if you wish to disable the password forcibly,"

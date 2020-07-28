@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include "pop3.h"
 #include "smtp.h"
 #include "mail_func.h"
@@ -20,7 +21,7 @@ int main(int argc, const char **argv)
 	char pop_address[16];
 	char smtp_address[16];
 	int list_nums[16*1024];
-	char *pcolon, *pitem, *pbuff;
+	char *pcolon, *pbuff;
 	POP3_SESSION pop_session;
 	SMTP_SESSION smtp_session;
 	
@@ -66,6 +67,7 @@ int main(int argc, const char **argv)
 
 	smtp_init(&smtp_session, smtp_address, smtp_port);
 	
+	struct pwitem { char user[256], pass[256]; };
 	plist = list_file_init(argv[3], "%s:256%s:256");
 	if (NULL == plist) {
 		printf("list_file_init %s: %s\n", argv[3], strerror(errno));
@@ -78,19 +80,18 @@ int main(int argc, const char **argv)
 		return 5;
 	}
 
-	pitem = list_file_get_list(plist);
+	const struct pwitem *pitem = reinterpret_cast(struct pwitem *, list_file_get_list(plist));
 	item_num = list_file_get_item_num(plist);
 	
 	for (i=0; i<item_num; i++) {
-		pop3_init(&pop_session, pop_address, pop_port, pitem + 512*i,
-			pitem + 512*i + 256);
+		pop3_init(&pop_session, pop_address, pop_port, pitem[i].user, pitem[i].pass);
 		if (FALSE == pop3_login(&pop_session)) {
-			printf("fail to login with account %s\n", pitem + 512*i);
+			printf("Failed to login with account %s\n", pitem[i].user);
 			pop3_free(&pop_session);
 			continue;
 		}
 		if (FALSE == pop3_list(&pop_session, list_nums)) {
-			printf("fail to list pop server with account %s\n", pitem + 512*i);
+			printf("Failed to list pop server with account %s\n", pitem[i].user);
 			pop3_free(&pop_session);
 			continue;
 		}
@@ -104,8 +105,8 @@ int main(int argc, const char **argv)
 				printf("fail to retrieve %d\n", list_nums[j]);
 				continue;
 			}
-			if (FALSE == smtp_send(&smtp_session, "pop_agent@system.mail",
-				pitem + 512*i, pbuff)) {
+			if (!smtp_send(&smtp_session, "pop_agent@system.mail",
+			    pitem[i].user, pbuff)) {
 				printf("fail to send mail %d via smtp server\n", list_nums[j]);
 				continue;
 			}
@@ -113,7 +114,7 @@ int main(int argc, const char **argv)
 			
 		}
 		pop3_free(&pop_session);
-		printf("%d mails ported into new system for %s\n", k, pitem + 512*i);
+		printf("%d mails ported into new system for %s\n", k, pitem[i].user);
 	}
 
 	list_file_free(plist);

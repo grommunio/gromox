@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "exec_sched.h"
 #include "str_hash.h"
@@ -54,10 +55,10 @@ void exec_sched_free()
 
 int exec_sched_run()
 {
-	char *pitem;
     int i, list_len, hash_cap;
 	LIST_FILE *plist_file;
 	USER_INFO temp_info;
+	struct usritem { char u[128]; };
 	
     /* initialize the list filter */
 	plist_file = list_file_init(g_list_path, "%s:128");
@@ -66,7 +67,7 @@ int exec_sched_run()
 			g_list_path, strerror(errno));
 		return -1;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct usritem *pitem = reinterpret_cast(struct usritem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + HASH_GROWING_NUM;
 	
@@ -81,8 +82,8 @@ int exec_sched_run()
 	temp_info.b_working = FALSE;
 
     for (i=0; i<list_len; i++) {
-		HX_strlower(pitem + 128 * i);
-        str_hash_add(g_hash_table, pitem + 128*i, &temp_info);   
+		HX_strlower(pitem[i].u);
+		str_hash_add(g_hash_table, pitem[i].u, &temp_info);
     }
     list_file_free(plist_file);	
 	g_hash_cap = hash_cap;

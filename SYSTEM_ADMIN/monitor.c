@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
@@ -29,17 +30,20 @@
 #define CALCULATE_INTERVAL(a, b)	\
 		((a).tv_sec - (b).tv_sec) * 1000000 + (a).tv_usec - (b).tv_usec
 
-
-typedef struct _CONSOLE_PORT {
-	SINGLE_LIST_NODE node;
-	pthread_t tid;
-	BOOL notify_stop;
-	int index;
+typedef struct CONSOLE_PORT {
 	char smtp_ip[16];
 	int smtp_port;
 	char delivery_ip[16];
 	int delivery_port;
 } CONSOLE_PORT;
+
+typedef struct CONSOLE_PNODE {
+	SINGLE_LIST_NODE node;
+	pthread_t tid;
+	BOOL notify_stop;
+	int index;
+	CONSOLE_PORT u;
+} CONSOLE_PNODE;
 
 static int *g_shm_begin;
 static BOOL g_notify_stop;
@@ -73,7 +77,6 @@ int main(int argc, const char **argv)
 	int shm_id;
 	int list_len;
 	key_t k_shm;
-	char *pitem;
 	char *str_value;
 	char temp_path[256];
 	char data_path[256];
@@ -82,7 +85,6 @@ int main(int argc, const char **argv)
 	SINGLE_LIST console_list;
 	LIST_FILE *plist_file;
 	CONFIG_FILE *pconfig_file;
-	CONSOLE_PORT *pconsole;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -143,7 +145,7 @@ int main(int argc, const char **argv)
 		return 6;
 	}
 	single_list_init(&console_list);
-	pitem = (char*)list_file_get_list(plist_file);
+	const struct CONSOLE_PORT *pitem = reinterpret_cast(CONSOLE_PORT *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	if (list_len > (SHARE_MEMORY_SIZE - sizeof(int))/(5*sizeof(int))) {
 		list_file_free(plist_file);
@@ -151,18 +153,14 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 	for (i=0; i<list_len; i++) {
-		pconsole = (CONSOLE_PORT*)malloc(sizeof(CONSOLE_PORT));
+		CONSOLE_PNODE *pconsole = malloc(sizeof(*pconsole));
 		if (NULL== pconsole) {
 			continue;
 		}
 		pconsole->node.pdata = pconsole;
 		pconsole->notify_stop = FALSE;
 		pconsole->index = i;
-		strcpy(pconsole->smtp_ip, pitem);
-		pconsole->smtp_port = *(int*)(pitem + 16);
-		strcpy(pconsole->delivery_ip, pitem + 16 + sizeof(int));
-		pconsole->delivery_port = *(int*)(pitem + 32 + sizeof(int));
-		pitem += 32 + 2*sizeof(int);
+		memcpy(&pconsole->u, &pitem[i], sizeof(*pitem));
 		if (pthread_create(&pconsole->tid, NULL, thread_work_func, pconsole) != 0) {
 			char buf[32];
 			snprintf(buf, sizeof(buf), "worker/%u", i);
@@ -180,7 +178,7 @@ int main(int argc, const char **argv)
 		sleep(1);
 	}
 	while ((pnode = single_list_get_from_head(&console_list)) != NULL) {
-		pconsole = (CONSOLE_PORT*)pnode->pdata;
+		CONSOLE_PNODE *pconsole = pnode->pdata;
 		pconsole->notify_stop = TRUE;
 		pthread_join(pconsole->tid, NULL);
 		free(pconsole);
@@ -213,15 +211,14 @@ static void* thread_work_func(void *arg)
 	char read_buff[1024];
 	struct timeval last_tm;
 	struct timeval current_tm;
-	CONSOLE_PORT *pconsole;
-	
-	pconsole = (CONSOLE_PORT*)arg;
+	CONSOLE_PNODE *pconsole = arg;
+
 	while (FALSE == pconsole->notify_stop) {
 		if (-1 == sockd_smtp) {
 			flush_data(pconsole->index, -1, -1, -1, -1, -1);
 			sleep(1);
-			sockd_smtp = connect_console(pconsole->smtp_ip,
-							pconsole->smtp_port);
+			sockd_smtp = connect_console(pconsole->u.smtp_ip,
+			             pconsole->u.smtp_port);
 			if (-1 == sockd_smtp) {
 				continue;
 			}
@@ -229,8 +226,8 @@ static void* thread_work_func(void *arg)
 		if (-1 == sockd_delivery) {
 			flush_data(pconsole->index, -1, -1, -1, -1, -1);
 			sleep(1);
-			sockd_delivery = connect_console(pconsole->delivery_ip,
-								pconsole->delivery_port);
+			sockd_delivery = connect_console(pconsole->u.delivery_ip,
+			                 pconsole->u.delivery_port);
 			if (-1 == sockd_delivery) {
 				continue;
 			}

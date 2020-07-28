@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include "file_operation.h"
 #include "list_file.h"
 #include <sys/types.h>
@@ -125,29 +126,30 @@ void file_operation_copy_monitor(const char *src_file, const char *dst_file)
 {
 	LIST_FILE *pfile;
 	int i, fd, len, item_num;
-	char *pitem, temp_line[1024];
+	char temp_line[1024];
+	struct srcitem { char a[256], b[12], c[256]; };
 
 	pfile = list_file_init((char*)src_file, "%s:256%s:12%s:256");
 	if (NULL == pfile) {
 		return;
 	}
 	item_num = list_file_get_item_num(pfile);
-	pitem = (char*)list_file_get_list(pfile);
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	fd = open(dst_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 	if (-1 == fd) {
 		list_file_free(pfile);
 		return;
 	}
 	for (i=0; i<item_num; i++) {
-		if (0 == strcmp(pitem + (2*256 + 12)*i + 256, "IN")) {
-			len = sprintf(temp_line, "F_IN\t%s\t%s\n", pitem + (2*256 + 12)*i,
-					pitem + (2*256 + 12)*i + 256 + 12);
-		} else if (0 == strcmp(pitem + (2*256 + 12)*i + 256, "OUT")) {
-			len = sprintf(temp_line, "F_OUT\t%s\t%s\n", pitem + (2*256 + 12)*i,
-					pitem + (2*256 + 12)*i + 256 + 12);
-		} else if (0 == strcmp(pitem + (2*256 + 12)*i + 256, "ALL")) {
-			len = sprintf(temp_line, "F_ALL\t%s\t%s\n", pitem + (2*256 + 12)*i,
-					pitem + (2*256 + 12)*i + 256 + 12);						
+		if (strcmp(pitem[i].b, "IN") == 0) {
+			len = sprintf(temp_line, "F_IN\t%s\t%s\n", pitem[i].a,
+					pitem[i].c);
+		} else if (strcmp(pitem[i].b, "OUT") == 0) {
+			len = sprintf(temp_line, "F_OUT\t%s\t%s\n", pitem[i].a,
+					pitem[i].c);
+		} else if (strcmp(pitem[i].b, "ALL") == 0) {
+			len = sprintf(temp_line, "F_ALL\t%s\t%s\n", pitem[i].a,
+					pitem[i].c);
 		} else {
 			len = 0;
 		}
@@ -159,8 +161,8 @@ void file_operation_copy_monitor(const char *src_file, const char *dst_file)
 }
 void file_operation_transfer(const char *src_file, const char *dst_file)
 {
+	struct srcitem { char a[256], b[256]; };
 	LIST_FILE *pfile;
-	char *pitem;
 	char temp_buff[256];
 	int fd, i, len, item_num;
 	
@@ -174,10 +176,10 @@ void file_operation_transfer(const char *src_file, const char *dst_file)
 		return;
 	}
 	item_num = list_file_get_item_num(pfile);
-	pitem = (char*)list_file_get_list(pfile);
-
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
-		len = sprintf(temp_buff, "%s\n", pitem + 2*256*i);
+		snprintf(temp_buff, sizeof(temp_buff), "%s\n", pitem[i].a);
+		len = strlen(temp_buff);
 		write(fd, temp_buff, len);
 	}
 	close(fd);

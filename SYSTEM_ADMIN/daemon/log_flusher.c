@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include <gromox/socket.h>
 #include "log_flusher.h"
 #include "single_list.h"
@@ -13,13 +14,17 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-typedef struct _CONSOLE_PORT {
-	SINGLE_LIST_NODE node;
+typedef struct CONSOLE_PORT {
 	char smtp_ip[16];
 	int smtp_port;
 	char delivery_ip[16];
 	int delivery_port;
 } CONSOLE_PORT;
+
+typedef struct CONSOLE_PNODE {
+	SINGLE_LIST_NODE node;
+	CONSOLE_PORT u;
+} CONSOLE_PNODE;
 
 static char g_list_path[256];
 static SINGLE_LIST g_console_list;
@@ -39,11 +44,8 @@ void log_flusher_init(const char *path)
 int log_flusher_run()
 {
 	LIST_FILE *plist_file;
-	char *pitem;
 	int i, list_len;
 	SINGLE_LIST_NODE *pnode;
-	CONSOLE_PORT *pport;
-	CONSOLE_PORT *pconsole;
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
 	if (NULL == plist_file) {
@@ -53,26 +55,22 @@ int log_flusher_run()
 		return 0;
 	}
 	
-	pitem = (char*)list_file_get_list(plist_file);
+	const CONSOLE_PORT *pitem = reinterpret_cast(CONSOLE_PORT *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	for (i=0; i<list_len; i++) {
-		pport = (CONSOLE_PORT*)malloc(sizeof(CONSOLE_PORT));
+		CONSOLE_PNODE *pport = malloc(sizeof(*pport));
 		if (NULL== pport) {
 			continue;
 		}
 		pport->node.pdata = pport;
-		strcpy(pport->smtp_ip, pitem);
-		pport->smtp_port = *(int*)(pitem + 16);
-		strcpy(pport->delivery_ip, pitem + 16 + sizeof(int));
-		pport->delivery_port = *(int*)(pitem + 32 + sizeof(int));
-		pitem += 32 + 2*sizeof(int);
+		memcpy(&pport->u, &pitem[i], sizeof(*pitem));
 		single_list_append_as_tail(&g_console_list, &pport->node);
 	}
 	list_file_free(plist_file);
 
 	for (pnode=single_list_get_head(&g_console_list); NULL!=pnode;
 		pnode=single_list_get_after(&g_console_list, pnode)) {
-		pconsole = (CONSOLE_PORT*)pnode->pdata;
+		const CONSOLE_PORT *pconsole = &static_cast(CONSOLE_PNODE *, pnode->pdata)->u;
 		log_flusher_control(pconsole->smtp_ip, pconsole->smtp_port);
 		log_flusher_control(pconsole->delivery_ip, pconsole->delivery_port);
 	}

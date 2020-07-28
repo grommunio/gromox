@@ -1,5 +1,7 @@
 #include <errno.h>
 #include <unistd.h>
+#include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "common_types.h"
 #include "scheduler.h"
@@ -74,11 +76,15 @@ int scheduler_run()
 	int list_len;
 	int smtp_num;
 	int pop3_num;
-	char *pitem;
 	LIST_FILE *plist_file;
 	SMTP_UNIT *psmtp_unit;
 	POP3_UNIT *ppop3_unit;	
 	DOUBLE_LIST_NODE *pnode;
+	struct srcitem {
+		char method[16], svmbox[256], username[256];
+		char password[256], dest_ip[16];
+		int dest_port;
+	};
 
 	plist_file = list_file_init(g_list_path, "%s:16:%s:256%s:256%s:256%s:16%d");
 	if (NULL == plist_file) {
@@ -87,11 +93,11 @@ int scheduler_run()
 		return -1;
 	}
 	list_len = list_file_get_item_num(plist_file);
-	pitem = (char*)list_file_get_list(plist_file);
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	smtp_num = 0;
 	pop3_num = 0;
-	for (i=0; i<list_len; i++, pitem+=2*16+sizeof(int)+3*256) {
-		if (0 == strcasecmp(pitem, "SMTP_IN")) {
+	for (i = 0; i < list_len; ++i) {
+		if (strcasecmp(pitem[i].method, "SMTP_IN") == 0) {
 			psmtp_unit = (SMTP_UNIT*)malloc(sizeof(SMTP_UNIT));
 			if (NULL == psmtp_unit) {
 				printf("[scheduler]: fail to allocate memory for smtp unit\n");
@@ -100,16 +106,16 @@ int scheduler_run()
 			psmtp_unit->node.pdata = psmtp_unit;
 			psmtp_unit->tid = 0;
 			psmtp_unit->need_auth = FALSE;
-			strcpy(psmtp_unit->supervise_mailbox, pitem + 16);
-			strcpy(psmtp_unit->username, pitem + 16 + 256);
-			strcpy(psmtp_unit->password, pitem + 16 + 2*256);
+			HX_strlcpy(psmtp_unit->supervise_mailbox, pitem[i].svmbox, sizeof(psmtp_unit->supervise_mailbox));
+			HX_strlcpy(psmtp_unit->username, pitem[i].username, sizeof(psmtp_unit->username));
+			HX_strlcpy(psmtp_unit->password, pitem[i].password, sizeof(psmtp_unit->password));
 			psmtp_unit->check_id = i;
-			strcpy(psmtp_unit->dest_ip, pitem + 16 + 3*256);
-			psmtp_unit->dest_port = *(int*)(pitem + 2*16 + 3*256);
+			HX_strlcpy(psmtp_unit->dest_ip, pitem[i].dest_ip, sizeof(psmtp_unit->dest_ip));
+			psmtp_unit->dest_port = pitem[i].dest_port;
 			psmtp_unit->last_time = 0;
 			double_list_append_as_tail(&g_smtp_list, &psmtp_unit->node);
 			smtp_num ++;
-		} else if (0 == strcasecmp(pitem, "SMTP_OUT")) {
+		} else if (strcasecmp(pitem[i].method, "SMTP_OUT") == 0) {
 			psmtp_unit = (SMTP_UNIT*)malloc(sizeof(SMTP_UNIT));
 			if (NULL == psmtp_unit) {
 				printf("[scheduler]: fail to allocate memory for smtp unit\n");
@@ -119,15 +125,15 @@ int scheduler_run()
 			psmtp_unit->tid = 0;
 			psmtp_unit->need_auth = TRUE;
 			psmtp_unit->check_id = i;
-			strcpy(psmtp_unit->supervise_mailbox, pitem + 16);
-			strcpy(psmtp_unit->username, pitem + 16 + 256);
-			strcpy(psmtp_unit->password, pitem + 16 + 2*256);
-			strcpy(psmtp_unit->dest_ip, pitem + 16 + 3*256);
-			psmtp_unit->dest_port = *(int*)(pitem + 2*16 + 3*256);
+			HX_strlcpy(psmtp_unit->supervise_mailbox, pitem[i].svmbox, sizeof(psmtp_unit->supervise_mailbox));
+			HX_strlcpy(psmtp_unit->username, pitem[i].username, sizeof(psmtp_unit->username));
+			HX_strlcpy(psmtp_unit->password, pitem[i].password, sizeof(psmtp_unit->password));
+			HX_strlcpy(psmtp_unit->dest_ip, pitem[i].dest_ip, sizeof(psmtp_unit->dest_ip));
+			psmtp_unit->dest_port = pitem[i].dest_port;
 			psmtp_unit->last_time = 0;
 			double_list_append_as_tail(&g_smtp_list, &psmtp_unit->node);
 			smtp_num ++;
-		} else if (0 == strcasecmp(pitem, "POP3")) {
+		} else if (strcasecmp(pitem[i].method, "POP3") == 0) {
 			ppop3_unit = (POP3_UNIT*)malloc(sizeof(POP3_UNIT));
 			if (NULL == ppop3_unit) {
 				printf("[scheduler]: fail to allocate memory for pop3 unit\n");
@@ -137,16 +143,16 @@ int scheduler_run()
 			ppop3_unit->tid = 0;
 			ppop3_unit->check_id = i;
 			ppop3_unit->last_time = 0;
-			strcpy(ppop3_unit->supervise_mailbox, pitem + 16);
-			strcpy(ppop3_unit->username, pitem + 16 + 256);
-			strcpy(ppop3_unit->password, pitem + 16 + 2*256);
-			strcpy(ppop3_unit->dest_ip, pitem + 16 + 3*256);
-			ppop3_unit->dest_port = *(int*)(pitem + 2*16 + 3*256);
+			HX_strlcpy(psmtp_unit->supervise_mailbox, pitem[i].svmbox, sizeof(psmtp_unit->supervise_mailbox));
+			HX_strlcpy(psmtp_unit->username, pitem[i].username, sizeof(psmtp_unit->username));
+			HX_strlcpy(psmtp_unit->password, pitem[i].password, sizeof(psmtp_unit->password));
+			HX_strlcpy(psmtp_unit->dest_ip, pitem[i].dest_ip, sizeof(psmtp_unit->dest_ip));
+			psmtp_unit->dest_port = pitem[i].dest_port;
 			double_list_append_as_tail(&g_pop3_list, &ppop3_unit->node);
 			pop3_num ++;
 		} else {
 			printf("[scheduler]: %s is unrecognized, should be SMTP_IN, "
-				"SMTP_OUT or POP3\n", pitem);
+				"SMTP_OUT or POP3\n", pitem[i].method);
 			continue;
 		}
 	}

@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include <gromox/gateway_control.h>
 #include <gromox/socket.h>
 #include "util.h"
@@ -13,13 +14,17 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-typedef struct _CONSOLE_PORT {
-	SINGLE_LIST_NODE node;
+typedef struct CONSOLE_PORT {
 	char smtp_ip[16];
 	int smtp_port;
 	char delivery_ip[16];
 	int delivery_port;
 } CONSOLE_PORT;
+
+typedef struct CONSOLE_PNODE {
+	SINGLE_LIST_NODE node;
+	CONSOLE_PORT u;
+} CONSOLE_PNODE;
 
 static char g_list_path[256];
 static SINGLE_LIST g_console_list;
@@ -38,9 +43,7 @@ void gateway_control_init(const char *path)
 
 int gateway_control_run()
 {
-	char *pitem;
 	int i, list_len;
-	CONSOLE_PORT *pport;
 	LIST_FILE *plist_file;
 	
 	plist_file = list_file_init(g_list_path, "%s:16%d%s:16%d");
@@ -50,19 +53,15 @@ int gateway_control_run()
 		return -1;
 	}
 	
-	pitem = (char*)list_file_get_list(plist_file);
+	const CONSOLE_PORT *pitem = reinterpret_cast(CONSOLE_PORT *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	for (i=0; i<list_len; i++) {
-		pport = (CONSOLE_PORT*)malloc(sizeof(CONSOLE_PORT));
+		CONSOLE_PNODE *pport = malloc(sizeof(*pport));
 		if (NULL== pport) {
 			continue;
 		}
 		pport->node.pdata = pport;
-		strcpy(pport->smtp_ip, pitem);
-		pport->smtp_port = *(int*)(pitem + 16);
-		strcpy(pport->delivery_ip, pitem + 16 + sizeof(int));
-		pport->delivery_port = *(int*)(pitem + 32 + sizeof(int));
-		pitem += 32 + 2*sizeof(int);
+		memcpy(&pport->u, &pitem[i], sizeof(*pitem));
 		single_list_append_as_tail(&g_console_list, &pport->node);
 	}
 	list_file_free(plist_file);
@@ -72,11 +71,10 @@ int gateway_control_run()
 void gateway_control_notify(const char *command, int control_mask)
 {
 	SINGLE_LIST_NODE *pnode;
-	CONSOLE_PORT *pconsole;
 	
 	for (pnode=single_list_get_head(&g_console_list); NULL!=pnode;
 		pnode=single_list_get_after(&g_console_list, pnode)) {
-		pconsole = (CONSOLE_PORT*)pnode->pdata;
+		const CONSOLE_PORT *pconsole = &static_cast(CONSOLE_PNODE *, pnode->pdata)->u;
 		if (NOTIFY_SMTP&control_mask) {
 			gateway_control_send(pconsole->smtp_ip,
 				pconsole->smtp_port, command);

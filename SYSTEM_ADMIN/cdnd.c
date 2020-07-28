@@ -199,7 +199,7 @@ int main(int argc, const char **argv)
 	pthread_t scan_thrid;
 	MIDB_ITEM *pmidb_item;
 	pthread_t accept_thrid;
-	char *str_value, *pitem;
+	char *str_value;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	struct sockaddr_in my_name;
@@ -366,6 +366,7 @@ int main(int argc, const char **argv)
 		return 5;
 	}
 
+	struct ipitem { char ip_addr[16]; };
 	plist = list_file_init(acl_path, "%s:16");
     if (NULL == plist) {
 		printf("[system]: Failed to read ACLs from %s: %s\n",
@@ -375,14 +376,14 @@ int main(int argc, const char **argv)
 	}
 
     num = list_file_get_item_num(plist);
-	pitem = list_file_get_list(plist);
+	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 	for (i=0; i<num; i++) {
 		pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
 		if (NULL == pacl) {
 			continue;
 		}
 		pacl->node.pdata = pacl;
-		strcpy(pacl->ip_addr, pitem + 16*i);
+		HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
 		double_list_append_as_tail(&g_acl_list, &pacl->node);
 	}
 	list_file_free(plist);

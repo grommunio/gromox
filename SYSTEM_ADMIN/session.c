@@ -100,7 +100,7 @@ int main(int argc, const char **argv)
 	pthread_t *thr_ids;
 	char temp_buff[32];
 	char listen_ip[16];
-	char *str_value, *pitem;
+	char *str_value;
 	ACL_ITEM *pacl;
 	struct sockaddr_in my_name;
 	LIST_FILE *plist;
@@ -314,6 +314,7 @@ int main(int argc, const char **argv)
 	}
 	
 	if ('\0' != g_list_path[0]) {
+		struct ipitem { char ip_addr[16]; };
 		plist = list_file_init(g_list_path, "%s:16");
 		if (NULL == plist) {
 			for (i=g_threads_num-1; i>=0; i--) {
@@ -337,14 +338,14 @@ int main(int argc, const char **argv)
 			return 8;
 		}
 		num = list_file_get_item_num(plist);
-		pitem = list_file_get_list(plist);
+		const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 		for (i=0; i<num; i++) {
 			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
 			if (NULL == pacl) {
 				continue;
 			}
 			pacl->node.pdata = pacl;
-			strcpy(pacl->ip_addr, pitem + 16*i);
+			HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
 			double_list_append_as_tail(&g_acl_list, &pacl->node);
 		}
 		list_file_free(plist);

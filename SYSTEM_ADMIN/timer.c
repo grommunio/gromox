@@ -113,10 +113,9 @@ int main(int argc, const char **argv)
 	char listen_ip[16];
 	char temp_path[256];
 	char temp_line[2048];
-	char *str_value, *parray;
+	char *str_value;
 	ACL_ITEM *pacl;
 	struct sockaddr_in my_name;
-	char *pitem, *ptr, *ptr1;
 	TIMER *ptimer;
 	LIST_FILE *pfile;
 	LIST_FILE *plist;
@@ -195,6 +194,11 @@ int main(int argc, const char **argv)
 	g_threads_num ++;
 	config_file_free(pconfig);
 
+	struct srcitem {
+		int tid;
+		long exectime;
+		char command[512];
+	} __attribute__((packed));
 	pfile = list_file_init(g_list_path, "%d%l%s:512");
 
 	if (NULL == pfile) {
@@ -206,19 +210,15 @@ int main(int argc, const char **argv)
 	double_list_init(&g_exec_list);
 
 	item_num = list_file_get_item_num(pfile);
-	pitem = list_file_get_list(pfile);
-
-
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
-		ptr = pitem + (512 + sizeof(int) + sizeof(long))*i;
-		if (0 == *(time_t*)(ptr + sizeof(int))) {
+		if (pitem[i].exectime == 0) {
 			for (j=0; j<item_num; j++) {
 				if (i == j) {
 					continue;
 				}
-				ptr1 = pitem + (512 + sizeof(int) + sizeof(long))*j;
-				if (*(int*)ptr == *(int*)ptr1) {
-					*(time_t*)(ptr1 + sizeof(int)) = 0;
+				if (pitem[i].tid == pitem[j].tid) {
+					pitem[j].exectime = 0;
 					break;
 				}
 			} 
@@ -228,21 +228,18 @@ int main(int argc, const char **argv)
 	time(&cur_time);
 
 	for (i=0; i<item_num; i++) {
-		ptr = pitem + (512 + sizeof(int) + sizeof(long))*i;
-		if (*(int*)ptr > g_last_tid) {
-			g_last_tid = *(int*)ptr;
-		}
-		if (0 == *(time_t*)(ptr + sizeof(int))) {
+		if (pitem[i].tid > g_last_tid)
+			g_last_tid = pitem[i].tid;
+		if (pitem[i].exectime == 0)
 			continue;
-		}
 		ptimer = (TIMER*)malloc(sizeof(TIMER));
 		if (NULL == ptimer) {
 			continue;
 		}
 		ptimer->node.pdata = ptimer;
-		ptimer->t_id = *(int*)ptr;
-		ptimer->exec_time = *(time_t*)(ptr + sizeof(int));
-		strcpy(ptimer->command, ptr + sizeof(int) + sizeof(long));
+		ptimer->t_id = pitem[i].tid;
+		ptimer->exec_time = pitem[i].exectime;
+		HX_strlcpy(ptimer->command, pitem[i].command, sizeof(ptimer->command));
 		put_timer(ptimer);
 	}
 
@@ -337,6 +334,7 @@ int main(int argc, const char **argv)
 
 
 	if ('\0' != g_acl_path[0]) {
+		struct ipitem { char ip_addr[16]; };
 		plist = list_file_init(g_acl_path, "%s:16");
 		if (NULL == plist) {
 			for (i=g_threads_num-1; i>=0; i--) {
@@ -359,7 +357,7 @@ int main(int argc, const char **argv)
 			return 9;
 		}
 
-		parray = list_file_get_list(plist);
+		const struct ipitem *parray = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 		num = list_file_get_item_num(plist);
 		for (i=0; i<num; i++) {
 			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
@@ -367,7 +365,7 @@ int main(int argc, const char **argv)
 				continue;
 			}
 			pacl->node.pdata = pacl;
-			strcpy(pacl->ip_addr, parray + 16*i);
+			strcpy(pacl->ip_addr, parray[i].ip_addr);
 			double_list_append_as_tail(&g_acl_list, &pacl->node);
 		}
 		list_file_free(plist);
@@ -429,15 +427,13 @@ int main(int argc, const char **argv)
 				pitem = list_file_get_list(pfile);
 				
 				for (i=0; i<item_num; i++) {
-					ptr = pitem + (512 + sizeof(int) + sizeof(long))*i;
-					if (0 == *(time_t*)(ptr + sizeof(int))) {
+					if (pitem[i].exectime == 0) {
 						for (j=0; j<item_num; j++) {
 							if (i == j) {
 								continue;
 							}
-							ptr1 = pitem + (512 + sizeof(int) + sizeof(long))*j;
-							if (*(int*)ptr == *(int*)ptr1) {
-								*(time_t*)(ptr1 + sizeof(int)) = 0;
+							if (pitem[i].tid == pitem[j].tid) {
+								pitem[j].exectime = 0;
 								break;
 							}
 						}
@@ -447,14 +443,11 @@ int main(int argc, const char **argv)
 				temp_fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 				if (-1 != temp_fd) {
 					for (i=0; i<item_num; i++) {
-						ptr = pitem + (512 + sizeof(int) + sizeof(long))*i;
-						if (0 == *(time_t*)(ptr + sizeof(int))) {
+						if (pitem[i].exectime == 0)
 							continue;
-						}
-						temp_len = sprintf(temp_line, "%d\t%ld\t", *(int*)ptr,
-									*(time_t*)(ptr + sizeof(int)));
-						encode_line(ptr + sizeof(int) + sizeof(long),
-							temp_line + temp_len);
+						temp_len = sprintf(temp_line, "%d\t%ld\t",
+						           pitem[i].tid, pitem[i].exectime);
+						encode_line(pitem[i].command, temp_line + temp_len);
 						temp_len = strlen(temp_line);
 						temp_line[temp_len] = '\n';
 						temp_len ++;
