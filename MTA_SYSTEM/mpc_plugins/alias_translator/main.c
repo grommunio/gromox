@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "str_hash.h"
@@ -20,6 +21,10 @@ enum{
 	REFRESH_OK,
 	REFRESH_FILE_ERROR,
 	REFRESH_HASH_FAIL
+};
+
+struct addritem {
+	char a[256], b[256];
 };
 
 static STR_HASH_TABLE *g_domain_hash;
@@ -237,7 +242,6 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	
 static int domain_table_refresh()
 {
-	char *pitem;
     int i, list_len;
 	LIST_FILE *plist_file;
     STR_HASH_TABLE *phash = NULL;
@@ -249,7 +253,7 @@ static int domain_table_refresh()
 			g_domain_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct addritem *pitem = reinterpret_cast(struct addritem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
@@ -259,8 +263,8 @@ static int domain_table_refresh()
 		return REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		HX_strlower(pitem + 2 * 256 * i);
-        str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);   
+		HX_strlower(pitem[i].a);
+		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
     list_file_free(plist_file);
 	
@@ -276,7 +280,6 @@ static int domain_table_refresh()
 
 static int address_table_refresh()
 {
-	char *pitem;
     int i, list_len;
 	LIST_FILE *plist_file;
     STR_HASH_TABLE *phash = NULL;
@@ -288,7 +291,7 @@ static int address_table_refresh()
 			g_address_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct addritem *pitem = reinterpret_cast(struct addritem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
@@ -298,8 +301,8 @@ static int address_table_refresh()
 		return REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		HX_strlower(pitem + 2 * 256 * i);
-        str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);   
+		HX_strlower(pitem[i].a);
+		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
     list_file_free(plist_file);
 	

@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "sender_routing.h"
 #include "str_hash.h"
@@ -91,8 +92,10 @@ static STR_HASH_TABLE* sender_routing_load_hash()
 	STR_HASH_TABLE *phash;
 	int i, list_num, ip_len;
 	char tmp_ip[16], ip_buff[16];
-	char *pitem, *pcomma, *pbegin;
-	char *sender_name, *routing_ips;
+	const char *pcomma, *pbegin;
+	struct srcitem {
+		char sender[256], routing_ip_addrs[1024];
+	};
 	
 	plist_file = list_file_init(g_path, "%s:256%s:1024");
 	if (NULL == plist_file) {
@@ -104,10 +107,10 @@ static STR_HASH_TABLE* sender_routing_load_hash()
 		list_file_free(plist_file);
 		return NULL;
 	}
-	pitem = list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	for (i=0; i<list_num; i++) {
-		sender_name = pitem + 1280*i;
-		routing_ips = sender_name + 256;
+		char *sender_name = pitem[i].sender;
+		const char *routing_ips = pitem[i].routing_ip_addrs;
 		HX_strlower(sender_name);
 		single_list_init(&temp_list);
 		pbegin = routing_ips;

@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include "ip_table.h"
 #include "ip4_hash.h"
 #include "util.h"
@@ -114,7 +115,7 @@ static int ip_table_refresh()
     IP4_HASH_TABLE *phash = NULL;
     int i, list_len, hash_cap;
 	LIST_FILE *plist_file;
-	char *pitem;
+	struct ipitem { char ip_addr[16]; };
 	
     /* initialize the list filter */
 	plist_file = list_file_init3(g_list_path, "%s:16", false);
@@ -123,7 +124,7 @@ static int ip_table_refresh()
 			g_list_path, strerror(errno));
 		return IP_TABLE_REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;
 	
@@ -134,7 +135,7 @@ static int ip_table_refresh()
 		return IP_TABLE_REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-        ip4_hash_add(phash, pitem + 16*i, &i);   
+		ip4_hash_add(phash, pitem[i].ip_addr, &i);
     }
     list_file_free(plist_file);
 	

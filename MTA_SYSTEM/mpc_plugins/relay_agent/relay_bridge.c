@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "relay_bridge.h"
 #include "relay_agent.h"
@@ -197,11 +198,11 @@ void relay_bridge_free()
 
 BOOL relay_bridge_refresh_table()
 {
-	char *pitem;
 	int i, list_len;
 	LIST_FILE *pfile;
 	ALLOW_UNIT *pallow;
 	DOUBLE_LIST_NODE *pnode;
+	struct ipitem { char ip_addr[16]; };
 
 	pfile = list_file_init(g_list_path, "%s:16");
 	if (NULL == pfile) {
@@ -210,8 +211,7 @@ BOOL relay_bridge_refresh_table()
 
 	
 	list_len = list_file_get_item_num(pfile);
-	pitem = list_file_get_list(pfile);
-
+	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(pfile));
 	pthread_rwlock_wrlock(&g_allow_lock);
 
 	while ((pnode = double_list_get_from_head(&g_allow_list)) != NULL)
@@ -223,7 +223,7 @@ BOOL relay_bridge_refresh_table()
 			continue;
 		}
 		pallow->node.pdata = pallow;
-		strcpy(pallow->ip, pitem + 16*i);
+		HX_strlcpy(pallow->ip, pitem[i].ip_addr, sizeof(pallow->ip));
 		double_list_append_as_tail(&g_allow_list, &pallow->node);
 	}
 

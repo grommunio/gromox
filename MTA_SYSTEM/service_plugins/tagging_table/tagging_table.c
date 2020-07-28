@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "tagging_table.h"
 #include "str_hash.h"
@@ -127,16 +128,16 @@ static int tagging_table_refresh()
     STR_HASH_TABLE *phash = NULL;
     int i, list_len, hash_cap;
 	LIST_FILE *plist_file;
-	char *pitem;
 	
     /* initialize the list filter */
+	struct srcitem { char user[256]; };
 	plist_file = list_file_init3(g_list_path, "%s:256", false);
 	if (NULL == plist_file) {
 		printf("[tagging_table]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));
 		return TAGGING_TABLE_REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;
 	
@@ -147,8 +148,8 @@ static int tagging_table_refresh()
 		return TAGGING_TABLE_REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		HX_strlower(pitem + 256 * i);
-        str_hash_add(phash, pitem + 256*i, &i);   
+		HX_strlower(pitem[i].user);
+		str_hash_add(phash, pitem[i].user, &i);
     }
     list_file_free(plist_file);
 	

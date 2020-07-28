@@ -341,9 +341,10 @@ static int mail_approving_add_domain(const char *domain)
 	STR_HASH_TABLE *ptemp_hash;
 	STR_HASH_TABLE **ppitem_hash;
 	int domain_len, address_len;
-	char *pitem, temp_path[256];
-	char temp_domain[256], temp_buff[256];
-	char *str_lang, *str_obj, *str_dst;
+	char temp_path[256], temp_domain[256], temp_buff[256];
+	struct srcitem {
+		char obj[256], dst[256], lang[32];
+	};
 
 	strcpy(temp_domain, domain);
 	HX_strlower(temp_domain);
@@ -356,7 +357,7 @@ static int mail_approving_add_domain(const char *domain)
 			temp_path, strerror(errno));
 		return DOMAIN_LOAD_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	phash = str_hash_init(list_len + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
@@ -365,9 +366,9 @@ static int mail_approving_add_domain(const char *domain)
 		return DOMAIN_LOAD_HASH_FAIL;
 	}
 	for (i=0; i<list_len; i++) {
-		str_obj = pitem + 544*i;
-		str_dst = str_obj + 256;
-		str_lang = str_dst + 256;
+		char *str_obj = pitem[i].obj;
+		const char *str_dst = pitem[i].dst;
+		const char *str_lang = pitem[i].lang;
 		HX_strlower(str_obj);
 		address_len = strlen(str_obj);
 		if (address_len <= domain_len + 1 ||

@@ -1,4 +1,5 @@
 #include <string.h>
+#include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include "relay_agent.h"
@@ -54,6 +55,10 @@ typedef struct _CONNECTION_UNIT {
 	int stat;
 } CONNECTION_UNIT;
 
+struct srcitem {
+	char ip_addr_and_port[32];
+	int b_64bit;
+};
 
 static int g_bit_mode;
 static int g_channel_num;
@@ -107,7 +112,7 @@ int relay_agent_run()
 	HOST_UNIT *punit;
 	CONNECTION_UNIT *pconnect;
 	int i, j, list_len, temp_port;
-	char *pitem, temp_ip[16], *pcolon;
+	char temp_ip[16];
 
 	pfile = list_file_init(g_list_path, "%s:32%d");
 	if (NULL == pfile) {
@@ -117,16 +122,16 @@ int relay_agent_run()
 	if (0 == list_len) {
 		printf("[relay_agent]: warning: site list is empty\n");
 	}
-	pitem = list_file_get_list(pfile);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	bit32_num = 0;
 	bit64_num = 0;
 	for (i=0; i<list_len; i++) {
-		if (NULL == extract_ip(pitem + (32 + sizeof(int))*i, temp_ip)) {
+		if (extract_ip(pitem[i].ip_addr_and_port, temp_ip) == nullptr) {
 			printf("[relay_agent]: line %d: ip address format error in "
 				"site list\n", i);
 			continue;
 		}
-		pcolon = strchr(pitem + (32 + sizeof(int))*i, ':');
+		const char *pcolon = strchr(pitem[i].ip_addr_and_port, ':');
 		if (NULL == pcolon) {
 			temp_port = 25;
 		} else {
@@ -145,7 +150,7 @@ int relay_agent_run()
 		punit->node.pdata = punit;
 		strcpy(punit->ip, temp_ip);
 		punit->port = temp_port;
-		if (0 == *(int*)(pitem + (32 + sizeof(int))*i + 32)) {
+		if (pitem[i].b_64bit == 0) {
 			punit->b_64bit = FALSE;
 			bit32_num ++;
 		} else {
@@ -237,7 +242,7 @@ BOOL relay_agent_refresh_table()
 	HOST_UNIT *punit;
 	HOST_UNIT *punit1;
 	int i, list_len, temp_port;
-	char *pitem, temp_ip[16], *pcolon;
+	char temp_ip[16];
 
 	pfile = list_file_init(g_list_path, "%s:32%d");
 	if (NULL == pfile) {
@@ -247,17 +252,17 @@ BOOL relay_agent_refresh_table()
 	if (0 == list_len) {
 		printf("[relay_agent]: warning: site list is empty\n");
 	}
-	pitem = list_file_get_list(pfile);
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	double_list_init(&temp_list);
 	bit32_num = 0;
 	bit64_num = 0;
 	for (i=0; i<list_len; i++) {
-		if (NULL == extract_ip(pitem + (32 + sizeof(int))*i, temp_ip)) {
+		if (extract_ip(pitem[i].ip_addr_and_port, temp_ip) == nullptr) {
 			printf("[relay_agent]: line %d: ip address format error in "
 				"site list\n", i);
 			continue;
 		}
-		pcolon = strchr(pitem + (32 + sizeof(int))*i, ':');
+		const char *pcolon = strchr(pitem[i].ip_addr_and_port, ':');
 		if (NULL == pcolon) {
 			temp_port = 25;
 		} else {
@@ -276,7 +281,7 @@ BOOL relay_agent_refresh_table()
 		punit->node.pdata = punit;
 		strcpy(punit->ip, temp_ip);
 		punit->port = temp_port;
-		if (0 == *(int*)(pitem + (32 + sizeof(int))*i + 32)) {
+		if (pitem[i].b_64bit == 0) {
 			punit->b_64bit = FALSE;
 			bit32_num ++;
 		} else {

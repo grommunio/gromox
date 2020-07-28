@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "address_list.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -21,12 +23,12 @@ static pthread_rwlock_t g_table_lock;
 
 int address_list_refresh()
 {
-	char *pitem;
 	char *pcolon;
 	int i, item_num;
 	HOST_ITEM temp_host;
 	LIST_FILE *plist;
 	STR_HASH_TABLE *phash, *phash_temp;
+	struct ipitem { char a[256], ip_addr_and_port[32]; };
 
 	plist = list_file_init3(g_list_path, "%s:256%s:32", false);
 	if (NULL == plist) {
@@ -41,15 +43,15 @@ int address_list_refresh()
 		list_file_free(plist);
 		return REFRESH_HASH_FAIL;
 	}
-	pitem = list_file_get_list(plist);
+	struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 	for (i=0; i<item_num; i++) {
-		HX_strlower(pitem + (256 + 32) * i);
-		if (NULL == extract_ip(pitem + (256+32)*i + 256, temp_host.ip)) {
+		HX_strlower(pitem[i].a);
+		if (extract_ip(pitem[i].ip_addr_and_port, temp_host.ip) == nullptr) {
 			printf("[domain_subsystem]: line %d: ip address format error in "
 				"address list\n", i);
 			continue;
 		}
-		pcolon = strchr(pitem + (256+32)*i + 256, ':');
+		pcolon = strchr(pitem[i].ip_addr_and_port, ':');
 		if (NULL == pcolon) {
 			temp_host.port = 25;
 		} else {
@@ -60,7 +62,7 @@ int address_list_refresh()
 				continue;
 			}
 		}
-		str_hash_add(phash, pitem + (256+32)*i, &temp_host);
+		str_hash_add(phash, pitem[i].a, &temp_host);
 	}
 	list_file_free(plist);
 	pthread_rwlock_wrlock(&g_table_lock);

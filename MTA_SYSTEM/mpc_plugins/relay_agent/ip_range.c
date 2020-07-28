@@ -21,6 +21,10 @@ typedef struct _RANGE_NODE {
 	unsigned int max;
 } RANGE_NODE;
 
+struct ipitem {
+	char ip_addr_min[16], ip_addr_max[16];
+};
+
 static BOOL g_notify_stop = TRUE;
 static BOOL g_main_site;
 static char g_list_path[256];
@@ -53,7 +57,6 @@ void ip_range_init(const char *list_path, const char *url_path, int interval,
 
 int ip_range_run()
 {
-	char *pitem;
 	int i, item_num;
 	LIST_FILE *pfile;
 	RANGE_NODE *prange;
@@ -62,13 +65,13 @@ int ip_range_run()
 	pfile = list_file_init(g_list_path, "%s:16%s:16");
 	if (NULL != pfile) {
 		item_num = list_file_get_item_num(pfile);
-		pitem = list_file_get_list(pfile);
+		const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(pfile));
 		for (i=0; i<item_num; i++) {
 			prange = (RANGE_NODE*)malloc(sizeof(RANGE_NODE));
 			prange->node.pdata = prange;
-			prange->min = ip_range_trans(pitem + 32*i);
+			prange->min = ip_range_trans(pitem[i].ip_addr_min);
 			g_range_table[prange->min / 0x1000000] = TRUE;
-			prange->max = ip_range_trans(pitem + 32*i + 16);
+			prange->max = ip_range_trans(pitem[i].ip_addr_max);
 			g_range_table[prange->max / 0x1000000] = TRUE;
 			double_list_append_as_tail(&g_range_list, &prange->node);
 		}
@@ -199,7 +202,6 @@ static void *thread_work_func(void *param)
 	unsigned int a,b,c,d;
 	unsigned int number;
 	char *ptr, *ptr1;
-	char *pitem;
 	char temp_line[128];
 	char temp_path[256];
 	char option_buff[512];
@@ -341,7 +343,7 @@ static void *thread_work_func(void *param)
 				i = 0;
 				continue;
 			}
-			pitem = list_file_get_list(pfile);
+			const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(pfile));
 			item_num = list_file_get_item_num(pfile);
 			pthread_rwlock_wrlock(&g_list_lock);
 			while ((pnode = double_list_get_from_head(&g_range_list)) != NULL)
@@ -350,9 +352,9 @@ static void *thread_work_func(void *param)
 			for (j=0; j<item_num; j++) {
 				prange = (RANGE_NODE*)malloc(sizeof(RANGE_NODE));
 				prange->node.pdata = prange;
-				prange->min = ip_range_trans(pitem + 32*j);
+				prange->min = ip_range_trans(pitem[j].ip_addr_min);
 				g_range_table[prange->min / 0x1000000] = TRUE;
-				prange->max = ip_range_trans(pitem + 32*j + 16);
+				prange->max = ip_range_trans(pitem[j].ip_addr_max);
 				g_range_table[prange->max / 0x1000000] = TRUE;
 				double_list_append_as_tail(&g_range_list, &prange->node);
 			}

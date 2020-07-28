@@ -1,10 +1,15 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include "inbound_ips.h"
 #include "dns_adaptor.h"
 #include "list_file.h"
 #include "vstack.h"
 #include <pthread.h>
+
+struct ipitem {
+	char ip_addr[16];
+};
 
 static char g_list_path[256];
 static LIST_FILE *g_inbound_list;
@@ -39,7 +44,6 @@ BOOL inbound_ips_check_local(const char *domain)
 {
 	VSTACK stack;
 	char *dest_ip;
-	char *pitem;
 	int i, item_num;
 	
 	vstack_init(&stack, g_stack_allocator, 16, 1024);
@@ -49,11 +53,11 @@ BOOL inbound_ips_check_local(const char *domain)
 	}
 	pthread_rwlock_rdlock(&g_list_lock);
 	item_num = list_file_get_item_num(g_inbound_list);
-	pitem = list_file_get_list(g_inbound_list);
+	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(g_inbound_list));
 	while (FALSE == vstack_is_empty(&stack)) {
 		dest_ip = vstack_get_top(&stack);
 		for (i=0; i<item_num; i++) {
-			if (0 == strcmp(dest_ip, pitem + 16*i)) {
+			if (strcmp(dest_ip, pitem[i].ip_addr) == 0) {
 				pthread_rwlock_unlock(&g_list_lock);
 				vstack_free(&stack);
 				return TRUE;

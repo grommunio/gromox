@@ -1,5 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include "list_file.h"
 #include <time.h>
@@ -106,7 +108,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 static void console_talk(int argc, char **argv, char *result, int length)
 {
 	int i, j;
-	char *pitem, *ptr;
+	char *ptr;
 	int item_len, item_num;
 	struct tm time_buff;
 	char help_string[] = "250 spam statistic help information:\r\n"
@@ -118,7 +120,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 						 "\t    --only for spam report forms\r\n"
 						 "\t%s clear\r\n"
 						 "\t    --clear spam report information";
-						 
+	struct srcitem { char thing[256]; };						 
 
 	if (1 == argc) {
 		strncpy(result, "550 too few arguments", length);
@@ -147,14 +149,14 @@ static void console_talk(int argc, char **argv, char *result, int length)
 			strncpy(result, "550 spam information table error", length);
 			return;
 		}
-		pitem = (char*)list_file_get_list(g_list);
+		const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(g_list));
 		item_len = sprintf(result, "250 spam statistics infomation:\r\n");
 		ptr = result + item_len;
 		item_len = 0;
 		item_num = list_file_get_item_num(g_list);
 		for (i=0; i<item_num && i<SPAM_TABLE_SIZE; i++) {
-			item_len = strlen(pitem + 256*i);
-			memcpy(ptr, pitem + 256*i, item_len);
+			item_len = strlen(pitem[i].thing);
+			memcpy(ptr, pitem[i].thing, item_len);
 			ptr += item_len;
 			for (j=0; j<SPAM_TAG_LEN-item_len; j++, ptr++) {
 				*ptr = ' ';
@@ -175,14 +177,14 @@ static void console_talk(int argc, char **argv, char *result, int length)
 			strncpy(result, "550 spam information table error", length);
 			return;
 		}
-		pitem = (char*)list_file_get_list(g_list);
+		const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(g_list));
 		item_len = sprintf(result, "250 spam statistics infomation:\r\n");
 		ptr = result + item_len;
 		item_len = 0;
 		item_num = list_file_get_item_num(g_list);
 		for (i=0; i<item_num && i<SPAM_TABLE_SIZE; i++) {
-			item_len = strlen(pitem + 256*i);
-			memcpy(ptr, pitem + 256*i, item_len);
+			item_len = strlen(pitem[i].thing);
+			memcpy(ptr, pitem[i].thing, item_len);
 			ptr += item_len;
 			for (j=0; j<SPAM_TAG_LEN-item_len; j++, ptr++) {
 				*ptr = ' ';

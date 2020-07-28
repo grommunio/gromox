@@ -1,5 +1,8 @@
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/socket.h>
 #include "backend_list.h"
 #include "double_list.h"
@@ -95,7 +98,8 @@ BOOL backend_list_refresh()
 	LIST_FILE *pfile;
 	BACKEND_UNIT *punit;
 	int i, list_len, temp_port;
-	char *pitem, temp_ip[16], *pcolon;
+	char temp_ip[16];
+	struct ipitem { char ip_addr_and_port[32]; };
 
 	pfile = list_file_init(g_list_path, "%s:32");
 	if (NULL == pfile) {
@@ -105,15 +109,15 @@ BOOL backend_list_refresh()
 	if (0 == list_len) {
 		printf("[gateway_dispatch]: warning: backend list is empty\n");
 	}
-	pitem = list_file_get_list(pfile);
+	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(pfile));
 	double_list_init(&temp_list);
 	for (i=0; i<list_len; i++) {
-		if (NULL == extract_ip(pitem + 32*i, temp_ip)) {
+		if (extract_ip(pitem[i].ip_addr_and_port, temp_ip) == nullptr) {
 			printf("[gateway_dispatch]: line %d: ip address format error in "
 				"backend list\n", i);
 			continue;
 		}
-		pcolon = strchr(pitem + 32*i, ':');
+		const char *pcolon = strchr(pitem[i].ip_addr_and_port, ':');
 		if (NULL == pcolon) {
 			temp_port = 25;
 		} else {
@@ -131,7 +135,7 @@ BOOL backend_list_refresh()
 		}
 		punit->node.pdata = punit;
 		punit->node_temp.pdata = punit;
-		strcpy(punit->ip, temp_ip);
+		HX_strlcpy(punit->ip, temp_ip, sizeof(punit->ip));
 		punit->port = temp_port;
 		double_list_append_as_tail(&temp_list, &punit->node);
 	}

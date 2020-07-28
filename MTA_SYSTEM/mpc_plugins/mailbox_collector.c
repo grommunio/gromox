@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "util.h"
@@ -83,10 +84,10 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 
 static int collector_refresh()
 {
-	char *pitem;
 	int i, item_num;
 	LIST_FILE *plist;
 	STR_HASH_TABLE *phash, *phash_temp;
+	struct srcitem { char a[256], b[256]; };
 
 	plist = list_file_init(g_list_path, "%s:256%s:256");
 	if (NULL == plist) {
@@ -101,10 +102,10 @@ static int collector_refresh()
 		list_file_free(plist);
 		return REFRESH_HASH_FAIL;
 	}
-	pitem = list_file_get_list(plist);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist));
 	for (i=0; i<item_num; i++) {
-		HX_strlower(pitem + 2 * 256 * i);
-		str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);
+		HX_strlower(pitem[i].a);
+		str_hash_add(phash, pitem[i].a, pitem[i].b);
 	}
 	list_file_free(plist);
 	pthread_rwlock_wrlock(&g_table_lock);

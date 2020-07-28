@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include "list_file.h"
@@ -69,12 +70,12 @@ void proxy_retrying_init(const char *list_path, int port, int time_out,
 
 int proxy_retrying_run()
 {
-	char *pitem;
 	int i, j, item_num;
 	size_t *temp_array;
 	LIST_FILE *plist;
 	struct in_addr addr;
 	UNIT_CHANNEL *pchannel;
+	struct ipitem { char ip_addr[16]; };
 	
 	plist = list_file_init(g_list_path, "%s:16");
 	if (NULL == plist) {
@@ -82,7 +83,7 @@ int proxy_retrying_run()
 			g_list_path, strerror(errno));
 		return -1;
 	}
-	pitem = list_file_get_list(plist);
+	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 	item_num = list_file_get_item_num(plist);
 	g_unit_list = (UNIT_SITE*)malloc(sizeof(UNIT_SITE)*item_num);
 	if (NULL == g_unit_list) {
@@ -99,7 +100,7 @@ int proxy_retrying_run()
 		return -3;
 	}
 	for (i=0; i<item_num; i++) {
-		temp_array[i] = inet_addr(pitem + 16*i);
+		temp_array[i] = inet_addr(pitem[i].ip_addr);
 	}
 	list_file_free(plist);
 	proxy_retrying_sort_array(temp_array, item_num);

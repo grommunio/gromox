@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "list_file.h"
 #include "double_list.h"
@@ -59,13 +60,13 @@ void stub_retrying_init(const char *list_path, int port, int time_out,
 
 int stub_retrying_run()
 {
-	char *pitem;
 	int optval;
 	int i, item_num;
 	int sockd, status;
 	LIST_FILE *plist;
 	UNIT_ADDR *punit;
 	struct sockaddr_in my_name;
+	struct ipitem { char ip_addr[16]; };
 	
 	plist = list_file_init(g_list_path, "%s:16");
 	if (NULL == plist) {
@@ -73,7 +74,7 @@ int stub_retrying_run()
 			g_list_path, strerror(errno));
 		return -1;
 	}
-	pitem = list_file_get_list(plist);
+	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 	item_num = list_file_get_item_num(plist);
 	for (i=0; i<item_num; i++) {
 		punit = (UNIT_ADDR*)malloc(sizeof(UNIT_ADDR));
@@ -82,7 +83,7 @@ int stub_retrying_run()
 			continue;
 		}
 		punit->node.pdata = punit;
-		strcpy(punit->ip_addr, pitem + 16*i);
+		HX_strlcpy(punit->ip_addr, pitem[i].ip_addr, sizeof(punit->ip_addr));
 		double_list_append_as_tail(&g_unit_list, &punit->node);
 	}
 	list_file_free(plist);

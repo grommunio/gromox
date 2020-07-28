@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/misc.h>
 #include <libHX/string.h>
 #include <gromox/resolv.h>
@@ -133,12 +134,14 @@ static BOOL dns_adaptor_refresh()
 	IP_NODE *p_ip;
 	SINGLE_LIST_NODE *pnode;
 	char tmp_ip[16], ip_buff[16];
-	char *pitem, *pcomma, *pbegin;
-	char *dns_type, *dns_name, *dns_ips;
+	const char *pcomma, *pbegin;
 	int i, list_num, ip_len;
 	BOOL normal_exist;
 	STR_HASH_TABLE *ptable;
 	pthread_mutex_t *plock;
+	struct srcitem {
+		char dns_type[4], dns_name[256], dns_ip_addrs[1024];
+	};
 
 	plist_file = list_file_init(g_path, "%s:4%s:256%s:1024");
 	if (NULL == plist_file) {
@@ -186,12 +189,12 @@ static BOOL dns_adaptor_refresh()
 	/* end of clear */
 	
 	list_num = list_file_get_item_num(plist_file);
-	pitem = list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	for (i=0; i<list_num; i++) {
-		dns_type = pitem + 1284*i;
-		dns_name = dns_type + 4;
+		const char *dns_type = pitem[i].dns_type;
+		char *dns_name = pitem[i].dns_name;
 		HX_strlower(dns_name);
-		dns_ips = dns_name + 256;
+		const char *dns_ips = pitem[i].dns_ip_addrs;
 		if (0 == strcasecmp(dns_type, "MX")) {
 			ptable = g_MX_table;
 			plock = &g_MX_lock;

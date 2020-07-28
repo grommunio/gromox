@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "domain_monitor.h"
 #include "mail_func.h"
@@ -403,21 +404,20 @@ static int domain_monitor_add_domain(const char *domain)
 	STR_HASH_ITER *iter;
 	int i, list_len, type;
 	LIST_FILE *plist_file;
-	char *pitem, temp_path[256];
-	char temp_domain[256], temp_buff[256];
-	char *str_type, *str_tag, *str_value;
+	char temp_path[256], temp_domain[256], temp_buff[256];
 
 	strcpy(temp_domain, domain);
 	HX_strlower(temp_domain);
 	sprintf(temp_path, "%s/%s.txt", g_root_path, temp_domain);
 	/* initialize the list filter */
+	struct srcitem { char type[16], tag[256], value[256]; };
 	plist_file = list_file_init(temp_path, "%s:16%s:256:%s:256");
 	if (NULL == plist_file) {
 		printf("[domain_monitor]: list_file_init %s: %s\n",
 			temp_path, strerror(errno));
 		return DOMAIN_LOAD_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	phash = str_hash_init(list_len + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
@@ -426,9 +426,9 @@ static int domain_monitor_add_domain(const char *domain)
 		return DOMAIN_LOAD_HASH_FAIL;
 	}
 	for (i=0; i<list_len; i++) {
-		str_type = pitem + 528*i;
-		str_tag = str_type + 16;
-		str_value = str_tag + 256;
+		const char *str_type = pitem[i].type;
+		char *str_tag = pitem[i].tag;
+		const char *str_value = pitem[i].value;
 		if (0 == strcasecmp("F_IN", str_type)) {
 			type = FORWARD_IN;
 		} else if (0 == strcasecmp("F_OUT", str_type)) {

@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "mail_forwarder.h"
 #include "mail_func.h"
@@ -343,9 +344,10 @@ static int mail_forwarder_refresh()
 	int i, list_len;
 	int hash_cap, type;
 	LIST_FILE *plist_file;
-	char *pitem;
-	char *str_type, *str_tag, *str_value;
 	BOOL should_add;
+	struct srcitem {
+		char type[16], tag[256], value[256];
+	};
 
 	/* initialize the list filter */
 	plist_file = list_file_init(g_path, "%s:16%s:256:%s:256");
@@ -354,7 +356,7 @@ static int mail_forwarder_refresh()
 			g_path, strerror(errno));
 		return TABLE_REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;
 	phash = str_hash_init(hash_cap, sizeof(DOUBLE_LIST), NULL);
@@ -364,9 +366,9 @@ static int mail_forwarder_refresh()
 		return TABLE_REFRESH_HASH_FAIL;
 	}
 	for (i=0; i<list_len; i++) {
-		str_type = pitem + 528*i;
-		str_tag = str_type + 16;
-		str_value = str_tag + 256;
+		const char *str_type = pitem[i].type;
+		char *str_tag = pitem[i].tag;
+		const char *str_value = pitem[i].value;
 		should_add = TRUE;
 		if (0 == strcasecmp("F_IN", str_type)) {
 			type = FORWARD_IN;

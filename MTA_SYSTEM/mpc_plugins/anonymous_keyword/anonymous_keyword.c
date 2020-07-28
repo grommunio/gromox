@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "anonymous_keyword.h"
 #include "single_list.h"
 #include "list_file.h"
@@ -91,13 +92,14 @@ BOOL anonymous_keyword_refresh()
 	iconv_t conv_id;
 	char *pin, *pout, *ptr;
 	char temp_buff[1024];
-	char *pitem1, *pitem2;
 	CHARSET_ITEM *pcharset;
 	LIST_FILE *pfile1, *pfile2;
 	SINGLE_LIST **temp_table;
 	SINGLE_LIST_NODE *pnode;
 	KEYWORD_NODE *pkeyword;
 	SINGLE_LIST *charset_list, *temp_list;
+	struct csitem { char cset[32]; };
+	struct kwitem { char word[256]; };
 	
 	charset_list = malloc(sizeof(SINGLE_LIST));
 	if (NULL == charset_list) {
@@ -121,9 +123,9 @@ BOOL anonymous_keyword_refresh()
 		list_file_free(pfile1);
 		return FALSE;
 	}
-	pitem1 = list_file_get_list(pfile1);
+	const struct csitem *pitem1 = reinterpret_cast(struct csitem *, list_file_get_list(pfile1));
 	item_num1 = list_file_get_item_num(pfile1);
-	pitem2 = list_file_get_list(pfile2);
+	const struct kwitem *pitem2 = reinterpret_cast(struct kwitem *, list_file_get_list(pfile2));
 	item_num2 = list_file_get_item_num(pfile2);
 	temp_table = (SINGLE_LIST**)malloc(256*256*sizeof(SINGLE_LIST*));
 	if (NULL == temp_table) {
@@ -135,8 +137,7 @@ BOOL anonymous_keyword_refresh()
 		return FALSE;
 	}
 	memset(temp_table, 0, sizeof(SINGLE_LIST*)*256*256);
-	if (item_num2 != 0 &&
-		0 != strncmp("--------", pitem2, 8)) {
+	if (item_num2 != 0 && strncmp("--------", pitem2[0].word, 8) != 0) {
 		printf("[anonymous_keyword]: first line of %s should be group name\n",
 			g_list_path);
 		free(charset_list);
@@ -146,9 +147,8 @@ BOOL anonymous_keyword_refresh()
 		return FALSE;
 	}
 	for (group_num=0, i=0; i<item_num2; i++) {
-		if (0 == strncmp("--------", pitem2 + 256*i, 8)) {
+		if (strncmp("--------", pitem2[i].word, 8) == 0)
 			group_num ++;
-		}
 	}
 	group_array = malloc(group_num*sizeof(GROUP_ITEM));
 	if (NULL == group_array) {
@@ -165,10 +165,9 @@ BOOL anonymous_keyword_refresh()
 		group_array[i].times = 0;
 	}
 	for (group_index=0, i=0; i<item_num2; i++) {
-		if (0 == strncmp("--------", pitem2 + 256*i, 8)) {
-			if (strlen(pitem2 + 256*i) > 8 && strlen(pitem2 + 256*i) < 32) {
-				strcpy(group_array[group_index].name, pitem2 + 256*i + 8);
-			}
+		if (strncmp("--------", pitem2[i].word, 8) == 0) {
+			if (strlen(pitem2[i].word) > 8 && strlen(pitem2[i].word) < 32)
+				strcpy(group_array[group_index].name, pitem2[i].word + 8);
 			group_index ++;
 		}
 	}
@@ -177,11 +176,11 @@ BOOL anonymous_keyword_refresh()
 		pcharset = (CHARSET_ITEM*)malloc(sizeof(CHARSET_ITEM));
 		if (NULL == pcharset) {
 			printf("[anonymous_keyword]: fail to allocate charset node for %s\n",
-				pitem1 + 32*i);
+				pitem1[i].cset);
 			continue;
 		}
 		pcharset->node.pdata = pcharset;
-		strcpy(pcharset->charset, pitem1 + 32*i);
+		HX_strlcpy(pcharset->charset, pitem1[i].cset, sizeof(pcharset->charset));
 		pcharset->match_table = malloc(256*256*sizeof(void*));
 		if (NULL == pcharset->match_table) {
 			printf("[anonymous_keyword]: fail to allocate match index table "
@@ -191,7 +190,7 @@ BOOL anonymous_keyword_refresh()
 		}
 		memset(pcharset->match_table, 0, 256*256*sizeof(void*));
 		if (0 != i) {
-			conv_id = iconv_open(pitem1 + 32*i, pitem1);
+			conv_id = iconv_open(pitem1[i].cset, pitem1[0].cset);
 			if ((iconv_t)-1 == conv_id) {
 				free(pcharset->match_table);
 				free(pcharset);
@@ -199,14 +198,14 @@ BOOL anonymous_keyword_refresh()
 			}
 		}
 		for (group_index=-1, j=0; j<item_num2; j++) {
-			if (0 == strncmp("--------", pitem2 + 256*j, 8)) {
+			if (strncmp("--------", pitem2[j].word, 8) == 0) {
 				group_index ++;
 				continue;
 			}
 			if (0 == i) {
-				strcpy(temp_buff, pitem2 + 256*j);
+				HX_strlcpy(temp_buff, pitem2[j].word, sizeof(temp_buff));
 			} else {
-				pin = pitem2 + 256*j;
+				pin = const_cast(char *, pitem2[j].word);
 				pout = temp_buff;
 				in_len = strlen(pin) + 1;
 				out_len = 1024;
@@ -214,7 +213,7 @@ BOOL anonymous_keyword_refresh()
 				if (-1 == conv_ret || 1024 - out_len <= 0 ||
 					1024 - out_len > 1023) {
 					printf("[anonymous_keyword]: fail to convert %s from \"%s\" "
-						"to \"%s\"!\n", pitem2 + 256*j, pitem1, pitem1 + 32*i);
+						"to \"%s\"!\n", pitem2[j].word, pitem1[0].cset, pitem1[i].cset);
 				}
 			}
 			temp_len = strlen(temp_buff);

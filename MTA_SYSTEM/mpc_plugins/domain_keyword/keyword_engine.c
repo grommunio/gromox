@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "keyword_engine.h"
 #include "single_list.h"
 #include "list_file.h"
@@ -30,13 +31,14 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 	iconv_t conv_id;
 	char *pin, *pout, *ptr;
 	char temp_buff[1024];
-	char *pitem1, *pitem2;
 	CHARSET_ITEM *pcharset;
 	LIST_FILE *pfile1, *pfile2;
 	SINGLE_LIST **temp_table;
 	SINGLE_LIST_NODE *pnode;
 	KEYWORD_NODE *pkeyword;
 	SINGLE_LIST *charset_list;
+	struct csitem { char cset[32]; };
+	struct kwitem { char word[256]; };
 	
 	charset_list = malloc(sizeof(SINGLE_LIST));
 	if (NULL == charset_list) {
@@ -60,9 +62,9 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 		list_file_free(pfile1);
 		return NULL;
 	}
-	pitem1 = list_file_get_list(pfile1);
+	const struct csitem *pitem1 = reinterpret_cast(struct csitem *, list_file_get_list(pfile1));
 	item_num1 = list_file_get_item_num(pfile1);
-	pitem2 = list_file_get_list(pfile2);
+	const struct kwitem *pitem2 = reinterpret_cast(struct kwitem *, list_file_get_list(pfile2));
 	item_num2 = list_file_get_item_num(pfile2);
 	temp_table = (SINGLE_LIST**)malloc(256*256*sizeof(SINGLE_LIST*));
 	if (NULL == temp_table) {
@@ -78,11 +80,11 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 		pcharset = (CHARSET_ITEM*)malloc(sizeof(CHARSET_ITEM));
 		if (NULL == pcharset) {
 			printf("[keyword_engine]: fail to allocate charset node for %s\n",
-				pitem1 + 32*i);
+				pitem1[i].cset);
 			continue;
 		}
 		pcharset->node.pdata = pcharset;
-		strcpy(pcharset->charset, pitem1 + 32*i);
+		HX_strlcpy(pcharset->charset, pitem1[i].cset, sizeof(pcharset->charset));
 		pcharset->match_table = malloc(256*256*sizeof(void*));
 		if (NULL == pcharset->match_table) {
 			printf("[keyword_engine]: fail to allocate match index table "
@@ -92,7 +94,7 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 		}
 		memset(pcharset->match_table, 0, 256*256*sizeof(void*));
 		if (0 != i) {
-			conv_id = iconv_open(pitem1 + 32*i, pitem1);
+			conv_id = iconv_open(pitem1[i].cset, pitem1[0].cset);
 			if ((iconv_t)-1 == conv_id) {
 				free(pcharset->match_table);
 				free(pcharset);
@@ -101,9 +103,9 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 		}
 		for (j=0; j<item_num2; j++) {
 			if (0 == i) {
-				strcpy(temp_buff, pitem2 + 256*j);
+				HX_strlcpy(temp_buff, pitem2[j].word, sizeof(temp_buff));
 			} else {
-				pin = pitem2 + 256*j;
+				pin = const_cast(char *, pitem2[j].word);
 				pout = temp_buff;
 				in_len = strlen(pin) + 1;
 				out_len = 1024;

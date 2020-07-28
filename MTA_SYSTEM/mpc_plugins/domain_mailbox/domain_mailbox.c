@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "domain_mailbox.h"
 #include "util.h"
@@ -32,10 +33,10 @@ int domain_mailbox_run()
 
 static BOOL domain_mailbox_refresh_table()
 {
-	char *pitem;
 	int i, item_num;
 	LIST_FILE *plist;
 	STR_HASH_TABLE *phash, *phash_temp;
+	struct srcitem { char a[256], b[256]; };
 
 	plist = list_file_init3(g_list_path, "%s:256%s:256", false);
 	if (NULL == plist) {
@@ -50,10 +51,10 @@ static BOOL domain_mailbox_refresh_table()
 		list_file_free(plist);
 		return FALSE;
 	}
-	pitem = list_file_get_list(plist);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist));
 	for (i=0; i<item_num; i++) {
-		HX_strlower(pitem + 2 * 256 * i);
-		str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);
+		HX_strlower(pitem[i].a);
+		str_hash_add(phash, pitem[i].a, pitem[i].b);
 	}
 	list_file_free(plist);
 	pthread_rwlock_wrlock(&g_table_lock);

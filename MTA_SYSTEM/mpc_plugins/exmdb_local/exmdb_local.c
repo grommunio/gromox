@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "util.h"
 #include "guid.h"
@@ -104,7 +105,6 @@ void exmdb_local_init(const char *config_path,
 int exmdb_local_run()
 {
 	int i, num;
-	char *pitem;
 	int last_propid;
 	LIST_FILE *plist;
 	char temp_line[256];
@@ -189,6 +189,7 @@ int exmdb_local_run()
 		printf("[exmdb_local]: fail to init oxcmail library\n");
 		return -2;
 	}
+	struct srcitem { char s[256]; };
 	plist = list_file_init(g_propname_path, "%s:256");
 	if (NULL == plist) {
 		printf("[exmdb_local]: Failed to read property name list from %s: %s\n",
@@ -196,7 +197,7 @@ int exmdb_local_run()
 		return -3;
 	}
 	num = list_file_get_item_num(plist);
-	pitem = list_file_get_list(plist);
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist));
 	g_str_hash = str_hash_init(num + 1, sizeof(uint16_t), NULL);
 	if (NULL == g_str_hash) {
 		printf("[exmdb_local]: fail to init hash table\n");
@@ -204,7 +205,7 @@ int exmdb_local_run()
 	}
 	last_propid = 0x8001;
 	for (i=0; i<num; i++) {
-		strcpy(temp_line, pitem + 256*i);
+		HX_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
 		HX_strlower(temp_line);
 		str_hash_add(g_str_hash, temp_line, &last_propid);
 		last_propid ++;

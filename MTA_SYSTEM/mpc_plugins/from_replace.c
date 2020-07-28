@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "str_hash.h"
@@ -123,15 +124,15 @@ static int table_refresh()
     STR_HASH_TABLE *phash = NULL;
     int i, list_len;
 	LIST_FILE *plist_file;
-	char *pitem;
 	
     /* initialize the list filter */
+	struct srcitem { char a[256], b[256]; };
 	plist_file = list_file_init(g_list_path, "%s:256%s:256");
 	if (NULL == plist_file) {
 		printf("[from_replace]: list_file_init %s: %s\n", g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
@@ -141,13 +142,13 @@ static int table_refresh()
 		return REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		if (NULL == strchr(pitem + 2*256*i + 256, '@') ||
-			NULL != strchr(pitem + 2*256*i + 256, ' ')) {
+		if (strchr(pitem[i].b, '@') == nullptr ||
+		    strchr(pitem[i].b, ' ') != nullptr) {
 			printf("[from_replace]: address format error in line %d\n", i);
 			continue;
 		}
-		HX_strlower(pitem + 2 * 256 * i);
-        str_hash_add(phash, pitem + 2*256*i, pitem + 2*256*i + 256);   
+		HX_strlower(pitem[i].a);
+		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
     list_file_free(plist_file);
 	

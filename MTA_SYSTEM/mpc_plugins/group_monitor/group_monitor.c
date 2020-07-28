@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "group_monitor.h"
 #include <gromox/hook_common.h>
@@ -460,9 +461,8 @@ static int group_monitor_add_group(const char *group)
 	STR_HASH_ITER *iter;
 	int i, list_len, type;
 	LIST_FILE *plist_file;
-	char *pdomain, *pitem, temp_path[256];
+	char *pdomain, temp_path[256];
 	char temp_group[256], temp_buff[256];
-	char *str_type, *str_tag, *str_value;
 
 	strcpy(temp_group, group);
 	HX_strlower(temp_group);
@@ -473,13 +473,14 @@ static int group_monitor_add_group(const char *group)
 	pdomain ++;
 	sprintf(temp_path, "%s/%s.txt", g_root_path, temp_group);
 	/* initialize the list filter */
+	struct srcitem { char type[16], tag[256], value[256]; };
 	plist_file = list_file_init(temp_path, "%s:16%s:256:%s:256");
 	if (NULL == plist_file) {
 		printf("[group_monitor]: list_file_init %s: %s\n",
 			temp_path, strerror(errno));
 		return GROUP_LOAD_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	phash = str_hash_init(list_len + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
@@ -488,9 +489,9 @@ static int group_monitor_add_group(const char *group)
 		return GROUP_LOAD_HASH_FAIL;
 	}
 	for (i=0; i<list_len; i++) {
-		str_type = pitem + 528*i;
-		str_tag = str_type + 16;
-		str_value = str_tag + 256;
+		const char *str_type = pitem[i].type;
+		char *str_tag = pitem[i].tag;
+		const char *str_value = pitem[i].value;
 		if (0 == strcasecmp("F_IN", str_type)) {
 			type = FORWARD_IN;
 		} else if (0 == strcasecmp("F_OUT", str_type)) {
