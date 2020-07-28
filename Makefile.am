@@ -7,7 +7,7 @@ AM_CXXFLAGS = ${my_CXXFLAGS}
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_resolv.la libgromox_rpc.la libgromox_webkit.la
 noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_webkit.ldd libgromox_rpc.ldd libgromox_mapi.ldd
-pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${domain_admin_progs} ${system_admin_progs} ${system_admin_tools} ${archiver_system_progs}
+pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools} ${archiver_system_progs} fcgi_cgi
 pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -19,8 +19,8 @@ noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-da_daemon.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-timer.service system/gromox-zcore.service
-unit_targets = system/gromox-archive.target system/gromox-da.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
+unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-timer.service system/gromox-zcore.service
+unit_targets = system/gromox-archive.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
 mta_system = delivery smtp
@@ -419,7 +419,6 @@ noinst_DATA += \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
-domain_admin_progs = da_daemon fcgi_cgi
 system_admin_progs = adaptor cdnd sa_daemon event locker monitor pad rsyncd rsyncer scanner sensor session supervisor timer
 system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
@@ -1257,8 +1256,6 @@ rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_map
 # DOMAIN_ADMIN
 fcgi_cgi_SOURCES = DOMAIN_ADMIN/fcgi_cgi.c
 fcgi_cgi_LDADD = -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_rpc.la
-da_daemon_SOURCES = DOMAIN_ADMIN/daemon/data_source.c DOMAIN_ADMIN/daemon/domain_classifier.c DOMAIN_ADMIN/daemon/item_sorter.c DOMAIN_ADMIN/daemon/main.c LIBRARY/system_log.c SYSTEM_ADMIN/daemon/log_flusher.c SYSTEM_ADMIN/daemon/smtp_sender.c
-da_daemon_LDADD = -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_resolv.la libgromox_webkit.la
 
 # SYSTEM_ADMIN
 saphpdir = ${pkgdatadir}/sa
@@ -1422,14 +1419,14 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 # doc
 man_MANS = \
 	doc/adaptor.8gx doc/archive.8gx doc/authmgr.4gx doc/bl_delete.8gx \
-	doc/cdnd.8gx doc/cidb.8gx doc/da.cfg.5gx doc/da_daemon.8gx \
+	doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \
 	doc/digest.8gx doc/esmtp_auth.4gx \
 	doc/event.8gx doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
 	doc/fcgi_cgi.8gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-archive.target.8gx \
-	doc/gromox-da.target.8gx doc/gromox-exch.target.8gx \
+	doc/gromox-exch.target.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
 	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \

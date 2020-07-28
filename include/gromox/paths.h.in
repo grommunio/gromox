@@ -14,7 +14,6 @@
 #define PKGDATADIR "/usr/share/gromox"
 #define PKGDATAAGENTDIR PKGDATADIR "/agent"
 #define PKGDATAARCHIVEDIR PKGDATADIR "/archive"
-#define PKGDATADADIR PKGDATADIR "/da_daemon"
 #define PKGDATADELIVERYDIR PKGDATADIR "/delivery"
 #define PKGDATAHTTPDIR PKGDATADIR "/http"
 #define PKGDATAIMAPDIR PKGDATADIR "/imap"

@@ -24,16 +24,6 @@ cidb(8gx)
 gromox\-archive.target(8gx) \(em systemd target replacing titan
 .IP \(bu 4
 migrator(8gx)
-.SH Domain administration subsystem
-.IP \(bu 4
-da.cfg(5gx) \(em configuration file for domain administration CGI programs
-.IP \(bu 4
-da_daemon(8gx)
-.IP \(bu 4
-fcgi_cgi(8gx)
-.IP \(bu 4
-gromox\-da.target(8gx) \(em domain administration service group unit for
-systemd
 .SH Exchange subsystem
 .IP \(bu 4
 exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
@@ -122,6 +112,9 @@ ldap_adaptor(4gx) \(em LDAP connector for user metadata and authentication
 .IP \(bu 4
 mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
 authentication
+.SH Supplemental programs
+.IP \(bu 4
+fcgi_cgi(8gx)
 .SH Listening sockets
 .IP \(bu 4
 /run/gromox/fcgi_cgi.sock \(em fcgi_cgi(8gx)
