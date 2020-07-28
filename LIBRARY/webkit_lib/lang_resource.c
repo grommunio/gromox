@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "lang_resource.h"
 #include "list_file.h"
@@ -34,7 +35,6 @@ static const char* lang_resource_replace(const char *language)
 LANG_RESOURCE* lang_resource_init(const char *path)
 {
 	DIR *dirp;
-	char *pitem;
 	char *pvalue;
 	int i, item_num;
 	LIST_FILE *pfile;
@@ -42,6 +42,7 @@ LANG_RESOURCE* lang_resource_init(const char *path)
 	char temp_path[256];
 	struct dirent *direntp;
 	LANG_RESOURCE *presource;
+	struct srcitem { char a[32], b[1024]; };
 
 	dirp = opendir(path);
 	if (NULL == dirp){
@@ -80,14 +81,12 @@ LANG_RESOURCE* lang_resource_init(const char *path)
 			free(pnode);
 			continue;
 		}
-		pitem = list_file_get_list(pfile);
+		const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 		item_num = list_file_get_item_num(pfile);
 		for (i=0; i<item_num; i++) {
-			pvalue = strdup(pitem + (1024+32)*i + 32);
-			if (FALSE == assoc_array_assign(pnode->parray,
-				pitem + (1024+32)*i, &pvalue)) {
+			pvalue = strdup(pitem[i].b);
+			if (!assoc_array_assign(pnode->parray, pitem[i].a, &pvalue))
 				free(pvalue);	
-			}
 		}
 		list_file_free(pfile);
 		

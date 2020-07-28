@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/paths.h>
 #include "rtf.h"
@@ -11,6 +12,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+struct srcitem {
+	int cpid;
+	char s[64];
+};
 
 static LIST_FILE *g_list_file;
 static unsigned int opt_show_version;
@@ -23,16 +29,13 @@ static struct HXoption g_options_table[] = {
 
 static const char* cpid_to_charset_to(uint32_t cpid)
 {
-	void *pitem;
 	int i, item_num;
 	
 	item_num = list_file_get_item_num(g_list_file);
-	pitem = list_file_get_list(g_list_file);
-	for (i=0; i<item_num; i++) {
-		if (*(uint32_t*)(pitem + (64+sizeof(int))*i) == cpid) {
-			return pitem + (64+sizeof(int))*i + sizeof(int);
-		}
-	}
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(g_list_file));
+	for (i = 0; i < item_num; ++i)
+		if (pitem[i].cpid == cpid)
+			return pitem[i].s;
 	return "us-ascii";
 }
 
