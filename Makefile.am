@@ -191,8 +191,8 @@ BUILT_SOURCES = include/gromox/paths.h
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/long_hash.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
-libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/localemap.cpp
-libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS}
+libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/localemap.cpp lib/oxoabkt.cpp
+libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS}
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_dbop_la_SOURCES = lib/dbop_mysql.cpp
 libgromox_dbop_la_LIBADD = ${mysql_LIBS}
@@ -576,7 +576,9 @@ mapi_la_LIBADD = ${HX_LIBS}
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 # tests
-noinst_PROGRAMS = tests/bodyconv tests/getmxbyname
+noinst_PROGRAMS = tests/abktconv tests/bodyconv tests/getmxbyname
+tests_abktconv_SOURCES = tests/abktconv.cpp
+tests_abktconv_LDADD = libgromox_cplus.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
 tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
