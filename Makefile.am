@@ -790,13 +790,13 @@ man_MANS = \
 	doc/timer.8gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in
-	sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
+	${AM_V_GEN}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLIBDIR .*|#define PKGLIBDIR "${pkglibdir}"|' \
 	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
 	 -e 's|#define PKGSTATEDIR .*|#define PKGSTATEDIR "${localstatedir}/lib/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
 		<$< >$@.tmp
-	if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi
+	${AM_V_at}if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
