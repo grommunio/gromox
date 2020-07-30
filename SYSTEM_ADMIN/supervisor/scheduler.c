@@ -100,7 +100,7 @@ int scheduler_run()
 		if (strcasecmp(pitem[i].method, "SMTP_IN") == 0) {
 			psmtp_unit = (SMTP_UNIT*)malloc(sizeof(SMTP_UNIT));
 			if (NULL == psmtp_unit) {
-				printf("[scheduler]: fail to allocate memory for smtp unit\n");
+				printf("[scheduler]: Failed to allocate memory for SMTP unit\n");
 				continue;
 			}
 			psmtp_unit->node.pdata = psmtp_unit;
@@ -118,7 +118,7 @@ int scheduler_run()
 		} else if (strcasecmp(pitem[i].method, "SMTP_OUT") == 0) {
 			psmtp_unit = (SMTP_UNIT*)malloc(sizeof(SMTP_UNIT));
 			if (NULL == psmtp_unit) {
-				printf("[scheduler]: fail to allocate memory for smtp unit\n");
+				printf("[scheduler]: Failed to allocate memory for SMTP unit\n");
 				continue;
 			}
 			psmtp_unit->node.pdata = psmtp_unit;
@@ -136,7 +136,7 @@ int scheduler_run()
 		} else if (strcasecmp(pitem[i].method, "POP3") == 0) {
 			ppop3_unit = (POP3_UNIT*)malloc(sizeof(POP3_UNIT));
 			if (NULL == ppop3_unit) {
-				printf("[scheduler]: fail to allocate memory for pop3 unit\n");
+				printf("[scheduler]: Failed to allocate memory for POP3 unit\n");
 				continue;
 			}
 			ppop3_unit->node.pdata = ppop3_unit;

@@ -123,7 +123,7 @@ static int table_refresh()
 	
     phash = str_hash_init(hash_cap, 32, NULL);
 	if (NULL == phash) {
-		printf("[lang_charset]: fail to allocate hash map");
+		printf("[lang_charset]: Failed to allocate hash map");
 		list_file_free(plist_file);
 		return REFRESH_HASH_FAIL;
 	}

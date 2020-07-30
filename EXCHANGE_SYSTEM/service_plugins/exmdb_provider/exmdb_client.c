@@ -543,7 +543,7 @@ int exmdb_client_run()
 		if (TRUE == common_util_check_local_ip(pitem[i].ip_addr)) {
 			plocal = malloc(sizeof(LOCAL_SVR));
 			if (NULL == plocal) {
-				printf("[exmdb_provider]: fail to allocate memory\n");
+				printf("[exmdb_provider]: Failed to allocate memory\n");
 				list_file_free(plist);
 				g_notify_stop = TRUE;
 				return 3;
@@ -564,7 +564,7 @@ int exmdb_client_run()
 		}
 		pserver = malloc(sizeof(REMOTE_SVR));
 		if (NULL == pserver) {
-			printf("[exmdb_provider]: fail to allocate memory for exmdb\n");
+			printf("[exmdb_provider]: Failed to allocate memory for exmdb\n");
 			list_file_free(plist);
 			g_notify_stop = TRUE;
 			return 5;

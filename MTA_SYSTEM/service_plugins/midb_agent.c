@@ -143,7 +143,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		for (i=0; i<list_num; i++) {
 			pserver = (BACK_SVR*)malloc(sizeof(BACK_SVR));
 			if (NULL == pserver) {
-				printf("[midb_agent]: fail to allocate memory for midb\n");
+				printf("[midb_agent]: Failed to allocate memory for midb\n");
 				list_file_free(plist);
 				return FALSE;
 			}

@@ -143,7 +143,7 @@ static int tagging_table_refresh()
 	
     phash = str_hash_init(hash_cap, sizeof(int), NULL);
 	if (NULL == phash) {
-		printf("[tagging_table]: fail to allocate hash map\n");
+		printf("[tagging_table]: Failed to allocate hash map\n");
 		list_file_free(plist_file);
 		return TAGGING_TABLE_REFRESH_HASH_FAIL;
 	}

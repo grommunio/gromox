@@ -130,7 +130,7 @@ BOOL backend_list_refresh()
 		}
 		punit = (BACKEND_UNIT*)malloc(sizeof(BACKEND_UNIT));
 		if (NULL == punit) {
-			debug_info("[gateway_dispatch]: fail to allocate memory");
+			debug_info("[gateway_dispatch]: Failed to allocate memory");
 			continue;
 		}
 		punit->node.pdata = punit;

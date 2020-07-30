@@ -63,7 +63,7 @@ int audit_filter_run()
 	}
     g_audit_hash = str_hash_init(g_audit_num, sizeof(STR_AUDIT), NULL);
     if (NULL == g_audit_hash) {
-        str_filter_echo("fail to allocate audit hash table");
+		str_filter_echo("Failed to allocate audit hash table");
         return -1;
 	}
 	return 0;

@@ -237,7 +237,7 @@ int main(int argc, const char **argv)
 	
 	g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
 	if (NULL == g_ssl_mutex_buf) {
-		printf("[system]: fail to allocate ssl locking buffer\n");
+		printf("[system]: Failed to allocate SSL locking buffer\n");
 		SSL_CTX_free(g_ssl_ctx);
 		close(sockd);
 		return 6;

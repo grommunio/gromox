@@ -420,7 +420,7 @@ int main(int argc, const char **argv)
 	
 	sql_string = malloc(str_size + str_size1 + 1);
 	if (NULL == sql_string) {
-		printf("fail to allocate memory\n");
+		printf("Failed to allocate memory\n");
 		return 6;
 	}
 	fd = open(PKGDATASADIR "/doc/sqlite3_common.txt", O_RDONLY);

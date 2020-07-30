@@ -153,7 +153,7 @@ int console_server_run()
 	}
 	pnodes = (CONSOLE_NODE*)malloc(MAX_CONSOLE_NUMBER*sizeof(CONSOLE_NODE));
 	if (NULL == pnodes) {
-		printf("[console_server]: fail to allocate console nodes buffer\n");
+		printf("[console_server]: Failed to allocate console nodes buffer\n");
 		close(sock);
 		return -5;
 	}

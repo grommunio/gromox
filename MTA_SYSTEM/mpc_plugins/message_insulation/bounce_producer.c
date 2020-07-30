@@ -233,7 +233,7 @@ static void bounce_producer_load_template(const char *temp_name, SINGLE_LIST *pl
 
 	presource = (RESOURCE_NODE*)malloc(sizeof(RESOURCE_NODE));
 	if (NULL == presource) {
-		printf("[message_insulation]: fail to allocate resource node memory\n");
+		printf("[message_insulation]: Failed to allocate resource node memory\n");
 		return;
 	}
 	/* fill the struct with initial data */

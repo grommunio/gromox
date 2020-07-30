@@ -1540,7 +1540,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	
 	pbuff = malloc(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
-		debug_info("[mime]: fail to allocate memory in mime_read_content");
+		debug_info("[mime]: Failed to allocate memory in mime_read_content");
 		*plength = 0;
 		return FALSE;
 	}

@@ -130,7 +130,7 @@ static int ip_table_refresh()
 	
     phash = ip4_hash_init(hash_cap, sizeof(int), NULL);
 	if (NULL == phash) {
-		ip_table_echo("fail to allocate hash map");
+		ip_table_echo("Failed to allocate hash map");
 		list_file_free(plist_file);
 		return IP_TABLE_REFRESH_HASH_FAIL;
 	}

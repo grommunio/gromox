@@ -103,7 +103,7 @@ BOOL anonymous_keyword_refresh()
 	
 	charset_list = malloc(sizeof(SINGLE_LIST));
 	if (NULL == charset_list) {
-		printf("[anonymous_keyword]: fail to allocate memory for "
+		printf("[anonymous_keyword]: Failed to allocate memory for "
 			"keyword engine\n");
 		return FALSE;
 	}
@@ -129,7 +129,7 @@ BOOL anonymous_keyword_refresh()
 	item_num2 = list_file_get_item_num(pfile2);
 	temp_table = (SINGLE_LIST**)malloc(256*256*sizeof(SINGLE_LIST*));
 	if (NULL == temp_table) {
-		printf("[anonymous_keyword]: fail to allocate memory for "
+		printf("[anonymous_keyword]: Failed to allocate memory for "
 			"temporary index table\n");
 		free(charset_list);
 		list_file_free(pfile1);
@@ -152,7 +152,7 @@ BOOL anonymous_keyword_refresh()
 	}
 	group_array = malloc(group_num*sizeof(GROUP_ITEM));
 	if (NULL == group_array) {
-		printf("[anonymous_keyword]: fail to allocate memory for "
+		printf("[anonymous_keyword]: Failed to allocate memory for "
 			"group array\n");
 		free(charset_list);
 		list_file_free(pfile1);
@@ -175,7 +175,7 @@ BOOL anonymous_keyword_refresh()
 	for (i=0; i<item_num1; i++) {
 		pcharset = (CHARSET_ITEM*)malloc(sizeof(CHARSET_ITEM));
 		if (NULL == pcharset) {
-			printf("[anonymous_keyword]: fail to allocate charset node for %s\n",
+			printf("[anonymous_keyword]: Failed to allocate charset node for %s\n",
 				pitem1[i].cset);
 			continue;
 		}
@@ -183,7 +183,7 @@ BOOL anonymous_keyword_refresh()
 		HX_strlcpy(pcharset->charset, pitem1[i].cset, sizeof(pcharset->charset));
 		pcharset->match_table = malloc(256*256*sizeof(void*));
 		if (NULL == pcharset->match_table) {
-			printf("[anonymous_keyword]: fail to allocate match index table "
+			printf("[anonymous_keyword]: Failed to allocate match index table "
 				"for %s", pcharset->charset);
 			free(pcharset);
 			continue;
@@ -290,7 +290,7 @@ BOOL anonymous_keyword_refresh()
 				}
 				pcharset->match_table[j] = malloc(temp_len + sizeof(int));
 				if (NULL == pcharset->match_table[j]) {
-					printf("[anonymous_keyword]: fail to allocate memory for "
+					printf("[anonymous_keyword]: Failed to allocate memory for "
 						"match item in %s", pcharset->charset);
 					continue;
 				}

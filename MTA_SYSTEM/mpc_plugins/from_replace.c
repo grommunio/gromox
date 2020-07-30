@@ -137,7 +137,7 @@ static int table_refresh()
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
 	if (NULL == phash) {
-		printf("[from_replace]: fail to allocate hash map\n");
+		printf("[from_replace]: Failed to allocate hash map\n");
 		list_file_free(plist_file);
 		return REFRESH_HASH_FAIL;
 	}

@@ -191,7 +191,7 @@ int service_load_library(const char *path)
 	}
 	plib = (PLUG_ENTITY*)malloc(sizeof(PLUG_ENTITY));
 	if (NULL == plib) {
-		printf("[service]: fail to allocate memory for %s\n", fake_path);
+		printf("[service]: Failed to allocate memory for %s\n", fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
 		return PLUGIN_FAIL_ALLOCNODE;
@@ -534,7 +534,7 @@ void* service_query(const char *service_name, const char *module)
 	if (NULL == pnode) {
 		pmodule = malloc(sizeof(REFERENCE_NODE));
 		if (NULL == pmodule) {
-			printf("[service]: fail to allocate memory for module node\n");
+			printf("[service]: Failed to allocate memory for module node\n");
 			return NULL;
 		}
 		memset(pmodule, 0, sizeof(REFERENCE_NODE));

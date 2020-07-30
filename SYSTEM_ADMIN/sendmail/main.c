@@ -132,7 +132,7 @@ int main(int argc, const char **argv)
 
 	pbuff = malloc(node_stat.st_size);
 	if (NULL == pbuff) {
-		printf("fail to allocate memory for reading mail\n");
+		printf("Failed to allocate memory for reading mail\n");
 		return 6;
 	}
 

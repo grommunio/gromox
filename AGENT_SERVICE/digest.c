@@ -55,7 +55,7 @@ int main(int argc, const char **argv)
 	pbuff = malloc(node_stat.st_size);
 
 	if (NULL == pbuff) {
-		printf("fail to allocate memory\n");
+		printf("Failed to allocate memory\n");
 		return 3;
 	}
 	
@@ -95,7 +95,7 @@ int main(int argc, const char **argv)
 
 	pbuff1 = malloc(1024*1024);
 	if (NULL == pbuff1) {
-		printf("fail to allocate digest memory\n");
+		printf("Failed to allocate digest memory\n");
 		free(pbuff);
 		mime_pool_free(ppool);
 		return 8;

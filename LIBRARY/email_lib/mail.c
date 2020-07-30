@@ -99,7 +99,7 @@ BOOL mail_retrieve_ex(MAIL *pmail, char *in_buff, size_t length)
 
 	pbuff = malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
-		debug_info("[mail]: fail to allocate buffer memory");
+		debug_info("[mail]: Failed to allocate buffer memory");
 		return FALSE;
 	}
 	memcpy(pbuff, in_buff, length);
@@ -1434,7 +1434,7 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 		
 	pbuff = malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
-		debug_info("[mail]: fail to allocate memory in mail_dup");
+		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		stream_free(&tmp_stream);
 		lib_buffer_free(pallocator);
 		return FALSE;
@@ -1495,7 +1495,7 @@ BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst)
 		
 	pbuff = malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
-		debug_info("[mail]: fail to allocate memory in mail_dup");
+		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		stream_free(&tmp_stream);
 		lib_buffer_free(pallocator);
 		return FALSE;

@@ -224,7 +224,7 @@ int mod_fastcgi_run()
 	list_file_free(pfile);
 	g_context_list = malloc(sizeof(FASTCGI_CONTEXT)*g_context_num);
 	if (NULL == g_context_list) {
-		printf("[mod_fastcgi]: fail to allocate context list\n");
+		printf("[mod_fastcgi]: Failed to allocate context list\n");
 		return -2;
 	}
 	return 0;

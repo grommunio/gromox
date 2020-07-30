@@ -114,7 +114,7 @@ int resource_run()
 
     g_def_code_table = malloc(sizeof(SMTP_ERROR_CODE) * SMTP_CODE_COUNT);
     if (NULL == g_def_code_table) {
-        printf("[resource]: fail to allocate default code table\n" );
+		printf("[resource]: Failed to allocate default code table\n");
         return -1;
     }
     if (FALSE == resource_refresh_smtp_code_table()) {
@@ -177,7 +177,7 @@ static int resource_construct_smtp_table(SMTP_ERROR_CODE **pptable)
     code_table = malloc(sizeof(SMTP_ERROR_CODE) * SMTP_CODE_COUNT);
 
     if (NULL == code_table) {
-        printf("[resource]: fail to allocate memory for smtp return code"
+		printf("[resource]: Failed to allocate memory for SMTP return code"
                 " table\n");
         fclose(file_ptr);
         return -1;

@@ -28,7 +28,7 @@ int inbound_ips_run()
 {
 	g_stack_allocator = vstack_allocator_init(16, 256*1024, TRUE);
 	if (NULL == g_stack_allocator) {
-		printf("[dns_adaptor]: fail to allocate buffer pool for inbound-ips\n");
+		printf("[dns_adaptor]: Failed to allocate buffer pool for inbound-ips\n");
 		return -1;
 	}
 	g_inbound_list = list_file_init(g_list_path, "%s:16");

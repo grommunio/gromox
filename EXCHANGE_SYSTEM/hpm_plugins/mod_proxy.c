@@ -208,7 +208,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		}
 		g_events = malloc(sizeof(struct epoll_event)*context_num);
 		if (NULL == g_events) {
-			printf("[mod_proxy]: fail to allocate memory for events\n");
+			printf("[mod_proxy]: Failed to allocate memory for events\n");
 			return FALSE;
 		}
 		g_notify_stop = FALSE;

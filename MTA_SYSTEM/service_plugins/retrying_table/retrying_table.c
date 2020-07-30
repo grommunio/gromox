@@ -45,7 +45,7 @@ int retrying_table_run()
 	}
     g_hash_table = str_hash_init(g_table_size, sizeof(time_t), NULL);
     if (NULL == g_hash_table) {
-        printf("[retrying_table]: fail to allocate hash table\n");
+		printf("[retrying_table]: Failed to allocate hash table\n");
         return -1;
 	}
 	return 0;

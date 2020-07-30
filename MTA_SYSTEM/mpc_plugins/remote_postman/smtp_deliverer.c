@@ -132,7 +132,7 @@ int smtp_deliverer_run()
 	
 	g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
 	if (NULL == g_ssl_mutex_buf) {
-		printf("[remote_postman]: fail to allocate ssl locking buffer\n");
+		printf("[remote_postman]: Failed to allocate SSL locking buffer\n");
 		return -7;
 	}
 	for (i=0; i<CRYPTO_num_locks(); i++) {

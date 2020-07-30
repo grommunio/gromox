@@ -71,7 +71,7 @@ int resource_run()
 
     g_def_code_table = malloc(sizeof(POP3_ERROR_CODE) * POP3_CODE_COUNT);
     if (NULL == g_def_code_table) {
-        printf("[resource]: fail to allocate default code table\n" );
+		printf("[resource]: Failed to allocate default code table\n" );
         return -1;
     }
     if (FALSE == resource_refresh_pop3_code_table()) {
@@ -134,7 +134,7 @@ static int resource_construct_pop3_table(POP3_ERROR_CODE **pptable)
     code_table = malloc(sizeof(POP3_ERROR_CODE) * POP3_CODE_COUNT);
 
     if (NULL == code_table) {
-        printf("[resource]: fail to allocate memory for pop3 return code"
+		printf("[resource]: Failed to allocate memory for POP3 return code"
                 " table\n");
         fclose(file_ptr);
         return -1;

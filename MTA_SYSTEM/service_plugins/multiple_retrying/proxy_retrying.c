@@ -87,13 +87,13 @@ int proxy_retrying_run()
 	item_num = list_file_get_item_num(plist);
 	g_unit_list = (UNIT_SITE*)malloc(sizeof(UNIT_SITE)*item_num);
 	if (NULL == g_unit_list) {
-		printf("[multiple_retrying]: fail to allocate memory for unit list\n");
+		printf("[multiple_retrying]: Failed to allocate memory for unit list\n");
 		list_file_free(plist);
 		return -2;
 	}
 	temp_array = (size_t*)malloc(sizeof(size_t)*item_num);
 	if (NULL == temp_array) {
-		printf("[multiple_retrying]: fail to allocate memory for sort array\n");
+		printf("[multiple_retrying]: Failed to allocate memory for sort array\n");
 		list_file_free(plist);
 		free(g_unit_list);
 		g_unit_list = NULL;
@@ -117,7 +117,7 @@ int proxy_retrying_run()
 			for (j=0; j<g_channel_num; j++) {
 				pchannel = (UNIT_CHANNEL*)malloc(sizeof(UNIT_CHANNEL));
 				if (NULL == pchannel) {
-					printf("[multiple_retrying] fail to allocate memory for "
+					printf("[multiple_retrying] Failed to allocate memory for "
 						"channel unit\n");
 					continue;
 				}

@@ -243,7 +243,7 @@ int ab_tree_run()
 	g_file_allocator = lib_buffer_init(
 		FILE_ALLOC_SIZE, g_file_blocks, TRUE);
 	if (NULL == g_file_allocator) {
-		printf("[exchange_nsp]: fail to allocate file blocks\n");
+		printf("[exchange_nsp]: Failed to allocate file blocks\n");
 		return -2;
 	}
 	g_notify_stop = FALSE;

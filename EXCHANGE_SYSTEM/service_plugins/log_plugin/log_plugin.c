@@ -108,12 +108,12 @@ int log_plugin_run()
 	
 	g_log_buf_ptr = malloc(g_log_buf_size);
 	if (NULL == g_log_buf_ptr) {
-		printf("[log_plugin]: fail to allocate memory for cache buffer\n");
+		printf("[log_plugin]: Failed to allocate memory for cache buffer\n");
 		return -1;
 	}
 	g_files_name = malloc(256*g_files_num);
 	if (NULL == g_files_name) {
-		printf("[log_plugin]: fail to allocate memory for files name buffer\n");
+		printf("[log_plugin]: Failed to allocate memory for files name buffer\n");
 		return -2;
 	}
 	g_notify_stop = FALSE;

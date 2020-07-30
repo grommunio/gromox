@@ -228,7 +228,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 
 	presource = (RESOURCE_NODE*)malloc(sizeof(RESOURCE_NODE));
 	if (NULL == presource) {
-		printf("[exmdb_provider]: fail to allocate resource node memory\n");
+		printf("[exmdb_provider]: Failed to allocate resource node memory\n");
 		return;
 	}
 	/* fill the struct with initial data */

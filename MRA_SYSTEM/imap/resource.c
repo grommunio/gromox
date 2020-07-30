@@ -149,7 +149,7 @@ int resource_run()
 
     g_def_code_table = malloc(sizeof(g_default_code_table));
     if (NULL == g_def_code_table) {
-        printf("[resource]: fail to allocate default code table\n" );
+		printf("[resource]: Failed to allocate default code table\n");
         return -1;
     }
 	if (FALSE == resource_load_imap_lang_list()) {
@@ -227,7 +227,7 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
     code_table = malloc(sizeof(g_default_code_table));
 
     if (NULL == code_table) {
-        printf("[resource]: fail to allocate memory for imap return code"
+		printf("[resource]: Failed to allocate memory for IMAP return code"
                 " table\n");
         fclose(file_ptr);
         return -1;

@@ -239,7 +239,7 @@ int anti_spamming_load_library(const char* path)
 	}
 	plib = (SHARELIB*)malloc(sizeof(SHARELIB));
 	if (NULL == plib) {
-		printf("[anti_spamming]: fail to allocate memory for %s\n", fake_path);
+		printf("[anti_spamming]: Failed to allocate memory for %s\n", fake_path);
 		printf("[anti_spamming]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
 		return PLUGIN_FAIL_ALLOCNODE;
@@ -375,7 +375,7 @@ static BOOL anti_spamming_register_filter(char* type, FILTER_FUNCTION func)
 	/* allocate the filter node and fill it */
 	pfilter = malloc(sizeof(FILTER_NODE));
 	if (NULL == pfilter) {
-		printf("[anti_spamming]: fail to allocate filter node in register"
+		printf("[anti_spamming]: Failed to allocate filter node in register"
 				" filter\n");
 		return FALSE;
 	}
@@ -1422,13 +1422,13 @@ static void* anti_spamming_queryservice(char *service)
 	}
 	pservice = malloc(sizeof(SERVICE_NODE));
 	if (NULL == pservice) {
-		debug_info("[anti-spamming]: fail to allocate memory for service node");
+		debug_info("[anti-spamming]: Failed to allocate memory for service node");
 		service_release(service, g_cur_lib->file_name);
 		return NULL;
 	}
 	pservice->service_name = malloc(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
-		debug_info("[anti-spamming]: fail to allocate memory for service name");
+		debug_info("[anti-spamming]: Failed to allocate memory for service name");
 		service_release(service, g_cur_lib->file_name);
 		free(pservice);
 		return NULL;

@@ -524,7 +524,7 @@ void domain_sign_console_talk(int argc, char **argv, char *result,
 				argv[2]);
 			break;
 		case DOMAIN_LOAD_MEM_FAIL:
-			snprintf(result, length, "550 fail to allocate memory for domain",
+			snprintf(result, length, "550 Failed to allocate memory for domain",
 				argv[2]);
 			break;
 		case DOMAIN_LOAD_DIR_ERROR:

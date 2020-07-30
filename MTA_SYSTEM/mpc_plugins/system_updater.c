@@ -362,7 +362,7 @@ static BOOL do_update(MAIL *pmail)
 	}
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE, 2, FALSE);
 	if (NULL == pallocator) {
-		update_log("fail to allocate lib buffer for script");
+		update_log("Failed to allocate lib buffer for script");
 		return FALSE;
 	}
 	stream_init(&stream, pallocator);
@@ -454,7 +454,7 @@ static void save_attachments(MIME *pmime, BOOL* result)
 	pbuff = malloc(mime_len);
 	if (NULL == pbuff) {
 		*result = FALSE;
-		update_log("fail to allocate memory for mime %s", name);
+		update_log("Failed to allocate memory for MIME %s", name);
 		return;
 	}
 	if (FALSE == mime_read_content(pmime, pbuff, &mime_len)) {
@@ -692,7 +692,7 @@ static void cmd_merge(int argc, char **argv)
 	if (0 == stat(tmp_file, &node_stat)) {
 		ptr = malloc(node_stat.st_size);
 		if (NULL == ptr) {
-			update_log("fail to allocate memory for %s", tmp_file);
+			update_log("Failed to allocate memory for %s", tmp_file);
 			return;
 		}
 		fd = open(tmp_file, O_RDONLY);

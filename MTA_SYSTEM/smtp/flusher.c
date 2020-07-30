@@ -124,14 +124,14 @@ void flusher_free()
 int flusher_run()
 {
 	if (NULL == g_flusher_plug) {
-		printf("[flusher]: fail to allocate memory for FLUSHER\n");
+		printf("[flusher]: Failed to allocate memory for FLUSHER\n");
 		return -3;
 	}
 	g_allocator = lib_buffer_init(sizeof(FLUSH_ENTITY), 
 		g_max_queue_len, TRUE);
 
 	if (NULL == g_allocator) {
-		printf("[flusher]: fail to allocate fifo memory\n");
+		printf("[flusher]: Failed to allocate FIFO memory\n");
 		return -1;
 	}
 	single_list_init(&g_flush_queue);
@@ -419,13 +419,13 @@ static void* flusher_queryservice(const char *service)
 	}
 	pservice = malloc(sizeof(SERVICE_NODE));
 	if (NULL == pservice) {
-		debug_info("[flusher]: fail to allocate memory for service node");
+		debug_info("[flusher]: Failed to allocate memory for service node");
 		service_release(service, g_flusher_plug->file_name);
 		return NULL;
 	}
 	pservice->service_name = malloc(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
-		debug_info("[flusher]: fail to allocate memory for service name");
+		debug_info("[flusher]: Failed to allocate memory for service name");
 		service_release(service, g_flusher_plug->file_name);
 		free(pservice);
 		return NULL;

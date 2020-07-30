@@ -138,7 +138,7 @@ static int str_table_refresh()
 	
     phash = str_hash_init(hash_cap, sizeof(int), NULL);
 	if (NULL == phash) {
-		str_table_echo("fail to allocate hash map");
+		str_table_echo("Failed to allocate hash map");
 		list_file_free(plist_file);
 		return STR_TABLE_REFRESH_HASH_FAIL;
 	}

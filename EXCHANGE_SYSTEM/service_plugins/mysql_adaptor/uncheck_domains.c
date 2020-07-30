@@ -74,7 +74,7 @@ int uncheck_domains_refresh()
 	
     phash = str_hash_init(list_len + 1, sizeof(int), NULL);
 	if (NULL == phash) {
-		printf("[mysql_adaptor]: fail to allocate hash map for "
+		printf("[mysql_adaptor]: Failed to allocate hash map for "
 			"uncheck domains\n");
 		list_file_free(plist_file);
 		return TABLE_REFRESH_HASH_FAIL;

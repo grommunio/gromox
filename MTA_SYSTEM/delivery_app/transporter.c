@@ -241,14 +241,14 @@ int transporter_run()
 	size = sizeof(CIRCLE_NODE)*g_threads_max*MAX_THROWING_NUM;
 	g_circles_ptr = (CIRCLE_NODE*)malloc(size);
 	if (NULL == g_circles_ptr) {
-		printf("[transporter]: fail to allocate memory for circle list\n");
+		printf("[transporter]: Failed to allocate memory for circle list\n");
         return -1;
 	}
 	memset(g_circles_ptr, 0, size);
 	size = sizeof(THREAD_DATA)*g_threads_max;
 	g_data_ptr = (THREAD_DATA*)malloc(size);
 	if (NULL == g_data_ptr) {
-        printf("[transporter]: fail to allocate memory for threads data\n");
+		printf("[transporter]: Failed to allocate memory for threads data\n");
 		transporter_collect_resource();
 		return -2;
 	}
@@ -269,7 +269,7 @@ int transporter_run()
 	g_free_ptr = (FREE_CONTEXT*)malloc(size);
 	if (NULL == g_free_ptr) {
 		transporter_collect_resource();
-		printf("[transporter]: fail to allocate memory for free list\n");
+		printf("[transporter]: Failed to allocate memory for free list\n");
         return -3;
 	}
 	memset(g_free_ptr, 0, size);
@@ -803,7 +803,7 @@ int transporter_load_library(const char* path)
     }
     plib = (PLUG_ENTITY*)malloc(sizeof(PLUG_ENTITY));
     if (NULL == plib) {
-        printf("[transporter]: fail to allocate memory for %s\n", fake_path);
+		printf("[transporter]: Failed to allocate memory for %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
         dlclose(handle);
         return PLUGIN_FAIL_ALLOCNODE;
@@ -1043,13 +1043,13 @@ static void* transporter_queryservice(char *service)
     }
     pservice = (SERVICE_NODE*)malloc(sizeof(SERVICE_NODE));
     if (NULL == pservice) {
-        debug_info("[transporter]: fail to allocate memory for service node");
+		debug_info("[transporter]: Failed to allocate memory for service node");
         service_release(service, g_cur_lib->file_name);
         return NULL;
     }
     pservice->service_name = (char*)malloc(strlen(service) + 1);
     if (NULL == pservice->service_name) {
-        debug_info("[transporter]: fail to allocate memory for service name");
+		debug_info("[transporter]: Failed to allocate memory for service name");
         service_release(service, g_cur_lib->file_name);
         free(pservice);
         return NULL;

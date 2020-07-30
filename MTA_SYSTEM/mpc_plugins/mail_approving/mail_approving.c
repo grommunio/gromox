@@ -361,7 +361,7 @@ static int mail_approving_add_domain(const char *domain)
 	list_len = list_file_get_item_num(plist_file);
 	phash = str_hash_init(list_len + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
-		printf("[mail_approving]: fail to allocate hash map for %s\n", domain);
+		printf("[mail_approving]: Failed to allocate hash map for %s\n", domain);
 		list_file_free(plist_file);
 		return DOMAIN_LOAD_HASH_FAIL;
 	}

@@ -18,12 +18,12 @@ MIME_POOL* mime_pool_init(size_t number, int ratio, BOOL thread_safe)
 
 	pmime_pool = malloc(sizeof(MIME_POOL));
 	if (NULL == pmime_pool) {
-		debug_info("[mime_pool]: fail to allocate mime pool memory");
+		debug_info("[mime_pool]: Failed to allocate MIME pool memory");
 		return NULL;
 	}
 	pmime_pool->pbegin = malloc(sizeof(MIME_POOL_NODE)*number);
 	if (NULL == pmime_pool->pbegin) {
-		debug_info("[mime_pool]: fail to allocate mime list");
+		debug_info("[mime_pool]: Failed to allocate MIME list");
 		free(pmime_pool->pbegin);
 		free(pmime_pool);
 		return NULL;

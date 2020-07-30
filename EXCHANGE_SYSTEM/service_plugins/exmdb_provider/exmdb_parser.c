@@ -1100,7 +1100,7 @@ int exmdb_parser_run()
 		}
 		plocal = malloc(sizeof(LOCAL_SVR));
 		if (NULL == plocal) {
-			printf("[exmdb_provider]: fail to allocate memory\n");
+			printf("[exmdb_provider]: Failed to allocate memory\n");
 			list_file_free(plist);
 			return 3;
 		}

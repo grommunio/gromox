@@ -234,7 +234,7 @@ int grey_list_refresh()
 	
     phash = ip4_hash_init(hash_cap, sizeof(GREY_LIST_ENTRY), NULL);
     if (NULL == phash) {
-        ip_filter_echo("fail to allocate hash map for grey list");
+		ip_filter_echo("Failed to allocate hash map for grey list");
 		list_file_free(plist_file);	
         return GREY_REFRESH_HASH_FAIL;
     }

@@ -201,7 +201,7 @@ int imap_parser_run()
 
 		g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
 		if (NULL == g_ssl_mutex_buf) {
-			printf("[imap_parser]: fail to allocate ssl locking buffer\n");
+			printf("[imap_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
 		
@@ -270,7 +270,7 @@ int imap_parser_run()
 	
     g_context_list = malloc(sizeof(IMAP_CONTEXT)*g_context_num);
     if (NULL== g_context_list) {
-        printf("[imap_parser]: fail to allocate imap contexts\n");
+		printf("[imap_parser]: Failed to allocate IMAP contexts\n");
         return -10;
     }
     for (i=0; i<g_context_num; i++) {

@@ -42,7 +42,7 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 	
 	charset_list = malloc(sizeof(SINGLE_LIST));
 	if (NULL == charset_list) {
-		printf("[keyword_engine]: fail to allocate memory for "
+		printf("[keyword_engine]: Failed to allocate memory for "
 			"keyword engine\n");
 		return NULL;
 	}
@@ -68,7 +68,7 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 	item_num2 = list_file_get_item_num(pfile2);
 	temp_table = (SINGLE_LIST**)malloc(256*256*sizeof(SINGLE_LIST*));
 	if (NULL == temp_table) {
-		printf("[keyword_engine]: fail to allocate memory for "
+		printf("[keyword_engine]: Failed to allocate memory for "
 			"temporary index table\n");
 		free(charset_list);
 		list_file_free(pfile1);
@@ -79,7 +79,7 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 	for (i=0; i<item_num1; i++) {
 		pcharset = (CHARSET_ITEM*)malloc(sizeof(CHARSET_ITEM));
 		if (NULL == pcharset) {
-			printf("[keyword_engine]: fail to allocate charset node for %s\n",
+			printf("[keyword_engine]: Failed to allocate charset node for %s\n",
 				pitem1[i].cset);
 			continue;
 		}
@@ -87,7 +87,7 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 		HX_strlcpy(pcharset->charset, pitem1[i].cset, sizeof(pcharset->charset));
 		pcharset->match_table = malloc(256*256*sizeof(void*));
 		if (NULL == pcharset->match_table) {
-			printf("[keyword_engine]: fail to allocate match index table "
+			printf("[keyword_engine]: Failed to allocate match index table "
 				"for %s", pcharset->charset);
 			free(pcharset);
 			continue;
@@ -188,7 +188,7 @@ KEYWORD_ENGINE* keyword_engine_init(char *charset_path, char *list_path)
 				}
 				pcharset->match_table[j] = malloc(temp_len + sizeof(int));
 				if (NULL == pcharset->match_table[j]) {
-					printf("[keyword_engine]: fail to allocate memory for "
+					printf("[keyword_engine]: Failed to allocate memory for "
 						"match item in %s", pcharset->charset);
 					continue;
 				}

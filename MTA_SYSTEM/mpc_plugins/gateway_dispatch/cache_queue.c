@@ -318,7 +318,7 @@ static void* thread_work_func(void* arg)
 			size = node_stat.st_size - sizeof(time_t) - 2*sizeof(int);
 			pbuff = malloc(((size - 1)/(64 * 1024) + 1) * 64 * 1024);
 			if (NULL == pbuff) {
-				printf("[gateway_dispatch]: fail to allocate memory for %s "
+				printf("[gateway_dispatch]: Failed to allocate memory for %s "
 					"in timer queue thread\n", direntp->d_name);
 				close(fd);
 				continue;

@@ -47,7 +47,7 @@ int ip_container_run()
 {
     g_container_table = ip4_hash_init(g_table_size, sizeof(int), NULL);
 	if (NULL == g_container_table) {
-		printf("[ip_container]: fail to allocate hash table\n");
+		printf("[ip_container]: Failed to allocate hash table\n");
 		return -1;
 	}
     return 0;

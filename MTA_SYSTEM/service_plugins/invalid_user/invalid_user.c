@@ -49,7 +49,7 @@ int invalid_user_run()
 {
     g_hash_table = str_hash_init(g_table_size, sizeof(time_t), NULL);
     if (NULL == g_hash_table) {
-        printf("[invalid_user]: fail to allocate hash table\n");
+		printf("[invalid_user]: Failed to allocate hash table\n");
         return -1;
 	}
 	return 0;

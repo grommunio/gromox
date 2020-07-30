@@ -591,7 +591,7 @@ int exmdb_client_run()
 		}
 		pserver = malloc(sizeof(REMOTE_SVR));
 		if (NULL == pserver) {
-			printf("[exmdb_local]: fail to allocate memory for exmdb\n");
+			printf("[exmdb_local]: Failed to allocate memory for exmdb\n");
 			list_file_free(plist);
 			g_notify_stop = TRUE;
 			return 3;

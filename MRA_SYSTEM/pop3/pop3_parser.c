@@ -143,7 +143,7 @@ int pop3_parser_run()
 
 		g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
 		if (NULL == g_ssl_mutex_buf) {
-			printf("[pop3_parser]: fail to allocate ssl locking buffer\n");
+			printf("[pop3_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
 		for (i=0; i<CRYPTO_num_locks(); i++) {
@@ -155,7 +155,7 @@ int pop3_parser_run()
     
     g_context_list = malloc(sizeof(POP3_CONTEXT)*g_context_num);
     if (NULL== g_context_list) {
-        printf("[pop3_parser]: fail to allocate pop3 contexts\n");
+		printf("[pop3_parser]: Failed to allocate POP3 contexts\n");
         return -4;
     }
     for (i=0; i<g_context_num; i++) {

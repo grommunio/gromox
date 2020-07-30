@@ -59,7 +59,7 @@ int audit_filter_run()
 	}
     g_audit_hash = ip4_hash_init(g_audit_num, sizeof(IP_AUDIT), NULL);
     if (NULL == g_audit_hash) {
-        ip_filter_echo("fail to allocate audit hash table");
+		ip_filter_echo("Failed to allocate audit hash table");
         return -1;
 	}
 	return 0;

@@ -3819,14 +3819,14 @@ static void* pdu_processor_queryservice(char *service)
 	}
 	pservice = (SERVICE_NODE*)malloc(sizeof(SERVICE_NODE));
 	if (NULL == pservice) {
-		debug_info("[pdu_processor]: fail to allocate memory "
+		debug_info("[pdu_processor]: Failed to allocate memory "
 			"for service node\n");
 		service_release(service, g_cur_plugin->file_name);
 		return NULL;
 	}
 	pservice->service_name = (char*)malloc(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
-		debug_info("[pdu_processor]: fail to allocate memory "
+		debug_info("[pdu_processor]: Failed to allocate memory "
 			"for service name\n");
 		service_release(service, g_cur_plugin->file_name);
 		free(pservice);
@@ -3884,7 +3884,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 	}
 	pplugin = malloc(sizeof(PROC_PLUGIN));
     if (NULL == pplugin) {
-		printf("[pdu_processor]: fail to allocate memory for %s\n", fake_path);
+		printf("[pdu_processor]: Failed to allocate memory for %s\n", fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
 		return PLUGIN_FAIL_ALLOCNODE;

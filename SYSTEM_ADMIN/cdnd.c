@@ -414,7 +414,7 @@ int main(int argc, const char **argv)
 	for (i=0; i<num; i++) {
 		pmidb = (MIDB_SVR*)malloc(sizeof(MIDB_SVR));
 		if (NULL == pmidb) {
-			printf("[system]: fail to allocate memory for midb server\n");
+			printf("[system]: Failed to allocate memory for midb server\n");
 			list_file_free(plist);
 			close(sockd);
 			str_hash_free(g_user_hash);

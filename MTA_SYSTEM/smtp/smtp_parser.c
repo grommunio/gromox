@@ -228,7 +228,7 @@ int smtp_parser_run()
 
 		g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
 		if (NULL == g_ssl_mutex_buf) {
-			printf("[smtp_parser]: fail to allocate ssl locking buffer\n");
+			printf("[smtp_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
 		for (i=0; i<CRYPTO_num_locks(); i++) {
@@ -245,12 +245,12 @@ int smtp_parser_run()
 	g_as_allocator = lib_buffer_init(TLS_BUFFER_BUS_ALLIN(g_flushing_size *
 		TLS_BUFFER_RATIO), g_threads_num * 2, TRUE); 
 	if (NULL == g_as_allocator) {
-		printf("[smtp_parser]: fail to allocate anti-spamming memory\n");
+		printf("[smtp_parser]: Failed to allocate anti-spamming memory\n");
 		return -6;
 	}
 	g_context_list = malloc(sizeof(SMTP_CONTEXT)*g_context_num);
 	if (NULL== g_context_list) {
-		printf("[smtp_parser]: fail to allocate smtp contexts\n");
+		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
 		return -7;
 	}
 	for (i=0; i<g_context_num; i++) {

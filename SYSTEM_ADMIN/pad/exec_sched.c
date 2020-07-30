@@ -73,7 +73,7 @@ int exec_sched_run()
 	
     g_hash_table = str_hash_init(hash_cap, sizeof(USER_INFO), NULL);
 	if (NULL == g_hash_table) {
-		printf("[exec_sched]: fail to allocate hash map");
+		printf("[exec_sched]: Failed to allocate hash map");
 		list_file_free(plist_file);
 		return -2;
 	}

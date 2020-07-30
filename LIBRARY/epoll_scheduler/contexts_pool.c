@@ -228,7 +228,7 @@ int contexts_pool_run()
 	if (NULL == g_events) {
 		close(g_epoll_fd);
 		g_epoll_fd = -1;
-		printf("[contexts_pool]: fail to allocate memory for events\n");
+		printf("[contexts_pool]: Failed to allocate memory for events\n");
 		return -2;
 	}
 	g_notify_stop = FALSE;

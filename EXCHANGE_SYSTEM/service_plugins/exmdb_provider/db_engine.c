@@ -805,7 +805,7 @@ int db_engine_run()
 	
 	g_thread_ids = malloc(sizeof(pthread_t)*g_threads_num);
 	if (NULL == g_thread_ids) {
-		printf("[exmdb_provider]: fail to allocate"
+		printf("[exmdb_provider]: Failed to allocate"
 			" populating thread id buffer\n");
 		return -1;
 	}

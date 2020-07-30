@@ -361,7 +361,7 @@ static int mail_forwarder_refresh()
 	hash_cap = list_len + g_growing_num;
 	phash = str_hash_init(hash_cap, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
-		printf("[mail_forwarder]: fail to allocate hash map");
+		printf("[mail_forwarder]: Failed to allocate hash map");
 		list_file_free(plist_file);
 		return TABLE_REFRESH_HASH_FAIL;
 	}

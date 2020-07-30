@@ -99,7 +99,7 @@ int timer_queue_run()
 	g_mess_id = timer_queue_retrieve_mess_ID();
 	g_list_ptr = (TIMER_ITEM*)malloc(g_max_threads*sizeof(TIMER_ITEM));
 	if (NULL == g_list_ptr) {
-        printf("[remote_postman]: fail to allocate memory for threads list\n");
+        printf("[remote_postman]: Failed to allocate memory for threads list\n");
         return -3;
 	}
 	memset(g_list_ptr, 0, g_max_threads*sizeof(TIMER_ITEM));
@@ -479,7 +479,7 @@ static void* thread_work_func(void* arg)
 	size = pitem->file_size - 2*sizeof(time_t) - 2*sizeof(int);
 	pbuff = malloc(((size - 1)/(64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
-		printf("[remote_postman]: fail to allocate memory for %s in "
+		printf("[remote_postman]: Failed to allocate memory for %s in "
 				"timer queue thread\n", pitem->file_name);
 		timer_queue_feedback_item(pitem);
 		put_context(pcontext);

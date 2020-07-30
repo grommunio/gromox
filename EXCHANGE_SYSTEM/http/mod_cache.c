@@ -183,7 +183,7 @@ int mod_cache_run()
 	list_file_free(pfile);
 	g_context_list = malloc(sizeof(CACHE_CONTEXT)*g_context_num);
 	if (NULL == g_context_list) {
-		printf("[mod_cache]: fail to allocate context list\n");
+		printf("[mod_cache]: Failed to allocate context list\n");
 		return -2;
 	}
 	memset(g_context_list, 0, sizeof(CACHE_CONTEXT)*g_context_num);

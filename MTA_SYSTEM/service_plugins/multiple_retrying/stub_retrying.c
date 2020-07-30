@@ -79,7 +79,7 @@ int stub_retrying_run()
 	for (i=0; i<item_num; i++) {
 		punit = (UNIT_ADDR*)malloc(sizeof(UNIT_ADDR));
 		if (NULL == punit) {
-			printf("[multiple_retrying]: fail to allocate memory for unit\n");
+			printf("[multiple_retrying]: Failed to allocate memory for unit\n");
 			continue;
 		}
 		punit->node.pdata = punit;

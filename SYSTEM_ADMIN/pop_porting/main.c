@@ -76,7 +76,7 @@ int main(int argc, const char **argv)
 
 	pbuff = malloc(128*1024*1024);
 	if (NULL == pbuff) {
-		printf("fail to allocate memory for retrieving email\n");
+		printf("Failed to allocate memory for retrieving email\n");
 		return 5;
 	}
 

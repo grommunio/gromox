@@ -442,7 +442,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 	}
 	pplugin = malloc(sizeof(HPM_PLUGIN));
     if (NULL == pplugin) {
-		printf("[hpm_processor]: fail to allocate memory for %s\n", fake_path);
+		printf("[hpm_processor]: Failed to allocate memory for %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
 		dlclose(handle);
 		return PLUGIN_FAIL_ALLOCNODE;
@@ -481,7 +481,7 @@ int hpm_processor_run()
 {
 	g_context_list = malloc(sizeof(HPM_CONTEXT)*g_context_num);
 	if (NULL == g_context_list) {
-		printf("[hpm_processor]: fail to allocate context list\n");
+		printf("[hpm_processor]: Failed to allocate context list\n");
 		return -1;
 	}
 	memset(g_context_list, 0, sizeof(HPM_CONTEXT)*g_context_num);

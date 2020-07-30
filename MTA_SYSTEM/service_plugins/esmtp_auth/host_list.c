@@ -129,7 +129,7 @@ BOOL host_list_refresh()
 		}
 		punit = (HOST_UNIT*)malloc(sizeof(HOST_UNIT));
 		if (NULL == punit) {
-			debug_info("[esmtp_auth]: fail to allocate memory");
+			debug_info("[esmtp_auth]: Failed to allocate memory");
 			continue;
 		}
 		punit->node.pdata = punit;

@@ -77,7 +77,7 @@ int threads_pool_run()
 	g_threads_data_buff = lib_buffer_init(sizeof(THR_DATA), 
 							g_threads_pool_max_num, FALSE);
 	if (NULL == g_threads_data_buff) {
-		printf("[threads_pool]: fail to allocate memory for threads pool\n");
+		printf("[threads_pool]: Failed to allocate memory for threads pool\n");
 		return -1;
 	}
 	/* list is also protected by g_threads_pool_data_lock */

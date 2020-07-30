@@ -421,7 +421,7 @@ static int domain_monitor_add_domain(const char *domain)
 	list_len = list_file_get_item_num(plist_file);
 	phash = str_hash_init(list_len + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
-		printf("[domain_monitor]: fail to allocate hash map for %s", domain);
+		printf("[domain_monitor]: Failed to allocate hash map for %s", domain);
 		list_file_free(plist_file);
 		return DOMAIN_LOAD_HASH_FAIL;
 	}

@@ -153,7 +153,7 @@ int http_parser_run()
 		}
 		g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
 		if (NULL == g_ssl_mutex_buf) {
-			printf("[http_parser]: fail to allocate ssl locking buffer\n");
+			printf("[http_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
 		}
 		for (i=0; i<CRYPTO_num_locks(); i++) {
@@ -176,7 +176,7 @@ int http_parser_run()
 	}
     g_context_list = malloc(sizeof(HTTP_CONTEXT)*g_context_num);
     if (NULL== g_context_list) {
-        printf("[http_parser]: fail to allocate http contexts\n");
+		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
 	g_inchannel_allocator = lib_buffer_init(

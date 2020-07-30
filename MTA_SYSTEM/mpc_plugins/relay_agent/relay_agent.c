@@ -144,7 +144,7 @@ int relay_agent_run()
 		}		
 		punit = (HOST_UNIT*)malloc(sizeof(HOST_UNIT));
 		if (NULL == punit) {
-			debug_info("[relay_agent]: fail to allocate memory");
+			debug_info("[relay_agent]: Failed to allocate memory");
 			continue;
 		}
 		punit->node.pdata = punit;
@@ -163,7 +163,7 @@ int relay_agent_run()
 		for (j=0; j<g_channel_num; j++) {
 			pconnect = (CONNECTION_UNIT*)malloc(sizeof(CONNECTION_UNIT));
 			if (NULL == pconnect) {
-				debug_info("[relay_agent]: fail to allocate memory");
+				debug_info("[relay_agent]: Failed to allocate memory");
 				continue;
 			}
 			pconnect->node.pdata = pconnect;
@@ -275,7 +275,7 @@ BOOL relay_agent_refresh_table()
 		}
 		punit = (HOST_UNIT*)malloc(sizeof(HOST_UNIT));
 		if (NULL == punit) {
-			debug_info("[relay_agent]: fail to allocate memory");
+			debug_info("[relay_agent]: Failed to allocate memory");
 			continue;
 		}
 		punit->node.pdata = punit;

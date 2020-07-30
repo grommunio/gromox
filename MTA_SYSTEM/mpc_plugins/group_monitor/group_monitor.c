@@ -484,7 +484,7 @@ static int group_monitor_add_group(const char *group)
 	list_len = list_file_get_item_num(plist_file);
 	phash = str_hash_init(list_len + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == phash) {
-		printf("[group_monitor]: fail to allocate hash map for %s", group);
+		printf("[group_monitor]: Failed to allocate hash map for %s", group);
 		list_file_free(plist_file);
 		return GROUP_LOAD_HASH_FAIL;
 	}

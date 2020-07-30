@@ -39,7 +39,7 @@ void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc)
 
 #ifdef _DEBUG_UMTA
 	if(NULL == pnode) {
-		debug_info("[mem_file]: fail to allocate first node in mem file's "
+		debug_info("[mem_file]: Failed to allocate first node in mem file's "
 				   "init func");
 		return;
 	}

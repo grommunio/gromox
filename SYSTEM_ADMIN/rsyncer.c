@@ -1165,7 +1165,7 @@ int main(int argc, const char **argv)
 
     g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
     if (NULL == g_ssl_mutex_buf) {
-        printf("[system]: fail to allocate ssl locking buffer\n");
+		printf("[system]: Failed to allocate SSL locking buffer\n");
 		SSL_CTX_free(g_ssl_ctx);
 		return 6;
     }
@@ -1186,7 +1186,7 @@ int main(int argc, const char **argv)
 	for (i=0; i<num; i++) {
 		pthread = (THREAD_NODE*)malloc(sizeof(THREAD_NODE));
 		if (NULL == pthread) {
-			printf("[system]: fail to allocate memory for %s\n",
+			printf("[system]: Failed to allocate memory for %s\n",
 				pitem[i].slave);
 			continue;
 		}
@@ -1207,7 +1207,7 @@ int main(int argc, const char **argv)
 
 	pthread = (THREAD_NODE*)malloc(sizeof(THREAD_NODE));
 	if (NULL == pthread) {
-		printf("[system]: fail to allocate memory for %s\n", mysql_path);	
+		printf("[system]: Failed to allocate memory for %s\n", mysql_path);	
 	} else {
 		pthread->node.pdata = pthread;
 		int ret = pthread_create(&pthread->thr_id, nullptr,

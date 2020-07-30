@@ -258,7 +258,7 @@ static int domain_table_refresh()
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
 	if (NULL == phash) {
-		printf("[alias_translator]: fail to allocate domain hash map\n");
+		printf("[alias_translator]: Failed to allocate domain hash map\n");
 		list_file_free(plist_file);
 		return REFRESH_HASH_FAIL;
 	}
@@ -296,7 +296,7 @@ static int address_table_refresh()
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
 	if (NULL == phash) {
-		printf("[alias_translator]: fail to allocate address hash map\n");
+		printf("[alias_translator]: Failed to allocate address hash map\n");
 		list_file_free(plist_file);
 		return REFRESH_HASH_FAIL;
 	}
