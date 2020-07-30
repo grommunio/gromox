@@ -836,7 +836,6 @@ static void cmd_delivery_control(int argc, char **argv)
 
 static void cmd_smtp_unload(int argc, char **argv)
 {
-	int len;
 	char tmp_file[256];
 	char bak_file[256];
 	char command[295];
@@ -848,7 +847,6 @@ static void cmd_smtp_unload(int argc, char **argv)
 			"plugin");
 		return;
 	}
-	len = strlen(argv[1]);
 	if (strncmp(argv[1], "libmtapas_", 10) != 0) {
 		update_log("unknown plugin type %s, can not be unloaded", argv[1]);
 		return;
@@ -896,7 +894,6 @@ static void cmd_smtp_unload(int argc, char **argv)
 
 static void cmd_delivery_unload(int argc, char **argv)
 {
-	int len;
 	char tmp_file[256];
 	char bak_file[256];
 	char command[295];
@@ -908,7 +905,6 @@ static void cmd_delivery_unload(int argc, char **argv)
 			"delivery-unload plugin");
 		return;
 	}
-	len = strlen(argv[1]);
 	if (strncmp(argv[1], "libmtahook_", 11) != 0) {
 		update_log("unknown plugin type %s, can not be unloaded", argv[1]);
 		return;
@@ -972,7 +968,6 @@ static void cmd_delivery_unload(int argc, char **argv)
 
 static void cmd_smtp_update(int argc, char **argv)
 {
-	int len;
 	char tmp_file[256];
 	char plug_file[256];
 	char command[295];
@@ -984,7 +979,6 @@ static void cmd_smtp_update(int argc, char **argv)
 			"plugin");
 		return;
 	}
-	len = strlen(argv[1]);
 	if (strncmp(argv[1], "libmtapas_", 10) != 0) {
 		update_log("unknown plugin type %s, can not be updated", argv[1]);
 		return;
@@ -1041,7 +1035,6 @@ static void cmd_smtp_update(int argc, char **argv)
 
 static void cmd_delivery_update(int argc, char **argv)
 {
-	int len;
 	char tmp_file[256];
 	char plug_file[256];
 	char command[295];
@@ -1053,7 +1046,6 @@ static void cmd_delivery_update(int argc, char **argv)
 			"delivery-update plugin");
 		return;
 	}
-	len = strlen(argv[1]);
 	if (strncmp(argv[1], "libmtahook_", 11) != 0) {
 		update_log("unknown plugin type %s, can not be updated", argv[1]);
 		return;
