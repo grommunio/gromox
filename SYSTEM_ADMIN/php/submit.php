@@ -26,7 +26,7 @@
 	try {
 		$message = mapi_openentry($session, $loc_string);
 	} catch (Exception  $e) {
-		die("fail to open message " . $argv[2]);
+		die("Failed to open message " . $argv[2]);
 	}
 	$props = mapi_getprops($message, array(PR_MESSAGE_FLAGS));
 	if (empty($props[PR_MESSAGE_FLAGS])) {

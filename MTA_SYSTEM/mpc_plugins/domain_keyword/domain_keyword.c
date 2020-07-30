@@ -398,7 +398,7 @@ void domain_keyword_console_talk(int argc, char **argv, char *result,
 				argv[2]);
 			break;
 		case DOMAIN_KEYWORD_FILE_FAIL:
-			snprintf(result, length, "550 fail to open domain %s's keyword "
+			snprintf(result, length, "550 Failed to open domain %s's keyword "
 				"list file", argv[2]);
 			break;
 		case DOMAIN_KEYWORD_HASH_FAIL:

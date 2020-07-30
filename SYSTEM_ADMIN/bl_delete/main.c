@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -42,7 +43,7 @@ int main(int argc, const char **argv)
 	fp = fopen(argv[1], "r");
 
 	if (NULL == fp) {
-		printf("fail to open %s\n", argv[1]);
+		printf("Failed to open %s: %s\n", argv[1], strerror(errno));
 		return 2;
 	}
 

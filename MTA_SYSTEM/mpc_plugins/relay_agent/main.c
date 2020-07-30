@@ -472,7 +472,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		if (0 == strcasecmp(argv[2], "ON")) {
 			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
-				strncpy(result, "550 fail to open config file", length);
+				strncpy(result, "550 Failed to open config file", length);
 				return;
 			}
 			config_file_set_value(pfile, "RELAY_SWITCH", "ON");
@@ -488,7 +488,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		} else if (0 == strcasecmp(argv[2], "OFF")) {
 			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
-				strncpy(result, "550 fail to open config file", length);
+				strncpy(result, "550 Failed to open config file", length);
 				return;
 			}
 			config_file_set_value(pfile, "RELAY_SWITCH", "OFF");
@@ -515,7 +515,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			strncpy(result, "550 fail to open config file", length);
+			strncpy(result, "550 Failed to open config file", length);
 			return;
 		}
 		config_file_set_value(pfile, "DOWNLOAD_INTERVAL", argv[2]);

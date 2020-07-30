@@ -7,7 +7,7 @@
 2170006  -ERR too many failures, user will be blocked for a while
 2170007  -ERR message not found
 2170008  -ERR login first
-2170009  -ERR fail to open message
+2170009  -ERR failed to open message
 2170010  +OK quit <host>
 2170011  +OK <host> pop service ready
 2170012  -ERR access denied by ipaddr filter for <ip>

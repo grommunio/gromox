@@ -344,7 +344,7 @@ void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 			}
 			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
-				strncpy(result, "550 fail to open config file", length);
+				strncpy(result, "550 Failed to open config file", length);
 				return;
 			}
 			g_log_level = log_level;
@@ -361,7 +361,7 @@ void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 			}
 			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
-				strncpy(result, "550 fail to open config file", length);
+				strncpy(result, "550 Failed to open config file", length);
 				return;
 			}
 			g_files_num = valid_days;
@@ -375,7 +375,7 @@ void log_plugin_console_talk(int argc, char **argv, char *result, int length)
 	if (3 == argc && 0 == strcmp("open", argv[1])) {
 		switch (log_plugin_open_redirect(argv[2])) {
 		case REDIRECT_FAIL_OPEN:
-			snprintf(result, length, "550 fail to open redirected log file %s",
+			snprintf(result, length, "550 Failed to open redirected log file %s",
 					argv[2]);
 			return;
 		case REDIRECT_ALREADY_OPEN:

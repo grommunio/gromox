@@ -808,7 +808,7 @@ void exmdb_local_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "FAILURE_TIMES_FOR_ALARM", argv[3]);
@@ -833,7 +833,7 @@ void exmdb_local_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "ALARM_INTERVAL", argv[3]);
@@ -856,7 +856,7 @@ void exmdb_local_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "RETRYING_TIMES", argv[3]);
@@ -879,7 +879,7 @@ void exmdb_local_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "CACHE_SCAN_INTERVAL", argv[3]);
@@ -903,7 +903,7 @@ void exmdb_local_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "RESPONSE_INTERVAL", argv[3]);

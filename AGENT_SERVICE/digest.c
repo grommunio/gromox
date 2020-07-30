@@ -4,7 +4,9 @@
 #include <libHX/option.h>
 #include <gromox/defs.h>
 #include "mail.h"
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -59,13 +61,13 @@ int main(int argc, const char **argv)
 	
 	fd = open(argv[1], O_RDONLY);
 	if (-1 == fd) {
-		printf("fail to open file %s\n", argv[1]);
+		printf("Failed to open %s: %s\n", argv[1], strerror(errno));
 		free(pbuff);
 		return 4;
 	}
 
 	if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		printf("fail to read file %s\n", argv[1]);
+		printf("Failed to read file %s: %s\n", argv[1], strerror(errno));
 		free(pbuff);
 		close(fd);
 		return 5;

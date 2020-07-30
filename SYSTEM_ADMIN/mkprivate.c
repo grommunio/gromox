@@ -645,7 +645,7 @@ int main(int argc, const char **argv)
 	}
 	fd = open(PKGDATASADIR "/doc/sqlite3_common.txt", O_RDONLY);
 	if (-1 == fd) {
-		printf("fail to open \"sqlite3_common.txt\" for reading\n");
+		printf("Failed to open \"sqlite3_common.txt\": %s\n", strerror(errno));
 		free(sql_string);
 		return 7;
 	}
@@ -659,7 +659,7 @@ int main(int argc, const char **argv)
 	close(fd);
 	fd = open(PKGDATASADIR "/doc/sqlite3_private.txt", O_RDONLY);
 	if (-1 == fd) {
-		printf("fail to open \"sqlite3_private.txt\" for reading\n");
+		printf("Failed to open \"sqlite3_private.txt\": %s\n", strerror(errno));
 		free(sql_string);
 		return 7;
 	}

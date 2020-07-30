@@ -698,7 +698,7 @@ static void cmd_merge(int argc, char **argv)
 		fd = open(tmp_file, O_RDONLY);
 		if (-1 == fd) {
 			free(ptr);
-			update_log("fail to open %s for reading", tmp_file);
+			update_log("Failed to open %s: %s", tmp_file, strerror(errno));
 			return;
 		}
 		if (node_stat.st_size != read(fd, ptr, node_stat.st_size)) {
@@ -711,7 +711,7 @@ static void cmd_merge(int argc, char **argv)
 		fd = open(source_file, O_APPEND|O_WRONLY);
 		if (-1 == fd) {
 			free(ptr);
-			update_log("fail to open %s for appending", source_file);
+			update_log("Failed to open %s: %s", source_file, strerror(errno));
 			return;
 		}
 		len = write(fd, ptr, node_stat.st_size);

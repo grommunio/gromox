@@ -183,7 +183,7 @@ int main(int argc, const char **argv)
 	}
 	fd = open(PKGDATASADIR "/doc/sqlite3_midb.txt", O_RDONLY);
 	if (-1 == fd) {
-		printf("fail to open \"sqlite3_midb.txt\" for reading\n");
+		printf("Failed to open \"sqlite3_midb.txt\": %s\n", strerror(errno));
 		free(sql_string);
 		return 7;
 	}

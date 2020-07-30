@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <errno.h>
 #include <string.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
@@ -161,13 +162,13 @@ static void insert_directory(const char *dir_path)
 		
 		fd = open(temp_path, O_RDONLY);
 		if (-1 == fd) {
-			printf("fail to open file %s\n", temp_path);
+			printf("Failed to open %s: %s\n", temp_path, strerror(errno));
 			free(pbuff);
 			continue;
 		}
 
 		if (node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-			printf("fail to read file %s\n", temp_path);
+			printf("Failed to read %s: %s\n", temp_path, strerror(errno));
 			free(pbuff);
 			close(fd);
 			continue;

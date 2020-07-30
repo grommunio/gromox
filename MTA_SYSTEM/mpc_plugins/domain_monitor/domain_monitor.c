@@ -609,7 +609,7 @@ void domain_monitor_console_talk(int argc, char **argv, char *result,
 				argv[2]);
 			break;
 		case DOMAIN_LOAD_FILE_ERROR:
-			snprintf(result, length, "550 fail to open domain %s's monitor "
+			snprintf(result, length, "550 Failed to open domain %s's monitor "
 				"list file", argv[2]);
 			break;
 		case DOMAIN_LOAD_HASH_FAIL:

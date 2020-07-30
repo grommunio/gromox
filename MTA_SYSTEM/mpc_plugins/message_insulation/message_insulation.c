@@ -364,7 +364,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
         } else {
             pfile = config_file_init2(NULL, g_config_path);
             if (NULL == pfile) {
-                strncpy(result, "550 fail to open config file", length);
+				strncpy(result, "550 Failed to open config file", length);
                 return;
             }
             config_file_set_value(pfile, "SCAN_INTERVAL", argv[3]);
@@ -386,7 +386,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
         } else {
             pfile = config_file_init2(NULL, g_config_path);
             if (NULL == pfile) {
-                strncpy(result, "550 fail to open config file", length);
+				strncpy(result, "550 Failed to open config file", length);
                 return;
             }
             config_file_set_value(pfile, "ONYMOUS_VALID_INTERVAL", argv[3]);
@@ -408,7 +408,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
         } else {
             pfile = config_file_init2(NULL, g_config_path);
             if (NULL == pfile) {
-                strncpy(result, "550 fail to open config file", length);
+				strncpy(result, "550 Failed to open config file", length);
                 return;
             }
             config_file_set_value(pfile, "ANONYMOUS_VALID_INTERVAL", argv[3]);

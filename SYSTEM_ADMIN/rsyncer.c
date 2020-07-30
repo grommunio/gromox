@@ -842,7 +842,7 @@ BEGIN_BACKUP:
 		conn.sockd = -1;
 		goto BEGIN_BACKUP;
 	case ERROR_EXECUTE:
-		printf("[system]: fail to open directory %s in remote host\n", path);
+		printf("[system]: Failed to open directory %s in remote host\n", path);
 		SSL_free(conn.ssl);
 		conn.ssl = NULL;
 		close(conn.sockd);

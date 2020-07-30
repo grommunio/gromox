@@ -450,7 +450,7 @@ void remote_postman_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "FAILURE_TIMES_FOR_ALARM", argv[3]);
@@ -475,7 +475,7 @@ void remote_postman_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "ALARM_INTERVAL", argv[3]);
@@ -498,7 +498,7 @@ void remote_postman_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "MAX_RCPT_NUM", argv[3]);
@@ -521,7 +521,7 @@ void remote_postman_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "SENDING_TRYING_TIMES", argv[3]);
@@ -559,7 +559,7 @@ void remote_postman_console_talk(int argc,
 		}
 		pfile = config_file_init2(NULL, g_config_path);
 		if (NULL == pfile) {
-			snprintf(result, length, "550 fail to open config file");
+			snprintf(result, length, "550 Failed to open config file");
 			return;
 		}
 		config_file_set_value(pfile, "TIMER_SCAN_INTERVAL", argv[3]);
@@ -595,7 +595,7 @@ void remote_postman_console_talk(int argc,
 		if (0 == strcasecmp("ON", argv[2])) {
 			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
-				snprintf(result, length, "550 fail to open config file");
+				snprintf(result, length, "550 Failed to open config file");
 				return;
 			}
 			config_file_set_value(pfile, "STARTTLS_SUPPORT", "ON");
@@ -610,7 +610,7 @@ void remote_postman_console_talk(int argc,
 		} else if (0 == strcasecmp("OFF", argv[2])) {
 			pfile = config_file_init2(NULL, g_config_path);
 			if (NULL == pfile) {
-				snprintf(result, length, "550 fail to open config file");
+				snprintf(result, length, "550 Failed to open config file");
 				return;
 			}
 			config_file_set_value(pfile, "STARTTLS_SUPPORT", "OFF");

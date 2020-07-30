@@ -598,7 +598,7 @@ void mail_approving_console_talk(int argc, char **argv, char *result,
 		} else {
 			fd = open(session_path, O_RDONLY);
 			if (-1 == fd) {
-				snprintf(result, length, "550 fail to open session file");
+				snprintf(result, length, "550 Failed to open session file");
 				return;
 			}
 				
@@ -685,7 +685,7 @@ void mail_approving_console_talk(int argc, char **argv, char *result,
 				argv[2]);
 			break;
 		case DOMAIN_LOAD_FILE_ERROR:
-			snprintf(result, length, "550 fail to open domain %s's monitor "
+			snprintf(result, length, "550 Failed to open domain %s's monitor "
 				"list file", argv[2]);
 			break;
 		case DOMAIN_LOAD_HASH_FAIL:

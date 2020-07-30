@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <errno.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
@@ -137,7 +138,7 @@ int main(int argc, const char **argv)
 
 	fd = open(temp_path, O_RDONLY);
 	if (-1 == fd) {
-		printf("fail to open mail file %s\n", temp_path);
+		printf("Failed to open mail file %s: %s\n", temp_path, strerror(errno));
 		free(pbuff);
 		return 7;
 	}

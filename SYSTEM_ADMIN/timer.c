@@ -284,7 +284,7 @@ int main(int argc, const char **argv)
 
 	g_list_fd = open(g_list_path, O_APPEND|O_WRONLY);
 	if (-1 == g_list_fd) {
-		printf("[system]: fail to open list file with append mode\n");
+		printf("[system]: Failed to open %s: %s\n", g_list_path, strerror(errno));
 		close(sockd);
 		return 7;
 	}
