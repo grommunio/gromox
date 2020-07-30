@@ -193,7 +193,6 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	ACTION_BLOCK *pblock;
 	HashTable *pdata_hash;
 	HashTable *paction_hash;
-	RESTRICTION	prestriction;
 	HashTable *precipient_hash;
 	TPROPVAL_ARRAY tmp_propvals;
 	RECIPIENT_BLOCK *prcpt_block;
@@ -1487,7 +1486,7 @@ zend_bool php_to_state_array(zval *pzval,
 	STATE_ARRAY *pstates TSRMLS_DC)
 {
 	int i; 
-	zval *pentry, *ppvalue_entry;
+	zval *pentry;
 	HashTable *ptarget_hash;
 	zstrplus str_sourcekey(zend_string_init("sourcekey", sizeof("sourcekey") - 1, 0));
 	zstrplus str_flags(zend_string_init("flags", sizeof("flags") - 1, 0));

@@ -7707,7 +7707,6 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	char maildir[256];
 	char username[256];
 	char tool_path[256];
-	char tool_command[256];
 	char cookie_buff[1024];
 	int pipes_in[2] = {-1, -1};
 	int pipes_out[2] = {-1, -1};

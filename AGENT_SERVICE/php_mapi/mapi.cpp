@@ -273,9 +273,6 @@ static char name_mapi_message[] = "MAPI Message";
 static char name_mapi_attachment[] = "MAPI Attachment";
 static char name_mapi_property[] = "MAPI Property";
 static char name_stream[] = "IStream Interface";
-static char name_fb_data[] = "Freebusy Data Interface";
-static char name_fb_update[] = "Freebusy Update Interface";
-static char name_fb_enumblock[] = "Freebusy Enumblock Interface";
 static char name_mapi_exportchanges[] = "ICS Export Changes";
 static char name_mapi_advisesink[] = "MAPI Advise sink";
 static char name_mapi_importhierarchychanges[] =
@@ -478,9 +475,6 @@ static void stream_object_free(STREAM_OBJECT *pstream)
 
 static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 {
-	char *pstring;
-	uint32_t result;
-	
 	if (0 == memcmp(&pstream->hsession, &GUID_NONE, sizeof(GUID))
 		|| 0 == pstream->hparent || 0 == pstream->proptag) {
 		return ecInvalidParam;
@@ -943,8 +937,6 @@ ZEND_FUNCTION(mapi_logon_ex)
 	char *password;
 	uint32_t result;
 	size_t username_len = 0, password_len = 0;
-	zval **ppzmethod;
-	zval **ppzserver_vars;
 	MAPI_RESOURCE *presource;
 	
 	flags = 0;
@@ -1401,7 +1393,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_folder_gethierarchytable)
 {
-	int type;
 	long flags;
 	uint32_t result;
 	uint32_t hobject;
@@ -1464,7 +1455,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_folder_getcontentstable)
 {
-	int type;
 	long flags;
 	uint32_t result;
 	uint32_t hobject;
@@ -2900,7 +2890,6 @@ ZEND_FUNCTION(mapi_message_createattach)
 	zval *pzresource;
 	MAPI_RESOURCE *pmessage;
 	MAPI_RESOURCE *presource;
-	MAPI_RESOURCE *pattachment;
 	
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r|l",
@@ -2946,9 +2935,7 @@ ZEND_FUNCTION(mapi_message_deleteattach)
 	long attach_id;
 	uint32_t result;
 	zval *pzresource;
-	uint32_t hobject;
 	MAPI_RESOURCE *pmessage;
-	MAPI_RESOURCE *presource;
 	
 	flags = 0;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rl|l",
@@ -3180,7 +3167,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_openpropertytostream)
 {
-	int	type;
 	long flags;
 	size_t guidlen = 0;
 	void *pvalue;
@@ -3465,7 +3451,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_setprops)
 {
-	int type;
 	uint32_t result;
 	zval *pzpropvals;
 	zval *pzresource;
@@ -3543,8 +3528,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_copyto)
 {
-	int type;
-	int type1;
 	long flags;
 	zval *pzsrc;
 	zval *pzdst;
@@ -3644,7 +3627,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_savechanges)
 {
-	int type;
 	long flags;
 	uint32_t result;
 	zval *pzresource;
@@ -3722,7 +3704,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_deleteprops)
 {
-	int type;
 	uint32_t result;
 	zval *pzresource;
 	zval *pzproptags;
@@ -4050,7 +4031,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_getprops)
 {
-	int type;
 	uint32_t result;
 	zval *pzresource;
 	zval *pztagarray;
@@ -4182,7 +4162,6 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_getnamesfromids)
 {
 	int i;
-	zval *pzprop;
 	zval *pzarray;
 	uint32_t result;
 	zval *pzresource;
@@ -4559,11 +4538,9 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 {
 	int i;
-	int type;
 	long acl_type;
 	uint32_t result;
 	zval *pzresource;
-	zval *pzdata_value;
 	PERMISSION_SET perm_set;
 	MAPI_RESOURCE *presource;
 	
@@ -4633,14 +4610,10 @@ THROW_EXCEPTION:
 ZEND_FUNCTION(mapi_zarafa_setpermissionrules)
 {
 	int i, j;
-	int type;
 	zval *pzperms;
 	uint32_t result;
-	zval **ppzentry;
-	zval **ppzvalue;
 	zval *pzresource;
 	HashTable *pdata;
-	LONG_ARRAY uid_array;
 	MAPI_RESOURCE *pfolder;
 	PERMISSION_SET perm_set;
 	HashTable *ptarget_hash;
@@ -4795,7 +4768,6 @@ THROW_EXCEPTION:
 
 ZEND_FUNCTION(mapi_exportchanges_config)
 {
-	int type;
 	long flags;
 	long buffersize;
 	uint32_t result;

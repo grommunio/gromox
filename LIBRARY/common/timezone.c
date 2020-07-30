@@ -201,11 +201,6 @@ static int tzparse(const char *name, struct state* const sp, int lastditch);
 static struct state *gmtptr;
 #endif /* defined ALL_STATE */
 
-#ifndef ALL_STATE
-static struct state	gmtmem;
-#define gmtptr		(&gmtmem)
-#endif /* State Farm */
-
 int gmt_is_set;
 
 /*

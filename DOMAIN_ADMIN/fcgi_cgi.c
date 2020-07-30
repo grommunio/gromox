@@ -730,9 +730,7 @@ static FCGI_CGI start_cgi(RECORD_PARAMS *pparams)
 	int i;
 	pid_t pid;
 	char** envp;
-	char *ptoken;
 	char* args[3];
-	char dir[256];
 	char path[256];
 	FCGI_CGI fcgi_cgi;
 	int pipes_in[2] = {-1, -1};
