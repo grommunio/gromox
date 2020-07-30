@@ -1758,9 +1758,9 @@ BOOL exmdb_server_check_folder_cycle(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	if (FALSE == common_util_check_decendant(
-		pdb->psqlite, rop_util_get_gc_value(dst_fid),
-		rop_util_get_gc_value(src_fid), pb_cycle)) {
+	if (!common_util_check_descendant(pdb->psqlite,
+	    rop_util_get_gc_value(dst_fid), rop_util_get_gc_value(src_fid),
+	    pb_cycle)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -2363,8 +2363,8 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 	}
 	src_val = rop_util_get_gc_value(src_fid);
 	dst_val = rop_util_get_gc_value(dst_fid);
-	if (FALSE == common_util_check_decendant(pdb->psqlite,
-		dst_fid, src_val, pb_collid)) {
+	if (!common_util_check_descendant(pdb->psqlite, dst_fid,
+	    src_val, pb_collid)) {
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
@@ -2495,8 +2495,8 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		return TRUE;
 	}
 	if (FALSE == b_copy) {
-		if (FALSE == common_util_check_decendant(
-			pdb->psqlite, dst_val, src_val, &b_included)) {
+		if (!common_util_check_descendant(pdb->psqlite, dst_val,
+		    src_val, &b_included)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -2828,8 +2828,8 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	if (pfolder_ids->count > 0) {
 		for (i=0; i<pfolder_ids->count; i++) {
 			fid_val1 = rop_util_get_gc_value(pfolder_ids->pll[i]);
-			if (FALSE == common_util_check_decendant(
-				pdb->psqlite, fid_val, fid_val1, &b_included)) {
+			if (!common_util_check_descendant(pdb->psqlite, fid_val,
+			    fid_val1, &b_included)) {
 				db_engine_put_db(pdb);
 				return FALSE;	
 			}

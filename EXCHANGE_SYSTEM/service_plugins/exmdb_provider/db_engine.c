@@ -487,7 +487,7 @@ static BOOL db_engine_search_folder(const char *dir,
 	return TRUE;
 }
 
-static BOOL db_engine_load_folder_decendant(const char *dir,
+static BOOL db_engine_load_folder_descendant(const char *dir,
 	BOOL b_recursive, uint64_t folder_id, EID_ARRAY *pfolder_ids)
 {
 	DB_ITEM *pdb;
@@ -712,7 +712,7 @@ NEXT_SEARCH:
 			if (FALSE == psearch->b_recursive) {
 				continue;
 			}
-			if (FALSE == db_engine_load_folder_decendant(
+			if (!db_engine_load_folder_descendant(
 				psearch->dir, psearch->b_recursive,
 				psearch->folder_ids.pll[i], pfolder_ids)) {
 				eid_array_free(pfolder_ids);
@@ -1054,12 +1054,12 @@ void db_engine_proc_dynamic_event(DB_ITEM *pdb, uint32_t cpid,
 		for (i=0; i<pdynamic->folder_ids.count; i++) {
 			if (DYNAMIC_EVENT_MOVE_FOLDER == event_type) {
 				if (pdynamic->search_flags & SEARCH_FLAG_RECURSIVE) {
-					if (FALSE == common_util_check_decendant(pdb->psqlite,
-						id1, pdynamic->folder_ids.pll[i], &b_included) ||
-						FALSE == common_util_check_decendant(pdb->psqlite,
-						id2, pdynamic->folder_ids.pll[i], &b_included1)) {
+					if (!common_util_check_descendant(pdb->psqlite,
+					    id1, pdynamic->folder_ids.pll[i], &b_included) ||
+					    !common_util_check_descendant(pdb->psqlite,
+					    id2, pdynamic->folder_ids.pll[i], &b_included1)) {
 						debug_info("[db_engine]: fatal error in"
-							" common_util_check_decendant\n");
+							" common_util_check_descendant\n");
 						continue;
 					}
 					if (b_included == b_included1) {
@@ -1125,10 +1125,10 @@ void db_engine_proc_dynamic_event(DB_ITEM *pdb, uint32_t cpid,
 				continue;
 			}
 			if (pdynamic->search_flags & SEARCH_FLAG_RECURSIVE) {
-				if (FALSE == common_util_check_decendant(pdb->psqlite,
-					id1, pdynamic->folder_ids.pll[i], &b_included)) {
+				if (!common_util_check_descendant(pdb->psqlite,
+				    id1, pdynamic->folder_ids.pll[i], &b_included)) {
 					debug_info("[db_engine]: fatal error in"
-						" common_util_check_decendant\n");
+						" common_util_check_descendant\n");
 					continue;
 				}
 				if (FALSE == b_included) {
@@ -2848,11 +2848,10 @@ static void db_engine_notify_hierarchy_table_add_row(
 		}
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
 			if (folder_id == ptable->folder_id ||
-				FALSE == common_util_check_decendant(
-				pdb->psqlite, folder_id, ptable->folder_id,
-				&b_included) || FALSE == b_included) {
+			    !common_util_check_descendant(pdb->psqlite,
+			    folder_id, ptable->folder_id, &b_included) ||
+			    !b_included)
 				continue;
-			}
 		} else {
 			if (parent_id != ptable->folder_id) {
 				continue;
@@ -3894,11 +3893,10 @@ static void db_engine_notify_hierarchy_table_delete_row(
 			continue;
 		}
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
-			if (FALSE == common_util_check_decendant(
-				pdb->psqlite, parent_id, ptable->folder_id,
-				&b_included) || FALSE == b_included) {
+			if (!common_util_check_descendant(pdb->psqlite,
+			    parent_id, ptable->folder_id, &b_included) ||
+			    !b_included)
 				continue;
-			}
 		} else {
 			if (parent_id != ptable->folder_id) {
 				continue;
@@ -4922,11 +4920,10 @@ static void db_engine_notify_hierarchy_table_modify_row(
 		}
 		if (TABLE_FLAG_DEPTH & ptable->table_flags) {
 			if (folder_id == ptable->folder_id ||
-				FALSE == common_util_check_decendant(
-				pdb->psqlite, folder_id, ptable->folder_id,
-				&b_included) || FALSE == b_included) {
+			    !common_util_check_descendant(pdb->psqlite,
+			    folder_id, ptable->folder_id, &b_included) ||
+			    !b_included)
 				continue;
-			}
 		} else {
 			if (parent_id != ptable->folder_id) {
 				continue;

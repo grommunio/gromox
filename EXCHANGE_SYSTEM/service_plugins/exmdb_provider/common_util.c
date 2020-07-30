@@ -1420,17 +1420,13 @@ static uint32_t common_util_get_folder_flags(
 		folder_flags |= FOLDER_FLAGS_RULES;
 	}
 	if (TRUE == exmdb_server_check_private()) {
-		if (TRUE == common_util_check_decendant(
-			psqlite, folder_id, PRIVATE_FID_IPMSUBTREE,
-			&b_included) && TRUE == b_included) {
+		if (common_util_check_descendant(psqlite, folder_id,
+		    PRIVATE_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
-		}
 	} else {
-		if (TRUE == common_util_check_decendant(
-			psqlite, folder_id, PUBLIC_FID_IPMSUBTREE,
-			&b_included) && TRUE == b_included) {
+		if (common_util_check_descendant(psqlite, folder_id,
+		    PUBLIC_FID_IPMSUBTREE, &b_included) && b_included)
 			folder_flags |= FOLDER_FLAGS_IPM;
-		}
 	}
 	return folder_flags;
 }
@@ -5200,7 +5196,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	return pbin;
 }
 
-BOOL common_util_check_decendant(sqlite3 *psqlite,
+BOOL common_util_check_descendant(sqlite3 *psqlite,
 	uint64_t inner_fid, uint64_t outer_fid, BOOL *pb_included)
 {
 	BOOL b_private;
