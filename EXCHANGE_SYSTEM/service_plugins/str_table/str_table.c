@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "str_table.h"
 #include "str_hash.h"
@@ -123,15 +124,15 @@ static int str_table_refresh()
     STR_HASH_TABLE *phash = NULL;
     int i, list_len, hash_cap;
 	LIST_FILE *plist_file;
-	char *pitem;
 	
     /* initialize the list filter */
+	struct srcitem { char s[256]; };
 	plist_file = list_file_init3(g_list_path, "%s:256", false);
 	if (NULL == plist_file) {
 		str_table_echo("list_file_init %s: %s", g_list_path, strerror(errno));
 		return STR_TABLE_REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;
 	
@@ -143,9 +144,9 @@ static int str_table_refresh()
 	}
     for (i=0; i<list_len; i++) {
 		if (FALSE == g_case_sensitive) {
-			HX_strlower(pitem + 256 * i);
+			HX_strlower(pitem[i].s);
 		}
-        str_hash_add(phash, pitem + 256*i, &i);   
+		str_hash_add(phash, pitem[i].s, &i);
     }
     list_file_free(plist_file);
 	

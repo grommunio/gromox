@@ -177,12 +177,15 @@ int mod_fastcgi_run()
 {
 	int i;
 	int tmp_len;
-	char *pitem;
 	int item_num;
 	LIST_FILE *pfile;
 	FASTCGI_NODE *pfnode;
 	char extra_headers[512];
-	
+
+	struct srcitem {
+		char domain[256], path[256], dir[256], suffix[16], index[256];
+		char extra_headers[304], sock_path[256];
+	};
 	pfile = list_file_init(g_list_path,
 		"%s:256%s:256%s:256%s:16%s:256%s:304%s:256");
 	if (NULL == pfile) {
@@ -191,7 +194,7 @@ int mod_fastcgi_run()
 		return -1;
 	}
 	item_num = list_file_get_item_num(pfile);
-	pitem = list_file_get_list(pfile);
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
 		pfnode = malloc(sizeof(FASTCGI_NODE));
 		if (NULL == pfnode) {
@@ -199,23 +202,23 @@ int mod_fastcgi_run()
 		}
 		pfnode->node.pdata = pfnode;
 		double_list_init(&pfnode->header_list);
-		pfnode->domain = strdup(pitem + 1600*i);
-		pfnode->path = strdup(pitem + 1600*i + 256);
+		pfnode->domain = strdup(pitem[i].domain);
+		pfnode->path = strdup(pitem[i].path);
 		tmp_len = strlen(pfnode->path);
 		if ('/' == pfnode->path[tmp_len - 1]) {
 			pfnode->path[tmp_len - 1] = '\0';
 		}
-		pfnode->directory = strdup(pitem + 1600*i + 512);
+		pfnode->directory = strdup(pitem[i].dir);
 		tmp_len = strlen(pfnode->directory);
 		if ('/' == pfnode->directory[tmp_len - 1]) {
 			pfnode->directory[tmp_len - 1] = '\0';
 		}
-		pfnode->suffix = strdup(pitem + 1600*i + 768);
-		pfnode->index = strdup(pitem + 1600*i + 784);
-		strcpy(extra_headers, pitem + 1600*i + 1040);
+		pfnode->suffix = strdup(pitem[i].suffix);
+		pfnode->index = strdup(pitem[i].index);
+		HX_strlcpy(extra_headers, pitem[i].extra_headers, sizeof(extra_headers));
 		mod_fastcgi_load_extra_headers(
 			extra_headers, &pfnode->header_list);
-		pfnode->sock_path = strdup(pitem + 1600*i + 1344);
+		pfnode->sock_path = strdup(pitem[i].sock_path);
 		double_list_append_as_tail(&g_fastcgi_list, &pfnode->node);
 	}
 	list_file_free(pfile);

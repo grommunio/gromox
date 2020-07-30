@@ -16,6 +16,10 @@
 
 #define ALLOCATION_INTERVAL						24*60*60
 
+struct dlgitem {
+	char user[256];
+};
+
 BOOL exmdb_server_ping_store(const char *dir)
 {
 	DB_ITEM *pdb;
@@ -307,7 +311,6 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	const char *username, uint32_t *ppermission)
 {
 	int i;
-	char *pitem;
 	int item_num;
 	DB_ITEM *pdb;
 	LIST_FILE *pfile;
@@ -356,11 +359,10 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	pfile = list_file_init(temp_path, "%s:256");
 	if (NULL != pfile) {
 		item_num = list_file_get_item_num(pfile);
-		pitem = list_file_get_list(pfile);
+		const struct dlgitem *pitem = reinterpret_cast(struct dlgitem *, list_file_get_list(pfile));
 		for (i=0; i<item_num; i++) {
-			if (0 == strcasecmp(pitem + 256*i, username) ||
-				TRUE == common_util_check_mlist_include(
-				pitem + 256*i, username)) {
+			if (strcasecmp(pitem[i].user, username) == 0 ||
+			    common_util_check_mlist_include(pitem[i].user, username)) {
 				*ppermission |= PERMISSION_SENDAS;
 				break;
 			}

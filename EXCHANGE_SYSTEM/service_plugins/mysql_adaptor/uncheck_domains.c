@@ -1,3 +1,4 @@
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include "uncheck_domains.h"
 #include "str_hash.h"
@@ -61,14 +62,14 @@ int uncheck_domains_refresh()
     STR_HASH_TABLE *phash = NULL;
     int i, list_len;
 	LIST_FILE *plist_file;
-	char *pitem;
 	
     /* initialize the list filter */
+	struct srcitem { char s[256]; };
 	plist_file = list_file_init(g_list_path, "%s:256");
 	if (NULL == plist_file) {
 		return TABLE_REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	
     phash = str_hash_init(list_len + 1, sizeof(int), NULL);
@@ -79,8 +80,8 @@ int uncheck_domains_refresh()
 		return TABLE_REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		HX_strlower(pitem + 256 * i);
-        str_hash_add(phash, pitem + 256*i, &i);   
+		HX_strlower(pitem[i].s);
+		str_hash_add(phash, pitem[i].s, &i);
     }
     list_file_free(plist_file);
 	

@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "common_types.h"
 #include "double_list.h"
@@ -51,7 +52,6 @@ void listener_init(const char *ip, int port, const char *list_path)
 int listener_run()
 {
 	int i, num;
-	char *pitem;
 	ACL_ITEM *pacl;
 	LIST_FILE *plist;
 	int status, optval;
@@ -96,6 +96,7 @@ int listener_run()
 	}
 
 	if ('\0' != g_list_path[0]) {
+		struct ipitem { char ip_addr[16]; };
 		plist = list_file_init(g_list_path, "%s:16");
 		if (NULL == plist) {
 			printf("[listener]: Failed to read ACLs from %s: %s\n",
@@ -104,14 +105,14 @@ int listener_run()
 			return -5;
 		}
 		num = list_file_get_item_num(plist);
-		pitem = list_file_get_list(plist);
+		const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 		for (i=0; i<num; i++) {
 			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
 			if (NULL == pacl) {
 				continue;
 			}
 			pacl->node.pdata = pacl;
-			strcpy(pacl->ip_addr, pitem + 16*i);
+			HX_strlcpy(pacl->ip_addr, pitem[i].ip_addr, sizeof(pacl->ip_addr));
 			double_list_append_as_tail(&g_acl_list, &pacl->node);
 		}
 		list_file_free(plist);

@@ -23,6 +23,10 @@ typedef struct _SORT_ITEM {
 	char *string;
 } SORT_ITEM;
 
+struct dlgitem {
+	char user[256];
+};
+
 static BOOL g_session_check;
 
 static BOOL (*verify_cpid)(uint32_t cpid);
@@ -1853,7 +1857,6 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	int i;
 	int total;
 	int base_id;
-	char *pitem;
 	int user_id;
 	int item_num;
 	int last_row;
@@ -1945,12 +1948,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			goto EXIT_GET_MATCHES;
 		}
 		item_num = list_file_get_item_num(pfile);
-		pitem = list_file_get_list(pfile);
+		const struct dlgitem *pitem = reinterpret_cast(struct dlgitem *, list_file_get_list(pfile));
 		for (i=0; i<item_num; i++) {
 			if ((*ppoutmids)->cvalues > requested) {
 				break;
 			}
-			if (FALSE == get_id_from_username(pitem + 256*i, &user_id) ||
+			if (!get_id_from_username(pitem[i].user, &user_id) ||
 				NULL == (pnode = ab_tree_uid_to_node(pbase, user_id))) {
 				continue;
 			}
@@ -2991,7 +2994,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 {
 	int i, fd;
 	int base_id;
-	char *pitem;
 	int item_num;
 	AB_BASE *pbase;
 	uint32_t result;
@@ -3052,14 +3054,14 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	pfile = list_file_init(temp_path, "%s:256");
 	if (NULL != pfile) {
 		item_num = list_file_get_item_num(pfile);
-		pitem = list_file_get_list(pfile);
+		const struct dlgitem *pitem = reinterpret_cast(struct dlgitem *, list_file_get_list(pfile));
 		for (i=0; i<item_num; i++) {
 			pnode = malloc(sizeof(DOUBLE_LIST_NODE));
 			if (NULL == pnode) {
 				result = ecMAPIOOM;
 				goto EXIT_MOD_LINKATT;
 			}
-			pnode->pdata = strdup(pitem + 256*i);
+			pnode->pdata = strdup(pitem[i].user);
 			if (NULL == pnode->pdata) {
 				free(pnode);
 				result = ecMAPIOOM;

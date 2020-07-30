@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/svc_common.h>
 #include "str_hash.h"
@@ -107,16 +108,16 @@ static int table_refresh()
     STR_HASH_TABLE *phash = NULL;
     int i, list_len, hash_cap;
 	LIST_FILE *plist_file;
-	char *pitem;
 	
     /* initialize the list filter */
+	struct srcitem { char a[32], b[32]; };
 	plist_file = list_file_init(g_list_path, "%s:32%s:32");
 	if (NULL == plist_file) {
 		printf("[lang_charset]: list_file_init %s: %s\n",
 			g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	pitem = (char*)list_file_get_list(plist_file);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + 1;
 	
@@ -127,8 +128,8 @@ static int table_refresh()
 		return REFRESH_HASH_FAIL;
 	}
     for (i=0; i<list_len; i++) {
-		HX_strlower(pitem + 64 * i);
-        str_hash_add(phash, pitem + 64*i, pitem + 64*i + 32);   
+		HX_strlower(pitem[i].a);
+		str_hash_add(phash, pitem[i].a, pitem[i].b);
     }
     list_file_free(plist_file);
 	

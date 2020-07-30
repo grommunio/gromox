@@ -193,7 +193,7 @@ BOOL common_util_check_delegate(
 BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir)
 {
-	char *pitem;
+	struct srcitem { char user[256]; };
 	int i, item_num;
 	LIST_FILE *pfile;
 	char temp_path[256];
@@ -204,9 +204,9 @@ BOOL common_util_check_delegate_permission(
 		return FALSE;
 	}
 	item_num = list_file_get_item_num(pfile);
-	pitem = list_file_get_list(pfile);
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
-		if (0 == strcasecmp(pitem + 256*i, account)) {
+		if (strcasecmp(pitem[i].user, account) == 0) {
 			list_file_free(pfile);
 			return TRUE;
 		}

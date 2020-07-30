@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "util.h"
@@ -147,10 +148,10 @@ int mod_cache_run()
 {
 	int i;
 	int tmp_len;
-	char *pitem;
 	int item_num;
 	LIST_FILE *pfile;
 	DIRECTORY_NODE *pdnode;
+	struct srcitem { char domain[256], uri_path[256], dir[256]; };
 	
 	pfile = list_file_init(g_list_path, "%s:256%s:256%s:256");
 	if (NULL == pfile) {
@@ -159,20 +160,20 @@ int mod_cache_run()
 		return -1;
 	}
 	item_num = list_file_get_item_num(pfile);
-	pitem = list_file_get_list(pfile);
+	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
 		pdnode = malloc(sizeof(DIRECTORY_NODE));
 		if (NULL == pdnode) {
 			continue;
 		}
 		pdnode->node.pdata = pdnode;
-		pdnode->domain = strdup(pitem + 768*i);
-		pdnode->path = strdup(pitem + 768*i + 256);
+		pdnode->domain = strdup(pitem[i].domain);
+		pdnode->path = strdup(pitem[i].uri_path);
 		tmp_len = strlen(pdnode->path);
 		if ('/' == pdnode->path[tmp_len - 1]) {
 			pdnode->path[tmp_len - 1] = '\0';
 		}
-		pdnode->directory = strdup(pitem + 768*i + 512);
+		pdnode->directory = strdup(pitem[i].dir);
 		tmp_len = strlen(pdnode->directory);
 		if ('/' == pdnode->directory[tmp_len - 1]) {
 			pdnode->directory[tmp_len - 1] = '\0';

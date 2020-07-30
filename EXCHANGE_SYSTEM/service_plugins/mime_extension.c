@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/svc_common.h>
 #include "list_file.h"
@@ -53,7 +54,6 @@ static const char* extension_to_mime(const char *pextension)
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
 	int i;
-	char *pitem;
 	int item_num;
 	char *psearch;
 	LIST_FILE *pfile;
@@ -62,7 +62,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	
 	
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		
 		pthread_mutex_init(&g_mime_lock, NULL);
@@ -75,6 +75,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			*psearch = '\0';
 		}
 		sprintf(tmp_path, "%s/%s.txt", get_data_path(), file_name);
+		struct srcitem { char ext[16], mimetype[64]; };
 		pfile = list_file_init(tmp_path, "%s:16%s:64");
 		if (NULL == pfile) {
 			printf("[mime_extension]: list_file_init %s/%s: %s\n",
@@ -82,7 +83,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);
-		pitem = list_file_get_list(pfile);
+		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 		g_mime_hash = str_hash_init(item_num + 1, 16, NULL);
 		if (NULL == g_mime_hash) {
 			printf("[mime_extension]: fail to init mime hash table\n");
@@ -96,12 +97,10 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		for (i=0; i<item_num; i++) {
-			HX_strlower(pitem + 80 * i);
-			HX_strlower(pitem + 80 * i + 16);
-			str_hash_add(g_extension_hash,
-				pitem + 80*i, pitem + 80*i + 16);
-			str_hash_add(g_mime_hash,
-				pitem + 80*i + 16, pitem + 80*i);
+			HX_strlower(pitem[i].ext);
+			HX_strlower(pitem[i].mimetype);
+			str_hash_add(g_extension_hash, pitem[i].ext, pitem[i].mimetype);
+			str_hash_add(g_mime_hash, pitem[i].mimetype, pitem[i].ext);
 		}
 		list_file_free(pfile);
 		if (FALSE == register_service("mime_to_extension", mime_to_extension)) {
@@ -116,6 +115,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[mime_extension]: plugin is loaded into system\n");
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		if (NULL != g_mime_hash) {
 			str_hash_free(g_mime_hash);

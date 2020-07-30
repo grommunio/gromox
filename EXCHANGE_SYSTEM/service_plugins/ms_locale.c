@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/svc_common.h>
 #include "list_file.h"
@@ -101,7 +102,6 @@ static const char* lcid_to_ltag(uint32_t lcid)
 BOOL SVC_LibMain(int reason, void **ppdata)
 {
 	int i;
-	char *pitem;
 	int item_num;
 	uint32_t lcid;
 	LIST_FILE *pfile;
@@ -110,7 +110,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	
 	
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		
 		pthread_mutex_init(&g_cpid_lock, NULL);
@@ -152,6 +152,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		list_file_free(pfile);
 		sprintf(tmp_path, "%s/lcid.txt", get_data_path());
+		struct srcitem { char lcid[16], locale[32]; };
 		pfile = list_file_init(tmp_path, "%s:16%s:32");
 		if (NULL == pfile) {
 			printf("[ms_locale]: list_file_init %s: %s\n",
@@ -160,7 +161,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		item_num = list_file_get_item_num(pfile);
 		printf("[ms_locale]: lcid.txt contains %d items\n", item_num);
-		pitem = list_file_get_list(pfile);
+		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 		g_lcid_hash = int_hash_init(item_num + 1, 32);
 		if (NULL == g_lcid_hash) {
 			printf("[ms_locale]: fail to init lcid hash table\n");
@@ -174,22 +175,20 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		for (i=0; i<item_num; i++) {
-			if (0 != strncasecmp(pitem + 48*i, "0x", 2)) {
+			if (strncasecmp(pitem[i].lcid, "0x", 2) != 0) {
 				printf("[ms_locale]: lcid %s is not "
-					"in hex string\n", pitem + 48*i);
+					"in hex string\n", pitem[i].lcid);
 				continue;
 			}
-			lcid = strtol(pitem + 48*i + 2, NULL, 16);
-			HX_strlower(pitem + 48 * i + 16);
-			if (1 != str_hash_add(g_ltag_hash, pitem + 48*i + 16, &lcid)) {
+			lcid = strtol(pitem[i].lcid + 2, nullptr, 16);
+			HX_strlower(pitem[i].locale);
+			if (str_hash_add(g_ltag_hash, pitem[i].locale, &lcid) != 1)
 				printf("[ms_locale]: fail to add item into ltag hash\n");
-			}
 			if (NULL != int_hash_query(g_lcid_hash, lcid)) {
 				continue;
 			}
-			if (1 != int_hash_add(g_lcid_hash, lcid, pitem + 48*i + 16)) {
+			if (int_hash_add(g_lcid_hash, lcid, pitem[i].locale) != 1)
 				printf("[ms_locale]: fail to add item into lcid hash\n");
-			}
 		}
 		list_file_free(pfile);
 		printf("[ms_locale]: loaded %zu locale IDs\n", g_lcid_hash->item_num);
@@ -216,6 +215,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		printf("[ms_locale]: plugin is loaded into system\n");
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		if (NULL != g_lcid_hash) {
 			int_hash_free(g_lcid_hash);

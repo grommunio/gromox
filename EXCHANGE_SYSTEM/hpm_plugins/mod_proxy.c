@@ -68,7 +68,6 @@ static void* thread_work_func(void *pparam);
 BOOL HPM_LibMain(int reason, void **ppdata)
 {
 	int i;
-	char *pitem;
 	int tmp_len;
 	int item_num;
 	char *ptoken;
@@ -81,10 +80,11 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 	HPM_INTERFACE interface;
 	
 	switch (reason) {
-    case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		double_list_init(&g_proxy_list);
 		sprintf(list_path, "%s/proxy.txt", get_data_path());
+		struct srcitem { char domain[256], uri_path[256], dest[256]; };
 		pfile = list_file_init(list_path, "%s:256%s:256%s:256");
 		if (NULL == pfile) {
 			printf("[mod_proxy]: list_file_init %s: %s\n",
@@ -92,7 +92,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);
-		pitem = list_file_get_list(pfile);
+		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 		for (i=0; i<item_num; i++) {
 			pxnode = malloc(sizeof(PROXY_NODE));
 			if (NULL == pxnode) {
@@ -100,11 +100,11 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			}
 			memset(pxnode, 0, sizeof(PROXY_NODE));
 			pxnode->node.pdata = pxnode;
-			pxnode->domain = strdup(pitem + 768*i);
+			pxnode->domain = strdup(pitem[i].domain);
 			if (NULL == pxnode->domain) {
 				break;
 			}
-			pxnode->path = strdup(pitem + 768*i + 256);
+			pxnode->path = strdup(pitem[i].uri_path);
 			if (NULL == pxnode->path) {
 				break;
 			}
@@ -112,11 +112,11 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			if ('/' == pxnode->path[tmp_len - 1]) {
 				pxnode->path[tmp_len - 1] = '\0';
 			}
-			if (0 == strncasecmp(pitem + 768*i + 512, "http://", 7)) {
-				ptoken1 = pitem + 768*i + 512 + 7;
+			if (strncasecmp(pitem[i].dest, "http://", 7) == 0) {
+				ptoken1 = pitem[i].dest + 7;
 			} else {
 				printf("[mod_proxy]: scheme of destination in '%s' "
-					"error, can only be http\n", pitem + 768*i + 512);
+				       "unsupported, can only be http\n", pitem[i].dest);
 				break;
 			}
 			ptoken = strchr(ptoken1, '/');
@@ -230,6 +230,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 		}
 		printf("[mod_proxy]: plugin is loaded into system\n");
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		if (FALSE == g_notify_stop) {
 			g_notify_stop = TRUE;

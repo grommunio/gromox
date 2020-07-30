@@ -168,7 +168,6 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
 static BOOL oxomsg_check_permission(const char *account,
 	const char *account_representing)
 {
-	char *pitem;
 	int i, item_num;
 	LIST_FILE *pfile;
 	char maildir[256];
@@ -182,16 +181,16 @@ static BOOL oxomsg_check_permission(const char *account,
 		return FALSE;
 	}
 	sprintf(temp_path, "%s/config/delegates.txt", maildir);
+	struct srcitem { char a[256]; };
 	pfile = list_file_init(temp_path, "%s:256");
 	if (NULL == pfile) {
 		return FALSE;
 	}
 	item_num = list_file_get_item_num(pfile);
-	pitem = list_file_get_list(pfile);
+	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
-		if (0 == strcasecmp(pitem + 256*i, account) ||
-			TRUE == common_util_check_mlist_include(
-			pitem + 256*i, account)) {
+		if (strcasecmp(pitem[i].a, account) == 0 ||
+		    common_util_check_mlist_include(pitem[i].a, account)) {
 			list_file_free(pfile);
 			return TRUE;
 		}
