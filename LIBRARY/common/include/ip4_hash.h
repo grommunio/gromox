@@ -43,7 +43,7 @@ IP4_HASH_TABLE* ip4_hash_init(size_t max_items, size_t item_size, PHASH_FUNC fun
 void ip4_hash_free(IP4_HASH_TABLE* ptbl);
 
 /* add the key and value into the specified hash table */
-int ip4_hash_add(IP4_HASH_TABLE* ptbl, char *key, void *value);
+extern int ip4_hash_add(IP4_HASH_TABLE *ptbl, const char *key, void *value);
 
 /* query if the key is exist in the hash table */
 void* ip4_hash_query(IP4_HASH_TABLE* ptbl, char *key);

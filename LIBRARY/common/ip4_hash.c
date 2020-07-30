@@ -137,7 +137,7 @@ void ip4_hash_free(IP4_HASH_TABLE* ptbl)
  *		-3	memory alloc fail
  *		-4	the key already exist	
  */
-int ip4_hash_add(IP4_HASH_TABLE* ptbl, char *key, void *value)
+int ip4_hash_add(IP4_HASH_TABLE *ptbl, const char *key, void *value)
 {
 
 	DOUBLE_LIST_NODE* next	= NULL;

@@ -113,7 +113,7 @@ static BOOL assoc_array_enlarge(ASSOC_ARRAY *parray)
 	return TRUE;
 }
 
-BOOL assoc_array_assign(ASSOC_ARRAY *parray, char *key, void *value)
+BOOL assoc_array_assign(ASSOC_ARRAY *parray, const char *key, void *value)
 {
 	void *ptr;
 

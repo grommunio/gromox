@@ -20,9 +20,7 @@ extern "C" {
 ASSOC_ARRAY* assoc_array_init(size_t data_size);
 
 void assoc_array_free(ASSOC_ARRAY *parray);
-
-BOOL assoc_array_assign(ASSOC_ARRAY *parray, char *key, void *value);
-
+extern BOOL assoc_array_assign(ASSOC_ARRAY *parray, const char *key, void *value);
 void* assoc_array_get_by_key(ASSOC_ARRAY *parray, const char *key);
 
 void* assoc_array_get_by_index(ASSOC_ARRAY *parray, size_t index);
