@@ -190,7 +190,7 @@ int mod_cache_run()
 	g_cache_hash = str_hash_init(HASH_GROWING_NUM,
 						sizeof(CACHE_ITEM*), NULL);
 	if (NULL == g_cache_hash) {
-		printf("[mod_cache]: fail to init cache hash table\n");
+		printf("[mod_cache]: Failed to init cache hash table\n");
 		return -3;
 	}
 	g_notify_stop = FALSE;

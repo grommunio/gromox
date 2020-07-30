@@ -129,13 +129,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		pcpid_item = list_file_get_list(pfile);
 		g_cpid_hash = int_hash_init(item_num + 1, 64);
 		if (NULL == g_cpid_hash) {
-			printf("[ms_locale]: fail to init cpid hash table\n");
+			printf("[ms_locale]: Failed to init cpid hash table\n");
 			list_file_free(pfile);
 			return FALSE;
 		}
 		g_charset_hash = str_hash_init(item_num + 1, sizeof(uint32_t), NULL);
 		if (NULL == g_charset_hash) {
-			printf("[ms_locale]: fail to init charset hash table\n");
+			printf("[ms_locale]: Failed to init charset hash table\n");
 			list_file_free(pfile);
 			return FALSE;
 		}
@@ -164,13 +164,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 		g_lcid_hash = int_hash_init(item_num + 1, 32);
 		if (NULL == g_lcid_hash) {
-			printf("[ms_locale]: fail to init lcid hash table\n");
+			printf("[ms_locale]: Failed to init lcid hash table\n");
 			list_file_free(pfile);
 			return FALSE;
 		}
 		g_ltag_hash = str_hash_init(item_num + 1, sizeof(uint32_t), NULL);
 		if (NULL == g_ltag_hash) {
-			printf("[ms_locale]: fail to init ltag hash table\n");
+			printf("[ms_locale]: Failed to init ltag hash table\n");
 			list_file_free(pfile);
 			return FALSE;
 		}

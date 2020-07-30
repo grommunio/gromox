@@ -105,7 +105,7 @@ int main(int argc, const char **argv)
 	
 	g_mime_pool = mime_pool_init(1024, 32, FALSE);
 	if (NULL == g_mime_pool) {
-		printf("fail to init mime pool\n");
+		printf("Failed to init MIME pool\n");
 		return 4;
 	}
 	

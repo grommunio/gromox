@@ -109,17 +109,17 @@ int dns_adaptor_run()
 {
 	g_ip_pool = lib_buffer_init(sizeof(IP_NODE), g_capacity*ITEM_RATIO, TRUE);
 	if (NULL== g_ip_pool) {
-		printf("[dns_adaptor]: fail to init ip node pool\n");
+		printf("[dns_adaptor]: Failed to init ipaddr node pool\n");
 		return -1;
 	}
 	g_A_table = str_hash_init(g_capacity, sizeof(DNS_ENTRY), NULL);
 	if (NULL == g_A_table) {
-		printf("[dns_adaptor]: fail to init DNS A record table\n");
+		printf("[dns_adaptor]: Failed to init DNS A record table\n");
 		return -2;
 	}
 	g_MX_table = str_hash_init(g_capacity, sizeof(DNS_ENTRY), NULL);
 	if (NULL == g_MX_table) {
-		printf("[dns_adaptor]: fail to init DNS MX record table\n");
+		printf("[dns_adaptor]: Failed to init DNS MX record table\n");
 		return -3;
 	}
 	dns_adaptor_refresh();

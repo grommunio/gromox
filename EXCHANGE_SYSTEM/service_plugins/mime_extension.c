@@ -86,13 +86,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
 		g_mime_hash = str_hash_init(item_num + 1, 16, NULL);
 		if (NULL == g_mime_hash) {
-			printf("[mime_extension]: fail to init mime hash table\n");
+			printf("[mime_extension]: Failed to init MIME hash table\n");
 			list_file_free(pfile);
 			return FALSE;
 		}
 		g_extension_hash = str_hash_init(item_num + 1, 64, NULL);
 		if (NULL == g_extension_hash) {
-			printf("[mime_extension]: fail to init extension hash table\n");
+			printf("[mime_extension]: Failed to init extension hash table\n");
 			list_file_free(pfile);
 			return FALSE;
 		}

@@ -197,7 +197,7 @@ int main(int argc, const char **argv)
 
 	g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 	if (NULL == g_ssl_ctx) {
-		printf("[system]: fail to init ssl context\n");
+		printf("[system]: Failed to init SSL context\n");
 		close(sockd);
 		return 6;
 	}

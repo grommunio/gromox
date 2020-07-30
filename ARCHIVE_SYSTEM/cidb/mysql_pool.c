@@ -88,7 +88,7 @@ int mysql_pool_run()
 
 	if (0 == double_list_get_nodes_num(&g_connection_list) &&
 		0 == double_list_get_nodes_num(&g_invalid_list)) {
-		printf("[mysql_pool]: fail to init connection list\n");
+		printf("[mysql_pool]: Failed to init connection list\n");
 		return -1;
 	}
 	

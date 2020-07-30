@@ -369,18 +369,18 @@ int emsmdb_interface_run()
 	g_handle_hash = str_hash_init((context_num + 1)*
 		MAX_HANDLES_ON_CONTEXT, sizeof(HANDLE_DATA), NULL);
 	if (NULL == g_handle_hash) {
-		printf("[exchange_emsmdb]: fail to init handle hash table\n");
+		printf("[exchange_emsmdb]: Failed to init handle hash table\n");
 		return -1;
 	}
 	g_user_hash = str_hash_init(context_num + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == g_user_hash) {
-		printf("[exchange_emsmdb]: fail to init user hash table\n");
+		printf("[exchange_emsmdb]: Failed to init user hash table\n");
 		return -2;
 	}
 	g_notify_hash = str_hash_init(AVERAGE_NOTIFY_NUM
 			*context_num, sizeof(NOTIFY_ITEM), NULL);
 	if (NULL == g_notify_hash) {
-		printf("[exchange_emsmdb]: fail to init notify hash map\n");
+		printf("[exchange_emsmdb]: Failed to init notify hash map\n");
 		return -3;
 	}
 	g_notify_stop = FALSE;

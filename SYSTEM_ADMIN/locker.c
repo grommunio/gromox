@@ -220,7 +220,7 @@ int main(int argc, const char **argv)
 
 	g_hash_table = str_hash_init(table_size, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == g_hash_table) {
-		printf("[system]: fail to init hash table\n");
+		printf("[system]: Failed to init hash table\n");
 		return 3;
 	}
 	

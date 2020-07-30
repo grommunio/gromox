@@ -6958,25 +6958,25 @@ int mail_engine_run()
 		system_services_ltag_to_lcid, system_services_lcid_to_ltag,
 		system_services_charset_to_cpid, system_services_cpid_to_charset,
 		system_services_mime_to_extension, system_services_extension_to_mime)) {
-		printf("[mail_engine]: fail to init oxcmail library\n");
+		printf("[mail_engine]: Failed to init oxcmail library\n");
 		return -1;
 	}
 	g_hash_table = str_hash_init(g_table_size, sizeof(IDB_ITEM), NULL);
 	if (NULL == g_hash_table) {
-		printf("[mail_engine]: fail to init hash table\n");
+		printf("[mail_engine]: Failed to init hash table\n");
 		return -2;
 	}
 	g_mime_pool = mime_pool_init(g_mime_num, FILENUM_PER_MIME, TRUE);
 	if (NULL == g_mime_pool) {
 		str_hash_free(g_hash_table);
-		printf("[mail_engine]: fail to init mime pool\n");
+		printf("[mail_engine]: Failed to init MIME pool\n");
 		return -3;
 	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size*10, TRUE);
 	if (NULL == g_alloc_mjson) {
 		mime_pool_free(g_mime_pool);
 		str_hash_free(g_hash_table);
-		printf("[mail_engine]: fail to init buffer pool for mjson\n");
+		printf("[mail_engine]: Failed to init buffer pool for mjson\n");
 		return -4;
 	}
 	g_notify_stop = FALSE;

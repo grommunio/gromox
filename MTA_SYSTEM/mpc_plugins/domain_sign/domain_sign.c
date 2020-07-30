@@ -88,7 +88,7 @@ int domain_sign_run()
 	g_hash_cap = domain_num + GROWING_NUM;
 	g_sign_hash = str_hash_init(g_hash_cap, sizeof(SINGLE_LIST*), NULL);
 	if (NULL == g_sign_hash) {
-		printf("[domain_monitor]: fail to init domain hash table\n");
+		printf("[domain_monitor]: Failed to init domain hash table\n");
 		return -2;
 	}
 	dirp = opendir(g_root_path);

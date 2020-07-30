@@ -119,7 +119,7 @@ int domain_keyword_run()
 	g_hash_table = str_hash_init(g_hash_cap, sizeof(void*), NULL);
 	if (NULL == g_hash_table) {
 		closedir(dirp);
-		printf("[domain_keyword]: fail to init hash table\n");
+		printf("[domain_keyword]: Failed to init hash table\n");
 		return -3;
 	}
 	seekdir(dirp, 0);
@@ -644,7 +644,7 @@ static int domain_keyword_add(const char *domain)
 	sprintf(keyword_path, "%s/%s.txt", g_root_path, temp_domain);
 	pengine = keyword_engine_init(charset_path, keyword_path);
 	if (NULL == pengine) {
-		printf("[domain_keyword]: fail to init keyword engine from file %s\n",
+		printf("[domain_keyword]: Failed to init keyword engine from file %s\n",
 			keyword_path);
 		return DOMAIN_KEYWORD_FILE_FAIL;
 	}

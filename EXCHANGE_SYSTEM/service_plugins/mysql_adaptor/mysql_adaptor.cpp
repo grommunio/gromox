@@ -131,7 +131,7 @@ int mysql_adaptor_run()
 
 	if (0 == double_list_get_nodes_num(&g_connection_list) &&
 		0 == double_list_get_nodes_num(&g_invalid_list)) {
-		printf("[mysql_adaptor]: fail to init connection list\n");
+		printf("[mysql_adaptor]: Failed to init connection list\n");
 		return -1;
 	}
 	

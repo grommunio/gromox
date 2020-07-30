@@ -104,7 +104,7 @@ int domain_monitor_run()
 	g_domain_hash = str_hash_init(g_hash_cap, sizeof(STR_HASH_TABLE), NULL);
 	if (NULL == g_domain_hash) {
 		closedir(dirp);
-		printf("[domain_monitor]: fail to init domain hash table\n");
+		printf("[domain_monitor]: Failed to init domain hash table\n");
 		return -2;
 	}
 	dirp = opendir(g_root_path);

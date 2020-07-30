@@ -77,7 +77,7 @@ int main(int argc, const char **argv)
 
 	if (NULL == ppool) {
 		free(pbuff);
-		printf("fail to init mime pool\n");
+		printf("Failed to init MIME pool\n");
 		return 6;
 	}
 

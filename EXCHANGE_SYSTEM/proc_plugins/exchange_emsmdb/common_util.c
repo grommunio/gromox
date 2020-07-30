@@ -2824,13 +2824,13 @@ int common_util_run()
 		common_util_ltag_to_lcid, common_util_lcid_to_ltag,
 		common_util_charset_to_cpid, common_util_cpid_to_charset,
 		common_util_mime_to_extension, common_util_extension_to_mime)) {
-		printf("[exchange_emsmdb]: fail to init oxcmail library\n");
+		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;
 	}
 	g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE,
 						g_average_blocks*context_num, TRUE);
 	if (NULL == g_file_allocator) {
-		printf("[exchange_emsmdb]: fail to init mem file allocator\n");
+		printf("[exchange_emsmdb]: Failed to init mem file allocator\n");
 		return -3;
 	}
 	mime_num = 16*context_num;
@@ -2841,7 +2841,7 @@ int common_util_run()
 	}
 	g_mime_pool = mime_pool_init(mime_num, 16, TRUE);
 	if (NULL == g_mime_pool) {
-		printf("[exchange_emsmdb]: fail to init mime pool\n");
+		printf("[exchange_emsmdb]: Failed to init MIME pool\n");
 		return -4;
 	}
 	return 0;

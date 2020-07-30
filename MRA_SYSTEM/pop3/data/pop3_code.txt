@@ -21,7 +21,7 @@
 2170020  -ERR cannot relogin under login stat
 2170021  -ERR midb read/write error
 2170022  -ERR fail to execute command in midb
-2170023  -ERR fail to initialize TLS
+2170023  -ERR failed to initialize TLS
 2170024  +OK begin TLS negotiation
 2170025  -ERR TLS negotiation only begin in AUTHORIZATION state
 2170026  -ERR must issue a STLS command first

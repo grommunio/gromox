@@ -36,7 +36,7 @@ MIME_POOL* mime_pool_init(size_t number, int ratio, BOOL thread_safe)
 	pmime_pool->allocator = lib_buffer_init(FILE_ALLOC_SIZE,
 							number*ratio, thread_safe);
 	if (NULL == pmime_pool->allocator) {
-		debug_info("[mime_pool]: fail to init file allocator");
+		debug_info("[mime_pool]: Failed to init file allocator");
 		free(pmime_pool->pbegin);
 		free(pmime_pool);
 		return NULL;

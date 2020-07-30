@@ -186,7 +186,7 @@ int exmdb_local_run()
 		exmdb_local_ltag_to_lcid, exmdb_local_lcid_to_ltag,
 		exmdb_local_charset_to_cpid, exmdb_local_cpid_to_charset,
 		exmdb_local_mime_to_extension, exmdb_local_extension_to_mime)) {
-		printf("[exmdb_local]: fail to init oxcmail library\n");
+		printf("[exmdb_local]: Failed to init oxcmail library\n");
 		return -2;
 	}
 	struct srcitem { char s[256]; };
@@ -200,7 +200,7 @@ int exmdb_local_run()
 	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist));
 	g_str_hash = str_hash_init(num + 1, sizeof(uint16_t), NULL);
 	if (NULL == g_str_hash) {
-		printf("[exmdb_local]: fail to init hash table\n");
+		printf("[exmdb_local]: Failed to init hash table\n");
 		return -4;
 	}
 	last_propid = 0x8001;

@@ -655,7 +655,7 @@ int common_util_run()
 {
 	g_mime_pool = mime_pool_init(g_mime_num, 16, TRUE);
 	if (NULL == g_mime_pool) {
-		printf("[common_util]: fail to init mime pool\n");
+		printf("[common_util]: Failed to init MIME pool\n");
 		return -1;
 	}
 	if (FALSE == oxcmail_init_library(
@@ -667,7 +667,7 @@ int common_util_run()
 		system_services_cpid_to_charset,
 		system_services_mime_to_extension,
 		system_services_extension_to_mime)) {
-		printf("[common_util]: fail to init oxcmail library\n");
+		printf("[common_util]: Failed to init oxcmail library\n");
 		return -2;
 	}
 	g_langmap_list = list_file_init(g_langmap_path, "%s:32%s:32");
@@ -682,7 +682,7 @@ int common_util_run()
 		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
 		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
 	if (NULL == g_folderlang_list) {
-		printf("[common_util]: fail to init "
+		printf("[common_util]: Failed to init "
 			"folderlang %s\n", g_folderlang_path);
 		return -4;
 	}

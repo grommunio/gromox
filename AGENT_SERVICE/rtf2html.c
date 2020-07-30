@@ -97,7 +97,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 	if (FALSE == rtf_init_library(cpid_to_charset_to)) {
-		fprintf(stderr, "fail to init rtf library\n");
+		fprintf(stderr, "Failed to init RTF library\n");
 		return 4;
 	}
 	tmp_len = 8*buff_len + 1024*1024 - rtf_len;

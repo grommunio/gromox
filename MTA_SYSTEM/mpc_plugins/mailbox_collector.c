@@ -98,7 +98,7 @@ static int collector_refresh()
 	item_num = list_file_get_item_num(plist);
 	phash = str_hash_init(item_num + 1, 256, NULL);
 	if (NULL == phash) {
-		printf("[mailbox_collector]: fail to init hash table\n", g_list_path);
+		printf("[mailbox_collector]: Failed to init hash table\n", g_list_path);
 		list_file_free(plist);
 		return REFRESH_HASH_FAIL;
 	}

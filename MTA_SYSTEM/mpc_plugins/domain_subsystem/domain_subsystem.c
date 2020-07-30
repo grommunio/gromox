@@ -45,7 +45,7 @@ int domain_subsystem_run()
     }
 
 	if (0 != clone_queue_run()) {
-        printf("[domain_subsystem]: fail to init clone queue\n");
+		printf("[domain_subsystem]: Failed to init clone queue\n");
         return -3;
     }
 

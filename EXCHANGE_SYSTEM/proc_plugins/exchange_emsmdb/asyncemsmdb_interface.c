@@ -74,18 +74,18 @@ int asyncemsmdb_interface_run()
 	}
 	g_async_hash = int_hash_init(2 * context_num, sizeof(ASYNC_WAIT *));
 	if (NULL == g_async_hash) {
-		printf("[exchange_emsmdb]: fail to init async ID hash table\n");
+		printf("[exchange_emsmdb]: Failed to init async ID hash table\n");
 		return -2;
 	}
 	g_wait_allocator = lib_buffer_init(
 		sizeof(ASYNC_WAIT), 2*context_num, TRUE);
 	if (NULL == g_wait_allocator) {
-		printf("[exchange_emsmdb]: fail to init async wait allocator\n");
+		printf("[exchange_emsmdb]: Failed to init async wait allocator\n");
 		return -3;
 	}
 	g_tag_hash = str_hash_init(context_num, sizeof(ASYNC_WAIT*), NULL);
 	if (NULL == g_tag_hash) {
-		printf("[exchange_emsmdb]: fail to init async user hash table\n");
+		printf("[exchange_emsmdb]: Failed to init async user hash table\n");
 		return -4;
 	}
 	g_notify_stop = FALSE;

@@ -36,7 +36,7 @@ int exmdb_server_run()
 	g_ctx_allocator = lib_buffer_init(sizeof(ENVIRONMENT_CONTEXT),
 										2*get_context_num(), TRUE);
 	if (NULL == g_ctx_allocator) {
-		printf("[exmdb_provider]: fail to init environment allocator\n");
+		printf("[exmdb_provider]: Failed to init environment allocator\n");
 		return -1;
 	}
 	return 0;

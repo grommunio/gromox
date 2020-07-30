@@ -216,13 +216,13 @@ int main(int argc, const char **argv)
 
 	g_session_table = str_hash_init(table_size, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == g_session_table) {
-		printf("[system]: fail to init session hash table\n");
+		printf("[system]: Failed to init session hash table\n");
 		return 3;
 	}
 	
 	g_user_table = str_hash_init(table_size, sizeof(USER_ITEM), NULL);
 	if (NULL == g_user_table) {
-		printf("[system]: fail to init user hash table\n");
+		printf("[system]: Failed to init user hash table\n");
 		str_hash_free(g_session_table);
 		return 3;
 	}

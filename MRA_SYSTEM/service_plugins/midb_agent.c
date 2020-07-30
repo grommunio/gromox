@@ -292,7 +292,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 								get_context_num()*g_file_ratio, TRUE);
 			
 			if (NULL == g_file_allocator) {
-				printf("[midb_agent]: fail to init memory pool\n");
+				printf("[midb_agent]: failed to init memory pool\n");
 				return FALSE;
 			}
 		}

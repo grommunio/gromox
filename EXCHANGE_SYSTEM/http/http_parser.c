@@ -127,7 +127,7 @@ int http_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
-			printf("[http_parser]: fail to init ssl context\n");
+			printf("[http_parser]: Failed to init SSL context\n");
 			return -1;
 		}
 		if ('\0' != g_certificate_passwd[0]) {
@@ -165,13 +165,13 @@ int http_parser_run()
 	g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE,
 							g_context_num * 16, TRUE);
 	if (NULL == g_file_allocator) {
-		printf("[http_parser]: fail to init mem file allocator\n");
+		printf("[http_parser]: Failed to init mem file allocator\n");
 		return -6;
 	}
 	g_vconnection_hash = str_hash_init(g_context_num + 1,
 						sizeof(VIRTUAL_CONNECTION), NULL);
 	if (NULL == g_vconnection_hash) {
-		printf("[http_parser]: fail to init select hash table\n");
+		printf("[http_parser]: Failed to init select hash table\n");
 		return -7;
 	}
     g_context_list = malloc(sizeof(HTTP_CONTEXT)*g_context_num);

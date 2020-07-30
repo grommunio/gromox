@@ -223,7 +223,7 @@ int main(int argc, const char **argv)
 	g_fifo_alloc = fifo_allocator_init(sizeof(MEM_FILE),
 					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
 	if (NULL == g_fifo_alloc) {
-		printf("[system]: fail to init queue allocator\n");
+		printf("[system]: Failed to init queue allocator\n");
 		return 3;
 	}
 	
@@ -231,7 +231,7 @@ int main(int argc, const char **argv)
 					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
 	if (NULL == g_file_alloc) {
 		fifo_allocator_free(g_fifo_alloc);
-		printf("[system]: fail to init file allocator\n");
+		printf("[system]: Failed to init file allocator\n");
 		return 4;
 	}
 	

@@ -391,7 +391,7 @@ int main(int argc, const char **argv)
 	
 	g_user_hash = str_hash_init(g_hash_cap, sizeof(USER_ITEM), NULL);
 	if (NULL == g_user_hash) {
-		printf("[system]: fail to init user hash table\n");
+		printf("[system]: Failed to init user hash table\n");
 		close(sockd);
 		list_file_free(plist);
 		return 7;

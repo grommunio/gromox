@@ -197,7 +197,7 @@ int smtp_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
-			printf("[smtp_parser]: fail to init ssl context\n");
+			printf("[smtp_parser]: Failed to init SSL context\n");
 			return -1;
 		}
 		

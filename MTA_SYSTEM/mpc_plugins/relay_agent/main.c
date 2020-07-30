@@ -214,7 +214,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 			token_path);
 		g_stack_allocator = vstack_allocator_init(16, 1024*get_context_num(), TRUE);
 		if (NULL == g_stack_allocator) {
-			printf("[relay_agent]: fail to init stack allocator\n");
+			printf("[relay_agent]: Failed to init stack allocator\n");
 			return FALSE;
 		}
 		if (0 != ip_range_run()) {

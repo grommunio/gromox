@@ -126,7 +126,7 @@ int smtp_deliverer_run()
     SSL_load_error_strings();
     g_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
     if (NULL == g_ssl_ctx) {
-        printf("[remote_postman]: fail to init ssl context\n");
+		printf("[remote_postman]: Failed to init SSL context\n");
         return -6;
     }
 	
@@ -144,7 +144,7 @@ int smtp_deliverer_run()
 	g_stack_allocator = vstack_allocator_init(
 			16, 1024*get_context_num(), TRUE);
 	if (NULL == g_stack_allocator) {
-		printf("[remote_postman]: fail to init stack allocator\n");
+		printf("[remote_postman]: Failed to init stack allocator\n");
 		return -8;
 	}
 	return 0;
@@ -437,7 +437,7 @@ SESSION_BEGIN:
 				connection.ssl = SSL_new(g_ssl_ctx);	
 				if (NULL == connection.ssl) {
 					smtp_deliverer_log_info(pcontext, 8,
-						"fail to init ssl connection");
+						"Failed to init SSL connection");
 					close(connection.sockd);
 					return SMTP_DELIVERER_CANNOT_CONNECT;
 				}

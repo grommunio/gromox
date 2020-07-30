@@ -1422,7 +1422,7 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			                mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
-		debug_info("[mail]: fail to init lib buffer in mail_dup");
+		debug_info("[mail]: Failed to init lib buffer in mail_dup");
 		return FALSE;
 	}
 	stream_init(&tmp_stream, pallocator);
@@ -1483,7 +1483,7 @@ BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst)
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			                mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
-		debug_info("[mail]: fail to init lib buffer in mail_dup");
+		debug_info("[mail]: Failed to init lib buffer in mail_dup");
 		return FALSE;
 	}
 	stream_init(&tmp_stream, pallocator);

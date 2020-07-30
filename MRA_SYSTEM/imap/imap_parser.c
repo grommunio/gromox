@@ -170,7 +170,7 @@ int imap_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
-			printf("[imap_parser]: fail to init ssl context\n");
+			printf("[imap_parser]: Failed to init SSL context\n");
 			return -1;
 		}
 		
@@ -214,7 +214,7 @@ int imap_parser_run()
 
 	g_select_hash = str_hash_init(g_context_num + 1, sizeof(DOUBLE_LIST), NULL);
 	if (NULL == g_select_hash) {
-		printf("[imap_parser]: fail to init select hash table\n");
+		printf("[imap_parser]: Failed to init select hash table\n");
 		return -4;
 	}
 	
@@ -224,7 +224,7 @@ int imap_parser_run()
 	}
 	g_alloc_file = lib_buffer_init(FILE_ALLOC_SIZE, num, TRUE);
 	if (NULL == g_alloc_file) {
-		printf("[imap_parser]: fail to init mem file allocator\n");
+		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -5;
 	}
 	
@@ -238,13 +238,13 @@ int imap_parser_run()
 	}
 	g_mime_pool = mime_pool_init(num, FILENUM_PER_MIME, TRUE);
 	if (NULL == g_mime_pool) {
-		printf("[imap_parser]: fail to init mime pool\n");
+		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
 	
 	g_alloc_xarray = xarray_allocator_init(sizeof(MITEM), g_average_num*g_context_num, TRUE);
 	if (NULL == g_alloc_xarray) {
-		printf("[imap_parser]: fail to init mem file allocator\n");
+		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -7;
 	}
 	
@@ -254,7 +254,7 @@ int imap_parser_run()
 	}
 	g_alloc_dir = dir_tree_allocator_init(num, TRUE);
 	if (NULL == g_alloc_dir) {
-		printf("[imap_parser]: fail to init dir node allocator\n");
+		printf("[imap_parser]: Failed to init dir node allocator\n");
 		return -8;
 	}
 	
@@ -264,7 +264,7 @@ int imap_parser_run()
 	}
 	g_alloc_mjson = mjson_allocator_init(num, TRUE);
 	if (NULL == g_alloc_mjson) {
-		printf("[imap_parser]: fail to init mjson allocator\n");
+		printf("[imap_parser]: Failed to init mjson allocator\n");
 		return -9;
 	}
 	
@@ -438,7 +438,7 @@ CONTEXT_PROCESSING:
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
-				/* IMAP_CODE_2180014: BAD internal error: fail to init SSL object */
+				/* IMAP_CODE_2180014: BAD internal error: failed to init SSL object */
 				imap_reply_str = resource_get_imap_code(IMAP_CODE_2180014, 1, &string_length);
 				write(pcontext->connection.sockd, imap_reply_str, string_length);
 				imap_parser_log_info(pcontext, 8, "out of SSL object");

@@ -110,7 +110,7 @@ int mail_approving_run()
 	g_domain_hash = str_hash_init(g_hash_cap, sizeof(STR_HASH_TABLE), NULL);
 	if (NULL == g_domain_hash) {
 		closedir(dirp);
-		printf("[mail_approving]: fail to init domain hash table\n");
+		printf("[mail_approving]: Failed to init domain hash table\n");
 		return -3;
 	}
 	seekdir(dirp, 0);

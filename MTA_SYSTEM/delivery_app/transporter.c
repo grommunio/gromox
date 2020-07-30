@@ -282,14 +282,14 @@ int transporter_run()
 	g_mime_pool = mime_pool_init(g_mime_num, FILENUM_PER_MIME, TRUE);
 	if (NULL == g_mime_pool) {
 		transporter_collect_resource();
-		printf("[transporter]: fail to init mime pool\n");
+		printf("[transporter]: Failed to init MIME pool\n");
         return -4;
 	}
 	g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE,
 		FILENUM_PER_CONTROL*(g_free_num + g_threads_max), TRUE);
 	if (NULL == g_file_allocator) {
         transporter_collect_resource();
-        printf("[transporter]: fail to init file allocator\n");
+		printf("[transporter]: Failed to init file allocator\n");
         return -5;
     }
 	for (i=0; i<g_threads_max; i++) {
@@ -380,7 +380,7 @@ static void transporter_collect_hooks()
 
     pallocator = vstack_allocator_init(256, 1024, FALSE);
     if (NULL == pallocator) {
-        debug_info("[transporter]: fail to init allocator for stack in"
+		debug_info("[transporter]: Failed to init allocator for stack in"
                 "transporter_stop\n");
         return;
     }
@@ -898,7 +898,7 @@ static void transporter_clean_up_unloading()
 
 	pallocator = vstack_allocator_init(sizeof(DOUBLE_LIST_NODE*), 1024, FALSE);
 	if (NULL == pallocator) {
-		debug_info("[transporter]: fail to init allocator for stack in"
+		debug_info("[transporter]: Failed to init allocator for stack in"
 				"transporter_clean_up_unloading\n");
 		return;
 	}

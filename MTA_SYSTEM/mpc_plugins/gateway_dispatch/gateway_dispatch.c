@@ -125,46 +125,46 @@ int gateway_dispatch_run()
 	
 	g_stack_allocator = vstack_allocator_init(16, 4096, TRUE);
 	if (NULL == g_stack_allocator) {
-		printf("[gateway_dispatch]: fail to init stack allocator\n");
+		printf("[gateway_dispatch]: Failed to init stack allocator\n");
 		return -7;
 	}
 	
 	if (0 != backend_list_run()) {
-		printf("[gateway_dispatch]: fail to init {backend_list} module\n");
+		printf("[gateway_dispatch]: Failed to init {backend_list} module\n");
 		return -8;
 	}
 	
 	g_running_modules[1] = backend_list_stop;
 	if (0 != files_allocator_run()) {
-		printf("[gateway_dispatch]: fail to init {files allocator} module\n");
+		printf("[gateway_dispatch]: Failed to init {files allocator} module\n");
 		gateway_dispatch_clean_up();
 		return -9;
 	}
 	g_running_modules[2] = files_allocator_stop;
 
 	if (0 != net_failure_run()) {
-		printf("[gateway_dispatch]: fail to init {net failure} module\n");
+		printf("[gateway_dispatch]: Failed to init {net failure} module\n");
 		gateway_dispatch_clean_up();
         return -10;
 	}
 	g_running_modules[3] = net_failure_stop;
 
 	if (0 != smtp_dispatch_run()) {
-        printf("[gateway_dispatch]: fail to init {smtp deliverer} module\n");
+		printf("[gateway_dispatch]: Failed to init {smtp deliverer} module\n");
         gateway_dispatch_clean_up();
         return -11;
     }
     g_running_modules[4] = smtp_dispatch_stop;
 
 	if (0 != bounce_producer_run()) {
-        printf("[gateway_dispatch]: fail to init {bounce producer} module\n");
+		printf("[gateway_dispatch]: Failed to init {bounce producer} module\n");
         gateway_dispatch_clean_up();
         return -12;
     }
     g_running_modules[5] = bounce_producer_stop;
 
 	if (0 != cache_queue_run()) {
-        printf("[gateway_dispatch]: fail to init {cache queue} module\n");
+		printf("[gateway_dispatch]: Failed to init {cache queue} module\n");
         gateway_dispatch_clean_up();
         return -13;
     }

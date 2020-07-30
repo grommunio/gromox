@@ -818,12 +818,12 @@ int db_engine_run()
 			" memory statistic for sqlite engine\n");
 	}
 	if (SQLITE_OK != sqlite3_initialize()) {
-		printf("[exmdb_provider]: fail to initialize sqlite engine\n");
+		printf("[exmdb_provider]: Failed to initialize sqlite engine\n");
 		return -2;
 	}
 	g_hash_table = str_hash_init(g_table_size, sizeof(DB_ITEM), NULL);
 	if (NULL == g_hash_table) {
-		printf("[exmdb_provider]: fail to init db hash table\n");
+		printf("[exmdb_provider]: Failed to init db hash table\n");
 		return -3;
 	}
 	g_notify_stop = FALSE;

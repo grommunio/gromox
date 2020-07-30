@@ -103,7 +103,7 @@ int main(int argc, const char **argv)
 	}
 	
 	if (NULL == (pmysql = mysql_init(NULL))) {
-		printf("fail to init mysql object\n");
+		printf("Failed to init mysql object\n");
 		config_file_free(pconfig);
 		return 3;
 	}
@@ -197,7 +197,7 @@ int main(int argc, const char **argv)
 	close(fd);
 	sql_string[str_size] = '\0';
 	if (SQLITE_OK != sqlite3_initialize()) {
-		printf("fail to initialize sqlite engine\n");
+		printf("Failed to initialize sqlite engine\n");
 		free(sql_string);
 		return 9;
 	}

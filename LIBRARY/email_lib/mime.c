@@ -1261,7 +1261,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			tmp_size / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
-		debug_info("[mime]: fail to init lib buffer"
+		debug_info("[mime]: Failed to init lib buffer"
 				" in mime_read_mutlipart_content");
 		*plength = 0;
 		return FALSE;
@@ -1493,7 +1493,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 				mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 		if (NULL == pallocator) {
-			debug_info("[mime]: fail to init lib"
+			debug_info("[mime]: Failed to init lib"
 				" buffer in mime_read_content");
 			*plength = 0;
 			return FALSE;

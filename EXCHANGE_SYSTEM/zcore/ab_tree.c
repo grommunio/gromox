@@ -237,7 +237,7 @@ int ab_tree_run()
 	
 	g_base_hash = int_hash_init(g_base_size, sizeof(AB_BASE *));
 	if (NULL == g_base_hash) {
-		printf("[exchange_nsp]: fail to init base hash table\n");
+		printf("[exchange_nsp]: Failed to init base hash table\n");
 		return -1;
 	}
 	g_file_allocator = lib_buffer_init(

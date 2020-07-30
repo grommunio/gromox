@@ -72,37 +72,37 @@ int remote_postman_run()
 		return -1;
 	}
 	if (0 != files_allocator_run()) {
-		printf("[remote_postman]: fail to init {files allocator} module\n");
+		printf("[remote_postman]: Failed to init {files allocator} module\n");
 		remote_postman_clean_up();
 		return -2;
 	}
 	g_running_modules[1] = files_allocator_stop;
 	if (0 != net_failure_run()) {
-		printf("[remote_postman]: fail to init {net failure} module\n");
+		printf("[remote_postman]: Failed to init {net failure} module\n");
 		remote_postman_clean_up();
         return -3;
 	}
 	g_running_modules[2] = net_failure_stop;
 	if (0 != smtp_deliverer_run()) {
-        printf("[remote_postman]: fail to init {smtp deliverer} module\n");
+		printf("[remote_postman]: Failed to init {smtp deliverer} module\n");
         remote_postman_clean_up();
         return -4;
     }
     g_running_modules[3] = smtp_deliverer_stop;
 	if (0 != bounce_producer_run()) {
-        printf("[remote_postman]: fail to init {bounce producer} module\n");
+		printf("[remote_postman]: Failed to init {bounce producer} module\n");
         remote_postman_clean_up();
         return -5;
     }
     g_running_modules[4] = bounce_producer_stop;
 	if (0 != timer_queue_run()) {
-        printf("[remote_postman]: fail to init {timer queue} module\n");
+		printf("[remote_postman]: Failed to init {timer queue} module\n");
         remote_postman_clean_up();
         return -6;
     }
     g_running_modules[5] = timer_queue_stop;
 	if (0 != sender_routing_run()) {
-        printf("[remote_postman]: fail to init {sender routing} module\n");
+		printf("[remote_postman]: Failed to init {sender routing} module\n");
         remote_postman_clean_up();
         return -7;
 	}

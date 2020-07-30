@@ -1245,7 +1245,7 @@ int anti_spamming_stop()
 
 	pallocator = vstack_allocator_init(256, 1024, FALSE);
 	if (NULL == pallocator) {
-		debug_info("[anti_spamming]: fail to init allocator for stack in" 
+		debug_info("[anti_spamming]: Failed to init allocator for stack in" 
 				"anti_spamming_stop\n");
 		return -1;
 	}

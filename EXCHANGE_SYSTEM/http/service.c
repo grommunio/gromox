@@ -116,7 +116,7 @@ int service_stop()
 
 	pallocator = vstack_allocator_init(256, 1024, FALSE);
 	if (NULL == pallocator) {
-		debug_info("[service]: fail to init allocator"
+		debug_info("[service]: Failed to init allocator"
 						" for stack in service_stop\n");
 		return -1;
 	}

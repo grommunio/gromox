@@ -1129,7 +1129,7 @@ int main(int argc, const char **argv)
 
     g_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
     if (NULL == g_ssl_ctx) {
-        printf("[system]: fail to init ssl context\n");
+		printf("[system]: Failed to init SSL context\n");
 		return 6;
     }
 

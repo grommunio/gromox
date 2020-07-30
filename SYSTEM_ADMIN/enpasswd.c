@@ -119,7 +119,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (NULL == (pmysql = mysql_init(NULL))) {
-		printf("fail to init mysql object\n");
+		printf("Failed to init mysql object\n");
 		config_file_free(pconfig);
 		return 6;
 	}

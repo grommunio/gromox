@@ -111,7 +111,7 @@ int pop3_parser_run()
 		SSL_load_error_strings();
 		g_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 		if (NULL == g_ssl_ctx) {
-			printf("[pop3_parser]: fail to init ssl context\n");
+			printf("[pop3_parser]: Failed to init SSL context\n");
 			return -1;
 		}
 		

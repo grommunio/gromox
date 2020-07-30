@@ -137,7 +137,7 @@ int group_monitor_run()
 	g_group_hash = str_hash_init(g_hash_cap, sizeof(STR_HASH_TABLE), NULL);
 	if (NULL == g_group_hash) {
 		closedir(dirp);
-		printf("[group_monitor]: fail to init group hash table\n");
+		printf("[group_monitor]: Failed to init group hash table\n");
 		return -6;
 	}
 	seekdir(dirp, 0);

@@ -77,7 +77,7 @@ static IMAP_RETURN_CODE g_default_code_table[] = {
 	{2180011, "BAD time out"},
 	{2180012, "BAD internal error, fail to read file"},
 	{2180013, "BAD search parameter syntax error"},
-	{2180014, "BAD internal error, fail to init SSL object"},
+	{2180014, "BAD internal error, failed to init SSL object"},
 	{2180015, "BAD <host> service not available"},
 	{2180016, "BAD access is denied from your IP address <remote_ip>"},
 	{2180017, "BAD literal size too large"},

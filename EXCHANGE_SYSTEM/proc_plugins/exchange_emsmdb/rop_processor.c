@@ -445,25 +445,25 @@ int rop_processor_run()
 	g_logmap_allocator = lib_buffer_init(256*sizeof(LOGON_ITEM*),
 							context_num*MAX_HANDLES_ON_CONTEXT, TRUE);
 	if (NULL == g_logmap_allocator) {
-		printf("[exchange_emsmdb]: fail to init logon map allocator\n");
+		printf("[exchange_emsmdb]: Failed to init logon map allocator\n");
 		return -1;
 	}
 	g_logitem_allocator = lib_buffer_init(sizeof(LOGON_ITEM),
 									256*context_num, TRUE);
 	if (NULL == g_logitem_allocator) {
-		printf("[exchange_emsmdb]: fail to init object map allocator\n");
+		printf("[exchange_emsmdb]: Failed to init object map allocator\n");
 		return -2;
 	}
 	g_handle_allocator = lib_buffer_init(sizeof(OBJECT_NODE),
 							g_average_handles*context_num, TRUE);
 	if (NULL == g_handle_allocator) {
-		printf("[exchange_emsmdb]: fail to init object handle allocator\n");
+		printf("[exchange_emsmdb]: Failed to init object handle allocator\n");
 		return -3;
 	}
 	g_logon_hash = str_hash_init(get_context_num()*256,
 								sizeof(uint32_t), NULL);
 	if (NULL == g_logon_hash) {
-		printf("[exchange_emsmdb]: fail to init logon hash\n");
+		printf("[exchange_emsmdb]: Failed to init logon hash\n");
 		return -4;
 	}
 	g_notify_stop = FALSE;
