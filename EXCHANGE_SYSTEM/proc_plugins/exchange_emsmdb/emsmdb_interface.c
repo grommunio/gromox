@@ -700,8 +700,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return ecAccessDenied;
 	}
-	if (phandle->username, first_time.tv_sec -
-		phandle->last_time > HANLDE_VALID_INTERVAL) {
+	if (first_time.tv_sec - phandle->last_time > HANLDE_VALID_INTERVAL) {
 		emsmdb_interface_put_handle_data(phandle);
 		emsmdb_interface_remove_handle(pcxh);
 		*pflags = 0;

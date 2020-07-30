@@ -1090,7 +1090,7 @@ BOOL exmdb_client_set_folder_by_class(const char *dir,
 	
 	request.call_id = CALL_ID_SET_FOLDER_BY_CLASS;
 	request.dir = (void*)dir;
-	request.payload.set_folder_by_class.folder_id;
+	request.payload.set_folder_by_class.folder_id = folder_id;
 	request.payload.set_folder_by_class.str_class = (void*)str_class;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1318,8 +1318,8 @@ BOOL exmdb_client_check_folder_cycle(const char *dir,
 	
 	request.call_id = CALL_ID_CHECK_FOLDER_CYCLE;
 	request.dir = (void*)dir;
-	request.payload.check_folder_cycle.src_fid;
-	request.payload.check_folder_cycle.dst_fid;
+	request.payload.check_folder_cycle.src_fid = src_fid;
+	request.payload.check_folder_cycle.dst_fid = dst_fid;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
