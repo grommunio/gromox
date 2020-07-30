@@ -796,7 +796,7 @@ include/gromox/paths.h: include/gromox/paths.h.in
 	 -e 's|#define PKGSTATEDIR .*|#define PKGSTATEDIR "${localstatedir}/lib/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
 		<$< >$@.tmp
-	${AM_V_at}if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi
+	${AM_V_at}if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi; rm -f $@.tmp
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
