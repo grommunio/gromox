@@ -257,7 +257,7 @@ static BOOL flusher_load_plugin(char* path)
 
 	
 	if (NULL == (phandle = dlopen(path, RTLD_LAZY))) {
-		printf("[flusher]: fail to load flusher plugin %s reason: %s\n",
+		printf("[flusher]: Failed to load flusher plugin %s: %s\n",
 			 path, dlerror());
 		return FALSE;
 	}

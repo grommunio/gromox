@@ -60,7 +60,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		pthread_rwlock_init(&g_table_lock, NULL);
 		
 		if (REFRESH_OK != collector_refresh()) {
-			printf("[mailbox_collector]: fail to load collector list\n");
+			printf("[mailbox_collector]: Failed to load collector list\n");
 			return FALSE;
 		}
 		

@@ -416,7 +416,7 @@ int main(int argc, const char **argv)
 			pthread_cond_destroy(&g_enqueue_waken_cond);
 			pthread_mutex_destroy(&g_dequeue_cond_mutex);
 			pthread_cond_destroy(&g_dequeue_waken_cond);
-			printf("[system]: fail to load acl from %s\n", g_list_path);
+			printf("[system]: Failed to load ACL from %s\n", g_list_path);
 			return 10;
 		}
 		num = list_file_get_item_num(plist);

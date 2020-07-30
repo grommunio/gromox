@@ -118,7 +118,7 @@ int resource_run()
         return -1;
     }
     if (FALSE == resource_refresh_smtp_code_table()) {
-        printf("[resource]: fail to load smtp code\n");
+		printf("[resource]: Failed to load SMTP code\n");
     }
     for (i = 0; i < SMTP_CODE_COUNT; i++) {
         g_def_code_table[i].code =

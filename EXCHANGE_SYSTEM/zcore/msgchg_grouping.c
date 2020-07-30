@@ -406,7 +406,7 @@ int msgchg_grouping_run()
 			continue;	
 		}
 		if (FALSE == msgchg_grouping_load_gpinfo(direntp->d_name)) {
-			printf("[exchange_emsmdb]: fail to load property group "
+			printf("[exchange_emsmdb]: Failed to load property group "
 				"info definition file %s under directory %s\n",
 				direntp->d_name, g_folder_path);
 			closedir(dirp);

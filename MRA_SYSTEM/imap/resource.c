@@ -153,12 +153,12 @@ int resource_run()
         return -1;
     }
 	if (FALSE == resource_load_imap_lang_list()) {
-		printf("[resource]: fail to load imap lang\n");
+		printf("[resource]: Failed to load IMAP languages\n");
 		return -3;
 	}
 	
     if (FALSE == resource_refresh_imap_code_table()) {
-        printf("[resource]: fail to load imap code\n");
+        printf("[resource]: Failed to load IMAP codes\n");
 		return -4;
     }
     for (i=0; i<sizeof(g_default_code_table)/sizeof(IMAP_RETURN_CODE); i++) {

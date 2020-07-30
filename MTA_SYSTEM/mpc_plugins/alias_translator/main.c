@@ -62,10 +62,10 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		g_address_hash = NULL;
 
 		if (REFRESH_OK != domain_table_refresh()) {
-			printf("[alias_translator]: fail to load domain alias table\n");
+			printf("[alias_translator]: Failed to load domain alias table\n");
 		}
 		if (REFRESH_OK != address_table_refresh()) {
-			printf("[alias_translator]: fail to load address alias table\n");
+			printf("[alias_translator]: Failed to load address alias table\n");
 			return FALSE;
 		}
         if (FALSE == register_hook(mail_hook)) {

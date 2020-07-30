@@ -54,7 +54,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		g_hash_table = NULL;
 
 		if (REFRESH_OK != table_refresh()) {
-			printf("[from_replace]: fail to load replace table\n");
+			printf("[from_replace]: Failed to load replace table\n");
 			return FALSE;
 		}
         if (FALSE == register_hook(mail_hook)) {

@@ -46,7 +46,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		sprintf(g_list_path, "%s/%s.txt", get_data_path(), file_name);
 		pthread_rwlock_init(&g_refresh_lock, NULL);
 		if (REFRESH_OK != table_refresh()) {
-			printf("[lang_charset]: fail to load hash table\n", file_name);
+			printf("[lang_charset]: Failed to load hash table\n", file_name);
 			return FALSE;
 		}
 		if (FALSE == register_service("lang_to_charset",

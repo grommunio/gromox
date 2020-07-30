@@ -332,7 +332,7 @@ int main(int argc, const char **argv)
 			pthread_mutex_destroy(&g_hash_lock);
 			pthread_mutex_destroy(&g_cond_mutex);
 			pthread_cond_destroy(&g_waken_cond);
-			printf("[system]: fail to load acl from %s\n", g_list_path);
+			printf("[system]: Failed to load ACL from %s\n", g_list_path);
 			return 8;
 		}
 		num = list_file_get_item_num(plist);

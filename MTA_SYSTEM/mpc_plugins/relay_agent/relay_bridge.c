@@ -104,7 +104,7 @@ int relay_bridge_run()
 
 	g_fake_id = relay_bridge_retrieve_min_ID();
 	if (FALSE == relay_bridge_refresh_table()) {
-		printf("[relay_agent]: fail to load allow list into system\n");
+		printf("[relay_agent]: Failed to load allow list into system\n");
 		return -3;
 	}
 	/* create a socket */

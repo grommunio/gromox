@@ -353,7 +353,7 @@ int main(int argc, const char **argv)
 			pthread_mutex_destroy(&g_tid_lock);
 			pthread_mutex_destroy(&g_cond_mutex);
 			pthread_cond_destroy(&g_waken_cond);
-			printf("[system]: fail to load acl from %s\n", g_acl_path);
+			printf("[system]: Failed to load ACL from %s\n", g_acl_path);
 			return 9;
 		}
 

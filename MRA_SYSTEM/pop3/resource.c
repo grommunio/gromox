@@ -75,7 +75,7 @@ int resource_run()
         return -1;
     }
     if (FALSE == resource_refresh_pop3_code_table()) {
-        printf("[resource]: fail to load pop3 code\n");
+		printf("[resource]: Failed to load POP3 codes\n");
     }
     for (i = 0; i < POP3_CODE_COUNT; i++) {
         g_def_code_table[i].code =

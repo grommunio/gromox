@@ -118,7 +118,7 @@ int main(int argc, const char **argv)
 
 	resource_init();
 	if (0 != resource_run()) { 
-		printf("[system]: fail to load resource\n"); 
+		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_1 = make_scope_exit(resource_free);

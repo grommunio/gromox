@@ -138,7 +138,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		config_file_free(pconfig);
 
 		if (FALSE == load_list()) {
-			printf("[archive_agent]: fail to load cidb list\n");
+			printf("[archive_agent]: Failed to load cidb list\n");
 			return FALSE;
 		}
 		
