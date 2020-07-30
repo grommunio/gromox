@@ -1626,7 +1626,7 @@ FETCH_STRUCTURE_LOOP:
 				if (0 == strcasecmp(pmime->encoding, "base64") ||
 					0 == strcasecmp(pmime->encoding, "quoted-printable")) {
 					offset += snprintf(buff + offset, length - offset,
-								" \"7bit\"", pmime->encoding);
+								" \"7bit\"");
 				} else {
 					offset += snprintf(buff + offset, length - offset,
 								" \"%s\"", pmime->encoding);

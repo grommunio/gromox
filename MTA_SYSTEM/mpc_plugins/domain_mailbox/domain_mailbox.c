@@ -47,7 +47,7 @@ static BOOL domain_mailbox_refresh_table()
 	item_num = list_file_get_item_num(plist);
 	phash = str_hash_init(item_num + 1, 256, NULL);
 	if (NULL == phash) {
-		printf("[domain_mailbox]: Failed to init hash table\n", g_list_path);
+		printf("[domain_mailbox]: Failed to init hash table\n");
 		list_file_free(plist);
 		return FALSE;
 	}

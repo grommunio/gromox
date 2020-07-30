@@ -39,7 +39,7 @@ int address_list_refresh()
 	item_num = list_file_get_item_num(plist);
 	phash = str_hash_init(item_num + 1, sizeof(HOST_ITEM), NULL);
 	if (NULL == phash) {
-		printf("[domain_subsystem]: Failed to init hash table\n", g_list_path);
+		printf("[domain_subsystem]: Failed to init hash table\n");
 		list_file_free(plist);
 		return REFRESH_HASH_FAIL;
 	}

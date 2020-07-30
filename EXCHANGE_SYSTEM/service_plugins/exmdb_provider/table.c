@@ -822,7 +822,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 		"inst_num INTEGER NOT NULL, "
 		"value NONE DEFAULT NULL, "
 		"extremum NONE DEFAULT NULL)",		/* read(unread) for message row */
-		table_id, table_id, table_id);
+		table_id);
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
