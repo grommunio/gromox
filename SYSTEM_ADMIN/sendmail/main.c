@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <stdint.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
@@ -76,7 +77,6 @@ int main(int argc, const char **argv)
 {
 	MAIL imail;
 	char *pbuff;
-	char *ptoken;
 	char smtp_ip[16];
 	MIME_POOL *ppool;
 	MIME *pmime_head;
@@ -88,7 +88,8 @@ int main(int argc, const char **argv)
 	char last_command[1024];
 	char last_response[1024];
 	char temp_field[MIME_FIELD_LEN];
-	int smtp_port, res_val, command_len;
+	uint16_t smtp_port = 25;
+	int res_val, command_len;
 	int fd;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -114,20 +115,11 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 
-	if (NULL == extract_ip(argv[5], smtp_ip)) {
-		printf("cannot find smtp server ip address in %s", argv[5]);
+	int ret = gx_addrport_split(argv[5], smtp_ip,
+	          GX_ARRAY_SIZE(smtp_ip), &smtp_port);
+	if (ret < 0) {
+		printf("Error with SMTP server address \"%s\": %s\n", argv[5], strerror(-ret));
 		return 4;
-	}
-
-	ptoken = strchr(argv[5], ':');
-	if (NULL == ptoken) {
-		smtp_port = 25;
-	} else {
-		smtp_port = atoi(ptoken + 1);
-		if (0 == smtp_port) {
-			printf("smtp server port error in %s\n", argv[5]);
-			return 5;
-		}
 	}
 
 	pbuff = malloc(node_stat.st_size);

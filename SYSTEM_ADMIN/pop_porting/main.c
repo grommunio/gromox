@@ -1,10 +1,13 @@
 #include <errno.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "pop3.h"
 #include "smtp.h"
 #include "mail_func.h"
 #include "list_file.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -14,14 +17,13 @@
 int main(int argc, const char **argv)
 {
 	LIST_FILE *plist;
-	int pop_port;
-	int smtp_port;
+	uint16_t pop_port = 110, smtp_port = 25;
 	int i, j, k;
 	int item_num;
 	char pop_address[16];
 	char smtp_address[16];
 	int list_nums[16*1024];
-	char *pcolon, *pbuff;
+	char *pbuff;
 	POP3_SESSION pop_session;
 	SMTP_SESSION smtp_session;
 	
@@ -35,36 +37,18 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 
-	pcolon = strchr(argv[1], ':');
-	if (NULL == pcolon) {
-		pop_port = 110;
-	} else {
-		pop_port = atoi(pcolon + 1);
-		if (pop_port <= 0) {
-			pop_port = 110;
-		}
-	}
-
-	if (NULL == extract_ip(argv[1], pop_address)) {
-		printf("pop server address format error!\n");
+	int ret = gx_addrport_split(argv[1], pop_address,
+	          GX_ARRAY_SIZE(pop_address), &pop_port);
+	if (ret < 0) {
+		printf("Error with POP server address \"%s\": %s\n", argv[1], strerror(-ret));
 		return 2;
 	}
-
-	pcolon = strchr(argv[2], ':');
-	if (NULL == pcolon) {
-		smtp_port = 25;
-	} else {
-		smtp_port = atoi(pcolon + 1);
-		if (smtp_port <= 0) {
-			smtp_port = 25;
-		}
-	}
-
-	if (NULL == extract_ip(argv[2], smtp_address)) {
-		printf("smtp server address format error!\n");
+	ret = gx_addrport_split(argv[2], smtp_address,
+	      GX_ARRAY_SIZE(smtp_address), &smtp_port);
+	if (ret < 0) {
+		printf("Error with SMTP server address \"%s\": %s\n", argv[1], strerror(-ret));
 		return 3;
 	}
-
 	smtp_init(&smtp_session, smtp_address, smtp_port);
 	
 	struct pwitem { char user[256], pass[256]; };

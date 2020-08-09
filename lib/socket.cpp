@@ -1,6 +1,9 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <fcntl.h>
 #include <netdb.h>
@@ -11,6 +14,82 @@
 #include <gromox/tie.hpp>
 
 using namespace gromox;
+
+/**
+ * Return the pointer to the singular colon character, any other input
+ * yields nullptr.
+ */
+static inline const char *has_exactly_one_colon(const char *s)
+{
+	s = strchr(s, ':');
+	if (s == nullptr)
+		return nullptr;
+	return strchr(s + 1, ':') == nullptr ? s : nullptr;
+}
+
+/**
+ * @spec:	"[" HOST-ANY "]" [ ":" PORT ]
+ * 		HOST-NAME [ ":" PORT ]
+ * 		HOST-IPV4 [ ":" PORT ]
+ * 		HOST-IPV6
+ * @host:	buffer for placing the extracted hostname
+ * 		(can overlap @spec)
+ * @hsize:	buffer size for @host
+ * @port:	storage space for extracted port number
+ * 		(can be nullptr)
+ *
+ * Returns <0 (error code) if unparsable or if the output buffer is too small.
+ * Success if on >=0.
+ */
+int gx_addrport_split(const char *spec, char *host,
+    size_t hbufsz, uint16_t *pport)
+{
+	if (*spec == '[') {
+		/* We also happen to allow IPv4 addrs and hostnames in [] */
+		++spec;
+		auto end = strchr(spec, ']');
+		if (end == nullptr)
+			return -EINVAL;
+		unsigned long hlen = end - spec;
+		if (hlen >= hbufsz)
+			return -E2BIG;
+		if (*++end == '\0')
+			return 1;
+		if (*end++ != ':')
+			return -EINVAL;
+		char *nend = nullptr;
+		uint16_t port = strtoul(end, &nend, 10);
+		if (nend == nullptr || *nend != '\0')
+			return -EINVAL;
+		memmove(host, spec, hlen);
+		host[hlen] = '\0';
+		if (pport == nullptr)
+			return 2;
+		*pport = port;
+		return 2;
+	}
+	auto onecolon = has_exactly_one_colon(spec);
+	if (onecolon != nullptr) {
+		unsigned long hlen = onecolon - spec;
+		if (hlen >= hbufsz)
+			return -E2BIG;
+		char *nend = nullptr;
+		uint16_t port = strtoul(onecolon + 1, &nend, 10);
+		if (nend == nullptr || *nend != '\0')
+			return -EINVAL;
+		memmove(host, spec, hlen);
+		host[hlen] = '\0';
+		if (pport == nullptr)
+			return 2;
+		*pport = port;
+		return 2;
+	}
+	auto hlen = strlen(spec) + 1;
+	if (hlen >= hbufsz)
+		return -E2BIG;
+	memmove(host, spec, hlen);
+	return 1;
+}
 
 int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 {

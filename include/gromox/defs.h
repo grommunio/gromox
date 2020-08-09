@@ -2,6 +2,13 @@
 #ifndef __cplusplus
 #	define nullptr NULL
 #endif
+#ifdef __cplusplus
+#	include <cstddef>
+template<typename T, size_t N> constexpr inline size_t GX_ARRAY_SIZE(T (&)[N]) { return N; }
+#else
+#	include <libHX/defs.h>
+#	define GX_ARRAY_SIZE ARRAY_SIZE
+#endif
 #define GX_EXPORT __attribute__((visibility("default")))
 typedef enum {
 	GXERR_SUCCESS = 0,

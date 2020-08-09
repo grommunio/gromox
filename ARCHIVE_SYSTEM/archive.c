@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <errno.h>
+#include <stdint.h>
 #include <string.h>
 #include <libHX/option.h>
 #include <gromox/defs.h>
@@ -25,8 +26,7 @@
 
 #define SOCKET_TIMEOUT			60
 
-
-static int g_cidb_port;
+static uint16_t g_cidb_port = 5556;
 static char g_cidb_host[16];
 static char g_area_path[128];
 static MIME_POOL *g_mime_pool;
@@ -86,22 +86,11 @@ int main(int argc, const char **argv)
 	}
 	
 	strncpy(g_area_path, argv[2], 128);
-	
-	
-	if (NULL == extract_ip(argv[3], g_cidb_host)) {
-		printf("cannot find ip address in %s\n", argv[3]);
+	int ret = gx_addrport_split(argv[3], g_cidb_host,
+	          GX_ARRAY_SIZE(g_cidb_host), &g_cidb_port);
+	if (ret < 0) {
+		printf("Format error in \"%s\": %s\n", argv[3], strerror(-ret));
 		return 3;
-	}
-	
-	ptoken = strchr(argv[3], ':');
-	if (NULL == ptoken) {
-		g_cidb_port = 5556;
-	} else {
-		g_cidb_port = atoi(ptoken + 1);
-		if (g_cidb_port <= 0) {
-			printf("port error in %s\n", argv[3]);
-			return 3;
-		}
 	}
 	
 	g_mime_pool = mime_pool_init(1024, 32, FALSE);

@@ -111,7 +111,7 @@ int relay_agent_run()
 	LIST_FILE *pfile;
 	HOST_UNIT *punit;
 	CONNECTION_UNIT *pconnect;
-	int i, j, list_len, temp_port;
+	int i, j, list_len;
 	char temp_ip[16];
 
 	pfile = list_file_init(g_list_path, "%s:32%d");
@@ -126,22 +126,14 @@ int relay_agent_run()
 	bit32_num = 0;
 	bit64_num = 0;
 	for (i=0; i<list_len; i++) {
-		if (extract_ip(pitem[i].ip_addr_and_port, temp_ip) == nullptr) {
-			printf("[relay_agent]: line %d: ip address format error in "
-				"site list\n", i);
+		uint16_t temp_port = 25;
+		int ret = gx_addrport_split(pitem[i].ip_addr_and_port, temp_ip,
+		          GX_ARRAY_SIZE(temp_ip), &temp_port);
+		if (ret < 0) {
+			printf("[relay_agent]: error in line %d with host \"%s\": %s\n",
+			       i, pitem[i].ip_addr_and_port, strerror(-ret));
 			continue;
 		}
-		const char *pcolon = strchr(pitem[i].ip_addr_and_port, ':');
-		if (NULL == pcolon) {
-			temp_port = 25;
-		} else {
-			temp_port = atoi(pcolon + 1);
-			if (0 == temp_port) {
-				printf("[relay_agent]: line %d: port error in "
-					"site list\n", i);
-				continue;
-			}
-		}		
 		punit = (HOST_UNIT*)malloc(sizeof(HOST_UNIT));
 		if (NULL == punit) {
 			debug_info("[relay_agent]: Failed to allocate memory");
@@ -241,7 +233,7 @@ BOOL relay_agent_refresh_table()
 	LIST_FILE *pfile;
 	HOST_UNIT *punit;
 	HOST_UNIT *punit1;
-	int i, list_len, temp_port;
+	int i, list_len;
 	char temp_ip[16];
 
 	pfile = list_file_init(g_list_path, "%s:32%d");
@@ -257,21 +249,13 @@ BOOL relay_agent_refresh_table()
 	bit32_num = 0;
 	bit64_num = 0;
 	for (i=0; i<list_len; i++) {
-		if (extract_ip(pitem[i].ip_addr_and_port, temp_ip) == nullptr) {
-			printf("[relay_agent]: line %d: ip address format error in "
-				"site list\n", i);
+		uint16_t temp_port = 25;
+		int ret = gx_addrport_split(pitem[i].ip_addr_and_port, temp_ip,
+		          GX_ARRAY_SIZE(temp_ip), &temp_port);
+		if (ret < 0) {
+			printf("[relay_agent]: error in line %d with host \"%s\": %s\n",
+			       i, pitem[i].ip_addr_and_port, strerror(-ret));
 			continue;
-		}
-		const char *pcolon = strchr(pitem[i].ip_addr_and_port, ':');
-		if (NULL == pcolon) {
-			temp_port = 25;
-		} else {
-			temp_port = atoi(pcolon + 1);
-			if (0 == temp_port) {
-				printf("[relay_agent]: line %d: port error in "
-					"site list\n", i);
-				continue;
-			}
 		}
 		punit = (HOST_UNIT*)malloc(sizeof(HOST_UNIT));
 		if (NULL == punit) {

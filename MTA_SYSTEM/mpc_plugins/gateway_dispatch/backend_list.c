@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 #include <libHX/defs.h>
@@ -25,7 +26,7 @@ typedef struct _BACKEND_UNIT {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST_NODE node_temp;
 	char ip[16];
-	int port;
+	uint16_t port;
 } BACKEND_UNIT;
 
 static void* thread_work_func(void *arg);
@@ -97,7 +98,7 @@ BOOL backend_list_refresh()
 	DOUBLE_LIST temp_list;
 	LIST_FILE *pfile;
 	BACKEND_UNIT *punit;
-	int i, list_len, temp_port;
+	int i, list_len;
 	char temp_ip[16];
 	struct ipitem { char ip_addr_and_port[32]; };
 
@@ -109,24 +110,17 @@ BOOL backend_list_refresh()
 	if (0 == list_len) {
 		printf("[gateway_dispatch]: warning: backend list is empty\n");
 	}
-	const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(pfile));
+	struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(pfile));
 	double_list_init(&temp_list);
 	for (i=0; i<list_len; i++) {
-		if (extract_ip(pitem[i].ip_addr_and_port, temp_ip) == nullptr) {
-			printf("[gateway_dispatch]: line %d: ip address format error in "
-				"backend list\n", i);
+		uint16_t temp_port = 25;
+
+		int ret = gx_addrport_split(pitem[i].ip_addr_and_port, temp_ip,
+		          GX_ARRAY_SIZE(temp_ip), &temp_port);
+		if (ret < 0) {
+			printf("[gateway_dispatch]: error in line %d with host \"%s\": %s\n",
+			       i, pitem[i].ip_addr_and_port, strerror(-ret));
 			continue;
-		}
-		const char *pcolon = strchr(pitem[i].ip_addr_and_port, ':');
-		if (NULL == pcolon) {
-			temp_port = 25;
-		} else {
-			temp_port = atoi(pcolon + 1);
-			if (0 == temp_port) {
-				printf("[gateway_dispatch]: line %d: port error in backend "
-					"list\n", i);
-				continue;
-			}
 		}
 		punit = (BACKEND_UNIT*)malloc(sizeof(BACKEND_UNIT));
 		if (NULL == punit) {

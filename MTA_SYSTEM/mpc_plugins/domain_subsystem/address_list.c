@@ -1,8 +1,10 @@
 #include <errno.h>
+#include <stdint.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "address_list.h"
 #include "str_hash.h"
 #include "list_file.h"
@@ -13,7 +15,7 @@
 
 typedef struct _HOST_ITEM {
 	char ip[16];
-	int port;
+	uint16_t port;
 } HOST_ITEM;
 
 static char g_list_path[256];
@@ -23,7 +25,6 @@ static pthread_rwlock_t g_table_lock;
 
 int address_list_refresh()
 {
-	char *pcolon;
 	int i, item_num;
 	HOST_ITEM temp_host;
 	LIST_FILE *plist;
@@ -46,21 +47,13 @@ int address_list_refresh()
 	struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
 	for (i=0; i<item_num; i++) {
 		HX_strlower(pitem[i].a);
-		if (extract_ip(pitem[i].ip_addr_and_port, temp_host.ip) == nullptr) {
-			printf("[domain_subsystem]: line %d: ip address format error in "
-				"address list\n", i);
+		temp_host.port = 25;
+		int ret = gx_addrport_split(pitem[i].ip_addr_and_port, temp_host.ip,
+		          GX_ARRAY_SIZE(temp_host.ip), &temp_host.port);
+		if (ret < 0) {
+			printf("[domain_subsystem]: error in line %d with host \"%s\": %s\n",
+			       i, pitem[i].ip_addr_and_port, strerror(-ret));
 			continue;
-		}
-		pcolon = strchr(pitem[i].ip_addr_and_port, ':');
-		if (NULL == pcolon) {
-			temp_host.port = 25;
-		} else {
-			temp_host.port = atoi(pcolon + 1);
-			if (0 == temp_host.port) {
-				printf("[domain_subsystem]: line %d: port error in address "
-					"list\n", i);
-				continue;
-			}
 		}
 		str_hash_add(phash, pitem[i].a, &temp_host);
 	}

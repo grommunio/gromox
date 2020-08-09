@@ -1,7 +1,9 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <libHX/defs.h>
 #include "double_list.h"
+#include <gromox/defs.h>
 #include <gromox/hpm_common.h>
 #include <gromox/socket.h>
 #include "list_file.h"
@@ -26,7 +28,7 @@ typedef struct _PROXY_NODE {
 	char *domain;
 	char *path;
 	char *remote_host;
-	int remote_port;
+	uint16_t remote_port;
 	char *remote_path;
 } PROXY_NODE;
 
@@ -123,8 +125,8 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			if (NULL == ptoken) {
 				ptoken = ptoken1 + strlen(ptoken1);
 			}
-			tmp_len = ptoken - ptoken1;
-			pxnode->remote_host = malloc(tmp_len + 1);
+			size_t remotehostlen = ptoken - ptoken1 + 1;
+			pxnode->remote_host = malloc(remotehostlen);
 			if (NULL == pxnode->remote_host) {
 				break;
 			}
@@ -149,29 +151,14 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 					pxnode->remote_path[tmp_len] = '\0';
 				}
 			}
-			if (*pxnode->remote_host == '[') {
-				ptoken = strchr(pxnode->remote_host, ']');
-				if (ptoken == nullptr) {
-					printf("[mod_proxy]: missing closing square bracket near \"%s\"\n", pxnode->remote_host);
-					break;
-				}
-				size_t hlen = ptoken - (pxnode->remote_host + 1);
-				memmove(pxnode->remote_host, pxnode->remote_host + 1, hlen);
-				pxnode->remote_host[hlen] = '\0';
-				ptoken = strchr(ptoken, ':');
-			} else {
-				ptoken = strchr(pxnode->remote_host, ':');
-			}
-			if (NULL == ptoken) {
-				pxnode->remote_port = 80;
-			} else {
-				*ptoken = '\0';
-				pxnode->remote_port = atoi(ptoken + 1);
-				if (pxnode->remote_port <= 0) {
-					printf("[mod_proxy]: port number of "
-						"destination in '%s' error", ptoken1);
-					break;
-				}
+			pxnode->remote_port = 80;
+			int ret = gx_addrport_split(pxnode->remote_host,
+			          pxnode->remote_host, remotehostlen,
+			          &pxnode->remote_port);
+			if (ret < 0) {
+				printf("[mod_proxy]: host format error near \"%s\": %s\n",
+				       ptoken1, strerror(-ret));
+				break;
 			}
 			double_list_append_as_tail(&g_proxy_list, &pxnode->node);
 		}
