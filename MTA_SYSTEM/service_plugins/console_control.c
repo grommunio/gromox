@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+#include <libHX/string.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include "util.h"
@@ -75,8 +76,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pfile, "CONSOLE_SERVER_IP");
 		if (NULL == str_value) {
-			str_value = "127.0.0.1";
-			config_file_set_value(pfile, "CONSOLE_SERVER_IP", str_value);
+			HX_strlcpy(g_console_ip, "127.0.0.1", sizeof(g_console_ip));
+			config_file_set_value(pfile, "CONSOLE_SERVER_IP", g_console_ip);
 		} else {
 			if (NULL == extract_ip(str_value, g_console_ip)) {
 				printf("[%s]: console server ipaddr \"%s\" format error\n",
