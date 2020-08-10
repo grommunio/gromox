@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <stdint.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
@@ -6509,6 +6512,7 @@ EXPORT_CONTENT_CLASS:
 		}
 	}
 	
+	mime_set_field(phead, "X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
 	rop_util_get_common_pset(PS_INTERNET_HEADERS, &guid);
 	for (i=0; i<pmsg->proplist.count; i++) {
 		propid = pmsg->proplist.ppropval[i].proptag >> 16;

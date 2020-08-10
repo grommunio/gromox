@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 #include <libHX/ctype_helper.h>
@@ -2302,6 +2305,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		return FALSE;
 	}
 
+	mail_set_header(pmail, "X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
 	if (FALSE == mail_to_file(pmail, sockd) ||
 		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);

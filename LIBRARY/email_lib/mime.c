@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "mail.h"
 #include "mime.h"
 #include "util.h"
@@ -29,6 +30,14 @@ static BOOL mime_parse_multiple(MIME *pmime);
 static void mime_produce_boundary(MIME *pmime);
 
 static BOOL mime_check_ascii_printable(const char *astring);
+
+bool mail_set_header(struct _MAIL *mail, const char *hdr, const char *val)
+{
+	SIMPLE_TREE_NODE *node = simple_tree_get_root(&mail->tree);
+	if (node == nullptr)
+		return false;
+	return mime_set_field(node->pdata, hdr, val);
+}
 
 /*
  *	this is the MIME's construct function

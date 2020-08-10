@@ -1,4 +1,7 @@
 #pragma once
+#ifndef __cplusplus
+#	include <stdbool.h>
+#endif
 #include "stream.h"
 #include "mem_file.h"
 #include "simple_tree.h"
@@ -46,6 +49,7 @@ struct _MAIL;
 extern "C" {
 #endif
 
+extern bool mail_set_header(struct _MAIL *, const char *hdr, const char *val);
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 
 void mime_free(MIME *pmime);
