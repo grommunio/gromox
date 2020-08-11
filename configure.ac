@@ -62,7 +62,6 @@ AC_SUBST([unitdir])
 
 PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([HX], [libHX >= 1.10])
-PKG_CHECK_MODULES([archive], [libarchive])
 PKG_CHECK_MODULES([crypto], [libcrypto])
 PKG_CHECK_MODULES([gumbo], [gumbo])
 PKG_CHECK_MODULES([sqlite], [sqlite3])
@@ -71,8 +70,6 @@ PKG_CHECK_MODULES([zlib], [zlib])
 have_pamheader=""
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
-AC_CHECK_LIB([spf2], [SPF_debugx2], [spf_LIBS=-lspf2], [AC_MSG_ERROR([libspf2 not found])])
-AC_SUBST([spf_LIBS])
 AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
 	AC_PATH_PROGS([MYSQL_CONFIG], [mysql_config mariadb_config])
 	AC_ARG_WITH([mysql-config], AS_HELP_STRING([--with-mysql-config=PATH], [path to the mysql-config script of mysql]),
