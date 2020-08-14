@@ -554,7 +554,6 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 			goto RDWR_ERROR;
 		}
 		offset += read_len;
-		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
@@ -1433,7 +1432,6 @@ static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
 			goto RDWR_ERROR;
 		}
 		offset += read_len;
-		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
@@ -1565,7 +1563,6 @@ static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
 			goto RDWR_ERROR;
 		}
 		offset += read_len;
-		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
@@ -1848,7 +1845,6 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 			goto RDWR_ERROR;
 		}
 		offset += read_len;
-		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
@@ -2026,7 +2022,6 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
 			goto RDWR_ERROR;
 		}
 		offset += read_len;
-		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
@@ -2190,7 +2185,6 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
 			goto RDWR_ERROR;
 		}
 		offset += read_len;
-		buff[offset] = '\0';
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
@@ -2419,7 +2413,6 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 				goto RDWR_ERROR;
 			}
 			offset += read_len;
-			buff[offset] = '\0';
 			
 			if (-1 == lines) {
 				for (i=0; i<offset-1&&i<36; i++) {
@@ -2625,7 +2618,6 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 				goto RDWR_ERROR;
 			}
 			offset += read_len;
-			buff[offset] = '\0';
 			
 			if (-1 == lines) {
 				for (i=0; i<offset-1&&i<36; i++) {
@@ -2837,7 +2829,6 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 				goto RDWR_ERROR;
 			}
 			offset += read_len;
-			buff[offset] = '\0';
 
 			if (-1 == lines) {
 				for (i=0; i<offset-1&&i<36; i++) {
@@ -3040,7 +3031,6 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 				goto RDWR_ERROR;
 			}
 			offset += read_len;
-			buff[offset] = '\0';
 
 			if (-1 == lines) {
 				for (i=0; i<offset-1&&i<36; i++) {
