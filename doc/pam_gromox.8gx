@@ -10,12 +10,21 @@ used in conjunction with non-Gromox SMTP/IMAP/etc. server processes that may be
 logically located before Gromox services and serving as accelerators.
 .SH Incantation in /etc/pam.d/smtp
 .PP
-In a default installation from a Linux distribution, /etc/pam.d/smtp may
-contain a textual line like "auth required pam_unix.so" (possibly by way of
-inclusion of "common-auth"). That line needs to be replaced by.
+Gromox accounts are not mapped from or to any Unix accounts, so the pam_unix.so
+module that is present in the default /etc/pam.d/smtp module list within Linux
+distributions is not suitable and can be wholly replaced. In otherwords,
+/etc/pam.d/smtp need just contain:
+.PP
 .nf
 auth required pam_gromox.so
+account required pam_permit.so
 .fi
+.PP
+(pam_gromox does not provide a usable "account" handler, therefore "account
+required pam_gromox.so" would do nothing. The PAM framework always starts out
+with an initial deny policy, so at least one module needs to be called to make
+the PAM request succeed. For this reason, if there are no other "account"
+modules listed, pam_permit.so should be used.)
 .SH Configuration directives in /etc/gromox/pam.conf
 .SS pam_prompt
 .PP
