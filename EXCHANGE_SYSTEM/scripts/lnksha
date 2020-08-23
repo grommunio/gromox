@@ -1,8 +1,0 @@
-#!/bin/sh
-
-LINKER='gcc -shared -fPIC'
-
-A_OBJECT=`find ./ -name '*.o' -print|sed -e 's/\\n/\ /'`
- 
-$LINKER -o $* $A_OBJECT
-
