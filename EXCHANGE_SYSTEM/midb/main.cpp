@@ -93,7 +93,6 @@ int main(int argc, const char **argv)
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	umask(0);	
 	signal(SIGPIPE, SIG_IGN);
 	g_config_file = pconfig = config_file_init2(opt_config_file, config_default_path("midb.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {

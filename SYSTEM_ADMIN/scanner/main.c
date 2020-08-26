@@ -68,7 +68,6 @@ int main(int argc, const char **argv)
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	umask(0);
 	pconfig = config_file_init2(opt_config_file, config_default_path("scanner.cfg"));
 	if (opt_config_file != nullptr && pconfig == nullptr) {
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));

@@ -76,7 +76,6 @@ int main(int argc, const char **argv)
 		printf("version: %s\n", PROJECT_VERSION);
 		return 0;
 	}
-	umask(0);
 	time(&now_time);	
 	char *dflcfgpath = config_default_path("synchronizer.cfg");
 	pconfig = config_file_init2(opt_config_file, dflcfgpath);

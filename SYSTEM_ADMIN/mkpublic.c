@@ -274,7 +274,6 @@ int main(int argc, const char **argv)
 		printf("usage: %s <domainname>\n", argv[0]);
 		return 1;
 	}
-	umask(0);
 	pconfig = config_file_init2(NULL, PKGSYSCONFDIR "/sa.cfg");
 	if (NULL == pconfig) {
 		printf("config_file_init %s: %s\n", PKGSYSCONFDIR "/sa.cfg", strerror(errno));

@@ -1,5 +1,4 @@
 #!/bin/sh
-umask 0
 if [ $# -lt 1 ];then
 	echo "usage $0 queue_dir"
 	exit 1

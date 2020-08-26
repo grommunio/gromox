@@ -388,7 +388,6 @@ int main(int argc, const char **argv)
 		printf("usage: %s <maildir>\n", argv[0]);
 		return 1;
 	}
-	umask(0);
 	snprintf(temp_path, 256, "%s/exmdb/exchange.sqlite3", argv[1]);
 	if (0 != stat(temp_path, &node_stat)) {
 		printf("can not find sotre database,"

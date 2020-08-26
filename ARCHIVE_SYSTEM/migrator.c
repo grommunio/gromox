@@ -63,7 +63,6 @@ static void do_migration(const char *src_path, const char *dst_path)
 	struct stat node_stat;
 	struct dirent *direntp;
 
-	umask(0);
 	for (i=1; i<=VDIR_PER_PARTITION; i++) {
 		for (j=1; j<=SUBDIR_PER_VDIR; j++) {
 			snprintf(temp_path, 255, "%s/v%d/%d", src_path, i, j);

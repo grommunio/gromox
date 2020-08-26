@@ -221,7 +221,6 @@ int main(int argc, const char **argv)
 	PARTITION_ITEM *ppartition;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	umask(0);
 	HX_strlcpy(list_path, PKGDATASADIR "/area_list.txt", sizeof(list_path));
 	pfile = list_file_init(list_path, "%s:12%s:256%s:256%d%d");
 	if (NULL == pfile) {
