@@ -34,6 +34,7 @@ Makefile.in
 /event
 /fcgi_cgi
 /freebusy
+/gromox-mailq
 /http
 /imap
 /locker
