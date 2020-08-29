@@ -3366,7 +3366,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		pprop->value.l = DT_MAILUSER;
 		break;
 	case PROP_TAG_SEARCHKEY:
-		pprop->value.bin.cb = strlen(paddress) + 5;
+		pprop->value.bin.cb = strlen(paddress) + 6;
 		pprop->value.bin.pc = ndr_stack_alloc(
 			NDR_STACK_OUT, pprop->value.bin.cb);
 		if (pprop->value.bin.pc == nullptr)
