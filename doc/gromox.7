@@ -24,6 +24,20 @@ cidb(8gx)
 gromox\-archive.target(8gx) \(em systemd target replacing titan
 .IP \(bu 4
 migrator(8gx)
+.SH Databases
+.IP \(bu 4
+User information is held in a MariaDB/MySQL database. This database can be
+accessed by multiple Gromox servers, and so enables distributed Gromox
+operation. The MariaDB system itself provides the necessary utilities for
+distributing or replicating this database.
+.IP \(bu 4
+Per-user e-mail messages are stored in a SQLite database (e.g.
+/var/lib/gromox/user/m1/1/1/exchange.sqlite3), as is a message index (e.g.
+/var/lib/gromox/user/m1/1/1/midb.sqlite3). These are normally only used by one
+system, but can be shared through network filesystems provided that file
+locking is properly implemented in the filesystem driver. Normal file
+mechanisms can be used to backup or transfer the database to another Gromox
+host.
 .SH Exchange subsystem
 .IP \(bu 4
 exchange_emsmdb(4gx) \(em http(8gx) processing plugin for the Wire Format
@@ -67,6 +81,8 @@ cdnd(8gx)
 esmtp_auth(4gx) \(em SMTP authentication proxy plugin
 .IP \(bu 4
 event(8gx)
+.IP \(bu 4
+gromox\-dbop(8gx) \(em Database maintenance utility
 .IP \(bu 4
 gromox\-mailq(8gx) \(em SMTP queue lister
 .IP \(bu 4

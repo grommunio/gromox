@@ -231,7 +231,7 @@ noinst_DATA += \
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker monitor pad rsyncd rsyncer scanner sensor session supervisor timer
 system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
-sbin_PROGRAMS = gromox-mailq
+sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 sacgidir = ${pkglibexecdir}/sa
 sacgi_PROGRAMS = status_rpc synchronization_rpc
@@ -709,6 +709,8 @@ enpasswd_SOURCES = SYSTEM_ADMIN/enpasswd.c
 enpasswd_LDADD = libgromox_common.la ${mysql_LIBS}
 event_SOURCES = SYSTEM_ADMIN/event.c
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
+gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
+gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
 gromox_mailq_SOURCES = SYSTEM_ADMIN/mailq.cpp
 locker_SOURCES = SYSTEM_ADMIN/locker.c
 locker_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -777,7 +779,7 @@ man_MANS = \
 	doc/event.8gx doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
 	doc/fcgi_cgi.8gx doc/freebusy.8gx doc/gromox.7 \
-	doc/gromox-archive.target.8gx \
+	doc/gromox-archive.target.8gx doc/gromox-dbop.8gx \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
