@@ -270,7 +270,7 @@ static const char tbl_domains_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `org_id` int(10) unsigned NOT NULL DEFAULT 0,"
 "  `domainname` varchar(255) CHARACTER SET ascii NOT NULL,"
-"  `password` varchar(40) NOT NULL DEFAULT '',"
+"  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `homedir` varchar(128) NOT NULL DEFAULT '',"
 "  `media` varchar(64) NOT NULL DEFAULT '',"
 "  `max_size` int(10) unsigned NOT NULL,"
@@ -304,7 +304,7 @@ static const char tbl_groups_top[] =
 "CREATE TABLE `groups` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `groupname` varchar(320) CHARACTER SET ascii NOT NULL,"
-"  `password` varchar(40) NOT NULL DEFAULT '',"
+"  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  `max_size` int(10) unsigned NOT NULL,"
 "  `max_user` int(10) unsigned NOT NULL,"
@@ -357,7 +357,7 @@ static const char tbl_users_top[] =
 "CREATE TABLE `users` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
-"  `password` varchar(40) NOT NULL DEFAULT '',"
+"  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `real_name` varchar(32) NOT NULL DEFAULT '',"
 "  `title` varchar(128) NOT NULL DEFAULT '',"
 "  `memo` varchar(128) NOT NULL DEFAULT '',"
@@ -438,6 +438,9 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{12, "ALTER TABLE `mlists` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{13, "ALTER TABLE `specifieds` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{14, "ALTER TABLE `users` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{15, "ALTER TABLE `domains` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
+	{16, "ALTER TABLE `groups` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
+	{17, "ALTER TABLE `users` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
 	{0, nullptr},
 };
 
