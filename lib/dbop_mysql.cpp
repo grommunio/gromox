@@ -233,12 +233,11 @@ int dbop_mysql_create_0(MYSQL *conn)
 /* Initialization to create most recent schema */
 static const char tbl_alias_top[] =
 "CREATE TABLE `aliases` ("
-"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `aliasname` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `mainname` varchar(320) CHARACTER SET ascii NOT NULL,"
-"  PRIMARY KEY (`id`),"
-"  UNIQUE KEY `aliasname` (`aliasname`),"
+"  PRIMARY KEY (`aliasname`),"
 "  KEY `mainname` (`mainname`)"
+"  CONSTRAINT `aliases_ibfk_1` FOREIGN KEY (`mainname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
 static const char tbl_assoc_top[] =
@@ -388,7 +387,6 @@ static const char tbl_users_top[] =
 ") DEFAULT CHARSET=utf8mb4";
 
 static const struct tbl_init tbl_init_top[] = {
-	{"aliases", tbl_alias_top},
 	{"associations", tbl_assoc_top},
 	{"classes", tbl_classes_top},
 	{"domains", tbl_domains_top},
@@ -400,6 +398,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"orgs", tbl_orgs_0},
 	{"specifieds", tbl_specifieds_top},
 	{"users", tbl_users_top},
+	{"aliases", tbl_alias_top},
 	{nullptr},
 };
 
@@ -441,6 +440,10 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{15, "ALTER TABLE `domains` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
 	{16, "ALTER TABLE `groups` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
 	{17, "ALTER TABLE `users` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
+	{18, "ALTER TABLE `aliases` DROP COLUMN `id`"},
+	{19, "ALTER TABLE `aliases` ADD PRIMARY KEY (`aliasname`)"},
+	{20, "ALTER TABLE `aliases` DROP INDEX `aliasname`"},
+	{21, "ALTER TABLE `aliases` ADD CONSTRAINT `aliases_ibfk_1` FOREIGN KEY (`mainname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"},
 	{0, nullptr},
 };
 

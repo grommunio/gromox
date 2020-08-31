@@ -925,8 +925,7 @@ RETRYING:
 	}
 	mysql_free_result(pmyres);
 
-	strcpy(sql_string, "SELECT id, aliasname FROM aliases");
-
+	strcpy(sql_string, "SELECT aliasname, mainname FROM aliases");
 	if (0 != mysql_query(pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pmysql))) {
 		system_log_info("[data_source]: fail to query mysql server, "
@@ -941,7 +940,7 @@ RETRYING:
 
 	for (j=0; j<rows; j++) {
 		myrow = mysql_fetch_row(pmyres);
-		pdomain = strchr(myrow[1], '@');
+		pdomain = strchr(myrow[0], '@');
 		if (NULL == pdomain) {
 			continue;
 		}
@@ -949,7 +948,11 @@ RETRYING:
 		if (0 != strcasecmp(pdomain, domainname)) {
 			continue;
 		}
-		sprintf(sql_string, "DELETE FROM aliases WHERE id=%s", myrow[0]);
+		char alias_esc[641], main_esc[641];
+		mysql_escape_string(alias_esc, myrow[0], strlen(myrow[0]));
+		mysql_escape_string(main_esc, myrow[1], strlen(myrow[1]));
+		snprintf(sql_string, sizeof(sql_string), "DELETE FROM aliases WHERE aliasname='%s' AND mainname='%s'",
+		         alias_esc, main_esc);
 		if (0 != mysql_query(pmysql, sql_string)) {
 			system_log_info("[data_source]: fail to query mysql server, "
 				"reason: %s", mysql_error(pmysql));
