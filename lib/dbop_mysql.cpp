@@ -231,19 +231,175 @@ int dbop_mysql_create_0(MYSQL *conn)
 }
 
 /* Initialization to create most recent schema */
+static const char tbl_alias_top[] =
+"CREATE TABLE `aliases` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `aliasname` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `mainname` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `aliasname` (`aliasname`),"
+"  KEY `mainname` (`mainname`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_assoc_top[] =
+"CREATE TABLE `associations` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `list_id` int(10) NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `list_id_2` (`list_id`,`username`),"
+"  KEY `username` (`username`),"
+"  KEY `list_id` (`list_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_classes_top[] =
+"CREATE TABLE `classes` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `classname` varchar(128) NOT NULL,"
+"  `listname` varchar(320) CHARACTER SET ascii DEFAULT NULL,"
+"  `domain_id` int(10) unsigned NOT NULL,"
+"  `group_id` int(10) unsigned NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  KEY `listname` (`listname`),"
+"  KEY `domain_id` (`domain_id`),"
+"  KEY `group_id` (`group_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_domains_top[] =
+"CREATE TABLE `domains` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `org_id` int(10) unsigned NOT NULL DEFAULT 0,"
+"  `domainname` varchar(255) CHARACTER SET ascii NOT NULL,"
+"  `password` varchar(40) NOT NULL DEFAULT '',"
+"  `homedir` varchar(128) NOT NULL DEFAULT '',"
+"  `media` varchar(64) NOT NULL DEFAULT '',"
+"  `max_size` int(10) unsigned NOT NULL,"
+"  `max_user` int(10) unsigned NOT NULL,"
+"  `title` varchar(128) NOT NULL DEFAULT '',"
+"  `address` varchar(128) NOT NULL DEFAULT '',"
+"  `admin_name` varchar(32) NOT NULL DEFAULT '',"
+"  `tel` varchar(64) NOT NULL DEFAULT '',"
+"  `create_day` date NOT NULL,"
+"  `end_day` date NOT NULL,"
+"  `privilege_bits` int(10) unsigned NOT NULL,"
+"  `domain_status` tinyint(4) NOT NULL DEFAULT 0,"
+"  `domain_type` tinyint(4) NOT NULL DEFAULT 0,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `domainname` (`domainname`),"
+"  KEY `homedir` (`homedir`,`domain_type`),"
+"  KEY `org_id` (`org_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_forwards_top[] =
+"CREATE TABLE `forwards` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `forward_type` tinyint(4) NOT NULL DEFAULT 0,"
+"  `destination` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `username` (`username`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_groups_top[] =
+"CREATE TABLE `groups` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `groupname` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `password` varchar(40) NOT NULL DEFAULT '',"
+"  `domain_id` int(10) unsigned NOT NULL,"
+"  `max_size` int(10) unsigned NOT NULL,"
+"  `max_user` int(10) unsigned NOT NULL,"
+"  `title` varchar(128) NOT NULL,"
+"  `create_day` date NOT NULL,"
+"  `privilege_bits` int(10) unsigned NOT NULL,"
+"  `group_status` tinyint(4) NOT NULL DEFAULT 0,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `groupname` (`groupname`),"
+"  KEY `domain_id` (`domain_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_members_top[] =
+"CREATE TABLE `members` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `class_id` int(10) unsigned NOT NULL,"
+"  `domain_id` int(10) unsigned NOT NULL,"
+"  `group_id` int(10) unsigned NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `class_id_2` (`class_id`,`username`),"
+"  KEY `username` (`username`),"
+"  KEY `class_id` (`class_id`),"
+"  KEY `domain_id` (`domain_id`),"
+"  KEY `group_id` (`group_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_mlists_top[] =
+"CREATE TABLE `mlists` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `listname` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `domain_id` int(10) unsigned NOT NULL,"
+"  `list_type` tinyint(4) NOT NULL,"
+"  `list_privilege` tinyint(4) NOT NULL DEFAULT 0,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `listname` (`listname`),"
+"  KEY `domain_id` (`domain_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_specifieds_top[] =
+"CREATE TABLE `specifieds` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `list_id` int(10) NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  KEY `list_id` (`list_id`)"
+") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_users_top[] =
+"CREATE TABLE `users` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `password` varchar(40) NOT NULL DEFAULT '',"
+"  `real_name` varchar(32) NOT NULL DEFAULT '',"
+"  `title` varchar(128) NOT NULL DEFAULT '',"
+"  `memo` varchar(128) NOT NULL DEFAULT '',"
+"  `domain_id` int(10) unsigned NOT NULL,"
+"  `group_id` int(10) unsigned NOT NULL,"
+"  `maildir` varchar(128) NOT NULL DEFAULT '',"
+"  `max_size` int(10) unsigned NOT NULL,"
+"  `max_file` int(10) unsigned NOT NULL,"
+"  `create_day` date NOT NULL,"
+"  `lang` varchar(32) NOT NULL DEFAULT '',"
+"  `timezone` varchar(64) NOT NULL DEFAULT '',"
+"  `mobile_phone` varchar(20) NOT NULL DEFAULT '',"
+"  `privilege_bits` int(10) unsigned NOT NULL,"
+"  `sub_type` tinyint(4) NOT NULL DEFAULT 0,"
+"  `address_status` tinyint(4) NOT NULL DEFAULT 0,"
+"  `address_type` tinyint(4) NOT NULL DEFAULT 0,"
+"  `cell` varchar(20) NOT NULL DEFAULT '',"
+"  `tel` varchar(20) NOT NULL DEFAULT '',"
+"  `nickname` varchar(32) NOT NULL DEFAULT '',"
+"  `homeaddress` varchar(128) NOT NULL DEFAULT '',"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `username` (`username`),"
+"  UNIQUE KEY `domain_id_2` (`domain_id`,`username`),"
+"  UNIQUE KEY `group_id_2` (`group_id`,`username`),"
+"  KEY `group_id` (`group_id`),"
+"  KEY `domain_id` (`domain_id`),"
+"  KEY `maildir` (`maildir`,`address_type`)"
+") DEFAULT CHARSET=utf8mb4";
+
 static const struct tbl_init tbl_init_top[] = {
-	{"aliases", tbl_alias_0},
-	{"associations", tbl_assoc_0},
-	{"classes", tbl_classes_0},
-	{"domains", tbl_domains_0},
-	{"forwards", tbl_forwards_0},
-	{"groups", tbl_groups_0},
+	{"aliases", tbl_alias_top},
+	{"associations", tbl_assoc_top},
+	{"classes", tbl_classes_top},
+	{"domains", tbl_domains_top},
+	{"forwards", tbl_forwards_top},
+	{"groups", tbl_groups_top},
 	{"hierarchy", tbl_hierarchy_0},
-	{"members", tbl_members_0},
-	{"mlists", tbl_mlists_0},
+	{"members", tbl_members_top},
+	{"mlists", tbl_mlists_top},
 	{"orgs", tbl_orgs_0},
-	{"specifieds", tbl_specifieds_0},
-	{"users", tbl_users_0},
+	{"specifieds", tbl_specifieds_top},
+	{"users", tbl_users_top},
 	{nullptr},
 };
 
@@ -270,6 +426,18 @@ unsigned int dbop_mysql_schemaversion(MYSQL *conn)
 static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{1, "CREATE TABLE `options` (`key` varchar(32) CHARACTER SET ascii NOT NULL,"
 	    " `value` varchar(255) DEFAULT NULL, PRIMARY KEY (`key`)) DEFAULT CHARSET=utf8mb4"},
+	{2, "ALTER TABLE `aliases` CHANGE COLUMN `aliasname` `aliasname` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{3, "ALTER TABLE `aliases` CHANGE COLUMN `mainname` `mainname` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{4, "ALTER TABLE `associations` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{6, "ALTER TABLE `classes` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{7, "ALTER TABLE `domains` CHANGE COLUMN `domainname` `domainname` varchar(255) CHARACTER SET ascii NOT NULL"},
+	{8, "ALTER TABLE `forwards` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{9, "ALTER TABLE `forwards` CHANGE COLUMN `destination` `destination` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{10, "ALTER TABLE `groups` CHANGE COLUMN `groupname` `groupname` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{11, "ALTER TABLE `members` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{12, "ALTER TABLE `mlists` CHANGE COLUMN `listname` `listname` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{13, "ALTER TABLE `specifieds` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
+	{14, "ALTER TABLE `users` CHANGE COLUMN `username` `username` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{0, nullptr},
 };
 
