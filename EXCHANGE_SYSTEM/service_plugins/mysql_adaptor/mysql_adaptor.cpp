@@ -369,6 +369,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 	}
 
 	char sql_string[1024], temp_name[512];
+	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 	         "username='%s'", encrypt_passwd, temp_name);
 	if (0 != mysql_query(pmysql, sql_string)) {
