@@ -572,7 +572,7 @@ int main(int argc, const char **argv)
 	} else {
 		printf("----------------------------- proc plugins end "
 		   "-----------------------------\n");
-		printf("[system run pdu processor OK\n");
+		printf("[system]: run pdu processor OK\n");
 	}
 	auto cleanup_11 = make_scope_exit(pdu_processor_free);
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
@@ -590,7 +590,7 @@ int main(int argc, const char **argv)
 	} else {
 		printf("----------------------------- hpm plugins end "
 		   "-----------------------------\n");
-		printf("[system run hpm processor OK\n");
+		printf("[system]: run hpm processor OK\n");
 	}
 	auto cleanup_13 = make_scope_exit(hpm_processor_free);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
