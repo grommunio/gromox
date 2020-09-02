@@ -153,7 +153,7 @@ static SINGLE_LIST_NODE* ab_tree_get_snode()
 	psnode = single_list_get_from_head(&g_snode_list);
 	pthread_mutex_unlock(&g_list_lock);
 	if (NULL == psnode) {
-		psnode = malloc(sizeof(SINGLE_LIST_NODE));
+		psnode = static_cast<decltype(psnode)>(malloc(sizeof(*psnode)));
 	}
 	return psnode;
 }
@@ -173,7 +173,7 @@ static AB_NODE* ab_tree_get_abnode()
 	pabnode = (AB_NODE*)single_list_get_from_head(&g_abnode_list);
 	pthread_mutex_unlock(&g_list_lock);
 	if (NULL == pabnode) {
-		pabnode = malloc(sizeof(AB_NODE));
+		pabnode = static_cast<decltype(pabnode)>(malloc(sizeof(*pabnode)));
 	}
 	if (NULL != pabnode) {
 		mem_file_init(&pabnode->f_info, g_file_allocator);
@@ -194,9 +194,7 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 {
 	SINGLE_LIST_NODE *psnode;
-	SIMPLE_TREE_NODE **ppnode;
-	
-	ppnode = int_hash_query(pbase->phash, minid);
+	auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, minid));
 	if (NULL != ppnode) {
 		return *ppnode;
 	}
@@ -205,7 +203,7 @@ SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
 		if (minid == ((AB_NODE*)psnode->pdata)->minid) {
 			pthread_mutex_unlock(&g_remote_lock);
-			return psnode->pdata;
+			return static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
 		}
 	}
 	pthread_mutex_unlock(&g_remote_lock);
@@ -234,7 +232,7 @@ int ab_tree_run()
 	SINGLE_LIST_NODE *psnode;
 
 #define E(f, s) do { \
-	(f) = query_service(s); \
+	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
 		return -1; \
@@ -311,7 +309,7 @@ static void ab_tree_unload_base(AB_BASE *pbase)
 		ab_tree_put_snode(pnode);
 	single_list_free(&pbase->gal_list);
 	while ((pnode = single_list_get_from_head(&pbase->remote_list)) != NULL) {
-		ab_tree_put_abnode(pnode->pdata);
+		ab_tree_put_abnode(static_cast<AB_NODE *>(pnode->pdata));
 		ab_tree_put_snode(pnode);
 	}
 	single_list_free(&pbase->remote_list);
@@ -336,7 +334,7 @@ int ab_tree_stop()
 		for (int_hash_iter_begin(iter);
 			FALSE == int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
-			ppbase = int_hash_iter_get_value(iter, NULL);
+			ppbase = static_cast<decltype(ppbase)>(int_hash_iter_get_value(iter, nullptr));
 			ab_tree_unload_base(*ppbase);
 			free(*ppbase);
 		}
@@ -563,7 +561,7 @@ static BOOL ab_tree_load_class(
 		mem_file_free(&file_user);
 		return TRUE;
 	}
-	parray = malloc(sizeof(SORT_ITEM)*rows);
+	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 	if (NULL == parray) {
 		mem_file_free(&file_user);
 		return FALSE;
@@ -774,7 +772,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			mem_file_free(&file_user);
 			continue;
 		}
-		parray = malloc(sizeof(SORT_ITEM)*rows);
+		parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 		if (NULL == parray) {
 			mem_file_free(&file_user);
 			mem_file_free(&file_group);
@@ -834,7 +832,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		mem_file_free(&file_user);
 		return TRUE;
 	}
-	parray = malloc(sizeof(SORT_ITEM)*rows);
+	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 	if (NULL == parray) {
 		mem_file_free(&file_user);
 		return FALSE;	
@@ -979,15 +977,15 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	if (num <= 1) {
 		return TRUE;
 	}
-	parray = malloc(sizeof(SORT_ITEM)*num);
+	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * num));
 	if (NULL == parray) {
 		return TRUE;
 	}
 	i = 0;
 	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->gal_list, pnode)) {
-		ab_tree_get_display_name(pnode->pdata, 1252, temp_buff);
-		parray[i].pnode = pnode->pdata;
+		ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), 1252, temp_buff);
+		parray[i].pnode = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
 		parray[i].string = strdup(temp_buff);
 		if (NULL == parray[i].string) {
 			for (i-=1; i>=0; i--) {
@@ -1019,7 +1017,7 @@ AB_BASE* ab_tree_get_base(int base_id)
 	count = 0;
 RETRY_LOAD_BASE:
 	pthread_mutex_lock(&g_base_lock);
-	ppbase = int_hash_query(g_base_hash, base_id);
+	ppbase = static_cast<decltype(ppbase)>(int_hash_query(g_base_hash, base_id));
 	if (NULL == ppbase) {
 		pbase = (AB_BASE*)malloc(sizeof(AB_BASE));
 		if (NULL == pbase) {
@@ -1090,7 +1088,7 @@ static void *scan_work_func(void *param)
 		for (int_hash_iter_begin(iter);
 			FALSE == int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
-			ppbase = int_hash_iter_get_value(iter, NULL);
+			ppbase = static_cast<decltype(ppbase)>(int_hash_iter_get_value(iter, nullptr));
 			if (BASE_STATUS_LIVING != (*ppbase)->status ||
 				0 != (*ppbase)->reference || time(NULL) -
 				(*ppbase)->load_time < g_cache_interval) {
@@ -1113,7 +1111,7 @@ static void *scan_work_func(void *param)
 		while ((pnode = single_list_get_from_head(&pbase->gal_list)) != NULL)
 			ab_tree_put_snode(pnode);
 		while ((pnode = single_list_get_from_head(&pbase->remote_list)) != NULL) {
-			ab_tree_put_abnode(pnode->pdata);
+			ab_tree_put_abnode(static_cast<AB_NODE *>(pnode->pdata));
 			ab_tree_put_snode(pnode);
 		}
 		if (NULL != pbase->phash) {
@@ -1192,7 +1190,8 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbase) {
 			return FALSE;
 		}
-		ppnode = int_hash_query(pbase->phash, ((AB_NODE*)pnode)->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash,
+		         reinterpret_cast<AB_NODE *>(pnode)->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			return FALSE;
@@ -1248,10 +1247,10 @@ void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	
 	pabnode = (AB_NODE*)pnode;
 	if (pabnode->node_type < 0x80 && NULL != pnode->pdata) {
-		return ab_tree_node_to_guid(pnode->pdata, pguid);	
+		return ab_tree_node_to_guid(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), pguid);
 	}
 	memset(pguid, 0, sizeof(GUID));
-	pguid->time_low = static_cast(unsigned int, pabnode->node_type) << 24;
+	pguid->time_low = static_cast<unsigned int>(pabnode->node_type) << 24;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
 		pguid->time_low |= pabnode->id;
 		tmp_id = ab_tree_get_minid_value(pabnode->minid);
@@ -1301,7 +1300,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		if (NULL == pbase) {
 			return FALSE;
 		}
-		ppnode = int_hash_query(pbase->phash, pabnode->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			return FALSE;
@@ -1395,7 +1394,7 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		"/cn=Configuration/cn=Servers/cn=", 32)) {
 		id = decode_hex_int(pdn + temp_len + 60);
 		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, id);
-		ppnode = int_hash_query(pbase->phash, minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, minid));
 		if (NULL != ppnode) {
 			return *ppnode;
 		} else {
@@ -1408,7 +1407,7 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	domain_id = decode_hex_int(pdn + temp_len + 18);
 	id = decode_hex_int(pdn + temp_len + 26);
 	minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, id);
-	ppnode = int_hash_query(pbase->phash, minid);
+	ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, minid));
 	if (NULL != ppnode) {
 		return *ppnode;
 	}
@@ -1417,7 +1416,7 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
 		if (minid == ((AB_NODE*)psnode->pdata)->minid) {
 			pthread_mutex_unlock(&g_remote_lock);
-			return psnode->pdata;
+			return static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
 		}
 	}
 	pthread_mutex_unlock(&g_remote_lock);
@@ -1431,7 +1430,7 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (NULL == pbase1) {
 		return NULL;
 	}
-	ppnode = int_hash_query(pbase1->phash, minid);
+	ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase1->phash, minid));
 	if (NULL == ppnode) {
 		ab_tree_put_base(pbase1);
 		return NULL;
@@ -1463,10 +1462,9 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 SIMPLE_TREE_NODE* ab_tree_uid_to_node(AB_BASE *pbase, int user_id)
 {
 	uint32_t minid;
-	SIMPLE_TREE_NODE **ppnode;
 	
 	minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
-	ppnode = int_hash_query(pbase->phash, minid);
+	auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, minid));
 	if (NULL == ppnode) {
 		return NULL;
 	}
@@ -1491,7 +1489,7 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 		if (NULL == pbase) {
 			return NODE_TYPE_REMOTE;
 		}
-		ppnode = int_hash_query(pbase->phash, pabnode->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			return NODE_TYPE_REMOTE;
@@ -1736,7 +1734,7 @@ void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 			str_address[0] = '\0';
 			return;
 		}
-		ppnode = int_hash_query(pbase->phash, pabnode->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			str_name[0] = '\0';
@@ -1788,7 +1786,7 @@ void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 			str_name[0] = '\0';
 			return;
 		}
-		ppnode = int_hash_query(pbase->phash, ((AB_NODE*)pnode)->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, reinterpret_cast<AB_NODE *>(pnode)->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			str_name[0] = '\0';
