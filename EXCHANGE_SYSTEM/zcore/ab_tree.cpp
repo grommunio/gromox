@@ -166,7 +166,7 @@ static SINGLE_LIST_NODE* ab_tree_get_snode()
 	psnode = single_list_get_from_head(&g_snode_list);
 	pthread_mutex_unlock(&g_list_lock);
 	if (NULL == psnode) {
-		psnode = malloc(sizeof(SINGLE_LIST_NODE));
+		psnode = static_cast<decltype(psnode)>(malloc(sizeof(*psnode)));
 	}
 	return psnode;
 }
@@ -186,7 +186,7 @@ static AB_NODE* ab_tree_get_abnode()
 	pabnode = (AB_NODE*)single_list_get_from_head(&g_abnode_list);
 	pthread_mutex_unlock(&g_list_lock);
 	if (NULL == pabnode) {
-		pabnode = malloc(sizeof(AB_NODE));
+		pabnode = static_cast<decltype(pabnode)>(malloc(sizeof(*pabnode)));
 	}
 	if (NULL != pabnode) {
 		mem_file_init(&pabnode->f_info, g_file_allocator);
@@ -206,9 +206,7 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 {
-	SIMPLE_TREE_NODE **ppnode;
-	
-	ppnode = int_hash_query(pbase->phash, minid);
+	auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, minid));
 	if (NULL != ppnode) {
 		return *ppnode;
 	}
@@ -314,7 +312,7 @@ int ab_tree_stop()
 		for (int_hash_iter_begin(iter);
 			FALSE == int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
-			ppbase = int_hash_iter_get_value(iter, NULL);
+			ppbase = static_cast<decltype(ppbase)>(int_hash_iter_get_value(iter, nullptr));
 			ab_tree_unload_base(*ppbase);
 			free(*ppbase);
 		}
@@ -540,7 +538,7 @@ static BOOL ab_tree_load_class(
 		mem_file_free(&file_user);
 		return TRUE;
 	}
-	parray = malloc(sizeof(SORT_ITEM)*rows);
+	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 	if (NULL == parray) {
 		mem_file_free(&file_user);
 		return FALSE;
@@ -751,7 +749,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			mem_file_free(&file_user);
 			continue;
 		}
-		parray = malloc(sizeof(SORT_ITEM)*rows);
+		parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 		if (NULL == parray) {
 			mem_file_free(&file_user);
 			mem_file_free(&file_group);
@@ -811,7 +809,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		mem_file_free(&file_user);
 		return TRUE;
 	}
-	parray = malloc(sizeof(SORT_ITEM)*rows);
+	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 	if (NULL == parray) {
 		mem_file_free(&file_user);
 		return FALSE;	
@@ -956,15 +954,15 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	if (num <= 1) {
 		return TRUE;
 	}
-	parray = malloc(sizeof(SORT_ITEM)*num);
+	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * num));
 	if (NULL == parray) {
 		return TRUE;
 	}
 	i = 0;
 	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->gal_list, pnode)) {
-		ab_tree_get_display_name(pnode->pdata, 1252, temp_buff);
-		parray[i].pnode = pnode->pdata;
+		ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), 1252, temp_buff);
+		parray[i].pnode = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
 		parray[i].string = strdup(temp_buff);
 		if (NULL == parray[i].string) {
 			for (i-=1; i>=0; i--) {
@@ -996,7 +994,7 @@ AB_BASE* ab_tree_get_base(int base_id)
 	count = 0;
 RETRY_LOAD_BASE:
 	pthread_mutex_lock(&g_base_lock);
-	ppbase = int_hash_query(g_base_hash, base_id);
+	ppbase = static_cast<decltype(ppbase)>(int_hash_query(g_base_hash, base_id));
 	if (NULL == ppbase) {
 		pbase = (AB_BASE*)malloc(sizeof(AB_BASE));
 		if (NULL == pbase) {
@@ -1064,7 +1062,7 @@ static void *scan_work_func(void *param)
 		for (int_hash_iter_begin(iter);
 			FALSE == int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
-			ppbase = int_hash_iter_get_value(iter, NULL);
+			ppbase = static_cast<decltype(ppbase)>(int_hash_iter_get_value(iter, nullptr));
 			if (BASE_STATUS_LIVING != (*ppbase)->status ||
 				0 != (*ppbase)->reference || time(NULL) -
 				(*ppbase)->load_time < g_cache_interval) {
@@ -1162,7 +1160,8 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pbase) {
 			return FALSE;
 		}
-		ppnode = int_hash_query(pbase->phash, ((AB_NODE*)pnode)->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash,
+		         reinterpret_cast<AB_NODE *>(pnode)->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			return FALSE;
@@ -1281,7 +1280,7 @@ static void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	
 	pabnode = (AB_NODE*)pnode;
 	if (pabnode->node_type < 0x80 && NULL != pnode->pdata) {
-		return ab_tree_node_to_guid(pnode->pdata, pguid);	
+		return ab_tree_node_to_guid(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), pguid);
 	}
 	memset(pguid, 0, sizeof(GUID));
 	pguid->time_low = pabnode->node_type << 24;
@@ -1335,7 +1334,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		if (NULL == pbase) {
 			return FALSE;
 		}
-		ppnode = int_hash_query(pbase->phash, pabnode->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			return FALSE;
@@ -1440,7 +1439,7 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 		if (NULL == pbase) {
 			return NODE_TYPE_REMOTE;
 		}
-		ppnode = int_hash_query(pbase->phash, pabnode->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			return NODE_TYPE_REMOTE;
@@ -1682,7 +1681,7 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 			str_address[0] = '\0';
 			return;
 		}
-		ppnode = int_hash_query(pbase->phash, pabnode->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			str_name[0] = '\0';
@@ -1734,7 +1733,8 @@ static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 			str_name[0] = '\0';
 			return;
 		}
-		ppnode = int_hash_query(pbase->phash, ((AB_NODE*)pnode)->minid);
+		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash,
+		         reinterpret_cast<AB_NODE *>(pnode)->minid));
 		if (NULL == ppnode) {
 			ab_tree_put_base(pbase);
 			str_name[0] = '\0';
@@ -1800,7 +1800,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		static_cast(BINARY *, *ppvalue)->pb = const_cast(uint8_t *, common_util_get_muidecsab());
+		static_cast<BINARY *>(*ppvalue)->pb = const_cast<uint8_t *>(common_util_get_muidecsab());
 		return TRUE;
 	case PROP_TAG_CONTAINERFLAGS:
 		if (node_type < 0x80) {
@@ -1886,7 +1886,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		*ppvalue = const_cast(char *, "EX");
+		*ppvalue = const_cast<char *>("EX");
 		return TRUE;
 	case PROP_TAG_EMAILADDRESS:
 		if (node_type > 0x80) {
@@ -1959,7 +1959,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)pvalue)->cb = 16;
-		((BINARY*)pvalue)->pb = (void*)g_guid_nspi;
+		static_cast<BINARY *>(pvalue)->pb = const_cast<uint8_t *>(g_guid_nspi);
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_SENDRICHINFO:
@@ -2005,10 +2005,9 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		ab_entryid.px500dn = dn;
-		((BINARY*)pvalue)->pb = common_util_alloc(1280);
-		if (NULL == ((BINARY*)pvalue)->pb) {
+		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(1280);
+		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
 			return FALSE;
-		}
 		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 1280, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 			&ext_push, &ab_entryid)) {
@@ -2030,11 +2029,11 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)pvalue)->cb = strlen(dn) + 4;
-		static_cast(BINARY *, pvalue)->pc = common_util_alloc(static_cast(BINARY *, pvalue)->cb);
-		if (static_cast(BINARY *, pvalue)->pc == nullptr)
+		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(static_cast<BINARY *>(pvalue)->cb);
+		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
 			return FALSE;
-		sprintf(static_cast(BINARY *, pvalue)->pc, "EX:%s", dn);
-		HX_strupper(static_cast(BINARY *, pvalue)->pc);
+		sprintf(static_cast<BINARY *>(pvalue)->pc, "EX:%s", dn);
+		HX_strupper(static_cast<BINARY *>(pvalue)->pc);
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_INSTANCEKEY:
@@ -2043,10 +2042,9 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)pvalue)->cb = 4;
-		((BINARY*)pvalue)->pb = common_util_alloc(4);
-		if (NULL == ((BINARY*)pvalue)->pb) {
+		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(4);
+		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
 			return FALSE;
-		}
 		minid = ab_tree_get_node_minid(pnode);
 		((BINARY*)pvalue)->pb[0] = minid & 0xFF;
 		((BINARY*)pvalue)->pb[1] = (minid >> 8) & 0xFF;
@@ -2275,17 +2273,14 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((STRING_ARRAY*)pvalue)->count = 1;
-		((STRING_ARRAY*)pvalue)->ppstr =
-			common_util_alloc(sizeof(char**));
+		static_cast<STRING_ARRAY *>(pvalue)->ppstr = static_cast<char **>(common_util_alloc(sizeof(char **)));
 		if (NULL == ((STRING_ARRAY*)pvalue)->ppstr) {
 			return FALSE;
 		}
 		
-		((STRING_ARRAY*)pvalue)->ppstr[0] =
-			common_util_alloc(strlen(dn) + 6);
-		if (NULL == ((STRING_ARRAY*)pvalue)->ppstr[0]) {
+		static_cast<STRING_ARRAY *>(pvalue)->ppstr[0] = static_cast<char *>(common_util_alloc(strlen(dn) + 6));
+		if (static_cast<STRING_ARRAY *>(pvalue)->ppstr[0] == nullptr)
 			return FALSE;
-		}
 		sprintf(((STRING_ARRAY*)pvalue)->ppstr[0], "SMTP:%s", dn);
 		*ppvalue = pvalue;
 		return TRUE;
@@ -2319,7 +2314,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn);
 		strcat(dn, "/config/portrait.jpg");
-		if (FALSE == common_util_load_file(dn, pvalue)) {
+		if (!common_util_load_file(dn, static_cast<BINARY *>(pvalue))) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
@@ -2338,8 +2333,7 @@ BOOL ab_tree_fetch_node_properties(SIMPLE_TREE_NODE *pnode,
 	void *pvalue;
 	USER_INFO *pinfo;
 	
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
@@ -2430,11 +2424,10 @@ BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 	single_list_init(presult_list);
 	for (psnode=single_list_get_head(plist); NULL!=psnode;
 		psnode=single_list_get_after(plist, psnode)) {
-		if (FALSE == ab_tree_resolve_node(
-			psnode->pdata, codepage, pstr)) {
+		if (!ab_tree_resolve_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
+		    codepage, pstr))
 			continue;
-		}
-		prnode = common_util_alloc(sizeof(SINGLE_LIST_NODE));
+		prnode = static_cast<decltype(prnode)>(common_util_alloc(sizeof(*prnode)));
 		if (NULL == prnode) {
 			return FALSE;
 		}
@@ -2447,14 +2440,14 @@ BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, const RESTRICTION *pfilter)
 {
-	int i, len;
+	int len;
 	char *ptoken;
 	void *pvalue;
 	uint8_t node_type;
 	
 	switch (pfilter->rt) {
 	case RESTRICTION_TYPE_AND:
-		for (i=0; i<((RESTRICTION_AND_OR*)pfilter->pres)->count; i++) {
+		for (unsigned int i = 0; i < static_cast<RESTRICTION_AND_OR *>(pfilter->pres)->count; ++i) {
 			if (FALSE == ab_tree_match_node(pnode, codepage,
 				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
 				return FALSE;
@@ -2462,7 +2455,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		}
 		return TRUE;
 	case RESTRICTION_TYPE_OR:
-		for (i=0; i<((RESTRICTION_AND_OR*)pfilter->pres)->count; i++) {
+		for (unsigned int i = 0; i < static_cast<RESTRICTION_AND_OR *>(pfilter->pres)->count; ++i) {
 			if (TRUE == ab_tree_match_node(pnode, codepage,
 				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
 				return TRUE;
@@ -2497,49 +2490,42 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		case FUZZY_LEVEL_FULLSTRING:
 			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (0 == strcasecmp(((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, pvalue)) {
+				if (strcasecmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (0 == strcmp(((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, pvalue)) {
+				if (strcmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
 			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (NULL != strstr(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strstr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case FUZZY_LEVEL_PREFIX:
-			len = strlen(((RESTRICTION_CONTENT*)
-				pfilter->pres)->propval.pvalue);
+			len = strlen(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue));
 			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
-				if (0 == strncasecmp(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, len)) {
+				if (strncasecmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue), len) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (0 == strncmp(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, len)) {
+				if (strncmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue), len) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			}
 			return FALSE;
@@ -2550,26 +2536,22 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 			if (TRUE == ab_tree_fetch_node_property(pnode,
 				codepage, PROP_TAG_ACCOUNT, &pvalue) &&
 				NULL != pvalue) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			/* =SMTP:user@company.com */
-			ptoken = strchr(((RESTRICTION_PROPERTY*)
-				pfilter->pres)->propval.pvalue, ':');
+			ptoken = strchr(static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue), ':');
 			if (NULL != ptoken) {
-				if (NULL != strcasestr(pvalue, ptoken + 1)) {
+				if (strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
 					return TRUE;
-				}
 			}
 			if (TRUE == ab_tree_fetch_node_property(pnode,
 				codepage, PROP_TAG_DISPLAYNAME, &pvalue) &&
 				NULL != pvalue) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		}
@@ -2643,9 +2625,8 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 		pgal_list = &pbase->gal_list;
 		for (psnode=single_list_get_head(pgal_list); NULL!=psnode;
 			psnode=single_list_get_after(pgal_list, psnode)) {
-			if (TRUE == ab_tree_match_node(
-				psnode->pdata, codepage, pfilter)) {
-				psnode1 = common_util_alloc(sizeof(SINGLE_LIST_NODE));
+			if (ab_tree_match_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata), codepage, pfilter)) {
+				psnode1 = static_cast<decltype(psnode1)>(common_util_alloc(sizeof(*psnode1)));
 				if (NULL == psnode1) {
 					return FALSE;
 				}
@@ -2666,7 +2647,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 				continue;
 			}
 			if (TRUE == ab_tree_match_node(pnode, codepage, pfilter)) {
-				psnode1 = common_util_alloc(sizeof(SINGLE_LIST_NODE));
+				psnode1 = static_cast<decltype(psnode1)>(common_util_alloc(sizeof(*psnode1)));
 				if (NULL == psnode1) {
 					return FALSE;
 				}
@@ -2679,7 +2660,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	if (0 == pminids->count) {
 		pminids->pl = NULL;
 	} else {
-		pminids->pl = common_util_alloc(sizeof(uint32_t)*pminids->count);
+		pminids->pl = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * pminids->count));
 		if (NULL == pminids->pl) {
 			return FALSE;
 		}
@@ -2687,7 +2668,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	count = 0;
 	for (psnode=single_list_get_head(&temp_list); NULL!=psnode;
 		psnode=single_list_get_after(&temp_list, psnode),count++) {
-		pminids->pl[count] = ab_tree_get_node_minid(psnode->pdata);
+		pminids->pl[count] = ab_tree_get_node_minid(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata));
 	}
 	return TRUE;
 }
