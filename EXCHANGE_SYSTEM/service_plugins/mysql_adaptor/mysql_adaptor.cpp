@@ -336,118 +336,117 @@ RETRYING:
 static BOOL firsttime_password(const char *username, const char *password,
     char *encrypt_passwd, char *reason, int length, unsigned int mode)
 {
-		const char *pdomain;
-		pdomain = strchr(username, '@');
-		if (NULL == pdomain) {
-			strncpy(reason, "domain name should be included!", length);
-			return FALSE;
-		}
-		pdomain ++;
+	const char *pdomain;
+	pdomain = strchr(username, '@');
+	if (NULL == pdomain) {
+		strncpy(reason, "domain name should be included!", length);
+		return FALSE;
+	}
+	pdomain++;
+
+	pthread_mutex_lock(&g_crypt_lock);
+	strcpy(encrypt_passwd, md5_crypt_wrapper(password));
+	pthread_mutex_unlock(&g_crypt_lock);
+
+	MYSQL *pmysql;
+	pmysql = mysql_init(NULL);
+	if (NULL == pmysql) {
+		strncpy(reason, "database error, please try later!", length);
+		return FALSE;
+	}
+
+	mysql_options(pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
+	if (g_timeout > 0) {
+		mysql_options(pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
+		mysql_options(pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
+	}
 		
-		pthread_mutex_lock(&g_crypt_lock);
-		strcpy(encrypt_passwd, md5_crypt_wrapper(password));
-		pthread_mutex_unlock(&g_crypt_lock);
+	if (NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
+	    g_db_name, g_port, NULL, 0)) {
+		mysql_close(pmysql);
+		strncpy(reason, "database error, please try later!", length);
+		return FALSE;
+	}
 
-		MYSQL *pmysql;
-		pmysql = mysql_init(NULL);
-		if (NULL == pmysql) {
-			strncpy(reason, "database error, please try later!", length);
-			return FALSE;
-		}
+	char sql_string[1024], temp_name[512];
+	snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
+	         "username='%s'", encrypt_passwd, temp_name);
+	if (0 != mysql_query(pmysql, sql_string)) {
+		mysql_close(pmysql);
+		strncpy(reason, "database error, please try later!", length);
+		return FALSE;
+	}
 
-		mysql_options(pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
-		if (g_timeout > 0) {
-			mysql_options(pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-			mysql_options(pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-		}
-			
-		if (NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
-			g_db_name, g_port, NULL, 0)) {
-			mysql_close(pmysql);
-			strncpy(reason, "database error, please try later!", length);
-			return FALSE;
-		}
+	MYSQL_RES *pmyres, *pmyres1;
+	snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
+	         "mainname='%s'", temp_name);
+	if (0 != mysql_query(pmysql, sql_string) ||
+		NULL == (pmyres = mysql_store_result(pmysql))) {
+		mysql_close(pmysql);
+		strncpy(reason, "database error, please try later!", length);
+		return FALSE;
+	}
 
-		char sql_string[1024], temp_name[512];
+	mysql_adaptor_encode_squote(pdomain, temp_name);
+	snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
+	         "mainname='%s'", temp_name);
+	if (0 != mysql_query(pmysql, sql_string) ||
+	    NULL == (pmyres1 = mysql_store_result(pmysql))) {
+		mysql_free_result(pmyres);
+		mysql_close(pmysql);
+		strncpy(reason, "database error, please try later!", length);
+		return FALSE;
+	}
+	size_t rows, rows1, k;
+	rows = mysql_num_rows(pmyres);
+	rows1 = mysql_num_rows(pmyres1);
+
+	for (k = 0; k < rows1; k++) {
+		char virtual_address[256];
+		MYSQL_ROW myrow1;
+		char *pat;
+
+		myrow1 = mysql_fetch_row(pmyres1);
+		strcpy(virtual_address, username);
+		pat = strchr(virtual_address, '@') + 1;
+		strcpy(pat, myrow1[0]);
+		mysql_adaptor_encode_squote(virtual_address, temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
-			"username='%s'", encrypt_passwd, temp_name);
-		if (0 != mysql_query(pmysql, sql_string)) {
-			mysql_close(pmysql);
-			strncpy(reason, "database error, please try later!", length);
-			return FALSE;
-		}
+		         "username='%s'", encrypt_passwd, temp_name);
+		mysql_query(pmysql, sql_string);
+	}
 
-		MYSQL_RES *pmyres, *pmyres1;
-		snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
-			"mainname='%s'", temp_name);
-		if (0 != mysql_query(pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pmysql))) {
-			mysql_close(pmysql);
-			strncpy(reason, "database error, please try later!", length);
-			return FALSE;
-		}
+	size_t j;
+	for (j = 0; j < rows; j++) {
+		MYSQL_ROW myrow;
 
-		mysql_adaptor_encode_squote(pdomain, temp_name);
-		snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
-			"mainname='%s'", temp_name);
-		if (0 != mysql_query(pmysql, sql_string) ||
-			NULL == (pmyres1 = mysql_store_result(pmysql))) {
-			mysql_free_result(pmyres);
-			mysql_close(pmysql);
-			strncpy(reason, "database error, please try later!", length);
-			return FALSE;
-		}
-		size_t rows, rows1, k;
-		rows = mysql_num_rows(pmyres);
-		rows1 = mysql_num_rows(pmyres1);
+		myrow = mysql_fetch_row(pmyres);
+		mysql_adaptor_encode_squote(myrow[0], temp_name);
+		snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
+		         "username='%s'", encrypt_passwd, temp_name);
+		mysql_query(pmysql, sql_string);
 
-		for (k=0; k<rows1; k++) {
-			char virtual_address[256];
+		mysql_data_seek(pmyres1, 0);
+		size_t k;
+		for (k = 0; k < rows1; k++) {
+			char virtual_address[256], *pat;
 			MYSQL_ROW myrow1;
-			char *pat;
 
 			myrow1 = mysql_fetch_row(pmyres1);
-			strcpy(virtual_address, username);
+			strcpy(virtual_address, myrow[0]);
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
 			mysql_adaptor_encode_squote(virtual_address, temp_name);
-			snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
-				"username='%s'", encrypt_passwd, temp_name);
+			snprintf(sql_string, 1024, "UPDATE users SET password='%s' "
+				"WHERE username='%s'", encrypt_passwd, temp_name);
 			mysql_query(pmysql, sql_string);
 		}
+	}
 
-		size_t j;
-		for (j=0; j<rows; j++) {
-			MYSQL_ROW myrow;
-
-			myrow = mysql_fetch_row(pmyres);
-			mysql_adaptor_encode_squote(myrow[0], temp_name);
-			snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
-				"username='%s'", encrypt_passwd, temp_name);
-			mysql_query(pmysql, sql_string);
-
-			mysql_data_seek(pmyres1, 0);
-			size_t k;
-			for (k=0; k<rows1; k++) {
-				char virtual_address[256], *pat;
-				MYSQL_ROW myrow1;
-
-				myrow1 = mysql_fetch_row(pmyres1);
-				strcpy(virtual_address, myrow[0]);
-				pat = strchr(virtual_address, '@') + 1;
-				strcpy(pat, myrow1[0]);
-				mysql_adaptor_encode_squote(virtual_address, temp_name);
-				snprintf(sql_string, 1024, "UPDATE users SET password='%s' "
-					"WHERE username='%s'", encrypt_passwd, temp_name);
-				mysql_query(pmysql, sql_string);
-
-			}
-		}
-
-		mysql_free_result(pmyres1);
-		mysql_free_result(pmyres);
-		mysql_close(pmysql);
-		return TRUE;
+	mysql_free_result(pmyres1);
+	mysql_free_result(pmyres);
+	mysql_close(pmysql);
+	return TRUE;
 }
 
 static BOOL verify_password(const char *username, const char *password,
