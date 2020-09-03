@@ -196,7 +196,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 
 #define E(f, s) do { \
-	if (!register_service((s), (f))) { \
+	if (!register_service((s), reinterpret_cast<void *>(f))) { \
 		printf("[%s]: failed to register the \"%s\" service\n", "mysql_adaptor", (s)); \
 		return false; \
 	} \
