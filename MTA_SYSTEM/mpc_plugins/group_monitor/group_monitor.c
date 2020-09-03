@@ -95,29 +95,19 @@ int group_monitor_run()
 	char temp_group[256];
 	struct dirent *direntp;
 
-	monitor_domains_check = query_service("monitor_domains_check");
-	if (NULL == monitor_domains_check) {
-		printf("[group_monitor]: failed to get service \"monitor_domains_check\"\n");
-		return -1;
-	}
-	
-	monitor_domains_add = query_service("monitor_domains_add");
-	if (NULL == monitor_domains_add) {
-		printf("[group_monitor]: failed to get service \"monitor_domains_add\"\n");
-		return -2;
-	}
-	
-	monitor_domains_remove = query_service("monitor_domains_remove");
-	if (NULL == monitor_domains_remove) {
-		printf("[group_monitor]: failed to get service \"monitor_domains_remove\"\n");
-		return -3;
-	}
-	
-	get_group_name = query_service("get_user_groupname");
-	if (NULL == get_group_name) {
-		printf("[group_monitor]: failed to get service \"get_group_name\"\n");
-		return -4;
-	}
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "group_monitor", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+	E(monitor_domains_check, "monitor_domains_check");
+	E(monitor_domains_add, "monitor_domains_add");
+	E(monitor_domains_remove, "monitor_domains_remove");
+	E(get_group_name, "get_user_groupname");
+#undef E
 	
 	dirp = opendir(g_root_path);
 	if (NULL == dirp) {

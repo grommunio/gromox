@@ -69,30 +69,19 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
 		pthread_mutex_init(&g_concurrent_mutex, NULL);
 		
-		relay_domains_query = (RELAY_DOMAINS_QUERY)query_service(
-								"relay_domains_query");
-		if (NULL == relay_domains_query) {
-			printf("[relay_agent]: failed to get service \"relay_domains_query\"\n");
-            return FALSE;
-		}
-		dns_query_A = (DNS_QUERY)query_service("dns_query_A");
-		if (NULL == dns_query_A) {
-			printf("[relay_agent]: failed to get service \"dns_query_A\"\n");
-			return FALSE;
-		}
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "relay_agent", (s)); \
+		return false; \
+	} \
+} while (false)
 
-		dns_query_MX = (DNS_QUERY)query_service("dns_query_MX");
-		if (NULL == dns_query_MX) {
-			printf("[relay_agent]: failed to get service \"dns_query_MX\"\n");
-			return FALSE;
-		}
-
-		dns_check_local = (CHECK_LOCAL)query_service("dns_check_local");
-		if (NULL == dns_check_local) {
-			printf("[relay_agent]: failed to get service \"dns_check_local\"\n");
-			return FALSE;
-		}
-		
+		E(relay_domains_query, "relay_domains_query");
+		E(dns_query_A, "dns_query_A");
+		E(dns_query_MX, "dns_query_MX");
+		E(dns_check_local, "dns_check_local");
+#undef E
 		/* get the plugin name from system api */
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');

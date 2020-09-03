@@ -232,58 +232,26 @@ int ab_tree_run()
 	int i;
 	AB_NODE *pabnode;
 	SINGLE_LIST_NODE *psnode;
-	
-	get_org_domains = query_service("get_org_domains");
-	if (NULL == get_org_domains) {
-		printf("[exchange_nsp]: failed to get service \"get_org_domains\"\n");
-		return -1;
-	}
-	get_domain_info = query_service("get_domain_info");
-	if (NULL == get_domain_info) {
-		printf("[exchange_nsp]: failed to get service \"get_domain_info\"\n");
-		return -1;
-	}
-	get_domain_groups = query_service("get_domain_groups");
-	if (NULL == get_domain_groups) {
-		printf("[exchange_nsp]: failed to get service \"get_domain_groups\"\n");
-		return -1;
-	}
-	get_group_classes = query_service("get_group_classes");
-	if (NULL == get_group_classes) {
-		printf("[exchange_nsp]: failed to get service \"get_group_classes\"\n");
-		return -1;
-	}
-	get_sub_classes = query_service("get_sub_classes");
-	if (NULL == get_sub_classes) {
-		printf("[exchange_nsp]: failed to get service \"get_sub_classes\"\n");
-		return -1;
-	}
-	get_class_users = query_service("get_class_users");
-	if (NULL == get_class_users) {
-		printf("[exchange_nsp]: failed to get service \"get_class_users\"\n");
-		return -1;
-	}
-	get_group_users = query_service("get_group_users");
-	if (NULL == get_group_users) {
-		printf("[exchange_nsp]: failed to get service \"get_group_users\"\n");
-		return -1;
-	}
-	get_domain_users = query_service("get_domain_users");
-	if (NULL == get_domain_users) {
-		printf("[exchange_nsp]: failed to get service \"get_domain_users\"\n");
-		return -1;
-	}
-	get_mlist_ids = query_service("get_mlist_ids");
-	if (NULL == get_mlist_ids) {
-		printf("exchange_nsp]: failed to get service \"get_mlist_ids\"\n");
-		return -1;
-	}
-	get_lang = query_service("get_lang");
-	if (NULL == get_lang) {
-		printf("[exchange_nsp]: fail to "
-			"get \"get_lang\" service\n");
-		return -1;
-	}
+
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+	E(get_org_domains, "get_org_domains");
+	E(get_domain_info, "get_domain_info");
+	E(get_domain_groups, "get_domain_groups");
+	E(get_group_classes, "get_group_classes");
+	E(get_sub_classes, "get_sub_classes");
+	E(get_class_users, "get_class_users");
+	E(get_group_users, "get_group_users");
+	E(get_domain_users, "get_domain_users");
+	E(get_mlist_ids, "get_mlist_ids");
+	E(get_lang, "get_lang");
+#undef E
 	g_base_hash = int_hash_init(g_base_size, sizeof(AB_BASE *));
 	if (NULL == g_base_hash) {
 		printf("[exchange_nsp]: Failed to init base hash table\n");

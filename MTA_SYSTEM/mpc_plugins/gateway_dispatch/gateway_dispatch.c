@@ -83,45 +83,21 @@ int gateway_dispatch_run()
 {
 	gateway_dispatch_spam_statistic = (SPAM_STATISTIC)query_service(
 										"spam_statistic");
-	
-	gateway_nouser_audit = (GATEWAY_NOUSER_AUDIT)query_service(
-							"gateway_nouser_audit");
-	gateway_norcpt_audit = (GATEWAY_NORCPT_AUDIT)query_service(
-							"gateway_norcpt_audit");
-	dns_query_A = (DNS_QUERY)query_service("dns_query_A");
-	if (NULL == dns_query_A) {
-		printf("[gateway_dispatch]: failed to get service \"dns_query_A\"\n");
-		return -1;
-	}
-	
-	dns_query_MX = (DNS_QUERY)query_service("dns_query_MX");
-	if (NULL == dns_query_MX) {
-		printf("[gateway_dispatch]: failed to get service \"dns_query_MX\"\n");
-		return -2;
-	}
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "gateway_dispatch", (s)); \
+		return -1; \
+	} \
+} while (false)
 
-	dns_check_local = (CHECK_LOCAL)query_service("dns_check_local");
-	if (NULL == dns_check_local) {
-		printf("[gateway_dispatch]: failed to get service \"dns_check_local\"\n");
-		return -3;
-	}
-	
-	if (NULL == gateway_nouser_audit) {
-		printf("[gateway_dispatch]: failed to get service \"gateway_nouser_audit\"\n");
-		return -4;
-	}
-	
-	if (NULL == gateway_norcpt_audit) {
-		printf("[gateway_dispatch]: failed to get service \"gateway_norcpt_audit\"\n");
-		return -5;
-	}
-	
-	smtp_console_control = (CONSOLE_CONTROL)query_service(
-							"smtp_console_control");
-	if (NULL == smtp_console_control) {
-		printf("gateway_dispatch]: failed to get service \"smtp_console_control\"\n");
-		return -6;
-	}
+	E(gateway_nouser_audit, "gateway_nouser_audit");
+	E(gateway_norcpt_audit, "gateway_norcpt_audit");
+	E(dns_query_A, "dns_query_A");
+	E(dns_query_MX, "dns_query_MX");
+	E(dns_check_local, "dns_check_local");
+	E(smtp_console_control, "smtp_console_control");
+#undef E
 	
 	g_stack_allocator = vstack_allocator_init(16, 4096, TRUE);
 	if (NULL == g_stack_allocator) {

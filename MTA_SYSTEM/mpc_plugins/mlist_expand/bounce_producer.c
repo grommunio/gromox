@@ -135,27 +135,19 @@ void bounce_producer_init(const char *path, const char* separator)
  */
 int bounce_producer_run()
 {
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "mlist_expand", (s)); \
+		return -1; \
+	} \
+} while (false)
 
-	bounce_producer_check_domain = query_service("check_domain");
-	if (NULL == bounce_producer_check_domain) {
-		printf("[mlist_expand]: failed to get service \"check_domain\"\n");
-		return -1;
-	}
-	bounce_producer_get_lang = query_service("get_user_lang");
-	if (NULL == bounce_producer_get_lang) {
-		printf("[mlist_expand]: failed to get service \"get_user_lang\"\n");
-		return -2;
-	}
-	bounce_producer_get_timezone = query_service("get_timezone");
-	if (NULL == bounce_producer_get_timezone) {
-		printf("[mlist_expand]: failed to get service \"get_timezone\"\n");
-		return -3;
-	}
-	bounce_producer_lang_to_charset = query_service("lang_to_charset");
-	if (NULL == bounce_producer_lang_to_charset) {
-		printf("[mlist_expand]: failed to get service \"lang_to_charset\"\n");
-		return -4;
-	}
+	E(bounce_producer_check_domain, "check_domain");
+	E(bounce_producer_get_lang, "get_user_lang");
+	E(bounce_producer_get_timezone, "get_timezone");
+	E(bounce_producer_lang_to_charset, "lang_to_charset");
+#undef E
 
 	single_list_init(&g_resource_list);
 	pthread_rwlock_init(&g_list_lock, NULL);

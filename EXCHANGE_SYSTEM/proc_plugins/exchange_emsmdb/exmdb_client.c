@@ -468,858 +468,139 @@ int exmdb_client_run()
 	void (*register_proc)(void*);
 	void (*pass_service)(int, void*);
 	
-	exmdb_client_ping_store =
-		query_service("exmdb_client_ping_store");
-	if (NULL == exmdb_client_ping_store) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_ping_store\" service\n");
-		return -1;
-	}
-	exmdb_client_get_all_named_propids =
-		query_service("exmdb_client_get_all_named_propids");
-	if (NULL == exmdb_client_get_all_named_propids) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_all_named_propids\" service\n");
-		return -2;
-	}
-	exmdb_client_get_named_propids =
-		query_service("exmdb_client_get_named_propids");
-	if (NULL == exmdb_client_get_named_propids) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_named_propids\" service\n");
-		return -2;
-	}
-	exmdb_client_get_named_propnames =
-		query_service("exmdb_client_get_named_propnames");
-	if (NULL == exmdb_client_get_named_propnames) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_named_propnames\" service\n");
-		return -2;
-	}
-	exmdb_client_get_mapping_guid =
-		query_service("exmdb_client_get_mapping_guid");
-	if (NULL == exmdb_client_get_mapping_guid) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_mapping_guid\" service\n");
-		return -2;
-	}
-	exmdb_client_get_mapping_replid =
-		query_service("exmdb_client_get_mapping_replid");
-	if (NULL == exmdb_client_get_mapping_replid) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_mapping_replid\" service\n");
-		return -2;
-	}
-	exmdb_client_get_store_all_proptags =
-		query_service("exmdb_client_get_store_all_proptags");
-	if (NULL == exmdb_client_get_store_all_proptags) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_store_all_proptags\" service\n");
-		return -2;
-	}
-	exmdb_client_get_store_properties =
-		query_service("exmdb_client_get_store_properties");
-	if (NULL == exmdb_client_get_store_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_store_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_set_store_properties =
-		query_service("exmdb_client_set_store_properties");
-	if (NULL == exmdb_client_set_store_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_store_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_remove_store_properties =
-		query_service("exmdb_client_remove_store_properties");
-	if (NULL == exmdb_client_remove_store_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_remove_store_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_check_mailbox_permission =
-		query_service("exmdb_client_check_mailbox_permission");
-	if (NULL == exmdb_client_check_mailbox_permission) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_mailbox_permission\" service\n");
-		return -2;
-	}
-	exmdb_client_get_folder_by_class =
-		query_service("exmdb_client_get_folder_by_class");
-	if (NULL == exmdb_client_get_folder_by_class) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_folder_by_class\" service\n");
-		return -2;
-	}
-	exmdb_client_set_folder_by_class =
-		query_service("exmdb_client_set_folder_by_class");
-	if (NULL == exmdb_client_set_folder_by_class) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_folder_by_class\" service\n");
-		return -2;
-	}
-	exmdb_client_get_folder_class_table =
-		query_service("exmdb_client_get_folder_class_table");
-	if (NULL == exmdb_client_get_folder_class_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_folder_class_table\" service\n");
-		return -2;
-	}
-	exmdb_client_check_folder_id =
-		query_service("exmdb_client_check_folder_id");
-	if (NULL == exmdb_client_check_folder_id) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_folder_id\" service\n");
-		return -2;
-	}
-	exmdb_client_check_folder_deleted =
-		query_service("exmdb_client_check_folder_deleted");
-	if (NULL == exmdb_client_check_folder_deleted) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_folder_deleted\" service\n");
-		return -2;
-	}
-	exmdb_client_get_folder_by_name =
-		query_service("exmdb_client_get_folder_by_name");
-	if (NULL == exmdb_client_get_folder_by_name) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_folder_by_name\" service\n");
-		return -2;
-	}
-	exmdb_client_check_folder_permission =
-		query_service("exmdb_client_check_folder_permission");
-	if (NULL == exmdb_client_check_folder_permission) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_folder_permission\" service\n");
-		return -2;
-	}
-	exmdb_client_create_folder_by_properties =
-		query_service("exmdb_client_create_folder_by_properties");
-	if (NULL == exmdb_client_create_folder_by_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_create_folder_by_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_get_folder_all_proptags =
-		query_service("exmdb_client_get_folder_all_proptags");
-	if (NULL == exmdb_client_get_folder_all_proptags) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_folder_all_proptags\" service\n");
-		return -2;
-	}
-	exmdb_client_get_folder_properties =
-		query_service("exmdb_client_get_folder_properties");
-	if (NULL == exmdb_client_get_folder_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_folder_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_set_folder_properties =
-		query_service("exmdb_client_set_folder_properties");
-	if (NULL == exmdb_client_set_folder_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_folder_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_remove_folder_properties =
-		query_service("exmdb_client_remove_folder_properties");
-	if (NULL == exmdb_client_remove_folder_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_remove_folder_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_delete_folder =
-		query_service("exmdb_client_delete_folder");
-	if (NULL == exmdb_client_delete_folder) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_delete_folder\" service\n");
-		return -2;
-	}
-	exmdb_client_empty_folder =
-		query_service("exmdb_client_empty_folder");
-	if (NULL == exmdb_client_empty_folder) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_empty_folder\" service\n");
-		return -2;
-	}
-	exmdb_client_check_folder_cycle =
-		query_service("exmdb_client_check_folder_cycle");
-	if (NULL == exmdb_client_check_folder_cycle) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_folder_cycle\" service\n");
-		return -2;
-	}
-	exmdb_client_copy_folder_internal =
-		query_service("exmdb_client_copy_folder_internal");
-	if (NULL == exmdb_client_copy_folder_internal) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_copy_folder_internal\" service\n");
-		return -2;
-	}
-	exmdb_client_get_search_criteria =
-		query_service("exmdb_client_get_search_criteria");
-	if (NULL == exmdb_client_get_search_criteria) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_search_criteria\" service\n");
-		return -2;
-	}
-	exmdb_client_set_search_criteria =
-		query_service("exmdb_client_set_search_criteria");
-	if (NULL == exmdb_client_set_search_criteria) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_search_criteria\" service\n");
-		return -2;
-	}
-	exmdb_client_movecopy_message =
-		query_service("exmdb_client_movecopy_message");
-	if (NULL == exmdb_client_movecopy_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_movecopy_message\" service\n");
-		return -2;
-	}
-	exmdb_client_movecopy_messages =
-		query_service("exmdb_client_movecopy_messages");
-	if (NULL == exmdb_client_movecopy_messages) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_movecopy_messages\" service\n");
-		return -2;
-	}
-	exmdb_client_movecopy_folder =
-		query_service("exmdb_client_movecopy_folder");
-	if (NULL == exmdb_client_movecopy_folder) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_movecopy_folder\" service\n");
-		return -2;
-	}
-	exmdb_client_delete_messages =
-		query_service("exmdb_client_delete_messages");
-	if (NULL == exmdb_client_delete_messages) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_delete_messages\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_brief =
-		query_service("exmdb_client_get_message_brief");
-	if (NULL == exmdb_client_get_message_brief) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_brief\" service\n");
-		return -2;
-	}
-	exmdb_client_sum_hierarchy =
-		query_service("exmdb_client_sum_hierarchy");
-	if (NULL == exmdb_client_sum_hierarchy) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_sum_hierarchy\" service\n");
-		return -2;
-	}
-	exmdb_client_load_hierarchy_table =
-		query_service("exmdb_client_load_hierarchy_table");
-	if (NULL == exmdb_client_load_hierarchy_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_load_hierarchy_table\" service\n");
-		return -2;
-	}
-	exmdb_client_sum_content =
-		query_service("exmdb_client_sum_content");
-	if (NULL == exmdb_client_sum_content) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_sum_content\" service\n");
-		return -2;
-	}
-	exmdb_client_load_content_table =
-		query_service("exmdb_client_load_content_table");
-	if (NULL == exmdb_client_load_content_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_load_content_table\" service\n");
-		return -2;
-	}
-	exmdb_client_reload_content_table =
-		query_service("exmdb_client_reload_content_table");
-	if (NULL == exmdb_client_reload_content_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_reload_content_table\" service\n");
-		return -2;
-	}
-	exmdb_client_load_permission_table =
-		query_service("exmdb_client_load_permission_table");
-	if (NULL == exmdb_client_load_permission_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_load_permission_table\" service\n");
-		return -2;
-	}
-	exmdb_client_load_rule_table =
-		query_service("exmdb_client_load_rule_table");
-	if (NULL == exmdb_client_load_rule_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_load_rule_table\" service\n");
-		return -2;
-	}
-	exmdb_client_unload_table =
-		query_service("exmdb_client_unload_table");
-	if (NULL == exmdb_client_unload_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_unload_table\" service\n");
-		return -2;
-	}
-	exmdb_client_sum_table =
-		query_service("exmdb_client_sum_table");
-	if (NULL == exmdb_client_sum_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_sum_table\" service\n");
-		return -2;
-	}
-	exmdb_client_query_table =
-		query_service("exmdb_client_query_table");
-	if (NULL == exmdb_client_query_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_query_table\" service\n");
-		return -2;
-	}
-	exmdb_client_match_table =
-		query_service("exmdb_client_match_table");
-	if (NULL == exmdb_client_match_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_match_table\" service\n");
-		return -2;
-	}
-	exmdb_client_locate_table =
-		query_service("exmdb_client_locate_table");
-	if (NULL == exmdb_client_locate_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_locate_table\" service\n");
-		return -2;
-	}
-	exmdb_client_read_table_row =
-		query_service("exmdb_client_read_table_row");
-	if (NULL == exmdb_client_read_table_row) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_read_table_row\" service\n");
-		return -2;
-	}
-	exmdb_client_mark_table =
-		query_service("exmdb_client_mark_table");
-	if (NULL == exmdb_client_mark_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_mark_table\" service\n");
-		return -2;
-	}
-	exmdb_client_get_table_all_proptags =
-		query_service("exmdb_client_get_table_all_proptags");
-	if (NULL == exmdb_client_get_table_all_proptags) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_table_all_proptags\" service\n");
-		return -2;
-	}
-	exmdb_client_expand_table =
-		query_service("exmdb_client_expand_table");
-	if (NULL == exmdb_client_expand_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_expand_table\" service\n");
-		return -2;
-	}
-	exmdb_client_collapse_table =
-		query_service("exmdb_client_collapse_table");
-	if (NULL == exmdb_client_collapse_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_collapse_table\" service\n");
-		return -2;
-	}
-	exmdb_client_store_table_state =
-		query_service("exmdb_client_store_table_state");
-	if (NULL == exmdb_client_store_table_state) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_store_table_state\" service\n");
-		return -2;
-	}
-	exmdb_client_restore_table_state =
-		query_service("exmdb_client_restore_table_state");
-	if (NULL == exmdb_client_restore_table_state) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_restore_table_state\" service\n");
-		return -2;
-	}
-	exmdb_client_check_message =
-		query_service("exmdb_client_check_message");
-	if (NULL == exmdb_client_check_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_message\" service\n");
-		return -2;
-	}
-	exmdb_client_check_message_deleted =
-		query_service("exmdb_client_check_message_deleted");
-	if (NULL == exmdb_client_check_message_deleted) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_message_deleted\" service\n");
-		return -2;
-	}
-	exmdb_client_load_message_instance =
-		query_service("exmdb_client_load_message_instance");
-	if (NULL == exmdb_client_load_message_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_load_message_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_load_embedded_instance =
-		query_service("exmdb_client_load_embedded_instance");
-	if (NULL == exmdb_client_load_embedded_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_load_embedded_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_get_embedded_cn = query_service("exmdb_client_get_embedded_cn");
-	if (exmdb_client_get_embedded_cn == nullptr) {
-		printf("[exchange_emsmdb]: fail to query "
-		       "\"exmdb_client_get_embedded_cn\" service\n");
-		return -2;
-	}
-	exmdb_client_reload_message_instance =
-		query_service("exmdb_client_reload_message_instance");
-	if (NULL == exmdb_client_reload_message_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_reload_message_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_clear_message_instance =
-		query_service("exmdb_client_clear_message_instance");
-	if (NULL == exmdb_client_clear_message_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_clear_message_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_read_message_instance =
-		query_service("exmdb_client_read_message_instance");
-	if (NULL == exmdb_client_read_message_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_read_message_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_write_message_instance =
-		query_service("exmdb_client_write_message_instance");
-	if (NULL == exmdb_client_write_message_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_write_message_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_load_attachment_instance =
-		query_service("exmdb_client_load_attachment_instance");
-	if (NULL == exmdb_client_load_attachment_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_load_attachment_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_create_attachment_instance =
-		query_service("exmdb_client_create_attachment_instance");
-	if (NULL == exmdb_client_create_attachment_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_create_attachment_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_read_attachment_instance =
-		query_service("exmdb_client_read_attachment_instance");
-	if (NULL == exmdb_client_read_attachment_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_read_attachment_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_write_attachment_instance =
-		query_service("exmdb_client_write_attachment_instance");
-	if (NULL == exmdb_client_write_attachment_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_write_attachment_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_delete_message_instance_attachment =
-		query_service("exmdb_client_delete_message_instance_attachment");
-	if (NULL == exmdb_client_delete_message_instance_attachment) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_delete_message_instance_attachment\" service\n");
-		return -2;
-	}
-	exmdb_client_flush_instance =
-		query_service("exmdb_client_flush_instance");
-	if (NULL == exmdb_client_flush_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_flush_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_unload_instance =
-		query_service("exmdb_client_unload_instance");
-	if (NULL == exmdb_client_unload_instance) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_unload_instance\" service\n");
-		return -2;
-	}
-	exmdb_client_get_instance_all_proptags =
-		query_service("exmdb_client_get_instance_all_proptags");
-	if (NULL == exmdb_client_get_instance_all_proptags) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_instance_all_proptags\" service\n");
-		return -2;
-	}
-	exmdb_client_get_instance_properties =
-		query_service("exmdb_client_get_instance_properties");
-	if (NULL == exmdb_client_get_instance_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_instance_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_set_instance_properties =
-		query_service("exmdb_client_set_instance_properties");
-	if (NULL == exmdb_client_set_instance_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_instance_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_remove_instance_properties =
-		query_service("exmdb_client_remove_instance_properties");
-	if (NULL == exmdb_client_remove_instance_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_remove_instance_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_check_instance_cycle =
-		query_service("exmdb_client_check_instance_cycle");
-	if (NULL == exmdb_client_check_instance_cycle) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_instance_cycle\" service\n");
-		return -2;
-	}
-	exmdb_client_empty_message_instance_rcpts =
-		query_service("exmdb_client_empty_message_instance_rcpts");
-	if (NULL == exmdb_client_empty_message_instance_rcpts) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_empty_message_instance_rcpts\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_instance_rcpts_num =
-		query_service("exmdb_client_get_message_instance_rcpts_num");
-	if (NULL == exmdb_client_get_message_instance_rcpts_num) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_instance_rcpts_num\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_instance_rcpts_all_proptags =
-		query_service("exmdb_client_get_message_instance_rcpts_all_proptags");
-	if (NULL == exmdb_client_get_message_instance_rcpts_all_proptags) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_instance_rcpts_all_proptags\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_instance_rcpts =
-		query_service("exmdb_client_get_message_instance_rcpts");
-	if (NULL == exmdb_client_get_message_instance_rcpts) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_instance_rcpts\" service\n");
-		return -2;
-	}
-	exmdb_client_update_message_instance_rcpts =
-		query_service("exmdb_client_update_message_instance_rcpts");
-	if (NULL == exmdb_client_update_message_instance_rcpts) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_update_message_instance_rcpts\" service\n");
-		return -2;
-	}
-	exmdb_client_copy_instance_rcpts =
-		query_service("exmdb_client_copy_instance_rcpts");
-	if (NULL == exmdb_client_copy_instance_rcpts) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_copy_instance_rcpts\" service\n");
-		return -2;
-	}
-	exmdb_client_empty_message_instance_attachments =
-		query_service("exmdb_client_empty_message_instance_attachments");
-	if (NULL == exmdb_client_empty_message_instance_attachments) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_empty_message_instance_attachments\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_instance_attachments_num =
-		query_service("exmdb_client_get_message_instance_attachments_num");
-	if (NULL == exmdb_client_get_message_instance_attachments_num) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_instance_attachments_num\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_instance_attachment_table_all_proptags =
-		query_service("exmdb_client_get_message_instance_attachment_table_all_proptags");
-	if (NULL == exmdb_client_get_message_instance_attachment_table_all_proptags) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_instance_attachment_table_all_proptags\" service\n");
-		return -2;
-	}
-	exmdb_client_query_message_instance_attachment_table =
-		query_service("exmdb_client_query_message_instance_attachment_table");
-	if (NULL == exmdb_client_query_message_instance_attachment_table) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_query_message_instance_attachment_table\" service\n");
-		return -2;
-	}
-	exmdb_client_copy_instance_attachments =
-		query_service("exmdb_client_copy_instance_attachments");
-	if (NULL == exmdb_client_copy_instance_attachments) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_copy_instance_attachments\" service\n");
-		return -2;
-	}
-	exmdb_client_set_message_instance_conflict =
-		query_service("exmdb_client_set_message_instance_conflict");
-	if (NULL == exmdb_client_set_message_instance_conflict) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_message_instance_conflict\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_rcpts =
-		query_service("exmdb_client_get_message_rcpts");
-	if (NULL == exmdb_client_get_message_rcpts) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_rcpts\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_properties =
-		query_service("exmdb_client_get_message_properties");
-	if (NULL == exmdb_client_get_message_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_set_message_properties =
-		query_service("exmdb_client_set_message_properties");
-	if (NULL == exmdb_client_set_message_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_message_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_set_message_read_state =
-		query_service("exmdb_client_set_message_read_state");
-	if (NULL == exmdb_client_set_message_read_state) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_message_read_state\" service\n");
-		return -2;
-	}
-	exmdb_client_remove_message_properties =
-		query_service("exmdb_client_remove_message_properties");
-	if (NULL == exmdb_client_remove_message_properties) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_remove_message_properties\" service\n");
-		return -2;
-	}
-	exmdb_client_allocate_message_id =
-		query_service("exmdb_client_allocate_message_id");
-	if (NULL == exmdb_client_allocate_message_id) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_allocate_message_id\" service\n");
-		return -2;
-	}
-	exmdb_client_allocate_cn =
-		query_service("exmdb_client_allocate_cn");
-	if (NULL == exmdb_client_allocate_cn) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_allocate_cn\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_group_id =
-		query_service("exmdb_client_get_message_group_id");
-	if (NULL == exmdb_client_get_message_group_id) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_group_id\" service\n");
-		return -2;
-	}
-	exmdb_client_set_message_group_id =
-		query_service("exmdb_client_set_message_group_id");
-	if (NULL == exmdb_client_set_message_group_id) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_message_group_id\" service\n");
-		return -2;
-	}
-	exmdb_client_save_change_indices =
-		query_service("exmdb_client_save_change_indices");
-	if (NULL == exmdb_client_save_change_indices) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_save_change_indices\" service\n");
-		return -2;
-	}
-	exmdb_client_get_change_indices =
-		query_service("exmdb_client_get_change_indices");
-	if (NULL == exmdb_client_get_change_indices) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_change_indices\" service\n");
-		return -2;
-	}
-	exmdb_client_mark_modified =
-		query_service("exmdb_client_mark_modified");
-	if (NULL == exmdb_client_mark_modified) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_mark_modified\" service\n");
-		return -2;
-	}
-	exmdb_client_try_mark_submit =
-		query_service("exmdb_client_try_mark_submit");
-	if (NULL == exmdb_client_try_mark_submit) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_try_mark_submit\" service\n");
-		return -2;
-	}
-	exmdb_client_clear_submit =
-		query_service("exmdb_client_clear_submit");
-	if (NULL == exmdb_client_clear_submit) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_clear_submit\" service\n");
-		return -2;
-	}
-	exmdb_client_link_message =
-		query_service("exmdb_client_link_message");
-	if (NULL == exmdb_client_link_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_link_message\" service\n");
-		return -2;
-	}
-	exmdb_client_unlink_message =
-		query_service("exmdb_client_unlink_message");
-	if (NULL == exmdb_client_unlink_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_unlink_message\" service\n");
-		return -2;
-	}
-	exmdb_client_rule_new_message =
-		query_service("exmdb_client_rule_new_message");
-	if (NULL == exmdb_client_rule_new_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_rule_new_message\" service\n");
-		return -2;
-	}
-	exmdb_client_set_message_timer =
-		query_service("exmdb_client_set_message_timer");
-	if (NULL == exmdb_client_set_message_timer) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_set_message_timer\" service\n");
-		return -2;
-	}
-	exmdb_client_get_message_timer =
-		query_service("exmdb_client_get_message_timer");
-	if (NULL == exmdb_client_get_message_timer) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_message_timer\" service\n");
-		return -2;
-	}
-	exmdb_client_empty_folder_permission =
-		query_service("exmdb_client_empty_folder_permission");
-	if (NULL == exmdb_client_empty_folder_permission) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_empty_folder_permission\" service\n");
-		return -2;
-	}
-	exmdb_client_update_folder_permission =
-		query_service("exmdb_client_update_folder_permission");
-	if (NULL == exmdb_client_update_folder_permission) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_update_folder_permission\" service\n");
-		return -2;
-	}
-	exmdb_client_empty_folder_rule =
-		query_service("exmdb_client_empty_folder_rule");
-	if (NULL == exmdb_client_empty_folder_rule) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_empty_folder_rule\" service\n");
-		return -2;
-	}
-	exmdb_client_update_folder_rule =
-		query_service("exmdb_client_update_folder_rule");
-	if (NULL == exmdb_client_update_folder_rule) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_update_folder_rule\" service\n");
-		return -2;
-	}
-	exmdb_client_delivery_message =
-		query_service("exmdb_client_delivery_message");
-	if (NULL == exmdb_client_delivery_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_delivery_message\" service\n");
-		return -2;
-	}
-	exmdb_client_write_message =
-		query_service("exmdb_client_write_message");
-	if (NULL == exmdb_client_write_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_write_message\" service\n");
-		return -2;
-	}
-	exmdb_client_read_message =
-		query_service("exmdb_client_read_message");
-	if (NULL == exmdb_client_read_message) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_read_message\" service\n");
-		return -2;
-	}
-	exmdb_client_get_content_sync =
-		query_service("exmdb_client_get_content_sync");
-	if (NULL == exmdb_client_get_content_sync) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_content_sync\" service\n");
-		return -2;
-	}
-	exmdb_client_get_hierarchy_sync =
-		query_service("exmdb_client_get_hierarchy_sync");
-	if (NULL == exmdb_client_get_hierarchy_sync) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_hierarchy_sync\" service\n");
-		return -2;
-	}
-	exmdb_client_allocate_ids =
-		query_service("exmdb_client_allocate_ids");
-	if (NULL == exmdb_client_allocate_ids) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_allocate_ids\" service\n");
-		return -2;
-	}
-	exmdb_client_subscribe_notification =
-		query_service("exmdb_client_subscribe_notification");
-	if (NULL == exmdb_client_subscribe_notification) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_subscribe_notification\" service\n");
-		return -2;
-	}
-	exmdb_client_unsubscribe_notification =
-		query_service("exmdb_client_unsubscribe_notification");
-	if (NULL == exmdb_client_unsubscribe_notification) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_unsubscribe_notification\" service\n");
-		return -2;
-	}
-	exmdb_client_transport_new_mail =
-		query_service("exmdb_client_transport_new_mail");
-	if (NULL == exmdb_client_transport_new_mail) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_transport_new_mail\" service\n");
-		return -2;
-	}
-	exmdb_client_check_contact_address =
-		query_service("exmdb_client_check_contact_address");
-	if (NULL == exmdb_client_check_contact_address) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_check_contact_address\" service\n");
-		return -2;
-	}
-	exmdb_client_get_public_folder_unread_count =
-		query_service("exmdb_client_get_public_folder_unread_count");
-	if (NULL == exmdb_client_get_public_folder_unread_count) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_get_public_folder_unread_count\" service\n");
-		return -2;
-	}
-	register_proc = query_service("exmdb_client_register_proc");
-	if (NULL == register_proc) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"exmdb_client_register_proc\" service\n");
-		return -2;
-	}
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+	E(exmdb_client_ping_store, "exmdb_client_ping_store");
+	E(exmdb_client_get_all_named_propids, "exmdb_client_get_all_named_propids");
+	E(exmdb_client_get_named_propids, "exmdb_client_get_named_propids");
+	E(exmdb_client_get_named_propnames, "exmdb_client_get_named_propnames");
+	E(exmdb_client_get_mapping_guid, "exmdb_client_get_mapping_guid");
+	E(exmdb_client_get_mapping_replid, "exmdb_client_get_mapping_replid");
+	E(exmdb_client_get_store_all_proptags, "exmdb_client_get_store_all_proptags");
+	E(exmdb_client_get_store_properties, "exmdb_client_get_store_properties");
+	E(exmdb_client_set_store_properties, "exmdb_client_set_store_properties");
+	E(exmdb_client_remove_store_properties, "exmdb_client_remove_store_properties");
+	E(exmdb_client_check_mailbox_permission, "exmdb_client_check_mailbox_permission");
+	E(exmdb_client_get_folder_by_class, "exmdb_client_get_folder_by_class");
+	E(exmdb_client_set_folder_by_class, "exmdb_client_set_folder_by_class");
+	E(exmdb_client_get_folder_class_table, "exmdb_client_get_folder_class_table");
+	E(exmdb_client_check_folder_id, "exmdb_client_check_folder_id");
+	E(exmdb_client_check_folder_deleted, "exmdb_client_check_folder_deleted");
+	E(exmdb_client_get_folder_by_name, "exmdb_client_get_folder_by_name");
+	E(exmdb_client_check_folder_permission, "exmdb_client_check_folder_permission");
+	E(exmdb_client_create_folder_by_properties, "exmdb_client_create_folder_by_properties");
+	E(exmdb_client_get_folder_all_proptags, "exmdb_client_get_folder_all_proptags");
+	E(exmdb_client_get_folder_properties, "exmdb_client_get_folder_properties");
+	E(exmdb_client_set_folder_properties, "exmdb_client_set_folder_properties");
+	E(exmdb_client_remove_folder_properties, "exmdb_client_remove_folder_properties");
+	E(exmdb_client_delete_folder, "exmdb_client_delete_folder");
+	E(exmdb_client_empty_folder, "exmdb_client_empty_folder");
+	E(exmdb_client_check_folder_cycle, "exmdb_client_check_folder_cycle");
+	E(exmdb_client_copy_folder_internal, "exmdb_client_copy_folder_internal");
+	E(exmdb_client_get_search_criteria, "exmdb_client_get_search_criteria");
+	E(exmdb_client_set_search_criteria, "exmdb_client_set_search_criteria");
+	E(exmdb_client_movecopy_message, "exmdb_client_movecopy_message");
+	E(exmdb_client_movecopy_messages, "exmdb_client_movecopy_messages");
+	E(exmdb_client_movecopy_folder, "exmdb_client_movecopy_folder");
+	E(exmdb_client_delete_messages, "exmdb_client_delete_messages");
+	E(exmdb_client_get_message_brief, "exmdb_client_get_message_brief");
+	E(exmdb_client_sum_hierarchy, "exmdb_client_sum_hierarchy");
+	E(exmdb_client_load_hierarchy_table, "exmdb_client_load_hierarchy_table");
+	E(exmdb_client_sum_content, "exmdb_client_sum_content");
+	E(exmdb_client_load_content_table, "exmdb_client_load_content_table");
+	E(exmdb_client_reload_content_table, "exmdb_client_reload_content_table");
+	E(exmdb_client_load_permission_table, "exmdb_client_load_permission_table");
+	E(exmdb_client_load_rule_table, "exmdb_client_load_rule_table");
+	E(exmdb_client_unload_table, "exmdb_client_unload_table");
+	E(exmdb_client_sum_table, "exmdb_client_sum_table");
+	E(exmdb_client_query_table, "exmdb_client_query_table");
+	E(exmdb_client_match_table, "exmdb_client_match_table");
+	E(exmdb_client_locate_table, "exmdb_client_locate_table");
+	E(exmdb_client_read_table_row, "exmdb_client_read_table_row");
+	E(exmdb_client_mark_table, "exmdb_client_mark_table");
+	E(exmdb_client_get_table_all_proptags, "exmdb_client_get_table_all_proptags");
+	E(exmdb_client_expand_table, "exmdb_client_expand_table");
+	E(exmdb_client_collapse_table, "exmdb_client_collapse_table");
+	E(exmdb_client_store_table_state, "exmdb_client_store_table_state");
+	E(exmdb_client_restore_table_state, "exmdb_client_restore_table_state");
+	E(exmdb_client_check_message, "exmdb_client_check_message");
+	E(exmdb_client_check_message_deleted, "exmdb_client_check_message_deleted");
+	E(exmdb_client_load_message_instance, "exmdb_client_load_message_instance");
+	E(exmdb_client_load_embedded_instance, "exmdb_client_load_embedded_instance");
+	E(exmdb_client_get_embedded_cn, "exmdb_client_get_embedded_cn");
+	E(exmdb_client_reload_message_instance, "exmdb_client_reload_message_instance");
+	E(exmdb_client_clear_message_instance, "exmdb_client_clear_message_instance");
+	E(exmdb_client_read_message_instance, "exmdb_client_read_message_instance");
+	E(exmdb_client_write_message_instance, "exmdb_client_write_message_instance");
+	E(exmdb_client_load_attachment_instance, "exmdb_client_load_attachment_instance");
+	E(exmdb_client_create_attachment_instance, "exmdb_client_create_attachment_instance");
+	E(exmdb_client_read_attachment_instance, "exmdb_client_read_attachment_instance");
+	E(exmdb_client_write_attachment_instance, "exmdb_client_write_attachment_instance");
+	E(exmdb_client_delete_message_instance_attachment, "exmdb_client_delete_message_instance_attachment");
+	E(exmdb_client_flush_instance, "exmdb_client_flush_instance");
+	E(exmdb_client_unload_instance, "exmdb_client_unload_instance");
+	E(exmdb_client_get_instance_all_proptags, "exmdb_client_get_instance_all_proptags");
+	E(exmdb_client_get_instance_properties, "exmdb_client_get_instance_properties");
+	E(exmdb_client_set_instance_properties, "exmdb_client_set_instance_properties");
+	E(exmdb_client_remove_instance_properties, "exmdb_client_remove_instance_properties");
+	E(exmdb_client_check_instance_cycle, "exmdb_client_check_instance_cycle");
+	E(exmdb_client_empty_message_instance_rcpts, "exmdb_client_empty_message_instance_rcpts");
+	E(exmdb_client_get_message_instance_rcpts_num, "exmdb_client_get_message_instance_rcpts_num");
+	E(exmdb_client_get_message_instance_rcpts_all_proptags, "exmdb_client_get_message_instance_rcpts_all_proptags");
+	E(exmdb_client_get_message_instance_rcpts, "exmdb_client_get_message_instance_rcpts");
+	E(exmdb_client_update_message_instance_rcpts, "exmdb_client_update_message_instance_rcpts");
+	E(exmdb_client_copy_instance_rcpts, "exmdb_client_copy_instance_rcpts");
+	E(exmdb_client_empty_message_instance_attachments, "exmdb_client_empty_message_instance_attachments");
+	E(exmdb_client_get_message_instance_attachments_num, "exmdb_client_get_message_instance_attachments_num");
+	E(exmdb_client_get_message_instance_attachment_table_all_proptags, "exmdb_client_get_message_instance_attachment_table_all_proptags");
+	E(exmdb_client_query_message_instance_attachment_table, "exmdb_client_query_message_instance_attachment_table");
+	E(exmdb_client_copy_instance_attachments, "exmdb_client_copy_instance_attachments");
+	E(exmdb_client_set_message_instance_conflict, "exmdb_client_set_message_instance_conflict");
+	E(exmdb_client_get_message_rcpts, "exmdb_client_get_message_rcpts");
+	E(exmdb_client_get_message_properties, "exmdb_client_get_message_properties");
+	E(exmdb_client_set_message_properties, "exmdb_client_set_message_properties");
+	E(exmdb_client_set_message_read_state, "exmdb_client_set_message_read_state");
+	E(exmdb_client_remove_message_properties, "exmdb_client_remove_message_properties");
+	E(exmdb_client_allocate_message_id, "exmdb_client_allocate_message_id");
+	E(exmdb_client_allocate_cn, "exmdb_client_allocate_cn");
+	E(exmdb_client_get_message_group_id, "exmdb_client_get_message_group_id");
+	E(exmdb_client_set_message_group_id, "exmdb_client_set_message_group_id");
+	E(exmdb_client_save_change_indices, "exmdb_client_save_change_indices");
+	E(exmdb_client_get_change_indices, "exmdb_client_get_change_indices");
+	E(exmdb_client_mark_modified, "exmdb_client_mark_modified");
+	E(exmdb_client_try_mark_submit, "exmdb_client_try_mark_submit");
+	E(exmdb_client_clear_submit, "exmdb_client_clear_submit");
+	E(exmdb_client_link_message, "exmdb_client_link_message");
+	E(exmdb_client_unlink_message, "exmdb_client_unlink_message");
+	E(exmdb_client_rule_new_message, "exmdb_client_rule_new_message");
+	E(exmdb_client_set_message_timer, "exmdb_client_set_message_timer");
+	E(exmdb_client_get_message_timer, "exmdb_client_get_message_timer");
+	E(exmdb_client_empty_folder_permission, "exmdb_client_empty_folder_permission");
+	E(exmdb_client_update_folder_permission, "exmdb_client_update_folder_permission");
+	E(exmdb_client_empty_folder_rule, "exmdb_client_empty_folder_rule");
+	E(exmdb_client_update_folder_rule, "exmdb_client_update_folder_rule");
+	E(exmdb_client_delivery_message, "exmdb_client_delivery_message");
+	E(exmdb_client_write_message, "exmdb_client_write_message");
+	E(exmdb_client_read_message, "exmdb_client_read_message");
+	E(exmdb_client_get_content_sync, "exmdb_client_get_content_sync");
+	E(exmdb_client_get_hierarchy_sync, "exmdb_client_get_hierarchy_sync");
+	E(exmdb_client_allocate_ids, "exmdb_client_allocate_ids");
+	E(exmdb_client_subscribe_notification, "exmdb_client_subscribe_notification");
+	E(exmdb_client_unsubscribe_notification, "exmdb_client_unsubscribe_notification");
+	E(exmdb_client_transport_new_mail, "exmdb_client_transport_new_mail");
+	E(exmdb_client_check_contact_address, "exmdb_client_check_contact_address");
+	E(exmdb_client_get_public_folder_unread_count, "exmdb_client_get_public_folder_unread_count");
+
+	E(register_proc, "exmdb_client_register_proc");
 	register_proc(emsmdb_interface_event_proc);
-	pass_service = query_service("pass_service");
-	if (NULL == pass_service) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"pass_service\" service\n");
-		return -2;
-	}
+
+	E(pass_service, "pass_service");
 	/* pass the service functions to exmdb_provider */
 	pass_service(SERVICE_ID_LANG_TO_CHARSET,
 		common_util_lang_to_charset);

@@ -772,27 +772,20 @@ void nsp_interface_init(BOOL b_check)
 
 int nsp_interface_run()
 {
-	get_domain_ids = query_service("get_domain_ids");
-	if (NULL == get_domain_ids) {
-		printf("[exchange_nsp]: failed to get service \"get_domain_ids\"\n");
-		return -1;
-	}
-	get_maildir = query_service("get_maildir");
-	if (NULL == get_maildir) {
-		printf("[exchange_nsp]: failed to get service \"get_maildir\"\n");
-		return -1;
-	}
-	get_id_from_username = query_service("get_id_from_username");
-	if (NULL == get_id_from_username) {
-		printf("[exchange_nsp]: failed to get service \"get_id_from_username\"\n");
-		return -1;
-	}
-	verify_cpid = query_service("verify_cpid");
-	if (NULL == verify_cpid) {
-		printf("[exchange_nsp]: failed to get service \"verify_cpid\"\n");
-		return -1;
-	}
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "exchange_nsp", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+	E(get_domain_ids, "get_domain_ids");
+	E(get_maildir, "get_maildir");
+	E(get_id_from_username, "get_id_from_username");
+	E(verify_cpid, "verify_cpid");
 	return 0;
+#undef E
 }
 
 int nsp_interface_stop()

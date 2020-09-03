@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "system_services.h"
 #include "service.h"
 #include <stdio.h>
@@ -34,65 +35,31 @@ void system_services_init()
  */
 int system_services_run()
 {
-	system_services_judge_ip = service_query("ip_filter_judge", "system");
-	if (NULL == system_services_judge_ip) {
-		printf("[system_services]: failed to get service \"ip_filter_judge\"\n");
-		return -1;
-	}
-	system_services_container_add_ip = service_query("ip_container_add",
-												"system");
-	if (NULL == system_services_container_add_ip) {
-		printf("[system_services]: failed to get service \"ip_container_add\"\n");
-		return -2;
-	}
-	system_services_container_remove_ip = service_query("ip_container_remove",
-												"system");
-	if (NULL == system_services_container_remove_ip) {
-		printf("[system_services]: failed to get service \"ip_container_remove\"\n");
-		return -3;
-	}
-	system_services_log_info = service_query("log_info", "system");
-	if (NULL == system_services_log_info) {
-		printf("[system_services]: failed to get service \"log_info\"\n");
-		return -4;
-	}
-	system_services_judge_user = service_query("user_filter_judge", "system");
-	if (NULL == system_services_judge_user) {
-		printf("[system_services]: failed to get service \"user_filter_judge\"\n");
-		return -5;
-	}
-	system_services_add_user_into_temp_list = service_query("user_filter_add", 
-												"system");
-	if (NULL == system_services_add_user_into_temp_list) {
-		printf("[system_services]: failed to get service \"user_filter_add\"\n");
-		return -6;
-	}
-	system_services_auth_login = service_query("auth_login_pop3", "system");
-	if (NULL == system_services_auth_login) {
-		printf("[system_services]: failed to get service \"auth_login_pop3\"\n");
-		return -7;
-	}
-	system_services_list_mail = service_query("list_mail", "system");
-	if (NULL == system_services_list_mail) {
-		printf("[system_services]: failed to get service \"list_mail\"\n");
-		return -8;
-	}
-	system_services_delete_mail = service_query("delete_mail", "system");
-	if (NULL == system_services_delete_mail) {
-		printf("[system_services]: failed to get service \"delete_mail\"\n");
-		return -9;
-	}
-	system_services_list_cdn_mail = service_query("cdn_uidl", "system");
-	system_services_delete_cdn_mail = service_query("cdn_remove", "system");
-	system_services_check_cdn_user = service_query("cdn_check", "system");
-	system_services_auth_cdn_user = service_query("cdn_auth", "system");
-	system_services_create_cdn_user = service_query("cdn_create", "system");
-	system_services_broadcast_event = service_query("broadcast_event", "system");
-	if (NULL == system_services_broadcast_event) {
-		printf("[system_services]: failed to get service \"broadcast_event\"\n");
-		return -10;
-	}
+#define E(f, s) do { \
+	(f) = service_query((s), "system"); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+	E(system_services_judge_ip, "ip_filter_judge");
+	E(system_services_container_add_ip, "ip_container_add");
+	E(system_services_container_remove_ip, "ip_container_remove");
+	E(system_services_log_info, "log_info");
+	E(system_services_judge_user, "user_filter_judge");
+	E(system_services_add_user_into_temp_list, "user_filter_add");
+	E(system_services_auth_login, "auth_login_pop3");
+	E(system_services_list_mail, "list_mail");
+	E(system_services_delete_mail, "delete_mail");
+	E(system_services_list_cdn_mail, "cdn_uidl");
+	E(system_services_delete_cdn_mail, "cdn_remove");
+	E(system_services_check_cdn_user, "cdn_check");
+	E(system_services_auth_cdn_user, "cdn_auth");
+	E(system_services_create_cdn_user, "cdn_create");
+	E(system_services_broadcast_event, "broadcast_event");
 	return 0;
+#undef E
 }
 
 /*

@@ -84,42 +84,24 @@ void smtp_deliverer_init(int trying_times, BOOL tls_switch)
  */
 int smtp_deliverer_run()
 {
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "remote_postman", (s)); \
+		return -1; \
+	} \
+} while (false)
+
 	int i;
 	
 	smtp_deliverer_destination_forbidden =
 		(DESTINATION_FORBIDDEN)query_service("destination_forbidden");
-	smtp_deliverer_destination_audit = 
-		(DESTINATION_AUDIT)query_service("destination_audit");
-	if (NULL == smtp_deliverer_destination_audit) {
-		printf("[remote_postman]: failed to get service \"destination_audit\"\n");
-		return -1;
-	}
-	smtp_deliverer_destination_query =
-		(DESTINATION_QUERY)query_service("destination_query");
-	if (NULL == smtp_deliverer_destination_query) {
-		printf("[remote_postman]: failed to get service \"destination_query\"\n");
-		return -2;
-	}
-	smtp_deliverer_hello_mx_query =
-		(HELLO_MX_QUERY)query_service("hello_mx_query");
-	if (NULL == smtp_deliverer_hello_mx_query) {
-		printf("[remote_postman]: failed to get service \"hello_mx_query\"\n");
-		return -3;
-	}
-	smtp_deliverer_dns_query_A =
-		(DNS_QUERY)query_service("dns_query_A");
-	if (NULL == smtp_deliverer_dns_query_A) {
-		printf("[remote_postman]: fail to "
-			"get \"dns_query_A\"service\n");
-		return -4;
-	}
-	smtp_deliverer_dns_query_MX =
-		(DNS_QUERY)query_service("dns_query_MX");
-	if (NULL == smtp_deliverer_dns_query_MX) {
-		printf("[remote_postman]: fail to "
-			"get \"dns_query_MX\" service\n");
-		return -5;
-	}
+	E(smtp_deliverer_destination_audit, "destination_audit");
+	E(smtp_deliverer_destination_query, "destination_query");
+	E(smtp_deliverer_hello_mx_query, "hello_mx_query");
+	E(smtp_deliverer_dns_query_A, "dns_query_A");
+	E(smtp_deliverer_dns_query_MX, "dns_query_MX");
+#undef E
 	
 	SSL_library_init();
     OpenSSL_add_all_algorithms();

@@ -2676,153 +2676,42 @@ int common_util_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	common_util_get_username_from_id = query_service("get_username_from_id");
-	if (NULL == common_util_get_username_from_id) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_username_from_id\" service\n");
-		return -1;
-	}
-	common_util_get_maildir = query_service("get_maildir");
-	if (NULL == common_util_get_maildir) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_maildir\" service\n");
-		return -1;
-	}
-	common_util_get_homedir = query_service("get_homedir");
-	if (NULL == common_util_get_homedir) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_homedir\" service\n");
-		return -1;
-	}
-	common_util_get_user_displayname = query_service("get_user_displayname");
-	if (NULL == common_util_get_user_displayname) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_user_displayname\" service\n");
-		return -1;
-	}
-	common_util_check_mlist_include = query_service("check_mlist_include");
-	if (NULL == common_util_check_mlist_include) {
-		printf("[exchange_emsmdb]: fail to query"
-			" \"check_mlist_include\" service\n");
-		return -1;
-	}
-	common_util_get_user_lang = query_service("get_user_lang");
-	if (NULL == common_util_get_user_lang) {
-		printf("[exchange_emsmdb]: fail to "
-			"query \"get_user_lang\" service\n");
-		return -1;
-	}
-	common_util_get_timezone = query_service("get_timezone");
-	if (NULL == common_util_get_timezone) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_timezone\" service\n");
-		return -1;
-	}
-	common_util_get_id_from_username = query_service("get_id_from_username");
-	if (NULL == common_util_get_id_from_username) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_id_from_username\" service\n");
-		return -1;
-	}
-	common_util_get_user_ids = query_service("get_user_ids");
-	if (NULL == common_util_get_user_ids) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_user_ids\" service\n");
-		return -1;
-	}
-	common_util_get_domain_ids = query_service("get_domain_ids");
-	if (NULL == common_util_get_domain_ids) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_domain_ids\" service\n");
-		return -1;
-	}
-	common_util_check_same_org = query_service("check_same_org");
-	if (NULL == common_util_check_same_org) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"check_same_org\" service\n");
-		return -1;
-	}
-	common_util_get_homedir_by_id = query_service("get_homedir_by_id");
-	if (NULL == common_util_get_homedir_by_id) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_homedir_by_id\" service\n");
-		return -1;
-	}
-	common_util_get_domainname_from_id =
-		query_service("get_domainname_from_id");
-	if (NULL == common_util_get_domainname_from_id) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"get_domainname_from_id\" service\n");
-		return -1;
-	}
-	common_util_get_id_from_maildir =
-		query_service("get_id_from_maildir");
-	if (NULL == common_util_get_id_from_maildir) {
-		printf("[exchange_emsmdb]: fail to query"
-			" \"get_id_from_maildir\" service\n");
-		return -1;
-	}
-	common_util_get_id_from_homedir =
-		query_service("get_id_from_homedir");
-	if (NULL == common_util_get_id_from_homedir) {
-		printf("[exchange_emsmdb]: fail to query"
-			" \"get_id_from_homedir\" service\n");
-		return -1;
-	}
-	common_util_lang_to_charset = query_service("lang_to_charset");
-	if (NULL == common_util_lang_to_charset) {
-		printf("[exchange_emsmdb]: failed to get service \"lang_to_charset\"\n");
-		return -1;
-	}
-	common_util_cpid_to_charset = query_service("cpid_to_charset");
-	if (NULL == common_util_cpid_to_charset) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"cpid_to_charset\" service\n");
-		return -1;
-	}
-	common_util_charset_to_cpid = query_service("charset_to_cpid");
-	if (NULL == common_util_charset_to_cpid) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"charset_to_cpid\" service\n");
-		return -1;
-	}
-	common_util_lcid_to_ltag = query_service("lcid_to_ltag");
-	if (NULL == common_util_lcid_to_ltag) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"lcid_to_ltag\" service\n");
-		return -1;
-	}
-	common_util_ltag_to_lcid = query_service("ltag_to_lcid");
-	if (NULL == common_util_ltag_to_lcid) {
-		printf("[exchange_emsmdb]: fail to query "
-			"\"ltag_to_lcid\" service\n");
-		return -1;
-	}
-	common_util_verify_cpid = query_service("verify_cpid");
-	if (NULL == common_util_verify_cpid) {
-		printf("[exchange_emsmdb]: failed to get service \"verify_cpid\"\n");
-		return -1;
-	}
-	common_util_add_timer = query_service("add_timer");
-	if (NULL == common_util_add_timer) {
-		printf("[exchange_emsmdb]: failed to get service \"add_timer\"\n");
-		return -1;
-	}
-	common_util_cancel_timer = query_service("cancel_timer");
-	if (NULL == common_util_cancel_timer) {
-		printf("[exchange_emsmdb]: failed to get service \"cancel_timer\"\n");
-		return -1;
-	}
-	common_util_mime_to_extension = query_service("mime_to_extension");
-	if (NULL == common_util_mime_to_extension) {
-		printf("[exchange_emsmdb]: failed to get service \"mime_to_extension\"\n");
-		return -1;
-	}
-	common_util_extension_to_mime = query_service("extension_to_mime");
-	if (NULL == common_util_extension_to_mime) {
-		printf("[exchange_emsmdb]: failed to get service \"extension_to_mime\"\n");
-		return -1;
-	}
+
+#define E(f, s) do { \
+	(f) = query_service(s); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+	E(common_util_get_username_from_id, "get_username_from_id");
+	E(common_util_get_maildir, "get_maildir");
+	E(common_util_get_homedir, "get_homedir");
+	E(common_util_get_user_displayname, "get_user_displayname");
+	E(common_util_check_mlist_include, "check_mlist_include");
+	E(common_util_get_user_lang, "get_user_lang");
+	E(common_util_get_timezone, "get_timezone");
+	E(common_util_get_id_from_username, "get_id_from_username");
+	E(common_util_get_user_ids, "get_user_ids");
+	E(common_util_get_domain_ids, "get_domain_ids");
+	E(common_util_check_same_org, "check_same_org");
+	E(common_util_get_homedir_by_id, "get_homedir_by_id");
+	E(common_util_get_domainname_from_id, "get_domainname_from_id");
+	E(common_util_get_id_from_maildir, "get_id_from_maildir");
+	E(common_util_get_id_from_homedir, "get_id_from_homedir");
+	E(common_util_lang_to_charset, "lang_to_charset");
+	E(common_util_cpid_to_charset, "cpid_to_charset");
+	E(common_util_charset_to_cpid, "charset_to_cpid");
+	E(common_util_lcid_to_ltag, "lcid_to_ltag");
+	E(common_util_ltag_to_lcid, "ltag_to_lcid");
+	E(common_util_verify_cpid, "verify_cpid");
+	E(common_util_add_timer, "add_timer");
+	E(common_util_cancel_timer, "cancel_timer");
+	E(common_util_mime_to_extension, "mime_to_extension");
+	E(common_util_extension_to_mime, "extension_to_mime");
+#undef E
+
 	if (FALSE == oxcmail_init_library(g_org_name,
 		common_util_get_user_ids, common_util_get_username_from_id,
 		common_util_ltag_to_lcid, common_util_lcid_to_ltag,

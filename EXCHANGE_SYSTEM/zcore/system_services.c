@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "system_services.h"
 #include "service.h"
 #include <stdio.h>
@@ -55,223 +56,50 @@ void system_services_init()
  */
 int system_services_run()
 {
-	system_services_get_user_lang = service_query(
-						"get_user_lang", "system");
-	if (NULL == system_services_get_user_lang) {
-		printf("[system_services]: fail to "
-			"get \"get_user_lang\" service\n");
-		return -1;
-	}
-	system_services_set_user_lang = service_query(
-						"set_user_lang", "system");
-	if (NULL == system_services_set_user_lang) {
-		printf("[system_services]: fail to "
-			"get \"set_user_lang\" service\n");
-		return -2;
-	}
-	system_services_get_maildir = service_query(
-						"get_maildir", "system");
-	if (NULL == system_services_get_maildir) {
-		printf("[system_services]: fail to "
-			"get \"get_maildir\" service\n");
-		return -3;
-	}
-	system_services_get_homedir = service_query(
-						"get_homedir", "system");
-	if (NULL == system_services_get_homedir) {
-		printf("[system_services]: fail to "
-			"get \"get_homedir\" service\n");
-		return -4;
-	}
-	system_services_get_timezone = service_query(
-						"get_timezone", "system");
-	if (NULL == system_services_get_timezone) {
-		printf("[system_services]: fail to "
-			"get \"get_timezone\" service\n");
-		return -5;
-	}
-	system_services_set_timezone = service_query(
-						"set_timezone", "system");
-	if (NULL == system_services_set_timezone) {
-		printf("[system_services]: fail to "
-			"set \"set_timezone\" service\n");
-		return -6;
-	}
-	system_services_get_username_from_id = service_query(
-						"get_username_from_id", "system");
-	if (NULL == system_services_get_username_from_id) {
-		printf("[system_services]: failed to get service \"get_username_from_id\"\n");
-		return -7;
-	}
-	system_services_get_id_from_username = service_query(
-						"get_id_from_username", "system");
-	if (NULL == system_services_get_id_from_username) {
-		printf("[system_services]: failed to get service \"get_id_from_username\"\n");
-		return -8;
-	}
-	system_services_get_domain_ids = service_query(
-						"get_domain_ids", "system");
-	if (NULL == system_services_get_domain_ids) {
-		printf("[system_services]: failed to get service \"get_domain_ids\"\n");
-		return -9;
-	}
-	system_services_get_user_ids = service_query(
-						"get_user_ids", "system");
-	if (NULL == system_services_get_user_ids) {
-		printf("[system_services]: fail to "
-			"get \"get_user_ids\" service\n");
-		return -10;
-	}
-	system_services_lang_to_charset = service_query(
-						"lang_to_charset", "system");
-	if (NULL == system_services_lang_to_charset) {
-		printf("[system_services]: failed to get service \"lang_to_charset\"\n");
-		return -11;
-	}
-	system_services_cpid_to_charset = service_query(
-						"cpid_to_charset", "system");
-	if (NULL == system_services_cpid_to_charset) {
-		printf("[system_services]: failed to get service \"cpid_to_charset\"\n");
-		return -12;
-	}
-	system_services_charset_to_cpid = service_query(
-						"charset_to_cpid", "system");
-	if (NULL == system_services_charset_to_cpid) {
-		printf("[system_services]: failed to get service \"charset_to_cpid\"\n");
-		return -13;
-	}
-	system_services_lcid_to_ltag = service_query(
-						"lcid_to_ltag", "system");
-	if (NULL == system_services_lcid_to_ltag) {
-		printf("[system_services]: fail to "
-			"get \"lcid_to_ltag\" service\n");
-		return -14;
-	}
-	system_services_ltag_to_lcid = service_query(
-						"ltag_to_lcid", "system");
-	if (NULL == system_services_ltag_to_lcid) {
-		printf("[system_services]: fail to "
-			"get \"ltag_to_lcid\" service\n");
-		return -15;
-	}
-	system_services_mime_to_extension = service_query(
-						"mime_to_extension", "system");
-	if (NULL == system_services_mime_to_extension) {
-		printf("[system_services]: failed to get service \"mime_to_extension\"\n");
-		return -16;
-	}
-	system_services_extension_to_mime = service_query(
-						"extension_to_mime", "system");
-	if (NULL == system_services_extension_to_mime) {
-		printf("[system_services]: failed to get service \"extension_to_mime\"\n");
-		return -17;
-	}
-	system_services_auth_login = service_query("auth_login_exch", "system");
-	if (NULL == system_services_auth_login) {
-		printf("[system_services]: fail to get the \"auth_login_exch\" service\n");
-		return -18;
-	}
-	system_services_get_user_displayname = service_query(
-						"get_user_displayname", "system");
-	if (NULL == system_services_get_user_displayname) {
-		printf("[system_services]: failed to get service \"get_user_displayname\"\n");
-		return -19;
-	}
-	system_services_get_org_domains = service_query(
-						"get_org_domains", "system");
-	if (NULL == system_services_get_org_domains) {
-		printf("[system_services]: failed to get service \"get_org_domains\"\n");
-		return -20;
-	}
-	system_services_get_domain_info = service_query(
-						"get_domain_info", "system");
-	if (NULL == system_services_get_domain_info) {
-		printf("[system_services]: failed to get service \"get_domain_info\"\n");
-		return -21;
-	}
-	system_services_get_domain_groups = service_query(
-						"get_domain_groups", "system");
-	if (NULL == system_services_get_domain_groups) {
-		printf("[system_services]: failed to get service \"get_domain_groups\"\n");
-		return -22;
-	}
-	system_services_get_group_classes = service_query(
-						"get_group_classes", "system");
-	if (NULL == system_services_get_group_classes) {
-		printf("[system_services]: failed to get service \"get_group_classes\"\n");
-		return -23;
-	}
-	system_services_get_sub_classes = service_query(
-						"get_sub_classes", "system");
-	if (NULL == system_services_get_sub_classes) {
-		printf("[system_services]: failed to get service \"get_sub_classes\"\n");
-		return -24;
-	}
-	system_services_get_class_users = service_query(
-						"get_class_users", "system");
-	if (NULL == system_services_get_class_users) {
-		printf("[system_services]: failed to get service \"get_class_users\"\n");
-		return -25;
-	}
-	system_services_get_group_users = service_query(
-						"get_group_users", "system");
-	if (NULL == system_services_get_group_users) {
-		printf("[system_services]: failed to get service \"get_group_users\"\n");
-		return -26;
-	}
-	system_services_get_domain_users = service_query(
-						"get_domain_users", "system");
-	if (NULL == system_services_get_domain_users) {
-		printf("[system_services]: failed to get service \"get_domain_users\"\n");
-		return -27;
-	}
-	system_services_get_mlist_ids = service_query(
-						"get_mlist_ids", "system");
-	if (NULL == system_services_get_mlist_ids) {
-		printf("system_services]: failed to get service \"get_mlist_ids\"\n");
-		return -28;
-	}
-	system_services_get_lang = service_query(
-						"get_lang", "system");
-	if (NULL == system_services_get_lang) {
-		printf("[system_services]: fail to"
-			" get \"get_lang\" service\n");
-		return -29;
-	}
-	system_services_check_same_org = service_query(
-						"check_same_org", "system");
-	if (NULL == system_services_check_same_org) {
-		printf("[system_services]: fail to query"
-				" \"check_same_org\" service\n");
-		return -30;
-	}
-	system_services_log_info = service_query(
-						"log_info", "system");
-	if (NULL == system_services_log_info) {
-		printf("[system_services]: fail to"
-			" get \"log_info\" service\n");
-		return -31;
-	}
-	system_services_set_password = service_query(
-						"set_password", "system");
-	if (NULL == system_services_set_password) {
-		printf("[system_service]: failed to get service \"set_password\"\n");
-		return -32;
-	}
-	system_services_get_user_privilege_bits =
-		service_query("get_user_privilege_bits", "system");
-	if (NULL == system_services_get_user_privilege_bits) {
-		printf("[system_service]: failed to get service \"get_user_privilege_bits\"\n");
-		return -33;
-	}
-	system_services_add_timer =
-		service_query("add_timer", "system");
-	if (NULL == system_services_add_timer) {
-		printf("[system_service]: fail to "
-			"get \"add_timer\" service\n");
-		return -34;
-	}
+#define E(f, s) do { \
+	(f) = service_query((s), "system"); \
+	if ((f) == nullptr) { \
+		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
+		return -1; \
+	} \
+} while (false)
+
+	E(system_services_get_user_lang, "get_user_lang");
+	E(system_services_set_user_lang, "set_user_lang");
+	E(system_services_get_maildir, "get_maildir");
+	E(system_services_get_homedir, "get_homedir");
+	E(system_services_get_timezone, "get_timezone");
+	E(system_services_set_timezone, "set_timezone");
+	E(system_services_get_username_from_id, "get_username_from_id");
+	E(system_services_get_id_from_username, "get_id_from_username");
+	E(system_services_get_domain_ids, "get_domain_ids");
+	E(system_services_get_user_ids, "get_user_ids");
+	E(system_services_lang_to_charset, "lang_to_charset");
+	E(system_services_cpid_to_charset, "cpid_to_charset");
+	E(system_services_charset_to_cpid, "charset_to_cpid");
+	E(system_services_lcid_to_ltag, "lcid_to_ltag");
+	E(system_services_ltag_to_lcid, "ltag_to_lcid");
+	E(system_services_mime_to_extension, "mime_to_extension");
+	E(system_services_extension_to_mime, "extension_to_mime");
+	E(system_services_auth_login, "auth_login_exch");
+	E(system_services_get_user_displayname, "get_user_displayname");
+	E(system_services_get_org_domains, "get_org_domains");
+	E(system_services_get_domain_info, "get_domain_info");
+	E(system_services_get_domain_groups, "get_domain_groups");
+	E(system_services_get_group_classes, "get_group_classes");
+	E(system_services_get_sub_classes, "get_sub_classes");
+	E(system_services_get_class_users, "get_class_users");
+	E(system_services_get_group_users, "get_group_users");
+	E(system_services_get_domain_users, "get_domain_users");
+	E(system_services_get_mlist_ids, "get_mlist_ids");
+	E(system_services_get_lang, "get_lang");
+	E(system_services_check_same_org, "check_same_org");
+	E(system_services_log_info, "log_info");
+	E(system_services_set_password, "set_password");
+	E(system_services_get_user_privilege_bits, "get_user_privilege_bits");
+	E(system_services_add_timer, "add_timer");
 	return 0;
+#undef E
 }
 
 /*
