@@ -65,13 +65,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
 		strcat(dn, "/cn=Microsoft Private MDB");
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -104,13 +104,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecInvalidObject;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -142,12 +142,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_MAPPINGSIGNATURE:
 		pprop->value.bin.cb = 16;
 		if (NULL == pbuff) {
-			pprop->value.bin.pb = ndr_stack_alloc(NDR_STACK_OUT, 16);
+			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (NULL == pprop->value.bin.pb) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.bin.pb = pbuff;
+			pprop->value.bin.pv = pbuff;
 		}
 		pguid = common_util_get_nspi_guid();
 		memcpy(pprop->value.bin.pb, pguid, 16);
@@ -204,24 +204,24 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		pprop->value.bin.cb = strlen(dn) + 4;
 		if (NULL == pbuff) {
-			pprop->value.bin.pc = ndr_stack_alloc(
+			pprop->value.bin.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, pprop->value.bin.cb);
 			if (pprop->value.bin.pc == nullptr)
 				return ecMAPIOOM;
 		} else {
-			pprop->value.bin.pc = pbuff;
+			pprop->value.bin.pv = pbuff;
 		}
 		sprintf(pprop->value.bin.pc, "EX:%s", dn);
 		HX_strupper(pprop->value.bin.pc);
 		break;
 	case PROP_TAG_INSTANCEKEY:
 		if (NULL == pbuff) {
-			pprop->value.bin.pb = ndr_stack_alloc(NDR_STACK_OUT, 4);
+			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 4);
 			if (NULL == pprop->value.bin.pb) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.bin.pb = pbuff;
+			pprop->value.bin.pv = pbuff;
 		}
 		pprop->value.bin.cb = 4;
 		minid = ab_tree_get_node_minid(pnode);
@@ -243,13 +243,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -267,13 +267,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
@@ -285,25 +285,25 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 				return ecNotFound;
 			}
 			if (NULL == pbuff) {
-				pprop->value.pstr = ndr_stack_alloc(
+				pprop->value.pv = ndr_stack_alloc(
 					NDR_STACK_OUT, strlen(dn) + 1);
 				if (NULL == pprop->value.pstr) {
 					return ecMAPIOOM;
 				}
 			} else {
-				pprop->value.pstr = pbuff;
+				pprop->value.pv = pbuff;
 			}
 			strcpy(pprop->value.pstr, dn);
 		} else if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_title(codepage, dn);
 			if (NULL == pbuff) {
-				pprop->value.pstr = ndr_stack_alloc(
+				pprop->value.pv = ndr_stack_alloc(
 					NDR_STACK_OUT, strlen(dn) + 1);
 				if (NULL == pprop->value.pstr) {
 					return ecMAPIOOM;
 				}
 			} else {
-				pprop->value.pstr = pbuff;
+				pprop->value.pv = pbuff;
 			}
 			strcpy(pprop->value.pstr, dn);
 		} else {
@@ -319,13 +319,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
@@ -338,13 +338,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -357,13 +357,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 						NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
@@ -377,13 +377,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -397,12 +397,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
@@ -415,13 +415,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -434,12 +434,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
@@ -452,13 +452,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -471,12 +471,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
@@ -489,13 +489,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -508,12 +508,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
@@ -524,13 +524,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -541,12 +541,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
@@ -557,13 +557,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -574,12 +574,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
@@ -590,13 +590,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -607,12 +607,12 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		if (NULL == pbuff) {
 			temp_len = 2*strlen(dn) + 1;
-			pprop->value.pstr = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
+			pprop->value.pv = ndr_stack_alloc(NDR_STACK_OUT, temp_len);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
@@ -634,13 +634,13 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		}
 		if (NULL == pbuff) {
-			pprop->value.pstr = ndr_stack_alloc(
+			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
 			if (NULL == pprop->value.pstr) {
 				return ecMAPIOOM;
 			}
 		} else {
-			pprop->value.pstr = pbuff;
+			pprop->value.pv = pbuff;
 		}
 		strcpy(pprop->value.pstr, dn);
 		break;
@@ -3342,7 +3342,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		break;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
-		pprop->value.pstr = ndr_stack_alloc(
+		pprop->value.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
 			return ecMAPIOOM;
@@ -3360,7 +3360,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		break;
 	case PROP_TAG_SEARCHKEY:
 		pprop->value.bin.cb = strlen(paddress) + 6;
-		pprop->value.bin.pc = ndr_stack_alloc(
+		pprop->value.bin.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, pprop->value.bin.cb);
 		if (pprop->value.bin.pc == nullptr)
 			return ecMAPIOOM;
@@ -3373,7 +3373,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	case PROP_TAG_DISPLAYNAME_STRING8:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
-		pprop->value.pstr = ndr_stack_alloc(
+		pprop->value.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
 			return ecMAPIOOM;

@@ -127,6 +127,7 @@ typedef union _PROP_VAL_UNION {
 	uint32_t l;
 	uint8_t b;
 	char *pstr;
+	void *pv;
 	BINARY bin;
 	FLATUID *pguid;
 	FILETIME ftime;
