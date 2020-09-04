@@ -436,6 +436,9 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 		mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	}
+	/* alias list */
+	mem_file_read(pfile_user, &temp_len, sizeof(int));
+	mem_file_read(pfile_user, temp_buff, temp_len);
 	return TRUE;
 }
 
@@ -487,6 +490,9 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 		mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	}
+	/* alias list */
+	mem_file_read(pfile_user, &temp_len, sizeof(int));
+	mem_file_read(pfile_user, temp_buff, temp_len);
 	return TRUE;
 }
 

@@ -1,4 +1,7 @@
+#include <map>
+#include <string>
 #include <string.h>
+#include <gromox/database.h>
 #include <gromox/defs.h>
 #include "cdner_agent.h"
 #include "mysql_adaptor.h"
@@ -40,6 +43,8 @@
 #define MLIST_RESULT_PRIVIL_DOMAIN		2
 #define MLIST_RESULT_PRIVIL_INTERNAL	3
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
+
+using namespace gromox;
 
 typedef struct _CONNECTION_NODE {
 	DOUBLE_LIST_NODE node;
@@ -2649,6 +2654,41 @@ RETRYING:
 	return count;
 }
 
+using alias_map_type = std::multimap<std::string, std::string>;
+
+static bool get_domain_aliases(CONNECTION_NODE *co,
+    int domain_id, alias_map_type &out) try
+{
+	char query[160];
+	snprintf(query, sizeof(query),
+		"SELECT u.username, a.aliasname FROM users AS u "
+		"INNER JOIN aliases AS a ON u.username=a.mainname "
+		"WHERE u.domain_id=%d", domain_id);
+	if (mysql_query(co->pmysql, query) != 0)
+		return false;
+	DB_RESULT res(co->pmysql, mysql_store_result(co->pmysql));
+	if (res == nullptr)
+		return false;
+	out.clear();
+	DB_ROW row;
+	while ((row = res.fetch_row()) != nullptr)
+		out.emplace(row[0], row[1]);
+	return true;
+} catch (...) {
+	return false;
+}
+
+static std::string aliases_serialize(const alias_map_type &amap, const std::string &addr)
+{
+	auto stop = amap.upper_bound(addr);
+	std::string s;
+	for (auto i = amap.lower_bound(addr); i != stop; ++i) {
+		s += i->second;
+		s.push_back('\0');
+	}
+	return s;
+}
+
 int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 {
 	int i;
@@ -2692,6 +2732,8 @@ RETRYING:
 	}
 
 	pconnection = (CONNECTION_NODE*)pnode->pdata;
+	alias_map_type dom_alias;
+	get_domain_aliases(pconnection, domain_id, dom_alias);
 	
 	snprintf(sql_string, 1024, "SELECT id, privilege_bits, "
 		"username, real_name, title, memo, cell, tel, nickname,"
@@ -2768,6 +2810,15 @@ RETRYING:
 			temp_len = strlen(myrow[13]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
 			mem_file_write(pfile, myrow[13], temp_len);
+			try {
+				auto astring = aliases_serialize(dom_alias, myrow[2]);
+				temp_len = astring.size() + 1;
+				mem_file_write(pfile, &temp_len, sizeof(int));
+				mem_file_write(pfile, astring.data(), temp_len);
+			} catch (...) {
+				temp_len = 0;
+				mem_file_write(pfile, &temp_len, sizeof(int));
+			}
 			count ++;
 			break;
 		case ADDRESS_TYPE_MLIST:
@@ -2793,6 +2844,15 @@ RETRYING:
 				temp_len = strlen(title);
 				mem_file_write(pfile, &temp_len, sizeof(int));
 				mem_file_write(pfile, title, temp_len);
+			}
+			try {
+				auto astring = aliases_serialize(dom_alias, myrow[2]);
+				temp_len = astring.size() + 1;
+				mem_file_write(pfile, &temp_len, sizeof(int));
+				mem_file_write(pfile, astring.data(), temp_len);
+			} catch (...) {
+				temp_len = 0;
+				mem_file_write(pfile, &temp_len, sizeof(int));
 			}
 			count ++;
 			break;
