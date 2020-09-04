@@ -80,6 +80,10 @@
 
 #define EPOCH_DIFF 						11644473600LL
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern const uint8_t *common_util_get_nspi_guid(void);
 extern GUID common_util_get_server_guid(void);
 void common_util_day_to_filetime(const char *day, FILETIME *pftime);
@@ -117,3 +121,7 @@ extern void common_util_init(void);
 extern int common_util_run(void);
 extern int common_util_stop(void);
 extern void common_util_free(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
