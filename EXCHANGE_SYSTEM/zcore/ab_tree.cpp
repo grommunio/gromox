@@ -1,3 +1,5 @@
+#include <string>
+#include <vector>
 #include <stdbool.h>
 #include <stdint.h>
 #include <libHX/defs.h>
@@ -470,6 +472,8 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 	/* alias list */
 	mem_file_read(pfile_user, &temp_len, sizeof(int));
 	mem_file_read(pfile_user, temp_buff, temp_len);
+	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
+	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	return TRUE;
 }
 
@@ -1557,6 +1561,50 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	}
 }
 
+static std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *pnode, unsigned int type)
+{
+	std::vector<std::string> alist;
+	auto pabnode = reinterpret_cast<AB_NODE *>(pnode);
+	MEM_FILE fake_file;
+	uint32_t tmp;
+
+	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
+	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+
+	switch (type) {
+	case NODE_TYPE_PERSON:
+	case NODE_TYPE_ROOM:
+	case NODE_TYPE_EQUIPMENT:
+		for (unsigned int i = 0; i < 10; ++i) {
+			mem_file_read(&fake_file, &tmp, sizeof(tmp));
+			mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
+		}
+		break;
+	case NODE_TYPE_MLIST:
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		break;
+	default:
+		printf("[exchange_nsp]: ab_tree_get_object_aliases does not support type %u\n", type);
+		return alist;
+	}
+
+	mem_file_read(&fake_file, &tmp, sizeof(tmp));
+	std::string s;
+	s.resize(tmp);
+	mem_file_read(&fake_file, &s[0], tmp);
+	size_t start = 0, end;
+	while ((end = s.find('\0', start)) != s.npos && end > start) {
+		alist.push_back(s.substr(start, end));
+		start = end + 1;
+	}
+	return alist;
+}
+
 static void ab_tree_get_user_info(
 	SIMPLE_TREE_NODE *pnode, int type, char *value)
 {
@@ -2259,7 +2307,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES:
+	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES: {
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		} else if (node_type == NODE_TYPE_PERSON ||
@@ -2274,22 +2322,33 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		pvalue = common_util_alloc(sizeof(STRING_ARRAY));
-		if (NULL == pvalue) {
-			return FALSE;
+		std::vector<std::string> alias_list;
+		try {
+			alias_list = ab_tree_get_object_aliases(pnode, node_type);
+		} catch (...) {
 		}
-		((STRING_ARRAY*)pvalue)->count = 1;
-		static_cast<STRING_ARRAY *>(pvalue)->ppstr = static_cast<char **>(common_util_alloc(sizeof(char **)));
-		if (NULL == ((STRING_ARRAY*)pvalue)->ppstr) {
+		auto sa = static_cast<STRING_ARRAY *>(common_util_alloc(sizeof(STRING_ARRAY)));
+		if (sa == nullptr)
 			return FALSE;
+		sa->count = 1 + alias_list.size();
+		sa->ppstr = static_cast<char **>(common_util_alloc(sizeof(char *) * sa->count));
+		if (sa->ppstr == nullptr)
+			return FALSE;
+		sa->ppstr[0] = static_cast<char *>(common_util_alloc(strlen(dn) + 6));
+		if (sa->ppstr[0] == nullptr)
+			return FALSE;
+		sprintf(sa->ppstr[0], "SMTP:%s", dn);
+		size_t i = 1;
+		for (const auto &a : alias_list) {
+			sa->ppstr[i] = static_cast<char *>(common_util_alloc(a.size() + 6));
+			if (sa->ppstr[i] == nullptr)
+				return false;
+			strcpy(sa->ppstr[i], "SMTP:");
+			strcat(sa->ppstr[i], a.c_str());
 		}
-		
-		static_cast<STRING_ARRAY *>(pvalue)->ppstr[0] = static_cast<char *>(common_util_alloc(strlen(dn) + 6));
-		if (static_cast<STRING_ARRAY *>(pvalue)->ppstr[0] == nullptr)
-			return FALSE;
-		sprintf(((STRING_ARRAY*)pvalue)->ppstr[0], "SMTP:%s", dn);
-		*ppvalue = pvalue;
+		*ppvalue = sa;
 		return TRUE;
+	}
 	case PROP_TAG_CREATIONTIME:
 		pvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == pvalue) {
