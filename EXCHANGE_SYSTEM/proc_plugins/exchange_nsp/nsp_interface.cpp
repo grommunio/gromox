@@ -1,3 +1,5 @@
+#include <string>
+#include <vector>
 #include <stdbool.h>
 #include <stdint.h>
 #include <libHX/defs.h>
@@ -648,7 +650,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		break;
 	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES:
-	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8:
+	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8: {
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		} else if (node_type == NODE_TYPE_PERSON ||
@@ -661,24 +663,33 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
-		pprop->value.string_array.cvalues = 1;
-		if (NULL == pbuff) {
-			pprop->value.string_array.ppstr =
-				static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(char **)));
-			if (NULL == pprop->value.string_array.ppstr) {
-				return ecMAPIOOM;
-			}
-			pprop->value.string_array.ppstr[0] =
-				static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, strlen(dn) + 6));
-			if (NULL == pprop->value.string_array.ppstr[0]) {
-				return ecMAPIOOM;
-			}
-		} else {
-			pprop->value.string_array.ppstr = (char**)pbuff;
-			pprop->value.string_array.ppstr[0] = static_cast<char *>(pbuff) + sizeof(char **);
+		std::vector<std::string> alias_list;
+		try {
+			alias_list = ab_tree_get_object_aliases(pnode, node_type);
+		} catch (...) {
+		}
+		pprop->value.string_array.cvalues = 1 + alias_list.size();
+		pprop->value.string_array.ppstr =
+			static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(char *) * pprop->value.string_array.cvalues));
+		if (NULL == pprop->value.string_array.ppstr) {
+			return ecMAPIOOM;
+		}
+		pprop->value.string_array.ppstr[0] =
+			static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, strlen(dn) + 6));
+		if (NULL == pprop->value.string_array.ppstr[0]) {
+			return ecMAPIOOM;
 		}
 		sprintf(pprop->value.string_array.ppstr[0], "SMTP:%s", dn);
+		size_t i = 1;
+		for (const auto &a : alias_list) {
+			pprop->value.string_array.ppstr[i] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, a.size() + 6));
+			if (pprop->value.string_array.ppstr[i] == nullptr)
+				return ecMAPIOOM;
+			strcpy(pprop->value.string_array.ppstr[i], "SMTP:");
+			strcat(pprop->value.string_array.ppstr[i++], a.c_str());
+		}
 		break;
+	}
 	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS:
 	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS_STRING8:
 		rpc_info = get_rpc_info();

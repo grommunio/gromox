@@ -1,3 +1,6 @@
+#include <cstdint>
+#include <string>
+#include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -439,6 +442,8 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 	/* alias list */
 	mem_file_read(pfile_user, &temp_len, sizeof(int));
 	mem_file_read(pfile_user, temp_buff, temp_len);
+	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
+	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	return TRUE;
 }
 
@@ -493,6 +498,8 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 	/* alias list */
 	mem_file_read(pfile_user, &temp_len, sizeof(int));
 	mem_file_read(pfile_user, temp_buff, temp_len);
+	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
+	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	return TRUE;
 }
 
@@ -1610,6 +1617,50 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 		}
 		break;
 	}
+}
+
+std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *pnode, unsigned int type)
+{
+	std::vector<std::string> alist;
+	auto pabnode = reinterpret_cast<AB_NODE *>(pnode);
+	MEM_FILE fake_file;
+	uint32_t tmp;
+
+	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
+	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+
+	switch (type) {
+	case NODE_TYPE_PERSON:
+	case NODE_TYPE_ROOM:
+	case NODE_TYPE_EQUIPMENT:
+		for (unsigned int i = 0; i < 10; ++i) {
+			mem_file_read(&fake_file, &tmp, sizeof(tmp));
+			mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
+		}
+		break;
+	case NODE_TYPE_MLIST:
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		mem_file_read(&fake_file, &tmp, sizeof(tmp));
+		break;
+	default:
+		printf("[exchange_nsp]: ab_tree_get_object_aliases does not support type %u\n", type);
+		return alist;
+	}
+
+	mem_file_read(&fake_file, &tmp, sizeof(tmp));
+	std::string s;
+	s.resize(tmp);
+	mem_file_read(&fake_file, &s[0], tmp);
+	size_t start = 0, end;
+	while ((end = s.find('\0', start)) != s.npos && end > start) {
+		alist.push_back(s.substr(start, end));
+		start = end + 1;
+	}
+	return alist;
 }
 
 void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value)
