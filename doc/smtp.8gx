@@ -1,9 +1,19 @@
 .TH smtp 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
+.PP
 smtp \(em Gromox SMTP server
 .SH Synopsis
 .PP
 \fBsmtp\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+The SMTP server accepts network connection requests and performs zero or more
+SMTP transactions per connection. Each received message is given to a flusher
+plugin, of which there currently is just one, message_enqueue(4gx).
+.PP
+smtp(8gx) is the equivalent of the Postfix smtpd(8) process.
+message_enqueue(4gx) is the approximate equivalent of the Postfix cleanup(8)
+process.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -203,4 +213,4 @@ The minimum number of client processing threads to keep around.
 Default: \fI1\fP
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmessage_enqueue(4gx)\fP

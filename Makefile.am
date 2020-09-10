@@ -784,7 +784,7 @@ man_MANS = \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
 	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \
-	doc/mapi.4gx doc/midb.8gx \
+	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/monitor.8gx doc/mysql_adaptor.4gx doc/pad.8gx \
 	doc/pam_gromox.8gx doc/pop3.8gx \
