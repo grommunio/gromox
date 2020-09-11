@@ -685,7 +685,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			pprop->value.string_array.ppstr[i] = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, a.size() + 6));
 			if (pprop->value.string_array.ppstr[i] == nullptr)
 				return ecMAPIOOM;
-			strcpy(pprop->value.string_array.ppstr[i], "SMTP:");
+			strcpy(pprop->value.string_array.ppstr[i], "smtp:");
 			strcat(pprop->value.string_array.ppstr[i++], a.c_str());
 		}
 		break;
