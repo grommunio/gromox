@@ -455,6 +455,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	 * (In LDAP DITs, such is not always supported either.)
 	 */
 	{23, "DELETE FROM `users` WHERE address_type=1"},
+	/* Domain aliases, with no @, might have been stored in this table too(?) */
+	{24, "DELETE FROM `aliases` WHERE aliasname NOT LIKE '%@%'"},
 	{0, nullptr},
 };
 
