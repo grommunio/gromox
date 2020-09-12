@@ -1,0 +1,58 @@
+.TH str_table 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+str_table \(em string table match service plugin
+.SH Description
+.PP
+str_table implements checking for a trivial presence lookup of something in a
+text file. The plugin can be used in any Gromox process, but in practice
+only makes an appeareance in smtp(8gx) and delivery(8gx).
+.PP
+The str_table plugin has multiple instances. These are: \fBbackup_list\fP,
+\fBboundary_list\fP, \fBdomain_list\fP, \fBdomain_whitelist\fP,
+\fBforbidden_from\fP, \fBforbidden_domain\fP, \fBforbidden_rcpt\fP,
+\fBmonitor_domains\fP, \fBrelay_domains\fP, \fBremote_mx_hello\fP,
+\fBsingle_rcpt\fP.
+.PP
+These instances are factual copies of the module to please the plugin loader
+and make it load different .cfg files. (This is clearly inefficient and may be
+fixed in a future release.) For example, the plugin loader will derive the name
+"backup_list.cfg" from the module name "libmtasvc_backup_list.so", and then
+pass this filename to the module so it can be loaded as a config file.
+.PP
+The plugin supports temporary modification of the string table as it exists in
+memory through the telnet console mechanism. A reload of the table from disk
+purges these modifications.
+.SH Configuration file directives
+.SS growing_num
+.PP
+The maximum number of additional string table entries on top of what the
+on-disk table file has supplied. So when the table file contains 40 entries and
+growing_num is 100, the in-memory copy of the table can hold up to 140 entries
+total.
+.PP
+Default: \fI100\fP
+.SS is_case_sensitive
+.PP
+Flag which determines whether matches should treat uppercase and lowercase
+differently or not.
+.PP
+Default: \fIfalse\fP
+.SS query_service_name
+.PP
+The plugin instance will expose its function through this service name. You
+should not change this ever, because other plugins rely on certain fixed
+values.
+.PP
+Default: varies per instance
+.SH Files
+.IP \(bu 4
+\fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
+of str_table (e.g. /etc/gromox/delivery/backup_list.cfg when delivery(8gx) was
+made to load libmtasvc_backup_list.so.)
+.IP \(bu 4
+\fIdata_file_path\fP/\fIinstance\fP.txt: string table on which matches are
+carried out (e.g. /usr/share/gromox/delivery/backup_list.txt)
+.SH See also
+.PP
+\fBgromox\fP(7)

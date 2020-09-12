@@ -65,13 +65,39 @@ imap(8gx) \(em IMAP server
 pop3(8gx) \(em POP3 server
 .SH Mail transport agent subsystem
 .IP \(bu 4
+alias_translator(4gx) \(em Alias resolution plugin for delivery(8gx)
+.IP \(bu 4
+backup_list(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+boundary_list(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
 delivery(8gx)
+.IP \(bu 4
+domain_list(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+domain_whitelist(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+forbidden_from(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+forbidden_domain(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+forbidden_rcpt(4gx) \(em instance of str_table(4gx)
 .IP \(bu 4
 gromox\-mta.target(8gx) \(em MTA service group unit for systemd
 .IP \(bu 4
 message_enqueue(4gx) \(em Message enqueueing flusher plugin for smtp(8gx)
 .IP \(bu 4
+monitor_domains(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+relay_domains(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+remote_mx_hello(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
+single_rcpt(4gx) \(em instance of str_table(4gx)
+.IP \(bu 4
 smtp(8gx) \(em SMTP server
+.IP \(bu 4
+str_table(4gx) \(em string table match plugin
 .SH System administration subsystem
 .IP \(bu 4
 adaptor(8gx)

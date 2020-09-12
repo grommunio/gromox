@@ -2,6 +2,10 @@
 .SH Synopsis
 .PP
 \fBadaptor\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+adaptor reads table data from MySQL and builds text files that act as caches
+for modules that utilize them. See the FILES section for example uses.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -15,7 +19,7 @@ Output version information and exit.
 Display option summary.
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fI/alias_addresses.txt
+\fIdata_file_path\fI/alias_addresses.txt: used by alias_translator(4gx)
 .IP \(bu 4
 \fIdata_file_path\fI/backup_list.txt
 .IP \(bu 4

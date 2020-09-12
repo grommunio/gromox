@@ -772,13 +772,16 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 
 # doc
 man_MANS = \
-	doc/adaptor.8gx doc/archive.8gx doc/authmgr.4gx doc/bl_delete.8gx \
-	doc/cdnd.8gx doc/cidb.8gx \
+	doc/adaptor.8gx doc/alias_translator.4gx \
+	doc/archive.8gx doc/authmgr.4gx doc/backup_list.4gx doc/bl_delete.8gx \
+	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \
-	doc/digest.8gx doc/esmtp_auth.4gx \
+	doc/digest.8gx doc/domain_list.4gx doc/domain_whitelist.4gx \
+	doc/esmtp_auth.4gx \
 	doc/event.8gx doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
-	doc/fcgi_cgi.8gx doc/freebusy.8gx doc/gromox.7 \
+	doc/fcgi_cgi.8gx doc/forbidden_domain.4gx doc/forbidden_from.4gx \
+	doc/forbidden_rcpt.4gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-archive.target.8gx doc/gromox-dbop.8gx \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
@@ -786,11 +789,14 @@ man_MANS = \
 	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
-	doc/monitor.8gx doc/mysql_adaptor.4gx doc/pad.8gx \
+	doc/monitor.8gx doc/monitor_domains.4gx \
+	doc/mysql_adaptor.4gx doc/pad.8gx \
 	doc/pam_gromox.8gx doc/pop3.8gx \
-	doc/rebuild.8gx doc/rsyncd.8gx doc/rsyncer.8gx doc/rtf2html.1gx \
+	doc/rebuild.8gx doc/relay_domains.4gx doc/remote_mx_hello.4gx \
+	doc/rsyncd.8gx doc/rsyncer.8gx doc/rtf2html.1gx \
 	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx doc/sendmail.8gx \
-	doc/sensor.8gx doc/session.8gx doc/smtp.8gx doc/supervisor.8gx \
+	doc/sensor.8gx doc/session.8gx doc/single_rcpt.4gx doc/smtp.8gx \
+	doc/str_table.4gx doc/supervisor.8gx \
 	doc/timer.8gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in
