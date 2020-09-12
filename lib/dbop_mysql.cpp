@@ -444,6 +444,12 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{19, "ALTER TABLE `aliases` ADD PRIMARY KEY (`aliasname`)"},
 	{20, "ALTER TABLE `aliases` DROP INDEX `aliasname`"},
 	{21, "ALTER TABLE `aliases` ADD CONSTRAINT `aliases_ibfk_1` FOREIGN KEY (`mainname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"},
+	/*
+	 * n22: Domain-level aliases are no longer supported; just insert
+	 * according user-level aliases entries into `aliases`. (This is also
+	 * how it is done with LDAP-based DITs elsewhere.)
+	 */
+	{22, "DELETE FROM `domains` WHERE domain_type=1"},
 	{0, nullptr},
 };
 
