@@ -15,7 +15,7 @@
 #include <mysql/mysql.h>
 
 #define ADDRESS_TYPE_NORMAL				0
-#define ADDRESS_TYPE_ALIAS				1
+#define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
 #define ADDRESS_TYPE_MLIST				2
 #define ADDRESS_TYPE_VIRTUAL			3
 /* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_ROOM */
@@ -296,9 +296,9 @@ RETRYING:
 	
 	myrow = mysql_fetch_row(pmyres);
 	temp_type = atoi(myrow[1]);
-	if (ADDRESS_TYPE_NORMAL != temp_type && ADDRESS_TYPE_ALIAS != temp_type) {
-		snprintf(reason, length, "\"%s\" is not a real user or alias user, "
-			"please correct the account name and try again", username);
+	if (temp_type != ADDRESS_TYPE_NORMAL) {
+		snprintf(reason, length, "\"%s\" is not a real user; "
+			"correct the account name and retry.", username);
 		mysql_free_result(pmyres);
 		return FALSE;
 	}
@@ -549,7 +549,7 @@ RETRYING:
 	
 	myrow = mysql_fetch_row(pmyres);
 	temp_type = atoi(myrow[1]);
-	if (ADDRESS_TYPE_NORMAL != temp_type && ADDRESS_TYPE_ALIAS != temp_type) {
+	if (temp_type != ADDRESS_TYPE_NORMAL) {
 		mysql_free_result(pmyres);
 		return FALSE;
 	}
@@ -2423,7 +2423,6 @@ RETRYING:
 		}
 		switch (address_type) {
 		case ADDRESS_TYPE_NORMAL:
-		case ADDRESS_TYPE_ALIAS:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
 			mem_file_write(pfile, &address_type, sizeof(int));
@@ -2577,7 +2576,6 @@ RETRYING:
 		}
 		switch (address_type) {
 		case ADDRESS_TYPE_NORMAL:
-		case ADDRESS_TYPE_ALIAS:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
 			mem_file_write(pfile, &address_type, sizeof(int));
@@ -2767,7 +2765,6 @@ RETRYING:
 		}
 		switch (address_type) {
 		case ADDRESS_TYPE_NORMAL:
-		case ADDRESS_TYPE_ALIAS:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
 			mem_file_write(pfile, &address_type, sizeof(int));

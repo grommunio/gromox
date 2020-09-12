@@ -1234,7 +1234,7 @@ typedef PROPTAG_ARRAY INDEX_ARRAY;
 #define DT_FOLDER_SPECIAL							0x04000000
 
 #define DB_ADDRESS_TYPE_NORMAL						0
-#define DB_ADDRESS_TYPE_ALIAS						1
+#define DB_ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
 #define DB_ADDRESS_TYPE_MLIST						2
 #define DB_ADDRESS_TYPE_VIRTUAL						3
 
@@ -1640,7 +1640,7 @@ typedef struct _DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
 #define CHANGE_NUMBER_BEGIN							0x800000000000LL
 
 #define ADDRESS_TYPE_NORMAL							0
-#define ADDRESS_TYPE_ALIAS							1
+#define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
 #define ADDRESS_TYPE_MLIST							2
 #define ADDRESS_TYPE_VIRTUAL						3
 /* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_ROOM */

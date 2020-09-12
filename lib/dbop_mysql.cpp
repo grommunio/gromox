@@ -450,6 +450,11 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	 * how it is done with LDAP-based DITs elsewhere.)
 	 */
 	{22, "DELETE FROM `domains` WHERE domain_type=1"},
+	/*
+	 * n23: Authentication through user-level aliases is no longer desired.
+	 * (In LDAP DITs, such is not always supported either.)
+	 */
+	{23, "DELETE FROM `users` WHERE address_type=1"},
 	{0, nullptr},
 };
 

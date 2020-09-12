@@ -31,7 +31,7 @@
 #define DTE_FLAG_ACL_CAPABLE				0x40000000
 
 #define ADDRESS_TYPE_NORMAL					0
-#define ADDRESS_TYPE_ALIAS					1
+#define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
 #define ADDRESS_TYPE_MLIST					2
 /* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_ROOM */
 #define ADDRESS_TYPE_ROOM					4
