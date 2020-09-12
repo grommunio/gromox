@@ -27,17 +27,11 @@ struct addritem {
 	char a[256], b[256];
 };
 
-static STR_HASH_TABLE *g_domain_hash;
 static STR_HASH_TABLE *g_address_hash;
-static pthread_rwlock_t g_domain_lock;
 static pthread_rwlock_t g_address_lock;
-static char g_domain_path[256];
 static char g_address_path[256];
 
-static int domain_table_refresh(void);
 static int address_table_refresh(void);
-static BOOL domain_table_query(const char *aliasname, char *mainname);
-
 static BOOL address_table_query(const char *aliasname, char *mainname);
 
 static void console_talk(int argc, char **argv, char *result, int length);
@@ -51,19 +45,9 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		
-		sprintf(g_domain_path, "%s/alias_domains.txt", get_data_path());
 		sprintf(g_address_path, "%s/alias_addresses.txt", get_data_path());
-		
-		pthread_rwlock_init(&g_domain_lock, NULL);
 		pthread_rwlock_init(&g_address_lock, NULL);
-		
-		g_domain_hash = NULL;
 		g_address_hash = NULL;
-
-		if (REFRESH_OK != domain_table_refresh()) {
-			printf("[alias_translator]: Failed to load domain alias table\n");
-		}
 		if (REFRESH_OK != address_table_refresh()) {
 			printf("[alias_translator]: Failed to load address alias table\n");
 			return FALSE;
@@ -76,16 +60,10 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		printf("[alias_translator]: plugin is loaded into system\n");
         return TRUE;
     case PLUGIN_FREE:
-    	if (NULL != g_domain_hash) {
-        	str_hash_free(g_domain_hash);
-        	g_domain_hash = NULL;
-    	}
-		
 		if (NULL != g_address_hash) {
 			str_hash_free(g_address_hash);
 			g_address_hash = NULL;
 		}
-    	pthread_rwlock_destroy(&g_domain_lock);
     	pthread_rwlock_destroy(&g_address_lock);
         return TRUE;
     }
@@ -95,7 +73,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 {
 	BOOL b_replaced;
-	char *pdomain;
 	char rcpt_to[256];
 	char mainname[256];
 	MEM_FILE temp_file;
@@ -109,38 +86,21 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	mem_file_init(&rcpt_file, pcontext->pcontrol->f_rcpt_to.allocator);
 	mem_file_copy(&pcontext->pcontrol->f_rcpt_to, &rcpt_file);
 	
-	pdomain = strchr(pcontext->pcontrol->from, '@');
-	if (NULL != pdomain) {
-		pdomain ++;
-		if (TRUE == domain_table_query(pdomain, mainname)) {
-			alias_log_info(pcontext, 8, "replace alias from-domain "
-				"from %s to %s", pdomain, mainname);
-			strcpy(pdomain, mainname);
-		}
-		if (TRUE == address_table_query(pcontext->pcontrol->from, mainname)) {
-			alias_log_info(pcontext, 8, "replace alias from-address "
-					"from %s to %s", pcontext->pcontrol->from, mainname);
-			strcpy(pcontext->pcontrol->from, mainname);
-		}
+	if (strchr(pcontext->pcontrol->from, '@') != nullptr &&
+	    address_table_query(pcontext->pcontrol->from, mainname)) {
+		alias_log_info(pcontext, 8, "replace alias from-address "
+				"from %s to %s", pcontext->pcontrol->from, mainname);
+		strcpy(pcontext->pcontrol->from, mainname);
 	}
 
 	b_replaced = FALSE;
 	while (MEM_END_OF_FILE != mem_file_readline(&rcpt_file, rcpt_to, 256)) {
-		pdomain = strchr(rcpt_to, '@');
-		if (NULL != pdomain) {
-			pdomain ++;
-			if (TRUE == domain_table_query(pdomain, mainname)) {
-				alias_log_info(pcontext, 8, "replace alias rcpt-domain "
-					"from %s to %s", pdomain, mainname);
-				strcpy(pdomain, mainname);
-				b_replaced = TRUE;
-			}
-			if (TRUE == address_table_query(rcpt_to, mainname)) {
-				alias_log_info(pcontext, 8, "replace alias rcpt-address "
-						"from %s to %s", rcpt_to, mainname);
-				strcpy(rcpt_to, mainname);
-				b_replaced = TRUE;
-			}
+		if (strchr(rcpt_to, '@') != nullptr &&
+		    address_table_query(rcpt_to, mainname)) {
+			alias_log_info(pcontext, 8, "replace alias rcpt-address "
+					"from %s to %s", rcpt_to, mainname);
+			strcpy(rcpt_to, mainname);
+			b_replaced = TRUE;
 		}
 		mem_file_writeline(&temp_file, rcpt_to);
 	}
@@ -195,29 +155,6 @@ static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	}
 }
 
-
-BOOL domain_table_query(const char *aliasname, char *mainname)
-{
-	char *presult;
-	char temp_string[256];
-	
-	strncpy(temp_string, aliasname, sizeof(temp_string));
-	temp_string[sizeof(temp_string) - 1] = '\0';
-	HX_strlower(temp_string);
-	
-	pthread_rwlock_rdlock(&g_domain_lock);
-	presult = str_hash_query(g_domain_hash, temp_string);
-	if (NULL != presult) {
-		strcpy(mainname, presult);
-	}
-	pthread_rwlock_unlock(&g_domain_lock);
-	if (NULL != presult) {
-        return TRUE;
-    } else {
-		return FALSE;
-	}
-}
-
 BOOL address_table_query(const char *aliasname, char *mainname)
 {
 	char *presult;
@@ -240,44 +177,6 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	}
 }
 	
-static int domain_table_refresh()
-{
-    int i, list_len;
-	LIST_FILE *plist_file;
-    STR_HASH_TABLE *phash = NULL;
-	
-    /* initialize the list filter */
-	plist_file = list_file_init3(g_domain_path, "%s:256%s:256", false);
-	if (NULL == plist_file) {
-		printf("[alias_translator]: Failed to read domain list from %s: %s\n",
-			g_domain_path, strerror(errno));
-		return REFRESH_FILE_ERROR;
-	}
-	struct addritem *pitem = reinterpret_cast(struct addritem *, list_file_get_list(plist_file));
-	list_len = list_file_get_item_num(plist_file);
-	
-    phash = str_hash_init(list_len + 1, 256, NULL);
-	if (NULL == phash) {
-		printf("[alias_translator]: Failed to allocate domain hash map\n");
-		list_file_free(plist_file);
-		return REFRESH_HASH_FAIL;
-	}
-    for (i=0; i<list_len; i++) {
-		HX_strlower(pitem[i].a);
-		str_hash_add(phash, pitem[i].a, pitem[i].b);
-    }
-    list_file_free(plist_file);
-	
-	pthread_rwlock_wrlock(&g_domain_lock);
-	if (NULL != g_domain_hash) {
-		str_hash_free(g_domain_hash);
-	}
-    g_domain_hash = phash;
-    pthread_rwlock_unlock(&g_domain_lock);
-
-    return REFRESH_OK;
-}
-
 static int address_table_refresh()
 {
     int i, list_len;
@@ -327,8 +226,6 @@ static int address_table_refresh()
 static void console_talk(int argc, char **argv, char *result, int length)
 {
 	char help_string[] = "250 alias translator help information:\r\n"
-						 "\t%s reload domains\r\n"
-						 "\t    --reload domain alias table from list file\r\n"
 						 "\t%s reload addresses\r\n"
 						 "\t    --reload address alias table from list file";
 
@@ -342,20 +239,7 @@ static void console_talk(int argc, char **argv, char *result, int length)
 		return;
 	}
 	if (3 == argc && 0 == strcmp("reload", argv[1])) {
-		if (0 == strcmp("domains", argv[2])) {
-			switch(domain_table_refresh()) {
-			case REFRESH_OK:
-				strncpy(result, "250 domain alias table reload OK", length);
-				return;
-			case REFRESH_FILE_ERROR:
-				strncpy(result, "550 domain alias list file error", length);
-				return;
-			case REFRESH_HASH_FAIL:
-				strncpy(result, "550 hash map error for domain alias table",
-					length);
-				return;
-			}
-		} else if (0 == strcmp("addresses", argv[2])) {
+		if (0 == strcmp("addresses", argv[2])) {
 			switch(address_table_refresh()) {
 			case REFRESH_OK:
 				strncpy(result, "250 address alias table reload OK", length);
