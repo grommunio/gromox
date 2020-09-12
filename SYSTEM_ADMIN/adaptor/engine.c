@@ -19,7 +19,6 @@ static pthread_t g_thread_id2;
 static char g_mount_path[256];
 static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];
-static char g_aliasdomain_path[256];
 static char g_backup_path[256];
 static char g_unchkusr_path[256];
 static char g_collector_path[256];
@@ -30,14 +29,13 @@ static void* thread_work_func1(void *param);
 static void* thread_work_func2(void *param);
 
 void engine_init(const char *mount_path, const char *domainlist_path,
-	const char *aliasaddress_path, const char *aliasdomain_path,
+	const char *aliasaddress_path,
 	const char *backup_path, const char *unchkusr_path,
 	const char *collector_path, const char *subsystem_path)
 {
 	strcpy(g_mount_path, mount_path);
 	strcpy(g_domainlist_path, domainlist_path);
 	strcpy(g_aliasaddress_path, aliasaddress_path);
-	strcpy(g_aliasdomain_path, aliasdomain_path);
 	strcpy(g_backup_path, backup_path);
 	strcpy(g_unchkusr_path, unchkusr_path);
 	strcpy(g_collector_path, collector_path);
@@ -78,7 +76,7 @@ void engine_free()
 static void* thread_work_func1(void *param)
 {
 	int count;
-	int fd, fd1, len;
+	int fd, len;
 	char *str_value;
 	char temp_domain[257];
 	char temp_line[1024];
@@ -91,7 +89,6 @@ static void* thread_work_func1(void *param)
 
 	remove(g_domainlist_path);
 	remove(g_aliasaddress_path);
-	remove(g_aliasdomain_path);
 	remove(g_backup_path);
 	remove(g_unchkusr_path);
 	remove(g_collector_path);
@@ -150,35 +147,22 @@ static void* thread_work_func1(void *param)
 		}
 		
 		sprintf(temp_path, "%s.tmp", g_aliasaddress_path);
-		sprintf(temp_path1, "%s.tmp", g_aliasdomain_path);
-		
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
 			data_source_collect_free(pcollect);
 			goto NEXT_LOOP;
 		}
 		
-		fd1 = open(temp_path1, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd1) {
-			close(fd);
-			data_source_collect_free(pcollect);
-			goto NEXT_LOOP;
-		}
-
 		for (data_source_collect_begin(pcollect);
 			!data_source_collect_done(pcollect);
 			data_source_collect_forward(pcollect)) {
 			palias_item = (ALIAS_ITEM*)data_source_collect_get_value(pcollect);
 			len = sprintf(temp_line, "%s\t%s\n", palias_item->aliasname,
 				palias_item->mainname);
-			if (NULL != strchr(palias_item->aliasname, '@')) {
+			if (strchr(palias_item->aliasname, '@') != nullptr)
 				write(fd, temp_line, len);
-			} else {
-				write(fd1, temp_line, len);
-			}
 		}
 		close(fd);
-		close(fd1);
 
 		if (0 != file_operation_compare(temp_path, g_aliasaddress_path)) {
 			rename(temp_path, g_aliasaddress_path);
@@ -188,14 +172,6 @@ static void* thread_work_func1(void *param)
 				NOTIFY_DELIVERY);
 		}
 
-		if (0 != file_operation_compare(temp_path1, g_aliasdomain_path)) {
-			rename(temp_path1, g_aliasdomain_path);
-			file_operation_broadcast(g_aliasdomain_path,
-				"data/delivery/alias_domains.txt");
-			gateway_control_notify("libmtahook_alias_translator.so reload domains",
-				NOTIFY_DELIVERY);
-		}
-		
 		data_source_collect_clear(pcollect);
 
 		if (FALSE == data_source_get_backup_list(pcollect)) {

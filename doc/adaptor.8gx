@@ -17,8 +17,6 @@ Display option summary.
 .IP \(bu 4
 \fIdata_file_path\fI/alias_addresses.txt
 .IP \(bu 4
-\fIdata_file_path\fI/alias_domains.txt
-.IP \(bu 4
 \fIdata_file_path\fI/backup_list.txt
 .IP \(bu 4
 \fIdata_file_path\fI/console_table.txt
