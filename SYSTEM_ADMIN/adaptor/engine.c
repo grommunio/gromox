@@ -87,14 +87,7 @@ static void* thread_work_func1(void *param)
 	ALIAS_ITEM *palias_item;
 	DATA_COLLECT *pcollect;
 
-	remove(g_domainlist_path);
-	remove(g_aliasaddress_path);
-	remove(g_backup_path);
-	remove(g_unchkusr_path);
-	remove(g_collector_path);
-	remove(g_subsystem_path);
-	
-	count = 0;
+	count = 30;
 	while (FALSE == g_notify_stop) {
 		if (count < 30) {
 			count ++;
