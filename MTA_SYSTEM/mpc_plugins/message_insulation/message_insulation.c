@@ -187,11 +187,11 @@ static void* thread_work_func(void* arg)
 				free(pbuff);
 				pmime = mail_get_head(pcontext->pmail);
 				
-				mime_get_field(pmime, "X-Envelop-From",
+				mime_get_field(pmime, "X-Envelope-From",
 					pcontext->pcontrol->from, 256);
-				rcpt_num = mime_get_field_num(pmime, "X-Envelop-Rcpt");
+				rcpt_num = mime_get_field_num(pmime, "X-Envelope-Rcpt");
 				for (i=0; i<rcpt_num; i++) {
-					if (TRUE == mime_search_field(pmime, "X-Envelop-Rcpt", i,
+					if (TRUE == mime_search_field(pmime, "X-Envelope-Rcpt", i,
 						temp_rcpt, 256)) {
 						mem_file_writeline(&pcontext->pcontrol->f_rcpt_to,
 							temp_rcpt);
@@ -269,14 +269,14 @@ BOOL message_insulation_activate(const char *file_name)
 		return FALSE;
 	}
 	pcontext->pcontrol->bound_type = atoi(bound_buff);
-	if (FALSE == mime_get_field(pmime, "X-Envelop-From",
+	if (FALSE == mime_get_field(pmime, "X-Envelope-From",
 		pcontext->pcontrol->from, 256)) {
 		put_context(pcontext);
 		return FALSE;
 	}
-	rcpt_num = mime_get_field_num(pmime, "X-Envelop-Rcpt");
+	rcpt_num = mime_get_field_num(pmime, "X-Envelope-Rcpt");
 	for (i=0; i<rcpt_num; i++) {
-		if (FALSE == mime_search_field(pmime, "X-Envelop-Rcpt", i,
+		if (FALSE == mime_search_field(pmime, "X-Envelope-Rcpt", i,
 			temp_rcpt, 256)) {
 			put_context(pcontext);
 			return FALSE;

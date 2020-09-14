@@ -581,7 +581,7 @@ static BOOL domain_keyword_insulate(MESSAGE_CONTEXT *pcontext, char *msgid)
 		remove(temp_path);
 		return FALSE;
 	}
-	len = sprintf(temp_buff, "X-Envelop-From: %s\r\n",
+	len = sprintf(temp_buff, "X-Envelope-From: %s\r\n",
 			pcontext->pcontrol->from);
 	if (len != write(fd, temp_buff, len)) {
 		close(fd);
@@ -592,7 +592,7 @@ static BOOL domain_keyword_insulate(MESSAGE_CONTEXT *pcontext, char *msgid)
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
 		temp_rcpt, 256)) {
-		len = sprintf(temp_buff, "X-Envelop-Rcpt: %s\r\n", temp_rcpt);
+		len = sprintf(temp_buff, "X-Envelope-Rcpt: %s\r\n", temp_rcpt);
 		if (len != write(fd, temp_buff, len)) {
 			close(fd);
 			remove(temp_path);

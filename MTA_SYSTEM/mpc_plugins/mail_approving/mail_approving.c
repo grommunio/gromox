@@ -738,7 +738,7 @@ static BOOL mail_approving_serialize(MESSAGE_CONTEXT *pcontext,
 		remove(temp_path);
 		return FALSE;
 	}
-	len = sprintf(temp_buff, "X-Envelop-From: %s\r\n",
+	len = sprintf(temp_buff, "X-Envelope-From: %s\r\n",
 			pcontext->pcontrol->from);
 	if (len != write(fd, temp_buff, len)) {
 		close(fd);
@@ -749,7 +749,7 @@ static BOOL mail_approving_serialize(MESSAGE_CONTEXT *pcontext,
 		MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
 		temp_rcpt, 256)) {
-		len = sprintf(temp_buff, "X-Envelop-Rcpt: %s\r\n", temp_rcpt);
+		len = sprintf(temp_buff, "X-Envelope-Rcpt: %s\r\n", temp_rcpt);
 		if (len != write(fd, temp_buff, len)) {
 			close(fd);
 			remove(temp_path);
@@ -818,14 +818,14 @@ static BOOL mail_approving_activate(const char *file_name)
 		return FALSE;
 	}
 	pcontext->pcontrol->bound_type = atoi(bound_buff);
-	if (FALSE == mime_get_field(pmime, "X-Envelop-From",
+	if (FALSE == mime_get_field(pmime, "X-Envelope-From",
 		pcontext->pcontrol->from, 256)) {
 		put_context(pcontext);
 		return FALSE;
 	}
-	rcpt_num = mime_get_field_num(pmime, "X-Envelop-Rcpt");
+	rcpt_num = mime_get_field_num(pmime, "X-Envelope-Rcpt");
 	for (i=0; i<rcpt_num; i++) {
-		if (FALSE == mime_search_field(pmime, "X-Envelop-Rcpt", i,
+		if (FALSE == mime_search_field(pmime, "X-Envelope-Rcpt", i,
 			temp_rcpt, 256)) {
 			put_context(pcontext);
 			return FALSE;
