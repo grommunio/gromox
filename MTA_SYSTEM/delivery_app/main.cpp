@@ -81,7 +81,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_remote_mx_hello.so",
 	"libmtasvc_single_rcpt.so",
 	"libmtasvc_smtp_console_control.so",
-	"libmtasvc_spam_statistic.so",
 	NULL,
 };
 

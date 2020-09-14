@@ -12,10 +12,6 @@ enum{
 	SMTP_RELAY
 };
 
-typedef void (*SPAM_STATISTIC)(int);
-
-extern SPAM_STATISTIC spam_statistic;
-
 void message_enqueue_init(const char *path, int tapse_units);
 extern int message_enqueue_run(void);
 extern int message_enqueue_stop(void);

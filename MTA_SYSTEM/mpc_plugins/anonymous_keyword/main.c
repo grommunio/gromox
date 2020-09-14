@@ -12,9 +12,6 @@
 #define TAG_LEN					40
 #define MAX_CIRCLE_NUMBER		0x7FFFFFFF
 #define DEF_MODE				S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
-#define SPAM_STATISTIC_SPAM_INSULATION  1
-
-typedef void (*SPAM_STATISTIC)(int);
 
 typedef struct _KEYWORD_RESULT {
 	BOOL is_found;
@@ -28,8 +25,6 @@ static time_t g_statistic_time;
 static char g_insulation_path[256];
 static char g_statistic_buff[4096];
 static pthread_mutex_t g_id_lock;
-
-static SPAM_STATISTIC spam_statistic;
 
 static void enum_text(MIME *pmime, KEYWORD_RESULT *presult);
 
@@ -56,8 +51,6 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-
-		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		/* get the plugin name from system api */
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
@@ -123,9 +116,6 @@ static BOOL keyword_hook(MESSAGE_CONTEXT *pcontext)
 		if (TRUE == anonymous_keyword_match(encode_string.charset, decode_buff,
 			decode_len, result.keyword, result.group) &&
 			TRUE == message_insulate(pcontext, &result, increase_id())) {
-			if (NULL != spam_statistic) {
-				spam_statistic(SPAM_STATISTIC_SPAM_INSULATION);
-			}
 			return TRUE;
 		}
 	}
@@ -136,9 +126,6 @@ static BOOL keyword_hook(MESSAGE_CONTEXT *pcontext)
 		if (TRUE == anonymous_keyword_match(encode_string.charset, decode_buff,
 			decode_len, result.keyword, result.group) &&
 			TRUE == message_insulate(pcontext, &result, increase_id())) {
-			if (NULL != spam_statistic) {
-				spam_statistic(SPAM_STATISTIC_SPAM_INSULATION);
-			}
 			return TRUE;
 		}
 	}
@@ -149,9 +136,6 @@ static BOOL keyword_hook(MESSAGE_CONTEXT *pcontext)
 		if (TRUE == anonymous_keyword_match(encode_string.charset, decode_buff,
 			decode_len, result.keyword, result.group) &&
 			TRUE == message_insulate(pcontext, &result, increase_id())) {
-			if (NULL != spam_statistic) {
-				spam_statistic(SPAM_STATISTIC_SPAM_INSULATION);
-			}
 			return TRUE;
 		}
 	}
@@ -162,9 +146,6 @@ static BOOL keyword_hook(MESSAGE_CONTEXT *pcontext)
 		if (TRUE == anonymous_keyword_match(encode_string.charset, decode_buff,
 			decode_len, result.keyword, result.group) &&
 			TRUE == message_insulate(pcontext, &result, increase_id())) {
-			if (NULL != spam_statistic) {
-				spam_statistic(SPAM_STATISTIC_SPAM_INSULATION);
-			}
 			return TRUE;
 		}
 	}
@@ -172,17 +153,11 @@ static BOOL keyword_hook(MESSAGE_CONTEXT *pcontext)
 	mail_enum_mime(pmail, (MAIL_MIME_ENUM)enum_text, &result);
 	if (TRUE == result.is_found && TRUE == message_insulate(pcontext,
 		&result, increase_id())) {
-		if (NULL != spam_statistic) {
-			spam_statistic(SPAM_STATISTIC_SPAM_INSULATION);
-		}
 		return TRUE;
 	}
 	mail_enum_mime(pmail, (MAIL_MIME_ENUM)enum_attachment, &result);
 	if (TRUE == result.is_found && TRUE == message_insulate(pcontext,
 		&result, increase_id())) {
-		if (NULL != spam_statistic) {
-			spam_statistic(SPAM_STATISTIC_SPAM_INSULATION);
-		}
 		return TRUE;
 	}
 	return FALSE;

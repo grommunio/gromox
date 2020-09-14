@@ -361,27 +361,18 @@ static void* thread_work_func(void* arg)
 				need_bounce = FALSE;
 				need_remove = TRUE;
 				net_failure_statistic(1, 0, 0, 0);
-				if (NULL != exmdb_local_spam_statistic) {
-					exmdb_local_spam_statistic(SPAM_STATISTIC_OK);
-				}
 				break;
 			case DELIVERY_OPERATION_DELIVERED:
 				bounce_type = BOUNCE_MAIL_DELIVERED;
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(1, 0, 0, 0);
-				if (NULL != exmdb_local_spam_statistic) {
-					exmdb_local_spam_statistic(SPAM_STATISTIC_OK);
-				}
 				break;
 			case DELIVERY_NO_USER:
 			    bounce_type = BOUNCE_NO_USER;
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 				net_failure_statistic(0, 0, 0, 1);
-				if (NULL != exmdb_local_spam_statistic) {
-					exmdb_local_spam_statistic(SPAM_STATISTIC_NOUSER);
-				}
 				break;
 			case DELIVERY_MAILBOX_FULL:
 				bounce_type = BOUNCE_MAILBOX_FULL;

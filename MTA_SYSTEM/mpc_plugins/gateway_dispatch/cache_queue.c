@@ -367,9 +367,6 @@ static void* thread_work_func(void* arg)
 				need_bounce = FALSE;
 				need_remove = TRUE;
 				net_failure_statistic(1, 0, 0, 0);
-				if (NULL != gateway_dispatch_spam_statistic) {
-					gateway_dispatch_spam_statistic(SPAM_STATISTIC_OK);
-				}
 				break;
 			case SMTP_DISPATCH_TEMP_ERROR:
 				net_failure_statistic(0, 1, 0, 0);
@@ -379,9 +376,6 @@ static void* thread_work_func(void* arg)
 			    need_bounce = TRUE;
 				need_remove = TRUE;
 			    net_failure_statistic(0, 0, 0, 1);
-				if (NULL != gateway_dispatch_spam_statistic) {
-					gateway_dispatch_spam_statistic(SPAM_STATISTIC_NOUSER);
-				}
 				/* ignore functionality of anti-enumeration ! */
 				break;
 			case SMTP_DISPATCH_PERMANENT_ERROR:

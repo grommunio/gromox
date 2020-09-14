@@ -12,11 +12,6 @@ enum {
 
 #define BOUND_NOTLOCAL					7
 
-#define SPAM_STATISTIC_OK               0
-#define SPAM_STATISTIC_NOUSER           2
-
-typedef void (*SPAM_STATISTIC)(int);
-
 extern BOOL (*exmdb_local_check_domain)(const char *domainname);
 
 extern BOOL (*exmdb_local_get_lang)(const char *username, char *lang);
@@ -29,9 +24,6 @@ extern BOOL (*exmdb_local_check_same_org2)(
 
 extern BOOL (*exmdb_local_lang_to_charset)(
 	const char *lang, char *charset);
-
-extern SPAM_STATISTIC exmdb_local_spam_statistic;
-
 void exmdb_local_init(const char *config_path,
 	const char *org_name, const char *default_charset,
 	const char *default_timezone, const char *propname_path);

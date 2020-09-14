@@ -28,15 +28,12 @@
 #define TOKEN_MESSAGE_QUEUE     1
 #define TOKEN_SHARE_MEMORY      2
 #define BLOCK_SIZE              64*1024*2
-#define SPAM_STATISTIC_OK   	0
 #define MAX_LINE_LENGTH			64*1024
 
 typedef struct _MSG_BUFF {
     long msg_type;
     int msg_content;
 } MSG_BUFF;
-
-SPAM_STATISTIC spam_statistic;
 
 static void* thread_work_func(void* arg);
 static BOOL message_enqueue_check(void);
@@ -287,9 +284,6 @@ static void* thread_work_func(void* arg)
     			msg.msg_type = MESSAGE_TAPE;
     			msg.msg_content = pos;
     			msgsnd(g_msg_id, &msg, sizeof(int), IPC_NOWAIT);
-				if (NULL != spam_statistic) {
-                	spam_statistic(SPAM_STATISTIC_OK);
-            	}
 				g_enqueued_num ++;
         		pentity->pflusher->flush_result = FLUSH_RESULT_OK;
         		feedback_entity(pentity);
@@ -301,9 +295,6 @@ static void* thread_work_func(void* arg)
     			msg.msg_type = MESSAGE_MESS;
     			msg.msg_content = pentity->pflusher->flush_ID;
     			msgsnd(g_msg_id, &msg, sizeof(int), IPC_NOWAIT);
-				if (NULL != spam_statistic) {
-                	spam_statistic(SPAM_STATISTIC_OK);
-				}
 				g_enqueued_num ++;
 			}
 			pentity->pflusher->flush_result = FLUSH_RESULT_OK;

@@ -41,9 +41,6 @@ static CHECK_LOCAL dns_check_local;
 static GATEWAY_NOUSER_AUDIT gateway_nouser_audit;
 
 static GATEWAY_NORCPT_AUDIT gateway_norcpt_audit;
-
-SPAM_STATISTIC gateway_dispatch_spam_statistic;
-
 static CONSOLE_CONTROL smtp_console_control;
 static void gateway_dispatch_clean_up(void);
 static void gateway_dispatch_dump_invalid(const char* ip, int port);
@@ -81,8 +78,6 @@ void gateway_dispatch_init(const char *list_path, int backend_interval,
  */
 int gateway_dispatch_run()
 {
-	gateway_dispatch_spam_statistic = (SPAM_STATISTIC)query_service(
-										"spam_statistic");
 #define E(f, s) do { \
 	(f) = query_service(s); \
 	if ((f) == nullptr) { \
@@ -269,9 +264,6 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 		need_retry = FALSE;
 		need_bounce = FALSE;
 		net_failure_statistic(1, 0, 0, 0);
-		if (NULL != gateway_dispatch_spam_statistic) {
-			gateway_dispatch_spam_statistic(SPAM_STATISTIC_OK);
-		}
 		break;
     case SMTP_DISPATCH_TEMP_ERROR:
 		need_retry = TRUE;
@@ -287,9 +279,6 @@ BOOL gateway_dispatch_hook(MESSAGE_CONTEXT *pcontext)
 			need_bounce = TRUE;
 		}
 		net_failure_statistic(0, 0, 0, 1);
-		if (NULL != gateway_dispatch_spam_statistic) {
-			gateway_dispatch_spam_statistic(SPAM_STATISTIC_NOUSER);
-		}
 		memset(tmp_ip, 0, 16);
 		pmime = mail_get_head(pcontext->pmail);
 		if (TRUE == mime_get_field(pmime,  "X-Lasthop", tmp_ip, 16) &&

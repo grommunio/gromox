@@ -43,9 +43,6 @@ BOOL (*exmdb_local_check_domain)(const char *domainname);
 
 static BOOL (*exmdb_local_get_user_info)(const char *username,
 	char *home_dir, char *charset, char *timezone);
-
-SPAM_STATISTIC exmdb_local_spam_statistic;
-
 BOOL (*exmdb_local_get_lang)(const char *username, char *lang);
 
 BOOL (*exmdb_local_get_timezone)(const char *username, char *timezone);
@@ -119,7 +116,6 @@ int exmdb_local_run()
 
 	E(exmdb_local_check_domain, "check_domain");
 	E(exmdb_local_get_user_info, "get_user_info");
-	E(exmdb_local_spam_statistic, "spam_statistic");
 	E(exmdb_local_get_lang, "get_user_lang");
 	E(exmdb_local_get_timezone, "get_timezone");
 	E(exmdb_local_check_same_org2, "check_same_org2");
@@ -208,15 +204,9 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			switch (exmdb_local_deliverquota(pcontext, rcpt_buff)) {
 			case DELIVERY_OPERATION_OK:
 				net_failure_statistic(1, 0, 0, 0);
-				if (NULL != exmdb_local_spam_statistic) {
-					exmdb_local_spam_statistic(SPAM_STATISTIC_OK);
-				}
 				break;
 			case DELIVERY_OPERATION_DELIVERED:
 				net_failure_statistic(1, 0, 0, 0);
-				if (NULL != exmdb_local_spam_statistic) {
-					exmdb_local_spam_statistic(SPAM_STATISTIC_OK);
-				}
 				if (TRUE == pcontext->pcontrol->need_bounce &&
 					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
 					pbounce_context = get_context();
@@ -273,9 +263,6 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 							enqueue_context(pbounce_context);
 						}
 					}
-				}
-				if (NULL != exmdb_local_spam_statistic) {
-					exmdb_local_spam_statistic(SPAM_STATISTIC_NOUSER);
 				}
 				break;
 			case DELIVERY_MAILBOX_FULL:

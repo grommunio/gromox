@@ -89,7 +89,6 @@ mta_plugins = \
 	libmtasvc_retrying_table.la \
 	libmtasvc_single_rcpt.la \
 	libmtasvc_smtp_console_control.la \
-	libmtasvc_spam_statistic.la \
 	libmtasvc_special_protection_audit.la \
 	libmtasvc_tagging_table.la \
 	libmtasvc_user_filter.la
@@ -158,7 +157,6 @@ noinst_DATA += \
 	libmtasvc_retrying_table.la \
 	libmtasvc_single_rcpt.ldd \
 	libmtasvc_smtp_console_control.ldd \
-	libmtasvc_spam_statistic.la \
 	libmtasvc_special_protection_audit.ldd \
 	libmtasvc_tagging_table.ldd \
 	libmtasvc_user_filter.ldd
@@ -519,10 +517,6 @@ libmtasvc_retrying_table_la_SOURCES = MTA_SYSTEM/service_plugins/retrying_table/
 libmtasvc_retrying_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_retrying_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_retrying_table_la_DEPENDENCIES = ${default_sym}
-libmtasvc_spam_statistic_la_SOURCES = MTA_SYSTEM/service_plugins/spam_statistic.c
-libmtasvc_spam_statistic_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_spam_statistic_la_LIBADD = libgromox_common.la
-EXTRA_libmtasvc_spam_statistic_la_DEPENDENCIES = ${default_sym}
 libmtasvc_tagging_table_la_SOURCES = MTA_SYSTEM/service_plugins/tagging_table/main.c MTA_SYSTEM/service_plugins/tagging_table/tagging_table.c
 libmtasvc_tagging_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_tagging_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la

@@ -1,3 +1,0 @@
-local\ delivery
-insulated
-user\ not\ existing

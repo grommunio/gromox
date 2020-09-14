@@ -21,7 +21,6 @@ BOOL FLH_LibMain(int reason, void** ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		spam_statistic = (SPAM_STATISTIC)query_service("spam_statistic");
 		strcpy(file_name, get_plugin_name());
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
