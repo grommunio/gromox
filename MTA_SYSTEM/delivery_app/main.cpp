@@ -55,8 +55,6 @@ static const char *const g_dfl_mpc_plugins[] = {
 	"libmtahook_remote_postman.so",
 	"libmtahook_report_forms.so",
 	"libmtahook_self_monitor.so",
-	"libmtahook_spam_complain.so",
-	"libmtahook_spam_tagging.so",
 	"libmtahook_status_forms.so",
 	"libmtahook_system_sign.so",
 	"libmtahook_system_updater.so",

@@ -50,8 +50,6 @@ mta_plugins = \
 	libmtahook_remote_postman.la \
 	libmtahook_report_forms.la \
 	libmtahook_self_monitor.la \
-	libmtahook_spam_complain.la \
-	libmtahook_spam_tagging.la \
 	libmtahook_status_forms.la \
 	libmtahook_system_sign.la \
 	libmtahook_system_updater.la \
@@ -121,8 +119,6 @@ noinst_DATA += \
 	libmtahook_remote_postman.ldd \
 	libmtahook_report_forms.ldd \
 	libmtahook_self_monitor.ldd \
-	libmtahook_spam_complain.ldd \
-	libmtahook_spam_tagging.ldd \
 	libmtahook_status_forms.ldd \
 	libmtahook_system_sign.ldd \
 	libmtahook_system_updater.ldd \
@@ -363,14 +359,6 @@ libmtahook_self_monitor_la_SOURCES = MTA_SYSTEM/mpc_plugins/self_monitor.c
 libmtahook_self_monitor_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_self_monitor_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmtahook_self_monitor_la_DEPENDENCIES = ${default_sym}
-libmtahook_spam_complain_la_SOURCES = MTA_SYSTEM/mpc_plugins/spam_complain/main.c MTA_SYSTEM/mpc_plugins/spam_complain/spam_complain.c
-libmtahook_spam_complain_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_spam_complain_la_LIBADD = libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_spam_complain_la_DEPENDENCIES = ${default_sym}
-libmtahook_spam_tagging_la_SOURCES = MTA_SYSTEM/mpc_plugins/spam_tagging.c
-libmtahook_spam_tagging_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_spam_tagging_la_LIBADD = libgromox_email.la
-EXTRA_libmtahook_spam_tagging_la_DEPENDENCIES = ${default_sym}
 libmtahook_status_forms_la_SOURCES = MTA_SYSTEM/mpc_plugins/status_forms.c
 libmtahook_status_forms_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_status_forms_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
