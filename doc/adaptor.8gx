@@ -21,7 +21,7 @@ Display option summary.
 .IP \(bu 4
 \fIdata_file_path\fI/alias_addresses.txt: used by alias_translator(4gx)
 .IP \(bu 4
-\fIdata_file_path\fI/backup_list.txt
+\fIdata_file_path\fI/backup_list.txt: used by archive_agent(4gx), backup_list(4gx)
 .IP \(bu 4
 \fIdata_file_path\fI/console_table.txt
 .IP \(bu 4

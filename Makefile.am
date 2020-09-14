@@ -749,7 +749,8 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 # doc
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx \
-	doc/archive.8gx doc/authmgr.4gx doc/backup_list.4gx doc/bl_delete.8gx \
+	doc/archive.8gx doc/archive_agent.4gx \
+	doc/authmgr.4gx doc/backup_list.4gx doc/bl_delete.8gx \
 	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx doc/domain_whitelist.4gx \
