@@ -28,7 +28,6 @@ mta_plugins = \
 	libmtaflh_message_enqueue.la \
 	libmtahook_alias_translator.la \
 	libmtahook_anonymous_keyword.la \
-	libmtahook_antivirus_processor.la \
 	libmtahook_archive_agent.la \
 	libmtahook_cdner_caching.la \
 	libmtahook_domain_keyword.la \
@@ -94,14 +93,12 @@ mta_plugins = \
 	libmtasvc_smtp_console_control.la \
 	libmtasvc_spam_statistic.la \
 	libmtasvc_special_protection_audit.la \
-	libmtasvc_sssp_agent.la \
 	libmtasvc_tagging_table.la \
 	libmtasvc_user_filter.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
 	libmtahook_alias_translator.ldd \
 	libmtahook_anonymous_keyword.ldd \
-	libmtahook_antivirus_processor.ldd \
 	libmtahook_archive_agent.ldd \
 	libmtahook_cdner_caching.ldd \
 	libmtahook_domain_keyword.ldd \
@@ -167,7 +164,6 @@ noinst_DATA += \
 	libmtasvc_smtp_console_control.ldd \
 	libmtasvc_spam_statistic.la \
 	libmtasvc_special_protection_audit.ldd \
-	libmtasvc_sssp_agent.la \
 	libmtasvc_tagging_table.ldd \
 	libmtasvc_user_filter.ldd
 mra_system = pop3 imap
@@ -279,10 +275,6 @@ libmtahook_anonymous_keyword_la_SOURCES = MTA_SYSTEM/mpc_plugins/anonymous_keywo
 libmtahook_anonymous_keyword_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_anonymous_keyword_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_anonymous_keyword_la_DEPENDENCIES = ${default_sym}
-libmtahook_antivirus_processor_la_SOURCES = MTA_SYSTEM/mpc_plugins/antivirus_processor.c
-libmtahook_antivirus_processor_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_antivirus_processor_la_LIBADD = libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_antivirus_processor_la_DEPENDENCIES = ${default_sym}
 libmtahook_archive_agent_la_SOURCES = MTA_SYSTEM/mpc_plugins/archive_agent/main.c
 libmtahook_archive_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_archive_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
@@ -543,10 +535,6 @@ libmtasvc_spam_statistic_la_SOURCES = MTA_SYSTEM/service_plugins/spam_statistic.
 libmtasvc_spam_statistic_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_spam_statistic_la_LIBADD = libgromox_common.la
 EXTRA_libmtasvc_spam_statistic_la_DEPENDENCIES = ${default_sym}
-libmtasvc_sssp_agent_la_SOURCES = MTA_SYSTEM/service_plugins/sssp_agent.c
-libmtasvc_sssp_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_sssp_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_sssp_agent_la_DEPENDENCIES = ${default_sym}
 libmtasvc_tagging_table_la_SOURCES = MTA_SYSTEM/service_plugins/tagging_table/main.c MTA_SYSTEM/service_plugins/tagging_table/tagging_table.c
 libmtasvc_tagging_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_tagging_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la

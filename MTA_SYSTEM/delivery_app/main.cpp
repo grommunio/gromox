@@ -36,7 +36,6 @@ static struct HXoption g_options_table[] = {
 static const char *const g_dfl_mpc_plugins[] = {
 	"libmtahook_alias_translator.so",
 	"libmtahook_anonymous_keyword.so",
-	"libmtahook_antivirus_processor.so",
 	"libmtahook_archive_agent.so",
 	"libmtahook_domain_keyword.so",
 	"libmtahook_domain_mailbox.so",
@@ -85,7 +84,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_single_rcpt.so",
 	"libmtasvc_smtp_console_control.so",
 	"libmtasvc_spam_statistic.so",
-	"libmtasvc_sssp_agent.so",
 	NULL,
 };
 
