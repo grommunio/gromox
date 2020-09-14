@@ -23,24 +23,6 @@ specified, /etc/gromox/smtp.cfg will be read if it exists.
 \fB\-?\fP
 Display option summary.
 .SH Configuration file directives
-.SS anti_spamming_ignore_errors
-.PP
-If set to yes, AS plugins that fail to load on startup are ignored. If set to
-no, the daemon will exit if any plugin cannot be loaded.
-.PP
-Default: \fIno\fP
-.SS anti_spamming_init_path
-.PP
-Path to a secondary directory where service plugins will be loaded from if a
-primary search in standard directories (as per ld.so(8)) was unsuccessful.
-.PP
-Default: \fI/usr/lib/gromox\fP
-.SS anti_spamming_plugin_list
-.PP
-Path to a text file which lists the filenames of service plugins to load,
-one per line.
-.PP
-Default: (unspecified)
 .SS block_interval_auths
 .PP
 The amount of time a user is blocked from connecting to the service after too

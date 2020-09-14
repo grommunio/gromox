@@ -4,7 +4,6 @@
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
 #include "console_server.h"
-#include "anti_spamming.h"
 #include "contexts_pool.h"
 #include "threads_pool.h"
 #include "lib_buffer.h"
@@ -48,17 +47,6 @@ static char g_service_help[] =
 	"\t    --print the module's refering plug-ins\r\n"
 	"\tservice depend <service>\r\n"
 	"\t    --print modules depending the service plug-in";
-
-static char g_anti_spam_help[] =
-	"250 SMTP DAEMON anti-spamming plugins help information:\r\n"
-	"\tanti-spamming info\r\n"
-	"\t    --print the plug-in info\r\n"
-	"\tanti-spamming load <name>\r\n"
-	"\t    --load the specified plug-in\r\n"
-	"\tanti-spamming unload <name>\r\n"
-	"\t    --unload the specified plug-in\r\n"
-	"\tanti-spamming reload <name>\r\n"
-	"\t    --reload the specified plug-in";
 
 static char g_smtp_parser_help[] =
 	"250 SMTP DAEMON smtp control help information:\r\n"
@@ -234,120 +222,6 @@ BOOL cmd_handler_service_control(int argc, char** argv)
 		return TRUE;
 	}
 
-	console_server_reply_to_client("550 invalid argument %s", argv[1]);
-	return TRUE;
-}
-
-/*  
- *  anti-spamming plug-in control, which can print all the plug-in 
- *  information, load and unload the specified plug-in dynamicly.
- *  the usage is as follows,
- *      anti-spamming info          // print the plug-in info
- *      anti-spamming load   <name> // load the specified plug-in
- *      anti-spamming unload <name> // unload the specified plug-in
- *      anti-spamming reload <name> // reload the specified plug-in
- */
-BOOL cmd_handler_anti_spamming_control(int argc, char** argv)
-{
-	int  result = 0;
-
-	if (1 == argc) {
-		console_server_reply_to_client("550 too few arguments");
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		console_server_reply_to_client(g_anti_spam_help);
-		return TRUE;
-	}
-
-	if (2 == argc && 0 == strcmp(argv[1], "info")) {
-		g_plugname_buffer_size = 0;
-		anti_spamming_enum_plugins(cmd_handler_dump_plugname);
-		g_plugname_buffer[g_plugname_buffer_size] = '\0';
-		console_server_reply_to_client("250 loaded anti-spamming plugins\r\n%s",
-				g_plugname_buffer);
-		g_plugname_buffer_size = 0;
-		return TRUE;
-	}
-
-	if (3 == argc && 0 == strcmp(argv[1], "load")) {
-		result = anti_spamming_load_library(argv[2]);
-		switch (result) {
-		case PLUGIN_LOAD_OK:
-			console_server_reply_to_client("250 load plug-in OK");
-			return TRUE;
-		case PLUGIN_ALREADY_LOADED:
-			console_server_reply_to_client("550 the plug-in has already "
-								"been loaded");
-			break;
-		case PLUGIN_FAIL_OPEN:
-			console_server_reply_to_client("550 error opening the plug-in");
-			break;
-		case PLUGIN_NO_MAIN:
-			console_server_reply_to_client("550 fail to find library function");
-			break;
-		case PLUGIN_FAIL_ALLOCNODE:
-			console_server_reply_to_client("550 fail to plug-in alloc memory");
-			break;
-		case PLUGIN_FAIL_EXECUTEMAIN:
-			console_server_reply_to_client("550 fail to execute plugin's "
-						"init function");
-			break;
-		default:
-			console_server_reply_to_client("550 unknown error");
-		}
-		return TRUE;
-	}
-
-	if (3 == argc && 0 == strcmp(argv[1], "unload")) {
-		result = anti_spamming_unload_library(argv[2]);
-		switch (result) {
-		case PLUGIN_UNLOAD_OK:
-			console_server_reply_to_client("250 unload %s OK", argv[2]);
-			return TRUE;
-		case PLUGIN_NOT_FOUND:
-			console_server_reply_to_client("550 no such plug-in running");
-			return TRUE;
-		case PLUGIN_SYSTEM_ERROR:
-			console_server_reply_to_client("550 information in "
-				"anti-spamming module diff with the current plug-in");
-			return TRUE;
-		default:
-			console_server_reply_to_client("550 unknown error");
-			return TRUE;
-		}
-	}
-
-	if (3 == argc && 0 == strcmp(argv[1], "reload")) {
-		result = anti_spamming_reload_library(argv[2]);
-		switch (result) {
-		case PLUGIN_RELOAD_OK:
-			console_server_reply_to_client("250 reload %s OK", argv[2]);
-			return TRUE;
-		case PLUGIN_RELOAD_NOT_FOUND:
-			console_server_reply_to_client("550 no such plug-in running");
-			return TRUE;
-		case PLUGIN_RELOAD_ERROR:
-			console_server_reply_to_client("550 reload error");
-			return TRUE;
-	 case PLUGIN_RELOAD_FAIL_OPEN:
-		 console_server_reply_to_client("550 error opening the plug-in");
-			return TRUE;
-		case PLUGIN_RELOAD_NO_MAIN:
-			console_server_reply_to_client("550 fail to find library function");
-			return TRUE;
-		case PLUGIN_RELOAD_FAIL_ALLOCNODE:
-			console_server_reply_to_client("550 fail to plug-in alloc memory");
-			return TRUE;
-		case PLUGIN_RELOAD_FAIL_EXECUTEMAIN:
-			console_server_reply_to_client("550 fail to execute plugin's "
-				"init function");
-			return TRUE;
-		default:
-			console_server_reply_to_client("550 unknown error");
-			return TRUE;
-		}
-	}
 	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
 }
@@ -699,26 +573,6 @@ BOOL cmd_handler_flusher_control(int argc, char** argv)
 	}
 	console_server_reply_to_client("%s", result);
 	return TRUE;
-}
-
-
-BOOL cmd_handler_as_plugins(int argc, char** argv)
-{
-	char buf[TALK_BUFFER_LEN];
-	
-	memset(buf, 0, TALK_BUFFER_LEN);
-	if (PLUGIN_TALK_OK == 
-		anti_spamming_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
-		if (strlen(buf) == 0) {
-			strncpy(buf, "550 anti-spamming plugin console talk is error "
-				"implemented", sizeof(buf) - 1);
-			buf[sizeof(buf) - 1] = '\0';
-		}
-		console_server_reply_to_client("%s", buf);
-		return TRUE;
-	}
-	return FALSE;
-
 }
 
 BOOL cmd_handler_service_plugins(int argc, char** argv)

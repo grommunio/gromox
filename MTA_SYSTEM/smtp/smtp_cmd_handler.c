@@ -5,7 +5,6 @@
 #include <gromox/defs.h>
 #include "smtp_cmd_handler.h"
 #include "system_services.h"
-#include "anti_spamming.h"
 #include "resource.h"
 #include "blocks_allocator.h"
 #include "util.h"
@@ -548,11 +547,9 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 {
     int string_length;
     const char* smtp_reply_str;
-    char buff[1024], reply_buf[1200];
     STREAM stream;
     int size, size_copied;
 	int size2, size2_used;
-	int judge_result;
 
     if (T_RCPT_CMD != pcontext->last_cmd) {
         /* 503 bad sequence of command, RCPT first */
@@ -578,31 +575,6 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 		return DISPATCH_CONTINUE;
 	}
 
-    /* pass the envelop information in anti-spamming judge */
-	judge_result = anti_spamming_pass_judges(pcontext, buff, 1024);
-	if (MESSAGE_REJECT == judge_result) {
-        /* 550 ... */
-        string_length = sprintf(reply_buf, "550 %s\r\n", buff);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reply_buf, string_length);
-		} else {
-			write(pcontext->connection.sockd, reply_buf, string_length);
-		}
-        smtp_parser_log_info(pcontext, 0,
-			"illegal mail is cut! reason: %s", buff);
-        return DISPATCH_SHOULD_CLOSE;
-	} else if (MESSAGE_RETRYING == judge_result) {
-        /* 450 ... */
-        string_length = sprintf(reply_buf, "450 %s\r\n", buff);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reply_buf, string_length);
-		} else {
-			write(pcontext->connection.sockd, reply_buf, string_length);
-		}
-        smtp_parser_log_info(pcontext, 0,
-			"dubious mail is cut! reason: %s", buff);
-        return DISPATCH_SHOULD_CLOSE;
-	}
     /* 354 Start mail input; end with <CRLF>.<CRLF> */
     smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2173003,1,&string_length);
     pcontext->last_cmd = T_DATA_CMD;

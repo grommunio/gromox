@@ -3,6 +3,7 @@
  */ 
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "smtp_parser.h"
 #include "smtp_cmd_handler.h"
 #include "files_allocator.h"
@@ -10,7 +11,6 @@
 #include "bndstack_allocator.h"
 #include "threads_pool.h"
 #include "system_services.h"
-#include "anti_spamming.h"
 #include "flusher.h"
 #include "resource.h"
 #include "lib_buffer.h"
@@ -55,19 +55,8 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext);
 static void smtp_parser_context_free(SMTP_CONTEXT *pcontext);
 
 static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole);
-
-static BOOL smtp_parser_pass_auditor_filter(SMTP_CONTEXT *pcontext,
-	BOOL is_whole, char *reason, int length);
-
 static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext,
 	char *reason, int length);
-static int smtp_parser_get_block_ID(void);
-static void smtp_parser_record_mime_field(SMTP_CONTEXT *pcontext,
-	MIME_FIELD *pfield);
-
-static int smtp_parser_parse_and_save_blkmime(SMTP_CONTEXT *pcontext,
-	char *in_buff, int length);
-
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
 static int g_context_num;
@@ -87,8 +76,6 @@ static unsigned int g_timeout;
 static size_t g_auth_times;
 static size_t g_blktime_auths;
 static SMTP_CONTEXT *g_context_list;
-static LIB_BUFFER *g_as_allocator;
-static pthread_key_t g_as_buff_key;
 static pthread_mutex_t g_block_ID_mutex;
 static int g_block_ID;
 static char g_certificate_path[256];
@@ -96,25 +83,6 @@ static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
 static pthread_mutex_t *g_ssl_mutex_buf;
-
-
-
-/*
- *    get a global unique block ID
- *    @return
- *        block ID
- */
-static int smtp_parser_get_block_ID()
-{
-	pthread_mutex_lock(&g_block_ID_mutex);
-	if (g_block_ID != 0x7FFFFFFF) {
-		g_block_ID ++;
-	} else {
-		g_block_ID = 1;
-	}
-	pthread_mutex_unlock(&g_block_ID_mutex);
-	return g_block_ID;
-}
 
 /* 
  * construct a smtp parser object
@@ -237,17 +205,6 @@ int smtp_parser_run()
 		CRYPTO_THREADID_set_callback(smtp_parser_ssl_id);
 		CRYPTO_set_locking_callback(smtp_parser_ssl_locking);
 	}
-	/* 
-	 to avoid that the thread is going to be released, by the threads pool is
-	 immediatly creating a new thread, error may occur under this condition.
-	 so double the g_as_allocator to avoid this program
-	 */
-	g_as_allocator = lib_buffer_init(TLS_BUFFER_BUS_ALLIN(g_flushing_size *
-		TLS_BUFFER_RATIO), g_threads_num * 2, TRUE); 
-	if (NULL == g_as_allocator) {
-		printf("[smtp_parser]: Failed to allocate anti-spamming memory\n");
-		return -6;
-	}
 	g_context_list = malloc(sizeof(SMTP_CONTEXT)*g_context_num);
 	if (NULL== g_context_list) {
 		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
@@ -258,7 +215,6 @@ int smtp_parser_run()
 	}
 	if (!resource_get_integer("LISTEN_SSL_PORT", &g_ssl_port))
 		g_ssl_port = 0;
-	pthread_key_create(&g_as_buff_key, NULL);
 	pthread_mutex_init(&g_block_ID_mutex, NULL);
 	return 0;
 }
@@ -273,14 +229,8 @@ int smtp_parser_stop()
 {
 	int i;
 
-	if (NULL != g_as_allocator && NULL != g_context_list) {
-		pthread_key_delete(g_as_buff_key);
+	if (g_context_list != nullptr)
 		pthread_mutex_destroy(&g_block_ID_mutex);
-	}
-	if (NULL != g_as_allocator) {
-		lib_buffer_free(g_as_allocator);
-		g_as_allocator = NULL;
-	}
 	if (NULL != g_context_list) {
 		for (i=0; i<g_context_num; i++) {
 			smtp_parser_context_free(g_context_list + i);
@@ -340,26 +290,10 @@ struct timeval smtp_parser_get_context_timestamp(SMTP_CONTEXT *pcontext)
  */
 int smtp_parser_threads_event_proc(int action)
 {
-	void *pbuff;
-	   
 	switch (action) {
 	case THREAD_CREATE:
-		anti_spamming_threads_event_proc(PLUGIN_THREAD_CREATE);
-		pbuff = lib_buffer_get(g_as_allocator);
-		if (NULL == pbuff) {
-			debug_info("[smtp_parser]: fatal error! fail to get memory from as"
-						" allocator\n");
-			return -1;
-		}
-		pthread_setspecific(g_as_buff_key, (const void*) pbuff);    
 		break;
 	case THREAD_DESTROY:
-		anti_spamming_threads_event_proc(PLUGIN_THREAD_DESTROY);
-		pbuff = (void*) pthread_getspecific(g_as_buff_key);
-		if (NULL != pbuff) {
-			lib_buffer_put(g_as_allocator, pbuff);
-		}
-		pthread_setspecific(g_as_buff_key, (const void*) NULL);    
 		break;
 	}
 	return 0;
@@ -549,10 +483,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
 		}
-		if (0 != pcontext->block_info.last_block_ID) {
-			anti_spamming_inform_filters(pcontext->block_info.block_type,
-				pcontext, ACTION_BLOCK_FREE,pcontext->block_info.last_block_ID);
-		}
 		if (NULL != pcontext->connection.ssl) {
 			SSL_shutdown(pcontext->connection.ssl);
 			SSL_free(pcontext->connection.ssl);
@@ -574,11 +504,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 LOST_READ:
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
-		}
-		if (0 != pcontext->block_info.last_block_ID) {
-			anti_spamming_inform_filters(pcontext->block_info.block_type,
-				pcontext, ACTION_BLOCK_FREE, 
-				pcontext->block_info.last_block_ID);
 		}
 		if (NULL != pcontext->connection.ssl) {
 			SSL_shutdown(pcontext->connection.ssl);
@@ -611,11 +536,6 @@ LOST_READ:
 			smtp_parser_log_info(pcontext, 0, "time out");
 			if (0 != pcontext->flusher.flush_ID) {
 				flusher_cancel(pcontext);
-			}
-			if (0 != pcontext->block_info.last_block_ID) {
-				anti_spamming_inform_filters(pcontext->block_info.block_type,
-					pcontext, ACTION_BLOCK_FREE, 
-					pcontext->block_info.last_block_ID);
 			}
 			if (NULL != pcontext->connection.ssl) {
 				SSL_shutdown(pcontext->connection.ssl);
@@ -802,9 +722,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		pcontext->flusher.flush_action = FLUSH_PART_MAIL;
 	}
 	/* a mail is recieved pass it in anti-spamming auditor&filter&statistic */
-	if (FALSE == smtp_parser_pass_auditor_filter(pcontext,is_whole,buff,1024)
-	   ||(TRUE == is_whole && 
-		 FALSE == smtp_parser_pass_statistic(pcontext, buff,1024))) {
+	if (is_whole && !smtp_parser_pass_statistic(pcontext, buff, 1024)) {
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, buff, strlen(buff));
 		} else {
@@ -848,611 +766,6 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 }
 
 /*
- *    class the information in context and pass them by auditors and filters
- *    @param
- *        pcontext [in, out]    indicate the context object
- *        is_whole              whether it's the last part of a mail
- *        reason [out]          buffer for retrieving reason when fail to pass
- *        length                indicate the length of buffer
- *    @reason
- *        TRUE                  OK to pass
- *        FALSE                 fail to pass
- */
-static BOOL smtp_parser_pass_auditor_filter(SMTP_CONTEXT *pcontext,
-	BOOL is_whole, char *reason, int length)
-{
-	char *ptls_buf, *parsed_buf, *smtp_reply_str;
-	const char *boundary_string; 
-	MIME_FIELD mime_field;
-	int audit_result, size;
-	size_t parsed_len, parsed_length;
-	int boundary_length, type_len; 
-	int filter_result, line_result, found_result;
-	int current_offset, string_length;
-	size_t data_read;
-	BOOL remains_copied;
-	char temp_line[MAX_LINE_LENGTH], tmp_reason[1024];
-	BOUNDARY_STRING *pbnd;
-	MAIL_BLOCK pass_mail_block;
-	
-	/* check if need to pass auditor */
-	if (PARSING_MAIL_HEAD == pcontext->block_info.state) {
-		/* retrieve mime head information from buffer */
-		size = STREAM_BLOCK_SIZE;
-		current_offset = 0;
-		char *pbuff = static_cast(char *, stream_getbuffer_for_reading(&pcontext->stream, &size));
-		while (current_offset < size && (parsed_length=parse_mime_field(pbuff + 
-			  current_offset, size - current_offset, &mime_field))) {
-			/* check if mime head is over */
-			smtp_parser_record_mime_field(pcontext, &mime_field);
-			current_offset += parsed_length;
-			if ('\r' == pbuff[current_offset]) {
-				current_offset ++;
-				if ('\n' == pbuff[current_offset]) {
-					current_offset ++;
-				}
-				break;
-			}
-			if ('\n' == pbuff[current_offset]) {
-				current_offset ++;
-				break;
-			}
-		}
-		/* check if boundary string has already been met */
-		if (pcontext->block_info.cur_bndstr.bndstr_len > 
-			MAX_BOUNDARY_STRING_LENGTH - 1) {
-			/* mime head error! no boundary string or too long */
-			smtp_parser_log_info(pcontext, 8, "boundary string in mime head "
-							"too long");    
-			goto MIME_ERROR;
-		}
-		
-		/* pass mime in mime head auditor */
-		audit_result = anti_spamming_pass_auditors(pcontext, tmp_reason, 1024);
-		if (MESSAGE_REJECT == audit_result) {
-			snprintf(reason, length, "550 %s\r\n", tmp_reason);
-			smtp_parser_log_info(pcontext, 8, 
-							"illegal mail is cut! reason: %s", tmp_reason);
-			return FALSE;
-		} else if (MESSAGE_RETRYING == audit_result) {
-			snprintf(reason, length, "450 %s\r\n", tmp_reason);
-			smtp_parser_log_info(pcontext, 8, 
-							"dubious mail is cut! reason: %s", tmp_reason);
-			return FALSE;
-		}
-		/* 
-		 if mail is a single part mail, record the mime head as block mime in
-		 context
-		 */
-		if (SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
-			if (ERROR_FOUND != smtp_parser_parse_and_save_blkmime(pcontext, 
-								pbuff, current_offset)) {
-				pcontext->block_info.state = PARSING_BLOCK_CONTENT;
-			} else {
-				smtp_parser_log_info(pcontext, 8, "found error in mime head of"
-								" single part mail");    
-				goto MIME_ERROR;
-			}
-		} else{
-			pcontext->block_info.state = PARSING_NEST_MIME;
-		}
-		/* may read too many bytes, which should be part of blocks */
-		stream_backward_reading_ptr(&pcontext->stream, size - current_offset);
-	}
-	if (PARSING_END == pcontext->block_info.state) {
-		return TRUE;
-	}
-	/* copy and arrange rest data in TLS buffer and search boundary string*/
-	ptls_buf = pthread_getspecific(g_as_buff_key);
-	/* prevent fatal error when system is too busy */
-	if (NULL == ptls_buf) {
-		printf("[smtp_parser]: fatal error when to get TLS buffer for "
-				"anti-spamming\n");
-		return TRUE;
-	}
-	memset(ptls_buf, 0, g_flushing_size);    /* zero partially */
-	parsed_buf = ptls_buf + (size_t)(g_flushing_size * (TLS_BUFFER_RATIO / 2));
-	/* 
-	 check if rest bytes for decoding is left in block_info, if there exists
-	 copy them first into ptls buffer    
-	   */
-	if (0 != pcontext->block_info.remains_len) {
-		memcpy(ptls_buf, pcontext->block_info.remains_encode,
-			   pcontext->block_info.remains_len);
-		data_read = pcontext->block_info.remains_len;
-		pcontext->block_info.remains_len = 0;
-		remains_copied = TRUE;
-	} else {
-		data_read = 0;
-		remains_copied = FALSE;
-	}
-	/* begin to extract the blocks of a mail */
-	if (SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
-		while (TRUE) {
-			size = MAX_LINE_LENGTH;
-			line_result = stream_copyline(&pcontext->stream, ptls_buf +
-						  data_read, &size);
-			data_read += size;
-
-			if (STREAM_COPY_PART != line_result &&
-				ENCODING_BASE64 != pcontext->block_info.encode_type) {
-				memcpy(ptls_buf + data_read, "\r\n", 2);
-				data_read += 2;
-			}
-
-			if (STREAM_COPY_OK != line_result &&
-				STREAM_COPY_PART != line_result) {
-				break;
-			}
-		}
-		if ((STREAM_COPY_END == line_result||STREAM_COPY_TERM == line_result)) {
-			if (0 == pcontext->block_info.last_block_ID) {
-				pcontext->block_info.last_block_ID = smtp_parser_get_block_ID();
-				pcontext->block_info.remains_len   = 0;
-				pcontext->block_info.block_body_len= 0;
-				anti_spamming_inform_filters(pcontext->block_info.block_type,
-											pcontext, ACTION_BLOCK_NEW, 
-											pcontext->block_info.last_block_ID);
-			}
-			if (ENCODING_BASE64 == pcontext->block_info.encode_type) {
-				pcontext->block_info.remains_len = data_read % 4;
-				parsed_len = data_read - pcontext->block_info.remains_len;
-				if (pcontext->block_info.remains_len > 0) {
-					memcpy(pcontext->block_info.remains_encode, ptls_buf +
-							parsed_len, pcontext->block_info.remains_len);
-				}
-				pass_mail_block.original_length    = parsed_len;
-
-				if (0 != decode64(ptls_buf,parsed_len,parsed_buf,&parsed_len)) {
-					pass_mail_block.is_parsed = FALSE;
-				} else {
-					pass_mail_block.is_parsed = TRUE;
-				}
-			} else if (ENCODING_QUOTED_PRINTABLE == 
-						pcontext->block_info.encode_type) {
-				parsed_len    = qp_decode(parsed_buf, ptls_buf, data_read);
-				pass_mail_block.original_length  = data_read;
-				pass_mail_block.is_parsed        = TRUE;
-			} else {
-				pass_mail_block.original_length  = data_read;
-				parsed_len                       = 0;
-				pass_mail_block.is_parsed        = FALSE;
-			}
-			pcontext->block_info.block_body_len += data_read;
-			pass_mail_block.block_ID     = pcontext->block_info.last_block_ID;
-			pass_mail_block.fp_mime_info = &pcontext->block_info.f_last_blkmime;
-			pass_mail_block.original_buff= ptls_buf;
-			pass_mail_block.parsed_buff  = parsed_buf;
-			pass_mail_block.parsed_length= parsed_len;
-			filter_result = anti_spamming_pass_filters(
-							pcontext->block_info.block_type,
-							pcontext,
-							&pass_mail_block,
-							tmp_reason,
-							sizeof(tmp_reason));
-			if (MESSAGE_REJECT == filter_result ||
-				MESSAGE_RETRYING == filter_result) {
-				anti_spamming_inform_filters(pcontext->block_info.block_type,
-										 pcontext, ACTION_BLOCK_FREE, 
-										 pcontext->block_info.last_block_ID);
-				goto REJECT_SPAM;
-			}
-			if (TRUE == is_whole) {
-				anti_spamming_inform_filters(pcontext->block_info.block_type,
-										 pcontext, ACTION_BLOCK_FREE, 
-										 pcontext->block_info.last_block_ID);
-				type_len = strlen(pcontext->block_info.block_type);
-				mem_file_write(&pcontext->mail.body.f_mail_parts,
-							   (char*)&type_len, sizeof(int));
-				mem_file_write(&pcontext->mail.body.f_mail_parts,
-							   pcontext->block_info.block_type,
-							   type_len);
-				mem_file_write(&pcontext->mail.body.f_mail_parts,
-							   (char*)&pcontext->block_info.block_body_len,
-							   sizeof(size_t));
-				pcontext->mail.body.parts_num += 1;
-			}
-			return TRUE;
-		} else {
-			/* go directly to the MIME_ERROR sub-procedure! */
-			if (0 != pcontext->block_info.last_block_ID) {
-				anti_spamming_inform_filters(pcontext->block_info.block_type,
-										 pcontext, ACTION_BLOCK_FREE, 
-										 pcontext->block_info.last_block_ID);
-			}
-			smtp_parser_log_info(pcontext, 8, "single part mail line too long");
-			goto MIME_ERROR;
-		}
-	} else {
-		while (TRUE) {
-			if (PARSING_BLOCK_HEAD == pcontext->block_info.state) {
-				while (TRUE) {
-					size = MAX_BLOCK_MIME_LEN -
-							pcontext->block_info.block_mime_len;
-					line_result = stream_copyline(&pcontext->stream,
-								   pcontext->block_info.block_mime +
-								   pcontext->block_info.block_mime_len, &size);
-					pcontext->block_info.block_mime_len += size;
-					if (pcontext->block_info.block_mime_len >=
-						MAX_BLOCK_MIME_LEN - 1) {
-						smtp_parser_log_info(pcontext, 8, 
-							"block mime head too long");
-						goto MIME_ERROR;
-					}
-					if (STREAM_COPY_OK == line_result) {
-						if (0 != size) {
-							pcontext->block_info.block_mime[
-								pcontext->block_info.block_mime_len++] = '\r';
-							pcontext->block_info.block_mime[
-								pcontext->block_info.block_mime_len++] = '\n';
-						}
-					} else {
-						break;
-					}
-					if (0 == size) {
-						pcontext->block_info.state = PARSING_BLOCK_CONTENT;
-						found_result = smtp_parser_parse_and_save_blkmime(
-									   pcontext,pcontext->block_info.block_mime,
-									   pcontext->block_info.block_mime_len);
-						if (ERROR_FOUND == found_result) {
-							smtp_parser_log_info(pcontext, 8, "find error in"
-											" mime head of part");    
-							goto MIME_ERROR;
-						} else if (TYPE_FOUND == found_result) {
-							pcontext->block_info.state = PARSING_BLOCK_CONTENT;
-							break;
-						} else if (BOUNDARY_FOUND == found_result) {
-							pcontext->block_info.state = PARSING_NEST_MIME;
-							break;
-						}
-					}
-				}
-				if (STREAM_COPY_OK == line_result) {
-					continue;
-				}
-				if (STREAM_COPY_PART == line_result) {
-					smtp_parser_log_info(pcontext, 8, "line too long in mail");    
-					goto MIME_ERROR;
-				}
-				if (TRUE == is_whole &&
-					pcontext->block_info.state != PARSING_END) {
-					if (0 != pcontext->block_info.last_block_ID) {
-						anti_spamming_inform_filters(
-							pcontext->block_info.block_type,
-							pcontext, ACTION_BLOCK_FREE,
-							pcontext->block_info.last_block_ID);
-					}
-					pcontext->block_info.state = PARSING_END;
-				}
-				return TRUE;
-			} else if(PARSING_BLOCK_CONTENT == pcontext->block_info.state) {
-				boundary_string = pcontext->block_info.cur_bndstr.bndstr;
-				boundary_length = pcontext->block_info.cur_bndstr.bndstr_len;
-				if (FALSE == remains_copied) {
-					data_read = 0;
-				} else {
-					remains_copied = FALSE;
-				}
-				while (TRUE) {
-					size = MAX_LINE_LENGTH;
-					line_result = stream_copyline(&pcontext->stream, ptls_buf +
-									data_read, &size);
-					if (STREAM_COPY_OK != line_result &&
-						STREAM_COPY_PART != line_result) {
-						break;
-					}
-					if (ptls_buf[data_read] == '-' &&
-						ptls_buf[data_read + 1] == '-') {
-						if (0 == strncmp(boundary_string, ptls_buf + data_read +
-							2, boundary_length)) {
-							/* block end is found */
-							if (0 == pcontext->block_info.last_block_ID) {
-								pcontext->block_info.last_block_ID = 
-									smtp_parser_get_block_ID();
-								pcontext->block_info.block_body_len= 0;
-								anti_spamming_inform_filters(
-									pcontext->block_info.block_type,
-									pcontext, ACTION_BLOCK_NEW, 
-									pcontext->block_info.last_block_ID);
-							}
-							if (ENCODING_BASE64 ==
-								pcontext->block_info.encode_type) {
-								pcontext->block_info.remains_len = data_read%4;
-								parsed_len = data_read - 
-											 pcontext->block_info.remains_len;
-								if (pcontext->block_info.remains_len > 0) {
-									memcpy(pcontext->block_info.remains_encode,
-										ptls_buf + parsed_len,
-										pcontext->block_info.remains_len);
-								}
-								pass_mail_block.original_length = parsed_len;
-								if (0 != decode64(ptls_buf, parsed_len, 
-										parsed_buf, &parsed_len)) {
-									pass_mail_block.is_parsed = FALSE;
-								} else {
-									pass_mail_block.is_parsed = TRUE;
-								}
-							} else if (ENCODING_QUOTED_PRINTABLE == 
-										pcontext->block_info.encode_type) {
-								parsed_len = qp_decode(parsed_buf, ptls_buf,
-											 data_read);
-								pass_mail_block.is_parsed        = TRUE;
-								pass_mail_block.original_length  = data_read;
-							} else {
-								parsed_len                       = 0;
-								pass_mail_block.original_length  = data_read;
-								pass_mail_block.is_parsed        = FALSE;
-							}
-
-							pcontext->block_info.block_body_len += data_read;
-							pass_mail_block.block_ID         = 
-									pcontext->block_info.last_block_ID;
-							pass_mail_block.fp_mime_info     = 
-									&pcontext->block_info.f_last_blkmime;
-							pass_mail_block.original_buff    = ptls_buf;
-							pass_mail_block.parsed_buff      = parsed_buf;
-							pass_mail_block.parsed_length    = parsed_len;
-
-							filter_result =anti_spamming_pass_filters(
-										   pcontext->block_info.block_type,
-										   pcontext,
-										   &pass_mail_block,
-										   tmp_reason, sizeof(tmp_reason));
-							anti_spamming_inform_filters(
-										pcontext->block_info.block_type,
-										pcontext, ACTION_BLOCK_FREE, 
-										pcontext->block_info.last_block_ID);
-							if (MESSAGE_REJECT == filter_result ||
-								MESSAGE_RETRYING == filter_result) {
-								goto REJECT_SPAM;
-							}
-							type_len = strlen(pcontext->block_info.block_type);
-							mem_file_write(&pcontext->mail.body.f_mail_parts,
-										   (char*)&type_len, sizeof(int));
-							mem_file_write(&pcontext->mail.body.f_mail_parts,
-										   pcontext->block_info.block_type,
-										   type_len);
-							mem_file_write(&pcontext->mail.body.f_mail_parts,
-									(char*)&pcontext->block_info.block_body_len,
-									sizeof(size_t));
-							pcontext->mail.body.parts_num += 1;
-							/* check if --boundary string-- is met */
-							if (size == boundary_length + 4 &&
-								ptls_buf[data_read + size - 1] == '-' &&
-								ptls_buf[data_read + size - 2] == '-') {
-								pbnd = (BOUNDARY_STRING*)vstack_get_top(
-										&pcontext->block_info.stack_bndstr);
-								/* last --bndstr-- is met */
-								if (NULL == pbnd) {
-									pcontext->block_info.state = PARSING_END;
-									return TRUE;
-								} else {
-									/* clear block mime information */
-									pcontext->block_info.block_mime_len = 0;
-									pcontext->block_info.block_type[0] = '\0';
-									mem_file_clear(
-										&pcontext->block_info.f_last_blkmime);
-									/* end of clear block mime information */
-									pcontext->block_info.last_block_ID = 0;
-									pcontext->block_info.cur_bndstr = *pbnd;
-									pcontext->block_info.state =
-										PARSING_NEST_MIME;
-									vstack_pop(
-										&pcontext->block_info.stack_bndstr);
-									break;
-								}
-							} else {
-								/* clear block mime information */
-								pcontext->block_info.block_mime_len = 0;
-								pcontext->block_info.block_type[0] = '\0';
-								mem_file_clear(
-									&pcontext->block_info.f_last_blkmime);
-								/* end of clear block mime information */
-								pcontext->block_info.last_block_ID = 0;
-								pcontext->block_info.state = PARSING_BLOCK_HEAD;
-								break;
-							}
-						}
-					}
-					data_read += size;
-					if (STREAM_COPY_PART != line_result &&
-						ENCODING_BASE64 != pcontext->block_info.encode_type) {
-						memcpy(ptls_buf + data_read, "\r\n", 2);
-						data_read += 2;
-					}
-				}
-				if ((STREAM_COPY_END == line_result ||
-					STREAM_COPY_TERM == line_result)) {
-			/*
-			 to check wether it's the last block of whole mail and end boundary
-			 string is met. if not, inform filter plugins the end of block to
-			 prevent memory leaks in these plugins
-			 */
-					if (TRUE == is_whole) {
-						anti_spamming_inform_filters(
-								pcontext->block_info.block_type,
-								pcontext, ACTION_BLOCK_FREE,
-								pcontext->block_info.last_block_ID);
-						/* unfinished mail, make it pass */
-						pcontext->block_info.state = PARSING_END;
-						return TRUE;
-					}
-					if (0 != size && ptls_buf[data_read] == '-') {
-				/* mime block now is used to save the last unterminated line */ 
-						memcpy(pcontext->block_info.block_mime, ptls_buf + 
-								 data_read, size);
-						pcontext->block_info.block_mime_len = size;
-						stream_backward_writing_ptr(&pcontext->stream, size);
-					} else {
-						pcontext->block_info.block_mime_len = 0;
-					}
-					if (0 == pcontext->block_info.last_block_ID) {
-						pcontext->block_info.last_block_ID =
-							smtp_parser_get_block_ID();
-						pcontext->block_info.block_body_len= 0;
-						anti_spamming_inform_filters(
-							pcontext->block_info.block_type,
-							pcontext, ACTION_BLOCK_NEW,
-							pcontext->block_info.last_block_ID);
-					}
-					/* 
-					 * append the size because the size has not been added in 
-					 * the above while loop 
-					 */
-					if (0 != size && ptls_buf[data_read] != '-') {
-						data_read    += size;
-					} 
-					if (ENCODING_BASE64 == pcontext->block_info.encode_type) {
-						
-						pcontext->block_info.remains_len = data_read % 4;
-						parsed_len = data_read -
-									 pcontext->block_info.remains_len;
-
-						if (pcontext->block_info.remains_len > 0) {
-							memcpy(pcontext->block_info.remains_encode,
-								ptls_buf + parsed_len,
-								pcontext->block_info.remains_len);
-						}
-						pass_mail_block.original_length = parsed_len;
-						if (0 != decode64(ptls_buf, parsed_len, parsed_buf,
-								&parsed_len)) {
-							pass_mail_block.is_parsed = FALSE;
-						} else {
-							pass_mail_block.is_parsed = TRUE;
-						}
-					} else if (ENCODING_QUOTED_PRINTABLE == 
-						pcontext->block_info.encode_type) {
-						parsed_len = qp_decode(parsed_buf, ptls_buf, data_read);
-						pass_mail_block.original_length  = data_read;
-						pass_mail_block.is_parsed        = TRUE;
-					} else {
-						pass_mail_block.is_parsed        = FALSE;
-						pass_mail_block.original_length  = data_read;
-						parsed_len                       = 0;
-					}
-
-					pcontext->block_info.block_body_len += data_read;
-					pass_mail_block.block_ID        = 
-							pcontext->block_info.last_block_ID;
-					pass_mail_block.fp_mime_info    = 
-							&pcontext->block_info.f_last_blkmime;
-					pass_mail_block.original_buff   = ptls_buf;
-					pass_mail_block.parsed_buff     = parsed_buf;
-					pass_mail_block.parsed_length   = parsed_len;
-
-					filter_result = anti_spamming_pass_filters(
-						pcontext->block_info.block_type,
-						pcontext,
-						&pass_mail_block,
-						tmp_reason, sizeof(tmp_reason));
-
-					if (MESSAGE_REJECT == filter_result ||
-						MESSAGE_RETRYING == filter_result) {
-						if (0 != pcontext->block_info.last_block_ID) {
-							anti_spamming_inform_filters(
-								pcontext->block_info.block_type,
-								pcontext, ACTION_BLOCK_FREE,
-								pcontext->block_info.last_block_ID);
-						}
-						goto REJECT_SPAM;
-					} else {
-						return TRUE;
-					}
-				 } else {
-					if (PARSING_END == pcontext->block_info.state) {
-						return TRUE;
-					}
-					continue;
-				 }
-			} else if (PARSING_NEST_MIME == pcontext->block_info.state) {
-				while (TRUE) {
-					size = MAX_LINE_LENGTH;
-					line_result= stream_copyline(&pcontext->stream, temp_line,
-								 &size);
-					if (STREAM_COPY_OK != line_result &&
-						STREAM_COPY_PART != line_result) {
-						break;
-					}
-					if (0 != size) {
-						if (temp_line[0] == '-' && temp_line[1] == '-'&&
-							0 == strncmp(temp_line + 2,
-							pcontext->block_info.cur_bndstr.bndstr,
-							pcontext->block_info.cur_bndstr.bndstr_len)) {
-							/* 
-							 check if --boundstring-- is met, if it is 
-							 continue to popup the boundary string from 
-							 stack! else go to PARSING_BLOCK_HEAD
-							*/
-							if (temp_line[pcontext->block_info.
-								cur_bndstr.bndstr_len + 2] != '-' ||
-								temp_line[pcontext->block_info.
-								cur_bndstr.bndstr_len + 3] != '-') {
-								/* clear block mime information */
-								pcontext->block_info.block_mime_len = 0;
-								pcontext->block_info.block_type[0] = '\0';
-								mem_file_clear(
-									&pcontext->block_info.f_last_blkmime);
-								/* end of clear block mime information */
-								pcontext->block_info.last_block_ID = 0;
-								pcontext->block_info.state = 
-									PARSING_BLOCK_HEAD;
-								break;
-							} else {
-								pbnd = (BOUNDARY_STRING*)vstack_get_top(
-									   &pcontext->block_info.stack_bndstr);
-								/* last --bndstr-- is met */
-								if (NULL == pbnd) {
-									pcontext->block_info.state = PARSING_END;
-									return TRUE;
-								} else {
-									pcontext->block_info.cur_bndstr = *pbnd;
-									vstack_pop(
-										   &pcontext->block_info.stack_bndstr);
-									continue;
-								}
-							}
-						}
-					}
-				}
-				if (STREAM_COPY_TERM == line_result ||
-					STREAM_COPY_END == line_result) {
-					if (TRUE == is_whole) {
-						/* unfinished mail, make it pass */  
-						pcontext->block_info.state = PARSING_END;
-						return TRUE;
-					}
-					memcpy(pcontext->block_info.block_mime, temp_line, size);
-					pcontext->block_info.block_mime_len = size;
-					return TRUE;
-				} else {
-					continue;
-				}
-			} else {
-				debug_info("[smtp_parser]: fatal error in "
-							"smtp_parser_pass_auditor_filter\n");
-			}
-		}    
-	}
-MIME_ERROR:
-	/* 451 Message doesn't conform to the EMIME standard. */
-	smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174013,1,&string_length);
-	strncpy(reason, smtp_reply_str, length);
-	return FALSE;
-REJECT_SPAM:
-	/* write reason from parsed buffer to user */
-	if (MESSAGE_REJECT == filter_result) {
-		smtp_parser_log_info(pcontext, 8, "illegal mail is cut! reason: %s", 
-						 tmp_reason);
-		snprintf(reason, length, "550 %s\r\n", tmp_reason);
-	} else {
-		smtp_parser_log_info(pcontext, 8, "dubious mail is cut! reason: %s", 
-						 tmp_reason);
-		snprintf(reason, length, "450 %s\r\n", tmp_reason);
-	}
-	return FALSE;
-}
-
-/*
  *   pass the mail into statistic
  *   @param
  *       pcontext [in]    indicate the context object
@@ -1462,24 +775,7 @@ REJECT_SPAM:
 static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext, char *reason,
 	int length)
 {
-	int statistic_result;
-	char tmp_reason[1024];
-
 	pcontext->mail.body.mail_length = pcontext->total_length;
-	statistic_result = anti_spamming_pass_statistics(pcontext, tmp_reason,1024);
-	if (MESSAGE_REJECT == statistic_result) {
-		/* write reason from parsed buffer to user */
-		smtp_parser_log_info(pcontext, 8, "illegal mail is cut! reason: %s", 
-							 tmp_reason);
-		snprintf(reason, length, "550 %s\r\n", tmp_reason);
-		return FALSE;
-	} else if (MESSAGE_RETRYING == statistic_result) {
-		/* write reason from parsed buffer to user */
-		smtp_parser_log_info(pcontext, 8, "dubious mail is cut! reason: %s", 
-							 tmp_reason);
-		snprintf(reason, length, "450 %s\r\n", tmp_reason);
-		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1863,321 +1159,6 @@ static void smtp_parser_context_free(SMTP_CONTEXT *pcontext)
 		close(pcontext->connection.sockd);
 		pcontext->connection.sockd = -1;
 	}
-}
-
-/*
- *    record mime head field into mail body
- *    @param
- *        pcontext [in]    indicate the context object
- *        pfield [in]        indicate the mime field
- */
-static void smtp_parser_record_mime_field(SMTP_CONTEXT *pcontext,
-	MIME_FIELD *pfield)
-{
-	char *ptmp, *ptmp2;
-	int len;
-	
-	switch (pfield->field_name_len) {
-	case 2:
-		if (0 == strncasecmp("To", pfield->field_name, 2)) {
-			mem_file_write(&pcontext->mail.head.f_mime_to, pfield->field_value,
-							pfield->field_value_len);
-			mem_file_write(&pcontext->mail.head.f_mime_to, " ", 1);
-			break;
-		} else if (0 == strncasecmp("Cc", pfield->field_name, 2)) {
-			mem_file_write(&pcontext->mail.head.f_mime_cc, pfield->field_value,
-							pfield->field_value_len);
-			mem_file_write(&pcontext->mail.head.f_mime_cc, " ", 1);
-			break;
-		}
-		goto FIELD_DEFAULT;
-	case 4:
-		if (0 == strncasecmp("From", pfield->field_name, 4)) {
-			mem_file_write(&pcontext->mail.head.f_mime_from, 
-							pfield->field_value, pfield->field_value_len);        
-			break;
-
-		} else if (0 == strncasecmp("Date", pfield->field_name, 4)) {
-			if (pfield->field_value_len < 63) {
-				strncpy(pcontext->mail.head.compose_time, pfield->field_value, 
-						pfield->field_value_len);
-				break;
-			}        
-		}    
-		goto FIELD_DEFAULT;
-	case 7:
-		if (0 == strncasecmp("Subject", pfield->field_name, 7)) {
-			mem_file_write(&pcontext->mail.head.f_subject, pfield->field_value,
-							pfield->field_value_len);        
-			break;
-		}
-		goto FIELD_DEFAULT;
-	case 8:
-		if (0 == strncasecmp("X-Mailer", pfield->field_name, 8)) {
-			mem_file_write(&pcontext->mail.head.f_xmailer, pfield->field_value,
-							pfield->field_value_len);        
-			break;
-		}
-		goto FIELD_DEFAULT;
-	case 10:
-		if (0 == strncasecmp("X-Priority", pfield->field_name, 10)) {
-			pfield->field_value[pfield->field_value_len] = '\0';
-			pcontext->mail.head.x_priority = atoi(pfield->field_value);
-			break;
-		} else if (0 == strncasecmp("User-Agent", pfield->field_name, 10)) {
-			mem_file_write(&pcontext->mail.head.f_xmailer, pfield->field_value,
-							pfield->field_value_len);        
-			break;
-		}
-		goto FIELD_DEFAULT;
-	case 12:
-		if (0 == strncasecmp("Delivered-To", pfield->field_name, 12)) {
-			mem_file_write(&pcontext->mail.head.f_mime_delivered_to,
-							pfield->field_value, pfield->field_value_len);        
-			break;
-		} else if (0 == strncasecmp("Content-Type", pfield->field_name, 12)) {
-			mem_file_write(&pcontext->mail.head.f_content_type,
-							pfield->field_value, pfield->field_value_len);
-			pfield->field_value[pfield->field_value_len] = '\0';
-			ptmp = search_string(pfield->field_value, "boundary=",
-				   pfield->field_value_len);
-				   
-			if (NULL != ptmp) {
-				ptmp += 9;
-				if('"' == ptmp[0] || '\'' == ptmp[0]) {
-					ptmp ++;
-				}
-				if (0 == strncasecmp(pfield->field_value, "multipart/", 10)) {
-					ptmp2 = strchr(ptmp, '"');
-					if (NULL == ptmp2) {
-						ptmp2 = strchr(ptmp, '\'');
-					}
-					if (NULL == ptmp2) {
-						ptmp2 = strchr(ptmp, ';');
-					}
-					if (NULL == ptmp2) {
-						len = strlen(ptmp);
-					} else {
-						len = (int)(ptmp2 - ptmp);
-					}
-					pcontext->block_info.cur_bndstr.bndstr_len = len;
-					if (len < MAX_BOUNDARY_STRING_LENGTH) {
-						memcpy(pcontext->block_info.cur_bndstr.bndstr, 
-								ptmp, len);
-						pcontext->block_info.cur_bndstr.bndstr[len] = '\0';
-						pcontext->mail.head.mail_part = MULTI_PARTS_MAIL;
-/*============================================================================*/
-	/* for Encryption mail, there is no need to record boundary string */
-						if (NULL != search_string(pfield->field_value, 
-							"smime-type", pfield->field_value_len)) {
-							pcontext->mail.head.mail_part = SINGLE_PART_MAIL;
-						}
-/*============================================================================*/
-					}
-				}
-			}
-			break;
-		}
-		goto FIELD_DEFAULT;
-	case 16:
-		if (0 == strncasecmp("X-Originating-IP", pfield->field_name, 16)) {
-			pfield->field_value[pfield->field_value_len] = '\0';
-			extract_ip(pfield->field_value, pcontext->mail.head.x_original_ip);
-			break;
-		}
-		goto FIELD_DEFAULT;
-	default:
-		goto FIELD_DEFAULT;
-	}
-	return;
-/* 
- * write the others field into mime file and the auditor plugins can  get the 
- * field that they want like those for filter plugins
- */
-FIELD_DEFAULT:
-	mem_file_write(&pcontext->mail.head.f_others,
-		(char*)&pfield->field_name_len, sizeof(pfield->field_name_len));
-	mem_file_write(&pcontext->mail.head.f_others, pfield->field_name, 
-		pfield->field_name_len);
-	mem_file_write(&pcontext->mail.head.f_others, 
-		(char*)&pfield->field_value_len, sizeof(pfield->field_value_len));
-	mem_file_write(&pcontext->mail.head.f_others, pfield->field_value, 
-		pfield->field_value_len);
-}
-
-/*
- *    parser the mime head of certain block and extract type information, save 
- *    other infomation in a memory file
- *    @param
- *        pcontext [in, out]    indicate the context object
- *        in_buff [in]        buffer contains block mime head 
- *        length                length of in_buff
- *    @return
- *        TYPE_FOUND                success to find type
- *        BOUNDARY_FOUND            find boundary string
- *        ERROR_FOUND                error, found nothing
- */
-static int smtp_parser_parse_and_save_blkmime(SMTP_CONTEXT *pcontext,
-	char *in_buff, int length)
-{
-	int current_offset = 0, parsed_length = 0;
-	MIME_FIELD mime_field;
-	BOOL type_found = FALSE;
-	int i, type_length, len;
-	char *ptmp, *ptmp2;
-
-	pcontext->block_info.encode_type = ENCODING_UNKNOWN;
-	while (current_offset < length) {
-		parsed_length = parse_mime_field(in_buff + current_offset,
-						length - current_offset, &mime_field);
-		/* if a empty line is meet, end of mail head parse */
-		if (0 == parsed_length) {
-			break;
-		}
-
-		/* check if mime head is over */
-		mem_file_write(&pcontext->block_info.f_last_blkmime, 
-						(char*)&mime_field.field_name_len,
-						sizeof(mime_field.field_name_len));
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						mime_field.field_name,
-						mime_field.field_name_len);
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-					   (char*)&mime_field.field_value_len,
-					   sizeof(mime_field.field_value_len));
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						mime_field.field_value,
-						mime_field.field_value_len);
-		if (12 == mime_field.field_name_len &&
-			0 == strncasecmp("Content-Type", mime_field.field_name, 12)) {
-			/* 
-			 * find if boundy string is contained in! if yes, that means parser
-			 * is going to a nested block, and the new boundary string will be
-			 * treated as the current boundary and the old one will be pushed 
-			 * into boundary strings stack.
-			 */
-			mime_field.field_value[mime_field.field_value_len] = '\0';
-			ptmp = search_string(mime_field.field_value, "boundary=",
-					mime_field.field_value_len);
-			if (NULL != ptmp) {
-				ptmp += 9;
-				if ('"' == ptmp[0] || '\'' == ptmp[0]) {
-					ptmp ++;
-				}
-				if (0 == strncasecmp(mime_field.field_value, "multipart/", 10)) {
-					ptmp2 = strchr(ptmp, '"');
-					if (NULL == ptmp2) {
-						ptmp2 = strchr(ptmp, '\'');
-					}
-					if (NULL == ptmp2) {
-						ptmp2 = strchr(ptmp, ';');
-					}
-					if (NULL == ptmp2) {
-						len = strlen(ptmp);
-					} else {
-						len = (int)(ptmp2 - ptmp);
-					}
-					if (len < MAX_BOUNDARY_STRING_LENGTH) {
-						/* save the old boundary string in the stack */ 
-						vstack_push(&pcontext->block_info.stack_bndstr,
-								  &pcontext->block_info.cur_bndstr);
-						memcpy(pcontext->block_info.cur_bndstr.bndstr,ptmp,len);
-						pcontext->block_info.cur_bndstr.bndstr[len] = '\0';
-						pcontext->block_info.cur_bndstr.bndstr_len = len;
-						return BOUNDARY_FOUND;
-					} else {
-						smtp_parser_log_info(pcontext, 0, 
-							"boundary string too long");
-						return ERROR_FOUND;
-					}
-				}
-			}
-			for (i=0; i< mime_field.field_value_len; i++) {
-				if(mime_field.field_value[i] == ';') {
-					break;
-				}
-			}
-			if (mime_field.field_value[i] == ';' && 
-				i != mime_field.field_value_len && i < 256) {
-				type_length = i;
-			} else {
-				if (i > 255) {
-					i = 255;
-				}
-				type_length = i;
-			}
-			type_found = TRUE;
-			memcpy(pcontext->block_info.block_type, 
-					mime_field.field_value, type_length);
-			pcontext->block_info.block_type[type_length] = '\0';
-		} else if (25 == mime_field.field_name_len && 
-			0 == strncasecmp(mime_field.field_name, 
-			"Content-Transfer-Encoding", 25)) {
-			if (6 == mime_field.field_value_len &&
-				0 == strncasecmp(mime_field.field_value, "base64", 6)) {
-				pcontext->block_info.encode_type    = ENCODING_BASE64;
-
-			} else if (4 == mime_field.field_value_len &&
-				0 == strncasecmp(mime_field.field_value, "7bit", 4)) {
-				pcontext->block_info.encode_type    = ENCODING_7BIT;
-
-			} else if (4 == mime_field.field_value_len &&
-				0 == strncasecmp(mime_field.field_value, "8bit", 4)) {
-				pcontext->block_info.encode_type    = ENCODING_8BIT;
-
-			} else if (16 == mime_field.field_value_len &&
-				0 == strncasecmp(mime_field.field_value, 
-				"quoted-printable", 16)) {
-				pcontext->block_info.encode_type    = ENCODING_QUOTED_PRINTABLE;
-			} else {
-				pcontext->block_info.encode_type    = ENCODING_UNKNOWN;
-			}
-		}
-		current_offset += parsed_length;
-	}
-	/* 
-	 append manually the content type "text/plain" for some old unix style mail
-	 and encoding type is 8bit
-	*/
-	if (FALSE == type_found) {
-		mime_field.field_name_len = 12;
-		memcpy(mime_field.field_name, "Content-Type", 12);
-		mime_field.field_value_len = 10;
-		memcpy(mime_field.field_value, "text/plain", 10);
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						(char*)&mime_field.field_name_len,
-						sizeof(mime_field.field_name_len));
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						mime_field.field_name,
-						mime_field.field_name_len);
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						(char*)&mime_field.field_value_len,
-						sizeof(mime_field.field_value_len));
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						mime_field.field_value,
-						mime_field.field_value_len);
-		mime_field.field_name_len = 25;
-		memcpy(mime_field.field_name, "Content-Transfer-Encoding", 25);
-		mime_field.field_value_len = 4;
-		memcpy(mime_field.field_value, "8bit", 4);
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						(char*)&mime_field.field_name_len,
-						sizeof(mime_field.field_name_len));
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						mime_field.field_name,
-						mime_field.field_name_len);
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						(char*)&mime_field.field_value_len,
-						sizeof(mime_field.field_value_len));
-		mem_file_write(&pcontext->block_info.f_last_blkmime,
-						mime_field.field_value,
-						mime_field.field_value_len);
-		strcpy(pcontext->block_info.block_type, "text/plain");
-		type_found = TRUE;
-	}
-	/* end of append the old unix style mail */
-
-	return (TRUE == type_found)?TYPE_FOUND:ERROR_FOUND;
 }
 
 /*

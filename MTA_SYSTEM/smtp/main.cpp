@@ -18,7 +18,6 @@
 #include "threads_pool.h" 
 #include "console_server.h" 
 #include "contexts_pool.h" 
-#include "anti_spamming.h"
 #include "service.h" 
 #include "system_services.h"
 #include "util.h"
@@ -93,7 +92,7 @@ int main(int argc, const char **argv)
 		smtp_support_starttls, smtp_force_starttls;
 	int thread_init_num, thread_charge_num, threads_max_num; 
 	const char *certificate_path, *cb_passwd, *private_key_path;
-	const char *anti_spam_path, *service_plugin_path; 
+	const char *service_plugin_path; 
 	const char *console_server_ip, *flusher_plugin_path, *user_name;
 	int block_interval_auth, block_interval_sessions;
 	int console_server_port; 
@@ -459,32 +458,13 @@ int main(int argc, const char **argv)
 	printf("[smtp]: block remote side %s when mails number is exceed for one "
 			"session\n", temp_buff);
 	
-	anti_spam_path = resource_get_string("ANTI_SPAMMING_INIT_PATH");
-	if (anti_spam_path == NULL) {
-		anti_spam_path = PKGLIBDIR;
-		resource_set_string("ANTI_SPAMMING_INIT_PATH", anti_spam_path);
-	}
-	printf("[anti_spamming]: anti-spamming plugin path %s\n", anti_spam_path);
-	const char *str_value = resource_get_string("ANTI_SPAMMING_PLUGIN_LIST");
-	const char *const *as_plugin_list = NULL;
-	if (str_value != NULL) {
-		as_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
-		if (as_plugin_list == NULL) {
-			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
-			return EXIT_FAILURE;
-		}
-	}
-	str_value = resource_get_string("ANTI_SPAMMING_IGNORE_ERRORS");
-	bool as_ignerr = parse_bool(str_value);
-	resource_set_string("ANTI_SPAMMING_IGNORE_ERRORS", as_ignerr ? "true" : "false");
- 
 	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
 	if (service_plugin_path == NULL) {
 		service_plugin_path = PKGLIBDIR;
 		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
 	}
 	printf("[service]: service plugins path is %s\n", service_plugin_path);
-	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
+	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
 		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
@@ -692,24 +672,6 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_21 = make_scope_exit(console_server_free);
 	auto cleanup_22 = make_scope_exit(console_server_stop);
-
-	anti_spamming_init(anti_spam_path, as_plugin_list != NULL ?
-		as_plugin_list : g_dfl_as_plugins, as_ignerr);
-
-	printf("------------------------ anti-spamming plugins begin"
-		   "------------------------\n");
-	if (0 != anti_spamming_run()) { 
-		printf("------------------------- anti-spamming plugins end"
-		   "-------------------------\n");
-		printf("[system]: failed to run anti-spamming\n");
-		return EXIT_FAILURE;
-	} else {
-		printf("------------------------- anti-spamming plugins end"
-		   "-------------------------\n");
-		printf("[system]: run anti-spamming OK\n");
-	}
-	auto cleanup_23 = make_scope_exit(anti_spamming_free);
-	auto cleanup_24 = make_scope_exit(anti_spamming_stop);
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(smtp_parser_process));
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);

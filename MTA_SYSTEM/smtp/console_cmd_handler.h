@@ -6,9 +6,6 @@ extern "C" {
 #endif
 
 BOOL cmd_handler_smtp_error_code_control(int argc, char** argv);
-
-BOOL cmd_handler_anti_spamming_control(int argc, char** argv);
-
 BOOL cmd_handler_smtp_control(int argc, char** argv);
 
 BOOL cmd_handler_service_control(int argc, char** argv);
@@ -20,9 +17,6 @@ BOOL cmd_handler_server_control(int argc, char** argv);
 BOOL cmd_handler_system_control(int argc, char** argv);
 
 BOOL cmd_handler_flusher_control(int argc, char** argv);
-
-BOOL cmd_handler_as_plugins(int argc, char** argv);
-
 BOOL cmd_handler_service_plugins(int argc, char** argv);
 
 #ifdef __cplusplus
