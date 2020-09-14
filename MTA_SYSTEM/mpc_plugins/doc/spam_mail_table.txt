@@ -1,3 +1,0 @@
-000001		mail is insulated by delivery
-
-000002		user does not exist in mail system
