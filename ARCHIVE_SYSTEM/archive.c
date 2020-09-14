@@ -48,7 +48,6 @@ static int connect_cidb(const char *ip_addr, int port);
 
 int main(int argc, const char **argv)
 {
-	char *ptoken;
 	struct stat node_stat;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -112,8 +111,6 @@ static void insert_directory(const char *dir_path)
 	DIR *dirp;
 	MAIL imail;
 	char *pbuff;
-	size_t offset;
-	int fd, tmp_len;
 	int64_t mail_id;
 	char temp_path[256];
 	char dest_path[128];
@@ -149,7 +146,7 @@ static void insert_directory(const char *dir_path)
 			continue;
 		}
 		
-		fd = open(temp_path, O_RDONLY);
+		int fd = open(temp_path, O_RDONLY);
 		if (-1 == fd) {
 			printf("Failed to open %s: %s\n", temp_path, strerror(errno));
 			free(pbuff);
@@ -344,7 +341,6 @@ static int64_t insert_cidb(MAIL *pmail, char *path)
 
 static int connect_cidb(const char *ip_addr, int port)
 {
-    int offset;
     int read_len;
 	fd_set myset;
 	struct timeval tv;
