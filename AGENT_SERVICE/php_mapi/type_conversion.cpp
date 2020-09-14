@@ -718,6 +718,7 @@ zend_bool php_to_tpropval_array(zval *pzval,
 	zval *entry;
 	size_t i = 0;
 	ZEND_HASH_FOREACH_KEY_VAL(ptarget_hash, idx, pstring, entry) {
+		static_cast<void>(pstring);
 		ppropvals->ppropval[i].proptag = phptag_to_proptag(idx);
 		ppropvals->ppropval[i].pvalue =
 			php_to_propval(entry, idx & 0xFFFF);

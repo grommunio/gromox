@@ -4476,7 +4476,7 @@ ZEND_FUNCTION(mapi_folder_setsearchcriteria)
 	}
 	result = zarafa_client_setsearchcriteria(
 		pfolder->hsession, pfolder->hobject,
-		flags, &entryid_array, &restriction);
+		flags, pentryid_array, prestriction);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;
 		goto THROW_EXCEPTION;
