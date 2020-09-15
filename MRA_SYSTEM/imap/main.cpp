@@ -431,14 +431,12 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_6 = make_scope_exit(service_stop);
 	
-	system_services_init();
 	if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
 	} else {
 		printf("[system]: run system service OK\n");
 	}
-	auto cleanup_7 = make_scope_exit(system_services_free);
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     

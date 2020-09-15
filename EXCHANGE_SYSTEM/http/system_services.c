@@ -13,14 +13,6 @@ const char* (*system_services_extension_to_mime)(const char*);
 void (*system_services_log_info)(int, const char *, ...);
 
 /*
- *	module's construct function
- */
-void system_services_init()
-{
-	/* do nothing */
-}
-
-/*
  *	run system services module
  *	@return
  *		0		OK
@@ -66,14 +58,3 @@ int system_services_stop()
 	service_release("extension_to_mime", "system");
 	return 0;
 }
-
-/*
- *	module's destruct function
- */
-void system_services_free()
-{
-	/* do nothing */
-
-}
-
-

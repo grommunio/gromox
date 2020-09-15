@@ -9,10 +9,8 @@
 extern "C" {
 #endif
 
-extern void system_services_init(void);
 extern int system_services_run(void);
 extern int system_services_stop(void);
-extern void system_services_free(void);
 
 extern BOOL (*system_services_judge_ip)(const char*);
 extern BOOL (*system_services_container_add_ip)(const char*);

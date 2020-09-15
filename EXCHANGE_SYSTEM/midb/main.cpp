@@ -357,8 +357,6 @@ int main(int argc, const char **argv)
 	service_init("midb", threads_num, service_path, config_path, data_path,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")));
-	system_services_init();
-	
 	common_util_init();
 	
 	exmdb_client_init(proxy_num, stub_num, exmdb_path);

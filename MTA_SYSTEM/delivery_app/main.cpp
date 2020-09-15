@@ -349,14 +349,12 @@ int main(int argc, const char **argv)
     }
 	auto cleanup_4 = make_scope_exit(service_stop);
 
-    system_services_init();
     if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
     } else {
         printf("[system]: run system service OK\n");
     }
-	auto cleanup_5 = make_scope_exit(system_services_free);
 	auto cleanup_6 = make_scope_exit(system_services_stop);
 
     message_dequeue_init(dequeue_path, tape_size, max_mem);
