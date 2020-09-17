@@ -162,11 +162,6 @@ int main(int argc, const char **argv)
 		unchkusr_path, collector_path, subsystem_path);
 	config_file_free(pconfig);
 	
-	if (0 != file_operation_run()) {
-		printf("[system]: failed to run file operation\n");
-		return 2;
-	}
-
 	if (0 != system_log_run()) {
 		printf("[system]: failed to run system log\n");
 		return 3;
@@ -176,11 +171,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run gateway control\n");
 		return 4;
 	}
-	if (0 != data_source_run()) {
-		printf("[system]: failed to run data source\n");
-		return 5;
-	}
-
 	if (0 != engine_run()) {
 		printf("[system]: failed to run engine\n");
 		return 6;
@@ -194,15 +184,10 @@ int main(int argc, const char **argv)
 	}
 
 	engine_stop();
-	engine_free();
-	data_source_stop();
-	data_source_free();
 	gateway_control_stop();
 	gateway_control_free();
 	system_log_stop();
 	system_log_free();
-	file_operation_stop();
-	file_operation_free();
 	return 0;
 }
 

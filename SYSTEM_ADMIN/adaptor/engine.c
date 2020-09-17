@@ -68,11 +68,6 @@ int engine_stop()
 	return 0;
 }
 
-void engine_free()
-{
-	/* do nothing */
-}
-
 static void* thread_work_func1(void *param)
 {
 	int count;

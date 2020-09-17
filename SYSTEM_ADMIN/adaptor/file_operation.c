@@ -15,12 +15,6 @@ void file_operation_init(const char *gateway_path)
 	strcpy(g_gateway_path, gateway_path);
 }
 
-int file_operation_run()
-{
-	/* do nothing */
-	return 0;
-}
-
 int file_operation_compare(const char *file1, const char *file2)
 {
 	char *ptr;
@@ -185,15 +179,3 @@ void file_operation_transfer(const char *src_file, const char *dst_file)
 	close(fd);
 	list_file_free(pfile);
 }
-
-int file_operation_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
-void file_operation_free()
-{
-	/* do nothing */
-}
-
