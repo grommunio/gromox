@@ -27,25 +27,6 @@ void data_source_init(const char *host, int port, const char *user,
 	strcpy(g_db_name, db_name);
 }
 
-int data_source_run()
-{
-
-	/* do nothing */
-	return 0;
-}
-
-int data_source_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
-void data_source_free()
-{
-	/* do nothing */
-}
-
-
 BOOL data_source_get_datadir(char *path_buff)
 {
 	int i;

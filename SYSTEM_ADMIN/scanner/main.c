@@ -282,9 +282,6 @@ int main(int argc, const char **argv)
 
 	
 	system_log_init(log_path);
-	
-	smtp_init();
-	
 	message_init(background_path, logo_path, logo_link);
 	
 	data_source_init(mysql_host, mysql_port,
@@ -303,21 +300,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run system log\n");
 		return 2;
 	}
-	
-	if (0 != smtp_run()) {
-		printf("[system]: failed to run smtp\n");
-		return 3;
-	}
-	
-	if (0 != message_run()) {
-		printf("[system]: failed to run message\n");
-		return 4;
-	}
-	if (0 != data_source_run()) {
-		printf("[system]: failed to run data source\n");
-		return 5;
-	}
-
 	if (0 != locker_client_run()) {
 		printf("[system]: failed to run locker client\n");
 		return 6;
@@ -345,12 +327,6 @@ int main(int argc, const char **argv)
 	midb_client_free();
 	locker_client_stop();
 	locker_client_free();
-	data_source_stop();
-	data_source_free();
-	message_stop();
-	message_free();
-	smtp_stop();
-	smtp_free();
 	system_log_stop();
 	system_log_free();
 	return 0;

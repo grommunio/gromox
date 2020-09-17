@@ -90,23 +90,6 @@ void message_init(const char *background_path, const char *logo_path,
 	strcpy(g_logo_link, logo_link);
 }
 
-int message_run()
-{
-	/* do nothing */
-	return 0;
-}
-
-void message_stop(void)
-{
-	/* do nothing */
-}
-
-void message_free()
-{
-	/* do nothing */
-}
-
-
 void message_alarm_message(char *buff, const char *area, const char *to)
 {
 	char *ptr;

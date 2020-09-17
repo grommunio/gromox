@@ -41,28 +41,6 @@ enum {
 };
 
 
-void smtp_init()
-{
-	/* do nothing */
-}
-
-int smtp_run()
-{
-	return 0;
-	/* do nothing */
-}
-
-int smtp_stop()
-{
-	return 0;
-	/* do nothing */
-}
-
-void smtp_free()
-{
-	/* do nothing */
-}
-
 static BOOL smtp_send_command(int sockd, const char *command,
 	int command_len);
 
