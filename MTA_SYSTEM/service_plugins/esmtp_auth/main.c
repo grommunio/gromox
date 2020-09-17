@@ -106,10 +106,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			printf("[esmtp_auth]: failed to run host list module\n");
 			return FALSE;
 		}
-		if (0 != esmtp_auth_run()) {
-			printf("[esmtp_auth]: failed to run esmtp auth module\n");
-			return FALSE;
-		}
 		if (0 != service_auth_run()) {
 			printf("[service_auth]: failed to run service auth module\n");
 			return FALSE;
@@ -129,11 +125,8 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 
     case PLUGIN_FREE:
 		service_auth_stop();
-		esmtp_auth_stop();
 		host_list_stop();
 		auth_cache_stop();
-		service_auth_free();
-		esmtp_auth_free();
 		host_list_free();
 		auth_cache_free();
         return TRUE;

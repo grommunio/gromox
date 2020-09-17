@@ -33,27 +33,6 @@ static BOOL smtp_clone_send_command(int sockd, const char *command,
 static int smtp_clone_get_response(int sockd, char *response,
 	int response_len, BOOL expect_3xx);
 
-void smtp_clone_init()
-{
-	/* do nothing */
-}
-
-int smtp_clone_run()
-{
-	return 0;
-}
-
-int smtp_clone_stop()
-{
-	return 0;
-}
-
-void smtp_clone_free()
-{
-	/* do nothing */
-}
-
-
 int smtp_clone_process(MESSAGE_CONTEXT *pcontext, const char *ip, int port)
 {
 	char rcpt_to[256];

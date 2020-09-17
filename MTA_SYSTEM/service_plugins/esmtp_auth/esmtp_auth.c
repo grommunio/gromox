@@ -43,25 +43,6 @@ void esmtp_auth_init(int retrying_times)
 	g_retrying_times = retrying_times;
 }
 
-int esmtp_auth_run()
-{
-	/* do nothing */
-	return 0;
-}
-
-int esmtp_auth_stop()
-{
-	/* do nothing */
-	return 0;
-
-}
-
-void esmtp_auth_free()
-{
-	/* do nothing */
-}
-
-
 BOOL esmtp_auth_login(const char *username, const char *password, char *reason,
 	int reason_len)
 {

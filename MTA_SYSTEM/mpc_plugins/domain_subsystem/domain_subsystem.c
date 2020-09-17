@@ -24,7 +24,6 @@ void domain_subsystem_init(const char *config_path, const char *list_path,
 {
 	strcpy(g_config_path, config_path);
 	address_list_init(list_path);
-	smtp_clone_init();
 	clone_queue_init(queue_path, interval, times);
 	g_concurrent_thr = 0;
 	g_max_thr = max_thr;
@@ -38,12 +37,6 @@ int domain_subsystem_run()
 		printf("[domain_subsystem]: failed to run address list\n");
 		return -1;
 	}
-	
-	if (0 != smtp_clone_run()) {
-		printf("[domain_subsystem]: failed to run smtp deliverer\n");
-        return -2;
-    }
-
 	if (0 != clone_queue_run()) {
 		printf("[domain_subsystem]: Failed to init clone queue\n");
         return -3;
@@ -56,7 +49,6 @@ int domain_subsystem_run()
 int domain_subsystem_stop()
 {
 	clone_queue_stop();
-	smtp_clone_stop();
 	address_list_stop();
 	return 0;
 }
@@ -64,7 +56,6 @@ int domain_subsystem_stop()
 void domain_subsystem_free()
 {
 	clone_queue_free();
-	smtp_clone_free();
 	address_list_free();
 	g_concurrent_thr = 0;
 	pthread_mutex_destroy(&g_concurrent_mutex);

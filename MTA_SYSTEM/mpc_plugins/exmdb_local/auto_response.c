@@ -251,27 +251,3 @@ void auto_response_reply(const char *user_home,
 	enqueue_context(pcontext);
 }
 
-
-
-void auto_response_init() 
-{
-	/* do nothing */
-}
-
-int auto_response_run()
-{
-	/* do nothing */
-	return 0;
-}
-
-void auto_response_stop(void)
-{
-	/* do nothing */
-}
-
-void auto_response_free()
-{
-	/* do nothing */
-}
-
-

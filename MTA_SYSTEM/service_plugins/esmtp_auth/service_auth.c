@@ -76,15 +76,6 @@ int service_auth_stop()
 }
 
 /*
- *	service auth's destruction function
- */
-void service_auth_free()
-{
-	/* do nothing */
-
-}
-
-/*
  *	implementation of "auth_ehlo"
  *	@return
  *		string of auth types

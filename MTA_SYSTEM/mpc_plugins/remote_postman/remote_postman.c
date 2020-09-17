@@ -146,7 +146,6 @@ void remote_postman_free()
 	g_concurrent_thr = 0;
     files_allocator_free();
     net_failure_free();
-    smtp_deliverer_free();
     bounce_producer_free();
     timer_queue_free();
 	sender_routing_free();

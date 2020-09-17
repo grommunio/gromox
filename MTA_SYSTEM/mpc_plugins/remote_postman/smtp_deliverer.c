@@ -162,14 +162,6 @@ void smtp_deliverer_stop()
 }
 
 /*
- *	module's destruct function
- */
-void smtp_deliverer_free()
-{
-	/* do nothing */
-}
-
-/*
  *	send a command string to destination
  *	@param
  *		pconnection			smtp connection
