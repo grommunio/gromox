@@ -30,18 +30,6 @@ void sensor_client_init(const char *sensor_ip, int sensor_port)
 	g_sensor_port = sensor_port;
 }
 
-int sensor_client_run()
-{
-	/* do nothing */
-	return 0;
-}
-
-int sensor_client_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
 void sensor_client_add(const char *username, int num)
 {
 	int len;
@@ -65,12 +53,6 @@ void sensor_client_add(const char *username, int num)
 	}
 	write(sockd, "QUIT\r\n", 6);
 	close(sockd);
-}
-
-void sensor_client_free()
-{
-	/* do nothing */
-
 }
 
 static int sensor_client_connect(const char *ip_addr, int port)

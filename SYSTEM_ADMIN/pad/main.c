@@ -266,25 +266,7 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run midb client\n");
 		return 4;
 	}
-
-	if (0 != data_source_run()) {
-		midb_client_stop();
-		system_log_stop();
-		printf("[system]: failed to run data source\n");
-		return 5;
-	}
-
-	if (0 != sensor_client_run()) {
-		data_source_stop();
-		midb_client_stop();
-		system_log_stop();
-		printf("[system]: failed to run command parser\n");
-		return 5;
-	}
-
 	if (0 != exec_sched_run()) {
-		sensor_client_stop();
-		data_source_stop();
 		midb_client_stop();
 		system_log_stop();
 		printf("[system]: failed to run exec sched\n");
@@ -293,8 +275,6 @@ int main(int argc, const char **argv)
 
 	if (0 != communicator_run()) {
 		exec_sched_stop();
-		sensor_client_stop();
-		data_source_stop();
 		midb_client_stop();
 		system_log_stop();
 		printf("[system]: fail to communicator\n");
@@ -310,8 +290,6 @@ int main(int argc, const char **argv)
 
 	communicator_stop();
 	exec_sched_stop();
-	sensor_client_stop();
-	data_source_stop();
 	midb_client_stop();
 	system_log_stop();
 	return 0;
