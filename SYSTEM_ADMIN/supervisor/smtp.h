@@ -11,10 +11,6 @@ enum {
 	SMTP_AUTH_FAIL
 };
 
-extern void smtp_init(void);
-extern int smtp_run(void);
-extern int smtp_stop(void);
-extern void smtp_free(void);
 int smtp_send_inbound(const char *ip, int port, const char *rcpt,
 	const char *message, char *last_command, char *last_response);
 

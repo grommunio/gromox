@@ -32,29 +32,6 @@
 #define EHLO_AUTH_LOGIN     1
 #define EHLO_AUTH_PLAIN     2
 
-
-void smtp_init()
-{
-	/* do nothing */
-}
-
-int smtp_run()
-{
-	return 0;
-	/* do nothing */
-}
-
-int smtp_stop()
-{
-	return 0;
-	/* do nothing */
-}
-
-void smtp_free()
-{
-	/* do nothing */
-}
-
 static int smtp_read_ehlo(int sockd, char *response, int response_len,
 	int *auth_type);
 

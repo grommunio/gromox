@@ -46,27 +46,6 @@ marginheight=\"0\" marginwidth=\"0\">\r\n<CENTER><BR>\r\n\
 "</TD></TR></TBODY></TABLE><P></P><BR>\r\n\
 <P></P><BR></CENTER></BODY></HTML>\r\n"
 
-void message_init()
-{
-	/* do nothing */
-}
-
-int message_run()
-{
-	/* do nothing */
-	return 0;
-}
-
-void message_stop(void)
-{
-	/* do nothing */
-}
-
-void message_free()
-{
-	/* do nothing */
-}
-
 void message_supervising(char *buff, int message_type, int id)
 {
 	if (MESSAGE_SUPERVISING_SMTP == message_type) {

@@ -96,25 +96,8 @@ int main(int argc, const char **argv)
 	itvltoa(supervise_interval, temp_buff);
 	printf("[system]: supervise interval is %s\n", temp_buff);
 	config_file_free(pconfig);
-
-	message_init();
-	smtp_init();
-	pop3_init();
 	scheduler_init(list_path, failure_path, default_domain, admin_mailbox,
 		supervise_interval);
-	
-	if (0 != message_run()) {
-		printf("[system]: failed to run message\n");
-		return 2;
-	}
-	if (0 != smtp_run()) {
-		printf("[system]: failed to run smtp\n");
-		return 3;
-	}
-	if (0 != pop3_run()) {
-		printf("[system]: failed to run pop3\n");
-		return 4;
-	}
 	if (0 != scheduler_run()) {
 		printf("[system]: fail to scheduler\n");
 		return 5;
@@ -126,9 +109,6 @@ int main(int argc, const char **argv)
 	}
 
 	scheduler_stop();
-	pop3_stop();
-	smtp_stop();
-	message_stop();
 	return 0;
 }
 

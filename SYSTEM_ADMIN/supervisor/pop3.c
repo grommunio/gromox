@@ -21,29 +21,6 @@
 #define SOCKET_TIMEOUT		180
 #define RETRIEVE_BUFSIZE	60*1024
 
-void pop3_init()
-{
-	/* do nothing */
-}
-
-int pop3_run()
-{
-	return 0;
-	/* do nothing */
-}
-
-int pop3_stop()
-{
-	return 0;
-	/* do nothing */
-}
-
-void pop3_free()
-{
-	/* do nothing */
-}
-
-
 static BOOL pop3_send_command(int sockd, const char *command, int command_len);
 
 static int pop3_get_response(int sockd, char *response, int response_len);
