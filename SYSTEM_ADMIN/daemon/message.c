@@ -112,12 +112,6 @@ int message_stop()
 	return 0;
 }
 
-void message_free()
-{
-	/* do nothing */
-}
-
-
 void message_make(char *buff, int type, const char *language,
 	const char *str_domain_user, const char *admin_mailbox)
 {

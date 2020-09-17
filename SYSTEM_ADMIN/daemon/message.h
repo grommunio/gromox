@@ -14,6 +14,5 @@ void message_init(const char *background_path, const char *logo_path,
 	const char *logo_link, const char *resource_path);
 extern int message_run(void);
 extern int message_stop(void);
-extern void message_free(void);
 void message_make(char *buff, int type, const char *language,
 	const char *str_domain_user, const char *admin_mailbox);

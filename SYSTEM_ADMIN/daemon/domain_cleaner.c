@@ -138,17 +138,6 @@ int domain_cleaner_run()
 	return 0;
 }
 
-int domain_cleaner_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
-void domain_cleaner_free()
-{
-	/* do nothing */
-}
-
 static void domain_cleaner_delete_domain(const char *domainname,
 	const char *homedir)
 {

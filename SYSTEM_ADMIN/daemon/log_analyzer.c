@@ -138,12 +138,6 @@ int log_analyzer_run()
 	return 0;
 }
 
-int log_analyzer_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
 void log_analyzer_free()
 {
 	g_statistic_path[0] = '\0';

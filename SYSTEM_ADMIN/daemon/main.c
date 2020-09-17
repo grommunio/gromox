@@ -243,8 +243,6 @@ int main(int argc, const char **argv)
 	sprintf(group_path, "%s/keyword_group.txt", data_path);
 	sprintf(kstatisitic_path, "%s/keyword_statistic.txt", data_path);
 	system_log_init(log_path);
-	file_operation_init();
-	smtp_sender_init();
 	midb_client_init(midb_path);
 	log_flusher_init(console_path);
 	message_init(background_path, logo_path, logo_link, resource_path);
@@ -261,14 +259,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run system log\n");
 		return 1;
 	}
-	if (0 != file_operation_run()) {
-		printf("[system]: failed to run file operation\n");
-		return 2;
-	}
-	if (0 != smtp_sender_run()) {
-		printf("[system]: failed to run smtp sender\n");
-		return 3;
-	}
 	if (0 != midb_client_run()) {
 		printf("[system]: failed to run midb client\n");
 		return 4;
@@ -284,10 +274,6 @@ int main(int argc, const char **argv)
 	if (0 != locker_client_run()) {
 		printf("[system]: failed to run locker client\n");
 		return 7;
-	}
-	if (0 != data_source_run()) {
-		printf("[system]: failed to run data source\n");
-		return 8;
 	}
 	if (0 != log_analyzer_run()) {
 		printf("[system]: failed to run domain classifier\n");
@@ -314,34 +300,15 @@ int main(int argc, const char **argv)
 		return 14;
 	}
 
-	password_cleaner_stop();
-	media_migrator_stop();
-	domain_cleaner_stop();
-	auto_backup_stop();
-	keyword_cleaning_stop();
-	log_analyzer_stop();
-	data_source_stop();
 	locker_client_stop();
 	message_stop();
 	log_flusher_stop();
 	midb_client_stop();
-	smtp_sender_stop();
-	file_operation_stop();
 	system_log_stop();
-
-	password_cleaner_free();
-	media_migrator_free();
-	domain_cleaner_free();
-	auto_backup_free();
-	keyword_cleaning_free();
 	log_analyzer_free();
-	data_source_free();
 	locker_client_free();
-	message_free();
 	log_flusher_free();
 	midb_client_free();
-	smtp_sender_free();
-	file_operation_free();
 	system_log_free();
 	printf("[system]: DAEMON run OK\n");
 	return 0;

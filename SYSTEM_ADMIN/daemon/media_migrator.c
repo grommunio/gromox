@@ -281,18 +281,6 @@ EMIGRATE_USERS:
 	return 0;
 }
 
-int media_migrator_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
-void media_migrator_free()
-{
-	/* do nothing */
-}
-
-
 static void media_migrator_free_mediadir(const char *dir)
 {	
 	int fd, len;

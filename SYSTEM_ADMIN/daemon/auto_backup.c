@@ -240,15 +240,3 @@ int auto_backup_run()
 	remove(dst_file);
 	return 0;
 }
-
-int auto_backup_stop()
-{
-	return 0;
-}
-
-void auto_backup_free()
-{
-	/* do nothing */
-}
-
-

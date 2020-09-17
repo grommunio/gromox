@@ -12,18 +12,6 @@
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
-
-void file_operation_init()
-{
-	/* do nothing */
-}
-
-int file_operation_run()
-{
-	/* do nothing */
-	return 0;
-}
-
 void file_operation_compress(const char *src_path, const char *dst_file)
 {
 	pid_t pid;
@@ -184,15 +172,3 @@ void file_operation_remove_dir(const char *path)
 	closedir(dirp);
 	remove(path);
 }
-
-int file_operation_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
-void file_operation_free()
-{
-	/* do nothing */
-}
-

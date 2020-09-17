@@ -73,9 +73,6 @@ int data_source_collect_forward(DATA_COLLECT *pcollect);
 
 void data_source_init(const char *host, int port, const char *user,
 	const char *password, const char *db_name);
-extern int data_source_run(void);
-extern int data_source_stop(void);
-extern void data_source_free(void);
 extern BOOL data_source_clean_deleted_alias(void);
 BOOL data_source_get_media_domain(int type, DATA_COLLECT *pcollect);
 

@@ -115,17 +115,6 @@ int keyword_cleaning_run()
 	return 0;
 }
 
-int keyword_cleaning_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
-void keyword_cleaning_free()
-{
-	/* do nothing */
-}
-
 static BOOL keyword_cleaning_send(const char *ip, int port, char *buff, int len)
 {
 	int read_len, offset;

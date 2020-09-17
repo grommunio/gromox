@@ -103,18 +103,6 @@ int password_cleaner_run()
 
 }
 
-void password_cleaner_stop(void)
-{
-	/* do nothing */
-
-}
-
-
-void password_cleaner_free()
-{
-	/* do nothing */
-}
-
 static void password_cleaner_verify_user(int default_type, time_t cur_time,
 	const char *username, const char *maildir, const char *password)
 {

@@ -46,29 +46,6 @@ static BOOL smtp_sender_send_command(int sockd, const char *command,
 static int smtp_sender_get_response(int sockd, char *response, 
 	int response_len, BOOL expect_3xx);
 
-
-void smtp_sender_init()
-{
-	/* do nothing */
-}
-
-int smtp_sender_run()
-{
-	/* do nothing */
-	return 0;
-}
-
-int smtp_sender_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
-void smtp_sender_free()
-{
-	/* do nothing */
-}
-
 void smtp_sender_send(const char *sender, const char *address,
 	const char *pbuff, int size)
 {
