@@ -27,18 +27,6 @@ void locker_client_init(const char *ip, int port, int max_interval)
 	g_max_interval = max_interval;
 }
 
-int locker_client_run()
-{
-	/* do nothing */
-	return 0;
-}
-
-int locker_client_stop()
-{
-	/* do nothing */
-	return 0;
-}
-
 LOCKD locker_client_lock(const char *resource)
 {
 	char temp_buff[1024];
@@ -71,13 +59,6 @@ void locker_client_unlock(LOCKD lockd)
 		close(lockd);
 	}
 }
-
-void locker_client_free()
-{
-	/* do nothing */
-
-}
-
 
 static BOOL locker_client_readline_timeout(int sockd, char *buff, int length)
 {

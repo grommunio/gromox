@@ -271,10 +271,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run message\n");
 		return 6;
 	}
-	if (0 != locker_client_run()) {
-		printf("[system]: failed to run locker client\n");
-		return 7;
-	}
 	if (0 != log_analyzer_run()) {
 		printf("[system]: failed to run domain classifier\n");
 		return 9;
@@ -300,13 +296,11 @@ int main(int argc, const char **argv)
 		return 14;
 	}
 
-	locker_client_stop();
 	message_stop();
 	log_flusher_stop();
 	midb_client_stop();
 	system_log_stop();
 	log_analyzer_free();
-	locker_client_free();
 	log_flusher_free();
 	midb_client_free();
 	system_log_free();

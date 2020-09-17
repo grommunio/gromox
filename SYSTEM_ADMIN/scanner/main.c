@@ -300,11 +300,6 @@ int main(int argc, const char **argv)
 		printf("[system]: failed to run system log\n");
 		return 2;
 	}
-	if (0 != locker_client_run()) {
-		printf("[system]: failed to run locker client\n");
-		return 6;
-	}
-
 	if (0 != midb_client_run()) {
 		printf("[system]: failed to run midb client\n");
 		return 7;
@@ -325,8 +320,6 @@ int main(int argc, const char **argv)
 	engine_free();
 	midb_client_stop();
 	midb_client_free();
-	locker_client_stop();
-	locker_client_free();
 	system_log_stop();
 	system_log_free();
 	return 0;
