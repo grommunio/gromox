@@ -458,11 +458,6 @@ BOOL (*exmdb_client_check_contact_address)(const char *dir,
 BOOL (*exmdb_client_get_public_folder_unread_count)(const char *dir,
 	const char *username, uint64_t folder_id, uint32_t *pcount);
 
-void exmdb_client_init()
-{
-	/* do nothing */
-}
-
 int exmdb_client_run()
 {
 	void (*register_proc)(void*);
@@ -636,16 +631,6 @@ int exmdb_client_run()
 	pass_service(SERVICE_ID_GET_HANDLE,
 		emsmdb_interface_get_handle);
 	return 0;
-}
-
-int exmdb_client_stop()
-{
-	return 0;
-}
-
-void exmdb_client_free()
-{
-	/* do nothing */
 }
 
 BOOL exmdb_client_get_named_propid(const char *dir,

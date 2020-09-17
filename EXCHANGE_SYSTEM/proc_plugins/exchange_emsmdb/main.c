@@ -267,7 +267,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		bounce_producer_init(resource_path, separator);
 		common_util_init(org_name, average_blocks, max_rcpt, max_mail,
 			max_length, max_rule_len, smtp_ip, smtp_port, submit_command);
-		exmdb_client_init();
 		msgchg_grouping_init(data_path);
 		emsmdb_interface_init();
 		asyncemsmdb_interface_init(async_num);
@@ -307,14 +306,12 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		asyncemsmdb_interface_stop();
 		emsmdb_interface_stop();
 		msgchg_grouping_stop();
-		exmdb_client_stop();
 		common_util_stop();
 		bounce_producer_stop();
 		rop_processor_free();
 		asyncemsmdb_interface_free();
 		emsmdb_interface_free();
 		msgchg_grouping_free();
-		exmdb_client_free();
 		common_util_free();
 		bounce_producer_free();
 		return TRUE;

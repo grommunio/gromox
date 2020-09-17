@@ -231,8 +231,3 @@ int exmdb_listener_stop()
 		free(pnode->pdata);
 	return 0;
 }
-
-void exmdb_listener_free()
-{
-	/* do nothing */
-}

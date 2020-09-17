@@ -95,8 +95,3 @@ int listener_stop()
 	g_listen_sockd = -1;
 	return 0;
 }
-
-void listener_free()
-{
-	/* do nothing */
-}

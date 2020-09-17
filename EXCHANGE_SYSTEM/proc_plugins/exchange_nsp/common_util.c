@@ -387,11 +387,6 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 	return TRUE;
 }
 
-void common_util_init()
-{
-	/* do nothing */
-}
-
 int common_util_run()
 {
 	cpid_to_charset = query_service("cpid_to_charset");
@@ -401,14 +396,4 @@ int common_util_run()
 	}
 	g_server_guid = guid_random_new();
 	return 0;
-}
-
-int common_util_stop()
-{
-	return 0;
-}
-
-void common_util_free()
-{
-	/* do nothing */
 }

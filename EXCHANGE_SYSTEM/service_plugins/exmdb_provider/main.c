@@ -636,7 +636,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		bounce_producer_stop();
 		common_util_stop();
 		exmdb_client_free();
-		exmdb_listener_free();
 		exmdb_parser_free();
 		exmdb_server_free();
 		db_engine_free();

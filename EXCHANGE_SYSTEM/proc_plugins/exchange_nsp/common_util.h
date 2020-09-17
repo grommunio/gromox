@@ -117,10 +117,7 @@ extern PROPTAG_ARRAY *common_util_proptagarray_init(void);
 uint32_t* common_util_proptagarray_enlarge(PROPTAG_ARRAY *pproptags);
 
 BOOL common_util_load_file(const char *path, BINARY *pbin);
-extern void common_util_init(void);
 extern int common_util_run(void);
-extern int common_util_stop(void);
-extern void common_util_free(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -802,16 +802,6 @@ int nsp_interface_run()
 #undef E
 }
 
-int nsp_interface_stop()
-{
-	return 0;
-}
-
-void nsp_interface_free()
-{
-	/* do nothing */
-}
-
 int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
 	STAT *pstat, FLATUID *pserver_guid, NSPI_HANDLE *phandle)
 {

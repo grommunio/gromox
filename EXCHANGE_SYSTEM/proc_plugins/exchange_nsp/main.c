@@ -103,7 +103,6 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		} else {
 			b_check = FALSE;
 		}
-		common_util_init();
 		ab_tree_init(org_name, table_size, cache_interval, max_item_num);
 		config_file_free(pfile);
 		pendpoint1 = register_endpoint("*", 6001);
@@ -145,12 +144,8 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		printf("[exchange_nsp]: plugin is loaded into system\n");
 		return TRUE;
 	case PLUGIN_FREE:
-		nsp_interface_stop();
-		nsp_interface_free();
 		ab_tree_stop();
 		ab_tree_free();
-		common_util_stop();
-		common_util_free();
 		return TRUE;
 	}
 	return false;
