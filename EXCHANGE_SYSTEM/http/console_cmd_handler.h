@@ -8,13 +8,6 @@ extern "C" {
 BOOL cmd_handler_http_control(int argc, char** argv);
 
 BOOL cmd_handler_rpc_control(int argc, char** argv);
-
-BOOL cmd_handler_service_control(int argc, char** argv);
-
-BOOL cmd_handler_proc_control(int argc, char** argv);
-
-BOOL cmd_handler_hpm_control(int argc, char **argv);
-
 BOOL cmd_handler_help(int argc, char** argv);
 
 BOOL cmd_handler_server_control(int argc, char** argv);
