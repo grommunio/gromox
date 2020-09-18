@@ -9,7 +9,6 @@
 #define NDR_STACK_OUT				1
 
 typedef void *(*QUERY_SERVICE)(const char *);
-typedef int (*QUERY_VERSION)(void);
 typedef BOOL (*SERVICE_REGISTRATION)(const char *, void *);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
@@ -21,7 +20,6 @@ typedef void* (*NDR_STACK_ALLOC)(int, size_t);
 extern "C" {
 #endif
 
-extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;
 extern SERVICE_REGISTRATION register_service;
 extern TALK_REGISTRATION register_talk;
@@ -34,7 +32,6 @@ extern GET_ENVIRONMENT get_host_ID;
 extern NDR_STACK_ALLOC ndr_stack_alloc;
 
 #define	DECLARE_API \
-	QUERY_VERSION query_version; \
 	QUERY_SERVICE query_service; \
 	SERVICE_REGISTRATION register_service; \
 	TALK_REGISTRATION register_talk; \
@@ -47,8 +44,7 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	NDR_STACK_ALLOC ndr_stack_alloc
 
 #define LINK_API(param) \
-	query_version = (QUERY_VERSION)param[0]; \
-	query_service = (QUERY_SERVICE)param[1]; \
+	query_service = (QUERY_SERVICE)param[0]; \
 	register_service = (SERVICE_REGISTRATION)query_service("register_service");\
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
 	unregister_talk = (TALK_REGISTRATION)query_service("unregister_talk"); \

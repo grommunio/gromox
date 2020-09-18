@@ -31,7 +31,6 @@ typedef struct _MESSAGE_CONTEXT{
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void *(*QUERY_SERVICE)(const char *);
-typedef int (*QUERY_VERSION)(void);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
 typedef BOOL(*HOOK_REGISTRATION)(HOOK_FUNCTION);
@@ -50,7 +49,6 @@ typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 extern "C" {
 #endif
 
-extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;
 extern HOOK_REGISTRATION register_hook, unregister_hook;
 extern HOOK_REGISTRATION register_local, register_remote;
@@ -74,7 +72,6 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 
 	
 #define DECLARE_API \
-	QUERY_VERSION query_version; \
 	QUERY_SERVICE query_service; \
 	HOOK_REGISTRATION register_hook, unregister_hook; \
 	HOOK_REGISTRATION register_local, register_remote; \
@@ -97,8 +94,7 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	IS_DOMAINLIST_VALID is_domainlist_valid
 
 #define LINK_API(param) \
-	query_version = (QUERY_VERSION)param[0]; \
-	query_service = (QUERY_SERVICE)param[1]; \
+	query_service = (QUERY_SERVICE)param[0]; \
 	register_hook = (HOOK_REGISTRATION)query_service("register_hook"); \
 	unregister_hook = (HOOK_REGISTRATION)query_service("unregister_hook"); \
 	register_local = (HOOK_REGISTRATION)query_service("register_local");\

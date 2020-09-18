@@ -52,7 +52,6 @@ typedef struct _DCERPC_INTERFACE {
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void *(*QUERY_SERVICE)(const char *);
-typedef int (*QUERY_VERSION)(void);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
 typedef void (*SET_INTEGER)(int);
@@ -74,7 +73,6 @@ typedef void (*LOG_INFO)(int, const char *, ...);
 extern "C" {
 #endif
 
-extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;
 extern EP_REGISTRATION register_endpoint;
 extern IF_REGISTRATION register_interface;
@@ -100,7 +98,6 @@ extern ASYNC_REPLY async_reply;
 
 	
 #define DECLARE_API \
-	QUERY_VERSION query_version; \
 	QUERY_SERVICE query_service; \
 	EP_REGISTRATION register_endpoint; \
 	IF_REGISTRATION register_interface; \
@@ -126,8 +123,7 @@ extern ASYNC_REPLY async_reply;
 	
 
 #define LINK_API(param) \
-	query_version = (QUERY_VERSION)param[0]; \
-	query_service = (QUERY_SERVICE)param[1]; \
+	query_service = (QUERY_SERVICE)param[0]; \
 	register_endpoint = (EP_REGISTRATION)query_service("register_endpoint"); \
 	register_interface = (IF_REGISTRATION)query_service("register_interface");\
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \

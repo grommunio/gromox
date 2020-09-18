@@ -13,9 +13,6 @@
 #include <dlfcn.h>
 #include <stdio.h>
 
-
-#define SERVICE_VERSION             0x00000001
-
 typedef struct _REFERENCE_NODE{
 	DOUBLE_LIST_NODE	node;
 	char				module_name[256];
@@ -43,7 +40,6 @@ typedef struct _SERVICE_ENTRY{
 	DOUBLE_LIST			list_reference;
 } SERVICE_ENTRY;
 
-static int service_get_version(void);
 static void* service_query_service(const char *service);
 static BOOL service_register_talk(TALK_MAIN talk);
 
@@ -153,14 +149,11 @@ int service_stop()
  */
 int service_load_library(const char *path)
 {
+	static void *const server_funcs[] = {(void *)service_query_service};
 	const char *fake_path = path;
-	void* two_server_funcs[2];
 	DOUBLE_LIST_NODE *pnode;
 	PLUGIN_MAIN func;
 	PLUG_ENTITY *plib;
-
-	two_server_funcs[0] = (void*)service_get_version;
-	two_server_funcs[1] = (void*)service_query_service;
 
 	/* check whether the library is already loaded */
 	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
@@ -218,7 +211,7 @@ int service_load_library(const char *path)
 	 */
 	g_cur_plug = plib;
 	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
+	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs))) {
 		printf("[service]: error executing the plugin's init function "
 				"in %s\n", fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
@@ -293,17 +286,6 @@ int service_unload_library(const char *path)
 	dlclose(plib->handle);
 	free(plib);
 	return PLUGIN_UNLOAD_OK;
-}
-
-/*
- *  get the service module version
- *
- *  @return
- *      the version value
- */
-static int service_get_version()
-{
-    return SERVICE_VERSION;
 }
 
 /*

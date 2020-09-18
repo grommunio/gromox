@@ -51,7 +51,6 @@ static BOOL flusher_unload_plugin(void);
 static void* flusher_queryservice(const char *service);
 static int flusher_get_queue_length(void);
 static const char *flusher_get_host_ID(void);
-static int flusher_get_version(void);
 static FLUSH_ENTITY *flusher_get_from_queue(void);
 static BOOL flusher_feedback_entity(FLUSH_ENTITY *pentity);
 
@@ -247,14 +246,10 @@ void flusher_cancel(SMTP_CONTEXT *pcontext)
 
 static BOOL flusher_load_plugin(char* path)
 {
+	static void *const server_funcs[] = {flusher_queryservice};
 	PLUGIN_MAIN appmain     = NULL;
 	void    *phandle        = NULL;
 	BOOL    main_result;
-	void* pass_to_plug_funcs[2];
-
-	pass_to_plug_funcs[0] = (void*)flusher_get_version;
-	pass_to_plug_funcs[1] = (void*)flusher_queryservice;
-
 	
 	if (NULL == (phandle = dlopen(path, RTLD_LAZY))) {
 		printf("[flusher]: Failed to load flusher plugin %s: %s\n",
@@ -273,7 +268,7 @@ static BOOL flusher_load_plugin(char* path)
 	g_flusher_plug->appmain = appmain;
 	g_flusher_plug->handle  = phandle;
 	g_can_register = TRUE;
-	main_result = appmain(PLUGIN_INIT, pass_to_plug_funcs);
+	main_result = appmain(PLUGIN_INIT, const_cast(void **, server_funcs));
 	g_can_register = FALSE;
 	if (FALSE == main_result) {
 		printf("[flusher]: fail to execute init in flusher plugin\n");
@@ -473,11 +468,6 @@ static const char *flusher_get_host_ID(void)
 static int flusher_get_queue_length()
 {
 	return g_max_queue_len;
-}
-
-static int flusher_get_version()
-{
-	return FLUSHER_VERSION;
 }
 
 void flusher_console_talk(int argc, char** argv, char* result, int len)

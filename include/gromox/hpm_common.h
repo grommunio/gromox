@@ -62,7 +62,6 @@ typedef struct _HTTP_AUTH_INFO {
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void *(*QUERY_SERVICE)(const char *);
-typedef int (*QUERY_VERSION)(void);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
 typedef void (*SET_INTEGER)(int);
@@ -84,7 +83,6 @@ typedef void (*LOG_INFO)(int, const char *, ...);
 extern "C" {
 #endif
 
-extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;
 extern TALK_REGISTRATION register_talk, unregister_talk;
 extern REGISTER_INTERFACE register_interface;
@@ -108,7 +106,6 @@ extern NEW_ENVIRONMENT rpc_new_environment;
 extern FREE_ENVIRONMENT rpc_free_environment;
 	
 #define DECLARE_API \
-	QUERY_VERSION query_version; \
 	QUERY_SERVICE query_service; \
 	REGISTER_INTERFACE register_interface; \
 	TALK_REGISTRATION register_talk, unregister_talk; \
@@ -132,8 +129,7 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	FREE_ENVIRONMENT rpc_free_environment;
 	
 #define LINK_API(param) \
-	query_version = (QUERY_VERSION)param[0]; \
-	query_service = (QUERY_SERVICE)param[1]; \
+	query_service = (QUERY_SERVICE)param[0]; \
 	register_interface = (REGISTER_INTERFACE)query_service("register_interface");\
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
 	unregister_talk = (TALK_REGISTRATION)query_service("unregister_talk"); \

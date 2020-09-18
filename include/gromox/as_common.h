@@ -90,7 +90,6 @@ typedef int (*FILTER_FUNCTION)(int, int, MAIL_BLOCK*, char*, int);
 typedef int (*STATISTIC_FUNCTION)(int, MAIL_WHOLE*, CONNECTION*, char*, int);
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void *(*QUERY_SERVICE)(const char *);
-typedef int (*QUERY_VERSION)(void);
 typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
 /* represent function type of register_judge and unregister_judge */
@@ -126,7 +125,6 @@ typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 extern "C" {
 #endif
 
-extern QUERY_VERSION query_version;
 extern QUERY_SERVICE query_service;
 extern JUDGE_REGISTRATION register_judge, unregister_judge;
 extern AUDITOR_REGISTRATION register_auditor, unregister_auditor;
@@ -151,7 +149,6 @@ extern CHECKING_FUNCTION check_domain;
 extern CHECKING_FUNCTION check_relay;
 	
 #define DECLARE_API \
-	QUERY_VERSION query_version; \
 	QUERY_SERVICE query_service; \
 	JUDGE_REGISTRATION register_judge, unregister_judge; \
 	AUDITOR_REGISTRATION register_auditor, unregister_auditor; \
@@ -176,8 +173,7 @@ extern CHECKING_FUNCTION check_relay;
 	CHECKING_FUNCTION check_relay
 
 #define LINK_API(param) \
-	query_version = (QUERY_VERSION)param[0]; \
-	query_service = (QUERY_SERVICE)param[1]; \
+	query_service = (QUERY_SERVICE)param[0]; \
 	register_judge = (JUDGE_REGISTRATION)query_service("register_judge"); \
 	unregister_judge = (JUDGE_REGISTRATION)query_service("unregister_judge"); \
 	register_auditor = (AUDITOR_REGISTRATION)query_service("register_auditor");\

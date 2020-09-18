@@ -58,7 +58,6 @@ typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef BOOL (*CANCEL_REGISTRATION)(CANCEL_FUNCTION);
 typedef BOOL (*TALK_REGISTRATION)(TALK_MAIN);
 typedef void* (*QUERY_SERVICE)(const char*);
-typedef int (*QUERY_VERSION)(void);
 typedef int (*GET_QUEUE_LENGTH)(void);
 typedef BOOL (*FEEDBACK_ENTITY)(FLUSH_ENTITY*);
 typedef FLUSH_ENTITY *(*QUEUE_OPERATION)(void);
@@ -77,7 +76,6 @@ extern "C" {
 #endif
 
 extern QUERY_SERVICE query_service;
-extern QUERY_VERSION query_version;
 extern GET_QUEUE_LENGTH get_queue_length;
 extern LOG_INFO log_info;
 extern FEEDBACK_ENTITY feedback_entity;
@@ -100,7 +98,6 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 
 #define DECLARE_API \
 	QUERY_SERVICE query_service; \
-	QUERY_VERSION query_version; \
 	GET_QUEUE_LENGTH get_queue_length; \
 	LOG_INFO log_info; \
 	FEEDBACK_ENTITY feedback_entity; \
@@ -122,8 +119,7 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	IS_DOMAINLIST_VALID is_domainlist_valid
 
 #define LINK_API(param) \
-	query_version = (QUERY_VERSION)param[0]; \
-	query_service = (QUERY_SERVICE)param[1]; \
+	query_service = (QUERY_SERVICE)param[0]; \
 	get_queue_length = (GET_QUEUE_LENGTH)query_service("get_queue_length"); \
 	feedback_entity = (FEEDBACK_ENTITY)query_service("feedback_entity"); \
 	register_cancel = (CANCEL_REGISTRATION)query_service("register_cancel"); \

@@ -24,7 +24,6 @@
 #define MAX_THROWING_NUM		16
 #define SCAN_INTERVAL			1
 #define MAX_TIMES_NOT_SERVED	5
-#define SERVICE_VERSION			0x00000001
 #define THREAD_STACK_SIZE       0x400000
 
 typedef struct _CONTROL_INFO{
@@ -146,7 +145,6 @@ static void transporter_collect_hooks(void);
 static void* thread_work_func(void* arg);
 
 static void* scan_work_func(void* arg);
-static int transporter_getversion(void);
 static void* transporter_queryservice(char *service);
 
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
@@ -749,17 +747,13 @@ static void* scan_work_func(void* arg)
  */
 int transporter_load_library(const char* path)
 {
+	static void *const server_funcs[] = {(void *)transporter_queryservice};
 	const char *fake_path = path;
-	void* two_server_funcs[2];
     DOUBLE_LIST_NODE *pnode;
     PLUGIN_MAIN func;
     PLUG_ENTITY *plib;
 
 	transporter_clean_up_unloading();
-
-    two_server_funcs[0] = (void*)transporter_getversion;
-    two_server_funcs[1] = (void*)transporter_queryservice;
-
 	/* check whether the plugin is same as local or remote plugin */
 	if (strcmp(path, g_local_path) == 0 || strcmp(path, g_remote_path) == 0) {
 		printf("[transporter]: %s is already loaded in module\n", path);
@@ -821,7 +815,7 @@ int transporter_load_library(const char* path)
     double_list_append_as_tail(&g_lib_list, &plib->node);
     g_cur_lib = plib;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-    if (FALSE == func(PLUGIN_INIT, (void**) two_server_funcs)) {
+	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs))) {
 		printf("[transporter]: error executing the plugin's init function "
                 "in %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
@@ -943,14 +937,6 @@ static void transporter_clean_up_unloading()
 	}
 	vstack_free(&stack);
 	vstack_allocator_free(pallocator);
-}
-
-/*
- *	get services version
- */
-static int transporter_getversion()
-{
-	 return SERVICE_VERSION;
 }
 
 /*

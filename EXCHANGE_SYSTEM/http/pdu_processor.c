@@ -21,11 +21,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-
-
-#define SERVICE_VERSION					0x00000001
-
 #define ASSOC_GROUP_HASH_SIZE			10000
 #define ASSOC_GROUP_HASH_GROWING		1000
 
@@ -3657,11 +3652,6 @@ static int pdu_processor_get_context_num()
 	return g_connection_num;
 }
 
-static int pdu_processor_getversion()
-{
-	return SERVICE_VERSION;
-}
-
 /* this function can also be invoked from hpm_plugins,
 	you should firt set context TLS before call this
 	function, if you don't do that, you will get nothing
@@ -3854,13 +3844,10 @@ static void* pdu_processor_queryservice(char *service)
  */
 static int pdu_processor_load_library(const char* plugin_name)
 {
+	static void *const server_funcs[] = {(void *)pdu_processor_queryservice};
 	const char *fake_path = plugin_name;
 	PLUGIN_MAIN func;
 	PROC_PLUGIN *pplugin;
-	void* two_server_funcs[2];
-	
-	two_server_funcs[0] = (void*)pdu_processor_getversion;
-	two_server_funcs[1] = (void*)pdu_processor_queryservice;
 	
 	void *handle = dlopen(plugin_name, RTLD_LAZY);
 	if (handle == NULL && strchr(plugin_name, '/') == NULL) {
@@ -3902,7 +3889,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 	double_list_append_as_tail(&g_plugin_list, &pplugin->node);
 	g_cur_plugin = pplugin;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-    if (FALSE == func(PLUGIN_INIT, (void**)two_server_funcs)) {
+	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs))) {
 		printf("[pdu_processor]: error executing the plugin's init function "
 			"in %s\n", fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);

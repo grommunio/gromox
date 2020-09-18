@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <gromox/paths.h>
 #include "hpm_processor.h"
 #include "pdu_processor.h"
@@ -12,8 +13,6 @@
 #include <sys/stat.h>
 #include <dlfcn.h>
 #include <fcntl.h>
-
-#define SERVICE_VERSION							0x00000001
 
 enum {
 	RESP_FAIL,
@@ -265,11 +264,6 @@ static void hpm_processor_activate_context(int context_id)
 	context_pool_activate_context((SCHEDULE_CONTEXT*)phttp);
 }
 
-static int hpm_processor_getversion()
-{
-	return SERVICE_VERSION;
-}
-
 static void* hpm_processor_queryservice(char *service)
 {
 	void *ret_addr;
@@ -413,13 +407,10 @@ static void hpm_processor_unload_library(const char *plugin_name)
 
 static int hpm_processor_load_library(const char *plugin_name)
 {
+	static void *const server_funcs[] = {(void *)hpm_processor_queryservice};
 	const char *fake_path = plugin_name;
 	PLUGIN_MAIN func;
 	HPM_PLUGIN *pplugin;
-	void* two_server_funcs[2];
-	
-	two_server_funcs[0] = (void*)hpm_processor_getversion;
-	two_server_funcs[1] = (void*)hpm_processor_queryservice;
 
 	void *handle = dlopen(plugin_name, RTLD_LAZY);
 	if (handle == NULL && strchr(plugin_name, '/') == NULL) {
@@ -457,7 +448,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 	double_list_append_as_tail(&g_plugin_list, &pplugin->node);
 	g_cur_plugin = pplugin;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-    if (FALSE == func(PLUGIN_INIT, (void**)two_server_funcs) ||
+	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs)) ||
 		NULL == pplugin->interface.preproc ||
 		NULL == pplugin->interface.proc ||
 		NULL == pplugin->interface.retr) {
