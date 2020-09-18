@@ -536,8 +536,6 @@ static void console_server_install_command()
     /* register your cmd here, move to console server.c*/
     console_server_register_command("return-code",
                                     cmd_handler_imap_return_code_control);
-    console_server_register_command("service",
-                                    cmd_handler_service_control);
     console_server_register_command("imap",
                                     cmd_handler_imap_control);
     console_server_register_command("system",
