@@ -61,12 +61,7 @@ static const char* flusher_get_extra_tag(int context_ID, int pos);
 static const char* flusher_get_extra_value(int context_ID, int pos);
 
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func);
-
-static BOOL flusher_unregister_cancel(CANCEL_FUNCTION cancel_func);
-
 static BOOL flusher_register_talk(TALK_MAIN talk_main);
-
-static BOOL flusher_unregister_talk(TALK_MAIN talk_main);
 static const char *flusher_get_plugin_name(void);
 static const char *flusher_get_config_path(void);
 static const char *flusher_get_data_path(void);
@@ -358,14 +353,8 @@ static void* flusher_queryservice(const char *service)
 	if (0 == strcmp(service, "register_cancel")) {
 		return flusher_register_cancel;
 	}
-	if (0 == strcmp(service, "unregister_cancel")) {
-		return flusher_unregister_cancel;
-	}
 	if (0 == strcmp(service, "register_talk")) {
 		return flusher_register_talk;
-	}
-	if (0 == strcmp(service, "unregister_talk")) {
-		return flusher_unregister_talk;
 	}
 	if (0 == strcmp(service, "get_from_queue")) {
 		return flusher_get_from_queue;
@@ -488,30 +477,12 @@ static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func)
 	return TRUE;
 }
 
-static BOOL flusher_unregister_cancel(CANCEL_FUNCTION cancel_func)
-{
-	if (cancel_func != g_flusher_plug->flush_cancel) {
-		return FALSE;
-	}
-	g_flusher_plug->flush_cancel = NULL;
-	return TRUE;
-}
-
 static BOOL flusher_register_talk(TALK_MAIN talk_main)
 {
 	if (FALSE == g_can_register || NULL != g_flusher_plug->console_talk) {
 		return FALSE;
 	}
 	g_flusher_plug->console_talk = talk_main;
-	return TRUE;
-}
-
-static BOOL flusher_unregister_talk(TALK_MAIN talk_main)
-{
-	if (talk_main != g_flusher_plug->console_talk) {
-		return FALSE;
-	}
-	g_flusher_plug->console_talk = NULL;
 	return TRUE;
 }
 

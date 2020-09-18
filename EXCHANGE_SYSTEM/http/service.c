@@ -42,8 +42,6 @@ typedef struct _SERVICE_ENTRY{
 
 static void* service_query_service(const char *service);
 static BOOL service_register_talk(TALK_MAIN talk);
-
-static BOOL service_unregister_talk(TALK_MAIN talk);
 static const char *service_get_plugin_name(void);
 static const char *service_get_config_path(void);
 static const char *service_get_data_path(void);
@@ -304,9 +302,6 @@ static void* service_query_service(const char *service)
     if (0 == strcmp(service, "register_talk")) {
         return service_register_talk;
     }
-    if (0 == strcmp(service, "unregister_talk")) {
-        return service_unregister_talk;
-    }
 	if (0 == strcmp(service, "get_plugin_name")) {
 		return service_get_plugin_name;
 	}
@@ -454,29 +449,6 @@ static BOOL service_register_talk(TALK_MAIN talk)
 	}
 	g_cur_plug->talk_main = talk;
 	return TRUE;
-}
-
-/*
- *  unregister the talk function
- *  @param
- *      talk    pointer to talk function
- *  @return
- *      TRUE or FALSE
- */
-static BOOL service_unregister_talk(TALK_MAIN talk)
-{
-	DOUBLE_LIST_NODE *pnode;
-	PLUG_ENTITY      *plib;
-	
-	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
-		 pnode=double_list_get_after(&g_list_plug, pnode)) {
-		plib = (PLUG_ENTITY*)(pnode->pdata);
-		if (plib->talk_main == talk) {
-			plib->talk_main = NULL;
-			return TRUE;
-		}
-	}
-	return FALSE;
 }
 
 /*

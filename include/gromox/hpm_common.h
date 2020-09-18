@@ -84,7 +84,7 @@ extern "C" {
 #endif
 
 extern QUERY_SERVICE query_service;
-extern TALK_REGISTRATION register_talk, unregister_talk;
+extern TALK_REGISTRATION register_talk;
 extern REGISTER_INTERFACE register_interface;
 extern GET_CONNECTION get_connection;
 extern GET_REQUEST get_request;
@@ -108,7 +108,7 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 #define DECLARE_API \
 	QUERY_SERVICE query_service; \
 	REGISTER_INTERFACE register_interface; \
-	TALK_REGISTRATION register_talk, unregister_talk; \
+	TALK_REGISTRATION register_talk; \
 	GET_CONNECTION get_connection; \
 	GET_REQUEST get_request; \
 	GET_AUTH_INFO get_auth_info; \
@@ -132,7 +132,6 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	query_service = (QUERY_SERVICE)param[0]; \
 	register_interface = (REGISTER_INTERFACE)query_service("register_interface");\
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
-	unregister_talk = (TALK_REGISTRATION)query_service("unregister_talk"); \
 	get_connection = (GET_CONNECTION)query_service("get_connection"); \
 	get_request = (GET_REQUEST)query_service("get_request"); \
 	get_auth_info = (GET_AUTH_INFO)query_service("get_auth_info"); \

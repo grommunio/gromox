@@ -148,17 +148,11 @@ static void* scan_work_func(void* arg);
 static void* transporter_queryservice(char *service);
 
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
-
-static BOOL transporter_unregister_hook(HOOK_FUNCTION func);
-
 static BOOL transporter_register_local(HOOK_FUNCTION func);
 
 static BOOL transporter_register_remote(HOOK_FUNCTION func);
 
 static BOOL transporter_register_talk(TALK_MAIN talk);
-
-static BOOL transporter_unregister_talk(TALK_MAIN talk);
-
 static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data); 
 static void transporter_clean_up_unloading(void);
@@ -964,14 +958,8 @@ static void* transporter_queryservice(char *service)
     if (strcmp(service, "register_remote") == 0) {
         return transporter_register_remote;
     }
-    if (strcmp(service, "unregister_hook") == 0) {
-        return transporter_unregister_hook;
-    }
 	if (strcmp(service, "register_talk") == 0) {
         return transporter_register_talk;
-    }
-    if (strcmp(service, "unregister_talk") == 0) {
-        return transporter_unregister_talk;
     }
 	if (strcmp(service, "get_host_ID") == 0) {
 		return transporter_get_host_ID;
@@ -1316,37 +1304,6 @@ static BOOL transporter_register_remote(HOOK_FUNCTION func)
 }
 
 /*
- *	unregister a hook
- *	@param
- *		func [in]			function address
- *	@return
- *		TRUE				OK
- *		FALSE				fail
- */
-static BOOL transporter_unregister_hook(HOOK_FUNCTION func)
-{
-	DOUBLE_LIST_NODE *pnode;
-    HOOK_ENTRY *phook;
-
-    /* find the hook node in hooks list */
-    for (pnode=double_list_get_head(&g_hook_list); NULL!=pnode;
-         pnode=double_list_get_after(&g_hook_list, pnode)) {
-        if (((HOOK_ENTRY*)(pnode->pdata))->hook_addr == func) {
-            break;
-        }
-    }
-    if (NULL == pnode) {
-        return FALSE;
-    }
-    phook = (HOOK_ENTRY*)pnode->pdata;
-    /* remove it first from lib's hook list, do not need rw lock */
-    double_list_remove(&phook->plib->list_hook, &phook->node_lib);
-	/* invalidate the hook */
-	phook->valid = FALSE;
-    return TRUE;
-}
-
-/*
  *	register a console talk function
  *	@param
  *		talk [in]			talk function
@@ -1361,30 +1318,6 @@ static BOOL transporter_register_talk(TALK_MAIN talk)
     }
     g_cur_lib->talk_main = talk;
     return TRUE;
-}
-
-/*
- *	unregister a console talk function
- *	@param
- *		talk [in]			talk function
- *	@return
- *		TRUE				OK
- *		FALSE				fail
- */
-static BOOL transporter_unregister_talk(TALK_MAIN talk)
-{
-    DOUBLE_LIST_NODE *pnode;
-    PLUG_ENTITY *plib;
-
-    for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
-         pnode=double_list_get_after(&g_lib_list, pnode)) {
-        plib = (PLUG_ENTITY*)(pnode->pdata);
-        if (plib->talk_main == talk) {
-            plib->talk_main = NULL;
-            return TRUE;
-        }
-    }
-    return FALSE;
 }
 
 static const char* transporter_get_host_ID()

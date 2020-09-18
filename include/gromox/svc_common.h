@@ -23,7 +23,6 @@ extern "C" {
 extern QUERY_SERVICE query_service;
 extern SERVICE_REGISTRATION register_service;
 extern TALK_REGISTRATION register_talk;
-extern TALK_REGISTRATION unregister_talk;
 extern GET_ENVIRONMENT get_plugin_name;
 extern GET_ENVIRONMENT get_config_path;
 extern GET_ENVIRONMENT get_data_path;
@@ -35,7 +34,6 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	QUERY_SERVICE query_service; \
 	SERVICE_REGISTRATION register_service; \
 	TALK_REGISTRATION register_talk; \
-	TALK_REGISTRATION unregister_talk; \
 	GET_ENVIRONMENT get_plugin_name; \
 	GET_ENVIRONMENT get_config_path; \
 	GET_ENVIRONMENT get_data_path; \
@@ -47,7 +45,6 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	query_service = (QUERY_SERVICE)param[0]; \
 	register_service = (SERVICE_REGISTRATION)query_service("register_service");\
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
-	unregister_talk = (TALK_REGISTRATION)query_service("unregister_talk"); \
 	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
 	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
 	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \

@@ -126,11 +126,11 @@ extern "C" {
 #endif
 
 extern QUERY_SERVICE query_service;
-extern JUDGE_REGISTRATION register_judge, unregister_judge;
-extern AUDITOR_REGISTRATION register_auditor, unregister_auditor;
-extern FILTER_REGISTRATION register_filter, unregister_filter;
-extern STATISTIC_REGISTRATION register_statistic, unregister_statistic;
-extern TALK_REGISTRATION register_talk, unregister_talk;
+extern JUDGE_REGISTRATION register_judge;
+extern AUDITOR_REGISTRATION register_auditor;
+extern FILTER_REGISTRATION register_filter;
+extern STATISTIC_REGISTRATION register_statistic;
+extern TALK_REGISTRATION register_talk;
 extern SET_EXTRA_VALUE set_extra_value;
 extern MARK_CONTEXT_SPAM mark_context_spam;
 extern GET_MAIL_ENTITY get_mail_entity;
@@ -150,11 +150,11 @@ extern CHECKING_FUNCTION check_relay;
 	
 #define DECLARE_API \
 	QUERY_SERVICE query_service; \
-	JUDGE_REGISTRATION register_judge, unregister_judge; \
-	AUDITOR_REGISTRATION register_auditor, unregister_auditor; \
-	FILTER_REGISTRATION register_filter, unregister_filter; \
-	STATISTIC_REGISTRATION register_statistic, unregister_statistic; \
-	TALK_REGISTRATION register_talk, unregister_talk; \
+	JUDGE_REGISTRATION register_judge; \
+	AUDITOR_REGISTRATION register_auditor; \
+	FILTER_REGISTRATION register_filter; \
+	STATISTIC_REGISTRATION register_statistic; \
+	TALK_REGISTRATION register_talk; \
 	SET_EXTRA_VALUE set_extra_value; \
 	MARK_CONTEXT_SPAM mark_context_spam; \
 	GET_MAIL_ENTITY get_mail_entity; \
@@ -175,19 +175,11 @@ extern CHECKING_FUNCTION check_relay;
 #define LINK_API(param) \
 	query_service = (QUERY_SERVICE)param[0]; \
 	register_judge = (JUDGE_REGISTRATION)query_service("register_judge"); \
-	unregister_judge = (JUDGE_REGISTRATION)query_service("unregister_judge"); \
 	register_auditor = (AUDITOR_REGISTRATION)query_service("register_auditor");\
-	unregister_auditor = (AUDITOR_REGISTRATION)query_service( \
-							"unregister_auditor"); \
 	register_filter	= (FILTER_REGISTRATION)query_service("register_filter"); \
-	unregister_filter = (FILTER_REGISTRATION)query_service( \
-							"unregister_filter"); \
 	register_statistic = (STATISTIC_REGISTRATION)query_service( \
 			                "register_statistic"); \
-	unregister_statistic = (STATISTIC_REGISTRATION)query_service( \
-			                "unregister_statistic"); \
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
-	unregister_talk = (TALK_REGISTRATION)query_service("unregister_talk"); \
 	set_extra_value = (SET_EXTRA_VALUE)query_service("set_extra_value"); \
 	mark_context_spam = (MARK_CONTEXT_SPAM)query_service("mark_context_spam"); \
 	get_mail_entity = (GET_MAIL_ENTITY)query_service("get_mail_entity"); \

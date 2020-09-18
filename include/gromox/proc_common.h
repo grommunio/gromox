@@ -76,7 +76,7 @@ extern "C" {
 extern QUERY_SERVICE query_service;
 extern EP_REGISTRATION register_endpoint;
 extern IF_REGISTRATION register_interface;
-extern TALK_REGISTRATION register_talk, unregister_talk;
+extern TALK_REGISTRATION register_talk;
 extern LOG_INFO log_info;
 extern GET_ENVIRONMENT get_host_ID;
 extern GET_ENVIRONMENT get_default_domain;
@@ -101,7 +101,7 @@ extern ASYNC_REPLY async_reply;
 	QUERY_SERVICE query_service; \
 	EP_REGISTRATION register_endpoint; \
 	IF_REGISTRATION register_interface; \
-	TALK_REGISTRATION register_talk, unregister_talk; \
+	TALK_REGISTRATION register_talk; \
 	LOG_INFO log_info; \
 	GET_ENVIRONMENT get_host_ID; \
 	GET_ENVIRONMENT get_default_domain; \
@@ -127,7 +127,6 @@ extern ASYNC_REPLY async_reply;
 	register_endpoint = (EP_REGISTRATION)query_service("register_endpoint"); \
 	register_interface = (IF_REGISTRATION)query_service("register_interface");\
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
-	unregister_talk = (TALK_REGISTRATION)query_service("unregister_talk"); \
 	log_info = (LOG_INFO)query_service("log_info"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	get_default_domain = (GET_ENVIRONMENT)query_service("get_default_domain"); \

@@ -110,22 +110,6 @@ static BOOL hpm_processor_register_talk(TALK_MAIN talk)
     return TRUE;
 }
 
-static BOOL hpm_processor_unregister_talk(TALK_MAIN talk)
-{
-	HPM_PLUGIN *pplugin;
-	DOUBLE_LIST_NODE *pnode;
-
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		pplugin = (HPM_PLUGIN*)(pnode->pdata);
-		if (pplugin->talk_main == talk) {
-			pplugin->talk_main = NULL;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
 static const char *hpm_processor_get_host_ID()
 {
 	return resource_get_string("HOST_ID");
@@ -278,9 +262,6 @@ static void* hpm_processor_queryservice(char *service)
 	}
 	if (strcmp(service, "register_talk") == 0) {
 		return hpm_processor_register_talk;
-	}
-	if (strcmp(service, "unregister_talk") == 0) {
-		return hpm_processor_unregister_talk;
 	}
 	if (strcmp(service, "get_host_ID") == 0) {
 		return hpm_processor_get_host_ID;

@@ -50,9 +50,9 @@ extern "C" {
 #endif
 
 extern QUERY_SERVICE query_service;
-extern HOOK_REGISTRATION register_hook, unregister_hook;
+extern HOOK_REGISTRATION register_hook;
 extern HOOK_REGISTRATION register_local, register_remote;
-extern TALK_REGISTRATION register_talk, unregister_talk;
+extern TALK_REGISTRATION register_talk;
 extern LOG_INFO log_info;
 extern GET_ENVIRONMENT get_host_ID;
 extern GET_ENVIRONMENT get_default_domain;
@@ -73,9 +73,9 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	
 #define DECLARE_API \
 	QUERY_SERVICE query_service; \
-	HOOK_REGISTRATION register_hook, unregister_hook; \
+	HOOK_REGISTRATION register_hook; \
 	HOOK_REGISTRATION register_local, register_remote; \
-	TALK_REGISTRATION register_talk, unregister_talk; \
+	TALK_REGISTRATION register_talk; \
 	LOG_INFO log_info; \
 	GET_ENVIRONMENT get_host_ID; \
 	GET_ENVIRONMENT get_default_domain; \
@@ -96,11 +96,9 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 #define LINK_API(param) \
 	query_service = (QUERY_SERVICE)param[0]; \
 	register_hook = (HOOK_REGISTRATION)query_service("register_hook"); \
-	unregister_hook = (HOOK_REGISTRATION)query_service("unregister_hook"); \
 	register_local = (HOOK_REGISTRATION)query_service("register_local");\
 	register_remote = (HOOK_REGISTRATION)query_service("register_remote"); \
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
-	unregister_talk = (TALK_REGISTRATION)query_service("unregister_talk"); \
 	log_info = (LOG_INFO)query_service("log_info"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	get_default_domain = (GET_ENVIRONMENT)query_service("get_default_domain"); \
