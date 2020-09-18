@@ -536,8 +536,6 @@ static void console_server_install_command()
 	/* register your cmd here, move to console server.c*/
 	console_server_register_command("return-code",
 									cmd_handler_pop3_error_code_control);
-	console_server_register_command("service",
-									cmd_handler_service_control);
 	console_server_register_command("pop3",
 									cmd_handler_pop3_control);
 	console_server_register_command("system",

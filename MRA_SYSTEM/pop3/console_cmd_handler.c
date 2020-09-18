@@ -19,13 +19,9 @@
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
 
-static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
-static int g_plugname_buffer_size;
-
 static char g_server_help[] =
 	"250 POP3 DAEMON server help information:\r\n"
 	"\treturn-code    --return code operating\r\n"
-	"\tservice        --control service plugins\r\n"
 	"\tpop3           --pop3 operating\r\n"
 	"\tsystem         --control the POP3 DAEMON server\r\n"
 	"\ttype \"<control-unit> --help\" for more information";
@@ -34,20 +30,6 @@ static char g_pop3_return_help[] =
 	"250 POP3 DAEMON return code help information:\r\n"
 	"\treturn-code reload\r\n"
 	"\t    --reload pop3 error code table";
-
-static char g_service_help[] =
-	"250 POP3 DAEMON service plugins help information:\r\n"
-	"\tservice info\r\n"
-	"\t    --print the plug-in info\r\n"
-	"\tservice load <name>\r\n"
-	"\t    --load the specified plug-in\r\n"
-	"\tservice unload <name>\r\n"
-	"\t    --unload the specified plug-in\r\n"
-	"\tservice reference <module>\r\n"
-	"\t    --print the module's refering plug-ins\r\n"
-	"\tservice depend <service>\r\n"
-	"\t    --print modules depending the service plug-in";
-
 
 static char g_pop3_parser_help[] =
 	"250 POP3 DAEMON pop3 control help information:\r\n"
@@ -74,8 +56,6 @@ static char g_system_help[] =
 	"\tsystem version\r\n"
 	"\t    --print the server version";
 	
-static void cmd_handler_dump_plugname(const char* plugname);
-
 BOOL cmd_handler_help(int argc, char** argv)
 {
 	if (1 != argc) {
@@ -116,104 +96,6 @@ BOOL cmd_handler_pop3_error_code_control(int argc, char** argv)
 	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
 }
-
-/*  
- *  service plug-in control, which can print all the plug-in 
- *  information, load and unload the specified plug-in dynamicly.
- *  the usage is as follows,
- *      service info                // print the plug-in info
- *      service load   <name>       // load the specified plug-in
- *      service unload <name>       // unload the specified plug-in
- *      service depend <name>       // print the modules depending plug-in
- */
-BOOL cmd_handler_service_control(int argc, char** argv)
-{
-	int result;
-
-	if (1 == argc) {
-		console_server_reply_to_client("550 too few arguments");
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		console_server_reply_to_client(g_service_help);
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "info")) {
-		g_plugname_buffer_size = 0;
-		service_enum_plugins(cmd_handler_dump_plugname);
-		g_plugname_buffer[g_plugname_buffer_size] = '\0';
-		console_server_reply_to_client("250 loaded service plugins:\r\n%s",
-				g_plugname_buffer);
-		return TRUE;
-	}
-	if (3 == argc && 0 == strcmp(argv[1], "load")) {
-		result = service_load_library(argv[2]);
-		switch (result) {
-		case PLUGIN_LOAD_OK:
-			console_server_reply_to_client("250 load plug-in OK");
-			return TRUE;
-		case PLUGIN_ALREADY_LOADED:
-			console_server_reply_to_client("550 the plug-in has already "
-								"been loaded");
-			break;
-		case PLUGIN_FAIL_OPEN:
-			console_server_reply_to_client("550 error opening the plug-in");
-			break;
-		case PLUGIN_NO_MAIN:
-			console_server_reply_to_client("550 fail to find library function");
-			break;
-		case PLUGIN_FAIL_ALLOCNODE:
-			console_server_reply_to_client("550 fail to plug-in alloc memory");
-			break;
-		case PLUGIN_FAIL_EXECUTEMAIN:
-			console_server_reply_to_client("550 fail to execute plugin's "
-						"init function");
-			break;
-		default:
-			console_server_reply_to_client("550 unknown error");
-		}
-		return TRUE;
-	}
-
-	if (3 == argc && 0 == strcmp(argv[1], "unload")) {
-		result = service_unload_library(argv[2]);
-		switch (result) {
-		case PLUGIN_UNLOAD_OK:
-			console_server_reply_to_client("250 unload %s OK", argv[2]);
-			return TRUE;
-		case PLUGIN_UNABLE_UNLOAD:
-			console_server_reply_to_client("550 unable to unload %s,"
-					"there're some modules depending this plug-in", argv[2]);
-			return TRUE;
-		case PLUGIN_NOT_FOUND:
-			console_server_reply_to_client("550 no such plug-in running");
-			return TRUE;
-		default:
-			console_server_reply_to_client("550 unknown error");
-			return TRUE;
-		}
-	}
-	if (3 == argc && 0 == strcmp(argv[1], "reference")) {
-		g_plugname_buffer_size = 0;
-		service_enum_reference(argv[2], cmd_handler_dump_plugname);
-		g_plugname_buffer[g_plugname_buffer_size] = '\0';
-		console_server_reply_to_client("250 module %s depends on:\r\n%s",
-				argv[2], g_plugname_buffer);
-		return TRUE;
-	}
-	if (3 == argc && 0 == strcmp(argv[1], "depend")) {
-		g_plugname_buffer_size = 0;
-		service_enum_dependency(argv[2], cmd_handler_dump_plugname);
-		g_plugname_buffer[g_plugname_buffer_size] = '\0';
-		console_server_reply_to_client("250 plugin %s is referenced by:\r\n%s",
-				argv[2], g_plugname_buffer);
-		return TRUE;
-	}
-
-	console_server_reply_to_client("550 invalid argument %s", argv[1]);
-	return TRUE;
-}
-
 
 BOOL cmd_handler_pop3_control(int argc, char** argv)
 {
@@ -323,16 +205,6 @@ BOOL cmd_handler_pop3_control(int argc, char** argv)
 
 	console_server_reply_to_client("550 no such argument %s", argv[2]);
 	return TRUE;
-}
-
-
-static void cmd_handler_dump_plugname(const char* plugname)
-{
-	if (g_plugname_buffer_size < PLUG_BUFFER_SIZE - strlen(plugname) - 3) {
-		g_plugname_buffer_size += snprintf(g_plugname_buffer + 
-			g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
-			"\t%s\r\n", plugname);
-	}
 }
 
 BOOL cmd_handler_system_control(int argc, char** argv)
