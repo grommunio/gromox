@@ -534,8 +534,6 @@ static void console_server_install_command()
 	/* register your cmd here, move to console server.c*/
 	console_server_register_command("return-code",
 					cmd_handler_smtp_error_code_control);
-	console_server_register_command("service",
-					cmd_handler_service_control);
 	console_server_register_command("smtp",
 					cmd_handler_smtp_control);
 	console_server_register_command("system",

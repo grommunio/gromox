@@ -7,9 +7,6 @@ extern "C" {
 
 BOOL cmd_handler_smtp_error_code_control(int argc, char** argv);
 BOOL cmd_handler_smtp_control(int argc, char** argv);
-
-BOOL cmd_handler_service_control(int argc, char** argv);
-
 BOOL cmd_handler_help(int argc, char** argv);
 
 BOOL cmd_handler_server_control(int argc, char** argv);
