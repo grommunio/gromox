@@ -16,21 +16,11 @@
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
 
-static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
-static int g_plugname_buffer_size;
-
 static char g_server_help[] =
 	"250 ZCORE DAEMON server help information:\r\n"
-	"\tservice        --control service plugins\r\n"
 	"\tzcore          --zcore operating\r\n"
 	"\tsystem         --control the ZCORE DAEMON server\r\n"
 	"\ttype \"<control-unit> --help\" for more information";
-
-
-static char g_service_help[] =
-	"250 ZCORE DAEMON service plugins help information:\r\n"
-	"\tservice info\r\n"
-	"\t    --print the plug-in info";
 
 static char g_zcore_help[] =
 	"250 ZCORE DAEMON zcore control help information:\r\n"
@@ -51,43 +41,6 @@ BOOL cmd_handler_help(int argc, char** argv)
 		return TRUE;
 	}
 	console_server_reply_to_client(g_server_help);
-	return TRUE;
-}
-
-static void cmd_handler_dump_plugname(const char* plugname)
-{
-	if (g_plugname_buffer_size < PLUG_BUFFER_SIZE - strlen(plugname) - 3) {
-		g_plugname_buffer_size += snprintf(g_plugname_buffer + 
-			g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
-			"\t%s\r\n", plugname);
-	}
-}
-
-/*  
- *  service plug-in control, which can print all the plug-in 
- *  information, load and unload the specified plug-in dynamicly.
- *  the usage is as follows,
- *      service info                // print the plug-in info
- */
-BOOL cmd_handler_service_control(int argc, char** argv)
-{
-	if (1 == argc) {
-		console_server_reply_to_client("550 too few arguments");
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		console_server_reply_to_client(g_service_help);
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "info")) {
-		g_plugname_buffer_size = 0;
-		service_enum_plugins(cmd_handler_dump_plugname);
-		g_plugname_buffer[g_plugname_buffer_size] = '\0';
-		console_server_reply_to_client("250 loaded service plugins:\r\n%s",
-			g_plugname_buffer);
-		return TRUE;
-	}
-	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
 }
 

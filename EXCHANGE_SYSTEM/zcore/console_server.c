@@ -532,9 +532,6 @@ void console_server_notify_main_stop()
 static void console_server_install_command()
 {
     /* register your cmd here, move to console server.c*/
-    
-    console_server_register_command("service",
-                                    cmd_handler_service_control);
     console_server_register_command("zcore",
                                     cmd_handler_zcore_control);
     console_server_register_command("system",
