@@ -53,7 +53,6 @@ static const uint32_t g_fbl_proptag = 0x8010001F;
 
 static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 {
-	BOOL b_mailer;
 	BOOL b_version;
 	DOUBLE_LIST *plist;
 	VCARD_LINE *pvline;
@@ -61,7 +60,6 @@ static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 	DOUBLE_LIST_NODE *pnode;
 	
 	b_version = FALSE;
-	b_mailer = FALSE;
 	plist = (DOUBLE_LIST*)pvcard;
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
@@ -75,22 +73,9 @@ static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 			    strcmp(pstring, "4.0") != 0)
 				return FALSE;
 			b_version = TRUE;
-		} else if (0 == strcasecmp(pvline->name, "MAILER") ||
-			0 == strcasecmp(pvline->name, "PRODID")) {
-			pstring = vcard_get_first_subvalue(pvline);
-			if (NULL == pstring) {
-				return FALSE;
-			}
-			if (0 != strcasecmp(pstring, "Microsoft Exchange")) {
-				return FALSE;
-			}
-			b_mailer = TRUE;
 		}
 	}
-	if (FALSE == b_version || FALSE == b_mailer) {
-		return FALSE;
-	}
-	return TRUE;
+	return b_version ? TRUE : FALSE;
 }
 
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
