@@ -71,9 +71,9 @@ static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 			if (NULL == pstring) {
 				return FALSE;
 			}
-			if (0 != strcmp(pstring, "3.0")) {
+			if (strcmp(pstring, "3.0") != 0 &&
+			    strcmp(pstring, "4.0") != 0)
 				return FALSE;
-			}
 			b_version = TRUE;
 		} else if (0 == strcasecmp(pvline->name, "MAILER") ||
 			0 == strcasecmp(pvline->name, "PRODID")) {
