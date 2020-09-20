@@ -19,7 +19,7 @@ noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-monitor.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-timer.service system/gromox-zcore.service
+unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pad.service system/gromox-pop3.service system/gromox-rsync.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-timer.service system/gromox-zcore.service
 unit_targets = system/gromox-archive.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
@@ -217,7 +217,7 @@ noinst_DATA += \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
-system_admin_progs = adaptor cdnd sa_daemon event locker monitor pad rsyncd rsyncer scanner sensor session supervisor timer
+system_admin_progs = adaptor cdnd sa_daemon event locker pad rsyncd rsyncer scanner sensor session supervisor timer
 system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
@@ -684,8 +684,6 @@ mkprivate_SOURCES = SYSTEM_ADMIN/mkprivate.c
 mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 mkpublic_SOURCES = SYSTEM_ADMIN/mkpublic.c
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-monitor_SOURCES = SYSTEM_ADMIN/monitor.c
-monitor_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 pad_SOURCES = LIBRARY/system_log.c SYSTEM_ADMIN/pad/communicator.c SYSTEM_ADMIN/pad/data_source.c SYSTEM_ADMIN/pad/exec_sched.c SYSTEM_ADMIN/pad/main.c SYSTEM_ADMIN/pad/midb_client.c SYSTEM_ADMIN/pad/pop3.c SYSTEM_ADMIN/pad/sensor_client.c SYSTEM_ADMIN/pad/uid_db.c SYSTEM_ADMIN/pad/vuser.c
 pad_LDADD = -lresolv -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
 pop_porting_SOURCES = SYSTEM_ADMIN/pop_porting/main.c SYSTEM_ADMIN/pop_porting/pop3.c SYSTEM_ADMIN/pop_porting/smtp.c
@@ -754,7 +752,7 @@ man_MANS = \
 	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
 	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
-	doc/monitor.8gx doc/monitor_domains.4gx \
+	doc/monitor_domains.4gx \
 	doc/mysql_adaptor.4gx doc/pad.8gx \
 	doc/pam_gromox.8gx doc/pop3.8gx \
 	doc/rebuild.8gx doc/relay_domains.4gx doc/remote_mx_hello.4gx \
