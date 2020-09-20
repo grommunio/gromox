@@ -57,9 +57,7 @@ Makefile.in
 /sensor
 /session
 /smtp
-/status_rpc
 /supervisor
-/synchronization_rpc
 /timer
 /userinfo
 /zcore

@@ -221,8 +221,6 @@ system_admin_progs = adaptor cdnd sa_daemon event locker pad rsyncd rsyncer scan
 system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
-sacgidir = ${pkglibexecdir}/sa
-sacgi_PROGRAMS = status_rpc synchronization_rpc
 
 archiver_system_progs = archive cidb migrator
 
@@ -702,12 +700,8 @@ sensor_SOURCES = SYSTEM_ADMIN/sensor/main.c SYSTEM_ADMIN/sensor/exmdb_client.c S
 sensor_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 session_SOURCES = SYSTEM_ADMIN/session.c
 session_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
-status_rpc_SOURCES = SYSTEM_ADMIN/status_rpc.c
-status_rpc_LDADD = ${HX_LIBS} libgromox_common.la
 supervisor_SOURCES = SYSTEM_ADMIN/supervisor/main.c SYSTEM_ADMIN/supervisor/message.c SYSTEM_ADMIN/supervisor/pop3.c SYSTEM_ADMIN/supervisor/scheduler.c SYSTEM_ADMIN/supervisor/smtp.c
 supervisor_LDADD = -lresolv -lpthread ${HX_LIBS} libgromox_common.la libgromox_resolv.la
-synchronization_rpc_SOURCES = SYSTEM_ADMIN/synchronization_rpc.c
-synchronization_rpc_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 timer_SOURCES = SYSTEM_ADMIN/timer.c
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 userinfo_SOURCES = SYSTEM_ADMIN/userinfo.c
