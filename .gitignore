@@ -48,8 +48,6 @@ Makefile.in
 /pop3
 /pop_porting
 /rebuild
-/rsyncd
-/rsyncer
 /rtf2html
 /sa_daemon
 /scanner
