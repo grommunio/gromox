@@ -29,6 +29,7 @@ static char* ical_get_tag_comma(char *pstring)
 		if (TRUE == b_quote) {
 			if ('"' == pstring[i]) {
 				memmove(pstring + i, pstring + i + 1, tmp_len - i);
+				pstring[tmp_len] = '\0';
 				tmp_len --;
 				i --;
 				b_quote = FALSE;
@@ -37,6 +38,7 @@ static char* ical_get_tag_comma(char *pstring)
 		}
 		if ('"' == pstring[i]) {
 			memmove(pstring + i, pstring + i + 1, tmp_len - i);
+			pstring[tmp_len] = '\0';
 			tmp_len --;
 			i --;
 			b_quote = TRUE;
@@ -101,6 +103,7 @@ static char* ical_get_value_semicolon(char *pstring)
 			if ('\\' == pstring[i + 1] || ';' == pstring[i + 1] ||
 				',' == pstring[i + 1]) {
 				memmove(pstring + i, pstring + i + 1, tmp_len - i - 1);
+				pstring[tmp_len-1] = '\0';
 				tmp_len --;
 			} else if ('n' == pstring[i + 1] || 'N' == pstring[i + 1]) {
 				pstring[i] = '\r';
@@ -281,7 +284,9 @@ static char* ical_get_string_line(char *pbuff, size_t max_length)
 				pnext = pbuff + i + 2;
 				if (' ' == *pnext || '\t' == *pnext) {
 					pnext ++;
-					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+					size_t bytes = pbuff + max_length - pnext;
+					memmove(pbuff + i, pnext, bytes);
+					pbuff[i+bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -289,7 +294,9 @@ static char* ical_get_string_line(char *pbuff, size_t max_length)
 				pnext = pbuff + i + 1;
 				if (' ' == *pnext || '\t' == *pnext) {
 					pnext ++;
-					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+					size_t bytes = pbuff + max_length - pnext;
+					memmove(pbuff + i, pnext, bytes);
+					pbuff[i+bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -303,7 +310,9 @@ static char* ical_get_string_line(char *pbuff, size_t max_length)
 			pnext = pbuff + i + 1;
 			if (' ' == *pnext || '\t' == *pnext) {
 				pnext ++;
-				memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+				size_t bytes = pbuff + max_length - pnext;
+				memmove(pbuff + i, pnext, bytes);
+				pbuff[i+bytes] = '\0';
 				max_length -= pnext - (pbuff + i);
 				continue;
 			}
@@ -451,6 +460,7 @@ static void ical_unescape_string(char *pstring)
 			if ('\\' == pstring[i + 1] || ';' == pstring[i + 1] ||
 				',' == pstring[i + 1]) {
 				memmove(pstring + i, pstring + i + 1, tmp_len - i);
+				pstring[tmp_len] = '\0';
 				tmp_len --;
 			} else if ('n' == pstring[i + 1] || 'N' == pstring[i + 1]) {
 				pstring[i] = '\r';
