@@ -44,7 +44,6 @@ Makefile.in
 /mkmidb
 /mkprivate
 /mkpublic
-/monitor
 /pad
 /pop3
 /pop_porting
