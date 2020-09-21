@@ -27,7 +27,6 @@ mta_system = delivery smtp
 mta_plugins = \
 	libmtaflh_message_enqueue.la \
 	libmtahook_alias_translator.la \
-	libmtahook_anonymous_keyword.la \
 	libmtahook_archive_agent.la \
 	libmtahook_cdner_caching.la \
 	libmtahook_domain_keyword.la \
@@ -93,7 +92,6 @@ mta_plugins = \
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
 	libmtahook_alias_translator.ldd \
-	libmtahook_anonymous_keyword.ldd \
 	libmtahook_archive_agent.ldd \
 	libmtahook_cdner_caching.ldd \
 	libmtahook_domain_keyword.ldd \
@@ -259,10 +257,6 @@ libmtahook_alias_translator_la_SOURCES = MTA_SYSTEM/mpc_plugins/alias_translator
 libmtahook_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtahook_alias_translator_la_DEPENDENCIES = ${default_sym}
-libmtahook_anonymous_keyword_la_SOURCES = MTA_SYSTEM/mpc_plugins/anonymous_keyword/anonymous_keyword.c MTA_SYSTEM/mpc_plugins/anonymous_keyword/main.c
-libmtahook_anonymous_keyword_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_anonymous_keyword_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_anonymous_keyword_la_DEPENDENCIES = ${default_sym}
 libmtahook_archive_agent_la_SOURCES = MTA_SYSTEM/mpc_plugins/archive_agent/main.c
 libmtahook_archive_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_archive_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
