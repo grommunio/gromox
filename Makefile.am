@@ -31,7 +31,6 @@ mta_plugins = \
 	libmtahook_cdner_caching.la \
 	libmtahook_domain_monitor.la \
 	libmtahook_domain_sign.la \
-	libmtahook_domain_subsystem.la \
 	libmtahook_exmdb_local.la \
 	libmtahook_from_replace.la \
 	libmtahook_gateway_dispatch.la \
@@ -95,7 +94,6 @@ noinst_DATA += \
 	libmtahook_cdner_caching.ldd \
 	libmtahook_domain_monitor.ldd \
 	libmtahook_domain_sign.ldd \
-	libmtahook_domain_subsystem.ldd \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_from_replace.ldd \
 	libmtahook_gateway_dispatch.ldd \
@@ -271,10 +269,6 @@ libmtahook_domain_sign_la_SOURCES = MTA_SYSTEM/mpc_plugins/domain_sign/domain_si
 libmtahook_domain_sign_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_domain_sign_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_domain_sign_la_DEPENDENCIES = ${default_sym}
-libmtahook_domain_subsystem_la_SOURCES = MTA_SYSTEM/mpc_plugins/domain_subsystem/address_list.c MTA_SYSTEM/mpc_plugins/domain_subsystem/clone_queue.c MTA_SYSTEM/mpc_plugins/domain_subsystem/domain_subsystem.c MTA_SYSTEM/mpc_plugins/domain_subsystem/main.c MTA_SYSTEM/mpc_plugins/domain_subsystem/smtp_clone.c
-libmtahook_domain_subsystem_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_domain_subsystem_la_LIBADD = -lpthread ${HX_LIBS} libgromox_email.la
-EXTRA_libmtahook_domain_subsystem_la_DEPENDENCIES = ${default_sym}
 libmtahook_exmdb_local_la_SOURCES = MTA_SYSTEM/mpc_plugins/exmdb_local/auto_response.c MTA_SYSTEM/mpc_plugins/exmdb_local/bounce_audit.c MTA_SYSTEM/mpc_plugins/exmdb_local/bounce_producer.c MTA_SYSTEM/mpc_plugins/exmdb_local/cache_queue.c MTA_SYSTEM/mpc_plugins/exmdb_local/exmdb_client.c MTA_SYSTEM/mpc_plugins/exmdb_local/exmdb_local.c MTA_SYSTEM/mpc_plugins/exmdb_local/main.c MTA_SYSTEM/mpc_plugins/exmdb_local/net_failure.c
 libmtahook_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
