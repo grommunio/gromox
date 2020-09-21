@@ -54,7 +54,4 @@ BOOL data_source_get_backup_list(DATA_COLLECT *pcollect);
 BOOL data_source_get_monitor_domains(DATA_COLLECT *pcollect);
 
 BOOL data_source_get_uncheckusr_list(DATA_COLLECT *pcollect);
-
-BOOL data_source_get_subsystem_list(DATA_COLLECT *pcollect);
-
 BOOL data_source_get_monitor_groups(DATA_COLLECT *pcollect);

@@ -27,8 +27,6 @@ Display option summary.
 .IP \(bu 4
 \fIdata_file_path\fI/domain_list.txt
 .IP \(bu 4
-\fIdata_file_path\fI/domain_subsystem.txt
-.IP \(bu 4
 \fIdata_file_path\fI/mailbox_collector.txt
 .IP \(bu 4
 \fIdata_file_path\fI/uncheck_domains.txt
