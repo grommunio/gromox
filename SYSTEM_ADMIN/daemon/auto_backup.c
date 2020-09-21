@@ -62,10 +62,6 @@ int auto_backup_run()
 	sprintf(dst_file, "%s/data_files/domain_blacklist.txt", g_backup_path);
 	file_operation_copy_file(src_file, dst_file);
 
-	sprintf(src_file, "%s/domain_mailbox.txt", g_data_path);
-	sprintf(dst_file, "%s/data_files/domain_mailbox.txt", g_backup_path);
-	file_operation_copy_file(src_file, dst_file);
-	
 	sprintf(src_file, "%s/domain_whitelist.txt", g_data_path);
 	sprintf(dst_file, "%s/data_files/domain_whitelist.txt", g_backup_path);
 	file_operation_copy_file(src_file, dst_file);
