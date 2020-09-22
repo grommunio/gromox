@@ -29,7 +29,6 @@ mta_plugins = \
 	libmtahook_alias_translator.la \
 	libmtahook_archive_agent.la \
 	libmtahook_cdner_caching.la \
-	libmtahook_domain_monitor.la \
 	libmtahook_domain_sign.la \
 	libmtahook_exmdb_local.la \
 	libmtahook_from_replace.la \
@@ -91,7 +90,6 @@ noinst_DATA += \
 	libmtahook_alias_translator.ldd \
 	libmtahook_archive_agent.ldd \
 	libmtahook_cdner_caching.ldd \
-	libmtahook_domain_monitor.ldd \
 	libmtahook_domain_sign.ldd \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_from_replace.ldd \
@@ -259,10 +257,6 @@ libmtahook_cdner_caching_la_SOURCES = MTA_SYSTEM/mpc_plugins/cdner_caching.c
 libmtahook_cdner_caching_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_cdner_caching_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_cdner_caching_la_DEPENDENCIES = ${default_sym}
-libmtahook_domain_monitor_la_SOURCES = MTA_SYSTEM/mpc_plugins/domain_monitor/domain_monitor.c MTA_SYSTEM/mpc_plugins/domain_monitor/main.c
-libmtahook_domain_monitor_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_domain_monitor_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_domain_monitor_la_DEPENDENCIES = ${default_sym}
 libmtahook_domain_sign_la_SOURCES = MTA_SYSTEM/mpc_plugins/domain_sign/domain_sign.c MTA_SYSTEM/mpc_plugins/domain_sign/main.c
 libmtahook_domain_sign_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_domain_sign_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
