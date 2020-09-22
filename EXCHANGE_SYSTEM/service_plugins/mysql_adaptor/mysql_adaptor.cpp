@@ -72,6 +72,16 @@ static void *thread_work_func(void *param);
 
 static void mysql_adaptor_encode_squote(const char *in, char *out);
 
+static inline size_t z_strlen(const char *s)
+{
+	return s != nullptr ? strlen(s) : 0;
+}
+
+static inline const char *z_null(const char *s)
+{
+	return s != nullptr ? s : "";
+}
+
 void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
 	int port, const char *user, const char *password, const char *db_name,
 	int timeout)
@@ -889,10 +899,12 @@ RETRYING:
 	}
 
 	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
-	snprintf(sql_string, 1024, "SELECT real_name, nickname, "
-		"address_type FROM users WHERE username='%s'", temp_name);
-	
+	snprintf(sql_string, sizeof(sql_string),
+	         "SELECT u2.propval_str AS real_name, "
+	         "u3.propval_str AS nickname, u.address_type FROM users AS u "
+	         "LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 "
+	         "LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 "
+	         "WHERE u.username='%s'", temp_name);
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
 		if (reco(pconnection, i, sql_string, pmyres))
@@ -910,17 +922,11 @@ RETRYING:
 	
 	myrow = mysql_fetch_row(pmyres);
 	address_type = atoi(myrow[2]);
-	if (ADDRESS_TYPE_MLIST == address_type) {
-		strcpy(pdisplayname, username);
-	} else {
-		if ('\0' != myrow[0][0]) {
-			strcpy(pdisplayname, myrow[0]);
-		} else if ('\0' != myrow[1][0]) {
-			strcpy(pdisplayname, myrow[1]);
-		} else {
-			strcpy(pdisplayname, username);
-		}
-	}
+	strcpy(pdisplayname,
+	       address_type == ADDRESS_TYPE_MLIST ? username :
+	       myrow[0] != nullptr && *myrow[0] != '\0' ? myrow[0] :
+	       myrow[1] != nullptr && *myrow[1] != '\0' ? myrow[1] :
+	       username);
 	mysql_free_result(pmyres);
 	return TRUE;
 }
@@ -2360,7 +2366,7 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 	MYSQL_RES *pmyres;
 	int address_type;
 	int list_privilege;
-	char sql_string[1024];
+	char sql_string[1600];
 	DOUBLE_LIST_NODE *pnode;
 	CONNECTION_NODE *pconnection;
 	
@@ -2389,12 +2395,23 @@ RETRYING:
 	}
 
 	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
-	snprintf(sql_string, 1024, "SELECT users.id, privilege_bits, "
-		"users.username, real_name, title, memo, cell, tel, nickname,"
-		" homeaddress, address_type, create_day, sub_type, maildir "
-		"FROM users INNER JOIN members ON members.class_id=%d AND "
-		"members.username=users.username", class_id);
+
+	snprintf(sql_string, sizeof(sql_string),
+	         "SELECT u.id, u.privilege_bits, u.username, "
+	         "u2.propval_str AS real_name, u3.propval_str AS title, "
+	         "u4.propval_str AS memo, u5.propval_str AS cell, "
+	         "u6.propval_str AS tel, u7.propval_str AS nickname, "
+	         "u8.propval_str AS homeaddress, u.address_type, 0 AS create_day, "
+	         "u.sub_type, u.maildir FROM users AS u "
+	         "INNER JOIN members ON members.class_id=%d AND members.username=u.username "
+	         "LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 "
+	         "LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=974585887 "
+	         "LEFT JOIN user_properties AS u4 ON u.id=u4.user_id AND u4.proptag=805568543 "
+	         "LEFT JOIN user_properties AS u5 ON u.id=u5.user_id AND u5.proptag=974913567 "
+	         "LEFT JOIN user_properties AS u6 ON u.id=u6.user_id AND u6.proptag=974782495 "
+	         "LEFT JOIN user_properties AS u7 ON u.id=u7.user_id AND u7.proptag=978255903 "
+	         "LEFT JOIN user_properties AS u8 ON u.id=u8.user_id AND u8.proptag=979173407",
+	         class_id);
 	
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
@@ -2431,7 +2448,7 @@ RETRYING:
 			temp_len = strlen(myrow[2]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
 			mem_file_write(pfile, myrow[2], temp_len);
-			temp_len = strlen(myrow[3]);
+			temp_len = z_strlen(myrow[3]);
 			if (0 == temp_len) {
 				ptoken = strchr(myrow[2], '@');
 				temp_len = ptoken - myrow[2];
@@ -2439,26 +2456,26 @@ RETRYING:
 				mem_file_write(pfile, myrow[2], temp_len);
 			} else {
 				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, myrow[3], temp_len);
+				mem_file_write(pfile, z_null(myrow[3]), temp_len);
 			}
-			temp_len = strlen(myrow[4]);
+			temp_len = z_strlen(myrow[4]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[4], temp_len);
-			temp_len = strlen(myrow[5]);
+			mem_file_write(pfile, z_null(myrow[4]), temp_len);
+			temp_len = z_strlen(myrow[5]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[5], temp_len);
-			temp_len = strlen(myrow[6]);
+			mem_file_write(pfile, z_null(myrow[5]), temp_len);
+			temp_len = z_strlen(myrow[6]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[6], temp_len);
-			temp_len = strlen(myrow[7]);
+			mem_file_write(pfile, z_null(myrow[6]), temp_len);
+			temp_len = z_strlen(myrow[7]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[7], temp_len);
-			temp_len = strlen(myrow[8]);
+			mem_file_write(pfile, z_null(myrow[7]), temp_len);
+			temp_len = z_strlen(myrow[8]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[8], temp_len);
-			temp_len = strlen(myrow[9]);
+			mem_file_write(pfile, z_null(myrow[8]), temp_len);
+			temp_len = z_strlen(myrow[9]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[9], temp_len);
+			mem_file_write(pfile, z_null(myrow[9]), temp_len);
 			temp_len = strlen(myrow[11]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
 			mem_file_write(pfile, myrow[11], temp_len);
@@ -2542,13 +2559,22 @@ RETRYING:
 	}
 
 	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
-	snprintf(sql_string, 1024, "SELECT id, privilege_bits, username, "
-		"real_name, title, memo, cell, tel, nickname, homeaddress, "
-		"address_type, create_day, sub_type, maildir FROM users WHERE"
-		" group_id=%d AND (SELECT count(*) AS num FROM members WHERE "
-		"users.username=members.username)=0", group_id);
-	
+	snprintf(sql_string, sizeof(sql_string),
+	         "SELECT u.id, u.privilege_bits, u.username, "
+	         "u2.propval_str AS real_name, u3.propval_str AS title, "
+	         "u4.propval_str AS memo, u5.propval_str AS cell, "
+	         "u6.propval_str AS tel, u7.propval_str AS nickname, "
+	         "u8.propval_str AS homeaddress, u.address_type, 0 AS create_day, "
+	         "u.sub_type, u.maildir FROM users AS u "
+	         "LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 "
+	         "LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=974585887 "
+	         "LEFT JOIN user_properties AS u4 ON u.id=u4.user_id AND u4.proptag=805568543 "
+	         "LEFT JOIN user_properties AS u5 ON u.id=u5.user_id AND u5.proptag=974913567 "
+	         "LEFT JOIN user_properties AS u6 ON u.id=u6.user_id AND u6.proptag=974782495 "
+	         "LEFT JOIN user_properties AS u7 ON u.id=u7.user_id AND u7.proptag=978255903 "
+	         "LEFT JOIN user_properties AS u8 ON u.id=u8.user_id AND u8.proptag=979173407 "
+	         "WHERE u.group_id=%d AND (SELECT COUNT(*) AS num FROM members WHERE u.username=members.username)=0",
+	         group_id);
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
 		if (reco(pconnection, i, sql_string, pmyres))
@@ -2584,7 +2610,7 @@ RETRYING:
 			temp_len = strlen(myrow[2]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
 			mem_file_write(pfile, myrow[2], temp_len);
-			temp_len = strlen(myrow[3]);
+			temp_len = z_strlen(myrow[3]);
 			if (0 == temp_len) {
 				ptoken = strchr(myrow[2], '@');
 				temp_len = ptoken - myrow[2];
@@ -2592,26 +2618,26 @@ RETRYING:
 				mem_file_write(pfile, myrow[2], temp_len);
 			} else {
 				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, myrow[3], temp_len);
+				mem_file_write(pfile, z_null(myrow[3]), temp_len);
 			}
-			temp_len = strlen(myrow[4]);
+			temp_len = z_strlen(myrow[4]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[4], temp_len);
-			temp_len = strlen(myrow[5]);
+			mem_file_write(pfile, z_null(myrow[4]), temp_len);
+			temp_len = z_strlen(myrow[5]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[5], temp_len);
-			temp_len = strlen(myrow[6]);
+			mem_file_write(pfile, z_null(myrow[5]), temp_len);
+			temp_len = z_strlen(myrow[6]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[6], temp_len);
-			temp_len = strlen(myrow[7]);
+			mem_file_write(pfile, z_null(myrow[6]), temp_len);
+			temp_len = z_strlen(myrow[7]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[7], temp_len);
-			temp_len = strlen(myrow[8]);
+			mem_file_write(pfile, z_null(myrow[7]), temp_len);
+			temp_len = z_strlen(myrow[8]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[8], temp_len);
-			temp_len = strlen(myrow[9]);
+			mem_file_write(pfile, z_null(myrow[8]), temp_len);
+			temp_len = z_strlen(myrow[9]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[9], temp_len);
+			mem_file_write(pfile, z_null(myrow[9]), temp_len);
 			temp_len = strlen(myrow[11]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
 			mem_file_write(pfile, myrow[11], temp_len);
@@ -2732,12 +2758,21 @@ RETRYING:
 	pconnection = (CONNECTION_NODE*)pnode->pdata;
 	alias_map_type dom_alias;
 	get_domain_aliases(pconnection, domain_id, dom_alias);
-	
-	snprintf(sql_string, 1024, "SELECT id, privilege_bits, "
-		"username, real_name, title, memo, cell, tel, nickname,"
-		" homeaddress, address_type, create_day, sub_type, maildir"
-		" FROM users WHERE domain_id=%d and group_id=0", domain_id);
-	
+	snprintf(sql_string, sizeof(sql_string),
+	         "SELECT u.id, u.privilege_bits, u.username, "
+	         "u2.propval_str AS real_name, u3.propval_str AS title, "
+	         "u4.propval_str AS memo, u5.propval_str AS cell, "
+	         "u6.propval_str AS tel, u7.propval_str AS nickname, "
+	         "u8.propval_str AS homeaddress, u.address_type, 0 AS create_day, "
+	         "u.sub_type, u.maildir FROM users AS u "
+	         "LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 "
+	         "LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=974585887 "
+	         "LEFT JOIN user_properties AS u4 ON u.id=u4.user_id AND u4.proptag=805568543 "
+	         "LEFT JOIN user_properties AS u5 ON u.id=u5.user_id AND u5.proptag=974913567 "
+	         "LEFT JOIN user_properties AS u6 ON u.id=u6.user_id AND u6.proptag=974782495 "
+	         "LEFT JOIN user_properties AS u7 ON u.id=u7.user_id AND u7.proptag=978255903 "
+	         "LEFT JOIN user_properties AS u8 ON u.id=u8.user_id AND u8.proptag=979173407 "
+	         "WHERE u.domain_id=%d AND u.group_id=0", domain_id);
 	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
 		if (reco(pconnection, i, sql_string, pmyres))
@@ -2773,7 +2808,7 @@ RETRYING:
 			temp_len = strlen(myrow[2]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
 			mem_file_write(pfile, myrow[2], temp_len);
-			temp_len = strlen(myrow[3]);
+			temp_len = z_strlen(myrow[3]);
 			if (0 == temp_len) {
 				ptoken = strchr(myrow[2], '@');
 				temp_len = ptoken - myrow[2];
@@ -2781,26 +2816,26 @@ RETRYING:
 				mem_file_write(pfile, myrow[2], temp_len);
 			} else {
 				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, myrow[3], temp_len);
+				mem_file_write(pfile, z_null(myrow[3]), temp_len);
 			}
-			temp_len = strlen(myrow[4]);
+			temp_len = z_strlen(myrow[4]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[4], temp_len);
-			temp_len = strlen(myrow[5]);
+			mem_file_write(pfile, z_null(myrow[4]), temp_len);
+			temp_len = z_strlen(myrow[5]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[5], temp_len);
-			temp_len = strlen(myrow[6]);
+			mem_file_write(pfile, z_null(myrow[5]), temp_len);
+			temp_len = z_strlen(myrow[6]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[6], temp_len);
-			temp_len = strlen(myrow[7]);
+			mem_file_write(pfile, z_null(myrow[6]), temp_len);
+			temp_len = z_strlen(myrow[7]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[7], temp_len);
-			temp_len = strlen(myrow[8]);
+			mem_file_write(pfile, z_null(myrow[7]), temp_len);
+			temp_len = z_strlen(myrow[8]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[8], temp_len);
-			temp_len = strlen(myrow[9]);
+			mem_file_write(pfile, z_null(myrow[8]), temp_len);
+			temp_len = z_strlen(myrow[9]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[9], temp_len);
+			mem_file_write(pfile, z_null(myrow[9]), temp_len);
 			temp_len = strlen(myrow[11]);
 			mem_file_write(pfile, &temp_len, sizeof(int));
 			mem_file_write(pfile, myrow[11], temp_len);
