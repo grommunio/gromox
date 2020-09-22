@@ -30,6 +30,8 @@ class GX_EXPORT DB_RESULT final {
 
 	DB_RESULT &operator=(DB_RESULT &&o) noexcept
 	{
+		if (m_res != nullptr)
+			mysql_free_result(m_res);
 		m_res = o.m_res;
 		o.m_res = nullptr;
 		return *this;
