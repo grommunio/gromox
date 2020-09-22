@@ -40,7 +40,6 @@ static const char *const g_dfl_mpc_plugins[] = {
 	"libmtahook_domain_sign.so",
 	"libmtahook_exmdb_local.so",
 	"libmtahook_from_replace.so",
-	"libmtahook_group_monitor.so",
 	"libmtahook_mail_approving.so",
 	"libmtahook_mailbox_collector.so",
 	"libmtahook_mail_forwarder.so",

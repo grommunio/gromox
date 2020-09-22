@@ -34,7 +34,6 @@ mta_plugins = \
 	libmtahook_exmdb_local.la \
 	libmtahook_from_replace.la \
 	libmtahook_gateway_dispatch.la \
-	libmtahook_group_monitor.la \
 	libmtahook_mail_approving.la \
 	libmtahook_mail_forwarder.la \
 	libmtahook_mailbox_collector.la \
@@ -97,7 +96,6 @@ noinst_DATA += \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_from_replace.ldd \
 	libmtahook_gateway_dispatch.ldd \
-	libmtahook_group_monitor.ldd \
 	libmtahook_mail_approving.ldd \
 	libmtahook_mail_forwarder.ldd \
 	libmtahook_mailbox_collector.ldd \
@@ -281,10 +279,6 @@ libmtahook_gateway_dispatch_la_SOURCES = MTA_SYSTEM/mpc_plugins/gateway_dispatch
 libmtahook_gateway_dispatch_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_gateway_dispatch_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_gateway_dispatch_la_DEPENDENCIES = ${default_sym}
-libmtahook_group_monitor_la_SOURCES = MTA_SYSTEM/mpc_plugins/group_monitor/group_monitor.c MTA_SYSTEM/mpc_plugins/group_monitor/main.c
-libmtahook_group_monitor_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_group_monitor_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_group_monitor_la_DEPENDENCIES = ${default_sym}
 libmtahook_mail_approving_la_SOURCES = MTA_SYSTEM/mpc_plugins/mail_approving/bounce_producer.c MTA_SYSTEM/mpc_plugins/mail_approving/mail_approving.c MTA_SYSTEM/mpc_plugins/mail_approving/main.c
 libmtahook_mail_approving_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mail_approving_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
