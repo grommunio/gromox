@@ -35,7 +35,6 @@ mta_plugins = \
 	libmtahook_gateway_dispatch.la \
 	libmtahook_mail_approving.la \
 	libmtahook_mail_forwarder.la \
-	libmtahook_mailbox_collector.la \
 	libmtahook_message_insulation.la \
 	libmtahook_mlist_expand.la \
 	libmtahook_os_inspection.la \
@@ -96,7 +95,6 @@ noinst_DATA += \
 	libmtahook_gateway_dispatch.ldd \
 	libmtahook_mail_approving.ldd \
 	libmtahook_mail_forwarder.ldd \
-	libmtahook_mailbox_collector.ldd \
 	libmtahook_message_insulation.ldd \
 	libmtahook_mlist_expand.ldd \
 	libmtahook_os_inspection.ldd \
@@ -281,10 +279,6 @@ libmtahook_mail_forwarder_la_SOURCES = MTA_SYSTEM/mpc_plugins/mail_forwarder/mai
 libmtahook_mail_forwarder_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mail_forwarder_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_mail_forwarder_la_DEPENDENCIES = ${default_sym}
-libmtahook_mailbox_collector_la_SOURCES = MTA_SYSTEM/mpc_plugins/mailbox_collector.c
-libmtahook_mailbox_collector_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_mailbox_collector_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtahook_mailbox_collector_la_DEPENDENCIES = ${default_sym}
 libmtahook_message_insulation_la_SOURCES = MTA_SYSTEM/mpc_plugins/message_insulation/bounce_producer.c MTA_SYSTEM/mpc_plugins/message_insulation/main.c MTA_SYSTEM/mpc_plugins/message_insulation/message_insulation.c
 libmtahook_message_insulation_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_message_insulation_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
