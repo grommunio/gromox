@@ -17,6 +17,16 @@ struct tbl_upgradefn {
 	const char *command;
 };
 
+static const char tbl_uprops_25[] =
+"CREATE TABLE `user_properties` ("
+"  `user_id` int(10) unsigned NOT NULL,"
+"  `proptag` int(10) unsigned NOT NULL,"
+"  `propval_bin` varbinary(4096) DEFAULT NULL,"
+"  `propval_str` varchar(4096) DEFAULT NULL,"
+"  PRIMARY KEY (`user_id`,`proptag`),"
+"  CONSTRAINT `user_properties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)"
+") DEFAULT CHARSET=utf8mb4";
+
 /* Initialization to create schema 0 */
 static const char tbl_alias_0[] =
 "CREATE TABLE `aliases` ("
@@ -357,26 +367,17 @@ static const char tbl_users_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
-"  `real_name` varchar(32) NOT NULL DEFAULT '',"
-"  `title` varchar(128) NOT NULL DEFAULT '',"
-"  `memo` varchar(128) NOT NULL DEFAULT '',"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  `group_id` int(10) unsigned NOT NULL,"
 "  `maildir` varchar(128) NOT NULL DEFAULT '',"
 "  `max_size` int(10) unsigned NOT NULL,"
 "  `max_file` int(10) unsigned NOT NULL,"
-"  `create_day` date NOT NULL,"
 "  `lang` varchar(32) NOT NULL DEFAULT '',"
 "  `timezone` varchar(64) NOT NULL DEFAULT '',"
-"  `mobile_phone` varchar(20) NOT NULL DEFAULT '',"
 "  `privilege_bits` int(10) unsigned NOT NULL,"
 "  `sub_type` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_status` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_type` tinyint(4) NOT NULL DEFAULT 0,"
-"  `cell` varchar(20) NOT NULL DEFAULT '',"
-"  `tel` varchar(20) NOT NULL DEFAULT '',"
-"  `nickname` varchar(32) NOT NULL DEFAULT '',"
-"  `homeaddress` varchar(128) NOT NULL DEFAULT '',"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `username` (`username`),"
 "  UNIQUE KEY `domain_id_2` (`domain_id`,`username`),"
@@ -399,6 +400,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"specifieds", tbl_specifieds_top},
 	{"users", tbl_users_top},
 	{"aliases", tbl_alias_top},
+	{"user_properties", tbl_uprops_25},
 	{nullptr},
 };
 
@@ -457,6 +459,15 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{23, "DELETE FROM `users` WHERE address_type=1"},
 	/* Domain aliases, with no @, might have been stored in this table too(?) */
 	{24, "DELETE FROM `aliases` WHERE aliasname NOT LIKE '%@%'"},
+	{25, tbl_uprops_25},
+	{26, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 979173407, `homeaddress` FROM `users` WHERE `homeaddress`!=''"}, /* pidTagHomeAddressStreet */
+	{27, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 978255903, `nickname` FROM `users` WHERE `nickname`!=''"}, /* pidTagNickname */
+	{28, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 973602847, `tel` FROM `users` WHERE `tel`!=''"}, /* pidTagBusinessTelephoneNumber */
+	{29, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974782495, `tel` FROM `users` WHERE `tel`!=''"}, /* pidTagPrimaryTelephoneNumber */
+	{30, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974913567, `cell` FROM `users` WHERE `cell`!=''"}, /* pidTagMobileTelephoneNumber */
+	{31, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805568543, `memo` FROM `users` WHERE `memo`!=''"}, /* pidTagComment */
+	{32, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974585887, `title` FROM `users` WHERE `title`!=''"}, /* pidTagTitle */
+	{33, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805371935, `real_name` FROM `users` WHERE `real_name`!=''"}, /* pidTagDisplayName */
 	{0, nullptr},
 };
 
