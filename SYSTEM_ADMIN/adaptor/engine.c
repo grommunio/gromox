@@ -21,7 +21,6 @@ static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];
 static char g_backup_path[256];
 static char g_unchkusr_path[256];
-static char g_collector_path[256];
 
 static void* thread_work_func1(void *param);
 
@@ -29,15 +28,13 @@ static void* thread_work_func2(void *param);
 
 void engine_init(const char *mount_path, const char *domainlist_path,
 	const char *aliasaddress_path,
-	const char *backup_path, const char *unchkusr_path,
-	const char *collector_path)
+	const char *backup_path, const char *unchkusr_path)
 {
 	strcpy(g_mount_path, mount_path);
 	strcpy(g_domainlist_path, domainlist_path);
 	strcpy(g_aliasaddress_path, aliasaddress_path);
 	strcpy(g_backup_path, backup_path);
 	strcpy(g_unchkusr_path, unchkusr_path);
-	strcpy(g_collector_path, collector_path);
 }
 
 
@@ -222,41 +219,6 @@ static void* thread_work_func1(void *param)
 				NOTIFY_SMTP);
 		}
 	
-		sprintf(temp_path, "%s.tmp", g_collector_path);
-
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			data_source_collect_free(pcollect);
-			goto NEXT_LOOP;
-		}
-
-		for (data_source_collect_begin(pcollect);
-			!data_source_collect_done(pcollect);
-			data_source_collect_forward(pcollect)) {
-			pdomain_item = (DOMAIN_ITEM*)data_source_collect_get_value(pcollect);
-			sprintf(temp_path1, "%s/domain.cfg", pdomain_item->homedir);
-			pconfig = config_file_init2(NULL, temp_path1);
-			if (NULL != pconfig) {
-				str_value = config_file_get_value(pconfig, "COLLECTOR_MAILBOX");
-				if (NULL != str_value) {
-					len = sprintf(temp_line, "%s\t%s\n",
-							pdomain_item->domainname, str_value);
-					write(fd, temp_line, len);
-				}
-				config_file_free(pconfig);
-			}
-		}
-		close(fd);
-		
-		if (0 != file_operation_compare(temp_path, g_collector_path)) {
-			rename(temp_path, g_collector_path);
-			file_operation_broadcast(g_collector_path,
-				"data/delivery/mailbox_collector.txt");
-			gateway_control_notify("libmtahook_mailbox_collector.so reload",
-				NOTIFY_DELIVERY);
-		}
-		
-		data_source_collect_clear(pcollect);
 NEXT_LOOP:
 		count = 0;
 	}
