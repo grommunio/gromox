@@ -39,7 +39,6 @@ mta_plugins = \
 	libmtahook_mlist_expand.la \
 	libmtahook_os_inspection.la \
 	libmtahook_redirect_agent.la \
-	libmtahook_relay_agent.la \
 	libmtahook_remote_postman.la \
 	libmtahook_self_monitor.la \
 	libmtahook_status_forms.la \
@@ -99,7 +98,6 @@ noinst_DATA += \
 	libmtahook_mlist_expand.ldd \
 	libmtahook_os_inspection.ldd \
 	libmtahook_redirect_agent.ldd \
-	libmtahook_relay_agent.ldd \
 	libmtahook_remote_postman.ldd \
 	libmtahook_self_monitor.ldd \
 	libmtahook_status_forms.ldd \
@@ -295,10 +293,6 @@ libmtahook_redirect_agent_la_SOURCES = MTA_SYSTEM/mpc_plugins/redirect_agent.c
 libmtahook_redirect_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_redirect_agent_la_LIBADD = libgromox_common.la
 EXTRA_libmtahook_redirect_agent_la_DEPENDENCIES = ${default_sym}
-libmtahook_relay_agent_la_SOURCES = MTA_SYSTEM/mpc_plugins/relay_agent/ip_range.c MTA_SYSTEM/mpc_plugins/relay_agent/main.c MTA_SYSTEM/mpc_plugins/relay_agent/relay_agent.c MTA_SYSTEM/mpc_plugins/relay_agent/relay_bridge.c
-libmtahook_relay_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_relay_agent_la_LIBADD = -lpthread ${HX_LIBS} ${zlib_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_relay_agent_la_DEPENDENCIES = ${default_sym}
 libmtahook_remote_postman_la_SOURCES = MTA_SYSTEM/mpc_plugins/remote_postman/bounce_producer.c MTA_SYSTEM/mpc_plugins/remote_postman/main.c MTA_SYSTEM/mpc_plugins/remote_postman/net_failure.c MTA_SYSTEM/mpc_plugins/remote_postman/remote_postman.c MTA_SYSTEM/mpc_plugins/remote_postman/sender_routing.c MTA_SYSTEM/mpc_plugins/remote_postman/smtp_deliverer.c MTA_SYSTEM/mpc_plugins/remote_postman/timer_queue.c
 libmtahook_remote_postman_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_remote_postman_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la
