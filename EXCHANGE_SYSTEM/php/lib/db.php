@@ -37,7 +37,7 @@ function get_user_info_by_name($email_address)
 {
 	$db_conn = get_db_connection();
 	
-	$sql_string = "SELECT maildir, real_name, username, id, domain_id, timezone FROM users WHERE username='" . $db_conn->real_escape_string($email_address) . "'";
+	$sql_string = "SELECT maildir, '', username, id, domain_id, timezone FROM users WHERE username='" . $db_conn->real_escape_string($email_address) . "'";
 	$results = $db_conn->query($sql_string);
 	if (!$results) {
 		die("fail to query database: " . $db_conn->error);
@@ -46,25 +46,38 @@ function get_user_info_by_name($email_address)
 		return NULL;
 	}
 	$row = $results->fetch_row();
-	$at_pos = strpos($row[2], '@');
-	$domain = substr($row[2], $at_pos + 1);
+	$data_array = array(
+		"maildir" => $row[0],
+		"username" => $row[2],
+		"domain" => substr($row[2], strpos($row[2], '@')),
+		"uid" => $row[3],
+		"did" => $row[4],
+	);
 	if (!$row[5]) {
 		$config = get_app_config();
-		$timezone = $config['default']['timezone'];
-		if (!$timezone) {
-			$timezone = "Asia/Shanghai";
-		}
+		$data_array["timezone"] = $config['default']['timezone'];
+		if (!$data_array["timezone"])
+			$data_array["timezone"] = "Asia/Shanghai";
 	} else {
-		$timezone = $row[5];
+		$data_array["timezone"] = $row[5];
 	}
-	return array('maildir'=>$row[0], 'real_name'=>$row[1], 'username'=>$row[2], 'domain'=>$domain, 'uid'=>$row[3], 'did'=>$row[4], 'timezone'=>$timezone);
+
+	$sql_string = "SELECT proptag, propval_str FROM users INNER JOIN user_properties AS up ON users.id=up.user_id WHERE users.username='" . $db_conn->real_escape_string($email_address) . "'";
+	$results = $db_conn->query($sql_string);
+	if (!$results)
+		die("failed to query database: " . $db_conn->error);
+	while (($row = $results->fetch_row())) {
+		if ($row[0] == 805371935)
+			$data_array["real_name"] = $row[1];
+	}
+	return $data_array;
 }
 
 function get_user_info_by_id($user_id)
 {
 	$db_conn = get_db_connection();
 	
-	$sql_string = "SELECT maildir, real_name, username, id, domain_id, timezone FROM users WHERE id=" . $user_id;
+	$sql_string = "SELECT maildir, '', username, id, domain_id, timezone FROM users WHERE id=" . $user_id;
 	$results = $db_conn->query($sql_string);
 	if (!$results) {
 		die("fail to query database: " . $db_conn->error);
@@ -73,18 +86,31 @@ function get_user_info_by_id($user_id)
 		return NULL;
 	}
 	$row = $results->fetch_row();
-	$at_pos = strpos($row[2], '@');
-	$domain = substr($row[2], $at_pos + 1);
+	$data_array = array(
+		"maildir" => $row[0],
+		"username" => $row[2],
+		"domain" => substr($row[2], strpos($row[2], '@')),
+		"uid" => $row[3],
+		"did" => $row[4],
+	);
 	if (!$row[5]) {
 		$config = get_app_config();
-		$timezone = $config['default']['timezone'];
-		if (!$timezone) {
-			$timezone = "Asia/Shanghai";
-		}
+		$data_array["timezone"] = $config['default']['timezone'];
+		if (!$data_array["timezone"])
+			$data_array["timezone"] = "Asia/Shanghai";
 	} else {
-		$timezone = $row[5];
+		$data_array["timezone"] = $row[5];
 	}
-	return array('maildir'=>$row[0], 'real_name'=>$row[1], 'username'=>$row[2], 'domain'=>$domain, 'uid'=>$row[3], 'did'=>$row[4], 'timezone'=>$timezone);
+
+	$sql_string = "SELECT proptag, propval_str FROM users INNER JOIN user_properties AS up ON users.id=up.user_id WHERE users.id=" . $user_id;
+	$results = $db_conn->query($sql_string);
+	if (!$results)
+		die("failed to query database: " . $db_conn->error);
+	while (($row = $results->fetch_row())) {
+		if ($row[0] == 805371935)
+			$data_array["real_name"] = $row[1];
+	}
+	return $data_array;
 }
 
 function get_domain_info_by_name($domain)
