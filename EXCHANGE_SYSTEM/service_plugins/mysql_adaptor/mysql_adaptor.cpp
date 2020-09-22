@@ -2664,7 +2664,7 @@ static bool get_domain_aliases(CONNECTION_NODE *co,
 		"WHERE u.domain_id=%d", domain_id);
 	if (mysql_query(co->pmysql, query) != 0)
 		return false;
-	DB_RESULT res(co->pmysql, mysql_store_result(co->pmysql));
+	DB_RESULT res(mysql_store_result(co->pmysql));
 	if (res == nullptr)
 		return false;
 	out.clear();

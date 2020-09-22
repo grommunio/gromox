@@ -20,21 +20,17 @@ using DB_ROW = char **;
 class GX_EXPORT DB_RESULT final {
 	public:
 	DB_RESULT() = default;
-	DB_RESULT(MYSQL *d, MYSQL_RES *r) noexcept : m_res(r), m_db(d) {}
-	DB_RESULT(DB_RESULT &&o) noexcept : m_res(o.m_res), m_db(o.m_db) { o.m_res = nullptr; }
+	DB_RESULT(MYSQL_RES *r) noexcept : m_res(r) {}
+	DB_RESULT(DB_RESULT &&o) noexcept : m_res(o.m_res) { o.m_res = nullptr; }
 	~DB_RESULT()
 	{
-		if (m_res == nullptr)
-			return;
-		if (m_db == nullptr)
-			return;
-		mysql_free_result(m_res);
+		if (m_res != nullptr)
+			mysql_free_result(m_res);
 	}
 
 	DB_RESULT &operator=(DB_RESULT &&o) noexcept
 	{
 		m_res = o.m_res;
-		m_db = o.m_db;
 		o.m_res = nullptr;
 		return *this;
 	}
@@ -55,7 +51,6 @@ class GX_EXPORT DB_RESULT final {
 
 	private:
 	MYSQL_RES *m_res = nullptr;
-	MYSQL *m_db = nullptr;
 };
 
 }

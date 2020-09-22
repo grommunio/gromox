@@ -415,7 +415,7 @@ unsigned int dbop_mysql_schemaversion(MYSQL *conn)
 	const char q[] = "SELECT `value` FROM `options` WHERE `key`='schemaversion'";
 	if (mysql_real_query(conn, q, strlen(q)) != 0)
 		return 0;
-	DB_RESULT res(conn, mysql_store_result(conn));
+	DB_RESULT res(mysql_store_result(conn));
 	if (res == nullptr)
 		abort();
 	auto row = res.fetch_row();
