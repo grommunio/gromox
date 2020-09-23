@@ -44,12 +44,12 @@ int system_services_run()
 	E(system_services_auth_login, "auth_login_pop3");
 	E(system_services_list_mail, "list_mail");
 	E(system_services_delete_mail, "delete_mail");
-	E(system_services_list_cdn_mail, "cdn_uidl");
-	E(system_services_delete_cdn_mail, "cdn_remove");
-	E(system_services_check_cdn_user, "cdn_check");
-	E(system_services_auth_cdn_user, "cdn_auth");
-	E(system_services_create_cdn_user, "cdn_create");
-	E(system_services_broadcast_event, "broadcast_event");
+	system_services_list_cdn_mail = service_query("cdn_uidl", "system");
+	system_services_delete_cdn_mail = service_query("cdn_remove", "system");
+	system_services_check_cdn_user = service_query("cdn_check", "system");
+	system_services_auth_cdn_user = service_query("cdn_auth", "system");
+	system_services_create_cdn_user = service_query("cdn_create", "system");
+	system_services_broadcast_event = service_query("broadcast_event", "system");
 	return 0;
 #undef E
 }
