@@ -1054,7 +1054,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	vcard_append_line(pvcard, pvline);
 	
-	pvline = vcard_new_simple_line("VERSION", "3.0");
+	pvline = vcard_new_simple_line("VERSION", "4.0");
 	if (NULL == pvline) {
 		goto EXPORT_FAILURE;
 	}
