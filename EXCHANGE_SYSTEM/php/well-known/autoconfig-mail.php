@@ -27,8 +27,8 @@ $provider->addAttribute('id', $host_name);
 foreach (get_domains() as $domain) {
 	$provider->addChild('domain', $domain);
 }
-$provider->addChild('displayName', 'Grammm Mail');
-$provider->addChild('displayShortName', 'Grammm');
+$provider->addChild('displayName', 'Gromox Mail');
+$provider->addChild('displayShortName', 'Gromox');
 
 $imap = $provider->addChild('incomingServer');
 $imap->addAttribute('type', 'imap');
