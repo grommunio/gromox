@@ -2071,8 +2071,8 @@ int plain_to_html(char *rbuf, int len)
 	
 	strcpy(tag_buff,
 		"<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;"
-		" charset=utf-8\">\r\n<meta name=\"Generator\" content=\"GRID text "
-		"converter\">\r\n</head>\r\n<body>\r\n<pre>");
+		" charset=utf-8\">\r\n<meta name=\"Generator\" content=\"gromox-texttohtml"
+		"\">\r\n</head>\r\n<body>\r\n<pre>");
 	tag_len = strlen(tag_buff);
 	rbuf_len = strlen(rbuf);
 	if (len < rbuf_len + tag_len + 25) {

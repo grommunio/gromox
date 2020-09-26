@@ -477,7 +477,7 @@ static BOOL html_write_header(RTF_WRITER*pwriter)
 		}
 	}
 	length = sprintf(tmp_string,
-		"}\n{\\*\\generator GRID rtf converter;}"
+		"}\n{\\*\\generator gromox-rtf;}"
 		"\n{\\*\\formatConverter converted from html;}"
 		"\\viewkind5\\viewscale100\n{\\*\\bkmkstart BM_BEGIN}");
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(

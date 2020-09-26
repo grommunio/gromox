@@ -1060,13 +1060,13 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	vcard_append_line(pvcard, pvline);
 	
-	pvline = vcard_new_simple_line("MAILER", "Microsoft Exchange");
+	pvline = vcard_new_simple_line("MAILER", "gromox-oxvcard");
 	if (NULL == pvline) {
 		goto EXPORT_FAILURE;
 	}
 	vcard_append_line(pvcard, pvline);
 	
-	pvline = vcard_new_simple_line("PRODID", "Microsoft Exchange");
+	pvline = vcard_new_simple_line("PRODID", "gromox-oxvcard");
 	if (NULL == pvline) {
 		goto EXPORT_FAILURE;
 	}

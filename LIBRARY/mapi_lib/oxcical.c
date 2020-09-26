@@ -5386,9 +5386,7 @@ static BOOL oxcical_export_internal(const char *method,
 		return FALSE;
 	}
 	ical_append_line(pical, piline);
-	
-	piline = ical_new_simple_line("PRODID",
-		"-//Gridware Information//GRID 1.0 calendar//EN");
+	piline = ical_new_simple_line("PRODID", "gromox-oxical");
 	if (NULL == piline) {
 		return FALSE;
 	}
