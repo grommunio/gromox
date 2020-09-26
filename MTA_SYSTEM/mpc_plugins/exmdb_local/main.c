@@ -69,7 +69,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
 		if (NULL == str_value) {
-			strcpy(org_name, "gridware information");
+			HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
 			config_file_set_value(pfile, "X500_ORG_NAME", org_name);
 		} else {
 			strcpy(org_name, str_value);

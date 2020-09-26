@@ -126,7 +126,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		
 		str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
 		if (NULL == str_value || '\0' == str_value[0]) {
-			strcpy(org_name, "gridware information");
+			HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
 		} else {
 			strcpy(org_name, str_value);
 		}

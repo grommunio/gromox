@@ -54,7 +54,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		org_name = config_file_get_value(pfile, "X500_ORG_NAME");
 		if (NULL == org_name) {
-			org_name = "gridware information";
+			org_name = "Gromox default";
 		}
 		printf("[exchange_nsp]: x500 org name is \"%s\"\n", org_name);
 		str_value = config_file_get_value(pfile, "HASH_TABLE_SIZE");

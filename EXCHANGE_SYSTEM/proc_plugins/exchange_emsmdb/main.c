@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/paths.h>
 #include "guid.h"
 #include "util.h"
@@ -97,7 +98,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		}
 		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
 		if (NULL == str_value || '\0' == str_value[0]) {
-			strcpy(org_name, "gridware information");
+			HX_strlcpy(org_name, "Gromox default", sizeof(org_name));
 		} else {
 			strcpy(org_name, str_value);
 		}
