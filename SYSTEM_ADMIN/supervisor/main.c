@@ -66,8 +66,8 @@ int main(int argc, const char **argv)
 	sprintf(failure_path, "%s/supervising_failure.txt", data_path);
 	str_value = config_file_get_value(pconfig, "ADMIN_MAILBOX");
 	if (NULL == str_value) {
-		strcpy(admin_mailbox, "admin@gridware.com.cn");
-		config_file_set_value(pconfig, "ADMIN_MAILBOX", "admin@gridware.com.cn");
+		HX_strlcpy(admin_mailbox, "root@localhost", sizeof(admin_mailbox));
+		config_file_set_value(pconfig, "ADMIN_MAILBOX", admin_mailbox);
 	} else {
 		strcpy(admin_mailbox, str_value);
 	}

@@ -133,8 +133,8 @@ int main(int argc, const char **argv)
 	
 	admin_mb = resource_get_string("ADMIN_MAILBOX");
 	if (admin_mb == NULL) {
-		admin_mb = "admin@gridware-info.com";
-		resource_set_string("ADMIN_MAILBOX", "admin@gridware-info.com");
+		admin_mb = "root@localhost";
+		resource_set_string("ADMIN_MAILBOX", admin_mb);
 	}
 	printf("[system]: administrator mailbox is %s\n", admin_mb);
 
