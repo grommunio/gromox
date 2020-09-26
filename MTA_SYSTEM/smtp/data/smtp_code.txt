@@ -1,4 +1,4 @@
-2172001		214 Help availble on http://www.gridware.com.cn
+2172001		214 Help availble on https://gromox.com/
 2172002		220 <domain> Service ready
 2172003		221 <domain> GoodBye!
 2172004		235 Authentification OK, go ahead
