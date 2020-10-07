@@ -178,8 +178,8 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 
 		cdner_agent_init(cdner_conn_num, cdner_host_ip, cdner_host_port);
 		uncheck_domains_init(uncheck_path);
-		mysql_adaptor_init(conn_num, scan_interval, mysql_host,
-			mysql_port, mysql_user, mysql_passwd, db_name, timeout);
+		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
+			db_name, mysql_port, conn_num, scan_interval, timeout});
 		config_file_free(pfile);
 		
 		if (cdner_agent_run() != 0) {

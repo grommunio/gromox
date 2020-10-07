@@ -1,6 +1,7 @@
 #include <map>
 #include <string>
 #include <string.h>
+#include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include "cdner_agent.h"
@@ -82,24 +83,22 @@ static inline const char *z_null(const char *s)
 	return s != nullptr ? s : "";
 }
 
-void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
-	int port, const char *user, const char *password, const char *db_name,
-	int timeout)
+void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 {
 	g_notify_stop = TRUE;
-	g_conn_num = conn_num;
-	g_scan_interval = scan_interval;
-	strcpy(g_host, host);
-	g_port = port;
-	g_timeout = timeout;
-	strcpy(g_user, user);
-	if (NULL == password || '\0' == password[0]) {
+	g_conn_num = parm.conn_num;
+	g_scan_interval = parm.scan_interval;
+	HX_strlcpy(g_host, parm.host, sizeof(g_host));
+	g_port = parm.port;
+	g_timeout = parm.timeout;
+	HX_strlcpy(g_user, parm.user, sizeof(g_user));
+	if (parm.pass == nullptr || *parm.pass == '\0') {
 		g_password = NULL;
 	} else {
-		strcpy(g_password_buff, password);
+		HX_strlcpy(g_password_buff, parm.pass, sizeof(g_password_buff));
 		g_password = g_password_buff;
 	}
-	strcpy(g_db_name, db_name);
+	HX_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
 	double_list_init(&g_connection_list);
 	double_list_init(&g_invalid_list);
 	pthread_mutex_init(&g_list_lock, NULL);

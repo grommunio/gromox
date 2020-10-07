@@ -14,13 +14,18 @@ enum {
 	USER_PRIVILEGE_PUBADDR = 1 << 3,
 };
 
+struct mysql_adaptor_init_param {
+	const char *host, *user, *pass, *dbname;
+	int port, conn_num, scan_interval, timeout;
+};
+
+#ifdef __cplusplus
+extern void mysql_adaptor_init(const struct mysql_adaptor_init_param &);
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void mysql_adaptor_init(int conn_num, int scan_interval, const char *host,
-	int port, const char *user, const char *password, const char *db_name,
-	int timeout);
 
 extern int mysql_adaptor_run(void);
 extern int mysql_adaptor_stop(void);
