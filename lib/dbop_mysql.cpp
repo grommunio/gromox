@@ -5,6 +5,7 @@
 #include <mysql.h>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
+#include <libHX/defs.h>
 
 using namespace gromox;
 
@@ -410,16 +411,16 @@ int dbop_mysql_create_top(MYSQL *conn)
 }
 
 /* Upgrade phases */
-unsigned int dbop_mysql_schemaversion(MYSQL *conn)
+int dbop_mysql_schemaversion(MYSQL *conn)
 {
 	const char q[] = "SELECT `value` FROM `options` WHERE `key`='schemaversion'";
 	if (mysql_real_query(conn, q, strlen(q)) != 0)
 		return 0;
 	DB_RESULT res(mysql_store_result(conn));
 	if (res == nullptr)
-		abort();
+		return -1;
 	auto row = res.fetch_row();
-	if (row == nullptr)
+	if (row == nullptr || row[0] == nullptr)
 		return 0;
 	return strtoul(row[0], nullptr, 0);
 }
@@ -471,9 +472,14 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{0, nullptr},
 };
 
+int dbop_mysql_recentversion()
+{
+	return tbl_upgrade_list[ARRAY_SIZE(tbl_upgrade_list)-2].v;
+}
+
 int dbop_mysql_upgrade(MYSQL *conn)
 {
-	unsigned int current = dbop_mysql_schemaversion(conn);
+	auto current = dbop_mysql_schemaversion(conn);
 	printf("Current schema n%u\n", current);
 
 	auto *entry = tbl_upgrade_list;

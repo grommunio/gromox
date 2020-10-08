@@ -175,11 +175,17 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 		if (cdner_conn_num > 0)
 			printf("[mysql_adaptor]: cdner port is %d\n", cdner_host_port);
+		str_value = config_file_get_value(pfile, "schema_upgrades");
+		enum sql_schema_upgrade upg;
+		if (str_value != nullptr && strcmp(str_value, "skip") == 0)
+			upg = S_SKIP;
+		else if (str_value != nullptr && strcmp(str_value, "autoupgrade") == 0)
+			upg = S_AUTOUP;
 
 		cdner_agent_init(cdner_conn_num, cdner_host_ip, cdner_host_port);
 		uncheck_domains_init(uncheck_path);
 		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
-			db_name, mysql_port, conn_num, scan_interval, timeout});
+			db_name, mysql_port, conn_num, scan_interval, timeout, upg});
 		config_file_free(pfile);
 		
 		if (cdner_agent_run() != 0) {

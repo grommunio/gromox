@@ -14,9 +14,14 @@ enum {
 	USER_PRIVILEGE_PUBADDR = 1 << 3,
 };
 
+enum sql_schema_upgrade {
+	S_ABORT, S_SKIP, S_AUTOUP,
+};
+
 struct mysql_adaptor_init_param {
 	const char *host, *user, *pass, *dbname;
 	int port, conn_num, scan_interval, timeout;
+	enum sql_schema_upgrade schema_upgrade;
 };
 
 #ifdef __cplusplus

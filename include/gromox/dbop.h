@@ -8,7 +8,8 @@ extern "C" {
 
 extern GX_EXPORT int dbop_mysql_create_0(MYSQL *);
 extern GX_EXPORT int dbop_mysql_create_top(MYSQL *);
-extern GX_EXPORT unsigned int dbop_mysql_schemaversion(MYSQL *);
+extern GX_EXPORT int dbop_mysql_recentversion(void);
+extern GX_EXPORT int dbop_mysql_schemaversion(MYSQL *);
 extern GX_EXPORT int dbop_mysql_upgrade(MYSQL *);
 
 #ifdef __cplusplus

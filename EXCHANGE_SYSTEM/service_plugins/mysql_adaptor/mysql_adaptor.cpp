@@ -3,6 +3,7 @@
 #include <string.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
+#include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include "cdner_agent.h"
 #include "mysql_adaptor.h"
@@ -68,6 +69,7 @@ static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_invalid_list;
 static pthread_t g_thread_id;
 static BOOL g_notify_stop = TRUE;
+static enum sql_schema_upgrade g_schema_upgrade;
 
 static void *thread_work_func(void *param);
 
@@ -99,10 +101,45 @@ void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 		g_password = g_password_buff;
 	}
 	HX_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
+	g_schema_upgrade = parm.schema_upgrade;
 	double_list_init(&g_connection_list);
 	double_list_init(&g_invalid_list);
 	pthread_mutex_init(&g_list_lock, NULL);
 	pthread_mutex_init(&g_crypt_lock, NULL);
+}
+
+static bool db_upgrade_check_2(MYSQL *conn)
+{
+	auto recent = dbop_mysql_recentversion();
+	auto current = dbop_mysql_schemaversion(conn);
+	if (current >= recent)
+		return true;
+	printf("[mysql_adaptor]: Current schema n%d. Update available: n%d. Configured action: ",
+	       current, recent);
+	if (g_schema_upgrade == S_SKIP) {
+		printf("skip\n");
+		return true;
+	} else if (g_schema_upgrade != S_AUTOUP) {
+		printf("abort\n");
+		return false;
+	}
+	printf("autoupgrade\n");
+	return dbop_mysql_upgrade(conn) == EXIT_SUCCESS;
+}
+
+static bool db_upgrade_check()
+{
+	pthread_mutex_lock(&g_list_lock);
+	auto node = double_list_get_from_head(&g_connection_list);
+	pthread_mutex_unlock(&g_list_lock);
+	if (node == nullptr)
+		return false;
+	auto conn = static_cast<CONNECTION_NODE *>(node->pdata);
+	auto ret = db_upgrade_check_2(conn->pmysql);
+	pthread_mutex_lock(&g_list_lock);
+	double_list_append_as_tail(&g_connection_list, &conn->node);
+	pthread_mutex_unlock(&g_list_lock);
+	return ret;
 }
 
 int mysql_adaptor_run()
@@ -148,7 +185,9 @@ int mysql_adaptor_run()
 		printf("[mysql_adaptor]: Failed to init connection list\n");
 		return -1;
 	}
-	
+
+	if (!db_upgrade_check())
+		return -1;
 	g_notify_stop = FALSE;
 	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
 	if (ret != 0) {

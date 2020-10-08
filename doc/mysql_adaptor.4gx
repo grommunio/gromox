@@ -37,6 +37,26 @@ Default: (unset)
 .SS scan_interval
 .PP
 Default: \fI1 minute\fP
+.SS schema_upgrades
+.PP
+This controls what to do when a database schema update is available.
+.TP
+\fBautoupdate\fP
+Do perform automatic schema upgrades when mysql_adaptor is started. This option
+can potentially be harmful if multiple programs try to upgrade the database at
+the same time.
+.TP
+\fBskip\fP
+No automatic schema upgrades are performed. The initialization will report
+completion and the program continues execution. The mysql_adaptor plugin may
+not properly work when desired tables are missing and cannot deliver data.
+.TP
+\fBabort\fP
+No automatic schema upgrades are performed. The initialization is aborted and
+the program terminates. Schema upgrades can be done manually with
+gromox\-dbop(8gx).
+.PP
+Default: \fIabort\fP
 .SH See also
 .PP
 \fBgromox\fP(7), \fBauthmgr\fP(4gx)
