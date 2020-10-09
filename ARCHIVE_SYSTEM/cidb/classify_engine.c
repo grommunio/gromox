@@ -103,9 +103,7 @@ static char* classify_engine_cl_decode_mime(const char *charset,
 	const char *mime_string);
 
 static void classify_engine_encode_squote(const char *in, char *out);
-
-static void classify_engine_escase_string(const char *in, char *out);
-
+static void classify_engine_escape_string(const char *in, char *out);
 static void classify_engine_enum_mime(MJSON_MIME *pmime, int *pattach);
 
 static DOUBLE_LIST* classify_engine_sphinx_search(DOUBLE_LIST *pclist);
@@ -1815,7 +1813,7 @@ static void classify_engine_encode_squote(const char *in, char *out)
 	out[j] = '\0';
 }
 
-static void classify_engine_escase_string(const char *in, char *out)
+static void classify_engine_escape_string(const char *in, char *out)
 {
 	int len, i, j;
 
@@ -1882,32 +1880,32 @@ static DOUBLE_LIST* classify_engine_sphinx_search(DOUBLE_LIST *pclist)
 		pconnode = (CONDITION_NODE*)pnode->pdata;	
 		switch (pconnode->condition) {
 		case CONDITION_FROM:
-			classify_engine_escase_string(pconnode->pstatment, escape_string);
+			classify_engine_escape_string(pconnode->pstatment, escape_string);
 			snprintf(query_string, 2048, "@from %s", escape_string);
 			sphinx_add_query(psphinx, query_string, "*", NULL);
 			break;
 		case CONDITION_TO:
-			classify_engine_escase_string(pconnode->pstatment, escape_string);
+			classify_engine_escape_string(pconnode->pstatment, escape_string);
 			snprintf(query_string, 2048, "@to %s", escape_string);
 			sphinx_add_query(psphinx, query_string, "*", NULL);
 			break;
 		case CONDITION_CC:
-			classify_engine_escase_string(pconnode->pstatment, escape_string);
+			classify_engine_escape_string(pconnode->pstatment, escape_string);
 			snprintf(query_string, 2048, "@cc %s", escape_string);
 			sphinx_add_query(psphinx, query_string, "*", NULL);
 			break;
 		case CONDITION_SUBJECT:
-			classify_engine_escase_string(pconnode->pstatment, escape_string);
+			classify_engine_escape_string(pconnode->pstatment, escape_string);
 			snprintf(query_string, 2048, "@subject %s", escape_string);
 			sphinx_add_query(psphinx, query_string, "*", NULL);
 			break;
 		case CONDITION_CONTENT:
-			classify_engine_escase_string(pconnode->pstatment, escape_string);
+			classify_engine_escape_string(pconnode->pstatment, escape_string);
 			snprintf(query_string, 2048, "@content %s", escape_string);
 			sphinx_add_query(psphinx, query_string, "*", NULL);
 			break;
 		case CONDITION_FILENAME:
-			classify_engine_escase_string(pconnode->pstatment, escape_string);
+			classify_engine_escape_string(pconnode->pstatment, escape_string);
 			snprintf(query_string, 2048, "@attachment %s", escape_string);
 			sphinx_add_query(psphinx, query_string, "*", NULL);
 			break;
