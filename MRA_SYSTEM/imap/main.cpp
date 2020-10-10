@@ -414,9 +414,9 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init("imap", context_num, service_plugin_path, config_dir, data_dir,
+	service_init({"imap", service_plugin_path, config_dir, data_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		svcplug_ignerr);
+		svcplug_ignerr, context_num});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 

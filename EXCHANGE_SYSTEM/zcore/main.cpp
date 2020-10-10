@@ -190,9 +190,10 @@ int main(int argc, const char **argv)
 	sprintf(folderlang_path, "%s/folder_lang.txt", data_path);
 	
 	msgchg_grouping_init(grouping_path);
-	service_init("zcore", threads_num, service_path, config_path, data_path,
+	service_init({"zcore", service_path, config_path, data_path,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")));
+		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
+		threads_num});
 	
 	str_value = config_file_get_value(pconfig, "ADDRESS_TABLE_SIZE");
 	if (NULL == str_value) {

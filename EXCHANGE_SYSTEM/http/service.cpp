@@ -61,18 +61,15 @@ static PLUG_ENTITY g_system_image;
  *  init the service module with the path specified where
  *  we can load the .svc plug-in
  */
-void service_init(const char *prog_id, int context_num, const char *plugin_dir,
-    const char *config_dir, const char *data_dir, const char *const *names,
-    bool ignerr)
+void service_init(const struct service_init_param &parm)
 {
-	g_program_identifier = prog_id;
-	g_context_num = context_num;
-	HX_strlcpy(g_init_path, plugin_dir, sizeof(g_init_path));
-	HX_strlcpy(g_config_dir, config_dir, sizeof(g_config_dir));
-	HX_strlcpy(g_data_dir, data_dir, sizeof(g_data_dir));
-	g_plugin_names = names;
-	g_ign_loaderr = ignerr;
-
+	g_program_identifier = parm.prog_id;
+	g_context_num = parm.context_num;
+	HX_strlcpy(g_init_path, parm.plugin_dir, sizeof(g_init_path));
+	HX_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
+	HX_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
+	g_plugin_names = parm.plugin_list;
+	g_ign_loaderr = parm.plugin_ignloaderr;
 	double_list_init(&g_list_plug);
 	double_list_init(&g_list_service);
 	g_system_image.node.pdata = &g_system_image;

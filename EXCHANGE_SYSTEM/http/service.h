@@ -5,11 +5,20 @@
 #include "common_types.h"
 #include "plugin.h"
 
+struct service_init_param {
+	const char *prog_id, *plugin_dir, *config_dir, *data_dir;
+	const char *const *plugin_list;
+	bool plugin_ignloaderr;
+	int context_num;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void service_init(const char *prog_id, int context_num, const char *plugin_path, const char *config_path, const char *data_path, const char *const *plugins, bool ignerr);
+#ifdef __cplusplus
+extern void service_init(const struct service_init_param &);
+#endif
 extern int service_run(void);
 extern int service_stop(void);
 int service_load_library(const char *path);

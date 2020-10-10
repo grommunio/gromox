@@ -321,10 +321,9 @@ int main(int argc, const char **argv)
         }
     }
 
-	service_init("delivery", threads_max + free_contexts, service_plugin_path,
-		config_dir, data_dir,
+	service_init({"delivery", service_plugin_path, config_dir, data_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		svcplug_ignerr);
+		svcplug_ignerr, threads_max + free_contexts});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
     if (0 != service_run()) { 
