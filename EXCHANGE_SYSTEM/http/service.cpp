@@ -119,7 +119,7 @@ int service_stop()
 	     pnode = double_list_get_after(&g_list_plug, pnode))
 		vstack_push(&stack, ((PLUG_ENTITY*)(pnode->pdata))->file_name);
 	while (FALSE == vstack_is_empty(&stack)) {
-		service_unload_library(vstack_get_top(&stack));
+		service_unload_library(static_cast<char *>(vstack_get_top(&stack)));
 		vstack_pop(&stack);
 	}
 	vstack_free(&stack);
@@ -156,7 +156,7 @@ int service_load_library(const char *path)
 	/* check whether the library is already loaded */
 	for (pnode=double_list_get_head(&g_list_plug); NULL!=pnode;
 		 pnode=double_list_get_after(&g_list_plug, pnode)) {
-		if (strcmp(static_cast(PLUG_ENTITY *, pnode->pdata)->file_name, path) == 0) {
+		if (strcmp(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
 			printf("[service]: %s is already loaded by service module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
@@ -209,7 +209,7 @@ int service_load_library(const char *path)
 	 */
 	g_cur_plug = plib;
 	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs))) {
+	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
 		printf("[service]: error executing the plugin's init function "
 				"in %s\n", fake_path);
 		printf("[service]: the plugin %s is not loaded\n", fake_path);
@@ -239,9 +239,8 @@ int service_unload_library(const char *path)
 	DOUBLE_LIST_NODE *pnode;
 	PLUGIN_MAIN func;
 	PLUG_ENTITY *plib;
-	char *ptr;
 
-	ptr = strrchr(path, '/');
+	auto ptr = strrchr(path, '/');
 	if (NULL != ptr) {
 		ptr++;
 	} else {
@@ -297,28 +296,28 @@ int service_unload_library(const char *path)
 static void* service_query_service(const char *service)
 {
     if (0 == strcmp(service, "register_service")) {
-        return service_register_service;
+		return reinterpret_cast<void *>(service_register_service);
     }
     if (0 == strcmp(service, "register_talk")) {
-        return service_register_talk;
+		return reinterpret_cast<void *>(service_register_talk);
     }
 	if (0 == strcmp(service, "get_plugin_name")) {
-		return service_get_plugin_name;
+		return reinterpret_cast<void *>(service_get_plugin_name);
 	}
 	if (0 == strcmp(service, "get_config_path")) {
-		return service_get_config_path;
+		return reinterpret_cast<void *>(service_get_config_path);
 	}
 	if (0 == strcmp(service, "get_data_path")) {
-		return service_get_data_path;
+		return reinterpret_cast<void *>(service_get_data_path);
 	}
 	if (0 == strcmp(service, "get_context_num")) {
-		return service_get_context_num;
+		return reinterpret_cast<void *>(service_get_context_num);
 	}
 	if (0 == strcmp(service, "get_host_ID")) {
-		return service_get_host_ID;
+		return reinterpret_cast<void *>(service_get_host_ID);
 	}
 	if (strcmp(service, "_program_identifier") == 0)
-		return const_cast(char *, g_program_identifier);
+		return const_cast<char *>(g_program_identifier);
 	return service_query(service, "untracked");
 }
 
@@ -418,7 +417,7 @@ BOOL service_register_service(const char *func_name, void *addr)
 	if (NULL != pnode) {
 		return FALSE;
 	}
-	pservice = malloc(sizeof(SERVICE_ENTRY));
+	pservice = static_cast<decltype(pservice)>(malloc(sizeof(*pservice)));
 	if (NULL == pservice) {
 		return FALSE;
 	}
@@ -486,7 +485,7 @@ void* service_query(const char *service_name, const char *module)
 		}
 	}
 	if (NULL == pnode) {
-		pmodule = malloc(sizeof(REFERENCE_NODE));
+		pmodule = static_cast<decltype(pmodule)>(malloc(sizeof(*pmodule)));
 		if (NULL == pmodule) {
 			printf("[service]: Failed to allocate memory for module node\n");
 			return NULL;
@@ -649,7 +648,7 @@ void service_enum_dependency(const char *plugin, ENUM_PLUGINS enum_func)
 				continue;
 			}
 			/* append the module into existing list */
-			pdep = malloc(sizeof(REFERENCE_NODE));
+			pdep = static_cast<decltype(pdep)>(malloc(sizeof(*pdep)));
 			if (NULL ==pdep) {
 				debug_info("[service]: cannot allocate memory for pdep in"
 						   "service_enum_dependency");
@@ -707,7 +706,7 @@ void service_enum_reference(const char *module, ENUM_PLUGINS enum_func)
 				&pservice->list_reference, pnode3)) {
 				pref = (REFERENCE_NODE*)(pnode3->pdata);
 				if (0 == strcmp(pref->module_name, module)) {
-					pmyref = malloc(sizeof(REFERENCE_NODE));
+					pmyref = static_cast<decltype(pmyref)>(malloc(sizeof(*pmyref)));
 					pmyref->node.pdata = pmyref;
 					strcpy(pmyref->module_name, plib->file_name);
 					double_list_append_as_tail(&ref_list, &pmyref->node);

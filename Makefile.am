@@ -232,9 +232,9 @@ libgromox_webkit_la_SOURCES = LIBRARY/webkit_lib/request_parser.c LIBRARY/webkit
 libgromox_webkit_la_LIBADD = ${HX_LIBS} libgromox_common.la
 
 # MTA_SYSTEM
-delivery_SOURCES = EXCHANGE_SYSTEM/http/service.c MTA_SYSTEM/delivery_app/console_server.c MTA_SYSTEM/delivery_app/console_cmd_handler.c MTA_SYSTEM/delivery_app/main.cpp MTA_SYSTEM/delivery_app/message_dequeue.c MTA_SYSTEM/delivery_app/system_services.c MTA_SYSTEM/delivery_app/transporter.c
+delivery_SOURCES = EXCHANGE_SYSTEM/http/service.cpp MTA_SYSTEM/delivery_app/console_server.c MTA_SYSTEM/delivery_app/console_cmd_handler.c MTA_SYSTEM/delivery_app/main.cpp MTA_SYSTEM/delivery_app/message_dequeue.c MTA_SYSTEM/delivery_app/system_services.c MTA_SYSTEM/delivery_app/transporter.c
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-smtp_SOURCES = EXCHANGE_SYSTEM/http/service.c MTA_SYSTEM/smtp/blocks_allocator.c MTA_SYSTEM/smtp/bndstack_allocator.c MTA_SYSTEM/smtp/console_server.c MTA_SYSTEM/smtp/console_cmd_handler.c MTA_SYSTEM/smtp/flusher.c MTA_SYSTEM/smtp/listener.c MTA_SYSTEM/smtp/main.cpp MTA_SYSTEM/smtp/resource.c MTA_SYSTEM/smtp/smtp_parser.c MTA_SYSTEM/smtp/smtp_cmd_handler.c MTA_SYSTEM/smtp/system_services.c
+smtp_SOURCES = EXCHANGE_SYSTEM/http/service.cpp MTA_SYSTEM/smtp/blocks_allocator.c MTA_SYSTEM/smtp/bndstack_allocator.c MTA_SYSTEM/smtp/console_server.c MTA_SYSTEM/smtp/console_cmd_handler.c MTA_SYSTEM/smtp/flusher.c MTA_SYSTEM/smtp/listener.c MTA_SYSTEM/smtp/main.cpp MTA_SYSTEM/smtp/resource.c MTA_SYSTEM/smtp/smtp_parser.c MTA_SYSTEM/smtp/smtp_cmd_handler.c MTA_SYSTEM/smtp/system_services.c
 smtp_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 libmtaflh_message_enqueue_la_SOURCES = MTA_SYSTEM/flusher_plugins/message_enqueue/main.c MTA_SYSTEM/flusher_plugins/message_enqueue/message_enqueue.c
 libmtaflh_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -462,9 +462,9 @@ libmtasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
 EXTRA_libmtasvc_user_filter_la_DEPENDENCIES = ${default_sym}
 
 # MRA_SYSTEM
-pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/service.c MRA_SYSTEM/pop3/console_server.c MRA_SYSTEM/pop3/console_cmd_handler.c MRA_SYSTEM/pop3/pop3_parser.c MRA_SYSTEM/pop3/pop3_cmd_handler.c MRA_SYSTEM/pop3/resource.c MRA_SYSTEM/pop3/system_services.c MRA_SYSTEM/pop3/units_allocator.c MRA_SYSTEM/pop3/main.cpp MRA_SYSTEM/pop3/listener.c
+pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/pop3/console_server.c MRA_SYSTEM/pop3/console_cmd_handler.c MRA_SYSTEM/pop3/pop3_parser.c MRA_SYSTEM/pop3/pop3_cmd_handler.c MRA_SYSTEM/pop3/resource.c MRA_SYSTEM/pop3/system_services.c MRA_SYSTEM/pop3/units_allocator.c MRA_SYSTEM/pop3/main.cpp MRA_SYSTEM/pop3/listener.c
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
-imap_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/service.c MRA_SYSTEM/imap/console_server.c MRA_SYSTEM/imap/console_cmd_handler.c MRA_SYSTEM/imap/imap_parser.c MRA_SYSTEM/imap/imap_cmd_parser.c MRA_SYSTEM/imap/listener.c MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.c MRA_SYSTEM/imap/system_services.c
+imap_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/imap/console_server.c MRA_SYSTEM/imap/console_cmd_handler.c MRA_SYSTEM/imap/imap_parser.c MRA_SYSTEM/imap/imap_cmd_parser.c MRA_SYSTEM/imap/listener.c MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.c MRA_SYSTEM/imap/system_services.c
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la
 libmrasvc_cdner_agent_la_SOURCES = MRA_SYSTEM/service_plugins/cdner_agent.c
 libmrasvc_cdner_agent_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -500,11 +500,11 @@ libmrasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
 EXTRA_libmrasvc_user_filter_la_DEPENDENCIES = ${default_sym}
 
 # EXCHANGE_SYSTEM
-http_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/console_server.c EXCHANGE_SYSTEM/http/console_cmd_handler.c EXCHANGE_SYSTEM/http/hpm_processor.c EXCHANGE_SYSTEM/http/http_parser.c EXCHANGE_SYSTEM/http/listener.c EXCHANGE_SYSTEM/http/main.cpp EXCHANGE_SYSTEM/http/mod_cache.c EXCHANGE_SYSTEM/http/mod_fastcgi.c EXCHANGE_SYSTEM/http/mod_rewrite.c EXCHANGE_SYSTEM/http/pdu_processor.c EXCHANGE_SYSTEM/http/pdu_ndr.c EXCHANGE_SYSTEM/http/service.c EXCHANGE_SYSTEM/http/system_services.c
+http_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/console_server.c EXCHANGE_SYSTEM/http/console_cmd_handler.c EXCHANGE_SYSTEM/http/hpm_processor.c EXCHANGE_SYSTEM/http/http_parser.c EXCHANGE_SYSTEM/http/listener.c EXCHANGE_SYSTEM/http/main.cpp EXCHANGE_SYSTEM/http/mod_cache.c EXCHANGE_SYSTEM/http/mod_fastcgi.c EXCHANGE_SYSTEM/http/mod_rewrite.c EXCHANGE_SYSTEM/http/pdu_processor.c EXCHANGE_SYSTEM/http/pdu_ndr.c EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/http/system_services.c
 http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la libgromox_webkit.la
-midb_SOURCES = EXCHANGE_SYSTEM/http/service.c EXCHANGE_SYSTEM/midb/cmd_parser.c EXCHANGE_SYSTEM/midb/common_util.c EXCHANGE_SYSTEM/midb/console_server.c EXCHANGE_SYSTEM/midb/console_cmd_handler.c EXCHANGE_SYSTEM/midb/exmdb_ext.c EXCHANGE_SYSTEM/midb/exmdb_client.c EXCHANGE_SYSTEM/midb/listener.c EXCHANGE_SYSTEM/midb/mail_engine.c EXCHANGE_SYSTEM/midb/main.cpp EXCHANGE_SYSTEM/midb/system_services.c
+midb_SOURCES = EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/midb/cmd_parser.c EXCHANGE_SYSTEM/midb/common_util.c EXCHANGE_SYSTEM/midb/console_server.c EXCHANGE_SYSTEM/midb/console_cmd_handler.c EXCHANGE_SYSTEM/midb/exmdb_ext.c EXCHANGE_SYSTEM/midb/exmdb_client.c EXCHANGE_SYSTEM/midb/listener.c EXCHANGE_SYSTEM/midb/mail_engine.c EXCHANGE_SYSTEM/midb/main.cpp EXCHANGE_SYSTEM/midb/system_services.c
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-zcore_SOURCES = EXCHANGE_SYSTEM/http/service.c EXCHANGE_SYSTEM/zcore/ab_tree.cpp EXCHANGE_SYSTEM/zcore/bounce_producer.c EXCHANGE_SYSTEM/zcore/common_util.c EXCHANGE_SYSTEM/zcore/console_server.c EXCHANGE_SYSTEM/zcore/console_cmd_handler.c EXCHANGE_SYSTEM/zcore/exmdb_ext.c EXCHANGE_SYSTEM/zcore/exmdb_client.c EXCHANGE_SYSTEM/zcore/listener.c EXCHANGE_SYSTEM/zcore/main.cpp EXCHANGE_SYSTEM/zcore/msgchg_grouping.c EXCHANGE_SYSTEM/zcore/table_object.c EXCHANGE_SYSTEM/zcore/object_tree.c EXCHANGE_SYSTEM/zcore/message_object.c EXCHANGE_SYSTEM/zcore/icsdownctx_object.c EXCHANGE_SYSTEM/zcore/folder_object.c EXCHANGE_SYSTEM/zcore/container_object.c EXCHANGE_SYSTEM/zcore/user_object.c EXCHANGE_SYSTEM/zcore/store_object.c EXCHANGE_SYSTEM/zcore/icsupctx_object.c EXCHANGE_SYSTEM/zcore/ics_state.c EXCHANGE_SYSTEM/zcore/attachment_object.c EXCHANGE_SYSTEM/zcore/rpc_parser.c EXCHANGE_SYSTEM/zcore/rpc_ext.c EXCHANGE_SYSTEM/zcore/system_services.cpp EXCHANGE_SYSTEM/zcore/zarafa_server.c
+zcore_SOURCES = EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/zcore/ab_tree.cpp EXCHANGE_SYSTEM/zcore/bounce_producer.c EXCHANGE_SYSTEM/zcore/common_util.c EXCHANGE_SYSTEM/zcore/console_server.c EXCHANGE_SYSTEM/zcore/console_cmd_handler.c EXCHANGE_SYSTEM/zcore/exmdb_ext.c EXCHANGE_SYSTEM/zcore/exmdb_client.c EXCHANGE_SYSTEM/zcore/listener.c EXCHANGE_SYSTEM/zcore/main.cpp EXCHANGE_SYSTEM/zcore/msgchg_grouping.c EXCHANGE_SYSTEM/zcore/table_object.c EXCHANGE_SYSTEM/zcore/object_tree.c EXCHANGE_SYSTEM/zcore/message_object.c EXCHANGE_SYSTEM/zcore/icsdownctx_object.c EXCHANGE_SYSTEM/zcore/folder_object.c EXCHANGE_SYSTEM/zcore/container_object.c EXCHANGE_SYSTEM/zcore/user_object.c EXCHANGE_SYSTEM/zcore/store_object.c EXCHANGE_SYSTEM/zcore/icsupctx_object.c EXCHANGE_SYSTEM/zcore/ics_state.c EXCHANGE_SYSTEM/zcore/attachment_object.c EXCHANGE_SYSTEM/zcore/rpc_parser.c EXCHANGE_SYSTEM/zcore/rpc_ext.c EXCHANGE_SYSTEM/zcore/system_services.cpp EXCHANGE_SYSTEM/zcore/zarafa_server.c
 zcore_LDADD = -ldl -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 libexsvc_codepage_lang_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/codepage_lang/codepage_lang.c EXCHANGE_SYSTEM/service_plugins/codepage_lang/main.c
 libexsvc_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -585,7 +585,7 @@ digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 freebusy_SOURCES = AGENT_SERVICE/freebusy.c
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
-pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp EXCHANGE_SYSTEM/http/service.c
+pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp EXCHANGE_SYSTEM/http/service.cpp
 pam_gromox_la_LIBADD = -lpam ${HX_LIBS} libgromox_common.la
 pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 rtf2html_SOURCES = AGENT_SERVICE/rtf2html.c
