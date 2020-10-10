@@ -290,6 +290,13 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: data files path is %s\n", str_val);
 
+	const char *state_dir = str_val = resource_get_string("STATE_PATH");
+	if (str_val == nullptr) {
+		state_dir = PKGSTATEDIR;
+		resource_set_string("STATE_PATH", state_dir);
+	}
+	printf("[system]: state path is %s\n", state_dir);
+
 	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
 	if (console_server_ip == NULL) {
 		console_server_ip = "127.0.0.1";
@@ -321,7 +328,7 @@ int main(int argc, const char **argv)
         }
     }
 
-	service_init({"delivery", service_plugin_path, config_dir, data_dir,
+	service_init({"delivery", service_plugin_path, config_dir, data_dir, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr, threads_max + free_contexts});
 	printf("--------------------------- service plugins begin"

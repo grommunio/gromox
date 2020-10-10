@@ -154,6 +154,11 @@ Path to a secondary directory where service plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
 .PP
 Default: \fI/usr/lib/gromox\fP
+.SS state_path
+.PP
+Directory for runtime variadic data.
+.PP
+Default: \fI/var/lib/gromox\fP
 .SS thread_charge_num
 .PP
 The maximum number of connections that each thread is allowed to process.

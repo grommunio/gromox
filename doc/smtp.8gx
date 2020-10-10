@@ -183,6 +183,11 @@ This flag controls the offering of the STARTTLS extension (RFC 3027) to
 clients.
 .PP
 Default: \fIfalse\fP
+.SS state_path
+.PP
+Directory for runtime variadic data.
+.PP
+Default: \fI/var/lib/gromox\fP
 .SS thread_charge_num
 .PP
 The maximum number of connections that each thread is allowed to process.

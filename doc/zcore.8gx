@@ -168,6 +168,11 @@ Default: \fI127.0.0.1\fP
 SMTP server TCP port number to contact for outgoing mail.
 .PP
 Default: \fI25\fP
+.SS state_path
+.PP
+Directory for runtime variadic data.
+.PP
+Default: \fI/var/lib/gromox\fP
 .SS submit_command
 .PP
 Default: \fI/usr/bin/php /usr/share/gromox/sa/submit.php

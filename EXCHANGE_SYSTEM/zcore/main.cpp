@@ -87,7 +87,7 @@ int main(int argc, const char **argv)
 	char temp_buff[32];
 	char host_name[256];
 	char console_ip[16];
-	char data_path[256];
+	char data_path[256], state_dir[256];
 	char exmdb_path[256];
 	CONFIG_FILE *pconfig;
 	char config_path[256];
@@ -181,6 +181,9 @@ int main(int argc, const char **argv)
 		strcpy(data_path, str_value);
 	}
 	printf("[system]: data path is %s\n", data_path);
+
+	str_value = config_file_get_value(pconfig, "STATE_PATH");
+	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	
 	sprintf(exmdb_path, "%s/exmdb_list.txt", data_path);
 	printf("[system]: exmdb file path is %s\n", exmdb_path);
@@ -190,7 +193,7 @@ int main(int argc, const char **argv)
 	sprintf(folderlang_path, "%s/folder_lang.txt", data_path);
 	
 	msgchg_grouping_init(grouping_path);
-	service_init({"zcore", service_path, config_path, data_path,
+	service_init({"zcore", service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
 		threads_num});

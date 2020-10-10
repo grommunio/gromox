@@ -13,6 +13,12 @@ Output version information and exit.
 .TP
 \fB\-?\fP
 Display option summary.
+.SH Configuration file directives
+.SS state_path
+.PP
+Directory for runtime variadic data.
+.PP
+Default: \fI/var/lib/gromox\fP
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/exmdb_list.txt

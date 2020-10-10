@@ -80,7 +80,7 @@ int main(int argc, const char **argv)
 	char acl_path[256];
 	uint64_t mmap_size;
 	char console_ip[16];
-	char data_path[256];
+	char data_path[256], state_dir[256];
 	char exmdb_path[256];
 	CONFIG_FILE *pconfig;
 	char config_path[256];
@@ -135,6 +135,10 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: data path is %s\n", data_path);
 	
+	str_value = config_file_get_value(pconfig, "STATE_PATH");
+	HX_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
+	printf("[system]: state path is %s\n", state_dir);
+
 	sprintf(acl_path, "%s/midb_acl.txt", data_path);
 	sprintf(exmdb_path, "%s/exmdb_list.txt", data_path);
 	printf("[system]: acl file path is %s\n", acl_path);
@@ -354,7 +358,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	service_init({"midb", service_path, config_path, data_path,
+	service_init({"midb", service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
 		threads_num});

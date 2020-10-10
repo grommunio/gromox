@@ -68,6 +68,7 @@ void service_init(const struct service_init_param &parm)
 	HX_strlcpy(g_init_path, parm.plugin_dir, sizeof(g_init_path));
 	HX_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
 	HX_strlcpy(g_data_dir, parm.data_dir, sizeof(g_data_dir));
+	HX_strlcpy(g_state_dir, parm.state_dir, sizeof(g_state_dir));
 	g_plugin_names = parm.plugin_list;
 	g_ign_loaderr = parm.plugin_ignloaderr;
 	double_list_init(&g_list_plug);

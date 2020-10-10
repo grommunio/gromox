@@ -415,10 +415,18 @@ int main(int argc, const char **argv)
 		data_dir = str_val = PKGDATAHTTPDIR;
 		resource_set_string("DATA_FILE_PATH", str_val);
 	}
-	sprintf(fastcgi_list_path, "%s/fastcgi.txt", str_val);
-	sprintf(cache_list_path, "%s/cache.txt", str_val);
-	sprintf(rewrite_list_path, "%s/rewrite.txt", str_val);
-	printf("[system]: data files path is %s\n", str_val);
+
+	const char *state_dir = str_val = resource_get_string("STATE_PATH");
+	if (str_val == nullptr) {
+		state_dir = PKGSTATEDIR;
+		resource_set_string("STATE_PATH", state_dir);
+	}
+
+	snprintf(fastcgi_list_path, sizeof(fastcgi_list_path), "%s/fastcgi.txt", data_dir);
+	snprintf(cache_list_path, sizeof(cache_list_path), "%s/cache.txt", data_dir);
+	snprintf(rewrite_list_path, sizeof(rewrite_list_path), "%s/rewrite.txt", data_dir);
+	printf("[system]: data files path is %s\n", data_dir);
+	printf("[system]: state path is %s\n", state_dir);
 	
 	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
 	if (console_server_ip == NULL) {
@@ -515,7 +523,7 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init({"http", service_plugin_path, config_dir, data_dir,
+	service_init({"http", service_plugin_path, config_dir, data_dir, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr, context_num});
 	if (!service_register_service("ndr_stack_alloc",
