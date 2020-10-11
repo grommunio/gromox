@@ -41,7 +41,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		}
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
 		strcpy(g_config_path, config_path);
-		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_data_path());
+		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_state_path());
 		pfile = config_file_init2(NULL, config_path);
 		if (NULL == pfile) {
 			printf("[mysql_adaptor]: config_file_init %s: %s\n", config_path, strerror(errno));

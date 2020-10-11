@@ -51,8 +51,8 @@ Default: varies per instance
 of str_table (e.g. /etc/gromox/delivery/backup_list.cfg when delivery(8gx) was
 made to load libmtasvc_backup_list.so.)
 .IP \(bu 4
-\fIdata_file_path\fP/\fIinstance\fP.txt: string table on which matches are
-carried out (e.g. /usr/share/gromox/delivery/backup_list.txt)
+\fIstate_path\fP/\fIinstance\fP.txt: string table on which matches are
+carried out (e.g. /var/lib/gromox/backup_list.txt)
 .SH See also
 .PP
 \fBgromox\fP(7)

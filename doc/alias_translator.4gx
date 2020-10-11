@@ -8,8 +8,8 @@ alias_translator is a mail transfer agent hook plugin which rewrites the
 envelope FROM and RCPT addresses of mails and replaces aliases by their
 respective primary addresses.
 .PP
-Alias mappings are read from \fIdata_file_path\fP/alias_addresses.txt, whereby
-data_file_path is the eponymous directive from the program that loaded the
+Alias mappings are read from \fIstate_path\fP/alias_addresses.txt, whereby
+state_path is the eponymous directive from the program that loaded the
 plugin. The alias_address.txt file constitutes a caching mechanism and is
 normally generated from MySQL data by adaptor(8gx). The adaptor process is also
 the one triggering the reload in alias_translator(4gx) via delivery(8gx)'s

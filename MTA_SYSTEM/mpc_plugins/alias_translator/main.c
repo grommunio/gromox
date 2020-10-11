@@ -45,7 +45,8 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		sprintf(g_address_path, "%s/alias_addresses.txt", get_data_path());
+		snprintf(g_address_path, sizeof(g_address_path),
+		         "%s/alias_addresses.txt", get_state_path());
 		pthread_rwlock_init(&g_address_lock, NULL);
 		g_address_hash = NULL;
 		if (REFRESH_OK != address_table_refresh()) {

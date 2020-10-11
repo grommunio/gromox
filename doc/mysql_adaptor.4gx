@@ -57,6 +57,9 @@ the program terminates. Schema upgrades can be done manually with
 gromox\-dbop(8gx).
 .PP
 Default: \fIabort\fP
+.SH Files
+.IP \(bu 4
+\fIstate_path\fP/uncheck_domains.txt
 .SH See also
 .PP
 \fBgromox\fP(7), \fBauthmgr\fP(4gx)
