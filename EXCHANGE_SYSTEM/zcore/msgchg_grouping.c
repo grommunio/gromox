@@ -180,20 +180,20 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 	}
 	group_id = strtol(file_path, NULL, 16);
 	if (0 == group_id || 0xFFFFFFFF == group_id) {
-		printf("[[exchange_emsmdb]: file name"
+		printf("[exchange_emsmdb]: file name"
 			" %s format error\n", file_name);
 		return NULL;
 	}
 	sprintf(file_path, "%s/%s", g_folder_path, file_name);
 	pfile = list_file_init(file_path, "%s:256");
 	if (NULL == pfile) {
-		printf("[[exchange_emsmdb]: list_file_init %s: %s\n",
+		printf("[exchange_emsmdb]: list_file_init %s: %s\n",
 			file_path, strerror(errno));
 		return NULL;
 	}
 	pinfo_node = msgchg_grouping_create_info_node(group_id);
 	if (NULL == pinfo_node) {
-		printf("[[exchange_emsmdb]: out of memory when "
+		printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
 		list_file_free(pfile);
 		return NULL;
@@ -213,7 +213,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			}
 			pgp_node = msgchg_grouping_create_group_node(index);
 			if (NULL == pgp_node) {
-				printf("[[exchange_emsmdb]: out of memory when "
+				printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
 				list_file_free(pfile);
 				return NULL;
@@ -221,7 +221,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			if (FALSE == msgchg_grouping_append_group_list(
 				pinfo_node, pgp_node)) {
 				msgchg_grouping_free_group_node(pgp_node);
-				printf("[[exchange_emsmdb]: index %d "
+				printf("[exchange_emsmdb]: index %d "
 							"duplicated\n", index);
 				list_file_free(pfile);
 				return NULL;
@@ -242,7 +242,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			}
 			ptag_node = malloc(sizeof(TAG_NODE));
 			if (NULL == ptag_node) {
-				printf("[[exchange_emsmdb]: out of memory when "
+				printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
 				list_file_free(pfile);
 				return NULL;
@@ -286,7 +286,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			}
 			ptag_node = malloc(sizeof(TAG_NODE));
 			if (NULL == ptag_node) {
-				printf("[[exchange_emsmdb]: out of memory "
+				printf("[exchange_emsmdb]: out of memory "
 					"when loading property group info\n");
 				list_file_free(pfile);
 				return NULL;
@@ -303,7 +303,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			ptag_node->ppropname = malloc(sizeof(PROPERTY_NAME));
 			if (NULL == ptag_node->ppropname) {
 				free(ptag_node);
-				printf("[[exchange_emsmdb]: out of memory when "
+				printf("[exchange_emsmdb]: out of memory when "
 					"loading property group info\n");
 				list_file_free(pfile);
 				return NULL;
@@ -323,7 +323,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				if (NULL == ptag_node->ppropname->plid) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
-					printf("[[exchange_emsmdb]: out of memory "
+					printf("[exchange_emsmdb]: out of memory "
 						"when loading property group info\n");
 					list_file_free(pfile);
 					return NULL;
@@ -357,7 +357,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				if (NULL == ptag_node->ppropname->pname) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
-					printf("[[exchange_emsmdb]: out of memory "
+					printf("[exchange_emsmdb]: out of memory "
 						"when loading property group info\n");
 					list_file_free(pfile);
 					return NULL;
