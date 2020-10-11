@@ -3631,6 +3631,12 @@ static const char* pdu_processor_get_data_path()
     return ret_value;
 }
 
+static const char *pdu_processor_get_state_path()
+{
+	const char *p = resource_get_string("STATE_PATH");
+	return p != nullptr ? p : PKGSTATEDIR;
+}
+
 static int pdu_processor_get_context_num()
 {
 	return g_connection_num;
@@ -3739,6 +3745,8 @@ static void* pdu_processor_queryservice(char *service)
 	if (strcmp(service, "get_data_path") == 0) {
 		return pdu_processor_get_data_path;
 	}
+	if (strcmp(service, "get_state_path") == 0)
+		return pdu_processor_get_state_path;
 	if (strcmp(service, "get_context_num") == 0) {
 		return pdu_processor_get_context_num;
 	}

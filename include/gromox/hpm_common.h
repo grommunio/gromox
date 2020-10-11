@@ -97,7 +97,7 @@ extern GET_ENVIRONMENT get_host_ID;
 extern GET_ENVIRONMENT get_default_domain;
 extern GET_ENVIRONMENT get_plugin_name;
 extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path;
+extern GET_ENVIRONMENT get_data_path, get_state_path;
 extern GET_INTEGER get_context_num;
 extern SET_INTEGER set_context;
 extern SET_EP_INFO set_ep_info;
@@ -120,7 +120,7 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	GET_ENVIRONMENT get_default_domain; \
 	GET_ENVIRONMENT get_plugin_name; \
 	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path; \
+	GET_ENVIRONMENT get_data_path, get_state_path; \
 	GET_INTEGER get_context_num; \
 	SET_INTEGER set_context; \
 	SET_EP_INFO set_ep_info; \
@@ -144,6 +144,7 @@ extern FREE_ENVIRONMENT rpc_free_environment;
 	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
 	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
 	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \
+	get_state_path = (GET_ENVIRONMENT)query_service("get_state_path"); \
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	set_context = (SET_INTEGER)query_service("set_context"); \
 	set_ep_info = (SET_EP_INFO)query_service("set_ep_info"); \

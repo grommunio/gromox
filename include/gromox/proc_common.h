@@ -82,7 +82,7 @@ extern GET_ENVIRONMENT get_host_ID;
 extern GET_ENVIRONMENT get_default_domain;
 extern GET_ENVIRONMENT get_plugin_name;
 extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path;
+extern GET_ENVIRONMENT get_data_path, get_state_path;
 extern GET_INTEGER get_context_num;
 extern GET_BINDING_HANDLE get_binding_handle;
 extern GET_RPC_INFO get_rpc_info;
@@ -107,7 +107,7 @@ extern ASYNC_REPLY async_reply;
 	GET_ENVIRONMENT get_default_domain; \
 	GET_ENVIRONMENT get_plugin_name; \
 	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path; \
+	GET_ENVIRONMENT get_data_path, get_state_path; \
 	GET_INTEGER get_context_num; \
 	GET_BINDING_HANDLE get_binding_handle; \
 	GET_RPC_INFO get_rpc_info; \
@@ -133,6 +133,7 @@ extern ASYNC_REPLY async_reply;
 	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
 	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
 	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \
+	get_state_path = (GET_ENVIRONMENT)query_service("get_state_path"); \
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	get_binding_handle = (GET_BINDING_HANDLE)query_service("get_binding_handle"); \
 	get_rpc_info = (GET_RPC_INFO)query_service("get_rpc_info"); \

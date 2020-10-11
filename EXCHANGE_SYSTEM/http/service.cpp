@@ -48,7 +48,7 @@ static const char *service_get_data_path(void);
 static int service_get_context_num(void);
 static const char *service_get_host_ID(void);
 
-static char g_init_path[256], g_config_dir[256], g_data_dir[256];
+static char g_init_path[256], g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static DOUBLE_LIST      g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static PLUG_ENTITY		*g_cur_plug;
@@ -282,6 +282,11 @@ int service_unload_library(const char *path)
 	return PLUGIN_UNLOAD_OK;
 }
 
+static const char *service_get_state_path()
+{
+	return g_state_dir;
+}
+
 /*
  *  get services
  *  @param
@@ -307,6 +312,8 @@ static void* service_query_service(const char *service)
 	if (0 == strcmp(service, "get_data_path")) {
 		return reinterpret_cast<void *>(service_get_data_path);
 	}
+	if (strcmp(service, "get_state_path") == 0)
+		return reinterpret_cast<void *>(service_get_state_path);
 	if (0 == strcmp(service, "get_context_num")) {
 		return reinterpret_cast<void *>(service_get_context_num);
 	}

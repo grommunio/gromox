@@ -25,7 +25,7 @@ extern SERVICE_REGISTRATION register_service;
 extern TALK_REGISTRATION register_talk;
 extern GET_ENVIRONMENT get_plugin_name;
 extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path;
+extern GET_ENVIRONMENT get_data_path, get_state_path;
 extern GET_INTEGER get_context_num;
 extern GET_ENVIRONMENT get_host_ID;
 extern NDR_STACK_ALLOC ndr_stack_alloc;
@@ -36,7 +36,7 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	TALK_REGISTRATION register_talk; \
 	GET_ENVIRONMENT get_plugin_name; \
 	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path; \
+	GET_ENVIRONMENT get_data_path, get_state_path; \
 	GET_INTEGER get_context_num; \
 	GET_ENVIRONMENT get_host_ID; \
 	NDR_STACK_ALLOC ndr_stack_alloc
@@ -48,6 +48,7 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
 	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
 	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \
+	get_state_path = (GET_ENVIRONMENT)query_service("get_state_path"); \
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc")

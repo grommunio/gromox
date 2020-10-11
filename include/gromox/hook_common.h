@@ -59,7 +59,7 @@ extern GET_ENVIRONMENT get_default_domain;
 extern GET_ENVIRONMENT get_admin_mailbox;
 extern GET_ENVIRONMENT get_plugin_name;
 extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path;
+extern GET_ENVIRONMENT get_data_path, get_state_path;
 extern GET_ENVIRONMENT get_queue_path;
 extern GET_INTEGER get_context_num;
 extern GET_INTEGER get_threads_num;
@@ -82,7 +82,7 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	GET_ENVIRONMENT get_admin_mailbox; \
 	GET_ENVIRONMENT get_plugin_name; \
 	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path; \
+	GET_ENVIRONMENT get_data_path, get_state_path; \
 	GET_ENVIRONMENT get_queue_path; \
 	GET_INTEGER get_context_num; \
 	GET_INTEGER get_threads_num; \
@@ -106,6 +106,7 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
 	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
 	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \
+	get_state_path = (GET_ENVIRONMENT)query_service("get_state_path"); \
 	get_queue_path = (GET_ENVIRONMENT)query_service("get_queue_path"); \
 	get_context_num = (GET_INTEGER)query_service("get_context_num"); \
 	get_threads_num = (GET_INTEGER)query_service("get_threads_num"); \

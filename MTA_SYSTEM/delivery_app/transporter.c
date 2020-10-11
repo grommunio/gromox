@@ -933,6 +933,10 @@ static void transporter_clean_up_unloading()
 	vstack_allocator_free(pallocator);
 }
 
+static const char *transporter_get_state_path()
+{
+	return resource_get_string("STATE_PATH");
+}
 /*
  *	get services
  *	@param
@@ -979,6 +983,8 @@ static void* transporter_queryservice(char *service)
     if (strcmp(service, "get_data_path") == 0) {
         return transporter_get_data_path;
     }
+	if (strcmp(service, "get_state_path") == 0)
+		return transporter_get_state_path;
 	if (strcmp(service, "get_queue_path") == 0) {
 		return transporter_get_queue_path;
 	}

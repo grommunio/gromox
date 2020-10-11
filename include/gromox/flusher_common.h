@@ -85,7 +85,7 @@ extern QUEUE_OPERATION get_from_queue;
 extern GET_ENVIRONMENT get_host_ID;
 extern GET_ENVIRONMENT get_plugin_name;
 extern GET_ENVIRONMENT get_config_path;
-extern GET_ENVIRONMENT get_data_path;
+extern GET_ENVIRONMENT get_data_path, get_state_path;
 extern GET_EXTRA_NUM get_extra_num;
 extern GET_EXTRA_TAGVAL get_extra_tag;
 extern GET_EXTRA_TAGVAL get_extra_value;
@@ -105,7 +105,7 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	GET_ENVIRONMENT get_host_ID; \
 	GET_ENVIRONMENT get_plugin_name; \
 	GET_ENVIRONMENT get_config_path; \
-	GET_ENVIRONMENT get_data_path; \
+	GET_ENVIRONMENT get_data_path, get_state_path; \
     GET_EXTRA_NUM get_extra_num; \
     GET_EXTRA_TAGVAL get_extra_tag; \
     GET_EXTRA_TAGVAL get_extra_value; \
@@ -127,6 +127,7 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	get_plugin_name = (GET_ENVIRONMENT)query_service("get_plugin_name"); \
 	get_config_path = (GET_ENVIRONMENT)query_service("get_config_path"); \
 	get_data_path = (GET_ENVIRONMENT)query_service("get_data_path"); \
+	get_state_path = (GET_ENVIRONMENT)query_service("get_state_path"); \
 	inc_flush_ID = (INC_FLUSH_ID)query_service("inc_flush_ID"); \
     get_extra_num = (GET_EXTRA_NUM)query_service("get_extra_num"); \
     get_extra_tag = (GET_EXTRA_TAGVAL)query_service("get_extra_tag"); \
