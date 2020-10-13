@@ -153,12 +153,10 @@ void lib_buffer_put(LIB_BUFFER* m_buf, void *item)
 	void *pzero;
 #endif
 
-#ifdef _DEBUG_UMTA
 	if (NULL == m_buf || NULL == item) {
 		debug_info("[lib_buffer]: lib_buffer_put, param NULL");
 		return;
 	}
-#endif
 	pcur_item	= (char *)item;
 	memset(pcur_item, 0, m_buf->item_size);
 
