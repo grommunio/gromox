@@ -469,6 +469,13 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{31, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805568543, `memo` FROM `users` WHERE `memo`!=''"}, /* pidTagComment */
 	{32, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 974585887, `title` FROM `users` WHERE `title`!=''"}, /* pidTagTitle */
 	{33, "INSERT INTO `user_properties` (`user_id`, `proptag`, `propval_str`) SELECT `id`, 805371935, `real_name` FROM `users` WHERE `real_name`!=''"}, /* pidTagDisplayName */
+	{34, "ALTER TABLE `users` DROP COLUMN `homeaddress`"},
+	{35, "ALTER TABLE `users` DROP COLUMN `nickname`"},
+	{36, "ALTER TABLE `users` DROP COLUMN `tel`"},
+	{37, "ALTER TABLE `users` DROP COLUMN `cell`"},
+	{38, "ALTER TABLE `users` DROP COLUMN `memo`"},
+	{39, "ALTER TABLE `users` DROP COLUMN `title`"},
+	{40, "ALTER TABLE `users` DROP COLUMN `real_name`"},
 	{0, nullptr},
 };
 
