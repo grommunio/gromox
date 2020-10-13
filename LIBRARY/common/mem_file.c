@@ -34,7 +34,7 @@ void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc)
 		return;
 	}
 #endif
-	/* acllocate the first node in initialization */
+	/* allocate the first node in initialization */
 	pnode = mem_file_append_node(pfile);
 
 #ifdef _DEBUG_UMTA

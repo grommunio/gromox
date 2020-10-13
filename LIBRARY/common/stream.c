@@ -46,7 +46,7 @@ void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
 		return;
 	}
 #endif
-	/* acllocate the first node in initialization */
+	/* allocate the first node in initialization */
 	bappend = stream_append_node(pstream);
 	if (FALSE == bappend) {
 		debug_info("[stream]: Failed to allocate first node in stream_init");
