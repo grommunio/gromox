@@ -444,8 +444,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{16, "ALTER TABLE `groups` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
 	{17, "ALTER TABLE `users` CHANGE COLUMN `password` `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT ''"},
 	{18, "ALTER TABLE `aliases` DROP COLUMN `id`"},
-	{19, "ALTER TABLE `aliases` ADD PRIMARY KEY (`aliasname`)"},
-	{20, "ALTER TABLE `aliases` DROP INDEX `aliasname`"},
+	{19, "ALTER TABLE `aliases` DROP INDEX `aliasname`"},
+	{20, "ALTER TABLE `aliases` ADD PRIMARY KEY (`aliasname`)"},
 	{21, "ALTER TABLE `aliases` ADD CONSTRAINT `aliases_ibfk_1` FOREIGN KEY (`mainname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"},
 	/*
 	 * n22: Domain-level aliases are no longer supported; just insert
