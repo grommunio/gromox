@@ -699,7 +699,7 @@ static int proxy_retr(int context_id)
 			pcontext->sockd = -1;
 			return HPM_RETRIEVE_ERROR;
 		}
-		return HPM_RETRIEVE_SCOKET;
+		return HPM_RETRIEVE_SOCKET;
 	}
 	tv_msec = 500;
 	pfd_read.fd = pcontext->sockd;

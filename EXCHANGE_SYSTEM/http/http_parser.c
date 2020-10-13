@@ -972,7 +972,7 @@ CONTEXT_PROCESSING:
 					pcontext->sched_stat = SCHED_STAT_RDHEAD;
 					stream_clear(&pcontext->stream_out);
 					return PROCESS_CONTINUE;
-				case HPM_RETRIEVE_SCOKET:
+				case HPM_RETRIEVE_SOCKET:
 					size = STREAM_BLOCK_SIZE;
 					pbuff = stream_getbuffer_for_reading(
 							&pcontext->stream_in, &size);
