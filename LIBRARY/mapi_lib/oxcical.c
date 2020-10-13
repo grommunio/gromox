@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "tpropval_array.h"
 #include "tarray_set.h"
 #include "ext_buffer.h"
@@ -1241,8 +1242,8 @@ static BOOL oxcical_parse_dtstamp(ICAL_LINE *piline,
 	if (FALSE == ical_datetime_to_utc(NULL, pvalue, &tmp_time)) {
 		return TRUE;
 	}
-	if (0 == strcasecmp(method, "REPLY") ||
-		0 == strcasecmp(method, "COUNTER")) {
+	if (method != nullptr && (strcasecmp(method, "REPLY") == 0 ||
+	    strcasecmp(method, "COUNTER") == 0)) {
 		/* PidLidAttendeeCriticalChange */
 		lid1 = 0x00000001;
 		propname.plid = &lid1;
@@ -3310,7 +3311,7 @@ static BOOL oxcical_import_internal(
 		}
 	}
 	
-	if (0 == strcasecmp(method, "REQUEST")) {
+	if (method != nullptr && strcasecmp(method, "REQUEST") == 0) {
 		if (NULL != ical_get_line(pmain_event,
 			"X-MICROSOFT-CDO-INTENDEDSTATUS") ||
 			NULL != ical_get_line(pmain_event,
@@ -3853,8 +3854,7 @@ MESSAGE_CONTENT* oxcical_import(
 {
 	BOOL b_proposal;
 	ICAL_LINE *piline;
-	const char *pvalue;
-	const char *pvalue1;
+	const char *pvalue = nullptr, *pvalue1 = nullptr;
 	uint16_t calendartype;
 	MESSAGE_CONTENT *pmsg;
 	TAGGED_PROPVAL propval;
