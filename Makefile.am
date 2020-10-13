@@ -7,7 +7,7 @@ AM_CXXFLAGS = ${my_CXXFLAGS}
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_resolv.la libgromox_rpc.la libgromox_webkit.la
 noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_webkit.ldd libgromox_rpc.ldd libgromox_mapi.ldd
-pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools} ${archiver_system_progs} fcgi_cgi
+pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools} ${archiver_system_progs}
 pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -19,7 +19,7 @@ noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-fcgi_cgi.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pad.service system/gromox-pop3.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-timer.service system/gromox-zcore.service
+unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pad.service system/gromox-pop3.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-sensor.service system/gromox-session.service system/gromox-smtp.service system/gromox-supervisor.service system/gromox-timer.service system/gromox-zcore.service
 unit_targets = system/gromox-archive.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
@@ -591,10 +591,6 @@ pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 rtf2html_SOURCES = AGENT_SERVICE/rtf2html.c
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 
-# DOMAIN_ADMIN
-fcgi_cgi_SOURCES = DOMAIN_ADMIN/fcgi_cgi.c
-fcgi_cgi_LDADD = -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_rpc.la
-
 # SYSTEM_ADMIN
 saphpdir = ${pkgdatadir}/sa
 saphp_DATA = SYSTEM_ADMIN/php/conf.php SYSTEM_ADMIN/php/db.php SYSTEM_ADMIN/php/submit.php
@@ -676,7 +672,7 @@ man_MANS = \
 	doc/esmtp_auth.4gx \
 	doc/event.8gx doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
-	doc/fcgi_cgi.8gx doc/forbidden_domain.4gx doc/forbidden_from.4gx \
+	doc/forbidden_domain.4gx doc/forbidden_from.4gx \
 	doc/forbidden_rcpt.4gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-archive.target.8gx doc/gromox-dbop.8gx \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \

@@ -2,5 +2,4 @@
 * /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
 * /z-push /usr/share/z-push php index.php | /run/gromox/php-fpm.sock
 * /webapp /usr/share/webapp php index.php | /run/gromox/php-fpm.sock
-* /cgi-bin /usr/libexec/gromox/da * index | /run/gromox/fcgi_cgi.sock
 * /.well-known /usr/share/gromox/http/php/well-known php index.php | /run/gromox/php-fpm.sock

@@ -32,7 +32,6 @@ Makefile.in
 /dispasswd
 /enpasswd
 /event
-/fcgi_cgi
 /freebusy
 /gromox-dbop
 /gromox-mailq
