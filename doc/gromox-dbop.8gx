@@ -3,7 +3,8 @@
 gromox\-dbop \(em Database maintenance utility
 .SH Synopsis
 .PP
-\fBgromox\-dbop [\-CU\fP] [\fB\-c\fP \fImysql_adaptor.cfg\fP]
+\fBgromox\-dbop [\-CU\fP] [\fB\-\-create\-old\fP] [\fB\-c\fP
+\fImysql_adaptor.cfg\fP]
 .SH Options
 .TP
 \fB\-C\fP
@@ -12,6 +13,9 @@ Create the initial set of tables for the user information database (in MySQL).
 \fB\-U\fP
 Upgrade the schema of the user information database. The database
 (MYSQL_DBNAME) should exist and be blank.
+.TP
+\fB\-\-create\-old\fP
+Create blank initial database using version n0. (This can be used for testing.)
 .TP
 \fB\-c\fP \fImysql_adaptor.cfg\fP
 Path to a configuration file that defines MYSQL_HOST, MYSQL_USERNAME, etc. If
