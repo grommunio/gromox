@@ -225,13 +225,12 @@ static const struct tbl_init tbl_init_0[] = {
 static int dbop_mysql_create_int(MYSQL *conn, const struct tbl_init *entry)
 {
 	for (; entry->name != nullptr; ++entry) {
-		printf("Creating %s", entry->name);
+		printf("Creating %s\n", entry->name);
 		auto ret = mysql_real_query(conn, entry->command, strlen(entry->command));
 		if (ret != 0) {
-			printf(": %s\n", mysql_error(conn));
+			printf("Query \"%s\":\n%s\n", entry->command, mysql_error(conn));
 			return EXIT_FAILURE;
 		}
-		printf("\n");
 	}
 	return EXIT_SUCCESS;
 }
@@ -247,7 +246,7 @@ static const char tbl_alias_top[] =
 "  `aliasname` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `mainname` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  PRIMARY KEY (`aliasname`),"
-"  KEY `mainname` (`mainname`)"
+"  KEY `mainname` (`mainname`),"
 "  CONSTRAINT `aliases_ibfk_1` FOREIGN KEY (`mainname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
