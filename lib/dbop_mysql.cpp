@@ -18,6 +18,7 @@ struct tbl_upgradefn {
 	const char *command;
 };
 
+/* If you are thinking about changing any tbl_XXX_N, with N=number, then you should rather add tbl_XXX_top. */
 static const char tbl_uprops_25[] =
 "CREATE TABLE `user_properties` ("
 "  `user_id` int(10) unsigned NOT NULL,"
@@ -27,6 +28,35 @@ static const char tbl_uprops_25[] =
 "  PRIMARY KEY (`user_id`,`proptag`),"
 "  CONSTRAINT `user_properties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_admroles_41[] =
+"CREATE TABLE `admin_roles` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `name` varchar(32) NOT NULL,"
+"  `description` varchar(256) DEFAULT NULL,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `name` (`name`)"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_admroleperm_42[] =
+"CREATE TABLE `admin_role_permission_relation` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `role_id` int(10) unsigned NOT NULL,"
+"  `permission` varchar(64) NOT NULL,"
+"  `parameters` text,"
+"  PRIMARY KEY (`id`),"
+"  KEY `role_id` (`role_id`),"
+"  CONSTRAINT `admin_role_permission_relation_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `admin_roles` (`id`)"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_admuserrole_43[] =
+"CREATE TABLE `admin_user_role_relation` ("
+"  `user_id` int(10) unsigned NOT NULL,"
+"  `role_id` int(10) unsigned NOT NULL,"
+"  PRIMARY KEY (`user_id`,`role_id`),"
+"  CONSTRAINT `admin_user_role_relation_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,"
+"  CONSTRAINT `admin_user_role_relation_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `admin_roles` (`id`)"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
 /* Initialization to create schema 0 */
 static const char tbl_alias_0[] =
@@ -388,6 +418,7 @@ static const char tbl_users_top[] =
 ") DEFAULT CHARSET=utf8mb4";
 
 static const struct tbl_init tbl_init_top[] = {
+	{"admin_roles", tbl_admroles_41},
 	{"associations", tbl_assoc_top},
 	{"classes", tbl_classes_top},
 	{"domains", tbl_domains_top},
@@ -401,6 +432,8 @@ static const struct tbl_init tbl_init_top[] = {
 	{"users", tbl_users_top},
 	{"aliases", tbl_alias_top},
 	{"user_properties", tbl_uprops_25},
+	{"admin_role_permission_relation", tbl_admroleperm_42},
+	{"admin_user_role_relation", tbl_admuserrole_43},
 	{nullptr},
 };
 
@@ -475,6 +508,9 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{38, "ALTER TABLE `users` DROP COLUMN `memo`"},
 	{39, "ALTER TABLE `users` DROP COLUMN `title`"},
 	{40, "ALTER TABLE `users` DROP COLUMN `real_name`"},
+	{41, tbl_admroles_41},
+	{42, tbl_admroleperm_42},
+	{43, tbl_admuserrole_43},
 	{0, nullptr},
 };
 
