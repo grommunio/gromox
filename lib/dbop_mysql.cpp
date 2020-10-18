@@ -19,6 +19,13 @@ struct tbl_upgradefn {
 };
 
 /* If you are thinking about changing any tbl_XXX_N, with N=number, then you should rather add tbl_XXX_top. */
+static const char tbl_options_1[] =
+"CREATE TABLE `options` ("
+"  `key` varchar(32) CHARACTER SET ascii NOT NULL,"
+"  `value` varchar(255) DEFAULT NULL,"
+"  PRIMARY KEY (`key`)"
+") DEFAULT CHARSET=utf8mb4";
+
 static const char tbl_uprops_25[] =
 "CREATE TABLE `user_properties` ("
 "  `user_id` int(10) unsigned NOT NULL,"
@@ -262,6 +269,14 @@ static int dbop_mysql_create_int(MYSQL *conn, const struct tbl_init *entry)
 			return EXIT_FAILURE;
 		}
 	}
+	char uq[80];
+	snprintf(uq, sizeof(uq), "INSERT INTO `options` (`key`, `value`) VALUES ('schemaversion', %u)",
+	         dbop_mysql_recentversion());
+	auto ret = mysql_real_query(conn, uq, strlen(uq));
+	if (ret != 0) {
+		printf("Query \"%s\":\n%s\n", uq, mysql_error(conn));
+		return EXIT_FAILURE;
+	}
 	return EXIT_SUCCESS;
 }
 
@@ -427,6 +442,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"hierarchy", tbl_hierarchy_0},
 	{"members", tbl_members_top},
 	{"mlists", tbl_mlists_top},
+	{"options", tbl_options_1},
 	{"orgs", tbl_orgs_0},
 	{"specifieds", tbl_specifieds_top},
 	{"users", tbl_users_top},
@@ -458,7 +474,7 @@ int dbop_mysql_schemaversion(MYSQL *conn)
 }
 
 static const struct tbl_upgradefn tbl_upgrade_list[] = {
-	{1, "CREATE TABLE `options` (`key` varchar(32) CHARACTER SET ascii NOT NULL,"
+	{1, "CREATE TABLE IF NOT EXISTS `options` (`key` varchar(32) CHARACTER SET ascii NOT NULL,"
 	    " `value` varchar(255) DEFAULT NULL, PRIMARY KEY (`key`)) DEFAULT CHARSET=utf8mb4"},
 	{2, "ALTER TABLE `aliases` CHANGE COLUMN `aliasname` `aliasname` varchar(320) CHARACTER SET ascii NOT NULL"},
 	{3, "ALTER TABLE `aliases` CHANGE COLUMN `mainname` `mainname` varchar(320) CHARACTER SET ascii NOT NULL"},
@@ -511,6 +527,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{41, tbl_admroles_41},
 	{42, tbl_admroleperm_42},
 	{43, tbl_admuserrole_43},
+	{44, "ALTER TABLE `users` DROP COLUMN `mobile_phone`"}, /* was never used (cf. cell) */
 	{0, nullptr},
 };
 
