@@ -367,7 +367,7 @@ uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt)
 	return message_size;
 }
 
-MESSAGE_CONTENT* message_content_dup(MESSAGE_CONTENT *pmsgctnt)
+MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
 {
 	int i;
 	MESSAGE_CONTENT *pmsgctnt1;

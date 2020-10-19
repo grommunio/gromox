@@ -34,7 +34,7 @@ static BOOL tpropval_array_append(TPROPVAL_ARRAY *parray,
 	return TRUE;
 }
 
-void* tpropval_array_get_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
+void *tpropval_array_get_propval(const TPROPVAL_ARRAY *parray, uint32_t proptag)
 {
 	int i;
 	

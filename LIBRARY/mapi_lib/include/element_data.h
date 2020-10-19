@@ -123,9 +123,7 @@ void message_content_set_attachments_internal(
 void message_content_free_internal(MESSAGE_CONTENT *pmsgctnt);
 
 void message_content_free(MESSAGE_CONTENT *pmsgctnt);
-
-MESSAGE_CONTENT* message_content_dup(MESSAGE_CONTENT *pmsgctnt);
-
+extern MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *);
 uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt);
 
 PROPERTY_GROUPINFO* property_groupinfo_init(uint32_t group_id);
