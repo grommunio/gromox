@@ -240,6 +240,10 @@ typedef struct _NSPIRESOLVENAMESW_OUT {
 	uint32_t result;
 } NSPIRESOLVENAMESW_OUT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int nsp_ndr_pull_nspibind(NDR_PULL *pndr, NSPIBIND_IN *r);
 
 int nsp_ndr_push_nspibind(NDR_PUSH *pndr, const NSPIBIND_OUT *r);
@@ -311,3 +315,7 @@ int nsp_ndr_push_nspiresolvenames(NDR_PUSH *pndr, const NSPIRESOLVENAMES_OUT *r)
 int nsp_ndr_pull_nspiresolvenamesw(NDR_PULL *pndr, NSPIRESOLVENAMESW_IN *r);
 
 int nsp_ndr_push_nspiresolvenamesw(NDR_PUSH *pndr, const NSPIRESOLVENAMESW_OUT *r);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -1502,6 +1502,10 @@ enum {
 	COMMON_UTIL_MAX_EXT_RULE_NUMBER
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern BOOL (*common_util_lang_to_charset)(
 	const char *lang, char *charset);
 
@@ -1758,3 +1762,7 @@ uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment);
 
 unsigned int common_util_get_param(int param);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

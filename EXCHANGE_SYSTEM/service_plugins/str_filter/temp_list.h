@@ -3,6 +3,9 @@
 #include "common_types.h"
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void temp_list_init(BOOL case_sensive, int size);
 extern int temp_list_run(void);
@@ -18,5 +21,8 @@ BOOL temp_list_dump(const char *path);
 
 BOOL temp_list_echo(const char *str, time_t *puntil);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* _H_TEMP_LIST_ */

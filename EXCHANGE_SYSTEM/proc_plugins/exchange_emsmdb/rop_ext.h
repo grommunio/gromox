@@ -2,6 +2,9 @@
 #include "ext_buffer.h"
 #include "processor_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int rop_ext_pull_rop_buffer(EXT_PULL *pext, ROP_BUFFER *r);
 extern int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len, const ROP_BUFFER *prop_buff, void *pbuff_out, uint32_t *pout_len);
@@ -18,3 +21,7 @@ int rop_ext_push_notify_response(EXT_PUSH *pext,
 
 int rop_ext_push_pending_response(EXT_PUSH *pext,
 	const PENDING_RESPONSE *r);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

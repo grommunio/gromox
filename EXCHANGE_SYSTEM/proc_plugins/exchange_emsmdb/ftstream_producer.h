@@ -29,6 +29,9 @@ typedef struct _FTSTREAM_PRODUCER {
 	BOOL b_read;
 } FTSTREAM_PRODUCER;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 FTSTREAM_PRODUCER* ftstream_producer_create(
 	LOGON_OBJECT *plogon, uint8_t string_option);
@@ -96,3 +99,7 @@ BOOL ftstream_producer_write_hierarchysync(
 	const FOLDER_CHANGES *pfldchgs,
 	const TPROPVAL_ARRAY *pdels,
 	const TPROPVAL_ARRAY *pstate);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -7,6 +7,10 @@
 	(((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
 	((a).tv_sec - (b).tv_sec - 1))
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void ip_filter_init(const char *module_name, const char *config_path,
 	int audit_num, int audit_interval, int audit_times, int temp_list_size,
 	const char *list_path, int growing_num); 
@@ -22,3 +26,7 @@ BOOL ip_filter_add_ip_into_temp_list(char *ip, int interval);
 void ip_filter_console_talk(int argc, char **argv, char *result, int length);
 
 void ip_filter_echo(const char *format, ...);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

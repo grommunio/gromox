@@ -2,6 +2,10 @@
 #include "mapi_types.h"
 #include "ext_buffer.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 uint32_t rop_logon_pmb(uint8_t logon_flags,
 	uint32_t open_flags, uint32_t store_stat, char *pessdn,
 	uint64_t *pfolder_id, uint8_t *presponse_flags,
@@ -536,3 +540,7 @@ uint32_t rop_registernotification(
 	uint8_t logon_id, uint32_t hin, uint32_t *phout);
 
 void rop_release(void *plogmap, uint8_t logon_id, uint32_t hin);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -2,6 +2,9 @@
 #include "mapi_types.h"
 #include "processor_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 NOTIFY_RESPONSE* notify_response_init(uint32_t handle, uint8_t logon_id);
 
@@ -12,3 +15,7 @@ BOOL notify_response_retrieve(NOTIFY_RESPONSE *pnotify,
 
 void notify_response_content_table_row_event_to_change(
 	NOTIFY_RESPONSE *pnotify);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

@@ -18,6 +18,10 @@ typedef struct _ICS_STATE {
 	IDSET *pread;
 } ICS_STATE;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ICS_STATE* ics_state_create(LOGON_OBJECT *plogon, int type);
 
 BOOL ics_state_append_idset(ICS_STATE *pstate,
@@ -26,3 +30,7 @@ BOOL ics_state_append_idset(ICS_STATE *pstate,
 TPROPVAL_ARRAY* ics_state_serialize(ICS_STATE *pstate);
 
 void ics_state_free(ICS_STATE *pstate);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

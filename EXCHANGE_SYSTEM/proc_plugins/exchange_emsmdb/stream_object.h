@@ -14,6 +14,10 @@ typedef struct _STREAM_OBJECT {
 	uint32_t max_length;
 } STREAM_OBJECT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	uint32_t open_flags, uint32_t proptag, uint32_t max_length);
 
@@ -51,3 +55,7 @@ BOOL stream_object_copy(STREAM_OBJECT *pstream_dst,
 BOOL stream_object_commit(STREAM_OBJECT *pstream);
 
 void stream_object_free(STREAM_OBJECT *pstream);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

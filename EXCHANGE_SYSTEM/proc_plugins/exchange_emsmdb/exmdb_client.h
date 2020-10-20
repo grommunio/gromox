@@ -3,6 +3,10 @@
 #include "mapi_types.h"
 #include "element_data.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void exmdb_client_init(void);
 extern int exmdb_client_run(void);
 extern int exmdb_client_stop(void);
@@ -499,3 +503,7 @@ extern BOOL (*exmdb_client_check_contact_address)(
 
 extern BOOL (*exmdb_client_get_public_folder_unread_count)(const char *dir,
 	const char *username, uint64_t folder_id, uint32_t *pcount);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

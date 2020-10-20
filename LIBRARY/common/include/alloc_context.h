@@ -19,3 +19,7 @@ void* alloc_context_alloc(ALLOC_CONTEXT *pcontext, size_t size);
 void alloc_context_free(ALLOC_CONTEXT *pcontext);
 
 size_t alloc_context_get_total(ALLOC_CONTEXT *pcontext);
+
+#ifdef __cplusplus
+}
+#endif

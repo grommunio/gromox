@@ -91,6 +91,10 @@ typedef struct _ECDOASYNCCONNECTEX_OUT {
 	int32_t result;
 } ECDOASYNCCONNECTEX_OUT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r);
 
 int emsmdb_ndr_push_ecdodisconnect(NDR_PUSH *pndr,
@@ -117,3 +121,7 @@ int emsmdb_ndr_pull_ecdoasyncconnectex(NDR_PULL *pndr,
 
 int emsmdb_ndr_push_ecdoasyncconnectex(NDR_PUSH *pndr,
 	const ECDOASYNCCONNECTEX_OUT *r);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

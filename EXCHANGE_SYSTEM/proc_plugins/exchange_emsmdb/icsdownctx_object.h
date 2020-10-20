@@ -35,6 +35,9 @@ typedef struct _ICSDOWNCTX_OBJECT {
 	PROPERTY_GROUPINFO fake_gpinfo;
 } ICSDOWNCTX_OBJECT;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 ICSDOWNCTX_OBJECT* icsdownctx_object_create(LOGON_OBJECT *plogon,
 	FOLDER_OBJECT *pfolder, uint8_t sync_type, uint8_t send_options,
@@ -60,3 +63,7 @@ void icsdownctx_object_free(ICSDOWNCTX_OBJECT *pctx);
 BOOL icsdownctx_object_get_buffer(ICSDOWNCTX_OBJECT *pctx,
 	void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

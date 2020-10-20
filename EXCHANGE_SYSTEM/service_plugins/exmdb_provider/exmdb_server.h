@@ -4,6 +4,10 @@
 #include "element_data.h"
 #include "alloc_context.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 extern void exmdb_server_init(void);
@@ -458,3 +462,7 @@ BOOL exmdb_server_get_public_folder_unread_count(const char *dir,
 void exmdb_server_register_proc(void *pproc);
 
 BOOL exmdb_server_unload_store(const char *dir);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

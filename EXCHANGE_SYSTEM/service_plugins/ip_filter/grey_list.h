@@ -13,6 +13,10 @@ enum{
 	GREY_REFRESH_HASH_FAIL
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void grey_list_init(const char *path, int growing_num);
 extern int grey_list_run(void);
 extern int grey_list_stop(void);
@@ -27,3 +31,7 @@ BOOL grey_list_remove_ip(const char *ip);
 BOOL grey_list_dump(const char *path);
 
 BOOL grey_list_echo(const char *ip, int *ptimes, int *pinterval);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

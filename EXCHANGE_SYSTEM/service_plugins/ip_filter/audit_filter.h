@@ -9,6 +9,10 @@ enum {
 	AUDIT_CAPABILITY
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void audit_filter_init(int audit_num, long audit_interval, int audit_times);
 extern int audit_filter_run(void);
 extern int audit_filter_stop(void);
@@ -24,3 +28,7 @@ BOOL audit_filter_echo(const char *ip, time_t *pfirst_access,
 BOOL audit_filter_dump(const char *path);
 
 BOOL audit_filter_remove_ip(const char *ip);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
