@@ -323,7 +323,7 @@ static void* service_query_service(const char *service)
 	}
 	if (strcmp(service, "_program_identifier") == 0)
 		return const_cast<char *>(g_program_identifier);
-	return service_query(service, "untracked");
+	return service_query(service, nullptr);
 }
 
 /*
@@ -478,6 +478,9 @@ void* service_query(const char *service_name, const char *module)
 	if (NULL == pnode) {
 		return NULL;
 	}
+	if (module == nullptr)
+		/* untracked user */
+		return pservice->service_addr;
 	/* iterate the service node's reference list and try to find out 
 	 * the module name, if the module already exists in the list, just add
 	 *  reference cout of module

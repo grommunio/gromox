@@ -76,16 +76,13 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	const void *authtok_v = nullptr;
 	ret = pam_get_item(pamh, PAM_AUTHTOK, &authtok_v);
-	if (ret != PAM_SUCCESS) {
-		printf("USUC\n");
+	if (ret != PAM_SUCCESS)
 		return PAM_AUTH_ERR;
-	}
 	struct stdlib_free { void operator()(void *p) { free(p); } };
 	std::unique_ptr<char, stdlib_free> authtok;
 	if (authtok_v != nullptr) {
 		authtok.reset(strdup(static_cast<const char *>(authtok_v)));
 	} else {
-		printf("RP\n");
 		ret = read_password(pamh, config_file_get_value(cfg, "pam_prompt"), &unique_tie(authtok));
 		if (ret != PAM_SUCCESS)
 			return ret;
@@ -123,8 +120,8 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	auto fptr_login = reinterpret_cast<login_t>(service_query("auth_login_smtp", "system"));
 	if (fptr_login == nullptr)
 		return PAM_AUTH_ERR;
+	auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_smtp", "system"); });
 	char reason[256];
-	printf("%s, %s\n", username, authtok.get());
 	return fptr_login(username, authtok.get(), reason, sizeof(reason)) != FALSE ?
 	       PAM_SUCCESS : PAM_AUTH_ERR;
 }
