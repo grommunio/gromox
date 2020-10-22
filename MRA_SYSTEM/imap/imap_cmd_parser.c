@@ -4447,7 +4447,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2180005: BAD can only process in select state */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2180005, 1, &string_length);
-		string_length = snprintf(buff, 1024, "%s %s", argv[0], imap_reply_str);
+		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
@@ -4486,8 +4487,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			error, missing MIDB connection */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190005, 1, &string_length);
-		string_length = snprintf(buff, 1024,
-			"%s %s", argv[0], imap_reply_str);
+		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	case MIDB_RDWR_ERROR:
@@ -4496,8 +4497,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		error, fail to communicate with MIDB */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190006, 1, &string_length);
-		string_length = snprintf(buff, 1024,
-			"%s %s", argv[0], imap_reply_str);
+		snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
@@ -4506,8 +4507,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
-		string_length = snprintf(buff, 1024, "%s %s%s",
-					argv[0], imap_reply_str, estring);
+		snprintf(buff, sizeof(buff), "%s %s%s", argv[0], imap_reply_str, estring);
+		string_length = strlen(buff);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
@@ -4526,8 +4527,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2170028, 1, &string_length);
-	string_length = snprintf(buff, 4096,
-		"%s %s", argv[0], imap_reply_str);
+	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+	string_length = strlen(buff);
 	stream_write(&pcontext->stream, buff, string_length);
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -4542,8 +4543,8 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 UID_FETCH_PARAM_ERR:
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2180000, 1, &string_length);
-	string_length = snprintf(buff, 1024,
-		"%s %s", argv[0], imap_reply_str);
+	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+	string_length = strlen(buff);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
