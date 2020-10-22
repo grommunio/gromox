@@ -427,7 +427,7 @@ char* common_util_convert_copy(BOOL to_utf8,
 	return pstr_out;
 }
 
-STRING_ARRAY* common_util_conver_copy_string_array(
+STRING_ARRAY *common_util_convert_copy_string_array(
 	BOOL to_utf8, uint32_t cpid, const STRING_ARRAY *parray)
 {
 	int i;

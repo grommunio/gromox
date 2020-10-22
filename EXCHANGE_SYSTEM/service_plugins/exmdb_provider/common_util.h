@@ -1578,10 +1578,7 @@ BOOL common_util_check_local_ip(const char *ip_addr);
 
 char* common_util_convert_copy(BOOL to_utf8,
 	uint32_t cpid, const char *pstring);
-
-STRING_ARRAY* common_util_conver_copy_string_array(
-	BOOL to_utf8, uint32_t cpid, const STRING_ARRAY *parray);
-
+extern STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8, uint32_t cpid, const STRING_ARRAY *);
 BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid);
 
 BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,

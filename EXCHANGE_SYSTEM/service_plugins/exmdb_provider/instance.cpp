@@ -2450,7 +2450,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
 				ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_conver_copy_string_array(
+					common_util_convert_copy_string_array(
 						FALSE, cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROPVAL_TYPE_WSTRING_ARRAY ==
@@ -2462,7 +2462,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
 				ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_conver_copy_string_array(
+					common_util_convert_copy_string_array(
 						TRUE, cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROPVAL_TYPE_UNSPECIFIED ==
@@ -2747,7 +2747,7 @@ BOOL exmdb_server_get_instance_properties(
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
 				ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_conver_copy_string_array(
+					common_util_convert_copy_string_array(
 					FALSE, pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROPVAL_TYPE_WSTRING_ARRAY ==
@@ -2759,7 +2759,7 @@ BOOL exmdb_server_get_instance_properties(
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
 				ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_conver_copy_string_array(
+					common_util_convert_copy_string_array(
 					TRUE, pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}	
 		} else if (PROPVAL_TYPE_UNSPECIFIED ==
@@ -3453,7 +3453,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					0xFFFF) == PROPVAL_TYPE_WSTRING_ARRAY) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
 				} else {
-					propval.pvalue = common_util_conver_copy_string_array(
+					propval.pvalue = common_util_convert_copy_string_array(
 										TRUE, pinstance->cpid,
 					                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
 					if (NULL == propval.pvalue) {
@@ -3556,7 +3556,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					0xFFFF) == PROPVAL_TYPE_WSTRING_ARRAY) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
 				} else {
-					propval.pvalue = common_util_conver_copy_string_array(
+					propval.pvalue = common_util_convert_copy_string_array(
 										TRUE, pinstance->cpid,
 					                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
 					if (NULL == propval.pvalue) {
