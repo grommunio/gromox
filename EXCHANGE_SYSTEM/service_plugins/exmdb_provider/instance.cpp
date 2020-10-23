@@ -2632,6 +2632,30 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 	return TRUE;
 }	
 
+static int instance_get_message_bodyU(DB_ITEM *db, MESSAGE_CONTENT *mc,
+    TPROPVAL_ARRAY *pval)
+{
+	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY);
+	bool use_first = data != nullptr;
+	if (data == nullptr)
+		data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY_STRING8);
+	if (data == nullptr)
+		return 0;
+	auto content = static_cast<char *>(instance_read_cid_content(*static_cast<uint64_t *>(data), nullptr));
+	if (content == nullptr)
+		return -1;
+	auto &pv = pval->ppropval[pval->count];
+	pv.proptag = PROP_TAG_BODY_UNSPECIFIED;
+	pv.pvalue = common_util_alloc(sizeof(TYPED_PROPVAL));
+	auto tpv = static_cast<TYPED_PROPVAL *>(pv.pvalue);
+	if (tpv == nullptr)
+		return -1;
+	tpv->type   = use_first ? PROPVAL_TYPE_WSTRING : PROPVAL_TYPE_STRING;
+	tpv->pvalue = use_first ? content + sizeof(int) : content;
+	++pval->count;
+	return 1;
+}
+
 BOOL exmdb_server_get_instance_properties(
 	const char *dir, uint32_t size_limit, uint32_t instance_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
@@ -2792,62 +2816,14 @@ BOOL exmdb_server_get_instance_properties(
 			continue;
 		}
 		switch (pproptags->pproptag[i]) {
-		case PROP_TAG_BODY_UNSPECIFIED:
-			pvalue = tpropval_array_get_propval(
-				&pmsgctnt->proplist, ID_TAG_BODY);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(
-						*(uint64_t*)pvalue, NULL);
-				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
-					return FALSE;
-				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-									PROP_TAG_BODY_UNSPECIFIED;
-				ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_alloc(sizeof(TYPED_PROPVAL));
-				if (NULL == ppropvals->ppropval[
-					ppropvals->count].pvalue) {
-					db_engine_put_db(pdb);
-					return FALSE;	
-				}
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->type =
-					PROPVAL_TYPE_WSTRING;
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->pvalue =
-					static_cast<char *>(pvalue) + sizeof(int);
-				ppropvals->count ++;
-				continue;
-			} else {
-				pvalue = tpropval_array_get_propval(
-					&pmsgctnt->proplist, ID_TAG_BODY_STRING8);
-				if (NULL != pvalue) {
-					pvalue = instance_read_cid_content(
-							*(uint64_t*)pvalue, NULL);
-					if (NULL == pvalue) {
-						db_engine_put_db(pdb);
-						return FALSE;
-					}
-					ppropvals->ppropval[ppropvals->count].proptag =
-										PROP_TAG_BODY_UNSPECIFIED;
-					ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_alloc(sizeof(TYPED_PROPVAL));
-					if (NULL == ppropvals->ppropval[
-						ppropvals->count].pvalue) {
-						db_engine_put_db(pdb);
-						return FALSE;	
-					}
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->type =
-						PROPVAL_TYPE_STRING;
-					((TYPED_PROPVAL*)ppropvals->ppropval[
-						ppropvals->count].pvalue)->pvalue =	pvalue;
-					ppropvals->count ++;
-					continue;
-				}
+		case PROP_TAG_BODY_UNSPECIFIED: {
+			auto ret = instance_get_message_bodyU(pdb, pmsgctnt, ppropvals);
+			if (ret < 0) {
+				db_engine_put_db(pdb);
+				return false;
 			}
 			break;
+		}
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED:
 			pvalue = tpropval_array_get_propval(
 				&pmsgctnt->proplist, ID_TAG_TRANSPORTMESSAGEHEADERS);
