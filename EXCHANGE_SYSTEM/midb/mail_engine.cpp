@@ -32,8 +32,8 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#define LLU(x) static_cast(unsigned long long, (x))
-#define S2A(x) reinterpret_cast(const char *, (x))
+#define LLU(x) static_cast<unsigned long long>(x)
+#define S2A(x) reinterpret_cast<const char *>(x)
 
 #define FILENUM_PER_MIME				8
 
@@ -217,7 +217,7 @@ static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
 		return strdup(string);
 	}	
 	length = strlen(string) + 1;
-	ret_string = malloc(2*length);
+	ret_string = static_cast<char *>(malloc(2 * length));
 	if (NULL == ret_string) {
 		return NULL;
 	}
@@ -265,7 +265,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 			0 == S_ISREG(node_stat.st_mode)) {
 			return 0;
 		}
-		pbuff = malloc(node_stat.st_size);
+		pbuff = static_cast<char *>(malloc(node_stat.st_size));
 		if (NULL == pbuff) {
 			return 0;
 		}
@@ -380,11 +380,11 @@ static char* mail_engine_ct_decode_mime(
 	int last_pos, begin_pos, end_pos;
 	ENCODE_STRING encode_string;
 	char *in_buff, *out_buff;
-	char *ret_string, *tmp_string;
+	char *tmp_string;
 	char temp_buff[1024];
 
 	buff_len = strlen(mime_string);
-	ret_string = malloc(2*(buff_len + 1));
+	auto ret_string = static_cast<char *>(malloc(2 * (buff_len + 1)));
 	if (NULL == ret_string) {
 		return NULL;
 	}
@@ -484,7 +484,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 	}
 	if (0 == strncmp(mjson_get_mime_ctype(pmime), "text/", 5)) {
 		length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
-		pbuff = malloc(2*length + 1);
+		pbuff = static_cast<char *>(malloc(2 * length + 1));
 		if (NULL == pbuff) {
 			return;
 		}
@@ -1647,7 +1647,7 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 				return NULL;
 			}
 			string[i] = '\0';
-			pseq = malloc(sizeof(SEQUENCE_NODE));
+			pseq = static_cast<SEQUENCE_NODE *>(malloc(sizeof(*pseq)));
 			if (NULL == pseq) {
 				mail_engine_ct_free_sequence(plist);
 				return NULL;
@@ -1723,7 +1723,7 @@ static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SEQUENCE_NODE *pseq = pnode->pdata;
+		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
 		if (-1 == pseq->max) {
 			if (-1 == pseq->min) {
 				if (num == max_uid) {
@@ -1806,7 +1806,7 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 		if (TRUE == mail_engine_ct_match_mail(psqlite,
 			charset, pstmt_message, mid_string, i + 1,
 			total_mail, uidnext, ptree)) {
-			pnode = malloc(sizeof(SINGLE_LIST_NODE));
+			pnode = static_cast<SINGLE_LIST_NODE *>(malloc(sizeof(SINGLE_LIST_NODE)));
 			if (NULL == pnode) {
 				continue;
 			}
@@ -2263,7 +2263,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		if (NULL == pvalue) {
 			sqlite3_bind_null(pstmt, 2);
 		} else {
-			sqlite3_bind_text(pstmt, 2, pvalue, -1, SQLITE_STATIC);
+			sqlite3_bind_text(pstmt, 2, static_cast<char *>(pvalue), -1, SQLITE_STATIC);
 		}
 		sqlite3_bind_int64(pstmt, 3, mod_time);
 		sqlite3_bind_int64(pstmt, 4, message_flags);
@@ -2317,7 +2317,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			uidnext ++;
 			mail_engine_insert_message(
 				pstmt2, &uidnext, message_id,
-				sqlite3_column_text(pstmt, 1),
+				reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 1)),
 				sqlite3_column_int64(pstmt, 3),
 				sqlite3_column_int64(pstmt, 4),
 				sqlite3_column_int64(pstmt, 2));
@@ -2325,8 +2325,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			mail_engine_sync_message(pidb,
 				pstmt2, pstmt3, &uidnext, message_id,
 				sqlite3_column_int64(pstmt, 4),
-				sqlite3_column_text(pstmt, 1),
-				sqlite3_column_text(pstmt1, 1),
+				reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 1)),
+				reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 1)),
 				sqlite3_column_int64(pstmt, 2),
 				sqlite3_column_int64(pstmt1, 2),
 				sqlite3_column_int64(pstmt, 3),
@@ -2357,7 +2357,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-			pnode = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
+			pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
 			if (NULL == pnode) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -2444,12 +2444,12 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
-		pnode = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
+		pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
 		if (NULL == pnode) {
 			return FALSE;
 		}
 		folder_id = sqlite3_column_int64(pstmt, 0);
-		pnode->pdata = common_util_dup(sqlite3_column_text(pstmt, 1));
+		pnode->pdata = static_cast<char *>(common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 1))));
 		if (NULL == pnode->pdata) {
 			return FALSE;
 		}
@@ -2458,7 +2458,7 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 	offset = 0;
 	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
 		pnode=double_list_get_after(&temp_list, pnode)) {
-		length = strlen(pnode->pdata);
+		length = strlen(static_cast<char *>(pnode->pdata));
 		if (length >= 256) {
 			return FALSE;
 		}
@@ -2569,9 +2569,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		}
 		pvalue = common_util_get_propvals(
 			rows.pparray[i], PROP_TAG_CONTAINERCLASS);
-		if (NULL == pvalue || 0 != strcasecmp(pvalue, "IPF.Note")) {
+		if (pvalue == nullptr || strcasecmp(static_cast<const char *>(pvalue), "IPF.Note") != 0)
 			continue;
-		}
 		sqlite3_reset(pstmt);
 		pvalue = common_util_get_propvals(
 			rows.pparray[i], PROP_TAG_FOLDERID);
@@ -2606,12 +2605,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		default:
 			pvalue = common_util_get_propvals(
 				rows.pparray[i], PROP_TAG_DISPLAYNAME);
-			if (NULL == pvalue || strlen(pvalue) >= 256) {
+			if (pvalue == nullptr || strlen(static_cast<const char *>(pvalue)) >= 256)
 				continue;
-			}
 			break;
 		}
-		sqlite3_bind_text(pstmt, 3, pvalue, -1, SQLITE_STATIC);
+		sqlite3_bind_text(pstmt, 3, static_cast<const char *>(pvalue), -1, SQLITE_STATIC);
 		pvalue = common_util_get_propvals(rows.pparray[i],
 							PROP_TAG_LOCALCOMMITTIMEMAX);
 		if (NULL == pvalue) {
@@ -2680,7 +2678,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 					LLU(parent_fid), LLU(folder_id));
 				sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 			}
-			if (0 != strcmp(encoded_name, sqlite3_column_text(pstmt1, 3))) {
+			if (strcmp(encoded_name, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 3))) != 0) {
 				sprintf(sql_string, "UPDATE folders SET name='%s' "
 				        "WHERE folder_id=%llu", encoded_name, LLU(folder_id));
 				sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
@@ -2720,7 +2718,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-			pnode = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
+			pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
 			if (NULL == pnode) {
 				goto SYNC_FAILURE;
 			}
@@ -2871,7 +2869,7 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 			pthread_mutex_unlock(&g_hash_lock);
 			return NULL;
 		}
-		pidb->username = strdup(sqlite3_column_text(pstmt, 0));
+		pidb->username = strdup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
 		sqlite3_finalize(pstmt);
 		if (NULL == pidb->username) {
 			sqlite3_close(pidb->psqlite);
@@ -2963,7 +2961,7 @@ static void *scan_work_func(void *param)
 				now_time - pidb->load_time > RELOAD_INTERVAL)) {
 				swap_string(path, htag);
 				if (0 != pidb->sub_id) {
-					psub = malloc(sizeof(SUB_NODE));
+					psub = static_cast<SUB_NODE *>(malloc(sizeof(SUB_NODE)));
 					if (NULL != psub) {
 						psub->node.pdata = psub;
 						strcpy(psub->maildir, path);
@@ -3031,12 +3029,9 @@ static int mail_engine_mquta(int argc, char **argv, int sockd)
 		argv[1], 0, &proptags, &propvals)) {
 		return 4;	
 	}
-	ptotal = common_util_get_propvals(&propvals,
-					PROP_TAG_MESSAGESIZEEXTENDED);
-	pmax = common_util_get_propvals(&propvals,
-				PROP_TAG_PROHIBITRECEIVEQUOTA);
-	pcount = common_util_get_propvals(&propvals,
-						PROP_TAG_CONTENTCOUNT);
+	ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PROP_TAG_MESSAGESIZEEXTENDED));
+	pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_PROHIBITRECEIVEQUOTA));
+	pcount = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_CONTENTCOUNT));
 	if (NULL == ptotal || NULL == pmax || NULL == pcount) {
 		return 4;
 	}
@@ -3068,10 +3063,8 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 		argv[1], 0, &proptags, &propvals)) {
 		return 4;	
 	}
-	ptotal = common_util_get_propvals(&propvals,
-					PROP_TAG_MESSAGESIZEEXTENDED);
-	pmax = common_util_get_propvals(&propvals,
-				PROP_TAG_PROHIBITRECEIVEQUOTA);
+	ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PROP_TAG_MESSAGESIZEEXTENDED));
+	pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_PROHIBITRECEIVEQUOTA));
 	if (NULL != ptotal && NULL != pmax) {
 		quota = *pmax;
 		quota *= 1024;
@@ -3541,8 +3534,9 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	temp_len = sprintf(temp_buff, "TRUE %d\r\n", length);
 	write(sockd, temp_buff, temp_len);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (0 == mail_engine_get_digest(pidb->psqlite,
-			sqlite3_column_text(pstmt, 0), temp_buff)) {
+		if (mail_engine_get_digest(pidb->psqlite,
+		    reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)),
+		    temp_buff) == 0) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
 			return 6;
@@ -3594,15 +3588,14 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 	}
 	double_list_init(&tmp_list);
 	while (SQLITE_ROW == (result = sqlite3_step(pstmt))) {
-		pinode = common_util_alloc(sizeof(IDL_NODE));
+		pinode = static_cast<IDL_NODE *>(common_util_alloc(sizeof(IDL_NODE)));
 		if (NULL == pinode) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
 			return 4;
 		}
 		pinode->node.pdata = pinode;
-		pinode->mid_string = common_util_dup(
-				sqlite3_column_text(pstmt, 0));
+		pinode->mid_string = common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
 		if (NULL == pinode->mid_string) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
@@ -3724,7 +3717,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		0 == S_ISREG(node_stat.st_mode)) {
 		return 1;
 	}
-	pbuff = malloc(node_stat.st_size);
+	pbuff = static_cast<char *>(malloc(node_stat.st_size));
 	if (NULL == pbuff) {
 		return 4;
 	}
@@ -3911,7 +3904,7 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 		return 1;
 	}
 	message_ids.count = 0;
-	message_ids.pids = common_util_alloc(sizeof(uint64_t)*(argc - 3));
+	message_ids.pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * (argc - 3)));
 	if (NULL == message_ids.pids) {
 		return 4;
 	}
@@ -4225,7 +4218,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		0 == S_ISREG(node_stat.st_mode)) {
 		return 1;
 	}
-	pbuff = malloc(node_stat.st_size);
+	pbuff = static_cast<char *>(malloc(node_stat.st_size));
 	if (NULL == pbuff) {
 		return 4;
 	}
@@ -4568,8 +4561,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	if (FALSE == exmdb_client_allocate_cn(argv[1], &change_num)
 		|| FALSE == exmdb_client_get_folder_properties(argv[1],
 		0, rop_util_make_eid_ex(1, folder_id), &proptags, &propvals)
-		|| NULL == (pbin1 = common_util_get_propvals(&propvals,
-		PROP_TAG_PREDECESSORCHANGELIST))) {
+		||
+	     (pbin1 = static_cast<BINARY *>(common_util_get_propvals(&propvals, PROP_TAG_PREDECESSORCHANGELIST))) == nullptr) {
 		return 4;	
 	}
 	if (parent_id == folder_id1) {
@@ -5283,7 +5276,6 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	uint64_t folder_id;
 	char flags_buff[16];
 	sqlite3_stmt *pstmt;
-	SIMU_NODE *psm_node;
 	char temp_line[1024];
 	char sql_string[1024];
 	DOUBLE_LIST temp_list;
@@ -5413,7 +5405,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	}
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		psm_node = common_util_alloc(sizeof(SIMU_NODE));
+		auto psm_node = static_cast<SIMU_NODE *>(common_util_alloc(sizeof(SIMU_NODE)));
 		if (NULL == psm_node) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
@@ -5478,7 +5470,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 		double_list_get_nodes_num(&temp_list));
 	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
 		pnode=double_list_get_after(&temp_list, pnode)) {
-		psm_node = (SIMU_NODE*)pnode->pdata;
+		auto psm_node = static_cast<SIMU_NODE *>(pnode->pdata);
 		buff_len = snprintf(temp_line, 512, "%u %s %u %s\r\n",
 					psm_node->idx - 1, psm_node->mid_string,
 					psm_node->uid, psm_node->flags_buff);
@@ -5732,7 +5724,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	}
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		pdt_node = common_util_alloc(sizeof(DTLU_NODE));
+		pdt_node = static_cast<DTLU_NODE *>(common_util_alloc(sizeof(*pdt_node)));
 		if (NULL == pdt_node) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
@@ -6289,7 +6281,7 @@ static void mail_engine_add_notification_message(
 			HX_strlcpy(mid_string, S2A(sqlite3_column_text(pstmt, 0)), sizeof(mid_string));
 			pvalue = sqlite3_column_text(pstmt, 1);
 			if (NULL != pvalue) {
-				strcpy(flags_buff, pvalue);
+				strcpy(flags_buff, static_cast<const char *>(pvalue));
 			}
 			pvalue = mid_string;
 		}
@@ -6325,7 +6317,7 @@ static void mail_engine_add_notification_message(
 	if (!gx_sql_prep(pidb->psqlite, sql_string, &pstmt))
 		return;	
 	mail_engine_insert_message(pstmt, &uidnext, message_id,
-			pvalue, message_flags, received_time, mod_time);
+		static_cast<const char *>(pvalue), message_flags, received_time, mod_time);
 	sqlite3_finalize(pstmt);
 	if (NULL != strchr(flags_buff, 'F')) {
 		sprintf(sql_string, "UPDATE messages SET "
@@ -6452,9 +6444,8 @@ REQUERY_FOLDER:
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	if (0 != strcasecmp(pvalue, "IPF.Note")) {
+	if (strcasecmp(static_cast<char *>(pvalue), "IPF.Note") != 0)
 		return FALSE;
-	}
 	pvalue = common_util_get_propvals(&propvals,
 					PROP_TAG_LOCALCOMMITTIMEMAX);
 	if (NULL == pvalue) {
@@ -6467,7 +6458,7 @@ REQUERY_FOLDER:
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	tmp_len = strlen(pvalue);
+	tmp_len = strlen(static_cast<char *>(pvalue));
 	if (tmp_len >= 256) {
 		return FALSE;
 	}
@@ -6478,7 +6469,7 @@ REQUERY_FOLDER:
 			return FALSE;
 		}
 		snprintf(temp_name, sizeof(temp_name), "%s/%s",
-		         decoded_name, static_cast(const char *, pvalue));
+		         decoded_name, static_cast<const char *>(pvalue));
 		tmp_len = strlen(temp_name);
 	}
 	encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
@@ -6613,7 +6604,7 @@ static void mail_engine_move_notification_folder(
 	if (NULL == pvalue) {
 		return;
 	}
-	tmp_len = strlen(pvalue);
+	tmp_len = strlen(static_cast<char *>(pvalue));
 	if (tmp_len >= 256) {
 		return;
 	}
@@ -6624,7 +6615,7 @@ static void mail_engine_move_notification_folder(
 			return;
 		}
 		snprintf(temp_name, sizeof(temp_name), "%s/%s",
-		         decoded_name, static_cast(const char *, pvalue));
+		         decoded_name, static_cast<const char *>(pvalue));
 		tmp_len = strlen(temp_name);
 	}
 	encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
@@ -6665,7 +6656,7 @@ static void mail_engine_modify_notification_folder(
 		sqlite3_finalize(pstmt);
 		return;
 	}
-	if (!decode_hex_binary(sqlite3_column_text(pstmt, 0),
+	if (!decode_hex_binary(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)),
 	    decoded_name, sizeof(decoded_name))) {
 		sqlite3_finalize(pstmt);
 		return;
@@ -6691,10 +6682,9 @@ static void mail_engine_modify_notification_folder(
 	} else {
 		pdisplayname ++;
 	}
-	if (0 == strcmp(pdisplayname, pvalue)) {
+	if (strcmp(pdisplayname, static_cast<char *>(pvalue)) == 0)
 		return;
-	}
-	tmp_len = strlen(pvalue);
+	tmp_len = strlen(static_cast<char* >(pvalue));
 	if (tmp_len >= 256) {
 		return;
 	}
@@ -6704,7 +6694,7 @@ static void mail_engine_modify_notification_folder(
 		if (pdisplayname - decoded_name + tmp_len >= 512) {
 			return;
 		}
-		strcpy(pdisplayname, pvalue);
+		strcpy(pdisplayname, static_cast<char *>(pvalue));
 		tmp_len = strlen(decoded_name);
 	}
 	encode_hex_binary(decoded_name, tmp_len, encoded_name, 1024);
@@ -7023,7 +7013,7 @@ int mail_engine_run()
 	cmd_parser_register_command("P-GFLG", mail_engine_pgflg);
 	cmd_parser_register_command("P-SRHL", mail_engine_psrhl);
 	cmd_parser_register_command("P-SRHU", mail_engine_psrhu);
-	exmdb_client_register_proc(mail_engine_notification_proc);
+	exmdb_client_register_proc(reinterpret_cast<void *>(mail_engine_notification_proc));
 	return 0;
 }
 
