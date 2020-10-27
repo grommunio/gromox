@@ -108,9 +108,7 @@ static int pdu_processor_load_library(const char* plugin_name);
 
 static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 {
-	NDR_STACK_ROOT *pstack_root;
-	
-	pstack_root = lib_buffer_get(g_stack_allocator);
+	auto pstack_root = static_cast<NDR_STACK_ROOT *>(lib_buffer_get(g_stack_allocator));
 	if (NULL == pstack_root) {
 		return NULL;
 	}
@@ -323,7 +321,7 @@ int pdu_processor_stop()
 		double_list_free(&pprocessor->auth_list);
 		
 		while ((pnode1 = double_list_get_from_head(&pprocessor->fragmented_list)) != NULL)
-			pdu_processor_free_call(pnode1->pdata);
+			pdu_processor_free_call(static_cast<DCERPC_CALL *>(pnode1->pdata));
 		double_list_free(&pprocessor->fragmented_list);
 		lib_buffer_put(g_processor_allocator, pprocessor);
 	}
@@ -336,7 +334,7 @@ int pdu_processor_stop()
 		vstack_push(&stack, ((PROC_PLUGIN*)(pnode->pdata))->file_name);
 	}
 	while (FALSE == vstack_is_empty(&stack)) {
-        pdu_processor_unload_library(vstack_get_top(&stack));
+		pdu_processor_unload_library(static_cast<char *>(vstack_get_top(&stack)));
         vstack_pop(&stack);
     }
 	vstack_free(&stack);
@@ -448,10 +446,9 @@ static DCERPC_INTERFACE* pdu_processor_find_interface_by_uuid(
 PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port)
 {
 	DOUBLE_LIST_NODE *pnode;
-	PDU_PROCESSOR *pprocessor;
 	DCERPC_ENDPOINT *pendpoint;
 	
-	pprocessor = lib_buffer_get(g_processor_allocator);
+	auto pprocessor = static_cast<PDU_PROCESSOR *>(lib_buffer_get(g_processor_allocator));
 	if (NULL == pprocessor) {
 		return NULL;
 	}
@@ -857,9 +854,8 @@ static BOOL pdu_processor_ncacn_push_with_auth(DATA_BLOB *pblob,
 
 static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
-	static const uint8_t zeros[4];
+	static constexpr uint8_t zeros[4] = {};
 	
 	/* setup a bind_ack */
 	pdu_processor_init_hdr(&pkt, pcall->b_bigendian);
@@ -871,10 +867,10 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.context_id = 0;
 	pkt.payload.fault.cancel_count = 0;
 	pkt.payload.fault.status = fault_code;
-	pkt.payload.fault.pad.data = const_cast(uint8_t *, zeros);
+	pkt.payload.fault.pad.data = const_cast<uint8_t *>(zeros);
 	pkt.payload.fault.pad.length = sizeof(zeros);
 
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -912,7 +908,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 			" number of connection reached\n");
 		return FALSE;
 	}
-	pauth_ctx = lib_buffer_get(g_auth_allocator);
+	pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(lib_buffer_get(g_auth_allocator));
 	if (NULL == pauth_ctx) {
 		return FALSE;
 	}
@@ -1016,7 +1012,6 @@ static BOOL pdu_processor_auth_bind_ack(DCERPC_CALL *pcall)
 /* return a dcerpc bind_nak */
 static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
 	
@@ -1029,7 +1024,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	pkt.payload.bind_nak.reject_reason = reason;
 	pkt.payload.bind_nak.num_versions = 0;
 
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -1147,7 +1142,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext = NULL;
 	} else {
 		/* add this context to the list of available context_ids */
-		pcontext = lib_buffer_get(g_context_allocator);
+		pcontext = static_cast<DCERPC_CONTEXT *>(lib_buffer_get(g_context_allocator));
 		if (NULL == pcontext) {
 			return pdu_processor_bind_nak(pcall, 0);
 		}
@@ -1240,7 +1235,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (FALSE == b_negotiate) {
 #endif
 		pkt.payload.bind_ack.num_contexts = 1;
-		pkt.payload.bind_ack.ctx_list = malloc(sizeof(DCERPC_ACK_CTX));
+		pkt.payload.bind_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(sizeof(DCERPC_ACK_CTX)));
 		if (NULL == pkt.payload.bind_ack.ctx_list) {
 			if (NULL != pcontext) {
 				pdu_processor_free_context(pcontext);
@@ -1291,7 +1286,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1405,7 +1400,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	uint32_t context_id;
 	DCERPC_BIND *palter;
 	uint32_t extra_flags;
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext;
@@ -1493,7 +1487,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			goto ALTER_ACK;
 		}
 		/* add this context to the list of available context_ids */
-		pcontext = lib_buffer_get(g_context_allocator);
+		pcontext = static_cast<DCERPC_CONTEXT *>(lib_buffer_get(g_context_allocator));
 		if (NULL == pcontext) {
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
@@ -1571,7 +1565,7 @@ ALTER_ACK:
 	pkt.payload.alter_ack.secondary_address[0] = '\0';
 	
 	pkt.payload.alter_ack.num_contexts = 1;
-	pkt.payload.alter_ack.ctx_list = malloc(sizeof(DCERPC_ACK_CTX));
+	pkt.payload.alter_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(sizeof(DCERPC_ACK_CTX)));
 	if (NULL == pkt.payload.alter_ack.ctx_list) {
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -1596,7 +1590,7 @@ ALTER_ACK:
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1745,8 +1739,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 		return FALSE;
 	}
 	memcpy(pdata, pblob->data, pblob->length);
-	memcpy(pdata + pblob->length, creds2.data, creds2.length);
-	pblob->data = pdata;
+	memcpy(static_cast<char *>(pdata) + pblob->length, creds2.data, creds2.length);
+	pblob->vdata = pdata;
 	pblob->length += creds2.length;
 	
 	return TRUE;
@@ -1769,7 +1763,6 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	NDR_PUSH ndr_push;
 	uint32_t chunk_size;
 	uint32_t total_length;
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	DCERPC_REQUEST *prequest;
 	
@@ -1829,7 +1822,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	chunk_size -= chunk_size % 16;
 
 	do {
-		pblob_node = lib_buffer_get(g_bnode_allocator);
+		auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 		if (NULL == pblob_node) {
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
@@ -1912,7 +1905,7 @@ static uint32_t pdu_processor_apply_async_id()
 		return 0;
 	}
 	pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
-	pasync_node = lib_buffer_get(g_async_allocator);
+	pasync_node = static_cast<ASYNC_NODE *>(lib_buffer_get(g_async_allocator));
 	if (NULL == pasync_node) {
 		return 0;
 	}
@@ -1955,7 +1948,7 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 		return;
 	}
 	pthread_mutex_lock(&g_async_lock);
-	ppasync_node = int_hash_query(g_async_hash, async_id);
+	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppasync_node || NULL != *ppasync_node) {
 		pthread_mutex_unlock(&g_async_lock);
 		return;
@@ -1983,7 +1976,7 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 		return;
 	}
 	pthread_mutex_lock(&g_async_lock);
-	ppasync_node = int_hash_query(g_async_hash, async_id);
+	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppasync_node || NULL != *ppasync_node) {
 		pthread_mutex_unlock(&g_async_lock);
 		return;
@@ -2012,7 +2005,7 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 	
 BUILD_BEGIN:
 	pthread_mutex_lock(&g_async_lock);
-	ppasync_node = int_hash_query(g_async_hash, async_id);
+	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppasync_node) {
 		pthread_mutex_unlock(&g_async_lock);
 		return FALSE;
@@ -2222,7 +2215,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 		}
 	}
 	if (0 != async_id) {
-		ppasync_node = int_hash_query(g_async_hash, async_id);
+		ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
 		if (NULL != ppasync_node && NULL != *ppasync_node) {
 			b_cancel = TRUE;
 			int_hash_remove(g_async_hash, async_id);
@@ -2279,7 +2272,6 @@ void pdu_processor_rts_echo(char *pbuff)
 
 BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
 	/* setup a echo */
@@ -2292,7 +2284,7 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 0;
 	pkt.payload.rts.commands = NULL;
 
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2592,11 +2584,9 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(
 
 static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
-	
-	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2610,7 +2600,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = malloc(sizeof(RTS_CMD));
+	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 		return FALSE;
@@ -2636,11 +2626,9 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
-	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2654,7 +2642,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 3;
-	pkt.payload.rts.commands = malloc(3*sizeof(RTS_CMD));
+	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(3 * sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 		return FALSE;
@@ -2684,11 +2672,9 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 
 BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
-	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2702,7 +2688,7 @@ BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = malloc(sizeof(RTS_CMD));
+	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 		return FALSE;
@@ -2727,11 +2713,9 @@ BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
-	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2745,7 +2729,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_RECYCLE_CHANNEL;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = malloc(sizeof(RTS_CMD));
+	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 		return FALSE;
@@ -2770,11 +2754,9 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
-	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2788,7 +2770,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 2;
-	pkt.payload.rts.commands = malloc(2*sizeof(RTS_CMD));
+	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(2 * sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 		return FALSE;
@@ -2815,11 +2797,9 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
-	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2833,7 +2813,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_EOF;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = malloc(sizeof(RTS_CMD));
+	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 		return FALSE;
@@ -2859,11 +2839,9 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	DCERPC_CALL *pcall, uint32_t bytes_received,
 	uint32_t available_window, const char *channel_cookie)
 {
-	BLOB_NODE *pblob_node;
 	DCERPC_NCACN_PACKET pkt;
 	
-	
-	pblob_node = lib_buffer_get(g_bnode_allocator);
+	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2877,7 +2855,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_OTHER_CMD;
 	pkt.payload.rts.num = 2;
-	pkt.payload.rts.commands = malloc(2*sizeof(RTS_CMD));
+	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(2 * sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 		return FALSE;
@@ -3298,7 +3276,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				memcpy(pdata, prequest->stub_and_verifier.data,
 					prequest->stub_and_verifier.length);
 				free(prequest->stub_and_verifier.data);
-				prequest->stub_and_verifier.data = pdata;
+				prequest->stub_and_verifier.vdata = pdata;
 				pcall->alloc_size = alloc_size;
 			}
 		} else {
@@ -3360,7 +3338,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				memcpy(pdata, prequestx->stub_and_verifier.data,
 					prequestx->stub_and_verifier.length);
 				free(prequestx->stub_and_verifier.data);
-				prequestx->stub_and_verifier.data = pdata;
+				prequestx->stub_and_verifier.vdata = pdata;
 				pcallx->alloc_size = alloc_size;
 			}
 				
@@ -3454,7 +3432,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 			return pendpoint;
 		}
 	}
-	pendpoint = malloc(sizeof(DCERPC_ENDPOINT));
+	pendpoint = static_cast<DCERPC_ENDPOINT *>(malloc(sizeof(*pendpoint)));
 	if (NULL == pendpoint) {
 		return NULL;
 	}
@@ -3501,7 +3479,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 		}
 	}
 	
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(*pnode)));
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -3511,7 +3489,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 		free(pnode);
 		return FALSE;
 	}
-	pif_node = malloc(sizeof(INTERFACE_NODE));
+	pif_node = static_cast<INTERFACE_NODE *>(malloc(sizeof(*pif_node)));
 	if (NULL == pif_node) {
 		free(pnode->pdata);
 		free(pnode);
@@ -3521,7 +3499,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	double_list_append_as_tail(&pendpoint->interface_list, pnode);
 	pif_node->node.pdata = pif_node;
 	pif_node->pendpoint = pendpoint;
-	pif_node->pinterface = pnode->pdata;
+	pif_node->pinterface = static_cast<DCERPC_INTERFACE *>(pnode->pdata);
 	double_list_append_as_tail(&g_cur_plugin->interface_list, &pif_node->node);
 	return TRUE;
 }
@@ -3722,66 +3700,66 @@ static void* pdu_processor_queryservice(char *service)
 		return NULL;
 	}
 	if (strcmp(service, "register_endpoint") == 0) {
-		return pdu_processor_register_endpoint;
+		return reinterpret_cast<void *>(pdu_processor_register_endpoint);
 	}
 	if (strcmp(service, "register_interface") == 0) {
-		return pdu_processor_register_interface;
+		return reinterpret_cast<void *>(pdu_processor_register_interface);
 	}
 	if (strcmp(service, "register_talk") == 0) {
-		return pdu_processor_register_talk;
+		return reinterpret_cast<void *>(pdu_processor_register_talk);
 	}
 	if (strcmp(service, "get_host_ID") == 0) {
-		return pdu_processor_get_host_ID;
+		return reinterpret_cast<void *>(pdu_processor_get_host_ID);
 	}
 	if (strcmp(service, "get_default_domain") == 0) {
-		return pdu_processor_get_default_domain;
+		return reinterpret_cast<void *>(pdu_processor_get_default_domain);
 	}
 	if (strcmp(service, "get_plugin_name") == 0) {
-		return pdu_processor_get_plugin_name;
+		return reinterpret_cast<void *>(pdu_processor_get_plugin_name);
 	}
 	if (strcmp(service, "get_config_path") == 0) {
-		return pdu_processor_get_config_path;
+		return reinterpret_cast<void *>(pdu_processor_get_config_path);
 	}
 	if (strcmp(service, "get_data_path") == 0) {
-		return pdu_processor_get_data_path;
+		return reinterpret_cast<void *>(pdu_processor_get_data_path);
 	}
 	if (strcmp(service, "get_state_path") == 0)
-		return pdu_processor_get_state_path;
+		return reinterpret_cast<void *>(pdu_processor_get_state_path);
 	if (strcmp(service, "get_context_num") == 0) {
-		return pdu_processor_get_context_num;
+		return reinterpret_cast<void *>(pdu_processor_get_context_num);
 	}
 	if (strcmp(service, "get_binding_handle") == 0) {
-		return pdu_processor_get_binding_handle;
+		return reinterpret_cast<void *>(pdu_processor_get_binding_handle);
 	}
 	if (strcmp(service, "get_rpc_info") == 0) {
-		return pdu_processor_get_rpc_info;
+		return reinterpret_cast<void *>(pdu_processor_get_rpc_info);
 	}
 	if (strcmp(service, "is_rpc_bigendian") == 0) {
-		return pdu_processor_is_rpc_bigendian;
+		return reinterpret_cast<void *>(pdu_processor_is_rpc_bigendian);
 	}
 	if (strcmp(service, "ndr_stack_alloc") == 0) {
-		return pdu_processor_ndr_stack_alloc;
+		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);
 	}
 	if (strcmp(service, "apply_async_id") == 0) {
-		return pdu_processor_apply_async_id;
+		return reinterpret_cast<void *>(pdu_processor_apply_async_id);
 	}
 	if (strcmp(service, "activate_async_id") == 0) {
-		return pdu_processor_activate_async_id;
+		return reinterpret_cast<void *>(pdu_processor_activate_async_id);
 	}
 	if (strcmp(service, "cancel_async_id") == 0) {
-		return pdu_processor_cancel_async_id;
+		return reinterpret_cast<void *>(pdu_processor_cancel_async_id);
 	}
 	if (strcmp(service, "rpc_build_environment") == 0) {
-		return pdu_processor_rpc_build_environment;
+		return reinterpret_cast<void *>(pdu_processor_rpc_build_environment);
 	}
 	if (strcmp(service, "rpc_new_environment") == 0) {
-		return pdu_processor_rpc_new_environment;
+		return reinterpret_cast<void *>(pdu_processor_rpc_new_environment);
 	}
 	if (strcmp(service, "rpc_free_environment") == 0) {
-		return pdu_processor_rpc_free_environment;
+		return reinterpret_cast<void *>(pdu_processor_rpc_free_environment);
 	}
 	if (strcmp(service, "async_reply") == 0) {
-		return pdu_processor_async_reply;
+		return reinterpret_cast<void *>(pdu_processor_async_reply);
 	}
 	/* check if already exists in the reference list */
 	for (pnode=double_list_get_head(&g_cur_plugin->list_reference);
@@ -3858,7 +3836,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 		dlclose(handle);
 		return PLUGIN_NO_MAIN;
 	}
-	pplugin = malloc(sizeof(PROC_PLUGIN));
+	pplugin = static_cast<PROC_PLUGIN *>(malloc(sizeof(*pplugin)));
     if (NULL == pplugin) {
 		printf("[pdu_processor]: Failed to allocate memory for %s\n", fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
@@ -3878,7 +3856,7 @@ static int pdu_processor_load_library(const char* plugin_name)
 	double_list_append_as_tail(&g_plugin_list, &pplugin->node);
 	g_cur_plugin = pplugin;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs))) {
+	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
 		printf("[pdu_processor]: error executing the plugin's init function "
 			"in %s\n", fake_path);
 		printf("[pdu_processor]: the plugin %s is not loaded\n", fake_path);
@@ -3934,7 +3912,7 @@ void pdu_processor_enum_endpoints(void (*enum_ep)(DCERPC_ENDPOINT*))
 	
 	for (pnode=double_list_get_head(&g_endpoint_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_endpoint_list, pnode)) {
-		enum_ep(pnode->pdata);
+		enum_ep(static_cast<DCERPC_ENDPOINT *>(pnode->pdata));
 	}
 }
 
@@ -3945,7 +3923,7 @@ void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,
 	
 	for (pnode=double_list_get_head(&pendpoint->interface_list); NULL!=pnode;
 		pnode=double_list_get_after(&pendpoint->interface_list, pnode)) {
-		enum_if(pnode->pdata);
+		enum_if(static_cast<DCERPC_INTERFACE *>(pnode->pdata));
 	}
 }
 
