@@ -674,8 +674,6 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 	*pb_partial = FALSE;
 	uint64_t fid_val = folder_id;
 	auto b_private = exmdb_server::is_private();
-	if (b_private)
-		b_hard = TRUE;
 	if (!common_util_get_folder_type(pdb->psqlite, folder_id, &folder_type))
 		return FALSE;
 	if (folder_type == FOLDER_SEARCH) {
@@ -761,20 +759,14 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		}
 	}
 	if (b_normal && b_fai) {
-		/* Note the differing table schemas between private and public schemas */
-		if (b_private)
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-				" message_size, is_associated FROM"
-				" messages WHERE parent_fid=%llu", LLU{fid_val});
-		else
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-				" message_size, is_associated, is_deleted FROM"
-				" messages WHERE parent_fid=%llu", LLU{fid_val});
+		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+		         " message_size, is_associated, is_deleted FROM"
+		         " messages WHERE parent_fid=%llu", LLU{fid_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 3);
+			bool is_deleted = pstmt.col_int64(3);
 			if (!b_hard && is_deleted)
 				continue;
 			uint64_t message_id = sqlite3_column_int64(pstmt, 0);
@@ -813,7 +805,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return FALSE;
 			}
-			if (!b_hard) {
+			if (!b_hard && !b_private) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 				        " WHERE message_id=%llu", LLU{message_id});
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -833,21 +825,15 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		}
 	} else if (b_normal || b_fai) {
 		bool is_associated = !b_normal;
-		if (b_private)
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-				" message_size FROM messages "
-				"WHERE parent_fid=%llu AND is_associated=%d",
-				LLU{fid_val}, is_associated);
-		else
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-				" message_size, is_deleted FROM messages "
-				"WHERE parent_fid=%llu AND is_associated=%d",
-				LLU{fid_val}, is_associated);
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
+		         " message_size, is_deleted FROM messages "
+		         "WHERE parent_fid=%llu AND is_associated=%d",
+		         LLU{fid_val}, is_associated);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			bool is_deleted = b_private ? 0 : sqlite3_column_int64(pstmt, 2);
+			bool is_deleted = pstmt.col_int64(2);
 			if (!b_hard && is_deleted)
 				continue;
 			uint64_t message_id = sqlite3_column_int64(pstmt, 0);
@@ -886,7 +872,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return FALSE;
 			}
-			if (!b_hard) {
+			if (!b_hard && !b_private) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 					" WHERE message_id=%llu", LLU{message_id});
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -1013,13 +999,9 @@ BOOL exmdb_server::delete_folder(const char *dir, uint32_t cpid,
 			return TRUE;
 		}
 		pstmt.finalize();
-		if (exmdb_server::is_private())
-			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM"
-			          " messages WHERE parent_fid=%llu", LLU{fid_val});
-		else
-			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM"
-							" messages WHERE parent_fid=%llu AND"
-							" is_deleted=0", LLU{fid_val});
+		snprintf(sql_string, std::size(sql_string), "SELECT count(*) FROM"
+		         " messages WHERE parent_fid=%llu AND"
+		         " is_deleted=0", LLU{fid_val});
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
@@ -1467,14 +1449,9 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		}
 	}
 	if (b_normal && b_fai) {
-		if (b_private)
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-						" is_associated FROM messages WHERE "
-						"parent_fid=%llu", LLU{fid_val});
-		else
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-						" is_associated FROM messages WHERE "
-						"parent_fid=%llu AND is_deleted=0", LLU{fid_val});
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
+		         " is_associated FROM messages WHERE "
+		         "parent_fid=%llu AND is_deleted=0", LLU{fid_val});
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -1513,16 +1490,10 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 	}
 	if (b_normal || b_fai) {
 		is_associated = !b_normal;
-		if (b_private)
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-			         " FROM messages WHERE parent_fid=%llu"
-			         " AND is_associated=%d", LLU{fid_val},
-			         is_associated);
-		else
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-			         " is_deleted FROM messages WHERE "
-			         "parent_fid=%llu AND is_associated=%d",
-			         LLU{fid_val}, is_associated);
+		snprintf(sql_string, std::size(sql_string), "SELECT message_id,"
+		         " is_deleted FROM messages WHERE "
+		         "parent_fid=%llu AND is_associated=%d",
+		         LLU{fid_val}, is_associated);
 
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
