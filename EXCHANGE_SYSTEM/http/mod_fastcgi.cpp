@@ -167,7 +167,7 @@ static void mod_fastcgi_load_extra_headers(
 			continue;
 		}
 		HX_strupper(tmp_buff);
-		pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+		pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(*pnode)));
 		pnode->pdata = strdup(tmp_buff);
 		double_list_append_as_tail(plist, pnode);
 	}
@@ -194,9 +194,9 @@ int mod_fastcgi_run()
 		return -1;
 	}
 	item_num = list_file_get_item_num(pfile);
-	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+	auto pitem = reinterpret_cast<struct srcitem *>(list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
-		pfnode = malloc(sizeof(FASTCGI_NODE));
+		pfnode = static_cast<FASTCGI_NODE *>(malloc(sizeof(*pfnode)));
 		if (NULL == pfnode) {
 			continue;
 		}
@@ -222,7 +222,7 @@ int mod_fastcgi_run()
 		double_list_append_as_tail(&g_fastcgi_list, &pfnode->node);
 	}
 	list_file_free(pfile);
-	g_context_list = malloc(sizeof(FASTCGI_CONTEXT)*g_context_num);
+	g_context_list = static_cast<FASTCGI_CONTEXT *>(malloc(sizeof(FASTCGI_CONTEXT) * g_context_num));
 	if (NULL == g_context_list) {
 		printf("[mod_fastcgi]: Failed to allocate context list\n");
 		return -2;
@@ -289,11 +289,11 @@ static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_array_uint8(pndr, reinterpret_cast(const uint8_t *, pname), name_len);
+	status = ndr_push_array_uint8(pndr, reinterpret_cast<const uint8_t *>(pname), name_len);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ndr_push_array_uint8(pndr, reinterpret_cast(const uint8_t *, pvalue), val_len);
+	return ndr_push_array_uint8(pndr, reinterpret_cast<const uint8_t *>(pvalue), val_len);
 }
 
 static int mod_fastcgi_push_begin_request(NDR_PUSH *pndr)
@@ -434,7 +434,7 @@ static int mod_fastcgi_push_stdin(NDR_PUSH *pndr,
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_push_array_uint8(pndr, pbuff, length);
+	status = ndr_push_array_uint8(pndr, static_cast<const uint8_t *>(pbuff), length);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -1074,11 +1074,10 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	}
 	for (pnode=double_list_get_head(&pfnode->header_list); NULL!=pnode;
 		pnode=double_list_get_after(&pfnode->header_list, pnode)) {
-		if (TRUE == mod_fastcgi_get_others_field(
-			&phttp->request.f_others, pnode->pdata,
-			tmp_buff, 1024)) {
-			status = mod_fastcgi_push_name_value(
-			&ndr_push, pnode->pdata, tmp_buff);
+		if (mod_fastcgi_get_others_field(&phttp->request.f_others,
+		    static_cast<char *>(pnode->pdata), tmp_buff, 1024)) {
+			status = mod_fastcgi_push_name_value(&ndr_push, 
+			         static_cast<char *>(pnode->pdata), tmp_buff);
 			if (NDR_ERR_SUCCESS != status) {
 				return FALSE;
 			}
@@ -1086,7 +1085,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	}
 	if (FALSE == phttp->pfast_context->b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
-		         static_cast(unsigned long long, phttp->pfast_context->content_length));
+		         static_cast<unsigned long long>(phttp->pfast_context->content_length));
 		status = mod_fastcgi_push_name_value(
 			&ndr_push, "CONTENT_LENGTH", tmp_buff);
 		if (NDR_ERR_SUCCESS != status) {
@@ -1097,7 +1096,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			return FALSE;
 		}
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
-		         static_cast(unsigned long long, node_stat.st_size));
+		         static_cast<unsigned long long>(node_stat.st_size));
 		status = mod_fastcgi_push_name_value(
 			&ndr_push, "CONTENT_LENGTH", tmp_buff);
 		if (NDR_ERR_SUCCESS != status) {
@@ -1168,7 +1167,8 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			goto END_OF_STDIN;
 		}
 		tmp_len = sizeof(tmp_buff);
-		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in, &tmp_len)) != NULL) {
+		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
+		    reinterpret_cast<unsigned int *>(&tmp_len))) != nullptr) {
 			if (tmp_len > phttp->pfast_context->content_length) {
 				stream_backward_reading_ptr(&phttp->stream_in,
 					tmp_len - phttp->pfast_context->content_length);
@@ -1302,8 +1302,8 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			return TRUE;	
 		}
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(
-			&phttp->stream_in, &size))) {
+		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
+		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phttp->pfast_context->cache_size + size >
 				phttp->pfast_context->content_length) {
 				tmp_len = phttp->pfast_context->content_length
@@ -1343,7 +1343,7 @@ CHUNK_BEGIN:
 				phttp->pfast_context->b_end = TRUE;
 				return TRUE;
 			}
-			ptoken = memmem(tmp_buff, size, "\r\n", 2);
+			ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
 			if (NULL == ptoken) {
 				if (1024 == size) {
 					http_parser_log_info(phttp, 8, "fail to "
@@ -1366,8 +1366,8 @@ CHUNK_BEGIN:
 				&phttp->stream_in, tmp_len);
 		}
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(
-			&phttp->stream_in, &size))) {
+		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
+		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phttp->pfast_context->chunk_size >=
 				size + phttp->pfast_context->chunk_offset) {
 				if (size != write(phttp->pfast_context->cache_fd,
@@ -1425,7 +1425,8 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 			return FALSE;
 		}
 		read_len = read(pfast_context->cli_sockd,
-				static_cast(char *, pbuff) + offset, length - offset);
+		           static_cast<char *>(pbuff) + offset,
+		           length - offset);
 		if (read_len <= 0) {
 			return FALSE;
 		}
@@ -1612,8 +1613,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			memcpy(response_buff + response_offset,
 				std_stream.buffer, std_stream.length);
 			response_offset += std_stream.length;
-			pbody = memmem(response_buff,
-				response_offset, "\r\n\r\n", 4);
+			pbody = static_cast<char *>(memmem(response_buff,
+			        response_offset, "\r\n\r\n", 4));
 			if (NULL == pbody) {
 				continue;
 			}
@@ -1630,7 +1631,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				strcpy(status_line, "200 Success");
 			} else {
 				tmp_len = response_offset - (ptoken - response_buff);
-				ptoken1 = memmem(ptoken, tmp_len, "\r\n", 2);
+				ptoken1 = static_cast<char *>(memmem(ptoken, tmp_len, "\r\n", 2));
 				if (NULL == ptoken1 || (tmp_len = ptoken1
 					- ptoken) >= sizeof(status_line)) {
 					http_parser_log_info(phttp, 8, "response header"
