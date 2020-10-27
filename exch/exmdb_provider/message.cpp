@@ -469,8 +469,6 @@ BOOL exmdb_server::delete_messages(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	*pb_partial = FALSE;
-	if (exmdb_server::is_private())
-		b_hard = TRUE;
 	src_val = rop_util_get_gc_value(folder_id);
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type))
 		return FALSE;
@@ -562,7 +560,7 @@ BOOL exmdb_server::delete_messages(const char *dir,
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
-		if (!b_hard) {
+		if (!b_hard && !is_private()) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 			        " WHERE message_id=%llu", LLU{tmp_val});
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -854,12 +852,8 @@ BOOL exmdb_server::check_message_deleted(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	if (exmdb_server::is_private())
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
-		          "FROM messages WHERE message_id=%llu", LLU{mid_val});
-	else
-		snprintf(sql_string, arsizeof(sql_string), "SELECT is_deleted "
-		          "FROM messages WHERE message_id=%llu", LLU{mid_val});
+	snprintf(sql_string, std::size(sql_string), "SELECT is_deleted "
+	         "FROM messages WHERE message_id=%llu", LLU{mid_val});
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;

@@ -310,15 +310,10 @@ BOOL exmdb_server::sum_content(const char *dir, uint64_t folder_id,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (exmdb_server::is_private())
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages WHERE parent_fid=%llu AND "
-			"is_associated=%u", LLU{fid_val}, !!b_fai);
-	else
-		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-			" FROM messages WHERE parent_fid=%llu AND "
-			"(is_associated=%u AND is_deleted=%u)",
-			LLU{fid_val}, !!b_fai, !!b_deleted);
+	snprintf(sql_string, std::size(sql_string), "SELECT count(*)"
+	         " FROM messages WHERE parent_fid=%llu AND "
+	         "(is_associated=%u AND is_deleted=%u)",
+	         LLU{fid_val}, !!b_fai, !!b_deleted);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
@@ -835,22 +830,24 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 	}
+	bool b_deleted = table_flags & TABLE_FLAG_SOFTDELETES;
 	if (exmdb_server::is_private()) {
-		if ((table_flags & TABLE_FLAG_SOFTDELETES) ||
-		    (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION)) {
+		if (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION) {
 			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
 		} else if (table_flags & TABLE_FLAG_ASSOCIATED) {
 			if (!b_search) {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 				        "FROM messages WHERE parent_fid=%llu "
-				        "AND is_associated=1", LLU{fid_val});
+				         "AND is_associated=1 AND is_deleted=%u",
+				         LLU{fid_val}, b_deleted);
 			} else {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT "
 				        "messages.message_id FROM messages"
 				        " JOIN search_result ON "
 				        "search_result.folder_id=%llu AND "
 				        "search_result.message_id=messages.message_id"
-				        " AND messages.is_associated=1", LLU{fid_val});
+				         " AND messages.is_associated=1 AND messages.is_deleted=%u",
+				         LLU{fid_val}, b_deleted);
 			}
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
 			if (conv_id != nullptr) {
@@ -858,25 +855,29 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				encode_hex_binary(conv_id->pb,
 					16, tmp_string, sizeof(tmp_string));
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
-				        "FROM message_properties WHERE proptag=%u AND"
-				        " propval=x'%s'", PR_CONVERSATION_ID,
-				        tmp_string);
+				         "FROM message_properties AS mp INNER JOIN messages AS m "
+				         "WHERE mp.proptag=%u AND mp.propval=x'%s' "
+				         "AND m.is_deleted=%u", PR_CONVERSATION_ID,
+				         tmp_string, b_deleted);
 			} else {
-				strcpy(sql_string, "SELECT message_id"
+				snprintf(sql_string, std::size(sql_string), "SELECT message_id"
 				       " FROM messages WHERE parent_fid IS NOT NULL"
-				       " AND is_associated=0");
+				         " AND is_associated=0 AND is_deleted=%u",
+				         b_deleted);
 			}
 		} else if (!b_search) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 			        "FROM messages WHERE parent_fid=%llu "
-			        "AND is_associated=0", LLU{fid_val});
+			         "AND is_associated=0 AND is_deleted=%u",
+			         LLU{fid_val}, b_deleted);
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			        "messages.message_id FROM messages"
 			        " JOIN search_result ON "
 			        "search_result.folder_id=%llu AND "
 			        "search_result.message_id=messages.message_id"
-			        " AND messages.is_associated=0", LLU{fid_val});
+			         " AND messages.is_associated=0 AND messages.is_deleted=%u",
+			         LLU{fid_val}, b_deleted);
 		}
 	} else if (!(table_flags & TABLE_FLAG_CONVERSATIONMEMBERS)) {
 		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
