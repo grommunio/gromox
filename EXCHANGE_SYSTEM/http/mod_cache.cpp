@@ -87,7 +87,7 @@ static void* scan_work_func(void *pparam)
 		iter = str_hash_iter_init(g_cache_hash);
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
-			ppitem = str_hash_iter_get_value(iter, tmp_key);
+			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, tmp_key));
 			pitem = *ppitem;
 			if (0 != pitem->reference) {
 				continue;
@@ -160,9 +160,9 @@ int mod_cache_run()
 		return -1;
 	}
 	item_num = list_file_get_item_num(pfile);
-	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+	auto pitem = reinterpret_cast<struct srcitem *>(list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
-		pdnode = malloc(sizeof(DIRECTORY_NODE));
+		pdnode = static_cast<DIRECTORY_NODE *>(malloc(sizeof(*pdnode)));
 		if (NULL == pdnode) {
 			continue;
 		}
@@ -181,7 +181,7 @@ int mod_cache_run()
 		double_list_append_as_tail(&g_directory_list, &pdnode->node);
 	}
 	list_file_free(pfile);
-	g_context_list = malloc(sizeof(CACHE_CONTEXT)*g_context_num);
+	g_context_list = static_cast<CACHE_CONTEXT *>(malloc(sizeof(CACHE_CONTEXT) * g_context_num));
 	if (NULL == g_context_list) {
 		printf("[mod_cache]: Failed to allocate context list\n");
 		return -2;
@@ -231,7 +231,7 @@ int mod_cache_stop()
 		iter = str_hash_iter_init(g_cache_hash);
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
-			ppitem = str_hash_iter_get_value(iter, NULL);
+			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, nullptr));
 			free((*ppitem)->blob.data);
 			free(*ppitem);
 		}
@@ -629,7 +629,7 @@ static BOOL mod_cache_parse_range_value(char *value,
 	pcontext->until = 0;
 	pcontext->range_pos = -1;
 	pcontext->range_num = range_num;
-	pcontext->prange = malloc(sizeof(RANGE)*range_num);
+	pcontext->prange = static_cast<RANGE *>(malloc(sizeof(RANGE) * range_num));
 	if (NULL == pcontext->prange) {
 		return FALSE;
 	}
@@ -788,7 +788,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		pcontext->until = node_stat.st_size;
 	}
 	pthread_mutex_lock(&g_hash_lock);
-	ppitem = str_hash_query(g_cache_hash, tmp_path);
+	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash, tmp_path));
 	if (NULL != ppitem) {
 		pitem = *ppitem;
 		if (pitem->ino != node_stat.st_ino ||
@@ -812,7 +812,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		}
 	}
 	pthread_mutex_unlock(&g_hash_lock);
-	pitem = malloc(sizeof(CACHE_ITEM));
+	pitem = static_cast<CACHE_ITEM *>(malloc(sizeof(*pitem)));
 	if (NULL == pitem) {
 		if (NULL != pcontext->prange) {
 			free(pcontext->prange);
@@ -825,7 +825,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	pitem->ino = node_stat.st_ino;
 	pitem->blob.length = node_stat.st_size;
 	pitem->mtime = node_stat.st_mtime;
-	pitem->blob.data = malloc(node_stat.st_size);
+	pitem->blob.data = static_cast<uint8_t *>(malloc(node_stat.st_size));
 	if (NULL == pitem->blob.data) {
 		free(pitem);
 		if (NULL != pcontext->prange) {
@@ -857,7 +857,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	close(fd);
 	pthread_mutex_lock(&g_hash_lock);
-	ppitem = str_hash_query(g_cache_hash, tmp_path);
+	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash, tmp_path));
 	if (NULL == ppitem) {
 		if (1 != str_hash_add(g_cache_hash, tmp_path, &pitem)) {
 			if (FALSE == mod_cache_enlarge_hash()) {
