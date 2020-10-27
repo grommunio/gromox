@@ -2,6 +2,8 @@
 #ifdef __cplusplus
 #	include <cstdint>
 #	include <ctime>
+#	include <string>
+#	include <vector>
 #else
 #	include <stdint.h>
 #	include <time.h>
