@@ -264,63 +264,63 @@ static void* hpm_processor_queryservice(char *service)
 		return NULL;
 	}
 	if (strcmp(service, "register_interface") == 0) {
-		return hpm_processor_register_interface;
+		return reinterpret_cast<void *>(hpm_processor_register_interface);
 	}
 	if (strcmp(service, "register_talk") == 0) {
-		return hpm_processor_register_talk;
+		return reinterpret_cast<void *>(hpm_processor_register_talk);
 	}
 	if (strcmp(service, "get_host_ID") == 0) {
-		return hpm_processor_get_host_ID;
+		return reinterpret_cast<void *>(hpm_processor_get_host_ID);
 	}
 	if (strcmp(service, "get_default_domain") == 0) {
-		return hpm_processor_get_default_domain;
+		return reinterpret_cast<void *>(hpm_processor_get_default_domain);
 	}
 	if (strcmp(service, "get_plugin_name") == 0) {
-		return hpm_processor_get_plugin_name;
+		return reinterpret_cast<void *>(hpm_processor_get_plugin_name);
 	}
 	if (strcmp(service, "get_config_path") == 0) {
-		return hpm_processor_get_config_path;
+		return reinterpret_cast<void *>(hpm_processor_get_config_path);
 	}
 	if (strcmp(service, "get_data_path") == 0) {
-		return hpm_processor_get_data_path;
+		return reinterpret_cast<void *>(hpm_processor_get_data_path);
 	}
 	if (strcmp(service, "get_state_path") == 0)
-		return hpm_processor_get_state_path;
+		return reinterpret_cast<void *>(hpm_processor_get_state_path);
 	if (strcmp(service, "get_context_num") == 0) {
-		return hpm_processor_get_context_num;
+		return reinterpret_cast<void *>(hpm_processor_get_context_num);
 	}
 	if (strcmp(service, "get_request") == 0) {
-		return hpm_processor_get_request;
+		return reinterpret_cast<void *>(hpm_processor_get_request);
 	}
 	if (strcmp(service, "get_auth_info") == 0) {
-		return hpm_processor_get_auth_info;
+		return reinterpret_cast<void *>(hpm_processor_get_auth_info);
 	}
 	if (strcmp(service, "get_connection") == 0) {
-		return hpm_processor_get_connection;
+		return reinterpret_cast<void *>(hpm_processor_get_connection);
 	}
 	if (strcmp(service, "write_response") == 0) {
-		return hpm_processor_write_response;
+		return reinterpret_cast<void *>(hpm_processor_write_response);
 	}
 	if (strcmp(service, "wakeup_context") == 0) {
-		return hpm_processor_wakeup_context;
+		return reinterpret_cast<void *>(hpm_processor_wakeup_context);
 	}
 	if (strcmp(service, "activate_context") == 0) {
-		return hpm_processor_activate_context;
+		return reinterpret_cast<void *>(hpm_processor_activate_context);
 	}
 	if (strcmp(service, "set_context") == 0) {
-		return http_parser_set_context;
+		return reinterpret_cast<void *>(http_parser_set_context);
 	}
 	if (strcmp(service, "set_ep_info") == 0) {
-		return hpm_processor_set_ep_info;
+		return reinterpret_cast<void *>(hpm_processor_set_ep_info);
 	}
 	if (strcmp(service, "ndr_stack_alloc") == 0) {
-		return pdu_processor_ndr_stack_alloc;
+		return reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc);
 	}
 	if (strcmp(service, "rpc_new_environment") == 0) {
-		return pdu_processor_rpc_new_environment;
+		return reinterpret_cast<void *>(pdu_processor_rpc_new_environment);
 	}
 	if (strcmp(service, "rpc_free_environment") == 0) {
-		return pdu_processor_rpc_free_environment;
+		return reinterpret_cast<void *>(pdu_processor_rpc_free_environment);
 	}
 	/* check if already exists in the reference list */
 	for (pnode=double_list_get_head(&g_cur_plugin->list_reference);
@@ -420,7 +420,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 		dlclose(handle);
 		return PLUGIN_NO_MAIN;
 	}
-	pplugin = malloc(sizeof(HPM_PLUGIN));
+	pplugin = static_cast<HPM_PLUGIN *>(malloc(sizeof(*pplugin)));
     if (NULL == pplugin) {
 		printf("[hpm_processor]: Failed to allocate memory for %s\n", fake_path);
 		printf("[hpm_processor]: the plugin %s is not loaded\n", fake_path);
@@ -437,7 +437,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 	double_list_append_as_tail(&g_plugin_list, &pplugin->node);
 	g_cur_plugin = pplugin;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs)) ||
+	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs)) ||
 		NULL == pplugin->interface.preproc ||
 		NULL == pplugin->interface.proc ||
 		NULL == pplugin->interface.retr) {
@@ -459,7 +459,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 
 int hpm_processor_run()
 {
-	g_context_list = malloc(sizeof(HPM_CONTEXT)*g_context_num);
+	g_context_list = static_cast<HPM_CONTEXT *>(malloc(sizeof(HPM_CONTEXT) * g_context_num));
 	if (NULL == g_context_list) {
 		printf("[hpm_processor]: Failed to allocate context list\n");
 		return -1;
@@ -487,7 +487,7 @@ int hpm_processor_stop()
 		vstack_push(&stack, ((HPM_PLUGIN*)(pnode->pdata))->file_name);
 	}
 	while (FALSE == vstack_is_empty(&stack)) {
-        hpm_processor_unload_library(vstack_get_top(&stack));
+		hpm_processor_unload_library(static_cast<char *>(vstack_get_top(&stack)));
         vstack_pop(&stack);
     }
 	vstack_free(&stack);
@@ -663,8 +663,8 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			return TRUE;	
 		}
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(
-			&phttp->stream_in, &size))) {
+		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
+		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phpm_ctx->cache_size + size >
 				phpm_ctx->content_length) {
 				tmp_len = phpm_ctx->content_length
@@ -699,7 +699,7 @@ CHUNK_BEGIN:
 				phpm_ctx->b_end = TRUE;
 				return TRUE;
 			}
-			ptoken = memmem(tmp_buff, size, "\r\n", 2);
+			ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
 			if (NULL == ptoken) {
 				if (1024 == size) {
 					http_parser_log_info(phttp, 8, "fail to "
@@ -720,8 +720,8 @@ CHUNK_BEGIN:
 			stream_forward_reading_ptr(&phttp->stream_in, tmp_len);
 		}
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(
-			&phttp->stream_in, &size))) {
+		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
+		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phpm_ctx->chunk_size >= size + phpm_ctx->chunk_offset) {
 				if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
 					http_parser_log_info(phttp, 8, "fail to "
@@ -785,8 +785,9 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 			if (NULL == pcontent) {
 				return FALSE;
 			}
-			if (phpm_ctx->content_length != stream_peek_buffer(
-				&phttp->stream_in, pcontent, phpm_ctx->content_length)) {
+			if (stream_peek_buffer(&phttp->stream_in,
+			    static_cast<char *>(pcontent),
+			    phpm_ctx->content_length) != phpm_ctx->content_length) {
 				free(pcontent);
 				return FALSE;
 			}
