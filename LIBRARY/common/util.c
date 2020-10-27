@@ -819,7 +819,7 @@ char* itvltoa(long interval, char *string)
 long atoitvl(const char *string)
 {
 	char *pbegin;
-	register char tmp;
+	char tmp;
 	long days, hours, minutes, seconds;
 	long i, length, ret_val;
 	char temp_buff[1028];

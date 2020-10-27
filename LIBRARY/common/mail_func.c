@@ -1012,7 +1012,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 char* find_url(char *buf, size_t howmuch, int *count)
 {
 	char *s1, *s2;
-	register char tmp;
+	char tmp;
 
 	for (s1=buf; howmuch>6; s1++) {
 		switch (*s1) {
@@ -1065,7 +1065,7 @@ char* find_mail_address(char *buf, size_t howmuch, int *count)
 {
 	long i, j, stop;
 	long at_pos, begin_pos, end_pos;
-	register char tmp;
+	char tmp;
 
 	for (i=0; i<howmuch; i++) {
 		if ('@' == buf[i]) {

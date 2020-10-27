@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-const struct state* tz_alloc(register const char *name);
+extern const struct state *tz_alloc(const char *name);
 void tz_free(const struct state* const sp);
 
 struct tm* tz_localtime(const struct state* const sp,
