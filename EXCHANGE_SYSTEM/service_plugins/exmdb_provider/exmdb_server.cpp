@@ -61,10 +61,8 @@ void exmdb_server_free()
 void exmdb_server_build_environment(BOOL b_local,
 	BOOL b_private, const char *dir)
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
 	common_util_build_tls();
-	pctx = lib_buffer_get(g_ctx_allocator);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(lib_buffer_get(g_ctx_allocator));
 	pctx->b_local = b_local;
 	if (FALSE == b_local) {
 		alloc_context_init(&pctx->alloc_ctx);
@@ -77,9 +75,7 @@ void exmdb_server_build_environment(BOOL b_local,
 
 void exmdb_server_free_environment()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	if (FALSE == pctx->b_local) {
 		alloc_context_free(&pctx->alloc_ctx);
 	}
@@ -94,9 +90,7 @@ void exmdb_server_set_remote_id(const char *remote_id)
 
 ALLOC_CONTEXT* exmdb_server_get_alloc_context()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	if (NULL == pctx || TRUE == pctx->b_local) {
 		return NULL;
 	}
@@ -105,7 +99,7 @@ ALLOC_CONTEXT* exmdb_server_get_alloc_context()
 
 const char* exmdb_server_get_remote_id()
 {
-	return pthread_getspecific(g_id_key);
+	return static_cast<char *>(pthread_getspecific(g_id_key));
 }
 
 void exmdb_server_set_public_username(const char *username)
@@ -115,16 +109,14 @@ void exmdb_server_set_public_username(const char *username)
 
 const char* exmdb_server_get_public_username()
 {
-	return pthread_getspecific(g_public_username_key);
+	return static_cast<char *>(pthread_getspecific(g_public_username_key));
 }
 
 /* can not be called in local rpc thread without
 	invoking exmdb_server_build_environment before! */
 BOOL exmdb_server_check_private()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	return pctx->b_private;
 }
 
@@ -132,9 +124,7 @@ BOOL exmdb_server_check_private()
 	invoking exmdb_server_build_environment before! */
 const char* exmdb_server_get_dir()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	return pctx->dir;
 }
 
@@ -142,18 +132,15 @@ const char* exmdb_server_get_dir()
 	invoking exmdb_server_build_environment before! */
 void exmdb_server_set_dir(const char *dir)
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	pctx->dir = dir;
 }
 
 int exmdb_server_get_account_id()
 {
 	int account_id;
-	ENVIRONMENT_CONTEXT *pctx;
 	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	if (pctx->account_id < 0) {
 		if (TRUE == pctx->b_private) {
 			if (TRUE == common_util_get_id_from_maildir(
@@ -172,9 +159,7 @@ int exmdb_server_get_account_id()
 
 const GUID* exmdb_server_get_handle()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	if (NULL == pctx || FALSE == pctx->b_local) {
 		return NULL;
 	}
@@ -183,5 +168,5 @@ const GUID* exmdb_server_get_handle()
 
 void exmdb_server_register_proc(void *pproc)
 {
-	exmdb_server_event_proc = pproc;
+	exmdb_server_event_proc = reinterpret_cast<decltype(exmdb_server_event_proc)>(pproc);
 }
