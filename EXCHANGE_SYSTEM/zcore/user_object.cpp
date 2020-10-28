@@ -9,9 +9,7 @@
 
 USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 {
-	USER_OBJECT *puser;
-	
-	puser = malloc(sizeof(USER_OBJECT));
+	auto puser = static_cast<USER_OBJECT *>(malloc(sizeof(USER_OBJECT)));
 	if (NULL == puser) {
 		return NULL;
 	}
@@ -78,8 +76,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 			common_util_index_proptags(pproptags,
 			PROP_TAG_ACCOUNT) >= 0) {
 			ppropvals->count = 0;
-			ppropvals->ppropval = common_util_alloc(
-							3*sizeof(TAGGED_PROPVAL));
+			ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+			                      3 * sizeof(TAGGED_PROPVAL)));
 			if (NULL == ppropvals->ppropval) {
 				return FALSE;
 			}
@@ -88,14 +86,14 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_OBJECTTYPE;
 				ppropvals->ppropval[ppropvals->count].pvalue =
-					const_cast(uint32_t *, &fake_type);
+					const_cast<uint32_t *>(&fake_type);
 				ppropvals->count ++;
 			}
 			if (common_util_index_proptags(pproptags,
 				PROP_TAG_ADDRESSTYPE) >= 0) {
 				ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_ADDRESSTYPE;
-				ppropvals->ppropval[ppropvals->count].pvalue  = const_cast(char *, "EX");
+				ppropvals->ppropval[ppropvals->count].pvalue = const_cast<char *>("EX");
 				ppropvals->count ++;
 			}
 			if ((common_util_index_proptags(pproptags,
@@ -171,8 +169,8 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 		}
 		return TRUE;
 	}
-	ppropvals->ppropval = common_util_alloc(
-	sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		ab_tree_put_base(pbase);
 		return FALSE;
