@@ -305,38 +305,23 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		pthread_setname_np(g_scan_id, "midb_agent");
 
-		if (FALSE == register_service("list_mail", list_mail) ||
-			FALSE == register_service("delete_mail", delete_mail) ||
-			FALSE == register_service("get_mail_id", get_mail_id) ||
-			FALSE == register_service("get_mail_uid", get_mail_uid) ||
-			FALSE == register_service("summary_folder", summary_folder) ||
-			FALSE == register_service("make_folder", make_folder) ||
-			FALSE == register_service("remove_folder", remove_folder) ||
-			FALSE == register_service("ping_mailbox", ping_mailbox) ||
-			FALSE == register_service("rename_folder", rename_folder) ||
-			FALSE == register_service("subscribe_folder", subscribe_folder) ||
-			FALSE == register_service("unsubscribe_folder", unsubscribe_folder) ||
-			FALSE == register_service("enum_folders", enum_folders) ||
-			FALSE == register_service("enum_subscriptions", enum_subscriptions) ||
-			FALSE == register_service("insert_mail", insert_mail) ||
-			FALSE == register_service("remove_mail", remove_mail) ||
-			FALSE == register_service("list_simple", list_simple) ||
-			FALSE == register_service("list_deleted", list_deleted) ||
-			FALSE == register_service("list_detail", list_detail) ||
-			FALSE == register_service("fetch_simple", fetch_simple) ||
-			FALSE == register_service("fetch_detail", fetch_detail) ||
-			FALSE == register_service("fetch_simple_uid", fetch_simple_uid) ||
-			FALSE == register_service("fetch_detail_uid", fetch_detail_uid) ||
-			FALSE == register_service("free_result", free_result) ||
-			FALSE == register_service("set_mail_flags", set_mail_flags) ||
-			FALSE == register_service("unset_mail_flags", unset_mail_flags) ||
-			FALSE == register_service("get_mail_flags", get_mail_flags) ||
-			FALSE == register_service("copy_mail", copy_mail) ||
-			FALSE == register_service("imap_search", imap_search) ||
-			FALSE == register_service("imap_search_uid", imap_search_uid)) {
+#define E(f) register_service(#f, (f))
+		if (!E(list_mail) || !E(delete_mail) || !E(get_mail_id) ||
+		    !E(get_mail_uid) || !E(summary_folder) || !E(make_folder) ||
+		    !E(remove_folder) || !E(ping_mailbox) ||
+		    !E(rename_folder) || !E(subscribe_folder) ||
+		    !E(unsubscribe_folder) || !E(enum_folders) ||
+		    !E(enum_subscriptions) || !E(insert_mail) ||
+		    !E(remove_mail) || !E(list_simple) || !E(list_deleted) ||
+		    !E(list_detail) || !E(fetch_simple) || !E(fetch_detail) ||
+		    !E(fetch_simple_uid) || !E(fetch_detail_uid) ||
+		    !E(free_result) || !E(set_mail_flags) ||
+		    !E(unset_mail_flags) || !E(get_mail_flags) ||
+		    !E(copy_mail) || !E(imap_search) || !E(imap_search_uid)) {
 			printf("[midb_agent]: failed to register services\n");
 			return FALSE;
 		}
+#undef E
 
 		if (FALSE == register_talk(console_talk)) {
 			printf("[midb_agent]: failed to register console talk\n");
