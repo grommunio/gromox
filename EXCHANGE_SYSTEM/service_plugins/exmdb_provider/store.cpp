@@ -67,8 +67,7 @@ BOOL exmdb_server_get_all_named_propids(
 		ppropids->ppropid = NULL;
 		return TRUE;
 	}
-	ppropids->ppropid = common_util_alloc(
-			sizeof(uint16_t)*total_count);
+	ppropids->ppropid = static_cast<uint16_t *>(common_util_alloc(sizeof(uint16_t) * total_count));
 	if (NULL == ppropids->ppropid) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -348,10 +347,8 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (TRUE == common_util_check_mlist_include(
-			sqlite3_column_text(pstmt, 0), username)) {
+		if (common_util_check_mlist_include(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)), username))
 			*ppermission |= sqlite3_column_int64(pstmt, 1);
-		}
 	}
 	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
@@ -359,7 +356,7 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	pfile = list_file_init(temp_path, "%s:256");
 	if (NULL != pfile) {
 		item_num = list_file_get_item_num(pfile);
-		const struct dlgitem *pitem = reinterpret_cast(struct dlgitem *, list_file_get_list(pfile));
+		auto pitem = reinterpret_cast<struct dlgitem *>(list_file_get_list(pfile));
 		for (i=0; i<item_num; i++) {
 			if (strcasecmp(pitem[i].user, username) == 0 ||
 			    common_util_check_mlist_include(pitem[i].user, username)) {
@@ -466,9 +463,9 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	sqlite3_finalize(pstmt);
 	sprintf(sql_string, "INSERT INTO allocated_eids "
 	          "VALUES (%llu, %llu, %lld, 0)",
-	          static_cast(unsigned long long, tmp_eid),
-	          static_cast(unsigned long long, tmp_eid + count),
-	          static_cast(long long, time(nullptr)));
+	          static_cast<unsigned long long>(tmp_eid),
+	          static_cast<unsigned long long>(tmp_eid + count),
+	          static_cast<long long>(time(nullptr)));
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		db_engine_put_db(pdb);
@@ -504,7 +501,7 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	} else {
 		last_id = ((NSUB_NODE*)pnode->pdata)->sub_id;
 	}
-	pnsub = malloc(sizeof(NSUB_NODE));
+	pnsub = static_cast<NSUB_NODE *>(malloc(sizeof(*pnsub)));
 	if (NULL == pnsub) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -619,7 +616,7 @@ static BOOL table_check_address_in_contact_folder(
 	sqlite3_reset(pstmt_subfolder);
 	sqlite3_bind_int64(pstmt_subfolder, 1, folder_id);
 	while (SQLITE_ROW == sqlite3_step(pstmt_subfolder)) {
-		pnode = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
+		pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode)));
 		if (NULL == pnode) {
 			return FALSE;
 		}
