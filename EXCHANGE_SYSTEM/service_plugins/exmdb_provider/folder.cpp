@@ -8,8 +8,8 @@
 #include "proptags.h"
 #include <string.h>
 #include <stdio.h>
-#define LLD(x) static_cast(long long, (x))
-#define LLU(x) static_cast(unsigned long long, (x))
+#define LLD(x) static_cast<long long>(x)
+#define LLU(x) static_cast<unsigned long long>(x)
 
 #define MAXIMUM_RECIEVE_FOLDERS				2000
 #define MAXIMUM_STORE_FOLDERS				10000
@@ -206,8 +206,8 @@ BOOL exmdb_server_get_folder_class_table(
 		ptable->pparray = NULL;
 		return TRUE;
 	}
-	ptable->pparray = common_util_alloc(
-		sizeof(TPROPVAL_ARRAY*)*total_count);
+	ptable->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
+	                  sizeof(TPROPVAL_ARRAY *) * total_count));
 	if (NULL == ptable->pparray) {
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -220,14 +220,14 @@ BOOL exmdb_server_get_folder_class_table(
 	}
 	ptable->count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		ppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
+		ppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(*ppropvals)));
 		if (NULL == ppropvals) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
 		ppropvals->count = 3;
-		ppropvals->ppropval = common_util_alloc(3*sizeof(TAGGED_PROPVAL));
+		ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(3 * sizeof(TAGGED_PROPVAL)));
 		if (NULL == ppropvals->ppropval) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -244,7 +244,7 @@ BOOL exmdb_server_get_folder_class_table(
 			rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 1));
 		ppropvals->ppropval[1].proptag = PROP_TAG_MESSAGECLASS_STRING8;
 		ppropvals->ppropval[1].pvalue =
-			common_util_dup(sqlite3_column_text(pstmt, 0));
+			common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
 		if (NULL == ppropvals->ppropval[1].pvalue) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -330,8 +330,8 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	}
 	pset->count = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
-	pset->pparray = common_util_alloc(sizeof(
-				TPROPVAL_ARRAY*)*pset->count);
+	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
+	                sizeof(TPROPVAL_ARRAY *) * pset->count));
 	if (NULL == pset->pparray) {
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -362,7 +362,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
-		ppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
+		ppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(*ppropvals)));
 		if (NULL == ppropvals) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -372,8 +372,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		}
 		pset->pparray[i] = ppropvals;
 		ppropvals->count = 0;
-		ppropvals->ppropval = common_util_alloc(
-						sizeof(TAGGED_PROPVAL)*5);
+		ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 5));
 		if (NULL == ppropvals->ppropval) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
@@ -400,7 +399,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			ppropvals->ppropval[ppropvals->count].proptag =
 										PROP_TAG_MIDSTRING;
 			ppropvals->ppropval[ppropvals->count].pvalue =
-				common_util_dup(sqlite3_column_text(pstmt, 2));
+				common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 2)));
 			if (NULL == ppropvals->ppropval[ppropvals->count].pvalue) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
@@ -608,7 +607,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	}
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_PARENTFOLDERID);
-	pname = common_util_get_propvals(pproperties, PROP_TAG_DISPLAYNAME);
+	pname = static_cast<char *>(common_util_get_propvals(pproperties, PROP_TAG_DISPLAYNAME));
 	if (NULL == pname) {
 		*pfolder_id = 0;
 		return TRUE;
@@ -739,8 +738,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		tmp_val = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, tmp_val);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (0 == strcasecmp(pname,
-				sqlite3_column_text(pstmt1, 0))) {
+			if (strcasecmp(pname, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 0))) == 0) {
 				sqlite3_finalize(pstmt1);
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
@@ -924,8 +922,8 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 		*pproptags = tmp_proptags;
 	} else {
 		pproptags->count = tmp_proptags.count + 1;
-		pproptags->pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+		pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+		                      sizeof(uint32_t) * pproptags->count));
 		if (NULL == pproptags->pproptag) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -2714,7 +2712,7 @@ BOOL exmdb_server_get_search_criteria(
 			sqlite3_column_blob(pstmt, 2),
 			sqlite3_column_bytes(pstmt, 2),
 			common_util_alloc, 0);
-		*pprestriction = common_util_alloc(sizeof(RESTRICTION));
+		*pprestriction = static_cast<RESTRICTION *>(common_util_alloc(sizeof(**pprestriction)));
 		if (NULL == *pprestriction) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -2881,7 +2879,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		if (0 == original_flags) {
 			goto CRITERIA_FAILURE;
 		}
-		prestriction = common_util_alloc(sizeof(RESTRICTION));
+		prestriction = static_cast<RESTRICTION *>(common_util_alloc(sizeof(*prestriction)));
 		if (NULL == prestriction) {
 			goto CRITERIA_FAILURE;
 		}
@@ -2906,8 +2904,8 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	}
 	if (pfolder_ids->count > 0) {
 		folder_ids.count = 0;
-		folder_ids.pll = common_util_alloc(
-			sizeof(uint64_t)*pfolder_ids->count);
+		folder_ids.pll = static_cast<uint64_t *>(common_util_alloc(
+		                 sizeof(uint64_t) * pfolder_ids->count));
 		if (NULL == folder_ids.pll) {
 			goto CRITERIA_FAILURE;
 		}
@@ -3081,17 +3079,15 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_ENTRYID);
 			if (NULL != pvalue) {
-				if (FALSE == common_util_addressbook_entryid_to_username(
-					pvalue, username)) {
+				if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username))
 					continue;
-				}
 			} else {
 				pvalue = common_util_get_propvals(
 					&prow[i].propvals, PROP_TAG_SMTPADDRESS);
 				if (NULL == pvalue) {
 					continue;
 				}
-				strncpy(username, pvalue, sizeof(username));
+				strncpy(username, static_cast<char *>(pvalue), sizeof(username));
 			}
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);
@@ -3406,10 +3402,10 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				db_engine_put_db(pdb);
 				return TRUE;
 			}
-			pname = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULENAME);
-			pprovider = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEPROVIDER);
+			pname = static_cast<char *>(common_util_get_propvals(
+			        &prow[i].propvals, PROP_TAG_RULENAME));
+			pprovider = static_cast<char *>(common_util_get_propvals(
+			            &prow[i].propvals, PROP_TAG_RULEPROVIDER));
 			if (NULL == pprovider) {
 				continue;
 			}
@@ -3437,14 +3433,14 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			} else {
 				state = *(uint32_t*)pvalue;
 			}
-			plevel = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULELEVEL);
-			puser_flags = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEUSERFLAGS);
-			pprovider_bin = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEPROVIDERDATA);
-			pcondition = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULECONDITION);
+			plevel = static_cast<uint32_t *>(common_util_get_propvals(
+			         &prow[i].propvals, PROP_TAG_RULELEVEL));
+			puser_flags = static_cast<uint32_t *>(common_util_get_propvals(
+			              &prow[i].propvals, PROP_TAG_RULEUSERFLAGS));
+			pprovider_bin = static_cast<BINARY *>(common_util_get_propvals(
+			                &prow[i].propvals, PROP_TAG_RULEPROVIDERDATA));
+			pcondition = static_cast<RESTRICTION *>(common_util_get_propvals(
+			             &prow[i].propvals, PROP_TAG_RULECONDITION));
 			if (NULL == pcondition) {
 				continue;
 			}
@@ -3455,8 +3451,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				goto RULE_FAILURE;
 			}
 			condition_len = ext_push.offset;
-			paction = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEACTIONS);
+			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
+			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
 			if (NULL == paction) {
 				continue;
 			}
@@ -3528,8 +3524,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				continue;
 			}
 			sqlite3_finalize(pstmt1);
-			pprovider = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEPROVIDER);
+			pprovider = static_cast<char *>(common_util_get_propvals(
+			            &prow[i].propvals, PROP_TAG_RULEPROVIDER));
 			if (NULL != pprovider) {
 				sprintf(sql_string, "UPDATE rules SET"
 				          " provider=? WHERE rule_id=%llu", LLU(rule_id));
@@ -3564,8 +3560,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 					goto RULE_FAILURE;
 				}
 			}
-			plevel = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULELEVEL);
+			plevel = static_cast<uint32_t *>(common_util_get_propvals(
+			         &prow[i].propvals, PROP_TAG_RULELEVEL));
 			if (NULL != plevel) {
 				sprintf(sql_string, "UPDATE rules SET level=%u"
 				        " WHERE rule_id=%llu", *plevel, LLU(rule_id));
@@ -3574,8 +3570,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 					goto RULE_FAILURE;
 				}
 			}
-			puser_flags = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEUSERFLAGS);
+			puser_flags = static_cast<uint32_t *>(common_util_get_propvals(
+			              &prow[i].propvals, PROP_TAG_RULEUSERFLAGS));
 			if (NULL != puser_flags) {
 				sprintf(sql_string, "UPDATE rules SET user_flags=%u"
 				        " WHERE rule_id=%llu", *puser_flags, LLU(rule_id));
@@ -3584,8 +3580,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 					goto RULE_FAILURE;
 				}
 			}
-			pprovider_bin = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEPROVIDERDATA);
+			pprovider_bin = static_cast<BINARY *>(common_util_get_propvals(
+			                &prow[i].propvals, PROP_TAG_RULEPROVIDERDATA));
 			if (NULL != pprovider_bin) {
 				sprintf(sql_string, "UPDATE rules SET "
 				          "provider_data=? WHERE rule_id=%llu", LLU(rule_id));
@@ -3599,8 +3595,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				}
 				sqlite3_finalize(pstmt1);
 			}
-			pcondition = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULECONDITION);
+			pcondition = static_cast<RESTRICTION *>(common_util_get_propvals(
+			             &prow[i].propvals, PROP_TAG_RULECONDITION));
 			if (NULL != pcondition) {
 				ext_buffer_push_init(&ext_push,
 				condition_buff, sizeof(condition_buff), 0);
@@ -3621,8 +3617,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				}
 				sqlite3_finalize(pstmt1);
 			}
-			paction = common_util_get_propvals(
-				&prow[i].propvals, PROP_TAG_RULEACTIONS);
+			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
+			          &prow[i].propvals, PROP_TAG_RULEACTIONS));
 			if (NULL != paction) {
 				ext_buffer_push_init(&ext_push,
 					action_buff, sizeof(action_buff), 0);
