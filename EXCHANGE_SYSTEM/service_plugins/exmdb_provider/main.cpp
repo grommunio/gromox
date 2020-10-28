@@ -378,7 +378,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 
-#define E(f) register_service(#f, f)
+#define E(f) register_service(#f, reinterpret_cast<void *>(f))
 		E(exmdb_client_ping_store);
 		E(exmdb_client_get_all_named_propids);
 		E(exmdb_client_get_named_propids);
@@ -501,8 +501,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		E(exmdb_client_get_public_folder_unread_count);
 #undef E
 		register_service("exmdb_client_register_proc",
-			exmdb_server_register_proc);
-		register_service("pass_service", common_util_pass_service);
+			reinterpret_cast<void *>(exmdb_server_register_proc));
+		register_service("pass_service", reinterpret_cast<void *>(common_util_pass_service));
 		
 		if (FALSE == register_talk(console_talk)) {
 			printf("[exmdb_provider]: failed to register console talk\n");
