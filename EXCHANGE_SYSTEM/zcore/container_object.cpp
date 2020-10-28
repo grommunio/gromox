@@ -16,9 +16,7 @@
 CONTAINER_OBJECT* container_object_create(
 	uint8_t type, CONTAINER_ID id)
 {
-	CONTAINER_OBJECT *pcontainer;
-	
-	pcontainer = malloc(sizeof(CONTAINER_OBJECT));
+	auto pcontainer = static_cast<CONTAINER_OBJECT *>(malloc(sizeof(CONTAINER_OBJECT)));
 	if (NULL == pcontainer) {
 		return NULL;
 	}
@@ -103,45 +101,40 @@ static BOOL container_object_match_contact_message(
 		case FUZZY_LEVEL_FULLSTRING:
 			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (0 == strcasecmp(((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, pvalue)) {
+				if (strcasecmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 			} else {
-				if (0 == strcmp(((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, pvalue)) {
+				if (strcmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
 			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			} else {
-				if (NULL != strstr(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strstr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case FUZZY_LEVEL_PREFIX:
-			len = strlen(((RESTRICTION_CONTENT*)
-				pfilter->pres)->propval.pvalue);
+			len = strlen(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue));
 			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
-				if (0 == strncasecmp(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, len)) {
+				if (strncasecmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    len) == 0)
 					return TRUE;
-				}
 			} else {
-				if (0 == strncmp(pvalue, ((RESTRICTION_CONTENT*)
-					pfilter->pres)->propval.pvalue, len)) {
+				if (strncmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    len) == 0)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		}
@@ -151,18 +144,16 @@ static BOOL container_object_match_contact_message(
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_SMTPADDRESS);
 			if (NULL != pvalue) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_DISPLAYNAME);
 			if (NULL != pvalue) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
-					pfilter->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		}
@@ -232,8 +223,8 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	pinfo = zarafa_server_get_info();
 	handle = object_tree_get_store_handle(
 		pinfo->ptree, TRUE, pinfo->user_id);
-	pstore = object_tree_get_object(
-		pinfo->ptree, handle, &mapi_type);
+	pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
+	         pinfo->ptree, handle, &mapi_type));
 	if (NULL == pstore || MAPI_STORE != mapi_type) {
 		return FALSE;
 	}
@@ -321,14 +312,13 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = common_util_alloc(sizeof(BINARY));
+	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(256);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(256);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
 	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -364,14 +354,13 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = common_util_alloc(sizeof(BINARY));
+	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(256);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(256);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
 	ext_buffer_push_init(&ext_push, pbin->pb, 256, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -441,7 +430,7 @@ BOOL container_object_load_user_table(
 			return FALSE;	
 		}
 		ab_tree_put_base(pbase);
-		pminid_array = malloc(sizeof(LONG_ARRAY));
+		pminid_array = static_cast<LONG_ARRAY *>(malloc(sizeof(*pminid_array)));
 		if (NULL == pminid_array) {
 			return FALSE;
 		}
@@ -451,7 +440,7 @@ BOOL container_object_load_user_table(
 			pminid_array->pl = NULL;
 			return TRUE;
 		}
-		pminid_array->pl = malloc(sizeof(uint32_t)*minid_array.count);
+		pminid_array->pl = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * minid_array.count));
 		if (NULL == pminid_array->pl) {
 			free(pcontainer->contents.pminid_array);
 			pcontainer->contents.pminid_array = NULL;
@@ -533,8 +522,8 @@ BOOL container_object_load_user_table(
 		}
 		handle = object_tree_get_store_handle(
 			pinfo->ptree, TRUE, pinfo->user_id);
-		pstore = object_tree_get_object(
-			pinfo->ptree, handle, &mapi_type);
+		pstore = static_cast<STORE_OBJECT *>(object_tree_get_object(
+		         pinfo->ptree, handle, &mapi_type));
 		if (NULL == pstore || MAPI_STORE != mapi_type) {
 			return FALSE;
 		}
@@ -548,16 +537,16 @@ BOOL container_object_load_user_table(
 	}
 	for (i=0; i<tmp_set.count; i++) {
 		for (j=0; j<3; j++) {
-			pdisplayname = common_util_get_propvals(
-				tmp_set.pparray[i], proptags.pproptag[3*j]);
+			pdisplayname = static_cast<char *>(common_util_get_propvals(
+			               tmp_set.pparray[i], proptags.pproptag[3*j]));
 			if (NULL == pdisplayname) {
-				pdisplayname = common_util_get_propvals(
-					tmp_set.pparray[i], PROP_TAG_DISPLAYNAME);
+				pdisplayname = static_cast<char *>(common_util_get_propvals(
+				               tmp_set.pparray[i], PROP_TAG_DISPLAYNAME));
 			}
-			paddress_type = common_util_get_propvals(
-				tmp_set.pparray[i], proptags.pproptag[3*j+1]);
-			paddress = common_util_get_propvals(
-				tmp_set.pparray[i], proptags.pproptag[3*j+2]);
+			paddress_type = static_cast<char *>(common_util_get_propvals(
+				tmp_set.pparray[i], proptags.pproptag[3*j+1]));
+			paddress = static_cast<char *>(common_util_get_propvals(
+				tmp_set.pparray[i], proptags.pproptag[3*j+2]));
 			if (NULL == paddress || NULL == paddress_type) {
 				continue;
 			}
@@ -589,7 +578,7 @@ BOOL container_object_load_user_table(
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
-			propval.pvalue  = const_cast(char *, "SMTP");
+			propval.pvalue  = const_cast<char *>("SMTP");
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -681,7 +670,7 @@ BOOL container_object_load_user_table(
 			propval.proptag = PROP_TAG_ABPROVIDERID;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 16;
-			tmp_bin.pb = const_cast(uint8_t *, common_util_get_muidzcsab());
+			tmp_bin.pb = const_cast<uint8_t *>(common_util_get_muidzcsab());
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -739,7 +728,7 @@ BOOL container_object_fetch_special_property(
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		static_cast(BINARY *, *ppvalue)->pb = const_cast(uint8_t *, common_util_get_muidecsab());
+		static_cast<BINARY *>(*ppvalue)->pb = const_cast<uint8_t *>(common_util_get_muidecsab());
 		return TRUE;
 	case PROP_TAG_ENTRYID:
 		pvalue = common_util_alloc(sizeof(BINARY));
@@ -752,14 +741,13 @@ BOOL container_object_fetch_special_property(
 		ab_entryid.version = 1;
 		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 		if (SPECIAL_CONTAINER_GAL == special_type) {
-			ab_entryid.px500dn = const_cast(char *, "");
+			ab_entryid.px500dn = const_cast<char *>("");
 		} else {
-			ab_entryid.px500dn = const_cast(char *, "/");
+			ab_entryid.px500dn = const_cast<char *>("/");
 		}
-		((BINARY*)pvalue)->pb = common_util_alloc(128);
-		if (NULL == ((BINARY*)pvalue)->pb) {
+		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(128);
+		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
 			return FALSE;
-		}
 		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 			&ext_push, &ab_entryid)) {
@@ -787,9 +775,9 @@ BOOL container_object_fetch_special_property(
 		return TRUE;
 	case PROP_TAG_DISPLAYNAME:
 		if (SPECIAL_CONTAINER_GAL == special_type) {
-			*ppvalue = const_cast(char *, "Global Address List");
+			*ppvalue = const_cast<char *>("Global Address List");
 		} else {
-			*ppvalue = const_cast(char *, "Gromox Contact Folders");
+			*ppvalue = const_cast<char *>("Gromox Contact Folders");
 		}
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKISMASTER:
@@ -812,8 +800,8 @@ static BOOL container_object_fetch_special_properties(
 	int i;
 	void *pvalue;
 	
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
@@ -851,8 +839,8 @@ static BOOL container_object_fetch_folder_properties(
 	}
 	folder_id = *(uint64_t*)pvalue;
 	pout_propvals->count = 0;
-	pout_propvals->ppropval = common_util_alloc(
-		pproptags->count*sizeof(TAGGED_PROPVAL));
+	pout_propvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+		sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == pout_propvals->ppropval) {
 		return FALSE;
 	}
@@ -866,7 +854,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			((BINARY*)pvalue)->cb = 16;
-			static_cast(BINARY *, pvalue)->pb = const_cast(uint8_t *, common_util_get_muidzcsab());
+			static_cast<BINARY *>(pvalue)->pb = const_cast<uint8_t *>(common_util_get_muidzcsab());
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
@@ -1061,7 +1049,7 @@ void container_object_get_container_table_all_proptags(
 	};
 	
 	pproptags->count = 7;
-	pproptags->pproptag = const_cast(uint32_t *, proptag_buff);
+	pproptags->pproptag = const_cast<uint32_t *>(proptag_buff);
 }
 
 static BOOL container_object_get_specialtables_from_node(
@@ -1074,7 +1062,7 @@ static BOOL container_object_get_specialtables_from_node(
 	count = (pset->count / 100 + 1) * 100;
 	if (pset->count + 1 >= count) {
 		count += 100;
-		pparray = common_util_alloc(count*sizeof(TPROPVAL_ARRAY*));
+		pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * count));
 		if (NULL == pparray) {
 			return FALSE;
 		}
@@ -1082,8 +1070,8 @@ static BOOL container_object_get_specialtables_from_node(
 			pset->count*sizeof(TPROPVAL_ARRAY*));
 		pset->pparray = pparray;
 	}
-	pset->pparray[pset->count] =
-		common_util_alloc(sizeof(TPROPVAL_ARRAY));
+	pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+		common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 	if (NULL == pset->pparray[pset->count]) {
 		return FALSE;
 	}
@@ -1145,14 +1133,12 @@ static BOOL container_object_query_folder_hierarchy(
 		}
 		pvalue = common_util_get_propvals(
 			tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
-		if (NULL == pvalue || 0 != strcasecmp(
-			pvalue, "IPF.Contact")) {
+		if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue), "IPF.Contact") != 0)
 			continue;
-		}
 		count = (pset->count / 100 + 1) * 100;
 		if (pset->count + 1 >= count) {
 			count += 100;
-			pparray = common_util_alloc(count*sizeof(TPROPVAL_ARRAY*));
+			pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * count));
 			if (NULL == pparray) {
 				return FALSE;
 			}
@@ -1160,8 +1146,8 @@ static BOOL container_object_query_folder_hierarchy(
 				pset->count*sizeof(TPROPVAL_ARRAY*));
 			pset->pparray = pparray;
 		}
-		pset->pparray[pset->count] =
-			common_util_alloc(sizeof(TPROPVAL_ARRAY));
+		pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+			common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 		if (NULL == pset->pparray[pset->count]) {
 			return FALSE;
 		}
@@ -1194,7 +1180,7 @@ BOOL container_object_query_container_table(
 		return TRUE;
 	}
 	tmp_set.count = 0;
-	tmp_set.pparray = common_util_alloc(sizeof(TPROPVAL_ARRAY*)*100);
+	tmp_set.pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * 100));
 	if (NULL == tmp_set.pparray) {
 		return FALSE;
 	}
@@ -1210,8 +1196,8 @@ BOOL container_object_query_container_table(
 			return FALSE;
 		}
 		if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
-			tmp_set.pparray[tmp_set.count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			tmp_set.pparray[tmp_set.count] = static_cast<TPROPVAL_ARRAY *>(
+				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				ab_tree_put_base(pbase);
 				return FALSE;
@@ -1223,8 +1209,8 @@ BOOL container_object_query_container_table(
 				return FALSE;
 			}
 			tmp_set.count ++;
-			tmp_set.pparray[tmp_set.count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			tmp_set.pparray[tmp_set.count] = static_cast<TPROPVAL_ARRAY *>(
+				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				ab_tree_put_base(pbase);
 				return FALSE;
@@ -1236,8 +1222,8 @@ BOOL container_object_query_container_table(
 				return FALSE;
 			}
 			tmp_set.count ++;
-			tmp_set.pparray[tmp_set.count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			tmp_set.pparray[tmp_set.count] = static_cast<TPROPVAL_ARRAY *>(
+				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 			if (NULL == tmp_set.pparray[tmp_set.count]) {
 				ab_tree_put_base(pbase);
 				return FALSE;
@@ -1298,8 +1284,8 @@ BOOL container_object_query_container_table(
 		ab_tree_put_base(pbase);
 	}
 	pset->count = 0;
-	pset->pparray = common_util_alloc(
-		sizeof(TPROPVAL_ARRAY*)*tmp_set.count);
+	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
+		sizeof(TPROPVAL_ARRAY *) * tmp_set.count));
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
@@ -1412,7 +1398,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_THUMBNAILPHOTO
 	};
 	pproptags->count = 34;
-	pproptags->pproptag = const_cast(uint32_t *, proptag_buff);
+	pproptags->pproptag = const_cast<uint32_t *>(proptag_buff);
 }
 
 BOOL container_object_query_user_table(
@@ -1447,7 +1433,7 @@ BOOL container_object_query_user_table(
 		}
 	}
 	pset->count = 0;
-	pset->pparray = common_util_alloc(row_count*sizeof(void*));
+	pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * row_count));
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
@@ -1470,8 +1456,8 @@ BOOL container_object_query_user_table(
 				if (NULL == ptnode) {
 					continue;
 				}
-				pset->pparray[pset->count] =
-					common_util_alloc(sizeof(TPROPVAL_ARRAY));
+				pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+					common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 				if (NULL == pset->pparray[pset->count]) {
 					ab_tree_put_base(pbase);
 					return FALSE;
@@ -1490,14 +1476,14 @@ BOOL container_object_query_user_table(
 					if (i < first_pos) {
 						continue;
 					}
-					pset->pparray[pset->count] =
-						common_util_alloc(sizeof(TPROPVAL_ARRAY));
+					pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+						common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 					if (NULL == pset->pparray[pset->count]) {
 						ab_tree_put_base(pbase);
 						return FALSE;
 					}
-					if (FALSE == ab_tree_fetch_node_properties(
-						psnode->pdata, pproptags, pset->pparray[pset->count])) {
+					if (!ab_tree_fetch_node_properties(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
+					    pproptags, pset->pparray[pset->count])) {
 						ab_tree_put_base(pbase);
 						return FALSE;	
 					}
@@ -1526,8 +1512,8 @@ BOOL container_object_query_user_table(
 						continue;
 					}
 					i ++;
-					pset->pparray[pset->count] =
-						common_util_alloc(sizeof(TPROPVAL_ARRAY));
+					pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+						common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 					if (NULL == pset->pparray[pset->count]) {
 						ab_tree_put_base(pbase);
 						return FALSE;
