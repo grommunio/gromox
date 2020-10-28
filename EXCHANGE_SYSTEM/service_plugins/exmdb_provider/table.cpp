@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <iconv.h>
 #include <stdio.h>
-#define LLU(x) static_cast(unsigned long long, (x))
+#define LLU(x) static_cast<unsigned long long>(x)
 
 typedef struct _CONDITION_NODE {
 	DOUBLE_LIST_NODE node;
@@ -276,7 +276,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	ptnode = malloc(sizeof(TABLE_NODE));
+	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -767,12 +767,13 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 	
 	b_conversation = FALSE;
 	if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-		if (NULL != prestriction && RESTRICTION_TYPE_PROPERTY
-			== prestriction->rt && (pres = prestriction->pres) &&
-			RELOP_EQ == pres->relop && PROP_TAG_CONVERSATIONID ==
-			pres->proptag && 16 == ((BINARY*)pres->propval.pvalue)->cb) {
+		if (prestriction != nullptr &&
+		    prestriction->rt == RESTRICTION_TYPE_PROPERTY &&
+		    (pres = static_cast<RESTRICTION_PROPERTY *>(prestriction->pres)) != nullptr &&
+		    pres->relop == RELOP_EQ &&
+		    pres->proptag == PROP_TAG_CONVERSATIONID &&
+		    static_cast<BINARY *>(pres->propval.pvalue)->cb == 16)
 			b_conversation = TRUE;
-		}
 	}
 	if (NULL != psorts && psorts->count >
 		sizeof(tmp_proptags)/sizeof(uint32_t)) {
@@ -851,7 +852,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			return FALSE;
 		}
 	}
-	ptnode = malloc(sizeof(TABLE_NODE));
+	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
@@ -1564,7 +1565,7 @@ static BOOL table_load_permissions(sqlite3 *psqlite,
 			sqlite3_finalize(pstmt1);
 			return FALSE;
 		}
-		pusername = reinterpret_cast(const char *, sqlite3_column_text(pstmt1, 1));
+		pusername = reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 1));
 		if ('\0' == pusername[0]) {
 			b_anonymous = TRUE;
 		} else if (0 == strcasecmp("default", pusername)) {
@@ -1633,7 +1634,7 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	ptnode = malloc(sizeof(TABLE_NODE));
+	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -1729,48 +1730,44 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		case FUZZY_LEVEL_FULLSTRING:
 			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (0 == strcasecmp(((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, pvalue)) {
+				if (strcasecmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (0 == strcmp(((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, pvalue)) {
+				if (strcmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
 			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (NULL != strstr(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue)) {
+				if (strstr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case FUZZY_LEVEL_PREFIX:
-			len = strlen(((RESTRICTION_CONTENT*)pres->pres)->propval.pvalue);
+			len = strlen(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue));
 			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (0 == strncasecmp(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, len)) {
+				if (strncasecmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    len) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (0 == strncmp(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, len)) {
+				if (strncmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    len) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			}
 			return FALSE;
@@ -1787,10 +1784,9 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 				& 0xFFFF) != PROPVAL_TYPE_WSTRING) {
 				return FALSE;
 			}
-			if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
-				pres->pres)->propval.pvalue)) {
+			if (strcasestr(static_cast<char *>(pvalue),
+			    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pres->pres)->propval.pvalue)) != nullptr)
 				return TRUE;
-			}
 			return FALSE;
 		}
 		return propval_compare_relop(
@@ -1946,7 +1942,7 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	ptnode = malloc(sizeof(TABLE_NODE));
+	ptnode = static_cast<TABLE_NODE *>(malloc(sizeof(*ptnode)));
 	if (NULL == ptnode) {
 		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", NULL, NULL, NULL);
 		db_engine_put_db(pdb);
@@ -2322,7 +2318,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT folder_id, depth FROM"
 						" t%u WHERE idx>=%u AND idx<%u ORDER BY idx ASC",
 						table_id, start_pos + 1, end_pos + 1);
-			pset->pparray = common_util_alloc(sizeof(void*)*row_needed);
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * row_needed));
 		} else {
 			end_pos = start_pos + row_needed;
 			if (end_pos < 0) {
@@ -2331,8 +2327,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT folder_id, depth FROM "
 						"t%u WHERE idx>%u AND idx<=%u ORDER BY idx DESC",
 						table_id, end_pos + 1, start_pos + 1);
-			pset->pparray = common_util_alloc(
-				sizeof(void*)*(start_pos - end_pos));
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
+				sizeof(TPROPVAL_ARRAY *) * (start_pos - end_pos)));
 		}
 		if (NULL == pset->pparray) {
 			db_engine_put_db(pdb);
@@ -2345,8 +2341,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			folder_id = sqlite3_column_int64(pstmt, 0);
-			pset->pparray[pset->count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 			if (NULL == pset->pparray[pset->count]) {
 				sqlite3_finalize(pstmt);
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -2354,8 +2350,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
-			pset->pparray[pset->count]->ppropval =
-				common_util_alloc(sizeof(TAGGED_PROPVAL)*pproptags->count);
+			pset->pparray[pset->count]->ppropval = static_cast<TAGGED_PROPVAL *>(
+				common_util_alloc(sizeof(TAGGED_PROPVAL) * pproptags->count));
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
@@ -2389,10 +2385,10 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					}
 					switch (pproptags->pproptag[i] & 0xFFFF) {
 					case PROPVAL_TYPE_WSTRING:
-						utf8_truncate(pvalue, 255);
+						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
 					case PROPVAL_TYPE_STRING:
-						table_truncate_string(cpid, pvalue);
+						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
 					case PROPVAL_TYPE_BINARY:
 						if (((BINARY*)pvalue)->cb > 510) {
@@ -2418,7 +2414,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT * FROM t%u"
 				" WHERE idx>=%u AND idx<%u ORDER BY idx ASC",
 				table_id, start_pos + 1, end_pos + 1);
-			pset->pparray = common_util_alloc(sizeof(void*)*row_needed);
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * row_needed));
 		} else {
 			end_pos = start_pos + row_needed;
 			if (end_pos < 0) {
@@ -2427,8 +2423,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT * FROM t%u"
 				" WHERE idx>=%u AND idx<%u ORDER BY idx DESC",
 				table_id, end_pos + 1, start_pos + 1);
-			pset->pparray = common_util_alloc(
-				sizeof(void*)*(start_pos - end_pos));
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
+				sizeof(TPROPVAL_ARRAY *) * (start_pos - end_pos)));
 		}
 		if (NULL == pset->pparray) {
 			db_engine_put_db(pdb);
@@ -2467,8 +2463,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			inst_id = sqlite3_column_int64(pstmt, 3);
 			row_type = sqlite3_column_int64(pstmt, 4);
-			pset->pparray[pset->count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 			if (NULL == pset->pparray[pset->count]) {
 				sqlite3_finalize(pstmt);
 				if (NULL != pstmt1) {
@@ -2483,8 +2479,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
-			pset->pparray[pset->count]->ppropval =
-				common_util_alloc(sizeof(TAGGED_PROPVAL)*pproptags->count);
+			pset->pparray[pset->count]->ppropval = static_cast<TAGGED_PROPVAL *>(
+				common_util_alloc(sizeof(TAGGED_PROPVAL) * pproptags->count));
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
 				if (NULL != pstmt1) {
@@ -2528,10 +2524,10 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				}
 				switch (pproptags->pproptag[i] & 0xFFFF) {
 				case PROPVAL_TYPE_WSTRING:
-					utf8_truncate(pvalue, 255);
+					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
 				case PROPVAL_TYPE_STRING:
-					table_truncate_string(cpid, pvalue);
+					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
 				case PROPVAL_TYPE_BINARY:
 					if (((BINARY*)pvalue)->cb > 510) {
@@ -2563,7 +2559,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT member_id FROM t%u "
 						"WHERE idx>=%u AND idx<%u ORDER BY idx ASC",
 						table_id, start_pos + 1, end_pos + 1);
-			pset->pparray = common_util_alloc(sizeof(void*)*row_needed);
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * row_needed));
 		} else {
 			end_pos = start_pos + row_needed;
 			if (end_pos < 0) {
@@ -2572,8 +2568,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT member_id FROM t%u "
 						"WHERE idx>%u AND idx<=%u ORDER BY idx DESC",
 						table_id, end_pos + 1, start_pos + 1);
-			pset->pparray = common_util_alloc(
-				sizeof(void*)*(start_pos - end_pos));
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
+				sizeof(TPROPVAL_ARRAY *) * (start_pos - end_pos)));
 		}
 		if (NULL == pset->pparray) {
 			db_engine_put_db(pdb);
@@ -2585,16 +2581,16 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			member_id = sqlite3_column_int64(pstmt, 0);
-			pset->pparray[pset->count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 			if (NULL == pset->pparray[pset->count]) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
-			pset->pparray[pset->count]->ppropval =
-				common_util_alloc(sizeof(TAGGED_PROPVAL)*pproptags->count);
+			pset->pparray[pset->count]->ppropval = static_cast<TAGGED_PROPVAL *>(
+				common_util_alloc(sizeof(TAGGED_PROPVAL) * pproptags->count));
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
@@ -2625,7 +2621,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 													pproptags->pproptag[i];
 				if (PROP_TAG_MEMBERNAME_STRING8 == pproptags->pproptag[i]) {
 					pset->pparray[pset->count]->ppropval[count].pvalue =
-							common_util_convert_copy(FALSE, cpid, pvalue);
+						common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 				} else {
 					pset->pparray[pset->count]->ppropval[count].pvalue =
 																	pvalue;
@@ -2643,7 +2639,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT rule_id FROM t%u "
 						"WHERE idx>=%u AND idx<%u ORDER BY idx ASC",
 						table_id, start_pos + 1, end_pos + 1);
-			pset->pparray = common_util_alloc(sizeof(void*)*row_needed);
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(sizeof(TPROPVAL_ARRAY *) * row_needed));
 		} else {
 			end_pos = start_pos + row_needed;
 			if (end_pos < 0) {
@@ -2652,8 +2648,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			sprintf(sql_string, "SELECT rule_id FROM t%u "
 						"WHERE idx>%u AND idx<=%u ORDER BY idx DESC",
 						table_id, end_pos + 1, start_pos + 1);
-			pset->pparray = common_util_alloc(
-				sizeof(void*)*(start_pos - end_pos));
+			pset->pparray = static_cast<TPROPVAL_ARRAY **>(common_util_alloc(
+				sizeof(TPROPVAL_ARRAY *) * (start_pos - end_pos)));
 		}
 		if (NULL == pset->pparray) {
 			db_engine_put_db(pdb);
@@ -2665,16 +2661,16 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			rule_id = sqlite3_column_int64(pstmt, 0);
-			pset->pparray[pset->count] =
-				common_util_alloc(sizeof(TPROPVAL_ARRAY));
+			pset->pparray[pset->count] = static_cast<TPROPVAL_ARRAY *>(
+				common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 			if (NULL == pset->pparray[pset->count]) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
 			pset->pparray[pset->count]->count = 0;
-			pset->pparray[pset->count]->ppropval =
-				common_util_alloc(sizeof(TAGGED_PROPVAL)*pproptags->count);
+			pset->pparray[pset->count]->ppropval = static_cast<TAGGED_PROPVAL *>(
+				common_util_alloc(sizeof(TAGGED_PROPVAL) * pproptags->count));
 			if (NULL == pset->pparray[pset->count]->ppropval) {
 				sqlite3_finalize(pstmt);
 				db_engine_put_db(pdb);
@@ -2702,7 +2698,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				if (PROP_TAG_RULENAME_STRING8 == pproptags->pproptag[i] ||
 					PROP_TAG_RULEPROVIDER_STRING8 == pproptags->pproptag[i]) {
 					pset->pparray[pset->count]->ppropval[count].pvalue =
-							common_util_convert_copy(FALSE, cpid, pvalue);
+						common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 				} else {
 					pset->pparray[pset->count]->ppropval[count].pvalue =
 																	pvalue;
@@ -2753,8 +2749,8 @@ static BOOL table_get_content_row_property(
 			((SVREID*)(*ppvalue))->message_id =
 							rop_util_make_eid_ex(
 							1, prow_param->inst_id);
-			pinst_num = common_util_column_sqlite_statement(
-					prow_param->pstmt, 10, PROPVAL_TYPE_LONG);
+			pinst_num = static_cast<uint32_t *>(common_util_column_sqlite_statement(
+			            prow_param->pstmt, 10, PROPVAL_TYPE_LONG));
 			if (NULL == pinst_num) {
 				return FALSE;
 			}
@@ -2858,48 +2854,44 @@ static BOOL table_evaluate_row_restriction(
 		case FUZZY_LEVEL_FULLSTRING:
 			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (0 == strcasecmp(((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, pvalue)) {
+				if (strcasecmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (0 == strcmp(((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, pvalue)) {
+				if (strcmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
 			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (NULL != strcasestr(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue)) {
+				if (strcasestr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (NULL != strstr(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue)) {
+				if (strstr(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue)) != nullptr)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case FUZZY_LEVEL_PREFIX:
-			len = strlen(((RESTRICTION_CONTENT*)pres->pres)->propval.pvalue);
+			len = strlen(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue));
 			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
 				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (0 == strncasecmp(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, len)) {
+				if (strncasecmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    len) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			} else {
-				if (0 == strncmp(pvalue, ((RESTRICTION_CONTENT*)
-					pres->pres)->propval.pvalue, len)) {
+				if (strncmp(static_cast<char *>(pvalue),
+				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    len) == 0)
 					return TRUE;
-				}
 				return FALSE;
 			}
 			return FALSE;
@@ -2915,10 +2907,9 @@ static BOOL table_evaluate_row_restriction(
 				& 0xFFFF) != PROPVAL_TYPE_WSTRING) {
 				return FALSE;
 			}
-			if (NULL != strcasestr(pvalue, ((RESTRICTION_PROPERTY*)
-				pres->pres)->propval.pvalue)) {
+			if (strcasestr(static_cast<char *>(pvalue),
+			    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pres->pres)->propval.pvalue)) != nullptr)
 				return TRUE;
-			}
 			return FALSE;
 		}
 		return propval_compare_relop(
@@ -3072,8 +3063,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				&hierarchy_param, table_get_hierarchy_row_property)) {
 				idx = sqlite3_column_int64(pstmt, 1);
 				count = 0;
-				ppropvals->ppropval = common_util_alloc(
-					sizeof(TAGGED_PROPVAL)*pproptags->count);
+				ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+				                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 				if (NULL == ppropvals->ppropval) {
 					sqlite3_finalize(pstmt);
 					db_engine_put_db(pdb);
@@ -3106,10 +3097,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						}
 						switch (pproptags->pproptag[i] & 0xFFFF) {
 						case PROPVAL_TYPE_WSTRING:
-							utf8_truncate(pvalue, 255);
+							utf8_truncate(static_cast<char *>(pvalue), 255);
 							break;
 						case PROPVAL_TYPE_STRING:
-							table_truncate_string(cpid, pvalue);
+							table_truncate_string(cpid, static_cast<char *>(pvalue));
 							break;
 						case PROPVAL_TYPE_BINARY:
 							if (((BINARY*)pvalue)->cb > 510) {
@@ -3187,8 +3178,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				&content_param, table_get_content_row_property)) {
 				idx = sqlite3_column_int64(pstmt, 1);
 				count = 0;
-				ppropvals->ppropval = common_util_alloc(
-					sizeof(TAGGED_PROPVAL)*pproptags->count);
+				ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+				                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 				if (NULL == ppropvals->ppropval) {
 					sqlite3_finalize(pstmt);
 					if (NULL != pstmt1) {
@@ -3231,10 +3222,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					}
 					switch (pproptags->pproptag[i] & 0xFFFF) {
 					case PROPVAL_TYPE_WSTRING:
-						utf8_truncate(pvalue, 255);
+						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
 					case PROPVAL_TYPE_STRING:
-						table_truncate_string(cpid, pvalue);
+						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
 					case PROPVAL_TYPE_BINARY:
 						if (((BINARY*)pvalue)->cb > 510) {
@@ -3279,8 +3270,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 			if (TRUE == table_evaluate_rule_restriction(
 				pdb->psqlite, rule_id, pres)) {
 				ppropvals->count = 0;
-				ppropvals->ppropval = common_util_alloc(
-					sizeof(TAGGED_PROPVAL)*pproptags->count);
+				ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+				                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 				if (NULL == ppropvals->ppropval) {
 					sqlite3_finalize(pstmt);
 					db_engine_put_db(pdb);
@@ -3307,7 +3298,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					if (PROP_TAG_RULENAME_STRING8 == pproptags->pproptag[i] ||
 						PROP_TAG_RULEPROVIDER_STRING8 == pproptags->pproptag[i]) {
 						ppropvals->ppropval[count].pvalue =
-								common_util_convert_copy(FALSE, cpid, pvalue);
+							common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 					} else {
 						ppropvals->ppropval[count].pvalue = pvalue;
 					}
@@ -3476,8 +3467,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		sqlite3_finalize(pstmt);
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 		count = 0;
-		ppropvals->ppropval = common_util_alloc(
-			sizeof(TAGGED_PROPVAL)*pproptags->count);
+		ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+		                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 		if (NULL == ppropvals->ppropval) {
 			db_engine_put_db(pdb);
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -3507,10 +3498,10 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				}
 				switch (pproptags->pproptag[i] & 0xFFFF) {
 				case PROPVAL_TYPE_WSTRING:
-					utf8_truncate(pvalue, 255);
+					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
 				case PROPVAL_TYPE_STRING:
-					table_truncate_string(cpid, pvalue);
+					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
 				case PROPVAL_TYPE_BINARY:
 					if (((BINARY*)pvalue)->cb > 510) {
@@ -3567,8 +3558,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		}
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);			
 		count = 0;
-		ppropvals->ppropval = common_util_alloc(
-			sizeof(TAGGED_PROPVAL)*pproptags->count);
+		ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+		                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 		if (NULL == ppropvals->ppropval) {
 			sqlite3_finalize(pstmt);
 			if (NULL != pstmt1) {
@@ -3609,10 +3600,10 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 			}
 			switch (pproptags->pproptag[i] & 0xFFFF) {
 			case PROPVAL_TYPE_WSTRING:
-				utf8_truncate(pvalue, 255);
+				utf8_truncate(static_cast<char *>(pvalue), 255);
 				break;
 			case PROPVAL_TYPE_STRING:
-				table_truncate_string(cpid, pvalue);
+				table_truncate_string(cpid, static_cast<char *>(pvalue));
 				break;
 			case PROPVAL_TYPE_BINARY:
 				if (((BINARY*)pvalue)->cb > 510) {
@@ -3809,15 +3800,15 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		pproptags->count = 0;
 		 for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
-			int_hash_iter_get_value(iter, &proptag);
+			int_hash_iter_get_value(iter, reinterpret_cast<int *>(&proptag));
 			tmp_proptags[pproptags->count] = proptag;
 			pproptags->count ++;
 		}
 		int_hash_iter_free(iter);
 		int_hash_free(phash);
 		tmp_proptags[pproptags->count++] = PROP_TAG_DEPTH;
-		pproptags->pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+		pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+		                      sizeof(uint32_t) * pproptags->count));
 		if (NULL == pproptags->pproptag) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -3874,7 +3865,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		pproptags->count = 0;
 		 for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
-			int_hash_iter_get_value(iter, &proptag);
+			int_hash_iter_get_value(iter, reinterpret_cast<int *>(&proptag));
 			tmp_proptags[pproptags->count] = proptag;
 			pproptags->count ++;
 		}
@@ -3896,8 +3887,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PROP_TAG_DEPTH;
 		tmp_proptags[pproptags->count++] = PROP_TAG_CONTENTCOUNT;
 		tmp_proptags[pproptags->count++] = PROP_TAG_CONTENTUNREADCOUNT;
-		pproptags->pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+		pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+		                      sizeof(uint32_t) * pproptags->count));
 		if (NULL == pproptags->pproptag) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -3908,7 +3899,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		return TRUE;
 	case TABLE_TYPE_PERMISSION:
 		pproptags->count = 4;
-		pproptags->pproptag = common_util_alloc(sizeof(uint32_t)*4);
+		pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * 4));
 		if (NULL == pproptags->pproptag) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -3921,7 +3912,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		return TRUE;
 	case TABLE_TYPE_RULE:
 		pproptags->count = 10;
-		pproptags->pproptag = common_util_alloc(sizeof(uint32_t)*10);
+		pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * 10));
 		if (NULL == pproptags->pproptag) {
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -3967,7 +3958,7 @@ static BOOL table_traverse_sub_contents(uint32_t step,
 			*pcount += sqlite3_column_int64(pstmt, 0);
 			sqlite3_reset(pstmt);
 		} else {
-			pnode = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
+			pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(*pnode)));
 			if (NULL == pnode) {
 				return FALSE;
 			}
