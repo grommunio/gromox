@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include "mod_fastcgi.h"
 #include "common_types.h"
 #include "contexts_pool.h"
@@ -118,7 +119,7 @@ typedef struct _RPC_OUT_CHANNEL {
 	char				connection_cookie[64];
 	BOOL				b_obsolete;			/* out channel is obsolte, wait for new out channel */
 	uint32_t			client_keepalive;	/* get from in channel */
-	volatile uint32_t	available_window;
+	std::atomic<uint32_t> available_window;
 	uint32_t			window_size;
 	uint32_t			bytes_sent;	/* length of sent data including RPC and RTS PDU, chunk data */
 	DCERPC_CALL			*pcall;		/* first output pcall of PDU by out channel itself */

@@ -1,6 +1,7 @@
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
  */ 
+#include <atomic>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "util.h"
@@ -34,7 +35,7 @@
 
 typedef struct _VIRTUAL_CONNECTION {
 	char hash_key[256];
-	volatile int reference;
+	std::atomic<int> reference;
 	pthread_mutex_t lock;
 	PDU_PROCESSOR *pprocessor;
 	HTTP_CONTEXT  *pcontext_in;

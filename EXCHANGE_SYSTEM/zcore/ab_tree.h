@@ -1,5 +1,6 @@
 #pragma once
 #ifdef __cplusplus
+#	include <atomic>
 #	include <cstdint>
 #	include <ctime>
 #else
@@ -50,8 +51,7 @@ typedef struct _DOMAIN_NODE {
 } DOMAIN_NODE;
 
 typedef struct _AB_BASE {
-	volatile int status;
-	volatile int reference;
+	std::atomic<int> status, reference;
 	time_t load_time;
 	int base_id;
 	SINGLE_LIST list;

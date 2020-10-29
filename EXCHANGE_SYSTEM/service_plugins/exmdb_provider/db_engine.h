@@ -1,5 +1,6 @@
 #pragma once
 #ifdef __cplusplus
+#	include <atomic>
 #	include <cstdint>
 #else
 #	include <stdint.h>
@@ -95,8 +96,8 @@ typedef struct _MEMORY_TABLES {
 } MEMORY_TABLES;
 
 typedef struct _DB_ITEM {
-	volatile int reference;	/* client reference count, item can be
-							flushed into file system only count is 0 */
+	/* client reference count, item can be flushed into file system only count is 0 */
+	std::atomic<int> reference;
 	time_t last_time;
 	pthread_mutex_t lock;
 	sqlite3 *psqlite;

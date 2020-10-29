@@ -1,3 +1,4 @@
+#include <atomic>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -121,12 +122,12 @@ typedef struct _KEYWORD_ENUM {
 
 typedef struct _IDB_ITEM {
 	sqlite3 *psqlite;
-	volatile int reference;	/* client reference count, item can be
-							flushed into file system only count is 0 */
+	/* client reference count, item can be flushed into file system only count is 0 */
 	char *username;
 	time_t last_time;
 	time_t load_time;
 	uint32_t sub_id;
+	std::atomic<int> reference;
 	pthread_mutex_t lock;
 } IDB_ITEM;
 

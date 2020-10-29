@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include "mapi_types.h"
 #include "common_util.h"
 #include "object_tree.h"
@@ -11,8 +12,8 @@ enum {
 };
 
 typedef struct _USER_INFO {
-	volatile int reference;
 	GUID hsession;
+	std::atomic<int> reference;
 	int user_id;
 	int domain_id;
 	int org_id;
