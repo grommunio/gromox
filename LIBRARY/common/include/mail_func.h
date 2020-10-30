@@ -7,6 +7,7 @@
 #else
 #	include <time.h>
 #endif
+#include <gromox/defs.h>
 #include "mem_file.h"
 
 #define MIME_NAME_LEN			80
@@ -76,8 +77,7 @@ void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
 
 int html_to_plain(char *rbuf, int len);
-
-int plain_to_html(char *rbuf, int len);
+extern GX_EXPORT char *plain_to_html(const char *rbuf);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,7 @@
 /*
  *	  Addr_kids, for parse the email addr
  */
+#include <stdlib.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "common_types.h"
@@ -2063,23 +2064,23 @@ REG_CHAR:
 	return (int)(rp - rbuf);
 }
 
-int plain_to_html(char *rbuf, int len)
+char *plain_to_html(const char *rbuf)
 {
-	int tag_len;
-	int rbuf_len;
-	char tag_buff[1024];
-	
-	strcpy(tag_buff,
+	const char head[] =
 		"<html><head><meta http-equiv=\"Content-Type\" content=\"text/html;"
 		" charset=utf-8\">\r\n<meta name=\"Generator\" content=\"gromox-texttohtml"
-		"\">\r\n</head>\r\n<body>\r\n<pre>");
-	tag_len = strlen(tag_buff);
-	rbuf_len = strlen(rbuf);
-	if (len < rbuf_len + tag_len + 25) {
-		return rbuf_len;
+		"\">\r\n</head>\r\n<body>\r\n<pre>";
+	const char footer[] = "</pre>\r\n</body>\r\n</html>";
+
+	char *body = HX_strquote(rbuf, HXQUOTE_HTML, nullptr);
+	if (body == nullptr)
+		return nullptr;
+	char *out = malloc(strlen(head) + strlen(body) + strlen(footer) + 1);
+	if (out != nullptr) {
+		strcpy(out, head);
+		strcat(out, body);
+		strcat(out, footer);
 	}
-	memmove(rbuf + tag_len, rbuf, rbuf_len);
-	memcpy(rbuf, tag_buff, tag_len);
-	memcpy(rbuf + tag_len + rbuf_len, "</pre>\r\n</body>\r\n</html>", 25);
-	return tag_len + rbuf_len + 25;
+	free(body);
+	return out;
 }

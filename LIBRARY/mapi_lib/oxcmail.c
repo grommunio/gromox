@@ -5119,14 +5119,12 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				message_content_free(pmsg);
 				return NULL;
 			}
-			tmp_int32 = strlen(pvalue) + 1024;
-			phtml_bin->pb = alloc(tmp_int32);
-			if (NULL == phtml_bin->pb) {
+			phtml_bin->pc = plain_to_html(pvalue);
+			if (phtml_bin->pc == nullptr) {
 				message_content_free(pmsg);
 				return NULL;
 			}
-			strcpy(phtml_bin->pc, pvalue);
-			phtml_bin->cb = plain_to_html(phtml_bin->pc, tmp_int32);
+			phtml_bin->cb = strlen(phtml_bin->pc);
 			propval.proptag = PROP_TAG_HTML;
 			propval.pvalue = phtml_bin;
 			tpropval_array_set_propval(
