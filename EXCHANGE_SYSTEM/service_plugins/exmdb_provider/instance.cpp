@@ -2736,6 +2736,27 @@ static int instance_get_message_htmlU(DB_ITEM *pdb, MESSAGE_CONTENT *mc,
 	return 1;
 }
 
+static int instance_get_message_htmrtf(DB_ITEM *db, MESSAGE_CONTENT *mc,
+    const PROPTAG_ARRAY *ptag, TPROPVAL_ARRAY *pval, unsigned int i)
+{
+	auto tagid = ptag->pproptag[i] == PROP_TAG_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
+	auto data  = tpropval_array_get_propval(&mc->proplist, tagid);
+	if (data == nullptr)
+		return 0;
+	uint32_t length = 0;
+	auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length);
+	if (content == nullptr)
+		return -1;
+	auto bin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
+	if (bin == nullptr)
+		return -1;
+	bin->cb = length;
+	bin->pv = content;
+	pval->ppropval[pval->count].proptag  = ptag->pproptag[i];
+	pval->ppropval[pval->count++].pvalue = bin;
+	return 1;
+}
+
 BOOL exmdb_server_get_instance_properties(
 	const char *dir, uint32_t size_limit, uint32_t instance_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
@@ -3002,35 +3023,14 @@ BOOL exmdb_server_get_instance_properties(
 			break;
 		}
 		case PROP_TAG_HTML:
-		case PROP_TAG_RTFCOMPRESSED:
-			if (PROP_TAG_HTML == pproptags->pproptag[i]) {
-				pvalue = tpropval_array_get_propval(
-					&pmsgctnt->proplist, ID_TAG_HTML);
-			} else {
-				pvalue = tpropval_array_get_propval(
-					&pmsgctnt->proplist, ID_TAG_RTFCOMPRESSED);
-			}
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(
-						*(uint64_t*)pvalue, &length);
-				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
-					return FALSE;
-				}
-				pbin = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin)));
-				if (NULL == pbin) {
-					db_engine_put_db(pdb);
-					return FALSE;
-				}
-				pbin->cb = length;
-				pbin->pv = pvalue;
-				ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue = pbin;
-				ppropvals->count ++;
-				continue;
+		case PROP_TAG_RTFCOMPRESSED: {
+			auto ret = instance_get_message_htmrtf(pdb, pmsgctnt, pproptags, ppropvals, i);
+			if (ret < 0) {
+				db_engine_put_db(pdb);
+				return false;
 			}
 			break;
+		}
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 			pvalue = tpropval_array_get_propval(
 				&pmsgctnt->proplist, ID_TAG_TRANSPORTMESSAGEHEADERS);
