@@ -2706,6 +2706,36 @@ static int instance_get_message_body8(DB_ITEM *db, INSTANCE_NODE *inst,
 	return 1;
 }
 
+static int instance_get_message_htmlU(DB_ITEM *pdb, MESSAGE_CONTENT *mc,
+    const PROPTAG_ARRAY *ptag, TPROPVAL_ARRAY *pval, unsigned int i)
+{
+	auto bin = static_cast<BINARY *>(tpropval_array_get_propval(&mc->proplist, PROP_TAG_HTML));
+	if (bin == nullptr) {
+		auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_HTML);
+		if (data == nullptr)
+			return 0;
+		uint32_t length = 0;
+		auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length);
+		if (content == nullptr)
+			return -1;
+		bin = static_cast<BINARY *>(common_util_alloc(sizeof(*bin)));
+		if (bin == nullptr)
+			return -1;
+		bin->cb = length;
+		bin->pv = content;
+	}
+	auto &pv = pval->ppropval[pval->count];
+	pv.proptag = ptag->pproptag[i];
+	pv.pvalue = common_util_alloc(sizeof(TYPED_PROPVAL));
+	auto tpv = static_cast<TYPED_PROPVAL *>(pv.pvalue);
+	if (tpv == nullptr)
+		return -1;
+	tpv->type = PROPVAL_TYPE_BINARY;
+	tpv->pvalue = bin;
+	++pval->count;
+	return 1;
+}
+
 BOOL exmdb_server_get_instance_properties(
 	const char *dir, uint32_t size_limit, uint32_t instance_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
@@ -2963,47 +2993,14 @@ BOOL exmdb_server_get_instance_properties(
 			}
 			break;
 		}
-		case PROP_TAG_HTML_UNSPECIFIED:
-			pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-			       &pmsgctnt->proplist, PROP_TAG_HTML));
-			if (NULL == pbin) {
-				pvalue = tpropval_array_get_propval(
-					&pmsgctnt->proplist, ID_TAG_HTML);
-				if (NULL != pvalue) {
-					pvalue = instance_read_cid_content(
-							*(uint64_t*)pvalue, &length);
-					if (NULL == pvalue) {
-						db_engine_put_db(pdb);
-						return FALSE;
-					}
-					pbin = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin)));
-					if (NULL == pbin) {
-						db_engine_put_db(pdb);
-						return FALSE;
-					}
-					pbin->cb = length;
-					pbin->pv = pvalue;
-				}
-			}
-			if (NULL != pbin) {
-				ppropvals->ppropval[ppropvals->count].proptag =
-											pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-						common_util_alloc(sizeof(TYPED_PROPVAL));
-				if (NULL == ppropvals->ppropval[
-					ppropvals->count].pvalue) {
-					db_engine_put_db(pdb);
-					return FALSE;	
-				}
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->type =
-					PROPVAL_TYPE_BINARY;
-				((TYPED_PROPVAL*)ppropvals->ppropval[
-					ppropvals->count].pvalue)->pvalue =	pbin;
-				ppropvals->count ++;
-				continue;
+		case PROP_TAG_HTML_UNSPECIFIED: {
+			auto ret = instance_get_message_htmlU(pdb, pmsgctnt, pproptags, ppropvals, i);
+			if (ret < 0) {
+				db_engine_put_db(pdb);
+				return false;
 			}
 			break;
+		}
 		case PROP_TAG_HTML:
 		case PROP_TAG_RTFCOMPRESSED:
 			if (PROP_TAG_HTML == pproptags->pproptag[i]) {
