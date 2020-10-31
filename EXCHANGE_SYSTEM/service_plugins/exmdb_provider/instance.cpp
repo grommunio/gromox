@@ -2681,6 +2681,31 @@ static int instance_get_message_body(DB_ITEM *db, INSTANCE_NODE *inst,
 	return 1;
 }
 
+static int instance_get_message_body8(DB_ITEM *db, INSTANCE_NODE *inst,
+    MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
+{
+	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY_STRING8);
+	auto use_first = data != nullptr;
+	if (data == nullptr)
+		data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY);
+	if (data == nullptr)
+		return 0;
+	auto content = static_cast<char *>(instance_read_cid_content(*static_cast<uint64_t *>(data), nullptr));
+	if (content == nullptr)
+		return -1;
+	auto &pv = pval->ppropval[pval->count];
+	pv.proptag = PROP_TAG_BODY_STRING8;
+	if (use_first) {
+		pv.pvalue = content;
+	} else {
+		pv.pvalue = common_util_convert_copy(false, inst->cpid, content + sizeof(int));
+		if (pv.pvalue == nullptr)
+			return 0;
+	}
+	++pval->count;
+	return 1;
+}
+
 BOOL exmdb_server_get_instance_properties(
 	const char *dir, uint32_t size_limit, uint32_t instance_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
@@ -2930,44 +2955,14 @@ BOOL exmdb_server_get_instance_properties(
 			}
 			break;
 		}
-		case PROP_TAG_BODY_STRING8:
-			pvalue = tpropval_array_get_propval(
-				&pmsgctnt->proplist, ID_TAG_BODY_STRING8);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(
-						*(uint64_t*)pvalue, NULL);
-				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
-					return FALSE;
-				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-											PROP_TAG_BODY_STRING8;
-				ppropvals->ppropval[ppropvals->count].pvalue =
-														pvalue;
-				ppropvals->count ++;
-				continue;
-			}
-			pvalue = tpropval_array_get_propval(
-				&pmsgctnt->proplist, ID_TAG_BODY);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(
-						*(uint64_t*)pvalue, NULL);
-				if (NULL == pvalue) {
-					db_engine_put_db(pdb);
-					return FALSE;
-				}
-				ppropvals->ppropval[ppropvals->count].proptag =
-											PROP_TAG_BODY_STRING8;
-				ppropvals->ppropval[ppropvals->count].pvalue =
-							common_util_convert_copy(FALSE,
-					pinstance->cpid, static_cast<char *>(pvalue) + sizeof(int));
-				if (NULL != ppropvals->ppropval[
-					ppropvals->count].pvalue) {
-					ppropvals->count ++;
-					continue;	
-				}
+		case PROP_TAG_BODY_STRING8: {
+			auto ret = instance_get_message_body8(pdb, pinstance, pmsgctnt, ppropvals);
+			if (ret < 0) {
+				db_engine_put_db(pdb);
+				return false;
 			}
 			break;
+		}
 		case PROP_TAG_HTML_UNSPECIFIED:
 			pbin = static_cast<BINARY *>(tpropval_array_get_propval(
 			       &pmsgctnt->proplist, PROP_TAG_HTML));
