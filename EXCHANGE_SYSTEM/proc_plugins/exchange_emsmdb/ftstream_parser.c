@@ -2,6 +2,7 @@
 #include "rop_processor.h"
 #include "endian_macro.h"
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include "util.h"
@@ -413,7 +414,7 @@ static int ftstream_parser_read_element(
 	}
 	*pmarker = 0;
 	proptype = atom_element & 0xFFFF;
-	propid = (atom_element & 0xFFFF0000) >> 16;
+	propid = PROP_ID(atom_element);
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (META_TAG_IDSETGIVEN == atom_element) {
 		proptype = PROPVAL_TYPE_BINARY;

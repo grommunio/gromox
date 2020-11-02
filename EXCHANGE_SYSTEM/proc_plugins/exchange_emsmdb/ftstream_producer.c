@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "ftstream_producer.h"
 #include "emsmdb_interface.h"
 #include "endian_macro.h"
@@ -420,7 +421,7 @@ static BOOL ftstream_producer_write_propvalue(
 	EMSMDB_INFO *pinfo;
 	uint16_t write_type;
 	
-	propid = (ppropval->proptag & 0xFFFF0000) >> 16;
+	propid = PROP_ID(ppropval->proptag);
 	proptype = ppropval->proptag & 0xFFFF;
 	/* ignore PROPVAL_TYPE_SVREID */
 	if (PROPVAL_TYPE_SVREID == proptype) {
@@ -968,7 +969,7 @@ static BOOL ftstream_producer_write_groupinfo(
 			return FALSE;
 		}
 		for (j=0; j<pginfo->pgroups[i].count; j++) {
-			propid = (pginfo->pgroups[i].pproptag[j] & 0xFFFF0000) >> 16;
+			propid = PROP_ID(pginfo->pgroups[i].pproptag[j]);
 			if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 				&ext_push, pginfo->pgroups[i].pproptag[j])) {
 				ext_buffer_push_free(&ext_push);

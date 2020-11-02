@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "rops.h"
 #include "propval.h"
 #include "common_util.h"
@@ -613,7 +614,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 		return ecMAPIOOM;
 	}
 	for (i=0; i<proptags.count; i++) {
-		propid = proptags.pproptag[i] >> 16;
+		propid = PROP_ID(proptags.pproptag[i]);
 		if (propid & 0x8000) {
 			propids.ppropid[propids.count] = propid;
 			propids.count ++;

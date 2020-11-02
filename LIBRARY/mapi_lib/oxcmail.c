@@ -5,6 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/mapidefs.h>
 #include "dsn.h"
 #include "rtf.h"
 #include "html.h"
@@ -3443,7 +3444,7 @@ static void oxcmail_replace_propid(
 	
 	for (i=0; i<pproplist->count; i++) {
 		proptag = pproplist->ppropval[i].proptag;
-		propid = proptag >> 16;
+		propid = PROP_ID(proptag);
 		if (0 == (propid & 0x8000)) {
 			continue;
 		}
@@ -6513,7 +6514,7 @@ EXPORT_CONTENT_CLASS:
 	mime_set_field(phead, "X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
 	rop_util_get_common_pset(PS_INTERNET_HEADERS, &guid);
 	for (i=0; i<pmsg->proplist.count; i++) {
-		propid = pmsg->proplist.ppropval[i].proptag >> 16;
+		propid = PROP_ID(pmsg->proplist.ppropval[i].proptag);
 		if (0 == (propid & 0x8000)) {
 			continue;
 		}

@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "type_conversion.h"
 #include "ext.hpp"
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
@@ -148,7 +149,7 @@ zend_bool php_to_sortorder_set(zval *pzval,
 	size_t i = 0;
 	ZEND_HASH_FOREACH_KEY_VAL(ptarget_hash, idx, key, entry) {
 		uint32_t proptag = phptag_to_proptag(key != nullptr ? atoi(key->val) : idx);
-		pset->psort[i].propid = proptag >> 16;
+		pset->psort[i].propid = PROP_ID(proptag);
 		pset->psort[i].type = proptag & 0xFFFF;
 		pset->psort[i].table_sort = zval_get_long(entry);
 		++i;

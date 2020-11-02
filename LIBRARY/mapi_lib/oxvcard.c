@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "rop_util.h"
 #include "oxvcard.h"
@@ -980,7 +981,7 @@ MESSAGE_CONTENT* oxvcard_import(
 	}
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
-		propid = proptag >> 16;
+		propid = PROP_ID(proptag);
 		if (propid & 0x8000) {
 			break;
 		}
@@ -993,7 +994,7 @@ MESSAGE_CONTENT* oxvcard_import(
 	}
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
-		propid = proptag >> 16;
+		propid = PROP_ID(proptag);
 		if (0 == (propid & 0x8000)) {
 			continue;
 		}
@@ -1118,7 +1119,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	for (i=0; i<3; i++) {
-		propid = g_email_proptags[i] >> 16;
+		propid = PROP_ID(g_email_proptags[i]);
 		proptag = propids.ppropid[propid - 0x8000] << 16;
 		proptag |= g_email_proptags[i] & 0xFFFF;
 		pvalue = tpropval_array_get_propval(
@@ -1286,7 +1287,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 			goto EXPORT_FAILURE;
 		}
 		vcard_append_value(pvline, pvvalue);
-		propid = g_workaddr_proptags[i] >> 16;
+		propid = PROP_ID(g_workaddr_proptags[i]);
 		proptag = propids.ppropid[propid - 0x8000] << 16;
 		proptag |= g_workaddr_proptags[i] & 0xFFFF;
 		pvalue = tpropval_array_get_propval(
@@ -1457,7 +1458,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	propid = g_categories_proptag >> 16;
+	propid = PROP_ID(g_categories_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
 	proptag |= g_categories_proptag & 0xFFFF;
 	pvalue = tpropval_array_get_propval(
@@ -1543,7 +1544,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	propid = g_bcd_proptag >> 16;
+	propid = PROP_ID(g_bcd_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
 	proptag |= g_bcd_proptag & 0xFFFF;
 	pvalue = tpropval_array_get_propval(
@@ -1570,7 +1571,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	for (i=0; i<4; i++) {
-		propid = g_ufld_proptags[i] >> 16;
+		propid = PROP_ID(g_ufld_proptags[i]);
 		proptag = propids.ppropid[propid - 0x8000] << 16;
 		proptag |= g_ufld_proptags[i] & 0xFFFF;
 		pvalue = tpropval_array_get_propval(
@@ -1684,7 +1685,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	propid = g_fbl_proptag >> 16;
+	propid = PROP_ID(g_fbl_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
 	proptag |= g_fbl_proptag & 0xFFFF;
 	pvalue = tpropval_array_get_propval(
@@ -1758,7 +1759,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	vcard_append_line(pvcard, pvline);
 	
-	propid = g_im_proptag >> 16;
+	propid = PROP_ID(g_im_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
 	proptag |= g_im_proptag & 0xFFFF;
 	pvalue = tpropval_array_get_propval(

@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <string.h>
 #include <libHX/string.h>
+#include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
 #include "proptag_array.h"
 #include "double_list.h"
@@ -233,7 +234,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				return NULL;
 			}
 			proptag = strtol(pline + 2, NULL, 16);
-			if ((proptag >> 16) == 0 || (proptag >> 16) >= 0x8000) {
+			if (PROP_ID(proptag) == 0 || PROP_ID(proptag) >= 0x8000) {
 				printf("[exchange_emsmdb]: fail to parse line"
 					"\"%s\" in %s\n", pline, file_path);
 				list_file_free(pfile);
@@ -247,7 +248,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				return NULL;
 			}
 			ptag_node->node.pdata = ptag_node;
-			ptag_node->propid = proptag >> 16;
+			ptag_node->propid = PROP_ID(proptag);
 			ptag_node->type = proptag & 0xFFFF;
 			ptag_node->ppropname = NULL;
 			double_list_append_as_tail(

@@ -2,6 +2,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "tarray_set.h"
 #include "ext_buffer.h"
@@ -2326,7 +2327,7 @@ static void oxcical_replace_propid(
 	
 	for (i=0; i<pproplist->count; i++) {
 		proptag = pproplist->ppropval[i].proptag;
-		propid = proptag >> 16;
+		propid = PROP_ID(proptag);
 		if (0 == (propid & 0x8000)) {
 			continue;
 		}

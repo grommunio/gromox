@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "tarray_set.h"
@@ -1295,7 +1296,7 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash
 	
 	for (i=0; i<pproplist->count; i++) {
 		proptag = pproplist->ppropval[i].proptag;
-		propid = proptag >> 16;
+		propid = PROP_ID(proptag);
 		if (0 == (propid & 0x8000)) {
 			continue;
 		}
@@ -2897,7 +2898,7 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 				pproplist, PROP_TAG_DISPLAYNAME);
 	for (i=0; i<pproplist->count; i++) {
 		ptnef_proplist->ppropval[ptnef_proplist->count].propid =
-							pproplist->ppropval[i].proptag >> 16;
+			PROP_ID(pproplist->ppropval[i].proptag);
 		ptnef_proplist->ppropval[ptnef_proplist->count].proptype =
 							pproplist->ppropval[i].proptag & 0xFFFF;
 		if (NULL != psmtp && PROP_TAG_ENTRYID ==
@@ -2934,7 +2935,7 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		}
 		memcpy(pbin->pb, tmp_bin.pb, tmp_bin.cb);
 		ptnef_proplist->ppropval[ptnef_proplist->count].propid =
-											PROP_TAG_ENTRYID >> 16;
+			PROP_ID(PROP_TAG_ENTRYID);
 		ptnef_proplist->ppropval[ptnef_proplist->count].proptype =
 										PROP_TAG_ENTRYID & 0xFFFF;
 		ptnef_proplist->ppropval[ptnef_proplist->count].ppropname = NULL;
@@ -3443,7 +3444,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			continue;
 		}
 		tnef_proplist.ppropval[tnef_proplist.count].propid =
-					pmsg->proplist.ppropval[i].proptag >> 16;
+			PROP_ID(pmsg->proplist.ppropval[i].proptag);
 		if (PROP_TAG_MESSAGECLASS == pmsg->proplist.ppropval[i].proptag) {
 			tnef_proplist.ppropval[tnef_proplist.count].proptype =
 												PROPVAL_TYPE_STRING;
@@ -3475,7 +3476,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			PROP_TAG_INTERNETMESSAGEID);
 		if (NULL != pvalue) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
-								PROP_TAG_TNEFCORRELATIONKEY >> 16;
+				PROP_ID(PROP_TAG_TNEFCORRELATIONKEY);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype =
 											PROPVAL_TYPE_BINARY;
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
@@ -3672,7 +3673,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				continue;
 			}
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
-				pattachment->proplist.ppropval[j].proptag >> 16;
+				PROP_ID(pattachment->proplist.ppropval[j].proptag);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype =
 				pattachment->proplist.ppropval[j].proptag & 0xFFFF;
 			if (tnef_proplist.ppropval[tnef_proplist.count].propid & 0x8000) {
@@ -3691,7 +3692,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 		if (NULL != pattachment->pembedded) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
-								PROP_TAG_ATTACHDATAOBJECT >> 16;
+				PROP_ID(PROP_TAG_ATTACHDATAOBJECT);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype =
 												PROPVAL_TYPE_OBJECT;
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;

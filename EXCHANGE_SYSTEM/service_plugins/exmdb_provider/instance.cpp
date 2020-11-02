@@ -2,6 +2,7 @@
 #include <libHX/defs.h>
 #include <gromox/database.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
 #include "exmdb_server.h"
@@ -2889,10 +2890,9 @@ BOOL exmdb_server_get_instance_properties(
 			}	
 		} else if (PROPVAL_TYPE_UNSPECIFIED ==
 			(pproptags->pproptag[i] & 0xFFFF)) {
-			propid = pproptags->pproptag[i] >> 16;
+			propid = PROP_ID(pproptags->pproptag[i]);
 			for (j=0; j<pmsgctnt->proplist.count; j++) {
-				if ((pmsgctnt->proplist.ppropval[j].proptag >> 16)
-					== propid) {
+				if (PROP_ID(pmsgctnt->proplist.ppropval[j].proptag) == propid) {
 					ppropvals->ppropval[ppropvals->count].proptag =
 											pproptags->pproptag[i];
 					ppropvals->ppropval[ppropvals->count].pvalue =

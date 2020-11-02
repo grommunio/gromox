@@ -3,6 +3,7 @@
 #endif
 #include <cstdint>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include "php.h"
 #include "php_mapi.h"
@@ -734,7 +735,7 @@ ZEND_FUNCTION(mapi_prop_id)
 		RETVAL_FALSE;
 	} else {
 		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(((uint32_t)proptag) >> 16);
+		RETURN_LONG(PROP_ID(proptag));
 	}
 }
 
@@ -4194,7 +4195,7 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 		goto THROW_EXCEPTION;
 	}
 	for (i=0; i<proptags.count; i++) {
-		propids.ppropid[i] = proptags.pproptag[i] >> 16;
+		propids.ppropid[i] = PROP_ID(proptags.pproptag[i]);
 	}
 	result = zarafa_client_getpropnames(
 		pstore->hsession, pstore->hobject,

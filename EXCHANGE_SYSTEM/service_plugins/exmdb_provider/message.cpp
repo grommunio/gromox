@@ -3,6 +3,7 @@
 #include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/database.h>
+#include <gromox/mapidefs.h>
 #include <gromox/svc_common.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
@@ -3146,11 +3147,10 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 	uint32_t *pproptag, BOOL *pb_replaced)
 {
 	int i;
-	uint16_t propid;
 	PROPID_ARRAY propids;
 	PROPNAME_ARRAY propnames;
 	
-	propid = (*pproptag) >> 16;
+	uint16_t propid = PROP_ID(*pproptag);
 	*pb_replaced = FALSE;
 	if (0 == (propid & 0x8000)) {
 		return TRUE;
