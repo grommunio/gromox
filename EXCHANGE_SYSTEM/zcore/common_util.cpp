@@ -160,17 +160,17 @@ BOOL common_util_check_delegate(
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
 	if (NULL != pvalue) {
-		if (0 == strcasecmp(pvalue, "EX")) {
+		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				return common_util_essdn_to_username(pvalue, username);
+				return common_util_essdn_to_username(static_cast<char *>(pvalue), username);
 			}
-		} else if (0 == strcasecmp(pvalue, "SMTP")) {
+		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				strncpy(username, pvalue, 256);
+				strncpy(username, static_cast<char *>(pvalue), 256);
 				return TRUE;
 			}
 		}
@@ -178,13 +178,13 @@ BOOL common_util_check_delegate(
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
 	if (NULL != pvalue) {
-		strncpy(username, pvalue, 256);
+		strncpy(username, static_cast<char *>(pvalue), 256);
 		return TRUE;
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_SENTREPRESENTINGENTRYID);
 	if (NULL != pvalue) {
-		return common_util_entryid_to_username(pvalue, username);
+		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username);
 	}
 	username[0] = '\0';
 	return TRUE;
@@ -204,7 +204,7 @@ BOOL common_util_check_delegate_permission(
 		return FALSE;
 	}
 	item_num = list_file_get_item_num(pfile);
-	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+	auto pitem = reinterpret_cast<const srcitem *>(list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
 		if (strcasecmp(pitem[i].user, account) == 0) {
 			list_file_free(pfile);
@@ -266,7 +266,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = (void*)account;
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
-	propval_buff[5].pvalue  = const_cast(char *, "EX");
+	propval_buff[5].pvalue  = const_cast<char *>("EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
 		return GXERR_CALL_FAILED;
 	}
@@ -311,7 +311,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
-	propval_buff[11].pvalue  = const_cast(char *, "EX");
+	propval_buff[11].pvalue  = const_cast<char *>("EX");
 	propval_buff[12].proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	propval_buff[12].pvalue = essdn_buff1;
 	propval_buff[13].proptag = PROP_TAG_SENTREPRESENTINGNAME;
@@ -580,7 +580,7 @@ void common_util_exmdb_locinfo_to_string(
 {
 	
 	sprintf(loc_string, "%d:%d:%llx", (int)type,
-	        db_id, static_cast(unsigned long long, rop_util_get_gc_value(eid)));
+	        db_id, static_cast<unsigned long long>(rop_util_get_gc_value(eid)));
 }
 
 BOOL common_util_exmdb_locinfo_from_string(
@@ -588,7 +588,6 @@ BOOL common_util_exmdb_locinfo_from_string(
 	int *pdb_id, uint64_t *peid)
 {
 	int tmp_len;
-	char *ptoken;
 	uint64_t tmp_val;
 	char tmp_buff[16];
 	
@@ -603,7 +602,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 	} else {
 		return FALSE;
 	}
-	ptoken = strchr(loc_string + 2, ':');
+	auto ptoken = strchr(loc_string + 2, ':');
 	if (NULL == ptoken) {
 		return FALSE;
 	}
@@ -753,9 +752,7 @@ const char* common_util_get_freebusy_path()
 
 BOOL common_util_build_environment()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = malloc(sizeof(ENVIRONMENT_CONTEXT));
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(malloc(sizeof(ENVIRONMENT_CONTEXT)));
 	if (NULL == pctx) {
 		return FALSE;
 	}
@@ -767,9 +764,7 @@ BOOL common_util_build_environment()
 
 void common_util_free_environment()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	pthread_setspecific(g_env_key, NULL);
 	alloc_context_free(&pctx->allocator);
 	free(pctx);
@@ -777,17 +772,13 @@ void common_util_free_environment()
 
 void* common_util_alloc(size_t size)
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	return alloc_context_alloc(&pctx->allocator, size);
 }
 
 void common_util_set_clifd(int clifd)
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	if (NULL != pctx) {
 		pctx->clifd = clifd;
 	}
@@ -795,9 +786,7 @@ void common_util_set_clifd(int clifd)
 
 int common_util_get_clifd()
 {
-	ENVIRONMENT_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_env_key);
+	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	if (NULL == pctx) {
 		return -1;
 	}
@@ -807,10 +796,9 @@ int common_util_get_clifd()
 char* common_util_dup(const char *pstr)
 {
 	int len;
-	char *pstr1;
 	
 	len = strlen(pstr) + 1;
-	pstr1 = common_util_alloc(len);
+	auto pstr1 = static_cast<char *>(common_util_alloc(len));
 	if (NULL == pstr1) {
 		return NULL;
 	}
@@ -820,9 +808,7 @@ char* common_util_dup(const char *pstr)
 
 static BINARY* common_util_dup_binary(const BINARY *pbin)
 {
-	BINARY *pbin1;
-	
-	pbin1 = common_util_alloc(sizeof(BINARY));
+	auto pbin1 = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin1) {
 		return NULL;
 	}
@@ -831,11 +817,10 @@ static BINARY* common_util_dup_binary(const BINARY *pbin)
 		pbin1->pb = NULL;
 		return pbin1;
 	}
-	pbin1->pb = common_util_alloc(pbin->cb);
-	if (NULL == pbin1->pb) {
+	pbin1->pv = common_util_alloc(pbin->cb);
+	if (pbin1->pv == nullptr)
 		return NULL;
-	}
-	memcpy(pbin1->pb, pbin->pb, pbin->cb);
+	memcpy(pbin1->pv, pbin->pv, pbin->cb);
 	return pbin1;
 }
 
@@ -849,9 +834,9 @@ ZNOTIFICATION* common_util_dup_znotification(
 	NEWMAIL_ZNOTIFICATION *pnew_notify1;
 	
 	if (FALSE == b_temp) {
-		pnotification1 = malloc(sizeof(ZNOTIFICATION));
+		pnotification1 = static_cast<ZNOTIFICATION *>(malloc(sizeof(ZNOTIFICATION)));
 	} else {
-		pnotification1 = common_util_alloc(sizeof(ZNOTIFICATION));
+		pnotification1 = static_cast<ZNOTIFICATION *>(common_util_alloc(sizeof(ZNOTIFICATION)));
 	}
 	if (NULL == pnotification) {
 		return NULL;
@@ -861,13 +846,13 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pnew_notify1 = (NEWMAIL_ZNOTIFICATION*)
 			pnotification->pnotification_data;
 		if (FALSE == b_temp) {
-			pnew_notify = malloc(sizeof(NEWMAIL_ZNOTIFICATION));
+			pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(malloc(sizeof(*pnew_notify)));
 			if (NULL == pnew_notify) {
 				free(pnotification1);
 				return NULL;
 			}
 		} else {
-			pnew_notify = common_util_alloc(sizeof(NEWMAIL_ZNOTIFICATION));
+			pnew_notify = static_cast<NEWMAIL_ZNOTIFICATION *>(common_util_alloc(sizeof(*pnew_notify)));
 			if (NULL == pnew_notify) {
 				return NULL;
 			}
@@ -876,35 +861,31 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pnotification1->pnotification_data = pnew_notify;
 		pnew_notify->entryid.cb = pnew_notify1->entryid.cb;
 		if (FALSE == b_temp) {
-			pnew_notify->entryid.pb = malloc(pnew_notify->entryid.cb);
-			if (NULL == pnew_notify->entryid.pb) {
+			pnew_notify->entryid.pv = malloc(pnew_notify->entryid.cb);
+			if (pnew_notify->entryid.pv == nullptr) {
 				common_util_free_znotification(pnotification1);
 				return NULL;
 			}
 		} else {
-			pnew_notify->entryid.pb = common_util_alloc(
-								pnew_notify->entryid.cb);
-			if (NULL == pnew_notify->entryid.pb) {
+			pnew_notify->entryid.pv = common_util_alloc(pnew_notify->entryid.cb);
+			if (pnew_notify->entryid.pv == nullptr)
 				return NULL;
-			}
 		}
-		memcpy(pnew_notify->entryid.pb, pnew_notify1->entryid.pb,
+		memcpy(pnew_notify->entryid.pv, pnew_notify1->entryid.pv,
 			pnew_notify->entryid.cb);
 		pnew_notify->parentid.cb = pnew_notify1->parentid.cb;
 		if (FALSE == b_temp) {
-			pnew_notify->parentid.pb = malloc(pnew_notify->parentid.cb);
-			if (NULL == pnew_notify->parentid.pb) {
+			pnew_notify->parentid.pv = malloc(pnew_notify->parentid.cb);
+			if (pnew_notify->parentid.pv == nullptr) {
 				common_util_free_znotification(pnotification1);
 				return NULL;
 			}
 		} else {
-			pnew_notify->parentid.pb = common_util_alloc(
-								pnew_notify->parentid.cb);
-			if (NULL == pnew_notify->parentid.pb) {
+			pnew_notify->parentid.pv = common_util_alloc(pnew_notify->parentid.cb);
+			if (pnew_notify->parentid.pv == nullptr)
 				return NULL;
-			}
 		}
-		memcpy(pnew_notify->parentid.pb, pnew_notify1->parentid.pb,
+		memcpy(pnew_notify->parentid.pv, pnew_notify1->parentid.pv,
 			pnew_notify->parentid.cb);
 		pnew_notify->flags = pnew_notify1->flags;
 		if (FALSE == b_temp) {
@@ -925,14 +906,13 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pobj_notify1 = (OBJECT_ZNOTIFICATION*)
 			pnotification->pnotification_data;
 		if (FALSE == b_temp) {
-			pobj_notify = malloc(sizeof(OBJECT_ZNOTIFICATION));
+			pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(malloc(sizeof(*pobj_notify)));
 			if (NULL == pobj_notify) {
 				free(pnotification1);
 				return NULL;
 			}
 		} else {
-			pobj_notify = common_util_alloc(
-				sizeof(OBJECT_ZNOTIFICATION));
+			pobj_notify = static_cast<OBJECT_ZNOTIFICATION *>(common_util_alloc(sizeof(*pobj_notify)));
 			if (NULL == pobj_notify) {
 				return NULL;
 			}
@@ -942,8 +922,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pobj_notify->object_type = pobj_notify1->object_type;
 		if (NULL != pobj_notify1->pentryid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pentryid = propval_dup(PROPVAL_TYPE_BINARY,
-												pobj_notify1->pentryid);
+				pobj_notify->pentryid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY,
+				                        pobj_notify1->pentryid));
 				if (NULL == pobj_notify->pentryid) {
 					common_util_free_znotification(pnotification1);
 					return NULL;
@@ -958,8 +938,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 		if (NULL != pobj_notify1->pparentid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pparentid = propval_dup(PROPVAL_TYPE_BINARY, 
-												pobj_notify1->pparentid);
+				pobj_notify->pparentid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY,
+				                         pobj_notify1->pparentid));
 				if (NULL == pobj_notify->pparentid) {
 					common_util_free_znotification(pnotification1);
 					return NULL;
@@ -974,8 +954,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 		if (NULL != pobj_notify1->pold_entryid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pold_entryid = propval_dup(PROPVAL_TYPE_BINARY, 
-												pobj_notify1->pold_entryid);
+				pobj_notify->pold_entryid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY, 
+				                            pobj_notify1->pold_entryid));
 				if (NULL == pobj_notify->pold_entryid) {
 					common_util_free_znotification(pnotification1);
 					return NULL;
@@ -990,8 +970,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 		if (NULL != pobj_notify->pold_parentid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pold_parentid = propval_dup(PROPVAL_TYPE_BINARY,
-												pobj_notify1->pold_parentid);
+				pobj_notify->pold_parentid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY,
+				                             pobj_notify1->pold_parentid));
 				if (NULL == pobj_notify->pold_parentid) {
 					common_util_free_znotification(pnotification1);
 					return NULL;
@@ -1013,16 +993,14 @@ ZNOTIFICATION* common_util_dup_znotification(
 					return NULL;
 				}
 			} else {
-				pobj_notify1->pproptags = common_util_alloc(
-									sizeof(PROPTAG_ARRAY));
+				pobj_notify1->pproptags = static_cast<PROPTAG_ARRAY *>(common_util_alloc(sizeof(PROPTAG_ARRAY)));
 				if (NULL == pobj_notify1->pproptags) {
 					return NULL;
 				}
 				pobj_notify1->pproptags->count =
 					pobj_notify->pproptags->count;
 				pobj_notify1->pproptags->pproptag =
-					common_util_alloc(sizeof(uint32_t)
-					*pobj_notify->pproptags->count);
+					static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t) * pobj_notify->pproptags->count));
 				if (NULL == pobj_notify1->pproptags->pproptag) {
 					return NULL;
 				}
@@ -1258,7 +1236,6 @@ BOOL common_util_entryid_to_username(
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username)
 {
-	BINARY *pbin;
 	char x500dn[1024];
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
@@ -1272,15 +1249,14 @@ BINARY* common_util_username_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(1280);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(1280);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
+	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;
@@ -1294,17 +1270,16 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
-	pbin->pb = common_util_alloc(1280);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(1280);
+	if (pbin->pv == nullptr)
 		return FALSE;
-	}
 	tmp_entryid.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 							tmp_entryid.provider_uid);
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
-	tmp_entryid.px500dn = (void*)essdn;
-	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
+	tmp_entryid.px500dn = const_cast<char *>(essdn);
+	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
 		return FALSE;
@@ -1350,10 +1325,9 @@ BOOL common_util_username_to_entryid(const char *username,
 		}
 		return TRUE;
 	}
-	pbin->pb = common_util_alloc(1280);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(1280);
+	if (pbin->pv == nullptr)
 		return FALSE;
-	}
 	oneoff_entry.flags = 0;
 	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF,
 						oneoff_entry.provider_uid);
@@ -1364,9 +1338,9 @@ BOOL common_util_username_to_entryid(const char *username,
 	} else {
 		oneoff_entry.pdisplay_name = (char*)username;
 	}
-	oneoff_entry.paddress_type = const_cast(char *, "SMTP");
+	oneoff_entry.paddress_type = const_cast<char *>("SMTP");
 	oneoff_entry.pmail_address = (char*)username;
-	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
+	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH;
@@ -1384,7 +1358,6 @@ BOOL common_util_username_to_entryid(const char *username,
 
 BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 {
-	BINARY *pbin;
 	char x500dn[1024];
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
@@ -1398,15 +1371,14 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(1280);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(1280);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 1280, EXT_FLAG_UTF16);
+	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;	
@@ -1561,7 +1533,6 @@ BINARY* common_util_to_folder_entryid(
 	STORE_OBJECT *pstore, uint64_t folder_id)
 {
 	BOOL b_found;
-	BINARY *pbin;
 	BINARY tmp_bin;
 	uint16_t replid;
 	EXT_PUSH ext_push;
@@ -1598,15 +1569,14 @@ BINARY* common_util_to_folder_entryid(
 	rop_util_get_gc_array(folder_id, tmp_entryid.global_counter);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(256);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(256);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 256, 0);
+	ext_buffer_push_init(&ext_push, pbin->pv, 256, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_folder_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;	
@@ -1618,21 +1588,19 @@ BINARY* common_util_to_folder_entryid(
 BINARY* common_util_calculate_folder_sourcekey(
 	STORE_OBJECT *pstore, uint64_t folder_id)
 {
-	BINARY *pbin;
 	BOOL b_found;
 	uint16_t replid;
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
 	pbin->cb = 22;
-	pbin->pb = common_util_alloc(22);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(22);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
 	if (TRUE == store_object_check_private(pstore)) {
 		longid.guid = rop_util_make_user_guid(
 			store_object_get_account_id(pstore));
@@ -1653,7 +1621,7 @@ BINARY* common_util_calculate_folder_sourcekey(
 		}	
 	}
 	rop_util_get_gc_array(folder_id, longid.global_counter);
-	ext_buffer_push_init(&ext_push, pbin->pb, 22, 0);
+	ext_buffer_push_init(&ext_push, pbin->pv, 22, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
 		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&ext_push, longid.global_counter, 6)) {
@@ -1666,7 +1634,6 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	uint64_t folder_id, uint64_t message_id)
 {
 	BOOL b_found;
-	BINARY *pbin;
 	BINARY tmp_bin;
 	uint16_t replid;
 	EXT_PUSH ext_push;
@@ -1707,15 +1674,14 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(256);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(256);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 256, 0);
+	ext_buffer_push_init(&ext_push, pbin->pv, 256, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_message_entryid(
 		&ext_push, &tmp_entryid)) {
 		return NULL;	
@@ -1727,19 +1693,17 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 BINARY* common_util_calculate_message_sourcekey(
 	STORE_OBJECT *pstore, uint64_t message_id)
 {
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
 	
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
 	pbin->cb = 22;
-	pbin->pb = common_util_alloc(22);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(22);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
 	if (TRUE == store_object_check_private(pstore)) {
 		longid.guid = rop_util_make_user_guid(
 			store_object_get_account_id(pstore));
@@ -1748,7 +1712,7 @@ BINARY* common_util_calculate_message_sourcekey(
 			store_object_get_account_id(pstore));
 	}
 	rop_util_get_gc_array(message_id, longid.global_counter);
-	ext_buffer_push_init(&ext_push, pbin->pb, 22, 0);
+	ext_buffer_push_init(&ext_push, pbin->pv, 22, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_guid(&ext_push,
 		&longid.guid) || EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 		&ext_push, longid.global_counter, 6)) {
@@ -1762,10 +1726,9 @@ BOOL common_util_recipients_to_list(
 {
 	int i;
 	void *pvalue;
-	DOUBLE_LIST_NODE *pnode;
 	
 	for (i=0; i<prcpts->count; i++) {
-		pnode = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
+		auto pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
 		if (NULL == pnode) {
 			return FALSE;
 		}
@@ -1788,12 +1751,11 @@ CONVERT_ENTRYID:
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			if (FALSE == common_util_entryid_to_username(
-				pvalue, pnode->pdata)) {
+			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+			    static_cast<char *>(pnode->pdata)))
 				return FALSE;
-			}
 		} else {
-			if (0 == strcasecmp(pvalue, "SMTP")) {
+			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 				pnode->pdata = common_util_get_propvals(
 					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
 				if (NULL == pnode->pdata) {
@@ -1810,18 +1772,16 @@ CONVERT_ENTRYID:
 
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 {
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(24);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(24);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 24, 0);
+	ext_buffer_push_init(&ext_push, pbin->pv, 24, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_xid(
 		&ext_push, size, pxid)) {
 		return NULL;
@@ -1848,17 +1808,14 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 
 BINARY* common_util_guid_to_binary(GUID guid)
 {
-	BINARY *pbin;
-	
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
 	pbin->cb = 0;
-	pbin->pb = common_util_alloc(16);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(16);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
 	rop_util_guid_to_binary(guid, pbin);
 	return pbin;
 }
@@ -1894,11 +1851,10 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
 	PCL *ppcl;
-	BINARY *pbin;
 	SIZED_XID xid;
 	BINARY *ptmp_bin;
 	
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1927,12 +1883,12 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		return NULL;
 	}
 	pbin->cb = ptmp_bin->cb;
-	pbin->pb = common_util_alloc(ptmp_bin->cb);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(ptmp_bin->cb);
+	if (pbin->pv == nullptr) {
 		rop_util_free_binary(ptmp_bin);
 		return NULL;
 	}
-	memcpy(pbin->pb, ptmp_bin->pb, pbin->cb);
+	memcpy(pbin->pv, ptmp_bin->pv, pbin->cb);
 	rop_util_free_binary(ptmp_bin);
 	return pbin;
 }
@@ -1942,10 +1898,9 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 {
 	PCL *ppcl1;
 	PCL *ppcl2;
-	BINARY *pbin;
 	BINARY *ptmp_bin;
 	
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1979,12 +1934,12 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 		return NULL;
 	}
 	pbin->cb = ptmp_bin->cb;
-	pbin->pb = common_util_alloc(ptmp_bin->cb);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(ptmp_bin->cb);
+	if (pbin->pv == nullptr) {
 		rop_util_free_binary(ptmp_bin);
 		return NULL;
 	}
-	memcpy(pbin->pb, ptmp_bin->pb, pbin->cb);
+	memcpy(pbin->pv, ptmp_bin->pv, pbin->cb);
 	rop_util_free_binary(ptmp_bin);
 	return pbin;
 }
@@ -1998,16 +1953,14 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 		return FALSE;
 	}
 	pbin->cb = node_state.st_size;
-	pbin->pb = common_util_alloc(node_state.st_size);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(node_state.st_size);
+	if (pbin->pv == nullptr)
 		return FALSE;
-	}
 	fd = open(path, O_RDONLY);
 	if (-1 == fd) {
 		return FALSE;
 	}
-	if (node_state.st_size != read(fd,
-		pbin->pb, node_state.st_size)) {
+	if (read(fd, pbin->pv, node_state.st_size) != node_state.st_size) {
 		close(fd);
 		return FALSE;
 	}
@@ -2166,14 +2119,14 @@ static BOOL common_util_send_mail(MAIL *pmail,
 
 	for (pnode=double_list_get_head(prcpt_list); NULL!=pnode;
 		pnode=double_list_get_after(prcpt_list, pnode)) {
-		if (NULL == strchr(pnode->pdata, '@')) {
+		if (strchr(static_cast<char *>(pnode->pdata), '@') == nullptr) {
 			command_len = sprintf(last_command,
 				"rcpt to:<%s@none>\r\n",
-				static_cast(const char *, pnode->pdata));
+			              static_cast<const char *>(pnode->pdata));
 		} else {
 			command_len = sprintf(last_command,
 				"rcpt to:<%s>\r\n",
-				static_cast(const char *, pnode->pdata));
+			              static_cast<const char *>(pnode->pdata));
 		}
 		if (FALSE == common_util_send_command(
 			sockd, last_command, command_len)) {
@@ -2267,7 +2220,7 @@ static void common_util_set_dir(const char *dir)
 
 static const char* common_util_get_dir()
 {
-	return pthread_getspecific(g_dir_key);
+	return static_cast<char *>(pthread_getspecific(g_dir_key));
 }
 
 static BOOL common_util_get_propids(
@@ -2315,14 +2268,12 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	BOOL b_partial;
 	int accound_id;
 	uint64_t new_id;
-	BINARY *ptarget;
 	USER_INFO *pinfo;
 	uint64_t parent_id;
 	uint64_t folder_id;
 	TARRAY_SET *prcpts;
 	DOUBLE_LIST temp_list;
 	uint32_t message_flags;
-	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -2347,8 +2298,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
-		ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL)
-						*(pmsgctnt->proplist.count + 1));
+		ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * (pmsgctnt->proplist.count + 1)));
 		if (NULL == ppropval) {
 			return FALSE;
 		}
@@ -2377,7 +2327,7 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 	}
 	double_list_init(&temp_list);
 	for (i=0; i<prcpts->count; i++) {
-		pnode = common_util_alloc(sizeof(DOUBLE_LIST_NODE));
+		auto pnode = static_cast<DOUBLE_LIST_NODE *>(common_util_alloc(sizeof(DOUBLE_LIST_NODE)));
 		if (NULL == pnode) {
 			return FALSE;
 		}
@@ -2420,18 +2370,17 @@ CONVERT_ENTRYID:
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			if (FALSE == common_util_entryid_to_username(
-				pvalue, pnode->pdata)) {
+			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
+			    static_cast<char *>(pnode->pdata)))
 				return FALSE;	
-			}
 		} else {
-			if (0 == strcasecmp(pvalue, "SMTP")) {
+			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 				pnode->pdata = common_util_get_propvals(
 					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
-			} else if (0 == strcasecmp(pvalue, "EX")) {
+			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 				pvalue = common_util_get_propvals(
 					prcpts->pparray[i], PROP_TAG_EMAILADDRESS);
 				if (NULL == pvalue) {
@@ -2441,10 +2390,9 @@ CONVERT_ENTRYID:
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
-				if (FALSE == common_util_essdn_to_username(
-					pvalue, pnode->pdata)) {
+				if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
+				    static_cast<char *>(pnode->pdata)))
 					goto CONVERT_ENTRYID;
-				}
 			} else {
 				goto CONVERT_ENTRYID;
 			}
@@ -2487,8 +2435,8 @@ CONVERT_ENTRYID:
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist,
 							PROP_TAG_SENTMAILSVREID);
-	ptarget = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_TARGETENTRYID);
+	auto ptarget = static_cast<BINARY *>(common_util_get_propvals(
+	               &pmsgctnt->proplist, PROP_TAG_TARGETENTRYID));
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(*ptarget,
 			&b_private, &accound_id, &folder_id, &new_id)) {
@@ -2568,14 +2516,12 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	SVREID *psvreid;
 	USER_INFO *pinfo;
 	EXT_PULL ext_pull;
-	MOVECOPY_ACTION *pmovecopy1;
-	STORE_ENTRYID *pstore_entryid;
 	
-	pmovecopy1 = common_util_alloc(sizeof(MOVECOPY_ACTION));
+	auto pmovecopy1 = static_cast<MOVECOPY_ACTION *>(common_util_alloc(sizeof(MOVECOPY_ACTION)));
 	if (NULL == pmovecopy1) {
 		return NULL;
 	}
-	pstore_entryid = common_util_alloc(sizeof(STORE_ENTRYID));
+	auto pstore_entryid = static_cast<STORE_ENTRYID *>(common_util_alloc(sizeof(STORE_ENTRYID)));
 	if (NULL == pstore_entryid) {
 		return NULL;
 	}
@@ -2599,7 +2545,7 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 	} else {
 		pmovecopy1->same_store = 1;
 		pmovecopy1->pstore_eid = NULL;
-		psvreid = common_util_alloc(sizeof(SVREID));
+		psvreid = static_cast<SVREID *>(common_util_alloc(sizeof(SVREID)));
 		if (NULL == psvreid) {
 			return NULL;
 		}
@@ -2620,9 +2566,8 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 {
 	int db_id;
 	BOOL b_private;
-	REPLY_ACTION *preply1;
 	
-	preply1 = common_util_alloc(sizeof(REPLY_ACTION));
+	auto preply1 = static_cast<REPLY_ACTION *>(common_util_alloc(sizeof(REPLY_ACTION)));
 	if (NULL == preply1) {
 		return NULL;
 	}
@@ -2639,17 +2584,16 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
-	RULE_ACTIONS *pactions;
 	
-	pactions = common_util_get_propvals(
-		ppropvals, PROP_TAG_RULEACTIONS);
+	auto pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
+	                ppropvals, PROP_TAG_RULEACTIONS));
 	for (i=0; i<pactions->count; i++) {
 		switch (pactions->pblock[i].type) {
 		case ACTION_TYPE_OP_MOVE:
 		case ACTION_TYPE_OP_COPY:
 			pactions->pblock[i].pdata =
 				common_util_convert_from_zmovecopy(
-				pactions->pblock[i].pdata);
+				static_cast<ZMOVECOPY_ACTION *>(pactions->pblock[i].pdata));
 			if (NULL == pactions->pblock[i].pdata) {
 				return FALSE;
 			}
@@ -2658,7 +2602,7 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 		case ACTION_TYPE_OP_OOF_REPLY:
 			pactions->pblock[i].pdata =
 				common_util_convert_from_zreply(
-				pactions->pblock[i].pdata);
+				static_cast<ZREPLY_ACTION *>(pactions->pblock[i].pdata));
 			if (NULL == pactions->pblock[i].pdata) {
 				return FALSE;
 			}
@@ -2670,7 +2614,6 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 
 BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 {
-	BINARY *pbin;
 	USER_INFO *pinfo;
 	EXT_PUSH ext_push;
 	char tmp_buff[1024];
@@ -2688,8 +2631,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 			PROVIDER_UID_WRAPPED_PRIVATE,
 			store_entryid.wrapped_provider_uid);
 		store_entryid.wrapped_type = 0x0000000C;
-		store_entryid.pserver_name = (void*)
-			store_object_get_account(pstore);
+		store_entryid.pserver_name = const_cast<char *>(store_object_get_account(pstore));
 		if (FALSE == common_util_username_to_essdn(
 			store_object_get_account(pstore), tmp_buff)) {
 			return NULL;	
@@ -2707,15 +2649,14 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 		}
 	}
 	store_entryid.pmailbox_dn = tmp_buff;
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(1024);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(1024);
+	if (pbin->pb == nullptr)
 		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 1024, EXT_FLAG_UTF16);
+	ext_buffer_push_init(&ext_push, pbin->pv, 1024, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
 		&ext_push, &store_entryid)) {
 		return NULL;	
@@ -2729,19 +2670,17 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 {
 	BINARY *pbin;
 	EXT_PUSH ext_push;
-	ZMOVECOPY_ACTION *pmovecopy1;
 	
-	pmovecopy1 = common_util_alloc(sizeof(ZMOVECOPY_ACTION));
+	auto pmovecopy1 = static_cast<ZMOVECOPY_ACTION *>(common_util_alloc(sizeof(ZMOVECOPY_ACTION)));
 	if (NULL == pmovecopy1) {
 		return NULL;
 	}
 	if (0 == pmovecopy->same_store) {
-		pmovecopy1->store_eid.pb = common_util_alloc(1024);
-		if (NULL == pmovecopy1->store_eid.pb) {
+		pmovecopy1->store_eid.pv = common_util_alloc(1024);
+		if (pmovecopy1->store_eid.pv == nullptr)
 			return NULL;
-		}
 		ext_buffer_push_init(&ext_push,
-			pmovecopy1->store_eid.pb, 1024, EXT_FLAG_UTF16);
+			pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_store_entryid(
 			&ext_push, pmovecopy->pstore_eid)) {
 			return NULL;	
@@ -2767,9 +2706,7 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 static ZREPLY_ACTION* common_util_convert_to_zreply(
 	STORE_OBJECT *pstore, REPLY_ACTION *preply)
 {
-	ZREPLY_ACTION *preply1;
-	
-	preply1 = common_util_alloc(sizeof(ZREPLY_ACTION));
+	auto preply1 = static_cast<ZREPLY_ACTION *>(common_util_alloc(sizeof(ZREPLY_ACTION)));
 	if (NULL == preply1) {
 		return NULL;
 	}
@@ -2786,17 +2723,15 @@ BOOL common_util_convert_to_zrule_data(
 	STORE_OBJECT *pstore, TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
-	RULE_ACTIONS *pactions;
 	
-	pactions = common_util_get_propvals(
-		ppropvals, PROP_TAG_RULEACTIONS);
+	auto pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(ppropvals, PROP_TAG_RULEACTIONS));
 	for (i=0; i<pactions->count; i++) {
 		switch (pactions->pblock[i].type) {
 		case ACTION_TYPE_OP_MOVE:
 		case ACTION_TYPE_OP_COPY:
 			pactions->pblock[i].pdata =
 				common_util_convert_to_zmovecopy(
-				pstore, pactions->pblock[i].pdata);
+				pstore, static_cast<MOVECOPY_ACTION *>(pactions->pblock[i].pdata));
 			if (NULL == pactions->pblock[i].pdata) {
 				return FALSE;
 			}
@@ -2805,7 +2740,7 @@ BOOL common_util_convert_to_zrule_data(
 		case ACTION_TYPE_OP_OOF_REPLY:
 			pactions->pblock[i].pdata =
 				common_util_convert_to_zreply(
-				pstore, pactions->pblock[i].pdata);
+				pstore, static_cast<REPLY_ACTION *>(pactions->pblock[i].pdata));
 			if (NULL == pactions->pblock[i].pdata) {
 				return FALSE;
 			}
@@ -2897,8 +2832,8 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	propval.proptag = PROP_TAG_CHANGEKEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	pbin1 = common_util_get_propvals(&pmsgctnt->proplist,
-						PROP_TAG_PREDECESSORCHANGELIST);
+	pbin1 = static_cast<BINARY *>(common_util_get_propvals(&pmsgctnt->proplist,
+	        PROP_TAG_PREDECESSORCHANGELIST));
 	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
@@ -2996,8 +2931,7 @@ static BOOL common_util_create_folder(
 	propval.proptag = PROP_TAG_CHANGEKEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(pproplist, &propval);
-	pbin1 = common_util_get_propvals(pproplist,
-				PROP_TAG_PREDECESSORCHANGELIST);
+	pbin1 = static_cast<BINARY *>(common_util_get_propvals(pproplist, PROP_TAG_PREDECESSORCHANGELIST));
 	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
@@ -3066,19 +3000,18 @@ static EID_ARRAY* common_util_load_folder_messages(
 	}
 	exmdb_client_unload_table(
 		store_object_get_dir(pstore), table_id);
-	pmessage_ids = common_util_alloc(sizeof(EID_ARRAY));
+	pmessage_ids = static_cast<EID_ARRAY *>(common_util_alloc(sizeof(EID_ARRAY)));
 	if (NULL == pmessage_ids) {
 		return NULL;
 	}
 	pmessage_ids->count = 0;
-	pmessage_ids->pids = common_util_alloc(
-		sizeof(uint64_t)*tmp_set.count);
+	pmessage_ids->pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * tmp_set.count));
 	if (NULL == pmessage_ids->pids) {
 		return NULL;
 	}
 	for (i=0; i<tmp_set.count; i++) {
-		pmid = common_util_get_propvals(
-			tmp_set.pparray[i], PROP_TAG_MID);
+		pmid = static_cast<uint64_t *>(common_util_get_propvals(
+		       tmp_set.pparray[i], PROP_TAG_MID));
 		if (NULL == pmid) {
 			return NULL;
 		}
@@ -3174,8 +3107,8 @@ gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
 	exmdb_client_unload_table(
 		store_object_get_dir(pstore), table_id);
 	for (i=0; i<tmp_set.count; i++) {
-		pfolder_id = common_util_get_propvals(
-			tmp_set.pparray[i], PROP_TAG_FOLDERID);
+		pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
+		             tmp_set.pparray[i], PROP_TAG_FOLDERID));
 		if (NULL == pfolder_id) {
 			return GXERR_CALL_FAILED;
 		}
@@ -3227,7 +3160,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 		&& NULL != pvalue) {
 		snprintf(tmp_path, sizeof(tmp_path), "%s/eml/%s",
 		         store_object_get_dir(pstore),
-		         static_cast(const char *, pvalue));
+		         static_cast<const char *>(pvalue));
 		return common_util_load_file(tmp_path, peml_bin);
 	}
 	pinfo = zarafa_server_get_info();
@@ -3243,8 +3176,7 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_INTERNETCODEPAGE)) {
-		ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL)
-						*(pmsgctnt->proplist.count + 1));
+		ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * (pmsgctnt->proplist.count + 1)));
 		if (NULL == ppropval) {
 			return FALSE;
 		}
@@ -3290,8 +3222,8 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 		return FALSE;
 	}
 	mail_free(&imail);
-	peml_bin->pb = common_util_alloc(mail_len + 128);
-	if (NULL == peml_bin->pb) {
+	peml_bin->pv = common_util_alloc(mail_len + 128);
+	if (peml_bin->pv == nullptr) {
 		stream_free(&tmp_stream);
 		lib_buffer_free(pallocator);
 		return FALSE;
@@ -3299,7 +3231,8 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 
 	peml_bin->cb = 0;
 	size = STREAM_BLOCK_SIZE;
-	while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size)) != NULL) {
+	while ((ptr = stream_getbuffer_for_reading(&tmp_stream,
+	       reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 		memcpy(peml_bin->pb + peml_bin->cb, ptr, size);
 		peml_bin->cb += size;
 		size = STREAM_BLOCK_SIZE;
@@ -3384,7 +3317,6 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	STORE_OBJECT *pstore, const BINARY *pical_bin)
 {
 	ICAL ical;
-	char *pbuff;
 	USER_INFO *pinfo;
 	char timezone[64];
 	MESSAGE_CONTENT *pmsgctnt;
@@ -3394,7 +3326,7 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 		pinfo->username, timezone) || '\0' == timezone[0]) {
 		strcpy(timezone, g_default_zone);
 	}
-	pbuff = common_util_alloc(pical_bin->cb + 1);
+	auto pbuff = static_cast<char *>(common_util_alloc(pical_bin->cb + 1));
 	if (NULL == pbuff) {
 		return FALSE;
 	}
@@ -3437,8 +3369,8 @@ BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
 		&vcard, common_util_get_propids)) {
 		return FALSE;
 	}
-	pvcf_bin->pb = common_util_alloc(VCARD_MAX_BUFFER_LEN);
-	if (NULL == pvcf_bin->pb) {
+	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
+	if (pvcf_bin->pv == nullptr) {
 		vcard_free(&vcard);
 		return FALSE;
 	}
@@ -3454,11 +3386,10 @@ BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
 MESSAGE_CONTENT* common_util_vcf_to_message(
 	STORE_OBJECT *pstore, const BINARY *pvcf_bin)
 {
-	char *pbuff;
 	VCARD vcard;
 	MESSAGE_CONTENT *pmsgctnt;
 	
-	pbuff = common_util_alloc(pvcf_bin->cb + 1);
+	auto pbuff = static_cast<char *>(common_util_alloc(pvcf_bin->cb + 1));
 	if (NULL == pbuff) {
 		return FALSE;
 	}
@@ -3531,9 +3462,8 @@ BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm)
 const char* common_util_lang_to_i18n(const char *lang)
 {
 	int i, num;
-	LANGMAP_ITEM *pitem;
 	
-	pitem = list_file_get_list(g_langmap_list);
+	auto pitem = static_cast<LANGMAP_ITEM *>(list_file_get_list(g_langmap_list));
 	num = list_file_get_item_num(g_langmap_list);
 	for (i=0; i<num; i++) {
 		if (0 == strcasecmp(pitem[i].lang, lang)) {
@@ -3546,9 +3476,8 @@ const char* common_util_lang_to_i18n(const char *lang)
 const char* common_util_i18n_to_lang(const char *i18n)
 {
 	int i, num;
-	LANGMAP_ITEM *pitem;
 	
-	pitem = list_file_get_list(g_langmap_list);
+	auto pitem = static_cast<LANGMAP_ITEM *>(list_file_get_list(g_langmap_list));
 	num = list_file_get_item_num(g_langmap_list);
 	for (i=0; i<num; i++) {
 		if (0 == strcasecmp(pitem[i].i18n, i18n)) {
@@ -3571,11 +3500,10 @@ const char* common_util_get_submit_command()
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 {
 	int i, j;
-	char *pline;
 	int line_num;
 	
 	line_num = list_file_get_item_num(g_folderlang_list);
-	pline = list_file_get_list(g_folderlang_list);
+	auto pline = static_cast<char *>(list_file_get_list(g_folderlang_list));
 	for (i=0; i<line_num; i++) {
 		if (0 != strcasecmp(pline + 1088*i, lang)) {
 			continue;
@@ -3586,21 +3514,21 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 		break;
 	}
 	if (i >= line_num) {
-		ppfolder_lang[RES_ID_IPM]      = const_cast(char *, "Top of Information Store");
-		ppfolder_lang[RES_ID_INBOX]    = const_cast(char *, "Inbox");
-		ppfolder_lang[RES_ID_DRAFT]    = const_cast(char *, "Drafts");
-		ppfolder_lang[RES_ID_OUTBOX]   = const_cast(char *, "Outbox");
-		ppfolder_lang[RES_ID_SENT]     = const_cast(char *, "Sent Items");
-		ppfolder_lang[RES_ID_DELETED]  = const_cast(char *, "Deleted Items");
-		ppfolder_lang[RES_ID_CONTACTS] = const_cast(char *, "Contacts");
-		ppfolder_lang[RES_ID_CALENDAR] = const_cast(char *, "Calendar");
-		ppfolder_lang[RES_ID_JOURNAL]  = const_cast(char *, "Journal");
-		ppfolder_lang[RES_ID_NOTES]    = const_cast(char *, "Notes");
-		ppfolder_lang[RES_ID_TASKS]    = const_cast(char *, "Tasks");
-		ppfolder_lang[RES_ID_JUNK]     = const_cast(char *, "Junk E-mail");
-		ppfolder_lang[RES_ID_SYNC]     = const_cast(char *, "Sync Issues");
-		ppfolder_lang[RES_ID_CONFLICT] = const_cast(char *, "Conflicts");
-		ppfolder_lang[RES_ID_LOCAL]    = const_cast(char *, "Local Failures");
-		ppfolder_lang[RES_ID_SERVER]   = const_cast(char *, "Server Failures");
+		ppfolder_lang[RES_ID_IPM]      = const_cast<char *>("Top of Information Store");
+		ppfolder_lang[RES_ID_INBOX]    = const_cast<char *>("Inbox");
+		ppfolder_lang[RES_ID_DRAFT]    = const_cast<char *>("Drafts");
+		ppfolder_lang[RES_ID_OUTBOX]   = const_cast<char *>("Outbox");
+		ppfolder_lang[RES_ID_SENT]     = const_cast<char *>("Sent Items");
+		ppfolder_lang[RES_ID_DELETED]  = const_cast<char *>("Deleted Items");
+		ppfolder_lang[RES_ID_CONTACTS] = const_cast<char *>("Contacts");
+		ppfolder_lang[RES_ID_CALENDAR] = const_cast<char *>("Calendar");
+		ppfolder_lang[RES_ID_JOURNAL]  = const_cast<char *>("Journal");
+		ppfolder_lang[RES_ID_NOTES]    = const_cast<char *>("Notes");
+		ppfolder_lang[RES_ID_TASKS]    = const_cast<char *>("Tasks");
+		ppfolder_lang[RES_ID_JUNK]     = const_cast<char *>("Junk E-mail");
+		ppfolder_lang[RES_ID_SYNC]     = const_cast<char *>("Sync Issues");
+		ppfolder_lang[RES_ID_CONFLICT] = const_cast<char *>("Conflicts");
+		ppfolder_lang[RES_ID_LOCAL]    = const_cast<char *>("Local Failures");
+		ppfolder_lang[RES_ID_SERVER]   = const_cast<char *>("Server Failures");
 	}
 }
