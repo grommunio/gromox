@@ -1805,80 +1805,76 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres)
 	
 	switch (pres->rt) {
 	case RESTRICTION_TYPE_AND:
-	case RESTRICTION_TYPE_OR:
-		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
-			if (FALSE == common_util_convert_restriction(to_unicode,
-				((RESTRICTION_AND_OR*)pres->pres)->pres + i)) {
+	case RESTRICTION_TYPE_OR: {
+		RESTRICTION_AND_OR *andor = pres->pres;
+		for (i = 0; i < andor->count; ++i)
+			if (!common_util_convert_restriction(to_unicode, &andor->pres[i]))
 				return FALSE;	
-			}
-		}
 		break;
-	case RESTRICTION_TYPE_NOT:
-		if (FALSE == common_util_convert_restriction(to_unicode,
-			&((RESTRICTION_NOT*)pres->pres)->res)) {
+	}
+	case RESTRICTION_TYPE_NOT: {
+		RESTRICTION_NOT *rnot = pres->pres;
+		if (!common_util_convert_restriction(to_unicode, &rnot->res))
 			return FALSE;	
-		}
 		break;
-	case RESTRICTION_TYPE_CONTENT:
-		if (FALSE == common_util_convert_tagged_propval(to_unicode,
-			&((RESTRICTION_CONTENT*)pres->pres)->propval)) {
+	}
+	case RESTRICTION_TYPE_CONTENT: {
+		RESTRICTION_CONTENT *rcon = pres->pres;
+		if (!common_util_convert_tagged_propval(to_unicode, &rcon->propval))
 			return FALSE;	
-		}
-		common_util_convert_proptag(to_unicode,
-			&((RESTRICTION_CONTENT*)pres->pres)->proptag);
+		common_util_convert_proptag(to_unicode, &rcon->proptag);
 		break;
-	case RESTRICTION_TYPE_PROPERTY:
-		if (FALSE == common_util_convert_tagged_propval(to_unicode,
-			&((RESTRICTION_PROPERTY*)pres->pres)->propval)) {
+	}
+	case RESTRICTION_TYPE_PROPERTY: {
+		RESTRICTION_PROPERTY *rprop = pres->pres;
+		if (!common_util_convert_tagged_propval(to_unicode, &rprop->propval))
 			return FALSE;	
-		}
-		common_util_convert_proptag(to_unicode,
-			&((RESTRICTION_PROPERTY*)pres->pres)->proptag);
+		common_util_convert_proptag(to_unicode, &rprop->proptag);
 		break;
-	case RESTRICTION_TYPE_PROPCOMPARE:
-		common_util_convert_proptag(to_unicode,
-			&((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1);
-		common_util_convert_proptag(to_unicode,
-			&((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2);
+	}
+	case RESTRICTION_TYPE_PROPCOMPARE: {
+		RESTRICTION_PROPCOMPARE *rprop = pres->pres;
+		common_util_convert_proptag(to_unicode, &rprop->proptag1);
+		common_util_convert_proptag(to_unicode, &rprop->proptag2);
 		break;
-	case RESTRICTION_TYPE_BITMASK:
-		common_util_convert_proptag(to_unicode,
-			&((RESTRICTION_BITMASK*)pres->pres)->proptag);
+	}
+	case RESTRICTION_TYPE_BITMASK: {
+		RESTRICTION_BITMASK *rbm = pres->pres;
+		common_util_convert_proptag(to_unicode, &rbm->proptag);
 		break;
-	case RESTRICTION_TYPE_SIZE:
-		common_util_convert_proptag(to_unicode,
-			&((RESTRICTION_SIZE*)pres->pres)->proptag);
+	}
+	case RESTRICTION_TYPE_SIZE: {
+		RESTRICTION_SIZE *rsize = pres->pres;
+		common_util_convert_proptag(to_unicode, &rsize->proptag);
 		break;
-	case RESTRICTION_TYPE_EXIST:
-		common_util_convert_proptag(to_unicode,
-			&((RESTRICTION_EXIST*)pres->pres)->proptag);
+	}
+	case RESTRICTION_TYPE_EXIST: {
+		RESTRICTION_EXIST *rex = pres->pres;
+		common_util_convert_proptag(to_unicode, &rex->proptag);
 		break;
-	case RESTRICTION_TYPE_SUBOBJ:
-		if (FALSE == common_util_convert_restriction(to_unicode,
-			&((RESTRICTION_SUBOBJ*)pres->pres)->res)) {
+	}
+	case RESTRICTION_TYPE_SUBOBJ: {
+		RESTRICTION_SUBOBJ *rsub = pres->pres;
+		if (!common_util_convert_restriction(to_unicode, &rsub->res))
 			return FALSE;	
-		}
 		break;
-	case RESTRICTION_TYPE_COMMENT:
-		for (i=0; i<((RESTRICTION_COMMENT*)pres->pres)->count; i++) {
-			if (FALSE == common_util_convert_tagged_propval(to_unicode,
-				((RESTRICTION_COMMENT*)pres->pres)->ppropval + i)) {
+	}
+	case RESTRICTION_TYPE_COMMENT: {
+		RESTRICTION_COMMENT *rcom = pres->pres;
+		for (i = 0; i < rcom->count; ++i)
+			if (!common_util_convert_tagged_propval(to_unicode, &rcom->ppropval[i]))
 				return FALSE;	
-			}
-		}
-		if (NULL != ((RESTRICTION_COMMENT*)pres->pres)->pres) {
-			if (FALSE == common_util_convert_restriction(to_unicode,
-				((RESTRICTION_COMMENT*)pres->pres)->pres)) {
+		if (rcom->pres != nullptr)
+			if (!common_util_convert_restriction(to_unicode, rcom->pres))
 				return FALSE;	
-			}
-		}
 		break;
-	case RESTRICTION_TYPE_COUNT:
-		if (FALSE == common_util_convert_restriction(to_unicode,
-			&((RESTRICTION_COUNT*)pres->pres)->sub_res)) {
+	}
+	case RESTRICTION_TYPE_COUNT: {
+		RESTRICTION_COUNT *rcnt = pres->pres;
+		if (!common_util_convert_restriction(to_unicode, &rcnt->sub_res))
 			return FALSE;	
-		}
 		break;
+	}
 	}
 	return TRUE;
 }
