@@ -39,9 +39,8 @@ MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 {
 	USER_INFO *pinfo;
 	uint64_t *pchange_num;
-	MESSAGE_OBJECT *pmessage;
 	
-	pmessage = malloc(sizeof(MESSAGE_OBJECT));
+	auto pmessage = static_cast<MESSAGE_OBJECT *>(malloc(sizeof(MESSAGE_OBJECT)));
 	if (NULL == pmessage) {
 		return NULL;
 	}
@@ -58,7 +57,7 @@ MESSAGE_OBJECT* message_object_create(STORE_OBJECT *pstore,
 	pmessage->pchanged_proptags = NULL;
 	pmessage->premoved_proptags = NULL;
 	if (0 == message_id) {
-		pmessage->pembedding = pparent;
+		pmessage->pembedding = static_cast<ATTACHMENT_OBJECT *>(pparent);
 		if (FALSE == exmdb_client_load_embedded_instance(
 			store_object_get_dir(pstore), b_new,
 			((ATTACHMENT_OBJECT*)pparent)->instance_id,
@@ -206,8 +205,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	propvals.count = 0;
-	propvals.ppropval = common_util_alloc(
-				sizeof(TAGGED_PROPVAL)*20);
+	propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 20));
 	if (NULL == propvals.ppropval) {
 		return FALSE;
 	}
@@ -234,7 +232,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_MESSAGECLASS;
-	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "IPM.Note");
+	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("IPM.Note");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
@@ -249,17 +247,17 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYBCC;
-	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "");
+	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYCC;
-	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "");
+	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYTO;
-	propvals.ppropval[propvals.count].pvalue  = const_cast(char *, "");
+	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
@@ -353,11 +351,10 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	pinfo = zarafa_server_get_info();
-	if (FALSE == system_services_get_user_displayname(
-		pinfo->username, pvalue) ||
-		'\0' == ((char*)pvalue)[0]) {
-		strcpy(pvalue, pinfo->username);
-	}
+	if (!system_services_get_user_displayname(pinfo->username,
+	    static_cast<char *>(pvalue)) ||
+	    *static_cast<char *>(pvalue) == '\0')
+		strcpy(static_cast<char *>(pvalue), pinfo->username);
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -456,7 +453,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		b_fai = TRUE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL)*8);
+	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 8));
 	if (NULL == tmp_propvals.ppropval) {
 		return GXERR_CALL_FAILED;
 	}
@@ -487,10 +484,10 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		if (NULL == pvalue) {
 			return GXERR_CALL_FAILED;
 		}
-		if (FALSE == system_services_get_user_displayname(
-			pinfo->username, pvalue) || '\0' == ((char*)pvalue)[0]) {
-			strcpy(pvalue, pinfo->username);
-		}
+		if (!system_services_get_user_displayname(pinfo->username,
+		    static_cast<char *>(pvalue)) ||
+		    *static_cast<char *>(pvalue) == '\0')
+			strcpy(static_cast<char *>(pvalue), pinfo->username);
 		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
 		tmp_propvals.count ++;
 	}
@@ -749,8 +746,8 @@ BOOL message_object_write_message(MESSAGE_OBJECT *pmessage,
 	PROBLEM_ARRAY tmp_problems;
 	
 	msgctnt = *pmsgctnt;
-	msgctnt.proplist.ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
+	msgctnt.proplist.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                            sizeof(TAGGED_PROPVAL) * pmsgctnt->proplist.count));
 	if (NULL == msgctnt.proplist.ppropval) {
 		return FALSE;
 	}
@@ -805,7 +802,6 @@ BOOL message_object_get_rowid_begin(
 {
 	int i;
 	int last_rowid;
-	int32_t *prow_id;
 	TARRAY_SET tmp_set;
 	
 	if (FALSE == exmdb_client_get_message_instance_rcpts(
@@ -815,8 +811,8 @@ BOOL message_object_get_rowid_begin(
 	}
 	last_rowid = -1;
 	for (i=0; i<tmp_set.count; i++) {
-		prow_id = common_util_get_propvals(
-			tmp_set.pparray[i], PROP_TAG_ROWID);
+		auto prow_id = static_cast<int32_t *>(common_util_get_propvals(
+		               tmp_set.pparray[i], PROP_TAG_ROWID));
 		if (NULL != prow_id && *prow_id > last_rowid) {
 			last_rowid = *prow_id;
 		}
@@ -946,8 +942,8 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 		return FALSE;	
 	}
 	pproptags->count = 0;
-	pproptags->pproptag = common_util_alloc(
-		sizeof(uint32_t)*(tmp_proptags.count + 15));
+	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                      sizeof(uint32_t) * (tmp_proptags.count + 15)));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -1153,14 +1149,14 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t lcid_default = 0x0409;
 	
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -1203,7 +1199,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		ppropvals->ppropval[ppropvals->count].proptag =
 								PROP_TAG_MESSAGELOCALEID;
 		ppropvals->ppropval[ppropvals->count].pvalue =
-			const_cast(uint32_t *, &lcid_default);
+			const_cast<uint32_t *>(&lcid_default);
 		ppropvals->count ++;
 	}
 	if (common_util_index_proptags(pproptags,
@@ -1238,19 +1234,19 @@ static BOOL message_object_set_properties_internal(
 		return FALSE;
 	}
 	problems.count = 0;
-	problems.pproblem = common_util_alloc(
-		sizeof(PROPERTY_PROBLEM)*ppropvals->count);
+	problems.pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
+	                    sizeof(PROPERTY_PROBLEM) * ppropvals->count));
 	if (NULL == problems.pproblem) {
 		return FALSE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*ppropvals->count);
+	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = common_util_alloc(
-		sizeof(uint16_t)*ppropvals->count);
+	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
+	                    sizeof(uint16_t) * ppropvals->count));
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -1376,18 +1372,18 @@ BOOL message_object_set_properties(MESSAGE_OBJECT *pmessage,
 		the relationship between PROP_TAG_SUBJECT and
 		PROP_TAG_NORMALIZEDSUBJECT, we try to resolve
 		the conflict when there exist both of them */
-	psubject = common_util_get_propvals(
-			ppropvals, PROP_TAG_SUBJECT);
+	psubject = static_cast<char *>(common_util_get_propvals(
+	           ppropvals, PROP_TAG_SUBJECT));
 	if (NULL == psubject) {
-		psubject = common_util_get_propvals(
-			ppropvals, PROP_TAG_SUBJECT_STRING8);
+		psubject = static_cast<char *>(common_util_get_propvals(
+		           ppropvals, PROP_TAG_SUBJECT_STRING8));
 	}
 	if (NULL != psubject) {
-		pnormalized_subject = common_util_get_propvals(
-				ppropvals, PROP_TAG_NORMALIZEDSUBJECT);
+		pnormalized_subject = static_cast<char *>(common_util_get_propvals(
+		                      ppropvals, PROP_TAG_NORMALIZEDSUBJECT));
 		if (NULL == pnormalized_subject) {
-			pnormalized_subject = common_util_get_propvals(
-				ppropvals, PROP_TAG_NORMALIZEDSUBJECT_STRING8);
+			pnormalized_subject = static_cast<char *>(common_util_get_propvals(
+			                      ppropvals, PROP_TAG_NORMALIZEDSUBJECT_STRING8));
 		}
 		if (NULL != pnormalized_subject) {
 			if ('\0' == pnormalized_subject[0] && '\0' != psubject[0]) {
@@ -1416,19 +1412,19 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 		return FALSE;
 	}
 	problems.count = 0;
-	problems.pproblem = common_util_alloc(
-		sizeof(PROPERTY_PROBLEM)*pproptags->count);
+	problems.pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
+	                    sizeof(PROPERTY_PROBLEM) * pproptags->count));
 	if (NULL == problems.pproblem) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-		sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
-	poriginal_indices = common_util_alloc(
-		sizeof(uint16_t)*pproptags->count);
+	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
+	                    sizeof(uint16_t) * pproptags->count));
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -1610,7 +1606,7 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pbrief;
 	TPROPVAL_ARRAY propvals;
-	static const uint8_t fake_false;
+	static const uint8_t fake_false = false;
 	TAGGED_PROPVAL propval_buff[2];
 	
 	read_flag &= MSG_READ_FLAG_SUPPRESS_RECEIPT|
@@ -1760,9 +1756,9 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;
 		propval_buff[0].proptag = PROP_TAG_READRECEIPTREQUESTED;
-		propval_buff[0].pvalue = const_cast(uint8_t *, &fake_false);
+		propval_buff[0].pvalue = const_cast<uint8_t *>(&fake_false);
 		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		propval_buff[1].pvalue = const_cast(uint8_t *, &fake_false);
+		propval_buff[1].pvalue = const_cast<uint8_t *>(&fake_false);
 		exmdb_client_set_instance_properties(dir,
 			pmessage->instance_id, &propvals, &problems);
 		exmdb_client_set_message_properties(dir, username,
