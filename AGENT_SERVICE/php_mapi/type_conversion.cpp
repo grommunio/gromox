@@ -857,76 +857,65 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 	}
 	switch(pres->rt) {
 	case RESTRICTION_TYPE_AND:
-	case RESTRICTION_TYPE_OR:
+	case RESTRICTION_TYPE_OR: {
 		pres->pres = emalloc(sizeof(RESTRICTION_AND_OR));
-		if (NULL == pres->pres) {
+		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
+		if (andor == nullptr)
 			return 0;
-		}
-		((RESTRICTION_AND_OR*)pres->pres)->count =
-				zend_hash_num_elements(pdata_hash);
-		static_cast<RESTRICTION_AND_OR *>(pres->pres)->pres = sta_malloc<RESTRICTION>(static_cast<RESTRICTION_AND_OR *>(pres->pres)->count);
-		if (NULL == ((RESTRICTION_AND_OR*)pres->pres)->pres) {
+		andor->count = zend_hash_num_elements(pdata_hash);
+		andor->pres = sta_malloc<RESTRICTION>(andor->count);
+		if (andor->pres == nullptr)
 			return 0;
-		}
 		i = 0;
 		ZEND_HASH_FOREACH_VAL(pdata_hash, value_entry) {
-			if (!php_to_restriction(value_entry,
-			    &static_cast<RESTRICTION_AND_OR *>(pres->pres)->pres[i++] TSRMLS_CC)) {
+			if (!php_to_restriction(value_entry, &andor->pres[i++] TSRMLS_CC))
 				return 0;
-			}
 		} ZEND_HASH_FOREACH_END();
 		break;
+	}
 	case RESTRICTION_TYPE_NOT: {
 		pres->pres = emalloc(sizeof(RESTRICTION_NOT));
-		if (NULL == pres->pres) {
+		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+		if (rnot == nullptr)
 			return 0;
-		}
 		i = 0;
 		HashPosition hpos;
 		zend_hash_internal_pointer_reset_ex(pdata_hash, &hpos);
 		value_entry = zend_hash_get_current_data_ex(pdata_hash, &hpos);
-		if (!php_to_restriction(value_entry,
-			&((RESTRICTION_NOT*)pres->pres)->res TSRMLS_CC)) {
+		if (!php_to_restriction(value_entry, &rnot->res TSRMLS_CC))
 			return 0;
-		}
 		break;
 	}
-	case RESTRICTION_TYPE_SUBOBJ:
+	case RESTRICTION_TYPE_SUBOBJ: {
 		pres->pres = emalloc(sizeof(RESTRICTION_SUBOBJ));
-		if (NULL == pres->pres) {
+		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
+		if (rsub == nullptr)
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_SUBOBJ*)pres->pres)->subobject =
-			phptag_to_proptag(zval_get_long(value_entry));
+		rsub->subobject = phptag_to_proptag(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RESTRICTION);
 		if (value_entry == nullptr)
 			return 0;
-		if (!php_to_restriction(value_entry,
-			&((RESTRICTION_SUBOBJ*)pres->pres)->res TSRMLS_CC)) {
+		if (!php_to_restriction(value_entry, &rsub->res TSRMLS_CC))
 			return 0;	
-		}
 		break;
-	case RESTRICTION_TYPE_COMMENT:
+	}
+	case RESTRICTION_TYPE_COMMENT: {
 		pres->pres = emalloc(sizeof(RESTRICTION_COMMENT));
-		if (NULL == pres->pres) {
+		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
+		if (rcom == nullptr)
 			return 0;
-		}
-		((RESTRICTION_COMMENT*)pres->pres)->pres =
-			st_malloc<RESTRICTION>();
-		if (NULL == ((RESTRICTION_COMMENT*)pres->pres)->pres) {
+		rcom->pres = st_malloc<RESTRICTION>();
+		if (rcom->pres == nullptr)
 			/* memory leak */
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RESTRICTION);
 		if (value_entry == nullptr)
 			return 0;
-		if (!php_to_restriction(value_entry,
-			((RESTRICTION_COMMENT*)pres->pres)->pres TSRMLS_CC)) {
+		if (!php_to_restriction(value_entry, rcom->pres TSRMLS_CC))
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPVALS);
 		if (value_entry == nullptr)
 			return 0;
@@ -934,24 +923,23 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 			value_entry, &tmp_propvals TSRMLS_CC)) {
 			return 0;
 		}
-		((RESTRICTION_COMMENT*)pres->pres)->count = tmp_propvals.count;
-		((RESTRICTION_COMMENT*)pres->pres)->ppropval = tmp_propvals.ppropval;
+		rcom->count = tmp_propvals.count;
+		rcom->ppropval = tmp_propvals.ppropval;
 		break;
-	case RESTRICTION_TYPE_CONTENT:
+	}
+	case RESTRICTION_TYPE_CONTENT: {
 		pres->pres = emalloc(sizeof(RESTRICTION_CONTENT));
-		if (NULL == pres->pres) {
+		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		if (rcon == nullptr)
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_CONTENT*)pres->pres)->proptag =
-			phptag_to_proptag(zval_get_long(value_entry));
+		rcon->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_FUZZYLEVEL);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level =
-			zval_get_long(value_entry);
+		rcon->fuzzy_level = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_VALUE);
 		if (value_entry == nullptr)
 			return 0;
@@ -961,34 +949,28 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 			if (1 != tmp_propvals.count) {
 				return 0;
 			}
-			((RESTRICTION_CONTENT*)pres->pres)->propval =
-									*tmp_propvals.ppropval;
+			rcon->propval = *tmp_propvals.ppropval;
 		} else {
-			((RESTRICTION_CONTENT*)pres->pres)->propval.proptag =
-				((RESTRICTION_CONTENT*)pres->pres)->proptag;
-			((RESTRICTION_CONTENT*)pres->pres)->propval.pvalue =
-				php_to_propval(value_entry,
-				((RESTRICTION_CONTENT*)pres->pres)->proptag&0xFFFF);
-			if (NULL == ((RESTRICTION_CONTENT*)pres->pres)->propval.pvalue) {
+			rcon->propval.proptag = rcon->proptag;
+			rcon->propval.pvalue = php_to_propval(value_entry, rcon->proptag & 0xFFFF);
+			if (rcon->propval.pvalue == nullptr)
 				return 0;
-			}
 		}
 		break;
-	case RESTRICTION_TYPE_PROPERTY:
+	}
+	case RESTRICTION_TYPE_PROPERTY: {
 		pres->pres = emalloc(sizeof(RESTRICTION_PROPERTY));
-		if (NULL == pres->pres) {
+		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		if (rprop == nullptr)
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_PROPERTY*)pres->pres)->proptag =
-			phptag_to_proptag(zval_get_long(value_entry));
+		rprop->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_PROPERTY*)pres->pres)->relop =
-			zval_get_long(value_entry);
+		rprop->relop = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_VALUE);
 		if (value_entry == nullptr)
 			return 0;
@@ -998,96 +980,86 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 			if (1 != tmp_propvals.count) {
 				return 0;
 			}
-			((RESTRICTION_PROPERTY*)pres->pres)->propval =
-									*tmp_propvals.ppropval;
+			rprop->propval = *tmp_propvals.ppropval;
 		} else {
-			((RESTRICTION_PROPERTY*)pres->pres)->propval.proptag =
-				((RESTRICTION_PROPERTY*)pres->pres)->proptag;
-			((RESTRICTION_PROPERTY*)pres->pres)->propval.pvalue =
-				php_to_propval(value_entry,
-				((RESTRICTION_PROPERTY*)pres->pres)->proptag&0xFFFF);
-			if (NULL == ((RESTRICTION_PROPERTY*)pres->pres)->propval.pvalue) {
+			rprop->propval.proptag = rprop->proptag;
+			rprop->propval.pvalue = php_to_propval(value_entry, rprop->proptag & 0xFFFF);
+			if (rprop->propval.pvalue == nullptr)
 				return 0;
-			}
 		}
 		break;
-	case RESTRICTION_TYPE_PROPCOMPARE:
+	}
+	case RESTRICTION_TYPE_PROPCOMPARE: {
 		pres->pres = emalloc(sizeof(RESTRICTION_PROPCOMPARE));
-		if (NULL == pres->pres) {
+		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		if (rprop == nullptr)
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
 			/* memory leak */
 			return 0;
-		((RESTRICTION_PROPCOMPARE*)pres->pres)->relop =
-			zval_get_long(value_entry);
+		rprop->relop = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG1);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1 =
-			zval_get_long(value_entry);
+		rprop->proptag1 = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG2);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2 =
-			zval_get_long(value_entry);
+		rprop->proptag2 = zval_get_long(value_entry);
 		break;
-	case RESTRICTION_TYPE_BITMASK:
+	}
+	case RESTRICTION_TYPE_BITMASK: {
 		pres->pres = emalloc(sizeof(RESTRICTION_BITMASK));
-		if (NULL == pres->pres) {
+		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		if (rbm == nullptr)
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_TYPE);
 		if (value_entry == nullptr)
 			/* memory leak */
 			return 0;
-		((RESTRICTION_BITMASK*)pres->pres)->bitmask_relop =
-			zval_get_long(value_entry);
+		rbm->bitmask_relop = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_MASK);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_BITMASK*)pres->pres)->mask =
-			zval_get_long(value_entry);
+		rbm->mask = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_BITMASK*)pres->pres)->proptag =
-			phptag_to_proptag(zval_get_long(value_entry));
+		rbm->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		break;
-	case RESTRICTION_TYPE_SIZE:
+	}
+	case RESTRICTION_TYPE_SIZE: {
 		pres->pres = emalloc(sizeof(RESTRICTION_SIZE));
-		if (NULL == pres->pres) {
+		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		if (rsize == nullptr)
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_SIZE);
 		if (value_entry == nullptr)
 			/* memory leak */
 			return 0;
-		((RESTRICTION_SIZE*)pres->pres)->size =
-			zval_get_long(value_entry);
+		rsize->size = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_RELOP);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_SIZE*)pres->pres)->relop =
-			zval_get_long(value_entry);
+		rsize->relop = zval_get_long(value_entry);
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_SIZE*)pres->pres)->proptag =
-			phptag_to_proptag(zval_get_long(value_entry));
+		rsize->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		break;
-	case RESTRICTION_TYPE_EXIST:
+	}
+	case RESTRICTION_TYPE_EXIST: {
 		pres->pres = emalloc(sizeof(RESTRICTION_EXIST));
-		if (NULL == pres->pres) {
+		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+		if (rex == nullptr)
 			return 0;
-		}
 		value_entry = zend_hash_index_find(pdata_hash, IDX_PROPTAG);
 		if (value_entry == nullptr)
 			return 0;
-		((RESTRICTION_EXIST*)pres->pres)->proptag =
-			phptag_to_proptag(zval_get_long(value_entry));
+		rex->proptag = phptag_to_proptag(zval_get_long(value_entry));
 		break;
+	}
 	default:
 		return 0;
 	}
