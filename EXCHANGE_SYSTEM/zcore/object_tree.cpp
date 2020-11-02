@@ -47,15 +47,13 @@ typedef struct _OBJECT_NODE {
 static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 {
 	int fd;
-	char *pbuff;
 	EXT_PULL ext_pull;
 	char tmp_path[256];
 	TARRAY_SET prof_set;
-	ROOT_OBJECT *prootobj;
 	struct stat node_stat;
 	TPROPVAL_ARRAY propvals;
 	
-	prootobj = malloc(sizeof(ROOT_OBJECT));
+	auto prootobj = static_cast<ROOT_OBJECT *>(malloc(sizeof(ROOT_OBJECT)));
 	if (NULL == prootobj) {
 		return NULL;
 	}
@@ -83,7 +81,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 		}
 		return prootobj;
 	}
-	pbuff = malloc(node_stat.st_size);
+	auto pbuff = malloc(node_stat.st_size);
 	if (NULL == pbuff) {
 		close(fd);
 		free(prootobj->maildir);
@@ -179,39 +177,39 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 {
 	switch (type) {
 	case MAPI_ROOT:
-		object_tree_free_root(pobject);
+		object_tree_free_root(static_cast<ROOT_OBJECT *>(pobject));
 		break;
 	case MAPI_TABLE:
-		table_object_free(pobject);
+		table_object_free(static_cast<TABLE_OBJECT *>(pobject));
 		break;
 	case MAPI_MESSAGE:
-		message_object_free(pobject);
+		message_object_free(static_cast<MESSAGE_OBJECT *>(pobject));
 		break;
 	case MAPI_ATTACHMENT:
-		attachment_object_free(pobject);
+		attachment_object_free(static_cast<ATTACHMENT_OBJECT *>(pobject));
 		break;
 	case MAPI_ABCONT:
-		container_object_free(pobject);
+		container_object_free(static_cast<CONTAINER_OBJECT *>(pobject));
 		break;
 	case MAPI_FOLDER:
-		folder_object_free(pobject);
+		folder_object_free(static_cast<FOLDER_OBJECT *>(pobject));
 		break;
 	case MAPI_STORE:
-		store_object_free(pobject);
+		store_object_free(static_cast<STORE_OBJECT *>(pobject));
 		break;
 	case MAPI_MAILUSER:
 	case MAPI_DISTLIST:
-		user_object_free(pobject);
+		user_object_free(static_cast<USER_OBJECT *>(pobject));
 		break;
 	case MAPI_PROFPROPERTY:
 		/* do not free TPROPVAL_ARRAY,
 		it's an element of pprof_set */
 		break;
 	case MAPI_ICSDOWNCTX:
-		icsdownctx_object_free(pobject);
+		icsdownctx_object_free(static_cast<ICSDOWNCTX_OBJECT *>(pobject));
 		break;
 	case MAPI_ICSUPCTX:
-		icsupctx_object_free(pobject);
+		icsupctx_object_free(static_cast<ICSUPCTX_OBJECT *>(pobject));
 		break;
 	}
 }
@@ -240,7 +238,7 @@ void object_tree_free(OBJECT_TREE *pobjtree)
 	
 	proot = simple_tree_get_root(&pobjtree->tree);
 	if (NULL != proot) {
-		object_tree_release_objnode(pobjtree, proot->pdata);
+		object_tree_release_objnode(pobjtree, static_cast<OBJECT_NODE *>(proot->pdata));
 	}
 	int_hash_free(pobjtree->phash);
 	simple_tree_free(&pobjtree->tree);
@@ -252,7 +250,6 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 {
 	int tmp_handle;
 	INT_HASH_ITER *iter;
-	OBJECT_NODE *pobjnode;
 	OBJECT_NODE *ptmphanle;
 	OBJECT_NODE **ppparent;
 	
@@ -265,12 +262,12 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 		}
 		ppparent = NULL;
 	} else {
-		ppparent = int_hash_query(pobjtree->phash, parent_handle);
+		ppparent = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, parent_handle));
 		if (NULL == ppparent) {
 			return INVALID_HANDLE;
 		}
 	}
-	pobjnode = malloc(sizeof(OBJECT_NODE));
+	auto pobjnode = static_cast<OBJECT_NODE *>(malloc(sizeof(OBJECT_NODE)));
 	if (NULL == pobjnode) {
 		return INVALID_HANDLE;
 	}
@@ -297,7 +294,7 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 		iter = int_hash_iter_init(pobjtree->phash);
 		for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
-			ptmphanle = int_hash_iter_get_value(iter, &tmp_handle);
+			ptmphanle = static_cast<OBJECT_NODE *>(int_hash_iter_get_value(iter, &tmp_handle));
 			int_hash_add(phash, tmp_handle, ptmphanle);
 		}
 		int_hash_iter_free(iter);
@@ -317,10 +314,9 @@ uint32_t object_tree_add_object_handle(OBJECT_TREE *pobjtree,
 OBJECT_TREE* object_tree_create(const char *maildir)
 {
 	int handle;
-	OBJECT_TREE *pobjtree;
 	ROOT_OBJECT *prootobj;
 	
-	pobjtree = malloc(sizeof(OBJECT_TREE));
+	auto pobjtree = static_cast<OBJECT_TREE *>(malloc(sizeof(OBJECT_TREE)));
 	if (NULL == pobjtree) {
 		return NULL;
 	}
@@ -356,7 +352,7 @@ void* object_tree_get_object(OBJECT_TREE *pobjtree,
 	if (obj_handle > 0x7FFFFFFF) {
 		return NULL;
 	}
-	ppobjnode = int_hash_query(pobjtree->phash, obj_handle);
+	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, obj_handle));
 	if (NULL == ppobjnode) {
 		return NULL;
 	}
@@ -372,7 +368,7 @@ void object_tree_release_object_handle(
 	if (ROOT_HANDLE == obj_handle || obj_handle > 0x7FFFFFFF) {
 		return;
 	}
-	ppobjnode = int_hash_query(pobjtree->phash, obj_handle);
+	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(pobjtree->phash, obj_handle));
 	/* do not relase store object until
 	the whole object tree is unloaded */
 	if (NULL == ppobjnode || MAPI_STORE == (*ppobjnode)->type) {
@@ -391,7 +387,7 @@ void* object_tree_get_zarafa_store_propval(
 	if (NULL == proot) {
 		return NULL;
 	}
-	prootobj = ((OBJECT_NODE*)proot->pdata)->pobject;
+	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	return tpropval_array_get_propval(
 		prootobj->pprivate_proplist, proptag);
 }
@@ -406,7 +402,7 @@ BOOL object_tree_set_zarafa_store_propval(
 	if (NULL == proot) {
 		return FALSE;
 	}
-	prootobj = ((OBJECT_NODE*)proot->pdata)->pobject;
+	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	return tpropval_array_set_propval(
 		prootobj->pprivate_proplist, ppropval);
@@ -422,7 +418,7 @@ void object_tree_remove_zarafa_store_propval(
 	if (NULL == proot) {
 		return;
 	}
-	prootobj = ((OBJECT_NODE*)proot->pdata)->pobject;
+	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	tpropval_array_remove_propval(
 		prootobj->pprivate_proplist, proptag);
@@ -442,11 +438,11 @@ TPROPVAL_ARRAY* object_tree_get_profile_sec(
 	if (NULL == proot) {
 		return NULL;
 	}
-	prootobj = ((OBJECT_NODE*)proot->pdata)->pobject;
+	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	for (i=0; i<prootobj->pprof_set->count; i++) {
-		pguid = tpropval_array_get_propval(
+		pguid = static_cast<GUID *>(tpropval_array_get_propval(
 			prootobj->pprof_set->pparray[i],
-			PROP_TAG_PROPFILESECLSID);
+			PROP_TAG_PROPFILESECLSID));
 		if (NULL == pguid) {
 			continue;
 		}
@@ -478,7 +474,7 @@ void object_tree_touch_profile_sec(OBJECT_TREE *pobjtree)
 	if (NULL == proot) {
 		return;
 	}
-	prootobj = ((OBJECT_NODE*)proot->pdata)->pobject;
+	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 }
 
@@ -502,10 +498,9 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	if (NULL != pnode) {
 		do {
 			pobjnode = (OBJECT_NODE*)pnode->pdata;
-			if (MAPI_STORE == pobjnode->type && b_private ==
-				store_object_check_private(pobjnode->pobject)
-				&& account_id == store_object_get_account_id(
-				pobjnode->pobject)) {
+			if (pobjnode->type == MAPI_STORE &&
+			    store_object_check_private(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == b_private &&
+			    store_object_get_account_id(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == account_id) {
 				return pobjnode->handle;	
 			}
 		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
@@ -555,8 +550,8 @@ BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 	static const uint32_t resource_type = MAPI_AB_PROVIDER;
 	
 	ppropvals->count = 0;
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
@@ -567,21 +562,21 @@ BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue =
-				const_cast(char *, "Exchange Directory Service");
+				const_cast<char *>("Exchange Directory Service");
 			ppropvals->count ++;
 			break;
 		case PROP_TAG_RESOURCETYPE:
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue =
-				const_cast(uint32_t *, &resource_type);
+				const_cast<uint32_t *>(&resource_type);
 			ppropvals->count ++;
 			break;
 		case PROP_TAG_ABPROVIDERID:
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
 			ppropvals->ppropval[ppropvals->count].pvalue =
-				const_cast(uint8_t *, common_util_get_muidecsab());
+				const_cast<uint8_t *>(common_util_get_muidecsab());
 			ppropvals->count ++;
 			break;
 		}
