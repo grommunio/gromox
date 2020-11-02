@@ -116,7 +116,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case KIND_LID:
-		tmp_name.plid = malloc(sizeof(uint32_t));
+		tmp_name.plid = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
 		if (NULL == tmp_name.plid) {
 			return FALSE;
 		}
@@ -174,7 +174,6 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 {
 	void *pvalue;
 	uint32_t proptag;
-	STORE_OBJECT *pstore;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	
@@ -190,7 +189,7 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	if (NULL == pvalue) {
 		return NULL;
 	}
-	pstore = malloc(sizeof(STORE_OBJECT));
+	auto pstore = static_cast<STORE_OBJECT *>(malloc(sizeof(STORE_OBJECT)));
 	if (NULL == pstore) {
 		return NULL;
 	}
@@ -198,7 +197,7 @@ STORE_OBJECT* store_object_create(BOOL b_private,
 	pstore->account_id = account_id;
 	strncpy(pstore->account, account, 256);
 	strncpy(pstore->dir, dir, 256);
-	pstore->mailbox_guid = rop_util_binary_to_guid(pvalue);
+	pstore->mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	pstore->pgpinfo = NULL;
 	pstore->ppropid_hash = NULL;
 	pstore->ppropname_hash = NULL;
@@ -216,7 +215,7 @@ void store_object_free(STORE_OBJECT *pstore)
 		property_groupinfo_free(pstore->pgpinfo);
 	}
 	while ((pnode = double_list_get_from_head(&pstore->group_list)) != NULL) {
-		property_groupinfo_free(pnode->pdata);
+		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
 		free(pnode);
 	}
 	double_list_free(&pstore->group_list);
@@ -224,7 +223,7 @@ void store_object_free(STORE_OBJECT *pstore)
 		piter = int_hash_iter_init(pstore->ppropid_hash);
 		for (int_hash_iter_begin(piter); !int_hash_iter_done(piter);
 			int_hash_iter_forward(piter)) {
-			ppropname = int_hash_iter_get_value(piter, NULL);
+			ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(piter, nullptr));
 			switch( ppropname->kind) {
 			case KIND_LID:
 				free(ppropname->plid);
@@ -290,14 +289,14 @@ BOOL store_object_get_named_propname(STORE_OBJECT *pstore,
 	if (propid < 0x8000) {
 		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
 		ppropname->kind = KIND_LID;
-		ppropname->plid = common_util_alloc(sizeof(uint32_t));
+		ppropname->plid = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 		if (NULL == ppropname->plid) {
 			return FALSE;
 		}
 		*ppropname->plid = propid;
 	}
 	if (NULL != pstore->ppropid_hash) {
-		pname = int_hash_query(pstore->ppropid_hash, propid);
+		pname = static_cast<PROPERTY_NAME *>(int_hash_query(pstore->ppropid_hash, propid));
 		if (NULL != pname) {
 			*ppropname = *pname;
 			return TRUE;
@@ -318,7 +317,6 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	int i;
-	int *pindex_map;
 	PROPERTY_NAME *pname;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
@@ -327,19 +325,19 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 		ppropnames->count = 0;
 		return TRUE;
 	}
-	pindex_map = common_util_alloc(ppropids->count*sizeof(int));
+	auto pindex_map = static_cast<int *>(common_util_alloc(ppropids->count * sizeof(int)));
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
-	ppropnames->ppropname = common_util_alloc(
-		sizeof(PROPERTY_NAME)*ppropids->count);
+	ppropnames->ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
+	                        sizeof(PROPERTY_NAME) * ppropids->count));
 	if (NULL == ppropnames->ppropname) {
 		return FALSE;
 	}
 	ppropnames->count = ppropids->count;
 	tmp_propids.count = 0;
-	tmp_propids.ppropid = common_util_alloc(
-			sizeof(uint16_t)*ppropids->count);
+	tmp_propids.ppropid = static_cast<uint16_t *>(common_util_alloc(
+	                      sizeof(uint16_t) * ppropids->count));
 	if (NULL == tmp_propids.ppropid) {
 		return FALSE;
 	}
@@ -349,7 +347,7 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 				&ppropnames->ppropname[i].guid);
 			ppropnames->ppropname[i].kind = KIND_LID;
 			ppropnames->ppropname[i].plid =
-				common_util_alloc(sizeof(uint32_t));
+				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 			if (NULL == ppropnames->ppropname[i].plid) {
 				return FALSE;
 			}
@@ -358,8 +356,7 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 			continue;
 		}
 		if (NULL != pstore->ppropid_hash) {
-			pname = int_hash_query(pstore->ppropid_hash,
-								ppropids->ppropid[i]);
+			pname = static_cast<PROPERTY_NAME *>(int_hash_query(pstore->ppropid_hash, ppropids->ppropid[i]));
 		} else {
 			pname = NULL;
 		}
@@ -426,7 +423,7 @@ BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
 		return TRUE;
 	}
 	if (NULL != pstore->ppropname_hash) {
-		pid = str_hash_query(pstore->ppropname_hash, tmp_string);
+		pid = static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash, tmp_string));
 		if (NULL != pid) {
 			*ppropid = *pid;
 			return TRUE;
@@ -450,7 +447,6 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 	int i;
 	GUID guid;
 	uint16_t *pid;
-	int *pindex_map;
 	char tmp_guid[64];
 	char tmp_string[256];
 	PROPID_ARRAY tmp_propids;
@@ -461,19 +457,19 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 		return TRUE;
 	}
 	rop_util_get_common_pset(PS_MAPI, &guid);
-	pindex_map = common_util_alloc(ppropnames->count*sizeof(int));
+	auto pindex_map = static_cast<int *>(common_util_alloc(ppropnames->count * sizeof(int)));
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
 	ppropids->count = ppropnames->count;
-	ppropids->ppropid = common_util_alloc(
-		sizeof(uint16_t)*ppropnames->count);
+	ppropids->ppropid = static_cast<uint16_t *>(common_util_alloc(
+	                    sizeof(uint16_t) * ppropnames->count));
 	if (NULL == ppropids->ppropid) {
 		return FALSE;
 	}
 	tmp_propnames.count = 0;
-	tmp_propnames.ppropname = common_util_alloc(
-		sizeof(PROPERTY_NAME)*ppropnames->count);
+	tmp_propnames.ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
+	                          sizeof(PROPERTY_NAME) * ppropnames->count));
 	if (NULL == tmp_propnames.ppropname) {
 		return FALSE;
 	}
@@ -504,7 +500,7 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 			continue;
 		}
 		if (NULL != pstore->ppropname_hash) {
-			pid = str_hash_query(pstore->ppropname_hash, tmp_string);
+			pid = static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash, tmp_string));
 		} else {
 			pid = NULL;
 		}
@@ -551,20 +547,19 @@ PROPERTY_GROUPINFO* store_object_get_last_property_groupinfo(
 PROPERTY_GROUPINFO* store_object_get_property_groupinfo(
 	STORE_OBJECT *pstore, uint32_t group_id)
 {
-	DOUBLE_LIST_NODE *pnode;
 	PROPERTY_GROUPINFO *pgpinfo;
 	
 	if (group_id == msgchg_grouping_get_last_group_id()) {
 		return store_object_get_last_property_groupinfo(pstore);
 	}
-	for (pnode=double_list_get_head(&pstore->group_list); NULL!=pnode;
-		pnode=double_list_get_after(&pstore->group_list, pnode)) {
+	for (auto pnode = double_list_get_head(&pstore->group_list); pnode != nullptr;
+	     pnode = double_list_get_after(&pstore->group_list, pnode)) {
 		pgpinfo = (PROPERTY_GROUPINFO*)pnode->pdata;
 		if (pgpinfo->group_id == group_id) {
 			return pgpinfo;
 		}
 	}
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
 		return NULL;
 	}
@@ -659,8 +654,8 @@ BOOL store_object_get_all_proptags(STORE_OBJECT *pstore,
 		pstore->dir, &tmp_proptags)) {
 		return FALSE;	
 	}
-	pproptags->pproptag = common_util_alloc(
-		sizeof(uint32_t)*(tmp_proptags.count + 50));
+	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                      sizeof(uint32_t) * (tmp_proptags.count + 50)));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -820,8 +815,8 @@ static void* store_object_get_oof_property(
 	CONFIG_FILE *pconfig;
 	MIME_FIELD mime_field;
 	struct stat node_stat;
-	static const uint8_t fake_true = 1;
-	static const uint8_t fake_false;
+	static constexpr uint8_t fake_true = true;
+	static constexpr uint8_t fake_false = false;
 	
 	switch (proptag) {
 	case PROP_TAG_OOFSTATE:
@@ -861,7 +856,7 @@ static void* store_object_get_oof_property(
 		if (-1 == fd) {
 			return NULL;
 		}
-		pbuff = common_util_alloc(buff_len + 1);
+		pbuff = static_cast<char *>(common_util_alloc(buff_len + 1));
 		if (NULL == pbuff) {
 			close(fd);
 			return NULL;
@@ -888,7 +883,7 @@ static void* store_object_get_oof_property(
 		if (-1 == fd) {
 			return NULL;
 		}
-		pbuff = common_util_alloc(buff_len);
+		pbuff = static_cast<char *>(common_util_alloc(buff_len));
 		if (NULL == pbuff) {
 			close(fd);
 			return NULL;
@@ -943,7 +938,7 @@ static void* store_object_get_oof_property(
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
 		pconfig = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig) {
-			return const_cast(uint8_t *, &fake_false);
+			return const_cast<uint8_t *>(&fake_false);
 		}
 		if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
 			str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
@@ -951,9 +946,9 @@ static void* store_object_get_oof_property(
 			str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
 		}
 		if (NULL == str_value || 0 == atoi(str_value)) {
-			pvalue = const_cast(uint8_t *, &fake_false);
+			pvalue = const_cast<uint8_t *>(&fake_false);
 		} else {
-			pvalue = const_cast(uint8_t *, &fake_true);
+			pvalue = const_cast<uint8_t *>(&fake_true);
 		}
 		config_file_free(pconfig);
 		return pvalue;
@@ -990,7 +985,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		static_cast(BINARY *, *ppvalue)->pb = const_cast(uint8_t *,
+		static_cast<BINARY *>(*ppvalue)->pb = const_cast<uint8_t *>(
 			!pstore->b_private ? public_uid :
 			store_object_check_owner_mode(pstore) ?
 			private_uid : share_uid);
@@ -1001,12 +996,11 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		if (TRUE == pstore->b_private) {
-			if (FALSE == system_services_get_user_displayname(
-				pstore->account, *ppvalue)) {
-				strcpy(*ppvalue, pstore->account);
-			}
+			if (!system_services_get_user_displayname(pstore->account,
+			    static_cast<char *>(*ppvalue)))
+				strcpy(static_cast<char *>(*ppvalue), pstore->account);
 		} else {
-			sprintf(*ppvalue, "Public Folders - %s", pstore->account);
+			sprintf(static_cast<char *>(*ppvalue), "Public Folders - %s", pstore->account);
 		}
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
@@ -1017,15 +1011,14 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (FALSE == system_services_get_user_displayname(
-			pstore->account, *ppvalue)) {
+		if (!system_services_get_user_displayname(pstore->account,
+		    static_cast<char *>(*ppvalue)))
 			return FALSE;	
-		}
-		temp_len = strlen(*ppvalue);
+		temp_len = strlen(static_cast<char *>(*ppvalue));
 		for (i=0; i<temp_len; i++) {
 			if (0 == isascii(((char*)(*ppvalue))[i])) {
-				strcpy(*ppvalue, pstore->account);
-				pvalue = strchr(*ppvalue, '@');
+				strcpy(static_cast<char *>(*ppvalue), pstore->account);
+				pvalue = strchr(static_cast<char *>(*ppvalue), '@');
 				*(char*)pvalue = '\0';
 				break;
 			}
@@ -1128,7 +1121,7 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		strcpy(*ppvalue, temp_buff);
+		strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		return TRUE;
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 		*ppvalue = common_util_alloc(sizeof(uint32_t));
@@ -1161,13 +1154,13 @@ static BOOL store_object_get_calculated_property(
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			strcpy(*ppvalue, pstore->account);
+			strcpy(static_cast<char *>(*ppvalue), pstore->account);
 		} else {
 			*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			strcpy(*ppvalue, temp_buff);
+			strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		}
 		return TRUE;
 	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
@@ -1186,7 +1179,7 @@ static BOOL store_object_get_calculated_property(
 		*(uint32_t*)(*ppvalue) = OBJECT_STORE;
 		return TRUE;
 	case PROP_TAG_PROVIDERDISPLAY:
-		*ppvalue = const_cast(char *, "Exchange Message Store");
+		*ppvalue = const_cast<char *>("Exchange Message Store");
 		return TRUE;
 	case PROP_TAG_RESOURCEFLAGS:
 		*ppvalue = common_util_alloc(sizeof(uint32_t));
@@ -1359,7 +1352,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ECSERVERVERSION:
-		*ppvalue = const_cast(char *, PROJECT_VERSION);
+		*ppvalue = const_cast<char *>(PROJECT_VERSION);
 		return TRUE;
 	case PROP_TAG_OOFSTATE:
 	case PROP_TAG_OOFINTERNALREPLY:
@@ -1418,14 +1411,14 @@ BOOL store_object_get_properties(STORE_OBJECT *pstore,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -1556,21 +1549,22 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
 		if (0 != stat(temp_path, &node_stat)) {
-			buff_len = strlen(pvalue);
-			pbuff = common_util_alloc(buff_len + 256);
+			buff_len = strlen(static_cast<const char *>(pvalue));
+			pbuff = static_cast<char *>(common_util_alloc(buff_len + 256));
 			if (NULL == pbuff) {
 				return FALSE;
 			}
 			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
 			           "\tcharset=\"utf-8\"\r\n\r\n%s",
-			           static_cast(const char *, pvalue));
+			           static_cast<const char *>(pvalue));
 		} else {
 			buff_len = node_stat.st_size;
 			fd = open(temp_path, O_RDONLY);
 			if (-1 == fd) {
 				return FALSE;
 			}
-			pbuff = common_util_alloc(buff_len + strlen(pvalue) + 1);
+			pbuff = static_cast<char *>(common_util_alloc(buff_len +
+			        strlen(static_cast<const char *>(pvalue)) + 1));
 			if (NULL == pbuff) {
 				close(fd);
 				return FALSE;
@@ -1583,12 +1577,12 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			pbuff[buff_len] = '\0';
 			ptoken = strstr(pbuff, "\r\n\r\n");
 			if (NULL != ptoken) {
-				strcpy(ptoken + 4, pvalue);
+				strcpy(ptoken + 4, static_cast<const char *>(pvalue));
 				buff_len = strlen(pbuff);
 			} else {
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n"
 				           "\tcharset=\"utf-8\"\r\n\r\n%s",
-				           static_cast(const char *, pvalue));
+				           static_cast<const char *>(pvalue));
 			}
 		}
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
@@ -1609,21 +1603,22 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			sprintf(temp_path, "%s/config/external-reply", maildir);
 		}
 		if (0 != stat(temp_path, &node_stat)) {
-			buff_len = strlen(pvalue);
-			pbuff = common_util_alloc(buff_len + 256);
+			buff_len = strlen(static_cast<const char *>(pvalue));
+			pbuff = static_cast<char *>(common_util_alloc(buff_len + 256));
 			if (NULL == pbuff) {
 				return FALSE;
 			}
 			buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
 			           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
-			           static_cast(const char *, pvalue));
+			           static_cast<const char *>(pvalue));
 		} else {
 			buff_len = node_stat.st_size;
-			pbuff = common_util_alloc(buff_len + strlen(pvalue) + 16);
+			pbuff = static_cast<char *>(common_util_alloc(buff_len +
+			        strlen(static_cast<const char *>(pvalue)) + 16));
 			if (NULL == pbuff) {
 				return FALSE;
 			}
-			ptoken = common_util_alloc(buff_len + 1);
+			ptoken = static_cast<char *>(common_util_alloc(buff_len + 1));
 			if (NULL == ptoken) {
 				return FALSE;
 			}
@@ -1641,11 +1636,11 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			if (NULL == ptoken) {
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
 				           "charset=\"utf-8\"\r\nSubject: %s\r\n\r\n",
-				           static_cast(const char *, pvalue));
+				           static_cast<const char *>(pvalue));
 			} else {
 				buff_len = sprintf(pbuff, "Content-Type: text/html;\r\n\t"
 				           "charset=\"utf-8\"\r\nSubject: %s%s",
-				           static_cast(const char *, pvalue), ptoken);
+				           static_cast<const char *>(pvalue), ptoken);
 			}
 		}
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
@@ -1779,7 +1774,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 		case PROP_TAG_ECUSERLANGUAGE:
 			if (TRUE == pstore->b_private) {
 				plang = common_util_i18n_to_lang(
-					ppropvals->ppropval[i].pvalue);
+				        static_cast<char *>(ppropvals->ppropval[i].pvalue));
 				common_util_get_folder_lang(plang, folder_lang);
 				store_object_set_folder_name(
 					pstore, PRIVATE_FID_IPMSUBTREE,
@@ -1836,7 +1831,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 		case PROP_TAG_ECUSERTIMEZONE:
 			if (TRUE == pstore->b_private) {
 				system_services_set_timezone(pstore->account,
-							ppropvals->ppropval[i].pvalue);
+					static_cast<char *>(ppropvals->ppropval[i].pvalue));
 			}
 			break;
 		case PROP_TAG_THUMBNAILPHOTO:
@@ -1906,7 +1901,7 @@ static BOOL store_object_get_folder_permissions(
 		return FALSE;
 	}
 	proptags.count = 2;
-	proptags.pproptag = const_cast(uint32_t *, proptag_buff);
+	proptags.pproptag = const_cast<uint32_t *>(proptag_buff);
 	if (FALSE == exmdb_client_query_table(pstore->dir, NULL,
 		0, table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client_unload_table(pstore->dir, table_id);
@@ -1917,8 +1912,8 @@ static BOOL store_object_get_folder_permissions(
 	for (i=0; i<permission_set.count; i++) {
 		if (max_count == pperm_set->count) {
 			max_count += 100;
-			pperm_row = common_util_alloc(
-				sizeof(PERMISSION_ROW)*max_count);
+			pperm_row = static_cast<PERMISSION_ROW *>(common_util_alloc(
+			            sizeof(PERMISSION_ROW) * max_count));
 			if (NULL == pperm_row) {
 				return FALSE;
 			}
@@ -1928,9 +1923,9 @@ static BOOL store_object_get_folder_permissions(
 			}
 			pperm_set->prows = pperm_row;
 		}
-		pentryid = common_util_get_propvals(
+		pentryid = static_cast<BINARY *>(common_util_get_propvals(
 				permission_set.pparray[i],
-				PROP_TAG_ENTRYID);
+		           PROP_TAG_ENTRYID));
 		/* ignore the default and anonymous user */
 		if (NULL == pentryid || 0 == pentryid->cb) {
 			continue;
@@ -1943,9 +1938,9 @@ static BOOL store_object_get_folder_permissions(
 				break;	
 			}
 		}
-		prights = common_util_get_propvals(
+		prights = static_cast<uint32_t *>(common_util_get_propvals(
 				permission_set.pparray[i],
-				PROP_TAG_MEMBERRIGHTS);
+		          PROP_TAG_MEMBERRIGHTS));
 		if (NULL == prights) {
 			continue;
 		}
