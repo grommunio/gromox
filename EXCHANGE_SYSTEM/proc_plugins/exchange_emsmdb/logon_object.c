@@ -3,6 +3,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "emsmdb_interface.h"
 #include "msgchg_grouping.h"
 #include "logon_object.h"
@@ -630,9 +631,8 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 static BOOL logon_object_check_readonly_property(
 	LOGON_OBJECT *plogon, uint32_t proptag)
 {
-	if (PROPVAL_TYPE_OBJECT == (proptag & 0xFFFF)) {
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
 		return TRUE;
-	}
 	switch (proptag) {
 	case PROP_TAG_ACCESSLEVEL:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:

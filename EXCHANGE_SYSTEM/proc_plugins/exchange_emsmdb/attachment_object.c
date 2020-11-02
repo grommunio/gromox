@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "attachment_object.h"
 #include "proptag_array.h"
 #include "exmdb_client.h"
@@ -289,7 +290,7 @@ BOOL attachment_object_get_all_proptags(
 BOOL attachment_object_check_readonly_property(
 	ATTACHMENT_OBJECT *pattachment, uint32_t proptag)
 {
-	if (PROPVAL_TYPE_OBJECT == (proptag & 0xFFFF) &&
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT &&
 		PROP_TAG_ATTACHDATAOBJECT != proptag) {
 		return TRUE;
 	}

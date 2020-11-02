@@ -1121,7 +1121,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	for (i=0; i<3; i++) {
 		propid = PROP_ID(g_email_proptags[i]);
 		proptag = propids.ppropid[propid - 0x8000] << 16;
-		proptag |= g_email_proptags[i] & 0xFFFF;
+		proptag |= PROP_TYPE(g_email_proptags[i]);
 		pvalue = tpropval_array_get_propval(
 			(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 		if (NULL == pvalue) {
@@ -1289,7 +1289,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 		vcard_append_value(pvline, pvvalue);
 		propid = PROP_ID(g_workaddr_proptags[i]);
 		proptag = propids.ppropid[propid - 0x8000] << 16;
-		proptag |= g_workaddr_proptags[i] & 0xFFFF;
+		proptag |= PROP_TYPE(g_workaddr_proptags[i]);
 		pvalue = tpropval_array_get_propval(
 			(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 		if (NULL == pvalue) {
@@ -1460,7 +1460,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	
 	propid = PROP_ID(g_categories_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= g_categories_proptag & 0xFFFF;
+	proptag |= PROP_TYPE(g_categories_proptag);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -1546,7 +1546,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	
 	propid = PROP_ID(g_bcd_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= g_bcd_proptag & 0xFFFF;
+	proptag |= PROP_TYPE(g_bcd_proptag);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -1573,7 +1573,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	for (i=0; i<4; i++) {
 		propid = PROP_ID(g_ufld_proptags[i]);
 		proptag = propids.ppropid[propid - 0x8000] << 16;
-		proptag |= g_ufld_proptags[i] & 0xFFFF;
+		proptag |= PROP_TYPE(g_ufld_proptags[i]);
 		pvalue = tpropval_array_get_propval(
 			(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 		if (NULL == pvalue) {
@@ -1687,7 +1687,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	
 	propid = PROP_ID(g_fbl_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= g_fbl_proptag & 0xFFFF;
+	proptag |= PROP_TYPE(g_fbl_proptag);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -1761,7 +1761,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	
 	propid = PROP_ID(g_im_proptag);
 	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= g_im_proptag & 0xFFFF;
+	proptag |= PROP_TYPE(g_im_proptag);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	pvline = vcard_new_simple_line("X-MS-IMADDRESS", pvalue);

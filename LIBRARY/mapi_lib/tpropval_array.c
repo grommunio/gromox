@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "util.h"
 #include "propval.h"
@@ -25,8 +26,7 @@ static BOOL tpropval_array_append(TPROPVAL_ARRAY *parray,
 		parray->ppropval = ppropvals;
 	}
 	parray->ppropval[parray->count].proptag = ppropval->proptag;
-	parray->ppropval[parray->count].pvalue = propval_dup(
-			ppropval->proptag & 0xFFFF, ppropval->pvalue);
+	parray->ppropval[parray->count].pvalue = propval_dup(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 	if (NULL == parray->ppropval[parray->count].pvalue) {
 		return FALSE;
 	}
@@ -56,12 +56,12 @@ BOOL tpropval_array_set_propval(TPROPVAL_ARRAY *parray,
 		if (ppropval->proptag == parray->ppropval[i].proptag) {
 			pvalue = parray->ppropval[i].pvalue;
 			parray->ppropval[i].pvalue = propval_dup(
-				ppropval->proptag & 0xFFFF, ppropval->pvalue);
+				PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			if (NULL == parray->ppropval[i].pvalue) {
 				parray->ppropval[i].pvalue = pvalue;
 				return FALSE;
 			}
-			propval_free(ppropval->proptag & 0xFFFF, pvalue);
+			propval_free(PROP_TYPE(ppropval->proptag), pvalue);
 			return TRUE;
 		}
 	}
@@ -74,7 +74,7 @@ void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
 	
 	for (i=0; i<parray->count; i++) {
 		if (proptag == parray->ppropval[i].proptag) {
-			propval_free(proptag & 0xFFFF, parray->ppropval[i].pvalue);
+			propval_free(PROP_TYPE(proptag), parray->ppropval[i].pvalue);
 			parray->count --;
 			if (i < parray->count) {
 				memmove(parray->ppropval + i, parray->ppropval + i + 1,
@@ -115,7 +115,7 @@ void tpropval_array_free_internal(TPROPVAL_ARRAY *parray)
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		propval_free(parray->ppropval[i].proptag & 0xFFFF,
+		propval_free(PROP_TYPE(parray->ppropval[i].proptag),
 			parray->ppropval[i].pvalue);
 	}
 	free(parray->ppropval);

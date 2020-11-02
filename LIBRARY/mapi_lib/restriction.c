@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "restriction.h"
 #include "propval.h"
 #include <stdlib.h>
@@ -92,8 +93,7 @@ static RESTRICTION_CONTENT* restriction_dup_content(
 	pres->fuzzy_level = prestriction->fuzzy_level;
 	pres->proptag = prestriction->proptag;
 	pres->propval.proptag = prestriction->propval.proptag;
-	pres->propval.pvalue = propval_dup(
-						prestriction->propval.proptag & 0xFFFF,
+	pres->propval.pvalue = propval_dup(PROP_TYPE(prestriction->propval.proptag),
 						prestriction->propval.pvalue);
 	if (NULL == pres->propval.pvalue) {
 		free(pres);
@@ -104,7 +104,7 @@ static RESTRICTION_CONTENT* restriction_dup_content(
 
 static void restriction_free_content(RESTRICTION_CONTENT *prestriction)
 {
-	propval_free(prestriction->propval.proptag & 0xFFFF,
+	propval_free(PROP_TYPE(prestriction->propval.proptag),
 							prestriction->propval.pvalue);
 	free(prestriction);
 }
@@ -121,8 +121,7 @@ static RESTRICTION_PROPERTY* restriction_dup_property(
 	pres->relop = prestriction->relop;
 	pres->proptag = prestriction->proptag;
 	pres->propval.proptag = prestriction->propval.proptag;
-	pres->propval.pvalue = propval_dup(
-						prestriction->propval.proptag & 0xFFFF,
+	pres->propval.pvalue = propval_dup(PROP_TYPE(prestriction->propval.proptag),
 						prestriction->propval.pvalue);
 	if (NULL == pres->propval.pvalue) {
 		free(pres);
@@ -134,7 +133,7 @@ static RESTRICTION_PROPERTY* restriction_dup_property(
 static void restriction_free_property(
 	RESTRICTION_PROPERTY *prestriction)
 {
-	propval_free(prestriction->propval.proptag & 0xFFFF,
+	propval_free(PROP_TYPE(prestriction->propval.proptag),
 							prestriction->propval.pvalue);
 	free(prestriction);
 }
@@ -266,12 +265,11 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 	}
 	for (i=0; i<prestriction->count; i++) {
 		pres->ppropval[i].proptag = prestriction->ppropval[i].proptag;
-		pres->ppropval[i].pvalue = propval_dup(
-				prestriction->ppropval[i].proptag & 0xFFFF,
+		pres->ppropval[i].pvalue = propval_dup(PROP_TYPE(prestriction->ppropval[i].proptag),
 				prestriction->ppropval[i].pvalue);
 		if (NULL == pres->ppropval[i].pvalue) {
 			for (i-=1; i>=0; i--) {
-				propval_free(pres->ppropval[i].proptag & 0xFFFF,
+				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
 									pres->ppropval[i].pvalue);
 			}
 			free(pres->ppropval);
@@ -283,7 +281,7 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 		pres->pres = restriction_dup(prestriction->pres);
 		if (NULL == pres->pres) {
 			for (i=0; i<pres->count; i++) {
-				propval_free(pres->ppropval[i].proptag & 0xFFFF,
+				propval_free(PROP_TYPE(pres->ppropval[i].proptag),
 									pres->ppropval[i].pvalue);
 			}
 			free(pres->ppropval);
@@ -302,7 +300,7 @@ static void restriction_free_comment(
 	int i;
 	
 	for (i=0; i<prestriction->count; i++) {
-		propval_free(prestriction->ppropval[i].proptag & 0xFFFF,
+		propval_free(PROP_TYPE(prestriction->ppropval[i].proptag),
 							prestriction->ppropval[i].pvalue);
 	}
 	free(prestriction->ppropval);
@@ -446,7 +444,7 @@ static uint32_t restriction_not_size(const RESTRICTION_NOT *r)
 static uint32_t restriction_content_size(
 	const RESTRICTION_CONTENT *r)
 {
-	return propval_size(r->propval.proptag & 0xFFFF,
+	return propval_size(PROP_TYPE(r->propval.proptag),
 			r->propval.pvalue) + sizeof(uint32_t) +
 			sizeof(uint32_t) + sizeof(uint32_t);
 }
@@ -455,7 +453,7 @@ static uint32_t restriction_property_size(
 	const RESTRICTION_PROPERTY *r)
 {
 	return sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint32_t) +
-			propval_size(r->propval.proptag & 0xFFFF, r->propval.pvalue);
+	       propval_size(PROP_TYPE(r->propval.proptag), r->propval.pvalue);
 }
 
 static uint32_t restriction_propcompare_size(
@@ -496,7 +494,7 @@ static uint32_t restriction_comment_size(
 	
 	size = sizeof(uint8_t);
 	for (i=0; i<r->count; i++) {
-		size += propval_size(r->ppropval[i].proptag & 0xFFFF,
+		size += propval_size(PROP_TYPE(r->ppropval[i].proptag),
 					r->ppropval[i].pvalue) + sizeof(uint32_t);
 	}
 	size ++;

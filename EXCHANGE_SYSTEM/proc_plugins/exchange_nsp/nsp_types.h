@@ -144,7 +144,7 @@ typedef union _PROP_VAL_UNION {
 typedef struct _PROPERTY_VALUE {
 	uint32_t proptag;
 	uint32_t reserved;
-	PROP_VAL_UNION value; /* type is proptag&0xFFFF */
+	PROP_VAL_UNION value; /* type is PROP_TYPE(proptag) */
 } PROPERTY_VALUE;
 
 typedef struct _PROPERTY_ROW {

@@ -2,6 +2,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "pcl.h"
 #include "util.h"
 #include "guid.h"
@@ -1962,11 +1963,10 @@ static BOOL common_util_get_message_subject(
 	}
 	strcpy(pvalue, psubject_prefix);
 	strcat(pvalue, pnormalized_subject);
-	if (PROPVAL_TYPE_WSTRING == (proptag&0xFFFF)) {
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_WSTRING)
 		*ppvalue = common_util_dup(pvalue);
-	} else {
+	else
 		*ppvalue = common_util_convert_copy(FALSE, cpid, pvalue);
-	}
 	return TRUE;
 }
 	
@@ -2125,11 +2125,10 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	if (proptag == proptag1) {
 		return pbuff;
 	}
-	if (PROPVAL_TYPE_STRING == (proptag & 0xFFFF)) {
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_STRING)
 		return common_util_convert_copy(TRUE, cpid, pbuff);
-	} else {
+	else
 		return common_util_convert_copy(FALSE, cpid, pbuff);
-	}
 }
 
 static void *common_util_get_message_header(sqlite3 *psqlite,
@@ -2190,11 +2189,10 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	if (proptag == proptag1) {
 		return pbuff;
 	}
-	if (PROPVAL_TYPE_STRING == (proptag & 0xFFFF)) {
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_STRING)
 		return common_util_convert_copy(TRUE, cpid, pbuff);
-	} else {
+	else
 		return common_util_convert_copy(FALSE, cpid, pbuff);
-	}
 }
 
 static void* common_util_get_message_cid_value(
@@ -2357,7 +2355,7 @@ BOOL common_util_get_properties(int table_type,
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if (PROPVAL_TYPE_OBJECT == (pproptags->pproptag[i] & 0xFFFF) &&
+		if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_OBJECT &&
 			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
 			PROP_TAG_ATTACHDATAOBJECT != pproptags->pproptag[i])) {
 			continue;
@@ -2982,7 +2980,7 @@ BOOL common_util_get_properties(int table_type,
 		}
 		/* end of special properties */
 		b_optimize = FALSE;
-		proptype = pproptags->pproptag[i] & 0xFFFF;
+		proptype = PROP_TYPE(pproptags->pproptag[i]);
 		if (PROPVAL_TYPE_UNSPECIFIED == proptype ||
 			PROPVAL_TYPE_STRING == proptype ||
 			PROPVAL_TYPE_WSTRING == proptype) {
@@ -3185,7 +3183,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				return FALSE;
 			}
-			ptyped->type = sqlite3_column_int64(pstmt, 0) & 0xFFFF;
+			ptyped->type = PROP_TYPE(sqlite3_column_int64(pstmt, 0));
 			ptyped->pvalue = common_util_dup(
 					sqlite3_column_text(pstmt, 1));
 			if (NULL == ptyped->pvalue) {
@@ -3203,21 +3201,19 @@ BOOL common_util_get_properties(int table_type,
 			}
 			continue;
 		} else if (PROPVAL_TYPE_STRING == proptype) {
-			if ((sqlite3_column_int64(pstmt, 0) & 0xFFFF) == proptype) {
+			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
 				pvalue = common_util_dup(
 						sqlite3_column_text(pstmt, 1));
-			} else {
+			else
 				pvalue = common_util_convert_copy(FALSE,
 					cpid, sqlite3_column_text(pstmt, 1));
-			}
 		} else if (PROPVAL_TYPE_WSTRING == proptype) {
-			if ((sqlite3_column_int64(pstmt, 0) & 0xFFFF) == proptype) {
+			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
 				pvalue = common_util_dup(
 						sqlite3_column_text(pstmt, 1));
-			} else {
+			else
 				pvalue = common_util_convert_copy(TRUE,
 					cpid, sqlite3_column_text(pstmt, 1));
-			}
 		} else {
 			switch (proptype) {
 			case PROPVAL_TYPE_FLOAT:
@@ -3886,7 +3882,7 @@ BOOL common_util_set_properties(int table_type,
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
 	for (i=0; i<ppropvals->count; i++) {
-		if (PROPVAL_TYPE_OBJECT == (ppropvals->ppropval[i].proptag & 0xFFFF) &&
+		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PROPVAL_TYPE_OBJECT &&
 			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
 			PROP_TAG_ATTACHDATAOBJECT != ppropvals->ppropval[i].proptag)) {
 			pproblems->pproblem[pproblems->count].index = i;
@@ -4188,7 +4184,7 @@ BOOL common_util_set_properties(int table_type,
 			}
 			break;
 		}
-		proptype = ppropvals->ppropval[i].proptag & 0xFFFF;
+		proptype = PROP_TYPE(ppropvals->ppropval[i].proptag);
 		if (0 != cpid && PROPVAL_TYPE_STRING == proptype) {
 			sqlite3_bind_int64(pstmt, 1, (ppropvals->ppropval[i].proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING);
 		} else if (0!= cpid && PROPVAL_TYPE_STRING_ARRAY == proptype) {
@@ -4541,7 +4537,7 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 			break;
 		}
 		proptag = pproptags->pproptag[i];
-		switch (proptag & 0xFFFF) {
+		switch (PROP_TYPE(proptag)) {
 		case PROPVAL_TYPE_STRING:
 		case PROPVAL_TYPE_WSTRING:
 			sqlite3_reset(pstmt);
@@ -5340,10 +5336,10 @@ static BOOL common_util_evaluate_subitem_restriction(
 	switch (pres->rt) {
 	case RESTRICTION_TYPE_CONTENT: {
 		RESTRICTION_CONTENT *rcon = pres->pres;
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_STRING &&
-		    (rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_STRING &&
+		    PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
@@ -5391,18 +5387,18 @@ static BOOL common_util_evaluate_subitem_restriction(
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if ((rprop->propval.proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
 				return FALSE;
 			if (strcasestr(pvalue, rprop->propval.pvalue) != nullptr)
 				return TRUE;
 			return FALSE;
 		}
-		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
-		       pvalue, rprop->propval.pvalue);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE: {
 		RESTRICTION_PROPCOMPARE *rprop = pres->pres;
-		if ((rprop->proptag1 & 0xFFFF) != (rprop->proptag2 & 0xFFFF))
+		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag1, &pvalue) || pvalue == nullptr)
@@ -5410,12 +5406,12 @@ static BOOL common_util_evaluate_subitem_restriction(
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag1, &pvalue1) || pvalue1 == nullptr)
 			return FALSE;
-		return propval_compare_relop(rprop->relop, rprop->proptag1 & 0xFFFF,
-		       pvalue, pvalue1);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		RESTRICTION_BITMASK *rbm = pres->pres;
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
@@ -5584,9 +5580,9 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		RESTRICTION_CONTENT *rcon = pres->pres;
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    folder_id, 0, psqlite, rcon->proptag, &pvalue) ||
@@ -5636,18 +5632,18 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if ((rprop->propval.proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
 				return FALSE;
 			if (strcasestr(pvalue, rprop->propval.pvalue) != nullptr)
 				return TRUE;
 			return FALSE;
 		}
-		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
-		       pvalue, rprop->propval.pvalue);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE: {
 		RESTRICTION_PROPCOMPARE *rprop = pres->pres;
-		if ((rprop->proptag1 & 0xFFFF) != (rprop->proptag2 & 0xFFFF))
+		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    folder_id, 0, psqlite, rprop->proptag1, &pvalue) ||
@@ -5657,12 +5653,12 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		    folder_id, 0, psqlite, rprop->proptag2, &pvalue1) ||
 		    pvalue1 == nullptr)
 			return FALSE;
-		return propval_compare_relop(rprop->relop, rprop->proptag1 & 0xFFFF,
-		       pvalue, pvalue1);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		RESTRICTION_BITMASK *rbm = pres->pres;
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    folder_id, 0, psqlite, rbm->proptag, &pvalue) ||
@@ -5748,10 +5744,10 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		RESTRICTION_CONTENT *rcon = pres->pres;
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_STRING &&
-		    (rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_STRING &&
+		    PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
@@ -5812,7 +5808,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 			    pvalue == nullptr)
 				return FALSE;
 			if (rprop->proptag == PROP_TAG_ANR) {
-				if ((rprop->propval.proptag &0xFFFF) != PROPVAL_TYPE_WSTRING)
+				if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
 					return FALSE;
 				if (strcasestr(pvalue, rprop->propval.pvalue) != nullptr)
 					return TRUE;
@@ -5820,12 +5816,12 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 			}
 			break;
 		}
-		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
-		       pvalue, rprop->propval.pvalue);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE: {
 		RESTRICTION_PROPCOMPARE *rprop = pres->pres;
-		if ((rprop->proptag1 & 0xFFFF) != (rprop->proptag2 & 0xFFFF))
+		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, cpid, psqlite, rprop->proptag1, &pvalue) ||
@@ -5835,12 +5831,12 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		    message_id, cpid, psqlite, rprop->proptag1, &pvalue1) ||
 		    pvalue1 == nullptr)
 			return FALSE;
-		return propval_compare_relop(rprop->relop, rprop->proptag1 & 0xFFFF,
-		       pvalue, pvalue1);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		RESTRICTION_BITMASK *rbm = pres->pres;
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, cpid, psqlite, rbm->proptag, &pvalue) ||
@@ -7122,8 +7118,7 @@ uint32_t common_util_calculate_message_size(
 			}
 			break;
 		default:
-			message_size += propval_size(
-				ppropval->proptag & 0xFFFF, ppropval->pvalue);
+			message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			break;
 		}
 	}
@@ -7134,8 +7129,7 @@ uint32_t common_util_calculate_message_size(
 				if (PROP_TAG_ROWID == ppropval->proptag) {
 					continue;
 				}
-				message_size += propval_size(
-					ppropval->proptag & 0xFFFF, ppropval->pvalue);
+				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			}
 		}
 	}
@@ -7153,8 +7147,7 @@ uint32_t common_util_calculate_message_size(
 								*(uint64_t*)ppropval->pvalue);
 					break;
 				default:
-					message_size += propval_size(
-						ppropval->proptag & 0xFFFF, ppropval->pvalue);
+					message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 				}
 			}
 			if (NULL != pattachment->pembedded) {
@@ -7185,8 +7178,7 @@ uint32_t common_util_calculate_attachment_size(
 						*(uint64_t*)ppropval->pvalue);
 			break;
 		default:
-			attachment_size += propval_size(
-				ppropval->proptag & 0xFFFF, ppropval->pvalue);
+			attachment_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 		}
 	}
 	if (NULL != pattachment->pembedded) {

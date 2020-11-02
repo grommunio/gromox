@@ -413,7 +413,7 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	*pmarker = 0;
-	proptype = atom_element & 0xFFFF;
+	proptype = PROP_TYPE(atom_element);
 	propid = PROP_ID(atom_element);
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (META_TAG_IDSETGIVEN == atom_element) {
@@ -930,7 +930,7 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 					return err;
 				break;
 			}
-			proptype = propval.proptag & 0xFFFF;
+			proptype = PROP_TYPE(propval.proptag);
 			if (proptype & 0x8000) {
 				codepage = proptype & 0x7FFF;
 				propval.proptag &= 0xFFFF0000;

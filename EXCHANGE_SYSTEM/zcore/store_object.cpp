@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
 #include "system_services.h"
 #include "zarafa_server.h"
@@ -576,9 +577,8 @@ PROPERTY_GROUPINFO* store_object_get_property_groupinfo(
 static BOOL store_object_check_readonly_property(
 	STORE_OBJECT *pstore, uint32_t proptag)
 {
-	if (PROPVAL_TYPE_OBJECT == (proptag & 0xFFFF)) {
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
 		return TRUE;
-	}
 	switch (proptag) {
 	case PROP_TAG_ACCESS:
 	case PROP_TAG_ACCESSLEVEL:

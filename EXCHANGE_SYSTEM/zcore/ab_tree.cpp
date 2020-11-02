@@ -5,6 +5,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
@@ -2533,10 +2534,10 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_STRING &&
-		    (rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_STRING &&
+		    PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
@@ -2612,14 +2613,14 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
-		       pvalue, rprop->propval.pvalue);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE:
 		return FALSE;
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)

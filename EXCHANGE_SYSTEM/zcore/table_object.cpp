@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <gromox/mapidefs.h>
 #include "tarray_set.h"
 #include "object_tree.h"
 #include "restriction.h"
@@ -1063,9 +1064,9 @@ static BOOL table_object_evaluate_restriction(
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rcon->proptag);
 		if (NULL == pvalue) {
@@ -1123,7 +1124,7 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		}
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if ((rprop->propval.proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
 				return FALSE;
 			if (strcasestr(static_cast<char *>(rprop->propval.pvalue),
 			    static_cast<char *>(pvalue)) != nullptr)
@@ -1131,11 +1132,11 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		}
 		return propval_compare_relop(rprop->relop,
-		       rprop->proptag & 0xFFFF, pvalue, rprop->propval.pvalue);
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE: {
 		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
-		if ((rprop->proptag1 & 0xFFFF) != (rprop->proptag2 & 0xFFFF))
+		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rprop->proptag1);
 		if (NULL == pvalue) {
@@ -1146,11 +1147,11 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		}
 		return propval_compare_relop(rprop->relop,
-		       rprop->proptag1 & 0xFFFF, pvalue, pvalue1);
+		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
 		if (NULL == pvalue) {

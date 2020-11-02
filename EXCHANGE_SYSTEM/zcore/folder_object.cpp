@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "folder_object.h"
 #include "zarafa_server.h"
@@ -163,9 +164,8 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 BOOL folder_object_check_readonly_property(
 	FOLDER_OBJECT *pfolder, uint32_t proptag)
 {
-	if (PROPVAL_TYPE_OBJECT == (proptag & 0xFFFF)) {
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
 		return TRUE;
-	}
 	switch (proptag) {
 	case PROP_TAG_ACCESS:
 	case PROP_TAG_ADDRESSBOOKENTRYID:

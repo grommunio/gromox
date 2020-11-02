@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "proptag_array.h"
 #include "tpropval_array.h"
 #include "element_data.h"
@@ -338,15 +339,13 @@ uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt)
 	message_size = 0;
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
 		ppropval = pmsgctnt->proplist.ppropval + i;
-		message_size += propval_size(
-			ppropval->proptag & 0xFFFF, ppropval->pvalue);
+		message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 	}
 	if (NULL != pmsgctnt->children.prcpts) {
 		for (i=0; i<pmsgctnt->children.prcpts->count; i++) {
 			for (j=0; j<pmsgctnt->children.prcpts->pparray[i]->count; j++) {
 				ppropval = pmsgctnt->children.prcpts->pparray[i]->ppropval + j;
-				message_size += propval_size(
-					ppropval->proptag & 0xFFFF, ppropval->pvalue);
+				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			}
 		}
 	}
@@ -355,8 +354,7 @@ uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt)
 			pattachment = pmsgctnt->children.pattachments->pplist[i];
 			for (j=0; j<pattachment->proplist.count; j++) {
 				ppropval = pattachment->proplist.ppropval + j;
-				message_size += propval_size(
-					ppropval->proptag & 0xFFFF, ppropval->pvalue);
+				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			}
 			if (NULL != pattachment->pembedded) {
 				message_size += message_content_get_size(

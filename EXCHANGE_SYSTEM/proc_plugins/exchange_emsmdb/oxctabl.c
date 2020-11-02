@@ -1,4 +1,5 @@
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "rops.h"
 #include "common_util.h"
 #include "exmdb_client.h"
@@ -61,7 +62,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		return ecNotSupported;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		type = pproptags->pproptag[i] & 0xFFFF;
+		type = PROP_TYPE(pproptags->pproptag[i]);
 		if (type & 0x1000) {
 			if (type & 0x2000) {
 				if (ropGetContentsTable !=

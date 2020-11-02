@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "attachment_object.h"
 #include "emsmdb_interface.h"
 #include "message_object.h"
@@ -69,7 +70,7 @@ static BOOL message_object_get_recipient_all_proptags(
 
 static uint32_t message_object_rectify_proptag(uint32_t proptag)
 {
-	switch (proptag & 0xFFFF) {
+	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_STRING:
 		proptag &= 0xFFFF0000;
 		proptag |= PROPVAL_TYPE_WSTRING;
@@ -1220,9 +1221,8 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 BOOL message_object_check_readonly_property(
 	MESSAGE_OBJECT *pmessage, uint32_t proptag)
 {
-	if (PROPVAL_TYPE_OBJECT == (proptag & 0xFFFF)) {
+	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
 		return TRUE;
-	}
 	switch (proptag) {
 	case PROP_TAG_ACCESS:
 	case PROP_TAG_ACCESSLEVEL:

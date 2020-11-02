@@ -1373,7 +1373,7 @@ static void tnef_tpropval_array_to_unicode(
 	uint16_t proptype;
 	
 	for (i=0; i<pproplist->count; i++) {
-		proptype = pproplist->ppropval[i].proptag & 0xFFFF;
+		proptype = PROP_TYPE(pproplist->ppropval[i].proptag);
 		if (PROPVAL_TYPE_STRING == proptype) {
 			pvalue = tnef_duplicate_string_to_unicode(
 				charset, pproplist->ppropval[i].pvalue);
@@ -2900,7 +2900,7 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		ptnef_proplist->ppropval[ptnef_proplist->count].propid =
 			PROP_ID(pproplist->ppropval[i].proptag);
 		ptnef_proplist->ppropval[ptnef_proplist->count].proptype =
-							pproplist->ppropval[i].proptag & 0xFFFF;
+			PROP_TYPE(pproplist->ppropval[i].proptag);
 		if (NULL != psmtp && PROP_TAG_ENTRYID ==
 			pproplist->ppropval[i].proptag) {
 			continue;
@@ -2936,8 +2936,7 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		memcpy(pbin->pb, tmp_bin.pb, tmp_bin.cb);
 		ptnef_proplist->ppropval[ptnef_proplist->count].propid =
 			PROP_ID(PROP_TAG_ENTRYID);
-		ptnef_proplist->ppropval[ptnef_proplist->count].proptype =
-										PROP_TAG_ENTRYID & 0xFFFF;
+		ptnef_proplist->ppropval[ptnef_proplist->count].proptype = PROP_TYPE(PROP_TAG_ENTRYID);
 		ptnef_proplist->ppropval[ptnef_proplist->count].ppropname = NULL;
 		ptnef_proplist->ppropval[ptnef_proplist->count].pvalue = pbin;
 		ptnef_proplist->count ++;
@@ -3453,8 +3452,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				pmsg->proplist.ppropval[i].proptag) {
 				b_key = TRUE;
 			}
-			tnef_proplist.ppropval[tnef_proplist.count].proptype =
-					pmsg->proplist.ppropval[i].proptag & 0xFFFF;
+			tnef_proplist.ppropval[tnef_proplist.count].proptype = PROP_TYPE(pmsg->proplist.ppropval[i].proptag);
 		}
 		if (tnef_proplist.ppropval[tnef_proplist.count].propid & 0x8000) {
 			if (FALSE == get_propname(
@@ -3674,8 +3672,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			}
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(pattachment->proplist.ppropval[j].proptag);
-			tnef_proplist.ppropval[tnef_proplist.count].proptype =
-				pattachment->proplist.ppropval[j].proptag & 0xFFFF;
+			tnef_proplist.ppropval[tnef_proplist.count].proptype = PROP_TYPE(pattachment->proplist.ppropval[j].proptag);
 			if (tnef_proplist.ppropval[tnef_proplist.count].propid & 0x8000) {
 				if (FALSE == get_propname(
 					tnef_proplist.ppropval[tnef_proplist.count].propid,

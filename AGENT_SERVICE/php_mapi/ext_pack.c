@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "ext_pack.h"
 #include <stdlib.h>
 #include <string.h>
@@ -916,7 +917,7 @@ zend_bool ext_pack_pull_tagged_propval(PULL_CTX *pctx, TAGGED_PROPVAL *r)
 	if (!ext_pack_pull_uint32(pctx, &r->proptag)) {
 		return 0;
 	}
-	return ext_pack_pull_propval(pctx, r->proptag&0xFFFF, &r->pvalue);
+	return ext_pack_pull_propval(pctx, PROP_TYPE(r->proptag), &r->pvalue);
 }
 
 zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r)
@@ -2046,7 +2047,7 @@ zend_bool ext_pack_push_tagged_propval(
 	if (!ext_pack_push_uint32(pctx, r->proptag)) {
 		return 0;
 	}
-	return ext_pack_push_propval(pctx, r->proptag&0xFFFF, r->pvalue);
+	return ext_pack_push_propval(pctx, PROP_TYPE(r->proptag), r->pvalue);
 }
 
 zend_bool ext_pack_push_proptag_array(

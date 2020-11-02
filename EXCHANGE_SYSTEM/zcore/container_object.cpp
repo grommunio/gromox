@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <gromox/mapidefs.h>
 #include "container_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"
@@ -81,9 +82,9 @@ static BOOL container_object_match_contact_message(
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rcon->proptag);
 		if (NULL == pvalue) {
@@ -152,14 +153,14 @@ static BOOL container_object_match_contact_message(
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
-		       pvalue, rprop->propval.pvalue);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE:
 		return FALSE;
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
 		if (NULL == pvalue) {

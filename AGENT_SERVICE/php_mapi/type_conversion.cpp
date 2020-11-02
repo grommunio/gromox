@@ -31,7 +31,7 @@ uint32_t proptag_to_phptag(uint32_t proptag)
 	uint32_t proptag1;
 	
 	proptag1 = proptag;
-	switch (proptag & 0xFFFF) {
+	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_WSTRING:
 		proptag1 &= 0xFFFF0000;
 		proptag1 |= PROPVAL_TYPE_STRING;
@@ -49,7 +49,7 @@ uint32_t phptag_to_proptag(uint32_t proptag)
 	uint32_t proptag1;
 	
 	proptag1 = proptag;
-	switch (proptag & 0xFFFF) {
+	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_STRING:
 		proptag1 &= 0xFFFF0000;
 		proptag1 |= PROPVAL_TYPE_WSTRING;
@@ -150,7 +150,7 @@ zend_bool php_to_sortorder_set(zval *pzval,
 	ZEND_HASH_FOREACH_KEY_VAL(ptarget_hash, idx, key, entry) {
 		uint32_t proptag = phptag_to_proptag(key != nullptr ? atoi(key->val) : idx);
 		pset->psort[i].propid = PROP_ID(proptag);
-		pset->psort[i].type = proptag & 0xFFFF;
+		pset->psort[i].type = PROP_TYPE(proptag);
 		pset->psort[i].table_sort = zval_get_long(entry);
 		++i;
 	} ZEND_HASH_FOREACH_END();
@@ -684,8 +684,7 @@ zend_bool php_to_tpropval_array(zval *pzval,
 	ZEND_HASH_FOREACH_KEY_VAL(ptarget_hash, idx, pstring, entry) {
 		static_cast<void>(pstring);
 		ppropvals->ppropval[i].proptag = phptag_to_proptag(idx);
-		ppropvals->ppropval[i].pvalue =
-			php_to_propval(entry, idx & 0xFFFF);
+		ppropvals->ppropval[i].pvalue = php_to_propval(entry, PROP_TYPE(idx));
 		if (NULL == ppropvals->ppropval[i].pvalue) {
 			return 0;
 		}
@@ -916,7 +915,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 			rcon->propval = *tmp_propvals.ppropval;
 		} else {
 			rcon->propval.proptag = rcon->proptag;
-			rcon->propval.pvalue = php_to_propval(value_entry, rcon->proptag & 0xFFFF);
+			rcon->propval.pvalue = php_to_propval(value_entry, PROP_TYPE(rcon->proptag));
 			if (rcon->propval.pvalue == nullptr)
 				return 0;
 		}
@@ -947,7 +946,7 @@ zend_bool php_to_restriction(zval *pzval, RESTRICTION *pres TSRMLS_DC)
 			rprop->propval = *tmp_propvals.ppropval;
 		} else {
 			rprop->propval.proptag = rprop->proptag;
-			rprop->propval.pvalue = php_to_propval(value_entry, rprop->proptag & 0xFFFF);
+			rprop->propval.pvalue = php_to_propval(value_entry, PROP_TYPE(rprop->proptag));
 			if (rprop->propval.pvalue == nullptr)
 				return 0;
 		}
@@ -1202,7 +1201,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 		* will work.
 		*/
 		sprintf(proptag_string, "%u", proptag_to_phptag(ppropval->proptag));
-		switch (ppropval->proptag & 0xFFFF) {
+		switch (PROP_TYPE(ppropval->proptag)) {
 		case PROPVAL_TYPE_LONG:
 		case PROPVAL_TYPE_ERROR:
 			add_assoc_long(pzret, proptag_string, *(uint32_t*)ppropval->pvalue);

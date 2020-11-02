@@ -1,4 +1,5 @@
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "rule_actions.h"
 #include "propval.h"
 #include <stdlib.h>
@@ -118,12 +119,11 @@ static BOOL recipient_block_dup_internal(
 	}
 	for (i=0; i<pblock->count; i++) {
 		precipient->ppropval[i].proptag = pblock->ppropval[i].proptag;
-		precipient->ppropval[i].pvalue = propval_dup(
-								pblock->ppropval[i].proptag & 0xFFFF,
+		precipient->ppropval[i].pvalue = propval_dup(PROP_TYPE(pblock->ppropval[i].proptag),
 								pblock->ppropval[i].pvalue);
 		if (NULL == precipient->ppropval[i].pvalue) {
 			for (i-=1; i>=0; i--) {
-				propval_free(precipient->ppropval[i].proptag & 0xFFFF,
+				propval_free(PROP_TYPE(precipient->ppropval[i].proptag),
 										precipient->ppropval[i].pvalue);
 			}
 			free(precipient->ppropval);
@@ -138,7 +138,7 @@ static void recipient_block_free_internal(RECIPIENT_BLOCK *pblock)
 	int i;
 	
 	for (i=0; i<pblock->count; i++) {
-		propval_free(pblock->ppropval[i].proptag & 0xFFFF,
+		propval_free(PROP_TYPE(pblock->ppropval[i].proptag),
 								pblock->ppropval[i].pvalue);
 	}
 	free(pblock->ppropval);
@@ -243,7 +243,7 @@ static BOOL action_block_dup_internal(
 		if (d == nullptr)
 			return FALSE;
 		d->proptag = s->proptag;
-		d->pvalue = propval_dup(s->proptag & 0xFFFF, s->pvalue);
+		d->pvalue = propval_dup(PROP_TYPE(s->proptag), s->pvalue);
 		if (d->pvalue == nullptr) {
 			free(pblock->pdata);
 			return FALSE;
@@ -279,7 +279,7 @@ static void action_block_free_internal(ACTION_BLOCK *paction)
 		break;
 	case ACTION_TYPE_OP_TAG: {
 		TAGGED_PROPVAL *p = paction->pdata;
-		propval_free(p->proptag & 0xFFFF, p->pvalue);
+		propval_free(PROP_TYPE(p->proptag), p->pvalue);
 		free(p);
 		break;
 	}
@@ -362,7 +362,7 @@ static uint32_t recipient_block_size(const RECIPIENT_BLOCK *r)
 	
 	size = sizeof(uint8_t) + sizeof(uint32_t);
 	for (i=0; i<r->count; i++) {
-		size += propval_size(r->ppropval[i].proptag & 0xFFFF,
+		size += propval_size(PROP_TYPE(r->ppropval[i].proptag),
 					r->ppropval[i].pvalue) + sizeof(uint32_t);
 	}
 	return size;
@@ -409,7 +409,7 @@ static uint32_t action_block_size(const ACTION_BLOCK *r)
 		break;
 	case ACTION_TYPE_OP_TAG: {
 		TAGGED_PROPVAL *p = r->pdata;
-		size += sizeof(uint32_t) + propval_size(p->proptag & 0xFFFF, p->pvalue);
+		size += sizeof(uint32_t) + propval_size(PROP_TYPE(p->proptag), p->pvalue);
 	}
 	}
 	return size;

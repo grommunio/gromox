@@ -174,8 +174,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	total_size = 0;
 	for (i=0; i<propvals.count; i++) {
-		tmp_size = propval_size(
-			propvals.ppropval[i].proptag & 0xFFFF,
+		tmp_size = propval_size(PROP_TYPE(propvals.ppropval[i].proptag),
 			propvals.ppropval[i].pvalue);
 		if (tmp_size > 0x8000) {
 			propvals.ppropval[i].proptag &= 0xFFFF0000;
@@ -192,7 +191,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	if (total_size > 0x7000) {
 		for (i=0; i<propvals.count; i++) {
-			proptype = propvals.ppropval[i].proptag & 0xFFFF;
+			proptype = PROP_TYPE(propvals.ppropval[i].proptag);
 			switch (proptype) {
 			case PROPVAL_TYPE_BINARY:
 			case PROPVAL_TYPE_OBJECT:
@@ -253,7 +252,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 			return ecError;
 		}
 		for (i=0; i<ppropvals->count; i++) {
-			if (propval_size(ppropvals->ppropval[i].proptag & 0xFFFF,
+			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
 				ppropvals->ppropval[i].pvalue) > size_limit) {
 				ppropvals->ppropval[i].proptag &= 0xFFFF0000;
 				ppropvals->ppropval[i].proptag |= PROPVAL_TYPE_ERROR;
@@ -285,7 +284,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 			return ecError;
 		}
 		for (i=0; i<ppropvals->count; i++) {
-			if (propval_size(ppropvals->ppropval[i].proptag & 0xFFFF,
+			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
 				ppropvals->ppropval[i].pvalue) > size_limit) {
 				ppropvals->ppropval[i].proptag &= 0xFFFF0000;
 				ppropvals->ppropval[i].proptag |= PROPVAL_TYPE_ERROR;
@@ -337,7 +336,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		return ecNotSupported;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if ((ppropvals->ppropval[i].proptag & 0xFFFF) != PROPVAL_TYPE_UNSPECIFIED)
+		if (PROP_TYPE(ppropvals->ppropval[i].proptag) != PROPVAL_TYPE_UNSPECIFIED)
 			continue;	
 		if (FALSE == common_util_convert_unspecified(cpid,
 			b_unicode, ppropvals->ppropval[i].pvalue)) {
@@ -1223,9 +1222,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			OPENSTREAM_FLAG_READONLY != flags) {
 			return ecNotSupported;
 		}
-		if (PROPVAL_TYPE_BINARY != (proptag & 0xFFFF)) {
+		if (PROP_TYPE(proptag) != PROPVAL_TYPE_BINARY)
 			return ecNotSupported;
-		}
 		if (TRUE == b_write) {
 			rpc_info = get_rpc_info();
 			if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {
@@ -1244,7 +1242,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		break;
 	case OBJECT_TYPE_MESSAGE:
 	case OBJECT_TYPE_ATTACHMENT:
-		switch (proptag & 0xFFFF) {
+		switch (PROP_TYPE(proptag)) {
 		case PROPVAL_TYPE_BINARY:
 		case PROPVAL_TYPE_STRING:
 		case PROPVAL_TYPE_WSTRING:

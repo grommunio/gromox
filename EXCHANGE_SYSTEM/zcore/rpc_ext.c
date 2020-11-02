@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "rpc_ext.h"
 #include "ext_buffer.h"
 #include "common_util.h"
@@ -391,8 +392,7 @@ static BOOL rpc_ext_pull_tagged_propval(
 		pext, &r->proptag)) {
 		return FALSE;
 	}
-	return rpc_ext_pull_propval(pext,
-		r->proptag&0xFFFF, &r->pvalue);
+	return rpc_ext_pull_propval(pext, PROP_TYPE(r->proptag), &r->pvalue);
 }
 
 static BOOL rpc_ext_pull_tpropval_array(
@@ -839,8 +839,7 @@ static BOOL rpc_ext_push_tagged_propval(
 		pext, r->proptag)) {
 		return FALSE;
 	}
-	return rpc_ext_push_propval(pext,
-		r->proptag&0xFFFF, r->pvalue);
+	return rpc_ext_push_propval(pext, PROP_TYPE(r->proptag), r->pvalue);
 }
 
 static BOOL rpc_ext_push_tpropval_array(

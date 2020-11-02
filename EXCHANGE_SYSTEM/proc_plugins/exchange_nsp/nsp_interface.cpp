@@ -5,6 +5,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
@@ -1657,7 +1658,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 		    codepage, pfilter->res.res_property.proptag,
 		    &prop_val, temp_buff) != ecSuccess)
 			return FALSE;
-		switch (pfilter->res.res_property.proptag & 0xFFFF) {
+		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
 		case PROPVAL_TYPE_SHORT:
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
@@ -2470,8 +2471,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (TRUE == b_unicode && NULL != pproptags) {
 		for (i=0; i<pproptags->cvalues; i++) {
-			if (PROPVAL_TYPE_STRING ==
-				(pproptags->pproptag[i] & 0xFFFF)) {
+			if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_STRING) {
 				*pprows = NULL;
 				return ecNotSupported;
 			}
@@ -2575,8 +2575,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (FALSE == b_proptags) {
 			count = 0;
 			for (i=0; i<(*pprows)->cvalues; i++) {
-				if (PROPVAL_TYPE_ERROR == 
-					((*pprows)->pprops[i].proptag & 0XFFFF) &&
+				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PROPVAL_TYPE_ERROR &&
 				    (*pprows)->pprops[i].value.err == ecNotFound)
 					continue;
 				if (i != count) {
@@ -2587,8 +2586,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			(*pprows)->cvalues = count;
 		} else {
 			for (i=0; i<(*pprows)->cvalues; i++) {
-				if (PROPVAL_TYPE_ERROR ==
-					((*pprows)->pprops[i].proptag & 0XFFFF)) {
+				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PROPVAL_TYPE_ERROR) {
 					result = ecWarnWithErrors;
 					break;
 				}

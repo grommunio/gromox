@@ -480,7 +480,7 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 		|| 0 == pstream->hparent || 0 == pstream->proptag) {
 		return ecInvalidParam;
 	}
-	switch (pstream->proptag & 0xFFFF) {
+	switch (PROP_TYPE(pstream->proptag)) {
 	case PROPVAL_TYPE_BINARY:
 		return zarafa_client_setpropval(
 			pstream->hsession, pstream->hparent,
@@ -721,7 +721,7 @@ ZEND_FUNCTION(mapi_prop_type)
 		RETVAL_FALSE;
 	} else {
 		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG(proptag & 0xFFFF);
+		RETURN_LONG(PROP_TYPE(proptag));
 	}
 }
 
@@ -3185,7 +3185,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		MAPI_G(hr) = ecInvalidParam;
 		goto THROW_EXCEPTION;
 	}
-	switch (proptag & 0xFFFF) {
+	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_BINARY:
 	case PROPVAL_TYPE_STRING:
 	case PROPVAL_TYPE_WSTRING:
@@ -3251,12 +3251,11 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		goto THROW_EXCEPTION;
 	}
 	if (NULL != pvalue) {
-		if (PROPVAL_TYPE_BINARY == (proptag & 0xFFFF)) {
+		if (PROP_TYPE(proptag) == PROPVAL_TYPE_BINARY)
 			stream_object_write(pstream,
 				((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb);
-		} else {
+		else
 			stream_object_write(pstream, pvalue, strlen(static_cast<const char *>(pvalue)));
-		}
 		stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 	}
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
@@ -3849,7 +3848,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		goto THROW_EXCEPTION;
 	}
 	if (0 == memcmp(&iid_guid, &IID_IStream, sizeof(GUID))) {
-		switch (proptag & 0xFFFF) {
+		switch (PROP_TYPE(proptag)) {
 		case PROPVAL_TYPE_BINARY:
 		case PROPVAL_TYPE_STRING:
 		case PROPVAL_TYPE_WSTRING:
@@ -3869,11 +3868,10 @@ ZEND_FUNCTION(mapi_openproperty)
 				MAPI_G(hr) = ecNotFound;
 				goto THROW_EXCEPTION;
 			}
-			if (PROPVAL_TYPE_BINARY == proptag & 0xFFFF) {
+			if (PROP_TYPE(proptag) == PROPVAL_TYPE_BINARY)
 				RETVAL_STRINGL(reinterpret_cast<const char *>(static_cast<BINARY *>(pvalue)->pb), static_cast<BINARY *>(pvalue)->cb);
-			} else {
+			else
 				RETVAL_STRINGL(static_cast<const char *>(pvalue), strlen(static_cast<const char *>(pvalue)));
-			}
 		} else {
 			pstream = stream_object_create();
 			if (NULL == pstream) {
@@ -3884,14 +3882,13 @@ ZEND_FUNCTION(mapi_openproperty)
 				pstream, probject->hsession,
 				probject->hobject, proptag);
 			if (NULL != pvalue) {
-				if (PROPVAL_TYPE_BINARY == (proptag & 0xFFFF)) {
+				if (PROP_TYPE(proptag) == PROPVAL_TYPE_BINARY)
 					stream_object_write(pstream,
 						((BINARY*)pvalue)->pb,
 						((BINARY*)pvalue)->cb);
-				} else {
+				else
 					stream_object_write(pstream,
 						pvalue, strlen(static_cast<const char *>(pvalue)));
-				}
 				stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 			}
 			ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);

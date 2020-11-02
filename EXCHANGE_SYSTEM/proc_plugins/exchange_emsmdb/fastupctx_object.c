@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "attachment_object.h"
 #include "fastupctx_object.h"
 #include "emsmdb_interface.h"
@@ -1032,7 +1033,7 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 	} else {
 		last_marker = 0;
 	}
-	if (PROPVAL_TYPE_OBJECT == (ppropval->proptag & 0xFFFF)) {
+	if (PROP_TYPE(ppropval->proptag) == PROPVAL_TYPE_OBJECT) {
 		if (NEWATTACH == last_marker || (0 == last_marker &&
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element)) {
 			if (PROP_TAG_ATTACHDATAOBJECT != ppropval->proptag) {

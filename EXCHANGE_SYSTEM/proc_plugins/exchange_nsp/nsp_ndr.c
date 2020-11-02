@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "nsp_ndr.h"
 #include <iconv.h>
@@ -1954,9 +1955,8 @@ static int nsp_ndr_pull_property_value(NDR_PULL *pndr, int flag, PROPERTY_VALUE 
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
 		}
-		if ((r->proptag&0xFFFF) != type) {
+		if (PROP_TYPE(r->proptag) != type)
 			return NDR_ERR_BAD_SWITCH;
-		}
 		status = ndr_pull_trailer_align(pndr, 5);
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
@@ -1964,7 +1964,7 @@ static int nsp_ndr_pull_property_value(NDR_PULL *pndr, int flag, PROPERTY_VALUE 
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		type = r->proptag&0xFFFF;
+		type = PROP_TYPE(r->proptag);
 		status = nsp_ndr_pull_prop_val_union(pndr, FLAG_CONTENT, &type, &r->value);
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
@@ -1991,7 +1991,7 @@ static int nsp_ndr_push_property_value(NDR_PUSH *pndr, int flag, const PROPERTY_
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = nsp_ndr_push_prop_val_union(pndr, FLAG_HEADER, r->proptag&0xFFFF, &r->value);
+		status = nsp_ndr_push_prop_val_union(pndr, FLAG_HEADER, PROP_TYPE(r->proptag), &r->value);
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
 		}
@@ -2002,7 +2002,7 @@ static int nsp_ndr_push_property_value(NDR_PUSH *pndr, int flag, const PROPERTY_
 	}
 	
 	if (flag & FLAG_CONTENT) {
-		status = nsp_ndr_push_prop_val_union(pndr, FLAG_CONTENT, r->proptag&0xFFFF, &r->value);
+		status = nsp_ndr_push_prop_val_union(pndr, FLAG_CONTENT, PROP_TYPE(r->proptag), &r->value);
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
 		}

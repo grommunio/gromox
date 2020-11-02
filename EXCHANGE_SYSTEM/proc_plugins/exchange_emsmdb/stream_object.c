@@ -1,4 +1,5 @@
 #include "util.h"
+#include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include "rop_processor.h"
@@ -103,7 +104,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 			return pstream;
 		}
 	}
-	switch (proptag & 0xFFFF) {
+	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_BINARY:
 	case PROPVAL_TYPE_OBJECT:
 		pstream->content_bin.cb = ((BINARY*)pvalue)->cb;
@@ -233,7 +234,7 @@ void* stream_object_get_content(STREAM_OBJECT *pstream)
 	void *pcontent;
 	uint32_t length;
 	
-	switch (pstream->proptag & 0xFFFF) {
+	switch (PROP_TYPE(pstream->proptag)) {
 	case PROPVAL_TYPE_BINARY:
 		return &pstream->content_bin;
 	case PROPVAL_TYPE_STRING:

@@ -422,7 +422,7 @@ static BOOL ftstream_producer_write_propvalue(
 	uint16_t write_type;
 	
 	propid = PROP_ID(ppropval->proptag);
-	proptype = ppropval->proptag & 0xFFFF;
+	proptype = PROP_TYPE(ppropval->proptag);
 	/* ignore PROPVAL_TYPE_SVREID */
 	if (PROPVAL_TYPE_SVREID == proptype) {
 		return TRUE;

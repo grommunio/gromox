@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <gromox/database.h>
+#include <gromox/mapidefs.h>
 #include "util.h"
 #include "guid.h"
 #include "str_hash.h"
@@ -3107,8 +3108,7 @@ static void* db_engine_get_extremum_value(DB_ITEM *pdb,
 			b_first = TRUE;
 			continue;
 		}
-		result = db_engine_compare_propval(
-			extremum_tag & 0xFFFF, pvalue, pvalue1);
+		result = db_engine_compare_propval(PROP_TYPE(extremum_tag), pvalue, pvalue1);
 		if (TABLE_SORT_MAXIMUM_CATEGORY == table_sort) {
 			if (result < 0) {
 				pvalue = pvalue1;
@@ -4269,7 +4269,7 @@ static void db_engine_notify_content_table_modify_row(
 		} else {
 			/* check if the multiple instance value is changed */ 
 			if (0 != ptable->instance_tag) {
-				type = ptable->instance_tag & 0xFFFF & (~0x3000);
+				type = PROP_TYPE(ptable->instance_tag) & ~0x3000;
 				if (FALSE == common_util_get_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					ptable->cpid, pdb->psqlite,
@@ -4460,10 +4460,10 @@ static void db_engine_notify_content_table_modify_row(
 						break;
 					}
 					pvalue = common_util_column_sqlite_statement(
-						pstmt2, 0, ptable->extremum_tag & 0xFFFF);
+					         pstmt2, 0, PROP_TYPE(ptable->extremum_tag));
 					sqlite3_finalize(pstmt2);
 					result = db_engine_compare_propval(
-						ptable->extremum_tag & 0xFFFF, pvalue,
+					         PROP_TYPE(ptable->extremum_tag), pvalue,
 						propvals[ptable->psorts->ccategories].pvalue);
 					if (TABLE_SORT_MAXIMUM_CATEGORY == ptable->psorts->psort[
 						ptable->psorts->ccategories].table_sort) {

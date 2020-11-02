@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <gromox/database.h>
+#include <gromox/mapidefs.h>
 #include "proptag_array.h"
 #include "sortorder_set.h"
 #include "exmdb_server.h"
@@ -1171,11 +1172,9 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				if (NULL == pvalue) {
 					sqlite3_bind_null(pstmt1, i + 2);
 				} else {
-					if (FALSE == common_util_bind_sqlite_statement(
-						pstmt1, i + 2, tmp_proptag & 0xFFFF,
-						pvalue)) {
+					if (!common_util_bind_sqlite_statement(pstmt1,
+					    i + 2, PROP_TYPE(tmp_proptag), pvalue))
 						goto LOAD_CONTENT_FAIL;	
-					}
 				}
 			}
 			if (psorts->ccategories > 0) {
@@ -1192,7 +1191,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			}
 			/* inssert all instances into stbl */
 			if (0 != ptnode->instance_tag) {
-				type = ptnode->instance_tag & 0xFFFF;
+				type = PROP_TYPE(ptnode->instance_tag);
 				type &= ~0x2000;
 				if (FALSE == common_util_get_property(
 					MESSAGE_PROPERTIES_TABLE, mid_val, cpid, pdb->psqlite,
@@ -1715,9 +1714,9 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
@@ -1773,19 +1772,19 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if ((rprop->propval.proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
 				return FALSE;
 			if (strcasestr(static_cast<char *>(pvalue),
 			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 				return TRUE;
 			return FALSE;
 		}
-		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
-		       pvalue, rprop->propval.pvalue);
+		return propval_compare_relop(rprop->relop,
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE: {
 		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
-		if ((rprop->proptag1 & 0xFFFF) != (rprop->proptag2 & 0xFFFF))
+		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rprop->proptag1, &pvalue) || pvalue == nullptr)
@@ -1794,11 +1793,11 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		    rprop->proptag2, &pvalue1) || pvalue1 == nullptr)
 			return FALSE;
 		return propval_compare_relop(rprop->relop,
-		       rprop->proptag1 & 0xFFFF, pvalue, pvalue1);
+		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
@@ -2152,8 +2151,8 @@ static BOOL table_column_content_tmptbl(
 	}
 	if (CONTENT_ROW_MESSAGE == row_type) {
 		if (0 != instance_tag && instance_tag == proptag) {
-			*ppvalue = common_util_column_sqlite_statement(
-				pstmt, 11, instance_tag & 0xFFFF & (~0x3000));
+			*ppvalue = common_util_column_sqlite_statement(pstmt,
+			           11, PROP_TYPE(instance_tag) & ~0x3000);
 			return TRUE;
 		}
 		return FALSE;
@@ -2162,8 +2161,7 @@ static BOOL table_column_content_tmptbl(
 		return FALSE;
 	}
 	if (extremum_tag == proptag) {
-		*ppvalue = common_util_column_sqlite_statement(
-							pstmt, 12, proptag & 0xFFFF);
+		*ppvalue = common_util_column_sqlite_statement(pstmt, 12, PROP_TYPE(proptag));
 		return TRUE;
 	}
 	for (i=psorts->ccategories-1; i>=0; i--) {
@@ -2195,11 +2193,11 @@ static BOOL table_column_content_tmptbl(
 		return FALSE;
 	}
 	if (0x3000 == (proptag & 0x3000)) {
-		*ppvalue = common_util_column_sqlite_statement(
-			pstmt2, 0, proptag & 0xFFFF & (~0x3000));
+		*ppvalue = common_util_column_sqlite_statement(pstmt2, 0,
+		           PROP_TYPE(proptag) & ~0x3000);
 	} else {
-		*ppvalue = common_util_column_sqlite_statement(
-					pstmt2, 0, proptag & 0xFFFF);
+		*ppvalue = common_util_column_sqlite_statement(pstmt2, 0,
+		           PROP_TYPE(proptag));
 	}
 	sqlite3_reset(pstmt2);
 	return TRUE;
@@ -2360,7 +2358,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					if (NULL == pvalue) {
 						continue;
 					}
-					switch (pproptags->pproptag[i] & 0xFFFF) {
+					switch (PROP_TYPE(pproptags->pproptag[i])) {
 					case PROPVAL_TYPE_WSTRING:
 						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
@@ -2499,7 +2497,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				if (NULL == pvalue) {
 					continue;
 				}
-				switch (pproptags->pproptag[i] & 0xFFFF) {
+				switch (PROP_TYPE(pproptags->pproptag[i])) {
 				case PROPVAL_TYPE_WSTRING:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
@@ -2814,9 +2812,9 @@ static BOOL table_evaluate_row_restriction(
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
-		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
+		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
 		if (!get_property(pparam, rcon->proptag, &pvalue) ||
 		    pvalue == nullptr)
@@ -2872,7 +2870,7 @@ static BOOL table_evaluate_row_restriction(
 		    pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if ((rprop->propval.proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
 				return FALSE;
 			if (strcasestr(static_cast<char *>(pvalue),
 			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
@@ -2880,11 +2878,11 @@ static BOOL table_evaluate_row_restriction(
 			return FALSE;
 		}
 		return propval_compare_relop(rprop->relop,
-		       rprop->proptag & 0xFFFF, pvalue, rprop->propval.pvalue);
+		       PROP_TYPE(rprop->proptag), pvalue, rprop->propval.pvalue);
 	}
 	case RESTRICTION_TYPE_PROPCOMPARE: {
 		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
-		if ((rprop->proptag1 & 0xFFFF) != (rprop->proptag2 & 0xFFFF))
+		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
 		if (!get_property(pparam, rprop->proptag1, &pvalue) ||
 		    pvalue == nullptr)
@@ -2893,11 +2891,11 @@ static BOOL table_evaluate_row_restriction(
 		    pvalue1 == nullptr)
 			return FALSE;
 		return propval_compare_relop(rprop->relop,
-		       rprop->proptag1 & 0xFFFF, pvalue, pvalue1);
+		       PROP_TYPE(rprop->proptag1), pvalue, pvalue1);
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
-		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
 			return FALSE;
 		if (!get_property(pparam, rbm->proptag, &pvalue) ||
 		    pvalue == nullptr)
@@ -3052,7 +3050,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						if (NULL == pvalue) {
 							continue;
 						}
-						switch (pproptags->pproptag[i] & 0xFFFF) {
+						switch (PROP_TYPE(pproptags->pproptag[i])) {
 						case PROPVAL_TYPE_WSTRING:
 							utf8_truncate(static_cast<char *>(pvalue), 255);
 							break;
@@ -3177,7 +3175,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					if (NULL == pvalue) {
 						continue;
 					}
-					switch (pproptags->pproptag[i] & 0xFFFF) {
+					switch (PROP_TYPE(pproptags->pproptag[i])) {
 					case PROPVAL_TYPE_WSTRING:
 						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
@@ -3453,7 +3451,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				if (NULL == pvalue) {
 					continue;
 				}
-				switch (pproptags->pproptag[i] & 0xFFFF) {
+				switch (PROP_TYPE(pproptags->pproptag[i])) {
 				case PROPVAL_TYPE_WSTRING:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
@@ -3555,7 +3553,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 			if (NULL == pvalue) {
 				continue;
 			}
-			switch (pproptags->pproptag[i] & 0xFFFF) {
+			switch (PROP_TYPE(pproptags->pproptag[i])) {
 			case PROPVAL_TYPE_WSTRING:
 				utf8_truncate(static_cast<char *>(pvalue), 255);
 				break;

@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "endian_macro.h"
 #include "ext_buffer.h"
 #include "util.h"
@@ -1305,7 +1306,7 @@ int ext_buffer_pull_tagged_propval(EXT_PULL *pext, TAGGED_PROPVAL *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_pull_propval(pext, r->proptag&0xFFFF, &r->pvalue);
+	return ext_buffer_pull_propval(pext, PROP_TYPE(r->proptag), &r->pvalue);
 }
 
 int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r)
@@ -1966,7 +1967,7 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
 		for (i=0; i<pcolumns->count; i++) {
 			status = ext_buffer_pull_propval(pext,
-						pcolumns->pproptag[i] & 0xFFFF, &r->pppropval[i]);
+			         PROP_TYPE(pcolumns->pproptag[i]), &r->pppropval[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -1979,7 +1980,7 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 				return EXT_ERR_ALLOC;
 			}
 			status = ext_buffer_pull_flagged_propval(pext,
-						pcolumns->pproptag[i] & 0xFFFF, r->pppropval[i]);
+			         PROP_TYPE(pcolumns->pproptag[i]), r->pppropval[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -4446,7 +4447,7 @@ int ext_buffer_push_tagged_propval(EXT_PUSH *pext, const TAGGED_PROPVAL *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	return ext_buffer_push_propval(pext, r->proptag&0xFFFF, r->pvalue);
+	return ext_buffer_push_propval(pext, PROP_TYPE(r->proptag), r->pvalue);
 }
 
 int ext_buffer_push_long_term_id(EXT_PUSH *pext, const LONG_TERM_ID *r)
@@ -5004,7 +5005,7 @@ int ext_buffer_push_property_row(EXT_PUSH *pext,
 	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
 		for (i=0; i<pcolumns->count; i++) {
 			status = ext_buffer_push_propval(pext,
-						pcolumns->pproptag[i] & 0xFFFF, r->pppropval[i]);
+			         PROP_TYPE(pcolumns->pproptag[i]), r->pppropval[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -5013,7 +5014,7 @@ int ext_buffer_push_property_row(EXT_PUSH *pext,
 	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
 		for (i=0; i<pcolumns->count; i++) {
 			status = ext_buffer_push_flagged_propval(pext,
-						pcolumns->pproptag[i] & 0xFFFF, r->pppropval[i]);
+			         PROP_TYPE(pcolumns->pproptag[i]), r->pppropval[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}

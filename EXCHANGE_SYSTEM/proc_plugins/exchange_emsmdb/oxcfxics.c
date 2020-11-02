@@ -1,4 +1,5 @@
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "rops.h"
 #include "guid.h"
 #include "idset.h"
@@ -1744,10 +1745,9 @@ uint32_t rop_syncimportdeletes(
 	ICSUPCTX_OBJECT *pctx;
 	FOLDER_OBJECT *pfolder;
 	
-	if (1 != ppropvals->count || PROPVAL_TYPE_BINARY_ARRAY
-		!= (ppropvals->ppropval[0].proptag & 0xFFFF)) {
+	if (ppropvals->count != 1 ||
+	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PROPVAL_TYPE_BINARY_ARRAY)
 		return ecInvalidParam;
-	}
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;

@@ -7,6 +7,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include <gromox/socket.h>
 #include "pcl.h"
 #include "util.h"
@@ -1188,9 +1189,8 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 	}
 	ptmp_proptags->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (PROPVAL_TYPE_OBJECT == (pproptags->pproptag[i] & 0xFFFF)) {
+		if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_OBJECT)
 			continue;
-		}
 		ptmp_proptags->pproptag[ptmp_proptags->count] = 
 									pproptags->pproptag[i];
 		ptmp_proptags->count ++;
@@ -1315,7 +1315,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 		prow->pppropval[i] = common_util_get_propvals(
 			(TPROPVAL_ARRAY*)ppropvals, pcolumns->pproptag[i]);
 		if (NULL != prow->pppropval[i] &&
-		    (pcolumns->pproptag[i] & 0xFFFF) == PROPVAL_TYPE_UNSPECIFIED) {
+		    PROP_TYPE(pcolumns->pproptag[i]) == PROPVAL_TYPE_UNSPECIFIED) {
 			if (FALSE == common_util_convert_unspecified(
 				cpid, b_unicode, prow->pppropval[i])) {
 				return FALSE;
@@ -1679,18 +1679,18 @@ BOOL common_util_modifyrecipient_to_propvals(
 static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 {
 	if (TRUE == to_unicode) {
-		if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_STRING) {
+		if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_STRING) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_WSTRING;
-		} else if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_STRING_ARRAY) {
+		} else if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_STRING_ARRAY) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_WSTRING_ARRAY;
 		}
 	} else {
-		if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_WSTRING) {
+		if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_STRING;
-		} else if ((*pproptag & 0xFFFF) == PROPVAL_TYPE_WSTRING_ARRAY) {
+		} else if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING_ARRAY) {
 			*pproptag &= 0xFFFF0000;
 			*pproptag |= PROPVAL_TYPE_STRING_ARRAY;
 		}
@@ -1706,7 +1706,7 @@ BOOL common_util_convert_tagged_propval(
 	char *pstring;
 	
 	if (TRUE == to_unicode) {
-		switch (ppropval->proptag & 0xFFFF) {
+		switch (PROP_TYPE(ppropval->proptag)) {
 		case PROPVAL_TYPE_STRING:
 			len = 2*strlen(ppropval->pvalue) + 1;
 			pstring = common_util_alloc(len);
@@ -1750,7 +1750,7 @@ BOOL common_util_convert_tagged_propval(
 			break;
 		}
 	} else {
-		switch (ppropval->proptag & 0xFFFF) {
+		switch (PROP_TYPE(ppropval->proptag)) {
 		case PROPVAL_TYPE_WSTRING:
 			len = 2*strlen(ppropval->pvalue) + 1;
 			pstring = common_util_alloc(len);

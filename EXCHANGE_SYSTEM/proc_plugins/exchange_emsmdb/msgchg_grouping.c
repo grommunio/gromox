@@ -249,7 +249,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 			}
 			ptag_node->node.pdata = ptag_node;
 			ptag_node->propid = PROP_ID(proptag);
-			ptag_node->type = proptag & 0xFFFF;
+			ptag_node->type = PROP_TYPE(proptag);
 			ptag_node->ppropname = NULL;
 			double_list_append_as_tail(
 				&pgp_node->tag_list, &ptag_node->node);
