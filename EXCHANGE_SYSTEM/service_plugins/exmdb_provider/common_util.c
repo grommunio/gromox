@@ -5512,30 +5512,29 @@ static BOOL common_util_evaluate_subobject_restriction(
 	int i;
 	
 	switch (pres->rt) {
-	case RESTRICTION_TYPE_OR:
-		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
-			if (TRUE == common_util_evaluate_subobject_restriction(
-				psqlite, cpid, message_id, proptag,
-				((RESTRICTION_AND_OR*)pres->pres)->pres + i)) {
+	case RESTRICTION_TYPE_OR: {
+		RESTRICTION_AND_OR *andor = pres->pres;
+		for (i = 0; i < andor->count; ++i)
+			if (common_util_evaluate_subobject_restriction(psqlite,
+			    cpid, message_id, proptag, &andor->pres[i]))
 				return TRUE;
-			}
-		}
 		return FALSE;
-	case RESTRICTION_TYPE_AND:
-		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
-			if (FALSE == common_util_evaluate_subobject_restriction(
-				psqlite, cpid, message_id, proptag,
-				((RESTRICTION_AND_OR*)pres->pres)->pres + i)) {
+	}
+	case RESTRICTION_TYPE_AND: {
+		RESTRICTION_AND_OR *andor = pres->pres;
+		for (i = 0; i < andor->count; ++i)
+			if (!common_util_evaluate_subobject_restriction(psqlite,
+			    cpid, message_id, proptag, &andor->pres[i]))
 				return FALSE;
-			}
-		}
 		return TRUE;
-	case RESTRICTION_TYPE_NOT:
-		if (TRUE == common_util_evaluate_subobject_restriction(psqlite, cpid,
-			message_id, proptag, &((RESTRICTION_NOT*)pres->pres)->res)) {
+	}
+	case RESTRICTION_TYPE_NOT: {
+		RESTRICTION_NOT *rnot = pres->pres;
+		if (common_util_evaluate_subobject_restriction(psqlite, cpid,
+		    message_id, proptag, &rnot->res))
 			return FALSE;
-		}
 		return TRUE;
+	}
 	case RESTRICTION_TYPE_CONTENT:
 	case RESTRICTION_TYPE_PROPERTY:
 	case RESTRICTION_TYPE_PROPCOMPARE:
