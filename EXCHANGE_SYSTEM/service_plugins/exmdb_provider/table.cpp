@@ -1698,74 +1698,67 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 	
 	switch (pres->rt) {
 	case RESTRICTION_TYPE_OR:
-	case RESTRICTION_TYPE_AND:
-		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
-			if (FALSE == table_evaluate_rule_restriction(psqlite,
-				rule_id, ((RESTRICTION_AND_OR*)pres->pres)->pres + i)) {
+	case RESTRICTION_TYPE_AND: {
+		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
+		for (i = 0; i < andor->count; ++i)
+			if (!table_evaluate_rule_restriction(psqlite,
+			    rule_id, &andor->pres[i]))
 				return FALSE;
-			}
-		}
 		return TRUE;
-	case RESTRICTION_TYPE_NOT:
-		if (TRUE == table_evaluate_rule_restriction(psqlite,
-			rule_id, &((RESTRICTION_NOT*)pres->pres)->res)) {
+	}
+	case RESTRICTION_TYPE_NOT: {
+		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
+		if (table_evaluate_rule_restriction(psqlite,
+		    rule_id, &rnot->res))
 			return FALSE;
-		}
 		return TRUE;
-	case RESTRICTION_TYPE_CONTENT:
-		if (PROPVAL_TYPE_WSTRING != (((RESTRICTION_CONTENT*)
-			pres->pres)->proptag & 0xFFFF)) {
+	}
+	case RESTRICTION_TYPE_CONTENT: {
+		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
+		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		}
-		if ((((RESTRICTION_CONTENT*)pres->pres)->proptag & 0xFFFF) !=
-			(((RESTRICTION_CONTENT*)pres->pres)->propval.proptag & 0xFFFF)) {
+		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
 			return FALSE;
-		}
-		if (FALSE == common_util_get_rule_property(rule_id, psqlite,
-			((RESTRICTION_CONTENT*)pres->pres)->proptag, &pvalue) ||
-			NULL == pvalue) {
+		if (!common_util_get_rule_property(rule_id, psqlite,
+		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
-		switch (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level & 0xFFFF) {
+		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FUZZY_LEVEL_FULLSTRING:
-			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
 				return FALSE;
 			} else {
-				if (strcmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
 				return FALSE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
-			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
 				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 				return FALSE;
 			} else {
 				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_PREFIX:
-			len = strlen(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue));
-			if (((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    static_cast<char *>(rcon->propval.pvalue),
 				    len) == 0)
 					return TRUE;
 				return FALSE;
 			} else {
 				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pres->pres)->propval.pvalue),
+				    static_cast<char *>(rcon->propval.pvalue),
 				    len) == 0)
 					return TRUE;
 				return FALSE;
@@ -1773,96 +1766,80 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 			return FALSE;
 		}
 		return FALSE;
-	case RESTRICTION_TYPE_PROPERTY:
-		if (FALSE == common_util_get_rule_property(rule_id, psqlite,
-			((RESTRICTION_PROPERTY*) pres->pres)->proptag, &pvalue)
-			|| NULL == pvalue) {
+	}
+	case RESTRICTION_TYPE_PROPERTY: {
+		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
+		if (!common_util_get_rule_property(rule_id, psqlite,
+		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
-		if (PROP_TAG_ANR == ((RESTRICTION_PROPERTY*)pres->pres)->proptag) {
-			if ((((RESTRICTION_PROPERTY*)pres->pres)->propval.proptag
-				& 0xFFFF) != PROPVAL_TYPE_WSTRING) {
+		if (rprop->proptag == PROP_TAG_ANR) {
+			if ((rprop->propval.proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
 				return FALSE;
-			}
 			if (strcasestr(static_cast<char *>(pvalue),
-			    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pres->pres)->propval.pvalue)) != nullptr)
+			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 				return TRUE;
 			return FALSE;
 		}
-		return propval_compare_relop(
-				((RESTRICTION_PROPERTY*)pres->pres)->relop,
-				((RESTRICTION_PROPERTY*)pres->pres)->proptag&0xFFFF,
-				pvalue, ((RESTRICTION_PROPERTY*)pres->pres)->propval.pvalue);
-	case RESTRICTION_TYPE_PROPCOMPARE:
-		if ((((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1&0xFFFF) !=
-			(((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2&0xFFFF)) {
+		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
+		       pvalue, rprop->propval.pvalue);
+	}
+	case RESTRICTION_TYPE_PROPCOMPARE: {
+		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
+		if ((rprop->proptag1 & 0xFFFF) != (rprop->proptag2 & 0xFFFF))
 			return FALSE;
-		}
-		if (FALSE == common_util_get_rule_property(rule_id, psqlite,
-			((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1, &pvalue)
-			|| NULL == pvalue) {
+		if (!common_util_get_rule_property(rule_id, psqlite,
+		    rprop->proptag1, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
-		if (FALSE == common_util_get_rule_property(rule_id, psqlite,
-			((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2, &pvalue1)
-			|| NULL == pvalue1) {
+		if (!common_util_get_rule_property(rule_id, psqlite,
+		    rprop->proptag2, &pvalue1) || pvalue1 == nullptr)
 			return FALSE;
-		}
-		return propval_compare_relop(
-				((RESTRICTION_PROPCOMPARE*)pres->pres)->relop,
-				((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1&0xFFFF,
-				pvalue, pvalue1);
-	case RESTRICTION_TYPE_BITMASK:
-		if (PROPVAL_TYPE_LONG != (((RESTRICTION_BITMASK*)
-			pres->pres)->proptag & 0xFFFF)) {
+		return propval_compare_relop(rprop->relop,
+		       rprop->proptag1 & 0xFFFF, pvalue, pvalue1);
+	}
+	case RESTRICTION_TYPE_BITMASK: {
+		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
+		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
 			return FALSE;
-		}
-		if (FALSE == common_util_get_rule_property(rule_id, psqlite,
-			((RESTRICTION_BITMASK*)pres->pres)->proptag, &pvalue) ||
-			NULL == pvalue) {
+		if (!common_util_get_rule_property(rule_id, psqlite,
+		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
-		switch (((RESTRICTION_BITMASK*)pres->pres)->bitmask_relop) {
+		switch (rbm->bitmask_relop) {
 		case BITMASK_RELOP_EQZ:
-			if (0 == (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pres->pres)->mask)) {
+			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
-			}
 			break;
 		case BITMASK_RELOP_NEZ:
-			if (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pres->pres)->mask) {
+			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
-			}
 			break;
 		}	
 		return FALSE;
-	case RESTRICTION_TYPE_SIZE:
-		if (FALSE == common_util_get_rule_property(rule_id, psqlite,
-			((RESTRICTION_SIZE*)pres->pres)->proptag, &pvalue) ||
-			NULL == pvalue) {
+	}
+	case RESTRICTION_TYPE_SIZE: {
+		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
+		if (!common_util_get_rule_property(rule_id, psqlite,
+		    rsize->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
-		val_size = propval_size(((RESTRICTION_SIZE*)
-					pres->pres)->proptag, pvalue);
-		return propval_compare_relop(((RESTRICTION_SIZE*)
-				pres->pres)->relop, PROPVAL_TYPE_LONG, &val_size,
-				&((RESTRICTION_SIZE*)pres->pres)->size);
-	case RESTRICTION_TYPE_EXIST:
-		if (FALSE == common_util_get_rule_property(rule_id, psqlite,
-			((RESTRICTION_EXIST*)pres->pres)->proptag, &pvalue) ||
-			NULL == pvalue) {
+		val_size = propval_size(rsize->proptag, pvalue);
+		return propval_compare_relop(rsize->relop, PROPVAL_TYPE_LONG,
+		       &val_size, &rsize->size);
+	}
+	case RESTRICTION_TYPE_EXIST: {
+		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
+		if (!common_util_get_rule_property(rule_id, psqlite,
+		    rex->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
 		return TRUE;
+	}
 	case RESTRICTION_TYPE_SUBOBJ:
 		return FALSE;
-	case RESTRICTION_TYPE_COMMENT:
-		if (NULL == ((RESTRICTION_COMMENT*)pres->pres)->pres) {
+	case RESTRICTION_TYPE_COMMENT: {
+		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
+		if (rcom->pres == nullptr)
 			return TRUE;
-		}
 		return table_evaluate_rule_restriction(psqlite, rule_id,
-				((RESTRICTION_COMMENT*)pres->pres)->pres);
+		       rcom->pres);
+	}
 	case RESTRICTION_TYPE_COUNT:
 		return FALSE;
 	}	
