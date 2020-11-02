@@ -1077,30 +1077,29 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 	array_init(pzret);
 	switch (pres->rt) {
 	case RESTRICTION_TYPE_AND:
-	case RESTRICTION_TYPE_OR:
+	case RESTRICTION_TYPE_OR: {
+		auto andor = static_cast<RESTRICTION_AND_OR *>(pres->pres);
 		array_init(&pzarray);
-		for (i=0; i<((RESTRICTION_AND_OR*)pres->pres)->count; i++) {
+		for (i = 0; i < andor->count; ++i) {
 			sprintf(key, "%i", i);
-			if (!restriction_to_php(
-				&((RESTRICTION_AND_OR*)pres->pres)->pres[i],
-				&pzentry TSRMLS_CC)) {
+			if (!restriction_to_php(&andor->pres[i], &pzentry TSRMLS_CC))
 				return 0;
-			}
 			add_assoc_zval(&pzarray, key, &pzentry);
 		}
 		break;
-	case RESTRICTION_TYPE_NOT:
+	}
+	case RESTRICTION_TYPE_NOT: {
+		auto rnot = static_cast<RESTRICTION_NOT *>(pres->pres);
 		array_init(&pzarray);
-		if (!restriction_to_php(
-			&((RESTRICTION_NOT*)pres->pres)->res,
-			&pzentry TSRMLS_CC)) {
+		if (!restriction_to_php(&rnot->res, &pzentry TSRMLS_CC))
 			return 0;	
-		}
 		add_assoc_zval(&pzarray, "0", &pzentry);
 		break;
-	case RESTRICTION_TYPE_CONTENT:
+	}
+	case RESTRICTION_TYPE_CONTENT: {
+		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
 		tmp_propvals.count = 1;
-		tmp_propvals.ppropval = &((RESTRICTION_CONTENT*)pres->pres)->propval;
+		tmp_propvals.ppropval = &rcon->propval;
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
 			return 0;
 		}
@@ -1108,15 +1107,15 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		sprintf(key, "%i", IDX_VALUE);
 		add_assoc_zval(&pzarray, key, &pzrops);		
 		sprintf(key, "%i", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_CONTENT*)pres->pres)->proptag));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rcon->proptag));
 		sprintf(key, "%i", IDX_FUZZYLEVEL);
-		add_assoc_long(&pzarray, key,
-			((RESTRICTION_CONTENT*)pres->pres)->fuzzy_level);
+		add_assoc_long(&pzarray, key, rcon->fuzzy_level);
 		break;
-	case RESTRICTION_TYPE_PROPERTY:
+	}
+	case RESTRICTION_TYPE_PROPERTY: {
+		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pres->pres);
 		tmp_propvals.count = 1;
-		tmp_propvals.ppropval = &((RESTRICTION_CONTENT*)pres->pres)->propval;
+		tmp_propvals.ppropval = &rprop->propval;
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
 			return 0;
 		}
@@ -1124,83 +1123,78 @@ zend_bool restriction_to_php(const RESTRICTION *pres,
 		sprintf(key, "%i", IDX_VALUE);
 		add_assoc_zval(&pzarray, key, &pzrops);
 		sprintf(key, "%i", IDX_RELOP);
-		add_assoc_long(&pzarray, key,
-			((RESTRICTION_PROPERTY*)pres->pres)->relop);
+		add_assoc_long(&pzarray, key, rprop->relop);
 		sprintf(key, "%i", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_PROPERTY*)pres->pres)->proptag));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag));
 		break;
-	case RESTRICTION_TYPE_PROPCOMPARE:
+	}
+	case RESTRICTION_TYPE_PROPCOMPARE: {
+		auto rprop = static_cast<RESTRICTION_PROPCOMPARE *>(pres->pres);
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_RELOP);
-		add_assoc_long(&pzarray, key,
-			((RESTRICTION_PROPCOMPARE*)pres->pres)->relop);
+		add_assoc_long(&pzarray, key, rprop->relop);
 		sprintf(key, "%i", IDX_PROPTAG1);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag1));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag1));
 		sprintf(key, "%i", IDX_PROPTAG2);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_PROPCOMPARE*)pres->pres)->proptag2));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rprop->proptag2));
 		break;
-	case RESTRICTION_TYPE_BITMASK:
+	}
+	case RESTRICTION_TYPE_BITMASK: {
+		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_TYPE);
-		add_assoc_long(&pzarray, key,
-			((RESTRICTION_BITMASK*)pres->pres)->bitmask_relop);
+		add_assoc_long(&pzarray, key, rbm->bitmask_relop);
 		sprintf(key, "%i", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_BITMASK*)pres->pres)->proptag));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rbm->proptag));
 		sprintf(key, "%i", IDX_MASK);
-		add_assoc_long(&pzarray, key,
-			((RESTRICTION_BITMASK*)pres->pres)->mask);
+		add_assoc_long(&pzarray, key, rbm->mask);
 		break;
-	case RESTRICTION_TYPE_SIZE:
+	}
+	case RESTRICTION_TYPE_SIZE: {
+		auto rsize = static_cast<RESTRICTION_SIZE *>(pres->pres);
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_RELOP);
-		add_assoc_long(&pzarray, key,
-			((RESTRICTION_SIZE*)pres->pres)->relop);
+		add_assoc_long(&pzarray, key, rsize->relop);
 		sprintf(key, "%i", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_SIZE*)pres->pres)->proptag));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rsize->proptag));
 		sprintf(key, "%i", IDX_SIZE);
-		add_assoc_long(&pzarray, key,
-			((RESTRICTION_SIZE*)pres->pres)->size);
+		add_assoc_long(&pzarray, key, rsize->size);
 		break;
-	case RESTRICTION_TYPE_EXIST:
+	}
+	case RESTRICTION_TYPE_EXIST: {
+		auto rex = static_cast<RESTRICTION_EXIST *>(pres->pres);
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_EXIST*)pres->pres)->proptag));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rex->proptag));
 		break;
-	case RESTRICTION_TYPE_SUBOBJ:
-		if (!restriction_to_php(
-			&((RESTRICTION_SUBOBJ*)pres->pres)->res,
-			&pzrestriction TSRMLS_CC)) {
+	}
+	case RESTRICTION_TYPE_SUBOBJ: {
+		auto rsub = static_cast<RESTRICTION_SUBOBJ *>(pres->pres);
+		if (!restriction_to_php(&rsub->res, &pzrestriction TSRMLS_CC))
 			return 0;	
-		}
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_PROPTAG);
-		add_assoc_long(&pzarray, key, proptag_to_phptag(
-			((RESTRICTION_SUBOBJ*)pres->pres)->subobject));
+		add_assoc_long(&pzarray, key, proptag_to_phptag(rsub->subobject));
 		sprintf(key, "%i", IDX_RESTRICTION);
 		add_assoc_zval(&pzarray, key, &pzrestriction);
 		break;
-	case RESTRICTION_TYPE_COMMENT:
-		tmp_propvals.count = ((RESTRICTION_COMMENT*)pres->pres)->count;
-		tmp_propvals.ppropval = ((RESTRICTION_COMMENT*)pres->pres)->ppropval;
+	}
+	case RESTRICTION_TYPE_COMMENT: {
+		auto rcom = static_cast<RESTRICTION_COMMENT *>(pres->pres);
+		tmp_propvals.count = rcom->count;
+		tmp_propvals.ppropval = rcom->ppropval;
 		if (!tpropval_array_to_php(&tmp_propvals, &pzrops TSRMLS_CC)) {
 			return 0;
 		}
-		if (!restriction_to_php(((RESTRICTION_COMMENT*)
-			pres->pres)->pres, &pzrestriction TSRMLS_CC)) {
+		if (!restriction_to_php(rcom->pres, &pzrestriction TSRMLS_CC))
 			return 0;	
-		}
 		array_init(&pzarray);
 		sprintf(key, "%i", IDX_PROPVALS);
 		add_assoc_zval(&pzarray, key, &pzrops);
 		sprintf(key, "%i", IDX_RESTRICTION);
 		add_assoc_zval(&pzarray, key, &pzrestriction);
 		break;
+	}
 	default:
 		return 0;
 	}
