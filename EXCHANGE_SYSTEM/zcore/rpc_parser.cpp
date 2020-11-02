@@ -51,9 +51,7 @@ void rpc_parser_free()
 
 BOOL rpc_parser_activate_connection(int clifd)
 {
-	CLIENT_NODE *pclient;
-	
-	pclient = malloc(sizeof(CLIENT_NODE));
+	auto pclient = static_cast<CLIENT_NODE *>(malloc(sizeof(CLIENT_NODE)));
 	if (NULL == pclient) {
 		return FALSE;
 	}
@@ -705,7 +703,7 @@ NEXT_CLIFD:
 			free(pbuff);
 			goto NEXT_CLIFD;
 		}
-		read_len = read(clifd, pbuff + offset, buff_len - offset);
+		read_len = read(clifd, static_cast<char *>(pbuff) + offset, buff_len - offset);
 		if (read_len <= 0) {
 			close(clifd);
 			free(pbuff);
@@ -717,7 +715,7 @@ NEXT_CLIFD:
 		}
 	}
 	common_util_build_environment();
-	tmp_bin.pb = pbuff;
+	tmp_bin.pv = pbuff;
 	tmp_bin.cb = buff_len;
 	if (FALSE == rpc_ext_pull_request(&tmp_bin, &request)) {
 		free(pbuff);
@@ -777,7 +775,7 @@ int rpc_parser_run()
 {
 	int i;
 	
-	g_thread_ids = malloc(sizeof(pthread_t)*g_thread_num);
+	g_thread_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * g_thread_num));
 	if (NULL == g_thread_ids) {
 		return -1;
 	}
