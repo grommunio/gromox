@@ -303,7 +303,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		return ext_buffer_pull_float(pext, r->pvalue);
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		r->pvalue = pext->alloc(sizeof(double));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -320,7 +320,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		*(uint8_t*)r->pvalue = fake_byte;
 		return ext_buffer_pull_advance(pext, 2);
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		r->pvalue = pext->alloc(sizeof(uint64_t));
@@ -2283,7 +2283,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_FLOAT:
 		return ext_buffer_push_float(pext, *(float*)r->pvalue);
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		return ext_buffer_push_double(pext, *(double*)r->pvalue);
 	case PROPVAL_TYPE_BYTE:
 		status = ext_buffer_push_uint16(pext, *(uint8_t*)r->pvalue);
@@ -2291,7 +2291,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			return status;
 		}
 		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)r->pvalue);

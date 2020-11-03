@@ -487,7 +487,7 @@ static int ftstream_parser_read_element(
 		pstream->offset += sizeof(float);
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		ppropval->pvalue = common_util_alloc(sizeof(double));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -509,7 +509,7 @@ static int ftstream_parser_read_element(
 		}
 		*(uint8_t*)ppropval->pvalue = fake_byte;
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		ppropval->pvalue = common_util_alloc(sizeof(uint64_t));

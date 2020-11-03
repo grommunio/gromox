@@ -231,7 +231,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		*static_cast<float *>(pvalue) = zval_get_double(entry);
 		break;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		pvalue = emalloc(sizeof(double));
 		if (NULL == pvalue) {
 			return NULL;
@@ -1206,7 +1206,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_long(pzret, proptag_string, *(uint16_t*)ppropval->pvalue);
 			break;
 		case PT_DOUBLE:
-		case PROPVAL_TYPE_FLOATINGTIME:
+		case PT_APPTIME:
 			add_assoc_double(pzret, proptag_string, *(double*)ppropval->pvalue);
 			break;
 		case PROPVAL_TYPE_LONGLONG:

@@ -3223,13 +3223,13 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_DOUBLE:
-			case PROPVAL_TYPE_FLOATINGTIME:
+			case PT_APPTIME:
 				pvalue = common_util_alloc(sizeof(double));
 				if (NULL != pvalue) {
 					*(double*)pvalue = sqlite3_column_double(pstmt, 0);
 				}
 				break;
-			case PROPVAL_TYPE_CURRENCY:
+			case PT_CURRENCY:
 			case PROPVAL_TYPE_LONGLONG:
 			case PROPVAL_TYPE_FILETIME:
 				pvalue = common_util_alloc(sizeof(uint64_t));
@@ -4218,12 +4218,12 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_DOUBLE:
-		case PROPVAL_TYPE_FLOATINGTIME:
+		case PT_APPTIME:
 			sqlite3_bind_double(pstmt, 2,
 				*(double*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_CURRENCY:
+		case PT_CURRENCY:
 		case PROPVAL_TYPE_LONGLONG:
 		case PROPVAL_TYPE_FILETIME:
 			sqlite3_bind_int64(pstmt, 2,
@@ -6819,10 +6819,10 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		sqlite3_bind_double(pstmt, bind_index, *(float*)pvalue);
 		break;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		sqlite3_bind_double(pstmt, bind_index, *(double*)pvalue);
 		break;
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint64_t*)pvalue);
@@ -6896,7 +6896,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 							pstmt, column_index);
 		return pvalue;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		pvalue = common_util_alloc(sizeof(double));
 		if (NULL == pvalue) {
 			return NULL;
@@ -6904,7 +6904,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		*(double*)pvalue = sqlite3_column_double(
 							pstmt, column_index);
 		return pvalue;
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		pvalue = common_util_alloc(sizeof(uint64_t));

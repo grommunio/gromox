@@ -55,7 +55,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		*(float*)preturn = *(float*)pvalue;
 		return preturn;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		preturn = malloc(sizeof(double));
 		if (NULL == preturn) {
 			return NULL;
@@ -69,7 +69,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		}
 		*(uint8_t*)preturn = *(uint8_t*)pvalue;
 		return preturn;
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		preturn = malloc(sizeof(uint64_t));
@@ -306,8 +306,8 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_LONG:
 	case PT_FLOAT:
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_CURRENCY:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_CURRENCY:
+	case PT_APPTIME:
 	case PROPVAL_TYPE_ERROR:
 	case PROPVAL_TYPE_BYTE:
 	case PROPVAL_TYPE_LONGLONG:
@@ -406,14 +406,14 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_FLOAT:
 		return sizeof(float);
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		return sizeof(double);
 	case PROPVAL_TYPE_BYTE:
 		return sizeof(uint8_t);
 	case PT_OBJECT:
 	case PROPVAL_TYPE_BINARY:
 		return ((BINARY*)pvalue)->cb;
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		return sizeof(uint64_t);
@@ -570,7 +570,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		switch (relop) {
@@ -641,7 +641,7 @@ BOOL propval_compare_relop(uint8_t relop,
 		}
 		return FALSE;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		switch (relop) {
 		case RELOP_LT:
 			if (*(double*)pvalue1 < *(double*)pvalue2) {

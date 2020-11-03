@@ -930,12 +930,12 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				break;
 			case PT_FLOAT:
 			case PT_DOUBLE:
-			case PROPVAL_TYPE_FLOATINGTIME:
+			case PT_APPTIME:
 				sql_len += snprintf(sql_string + sql_len,
 							sizeof(sql_string) - sql_len,
 							", v%x REAL", tmp_proptag);
 				break;
-			case PROPVAL_TYPE_CURRENCY:
+			case PT_CURRENCY:
 			case PROPVAL_TYPE_LONGLONG:
 			case PROPVAL_TYPE_FILETIME:
 			case PT_SHORT:
@@ -4463,12 +4463,12 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			break;
 		case PT_FLOAT:
 		case PT_DOUBLE:
-		case PROPVAL_TYPE_FLOATINGTIME:
+		case PT_APPTIME:
 			sql_len += snprintf(sql_string + sql_len,
 						sizeof(sql_string) - sql_len,
 						", v%x REAL", tmp_proptag);
 			break;
-		case PROPVAL_TYPE_CURRENCY:
+		case PT_CURRENCY:
 		case PROPVAL_TYPE_LONGLONG:
 		case PROPVAL_TYPE_FILETIME:
 		case PT_SHORT:

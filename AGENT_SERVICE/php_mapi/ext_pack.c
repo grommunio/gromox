@@ -824,7 +824,7 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 		}
 		return ext_pack_pull_float(pctx, *ppval);
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		*ppval = emalloc(sizeof(double));
 		if (NULL == *ppval) {
 			return 0;
@@ -2005,7 +2005,7 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 	case PT_FLOAT:
 		return ext_pack_push_float(pctx, *(float*)pval);
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		return ext_pack_push_double(pctx, *(double*)pval);
 	case PROPVAL_TYPE_BYTE:
 		return ext_pack_push_uint8(pctx, *(uint8_t*)pval);

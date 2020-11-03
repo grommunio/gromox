@@ -1185,7 +1185,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		}
 		return ext_buffer_pull_float(pext, *ppval);
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		*ppval = pext->alloc(sizeof(double));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -1197,7 +1197,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_uint8(pext, *ppval);
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		*ppval = pext->alloc(sizeof(uint64_t));
@@ -4386,11 +4386,11 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	case PT_FLOAT:
 		return ext_buffer_push_float(pext, *(float*)pval);
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		return ext_buffer_push_double(pext, *(double*)pval);
 	case PROPVAL_TYPE_BYTE:
 		return ext_buffer_push_uint8(pext, *(uint8_t*)pval);
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)pval);

@@ -231,7 +231,7 @@ static BOOL rpc_ext_pull_propval(
 		}
 		return TRUE;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		*ppval = pext->alloc(sizeof(double));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -734,7 +734,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		}
 		return TRUE;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_double(
 			pext, *(double*)pval)) {
 			return FALSE;	

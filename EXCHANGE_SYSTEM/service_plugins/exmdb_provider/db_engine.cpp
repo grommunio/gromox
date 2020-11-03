@@ -1276,7 +1276,7 @@ static int db_engine_compare_propval(
 			return -1;
 		}
 		return 0;
-	case PROPVAL_TYPE_CURRENCY:
+	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		if (*(uint64_t*)pvalue1 > *(uint64_t*)pvalue2) {
@@ -1293,7 +1293,7 @@ static int db_engine_compare_propval(
 		}
 		return 0;
 	case PT_DOUBLE:
-	case PROPVAL_TYPE_FLOATINGTIME:
+	case PT_APPTIME:
 		if (*(double*)pvalue1 > *(double*)pvalue2) {
 			return 1;
 		} else if (*(double*)pvalue1 < *(double*)pvalue2) {
