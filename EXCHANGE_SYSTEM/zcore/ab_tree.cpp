@@ -2511,102 +2511,91 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	uint8_t node_type;
 	
 	switch (pfilter->rt) {
-	case RESTRICTION_TYPE_AND:
-		for (unsigned int i = 0; i < static_cast<RESTRICTION_AND_OR *>(pfilter->pres)->count; ++i) {
-			if (FALSE == ab_tree_match_node(pnode, codepage,
-				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
+	case RESTRICTION_TYPE_AND: {
+		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
+		for (unsigned int i = 0; i < andor->count; ++i)
+			if (!ab_tree_match_node(pnode, codepage, &andor->pres[i]))
 				return FALSE;
-			}
-		}
 		return TRUE;
-	case RESTRICTION_TYPE_OR:
-		for (unsigned int i = 0; i < static_cast<RESTRICTION_AND_OR *>(pfilter->pres)->count; ++i) {
-			if (TRUE == ab_tree_match_node(pnode, codepage,
-				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
+	}
+	case RESTRICTION_TYPE_OR: {
+		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
+		for (unsigned int i = 0; i < andor->count; ++i)
+			if (ab_tree_match_node(pnode, codepage, &andor->pres[i]))
 				return TRUE;
-			}
-		}
 		return FALSE;
-	case RESTRICTION_TYPE_NOT:
-		if (TRUE == ab_tree_match_node(pnode, codepage,
-			&((RESTRICTION_NOT*)pfilter->pres)->res)) {
+	}
+	case RESTRICTION_TYPE_NOT: {
+		auto rnot = static_cast<RESTRICTION_NOT *>(pfilter->pres);
+		if (ab_tree_match_node(pnode, codepage, &rnot->res))
 			return FALSE;
-		}
 		return TRUE;
-	case RESTRICTION_TYPE_CONTENT:
-		if (PROPVAL_TYPE_STRING != (((RESTRICTION_CONTENT*)
-			pfilter->pres)->proptag & 0xFFFF) && PROPVAL_TYPE_WSTRING !=
-			(((RESTRICTION_CONTENT*)pfilter->pres)->proptag & 0xFFFF)) {
+	}
+	case RESTRICTION_TYPE_CONTENT: {
+		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
+		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_STRING &&
+		    (rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		}
-		if ((((RESTRICTION_CONTENT*)pfilter->pres)->proptag & 0xFFFF)
-			!= (((RESTRICTION_CONTENT*)pfilter->pres)->propval.proptag
-			& 0xFFFF)) {
+		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
 			return FALSE;
-		}
-		if (FALSE == ab_tree_fetch_node_property(
-			pnode, codepage, ((RESTRICTION_CONTENT*)
-			pfilter->pres)->proptag, &pvalue) ||
-			NULL == pvalue) {
+		if (!ab_tree_fetch_node_property(pnode, codepage,
+		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		}
-		switch (((RESTRICTION_CONTENT*)
-			pfilter->pres)->fuzzy_level & 0xFFFF) {
+		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FUZZY_LEVEL_FULLSTRING:
-			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
 				return FALSE;
 			} else {
-				if (strcmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
 				return FALSE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
-			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
 				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 				return FALSE;
 			} else {
 				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_PREFIX:
-			len = strlen(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue));
-			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue), len) == 0)
+				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
 					return TRUE;
 				return FALSE;
 			} else {
 				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue), len) == 0)
+				    static_cast<char *>(rcon->propval.pvalue), len) == 0)
 					return TRUE;
 				return FALSE;
 			}
 			return FALSE;
 		}
 		return FALSE;
-	case RESTRICTION_TYPE_PROPERTY:
-		if (PROP_TAG_ANR == ((RESTRICTION_PROPERTY*)pfilter->pres)->proptag) {
+	}
+	case RESTRICTION_TYPE_PROPERTY: {
+		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pfilter->pres);
+		if (rprop->proptag == PROP_TAG_ANR) {
 			if (TRUE == ab_tree_fetch_node_property(pnode,
 				codepage, PROP_TAG_ACCOUNT, &pvalue) &&
 				NULL != pvalue) {
 				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			/* =SMTP:user@company.com */
-			ptoken = strchr(static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue), ':');
+			ptoken = strchr(static_cast<char *>(rprop->propval.pvalue), ':');
 			if (NULL != ptoken) {
 				if (strcasestr(static_cast<char *>(pvalue), ptoken + 1) != nullptr)
 					return TRUE;
@@ -2615,60 +2604,51 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 				codepage, PROP_TAG_DISPLAYNAME, &pvalue) &&
 				NULL != pvalue) {
 				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			return FALSE;
 		}
-		if (FALSE == ab_tree_fetch_node_property(pnode, codepage,
-			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag,
-			&pvalue) || NULL == pvalue) {
+		if (!ab_tree_fetch_node_property(pnode, codepage,
+		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
-		return propval_compare_relop(
-			((RESTRICTION_PROPERTY*)pfilter->pres)->relop,
-			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag&0xFFFF,
-			pvalue, ((RESTRICTION_PROPERTY*)pfilter->pres)->propval.pvalue);
+		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
+		       pvalue, rprop->propval.pvalue);
+	}
 	case RESTRICTION_TYPE_PROPCOMPARE:
 		return FALSE;
-	case RESTRICTION_TYPE_BITMASK:
-		 if (PROPVAL_TYPE_LONG != (((RESTRICTION_BITMASK*)
-			pfilter->pres)->proptag & 0xFFFF)) {
+	case RESTRICTION_TYPE_BITMASK: {
+		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
+		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
 			return FALSE;
-		}
-		if (FALSE == ab_tree_fetch_node_property(pnode, codepage,
-			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag,
-			&pvalue) || NULL == pvalue) {
+		if (!ab_tree_fetch_node_property(pnode, codepage,
+		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		}
-		switch (((RESTRICTION_BITMASK*)pfilter->pres)->bitmask_relop) {
+		switch (rbm->bitmask_relop) {
 		case BITMASK_RELOP_EQZ:
-			if (0 == (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pfilter->pres)->mask)) {
+			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
-			}
 			break;
 		case BITMASK_RELOP_NEZ:
-			if (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pfilter->pres)->mask) {
+			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
-			}
 			break;
 		}
 		return FALSE;
+	}
 	case RESTRICTION_TYPE_SIZE:
 		return FALSE;
-	case RESTRICTION_TYPE_EXIST:
+	case RESTRICTION_TYPE_EXIST: {
+		auto rex = static_cast<RESTRICTION_EXIST *>(pfilter->pres);
 		node_type = ab_tree_get_node_type(pnode);
 		if (node_type > 0x80) {
 			return FALSE;
 		}
-		if (TRUE == ab_tree_fetch_node_property(pnode, codepage,
-			((RESTRICTION_EXIST*)pfilter->pres)->proptag, &pvalue)
-			&& NULL != pvalue) {
+		if (ab_tree_fetch_node_property(pnode, codepage,
+		    rex->proptag, &pvalue) && pvalue != nullptr)
 			return TRUE;	
-		}
 		return FALSE;
+	}
 	case RESTRICTION_TYPE_SUBOBJ:
 		return FALSE;
 	}
