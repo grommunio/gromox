@@ -786,7 +786,7 @@ ZEND_FUNCTION(mapi_prop_tag)
 		RETVAL_FALSE;
 	} else {
 		MAPI_G(hr) = ecSuccess;
-		RETURN_LONG((propid << 16) | proptype);
+		RETURN_LONG(PROP_TAG(proptype, propid));
 	}
 }
 
@@ -3437,8 +3437,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 	}
 	array_init(return_value);
 	for (i=0; i<propids.count; i++) {
-		add_next_index_long(return_value,
-			((uint32_t)propids.ppropid[i]) << 16);
+		add_next_index_long(return_value, PROP_TAG(PT_UNSPECIFIED, propids.ppropid[i]));
 	}
 	MAPI_G(hr) = ecSuccess;
 	return;

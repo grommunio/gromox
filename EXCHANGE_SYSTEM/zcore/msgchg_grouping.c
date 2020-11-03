@@ -466,7 +466,7 @@ PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 			pnode1=double_list_get_after(&pgp_node->tag_list, pnode1)) {
 			ptag_node = (TAG_NODE*)pnode1->pdata;
 			if (0 != ptag_node->propid) {
-				proptag = ptag_node->propid;
+				proptag = PROP_TAG(ptag_node->type, ptag_node->propid);
 			} else {
 				if (FALSE == store_object_get_named_propid(pstore, TRUE,
 					ptag_node->ppropname, &propid) || 0 == propid) {
@@ -474,10 +474,8 @@ PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 					proptag_array_free(pproptags);
 					return NULL;
 				}
-				proptag = propid;
+				proptag = PROP_TAG(ptag_node->type, propid);
 			}
-			proptag <<= 16;
-			proptag |= ptag_node->type;
 			if (FALSE == proptag_array_append(pproptags, proptag)) {
 				property_groupinfo_free(pinfo);
 				proptag_array_free(pproptags);

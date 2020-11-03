@@ -267,9 +267,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	}
 	for (i=0; i<9; i++) {
-		pproptags->pproptag[i] = propids.ppropid[i];
-		pproptags->pproptag[i] <<= 16;
-		pproptags->pproptag[i] |= PROPVAL_TYPE_WSTRING;
+		pproptags->pproptag[i] = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[i]);
 	}
 	pproptags->count = 9;
 	return TRUE;

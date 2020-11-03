@@ -999,9 +999,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			continue;
 		}
 		proptag = propids.ppropid[propid - 0x8000];
-		proptag <<= 16;
-		pmsg->proplist.ppropval[i].proptag &= 0xFFFF;
-		pmsg->proplist.ppropval[i].proptag |= proptag;
+		pmsg->proplist.ppropval[i].proptag =
+			PROP_TAG(PROP_TYPE(pmsg->proplist.ppropval[i].proptag), proptag);
 	}
 	return pmsg;
 	
@@ -1120,8 +1119,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	
 	for (i=0; i<3; i++) {
 		propid = PROP_ID(g_email_proptags[i]);
-		proptag = propids.ppropid[propid - 0x8000] << 16;
-		proptag |= PROP_TYPE(g_email_proptags[i]);
+		proptag = PROP_TAG(PROP_TYPE(g_email_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = tpropval_array_get_propval(
 			(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 		if (NULL == pvalue) {
@@ -1288,8 +1286,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 		}
 		vcard_append_value(pvline, pvvalue);
 		propid = PROP_ID(g_workaddr_proptags[i]);
-		proptag = propids.ppropid[propid - 0x8000] << 16;
-		proptag |= PROP_TYPE(g_workaddr_proptags[i]);
+		proptag = PROP_TAG(PROP_TYPE(g_workaddr_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = tpropval_array_get_propval(
 			(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 		if (NULL == pvalue) {
@@ -1459,8 +1456,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	propid = PROP_ID(g_categories_proptag);
-	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= PROP_TYPE(g_categories_proptag);
+	proptag = PROP_TAG(PROP_TYPE(g_categories_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -1545,8 +1541,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	propid = PROP_ID(g_bcd_proptag);
-	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= PROP_TYPE(g_bcd_proptag);
+	proptag = PROP_TAG(PROP_TYPE(g_bcd_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -1572,8 +1567,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	
 	for (i=0; i<4; i++) {
 		propid = PROP_ID(g_ufld_proptags[i]);
-		proptag = propids.ppropid[propid - 0x8000] << 16;
-		proptag |= PROP_TYPE(g_ufld_proptags[i]);
+		proptag = PROP_TAG(PROP_TYPE(g_ufld_proptags[i]), propids.ppropid[propid - 0x8000]);
 		pvalue = tpropval_array_get_propval(
 			(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 		if (NULL == pvalue) {
@@ -1686,8 +1680,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	propid = PROP_ID(g_fbl_proptag);
-	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= PROP_TYPE(g_fbl_proptag);
+	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -1760,8 +1753,7 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	vcard_append_line(pvcard, pvline);
 	
 	propid = PROP_ID(g_im_proptag);
-	proptag = propids.ppropid[propid - 0x8000] << 16;
-	proptag |= PROP_TYPE(g_im_proptag);
+	proptag = PROP_TAG(PROP_TYPE(g_im_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = tpropval_array_get_propval(
 		(TPROPVAL_ARRAY*)&pmsg->proplist, proptag);
 	pvline = vcard_new_simple_line("X-MS-IMADDRESS", pvalue);

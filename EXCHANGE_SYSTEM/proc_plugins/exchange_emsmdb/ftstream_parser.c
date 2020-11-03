@@ -432,9 +432,7 @@ static int ftstream_parser_read_element(
 	if (pstream->st_size == pstream->offset) {
 		goto CONTINUE_WAITING;
 	}
-	ppropval->proptag = propid;
-	ppropval->proptag <<= 16;
-	ppropval->proptag |= proptype;
+	ppropval->proptag = PROP_TAG(proptype, propid);
 	if (proptype & 0x8000) {
 		/* codepage string */
 		codepage = proptype & 0x7FFF;

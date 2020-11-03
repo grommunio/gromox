@@ -1703,9 +1703,7 @@ static void db_engine_notify_content_table_add_row(
 				ptable->remote_id, &datagram);
 		} else if (0 == ptable->psorts->ccategories) {
 			for (i=0; i<ptable->psorts->count; i++) {
-				propvals[i].proptag = ptable->psorts->psort[i].propid;
-				propvals[i].proptag <<= 16;
-				propvals[i].proptag |= ptable->psorts->psort[i].type;
+				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (FALSE == common_util_get_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					ptable->cpid, pdb->psqlite, propvals[i].proptag,
@@ -1872,9 +1870,7 @@ static void db_engine_notify_content_table_add_row(
 				}
 			}
 			for (i=0; i<ptable->psorts->count; i++) {
-				propvals[i].proptag = ptable->psorts->psort[i].propid;
-				propvals[i].proptag <<= 16;
-				propvals[i].proptag |= ptable->psorts->psort[i].type;
+				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (propvals[i].proptag == ptable->instance_tag) {
 					multi_index = i;
 					if (FALSE == common_util_get_property(
@@ -4133,9 +4129,7 @@ static void db_engine_notify_content_table_modify_row(
 				ptable->remote_id, &datagram);
 		} else if (0 == ptable->psorts->ccategories) {
 			for (i=0; i<ptable->psorts->count; i++) {
-				propvals[i].proptag = ptable->psorts->psort[i].propid;
-				propvals[i].proptag <<= 16;
-				propvals[i].proptag |= ptable->psorts->psort[i].type;
+				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (FALSE == common_util_get_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					ptable->cpid, pdb->psqlite, propvals[i].proptag,
@@ -4364,9 +4358,7 @@ static void db_engine_notify_content_table_modify_row(
 				multi_num = 1;
 			}
 			for (i=0; i<ptable->psorts->count; i++) {
-				propvals[i].proptag = ptable->psorts->psort[i].propid;
-				propvals[i].proptag <<= 16;
-				propvals[i].proptag |= ptable->psorts->psort[i].type;
+				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (propvals[i].proptag == ptable->instance_tag) {
 					propvals[i].pvalue = NULL;
 				} else {

@@ -4,6 +4,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include "util.h"
 #include "guid.h"
 #include "rpc_ext.h"
@@ -4057,9 +4058,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		}
 	}
 	for (i=0; i<psortset->count; i++) {
-		tmp_proptag = psortset->psort[i].propid;
-		tmp_proptag <<= 16;
-		tmp_proptag |= psortset->psort[i].type;
+		tmp_proptag = PROP_TAG(psortset->psort[i].type, psortset->psort[i].propid);
 		if (PROP_TAG_DEPTH == tmp_proptag ||
 			PROP_TAG_INSTID == tmp_proptag ||
 			PROP_TAG_INSTANCENUM == tmp_proptag ||

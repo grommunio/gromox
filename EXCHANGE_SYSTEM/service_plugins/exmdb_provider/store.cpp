@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <gromox/database.h>
+#include <gromox/mapidefs.h>
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "list_file.h"
@@ -684,15 +685,9 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;	
 	}
-	proptags[0] = propids.ppropid[0];
-	proptags[0] <<= 16;
-	proptags[0] |= PROPVAL_TYPE_WSTRING;
-	proptags[1] = propids.ppropid[1];
-	proptags[1] <<= 16;
-	proptags[1] |= PROPVAL_TYPE_WSTRING;
-	proptags[2] = propids.ppropid[2];
-	proptags[2] <<= 16;
-	proptags[2] |= PROPVAL_TYPE_WSTRING;
+	proptags[0] = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[0]);
+	proptags[1] = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[1]);
+	proptags[2] = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[2]);
 	sprintf(sql_string, "SELECT folder_id"
 				" FROM folders WHERE parent_id=?");
 	if (!gx_sql_prep(pdb->psqlite, sql_string, &pstmt1)) {

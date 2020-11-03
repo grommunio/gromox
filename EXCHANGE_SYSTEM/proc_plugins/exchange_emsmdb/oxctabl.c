@@ -25,9 +25,7 @@ static BOOL oxctable_verify_columns_and_sorts(
 		if (0 == (psort_criteria->psort[i].type & 0x1000)) {
 			return FALSE;
 		}
-		proptag = psort_criteria->psort[i].propid;
-		proptag <<= 16;
-		proptag |= psort_criteria->psort[i].type;
+		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
 	for (i=0; i<pcolumns->count; i++) {
@@ -157,9 +155,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		}
 	}
 	for (i=0; i<psort_criteria->count; i++) {
-		tmp_proptag = psort_criteria->psort[i].propid;
-		tmp_proptag <<= 16;
-		tmp_proptag |= psort_criteria->psort[i].type;
+		tmp_proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		if (PROP_TAG_DEPTH == tmp_proptag ||
 			PROP_TAG_INSTID == tmp_proptag ||
 			PROP_TAG_INSTANCENUM == tmp_proptag ||

@@ -1306,10 +1306,8 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash
 			i --;
 			continue;
 		}
-		proptag = *ppropid;
-		proptag <<= 16;
-		pproplist->ppropval[i].proptag &= 0xFFFF;
-		pproplist->ppropval[i].proptag |= proptag;
+		pproplist->ppropval[i].proptag =
+			PROP_TAG(PROP_TYPE(pproplist->ppropval[i].proptag), *ppropid);
 	}
 }
 
@@ -1561,9 +1559,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 						ptnef_propval->propid = *ppropid;
 					}
 				}
-				propval.proptag = ptnef_propval->propid;
-				propval.proptag <<= 16;
-				propval.proptag |= ptnef_propval->proptype;
+				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 				propval.pvalue = ptnef_propval->pvalue;
 				if (FALSE == tpropval_array_set_propval(
 					&pmsg->proplist, &propval)) {
@@ -1846,9 +1842,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 							ptnef_propval->propid = *ppropid;
 						}
 					}
-					propval.proptag = ptnef_propval->propid;
-					propval.proptag <<= 16;
-					propval.proptag |= ptnef_propval->proptype;
+					propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 					propval.pvalue = ptnef_propval->pvalue;
 					if (FALSE == tpropval_array_set_propval(
 						pproplist, &propval)) {
@@ -1990,9 +1984,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					}
 					continue;
 				}
-				propval.proptag = ptnef_propval->propid;
-				propval.proptag <<= 16;
-				propval.proptag |= ptnef_propval->proptype;
+				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 				propval.pvalue = ptnef_propval->pvalue;
 				if (FALSE == tpropval_array_set_propval(
 					&pattachment->proplist, &propval)) {

@@ -767,8 +767,7 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BINARY;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -816,8 +815,7 @@ static BOOL oxcical_parse_recurring_timezone(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_WSTRING;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 	propval.pvalue = (void*)ptzid;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -839,8 +837,7 @@ static BOOL oxcical_parse_recurring_timezone(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BINARY;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -862,8 +859,7 @@ static BOOL oxcical_parse_recurring_timezone(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BINARY;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -889,8 +885,7 @@ static BOOL oxcical_parse_proposal(INT_HASH_TABLE *phash,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BYTE;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
 	if (FALSE == tpropval_array_set_propval(
@@ -1134,8 +1129,7 @@ static BOOL oxcical_parse_categoris(ICAL_LINE *piline,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-		propval.proptag |= PROPVAL_TYPE_WSTRING_ARRAY;
+		propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING_ARRAY, *plast_propid);
 		propval.pvalue = &strings_array;
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
@@ -1258,8 +1252,7 @@ static BOOL oxcical_parse_dtstamp(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_FILETIME;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (FALSE == tpropval_array_set_propval(
@@ -1299,8 +1292,7 @@ static BOOL oxcical_parse_start_end(BOOL b_start,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-		propval.proptag |= PROPVAL_TYPE_FILETIME;
+		propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 		propval.pvalue = &tmp_int64;
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
@@ -1325,8 +1317,7 @@ static BOOL oxcical_parse_start_end(BOOL b_start,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-		propval.proptag |= PROPVAL_TYPE_FILETIME;
+		propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 		propval.pvalue = &tmp_int64;
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
@@ -1354,8 +1345,7 @@ static BOOL oxcical_parse_subtype(INT_HASH_TABLE *phash,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BYTE;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
 	if (FALSE == tpropval_array_set_propval(
@@ -1462,8 +1452,7 @@ static BOOL oxcical_parse_duration(uint32_t minutes,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &minutes;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1593,8 +1582,7 @@ MAKE_GLOBALOBJID:
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BINARY;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1619,8 +1607,7 @@ MAKE_GLOBALOBJID:
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BINARY;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1671,8 +1658,7 @@ static BOOL oxcical_parse_location(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_WSTRING;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 	propval.pvalue = tmp_buff;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1690,8 +1676,7 @@ static BOOL oxcical_parse_location(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_WSTRING;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 	propval.pvalue = (void*)pvalue;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1843,8 +1828,7 @@ static BOOL oxcical_parse_sequence(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1889,8 +1873,7 @@ static BOOL oxcical_parse_busystatus(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1914,8 +1897,7 @@ static BOOL oxcical_parse_busystatus(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &intented_val;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1956,8 +1938,7 @@ static BOOL oxcical_parse_transp(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1981,8 +1962,7 @@ static BOOL oxcical_parse_transp(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &intented_val;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2025,8 +2005,7 @@ static BOOL oxcical_parse_status(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2050,8 +2029,7 @@ static BOOL oxcical_parse_status(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &intented_val;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2158,8 +2136,7 @@ static BOOL oxcical_parse_recurrence_id(ICAL_COMPONENT *ptz_component,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16 |
-									PROPVAL_TYPE_FILETIME;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (FALSE == tpropval_array_set_propval(
@@ -2199,8 +2176,7 @@ static BOOL oxcical_parse_disallow_counter(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BYTE;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2248,8 +2224,7 @@ static BOOL oxcical_parse_appointment_recurrence(
 		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BINARY;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2274,8 +2249,7 @@ static BOOL oxcical_parse_appointment_recurrence(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_FILETIME;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 	propval.pvalue = &nt_time;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2292,8 +2266,7 @@ static BOOL oxcical_parse_appointment_recurrence(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_FILETIME;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 	propval.pvalue = &nt_time;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2337,10 +2310,8 @@ static void oxcical_replace_propid(
 			i --;
 			continue;
 		}
-		proptag = *ppropid;
-		proptag <<= 16;
-		pproplist->ppropval[i].proptag &= 0xFFFF;
-		pproplist->ppropval[i].proptag |= proptag;
+		pproplist->ppropval[i].proptag =
+			PROP_TAG(PROP_TYPE(pproplist->ppropval[i].proptag), *ppropid);
 	}
 }
 
@@ -2811,8 +2782,7 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_LONG;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_LONG, *plast_propid);
 	propval.pvalue = &reminder_delta;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2827,8 +2797,7 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_FILETIME;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(start_time);
 	if (FALSE == tpropval_array_set_propval(
@@ -2844,8 +2813,7 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_FILETIME;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(
 		start_time - reminder_delta*60);
@@ -2862,8 +2830,7 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = ((uint32_t)(*plast_propid)) << 16;
-	propval.proptag |= PROPVAL_TYPE_BYTE;
+	propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
 	if (FALSE == tpropval_array_set_propval(
@@ -5300,8 +5267,7 @@ static BOOL oxcical_export_internal(const char *method,
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-										PROPVAL_TYPE_BYTE;
+			proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[0]);
 			pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -5333,8 +5299,7 @@ static BOOL oxcical_export_internal(const char *method,
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-							PROPVAL_TYPE_FILETIME;
+	proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, proptag);
 	if (NULL == pvalue) {
@@ -5355,8 +5320,7 @@ static BOOL oxcical_export_internal(const char *method,
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-							PROPVAL_TYPE_FILETIME;
+	proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -5367,8 +5331,7 @@ static BOOL oxcical_export_internal(const char *method,
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-									PROPVAL_TYPE_LONG;
+		proptag = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, proptag);
 		if (NULL == pvalue) {
@@ -5407,8 +5370,7 @@ static BOOL oxcical_export_internal(const char *method,
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_BINARY;
+	proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, proptag);
 	if (NULL == pvalue) {
@@ -5518,8 +5480,7 @@ static BOOL oxcical_export_internal(const char *method,
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-									PROPVAL_TYPE_BINARY;
+		proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, proptag);
 		if (NULL != pvalue) {
@@ -5531,8 +5492,7 @@ static BOOL oxcical_export_internal(const char *method,
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-										PROPVAL_TYPE_WSTRING;
+			proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[0]);
 			tzid = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 			if (NULL == tzid) {
@@ -5559,8 +5519,7 @@ EXPORT_TZDEFINITION:
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-										PROPVAL_TYPE_BINARY;
+			proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
 			pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 			if (NULL != pvalue) {
@@ -5588,8 +5547,7 @@ EXPORT_TZDEFINITION:
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-									PROPVAL_TYPE_BINARY;
+		proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, proptag);
 		if (NULL != pvalue) {
@@ -5598,8 +5556,7 @@ EXPORT_TZDEFINITION:
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-										PROPVAL_TYPE_BINARY;
+			proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
 			pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 		}
@@ -5629,8 +5586,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_BYTE;
+	proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -5753,8 +5709,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_BINARY;
+	proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -5834,9 +5789,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag_xrt = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_FILETIME;
-	
+	proptag_xrt = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, proptag_xrt);
 	if (NULL == pvalue) {
@@ -5848,8 +5801,7 @@ EXPORT_VEVENT:
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-									PROPVAL_TYPE_BYTE;
+		proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 					&pmsg->proplist, proptag);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -5861,8 +5813,7 @@ EXPORT_VEVENT:
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-											PROPVAL_TYPE_LONG;
+			proptag = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[0]);
 			pvalue = tpropval_array_get_propval(
 						&pmsg->proplist, proptag);
 			if (NULL != pvalue) {
@@ -5874,8 +5825,7 @@ EXPORT_VEVENT:
 				if (FALSE == get_propids(&propnames, &propids)) {
 					return FALSE;
 				}
-				proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-											PROPVAL_TYPE_BINARY;
+				proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
 				pvalue = tpropval_array_get_propval(
 							&pmsg->proplist, proptag);
 				if (NULL != pvalue) {
@@ -6060,8 +6010,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-						PROPVAL_TYPE_WSTRING_ARRAY;
+	proptag = PROP_TAG(PROPVAL_TYPE_WSTRING_ARRAY, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -6142,8 +6091,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_FILETIME;
+	proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -6168,8 +6116,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_LONG;
+	proptag = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[0]);
 	pbusystatus = tpropval_array_get_propval(
 					&pmsg->proplist, proptag);
 	if (NULL != pbusystatus) {
@@ -6202,8 +6149,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_LONG;
+	proptag = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[0]);
 	psequence = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != psequence) {
@@ -6223,8 +6169,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_WSTRING;
+	proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -6240,8 +6185,7 @@ EXPORT_VEVENT:
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-									PROPVAL_TYPE_WSTRING;
+		proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 					&pmsg->proplist, proptag);
 		if (NULL != pvalue) {
@@ -6333,8 +6277,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_LONG;
+	proptag = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -6439,8 +6382,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_BYTE;
+	proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -6495,8 +6437,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-								PROPVAL_TYPE_BYTE;
+	proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -6518,8 +6459,7 @@ EXPORT_VEVENT:
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = ((uint32_t)propids.ppropid[0]) << 16 |
-									PROPVAL_TYPE_LONG;
+		proptag = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 					&pmsg->proplist, proptag);
 		if (NULL == pvalue || 0x5AE980E1 == *(uint32_t*)pvalue) {

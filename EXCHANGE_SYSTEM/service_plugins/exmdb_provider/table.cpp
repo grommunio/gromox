@@ -476,9 +476,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		multi_index = -1;
 		for (i=0; i<psorts->ccategories; i++) {
 			if (0x3000 == (psorts->psort[i].type & 0x3000)) {
-				tmp_proptag = psorts->psort[i].propid;
-				tmp_proptag <<= 16;
-				tmp_proptag |= psorts->psort[i].type;
+				tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 				multi_index = i;
 				break;
 			}
@@ -499,9 +497,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		}
 		b_orderby = FALSE;
 		for (i=psorts->ccategories; i<psorts->count; i++) {
-			tmp_proptag = psorts->psort[i].propid;
-			tmp_proptag <<= 16;
-			tmp_proptag |= psorts->psort[i].type;
+			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (TABLE_SORT_MAXIMUM_CATEGORY ==
 				psorts->psort[i].table_sort ||
 				TABLE_SORT_MINIMUM_CATEGORY ==
@@ -596,9 +592,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		sqlite3_finalize(pstmt);
 		return TRUE;
 	}
-	tmp_proptag = psorts->psort[depth].propid;
-	tmp_proptag <<= 16;
-	tmp_proptag |= psorts->psort[depth].type;
+	tmp_proptag = PROP_TAG(psorts->psort[depth].type, psorts->psort[depth].propid);
 	if (depth == psorts->ccategories - 1 &&
 		psorts->count > psorts->ccategories
 		&& (TABLE_SORT_MAXIMUM_CATEGORY ==
@@ -606,9 +600,7 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		TABLE_SORT_MINIMUM_CATEGORY ==
 		psorts->psort[depth + 1].table_sort)) {
 		b_extremum = TRUE;
-		tmp_proptag1 = psorts->psort[depth + 1].propid;
-		tmp_proptag1 <<= 16;
-		tmp_proptag1 |= psorts->psort[depth + 1].type;
+		tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psorts->psort[depth + 1].table_sort) {
 			sql_len = snprintf(sql_string, sizeof(sql_string),
@@ -902,9 +894,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			" TABLE stbl (message_id INTEGER");
 		tag_count = 0;
 		for (i=0; i<psorts->count; i++) {
-			tmp_proptag = psorts->psort[i].propid;
-			tmp_proptag <<= 16;
-			tmp_proptag |= psorts->psort[i].type;
+			tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 			if (TABLE_SORT_MAXIMUM_CATEGORY ==
 				psorts->psort[i].table_sort ||
 				TABLE_SORT_MINIMUM_CATEGORY ==
@@ -2165,9 +2155,7 @@ static BOOL table_column_content_tmptbl(
 		return TRUE;
 	}
 	for (i=psorts->ccategories-1; i>=0; i--) {
-		tmp_proptag = psorts->psort[i].propid;
-		tmp_proptag <<= 16;
-		tmp_proptag |= psorts->psort[i].type;
+		tmp_proptag = PROP_TAG(psorts->psort[i].type, psorts->psort[i].propid);
 		if (proptag == tmp_proptag) {
 			break;
 		}
@@ -4464,9 +4452,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	sql_len = sprintf(sql_string, "CREATE TABLE s%u "
 			"(depth INTEGER NOT NULL ", *pstate_id);
 	for (i=0; i<ptnode->psorts->ccategories; i++) {
-		tmp_proptag = ptnode->psorts->psort[i].propid;
-		tmp_proptag <<= 16;
-		tmp_proptag |= ptnode->psorts->psort[i].type;
+		tmp_proptag = PROP_TAG(ptnode->psorts->psort[i].type, ptnode->psorts->psort[i].propid);
 		if (ptnode->instance_tag == tmp_proptag) {
 			type = ptnode->psorts->psort[i].type & (~0x3000);
 		} else {

@@ -1,4 +1,5 @@
 #include <libHX/string.h>
+#include <gromox/mapidefs.h>
 #include <gromox/socket.h>
 #include <gromox/paths.h>
 #include "tpropval_array.h"
@@ -1857,45 +1858,19 @@ static BOOL get_freebusy(const char *dir)
 	if (propids.count != propnames.count) {
 		return FALSE;
 	}
-	pidlidappointmentstartwhole = propids.ppropid[0];
-	pidlidappointmentstartwhole <<= 16;
-	pidlidappointmentstartwhole |= PROPVAL_TYPE_FILETIME;
-	pidlidappointmentendwhole = propids.ppropid[1];
-	pidlidappointmentendwhole <<= 16;
-	pidlidappointmentendwhole |= PROPVAL_TYPE_FILETIME;
-	pidlidbusystatus = propids.ppropid[2];
-	pidlidbusystatus <<= 16;
-	pidlidbusystatus |= PROPVAL_TYPE_LONG;
-	pidlidrecurring = propids.ppropid[3];
-	pidlidrecurring <<= 16;
-	pidlidrecurring |= PROPVAL_TYPE_BYTE;
-	pidlidappointmentrecur = propids.ppropid[4];
-	pidlidappointmentrecur <<= 16;
-	pidlidappointmentrecur |= PROPVAL_TYPE_BINARY;
-	pidlidappointmentsubtype = propids.ppropid[5];
-	pidlidappointmentsubtype <<= 16;
-	pidlidappointmentsubtype |= PROPVAL_TYPE_BYTE;
-	pidlidprivate = propids.ppropid[6];
-	pidlidprivate <<= 16;
-	pidlidprivate |= PROPVAL_TYPE_BYTE;
-	pidlidappointmentstateflags = propids.ppropid[7];
-	pidlidappointmentstateflags <<= 16;
-	pidlidappointmentstateflags |= PROPVAL_TYPE_LONG;
-	pidlidclipend = propids.ppropid[8];
-	pidlidclipend <<= 16;
-	pidlidclipend |= PROPVAL_TYPE_FILETIME;
-	pidlidlocation = propids.ppropid[9];
-	pidlidlocation <<= 16;
-	pidlidlocation |= PROPVAL_TYPE_WSTRING;
-	pidlidreminderset = propids.ppropid[10];
-	pidlidreminderset <<= 16;
-	pidlidreminderset |= PROPVAL_TYPE_BYTE;
-	pidlidglobalobjectid = propids.ppropid[11];
-	pidlidglobalobjectid <<= 16;
-	pidlidglobalobjectid |= PROPVAL_TYPE_BINARY;
-	pidlidtimezonestruct = propids.ppropid[12];
-	pidlidtimezonestruct <<= 16;
-	pidlidtimezonestruct |= PROPVAL_TYPE_BINARY;
+	pidlidappointmentstartwhole = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
+	pidlidappointmentendwhole = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[1]);
+	pidlidbusystatus = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[2]);
+	pidlidrecurring = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[3]);
+	pidlidappointmentrecur = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[4]);
+	pidlidappointmentsubtype = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[5]);
+	pidlidprivate = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[6]);
+	pidlidappointmentstateflags = PROP_TAG(PROPVAL_TYPE_LONG, propids.ppropid[7]);
+	pidlidclipend = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[8]);
+	pidlidlocation = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[9]);
+	pidlidreminderset = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[10]);
+	pidlidglobalobjectid = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[11]);
+	pidlidtimezonestruct = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[12]);
 	
 	if (NULL != g_username) {
 		if (FALSE == exmdb_client_check_folder_permission(

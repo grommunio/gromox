@@ -6,6 +6,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/mapidefs.h>
 #include <gromox/socket.h>
 #include "pcl.h"
 #include "ical.h"
@@ -97,9 +98,7 @@ BOOL common_util_verify_columns_and_sorts(
 		if (0 == (psort_criteria->psort[i].type & 0x1000)) {
 			return FALSE;
 		}
-		proptag = psort_criteria->psort[i].propid;
-		proptag <<= 16;
-		proptag |= psort_criteria->psort[i].type;
+		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
 	for (i=0; i<pcolumns->count; i++) {
