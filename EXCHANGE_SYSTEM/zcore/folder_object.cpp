@@ -1039,7 +1039,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		pfolder->folder_id, b_freebusy, count, pperm_data);
 }
 
-static BOOL folder_object_flush_delegats(int fd,
+static BOOL folder_object_flush_delegates(int fd,
 	FORWARDDELEGATE_ACTION *paction)
 {
 	int i, j;
@@ -1139,7 +1139,7 @@ BOOL folder_object_updaterules(FOLDER_OBJECT *pfolder,
 				for (i=0; i<pactions->count; i++) {
 					if (ACTION_TYPE_OP_DELEGATE ==
 						pactions->pblock[i].type) {
-						if (FALSE == folder_object_flush_delegats(
+						if (!folder_object_flush_delegates(
 						    fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {
 							close(fd);
 							return FALSE;
