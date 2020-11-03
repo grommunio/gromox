@@ -493,10 +493,10 @@ static BOOL ftstream_producer_write_propvalue(
 	case PT_LONG:
 		return ftstream_producer_write_uint32(pstream,
 						*(uint32_t*)ppropval->pvalue);
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		return ftstream_producer_write_float(pstream,
 						*(float*)ppropval->pvalue);
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		return ftstream_producer_write_double(pstream,
 						*(double*)ppropval->pvalue);

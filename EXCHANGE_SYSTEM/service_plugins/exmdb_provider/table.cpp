@@ -928,8 +928,8 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 							sizeof(sql_string) - sql_len,
 							", v%x TEXT COLLATE NOCASE", tmp_proptag);
 				break;
-			case PROPVAL_TYPE_FLOAT:
-			case PROPVAL_TYPE_DOUBLE:
+			case PT_FLOAT:
+			case PT_DOUBLE:
 			case PROPVAL_TYPE_FLOATINGTIME:
 				sql_len += snprintf(sql_string + sql_len,
 							sizeof(sql_string) - sql_len,
@@ -4461,8 +4461,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 						sizeof(sql_string) - sql_len,
 						", v%x TEXT", tmp_proptag);
 			break;
-		case PROPVAL_TYPE_FLOAT:
-		case PROPVAL_TYPE_DOUBLE:
+		case PT_FLOAT:
+		case PT_DOUBLE:
 		case PROPVAL_TYPE_FLOATINGTIME:
 			sql_len += snprintf(sql_string + sql_len,
 						sizeof(sql_string) - sql_len,

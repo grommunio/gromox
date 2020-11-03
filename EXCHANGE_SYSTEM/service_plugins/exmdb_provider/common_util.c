@@ -3216,13 +3216,13 @@ BOOL common_util_get_properties(int table_type,
 					cpid, sqlite3_column_text(pstmt, 1));
 		} else {
 			switch (proptype) {
-			case PROPVAL_TYPE_FLOAT:
+			case PT_FLOAT:
 				pvalue = common_util_alloc(sizeof(float));
 				if (NULL != pvalue) {
 					*(float*)pvalue = sqlite3_column_double(pstmt, 0);
 				}
 				break;
-			case PROPVAL_TYPE_DOUBLE:
+			case PT_DOUBLE:
 			case PROPVAL_TYPE_FLOATINGTIME:
 				pvalue = common_util_alloc(sizeof(double));
 				if (NULL != pvalue) {
@@ -4212,12 +4212,12 @@ BOOL common_util_set_properties(int table_type,
 												-1, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_FLOAT:
+		case PT_FLOAT:
 			sqlite3_bind_double(pstmt, 2,
 				*(float*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_DOUBLE:
+		case PT_DOUBLE:
 		case PROPVAL_TYPE_FLOATINGTIME:
 			sqlite3_bind_double(pstmt, 2,
 				*(double*)ppropvals->ppropval[i].pvalue);
@@ -6815,10 +6815,10 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		sqlite3_bind_text(pstmt, bind_index,
 				pvalue, -1, SQLITE_STATIC);
 		break;
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		sqlite3_bind_double(pstmt, bind_index, *(float*)pvalue);
 		break;
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		sqlite3_bind_double(pstmt, bind_index, *(double*)pvalue);
 		break;
@@ -6887,7 +6887,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 			return NULL;
 		}
 		return common_util_dup(pvalue);
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		pvalue = common_util_alloc(sizeof(float));
 		if (NULL == pvalue) {
 			return NULL;
@@ -6895,7 +6895,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		*(float*)pvalue = sqlite3_column_double(
 							pstmt, column_index);
 		return pvalue;
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		pvalue = common_util_alloc(sizeof(double));
 		if (NULL == pvalue) {

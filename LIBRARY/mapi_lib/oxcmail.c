@@ -1408,7 +1408,7 @@ static BOOL oxcmail_parse_message_flag(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_DOUBLE, *plast_propid);
+	propval.proptag = PROP_TAG(PT_DOUBLE, *plast_propid);
 	propval.pvalue = &tmp_double;
 	tmp_double = 0.0;
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {

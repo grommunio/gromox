@@ -73,8 +73,8 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		switch (type) {
 		case PT_SHORT:
 		case PT_LONG:
-		case PROPVAL_TYPE_FLOAT:
-		case PROPVAL_TYPE_DOUBLE:
+		case PT_FLOAT:
+		case PT_DOUBLE:
 		case PROPVAL_TYPE_CURRENCY:
 		case PROPVAL_TYPE_FLOATINGTIME:
 		case PROPVAL_TYPE_BYTE:
@@ -194,8 +194,8 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		switch (type) {
 		case PT_SHORT:
 		case PT_LONG:
-		case PROPVAL_TYPE_FLOAT:
-		case PROPVAL_TYPE_DOUBLE:
+		case PT_FLOAT:
+		case PT_DOUBLE:
 		case PROPVAL_TYPE_CURRENCY:
 		case PROPVAL_TYPE_FLOATINGTIME:
 		case PROPVAL_TYPE_BYTE:

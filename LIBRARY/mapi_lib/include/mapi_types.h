@@ -3,8 +3,6 @@
 #include "common_types.h"
 #include "double_list.h"
 
-#define PROPVAL_TYPE_FLOAT							0x0004
-#define PROPVAL_TYPE_DOUBLE							0x0005
 #define PROPVAL_TYPE_CURRENCY						0x0006
 #define PROPVAL_TYPE_FLOATINGTIME					0x0007
 #define PROPVAL_TYPE_ERROR							0x000a

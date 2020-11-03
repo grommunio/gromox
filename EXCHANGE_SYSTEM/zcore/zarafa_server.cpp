@@ -4102,8 +4102,8 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		switch (type) {
 		case PT_SHORT:
 		case PT_LONG:
-		case PROPVAL_TYPE_FLOAT:
-		case PROPVAL_TYPE_DOUBLE:
+		case PT_FLOAT:
+		case PT_DOUBLE:
 		case PROPVAL_TYPE_CURRENCY:
 		case PROPVAL_TYPE_FLOATINGTIME:
 		case PROPVAL_TYPE_BYTE:

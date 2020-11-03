@@ -220,7 +220,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		*ppval = pext->alloc(sizeof(float));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -230,7 +230,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		*ppval = pext->alloc(sizeof(double));
 		if (NULL == *ppval) {
@@ -727,13 +727,13 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_float(
 			pext, *(float*)pval)) {
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_double(
 			pext, *(double*)pval)) {

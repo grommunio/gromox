@@ -475,7 +475,7 @@ static int ftstream_parser_read_element(
 			return FTSTREAM_PARSER_READ_FAIL;	
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		ppropval->pvalue = common_util_alloc(sizeof(float));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -486,7 +486,7 @@ static int ftstream_parser_read_element(
 		}
 		pstream->offset += sizeof(float);
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		ppropval->pvalue = common_util_alloc(sizeof(double));
 		if (NULL == ppropval->pvalue) {

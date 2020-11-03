@@ -5,8 +5,6 @@
 #	include <stdint.h>
 #endif
 
-#define PROPVAL_TYPE_FLOAT							0x0004
-#define PROPVAL_TYPE_DOUBLE							0x0005
 #define PROPVAL_TYPE_FLOATINGTIME					0x0007
 #define PROPVAL_TYPE_ERROR							0x000a
 #define PROPVAL_TYPE_BYTE							0x000b

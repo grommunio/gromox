@@ -1285,14 +1285,14 @@ static int db_engine_compare_propval(
 			return -1;
 		}
 		return 0;
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		if (*(float*)pvalue1 > *(float*)pvalue2) {
 			return 1;
 		} else if (*(float*)pvalue1 < *(float*)pvalue2) {
 			return -1;
 		}
 		return 0;
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		if (*(double*)pvalue1 > *(double*)pvalue2) {
 			return 1;

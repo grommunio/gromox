@@ -296,13 +296,13 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_uint32(pext, r->pvalue);
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		r->pvalue = pext->alloc(sizeof(float));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_float(pext, r->pvalue);
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		r->pvalue = pext->alloc(sizeof(double));
 		if (NULL == r->pvalue) {
@@ -2280,9 +2280,9 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PROPVAL_TYPE_ERROR:
 	case PT_LONG:
 		return ext_buffer_push_uint32(pext, *(uint32_t*)r->pvalue);
-	case PROPVAL_TYPE_FLOAT:
+	case PT_FLOAT:
 		return ext_buffer_push_float(pext, *(float*)r->pvalue);
-	case PROPVAL_TYPE_DOUBLE:
+	case PT_DOUBLE:
 	case PROPVAL_TYPE_FLOATINGTIME:
 		return ext_buffer_push_double(pext, *(double*)r->pvalue);
 	case PROPVAL_TYPE_BYTE:
