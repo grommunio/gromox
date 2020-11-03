@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "rule_actions.h"
 #include "propval.h"
 #include <stdlib.h>
@@ -235,21 +236,20 @@ static BOOL action_block_dup_internal(
 			return FALSE;
 		}
 		return TRUE;
-	case ACTION_TYPE_OP_TAG:
+	case ACTION_TYPE_OP_TAG: {
 		pblock->pdata = malloc(sizeof(TAGGED_PROPVAL));
-		if (NULL == pblock->pdata) {
+		TAGGED_PROPVAL *s = paction->pdata;
+		TAGGED_PROPVAL *d = pblock->pdata;
+		if (d == nullptr)
 			return FALSE;
-		}
-		((TAGGED_PROPVAL*)pblock->pdata)->proptag =
-						((TAGGED_PROPVAL*)paction->pdata)->proptag;
-		((TAGGED_PROPVAL*)pblock->pdata)->pvalue = propval_dup(
-					((TAGGED_PROPVAL*)paction->pdata)->proptag & 0xFFFF,
-							((TAGGED_PROPVAL*)paction->pdata)->pvalue);
-		if (NULL == ((TAGGED_PROPVAL*)pblock->pdata)->pvalue) {
+		d->proptag = s->proptag;
+		d->pvalue = propval_dup(s->proptag & 0xFFFF, s->pvalue);
+		if (d->pvalue == nullptr) {
 			free(pblock->pdata);
 			return FALSE;
 		}
 		return TRUE;
+	}
 	case ACTION_TYPE_OP_DELETE:
 	case ACTION_TYPE_OP_MARK_AS_READ:
 		pblock->pdata = NULL;
@@ -277,11 +277,12 @@ static void action_block_free_internal(ACTION_BLOCK *paction)
 	case ACTION_TYPE_OP_DELEGATE:
 		forwarddelegate_action_free(paction->pdata);
 		break;
-	case ACTION_TYPE_OP_TAG:
-		propval_free(((TAGGED_PROPVAL*)paction->pdata)->proptag & 0xFFFF,
-								((TAGGED_PROPVAL*)paction->pdata)->pvalue);
-		free(paction->pdata);
+	case ACTION_TYPE_OP_TAG: {
+		TAGGED_PROPVAL *p = paction->pdata;
+		propval_free(p->proptag & 0xFFFF, p->pvalue);
+		free(p);
 		break;
+	}
 	case ACTION_TYPE_OP_DELETE:
 	case ACTION_TYPE_OP_MARK_AS_READ:
 		break;
@@ -406,10 +407,10 @@ static uint32_t action_block_size(const ACTION_BLOCK *r)
 	case ACTION_TYPE_OP_DELEGATE:
 		size += forwarddelegate_action_size(r->pdata);
 		break;
-	case ACTION_TYPE_OP_TAG:
-		size += sizeof(uint32_t) + propval_size(
-				((TAGGED_PROPVAL*)r->pdata)->proptag & 0xFFFF,
-				((TAGGED_PROPVAL*)r->pdata)->pvalue);
+	case ACTION_TYPE_OP_TAG: {
+		TAGGED_PROPVAL *p = r->pdata;
+		size += sizeof(uint32_t) + propval_size(p->proptag & 0xFFFF, p->pvalue);
+	}
 	}
 	return size;
 }
