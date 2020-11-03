@@ -1198,7 +1198,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		}
 		return ext_buffer_pull_uint8(pext, *ppval);
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		*ppval = pext->alloc(sizeof(uint64_t));
 		if (NULL == (*ppval)) {
@@ -1252,7 +1252,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_long_array(pext, *ppval);
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		*ppval = pext->alloc(sizeof(LONGLONG_ARRAY));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -4391,7 +4391,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	case PT_BOOLEAN:
 		return ext_buffer_push_uint8(pext, *(uint8_t*)pval);
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)pval);
 	case PT_STRING8:
@@ -4413,7 +4413,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_short_array(pext, pval);
 	case PT_MV_LONG:
 		return ext_buffer_push_long_array(pext, pval);
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		return ext_buffer_push_longlong_array(pext, pval);
 	case PT_MV_STRING8:
 		return ext_buffer_push_string_array(pext, pval);

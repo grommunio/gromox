@@ -238,7 +238,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		}
 		*static_cast<double *>(pvalue) = zval_get_double(entry);
 		break;
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 		pvalue = emalloc(sizeof(uint64_t));
 		if (NULL == pvalue) {
 			return NULL;
@@ -345,7 +345,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
-	case PROPVAL_TYPE_LONGLONG_ARRAY: {
+	case PT_MV_I8: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
@@ -1209,7 +1209,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 		case PT_APPTIME:
 			add_assoc_double(pzret, proptag_string, *(double*)ppropval->pvalue);
 			break;
-		case PROPVAL_TYPE_LONGLONG:
+		case PT_I8:
  			add_assoc_double(pzret, proptag_string, *(uint64_t*)ppropval->pvalue);
 			break;
 		case PT_FLOAT:

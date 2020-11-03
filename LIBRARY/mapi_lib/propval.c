@@ -70,7 +70,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		*(uint8_t*)preturn = *(uint8_t*)pvalue;
 		return preturn;
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		preturn = malloc(sizeof(uint64_t));
 		if (NULL == preturn) {
@@ -178,7 +178,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 						sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count);
 		}
 		return preturn;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		preturn = malloc(sizeof(LONGLONG_ARRAY));
 		if (NULL == preturn) {
 			return NULL;
@@ -310,7 +310,7 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_APPTIME:
 	case PT_ERROR:
 	case PT_BOOLEAN:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PT_STRING8:
 	case PT_UNICODE:
 	case PROPVAL_TYPE_FILETIME:
@@ -346,7 +346,7 @@ void propval_free(uint16_t type, void *pvalue)
 			free(((LONG_ARRAY*)pvalue)->pl);
 		}
 		break;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		if (NULL != ((LONGLONG_ARRAY*)pvalue)->pll) {
 			free(((LONGLONG_ARRAY*)pvalue)->pll);
 		}
@@ -414,7 +414,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_BINARY:
 		return ((BINARY*)pvalue)->cb;
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		return sizeof(uint64_t);
 	case PT_STRING8:
@@ -436,7 +436,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count;
 	case PT_MV_LONG:
 		return sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		return sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count;
 	case PT_MV_STRING8:
 		length = 0;
@@ -571,7 +571,7 @@ BOOL propval_compare_relop(uint8_t relop,
 		}
 		return FALSE;
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		switch (relop) {
 		case RELOP_LT:
@@ -990,7 +990,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		switch (relop) {
 		case RELOP_EQ:
 			if (((LONGLONG_ARRAY*)pvalue1)->count !=

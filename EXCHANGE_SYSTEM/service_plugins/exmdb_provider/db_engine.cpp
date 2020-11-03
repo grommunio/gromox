@@ -1277,7 +1277,7 @@ static int db_engine_compare_propval(
 		}
 		return 0;
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		if (*(uint64_t*)pvalue1 > *(uint64_t*)pvalue2) {
 			return 1;
@@ -1905,7 +1905,7 @@ static void db_engine_notify_content_table_add_row(
 					case PT_MV_LONG:
 						multi_num = ((LONG_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_LONGLONG_ARRAY:
+					case PT_MV_I8:
 						multi_num = ((LONGLONG_ARRAY*)pmultival)->count;
 						break;
 					case PT_MV_STRING8:
@@ -2005,7 +2005,7 @@ static void db_engine_notify_content_table_add_row(
 						propvals[multi_index].pvalue =
 							((LONG_ARRAY*)pmultival)->pl + j;
 						break;
-					case PROPVAL_TYPE_LONGLONG_ARRAY:
+					case PT_MV_I8:
 						propvals[multi_index].pvalue =
 							((LONGLONG_ARRAY*)pmultival)->pll + j;
 						break;
@@ -4279,7 +4279,7 @@ static void db_engine_notify_content_table_modify_row(
 					case PT_LONG:
 						multi_num = ((LONG_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_LONGLONG:
+					case PT_I8:
 						multi_num = ((LONGLONG_ARRAY*)pmultival)->count;
 						break;
 					case PT_STRING8:
@@ -4328,7 +4328,7 @@ static void db_engine_notify_content_table_modify_row(
 							pvalue1 = &((LONG_ARRAY*)
 								pmultival)->pl[inst_num - 1];
 							break;
-						case PROPVAL_TYPE_LONGLONG:
+						case PT_I8:
 							pvalue1 = &((LONGLONG_ARRAY*)
 								pmultival)->pll[inst_num - 1];
 							break;

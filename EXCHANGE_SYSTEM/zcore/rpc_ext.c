@@ -251,7 +251,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		*ppval = pext->alloc(sizeof(uint64_t));
 		if (NULL == *ppval) {
@@ -330,7 +330,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		*ppval = pext->alloc(sizeof(LONGLONG_ARRAY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -746,7 +746,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint64(
 			pext, *(uint64_t*)pval)) {
@@ -797,7 +797,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_longlong_array(
 			pext, pval)) {
 			return FALSE;	

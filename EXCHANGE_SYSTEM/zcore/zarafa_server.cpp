@@ -4108,7 +4108,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		case PT_APPTIME:
 		case PT_BOOLEAN:
 		case PT_OBJECT:
-		case PROPVAL_TYPE_LONGLONG:
+		case PT_I8:
 		case PT_STRING8:
 		case PT_UNICODE:
 		case PROPVAL_TYPE_FILETIME:
@@ -4119,7 +4119,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		case PT_BINARY:
 		case PT_MV_SHORT:
 		case PT_MV_LONG:
-		case PROPVAL_TYPE_LONGLONG_ARRAY:
+		case PT_MV_I8:
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
 		case PT_MV_CLSID:

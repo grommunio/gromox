@@ -936,7 +936,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 							", v%x REAL", tmp_proptag);
 				break;
 			case PT_CURRENCY:
-			case PROPVAL_TYPE_LONGLONG:
+			case PT_I8:
 			case PROPVAL_TYPE_FILETIME:
 			case PT_SHORT:
 			case PT_LONG:
@@ -1235,13 +1235,13 @@ BIND_NULL_INSTANCE:
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PROPVAL_TYPE_LONGLONG_ARRAY:
+				case PT_MV_I8:
 					if (0 == ((LONGLONG_ARRAY*)pvalue)->count) {
 						goto BIND_NULL_INSTANCE;
 					}
 					for (i=0; i<((LONGLONG_ARRAY*)pvalue)->count; i++) {
 						if (FALSE == common_util_bind_sqlite_statement(
-							pstmt1, multi_index, PROPVAL_TYPE_LONGLONG,
+						    pstmt1, multi_index, PT_I8,
 							((LONGLONG_ARRAY*)pvalue)->pll + i)) {
 							goto LOAD_CONTENT_FAIL;
 						}
@@ -2069,8 +2069,7 @@ static BOOL table_column_content_tmptbl(
 		}
 		break;
 	case PROP_TAG_INSTID:
-		*ppvalue = common_util_column_sqlite_statement(
-						pstmt, 3, PROPVAL_TYPE_LONGLONG);
+		*ppvalue = common_util_column_sqlite_statement(pstmt, 3, PT_I8);
 		if (*ppvalue != NULL) {
 			if (CONTENT_ROW_MESSAGE == row_type) {
 				*(uint64_t*)*ppvalue = rop_util_make_eid_ex(
@@ -4469,7 +4468,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 						", v%x REAL", tmp_proptag);
 			break;
 		case PT_CURRENCY:
-		case PROPVAL_TYPE_LONGLONG:
+		case PT_I8:
 		case PROPVAL_TYPE_FILETIME:
 		case PT_SHORT:
 		case PT_LONG:

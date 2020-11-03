@@ -3229,7 +3229,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_CURRENCY:
-			case PROPVAL_TYPE_LONGLONG:
+			case PT_I8:
 			case PROPVAL_TYPE_FILETIME:
 				pvalue = common_util_alloc(sizeof(uint64_t));
 				if (NULL != pvalue) {
@@ -3369,7 +3369,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_LONGLONG_ARRAY:
+			case PT_MV_I8:
 				pvalue = common_util_alloc(sizeof(LONGLONG_ARRAY));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -4222,7 +4222,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			break;
 		case PT_CURRENCY:
-		case PROPVAL_TYPE_LONGLONG:
+		case PT_I8:
 		case PROPVAL_TYPE_FILETIME:
 			sqlite3_bind_int64(pstmt, 2,
 				*(uint64_t*)ppropvals->ppropval[i].pvalue);
@@ -4341,7 +4341,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			ext_buffer_push_free(&ext_push);
 			break;
-		case PROPVAL_TYPE_LONGLONG_ARRAY:
+		case PT_MV_I8:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -6821,7 +6821,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		sqlite3_bind_double(pstmt, bind_index, *(double*)pvalue);
 		break;
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint64_t*)pvalue);
 		break;
@@ -6903,7 +6903,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 							pstmt, column_index);
 		return pvalue;
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		pvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == pvalue) {

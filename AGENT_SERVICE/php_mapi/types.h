@@ -5,11 +5,9 @@
 #	include <stdint.h>
 #endif
 
-#define PROPVAL_TYPE_LONGLONG						0x0014
 #define PROPVAL_TYPE_FILETIME						0x0040
 #define PROPVAL_TYPE_RESTRICTION					0x00fd
 #define PROPVAL_TYPE_RULE							0x00fe
-#define PROPVAL_TYPE_LONGLONG_ARRAY					0x1014
 
 typedef struct _GUID {
 	uint32_t time_low;

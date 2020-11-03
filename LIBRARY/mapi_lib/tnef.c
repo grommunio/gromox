@@ -321,7 +321,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		*(uint8_t*)r->pvalue = fake_byte;
 		return ext_buffer_pull_advance(pext, 2);
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		r->pvalue = pext->alloc(sizeof(uint64_t));
 		if (NULL == r->pvalue) {
@@ -524,7 +524,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		r->pvalue = pext->alloc(sizeof(LONGLONG_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -2292,7 +2292,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		}
 		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)r->pvalue);
 	case PT_STRING8:
@@ -2446,7 +2446,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		status = ext_buffer_push_uint32(pext,
 			((LONGLONG_ARRAY*)r->pvalue)->count);
 		if (EXT_ERR_SUCCESS != status) {

@@ -503,7 +503,7 @@ static BOOL ftstream_producer_write_propvalue(
 		return ftstream_producer_write_uint16(pstream,
 						*(uint8_t*)ppropval->pvalue);
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		return ftstream_producer_write_uint64(pstream,
 						*(uint64_t*)ppropval->pvalue);
@@ -551,7 +551,7 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		count = ((LONGLONG_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
 			pstream, count)) {

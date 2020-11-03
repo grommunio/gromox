@@ -510,7 +510,7 @@ static int ftstream_parser_read_element(
 		*(uint8_t*)ppropval->pvalue = fake_byte;
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_CURRENCY:
-	case PROPVAL_TYPE_LONGLONG:
+	case PT_I8:
 	case PROPVAL_TYPE_FILETIME:
 		ppropval->pvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == ppropval->pvalue) {
@@ -650,7 +650,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	case PT_MV_I8:
 		ppropval->pvalue =
 			common_util_alloc(sizeof(LONGLONG_ARRAY));
 		if (NULL == ppropval->pvalue) {
