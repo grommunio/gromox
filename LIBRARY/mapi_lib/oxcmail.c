@@ -2433,7 +2433,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 		binhex_clear(&binhex);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = pbin;
 	if (FALSE == tpropval_array_set_propval(
 		&pattachment->proplist, &propval)) {
@@ -2547,7 +2547,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
 	tmp_bin.pb = (uint8_t*)pcontent;
@@ -2691,7 +2691,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = pbin;
 	if (FALSE == tpropval_array_set_propval(
 		&pattachment->proplist, &propval)) {
@@ -2778,7 +2778,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = pbin;
 	if (FALSE == tpropval_array_set_propval(
 		&pattachment->proplist, &propval)) {
@@ -6836,7 +6836,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 	pbin = tpropval_array_get_propval(
 		&pattachment->proplist, proptag);
 	proptag = PROP_TAG(PT_UNICODE, propids.ppropid[1]);

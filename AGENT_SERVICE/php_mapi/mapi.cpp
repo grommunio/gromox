@@ -481,7 +481,7 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 		return ecInvalidParam;
 	}
 	switch (PROP_TYPE(pstream->proptag)) {
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		return zarafa_client_setpropval(
 			pstream->hsession, pstream->hparent,
 			pstream->proptag, &pstream->content_bin);
@@ -3187,7 +3187,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		goto THROW_EXCEPTION;
 	}
 	switch (PROP_TYPE(proptag)) {
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 	case PT_STRING8:
 	case PT_UNICODE:
 		break;
@@ -3252,7 +3252,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		goto THROW_EXCEPTION;
 	}
 	if (NULL != pvalue) {
-		if (PROP_TYPE(proptag) == PROPVAL_TYPE_BINARY)
+		if (PROP_TYPE(proptag) == PT_BINARY)
 			stream_object_write(pstream,
 				((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb);
 		else
@@ -3849,7 +3849,7 @@ ZEND_FUNCTION(mapi_openproperty)
 	}
 	if (0 == memcmp(&iid_guid, &IID_IStream, sizeof(GUID))) {
 		switch (PROP_TYPE(proptag)) {
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 		case PT_STRING8:
 		case PT_UNICODE:
 			break;
@@ -3868,7 +3868,7 @@ ZEND_FUNCTION(mapi_openproperty)
 				MAPI_G(hr) = ecNotFound;
 				goto THROW_EXCEPTION;
 			}
-			if (PROP_TYPE(proptag) == PROPVAL_TYPE_BINARY)
+			if (PROP_TYPE(proptag) == PT_BINARY)
 				RETVAL_STRINGL(reinterpret_cast<const char *>(static_cast<BINARY *>(pvalue)->pb), static_cast<BINARY *>(pvalue)->cb);
 			else
 				RETVAL_STRINGL(static_cast<const char *>(pvalue), strlen(static_cast<const char *>(pvalue)));
@@ -3882,7 +3882,7 @@ ZEND_FUNCTION(mapi_openproperty)
 				pstream, probject->hsession,
 				probject->hobject, proptag);
 			if (NULL != pvalue) {
-				if (PROP_TYPE(proptag) == PROPVAL_TYPE_BINARY)
+				if (PROP_TYPE(proptag) == PT_BINARY)
 					stream_object_write(pstream,
 						((BINARY*)pvalue)->pb,
 						((BINARY*)pvalue)->cb);

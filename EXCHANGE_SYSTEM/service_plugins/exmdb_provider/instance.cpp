@@ -2532,7 +2532,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			ppropvals->count ++;
 			continue;
 		case PROP_TAG_ATTACHDATA_UNSPECIFIED:
-			proptype = PROPVAL_TYPE_BINARY;
+			proptype = PT_BINARY;
 			pbin = static_cast<BINARY *>(tpropval_array_get_propval(
 			       &pattachment->proplist, PROP_TAG_ATTACHDATABINARY));
 			if (NULL == pbin) {
@@ -2724,7 +2724,7 @@ static int instance_get_message_htmlU(DB_ITEM *pdb, MESSAGE_CONTENT *mc,
 	auto tpv = static_cast<TYPED_PROPVAL *>(pv.pvalue);
 	if (tpv == nullptr)
 		return -1;
-	tpv->type = PROPVAL_TYPE_BINARY;
+	tpv->type = PT_BINARY;
 	tpv->pvalue = bin;
 	++pval->count;
 	return 1;

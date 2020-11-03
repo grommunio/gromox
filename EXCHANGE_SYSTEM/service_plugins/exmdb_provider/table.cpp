@@ -945,10 +945,10 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 							sizeof(sql_string) - sql_len,
 							", v%x INTEGER", tmp_proptag);
 				break;
-			case PROPVAL_TYPE_GUID:
+			case PT_CLSID:
 			case PROPVAL_TYPE_SVREID:
 			case PT_OBJECT:
-			case PROPVAL_TYPE_BINARY:
+			case PT_BINARY:
 				sql_len += snprintf(sql_string + sql_len,
 							sizeof(sql_string) - sql_len,
 							", v%x BLOB", tmp_proptag);
@@ -1272,13 +1272,13 @@ BIND_NULL_INSTANCE:
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PROPVAL_TYPE_GUID_ARRAY:
+				case PT_MV_CLSID:
 					if (0 == ((GUID_ARRAY*)pvalue)->count) {
 						goto BIND_NULL_INSTANCE;
 					}
 					for (i=0; i<((GUID_ARRAY*)pvalue)->count; i++) {
 						if (FALSE == common_util_bind_sqlite_statement(
-							pstmt1, multi_index, PROPVAL_TYPE_GUID,
+						    pstmt1, multi_index, PT_CLSID,
 							((GUID_ARRAY*)pvalue)->pguid + i)) {
 							goto LOAD_CONTENT_FAIL;
 						}
@@ -1290,13 +1290,13 @@ BIND_NULL_INSTANCE:
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PROPVAL_TYPE_BINARY_ARRAY:
+				case PT_MV_BINARY:
 					if (0 == ((BINARY_ARRAY*)pvalue)->count) {
 						goto BIND_NULL_INSTANCE;
 					}
 					for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
 						if (FALSE == common_util_bind_sqlite_statement(
-							pstmt1, multi_index, PROPVAL_TYPE_BINARY,
+						    pstmt1, multi_index, PT_BINARY,
 							((BINARY_ARRAY*)pvalue)->pbin + i)) {
 							goto LOAD_CONTENT_FAIL;
 						}
@@ -2349,7 +2349,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					case PT_STRING8:
 						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
-					case PROPVAL_TYPE_BINARY:
+					case PT_BINARY:
 						if (((BINARY*)pvalue)->cb > 510) {
 							((BINARY*)pvalue)->cb = 510;
 						}
@@ -2488,7 +2488,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				case PT_STRING8:
 					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
-				case PROPVAL_TYPE_BINARY:
+				case PT_BINARY:
 					if (((BINARY*)pvalue)->cb > 510) {
 						((BINARY*)pvalue)->cb = 510;
 					}
@@ -3041,7 +3041,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						case PT_STRING8:
 							table_truncate_string(cpid, static_cast<char *>(pvalue));
 							break;
-						case PROPVAL_TYPE_BINARY:
+						case PT_BINARY:
 							if (((BINARY*)pvalue)->cb > 510) {
 								((BINARY*)pvalue)->cb = 510;
 							}
@@ -3166,7 +3166,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					case PT_STRING8:
 						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
-					case PROPVAL_TYPE_BINARY:
+					case PT_BINARY:
 						if (((BINARY*)pvalue)->cb > 510) {
 							((BINARY*)pvalue)->cb = 510;
 						}
@@ -3442,7 +3442,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				case PT_STRING8:
 					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
-				case PROPVAL_TYPE_BINARY:
+				case PT_BINARY:
 					if (((BINARY*)pvalue)->cb > 510) {
 						((BINARY*)pvalue)->cb = 510;
 					}
@@ -3544,7 +3544,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 			case PT_STRING8:
 				table_truncate_string(cpid, static_cast<char *>(pvalue));
 				break;
-			case PROPVAL_TYPE_BINARY:
+			case PT_BINARY:
 				if (((BINARY*)pvalue)->cb > 510) {
 					((BINARY*)pvalue)->cb = 510;
 				}
@@ -4478,10 +4478,10 @@ BOOL exmdb_server_store_table_state(const char *dir,
 						sizeof(sql_string) - sql_len,
 						", v%x INTEGER", tmp_proptag);
 			break;
-		case PROPVAL_TYPE_GUID:
+		case PT_CLSID:
 		case PROPVAL_TYPE_SVREID:
 		case PT_OBJECT:
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 			sql_len += snprintf(sql_string + sql_len,
 						sizeof(sql_string) - sql_len,
 						", v%x BLOB", tmp_proptag);

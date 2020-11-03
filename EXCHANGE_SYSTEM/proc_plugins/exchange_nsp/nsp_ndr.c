@@ -1521,7 +1521,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				r->pstr = NULL;
 			}
 			break;
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 			status = nsp_ndr_pull_binary(pndr, FLAG_HEADER, &r->bin);
 			break;
 		case PROPVAL_TYPE_FLATUID:
@@ -1547,7 +1547,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_MV_STRING8:
 			status = nsp_ndr_pull_string_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
-		case PROPVAL_TYPE_BINARY_ARRAY:
+		case PT_MV_BINARY:
 			status = nsp_ndr_pull_binary_array(pndr, FLAG_HEADER, &r->bin_array);
 			break;
 		case PROPVAL_TYPE_FLATUID_ARRAY:
@@ -1654,7 +1654,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				free(pwstring);
 			}
 			break;
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 			status = nsp_ndr_pull_binary(pndr, FLAG_CONTENT, &r->bin);
 			break;
 		case PROPVAL_TYPE_FLATUID:
@@ -1687,7 +1687,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_BINARY_ARRAY:
+		case PT_MV_BINARY:
 			status = nsp_ndr_pull_binary_array(pndr, FLAG_CONTENT, &r->bin_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
@@ -1754,7 +1754,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_UNICODE:
 			status = ndr_push_unique_ptr(pndr, r->pstr);
 			break;
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 			status = nsp_ndr_push_binary(pndr, FLAG_HEADER, &r->bin);
 			break;
 		case PROPVAL_TYPE_FLATUID:
@@ -1775,7 +1775,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_MV_STRING8:
 			status = nsp_ndr_push_string_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
-		case PROPVAL_TYPE_BINARY_ARRAY:
+		case PT_MV_BINARY:
 			status = nsp_ndr_push_binary_array(pndr, FLAG_HEADER, &r->bin_array);
 			break;
 		case PROPVAL_TYPE_FLATUID_ARRAY:
@@ -1863,7 +1863,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				}
 			}
 			break;
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 			status = nsp_ndr_push_binary(pndr, FLAG_CONTENT, &r->bin);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
@@ -1899,7 +1899,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_BINARY_ARRAY:
+		case PT_MV_BINARY:
 			status = nsp_ndr_push_binary_array(pndr, FLAG_CONTENT, &r->bin_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;

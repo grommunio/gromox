@@ -1746,7 +1746,7 @@ uint32_t rop_syncimportdeletes(
 	FOLDER_OBJECT *pfolder;
 	
 	if (ppropvals->count != 1 ||
-	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PROPVAL_TYPE_BINARY_ARRAY)
+	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY)
 		return ecInvalidParam;
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {

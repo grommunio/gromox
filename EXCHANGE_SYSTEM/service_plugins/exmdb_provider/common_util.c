@@ -3254,7 +3254,7 @@ BOOL common_util_get_properties(int table_type,
 					*(uint8_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
-			case PROPVAL_TYPE_GUID:
+			case PT_CLSID:
 				pvalue = common_util_alloc(sizeof(GUID));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -3319,7 +3319,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_OBJECT:
-			case PROPVAL_TYPE_BINARY:
+			case PT_BINARY:
 				pvalue = common_util_alloc(sizeof(BINARY));
 				if (NULL != pvalue) {
 					((BINARY*)pvalue)->cb =
@@ -3415,7 +3415,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_GUID_ARRAY:
+			case PT_MV_CLSID:
 				pvalue = common_util_alloc(sizeof(GUID_ARRAY));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -3431,7 +3431,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_BINARY_ARRAY:
+			case PT_MV_BINARY:
 				pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -4243,7 +4243,7 @@ BOOL common_util_set_properties(int table_type,
 				*(uint8_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_GUID:
+		case PT_CLSID:
 			ext_buffer_push_init(&ext_push, temp_buff, 16, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
 				&ext_push, ppropvals->ppropval[i].pvalue)) {
@@ -4298,7 +4298,7 @@ BOOL common_util_set_properties(int table_type,
 			ext_buffer_push_free(&ext_push);
 			break;
 		case PT_OBJECT:
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 			if (0 == ((BINARY*)ppropvals->ppropval[i].pvalue)->cb) {
 				sqlite3_bind_blob(pstmt, 2, &i, 0, SQLITE_STATIC);
 			} else {
@@ -4411,7 +4411,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			ext_buffer_push_free(&ext_push);
 			break;
-		case PROPVAL_TYPE_GUID_ARRAY:
+		case PT_MV_CLSID:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -4427,7 +4427,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			ext_buffer_push_free(&ext_push);
 			break;
-		case PROPVAL_TYPE_BINARY_ARRAY:
+		case PT_MV_BINARY:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -6834,7 +6834,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 	case PT_BOOLEAN:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint8_t*)pvalue);
 		break;
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		ext_buffer_push_init(&ext_push, temp_buff, 16, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
 			&ext_push, pvalue)) {
@@ -6853,7 +6853,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 							ext_push.offset, SQLITE_STATIC);
 		break;
 	case PT_OBJECT:
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		if (0 == ((BINARY*)pvalue)->cb) {
 			sqlite3_bind_null(pstmt, bind_index);
 		} else {
@@ -6936,7 +6936,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		*(uint8_t*)pvalue = sqlite3_column_int64(
 							pstmt, column_index);
 		return pvalue;
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		pvalue = (void*)sqlite3_column_blob(pstmt, column_index);
 		if (NULL == pvalue) {
 			return NULL;
@@ -6971,7 +6971,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		}
 		return pvalue;
 	case PT_OBJECT:
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		if (sqlite3_column_bytes(pstmt, column_index) > 512) {
 			return NULL;
 		}

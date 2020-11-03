@@ -192,7 +192,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		for (i=0; i<propvals.count; i++) {
 			proptype = PROP_TYPE(propvals.ppropval[i].proptag);
 			switch (proptype) {
-			case PROPVAL_TYPE_BINARY:
+			case PT_BINARY:
 			case PT_OBJECT:
 			case PT_STRING8:
 			case PT_UNICODE:
@@ -1218,7 +1218,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			OPENSTREAM_FLAG_READONLY != flags) {
 			return ecNotSupported;
 		}
-		if (PROP_TYPE(proptag) != PROPVAL_TYPE_BINARY)
+		if (PROP_TYPE(proptag) != PT_BINARY)
 			return ecNotSupported;
 		if (TRUE == b_write) {
 			rpc_info = get_rpc_info();
@@ -1239,7 +1239,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	case OBJECT_TYPE_MESSAGE:
 	case OBJECT_TYPE_ATTACHMENT:
 		switch (PROP_TYPE(proptag)) {
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 		case PT_STRING8:
 		case PT_UNICODE:
 			break;

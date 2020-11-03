@@ -274,7 +274,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		*ppval = pext->alloc(sizeof(GUID));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -300,7 +300,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		}
 		return rpc_ext_pull_rule_actions(pext, *ppval);
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		*ppval = pext->alloc(sizeof(BINARY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -360,7 +360,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		*ppval = pext->alloc(sizeof(GUID_ARRAY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -370,7 +370,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		*ppval = pext->alloc(sizeof(BINARY_ARRAY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -765,7 +765,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_guid(
 			pext, pval)) {
 			return FALSE;	
@@ -779,7 +779,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		return TRUE;
 	case PROPVAL_TYPE_RULE:
 		return rpc_ext_push_rule_actions(pext, pval);
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_binary(
 			pext, pval)) {
 			return FALSE;	
@@ -815,13 +815,13 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_guid_array(
 			pext, pval)) {
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_binary_array(
 			pext, pval)) {
 			return FALSE;	

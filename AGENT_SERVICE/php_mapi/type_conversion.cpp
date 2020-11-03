@@ -260,7 +260,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		}
 		*static_cast<uint64_t *>(pvalue) = unix_to_nttime(zval_get_long(entry));
 		break;
-	case PROPVAL_TYPE_BINARY: {
+	case PT_BINARY: {
 		zstrplus str(zval_get_string(entry));
 		pvalue = emalloc(sizeof(BINARY));
 		auto bin = static_cast<BINARY *>(pvalue);
@@ -288,7 +288,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		static_cast<char *>(pvalue)[str->len] = '\0';
 		break;
 	}
-	case PROPVAL_TYPE_GUID: {
+	case PT_CLSID: {
 		zstrplus str(zval_get_string(entry));
 		if (str->len != sizeof(GUID))
 			return NULL;
@@ -399,7 +399,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
-	case PROPVAL_TYPE_BINARY_ARRAY: {
+	case PT_MV_BINARY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
@@ -432,7 +432,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
-	case PROPVAL_TYPE_GUID_ARRAY: {
+	case PT_MV_CLSID: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
@@ -1222,7 +1222,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 		case PT_UNICODE:
 			add_assoc_string(pzret, proptag_string, static_cast<const char *>(ppropval->pvalue));
 			break;
-		case PROPVAL_TYPE_BINARY:
+		case PT_BINARY:
 			add_assoc_stringl(pzret, proptag_string,
 				reinterpret_cast<const char *>(static_cast<BINARY *>(ppropval->pvalue)->pb),
 				static_cast<BINARY *>(ppropval->pvalue)->cb);
@@ -1231,7 +1231,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_long(pzret, proptag_string,
 				nttime_to_unix(*(uint64_t*)ppropval->pvalue));
 			break;
-		case PROPVAL_TYPE_GUID:
+		case PT_CLSID:
 			add_assoc_stringl(pzret, proptag_string,
 				static_cast<const char *>(ppropval->pvalue), sizeof(GUID));
 			break;
@@ -1255,7 +1255,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
-		case PROPVAL_TYPE_BINARY_ARRAY: {
+		case PT_MV_BINARY: {
 			array_init(&pzmval);
 			auto xb = static_cast<BINARY_ARRAY *>(ppropval->pvalue);
 			for (j = 0; j < xb->count; ++j) {
@@ -1278,7 +1278,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
-		case PROPVAL_TYPE_GUID_ARRAY: {
+		case PT_MV_CLSID: {
 			array_init(&pzmval);
 			auto xb = static_cast<GUID_ARRAY *>(ppropval->pvalue);
 			for (j = 0; j < xb->count; ++j) {

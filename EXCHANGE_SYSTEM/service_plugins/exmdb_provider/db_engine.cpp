@@ -1303,9 +1303,9 @@ static int db_engine_compare_propval(
 	case PT_STRING8:
 	case PT_UNICODE:
 		return strcasecmp(static_cast<char *>(pvalue1), static_cast<char *>(pvalue2));
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		return guid_compare(static_cast<GUID *>(pvalue1), static_cast<GUID *>(pvalue2));
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		if (0 == ((BINARY*)pvalue1)->cb &&
 			0 != ((BINARY*)pvalue2)->cb) {
 			return -1;
@@ -1912,10 +1912,10 @@ static void db_engine_notify_content_table_add_row(
 					case PT_MV_UNICODE:
 						multi_num = ((STRING_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_GUID_ARRAY:
+					case PT_MV_CLSID:
 						multi_num = ((GUID_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_BINARY_ARRAY:
+					case PT_MV_BINARY:
 						multi_num = ((BINARY_ARRAY*)pmultival)->count;
 						break;
 					default:
@@ -2014,11 +2014,11 @@ static void db_engine_notify_content_table_add_row(
 						propvals[multi_index].pvalue =
 							((STRING_ARRAY*)pmultival)->ppstr[j];
 						break;
-					case PROPVAL_TYPE_GUID_ARRAY:
+					case PT_MV_CLSID:
 						propvals[multi_index].pvalue =
 							((GUID_ARRAY*)pmultival)->pguid + j;
 						break;
-					case PROPVAL_TYPE_BINARY_ARRAY:
+					case PT_MV_BINARY:
 						propvals[multi_index].pvalue =
 							((BINARY_ARRAY*)pmultival)->pbin + j;
 						break;
@@ -4286,10 +4286,10 @@ static void db_engine_notify_content_table_modify_row(
 					case PT_UNICODE:
 						multi_num = ((STRING_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_GUID:
+					case PT_CLSID:
 						multi_num = ((GUID_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_BINARY:
+					case PT_BINARY:
 						multi_num = ((BINARY_ARRAY*)pmultival)->count;
 						break;
 					}
@@ -4337,11 +4337,11 @@ static void db_engine_notify_content_table_modify_row(
 							pvalue1 = ((STRING_ARRAY*)
 								pmultival)->ppstr[inst_num - 1];
 							break;
-						case PROPVAL_TYPE_GUID:
+						case PT_CLSID:
 							pvalue1 = &((GUID_ARRAY*)
 								pmultival)->pguid[inst_num - 1];
 							break;
-						case PROPVAL_TYPE_BINARY:
+						case PT_BINARY:
 							pvalue1 = &((BINARY_ARRAY*)
 								pmultival)->pbin[inst_num - 1];
 							break;

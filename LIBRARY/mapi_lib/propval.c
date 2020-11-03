@@ -81,7 +81,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 	case PT_STRING8:
 	case PT_UNICODE:
 		return strdup(pvalue);
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		preturn = malloc(sizeof(GUID));
 		if (NULL == preturn) {
 			return NULL;
@@ -121,7 +121,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		return restriction_dup(pvalue);
 	case PROPVAL_TYPE_RULE:
 		return rule_actions_dup(pvalue);
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 	case PT_OBJECT:
 		preturn = malloc(sizeof(BINARY));
 		if (NULL == preturn) {
@@ -227,7 +227,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 			}
 		}
 		return preturn;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		preturn = malloc(sizeof(GUID_ARRAY));
 		if (NULL == preturn) {
 			return NULL;
@@ -246,7 +246,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 									sizeof(GUID)*((GUID_ARRAY*)pvalue)->count);
 		}
 		return preturn;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		preturn = malloc(sizeof(BINARY_ARRAY));
 		if (NULL == preturn) {
 			return NULL;
@@ -314,7 +314,7 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_STRING8:
 	case PT_UNICODE:
 	case PROPVAL_TYPE_FILETIME:
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		break;
 	case PROPVAL_TYPE_RESTRICTION:
 		restriction_free(pvalue);
@@ -330,7 +330,7 @@ void propval_free(uint16_t type, void *pvalue)
 			free(((SVREID*)pvalue)->pbin);
 		}
 		break;
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 	case PT_OBJECT:
 		if (NULL != ((BINARY*)pvalue)->pb) {
 			free(((BINARY*)pvalue)->pb);
@@ -360,12 +360,12 @@ void propval_free(uint16_t type, void *pvalue)
 			free(((STRING_ARRAY*)pvalue)->ppstr);
 		}
 		break;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		if (NULL != ((GUID_ARRAY*)pvalue)->pguid) {
 			free(((GUID_ARRAY*)pvalue)->pguid);
 		}
 		break;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
 			if (NULL != ((BINARY_ARRAY*)pvalue)->pbin[i].pb) {
 				free(((BINARY_ARRAY*)pvalue)->pbin[i].pb);
@@ -411,7 +411,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_BOOLEAN:
 		return sizeof(uint8_t);
 	case PT_OBJECT:
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		return ((BINARY*)pvalue)->cb;
 	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
@@ -421,7 +421,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return strlen(pvalue) + 1;
 	case PT_UNICODE:
 		return propval_utf16_len(pvalue);
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		return 16;
 	case PROPVAL_TYPE_SVREID:
 		if (NULL != ((SVREID*)pvalue)->pbin) {
@@ -450,9 +450,9 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 			length += propval_utf16_len(((STRING_ARRAY*)pvalue)->ppstr[i]);
 		}
 		return length;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		return 16*((GUID_ARRAY*)pvalue)->count;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		length = 0;
 		for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
 			length += ((BINARY_ARRAY*)pvalue)->pbin[i].cb;
@@ -710,7 +710,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		switch (relop) {
 		case RELOP_LT:
 			if (guid_compare(pvalue1, pvalue2) < 0) {
@@ -744,7 +744,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		switch (relop) {
 		case RELOP_LT:
 			if (0 == ((BINARY*)pvalue1)->cb &&
@@ -1045,7 +1045,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		switch (relop) {
 		case RELOP_EQ:
 			if (((BINARY_ARRAY*)pvalue1)->count !=

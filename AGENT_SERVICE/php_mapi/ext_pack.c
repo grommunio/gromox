@@ -846,7 +846,7 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 	case PT_STRING8:
 	case PT_UNICODE:
 		return ext_pack_pull_string(pctx, (char**)ppval);
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		*ppval = emalloc(sizeof(GUID));
 		if (NULL == *ppval) {
 			return 0;
@@ -864,7 +864,7 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 			return 0;
 		}
 		return ext_pack_pull_rule_actions(pctx, *ppval);
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		*ppval = emalloc(sizeof(BINARY));
 		if (NULL == *ppval) {
 			return 0;
@@ -895,13 +895,13 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 			return 0;
 		}
 		return ext_pack_pull_string_array(pctx, *ppval);
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		*ppval = emalloc(sizeof(GUID_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
 		return ext_pack_pull_guid_array(pctx, *ppval);
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		*ppval = emalloc(sizeof(BINARY_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
@@ -2015,13 +2015,13 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 	case PT_STRING8:
 	case PT_UNICODE:
 		return ext_pack_push_string(pctx, pval);
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		return ext_pack_push_guid(pctx, pval);
 	case PROPVAL_TYPE_RESTRICTION:
 		return ext_pack_push_restriction(pctx, pval);
 	case PROPVAL_TYPE_RULE:
 		return ext_pack_push_rule_actions(pctx, pval);
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		return ext_pack_push_binary(pctx, pval);
 	case PT_MV_SHORT:
 		return ext_pack_push_short_array(pctx, pval);
@@ -2032,9 +2032,9 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		return ext_pack_push_string_array(pctx, pval);
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		return ext_pack_push_guid_array(pctx, pval);
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		return ext_pack_push_binary_array(pctx, pval);
 	default:
 		return 0;

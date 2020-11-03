@@ -513,7 +513,7 @@ static BOOL ftstream_producer_write_propvalue(
 	case PT_UNICODE:
 		return ftstream_producer_write_wstring(
 					pstream, ppropval->pvalue);
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		return ftstream_producer_write_guid(
 				pstream, ppropval->pvalue);
 	/*
@@ -522,7 +522,7 @@ static BOOL ftstream_producer_write_propvalue(
 					pstream, ppropval->pvalue);
 	*/
 	case PT_OBJECT:
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		return ftstream_producer_write_binary(
 					pstream, ppropval->pvalue);
 	case PT_MV_SHORT:
@@ -590,7 +590,7 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 		return TRUE;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		count = ((GUID_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
 			pstream, count)) {
@@ -603,7 +603,7 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 		return TRUE;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		count = ((BINARY_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
 			pstream, count)) {
@@ -706,10 +706,8 @@ BOOL ftstream_producer_write_errorinfo(
 		return FALSE;
 	}
 	/* 0x00000102 is the only proptag in proplist */
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, PROPVAL_TYPE_BINARY)) {
+	if (!ftstream_producer_write_uint32(pstream, PT_BINARY))
 		return FALSE;
-	}
 	return ftstream_producer_write_binary(pstream, &tmp_bin);
 }
 
@@ -938,10 +936,8 @@ static BOOL ftstream_producer_write_groupinfo(
 		return FALSE;
 	}
 	/* 0x00000102 is the only proptag in proplist */
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, PROPVAL_TYPE_BINARY)) {
+	if (!ftstream_producer_write_uint32(pstream, PT_BINARY))
 		return FALSE;
-	}
 	if (FALSE == ext_buffer_push_init(
 		&ext_push, NULL, 0, EXT_FLAG_UTF16)) {
 		return FALSE;	
@@ -1229,10 +1225,8 @@ BOOL ftstream_producer_write_progresstotal(
 		pstream, marker)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, PROPVAL_TYPE_BINARY)) {
+	if (!ftstream_producer_write_uint32(pstream, PT_BINARY))
 		return FALSE;
-	}
 	/* binary length */
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, 32)) {

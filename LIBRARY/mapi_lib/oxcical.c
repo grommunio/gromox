@@ -767,7 +767,7 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -837,7 +837,7 @@ static BOOL oxcical_parse_recurring_timezone(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -859,7 +859,7 @@ static BOOL oxcical_parse_recurring_timezone(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1582,7 +1582,7 @@ MAKE_GLOBALOBJID:
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1607,7 +1607,7 @@ MAKE_GLOBALOBJID:
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2224,7 +2224,7 @@ static BOOL oxcical_parse_appointment_recurrence(
 		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BINARY, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -5370,7 +5370,7 @@ static BOOL oxcical_export_internal(const char *method,
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, proptag);
 	if (NULL == pvalue) {
@@ -5480,7 +5480,7 @@ static BOOL oxcical_export_internal(const char *method,
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+		proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, proptag);
 		if (NULL != pvalue) {
@@ -5519,7 +5519,7 @@ EXPORT_TZDEFINITION:
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+			proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 			pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 			if (NULL != pvalue) {
@@ -5547,7 +5547,7 @@ EXPORT_TZDEFINITION:
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+		proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, proptag);
 		if (NULL != pvalue) {
@@ -5556,7 +5556,7 @@ EXPORT_TZDEFINITION:
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+			proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 			pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 		}
@@ -5709,7 +5709,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -5825,7 +5825,7 @@ EXPORT_VEVENT:
 				if (FALSE == get_propids(&propnames, &propids)) {
 					return FALSE;
 				}
-				proptag = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[0]);
+				proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
 				pvalue = tpropval_array_get_propval(
 							&pmsg->proplist, proptag);
 				if (NULL != pvalue) {

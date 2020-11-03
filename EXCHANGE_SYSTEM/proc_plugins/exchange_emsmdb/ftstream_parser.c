@@ -417,7 +417,7 @@ static int ftstream_parser_read_element(
 	propid = PROP_ID(atom_element);
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (META_TAG_IDSETGIVEN == atom_element) {
-		proptype = PROPVAL_TYPE_BINARY;
+		proptype = PT_BINARY;
 	}
 	if (propid & 0x8000) {
 		ppropname = ftstream_parser_read_property_name(pstream);
@@ -543,7 +543,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		ppropval->pvalue = common_util_alloc(sizeof(GUID));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -568,7 +568,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_OBJECT:
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		ppropval->pvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -776,7 +776,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		ppropval->pvalue =
 			common_util_alloc(sizeof(GUID_ARRAY));
 		if (NULL == ppropval->pvalue) {
@@ -809,7 +809,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		ppropval->pvalue =
 			common_util_alloc(sizeof(BINARY_ARRAY));
 		if (NULL == ppropval->pvalue) {

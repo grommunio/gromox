@@ -372,7 +372,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		pext->offset = offset;
 		return ext_buffer_pull_advance(pext, tnef_align(tmp_int));
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		r->pvalue = pext->alloc(sizeof(GUID));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -425,7 +425,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		return ext_buffer_pull_advance(pext,
 			tnef_align(pext->offset - offset));
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		r->pvalue = pext->alloc(sizeof(BINARY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -640,7 +640,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		r->pvalue = pext->alloc(sizeof(GUID_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -670,7 +670,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		r->pvalue = pext->alloc(sizeof(BINARY_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -2343,7 +2343,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		pext->offset = offset1;
 		return ext_buffer_push_bytes(pext,
 			g_pad_bytes, tnef_align(tmp_int));
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		return ext_buffer_push_guid(pext, r->pvalue);
 	case PROPVAL_TYPE_SVREID:
 		return ext_buffer_push_svreid(pext, r->pvalue);
@@ -2396,7 +2396,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			return ext_buffer_push_bytes(pext,
 				g_pad_bytes, tnef_align(tmp_int));
 		}
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 		status = ext_buffer_push_uint32(pext, 1);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -2524,7 +2524,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		status = ext_buffer_push_uint32(pext,
 			((GUID_ARRAY*)r->pvalue)->count);
 		if (EXT_ERR_SUCCESS != status) {
@@ -2538,7 +2538,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		status = ext_buffer_push_uint32(pext,
 			((BINARY_ARRAY*)r->pvalue)->count);
 		if (EXT_ERR_SUCCESS != status) {
@@ -3465,8 +3465,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (NULL != pvalue) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(PROP_TAG_TNEFCORRELATIONKEY);
-			tnef_proplist.ppropval[tnef_proplist.count].proptype =
-											PROPVAL_TYPE_BINARY;
+			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_BINARY;
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
 			tnef_proplist.ppropval[tnef_proplist.count].pvalue = &key_bin;
 			key_bin.cb = strlen(pvalue) + 1;

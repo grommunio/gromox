@@ -7,13 +7,9 @@
 
 #define PROPVAL_TYPE_LONGLONG						0x0014
 #define PROPVAL_TYPE_FILETIME						0x0040
-#define PROPVAL_TYPE_GUID							0x0048
 #define PROPVAL_TYPE_RESTRICTION					0x00fd
 #define PROPVAL_TYPE_RULE							0x00fe
-#define PROPVAL_TYPE_BINARY							0x0102
 #define PROPVAL_TYPE_LONGLONG_ARRAY					0x1014
-#define PROPVAL_TYPE_GUID_ARRAY						0x1048
-#define PROPVAL_TYPE_BINARY_ARRAY					0x1102
 
 typedef struct _GUID {
 	uint32_t time_low;

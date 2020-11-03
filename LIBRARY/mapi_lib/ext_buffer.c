@@ -1215,7 +1215,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_svreid(pext, *ppval);
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		*ppval = pext->alloc(sizeof(GUID));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -1233,7 +1233,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_rule_actions(pext, *ppval);
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 	case PT_OBJECT:
 		*ppval = pext->alloc(sizeof(BINARY));
 		if (NULL == (*ppval)) {
@@ -1270,13 +1270,13 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_wstring_array(pext, *ppval);
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		*ppval = pext->alloc(sizeof(GUID_ARRAY));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_guid_array(pext, *ppval);
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		*ppval = pext->alloc(sizeof(BINARY_ARRAY));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -4398,7 +4398,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_string(pext, pval);
 	case PT_UNICODE:
 		return ext_buffer_push_wstring(pext, pval);
-	case PROPVAL_TYPE_GUID:
+	case PT_CLSID:
 		return ext_buffer_push_guid(pext, pval);
 	case PROPVAL_TYPE_SVREID:
 		return ext_buffer_push_svreid(pext, pval);
@@ -4406,7 +4406,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_restriction(pext, pval);
 	case PROPVAL_TYPE_RULE:
 		return ext_buffer_push_rule_actions(pext, pval);
-	case PROPVAL_TYPE_BINARY:
+	case PT_BINARY:
 	case PT_OBJECT:
 		return ext_buffer_push_binary(pext, pval);
 	case PT_MV_SHORT:
@@ -4419,9 +4419,9 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_string_array(pext, pval);
 	case PT_MV_UNICODE:
 		return ext_buffer_push_wstring_array(pext, pval);
-	case PROPVAL_TYPE_GUID_ARRAY:
+	case PT_MV_CLSID:
 		return ext_buffer_push_guid_array(pext, pval);
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	case PT_MV_BINARY:
 		return ext_buffer_push_binary_array(pext, pval);
 	default:
 		return EXT_ERR_BAD_SWITCH;

@@ -921,7 +921,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		pobj_notify->object_type = pobj_notify1->object_type;
 		if (NULL != pobj_notify1->pentryid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pentryid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY,
+				pobj_notify->pentryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 				                        pobj_notify1->pentryid));
 				if (NULL == pobj_notify->pentryid) {
 					common_util_free_znotification(pnotification1);
@@ -937,7 +937,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 		if (NULL != pobj_notify1->pparentid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pparentid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY,
+				pobj_notify->pparentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 				                         pobj_notify1->pparentid));
 				if (NULL == pobj_notify->pparentid) {
 					common_util_free_znotification(pnotification1);
@@ -953,7 +953,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 		if (NULL != pobj_notify1->pold_entryid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pold_entryid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY, 
+				pobj_notify->pold_entryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 				                            pobj_notify1->pold_entryid));
 				if (NULL == pobj_notify->pold_entryid) {
 					common_util_free_znotification(pnotification1);
@@ -969,7 +969,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 		if (NULL != pobj_notify->pold_parentid) {
 			if (FALSE == b_temp) {
-				pobj_notify->pold_parentid = static_cast<BINARY *>(propval_dup(PROPVAL_TYPE_BINARY,
+				pobj_notify->pold_parentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 				                             pobj_notify1->pold_parentid));
 				if (NULL == pobj_notify->pold_parentid) {
 					common_util_free_znotification(pnotification1);
