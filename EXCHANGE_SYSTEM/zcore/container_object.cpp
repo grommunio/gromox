@@ -59,149 +59,134 @@ static BOOL container_object_match_contact_message(
 	void *pvalue;
 	
 	switch (pfilter->rt) {
-	case RESTRICTION_TYPE_AND:
-		for (i=0; i<((RESTRICTION_AND_OR*)pfilter->pres)->count; i++) {
-			if (FALSE == container_object_match_contact_message(ppropvals,
-				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
+	case RESTRICTION_TYPE_AND: {
+		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
+		for (i = 0; i < andor->count; ++i)
+			if (!container_object_match_contact_message(ppropvals, &andor->pres[i]))
 				return FALSE;
-			}
-		}
 		return TRUE;
-	case RESTRICTION_TYPE_OR:
-		for (i=0; i<((RESTRICTION_AND_OR*)pfilter->pres)->count; i++) {
-			if (TRUE == container_object_match_contact_message(ppropvals,
-				&((RESTRICTION_AND_OR*)pfilter->pres)->pres[i])) {
+	}
+	case RESTRICTION_TYPE_OR: {
+		auto andor = static_cast<RESTRICTION_AND_OR *>(pfilter->pres);
+		for (i = 0; i < andor->count; ++i)
+			if (container_object_match_contact_message(ppropvals, &andor->pres[i]))
 				return TRUE;
-			}
-		}
 		return FALSE;
-	case RESTRICTION_TYPE_NOT:
-		if (TRUE == container_object_match_contact_message(
-			ppropvals, &((RESTRICTION_NOT*)pfilter->pres)->res)) {
+	}
+	case RESTRICTION_TYPE_NOT: {
+		auto rnot = static_cast<RESTRICTION_NOT *>(pfilter->pres);
+		if (container_object_match_contact_message(ppropvals, &rnot->res))
 			return FALSE;
-		}
 		return TRUE;
-	case RESTRICTION_TYPE_CONTENT:
-		if (PROPVAL_TYPE_WSTRING != (((RESTRICTION_CONTENT*)
-			pfilter->pres)->proptag & 0xFFFF)) {
+	}
+	case RESTRICTION_TYPE_CONTENT: {
+		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
+		if ((rcon->proptag & 0xFFFF) != PROPVAL_TYPE_WSTRING)
 			return FALSE;
-		}
-		if ((((RESTRICTION_CONTENT*)pfilter->pres)->proptag & 0xFFFF)
-			!= (((RESTRICTION_CONTENT*)pfilter->pres)->propval.proptag
-			& 0xFFFF)) {
+		if ((rcon->proptag & 0xFFFF) != (rcon->propval.proptag & 0xFFFF))
 			return FALSE;
-		}
-		pvalue = common_util_get_propvals(ppropvals,
-			((RESTRICTION_CONTENT*)pfilter->pres)->proptag);
+		pvalue = common_util_get_propvals(ppropvals, rcon->proptag);
 		if (NULL == pvalue) {
 			return FALSE;	
 		}
-		switch (((RESTRICTION_CONTENT*)
-			pfilter->pres)->fuzzy_level & 0xFFFF) {
+		switch (rcon->fuzzy_level & 0xFFFF) {
 		case FUZZY_LEVEL_FULLSTRING:
-			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
-				if (strcasecmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+				if (strcasecmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
 			} else {
-				if (strcmp(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				if (strcmp(static_cast<char *>(rcon->propval.pvalue),
 				    static_cast<char *>(pvalue)) == 0)
 					return TRUE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_SUBSTRING:
-			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE|FUZZY_LEVEL_LOOSE)) {
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
 				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 			} else {
 				if (strstr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rcon->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			return FALSE;
 		case FUZZY_LEVEL_PREFIX:
-			len = strlen(static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue));
-			if (((RESTRICTION_CONTENT*)pfilter->pres)->fuzzy_level &
-				(FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
+			len = strlen(static_cast<char *>(rcon->propval.pvalue));
+			if (rcon->fuzzy_level & (FUZZY_LEVEL_IGNORECASE | FUZZY_LEVEL_LOOSE)) {
 				if (strncasecmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    static_cast<char *>(rcon->propval.pvalue),
 				    len) == 0)
 					return TRUE;
 			} else {
 				if (strncmp(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_CONTENT *>(pfilter->pres)->propval.pvalue),
+				    static_cast<char *>(rcon->propval.pvalue),
 				    len) == 0)
 					return TRUE;
 			}
 			return FALSE;
 		}
 		return FALSE;
-	case RESTRICTION_TYPE_PROPERTY:
-		if (PROP_TAG_ANR == ((RESTRICTION_PROPERTY*)pfilter->pres)->proptag) {
+	}
+	case RESTRICTION_TYPE_PROPERTY: {
+		auto rprop = static_cast<RESTRICTION_PROPERTY *>(pfilter->pres);
+		if (rprop->proptag == PROP_TAG_ANR) {
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_SMTPADDRESS);
 			if (NULL != pvalue) {
 				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_DISPLAYNAME);
 			if (NULL != pvalue) {
 				if (strcasestr(static_cast<char *>(pvalue),
-				    static_cast<char *>(static_cast<RESTRICTION_PROPERTY *>(pfilter->pres)->propval.pvalue)) != nullptr)
+				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			return FALSE;
 		}
-		pvalue = common_util_get_propvals(ppropvals,
-			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag);
+		pvalue = common_util_get_propvals(ppropvals, rprop->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		return propval_compare_relop(
-			((RESTRICTION_PROPERTY*)pfilter->pres)->relop,
-			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag&0xFFFF,
-			pvalue, ((RESTRICTION_PROPERTY*)pfilter->pres)->propval.pvalue);
+		return propval_compare_relop(rprop->relop, rprop->proptag & 0xFFFF,
+		       pvalue, rprop->propval.pvalue);
+	}
 	case RESTRICTION_TYPE_PROPCOMPARE:
 		return FALSE;
-	case RESTRICTION_TYPE_BITMASK:
-		 if (PROPVAL_TYPE_LONG != (((RESTRICTION_BITMASK*)
-			pfilter->pres)->proptag & 0xFFFF)) {
+	case RESTRICTION_TYPE_BITMASK: {
+		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
+		if ((rbm->proptag & 0xFFFF) != PROPVAL_TYPE_LONG)
 			return FALSE;
-		}
-		pvalue = common_util_get_propvals(ppropvals,
-			((RESTRICTION_PROPERTY*)pfilter->pres)->proptag);
+		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		switch (((RESTRICTION_BITMASK*)pfilter->pres)->bitmask_relop) {
+		switch (rbm->bitmask_relop) {
 		case BITMASK_RELOP_EQZ:
-			if (0 == (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pfilter->pres)->mask)) {
+			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
 				return TRUE;
-			}
 			break;
 		case BITMASK_RELOP_NEZ:
-			if (*(uint32_t*)pvalue &
-				((RESTRICTION_BITMASK*)pfilter->pres)->mask) {
+			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
 				return TRUE;
-			}
 			break;
 		}
 		return FALSE;
+	}
 	case RESTRICTION_TYPE_SIZE:
 		return FALSE;
-	case RESTRICTION_TYPE_EXIST:
-		pvalue = common_util_get_propvals(ppropvals,
-			((RESTRICTION_EXIST*)pfilter->pres)->proptag);
+	case RESTRICTION_TYPE_EXIST: {
+		auto rex = static_cast<RESTRICTION_EXIST *>(pfilter->pres);
+		pvalue = common_util_get_propvals(ppropvals, rex->proptag);
 		if (NULL != pvalue) {
 			return TRUE;	
 		}
 		return FALSE;
+	}
 	case RESTRICTION_TYPE_SUBOBJ:
 		return FALSE;
 	}
