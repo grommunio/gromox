@@ -1730,13 +1730,13 @@ BOOL common_util_convert_tagged_propval(
 			}
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
-		case PROPVAL_TYPE_RESTRICTION:
+		case PT_SRESTRICT:
 			if (FALSE == common_util_convert_restriction(
 				TRUE, ppropval->pvalue)) {
 				return FALSE;	
 			}
 			break;
-		case PROPVAL_TYPE_RULE:
+		case PT_ACTIONS:
 			if (FALSE == common_util_convert_rule_actions(
 				TRUE, ppropval->pvalue)) {
 				return FALSE;	
@@ -1775,13 +1775,13 @@ BOOL common_util_convert_tagged_propval(
 			}
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
-		case PROPVAL_TYPE_RESTRICTION:
+		case PT_SRESTRICT:
 			if (FALSE == common_util_convert_restriction(
 				FALSE, ppropval->pvalue)) {
 				return FALSE;	
 			}
 			break;
-		case PROPVAL_TYPE_RULE:
+		case PT_ACTIONS:
 			if (FALSE == common_util_convert_rule_actions(
 				FALSE, ppropval->pvalue)) {
 				return FALSE;	

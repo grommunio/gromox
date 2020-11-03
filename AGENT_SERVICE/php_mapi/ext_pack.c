@@ -852,13 +852,13 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 			return 0;
 		}
 		return ext_pack_pull_guid(pctx, *ppval);
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		*ppval = emalloc(sizeof(RESTRICTION));
 		if (NULL == *ppval) {
 			return 0;
 		}
 		return ext_pack_pull_restriction(pctx, *ppval);
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		*ppval = emalloc(sizeof(RULE_ACTIONS));
 		if (NULL == *ppval) {
 			return 0;
@@ -2017,9 +2017,9 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 		return ext_pack_push_string(pctx, pval);
 	case PT_CLSID:
 		return ext_pack_push_guid(pctx, pval);
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		return ext_pack_push_restriction(pctx, pval);
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		return ext_pack_push_rule_actions(pctx, pval);
 	case PT_BINARY:
 		return ext_pack_push_binary(pctx, pval);

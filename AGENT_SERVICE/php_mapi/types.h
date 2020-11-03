@@ -5,9 +5,6 @@
 #	include <stdint.h>
 #endif
 
-#define PROPVAL_TYPE_RESTRICTION					0x00fd
-#define PROPVAL_TYPE_RULE							0x00fe
-
 typedef struct _GUID {
 	uint32_t time_low;
 	uint16_t time_mid;

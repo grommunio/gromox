@@ -378,7 +378,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_guid(pext, r->pvalue);
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		r->pvalue = pext->alloc(sizeof(SVREID));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -2345,7 +2345,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			g_pad_bytes, tnef_align(tmp_int));
 	case PT_CLSID:
 		return ext_buffer_push_guid(pext, r->pvalue);
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		return ext_buffer_push_svreid(pext, r->pvalue);
 	case PT_OBJECT:
 		status = ext_buffer_push_uint32(pext, 1);

@@ -423,10 +423,9 @@ static BOOL ftstream_producer_write_propvalue(
 	
 	propid = PROP_ID(ppropval->proptag);
 	proptype = PROP_TYPE(ppropval->proptag);
-	/* ignore PROPVAL_TYPE_SVREID */
-	if (PROPVAL_TYPE_SVREID == proptype) {
+	/* ignore PT_SVREID */
+	if (proptype == PT_SVREID)
 		return TRUE;
-	}
 	if (PROP_TAG_MESSAGECLASS == ppropval->proptag) {
 		proptype = PT_STRING8;
 	}
@@ -517,7 +516,7 @@ static BOOL ftstream_producer_write_propvalue(
 		return ftstream_producer_write_guid(
 				pstream, ppropval->pvalue);
 	/*
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		return ftstream_producer_write_svreid(
 					pstream, ppropval->pvalue);
 	*/

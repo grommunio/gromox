@@ -1209,7 +1209,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		return ext_buffer_pull_string(pext, (char**)ppval);
 	case PT_UNICODE:
 		return ext_buffer_pull_wstring(pext, (char**)ppval);
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		*ppval = pext->alloc(sizeof(SVREID));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -1221,13 +1221,13 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_guid(pext, *ppval);
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		*ppval = pext->alloc(sizeof(RESTRICTION));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_restriction(pext, *ppval);
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		*ppval = pext->alloc(sizeof(RULE_ACTIONS));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -4400,11 +4400,11 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_wstring(pext, pval);
 	case PT_CLSID:
 		return ext_buffer_push_guid(pext, pval);
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		return ext_buffer_push_svreid(pext, pval);
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		return ext_buffer_push_restriction(pext, pval);
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		return ext_buffer_push_rule_actions(pext, pval);
 	case PT_BINARY:
 	case PT_OBJECT:

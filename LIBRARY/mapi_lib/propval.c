@@ -88,7 +88,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		}
 		memcpy(preturn, pvalue, sizeof(GUID));
 		return preturn;
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		preturn = malloc(sizeof(SVREID));
 		if (NULL == preturn) {
 			return NULL;
@@ -117,9 +117,9 @@ void* propval_dup(uint16_t type, void *pvalue)
 			memcpy(preturn, pvalue, sizeof(SVREID));
 		}
 		return preturn;
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		return restriction_dup(pvalue);
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		return rule_actions_dup(pvalue);
 	case PT_BINARY:
 	case PT_OBJECT:
@@ -316,13 +316,13 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_SYSTIME:
 	case PT_CLSID:
 		break;
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		restriction_free(pvalue);
 		return;
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		rule_actions_free(pvalue);
 		return;
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		if (NULL != ((SVREID*)pvalue)->pbin) {
 			if (NULL != ((SVREID*)pvalue)->pbin->pb) {
 				free(((SVREID*)pvalue)->pbin->pb);
@@ -423,14 +423,14 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return propval_utf16_len(pvalue);
 	case PT_CLSID:
 		return 16;
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		if (NULL != ((SVREID*)pvalue)->pbin) {
 			return ((SVREID*)pvalue)->pbin->cb + 1;
 		}
 		return 21;
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		return restriction_size(pvalue);
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		return rule_actions_size(pvalue);
 	case PT_MV_SHORT:
 		return sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count;
@@ -864,7 +864,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		switch (relop) {
 		case RELOP_EQ:
 			if ((NULL == ((SVREID*)pvalue1)->pbin &&

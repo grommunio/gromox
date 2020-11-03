@@ -3270,7 +3270,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_SVREID:
+			case PT_SVREID:
 				pvalue = common_util_alloc(sizeof(SVREID));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -3286,7 +3286,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_RESTRICTION:
+			case PT_SRESTRICT:
 				pvalue = common_util_alloc(sizeof(RESTRICTION));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -3302,7 +3302,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_RULE:
+			case PT_ACTIONS:
 				pvalue = common_util_alloc(sizeof(RULE_ACTIONS));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -4254,7 +4254,7 @@ BOOL common_util_set_properties(int table_type,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_SVREID:
+		case PT_SVREID:
 			ext_buffer_push_init(&ext_push, temp_buff, 256, 0);
 			if (EXT_ERR_SUCCESS != ext_buffer_push_svreid(
 				&ext_push, ppropvals->ppropval[i].pvalue)) {
@@ -4265,7 +4265,7 @@ BOOL common_util_set_properties(int table_type,
 					ext_push.offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_RESTRICTION:
+		case PT_SRESTRICT:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -4281,7 +4281,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			ext_buffer_push_free(&ext_push);
 			break;
-		case PROPVAL_TYPE_RULE:
+		case PT_ACTIONS:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -6843,7 +6843,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.data,
 							ext_push.offset, SQLITE_STATIC);
 		break;
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		ext_buffer_push_init(&ext_push, temp_buff, 256, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_svreid(
 			&ext_push, pvalue)) {
@@ -6953,7 +6953,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 			return NULL;
 		}
 		return pvalue;
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		pvalue = (void*)sqlite3_column_blob(pstmt, column_index);
 		if (NULL == pvalue) {
 			return NULL;

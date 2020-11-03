@@ -946,7 +946,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 							", v%x INTEGER", tmp_proptag);
 				break;
 			case PT_CLSID:
-			case PROPVAL_TYPE_SVREID:
+			case PT_SVREID:
 			case PT_OBJECT:
 			case PT_BINARY:
 				sql_len += snprintf(sql_string + sql_len,
@@ -4478,7 +4478,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 						", v%x INTEGER", tmp_proptag);
 			break;
 		case PT_CLSID:
-		case PROPVAL_TYPE_SVREID:
+		case PT_SVREID:
 		case PT_OBJECT:
 		case PT_BINARY:
 			sql_len += snprintf(sql_string + sql_len,

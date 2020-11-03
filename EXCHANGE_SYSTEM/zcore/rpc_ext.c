@@ -284,7 +284,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		*ppval = pext->alloc(sizeof(RESTRICTION));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -294,7 +294,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		*ppval = pext->alloc(sizeof(RULE_ACTIONS));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -771,13 +771,13 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_RESTRICTION:
+	case PT_SRESTRICT:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_restriction(
 			pext, pval)) {
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_RULE:
+	case PT_ACTIONS:
 		return rpc_ext_push_rule_actions(pext, pval);
 	case PT_BINARY:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_binary(

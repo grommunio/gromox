@@ -553,7 +553,7 @@ static int ftstream_parser_read_element(
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_SVREID:
+	case PT_SVREID:
 		ppropval->pvalue = common_util_alloc(sizeof(SVREID));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;

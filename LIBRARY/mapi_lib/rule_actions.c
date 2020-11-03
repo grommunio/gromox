@@ -56,7 +56,7 @@ static MOVECOPY_ACTION* movecopy_action_dup(const MOVECOPY_ACTION *paction)
 	
 	if (1 == paction->same_store) {
 		pmovecopy->pfolder_eid =
-			propval_dup(PROPVAL_TYPE_SVREID, paction->pfolder_eid);
+			propval_dup(PT_SVREID, paction->pfolder_eid);
 	} else {
 		pmovecopy->pfolder_eid =
 			propval_dup(PT_BINARY, paction->pfolder_eid);
@@ -77,7 +77,7 @@ static void movecopy_action_free(MOVECOPY_ACTION *paction)
 		store_entryid_free(paction->pstore_eid);
 	}
 	if (1 == paction->same_store) {
-		propval_free(PROPVAL_TYPE_SVREID, paction->pfolder_eid);
+		propval_free(PT_SVREID, paction->pfolder_eid);
 	} else {
 		propval_free(PT_BINARY, paction->pfolder_eid);
 	}
