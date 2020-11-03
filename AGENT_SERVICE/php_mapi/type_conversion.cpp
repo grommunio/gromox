@@ -208,14 +208,14 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	if (entry == nullptr)
 		return nullptr;
 	switch(proptype)	{
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		pvalue = emalloc(sizeof(uint16_t));
 		if (NULL == pvalue) {
 			return NULL;
 		}
 		*static_cast<uint16_t *>(pvalue) = zval_get_long(entry);
 		break;
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 	case PROPVAL_TYPE_ERROR:
 		pvalue = emalloc(sizeof(uint32_t));
 		if (NULL == pvalue) {
@@ -299,7 +299,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		memcpy(pvalue, str->val, sizeof(GUID));
 		break;
 	}
-	case PROPVAL_TYPE_SHORT_ARRAY: {
+	case PT_MV_SHORT: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
@@ -322,7 +322,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
-	case PROPVAL_TYPE_LONG_ARRAY: {
+	case PT_MV_LONG: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
@@ -1198,11 +1198,11 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 		*/
 		sprintf(proptag_string, "%u", proptag_to_phptag(ppropval->proptag));
 		switch (PROP_TYPE(ppropval->proptag)) {
-		case PROPVAL_TYPE_LONG:
+		case PT_LONG:
 		case PROPVAL_TYPE_ERROR:
 			add_assoc_long(pzret, proptag_string, *(uint32_t*)ppropval->pvalue);
 			break;
-		case PROPVAL_TYPE_SHORT:
+		case PT_SHORT:
 			add_assoc_long(pzret, proptag_string, *(uint16_t*)ppropval->pvalue);
 			break;
 		case PROPVAL_TYPE_DOUBLE:
@@ -1235,7 +1235,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_stringl(pzret, proptag_string,
 				static_cast<const char *>(ppropval->pvalue), sizeof(GUID));
 			break;
-		case PROPVAL_TYPE_SHORT_ARRAY: {
+		case PT_MV_SHORT: {
 			array_init(&pzmval);
 			auto xs = static_cast<SHORT_ARRAY *>(ppropval->pvalue);
 			for (j = 0; j < xs->count; ++j) {
@@ -1245,7 +1245,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
-		case PROPVAL_TYPE_LONG_ARRAY: {
+		case PT_MV_LONG: {
 			array_init(&pzmval);
 			auto xl = static_cast<LONG_ARRAY *>(ppropval->pvalue);
 			for (j = 0; j < xl->count; ++j) {

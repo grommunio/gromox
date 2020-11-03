@@ -160,7 +160,7 @@ static BOOL container_object_match_contact_message(
 		return FALSE;
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
 		if (NULL == pvalue) {

@@ -3,8 +3,6 @@
 #include "common_types.h"
 #include "double_list.h"
 
-#define PROPVAL_TYPE_SHORT							0x0002
-#define PROPVAL_TYPE_LONG							0x0003
 #define PROPVAL_TYPE_FLOAT							0x0004
 #define PROPVAL_TYPE_DOUBLE							0x0005
 #define PROPVAL_TYPE_CURRENCY						0x0006
@@ -20,8 +18,6 @@
 #define PROPVAL_TYPE_RESTRICTION					0x00fd
 #define PROPVAL_TYPE_RULE							0x00fe
 #define PROPVAL_TYPE_BINARY							0x0102
-#define PROPVAL_TYPE_SHORT_ARRAY					0x1002
-#define PROPVAL_TYPE_LONG_ARRAY						0x1003
 #define PROPVAL_TYPE_LONGLONG_ARRAY					0x1014
 #define PROPVAL_TYPE_STRING_ARRAY					0x101e
 #define PROPVAL_TYPE_WSTRING_ARRAY					0x101f

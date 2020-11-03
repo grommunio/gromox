@@ -1502,10 +1502,10 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			return status;
 		}
 		switch (*ptype) {
-		case PROPVAL_TYPE_SHORT:
+		case PT_SHORT:
 			status = ndr_pull_uint16(pndr, &r->s);
 			break;
-		case PROPVAL_TYPE_LONG:
+		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			status = ndr_pull_uint32(pndr, &r->l);
 			break;
@@ -1538,10 +1538,10 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PROPVAL_TYPE_ERROR:
 			status = ndr_pull_uint32(pndr, &r->err);
 			break;
-		case PROPVAL_TYPE_SHORT_ARRAY:
+		case PT_MV_SHORT:
 			status = nsp_ndr_pull_short_array(pndr, FLAG_HEADER, &r->short_array);
 			break;
-		case PROPVAL_TYPE_LONG_ARRAY:
+		case PT_MV_LONG:
 			status = nsp_ndr_pull_long_array(pndr, FLAG_HEADER, &r->long_array);
 			break;
 		case PROPVAL_TYPE_STRING_ARRAY:
@@ -1572,9 +1572,9 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 	
 	if (flag & FLAG_CONTENT) {
 		switch (*ptype) {
-		case PROPVAL_TYPE_SHORT:
+		case PT_SHORT:
 			break;
-		case PROPVAL_TYPE_LONG:
+		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			break;
 		case PROPVAL_TYPE_BYTE:
@@ -1669,13 +1669,13 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			break;
 		case PROPVAL_TYPE_ERROR:
 			break;
-		case PROPVAL_TYPE_SHORT_ARRAY:
+		case PT_MV_SHORT:
 			status = nsp_ndr_pull_short_array(pndr, FLAG_CONTENT, &r->short_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_LONG_ARRAY:
+		case PT_MV_LONG:
 			status = nsp_ndr_pull_long_array(pndr, FLAG_CONTENT, &r->long_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
@@ -1740,10 +1740,10 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 			return status;
 		}
 		switch (type) {
-		case PROPVAL_TYPE_SHORT:
+		case PT_SHORT:
 			status = ndr_push_uint16(pndr, r->s);
 			break;
-		case PROPVAL_TYPE_LONG:
+		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			status = ndr_push_uint32(pndr, r->l);
 			break;
@@ -1766,10 +1766,10 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PROPVAL_TYPE_ERROR:
 			status = ndr_push_uint32(pndr, r->err);
 			break;
-		case PROPVAL_TYPE_SHORT_ARRAY:
+		case PT_MV_SHORT:
 			status = nsp_ndr_push_short_array(pndr, FLAG_HEADER, &r->short_array);
 			break;
-		case PROPVAL_TYPE_LONG_ARRAY:
+		case PT_MV_LONG:
 			status = nsp_ndr_push_long_array(pndr, FLAG_HEADER, &r->long_array);
 			break;
 		case PROPVAL_TYPE_STRING_ARRAY:
@@ -1801,9 +1801,9 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 	
 	if (flag & FLAG_CONTENT) {
 		switch (type) {
-		case PROPVAL_TYPE_SHORT:
+		case PT_SHORT:
 			break;
-		case PROPVAL_TYPE_LONG:
+		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			break;
 		case PROPVAL_TYPE_BYTE:
@@ -1881,13 +1881,13 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 			break;
 		case PROPVAL_TYPE_ERROR:
 			break;
-		case PROPVAL_TYPE_SHORT_ARRAY:
+		case PT_MV_SHORT:
 			status = nsp_ndr_push_short_array(pndr, FLAG_CONTENT, &r->short_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_LONG_ARRAY:
+		case PT_MV_LONG:
 			status = nsp_ndr_push_long_array(pndr, FLAG_CONTENT, &r->long_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;

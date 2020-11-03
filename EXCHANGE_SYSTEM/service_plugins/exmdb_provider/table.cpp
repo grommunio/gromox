@@ -938,8 +938,8 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			case PROPVAL_TYPE_CURRENCY:
 			case PROPVAL_TYPE_LONGLONG:
 			case PROPVAL_TYPE_FILETIME:
-			case PROPVAL_TYPE_SHORT:
-			case PROPVAL_TYPE_LONG:
+			case PT_SHORT:
+			case PT_LONG:
 			case PROPVAL_TYPE_BYTE:
 				sql_len += snprintf(sql_string + sql_len,
 							sizeof(sql_string) - sql_len,
@@ -1199,13 +1199,13 @@ BIND_NULL_INSTANCE:
 					continue;
 				}
 				switch (type) {
-				case PROPVAL_TYPE_SHORT_ARRAY:
+				case PT_MV_SHORT:
 					if (0 == ((SHORT_ARRAY*)pvalue)->count) {
 						goto BIND_NULL_INSTANCE;
 					}
 					for (i=0; i<((SHORT_ARRAY*)pvalue)->count; i++) {
 						if (FALSE == common_util_bind_sqlite_statement(
-							pstmt1, multi_index, PROPVAL_TYPE_SHORT,
+						    pstmt1, multi_index, PT_SHORT,
 							((SHORT_ARRAY*)pvalue)->ps + i)) {
 							goto LOAD_CONTENT_FAIL;
 						}
@@ -1217,13 +1217,13 @@ BIND_NULL_INSTANCE:
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PROPVAL_TYPE_LONG_ARRAY:
+				case PT_MV_LONG:
 					if (0 == ((LONG_ARRAY*)pvalue)->count) {
 						goto BIND_NULL_INSTANCE;
 					}
 					for (i=0; i<((LONG_ARRAY*)pvalue)->count; i++) {
 						if (FALSE == common_util_bind_sqlite_statement(
-							pstmt1, multi_index, PROPVAL_TYPE_LONG,
+						    pstmt1, multi_index, PT_LONG,
 							((LONG_ARRAY*)pvalue)->pl + i)) {
 							goto LOAD_CONTENT_FAIL;
 						}
@@ -1787,7 +1787,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_rule_property(rule_id, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
@@ -1810,7 +1810,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		    rsize->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PROPVAL_TYPE_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RESTRICTION_TYPE_EXIST: {
@@ -2082,8 +2082,7 @@ static BOOL table_column_content_tmptbl(
 		}
 		return TRUE;
 	case PROP_TAG_INSTANCENUM:
-		*ppvalue = common_util_column_sqlite_statement(
-					pstmt, 10, PROPVAL_TYPE_LONG);
+		*ppvalue = common_util_column_sqlite_statement(pstmt, 10, PT_LONG);
 		return TRUE;
 	case PROP_TAG_ROWTYPE:
 		if (NULL == psorts || 0 == psorts->ccategories) {
@@ -2113,8 +2112,7 @@ static BOOL table_column_content_tmptbl(
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		*ppvalue = common_util_column_sqlite_statement(
-					pstmt, 7, PROPVAL_TYPE_LONG);
+		*ppvalue = common_util_column_sqlite_statement(pstmt, 7, PT_LONG);
 		return TRUE;
 	case PROP_TAG_CONTENTCOUNT:
 		if (CONTENT_ROW_MESSAGE == row_type) {
@@ -2123,8 +2121,7 @@ static BOOL table_column_content_tmptbl(
 				*(uint32_t*)*ppvalue = 0;
 			}
 		} else {
-			*ppvalue = common_util_column_sqlite_statement(
-							pstmt, 8, PROPVAL_TYPE_LONG);
+			*ppvalue = common_util_column_sqlite_statement(pstmt, 8, PT_LONG);
 		}
 		return TRUE;
 	case PROP_TAG_CONTENTUNREADCOUNT:
@@ -2134,8 +2131,7 @@ static BOOL table_column_content_tmptbl(
 				*(uint32_t*)*ppvalue = 0;
 			}
 		} else {
-			*ppvalue = common_util_column_sqlite_statement(
-							pstmt, 9, PROPVAL_TYPE_LONG);
+			*ppvalue = common_util_column_sqlite_statement(pstmt, 9, PT_LONG);
 		}
 		return TRUE;
 	}
@@ -2713,7 +2709,7 @@ static BOOL table_get_content_row_property(
 							rop_util_make_eid_ex(
 							1, prow_param->inst_id);
 			pinst_num = static_cast<uint32_t *>(common_util_column_sqlite_statement(
-			            prow_param->pstmt, 10, PROPVAL_TYPE_LONG));
+			            prow_param->pstmt, 10, PT_LONG));
 			if (NULL == pinst_num) {
 				return FALSE;
 			}
@@ -2883,7 +2879,7 @@ static BOOL table_evaluate_row_restriction(
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!get_property(pparam, rbm->proptag, &pvalue) ||
 		    pvalue == nullptr)
@@ -2906,7 +2902,7 @@ static BOOL table_evaluate_row_restriction(
 		    pvalue == nullptr)
 			return FALSE;
 		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PROPVAL_TYPE_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RESTRICTION_TYPE_EXIST: {
@@ -4475,8 +4471,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		case PROPVAL_TYPE_CURRENCY:
 		case PROPVAL_TYPE_LONGLONG:
 		case PROPVAL_TYPE_FILETIME:
-		case PROPVAL_TYPE_SHORT:
-		case PROPVAL_TYPE_LONG:
+		case PT_SHORT:
+		case PT_LONG:
 		case PROPVAL_TYPE_BYTE:
 			sql_len += snprintf(sql_string + sql_len,
 						sizeof(sql_string) - sql_len,

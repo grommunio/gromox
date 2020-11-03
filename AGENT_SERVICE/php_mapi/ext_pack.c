@@ -804,13 +804,13 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 		type &= ~0x3000;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		*ppval = emalloc(sizeof(uint16_t));
 		if (NULL == *ppval) {
 			return 0;
 		}
 		return ext_pack_pull_uint16(pctx, *ppval);
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 	case PROPVAL_TYPE_ERROR:
 		*ppval = emalloc(sizeof(uint32_t));
 		if (NULL == *ppval) {
@@ -870,13 +870,13 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 			return 0;
 		}
 		return ext_pack_pull_binary(pctx, *ppval);
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		*ppval = emalloc(sizeof(SHORT_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
 		return ext_pack_pull_short_array(pctx, *ppval);
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		*ppval = emalloc(sizeof(LONG_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
@@ -1997,9 +1997,9 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 		type &= ~0x3000;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		return ext_pack_push_uint16(pctx, *(uint16_t*)pval);
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 	case PROPVAL_TYPE_ERROR:
 		return ext_pack_push_uint32(pctx, *(uint32_t*)pval);
 	case PROPVAL_TYPE_FLOAT:
@@ -2023,9 +2023,9 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 		return ext_pack_push_rule_actions(pctx, pval);
 	case PROPVAL_TYPE_BINARY:
 		return ext_pack_push_binary(pctx, pval);
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		return ext_pack_push_short_array(pctx, pval);
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		return ext_pack_push_long_array(pctx, pval);
 	case PROPVAL_TYPE_LONGLONG_ARRAY:
 		return ext_pack_push_longlong_array(pctx, pval);

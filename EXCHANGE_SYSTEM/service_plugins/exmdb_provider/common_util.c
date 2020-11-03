@@ -3237,13 +3237,13 @@ BOOL common_util_get_properties(int table_type,
 					*(uint64_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
-			case PROPVAL_TYPE_SHORT:
+			case PT_SHORT:
 				pvalue = common_util_alloc(sizeof(uint16_t));
 				if (NULL != pvalue) {
 					*(uint16_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
-			case PROPVAL_TYPE_LONG:
+			case PT_LONG:
 				pvalue = common_util_alloc(sizeof(uint32_t));
 				if (NULL != pvalue) {
 					*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 0);
@@ -3338,7 +3338,7 @@ BOOL common_util_get_properties(int table_type,
 						((BINARY*)pvalue)->cb);
 				}
 				break;
-			case PROPVAL_TYPE_SHORT_ARRAY:
+			case PT_MV_SHORT:
 				pvalue = common_util_alloc(sizeof(SHORT_ARRAY));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -3354,7 +3354,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_LONG_ARRAY:
+			case PT_MV_LONG:
 				pvalue = common_util_alloc(sizeof(LONG_ARRAY));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -4230,12 +4230,12 @@ BOOL common_util_set_properties(int table_type,
 				*(uint64_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_SHORT:
+		case PT_SHORT:
 			sqlite3_bind_int64(pstmt, 2,
 				*(uint16_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_LONG:
+		case PT_LONG:
 			sqlite3_bind_int64(pstmt, 2,
 				*(uint32_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
@@ -4311,7 +4311,7 @@ BOOL common_util_set_properties(int table_type,
 			}
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_SHORT_ARRAY:
+		case PT_MV_SHORT:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -4327,7 +4327,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			ext_buffer_push_free(&ext_push);
 			break;
-		case PROPVAL_TYPE_LONG_ARRAY:
+		case PT_MV_LONG:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -5411,7 +5411,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		RESTRICTION_BITMASK *rbm = pres->pres;
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_property(table_type, id, cpid, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
@@ -5434,7 +5434,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 		    rsize->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PROPVAL_TYPE_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RESTRICTION_TYPE_EXIST: {
@@ -5658,7 +5658,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		RESTRICTION_BITMASK *rbm = pres->pres;
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    folder_id, 0, psqlite, rbm->proptag, &pvalue) ||
@@ -5683,7 +5683,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PROPVAL_TYPE_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RESTRICTION_TYPE_EXIST: {
@@ -5836,7 +5836,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		RESTRICTION_BITMASK *rbm = pres->pres;
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, cpid, psqlite, rbm->proptag, &pvalue) ||
@@ -5861,7 +5861,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PROPVAL_TYPE_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RESTRICTION_TYPE_EXIST: {
@@ -6827,10 +6827,10 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 	case PROPVAL_TYPE_FILETIME:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint64_t*)pvalue);
 		break;
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint16_t*)pvalue);
 		break;
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint32_t*)pvalue);
 		break;
 	case PROPVAL_TYPE_BYTE:
@@ -6914,7 +6914,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		*(uint64_t*)pvalue = sqlite3_column_int64(
 							pstmt, column_index);
 		return pvalue;
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		pvalue = common_util_alloc(sizeof(uint16_t));
 		if (NULL == pvalue) {
 			return NULL;
@@ -6922,7 +6922,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		*(uint16_t*)pvalue = sqlite3_column_int64(
 							pstmt, column_index);
 		return pvalue;
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		pvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == pvalue) {
 			return NULL;

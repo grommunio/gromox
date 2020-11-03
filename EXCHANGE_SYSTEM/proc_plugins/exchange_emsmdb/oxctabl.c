@@ -71,8 +71,8 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 			}
 		}
 		switch (type) {
-		case PROPVAL_TYPE_SHORT:
-		case PROPVAL_TYPE_LONG:
+		case PT_SHORT:
+		case PT_LONG:
 		case PROPVAL_TYPE_FLOAT:
 		case PROPVAL_TYPE_DOUBLE:
 		case PROPVAL_TYPE_CURRENCY:
@@ -88,8 +88,8 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PROPVAL_TYPE_RESTRICTION:
 		case PROPVAL_TYPE_RULE:
 		case PROPVAL_TYPE_BINARY:
-		case PROPVAL_TYPE_SHORT_ARRAY:
-		case PROPVAL_TYPE_LONG_ARRAY:
+		case PT_MV_SHORT:
+		case PT_MV_LONG:
 		case PROPVAL_TYPE_LONGLONG_ARRAY:
 		case PROPVAL_TYPE_STRING_ARRAY:
 		case PROPVAL_TYPE_WSTRING_ARRAY:
@@ -192,8 +192,8 @@ uint32_t rop_sorttable(uint8_t table_flags,
 			b_multi_inst = TRUE;
 		}
 		switch (type) {
-		case PROPVAL_TYPE_SHORT:
-		case PROPVAL_TYPE_LONG:
+		case PT_SHORT:
+		case PT_LONG:
 		case PROPVAL_TYPE_FLOAT:
 		case PROPVAL_TYPE_DOUBLE:
 		case PROPVAL_TYPE_CURRENCY:
@@ -209,8 +209,8 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PROPVAL_TYPE_RESTRICTION:
 		case PROPVAL_TYPE_RULE:
 		case PROPVAL_TYPE_BINARY:
-		case PROPVAL_TYPE_SHORT_ARRAY:
-		case PROPVAL_TYPE_LONG_ARRAY:
+		case PT_MV_SHORT:
+		case PT_MV_LONG:
 		case PROPVAL_TYPE_LONGLONG_ARRAY:
 		case PROPVAL_TYPE_STRING_ARRAY:
 		case PROPVAL_TYPE_WSTRING_ARRAY:

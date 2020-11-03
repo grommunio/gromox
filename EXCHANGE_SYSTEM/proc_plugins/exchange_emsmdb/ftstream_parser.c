@@ -454,7 +454,7 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	switch (proptype) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		ppropval->pvalue = common_util_alloc(sizeof(uint16_t));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -465,7 +465,7 @@ static int ftstream_parser_read_element(
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PROPVAL_TYPE_ERROR:
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		ppropval->pvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -582,7 +582,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		ppropval->pvalue =
 			common_util_alloc(sizeof(SHORT_ARRAY));
 		if (NULL == ppropval->pvalue) {
@@ -616,7 +616,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		ppropval->pvalue =
 			common_util_alloc(sizeof(LONG_ARRAY));
 		if (NULL == ppropval->pvalue) {

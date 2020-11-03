@@ -199,7 +199,7 @@ static BOOL rpc_ext_pull_propval(
 		type &= ~0x3000;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		*ppval = pext->alloc(sizeof(uint16_t));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -209,7 +209,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 	case PROPVAL_TYPE_ERROR:
 		*ppval = pext->alloc(sizeof(uint32_t));
 		if (NULL == *ppval) {
@@ -310,7 +310,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		*ppval = pext->alloc(sizeof(SHORT_ARRAY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -320,7 +320,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		*ppval = pext->alloc(sizeof(LONG_ARRAY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -714,13 +714,13 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		type &= ~0x3000;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint16(
 			pext, *(uint16_t*)pval)) {
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 	case PROPVAL_TYPE_ERROR:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 			pext, *(uint32_t*)pval)) {
@@ -785,13 +785,13 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_short_array(
 			pext, pval)) {
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_long_array(
 			pext, pval)) {
 			return FALSE;	

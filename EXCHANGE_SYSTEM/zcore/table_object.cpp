@@ -1151,7 +1151,7 @@ static BOOL table_object_evaluate_restriction(
 	}
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pres->pres);
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
 		if (NULL == pvalue) {
@@ -1176,7 +1176,7 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		}
 		val_size = propval_size(rsize->proptag, pvalue);
-		return propval_compare_relop(rsize->relop, PROPVAL_TYPE_LONG,
+		return propval_compare_relop(rsize->relop, PT_LONG,
 		       &val_size, &rsize->size);
 	}
 	case RESTRICTION_TYPE_EXIST: {

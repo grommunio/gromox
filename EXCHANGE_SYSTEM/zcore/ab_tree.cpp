@@ -2620,7 +2620,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		return FALSE;
 	case RESTRICTION_TYPE_BITMASK: {
 		auto rbm = static_cast<RESTRICTION_BITMASK *>(pfilter->pres);
-		if (PROP_TYPE(rbm->proptag) != PROPVAL_TYPE_LONG)
+		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
 		if (!ab_tree_fetch_node_property(pnode, codepage,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)

@@ -279,7 +279,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 	}
 	switch (r->proptype) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		r->pvalue = pext->alloc(sizeof(uint16_t));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -290,7 +290,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		return ext_buffer_pull_advance(pext, 2);
 	case PROPVAL_TYPE_ERROR:
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		r->pvalue = pext->alloc(sizeof(uint32_t));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -460,7 +460,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		return ext_buffer_pull_advance(pext,
 			tnef_align(pext->offset - offset));
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		r->pvalue = pext->alloc(sizeof(SHORT_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -494,7 +494,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		r->pvalue = pext->alloc(sizeof(LONG_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -2271,14 +2271,14 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		}
 	}
 	switch (r->proptype) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		status = ext_buffer_push_uint16(pext, *(uint16_t*)r->pvalue);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
 	case PROPVAL_TYPE_ERROR:
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		return ext_buffer_push_uint32(pext, *(uint32_t*)r->pvalue);
 	case PROPVAL_TYPE_FLOAT:
 		return ext_buffer_push_float(pext, *(float*)r->pvalue);
@@ -2414,7 +2414,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		}
 		return ext_buffer_push_bytes(pext, g_pad_bytes,
 			tnef_align(((BINARY*)r->pvalue)->cb));
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		status = ext_buffer_push_uint32(pext,
 			((SHORT_ARRAY*)r->pvalue)->count);
 		if (EXT_ERR_SUCCESS != status) {
@@ -2432,7 +2432,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		status = ext_buffer_push_uint32(pext,
 			((LONG_ARRAY*)r->pvalue)->count);
 		if (EXT_ERR_SUCCESS != status) {

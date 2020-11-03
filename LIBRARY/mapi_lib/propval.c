@@ -32,7 +32,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 			return NULL;
 		}
 		return preturn;
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		preturn = malloc(sizeof(uint16_t));
 		if (NULL == preturn) {
 			return NULL;
@@ -40,7 +40,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		*(uint16_t*)preturn = *(uint16_t*)pvalue;
 		return preturn;
 	case PROPVAL_TYPE_ERROR:
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		preturn = malloc(sizeof(uint32_t));
 		if (NULL == preturn) {
 			return NULL;
@@ -140,7 +140,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 			memcpy(((BINARY*)preturn)->pb, ((BINARY*)pvalue)->pb, length);
 		}
 		return preturn;
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		preturn = malloc(sizeof(SHORT_ARRAY));
 		if (NULL == preturn) {
 			return NULL;
@@ -159,7 +159,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 						sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count);
 		}
 		return preturn;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		preturn = malloc(sizeof(LONG_ARRAY));
 		if (NULL == preturn) {
 			return NULL;
@@ -302,8 +302,8 @@ void propval_free(uint16_t type, void *pvalue)
 		propval_free(((TYPED_PROPVAL*)pvalue)->type,
 					((TYPED_PROPVAL*)pvalue)->pvalue);
 		break;
-	case PROPVAL_TYPE_SHORT:
-	case PROPVAL_TYPE_LONG:
+	case PT_SHORT:
+	case PT_LONG:
 	case PROPVAL_TYPE_FLOAT:
 	case PROPVAL_TYPE_DOUBLE:
 	case PROPVAL_TYPE_CURRENCY:
@@ -336,12 +336,12 @@ void propval_free(uint16_t type, void *pvalue)
 			free(((BINARY*)pvalue)->pb);
 		}
 		break;
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		if (NULL != ((SHORT_ARRAY*)pvalue)->ps) {
 			free(((SHORT_ARRAY*)pvalue)->ps);
 		}
 		break;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		if (NULL != ((LONG_ARRAY*)pvalue)->pl) {
 			free(((LONG_ARRAY*)pvalue)->pl);
 		}
@@ -398,10 +398,10 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_UNSPECIFIED:
 		return propval_size(((TYPED_PROPVAL*)pvalue)->type,
 						((TYPED_PROPVAL*)pvalue)->pvalue);
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		return sizeof(uint16_t);
 	case PROPVAL_TYPE_ERROR:
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		return sizeof(uint32_t);
 	case PROPVAL_TYPE_FLOAT:
 		return sizeof(float);
@@ -432,9 +432,9 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return restriction_size(pvalue);
 	case PROPVAL_TYPE_RULE:
 		return rule_actions_size(pvalue);
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		return sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		return sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count;
 	case PROPVAL_TYPE_LONGLONG_ARRAY:
 		return sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count;
@@ -468,7 +468,7 @@ BOOL propval_compare_relop(uint8_t relop,
 	int i;
 	
 	switch (proptype) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		switch (relop) {
 		case RELOP_LT:
 			if (*(uint16_t*)pvalue1 < *(uint16_t*)pvalue2) {
@@ -501,7 +501,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 	case PROPVAL_TYPE_ERROR:
 		switch (relop) {
 		case RELOP_LT:
@@ -938,7 +938,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return TRUE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		switch (relop) {
 		case RELOP_EQ:
 			if (((SHORT_ARRAY*)pvalue1)->count !=
@@ -964,7 +964,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		switch (relop) {
 		case RELOP_EQ:
 			if (((LONG_ARRAY*)pvalue1)->count !=

@@ -1254,14 +1254,14 @@ static int db_engine_compare_propval(
 		return 1;
 	}
 	switch (proptype) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		if (*(uint16_t*)pvalue1 > *(uint16_t*)pvalue2) {
 			return 1;
 		} else if (*(uint16_t*)pvalue1 < *(uint16_t*)pvalue2) {
 			return -1;
 		}
 		return 0;
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 	case PROPVAL_TYPE_ERROR:
 		if (*(uint32_t*)pvalue1 > *(uint32_t*)pvalue2) {
 			return 1;
@@ -1899,10 +1899,10 @@ static void db_engine_notify_content_table_add_row(
 					type = ptable->psorts->psort[
 						multi_index].type & (~0x2000);
 					switch (type) {
-					case PROPVAL_TYPE_SHORT_ARRAY:
+					case PT_MV_SHORT:
 						multi_num = ((SHORT_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_LONG_ARRAY:
+					case PT_MV_LONG:
 						multi_num = ((LONG_ARRAY*)pmultival)->count;
 						break;
 					case PROPVAL_TYPE_LONGLONG_ARRAY:
@@ -1997,11 +1997,11 @@ static void db_engine_notify_content_table_add_row(
 					type = ptable->psorts->psort[
 						multi_index].type & (~0x2000);
 					switch (type) {
-					case PROPVAL_TYPE_SHORT_ARRAY:
+					case PT_MV_SHORT:
 						propvals[multi_index].pvalue =
 							((SHORT_ARRAY*)pmultival)->ps + j;
 						break;
-					case PROPVAL_TYPE_LONG_ARRAY:
+					case PT_MV_LONG:
 						propvals[multi_index].pvalue =
 							((LONG_ARRAY*)pmultival)->pl + j;
 						break;
@@ -4273,10 +4273,10 @@ static void db_engine_notify_content_table_modify_row(
 				}
 				if (NULL != pmultival) {
 					switch (type) {
-					case PROPVAL_TYPE_SHORT:
+					case PT_SHORT:
 						multi_num = ((SHORT_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_LONG:
+					case PT_LONG:
 						multi_num = ((LONG_ARRAY*)pmultival)->count;
 						break;
 					case PROPVAL_TYPE_LONGLONG:
@@ -4320,11 +4320,11 @@ static void db_engine_notify_content_table_modify_row(
 							goto REFRESH_TABLE;
 						}
 						switch (type) {
-						case PROPVAL_TYPE_SHORT:
+						case PT_SHORT:
 							pvalue1 = &((SHORT_ARRAY*)
 								pmultival)->ps[inst_num - 1];
 							break;
-						case PROPVAL_TYPE_LONG:
+						case PT_LONG:
 							pvalue1 = &((LONG_ARRAY*)
 								pmultival)->pl[inst_num - 1];
 							break;

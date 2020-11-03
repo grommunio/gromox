@@ -1651,7 +1651,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 		    &prop_val, temp_buff) != ecSuccess)
 			return FALSE;
 		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
-		case PROPVAL_TYPE_SHORT:
+		case PT_SHORT:
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
 				if (prop_val.value.s <
@@ -1690,7 +1690,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 				return FALSE;
 			}
 			return FALSE;
-		case PROPVAL_TYPE_LONG:
+		case PT_LONG:
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
 				if (prop_val.value.l <

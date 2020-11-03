@@ -433,7 +433,7 @@ static BOOL ftstream_producer_write_propvalue(
 	write_type = proptype;
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (0x4017 == propid) {
-		write_type = PROPVAL_TYPE_LONG;
+		write_type = PT_LONG;
 	} else {
 		if (PROPVAL_TYPE_STRING == proptype ||
 			PROPVAL_TYPE_WSTRING == proptype) {
@@ -486,11 +486,11 @@ static BOOL ftstream_producer_write_propvalue(
 	}
 	
 	switch (proptype) {
-	case PROPVAL_TYPE_SHORT:
+	case PT_SHORT:
 		return ftstream_producer_write_uint16(pstream,
 						*(uint16_t*)ppropval->pvalue);
 	case PROPVAL_TYPE_ERROR:
-	case PROPVAL_TYPE_LONG:
+	case PT_LONG:
 		return ftstream_producer_write_uint32(pstream,
 						*(uint32_t*)ppropval->pvalue);
 	case PROPVAL_TYPE_FLOAT:
@@ -526,7 +526,7 @@ static BOOL ftstream_producer_write_propvalue(
 	case PROPVAL_TYPE_BINARY:
 		return ftstream_producer_write_binary(
 					pstream, ppropval->pvalue);
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PT_MV_SHORT:
 		count = ((SHORT_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
 			pstream, count)) {
@@ -539,7 +539,7 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 		return TRUE;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	case PT_MV_LONG:
 		count = ((LONG_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
 			pstream, count)) {
@@ -1199,10 +1199,8 @@ BOOL ftstream_producer_write_progresspermessage(
 		pstream, marker)) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, PROPVAL_TYPE_LONG)) {
+	if (!ftstream_producer_write_uint32(pstream, PT_LONG))
 		return FALSE;
-	}
 	if (FALSE == ftstream_producer_write_uint32(
 		pstream, pprogmsg->message_size)) {
 		return FALSE;	
