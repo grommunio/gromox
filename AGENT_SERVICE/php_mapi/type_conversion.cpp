@@ -266,18 +266,17 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 	case PROPVAL_TYPE_BINARY: {
 		zstrplus str(zval_get_string(entry));
 		pvalue = emalloc(sizeof(BINARY));
-		if (NULL == pvalue) {
+		auto bin = static_cast<BINARY *>(pvalue);
+		if (bin == nullptr)
 			return NULL;
-		}
-		static_cast<BINARY *>(pvalue)->cb = str->len;
+		bin->cb = str->len;
 		if (str->len == 0) {
-			((BINARY*)pvalue)->pb = NULL;
+			bin->pb = nullptr;
 		} else {
-			static_cast<BINARY *>(pvalue)->pb = sta_malloc<uint8_t>(str->len);
-			if (NULL == ((BINARY*)pvalue)->pb) {
+			bin->pb = sta_malloc<uint8_t>(str->len);
+			if (bin->pb == nullptr)
 				return NULL;
-			}
-			memcpy(static_cast<BINARY *>(pvalue)->pb, str->val, str->len);
+			memcpy(bin->pb, str->val, str->len);
 		}
 		break;
 	}
@@ -303,198 +302,185 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		memcpy(pvalue, str->val, sizeof(GUID));
 		break;
 	}
-	case PROPVAL_TYPE_SHORT_ARRAY:
+	case PROPVAL_TYPE_SHORT_ARRAY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
 		}
 		pvalue = emalloc(sizeof(SHORT_ARRAY));
-		if (NULL == pvalue) {
+		auto xs = static_cast<SHORT_ARRAY *>(pvalue);
+		if (xs == nullptr)
 			return NULL;
-		}
-		((SHORT_ARRAY*)pvalue)->count =
-			zend_hash_num_elements(pdata_hash);
-		if (0 == ((SHORT_ARRAY*)pvalue)->count) {
-			((SHORT_ARRAY*)pvalue)->ps = NULL;
+		xs->count = zend_hash_num_elements(pdata_hash);
+		if (xs->count == 0) {
+			xs->ps = nullptr;
 			break;
 		}
-		((SHORT_ARRAY*)pvalue)->ps =
-			sta_malloc<uint16_t>(static_cast<SHORT_ARRAY *>(pvalue)->count);
-		if (NULL == ((SHORT_ARRAY*)pvalue)->ps) {
+		xs->ps = sta_malloc<uint16_t>(xs->count);
+		if (xs->ps == nullptr)
 			return NULL;
-		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			static_cast<SHORT_ARRAY *>(pvalue)->ps[j++] = zval_get_long(entry);
+			xs->ps[j++] = zval_get_long(entry);
 		} ZEND_HASH_FOREACH_END();
 		break;
-	case PROPVAL_TYPE_LONG_ARRAY:
+	}
+	case PROPVAL_TYPE_LONG_ARRAY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
 		}
 		pvalue = emalloc(sizeof(LONG_ARRAY));
-		if (NULL == pvalue) {
+		auto xl = static_cast<LONG_ARRAY *>(pvalue);
+		if (xl == nullptr)
 			return NULL;
-		}
-		((LONG_ARRAY*)pvalue)->count =
-			zend_hash_num_elements(pdata_hash);
-		if (0 == ((LONG_ARRAY*)pvalue)->count) {
-			((LONG_ARRAY*)pvalue)->pl = NULL;
+		xl->count = zend_hash_num_elements(pdata_hash);
+		if (xl->count == 0) {
+			xl->pl = nullptr;
 			break;
 		}
-		((LONG_ARRAY*)pvalue)->pl =
-			sta_malloc<uint32_t>(static_cast<LONG_ARRAY *>(pvalue)->count);
-		if (NULL == ((LONG_ARRAY*)pvalue)->pl) {
+		xl->pl = sta_malloc<uint32_t>(xl->count);
+		if (xl->pl == nullptr)
 			return NULL;
-		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			static_cast<LONG_ARRAY *>(pvalue)->pl[j++] = zval_get_long(entry);
+			xl->pl[j++] = zval_get_long(entry);
 		} ZEND_HASH_FOREACH_END();
 		break;
-	case PROPVAL_TYPE_LONGLONG_ARRAY:
+	}
+	case PROPVAL_TYPE_LONGLONG_ARRAY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
 		}
 		pvalue = emalloc(sizeof(LONGLONG_ARRAY));
-		if (NULL == pvalue) {
+		auto xl = static_cast<LONGLONG_ARRAY *>(pvalue);
+		if (xl == nullptr)
 			return NULL;
-		}
-		((LONGLONG_ARRAY*)pvalue)->count =
-			zend_hash_num_elements(pdata_hash);
-		if (0 == ((LONGLONG_ARRAY*)pvalue)->count) {
-			((LONGLONG_ARRAY*)pvalue)->pll = NULL;
+		xl->count = zend_hash_num_elements(pdata_hash);
+		if (xl->count == 0) {
+			xl->pll = nullptr;
 			break;
 		}
-		((LONGLONG_ARRAY*)pvalue)->pll =
-			sta_malloc<uint64_t>(static_cast<LONGLONG_ARRAY *>(pvalue)->count);
-		if (NULL == ((LONGLONG_ARRAY*)pvalue)->pll) {
+		xl->pll = sta_malloc<uint64_t>(xl->count);
+		if (xl->pll == nullptr)
 			return NULL;
-		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
-			static_cast<LONGLONG_ARRAY *>(pvalue)->pll[j++] = zval_get_double(data_entry);
+			xl->pll[j++] = zval_get_double(data_entry);
 		} ZEND_HASH_FOREACH_END();
 		break;
+	}
 	case PROPVAL_TYPE_STRING_ARRAY:
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PROPVAL_TYPE_WSTRING_ARRAY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
 		}
 		pvalue = emalloc(sizeof(STRING_ARRAY));
-		if (NULL == pvalue) {
+		auto xs = static_cast<STRING_ARRAY *>(pvalue);
+		if (xs == nullptr)
 			return NULL;
-		}
-		((STRING_ARRAY*)pvalue)->count =
-			zend_hash_num_elements(pdata_hash);
-		if (0 == ((STRING_ARRAY*)pvalue)->count) {
-			((STRING_ARRAY*)pvalue)->ppstr = NULL;
+		xs->count = zend_hash_num_elements(pdata_hash);
+		if (xs->count == 0) {
+			xs->ppstr = nullptr;
 			break;
 		}
-		static_cast<STRING_ARRAY *>(pvalue)->ppstr = sta_malloc<char *>(static_cast<STRING_ARRAY *>(pvalue)->count);
-		if (NULL == ((STRING_ARRAY*)pvalue)->ppstr) {
+		xs->ppstr = sta_malloc<char *>(xs->count);
+		if (xs->ppstr == nullptr)
 			return NULL;
-		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			zstrplus str(zval_get_string(data_entry));
 			pstring = sta_malloc<char>(str->len + 1);
 			if (NULL == pstring) {
 				return NULL;
 			}
-			static_cast<STRING_ARRAY *>(pvalue)->ppstr[j++] = pstring;
+			xs->ppstr[j++] = pstring;
 			memcpy(pstring, str->val, str->len);
 			pstring[str->len] = '\0';
 		} ZEND_HASH_FOREACH_END();
 		break;
-	case PROPVAL_TYPE_BINARY_ARRAY:
+	}
+	case PROPVAL_TYPE_BINARY_ARRAY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
 		}
 		pvalue = emalloc(sizeof(BINARY_ARRAY));
-		if (NULL == pvalue) {
+		auto xb = static_cast<BINARY_ARRAY *>(pvalue);
+		if (xb == nullptr)
 			return NULL;
-		}
-		((BINARY_ARRAY*)pvalue)->count =
-			zend_hash_num_elements(pdata_hash);
-		if (0 == ((BINARY_ARRAY*)pvalue)->count) {
-			((BINARY_ARRAY*)pvalue)->pbin = NULL;
+		xb->count = zend_hash_num_elements(pdata_hash);
+		if (xb->count == 0) {
+			xb->pbin = nullptr;
 			break;
 		}
-		static_cast<BINARY_ARRAY *>(pvalue)->pbin = sta_malloc<BINARY>(static_cast<BINARY_ARRAY *>(pvalue)->count);
-		if (NULL == ((BINARY_ARRAY*)pvalue)->pbin) {
+		xb->pbin = sta_malloc<BINARY>(xb->count);
+		if (xb->pbin == nullptr)
 			return NULL;
-		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			zstrplus str(zval_get_string(data_entry));
-			static_cast<BINARY_ARRAY *>(pvalue)->pbin[j].cb = str->len;
+			xb->pbin[j].cb = str->len;
 			if (str->len == 0) {
-				((BINARY_ARRAY*)pvalue)->pbin[j].pb = NULL;
+				xb->pbin[j].pb = NULL;
 			} else {
-				static_cast<BINARY_ARRAY *>(pvalue)->pbin[j].pb = sta_malloc<uint8_t>(str->len);
-				if (NULL == ((BINARY_ARRAY*)pvalue)->pbin[j].pb) {
+				xb->pbin[j].pb = sta_malloc<uint8_t>(str->len);
+				if (xb->pbin[j].pb == nullptr)
 					return NULL;
-				}
-				memcpy(static_cast<BINARY_ARRAY *>(pvalue)->pbin[j].pb, str->val, str->len);
+				memcpy(xb->pbin[j].pb, str->val, str->len);
 			}
 			++j;
 		} ZEND_HASH_FOREACH_END();
 		break;
-	case PROPVAL_TYPE_GUID_ARRAY:
+	}
+	case PROPVAL_TYPE_GUID_ARRAY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
 			return NULL;
 		}
 		pvalue = emalloc(sizeof(GUID_ARRAY));
-		if (NULL == pvalue) {
+		auto xb = static_cast<GUID_ARRAY *>(pvalue);
+		if (xb == nullptr)
 			return NULL;
-		}
-		((GUID_ARRAY*)pvalue)->count =
-			zend_hash_num_elements(pdata_hash);
-		if (0 == ((GUID_ARRAY*)pvalue)->count) {
-			((GUID_ARRAY*)pvalue)->pguid = NULL;
+		xb->count = zend_hash_num_elements(pdata_hash);
+		if (xb->count == 0) {
+			xb->pguid = nullptr;
 			break;
 		}
-		static_cast<GUID_ARRAY *>(pvalue)->pguid = sta_malloc<GUID>(static_cast<GUID_ARRAY *>(pvalue)->count);
-		if (NULL == ((GUID_ARRAY*)pvalue)->pguid) {
+		xb->pguid = sta_malloc<GUID>(xb->count);
+		if (xb->pguid == nullptr)
 			return NULL;
-		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			zstrplus str(zval_get_string(data_entry));
 			if (str->len != sizeof(GUID))
 				return NULL;
-			memcpy(&((GUID_ARRAY*)pvalue)->pguid[j],
-				Z_STRVAL_P(data_entry), sizeof(GUID));
+			memcpy(&xb->pguid[j], Z_STRVAL_P(data_entry), sizeof(GUID));
 		} ZEND_HASH_FOREACH_END();
 		break;
-	case PROPVAL_TYPE_RULE:
+	}
+	case PROPVAL_TYPE_RULE: {
 		pvalue = emalloc(sizeof(RULE_ACTIONS));
-		if (NULL == pvalue) {
+		auto xr = static_cast<RULE_ACTIONS *>(pvalue);
+		if (xr == nullptr)
 			return NULL;
-		}
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
-			((RULE_ACTIONS*)pvalue)->count = 0;
-			((RULE_ACTIONS*)pvalue)->pblock = NULL;
+			xr->count = 0;
+			xr->pblock = NULL;
 			break;
 		}
-		((RULE_ACTIONS*)pvalue)->count =
-			zend_hash_num_elements(pdata_hash);
-		if (0 == ((RULE_ACTIONS*)pvalue)->count) {
-			((RULE_ACTIONS*)pvalue)->pblock = NULL;
+		xr->count = zend_hash_num_elements(pdata_hash);
+		if (xr->count == 0) {
+			xr->pblock = nullptr;
 			break;
 		}
-		static_cast<RULE_ACTIONS *>(pvalue)->pblock = sta_malloc<ACTION_BLOCK>(static_cast<RULE_ACTIONS *>(pvalue)->count);
-		if (NULL == ((RULE_ACTIONS*)pvalue)->pblock) {
+		xr->pblock = sta_malloc<ACTION_BLOCK>(xr->count);
+		if (xr->pblock == nullptr)
 			return NULL;
-		}
 		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
 			ZVAL_DEREF(data_entry);
 			paction_hash = HASH_OF(data_entry);
@@ -504,7 +490,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			data_entry = zend_hash_find(paction_hash, str_action.get());
 			if (data_entry == nullptr)
 				return NULL;
-			pblock = ((RULE_ACTIONS*)pvalue)->pblock + j;
+			pblock = &xr->pblock[j];
 			pblock->type = zval_get_long(data_entry);
 			/* option field user defined flags, default 0 */
 			data_entry = zend_hash_find(paction_hash, str_flags.get());
@@ -524,39 +510,29 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			case ACTION_TYPE_OP_MOVE:
 			case ACTION_TYPE_OP_COPY: {
 				pblock->pdata = emalloc(sizeof(MOVECOPY_ACTION));
-				if (NULL == pblock->pdata) {
+				auto xq = static_cast<MOVECOPY_ACTION *>(pblock->pdata);
+				if (xq == nullptr)
 					return NULL;
-				}
 
 				data_entry = zend_hash_find(paction_hash, str_storeentryid.get());
 				if (data_entry == nullptr)
 					return NULL;
 				zstrplus str1(zval_get_string(data_entry));
-				((MOVECOPY_ACTION*)pblock->pdata)->store_eid.cb =
-									str1->len;
-				((MOVECOPY_ACTION*)pblock->pdata)->store_eid.pb =
-							sta_malloc<uint8_t>(str1->len);
-				if (NULL == ((MOVECOPY_ACTION*)pblock->pdata)->store_eid.pb) {
+				xq->store_eid.cb = str1->len;
+				xq->store_eid.pb = sta_malloc<uint8_t>(str1->len);
+				if (xq->store_eid.pb == nullptr)
 					return NULL;
-				}
-				memcpy(((MOVECOPY_ACTION*)
-					pblock->pdata)->store_eid.pb,
-					str1->val, str1->len);
+				memcpy(xq->store_eid.pb, str1->val, str1->len);
 
 				data_entry = zend_hash_find(paction_hash, str_folderentryid.get());
 				if (data_entry == nullptr)
 					return NULL;
 				zstrplus str2(zval_get_string(data_entry));
-				((MOVECOPY_ACTION*)pblock->pdata)->folder_eid.cb =
-					str2->len;
-				((MOVECOPY_ACTION*)pblock->pdata)->folder_eid.pb =
-					sta_malloc<uint8_t>(str2->len);
-				if (NULL == ((MOVECOPY_ACTION*)pblock->pdata)->folder_eid.pb) {
+				xq->folder_eid.cb = str2->len;
+				xq->folder_eid.pb = sta_malloc<uint8_t>(str2->len);
+				if (xq->folder_eid.pb == nullptr)
 					return NULL;
-				}
-				memcpy(((MOVECOPY_ACTION*)
-					pblock->pdata)->folder_eid.pb,
-					str2->val, str2->len);
+				memcpy(xq->folder_eid.pb, str2->val, str2->len);
 				break;
 			}
 			case ACTION_TYPE_OP_REPLY:
@@ -566,30 +542,23 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 					return NULL;
 				zstrplus str1(zval_get_string(data_entry));
 				pblock->pdata = emalloc(sizeof(REPLY_ACTION));
-				if (NULL == pblock->pdata) {
+				auto xq = static_cast<REPLY_ACTION *>(pblock->pdata);
+				if (xq == nullptr)
 					return NULL;
-				}
-				((REPLY_ACTION*)pblock->pdata)->message_eid.cb =
-					str1->len;
-				((REPLY_ACTION*)pblock->pdata)->message_eid.pb =
-					sta_malloc<uint8_t>(str1->len);
-				if (NULL == ((REPLY_ACTION*)pblock->pdata)->message_eid.pb) {
+				xq->message_eid.cb = str1->len;
+				xq->message_eid.pb = sta_malloc<uint8_t>(str1->len);
+				if (xq->message_eid.pb == nullptr)
 					return NULL;
-				}
-				memcpy(((REPLY_ACTION*)
-					pblock->pdata)->message_eid.pb,
-					str1->val, str1->len);
+				memcpy(xq->message_eid.pb, str1->val, str1->len);
 
 				data_entry = zend_hash_find(paction_hash, str_replyguid.get());
 				if (data_entry != nullptr) {
 					zstrplus str2(zval_get_string(data_entry));
 					if (str2->len != sizeof(GUID))
 						return NULL;
-					memcpy(&((REPLY_ACTION*)pblock->pdata)->template_guid,
-						str2->val, sizeof(GUID));
+					memcpy(&xq->template_guid, str2->val, sizeof(GUID));
 				} else {
-					memset(&((REPLY_ACTION*)
-						pblock->pdata)->template_guid, 0, sizeof(GUID));
+					memset(&xq->template_guid, 0, sizeof(GUID));
 				}
 				break;
 			}
@@ -624,31 +593,24 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 				if (data_entry == nullptr || Z_TYPE_P(data_entry) != IS_ARRAY)
 					return NULL;
 				pblock->pdata = emalloc(sizeof(FORWARDDELEGATE_ACTION));
-				if (NULL == pblock->pdata) {
+				auto xq = static_cast<FORWARDDELEGATE_ACTION *>(pblock->pdata);
+				if (xq == nullptr)
 					return NULL;
-				}
 				ZVAL_DEREF(data_entry);
 				precipient_hash = HASH_OF(data_entry);
-				((FORWARDDELEGATE_ACTION*)pblock->pdata)->count =
-						zend_hash_num_elements(precipient_hash);
-				if (0 == ((FORWARDDELEGATE_ACTION*)pblock->pdata)->count) {
+				xq->count = zend_hash_num_elements(precipient_hash);
+				if (xq->count == 0)
 					return NULL;
-				}
-				((FORWARDDELEGATE_ACTION*)pblock->pdata)->pblock =
-					sta_malloc<RECIPIENT_BLOCK>(
-					((FORWARDDELEGATE_ACTION*)pblock->pdata)->count);
-				if (NULL == ((FORWARDDELEGATE_ACTION*)
-					pblock->pdata)->pblock) {
+				xq->pblock = sta_malloc<RECIPIENT_BLOCK>(xq->count);
+				if (xq->pblock == nullptr)
 					return NULL;
-				}
 				int k = 0;
 				ZEND_HASH_FOREACH_VAL(precipient_hash, data_entry) {
 					if (!php_to_tpropval_array(data_entry,
 						&tmp_propvals TSRMLS_CC)) {
 						return NULL;
 					}
-					prcpt_block = ((FORWARDDELEGATE_ACTION*)
-								pblock->pdata)->pblock + k;
+					prcpt_block = &xq->pblock[k];
 					prcpt_block->reserved = 0;
 					prcpt_block->count = tmp_propvals.count;
 					prcpt_block->ppropval = tmp_propvals.ppropval;
@@ -677,6 +639,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			++j;
 		} ZEND_HASH_FOREACH_END();
 		break;
+	}
 	case PROPVAL_TYPE_RESTRICTION:
 		pvalue = emalloc(sizeof(RESTRICTION));
 		if (NULL == pvalue) {
