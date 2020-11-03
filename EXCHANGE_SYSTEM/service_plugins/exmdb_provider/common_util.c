@@ -3230,7 +3230,7 @@ BOOL common_util_get_properties(int table_type,
 				break;
 			case PT_CURRENCY:
 			case PT_I8:
-			case PROPVAL_TYPE_FILETIME:
+			case PT_SYSTIME:
 				pvalue = common_util_alloc(sizeof(uint64_t));
 				if (NULL != pvalue) {
 					*(uint64_t*)pvalue = sqlite3_column_int64(pstmt, 0);
@@ -4223,7 +4223,7 @@ BOOL common_util_set_properties(int table_type,
 			break;
 		case PT_CURRENCY:
 		case PT_I8:
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 			sqlite3_bind_int64(pstmt, 2,
 				*(uint64_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
@@ -6822,7 +6822,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		break;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint64_t*)pvalue);
 		break;
 	case PT_SHORT:
@@ -6904,7 +6904,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		return pvalue;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		pvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == pvalue) {
 			return NULL;

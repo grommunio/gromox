@@ -1252,7 +1252,7 @@ static BOOL oxcical_parse_dtstamp(ICAL_LINE *piline,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (FALSE == tpropval_array_set_propval(
@@ -1292,7 +1292,7 @@ static BOOL oxcical_parse_start_end(BOOL b_start,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+		propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 		propval.pvalue = &tmp_int64;
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
@@ -1317,7 +1317,7 @@ static BOOL oxcical_parse_start_end(BOOL b_start,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+		propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 		propval.pvalue = &tmp_int64;
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
@@ -2136,7 +2136,7 @@ static BOOL oxcical_parse_recurrence_id(ICAL_COMPONENT *ptz_component,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (FALSE == tpropval_array_set_propval(
@@ -2249,7 +2249,7 @@ static BOOL oxcical_parse_appointment_recurrence(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &nt_time;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2266,7 +2266,7 @@ static BOOL oxcical_parse_appointment_recurrence(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &nt_time;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -2797,7 +2797,7 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(start_time);
 	if (FALSE == tpropval_array_set_propval(
@@ -2813,7 +2813,7 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, *plast_propid);
+	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(
 		start_time - reminder_delta*60);
@@ -5299,7 +5299,7 @@ static BOOL oxcical_export_internal(const char *method,
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, proptag);
 	if (NULL == pvalue) {
@@ -5320,7 +5320,7 @@ static BOOL oxcical_export_internal(const char *method,
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -5789,7 +5789,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag_xrt = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
+	proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 			&pmsg->proplist, proptag_xrt);
 	if (NULL == pvalue) {
@@ -6091,7 +6091,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {

@@ -937,7 +937,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				break;
 			case PT_CURRENCY:
 			case PT_I8:
-			case PROPVAL_TYPE_FILETIME:
+			case PT_SYSTIME:
 			case PT_SHORT:
 			case PT_LONG:
 			case PT_BOOLEAN:
@@ -4469,7 +4469,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			break;
 		case PT_CURRENCY:
 		case PT_I8:
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 		case PT_SHORT:
 		case PT_LONG:
 		case PT_BOOLEAN:

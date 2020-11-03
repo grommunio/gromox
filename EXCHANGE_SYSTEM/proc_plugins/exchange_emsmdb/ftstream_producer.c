@@ -504,7 +504,7 @@ static BOOL ftstream_producer_write_propvalue(
 						*(uint8_t*)ppropval->pvalue);
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		return ftstream_producer_write_uint64(pstream,
 						*(uint64_t*)ppropval->pvalue);
 	case PT_STRING8:

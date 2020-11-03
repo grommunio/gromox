@@ -252,7 +252,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		}
 		*static_cast<uint8_t *>(pvalue) = zval_is_true(entry);
 		break;
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		/* convert unix timestamp to nt timestamp */
 		pvalue = emalloc(sizeof(uint64_t));
 		if (NULL == pvalue) {
@@ -1227,7 +1227,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 				reinterpret_cast<const char *>(static_cast<BINARY *>(ppropval->pvalue)->pb),
 				static_cast<BINARY *>(ppropval->pvalue)->cb);
 			break;
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 			add_assoc_long(pzret, proptag_string,
 				nttime_to_unix(*(uint64_t*)ppropval->pvalue));
 			break;

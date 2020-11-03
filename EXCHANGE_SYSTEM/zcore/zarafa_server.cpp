@@ -4111,7 +4111,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		case PT_I8:
 		case PT_STRING8:
 		case PT_UNICODE:
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 		case PT_CLSID:
 		case PROPVAL_TYPE_SVREID:
 		case PROPVAL_TYPE_RESTRICTION:

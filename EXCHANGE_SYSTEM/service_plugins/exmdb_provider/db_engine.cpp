@@ -1278,7 +1278,7 @@ static int db_engine_compare_propval(
 		return 0;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		if (*(uint64_t*)pvalue1 > *(uint64_t*)pvalue2) {
 			return 1;
 		} else if (*(uint64_t*)pvalue1 < *(uint64_t*)pvalue2) {

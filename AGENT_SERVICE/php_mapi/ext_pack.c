@@ -837,7 +837,7 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 		}
 		return ext_pack_pull_uint8(pctx, *ppval);
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		*ppval = emalloc(sizeof(uint64_t));
 		if (NULL == *ppval) {
 			return 0;
@@ -2010,7 +2010,7 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 	case PT_BOOLEAN:
 		return ext_pack_push_uint8(pctx, *(uint8_t*)pval);
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		return ext_pack_push_uint64(pctx, *(uint64_t*)pval);
 	case PT_STRING8:
 	case PT_UNICODE:

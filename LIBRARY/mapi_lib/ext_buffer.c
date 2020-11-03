@@ -1199,7 +1199,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		return ext_buffer_pull_uint8(pext, *ppval);
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		*ppval = pext->alloc(sizeof(uint64_t));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -4392,7 +4392,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_uint8(pext, *(uint8_t*)pval);
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)pval);
 	case PT_STRING8:
 		return ext_buffer_push_string(pext, pval);

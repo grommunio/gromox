@@ -71,7 +71,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		return preturn;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		preturn = malloc(sizeof(uint64_t));
 		if (NULL == preturn) {
 			return NULL;
@@ -313,7 +313,7 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_I8:
 	case PT_STRING8:
 	case PT_UNICODE:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 	case PT_CLSID:
 		break;
 	case PROPVAL_TYPE_RESTRICTION:
@@ -415,7 +415,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return ((BINARY*)pvalue)->cb;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		return sizeof(uint64_t);
 	case PT_STRING8:
 		return strlen(pvalue) + 1;
@@ -572,7 +572,7 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		switch (relop) {
 		case RELOP_LT:
 			if (*(uint64_t*)pvalue1 < *(uint64_t*)pvalue2) {

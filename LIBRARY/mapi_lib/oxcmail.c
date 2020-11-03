@@ -3534,11 +3534,11 @@ static void oxcmail_remove_flag_propties(
 		return;
 	}
 	tpropval_array_remove_propval(&pmsg->proplist,
-		PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]));
+		PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
 	tpropval_array_remove_propval(&pmsg->proplist,
-		PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[1]));
+		PROP_TAG(PT_SYSTIME, propids.ppropid[1]));
 	tpropval_array_remove_propval(&pmsg->proplist,
-		PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[2]));
+		PROP_TAG(PT_SYSTIME, propids.ppropid[2]));
 }
 
 static BOOL oxcmail_copy_message_proplist(

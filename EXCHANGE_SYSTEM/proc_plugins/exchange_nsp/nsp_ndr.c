@@ -1532,7 +1532,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				r->pguid = NULL;
 			}
 			break;
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 			status = nsp_ndr_pull_filetime(pndr, &r->ftime);
 			break;
 		case PT_ERROR:
@@ -1556,7 +1556,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_MV_UNICODE:
 			status = nsp_ndr_pull_wstring_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
-		case PROPVAL_TYPE_FILETIME_ARRAY:
+		case PT_MV_SYSTIME:
 			status = nsp_ndr_pull_filetime_array(pndr, FLAG_HEADER, &r->ftime_array);
 			break;
 		case PT_NULL:
@@ -1665,7 +1665,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				}
 			}
 			break;
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 			break;
 		case PT_ERROR:
 			break;
@@ -1705,7 +1705,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_FILETIME_ARRAY:
+		case PT_MV_SYSTIME:
 			status = nsp_ndr_pull_filetime_array(pndr, FLAG_CONTENT, &r->ftime_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
@@ -1760,7 +1760,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PROPVAL_TYPE_FLATUID:
 			status = ndr_push_unique_ptr(pndr, r->pguid);
 			break;
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 			status = nsp_ndr_push_filetime(pndr, &r->ftime);
 			break;
 		case PT_ERROR:
@@ -1784,7 +1784,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_MV_UNICODE:
 			status = nsp_ndr_push_wstring_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
-		case PROPVAL_TYPE_FILETIME_ARRAY:
+		case PT_MV_SYSTIME:
 			status = nsp_ndr_push_filetime_array(pndr, FLAG_HEADER, &r->ftime_array);
 			break;
 		case PT_NULL:
@@ -1877,7 +1877,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				}
 			}
 			break;
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 			break;
 		case PT_ERROR:
 			break;
@@ -1917,7 +1917,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_FILETIME_ARRAY:
+		case PT_MV_SYSTIME:
 			status = nsp_ndr_push_filetime_array(pndr, FLAG_CONTENT, &r->ftime_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;

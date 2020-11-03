@@ -82,7 +82,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PT_I8:
 		case PT_STRING8:
 		case PT_UNICODE:
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 		case PT_CLSID:
 		case PROPVAL_TYPE_SVREID:
 		case PROPVAL_TYPE_RESTRICTION:
@@ -203,7 +203,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PT_I8:
 		case PT_STRING8:
 		case PT_UNICODE:
-		case PROPVAL_TYPE_FILETIME:
+		case PT_SYSTIME:
 		case PT_CLSID:
 		case PROPVAL_TYPE_SVREID:
 		case PROPVAL_TYPE_RESTRICTION:

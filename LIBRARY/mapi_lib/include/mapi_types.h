@@ -3,7 +3,6 @@
 #include "common_types.h"
 #include "double_list.h"
 
-#define PROPVAL_TYPE_FILETIME						0x0040
 #define PROPVAL_TYPE_SVREID							0x00fb
 #define PROPVAL_TYPE_RESTRICTION					0x00fd
 #define PROPVAL_TYPE_RULE							0x00fe

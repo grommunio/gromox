@@ -511,7 +511,7 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		ppropval->pvalue = common_util_alloc(sizeof(uint64_t));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;

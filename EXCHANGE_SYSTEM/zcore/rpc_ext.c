@@ -252,7 +252,7 @@ static BOOL rpc_ext_pull_propval(
 		}
 		return TRUE;
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		*ppval = pext->alloc(sizeof(uint64_t));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -747,7 +747,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		}
 		return TRUE;
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint64(
 			pext, *(uint64_t*)pval)) {
 			return FALSE;

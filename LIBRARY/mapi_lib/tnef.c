@@ -322,7 +322,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		return ext_buffer_pull_advance(pext, 2);
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		r->pvalue = pext->alloc(sizeof(uint64_t));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -2293,7 +2293,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
 	case PT_CURRENCY:
 	case PT_I8:
-	case PROPVAL_TYPE_FILETIME:
+	case PT_SYSTIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)r->pvalue);
 	case PT_STRING8:
 		status = ext_buffer_push_uint32(pext, 1);
