@@ -78,7 +78,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		}
 		*(uint64_t*)preturn = *(uint64_t*)pvalue;
 		return preturn;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 	case PROPVAL_TYPE_WSTRING:
 		return strdup(pvalue);
 	case PROPVAL_TYPE_GUID:
@@ -197,7 +197,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 						sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count);
 		}
 		return preturn;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 	case PROPVAL_TYPE_WSTRING_ARRAY:
 		preturn = malloc(sizeof(STRING_ARRAY));
 		if (NULL == preturn) {
@@ -311,7 +311,7 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_ERROR:
 	case PT_BOOLEAN:
 	case PROPVAL_TYPE_LONGLONG:
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 	case PROPVAL_TYPE_WSTRING:
 	case PROPVAL_TYPE_FILETIME:
 	case PROPVAL_TYPE_GUID:
@@ -351,7 +351,7 @@ void propval_free(uint16_t type, void *pvalue)
 			free(((LONGLONG_ARRAY*)pvalue)->pll);
 		}
 		break;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 	case PROPVAL_TYPE_WSTRING_ARRAY:
 		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
 			free(((STRING_ARRAY*)pvalue)->ppstr[i]);
@@ -417,7 +417,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		return sizeof(uint64_t);
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		return strlen(pvalue) + 1;
 	case PROPVAL_TYPE_WSTRING:
 		return propval_utf16_len(pvalue);
@@ -438,7 +438,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count;
 	case PROPVAL_TYPE_LONGLONG_ARRAY:
 		return sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		length = 0;
 		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
 			length += strlen(((STRING_ARRAY*)pvalue)->ppstr[i]) + 1;
@@ -675,7 +675,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 	case PROPVAL_TYPE_WSTRING:
 		switch (relop) {
 		case RELOP_LT:
@@ -1016,7 +1016,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 	case PROPVAL_TYPE_WSTRING_ARRAY:
 		switch (relop) {
 		case RELOP_EQ:

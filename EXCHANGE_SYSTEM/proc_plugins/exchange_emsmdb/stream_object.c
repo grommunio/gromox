@@ -116,7 +116,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		memcpy(pstream->content_bin.pb,
 			((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb);
 		return pstream;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		pstream->content_bin.cb = strlen(pvalue) + 1;
 		pstream->content_bin.pb = malloc(pstream->content_bin.cb);
 		if (NULL == pstream->content_bin.pb) {
@@ -237,7 +237,7 @@ void* stream_object_get_content(STREAM_OBJECT *pstream)
 	switch (PROP_TYPE(pstream->proptag)) {
 	case PROPVAL_TYPE_BINARY:
 		return &pstream->content_bin;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		return pstream->content_bin.pb;
 	case PROPVAL_TYPE_WSTRING:
 		length = 2*pstream->content_bin.cb;

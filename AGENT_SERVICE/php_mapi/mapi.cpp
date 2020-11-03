@@ -485,7 +485,7 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 		return zarafa_client_setpropval(
 			pstream->hsession, pstream->hparent,
 			pstream->proptag, &pstream->content_bin);
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 	case PROPVAL_TYPE_WSTRING:
 		return zarafa_client_setpropval(pstream->hsession,
 			pstream->hparent,
@@ -3188,7 +3188,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 	}
 	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_BINARY:
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 	case PROPVAL_TYPE_WSTRING:
 		break;
 	default:
@@ -3850,7 +3850,7 @@ ZEND_FUNCTION(mapi_openproperty)
 	if (0 == memcmp(&iid_guid, &IID_IStream, sizeof(GUID))) {
 		switch (PROP_TYPE(proptag)) {
 		case PROPVAL_TYPE_BINARY:
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 		case PROPVAL_TYPE_WSTRING:
 			break;
 		default:

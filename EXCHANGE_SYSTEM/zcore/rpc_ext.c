@@ -262,7 +262,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_string(
 			pext, (char**)ppval)) {
 			return FALSE;	
@@ -340,7 +340,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		*ppval = pext->alloc(sizeof(STRING_ARRAY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -753,7 +753,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_string(
 			pext, pval)) {
 			return FALSE;	
@@ -803,7 +803,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_string_array(
 			pext, pval)) {
 			return FALSE;	

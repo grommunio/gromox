@@ -428,17 +428,17 @@ static BOOL ftstream_producer_write_propvalue(
 		return TRUE;
 	}
 	if (PROP_TAG_MESSAGECLASS == ppropval->proptag) {
-		proptype = PROPVAL_TYPE_STRING;
+		proptype = PT_STRING8;
 	}
 	write_type = proptype;
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (0x4017 == propid) {
 		write_type = PT_LONG;
 	} else {
-		if (PROPVAL_TYPE_STRING == proptype ||
+		if (proptype == PT_STRING8 ||
 			PROPVAL_TYPE_WSTRING == proptype) {
 			if (pstream->string_option & STRING_OPTION_FORCE_UNICODE) {
-				if (PROPVAL_TYPE_STRING == proptype) {
+				if (proptype == PT_STRING8) {
 					proptype = PROPVAL_TYPE_WSTRING;
 					write_type = PROPVAL_TYPE_WSTRING;
 					len = 2*strlen(ppropval->pvalue) + 2;
@@ -453,7 +453,7 @@ static BOOL ftstream_producer_write_propvalue(
 					ppropval->pvalue = pvalue;
 				}
 			} else if (pstream->string_option & STRING_OPTION_CPID) {
-				if (PROPVAL_TYPE_STRING == proptype) {
+				if (proptype == PT_STRING8) {
 					pinfo = emsmdb_interface_get_emsmdb_info();
 					if (NULL == pinfo) {
 						return FALSE;
@@ -464,8 +464,8 @@ static BOOL ftstream_producer_write_propvalue(
 				}
 			} else if (STRING_OPTION_NONE == pstream->string_option) {
 				if (PROPVAL_TYPE_WSTRING == proptype) {
-					proptype = PROPVAL_TYPE_STRING;
-					write_type = PROPVAL_TYPE_STRING;
+					proptype = PT_STRING8;
+					write_type = PT_STRING8;
 					len = 2*strlen(ppropval->pvalue) + 2;
 					pvalue = common_util_alloc(len);
 					if (NULL == pvalue) {
@@ -508,7 +508,7 @@ static BOOL ftstream_producer_write_propvalue(
 	case PROPVAL_TYPE_FILETIME:
 		return ftstream_producer_write_uint64(pstream,
 						*(uint64_t*)ppropval->pvalue);
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		return ftstream_producer_write_string(
 					pstream, ppropval->pvalue);
 	case PROPVAL_TYPE_WSTRING:
@@ -565,7 +565,7 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 		return TRUE;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		count = ((STRING_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
 			pstream, count)) {

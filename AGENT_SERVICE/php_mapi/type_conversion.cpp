@@ -23,7 +23,7 @@ time_t nttime_to_unix(uint64_t nt_time)
 	return (time_t)unix_time;
 }
 
-/* in php-mapi the PROPVAL_TYPE_STRING means utf-8
+/* In PHP-MAPI, PT_STRING8 means UTF-8
 	string we don't user PROPVAL_TYPE_WSTRING,
 	there's no definition for ansi string */
 uint32_t proptag_to_phptag(uint32_t proptag)
@@ -33,10 +33,10 @@ uint32_t proptag_to_phptag(uint32_t proptag)
 	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_WSTRING:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING);
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_STRING8);
 		break;
 	case PROPVAL_TYPE_WSTRING_ARRAY:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING_ARRAY);
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_MV_STRING8);
 		break;
 	}
 	return proptag1;
@@ -48,10 +48,10 @@ uint32_t phptag_to_proptag(uint32_t proptag)
 	
 	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_WSTRING);
 		break;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_WSTRING_ARRAY);
 		break;
 	}
@@ -277,7 +277,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		}
 		break;
 	}
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 	case PROPVAL_TYPE_WSTRING: {
 		zstrplus str(zval_get_string(entry));
 		pvalue = emalloc(str->len + 1);
@@ -368,7 +368,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 	case PROPVAL_TYPE_WSTRING_ARRAY: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
@@ -1218,7 +1218,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 		case PT_BOOLEAN:
 			add_assoc_bool(pzret, proptag_string, *(uint8_t*)ppropval->pvalue);
 			break;
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 		case PROPVAL_TYPE_WSTRING:
 			add_assoc_string(pzret, proptag_string, static_cast<const char *>(ppropval->pvalue));
 			break;
@@ -1267,7 +1267,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
 		}
-		case PROPVAL_TYPE_STRING_ARRAY:
+		case PT_MV_STRING8:
 		case PROPVAL_TYPE_WSTRING_ARRAY: {
 			array_init(&pzmval);
 			auto xs = static_cast<STRING_ARRAY *>(ppropval->pvalue);

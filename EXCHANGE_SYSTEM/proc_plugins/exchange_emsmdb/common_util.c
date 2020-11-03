@@ -1260,7 +1260,7 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 	size_t tmp_len;
 	
 	if (TRUE == b_unicode) {
-		if (ptyped->type != PROPVAL_TYPE_STRING)
+		if (ptyped->type != PT_STRING8)
 			return TRUE;
 		tmp_len = 2*strlen(ptyped->pvalue) + 1;
 		pvalue = common_util_alloc(tmp_len);
@@ -1679,16 +1679,15 @@ BOOL common_util_modifyrecipient_to_propvals(
 static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 {
 	if (TRUE == to_unicode) {
-		if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_STRING) {
+		if (PROP_TYPE(*pproptag) == PT_STRING8)
 			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_WSTRING);
-		} else if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_STRING_ARRAY) {
+		else if (PROP_TYPE(*pproptag) == PT_MV_STRING8)
 			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_WSTRING_ARRAY);
-		}
 	} else {
 		if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING) {
-			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_STRING);
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PT_STRING8);
 		} else if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING_ARRAY) {
-			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_STRING_ARRAY);
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PT_MV_STRING8);
 		}
 	}
 }
@@ -1703,7 +1702,7 @@ BOOL common_util_convert_tagged_propval(
 	
 	if (TRUE == to_unicode) {
 		switch (PROP_TYPE(ppropval->proptag)) {
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 			len = 2*strlen(ppropval->pvalue) + 1;
 			pstring = common_util_alloc(len);
 			if (NULL == pstring) {
@@ -1716,7 +1715,7 @@ BOOL common_util_convert_tagged_propval(
 			ppropval->pvalue = pstring;
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
-		case PROPVAL_TYPE_STRING_ARRAY:
+		case PT_MV_STRING8:
 			for (i=0; i<((STRING_ARRAY*)ppropval->pvalue)->count; i++) {
 				len = 2*strlen(((STRING_ARRAY*)ppropval->pvalue)->ppstr[i]) + 1;
 				pstring = common_util_alloc(len);

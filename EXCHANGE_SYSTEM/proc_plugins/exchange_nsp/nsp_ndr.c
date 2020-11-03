@@ -1512,7 +1512,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_BOOLEAN:
 			status = ndr_pull_uint8(pndr, &r->b);
 			break;
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 		case PROPVAL_TYPE_WSTRING:
 			status = ndr_pull_generic_ptr(pndr, &ptr);
 			if (0 != ptr) {
@@ -1544,7 +1544,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_MV_LONG:
 			status = nsp_ndr_pull_long_array(pndr, FLAG_HEADER, &r->long_array);
 			break;
-		case PROPVAL_TYPE_STRING_ARRAY:
+		case PT_MV_STRING8:
 			status = nsp_ndr_pull_string_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
 		case PROPVAL_TYPE_BINARY_ARRAY:
@@ -1579,7 +1579,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			break;
 		case PT_BOOLEAN:
 			break;
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 			if (NULL != r->pstr) {
 				status = ndr_pull_ulong(pndr, &size);
 				if (NDR_ERR_SUCCESS != status) {
@@ -1681,7 +1681,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_STRING_ARRAY:
+		case PT_MV_STRING8:
 			status = nsp_ndr_pull_string_array(pndr, FLAG_CONTENT, &r->string_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
@@ -1750,7 +1750,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_BOOLEAN:
 			status = ndr_push_uint8(pndr, r->b);
 			break;
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 		case PROPVAL_TYPE_WSTRING:
 			status = ndr_push_unique_ptr(pndr, r->pstr);
 			break;
@@ -1772,7 +1772,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_MV_LONG:
 			status = nsp_ndr_push_long_array(pndr, FLAG_HEADER, &r->long_array);
 			break;
-		case PROPVAL_TYPE_STRING_ARRAY:
+		case PT_MV_STRING8:
 			status = nsp_ndr_push_string_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
 		case PROPVAL_TYPE_BINARY_ARRAY:
@@ -1808,7 +1808,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 			break;
 		case PT_BOOLEAN:
 			break;
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 			if (NULL != r->pstr) {
 				length = strlen(r->pstr) + 1;
 				status = ndr_push_ulong(pndr, length);
@@ -1893,7 +1893,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_STRING_ARRAY:
+		case PT_MV_STRING8:
 			status = nsp_ndr_push_string_array(pndr, FLAG_CONTENT, &r->string_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;

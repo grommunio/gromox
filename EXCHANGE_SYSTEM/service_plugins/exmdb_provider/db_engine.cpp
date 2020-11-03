@@ -1300,7 +1300,7 @@ static int db_engine_compare_propval(
 			return -1;
 		}
 		return 0;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 	case PROPVAL_TYPE_WSTRING:
 		return strcasecmp(static_cast<char *>(pvalue1), static_cast<char *>(pvalue2));
 	case PROPVAL_TYPE_GUID:
@@ -1908,7 +1908,7 @@ static void db_engine_notify_content_table_add_row(
 					case PROPVAL_TYPE_LONGLONG_ARRAY:
 						multi_num = ((LONGLONG_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_STRING_ARRAY:
+					case PT_MV_STRING8:
 					case PROPVAL_TYPE_WSTRING_ARRAY:
 						multi_num = ((STRING_ARRAY*)pmultival)->count;
 						break;
@@ -2009,7 +2009,7 @@ static void db_engine_notify_content_table_add_row(
 						propvals[multi_index].pvalue =
 							((LONGLONG_ARRAY*)pmultival)->pll + j;
 						break;
-					case PROPVAL_TYPE_STRING_ARRAY:
+					case PT_MV_STRING8:
 					case PROPVAL_TYPE_WSTRING_ARRAY:
 						propvals[multi_index].pvalue =
 							((STRING_ARRAY*)pmultival)->ppstr[j];
@@ -4282,7 +4282,7 @@ static void db_engine_notify_content_table_modify_row(
 					case PROPVAL_TYPE_LONGLONG:
 						multi_num = ((LONGLONG_ARRAY*)pmultival)->count;
 						break;
-					case PROPVAL_TYPE_STRING:
+					case PT_STRING8:
 					case PROPVAL_TYPE_WSTRING:
 						multi_num = ((STRING_ARRAY*)pmultival)->count;
 						break;
@@ -4332,7 +4332,7 @@ static void db_engine_notify_content_table_modify_row(
 							pvalue1 = &((LONGLONG_ARRAY*)
 								pmultival)->pll[inst_num - 1];
 							break;
-						case PROPVAL_TYPE_STRING:
+						case PT_STRING8:
 						case PROPVAL_TYPE_WSTRING:
 							pvalue1 = ((STRING_ARRAY*)
 								pmultival)->ppstr[inst_num - 1];

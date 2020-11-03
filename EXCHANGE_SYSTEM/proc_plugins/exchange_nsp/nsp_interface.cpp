@@ -1770,7 +1770,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 				return FALSE;
 			}
 			return FALSE;
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 		case PROPVAL_TYPE_WSTRING:
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
@@ -2463,7 +2463,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (TRUE == b_unicode && NULL != pproptags) {
 		for (i=0; i<pproptags->cvalues; i++) {
-			if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_STRING) {
+			if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
 				*pprows = NULL;
 				return ecNotSupported;
 			}

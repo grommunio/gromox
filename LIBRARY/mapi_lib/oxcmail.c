@@ -720,7 +720,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 			propval.proptag = proptag1;
 			propval.pvalue = utf8_field;
 		} else {
-			propval.proptag = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING);
+			propval.proptag = CHANGE_PROP_TYPE(proptag1, PT_STRING8);
 			propval.pvalue = paddr->display_name;
 		}
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -731,7 +731,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		if (TRUE == oxcmail_check_ascii(username)) {
 			propval.proptag = proptag1;
 		} else {
-			propval.proptag = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING);
+			propval.proptag = CHANGE_PROP_TYPE(proptag1, PT_STRING8);
 		}
 		propval.pvalue = username;
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1081,7 +1081,7 @@ static BOOL oxcmail_parse_keywords(const char *charset,
 	
 	if (FALSE == mime_string_to_utf8(
 		charset, field, tmp_buff)) {
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING_ARRAY, propid);
+		propval.proptag = PROP_TAG(PT_MV_STRING8, propid);
 		strcpy(tmp_buff, field);
 	} else {
 		propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING_ARRAY, propid);
@@ -1265,7 +1265,7 @@ static BOOL oxcmail_parse_content_class(
 				if (TRUE == oxcmail_check_ascii(ptoken)) {
 					propval1.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 				} else {
-					propval1.proptag = PROP_TAG(PROPVAL_TYPE_STRING, *plast_propid);
+					propval1.proptag = PROP_TAG(PT_STRING8, *plast_propid);
 				}
 				propval1.pvalue = ptoken;
 				if (FALSE == tpropval_array_set_propval(
@@ -1288,7 +1288,7 @@ static BOOL oxcmail_parse_content_class(
 		if (TRUE == oxcmail_check_ascii(field)) {
 			propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 		} else {
-			propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, *plast_propid);
+			propval.proptag = PROP_TAG(PT_STRING8, *plast_propid);
 		}
 		propval.pvalue = field;
 		if (FALSE == tpropval_array_set_propval(
@@ -1328,7 +1328,7 @@ static BOOL oxcmail_parse_message_flag(
 	if (TRUE == oxcmail_check_ascii(field)) {
 		propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 	} else {
-		propval.proptag  = PROP_TAG(PROPVAL_TYPE_STRING, *plast_propid);
+		propval.proptag  = PROP_TAG(PT_STRING8, *plast_propid);
 	}
 	propval.pvalue = field;
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1362,7 +1362,7 @@ static BOOL oxcmail_parse_message_flag(
 		if (TRUE == b_unicode) {
 			propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 		} else {
-			propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, *plast_propid);
+			propval.proptag = PROP_TAG(PT_STRING8, *plast_propid);
 		}
 		propval.pvalue = pvalue;
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1500,7 +1500,7 @@ static BOOL oxcmail_parse_classification(char *field,
 	if (TRUE == oxcmail_check_ascii(field)) {
 		propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 	} else {
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, *plast_propid);
+		propval.proptag = PROP_TAG(PT_STRING8, *plast_propid);
 	}
 	propval.pvalue = field;
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1528,7 +1528,7 @@ static BOOL oxcmail_parse_classdesc(char *field,
 	if (TRUE == oxcmail_check_ascii(field)) {
 		propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 	} else {
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, *plast_propid);
+		propval.proptag = PROP_TAG(PT_STRING8, *plast_propid);
 	}
 	propval.pvalue = field;
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1556,7 +1556,7 @@ static BOOL oxcmail_parse_classid(char *field,
 	if (TRUE == oxcmail_check_ascii(field)) {
 		propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
 	} else {
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, *plast_propid);
+		propval.proptag = PROP_TAG(PT_STRING8, *plast_propid);
 	}
 	propval.pvalue = field;
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1866,7 +1866,7 @@ static BOOL oxcmail_enum_mail_head(
 		if (TRUE == oxcmail_check_ascii(field)) {
 			propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, penum_param->last_propid);
 		} else {
-			propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, penum_param->last_propid);
+			propval.proptag = PROP_TAG(PT_STRING8, penum_param->last_propid);
 		}
 		propval.pvalue = field;
 		penum_param->last_propid ++;
@@ -2146,7 +2146,7 @@ static BOOL oxcmail_enum_mail_head(
 		if (TRUE == oxcmail_check_ascii(field)) {
 			propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, penum_param->last_propid);
 		} else {
-			propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, penum_param->last_propid);
+			propval.proptag = PROP_TAG(PT_STRING8, penum_param->last_propid);
 		}
 		propval.pvalue = field;
 		penum_param->last_propid ++;
@@ -2185,7 +2185,7 @@ static BOOL oxcmail_enum_mail_head(
 		if (TRUE == oxcmail_check_ascii(field)) {
 			propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, penum_param->last_propid);
 		} else {
-			propval.proptag = PROP_TAG(PROPVAL_TYPE_STRING, penum_param->last_propid);
+			propval.proptag = PROP_TAG(PT_STRING8, penum_param->last_propid);
 		}
 		propval.pvalue = field;
 		penum_param->last_propid ++;

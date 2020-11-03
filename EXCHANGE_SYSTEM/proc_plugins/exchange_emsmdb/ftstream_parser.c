@@ -521,7 +521,7 @@ static int ftstream_parser_read_element(
 			return FTSTREAM_PARSER_READ_FAIL;	
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		ppropval->pvalue = ftstream_parser_read_string(
 								pstream, &b_continue);
 		if (NULL == ppropval->pvalue) {
@@ -684,7 +684,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		ppropval->pvalue =
 			common_util_alloc(sizeof(STRING_ARRAY));
 		if (NULL == ppropval->pvalue) {
@@ -934,7 +934,7 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 				pvalue = common_util_alloc(len);
 				if (NULL == pvalue || common_util_mb_to_utf8(
 					codepage, propval.pvalue, pvalue, len) <= 0) {
-					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PROPVAL_TYPE_STRING);
+					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_STRING8);
 				} else {
 					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PROPVAL_TYPE_WSTRING);
 					propval.pvalue = pvalue;

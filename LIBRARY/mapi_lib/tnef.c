@@ -328,7 +328,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_uint64(pext, r->pvalue);
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		status = ext_buffer_pull_uint32(pext, &tmp_int);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -554,7 +554,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		r->pvalue = pext->alloc(sizeof(STRING_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -1372,11 +1372,11 @@ static void tnef_tpropval_array_to_unicode(
 	
 	for (i=0; i<pproplist->count; i++) {
 		proptype = PROP_TYPE(pproplist->ppropval[i].proptag);
-		if (PROPVAL_TYPE_STRING == proptype) {
+		if (proptype == PT_STRING8) {
 			pvalue = tnef_duplicate_string_to_unicode(
 				charset, pproplist->ppropval[i].pvalue);
 			proptype = PROPVAL_TYPE_WSTRING;
-		} else if (PROPVAL_TYPE_STRING_ARRAY == proptype) {
+		} else if (proptype == PT_MV_STRING8) {
 			pvalue = tnef_duplicate_string_array_to_unicode(
 					charset, pproplist->ppropval[i].pvalue);
 			proptype = PROPVAL_TYPE_WSTRING_ARRAY;
@@ -2295,7 +2295,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_FILETIME:
 		return ext_buffer_push_uint64(pext, *(uint64_t*)r->pvalue);
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		status = ext_buffer_push_uint32(pext, 1);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -2460,7 +2460,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		status = ext_buffer_push_uint32(pext,
 			((STRING_ARRAY*)r->pvalue)->count);
 		if (EXT_ERR_SUCCESS != status) {
@@ -3436,8 +3436,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tnef_proplist.ppropval[tnef_proplist.count].propid =
 			PROP_ID(pmsg->proplist.ppropval[i].proptag);
 		if (PROP_TAG_MESSAGECLASS == pmsg->proplist.ppropval[i].proptag) {
-			tnef_proplist.ppropval[tnef_proplist.count].proptype =
-												PROPVAL_TYPE_STRING;
+			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_STRING8;
 		} else {
 			if (PROP_TAG_TNEFCORRELATIONKEY ==
 				pmsg->proplist.ppropval[i].proptag) {

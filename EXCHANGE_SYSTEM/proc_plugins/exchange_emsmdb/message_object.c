@@ -71,10 +71,10 @@ static BOOL message_object_get_recipient_all_proptags(
 static uint32_t message_object_rectify_proptag(uint32_t proptag)
 {
 	switch (PROP_TYPE(proptag)) {
-	case PROPVAL_TYPE_STRING:
+	case PT_STRING8:
 		proptag = CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING);
 		break;
-	case PROPVAL_TYPE_STRING_ARRAY:
+	case PT_MV_STRING8:
 		proptag = CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING_ARRAY);
 		break;
 	case PT_UNSPECIFIED:

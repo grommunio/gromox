@@ -922,7 +922,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 				type = psorts->psort[i].type;
 			}
 			switch (type) {
-			case PROPVAL_TYPE_STRING:
+			case PT_STRING8:
 			case PROPVAL_TYPE_WSTRING:
 				sql_len += snprintf(sql_string + sql_len,
 							sizeof(sql_string) - sql_len,
@@ -1253,14 +1253,14 @@ BIND_NULL_INSTANCE:
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PROPVAL_TYPE_STRING_ARRAY:
+				case PT_MV_STRING8:
 				case PROPVAL_TYPE_WSTRING_ARRAY:
 					if (0 == ((STRING_ARRAY*)pvalue)->count) {
 						goto BIND_NULL_INSTANCE;
 					}
 					for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
 						if (FALSE == common_util_bind_sqlite_statement(
-							pstmt1, multi_index, PROPVAL_TYPE_STRING,
+						    pstmt1, multi_index, PT_STRING8,
 							((STRING_ARRAY*)pvalue)->ppstr[i])) {
 							goto LOAD_CONTENT_FAIL;
 						}
@@ -2346,7 +2346,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					case PROPVAL_TYPE_WSTRING:
 						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
-					case PROPVAL_TYPE_STRING:
+					case PT_STRING8:
 						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
 					case PROPVAL_TYPE_BINARY:
@@ -2485,7 +2485,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				case PROPVAL_TYPE_WSTRING:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
-				case PROPVAL_TYPE_STRING:
+				case PT_STRING8:
 					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
 				case PROPVAL_TYPE_BINARY:
@@ -3038,7 +3038,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						case PROPVAL_TYPE_WSTRING:
 							utf8_truncate(static_cast<char *>(pvalue), 255);
 							break;
-						case PROPVAL_TYPE_STRING:
+						case PT_STRING8:
 							table_truncate_string(cpid, static_cast<char *>(pvalue));
 							break;
 						case PROPVAL_TYPE_BINARY:
@@ -3163,7 +3163,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					case PROPVAL_TYPE_WSTRING:
 						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
-					case PROPVAL_TYPE_STRING:
+					case PT_STRING8:
 						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
 					case PROPVAL_TYPE_BINARY:
@@ -3439,7 +3439,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				case PROPVAL_TYPE_WSTRING:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
-				case PROPVAL_TYPE_STRING:
+				case PT_STRING8:
 					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
 				case PROPVAL_TYPE_BINARY:
@@ -3541,7 +3541,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 			case PROPVAL_TYPE_WSTRING:
 				utf8_truncate(static_cast<char *>(pvalue), 255);
 				break;
-			case PROPVAL_TYPE_STRING:
+			case PT_STRING8:
 				table_truncate_string(cpid, static_cast<char *>(pvalue));
 				break;
 			case PROPVAL_TYPE_BINARY:
@@ -4455,7 +4455,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			type = ptnode->psorts->psort[i].type;
 		}
 		switch (type) {
-		case PROPVAL_TYPE_STRING:
+		case PT_STRING8:
 		case PROPVAL_TYPE_WSTRING:
 			sql_len += snprintf(sql_string + sql_len,
 						sizeof(sql_string) - sql_len,
