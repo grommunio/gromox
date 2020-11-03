@@ -437,7 +437,7 @@ static int ftstream_parser_read_element(
 		/* codepage string */
 		codepage = proptype & 0x7FFF;
 		if (1200 == codepage) {
-			ppropval->proptag = CHANGE_PROP_TYPE(ppropval->proptag, PROPVAL_TYPE_WSTRING);
+			ppropval->proptag = CHANGE_PROP_TYPE(ppropval->proptag, PT_UNICODE);
 			ppropval->pvalue = ftstream_parser_read_wstring(
 										pstream, &b_continue);
 		} else {
@@ -532,7 +532,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		ppropval->pvalue = ftstream_parser_read_wstring(
 								pstream, &b_continue);
 		if (NULL == ppropval->pvalue) {
@@ -730,7 +730,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		ppropval->pvalue =
 			common_util_alloc(sizeof(STRING_ARRAY));
 		if (NULL == ppropval->pvalue) {
@@ -936,7 +936,7 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 					codepage, propval.pvalue, pvalue, len) <= 0) {
 					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_STRING8);
 				} else {
-					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PROPVAL_TYPE_WSTRING);
+					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_UNICODE);
 					propval.pvalue = pvalue;
 				}
 			}

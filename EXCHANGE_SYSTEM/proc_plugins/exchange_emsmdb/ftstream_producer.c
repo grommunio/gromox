@@ -435,12 +435,11 @@ static BOOL ftstream_producer_write_propvalue(
 	if (0x4017 == propid) {
 		write_type = PT_LONG;
 	} else {
-		if (proptype == PT_STRING8 ||
-			PROPVAL_TYPE_WSTRING == proptype) {
+		if (proptype == PT_STRING8 || proptype == PT_UNICODE) {
 			if (pstream->string_option & STRING_OPTION_FORCE_UNICODE) {
 				if (proptype == PT_STRING8) {
-					proptype = PROPVAL_TYPE_WSTRING;
-					write_type = PROPVAL_TYPE_WSTRING;
+					proptype = PT_UNICODE;
+					write_type = PT_UNICODE;
 					len = 2*strlen(ppropval->pvalue) + 2;
 					pvalue = common_util_alloc(len);
 					if (NULL == pvalue) {
@@ -463,7 +462,7 @@ static BOOL ftstream_producer_write_propvalue(
 					write_type = 0x8000 | 1200;
 				}
 			} else if (STRING_OPTION_NONE == pstream->string_option) {
-				if (PROPVAL_TYPE_WSTRING == proptype) {
+				if (proptype == PT_UNICODE) {
 					proptype = PT_STRING8;
 					write_type = PT_STRING8;
 					len = 2*strlen(ppropval->pvalue) + 2;
@@ -511,7 +510,7 @@ static BOOL ftstream_producer_write_propvalue(
 	case PT_STRING8:
 		return ftstream_producer_write_string(
 					pstream, ppropval->pvalue);
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		return ftstream_producer_write_wstring(
 					pstream, ppropval->pvalue);
 	case PROPVAL_TYPE_GUID:
@@ -578,7 +577,7 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 		return TRUE;
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		count = ((STRING_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
 			pstream, count)) {

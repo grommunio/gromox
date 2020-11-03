@@ -923,7 +923,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			}
 			switch (type) {
 			case PT_STRING8:
-			case PROPVAL_TYPE_WSTRING:
+			case PT_UNICODE:
 				sql_len += snprintf(sql_string + sql_len,
 							sizeof(sql_string) - sql_len,
 							", v%x TEXT COLLATE NOCASE", tmp_proptag);
@@ -1254,7 +1254,7 @@ BIND_NULL_INSTANCE:
 					}
 					break;
 				case PT_MV_STRING8:
-				case PROPVAL_TYPE_WSTRING_ARRAY:
+				case PT_MV_UNICODE:
 					if (0 == ((STRING_ARRAY*)pvalue)->count) {
 						goto BIND_NULL_INSTANCE;
 					}
@@ -1704,7 +1704,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
-		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
@@ -1762,7 +1762,7 @@ static BOOL table_evaluate_rule_restriction(sqlite3 *psqlite,
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			if (strcasestr(static_cast<char *>(pvalue),
 			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
@@ -2343,7 +2343,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 						continue;
 					}
 					switch (PROP_TYPE(pproptags->pproptag[i])) {
-					case PROPVAL_TYPE_WSTRING:
+					case PT_UNICODE:
 						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
 					case PT_STRING8:
@@ -2482,7 +2482,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					continue;
 				}
 				switch (PROP_TYPE(pproptags->pproptag[i])) {
-				case PROPVAL_TYPE_WSTRING:
+				case PT_UNICODE:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
 				case PT_STRING8:
@@ -2796,7 +2796,7 @@ static BOOL table_evaluate_row_restriction(
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
-		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
@@ -2854,7 +2854,7 @@ static BOOL table_evaluate_row_restriction(
 		    pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			if (strcasestr(static_cast<char *>(pvalue),
 			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
@@ -3035,7 +3035,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 							continue;
 						}
 						switch (PROP_TYPE(pproptags->pproptag[i])) {
-						case PROPVAL_TYPE_WSTRING:
+						case PT_UNICODE:
 							utf8_truncate(static_cast<char *>(pvalue), 255);
 							break;
 						case PT_STRING8:
@@ -3160,7 +3160,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						continue;
 					}
 					switch (PROP_TYPE(pproptags->pproptag[i])) {
-					case PROPVAL_TYPE_WSTRING:
+					case PT_UNICODE:
 						utf8_truncate(static_cast<char *>(pvalue), 255);
 						break;
 					case PT_STRING8:
@@ -3436,7 +3436,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 					continue;
 				}
 				switch (PROP_TYPE(pproptags->pproptag[i])) {
-				case PROPVAL_TYPE_WSTRING:
+				case PT_UNICODE:
 					utf8_truncate(static_cast<char *>(pvalue), 255);
 					break;
 				case PT_STRING8:
@@ -3538,7 +3538,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				continue;
 			}
 			switch (PROP_TYPE(pproptags->pproptag[i])) {
-			case PROPVAL_TYPE_WSTRING:
+			case PT_UNICODE:
 				utf8_truncate(static_cast<char *>(pvalue), 255);
 				break;
 			case PT_STRING8:
@@ -4456,7 +4456,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		}
 		switch (type) {
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			sql_len += snprintf(sql_string + sql_len,
 						sizeof(sql_string) - sql_len,
 						", v%x TEXT", tmp_proptag);

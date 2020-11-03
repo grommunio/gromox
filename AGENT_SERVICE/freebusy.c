@@ -1867,7 +1867,7 @@ static BOOL get_freebusy(const char *dir)
 	pidlidprivate = PROP_TAG(PT_BOOLEAN, propids.ppropid[6]);
 	pidlidappointmentstateflags = PROP_TAG(PT_LONG, propids.ppropid[7]);
 	pidlidclipend = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[8]);
-	pidlidlocation = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[9]);
+	pidlidlocation = PROP_TAG(PT_UNICODE, propids.ppropid[9]);
 	pidlidreminderset = PROP_TAG(PT_BOOLEAN, propids.ppropid[10]);
 	pidlidglobalobjectid = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[11]);
 	pidlidtimezonestruct = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[12]);

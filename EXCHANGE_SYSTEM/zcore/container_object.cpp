@@ -82,7 +82,7 @@ static BOOL container_object_match_contact_message(
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
-		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
@@ -267,7 +267,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	}
 	for (i=0; i<9; i++) {
-		pproptags->pproptag[i] = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[i]);
+		pproptags->pproptag[i] = PROP_TAG(PT_UNICODE, propids.ppropid[i]);
 	}
 	pproptags->count = 9;
 	return TRUE;

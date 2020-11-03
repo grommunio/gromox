@@ -1064,7 +1064,7 @@ static BOOL table_object_evaluate_restriction(
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pres->pres);
-		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
@@ -1124,7 +1124,7 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		}
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			if (strcasestr(static_cast<char *>(rprop->propval.pvalue),
 			    static_cast<char *>(pvalue)) != nullptr)

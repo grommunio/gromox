@@ -81,7 +81,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PT_OBJECT:
 		case PROPVAL_TYPE_LONGLONG:
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 		case PROPVAL_TYPE_FILETIME:
 		case PROPVAL_TYPE_GUID:
 		case PROPVAL_TYPE_SVREID:
@@ -92,7 +92,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PT_MV_LONG:
 		case PROPVAL_TYPE_LONGLONG_ARRAY:
 		case PT_MV_STRING8:
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 		case PROPVAL_TYPE_GUID_ARRAY:
 		case PROPVAL_TYPE_BINARY_ARRAY:
 			break;
@@ -202,7 +202,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PT_OBJECT:
 		case PROPVAL_TYPE_LONGLONG:
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 		case PROPVAL_TYPE_FILETIME:
 		case PROPVAL_TYPE_GUID:
 		case PROPVAL_TYPE_SVREID:
@@ -213,7 +213,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PT_MV_LONG:
 		case PROPVAL_TYPE_LONGLONG_ARRAY:
 		case PT_MV_STRING8:
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 		case PROPVAL_TYPE_GUID_ARRAY:
 		case PROPVAL_TYPE_BINARY_ARRAY:
 			break;

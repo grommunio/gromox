@@ -24,7 +24,7 @@ time_t nttime_to_unix(uint64_t nt_time)
 }
 
 /* In PHP-MAPI, PT_STRING8 means UTF-8
-	string we don't user PROPVAL_TYPE_WSTRING,
+ * string. We do not use PT_UNICODE,
 	there's no definition for ansi string */
 uint32_t proptag_to_phptag(uint32_t proptag)
 {
@@ -32,10 +32,10 @@ uint32_t proptag_to_phptag(uint32_t proptag)
 	
 	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_STRING8);
 		break;
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_MV_STRING8);
 		break;
 	}
@@ -49,10 +49,10 @@ uint32_t phptag_to_proptag(uint32_t proptag)
 	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
 	case PT_STRING8:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_WSTRING);
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_UNICODE);
 		break;
 	case PT_MV_STRING8:
-		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_WSTRING_ARRAY);
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PT_MV_UNICODE);
 		break;
 	}
 	return proptag1;
@@ -278,7 +278,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		break;
 	}
 	case PT_STRING8:
-	case PROPVAL_TYPE_WSTRING: {
+	case PT_UNICODE: {
 		zstrplus str(zval_get_string(entry));
 		pvalue = emalloc(str->len + 1);
 		if (NULL == pvalue) {
@@ -369,7 +369,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		break;
 	}
 	case PT_MV_STRING8:
-	case PROPVAL_TYPE_WSTRING_ARRAY: {
+	case PT_MV_UNICODE: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
 		if (NULL == pdata_hash) {
@@ -1219,7 +1219,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_bool(pzret, proptag_string, *(uint8_t*)ppropval->pvalue);
 			break;
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			add_assoc_string(pzret, proptag_string, static_cast<const char *>(ppropval->pvalue));
 			break;
 		case PROPVAL_TYPE_BINARY:
@@ -1268,7 +1268,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			break;
 		}
 		case PT_MV_STRING8:
-		case PROPVAL_TYPE_WSTRING_ARRAY: {
+		case PT_MV_UNICODE: {
 			array_init(&pzmval);
 			auto xs = static_cast<STRING_ARRAY *>(ppropval->pvalue);
 			for (j = 0; j < xs->count; ++j) {

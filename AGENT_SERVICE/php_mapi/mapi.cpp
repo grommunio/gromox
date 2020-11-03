@@ -486,10 +486,10 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 			pstream->hsession, pstream->hparent,
 			pstream->proptag, &pstream->content_bin);
 	case PT_STRING8:
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		return zarafa_client_setpropval(pstream->hsession,
 			pstream->hparent,
-			CHANGE_PROP_TYPE(pstream->proptag, PROPVAL_TYPE_WSTRING),
+			CHANGE_PROP_TYPE(pstream->proptag, PT_UNICODE),
 			pstream->content_bin.pb);
 	default:
 		return ecInvalidParam;
@@ -3189,7 +3189,7 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_BINARY:
 	case PT_STRING8:
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		break;
 	default:
 		MAPI_G(hr) = ecInvalidParam;
@@ -3851,7 +3851,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		switch (PROP_TYPE(proptag)) {
 		case PROPVAL_TYPE_BINARY:
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			break;
 		default:
 			MAPI_G(hr) = ecNotSupported;

@@ -815,7 +815,7 @@ static BOOL oxcical_parse_recurring_timezone(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
+	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = (void*)ptzid;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1129,7 +1129,7 @@ static BOOL oxcical_parse_categoris(ICAL_LINE *piline,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING_ARRAY, *plast_propid);
+		propval.proptag = PROP_TAG(PT_MV_UNICODE, *plast_propid);
 		propval.pvalue = &strings_array;
 		if (FALSE == tpropval_array_set_propval(
 			&pmsg->proplist, &propval)) {
@@ -1658,7 +1658,7 @@ static BOOL oxcical_parse_location(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
+	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = tmp_buff;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -1676,7 +1676,7 @@ static BOOL oxcical_parse_location(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, *plast_propid);
+	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = (void*)pvalue;
 	if (FALSE == tpropval_array_set_propval(
 		&pmsg->proplist, &propval)) {
@@ -5492,7 +5492,7 @@ static BOOL oxcical_export_internal(const char *method,
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
-			proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[0]);
+			proptag = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 			tzid = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 			if (NULL == tzid) {
@@ -6010,7 +6010,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_WSTRING_ARRAY, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_MV_UNICODE, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -6169,7 +6169,7 @@ EXPORT_VEVENT:
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
-	proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[0]);
+	proptag = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 	pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, proptag);
 	if (NULL != pvalue) {
@@ -6185,7 +6185,7 @@ EXPORT_VEVENT:
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
 		}
-		proptag = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[0]);
+		proptag = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 		pvalue = tpropval_array_get_propval(
 					&pmsg->proplist, proptag);
 		if (NULL != pvalue) {

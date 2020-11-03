@@ -1513,7 +1513,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			status = ndr_pull_uint8(pndr, &r->b);
 			break;
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			status = ndr_pull_generic_ptr(pndr, &ptr);
 			if (0 != ptr) {
 				r->pstr = (char*)(long)ptr;
@@ -1553,7 +1553,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PROPVAL_TYPE_FLATUID_ARRAY:
 			status = nsp_ndr_pull_flatuid_array(pndr, FLAG_HEADER, &r->guid_array);
 			break;
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 			status = nsp_ndr_pull_wstring_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
 		case PROPVAL_TYPE_FILETIME_ARRAY:
@@ -1610,7 +1610,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				}
 			}
 			break;
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			if (NULL != r->pstr) {
 				status = ndr_pull_ulong(pndr, &size);
 				if (NDR_ERR_SUCCESS != status) {
@@ -1699,7 +1699,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 			status = nsp_ndr_pull_wstring_array(pndr, FLAG_CONTENT, &r->string_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;
@@ -1751,7 +1751,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 			status = ndr_push_uint8(pndr, r->b);
 			break;
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			status = ndr_push_unique_ptr(pndr, r->pstr);
 			break;
 		case PROPVAL_TYPE_BINARY:
@@ -1781,7 +1781,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PROPVAL_TYPE_FLATUID_ARRAY:
 			status = nsp_ndr_push_flatuid_array(pndr, FLAG_HEADER, &r->guid_array);
 			break;
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 			status = nsp_ndr_push_wstring_array(pndr, FLAG_HEADER, &r->string_array);
 			break;
 		case PROPVAL_TYPE_FILETIME_ARRAY:
@@ -1829,7 +1829,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				}
 			}
 			break;
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			if (NULL != r->pstr) {
 				length = strlen(r->pstr) + 1;
 				pwstring = malloc(2*length);
@@ -1911,7 +1911,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 			status = nsp_ndr_push_wstring_array(pndr, FLAG_CONTENT, &r->string_array);
 			if (NDR_ERR_SUCCESS != status) {
 				return status;

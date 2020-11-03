@@ -350,7 +350,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		pext->offset = offset;
 		return ext_buffer_pull_advance(pext, tnef_align(tmp_int));
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		status = ext_buffer_pull_uint32(pext, &tmp_int);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -597,7 +597,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		r->pvalue = pext->alloc(sizeof(STRING_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -1375,11 +1375,11 @@ static void tnef_tpropval_array_to_unicode(
 		if (proptype == PT_STRING8) {
 			pvalue = tnef_duplicate_string_to_unicode(
 				charset, pproplist->ppropval[i].pvalue);
-			proptype = PROPVAL_TYPE_WSTRING;
+			proptype = PT_UNICODE;
 		} else if (proptype == PT_MV_STRING8) {
 			pvalue = tnef_duplicate_string_array_to_unicode(
 					charset, pproplist->ppropval[i].pvalue);
-			proptype = PROPVAL_TYPE_WSTRING_ARRAY;
+			proptype = PT_MV_UNICODE;
 		} else {
 			continue;
 		}
@@ -2319,7 +2319,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		pext->offset = offset1;
 		return ext_buffer_push_bytes(pext,
 			g_pad_bytes, tnef_align(tmp_int));
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		status = ext_buffer_push_uint32(pext, 1);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -2492,7 +2492,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		status = ext_buffer_push_uint32(pext,
 			((STRING_ARRAY*)r->pvalue)->count);
 		if (EXT_ERR_SUCCESS != status) {

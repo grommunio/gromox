@@ -844,7 +844,7 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 		}
 		return ext_pack_pull_uint64(pctx, *ppval);
 	case PT_STRING8:
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		return ext_pack_pull_string(pctx, (char**)ppval);
 	case PROPVAL_TYPE_GUID:
 		*ppval = emalloc(sizeof(GUID));
@@ -889,7 +889,7 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 		}
 		return ext_pack_pull_longlong_array(pctx, *ppval);
 	case PT_MV_STRING8:
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		*ppval = emalloc(sizeof(STRING_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
@@ -2013,7 +2013,7 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 	case PROPVAL_TYPE_FILETIME:
 		return ext_pack_push_uint64(pctx, *(uint64_t*)pval);
 	case PT_STRING8:
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		return ext_pack_push_string(pctx, pval);
 	case PROPVAL_TYPE_GUID:
 		return ext_pack_push_guid(pctx, pval);
@@ -2030,7 +2030,7 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 	case PROPVAL_TYPE_LONGLONG_ARRAY:
 		return ext_pack_push_longlong_array(pctx, pval);
 	case PT_MV_STRING8:
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		return ext_pack_push_string_array(pctx, pval);
 	case PROPVAL_TYPE_GUID_ARRAY:
 		return ext_pack_push_guid_array(pctx, pval);

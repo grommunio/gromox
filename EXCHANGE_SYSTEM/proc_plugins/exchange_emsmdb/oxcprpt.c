@@ -195,7 +195,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 			case PROPVAL_TYPE_BINARY:
 			case PT_OBJECT:
 			case PT_STRING8:
-			case PROPVAL_TYPE_WSTRING:
+			case PT_UNICODE:
 				if (0x1000 < propval_size(proptype,
 					propvals.ppropval[i].pvalue)) {
 					propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
@@ -1241,7 +1241,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		switch (PROP_TYPE(proptag)) {
 		case PROPVAL_TYPE_BINARY:
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			break;
 		case PT_OBJECT:
 			if (PROP_TAG_ATTACHDATAOBJECT == proptag) {

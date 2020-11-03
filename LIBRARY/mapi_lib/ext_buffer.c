@@ -1207,7 +1207,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		return ext_buffer_pull_uint64(pext, *ppval);
 	case PT_STRING8:
 		return ext_buffer_pull_string(pext, (char**)ppval);
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		return ext_buffer_pull_wstring(pext, (char**)ppval);
 	case PROPVAL_TYPE_SVREID:
 		*ppval = pext->alloc(sizeof(SVREID));
@@ -1264,7 +1264,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_string_array(pext, *ppval);
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		*ppval = pext->alloc(sizeof(STRING_ARRAY));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -4396,7 +4396,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_uint64(pext, *(uint64_t*)pval);
 	case PT_STRING8:
 		return ext_buffer_push_string(pext, pval);
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		return ext_buffer_push_wstring(pext, pval);
 	case PROPVAL_TYPE_GUID:
 		return ext_buffer_push_guid(pext, pval);
@@ -4417,7 +4417,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		return ext_buffer_push_longlong_array(pext, pval);
 	case PT_MV_STRING8:
 		return ext_buffer_push_string_array(pext, pval);
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		return ext_buffer_push_wstring_array(pext, pval);
 	case PROPVAL_TYPE_GUID_ARRAY:
 		return ext_buffer_push_guid_array(pext, pval);

@@ -126,7 +126,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		memcpy(pstream->content_bin.pb,
 			((BINARY*)pvalue)->pb, pstream->content_bin.cb);
 		return pstream;
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		buff_len = 2*strlen(pvalue) + 2;
 		pstream->content_bin.pb = malloc(buff_len);
 		if (NULL == pstream->content_bin.pb) {
@@ -239,7 +239,7 @@ void* stream_object_get_content(STREAM_OBJECT *pstream)
 		return &pstream->content_bin;
 	case PT_STRING8:
 		return pstream->content_bin.pb;
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		length = 2*pstream->content_bin.cb;
 		pcontent = common_util_alloc(length);
 		if (NULL == pcontent) {

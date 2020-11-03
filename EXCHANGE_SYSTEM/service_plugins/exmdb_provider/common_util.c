@@ -1963,7 +1963,7 @@ static BOOL common_util_get_message_subject(
 	}
 	strcpy(pvalue, psubject_prefix);
 	strcat(pvalue, pnormalized_subject);
-	if (PROP_TYPE(proptag) == PROPVAL_TYPE_WSTRING)
+	if (PROP_TYPE(proptag) == PT_UNICODE)
 		*ppvalue = common_util_dup(pvalue);
 	else
 		*ppvalue = common_util_convert_copy(FALSE, cpid, pvalue);
@@ -2982,14 +2982,14 @@ BOOL common_util_get_properties(int table_type,
 		b_optimize = FALSE;
 		proptype = PROP_TYPE(pproptags->pproptag[i]);
 		if (proptype == PT_UNSPECIFIED || proptype == PT_STRING8 ||
-			PROPVAL_TYPE_WSTRING == proptype) {
+		    proptype == PT_UNICODE) {
 			switch (table_type) {
 			case STORE_PROPERTIES_TABLE:
 				sprintf(sql_string, "SELECT proptag, propval"
 							" FROM store_properties WHERE proptag=?");
 				if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 					return FALSE;
-				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING));
+				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				break;
 			case FOLDER_PROPERTIES_TABLE:
 				sprintf(sql_string, "SELECT proptag,"
@@ -2998,7 +2998,7 @@ BOOL common_util_get_properties(int table_type,
 				if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 					return FALSE;
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				break;
 			case MESSAGE_PROPERTIES_TABLE:
 				pstmt = common_util_get_optimize_stmt(table_type, FALSE);
@@ -3013,7 +3013,7 @@ BOOL common_util_get_properties(int table_type,
 						return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
 			case RECIPIENT_PROPERTIES_TABLE:
@@ -3029,7 +3029,7 @@ BOOL common_util_get_properties(int table_type,
 						return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
 			case ATTACHMENT_PROPERTIES_TABLE:
@@ -3039,7 +3039,7 @@ BOOL common_util_get_properties(int table_type,
 				if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 					return FALSE;
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
 			}
@@ -3050,7 +3050,7 @@ BOOL common_util_get_properties(int table_type,
 					" FROM store_properties WHERE proptag=?");
 				if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 					return FALSE;
-				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY));
+				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case FOLDER_PROPERTIES_TABLE:
 				sprintf(sql_string, "SELECT propval "
@@ -3059,7 +3059,7 @@ BOOL common_util_get_properties(int table_type,
 				if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 					return FALSE;
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case MESSAGE_PROPERTIES_TABLE:
 				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
@@ -3074,7 +3074,7 @@ BOOL common_util_get_properties(int table_type,
 						return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case RECIPIENT_PROPERTIES_TABLE:
 				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
@@ -3089,7 +3089,7 @@ BOOL common_util_get_properties(int table_type,
 						return FALSE;
 				}
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case ATTACHMENT_PROPERTIES_TABLE:
 				sprintf(sql_string, "SELECT propval "
@@ -3098,7 +3098,7 @@ BOOL common_util_get_properties(int table_type,
 				if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 					return FALSE;
 				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY));
+				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			}
 		} else {
@@ -3206,7 +3206,7 @@ BOOL common_util_get_properties(int table_type,
 			else
 				pvalue = common_util_convert_copy(FALSE,
 					cpid, sqlite3_column_text(pstmt, 1));
-		} else if (PROPVAL_TYPE_WSTRING == proptype) {
+		} else if (proptype == PT_UNICODE) {
 			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
 				pvalue = common_util_dup(
 						sqlite3_column_text(pstmt, 1));
@@ -3386,7 +3386,7 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_MV_STRING8:
-			case PROPVAL_TYPE_WSTRING_ARRAY:
+			case PT_MV_UNICODE:
 				pvalue = common_util_alloc(sizeof(STRING_ARRAY));
 				if (NULL != pvalue) {
 					ext_buffer_pull_init(&ext_pull,
@@ -4185,9 +4185,9 @@ BOOL common_util_set_properties(int table_type,
 		}
 		proptype = PROP_TYPE(ppropvals->ppropval[i].proptag);
 		if (cpid != 0 && proptype == PT_STRING8)
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PROPVAL_TYPE_WSTRING));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_UNICODE));
 		else if (cpid != 0 && proptype == PT_MV_STRING8)
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PROPVAL_TYPE_WSTRING_ARRAY));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_MV_UNICODE));
 		else
 			sqlite3_bind_int64(pstmt, 1, ppropvals->ppropval[i].proptag);
 		switch (proptype) {
@@ -4205,7 +4205,7 @@ BOOL common_util_set_properties(int table_type,
 			sqlite3_bind_text(pstmt, 2, pstring, -1, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			sqlite3_bind_text(pstmt, 2, ppropvals->ppropval[i].pvalue,
 												-1, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
@@ -4395,7 +4395,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			ext_buffer_push_free(&ext_push);
 			break;
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -4537,9 +4537,9 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 		proptag = pproptags->pproptag[i];
 		switch (PROP_TYPE(proptag)) {
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PT_UNICODE));
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -4552,9 +4552,9 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 			}
 			break;
 		case PT_MV_STRING8:
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING_ARRAY));
+			sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE));
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
 				sqlite3_finalize(pstmt);
 				return FALSE;
@@ -5335,7 +5335,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 	case RESTRICTION_TYPE_CONTENT: {
 		RESTRICTION_CONTENT *rcon = pres->pres;
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
-		    PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
@@ -5385,7 +5385,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			if (strcasestr(pvalue, rprop->propval.pvalue) != nullptr)
 				return TRUE;
@@ -5578,7 +5578,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	}
 	case RESTRICTION_TYPE_CONTENT: {
 		RESTRICTION_CONTENT *rcon = pres->pres;
-		if (PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		if (PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
@@ -5630,7 +5630,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		    pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
+			if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 				return FALSE;
 			if (strcasestr(pvalue, rprop->propval.pvalue) != nullptr)
 				return TRUE;
@@ -5743,7 +5743,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	case RESTRICTION_TYPE_CONTENT: {
 		RESTRICTION_CONTENT *rcon = pres->pres;
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
-		    PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
@@ -5806,7 +5806,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 			    pvalue == nullptr)
 				return FALSE;
 			if (rprop->proptag == PROP_TAG_ANR) {
-				if (PROP_TYPE(rprop->propval.proptag) != PROPVAL_TYPE_WSTRING)
+				if (PROP_TYPE(rprop->propval.proptag) != PT_UNICODE)
 					return FALSE;
 				if (strcasestr(pvalue, rprop->propval.pvalue) != nullptr)
 					return TRUE;
@@ -6809,7 +6809,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 	}
 	switch (proptype) {
 	case PT_STRING8:
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		sqlite3_bind_text(pstmt, bind_index,
 				pvalue, -1, SQLITE_STATIC);
 		break;
@@ -6879,7 +6879,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 	}
 	switch (proptype) {
 	case PT_STRING8:
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		pvalue = (void*)sqlite3_column_text(pstmt, column_index);
 		if (NULL == pvalue) {
 			return NULL;

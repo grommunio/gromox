@@ -268,7 +268,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_wstring(
 			pext, (char**)ppval)) {
 			return FALSE;	
@@ -350,7 +350,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		*ppval = pext->alloc(sizeof(STRING_ARRAY));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -759,7 +759,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_WSTRING:
+	case PT_UNICODE:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_wstring(
 			pext, pval)) {
 			return FALSE;
@@ -809,7 +809,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_WSTRING_ARRAY:
+	case PT_MV_UNICODE:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_wstring_array(
 			pext, pval)) {
 			return FALSE;	

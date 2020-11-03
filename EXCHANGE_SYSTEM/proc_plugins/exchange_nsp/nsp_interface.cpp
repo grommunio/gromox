@@ -1771,7 +1771,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 			}
 			return FALSE;
 		case PT_STRING8:
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
 				if (strcasecmp(prop_val.value.pstr,

@@ -1272,7 +1272,7 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 			return FALSE;	
 		}
 	} else {
-		if (ptyped->type != PROPVAL_TYPE_WSTRING)
+		if (ptyped->type != PT_UNICODE)
 			return TRUE;
 		tmp_len = 2*strlen(ptyped->pvalue) + 1;
 		pvalue = common_util_alloc(tmp_len);
@@ -1680,15 +1680,14 @@ static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 {
 	if (TRUE == to_unicode) {
 		if (PROP_TYPE(*pproptag) == PT_STRING8)
-			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_WSTRING);
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PT_UNICODE);
 		else if (PROP_TYPE(*pproptag) == PT_MV_STRING8)
-			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_WSTRING_ARRAY);
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PT_MV_UNICODE);
 	} else {
-		if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING) {
+		if (PROP_TYPE(*pproptag) == PT_UNICODE)
 			*pproptag = CHANGE_PROP_TYPE(*pproptag, PT_STRING8);
-		} else if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING_ARRAY) {
+		else if (PROP_TYPE(*pproptag) == PT_MV_UNICODE)
 			*pproptag = CHANGE_PROP_TYPE(*pproptag, PT_MV_STRING8);
-		}
 	}
 }
 
@@ -1746,7 +1745,7 @@ BOOL common_util_convert_tagged_propval(
 		}
 	} else {
 		switch (PROP_TYPE(ppropval->proptag)) {
-		case PROPVAL_TYPE_WSTRING:
+		case PT_UNICODE:
 			len = 2*strlen(ppropval->pvalue) + 1;
 			pstring = common_util_alloc(len);
 			if (NULL == pstring) {
@@ -1759,7 +1758,7 @@ BOOL common_util_convert_tagged_propval(
 			ppropval->pvalue = pstring;
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PT_MV_UNICODE:
 			for (i=0; i<((STRING_ARRAY*)ppropval->pvalue)->count; i++) {
 				len = 2*strlen(((STRING_ARRAY*)
 						ppropval->pvalue)->ppstr[i]) + 1;

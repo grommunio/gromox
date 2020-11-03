@@ -2535,7 +2535,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 	case RESTRICTION_TYPE_CONTENT: {
 		auto rcon = static_cast<RESTRICTION_CONTENT *>(pfilter->pres);
 		if (PROP_TYPE(rcon->proptag) != PT_STRING8 &&
-		    PROP_TYPE(rcon->proptag) != PROPVAL_TYPE_WSTRING)
+		    PROP_TYPE(rcon->proptag) != PT_UNICODE)
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
