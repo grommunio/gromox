@@ -1390,8 +1390,7 @@ static void tnef_tpropval_array_to_unicode(
 		}
 		propval_free(proptype, pproplist->ppropval[i].pvalue);
 		pproplist->ppropval[i].pvalue = pvalue;
-		pproplist->ppropval[i].proptag &= 0xFFFF0000;
-		pproplist->ppropval[i].proptag |= proptype;
+		pproplist->ppropval[i].proptag = CHANGE_PROP_TYPE(pproplist->ppropval[i].proptag, proptype);
 	}
 }
 

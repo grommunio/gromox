@@ -33,12 +33,10 @@ uint32_t proptag_to_phptag(uint32_t proptag)
 	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_WSTRING:
-		proptag1 &= 0xFFFF0000;
-		proptag1 |= PROPVAL_TYPE_STRING;
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING);
 		break;
 	case PROPVAL_TYPE_WSTRING_ARRAY:
-		proptag1 &= 0xFFFF0000;
-		proptag1 |= PROPVAL_TYPE_STRING_ARRAY;
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING_ARRAY);
 		break;
 	}
 	return proptag1;
@@ -51,12 +49,10 @@ uint32_t phptag_to_proptag(uint32_t proptag)
 	proptag1 = proptag;
 	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_STRING:
-		proptag1 &= 0xFFFF0000;
-		proptag1 |= PROPVAL_TYPE_WSTRING;
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_WSTRING);
 		break;
 	case PROPVAL_TYPE_STRING_ARRAY:
-		proptag1 &= 0xFFFF0000;
-		proptag1 |= PROPVAL_TYPE_WSTRING_ARRAY;
+		proptag1 = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_WSTRING_ARRAY);
 		break;
 	}
 	return proptag1;

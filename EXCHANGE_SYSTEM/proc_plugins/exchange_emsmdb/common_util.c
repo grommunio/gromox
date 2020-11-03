@@ -1239,7 +1239,7 @@ BOOL common_util_propvals_to_row(
 			if (NULL == prow->pppropval[i]) {
 				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
 				pflagged_val->pvalue = common_util_get_propvals(ppropvals,
-					(pcolumns->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_ERROR);
+					CHANGE_PROP_TYPE(pcolumns->pproptag[i], PROPVAL_TYPE_ERROR));
 				if (NULL == pflagged_val->pvalue) {
 					pflagged_val->pvalue = const_cast(uint32_t *, &errcode);
 				}
@@ -1329,7 +1329,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 			if (NULL == prow->pppropval[i]) {
 				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
 				pflagged_val->pvalue = common_util_get_propvals(ppropvals,
-					(pcolumns->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_ERROR);
+					CHANGE_PROP_TYPE(pcolumns->pproptag[i], PROPVAL_TYPE_ERROR));
 				if (NULL == pflagged_val->pvalue) {
 					pflagged_val->pvalue = const_cast(uint32_t *, &errcode);
 				}
@@ -1680,19 +1680,15 @@ static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 {
 	if (TRUE == to_unicode) {
 		if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_STRING) {
-			*pproptag &= 0xFFFF0000;
-			*pproptag |= PROPVAL_TYPE_WSTRING;
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_WSTRING);
 		} else if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_STRING_ARRAY) {
-			*pproptag &= 0xFFFF0000;
-			*pproptag |= PROPVAL_TYPE_WSTRING_ARRAY;
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_WSTRING_ARRAY);
 		}
 	} else {
 		if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING) {
-			*pproptag &= 0xFFFF0000;
-			*pproptag |= PROPVAL_TYPE_STRING;
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_STRING);
 		} else if (PROP_TYPE(*pproptag) == PROPVAL_TYPE_WSTRING_ARRAY) {
-			*pproptag &= 0xFFFF0000;
-			*pproptag |= PROPVAL_TYPE_STRING_ARRAY;
+			*pproptag = CHANGE_PROP_TYPE(*pproptag, PROPVAL_TYPE_STRING_ARRAY);
 		}
 	}
 }

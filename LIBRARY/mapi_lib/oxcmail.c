@@ -720,7 +720,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 			propval.proptag = proptag1;
 			propval.pvalue = utf8_field;
 		} else {
-			propval.proptag = (proptag1 & 0xFFFF0000) | PROPVAL_TYPE_STRING;
+			propval.proptag = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING);
 			propval.pvalue = paddr->display_name;
 		}
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -731,7 +731,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		if (TRUE == oxcmail_check_ascii(username)) {
 			propval.proptag = proptag1;
 		} else {
-			propval.proptag = (proptag1 & 0xFFFF0000) | PROPVAL_TYPE_STRING;
+			propval.proptag = CHANGE_PROP_TYPE(proptag1, PROPVAL_TYPE_STRING);
 		}
 		propval.pvalue = username;
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {

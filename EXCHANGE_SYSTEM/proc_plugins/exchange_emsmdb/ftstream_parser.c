@@ -439,8 +439,7 @@ static int ftstream_parser_read_element(
 		/* codepage string */
 		codepage = proptype & 0x7FFF;
 		if (1200 == codepage) {
-			ppropval->proptag &= 0xFFFF0000;
-			ppropval->proptag |= PROPVAL_TYPE_WSTRING;
+			ppropval->proptag = CHANGE_PROP_TYPE(ppropval->proptag, PROPVAL_TYPE_WSTRING);
 			ppropval->pvalue = ftstream_parser_read_wstring(
 										pstream, &b_continue);
 		} else {
@@ -933,14 +932,13 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 			proptype = PROP_TYPE(propval.proptag);
 			if (proptype & 0x8000) {
 				codepage = proptype & 0x7FFF;
-				propval.proptag &= 0xFFFF0000;
 				len = 2*strlen(propval.pvalue) + 2;
 				pvalue = common_util_alloc(len);
 				if (NULL == pvalue || common_util_mb_to_utf8(
 					codepage, propval.pvalue, pvalue, len) <= 0) {
-					propval.proptag |= PROPVAL_TYPE_STRING;
+					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PROPVAL_TYPE_STRING);
 				} else {
-					propval.proptag |= PROPVAL_TYPE_WSTRING;
+					propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PROPVAL_TYPE_WSTRING);
 					propval.pvalue = pvalue;
 				}
 			}

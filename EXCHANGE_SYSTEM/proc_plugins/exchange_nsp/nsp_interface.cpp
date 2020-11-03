@@ -754,7 +754,6 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 {
 	int i;
 	uint32_t err_val;
-	uint32_t tmp_tag;
 	uint8_t node_type;
 	PROPERTY_VALUE *pprop;
 	
@@ -770,10 +769,7 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 		err_val = nsp_interface_fetch_property(pnode, b_ephid,
 				codepage, pproptags->pproptag[i], pprop, NULL);
 		if (err_val != ecSuccess) {
-			tmp_tag = pprop->proptag;
-			tmp_tag &= 0xFFFF0000;
-			tmp_tag += PROPVAL_TYPE_ERROR;
-			pprop->proptag = tmp_tag;
+			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PROPVAL_TYPE_ERROR);
 			pprop->value.err = err_val;
 		}
 	}
@@ -1090,7 +1086,6 @@ static void nsp_interface_make_ptyperror_row(
 	PROPTAG_ARRAY *pproptags, PROPERTY_ROW *prow)
 {
 	int i;
-	uint32_t tmp_tag;
 	
 	prow->reserved = 0x0;
 	prow->cvalues = pproptags->cvalues;
@@ -1100,10 +1095,7 @@ static void nsp_interface_make_ptyperror_row(
 		return;
 	}
 	for (i=0; i<prow->cvalues; i++) {
-		tmp_tag = pproptags->pproptag[i];
-		tmp_tag = (tmp_tag & 0xFFFF0000) | PROPVAL_TYPE_ERROR;
-
-		prow->pprops[i].proptag = tmp_tag;
+		prow->pprops[i].proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_ERROR);
 		prow->pprops[i].reserved = 0x0;
 		prow->pprops[i].value.err = 0;
 	}
@@ -2694,7 +2686,6 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 	unsigned int depth, int container_id, const char *str_dname,
 	PERMANENT_ENTRYID *ppermeid_parent, PERMANENT_ENTRYID *ppermeid)
 {
-	int	tmp_tag;
 	int tmp_len;
 	char tmp_title[1024];
 	
@@ -2715,10 +2706,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 	prow->pprops[0].reserved = 0;
 	if (FALSE == common_util_permanent_entryid_to_binary(
 		ppermeid, &prow->pprops[0].value.bin)) {
-		tmp_tag = (int) prow->pprops[0].proptag;
-		tmp_tag &= 0xFFFF0000;
-		tmp_tag += PROPVAL_TYPE_ERROR;
-		prow->pprops[0].proptag = tmp_tag;
+		prow->pprops[0].proptag = CHANGE_PROP_TYPE(prow->pprops[0].proptag, PROPVAL_TYPE_ERROR);
 		prow->pprops[0].value.err = ecMAPIOOM;
 	}
 	
@@ -2769,10 +2757,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 			}
 		}
 		if (NULL == prow->pprops[4].value.pstr) {
-			tmp_tag = (int) prow->pprops[4].proptag;
-			tmp_tag &= 0xFFFF0000;
-			tmp_tag += PROPVAL_TYPE_ERROR;
-			prow->pprops[4].proptag = tmp_tag;
+			prow->pprops[4].proptag = CHANGE_PROP_TYPE(prow->pprops[4].proptag, PROPVAL_TYPE_ERROR);
 			prow->pprops[4].value.err = ecMAPIOOM;
 		}
 	}
@@ -2788,10 +2773,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 		prow->pprops[6].reserved = 0;
 		if (FALSE == common_util_permanent_entryid_to_binary(
 			ppermeid_parent, &prow->pprops[6].value.bin)) {
-			tmp_tag = (int) prow->pprops[6].proptag;
-			tmp_tag &= 0xFFFF0000;
-			tmp_tag += PROPVAL_TYPE_ERROR;
-			prow->pprops[6].proptag = tmp_tag;
+			prow->pprops[6].proptag = CHANGE_PROP_TYPE(prow->pprops[6].proptag, PROPVAL_TYPE_ERROR);
 			prow->pprops[6].value.err = ecMAPIOOM;
 		}
 	}
@@ -3378,7 +3360,6 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 {
 	int i;
 	uint32_t err_val;
-	uint32_t tmp_tag;
 	PROPERTY_VALUE *pprop;
 	
 	for (i=0; i<pproptags->cvalues; i++) {
@@ -3389,10 +3370,7 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 		err_val = nsp_interface_fetch_smtp_property(
 			paddress, pproptags->pproptag[i], pprop);
 		if (err_val != ecSuccess) {
-			tmp_tag = pprop->proptag;
-			tmp_tag &= 0xFFFF0000;
-			tmp_tag += PROPVAL_TYPE_ERROR;
-			pprop->proptag = tmp_tag;
+			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PROPVAL_TYPE_ERROR);
 			pprop->value.err = err_val;
 		}
 	}

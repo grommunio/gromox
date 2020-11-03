@@ -1358,11 +1358,11 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			}
 			if (PROP_TYPE(proptag) == PROPVAL_TYPE_STRING) {
 				if (tpropval_array_get_propval(pproplist,
-				    (proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING) != NULL)
+				    CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING)) != nullptr)
 					continue;
 			} else if (PROP_TYPE(proptag) == PROPVAL_TYPE_WSTRING) {
 				if (tpropval_array_get_propval(pproplist,
-				    (proptag & 0xFFFF0000) | PROPVAL_TYPE_STRING) != NULL)
+				    CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_STRING)) != nullptr)
 					continue;
 			}
 			if (NULL != tpropval_array_get_propval(pproplist, proptag)) {
@@ -1723,11 +1723,11 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 			}
 			if (PROP_TYPE(proptag) == PROPVAL_TYPE_STRING) {
 				if (tpropval_array_get_propval(pproplist,
-				    (proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING) != NULL)
+				    CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING)) != nullptr)
 					continue;
 			} else if (PROP_TYPE(proptag) == PROPVAL_TYPE_WSTRING) {
 				if (tpropval_array_get_propval(pproplist,
-				    (proptag & 0xFFFF0000) | PROPVAL_TYPE_STRING) != NULL)
+				    CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_STRING)) != nullptr)
 					continue;
 			}
 			if (NULL != tpropval_array_get_propval(pproplist, proptag)) {
@@ -2421,7 +2421,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 		}
 		ppropvals->ppropval[ppropvals->count].pvalue = NULL;
 		if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_STRING) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING);
 			pvalue = tpropval_array_get_propval(
 				&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2431,7 +2431,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_WSTRING) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING);
 			pvalue = tpropval_array_get_propval(
 				&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2441,7 +2441,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 					common_util_convert_copy(TRUE, cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_STRING_ARRAY) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY);
 			pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2452,7 +2452,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 						FALSE, cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_WSTRING_ARRAY) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING_ARRAY;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING_ARRAY);
 			pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2463,7 +2463,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 						TRUE, cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_UNSPECIFIED) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING);
 			pvalue = tpropval_array_get_propval(
 				&pattachment->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2481,7 +2481,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				((TYPED_PROPVAL*)ppropvals->ppropval[
 					ppropvals->count].pvalue)->pvalue =	pvalue;
 			} else {
-				proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING;
+				proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING);
 				pvalue = tpropval_array_get_propval(
 					&pattachment->proplist, proptag);
 				if (NULL != pvalue) {
@@ -2836,7 +2836,7 @@ BOOL exmdb_server_get_instance_properties(
 		}
 		ppropvals->ppropval[ppropvals->count].pvalue = NULL;
 		if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_STRING) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2847,7 +2847,7 @@ BOOL exmdb_server_get_instance_properties(
 					pinstance->cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_WSTRING) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2858,7 +2858,7 @@ BOOL exmdb_server_get_instance_properties(
 					pinstance->cpid, static_cast<char *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_STRING_ARRAY) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
@@ -2869,7 +2869,7 @@ BOOL exmdb_server_get_instance_properties(
 					FALSE, pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_WSTRING_ARRAY) {
-			proptag = (pproptags->pproptag[i] & 0xFFFF0000) | PROPVAL_TYPE_STRING_ARRAY;
+			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING_ARRAY);
 			pvalue = tpropval_array_get_propval(
 					&pmsgctnt->proplist, proptag);
 			if (NULL != pvalue) {
@@ -3376,12 +3376,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROPVAL_TYPE_STRING:
 			case PROPVAL_TYPE_WSTRING:
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING);
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_STRING));
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING);
-				propval.proptag = (pproperties->ppropval[i].proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING;
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING));
+				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PROPVAL_TYPE_WSTRING) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
 				} else {
@@ -3396,12 +3394,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROPVAL_TYPE_STRING_ARRAY:
 			case PROPVAL_TYPE_WSTRING_ARRAY:
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING_ARRAY);
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_STRING_ARRAY));
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING_ARRAY);
-				propval.proptag = (pproperties->ppropval[i].proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY;
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING_ARRAY));
+				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING_ARRAY);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PROPVAL_TYPE_WSTRING_ARRAY) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
 				} else {
@@ -3477,12 +3473,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROPVAL_TYPE_STRING:
 			case PROPVAL_TYPE_WSTRING:
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING);
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_STRING));
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING);
-				propval.proptag = (pproperties->ppropval[i].proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING;
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING));
+				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PROPVAL_TYPE_WSTRING) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
 				} else {
@@ -3497,12 +3491,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROPVAL_TYPE_STRING_ARRAY:
 			case PROPVAL_TYPE_WSTRING_ARRAY:
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING_ARRAY);
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_STRING_ARRAY));
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproperties->ppropval[i].proptag & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING_ARRAY);
-				propval.proptag = (pproperties->ppropval[i].proptag & 0xFFFF0000) | PROPVAL_TYPE_WSTRING_ARRAY;
+					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING_ARRAY));
+				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PROPVAL_TYPE_WSTRING_ARRAY);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PROPVAL_TYPE_WSTRING_ARRAY) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
 				} else {
@@ -3603,23 +3595,19 @@ BOOL exmdb_server_remove_instance_properties(
 			switch (PROP_TYPE(pproptags->pproptag[i])) {
 			case PROPVAL_TYPE_STRING:
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING));
 				break;
 			case PROPVAL_TYPE_WSTRING:
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING));
 				break;
 			case PROPVAL_TYPE_STRING_ARRAY:
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING_ARRAY);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY));
 				break;
 			case PROPVAL_TYPE_WSTRING_ARRAY:
 				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING_ARRAY);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING_ARRAY));
 				break;
 			}
 		}
@@ -3641,23 +3629,19 @@ BOOL exmdb_server_remove_instance_properties(
 			switch (PROP_TYPE(pproptags->pproptag[i])) {
 			case PROPVAL_TYPE_STRING:
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING));
 				break;
 			case PROPVAL_TYPE_WSTRING:
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING));
 				break;
 			case PROPVAL_TYPE_STRING_ARRAY:
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_WSTRING_ARRAY);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING_ARRAY));
 				break;
 			case PROPVAL_TYPE_WSTRING_ARRAY:
 				tpropval_array_remove_propval(&pattachment->proplist,
-					(pproptags->pproptag[i] & 0xFFFF0000) |
-					PROPVAL_TYPE_STRING_ARRAY);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_STRING_ARRAY));
 				break;
 			}
 		}

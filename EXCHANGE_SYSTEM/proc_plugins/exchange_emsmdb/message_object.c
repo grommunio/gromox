@@ -72,15 +72,13 @@ static uint32_t message_object_rectify_proptag(uint32_t proptag)
 {
 	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_STRING:
-		proptag &= 0xFFFF0000;
-		proptag |= PROPVAL_TYPE_WSTRING;
+		proptag = CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING);
 		break;
 	case PROPVAL_TYPE_STRING_ARRAY:
-		proptag &= 0xFFFF0000;
-		proptag |= PROPVAL_TYPE_WSTRING_ARRAY;
+		proptag = CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING_ARRAY);
 		break;
 	case PROPVAL_TYPE_UNSPECIFIED:
-		proptag |= PROPVAL_TYPE_WSTRING;
+		proptag = CHANGE_PROP_TYPE(proptag, PROPVAL_TYPE_WSTRING);
 		break;
 	}
 	return proptag;
@@ -1402,7 +1400,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 				ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
-					(pproptags->pproptag[i]&0xFFFF0000)|PROPVAL_TYPE_ERROR;
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_ERROR);
 				ppropvals->ppropval[ppropvals->count].pvalue =
 					const_cast(uint32_t *, &err_code);
 			}

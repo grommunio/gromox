@@ -488,8 +488,9 @@ static uint32_t stream_object_commit(STREAM_OBJECT *pstream)
 	case PROPVAL_TYPE_STRING:
 	case PROPVAL_TYPE_WSTRING:
 		return zarafa_client_setpropval(pstream->hsession,
-			pstream->hparent, pstream->proptag & 0xFFFF0000
-			| PROPVAL_TYPE_WSTRING, pstream->content_bin.pb);
+			pstream->hparent,
+			CHANGE_PROP_TYPE(pstream->proptag, PROPVAL_TYPE_WSTRING),
+			pstream->content_bin.pb);
 	default:
 		return ecInvalidParam;
 	}
