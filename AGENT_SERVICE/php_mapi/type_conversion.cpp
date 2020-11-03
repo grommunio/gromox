@@ -1239,54 +1239,61 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 			add_assoc_stringl(pzret, proptag_string,
 				static_cast<const char *>(ppropval->pvalue), sizeof(GUID));
 			break;
-		case PROPVAL_TYPE_SHORT_ARRAY:
+		case PROPVAL_TYPE_SHORT_ARRAY: {
 			array_init(&pzmval);
-			for (j=0; j<((SHORT_ARRAY*)ppropval->pvalue)->count; j++) {
+			auto xs = static_cast<SHORT_ARRAY *>(ppropval->pvalue);
+			for (j = 0; j < xs->count; ++j) {
 				sprintf(key, "%i", j);
-				add_assoc_long(&pzmval, key,
-					((SHORT_ARRAY*)ppropval->pvalue)->ps[j]);
+				add_assoc_long(&pzmval, key, xs->ps[j]);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
-		case PROPVAL_TYPE_LONG_ARRAY:
+		}
+		case PROPVAL_TYPE_LONG_ARRAY: {
 			array_init(&pzmval);
-			for (j=0; j<((LONG_ARRAY*)ppropval->pvalue)->count; j++) {
+			auto xl = static_cast<LONG_ARRAY *>(ppropval->pvalue);
+			for (j = 0; j < xl->count; ++j) {
 				sprintf(key, "%i", j);
-				add_assoc_long(&pzmval, key,
-					((LONG_ARRAY*)ppropval->pvalue)->pl[j]);
+				add_assoc_long(&pzmval, key, xl->pl[j]);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
-		case PROPVAL_TYPE_BINARY_ARRAY:
+		}
+		case PROPVAL_TYPE_BINARY_ARRAY: {
 			array_init(&pzmval);
-			for (j=0; j<((BINARY_ARRAY*)ppropval->pvalue)->count; j++) {
+			auto xb = static_cast<BINARY_ARRAY *>(ppropval->pvalue);
+			for (j = 0; j < xb->count; ++j) {
 				sprintf(key, "%i", j);
 				add_assoc_stringl(&pzmval, key,
-					reinterpret_cast<const char *>(static_cast<BINARY_ARRAY *>(ppropval->pvalue)->pbin[j].pb),
-					static_cast<BINARY_ARRAY *>(ppropval->pvalue)->pbin[j].cb);
+					reinterpret_cast<const char *>(xb->pbin[j].pb),
+					xb->pbin[j].cb);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
+		}
 		case PROPVAL_TYPE_STRING_ARRAY:
-		case PROPVAL_TYPE_WSTRING_ARRAY:
+		case PROPVAL_TYPE_WSTRING_ARRAY: {
 			array_init(&pzmval);
-			for (j=0; j<((STRING_ARRAY*)ppropval->pvalue)->count; j++) {
+			auto xs = static_cast<STRING_ARRAY *>(ppropval->pvalue);
+			for (j = 0; j < xs->count; ++j) {
 				sprintf(key, "%i", j);
-				add_assoc_string(&pzmval, key,
-					static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr[j]);
+				add_assoc_string(&pzmval, key, xs->ppstr[j]);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
-		case PROPVAL_TYPE_GUID_ARRAY:
+		}
+		case PROPVAL_TYPE_GUID_ARRAY: {
 			array_init(&pzmval);
-			for (j=0; j<((GUID_ARRAY*)ppropval->pvalue)->count; j++) {
+			auto xb = static_cast<GUID_ARRAY *>(ppropval->pvalue);
+			for (j = 0; j < xb->count; ++j) {
 				sprintf(key, "%i", j);
 				add_assoc_stringl(&pzmval, key,
-					(char*)&((GUID_ARRAY*)ppropval->pvalue)->pguid[j],
+					reinterpret_cast<char *>(&xb->pguid[j]),
 					sizeof(GUID));
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;
+		}
 		case PROPVAL_TYPE_RULE:
 			prule = (RULE_ACTIONS*)ppropval->pvalue;
 			array_init(&pzactarray);
@@ -1297,28 +1304,28 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 				add_assoc_long(&pzactval, "flavor", prule->pblock[j].flavor);
 				switch (prule->pblock[j].type) {
 				case ACTION_TYPE_OP_MOVE:
-				case ACTION_TYPE_OP_COPY:
+				case ACTION_TYPE_OP_COPY: {
+					auto xq = static_cast<MOVECOPY_ACTION *>(prule->pblock[j].pdata);
 					add_assoc_stringl(&pzactval, "storeentryid",
-						reinterpret_cast<const char *>(static_cast<MOVECOPY_ACTION *>(prule->pblock[j].pdata)->store_eid.pb),
-						((MOVECOPY_ACTION*)
-						prule->pblock[j].pdata)->store_eid.cb);
+						reinterpret_cast<char *>(xq->store_eid.pb),
+						xq->store_eid.cb);
 					add_assoc_stringl(&pzactval, "folderentryid",
-						reinterpret_cast<const char *>(static_cast<MOVECOPY_ACTION *>(prule->pblock[j].pdata)->folder_eid.pb),
-						((MOVECOPY_ACTION*)
-						prule->pblock[j].pdata)->folder_eid.cb);
+						reinterpret_cast<char *>(xq->folder_eid.pb),
+						xq->folder_eid.cb);
 					break;
+				}
 				case ACTION_TYPE_OP_REPLY:
-				case ACTION_TYPE_OP_OOF_REPLY:
+				case ACTION_TYPE_OP_OOF_REPLY: {
+					auto xq = static_cast<REPLY_ACTION *>(prule->pblock[j].pdata);
 					add_assoc_stringl(&pzactval, "replyentryid",
-						reinterpret_cast<const char *>(static_cast<REPLY_ACTION *>(prule->pblock[j].pdata)->message_eid.pb),
-						((REPLY_ACTION*)
-						prule->pblock[j].pdata)->message_eid.cb);
+						reinterpret_cast<char *>(xq->message_eid.pb),
+						xq->message_eid.cb);
 					add_assoc_stringl(
 						&pzactval, "replyguid",
-						(char*)&((REPLY_ACTION*)
-						prule->pblock[j].pdata)->template_guid,
+						reinterpret_cast<char *>(&xq->template_guid),
 						sizeof(GUID));
 					break;
+				}
 				case ACTION_TYPE_OP_DEFER_ACTION:
 					add_assoc_stringl(&pzactval, "dam",
 						static_cast<const char *>(prule->pblock[j].pdata), prule->pblock[j].length
@@ -1329,14 +1336,12 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 						*(uint32_t*)prule->pblock[j].pdata);
 					break;
 				case ACTION_TYPE_OP_FORWARD:
-				case ACTION_TYPE_OP_DELEGATE:
+				case ACTION_TYPE_OP_DELEGATE: {
 					array_init(&pzalist);
-					for (k=0; k<((FORWARDDELEGATE_ACTION*)
-						prule->pblock[j].pdata)->count; k++) {
-						tmp_propvals.count = ((FORWARDDELEGATE_ACTION*)
-								prule->pblock[j].pdata)->pblock[k].count;
-						tmp_propvals.ppropval = ((FORWARDDELEGATE_ACTION*)
-								prule->pblock[j].pdata)->pblock[k].ppropval;
+					auto xq = static_cast<FORWARDDELEGATE_ACTION *>(prule->pblock[j].pdata);
+					for (k = 0; k < xq->count; ++k) {
+						tmp_propvals.count = xq->pblock[k].count;
+						tmp_propvals.ppropval = xq->pblock[k].ppropval;
 						if (!tpropval_array_to_php(&tmp_propvals,
 							&pzpropval TSRMLS_CC)) {
 							return 0;
@@ -1346,6 +1351,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 					}
 					add_assoc_zval(&pzactval, "adrlist", &pzalist);
 					break;
+				}
 				case ACTION_TYPE_OP_TAG:
 					tmp_propvals.count = 1;
 					tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(prule->pblock[j].pdata);
