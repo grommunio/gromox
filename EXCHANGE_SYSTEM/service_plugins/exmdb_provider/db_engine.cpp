@@ -1262,14 +1262,14 @@ static int db_engine_compare_propval(
 		}
 		return 0;
 	case PT_LONG:
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 		if (*(uint32_t*)pvalue1 > *(uint32_t*)pvalue2) {
 			return 1;
 		} else if (*(uint32_t*)pvalue1 < *(uint32_t*)pvalue2) {
 			return -1;
 		}
 		return 0;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		if (*(uint8_t*)pvalue1 > *(uint8_t*)pvalue2) {
 			return 1;
 		} else if (*(uint8_t*)pvalue1 < *(uint8_t*)pvalue2) {

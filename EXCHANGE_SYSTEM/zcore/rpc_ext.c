@@ -210,7 +210,7 @@ static BOOL rpc_ext_pull_propval(
 		}
 		return TRUE;
 	case PT_LONG:
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 		*ppval = pext->alloc(sizeof(uint32_t));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -241,7 +241,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		}
 		return TRUE;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		*ppval = pext->alloc(sizeof(uint8_t));
 		if (NULL == *ppval) {
 			return FALSE;
@@ -721,7 +721,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		}
 		return TRUE;
 	case PT_LONG:
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 			pext, *(uint32_t*)pval)) {
 			return FALSE;	
@@ -740,7 +740,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 			return FALSE;	
 		}
 		return TRUE;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(
 			pext, *(uint8_t*)pval)) {
 			return FALSE;	

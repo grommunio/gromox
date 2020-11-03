@@ -658,7 +658,7 @@ BOOL folder_object_get_properties(FOLDER_OBJECT *pfolder,
 				ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_ERROR);
+					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
 				ppropvals->ppropval[ppropvals->count].pvalue =
 					const_cast(uint32_t *, &err_code);
 			}

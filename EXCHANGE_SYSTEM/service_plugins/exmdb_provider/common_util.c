@@ -3249,7 +3249,7 @@ BOOL common_util_get_properties(int table_type,
 					*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 0);
 				}
 				break;
-			case PROPVAL_TYPE_BYTE:
+			case PT_BOOLEAN:
 				pvalue = common_util_alloc(sizeof(uint8_t));
 				if (NULL != pvalue) {
 					*(uint8_t*)pvalue = sqlite3_column_int64(pstmt, 0);
@@ -4240,7 +4240,7 @@ BOOL common_util_set_properties(int table_type,
 				*(uint32_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
 			break;
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			sqlite3_bind_int64(pstmt, 2,
 				*(uint8_t*)ppropvals->ppropval[i].pvalue);
 			s_result = sqlite3_step(pstmt);
@@ -6833,7 +6833,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 	case PT_LONG:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint32_t*)pvalue);
 		break;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		sqlite3_bind_int64(pstmt, bind_index, *(uint8_t*)pvalue);
 		break;
 	case PROPVAL_TYPE_GUID:
@@ -6930,7 +6930,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		*(uint32_t*)pvalue = sqlite3_column_int64(
 							pstmt, column_index);
 		return pvalue;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		pvalue = common_util_alloc(sizeof(uint8_t));
 		if (NULL == pvalue) {
 			return NULL;

@@ -1239,7 +1239,7 @@ BOOL common_util_propvals_to_row(
 			if (NULL == prow->pppropval[i]) {
 				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
 				pflagged_val->pvalue = common_util_get_propvals(ppropvals,
-					CHANGE_PROP_TYPE(pcolumns->pproptag[i], PROPVAL_TYPE_ERROR));
+					CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
 				if (NULL == pflagged_val->pvalue) {
 					pflagged_val->pvalue = const_cast(uint32_t *, &errcode);
 				}
@@ -1329,7 +1329,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 			if (NULL == prow->pppropval[i]) {
 				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
 				pflagged_val->pvalue = common_util_get_propvals(ppropvals,
-					CHANGE_PROP_TYPE(pcolumns->pproptag[i], PROPVAL_TYPE_ERROR));
+					CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
 				if (NULL == pflagged_val->pvalue) {
 					pflagged_val->pvalue = const_cast(uint32_t *, &errcode);
 				}

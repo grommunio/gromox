@@ -1509,7 +1509,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			status = ndr_pull_uint32(pndr, &r->l);
 			break;
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			status = ndr_pull_uint8(pndr, &r->b);
 			break;
 		case PROPVAL_TYPE_STRING:
@@ -1535,7 +1535,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PROPVAL_TYPE_FILETIME:
 			status = nsp_ndr_pull_filetime(pndr, &r->ftime);
 			break;
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 			status = ndr_pull_uint32(pndr, &r->err);
 			break;
 		case PT_MV_SHORT:
@@ -1577,7 +1577,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			break;
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			break;
 		case PROPVAL_TYPE_STRING:
 			if (NULL != r->pstr) {
@@ -1667,7 +1667,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 			break;
 		case PROPVAL_TYPE_FILETIME:
 			break;
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 			break;
 		case PT_MV_SHORT:
 			status = nsp_ndr_pull_short_array(pndr, FLAG_CONTENT, &r->short_array);
@@ -1747,7 +1747,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			status = ndr_push_uint32(pndr, r->l);
 			break;
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			status = ndr_push_uint8(pndr, r->b);
 			break;
 		case PROPVAL_TYPE_STRING:
@@ -1763,7 +1763,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PROPVAL_TYPE_FILETIME:
 			status = nsp_ndr_push_filetime(pndr, &r->ftime);
 			break;
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 			status = ndr_push_uint32(pndr, r->err);
 			break;
 		case PT_MV_SHORT:
@@ -1806,7 +1806,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PT_LONG:
 		case PROPVAL_TYPE_EMBEDDEDTABLE:
 			break;
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			break;
 		case PROPVAL_TYPE_STRING:
 			if (NULL != r->pstr) {
@@ -1879,7 +1879,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 			break;
 		case PROPVAL_TYPE_FILETIME:
 			break;
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 			break;
 		case PT_MV_SHORT:
 			status = nsp_ndr_push_short_array(pndr, FLAG_CONTENT, &r->short_array);

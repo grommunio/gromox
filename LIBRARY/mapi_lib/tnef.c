@@ -289,7 +289,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return status;
 		}
 		return ext_buffer_pull_advance(pext, 2);
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 	case PT_LONG:
 		r->pvalue = pext->alloc(sizeof(uint32_t));
 		if (NULL == r->pvalue) {
@@ -309,7 +309,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_double(pext, r->pvalue);
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		r->pvalue = pext->alloc(sizeof(uint8_t));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -2277,7 +2277,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			return status;
 		}
 		return ext_buffer_push_bytes(pext, g_pad_bytes, 2);
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 	case PT_LONG:
 		return ext_buffer_push_uint32(pext, *(uint32_t*)r->pvalue);
 	case PT_FLOAT:
@@ -2285,7 +2285,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		return ext_buffer_push_double(pext, *(double*)r->pvalue);
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		status = ext_buffer_push_uint16(pext, *(uint8_t*)r->pvalue);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;

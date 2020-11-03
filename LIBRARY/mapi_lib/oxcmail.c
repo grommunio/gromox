@@ -1393,7 +1393,7 @@ static BOOL oxcmail_parse_message_flag(
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, *plast_propid);
+	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 0;
 	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1439,7 +1439,7 @@ static BOOL oxcmail_parse_classified(char *field,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, *plast_propid);
+		propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
 		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
@@ -1467,7 +1467,7 @@ static BOOL oxcmail_parse_classkeep(char *field,
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, *plast_propid);
+		propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 		if (0 == strcasecmp(field, "true")) {
 			tmp_byte = 1;
 		} else if (0 == strcasecmp(field, "false")) {
@@ -5150,7 +5150,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				message_content_free(pmsg);
 				return FALSE;
 			}
-			propval.proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[0]);
+			propval.proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 1;
 			if (FALSE == tpropval_array_set_propval(
@@ -6166,7 +6166,7 @@ EXPORT_CONTENT_CLASS:
 		return FALSE;
 	}
 	propid = propids.ppropid[0];
-	proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propid);
+	proptag = PROP_TAG(PT_BOOLEAN, propid);
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (FALSE == mime_set_field(phead,
@@ -6185,7 +6185,7 @@ EXPORT_CONTENT_CLASS:
 		return FALSE;
 	}
 	propid = propids.ppropid[0];
-	proptag = PROP_TAG(PROPVAL_TYPE_BYTE, propid);
+	proptag = PROP_TAG(PT_BOOLEAN, propid);
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (FALSE == mime_set_field(phead,

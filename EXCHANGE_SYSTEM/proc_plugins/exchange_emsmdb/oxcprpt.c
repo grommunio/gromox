@@ -177,7 +177,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		tmp_size = propval_size(PROP_TYPE(propvals.ppropval[i].proptag),
 			propvals.ppropval[i].pvalue);
 		if (tmp_size > 0x8000) {
-			propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PROPVAL_TYPE_ERROR);
+			propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 			propvals.ppropval[i].pvalue =
 				common_util_alloc(sizeof(uint32_t));
 			if (NULL == propvals.ppropval[i].pvalue) {
@@ -198,7 +198,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 			case PROPVAL_TYPE_WSTRING:
 				if (0x1000 < propval_size(proptype,
 					propvals.ppropval[i].pvalue)) {
-					propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PROPVAL_TYPE_ERROR);
+					propvals.ppropval[i].proptag = CHANGE_PROP_TYPE(propvals.ppropval[i].proptag, PT_ERROR);
 					propvals.ppropval[i].pvalue =
 						common_util_alloc(sizeof(uint32_t));
 					if (NULL == propvals.ppropval[i].pvalue) {
@@ -252,7 +252,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		for (i=0; i<ppropvals->count; i++) {
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
 				ppropvals->ppropval[i].pvalue) > size_limit) {
-				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PROPVAL_TYPE_ERROR);
+				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
 				ppropvals->ppropval[i].pvalue =
 					common_util_alloc(sizeof(uint32_t));
 				if (NULL == ppropvals->ppropval[i].pvalue) {
@@ -283,7 +283,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		for (i=0; i<ppropvals->count; i++) {
 			if (propval_size(PROP_TYPE(ppropvals->ppropval[i].proptag),
 				ppropvals->ppropval[i].pvalue) > size_limit) {
-				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PROPVAL_TYPE_ERROR);
+				ppropvals->ppropval[i].proptag = CHANGE_PROP_TYPE(ppropvals->ppropval[i].proptag, PT_ERROR);
 				ppropvals->ppropval[i].pvalue =
 								common_util_alloc(sizeof(uint32_t));
 				if (NULL == ppropvals->ppropval[i].pvalue) {

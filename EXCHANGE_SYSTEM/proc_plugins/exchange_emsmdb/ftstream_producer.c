@@ -489,7 +489,7 @@ static BOOL ftstream_producer_write_propvalue(
 	case PT_SHORT:
 		return ftstream_producer_write_uint16(pstream,
 						*(uint16_t*)ppropval->pvalue);
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 	case PT_LONG:
 		return ftstream_producer_write_uint32(pstream,
 						*(uint32_t*)ppropval->pvalue);
@@ -500,7 +500,7 @@ static BOOL ftstream_producer_write_propvalue(
 	case PT_APPTIME:
 		return ftstream_producer_write_double(pstream,
 						*(double*)ppropval->pvalue);
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		return ftstream_producer_write_uint16(pstream,
 						*(uint8_t*)ppropval->pvalue);
 	case PT_CURRENCY:
@@ -1205,10 +1205,8 @@ BOOL ftstream_producer_write_progresspermessage(
 		pstream, pprogmsg->message_size)) {
 		return FALSE;	
 	}
-	if (FALSE == ftstream_producer_write_uint32(
-		pstream, PROPVAL_TYPE_BYTE)) {
+	if (!ftstream_producer_write_uint32(pstream, PT_BOOLEAN))
 		return FALSE;
-	}
 	if (TRUE == pprogmsg->b_fai) {
 		b_fai = 1;
 	} else {

@@ -769,7 +769,7 @@ static uint32_t nsp_interface_fetch_row(SIMPLE_TREE_NODE *pnode,
 		err_val = nsp_interface_fetch_property(pnode, b_ephid,
 				codepage, pproptags->pproptag[i], pprop, NULL);
 		if (err_val != ecSuccess) {
-			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PROPVAL_TYPE_ERROR);
+			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PT_ERROR);
 			pprop->value.err = err_val;
 		}
 	}
@@ -1095,7 +1095,7 @@ static void nsp_interface_make_ptyperror_row(
 		return;
 	}
 	for (i=0; i<prow->cvalues; i++) {
-		prow->pprops[i].proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_ERROR);
+		prow->pprops[i].proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
 		prow->pprops[i].reserved = 0x0;
 		prow->pprops[i].value.err = 0;
 	}
@@ -1730,7 +1730,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 				return FALSE;
 			}
 			return FALSE;
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
 				if (prop_val.value.b <
@@ -2567,7 +2567,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (FALSE == b_proptags) {
 			count = 0;
 			for (i=0; i<(*pprows)->cvalues; i++) {
-				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PROPVAL_TYPE_ERROR &&
+				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR &&
 				    (*pprows)->pprops[i].value.err == ecNotFound)
 					continue;
 				if (i != count) {
@@ -2578,7 +2578,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			(*pprows)->cvalues = count;
 		} else {
 			for (i=0; i<(*pprows)->cvalues; i++) {
-				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PROPVAL_TYPE_ERROR) {
+				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR) {
 					result = ecWarnWithErrors;
 					break;
 				}
@@ -2706,7 +2706,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 	prow->pprops[0].reserved = 0;
 	if (FALSE == common_util_permanent_entryid_to_binary(
 		ppermeid, &prow->pprops[0].value.bin)) {
-		prow->pprops[0].proptag = CHANGE_PROP_TYPE(prow->pprops[0].proptag, PROPVAL_TYPE_ERROR);
+		prow->pprops[0].proptag = CHANGE_PROP_TYPE(prow->pprops[0].proptag, PT_ERROR);
 		prow->pprops[0].value.err = ecMAPIOOM;
 	}
 	
@@ -2757,7 +2757,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 			}
 		}
 		if (NULL == prow->pprops[4].value.pstr) {
-			prow->pprops[4].proptag = CHANGE_PROP_TYPE(prow->pprops[4].proptag, PROPVAL_TYPE_ERROR);
+			prow->pprops[4].proptag = CHANGE_PROP_TYPE(prow->pprops[4].proptag, PT_ERROR);
 			prow->pprops[4].value.err = ecMAPIOOM;
 		}
 	}
@@ -2773,7 +2773,7 @@ static BOOL nsp_interface_build_specialtable(PROPERTY_ROW *prow,
 		prow->pprops[6].reserved = 0;
 		if (FALSE == common_util_permanent_entryid_to_binary(
 			ppermeid_parent, &prow->pprops[6].value.bin)) {
-			prow->pprops[6].proptag = CHANGE_PROP_TYPE(prow->pprops[6].proptag, PROPVAL_TYPE_ERROR);
+			prow->pprops[6].proptag = CHANGE_PROP_TYPE(prow->pprops[6].proptag, PT_ERROR);
 			prow->pprops[6].value.err = ecMAPIOOM;
 		}
 	}
@@ -3370,7 +3370,7 @@ static uint32_t nsp_interface_fetch_smtp_row(const char *paddress,
 		err_val = nsp_interface_fetch_smtp_property(
 			paddress, pproptags->pproptag[i], pprop);
 		if (err_val != ecSuccess) {
-			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PROPVAL_TYPE_ERROR);
+			pprop->proptag = CHANGE_PROP_TYPE(pprop->proptag, PT_ERROR);
 			pprop->value.err = err_val;
 		}
 	}

@@ -940,7 +940,7 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			case PROPVAL_TYPE_FILETIME:
 			case PT_SHORT:
 			case PT_LONG:
-			case PROPVAL_TYPE_BYTE:
+			case PT_BOOLEAN:
 				sql_len += snprintf(sql_string + sql_len,
 							sizeof(sql_string) - sql_len,
 							", v%x INTEGER", tmp_proptag);
@@ -4473,7 +4473,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		case PROPVAL_TYPE_FILETIME:
 		case PT_SHORT:
 		case PT_LONG:
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			sql_len += snprintf(sql_string + sql_len,
 						sizeof(sql_string) - sql_len,
 						", v%x INTEGER", tmp_proptag);

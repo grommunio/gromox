@@ -77,7 +77,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PT_DOUBLE:
 		case PT_CURRENCY:
 		case PT_APPTIME:
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 		case PT_OBJECT:
 		case PROPVAL_TYPE_LONGLONG:
 		case PROPVAL_TYPE_STRING:
@@ -97,7 +97,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PROPVAL_TYPE_BINARY_ARRAY:
 			break;
 		case PT_UNSPECIFIED:
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 		default:
 			return ecInvalidParam;
 		}
@@ -198,7 +198,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PT_DOUBLE:
 		case PT_CURRENCY:
 		case PT_APPTIME:
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 		case PT_OBJECT:
 		case PROPVAL_TYPE_LONGLONG:
 		case PROPVAL_TYPE_STRING:
@@ -218,7 +218,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PROPVAL_TYPE_BINARY_ARRAY:
 			break;
 		case PT_UNSPECIFIED:
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 		default:
 			return ecInvalidParam;
 		}

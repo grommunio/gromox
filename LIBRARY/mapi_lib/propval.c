@@ -39,7 +39,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		}
 		*(uint16_t*)preturn = *(uint16_t*)pvalue;
 		return preturn;
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 	case PT_LONG:
 		preturn = malloc(sizeof(uint32_t));
 		if (NULL == preturn) {
@@ -62,7 +62,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		}
 		*(double*)preturn = *(double*)pvalue;
 		return preturn;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		preturn = malloc(sizeof(uint8_t));
 		if (NULL == preturn) {
 			return NULL;
@@ -308,8 +308,8 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_DOUBLE:
 	case PT_CURRENCY:
 	case PT_APPTIME:
-	case PROPVAL_TYPE_ERROR:
-	case PROPVAL_TYPE_BYTE:
+	case PT_ERROR:
+	case PT_BOOLEAN:
 	case PROPVAL_TYPE_LONGLONG:
 	case PROPVAL_TYPE_STRING:
 	case PROPVAL_TYPE_WSTRING:
@@ -400,7 +400,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 						((TYPED_PROPVAL*)pvalue)->pvalue);
 	case PT_SHORT:
 		return sizeof(uint16_t);
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 	case PT_LONG:
 		return sizeof(uint32_t);
 	case PT_FLOAT:
@@ -408,7 +408,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		return sizeof(double);
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		return sizeof(uint8_t);
 	case PT_OBJECT:
 	case PROPVAL_TYPE_BINARY:
@@ -502,7 +502,7 @@ BOOL propval_compare_relop(uint8_t relop,
 		}
 		return FALSE;
 	case PT_LONG:
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 		switch (relop) {
 		case RELOP_LT:
 			if (*(uint32_t*)pvalue1 < *(uint32_t*)pvalue2) {
@@ -536,7 +536,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		switch (relop) {
 		case RELOP_LT:
 			if (*(uint8_t*)pvalue1 < *(uint8_t*)pvalue2) {

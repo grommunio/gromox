@@ -4106,7 +4106,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		case PT_DOUBLE:
 		case PT_CURRENCY:
 		case PT_APPTIME:
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 		case PT_OBJECT:
 		case PROPVAL_TYPE_LONGLONG:
 		case PROPVAL_TYPE_STRING:
@@ -4126,7 +4126,7 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		case PROPVAL_TYPE_BINARY_ARRAY:
 			break;
 		case PT_UNSPECIFIED:
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 		default:
 			zarafa_server_put_user_info(pinfo);
 			return ecInvalidParam;

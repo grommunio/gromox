@@ -464,7 +464,7 @@ static int ftstream_parser_read_element(
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 	case PT_LONG:
 		ppropval->pvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == ppropval->pvalue) {
@@ -498,7 +498,7 @@ static int ftstream_parser_read_element(
 		}
 		pstream->offset += sizeof(double);
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		ppropval->pvalue = common_util_alloc(sizeof(uint8_t));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;

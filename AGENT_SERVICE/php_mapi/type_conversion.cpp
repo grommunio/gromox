@@ -216,7 +216,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		*static_cast<uint16_t *>(pvalue) = zval_get_long(entry);
 		break;
 	case PT_LONG:
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 		pvalue = emalloc(sizeof(uint32_t));
 		if (NULL == pvalue) {
 			return NULL;
@@ -245,7 +245,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		}
 		*static_cast<uint64_t *>(pvalue) = zval_get_double(entry);
 		break;
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		pvalue = emalloc(sizeof(uint8_t));
 		if (NULL == pvalue) {
 			return NULL;
@@ -1199,7 +1199,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 		sprintf(proptag_string, "%u", proptag_to_phptag(ppropval->proptag));
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_LONG:
-		case PROPVAL_TYPE_ERROR:
+		case PT_ERROR:
 			add_assoc_long(pzret, proptag_string, *(uint32_t*)ppropval->pvalue);
 			break;
 		case PT_SHORT:
@@ -1215,7 +1215,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals,
 		case PT_FLOAT:
 			add_assoc_double(pzret, proptag_string, *(float*)ppropval->pvalue);
 			break;
-		case PROPVAL_TYPE_BYTE:
+		case PT_BOOLEAN:
 			add_assoc_bool(pzret, proptag_string, *(uint8_t*)ppropval->pvalue);
 			break;
 		case PROPVAL_TYPE_STRING:

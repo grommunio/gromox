@@ -1861,14 +1861,14 @@ static BOOL get_freebusy(const char *dir)
 	pidlidappointmentstartwhole = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[0]);
 	pidlidappointmentendwhole = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[1]);
 	pidlidbusystatus = PROP_TAG(PT_LONG, propids.ppropid[2]);
-	pidlidrecurring = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[3]);
+	pidlidrecurring = PROP_TAG(PT_BOOLEAN, propids.ppropid[3]);
 	pidlidappointmentrecur = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[4]);
-	pidlidappointmentsubtype = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[5]);
-	pidlidprivate = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[6]);
+	pidlidappointmentsubtype = PROP_TAG(PT_BOOLEAN, propids.ppropid[5]);
+	pidlidprivate = PROP_TAG(PT_BOOLEAN, propids.ppropid[6]);
 	pidlidappointmentstateflags = PROP_TAG(PT_LONG, propids.ppropid[7]);
 	pidlidclipend = PROP_TAG(PROPVAL_TYPE_FILETIME, propids.ppropid[8]);
 	pidlidlocation = PROP_TAG(PROPVAL_TYPE_WSTRING, propids.ppropid[9]);
-	pidlidreminderset = PROP_TAG(PROPVAL_TYPE_BYTE, propids.ppropid[10]);
+	pidlidreminderset = PROP_TAG(PT_BOOLEAN, propids.ppropid[10]);
 	pidlidglobalobjectid = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[11]);
 	pidlidtimezonestruct = PROP_TAG(PROPVAL_TYPE_BINARY, propids.ppropid[12]);
 	

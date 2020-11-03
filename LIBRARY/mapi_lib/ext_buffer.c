@@ -1172,7 +1172,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		}
 		return ext_buffer_pull_uint16(pext, *ppval);
 	case PT_LONG:
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 		*ppval = pext->alloc(sizeof(uint32_t));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -1191,7 +1191,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_double(pext, *ppval);
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		*ppval = pext->alloc(sizeof(uint8_t));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -4381,14 +4381,14 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	case PT_SHORT:
 		return ext_buffer_push_uint16(pext, *(uint16_t*)pval);
 	case PT_LONG:
-	case PROPVAL_TYPE_ERROR:
+	case PT_ERROR:
 		return ext_buffer_push_uint32(pext, *(uint32_t*)pval);
 	case PT_FLOAT:
 		return ext_buffer_push_float(pext, *(float*)pval);
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		return ext_buffer_push_double(pext, *(double*)pval);
-	case PROPVAL_TYPE_BYTE:
+	case PT_BOOLEAN:
 		return ext_buffer_push_uint8(pext, *(uint8_t*)pval);
 	case PT_CURRENCY:
 	case PROPVAL_TYPE_LONGLONG:
@@ -4963,7 +4963,7 @@ int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 		if (FLAGGED_PROPVAL_FLAG_UNAVAILABLE == r->flag) {
 			type = 0;
 		} else if (FLAGGED_PROPVAL_FLAG_ERROR == r->flag) {
-			type = PROPVAL_TYPE_ERROR;
+			type = PT_ERROR;
 			pvalue = r->pvalue;
 		} else {
 			type = ((TYPED_PROPVAL*)r->pvalue)->type;
