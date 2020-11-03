@@ -200,7 +200,7 @@ BOOL attachment_object_get_all_proptags(
 BOOL attachment_object_check_readonly_property(
 	ATTACHMENT_OBJECT *pattachment, uint32_t proptag)
 {
-	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT &&
+	if (PROP_TYPE(proptag) == PT_OBJECT &&
 		PROP_TAG_ATTACHDATAOBJECT != proptag) {
 		return TRUE;
 	}

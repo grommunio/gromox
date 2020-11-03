@@ -193,7 +193,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 			proptype = PROP_TYPE(propvals.ppropval[i].proptag);
 			switch (proptype) {
 			case PROPVAL_TYPE_BINARY:
-			case PROPVAL_TYPE_OBJECT:
+			case PT_OBJECT:
 			case PROPVAL_TYPE_STRING:
 			case PROPVAL_TYPE_WSTRING:
 				if (0x1000 < propval_size(proptype,
@@ -332,7 +332,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		return ecNotSupported;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (PROP_TYPE(ppropvals->ppropval[i].proptag) != PROPVAL_TYPE_UNSPECIFIED)
+		if (PROP_TYPE(ppropvals->ppropval[i].proptag) != PT_UNSPECIFIED)
 			continue;	
 		if (FALSE == common_util_convert_unspecified(cpid,
 			b_unicode, ppropvals->ppropval[i].pvalue)) {
@@ -1243,7 +1243,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		case PROPVAL_TYPE_STRING:
 		case PROPVAL_TYPE_WSTRING:
 			break;
-		case PROPVAL_TYPE_OBJECT:
+		case PT_OBJECT:
 			if (PROP_TAG_ATTACHDATAOBJECT == proptag) {
 				break;
 			}

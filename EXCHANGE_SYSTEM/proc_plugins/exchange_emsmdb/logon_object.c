@@ -631,7 +631,7 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 static BOOL logon_object_check_readonly_property(
 	LOGON_OBJECT *plogon, uint32_t proptag)
 {
-	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
+	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
 	case PROP_TAG_ACCESSLEVEL:

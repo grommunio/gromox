@@ -2355,7 +2355,7 @@ BOOL common_util_get_properties(int table_type,
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_OBJECT &&
+		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT &&
 			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
 			PROP_TAG_ATTACHDATAOBJECT != pproptags->pproptag[i])) {
 			continue;
@@ -2981,7 +2981,7 @@ BOOL common_util_get_properties(int table_type,
 		/* end of special properties */
 		b_optimize = FALSE;
 		proptype = PROP_TYPE(pproptags->pproptag[i]);
-		if (PROPVAL_TYPE_UNSPECIFIED == proptype ||
+		if (proptype == PT_UNSPECIFIED ||
 			PROPVAL_TYPE_STRING == proptype ||
 			PROPVAL_TYPE_WSTRING == proptype) {
 			switch (table_type) {
@@ -3175,7 +3175,7 @@ BOOL common_util_get_properties(int table_type,
 			}
 			continue;
 		}
-		if (PROPVAL_TYPE_UNSPECIFIED == proptype) {
+		if (proptype == PT_UNSPECIFIED) {
 			ptyped = common_util_alloc(sizeof(TYPED_PROPVAL));
 			if (NULL == ptyped) {
 				if (FALSE == b_optimize) {
@@ -3319,7 +3319,7 @@ BOOL common_util_get_properties(int table_type,
 					}
 				}
 				break;
-			case PROPVAL_TYPE_OBJECT:
+			case PT_OBJECT:
 			case PROPVAL_TYPE_BINARY:
 				pvalue = common_util_alloc(sizeof(BINARY));
 				if (NULL != pvalue) {
@@ -3882,7 +3882,7 @@ BOOL common_util_set_properties(int table_type,
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
 	for (i=0; i<ppropvals->count; i++) {
-		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PROPVAL_TYPE_OBJECT &&
+		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PT_OBJECT &&
 			(ATTACHMENT_PROPERTIES_TABLE != table_type ||
 			PROP_TAG_ATTACHDATAOBJECT != ppropvals->ppropval[i].proptag)) {
 			pproblems->pproblem[pproblems->count].index = i;
@@ -4299,7 +4299,7 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			ext_buffer_push_free(&ext_push);
 			break;
-		case PROPVAL_TYPE_OBJECT:
+		case PT_OBJECT:
 		case PROPVAL_TYPE_BINARY:
 			if (0 == ((BINARY*)ppropvals->ppropval[i].pvalue)->cb) {
 				sqlite3_bind_blob(pstmt, 2, &i, 0, SQLITE_STATIC);
@@ -6854,7 +6854,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.data,
 							ext_push.offset, SQLITE_STATIC);
 		break;
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 	case PROPVAL_TYPE_BINARY:
 		if (0 == ((BINARY*)pvalue)->cb) {
 			sqlite3_bind_null(pstmt, bind_index);
@@ -6972,7 +6972,7 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 			return NULL;
 		}
 		return pvalue;
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 	case PROPVAL_TYPE_BINARY:
 		if (sqlite3_column_bytes(pstmt, column_index) > 512) {
 			return NULL;

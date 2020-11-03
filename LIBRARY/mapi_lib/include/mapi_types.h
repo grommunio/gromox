@@ -3,8 +3,6 @@
 #include "common_types.h"
 #include "double_list.h"
 
-
-#define PROPVAL_TYPE_UNSPECIFIED					0x0000
 #define PROPVAL_TYPE_SHORT							0x0002
 #define PROPVAL_TYPE_LONG							0x0003
 #define PROPVAL_TYPE_FLOAT							0x0004
@@ -13,7 +11,6 @@
 #define PROPVAL_TYPE_FLOATINGTIME					0x0007
 #define PROPVAL_TYPE_ERROR							0x000a
 #define PROPVAL_TYPE_BYTE							0x000b
-#define PROPVAL_TYPE_OBJECT							0x000d
 #define PROPVAL_TYPE_LONGLONG						0x0014
 #define PROPVAL_TYPE_STRING							0x001e
 #define PROPVAL_TYPE_WSTRING						0x001f

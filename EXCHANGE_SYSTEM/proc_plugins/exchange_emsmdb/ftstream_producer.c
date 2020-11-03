@@ -522,7 +522,7 @@ static BOOL ftstream_producer_write_propvalue(
 		return ftstream_producer_write_svreid(
 					pstream, ppropval->pvalue);
 	*/
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 	case PROPVAL_TYPE_BINARY:
 		return ftstream_producer_write_binary(
 					pstream, ppropval->pvalue);

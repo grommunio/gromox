@@ -1,3 +1,4 @@
+#include <gromox/mapidefs.h>
 #include "guid.h"
 #include "util.h"
 #include "propval.h"
@@ -17,7 +18,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 		return NULL;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_UNSPECIFIED:
+	case PT_UNSPECIFIED:
 		preturn = malloc(sizeof(TYPED_PROPVAL));
 		if (NULL == preturn) {
 			return NULL;
@@ -121,7 +122,7 @@ void* propval_dup(uint16_t type, void *pvalue)
 	case PROPVAL_TYPE_RULE:
 		return rule_actions_dup(pvalue);
 	case PROPVAL_TYPE_BINARY:
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 		preturn = malloc(sizeof(BINARY));
 		if (NULL == preturn) {
 			return NULL;
@@ -297,7 +298,7 @@ void propval_free(uint16_t type, void *pvalue)
 		return;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_UNSPECIFIED:
+	case PT_UNSPECIFIED:
 		propval_free(((TYPED_PROPVAL*)pvalue)->type,
 					((TYPED_PROPVAL*)pvalue)->pvalue);
 		break;
@@ -330,7 +331,7 @@ void propval_free(uint16_t type, void *pvalue)
 		}
 		break;
 	case PROPVAL_TYPE_BINARY:
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 		if (NULL != ((BINARY*)pvalue)->pb) {
 			free(((BINARY*)pvalue)->pb);
 		}
@@ -394,7 +395,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	uint32_t length;
 	
 	switch (type) {
-	case PROPVAL_TYPE_UNSPECIFIED:
+	case PT_UNSPECIFIED:
 		return propval_size(((TYPED_PROPVAL*)pvalue)->type,
 						((TYPED_PROPVAL*)pvalue)->pvalue);
 	case PROPVAL_TYPE_SHORT:
@@ -409,7 +410,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return sizeof(double);
 	case PROPVAL_TYPE_BYTE:
 		return sizeof(uint8_t);
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 	case PROPVAL_TYPE_BINARY:
 		return ((BINARY*)pvalue)->cb;
 	case PROPVAL_TYPE_CURRENCY:

@@ -164,7 +164,7 @@ BOOL folder_object_get_all_proptags(FOLDER_OBJECT *pfolder,
 BOOL folder_object_check_readonly_property(
 	FOLDER_OBJECT *pfolder, uint32_t proptag)
 {
-	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
+	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
 	case PROP_TAG_ACCESS:

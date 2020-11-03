@@ -1159,7 +1159,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		type &= ~0x3000;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_UNSPECIFIED:
+	case PT_UNSPECIFIED:
 		*ppval = pext->alloc(sizeof(TYPED_PROPVAL));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -1234,7 +1234,7 @@ int ext_buffer_pull_propval(EXT_PULL *pext, uint16_t type, void **ppval)
 		}
 		return ext_buffer_pull_rule_actions(pext, *ppval);
 	case PROPVAL_TYPE_BINARY:
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 		*ppval = pext->alloc(sizeof(BINARY));
 		if (NULL == (*ppval)) {
 			return EXT_ERR_ALLOC;
@@ -1915,7 +1915,7 @@ int ext_buffer_pull_flagged_propval(EXT_PULL *pext,
 	int status;
 	void **ppvalue;
 	
-	if (PROPVAL_TYPE_UNSPECIFIED == type) {
+	if (type == PT_UNSPECIFIED) {
 		status = ext_buffer_pull_uint16(pext, &type);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -4376,7 +4376,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 		type &= ~0x3000;
 	}
 	switch (type) {
-	case PROPVAL_TYPE_UNSPECIFIED:
+	case PT_UNSPECIFIED:
 		return ext_buffer_push_typed_propval(pext, pval);
 	case PROPVAL_TYPE_SHORT:
 		return ext_buffer_push_uint16(pext, *(uint16_t*)pval);
@@ -4407,7 +4407,7 @@ int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval)
 	case PROPVAL_TYPE_RULE:
 		return ext_buffer_push_rule_actions(pext, pval);
 	case PROPVAL_TYPE_BINARY:
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 		return ext_buffer_push_binary(pext, pval);
 	case PROPVAL_TYPE_SHORT_ARRAY:
 		return ext_buffer_push_short_array(pext, pval);
@@ -4959,7 +4959,7 @@ int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 	int status;
 	void *pvalue;
 	
-	if (PROPVAL_TYPE_UNSPECIFIED == type) {
+	if (type == PT_UNSPECIFIED) {
 		if (FLAGGED_PROPVAL_FLAG_UNAVAILABLE == r->flag) {
 			type = 0;
 		} else if (FLAGGED_PROPVAL_FLAG_ERROR == r->flag) {

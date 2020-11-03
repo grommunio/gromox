@@ -1559,7 +1559,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 		case PROPVAL_TYPE_FILETIME_ARRAY:
 			status = nsp_ndr_pull_filetime_array(pndr, FLAG_HEADER, &r->ftime_array);
 			break;
-		case PROPVAL_TYPE_RESERVED:
+		case PT_NULL:
 			status = ndr_pull_uint32(pndr, &r->reserved);
 			break;
 		default:
@@ -1711,7 +1711,7 @@ static int nsp_ndr_pull_prop_val_union(NDR_PULL *pndr, int flag, int *ptype, PRO
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_RESERVED:
+		case PT_NULL:
 			break;
 		default:
 			return NDR_ERR_BAD_SWITCH;
@@ -1787,7 +1787,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 		case PROPVAL_TYPE_FILETIME_ARRAY:
 			status = nsp_ndr_push_filetime_array(pndr, FLAG_HEADER, &r->ftime_array);
 			break;
-		case PROPVAL_TYPE_RESERVED:
+		case PT_NULL:
 			status = ndr_push_uint32(pndr, r->reserved);
 			break;
 		default:
@@ -1923,7 +1923,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, int flag, int type, const
 				return status;
 			}
 			break;
-		case PROPVAL_TYPE_RESERVED:
+		case PT_NULL:
 			break;
 		default:
 			return NDR_ERR_BAD_SWITCH;

@@ -1033,7 +1033,7 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 	} else {
 		last_marker = 0;
 	}
-	if (PROP_TYPE(ppropval->proptag) == PROPVAL_TYPE_OBJECT) {
+	if (PROP_TYPE(ppropval->proptag) == PT_OBJECT) {
 		if (NEWATTACH == last_marker || (0 == last_marker &&
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element)) {
 			if (PROP_TAG_ATTACHDATAOBJECT != ppropval->proptag) {

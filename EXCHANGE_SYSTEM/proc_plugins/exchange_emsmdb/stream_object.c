@@ -106,7 +106,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	}
 	switch (PROP_TYPE(proptag)) {
 	case PROPVAL_TYPE_BINARY:
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 		pstream->content_bin.cb = ((BINARY*)pvalue)->cb;
 		pstream->content_bin.pb = malloc(((BINARY*)pvalue)->cb);
 		if (NULL == pstream->content_bin.pb) {

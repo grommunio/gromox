@@ -4,5 +4,7 @@
 #define CHANGE_PROP_TYPE(tag, newtype) (((tag) & ~0xFFFF) | (newtype))
 #define PROP_TAG(type, tag) (((tag) << 16) | (type))
 enum {
-	PT_UNSPECIFIED = 0x0000,
+	PT_UNSPECIFIED = 0x0000, /* VT_EMPTY */
+	PT_NULL = 0x0001, /* VT_NULL */
+	PT_OBJECT = 0x000D, /* VT_OBJECT */
 };

@@ -577,7 +577,7 @@ PROPERTY_GROUPINFO* store_object_get_property_groupinfo(
 static BOOL store_object_check_readonly_property(
 	STORE_OBJECT *pstore, uint32_t proptag)
 {
-	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
+	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
 	case PROP_TAG_ACCESS:

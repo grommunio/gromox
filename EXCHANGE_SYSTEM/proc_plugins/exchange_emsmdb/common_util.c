@@ -1189,7 +1189,7 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 	}
 	ptmp_proptags->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_OBJECT)
+		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT)
 			continue;
 		ptmp_proptags->pproptag[ptmp_proptags->count] = 
 									pproptags->pproptag[i];
@@ -1315,7 +1315,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 		prow->pppropval[i] = common_util_get_propvals(
 			(TPROPVAL_ARRAY*)ppropvals, pcolumns->pproptag[i]);
 		if (NULL != prow->pppropval[i] &&
-		    PROP_TYPE(pcolumns->pproptag[i]) == PROPVAL_TYPE_UNSPECIFIED) {
+		    PROP_TYPE(pcolumns->pproptag[i]) == PT_UNSPECIFIED) {
 			if (FALSE == common_util_convert_unspecified(
 				cpid, b_unicode, prow->pppropval[i])) {
 				return FALSE;

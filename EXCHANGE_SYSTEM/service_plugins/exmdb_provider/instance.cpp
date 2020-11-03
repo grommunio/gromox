@@ -2462,7 +2462,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 					common_util_convert_copy_string_array(
 						TRUE, cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_UNSPECIFIED) {
+		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
 			proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PROPVAL_TYPE_WSTRING);
 			pvalue = tpropval_array_get_propval(
 				&pattachment->proplist, proptag);
@@ -2556,7 +2556,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				}
 			}
 			if (NULL == pbin) {
-				proptype = PROPVAL_TYPE_OBJECT;
+				proptype = PT_OBJECT;
 				pbin = static_cast<BINARY *>(tpropval_array_get_propval(
 				       &pattachment->proplist, PROP_TAG_ATTACHDATAOBJECT));
 				if (NULL == pbin) {
@@ -2879,7 +2879,7 @@ BOOL exmdb_server_get_instance_properties(
 					common_util_convert_copy_string_array(
 					TRUE, pinstance->cpid, static_cast<STRING_ARRAY *>(pvalue));
 			}	
-		} else if (PROP_TYPE(pproptags->pproptag[i]) == PROPVAL_TYPE_UNSPECIFIED) {
+		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
 			propid = PROP_ID(pproptags->pproptag[i]);
 			for (j=0; j<pmsgctnt->proplist.count; j++) {
 				if (PROP_ID(pmsgctnt->proplist.ppropval[j].proptag) == propid) {

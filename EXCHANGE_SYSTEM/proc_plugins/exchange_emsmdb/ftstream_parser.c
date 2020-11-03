@@ -567,7 +567,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 	case PROPVAL_TYPE_BINARY:
 		ppropval->pvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == ppropval->pvalue) {

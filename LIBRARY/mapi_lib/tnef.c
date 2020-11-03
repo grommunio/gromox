@@ -384,7 +384,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_svreid(pext, r->pvalue);
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 		r->pvalue = pext->alloc(sizeof(BINARY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -1963,7 +1963,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 						ptnef_propval->propid = *ppropid;
 					}
 				}
-				if (PROPVAL_TYPE_OBJECT == ptnef_propval->proptype) {
+				if (ptnef_propval->proptype == PT_OBJECT) {
 					if (0 == memcmp(IID_IMessage, ((BINARY*)
 						ptnef_propval->pvalue)->pb, 16)) {
 						pembedded = tnef_deserialize_internal(
@@ -2347,7 +2347,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		return ext_buffer_push_guid(pext, r->pvalue);
 	case PROPVAL_TYPE_SVREID:
 		return ext_buffer_push_svreid(pext, r->pvalue);
-	case PROPVAL_TYPE_OBJECT:
+	case PT_OBJECT:
 		status = ext_buffer_push_uint32(pext, 1);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -3681,8 +3681,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (NULL != pattachment->pembedded) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(PROP_TAG_ATTACHDATAOBJECT);
-			tnef_proplist.ppropval[tnef_proplist.count].proptype =
-												PROPVAL_TYPE_OBJECT;
+			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_OBJECT;
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
 			tnef_proplist.ppropval[tnef_proplist.count].pvalue = &tmp_bin;
 			tmp_bin.cb = 0xFFFFFFFF;

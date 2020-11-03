@@ -1002,7 +1002,7 @@ BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
 BOOL message_object_check_readonly_property(
 	MESSAGE_OBJECT *pmessage, uint32_t proptag)
 {
-	if (PROP_TYPE(proptag) == PROPVAL_TYPE_OBJECT)
+	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
 	switch (proptag) {
 	case PROP_TAG_ACCESS:
