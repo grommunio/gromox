@@ -196,7 +196,7 @@ noinst_DATA += \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker pad scanner sensor session supervisor timer
-system_admin_tools = areadb bl_delete dispasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
+system_admin_tools = areadb bl_delete mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
@@ -598,8 +598,6 @@ cdnd_SOURCES = SYSTEM_ADMIN/cdnd.c
 cdnd_LDADD = -lpthread ${HX_LIBS} ${crypto_LIBS} ${ssl_LIBS} ${mysql_LIBS} ${zlib_LIBS} libgromox_common.la
 sa_daemon_SOURCES = LIBRARY/locker_client.c LIBRARY/system_log.c SYSTEM_ADMIN/daemon/auto_backup.c SYSTEM_ADMIN/daemon/data_source.c SYSTEM_ADMIN/daemon/domain_cleaner.c SYSTEM_ADMIN/daemon/file_operation.c SYSTEM_ADMIN/daemon/keyword_cleaning.c SYSTEM_ADMIN/daemon/log_analyzer.c SYSTEM_ADMIN/daemon/log_flusher.c SYSTEM_ADMIN/daemon/main.c SYSTEM_ADMIN/daemon/media_migrator.c SYSTEM_ADMIN/daemon/message.c SYSTEM_ADMIN/daemon/midb_client.c SYSTEM_ADMIN/daemon/password_cleaner.c SYSTEM_ADMIN/daemon/smtp_sender.c
 sa_daemon_LDADD = -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la libgromox_resolv.la libgromox_webkit.la
-dispasswd_SOURCES = SYSTEM_ADMIN/dispasswd.c
-dispasswd_LDADD = libgromox_common.la ${mysql_LIBS}
 event_SOURCES = SYSTEM_ADMIN/event.c
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp

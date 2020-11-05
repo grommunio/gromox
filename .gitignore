@@ -29,7 +29,6 @@ Makefile.in
 /cidb
 /delivery
 /digest
-/dispasswd
 /event
 /freebusy
 /gromox-dbop
