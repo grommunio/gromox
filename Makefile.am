@@ -196,7 +196,7 @@ noinst_DATA += \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker pad scanner sensor session supervisor timer
-system_admin_tools = areadb bl_delete mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
+system_admin_tools = areadb bl_delete mkmidb mkprivate mkpublic rebuild sendmail userinfo
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
@@ -613,8 +613,6 @@ mkpublic_SOURCES = SYSTEM_ADMIN/mkpublic.c
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 pad_SOURCES = LIBRARY/system_log.c SYSTEM_ADMIN/pad/communicator.c SYSTEM_ADMIN/pad/data_source.c SYSTEM_ADMIN/pad/exec_sched.c SYSTEM_ADMIN/pad/main.c SYSTEM_ADMIN/pad/midb_client.c SYSTEM_ADMIN/pad/pop3.c SYSTEM_ADMIN/pad/sensor_client.c SYSTEM_ADMIN/pad/uid_db.c SYSTEM_ADMIN/pad/vuser.c
 pad_LDADD = -lresolv -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
-pop_porting_SOURCES = SYSTEM_ADMIN/pop_porting/main.c SYSTEM_ADMIN/pop_porting/pop3.c SYSTEM_ADMIN/pop_porting/smtp.c
-pop_porting_LDADD = libgromox_common.la
 rebuild_SOURCES = SYSTEM_ADMIN/rebuild.c
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 scanner_SOURCES = LIBRARY/locker_client.c LIBRARY/system_log.c SYSTEM_ADMIN/scanner/data_source.c SYSTEM_ADMIN/scanner/engine.c SYSTEM_ADMIN/scanner/main.c SYSTEM_ADMIN/scanner/message.c SYSTEM_ADMIN/scanner/midb_client.c SYSTEM_ADMIN/scanner/smtp.c

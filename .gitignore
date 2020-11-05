@@ -43,7 +43,6 @@ Makefile.in
 /mkpublic
 /pad
 /pop3
-/pop_porting
 /rebuild
 /rtf2html
 /sa_daemon
