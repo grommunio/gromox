@@ -30,7 +30,6 @@ Makefile.in
 /delivery
 /digest
 /dispasswd
-/enpasswd
 /event
 /freebusy
 /gromox-dbop

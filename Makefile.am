@@ -196,7 +196,7 @@ noinst_DATA += \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker pad scanner sensor session supervisor timer
-system_admin_tools = areadb bl_delete dispasswd enpasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
+system_admin_tools = areadb bl_delete dispasswd mkmidb mkprivate mkpublic pop_porting rebuild sendmail userinfo
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
@@ -600,8 +600,6 @@ sa_daemon_SOURCES = LIBRARY/locker_client.c LIBRARY/system_log.c SYSTEM_ADMIN/da
 sa_daemon_LDADD = -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la libgromox_resolv.la libgromox_webkit.la
 dispasswd_SOURCES = SYSTEM_ADMIN/dispasswd.c
 dispasswd_LDADD = libgromox_common.la ${mysql_LIBS}
-enpasswd_SOURCES = SYSTEM_ADMIN/enpasswd.c
-enpasswd_LDADD = libgromox_common.la ${mysql_LIBS}
 event_SOURCES = SYSTEM_ADMIN/event.c
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
