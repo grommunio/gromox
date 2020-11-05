@@ -196,7 +196,7 @@ noinst_DATA += \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker pad scanner sensor session supervisor timer
-system_admin_tools = areadb bl_delete mkmidb mkprivate mkpublic rebuild sendmail userinfo
+system_admin_tools = areadb mkmidb mkprivate mkpublic rebuild sendmail userinfo
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
@@ -592,8 +592,6 @@ adaptor_SOURCES = LIBRARY/system_log.c SYSTEM_ADMIN/adaptor/data_source.c SYSTEM
 adaptor_LDADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
 areadb_SOURCES = SYSTEM_ADMIN/areadb.c
 areadb_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-bl_delete_SOURCES = SYSTEM_ADMIN/bl_delete/midb_client.c SYSTEM_ADMIN/bl_delete/main.c
-bl_delete_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_webkit.la
 cdnd_SOURCES = SYSTEM_ADMIN/cdnd.c
 cdnd_LDADD = -lpthread ${HX_LIBS} ${crypto_LIBS} ${ssl_LIBS} ${mysql_LIBS} ${zlib_LIBS} libgromox_common.la
 sa_daemon_SOURCES = LIBRARY/locker_client.c LIBRARY/system_log.c SYSTEM_ADMIN/daemon/auto_backup.c SYSTEM_ADMIN/daemon/data_source.c SYSTEM_ADMIN/daemon/domain_cleaner.c SYSTEM_ADMIN/daemon/file_operation.c SYSTEM_ADMIN/daemon/keyword_cleaning.c SYSTEM_ADMIN/daemon/log_analyzer.c SYSTEM_ADMIN/daemon/log_flusher.c SYSTEM_ADMIN/daemon/main.c SYSTEM_ADMIN/daemon/media_migrator.c SYSTEM_ADMIN/daemon/message.c SYSTEM_ADMIN/daemon/midb_client.c SYSTEM_ADMIN/daemon/password_cleaner.c SYSTEM_ADMIN/daemon/smtp_sender.c
@@ -653,7 +651,7 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx \
 	doc/archive.8gx doc/archive_agent.4gx \
-	doc/authmgr.4gx doc/backup_list.4gx doc/bl_delete.8gx \
+	doc/authmgr.4gx doc/backup_list.4gx \
 	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx doc/domain_whitelist.4gx \

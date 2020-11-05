@@ -24,7 +24,6 @@ Makefile.in
 /adaptor
 /archive
 /areadb
-/bl_delete
 /cdnd
 /cidb
 /delivery
