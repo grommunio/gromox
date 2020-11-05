@@ -12,6 +12,6 @@ gromox\-sa.target is a unit for starting/stopping units as a group.
 .SH See also
 .PP
 \fBgromox\fP(7), \fBadaptor\fP(8gx), \fBcdnd\fP(8gx), \fBevent\fP(8gx),
-\fBlocker\fP(8gx), \fBmonitor\fP(8gx), \fBpad\fP(8gx),
+\fBlocker\fP(8gx), \fBmonitor\fP(8gx),
 \fBsa_daemon\fP(8gx), \fBscanner\fP(8gx), \fBsensor\fP(8gx),
 \fBsession\fP(8gx), \fBsupervisor\fP(8gx), \fBtimer\fP(8gx)

@@ -40,7 +40,6 @@ Makefile.in
 /mkmidb
 /mkprivate
 /mkpublic
-/pad
 /pop3
 /rebuild
 /rtf2html
