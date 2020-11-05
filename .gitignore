@@ -51,7 +51,6 @@ Makefile.in
 /smtp
 /supervisor
 /timer
-/userinfo
 /zcore
 
 /include/gromox/paths.h

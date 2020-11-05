@@ -196,7 +196,7 @@ noinst_DATA += \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker scanner sensor session supervisor timer
-system_admin_tools = areadb mkmidb mkprivate mkpublic rebuild sendmail userinfo
+system_admin_tools = areadb mkmidb mkprivate mkpublic rebuild sendmail
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
@@ -623,8 +623,6 @@ supervisor_SOURCES = SYSTEM_ADMIN/supervisor/main.c SYSTEM_ADMIN/supervisor/mess
 supervisor_LDADD = -lresolv -lpthread ${HX_LIBS} libgromox_common.la libgromox_resolv.la
 timer_SOURCES = SYSTEM_ADMIN/timer.c
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
-userinfo_SOURCES = SYSTEM_ADMIN/userinfo.c
-userinfo_LDADD = libgromox_common.la ${mysql_LIBS}
 
 # ARCHIVE_SYSTEM
 archive_SOURCES = ARCHIVE_SYSTEM/archive.c
