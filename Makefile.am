@@ -139,7 +139,7 @@ noinst_DATA += \
 mra_system = pop3 imap
 mra_plugins = \
 	libmrasvc_cdner_agent.la \
-	libmrasvc_event_proxy.la \
+	libgxsvc_event_proxy.la \
 	libmrasvc_event_stub.la \
 	libmrasvc_ip_container.la \
 	libmrasvc_ip_filter.la \
@@ -148,7 +148,7 @@ mra_plugins = \
 	libmrasvc_user_filter.la
 noinst_DATA += \
 	libmrasvc_cdner_agent.ldd \
-	libmrasvc_event_proxy.ldd \
+	libgxsvc_event_proxy.ldd \
 	libmrasvc_event_stub.ldd \
 	libmrasvc_ip_container.ldd \
 	libmrasvc_ip_filter.ldd \
@@ -158,7 +158,6 @@ noinst_DATA += \
 exchange_progs = http midb zcore
 exchange_plugins = \
 	libexsvc_codepage_lang.la \
-	libexsvc_event_proxy.la \
 	libexsvc_exmdb_provider.la \
 	libexsvc_ip_container.la \
 	libexsvc_ip_filter.la \
@@ -177,7 +176,6 @@ exchange_plugins = \
 	libgxsvc_mysql_adaptor.la
 noinst_DATA += \
 	libexsvc_codepage_lang.ldd \
-	libexsvc_event_proxy.ldd \
 	libexsvc_exmdb_provider.ldd \
 	libexsvc_ip_container.ldd \
 	libexsvc_ip_filter.ldd \
@@ -464,10 +462,10 @@ libmrasvc_cdner_agent_la_SOURCES = MRA_SYSTEM/service_plugins/cdner_agent.c
 libmrasvc_cdner_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_cdner_agent_la_LIBADD = -lcrypt -lpthread libgromox_common.la
 EXTRA_libmrasvc_cdner_agent_la_DEPENDENCIES = ${default_sym}
-libmrasvc_event_proxy_la_SOURCES = MRA_SYSTEM/service_plugins/event_proxy.c
-libmrasvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
-libmrasvc_event_proxy_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libmrasvc_event_proxy_la_DEPENDENCIES = ${default_sym}
+libgxsvc_event_proxy_la_SOURCES = MRA_SYSTEM/service_plugins/event_proxy.c
+libgxsvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_event_proxy_la_LIBADD = -lpthread libgromox_common.la
+EXTRA_libgxsvc_event_proxy_la_DEPENDENCIES = ${default_sym}
 libmrasvc_event_stub_la_SOURCES = MRA_SYSTEM/service_plugins/event_stub.c
 libmrasvc_event_stub_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_event_stub_la_LIBADD = -lpthread libgromox_common.la
@@ -504,10 +502,6 @@ libexsvc_codepage_lang_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/codepage_lan
 libexsvc_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_codepage_lang_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexsvc_codepage_lang_la_DEPENDENCIES = ${default_sym}
-libexsvc_event_proxy_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/event_proxy.c
-libexsvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_event_proxy_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libexsvc_event_proxy_la_DEPENDENCIES = ${default_sym}
 libexsvc_exmdb_provider_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/exmdb_provider/bounce_producer.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/common_util.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/db_engine.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_ext.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_listener.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_parser.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/notification_agent.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_server.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/folder.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/ics.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instance.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/main.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/message.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/store.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/table.cpp
 libexsvc_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la

@@ -43,7 +43,7 @@ static struct HXoption g_options_table[] = {
 };
 
 static const char *const g_dfl_svc_plugins[] = {
-	"libexsvc_event_proxy.so",
+	"libgxsvc_event_proxy.so",
 	"libexsvc_lang_charset.so",
 	"libexsvc_mime_extension.so",
 	"libexsvc_ms_locale.so",

@@ -41,7 +41,7 @@ static struct HXoption g_options_table[] = {
 };
 
 static const char *const g_dfl_svc_plugins[] = {
-	"libmrasvc_event_proxy.so",
+	"libgxsvc_event_proxy.so",
 	"libmrasvc_ip_container.so",
 	"libmrasvc_ip_filter.so",
 	"libmrasvc_log_plugin.so",
