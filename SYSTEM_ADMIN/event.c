@@ -205,8 +205,8 @@ int main(int argc, const char **argv)
 		config_file_set_value(pconfig, "EVENT_THREADS_NUM", "50");
 	} else {
 		g_threads_num = atoi(str_value);
-		if (g_threads_num < 20) {
-			g_threads_num = 20;
+		if (g_threads_num < 1) {
+			g_threads_num = 1;
 			config_file_set_value(pconfig, "EVENT_THREADS_NUM", "20");
 		}
 		if (g_threads_num > 1000) {
