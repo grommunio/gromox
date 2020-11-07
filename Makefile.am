@@ -673,7 +673,7 @@ man_MANS = \
 	doc/str_table.4gx doc/supervisor.8gx \
 	doc/timer.8gx doc/zcore.8gx
 
-include/gromox/paths.h: include/gromox/paths.h.in
+include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \
 	 -e 's|#define PKGLIBDIR .*|#define PKGLIBDIR "${pkglibdir}"|' \
 	 -e 's|#define PKGDATADIR .*|#define PKGDATADIR "${pkgdatadir}"|' \
