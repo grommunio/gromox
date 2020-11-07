@@ -205,7 +205,7 @@ archiver_system_progs = archive cidb migrator
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/fifo.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/long_hash.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/fileio.cpp lib/socket.cpp
+libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/long_hash.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/fileio.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_dbop_la_SOURCES = lib/dbop_mysql.cpp
@@ -596,7 +596,7 @@ cdnd_SOURCES = SYSTEM_ADMIN/cdnd.c
 cdnd_LDADD = -lpthread ${HX_LIBS} ${crypto_LIBS} ${ssl_LIBS} ${mysql_LIBS} ${zlib_LIBS} libgromox_common.la
 sa_daemon_SOURCES = LIBRARY/locker_client.c LIBRARY/system_log.c SYSTEM_ADMIN/daemon/auto_backup.c SYSTEM_ADMIN/daemon/data_source.c SYSTEM_ADMIN/daemon/domain_cleaner.c SYSTEM_ADMIN/daemon/file_operation.c SYSTEM_ADMIN/daemon/keyword_cleaning.c SYSTEM_ADMIN/daemon/log_analyzer.c SYSTEM_ADMIN/daemon/log_flusher.c SYSTEM_ADMIN/daemon/main.c SYSTEM_ADMIN/daemon/media_migrator.c SYSTEM_ADMIN/daemon/message.c SYSTEM_ADMIN/daemon/midb_client.c SYSTEM_ADMIN/daemon/password_cleaner.c SYSTEM_ADMIN/daemon/smtp_sender.c
 sa_daemon_LDADD = -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la libgromox_resolv.la libgromox_webkit.la
-event_SOURCES = SYSTEM_ADMIN/event.c
+event_SOURCES = SYSTEM_ADMIN/event.c LIBRARY/common/fifo.c
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
