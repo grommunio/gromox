@@ -271,15 +271,13 @@ static char* ical_get_string_line(char *pbuff, size_t max_length)
 {
 	size_t i;
 	char *pnext;
-	BOOL b_seached;
-	
-	b_seached = FALSE;
+	BOOL b_searched = false;
+
 	for (i=0; i<max_length; i++) {
 		if ('\r' == pbuff[i]) {
 			pbuff[i] = '\0';
-			if (FALSE == b_seached) {
-				b_seached = TRUE;
-			}
+			if (!b_searched)
+				b_searched = TRUE;
 			if (i + 1 < max_length && '\n' == pbuff[i + 1]) {
 				pnext = pbuff + i + 2;
 				if (' ' == *pnext || '\t' == *pnext) {
@@ -304,9 +302,8 @@ static char* ical_get_string_line(char *pbuff, size_t max_length)
 			return pnext;
 		} else if ('\n' == pbuff[i]) {
 			pbuff[i] = '\0';
-			if (FALSE == b_seached) {
-				b_seached = TRUE;
-			}
+			if (!b_searched)
+				b_searched = TRUE;
 			pnext = pbuff + i + 1;
 			if (' ' == *pnext || '\t' == *pnext) {
 				pnext ++;

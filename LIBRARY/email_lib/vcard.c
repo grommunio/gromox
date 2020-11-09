@@ -1,4 +1,5 @@
 #include "vcard.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -153,15 +154,14 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 	size_t i;
 	char *pnext;
 	BOOL b_quoted;
-	BOOL b_seached;
+	BOOL b_searched = false;
 	
 	b_quoted = FALSE;
-	b_seached = FALSE;
 	for (i=0; i<max_length; i++) {
 		if ('\r' == pbuff[i]) {
 			pbuff[i] = '\0';
-			if (FALSE == b_seached) {
-				b_seached = TRUE;
+			if (!b_searched) {
+				b_searched = TRUE;
 				if (NULL != strcasestr(pbuff, "QUOTED-PRINTABLE")) {
 					b_quoted = TRUE;
 				} else {
@@ -235,8 +235,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			return pnext;
 		} else if ('\n' == pbuff[i]) {
 			pbuff[i] = '\0';
-			if (FALSE == b_seached) {
-				b_seached = TRUE;
+			if (!b_searched) {
+				b_searched = TRUE;
 				if (NULL != strcasestr(pbuff, "QUOTED-PRINTABLE")) {
 					b_quoted = TRUE;
 				} else {
