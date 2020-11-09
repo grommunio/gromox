@@ -789,7 +789,7 @@ void parse_mime_encode_string(char *in_buff, long buff_len,
 	if (i >= buff_len - 1) {
 		return;
 	}
-	/* copy charset to pasred structure */
+	/* copy charset to parsed structure */
 	charset_len = i - charset_begin;
 	if (charset_len > sizeof(pencode_string->charset) - 1) {
 		return;

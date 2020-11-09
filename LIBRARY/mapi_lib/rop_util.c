@@ -247,9 +247,9 @@ void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
 BOOL rop_util_get_common_pset(int pset_type, GUID *pguid)
 {
 	static GUID guids[17];
-	static BOOL b_pasred;
+	static BOOL b_parsed;
 	
-	if (FALSE == b_pasred) {
+	if (FALSE == b_parsed) {
 		guid_from_string(&guids[0], "00020329-0000-0000-c000-000000000046");
 		guid_from_string(&guids[1], "00062008-0000-0000-C000-000000000046");
 		guid_from_string(&guids[2], "00062004-0000-0000-C000-000000000046");
@@ -267,7 +267,7 @@ BOOL rop_util_get_common_pset(int pset_type, GUID *pguid)
 		guid_from_string(&guids[14], "23239608-685D-4732-9C55-4C95CB4E8E33");
 		guid_from_string(&guids[15], "00020328-0000-0000-c000-000000000046");
 		guid_from_string(&guids[16], "96357F7F-59E1-47D0-99A7-46515C183B54");
-		b_pasred = TRUE;
+		b_parsed = TRUE;
 	}
 	if (pset_type < 0 || pset_type > 17) {
 		return FALSE;
