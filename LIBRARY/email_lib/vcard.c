@@ -33,6 +33,7 @@ static char* vcard_get_semicolon(char *pstring)
 			if ('\\' == pstring[i + 1] || ';' == pstring[i + 1] ||
 				',' == pstring[i + 1]) {
 				memmove(pstring + i, pstring + i + 1, tmp_len - i - 1);
+				pstring[tmp_len] = '\0';
 				tmp_len --;
 			} else if ('n' == pstring[i + 1] || 'N' == pstring[i + 1]) {
 				pstring[i] = '\r';
@@ -170,6 +171,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			if (TRUE == b_quoted) {
 				if ('=' == pbuff[i - 1]) {
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
+					pbuff[max_length-1] = '\0';
 					max_length --;
 					i --;
 				} else {
@@ -189,6 +191,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				pnext = pbuff + i + 2;
 				if (TRUE == b_quoted) {
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+					size_t bytes = pbuff + max_length - pnext;
+					pbuff[i+bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -200,6 +204,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 						break;
 					}
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+					size_t bytes = pbuff + max_length - pnext;
+					pbuff[i+bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -207,6 +213,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				pnext = pbuff + i + 1;
 				if (TRUE == b_quoted) {
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+					size_t bytes = pbuff + max_length - pnext;
+					pbuff[i+bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -218,6 +226,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 						break;
 					}
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+					size_t bytes = pbuff + max_length - pnext;
+					pbuff[i+bytes] = '\0';
 					max_length -= pnext - (pbuff + i);
 					continue;
 				}
@@ -236,6 +246,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			if (TRUE == b_quoted) {
 				if ('=' == pbuff[i - 1]) {
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
+					pbuff[max_length-1] = '\0';
 					max_length --;
 					i --;
 				} else {
@@ -247,6 +258,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			pnext = pbuff + i + 1;
 			if (TRUE == b_quoted) {
 				memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+				size_t bytes = pbuff + max_length - pnext;
+				pbuff[i+bytes] = '\0';
 				max_length -= pnext - (pbuff + i);
 				continue;
 			}
@@ -258,6 +271,8 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 					break;
 				}
 				memmove(pbuff + i, pnext, pbuff + max_length - pnext);
+				size_t bytes = pbuff + max_length - pnext;
+				pbuff[i+bytes] = '\0';
 				max_length -= pnext - (pbuff + i);
 				continue;
 			}
@@ -379,6 +394,7 @@ static void vcard_unescape_string(char *pstring)
 			if ('\\' == pstring[i + 1] || ';' == pstring[i + 1] ||
 				',' == pstring[i + 1]) {
 				memmove(pstring + i, pstring + i + 1, tmp_len - i);
+				pstring[tmp_len] = '\0';
 				tmp_len --;
 			} else if ('n' == pstring[i + 1] || 'N' == pstring[i + 1]) {
 				pstring[i] = '\r';
