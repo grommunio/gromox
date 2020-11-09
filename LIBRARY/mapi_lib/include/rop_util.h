@@ -6,6 +6,26 @@
 #endif
 #include "mapi_types.h"
 
+enum {
+	PS_PUBLIC_STRINGS = 0,
+	PSETID_COMMON,
+	PSETID_ADDRESS,
+	PS_INTERNET_HEADERS,
+	PSETID_APPOINTMENT,
+	PSETID_MEETING,
+	PSETID_LOG,
+	PSETID_MESSAGING,
+	PSETID_NOTE,
+	PSETID_POSTRSS,
+	PSETID_TASK,
+	PSETID_UNIFIEDMESSAGING,
+	PSETID_AIRSYNC,
+	PSETID_SHARING,
+	PSETID_XMLEXTRACTEDENTITIES,
+	PS_MAPI,
+	PSETID_ATTACHMENT,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,9 +59,7 @@ extern uint64_t rop_util_current_nttime(void);
 GUID rop_util_binary_to_guid(const BINARY *pbin);
 
 void rop_util_guid_to_binary(GUID guid, BINARY *pbin);
-
-BOOL rop_util_get_common_pset(int pset_type, GUID *pguid);
-
+extern BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid);
 BOOL rop_util_get_provider_uid(int provider_type, uint8_t *pflat_guid);
 
 void rop_util_free_binary(BINARY *pbin);

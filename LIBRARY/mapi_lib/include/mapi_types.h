@@ -437,24 +437,6 @@ typedef struct _SORTORDER_SET {
 	SORT_ORDER *psort;
 } SORTORDER_SET;
 
-#define PS_PUBLIC_STRINGS							1
-#define PSETID_COMMON								2
-#define PSETID_ADDRESS								3
-#define PS_INTERNET_HEADERS							4
-#define PSETID_APPOINTMENT							5
-#define PSETID_MEETING								6
-#define PSETID_LOG									7
-#define PSETID_MESSAGING							8
-#define PSETID_NOTE									9
-#define PSETID_POSTRSS								10
-#define PSETID_TASK									11
-#define PSETID_UNIFIEDMESSAGING						12
-#define PSETID_AIRSYNC								13
-#define PSETID_SHARING								14
-#define PSETID_XMLEXTRACTEDENTITIES					15
-#define PS_MAPI										16
-#define PSETID_ATTACHMENT							17
-
 typedef struct _PROPNAME_ARRAY {
 	uint16_t count;
 	PROPERTY_NAME *ppropname;
