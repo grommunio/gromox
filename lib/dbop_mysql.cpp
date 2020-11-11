@@ -333,7 +333,6 @@ static const char tbl_domains_top[] =
 "  `address` varchar(128) NOT NULL DEFAULT '',"
 "  `admin_name` varchar(32) NOT NULL DEFAULT '',"
 "  `tel` varchar(64) NOT NULL DEFAULT '',"
-"  `create_day` date NOT NULL,"
 "  `end_day` date NOT NULL,"
 "  `privilege_bits` int(10) unsigned NOT NULL,"
 "  `domain_status` tinyint(4) NOT NULL DEFAULT 0,"
@@ -363,7 +362,6 @@ static const char tbl_groups_top[] =
 "  `max_size` int(10) unsigned NOT NULL,"
 "  `max_user` int(10) unsigned NOT NULL,"
 "  `title` varchar(128) NOT NULL,"
-"  `create_day` date NOT NULL,"
 "  `privilege_bits` int(10) unsigned NOT NULL,"
 "  `group_status` tinyint(4) NOT NULL DEFAULT 0,"
 "  PRIMARY KEY (`id`),"
@@ -528,6 +526,9 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{42, tbl_admroleperm_42},
 	{43, tbl_admuserrole_43},
 	{44, "ALTER TABLE `users` DROP COLUMN `mobile_phone`"}, /* was never used (cf. cell) */
+	{45, "ALTER TABLE `users` DROP COLUMN `create_day`"},
+	{46, "ALTER TABLE `domains` DROP COLUMN `create_day`"},
+	{47, "ALTER TABLE `groups` DROP COLUMN `create_day`"},
 	{0, nullptr},
 };
 
