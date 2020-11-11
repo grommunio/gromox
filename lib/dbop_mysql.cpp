@@ -324,19 +324,14 @@ static const char tbl_domains_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `org_id` int(10) unsigned NOT NULL DEFAULT 0,"
 "  `domainname` varchar(255) CHARACTER SET ascii NOT NULL,"
-"  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `homedir` varchar(128) NOT NULL DEFAULT '',"
-"  `media` varchar(64) NOT NULL DEFAULT '',"
-"  `max_size` int(10) unsigned NOT NULL,"
 "  `max_user` int(10) unsigned NOT NULL,"
 "  `title` varchar(128) NOT NULL DEFAULT '',"
 "  `address` varchar(128) NOT NULL DEFAULT '',"
 "  `admin_name` varchar(32) NOT NULL DEFAULT '',"
 "  `tel` varchar(64) NOT NULL DEFAULT '',"
 "  `end_day` date NOT NULL,"
-"  `privilege_bits` int(10) unsigned NOT NULL,"
 "  `domain_status` tinyint(4) NOT NULL DEFAULT 0,"
-"  `domain_type` tinyint(4) NOT NULL DEFAULT 0,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `domainname` (`domainname`),"
 "  KEY `homedir` (`homedir`,`domain_type`),"
@@ -414,7 +409,6 @@ static const char tbl_users_top[] =
 "  `group_id` int(10) unsigned NOT NULL,"
 "  `maildir` varchar(128) NOT NULL DEFAULT '',"
 "  `max_size` int(10) unsigned NOT NULL,"
-"  `max_file` int(10) unsigned NOT NULL,"
 "  `lang` varchar(32) NOT NULL DEFAULT '',"
 "  `timezone` varchar(64) NOT NULL DEFAULT '',"
 "  `privilege_bits` int(10) unsigned NOT NULL,"
@@ -529,6 +523,13 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{45, "ALTER TABLE `users` DROP COLUMN `create_day`"},
 	{46, "ALTER TABLE `domains` DROP COLUMN `create_day`"},
 	{47, "ALTER TABLE `groups` DROP COLUMN `create_day`"},
+	{48, "DELETE FROM `domains` WHERE domain_type!=0"},
+	{49, "ALTER TABLE `domains` DROP COLUMN `domain_type`"},
+	{50, "ALTER TABLE `domains` DROP COLUMN `password`"},
+	{51, "ALTER TABLE `domains` DROP COLUMN `media`"},
+	{52, "ALTER TABLE `domains` DROP COLUMN `max_size`"},
+	{53, "ALTER TABLE `domains` DROP COLUMN `privilege_bits`"},
+	{54, "ALTER TABLE `users` DROP COLUMN `max_file`"},
 	{0, nullptr},
 };
 
