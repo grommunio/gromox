@@ -2040,7 +2040,7 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 		db_engine_put_db(pdb);
 		return FALSE;
 	}
-	**pptimer_id = sqlite3_column_int64(pstmt, 1);
+	**pptimer_id = sqlite3_column_int64(pstmt, 0);
 	sqlite3_finalize(pstmt);
 	db_engine_put_db(pdb);
 	return TRUE;
