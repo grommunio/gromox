@@ -171,6 +171,7 @@ exchange_plugins = \
 	libexproc_exchange_nsp.la \
 	libexproc_exchange_rfr.la \
 	libexhpm_proxy.la \
+	libgxsvc_at_client.la \
 	libgxsvc_authmgr.la \
 	libgxsvc_ldap_adaptor.la \
 	libgxsvc_mysql_adaptor.la
@@ -189,6 +190,7 @@ noinst_DATA += \
 	libexproc_exchange_nsp.ldd \
 	libexproc_exchange_rfr.ldd \
 	libexhpm_proxy.ldd \
+	libgxsvc_at_client.ldd \
 	libgxsvc_authmgr.ldd \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_mysql_adaptor.ldd
@@ -554,6 +556,10 @@ libexhpm_proxy_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/mod_proxy.c
 libexhpm_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexhpm_proxy_la_DEPENDENCIES = ${default_sym}
+libgxsvc_at_client_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/at_client.c
+libgxsvc_at_client_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_at_client_la_LIBADD = ${HX_LIBS}
+EXTRA_libgxsvc_at_client_la_DEPENDENCIES = ${default_sym}
 libgxsvc_authmgr_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/authmgr.cpp MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
 libgxsvc_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_authmgr_la_LIBADD = libgromox_common.la
@@ -640,7 +646,7 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 # doc
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx \
-	doc/archive.8gx doc/archive_agent.4gx \
+	doc/archive.8gx doc/archive_agent.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/backup_list.4gx \
 	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \

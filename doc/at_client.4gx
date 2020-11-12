@@ -1,0 +1,30 @@
+.TH at_client 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+at_client \(em timer client service plugin
+.SH Description
+.PP
+at_client is a loadable plugin that will utilize the at(1) framework to
+schedule deferred commands. http(8gx) and zcore(8gx) use the timer interface to
+implement delayed delivery of e-mail.
+.PP
+The atd(8) daemon needs to be running for commands to get executed.
+.SH Configuration file directives
+.PP
+This plugin has no directives.
+.SH Caveats
+.PP
+The at implementation of Thomas Koenig and maintained by Calhariz (as of 2020)
+is present in Linux distributions as well as FreeBSD, and it wraps the job ID
+counter at 1048576 back to 0. New jobs can receive an ID that is still in use
+by a prior pending job.
+.PP
+The at implementation of OpenBSD (derived from Thomas Koenig's) has a
+modification by Millert that changes job IDs into job "names", which are of the
+form "<starttime>.<queue>", i.e. no longer a single integer. This is
+unsupported by Gromox. Due to the job names, the at implementation supports
+storing at most one job every second \(em the start time is shifted forwards if
+a collision is detected, but only up to 120 seconds, which means that job
+enqueueing can trivially fail.
+.PP
+\fBgromox\fP(7), \fBat\fP(1), \fBatd\fP(8)
