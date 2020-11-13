@@ -652,7 +652,8 @@ man_MANS = \
 	doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx doc/domain_whitelist.4gx \
 	doc/esmtp_auth.4gx \
-	doc/event.8gx doc/exchange_emsmdb.4gx \
+	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
+	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
 	doc/forbidden_domain.4gx doc/forbidden_from.4gx \
 	doc/forbidden_rcpt.4gx doc/freebusy.8gx doc/gromox.7 \

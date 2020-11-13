@@ -1,0 +1,20 @@
+.TH event_proxy 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+event_stub \(em event sender service plugin
+.SH Description
+.PP
+event_proxy connects to the event(8gx) daemon and sets itself up so as to be
+able to send notifications.
+.PP
+event_proxy installs three service functions, "broadcast_event",
+"broadcast_select" and "broadcast_unselect", though the latter two are just
+convenience functions for broadcast_event. broadcast_event is for synchronously
+sending a notification into the event distribution system. Arbitrary
+notifications and commands can be sent this way. The return value is ignored.
+.PP
+In practice, midb(8gx), imap(8gx) and pop3(8gx) issue FOLDER-TOUCH
+notifications. Only imap(8gx) issues MESSAGE-FLAG notifications.
+.SH See also
+.PP
+\fBevent\fP(8gx), \fBevent_proxy\fP(4gx)

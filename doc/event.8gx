@@ -2,6 +2,14 @@
 .SH Synopsis
 .PP
 \fBevent\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+The event daemon is a software bus, inter-process communication (IPC) mechanism
+that allows communication between multiple processes running concurrently on
+multiple machines.
+.PP
+In practice, it is used by midb(8gx), pop3(8gx) and imap(8gx) to notify
+imap(8gx) instances of changed folder/message states.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -40,6 +48,49 @@ Default: \fI33333\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI50\fP
+.SH Event protocol
+.PP
+The event service is exposed as a line-based text protocol. Upon connection,
+the event server gratitiously writes "OK", following which the server will wait
+for commands, and execute them synchronously.
+.PP
+"FALSE" may be emitted by the server if there is a syntax error.
+.PP
+Each connection to the event daemon starts out in Enqueue Mode.
+.PP
+The command "ID <res_id>" declares the particular connection to be a notification
+sender. res_id is generally the hostname and the PID. The server always
+responds with "TRUE".
+.PP
+The command "LISTEN <res_id>" declares the particular connection to be a
+notification receiver. res_id follows the same pattern. The server responds
+with "TRUE" and the connection state changes to the Dequeue Mode (see below).
+.PP
+The command "SELECT <username> <folder>" subscribes those connections that have
+registered \fBas a listener for res_id\fP to notifications. (This means that a
+process wishing to use event_stub(4gx) to listen for notifications strictly
+requires loading event_proxy(4gx) too, and, in essence, use two connections to
+event(8gx).) The server responds with "FALSE" if no listener exists, or "TRUE"
+on success.
+.PP
+The command "UNSELECT <username> <folder>" unsubscribes those connections that
+had registered as a listener for res_id. The server always responds with
+"TRUE".
+.PP
+Auxiliary self-explanatory commands available are: "QUIT" and "PING".
+.PP
+Any other input is treated as a notification item and is not interpreted by
+event(8gx) beyond checking the number of fields.
+.PP
+The notification "FOLDER-TOUCH <username> <folder>" informs listeners that the
+folder metadata has changed and warrants being reloaded.
+.PP
+The notification "MESSAGE-FLAG <username> <folder> <messageid>" informs
+listeners that the message metadata has changed and warrants being reloaded.
+.PP
+Clients in Dequeue Mode will receive notifications. Each notification line
+received by the client needs to be acknowledged with a "TRUE" response. It is
+not possible to exit Dequeue Mode; connection termination is the only way out.
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBevent_proxy\fP(4gx), \fBevent_stub\fP(4gx)
