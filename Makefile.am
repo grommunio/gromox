@@ -671,7 +671,7 @@ man_MANS = \
 	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx doc/sendmail.8gx \
 	doc/sensor.8gx doc/session.8gx doc/single_rcpt.4gx doc/smtp.8gx \
 	doc/str_table.4gx doc/supervisor.8gx \
-	doc/timer.8gx doc/zcore.8gx
+	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	${AM_V_GEN}sed -e 's|#define PKGSYSCONFDIR .*|#define PKGSYSCONFDIR "${sysconfdir}/${PACKAGE_NAME}"|' \

@@ -1,7 +1,17 @@
 .TH timer 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+\fBtimer\fP \(em deferred command executor
 .SH Synopsis
 .PP
 \fBtimer\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+The timer daemon can be used to schedule commands to be executed once, at a
+particular time in the future. It is similar to the at(1) command and its
+associated daemon, atd.
+.PP
+timer(8gx) generally receives commands from timer_agent(4gx).
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -15,9 +25,11 @@ Output version information and exit.
 Display option summary.
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/timer.txt
+\fIdata_file_path\fP/timer.txt: The state file of timer(8gx), used to carry
+timers across reboots.
 .IP \(bu 4
-\fIdata_file_path\fP/timer_acl.txt
+\fIdata_file_path\fP/timer_acl.txt: A list of IP addresses that are allowed to
+connect, for when timer_listen_ip is not set in the configuration file.
 .SH Configuration file directives
 .SS data_file_path
 .PP
@@ -26,9 +38,11 @@ Directory where plugin instances will look for their data files.
 Default: \fI/usr/share/gromox/sa\fP
 .SS timer_listen_ip
 .PP
-The IPv4 address for exposing the timer service on.
+The IPv4 address for exposing the timer service on. When an address is set,
+timer_acl.txt will be ignored; be aware that if the address is 0.0.0.0, this
+would enable global access.
 .PP
-Default: \fI127.0.0.1\fP
+Default: \fI127.0.0.1\fP and ACL is ignored
 .SS timer_listen_port
 .PP
 The TCP port number for exposing the timer service on.
@@ -39,6 +53,17 @@ Default: \fI6666\fP
 The minimum number of client processing threads to keep around.
 .PP
 Default: \fI50\fP
+.SH Timer protocol
+.PP
+The timer service is exposed as a line-based text protocol. Upon connection,
+the event server gratitiously writes "OK", following which the server will wait
+for timer commands, and execute them synchronously.
+.PP
+The command "ADD <seconds> <command>" installs a new timer for the given command
+to be executed in that many seconds from now. The server will respond with
+"FALSE 2", "FALSE 3", or respond with the timer ID as "TRUE <id>".
+.PP
+The command "CANCEL <id>" revokes the timer with the chosen ID.
 .SH See also
 .PP
-\fBgromox\fP(7)
+\fBgromox\fP(7), \fBtimer_agent\fP(4gx)
