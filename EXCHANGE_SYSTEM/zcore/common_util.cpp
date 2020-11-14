@@ -2231,6 +2231,13 @@ static BOOL common_util_get_propids(
 			ppropnames, ppropids);
 }
 
+static BOOL common_util_get_propids_create(const PROPNAME_ARRAY *names,
+    PROPID_ARRAY *ids)
+{
+	return exmdb_client_get_named_propids(common_util_get_dir(),
+	       TRUE, names, ids);
+}
+
 static BOOL common_util_get_propname(
 	uint16_t propid, PROPERTY_NAME **pppropname)
 {
@@ -3266,7 +3273,7 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 	}
 	common_util_set_dir(store_object_get_dir(pstore));
 	pmsgctnt = oxcmail_import(charset, timezone, &imail,
-			common_util_alloc, common_util_get_propids);
+	           common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
 	return pmsgctnt;
 }
@@ -3338,7 +3345,7 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	}
 	common_util_set_dir(store_object_get_dir(pstore));
 	pmsgctnt = oxcical_import(timezone, &ical,
-		common_util_alloc, common_util_get_propids,
+	           common_util_alloc, common_util_get_propids_create,
 		common_util_username_to_entryid);
 	ical_free(&ical);
 	return pmsgctnt;
@@ -3400,7 +3407,7 @@ MESSAGE_CONTENT* common_util_vcf_to_message(
 		return FALSE;
 	}
 	common_util_set_dir(store_object_get_dir(pstore));
-	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids);	
+	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);
 	vcard_free(&vcard);
 	return pmsgctnt;
 }
