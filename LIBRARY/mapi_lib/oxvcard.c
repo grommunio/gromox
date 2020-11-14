@@ -405,16 +405,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				goto IMPORT_FAILURE;
 			}
 			pnode2 = double_list_get_head(pvparam->pparamval_list);
-			if (NULL == pnode2 || NULL == pnode2->pdata ||
-				(0 != strcasecmp(pnode2->pdata, "work") &&
-				0 != strcasecmp(pnode2->pdata, "home") &&
-				0 != strcasecmp(pnode2->pdata, "postal") &&
-				0 != strcasecmp(pnode2->pdata, "dom") &&
-				0 != strcasecmp(pnode2->pdata, "intl") &&
-				0 != strcasecmp(pnode2->pdata, "parcel"))) {
-				goto IMPORT_FAILURE;
-			}
-			address_type = pnode2->pdata;
+			address_type = pnode2 != nullptr && pnode2->pdata != nullptr ? pnode2->pdata : "";
 			count = 0;
 			for (pnode1=double_list_get_head(&pvline->value_list);
 				NULL!=pnode1; pnode1=double_list_get_after(
