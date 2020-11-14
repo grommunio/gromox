@@ -956,7 +956,7 @@ zend_bool ext_pack_pull_property_name(PULL_CTX *pctx, PROPERTY_NAME *r)
 	}
 	r->plid = NULL;
 	r->pname = NULL;
-	if (KIND_LID == r->kind) {
+	if (r->kind == MNID_ID) {
 		r->plid = emalloc(sizeof(uint32_t));
 		if (NULL == r->plid) {
 			return 0;
@@ -964,7 +964,7 @@ zend_bool ext_pack_pull_property_name(PULL_CTX *pctx, PROPERTY_NAME *r)
 		if (!ext_pack_pull_uint32(pctx, r->plid)) {
 			return 0;
 		}
-	} else if (KIND_NAME == r->kind) {
+	} else if (r->kind == MNID_STRING) {
 		if (!ext_pack_pull_uint8(pctx, &name_size)) {
 			return 0;
 		}
@@ -2079,11 +2079,11 @@ zend_bool ext_pack_push_property_name(
 	if (!ext_pack_push_guid(pctx, &r->guid)) {
 		return 0;
 	}
-	if (KIND_LID == r->kind) {
+	if (r->kind == MNID_ID) {
 		if (!ext_pack_push_uint32(pctx, *r->plid)) {
 			return 0;
 		}
-	} else if (KIND_NAME == r->kind) {
+	} else if (r->kind == MNID_STRING) {
 		offset = pctx->offset;
 		if (!ext_pack_push_advance(pctx, sizeof(uint8_t))) {
 			return 0;

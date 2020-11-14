@@ -1403,7 +1403,7 @@ int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 	}
 	r->plid = NULL;
 	r->pname = NULL;
-	if (KIND_LID == r->kind) {
+	if (r->kind == MNID_ID) {
 		r->plid = pext->alloc(sizeof(uint32_t));
 		if (NULL == r->plid) {
 			return EXT_ERR_ALLOC;
@@ -1412,7 +1412,7 @@ int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-	} else if (KIND_NAME == r->kind) {
+	} else if (r->kind == MNID_STRING) {
 		status = ext_buffer_pull_uint8(pext, &name_size);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -4528,12 +4528,12 @@ int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (KIND_LID == r->kind) {
+	if (r->kind == MNID_ID) {
 		status = ext_buffer_push_uint32(pext, *r->plid);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-	} else if (KIND_NAME == r->kind) {
+	} else if (r->kind == MNID_STRING) {
 		offset = pext->offset;
 		status = ext_buffer_push_advance(pext, sizeof(uint8_t));
 		if (EXT_ERR_SUCCESS != status) {

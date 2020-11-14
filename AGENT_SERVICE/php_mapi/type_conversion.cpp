@@ -1587,7 +1587,7 @@ zend_bool php_to_propname_array(zval *pzval_names,
 		}
 		switch (Z_TYPE_P(entry)) {
 		case IS_LONG:
-			ppropnames->ppropname[i].kind = KIND_LID;
+			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].plid = st_malloc<uint32_t>();
 			if (NULL == ppropnames->ppropname[i].plid) {
 				return 0;
@@ -1596,7 +1596,7 @@ zend_bool php_to_propname_array(zval *pzval_names,
 			ppropnames->ppropname[i].pname = NULL;
 			break;
 		case IS_STRING:
-			ppropnames->ppropname[i].kind = KIND_NAME;
+			ppropnames->ppropname[i].kind = MNID_STRING;
 			ppropnames->ppropname[i].plid = NULL;
 			ppropnames->ppropname[i].pname = estrdup(Z_STRVAL_P(entry));
 			if (NULL == ppropnames->ppropname[i].pname) {
@@ -1604,7 +1604,7 @@ zend_bool php_to_propname_array(zval *pzval_names,
 			}
 			break;
 		case IS_DOUBLE:
-			ppropnames->ppropname[i].kind = KIND_LID;
+			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].plid = st_malloc<uint32_t>();
 			if (NULL == ppropnames->ppropname[i].plid) {
 				return 0;

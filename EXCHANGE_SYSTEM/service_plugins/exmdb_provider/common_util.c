@@ -6382,11 +6382,11 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	for (i=0; i<ppropnames->count; i++) {
 		guid_to_string(&ppropnames->ppropname[i].guid, guid_string, 64);
 		switch (ppropnames->ppropname[i].kind) {
-		case KIND_LID:
+		case MNID_ID:
 			snprintf(name_string, 1024, "GUID=%s,LID=%u",
 				guid_string, *ppropnames->ppropname[i].plid);
 			break;
-		case KIND_NAME:
+		case MNID_STRING:
 			if (strlen(ppropnames->ppropname[i].pname) >= 1024) {
 				ppropids->ppropid[i] = 0;
 				continue;
@@ -6466,7 +6466,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			goto NOT_FOUND_PROPNAME;
 		}
 		if (0 == strncasecmp(ptoken, "LID=", 4)) {
-			ppropnames->ppropname[i].kind = KIND_LID;
+			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].plid =
 				common_util_alloc(sizeof(uint32_t));
 			if (NULL == ppropnames->ppropname[i].plid) {
@@ -6480,7 +6480,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			ppropnames->ppropname[i].pname = NULL;
 			continue;
 		} else if (0 == strncasecmp(ptoken, "NAME=", 5)) {
-			ppropnames->ppropname[i].kind = KIND_NAME;
+			ppropnames->ppropname[i].kind = MNID_STRING;
 			HX_strrtrim(ptoken + 5);
 			HX_strltrim(ptoken + 5);
 			if ('\0' == ptoken[5]) {

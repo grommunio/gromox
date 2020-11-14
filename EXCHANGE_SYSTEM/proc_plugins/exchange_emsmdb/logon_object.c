@@ -92,7 +92,7 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 	tmp_name.guid = ppropname->guid;
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
-	case KIND_LID:
+	case MNID_ID:
 		tmp_name.plid = malloc(sizeof(uint32_t));
 		if (NULL == tmp_name.plid) {
 			return FALSE;
@@ -101,7 +101,7 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 		tmp_name.pname = NULL;
 		snprintf(tmp_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
 		break;
-	case KIND_NAME:
+	case MNID_STRING:
 		tmp_name.plid = NULL;
 		tmp_name.pname = strdup(ppropname->pname);
 		if (NULL == tmp_name.pname) {
@@ -190,10 +190,10 @@ void logon_object_free(LOGON_OBJECT *plogon)
 			int_hash_iter_forward(piter)) {
 			ppropname = int_hash_iter_get_value(piter, NULL);
 			switch( ppropname->kind) {
-			case KIND_LID:
+			case MNID_ID:
 				free(ppropname->plid);
 				break;
-			case KIND_NAME:
+			case MNID_STRING:
 				free(ppropname->pname);
 				break;
 			}
@@ -248,7 +248,7 @@ BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	
 	if (propid < 0x8000) {
 		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
-		ppropname->kind = KIND_LID;
+		ppropname->kind = MNID_ID;
 		ppropname->plid = common_util_alloc(sizeof(uint32_t));
 		if (NULL == ppropname->plid) {
 			return FALSE;
@@ -266,10 +266,8 @@ BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 		plogon->dir, propid, ppropname)) {
 		return FALSE;	
 	}
-	if (KIND_LID == ppropname->kind ||
-		KIND_NAME == ppropname->kind) {
+	if (ppropname->kind == MNID_ID || ppropname->kind == MNID_STRING)
 		logon_object_cache_propname(plogon, propid, ppropname);
-	}
 	return TRUE;
 }
 
@@ -306,7 +304,7 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 		if (ppropids->ppropid[i] < 0x8000) {
 			rop_util_get_common_pset(PS_MAPI,
 				&ppropnames->ppropname[i].guid);
-			ppropnames->ppropname[i].kind = KIND_LID;
+			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].plid =
 				common_util_alloc(sizeof(uint32_t));
 			if (NULL == ppropnames->ppropname[i].plid) {
@@ -343,11 +341,10 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 		if (pindex_map[i] < 0) {
 			ppropnames->ppropname[i] =
 				tmp_propnames.ppropname[(-1)*pindex_map[i] - 1];
-			if (KIND_LID == ppropnames->ppropname[i].kind ||
-				KIND_NAME == ppropnames->ppropname[i].kind) {
+			if (ppropnames->ppropname[i].kind == MNID_ID ||
+			    ppropnames->ppropname[i].kind == MNID_STRING)
 				logon_object_cache_propname(plogon,
 					ppropids->ppropid[i], ppropnames->ppropname + i);
-			}
 		}
 	}
 	return TRUE;
@@ -364,19 +361,18 @@ BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
 	
 	rop_util_get_common_pset(PS_MAPI, &guid);
 	if (0 == guid_compare(&ppropname->guid, &guid)) {
-		if (KIND_LID == ppropname->kind) {
+		if (ppropname->kind == MNID_ID)
 			*ppropid = *ppropname->plid;
-		} else {
+		else
 			*ppropid = 0;
-		}
 		return TRUE;
 	}
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
-	case KIND_LID:
+	case MNID_ID:
 		snprintf(tmp_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
 		break;
-	case KIND_NAME:
+	case MNID_STRING:
 		snprintf(tmp_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
 		HX_strlower(tmp_string);
 		break;
@@ -438,21 +434,20 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 	}
 	for (i=0; i<ppropnames->count; i++) {
 		if (0 == guid_compare(&ppropnames->ppropname[i].guid, &guid)) {
-			if (KIND_LID == ppropnames->ppropname[i].kind) {
+			if (ppropnames->ppropname[i].kind == MNID_ID)
 				ppropids->ppropid[i] = *ppropnames->ppropname[i].plid;
-			} else {
+			else
 				ppropids->ppropid[i] = 0;
-			}
 			pindex_map[i] = i;
 			continue;
 		}
 		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
 		switch (ppropnames->ppropname[i].kind) {
-		case KIND_LID:
+		case MNID_ID:
 			snprintf(tmp_string, 256, "%s:lid:%u",
 				tmp_guid, *ppropnames->ppropname[i].plid);
 			break;
-		case KIND_NAME:
+		case MNID_STRING:
 			snprintf(tmp_string, 256, "%s:name:%s",
 				tmp_guid, ppropnames->ppropname[i].pname);
 			HX_strlower(tmp_string);

@@ -116,7 +116,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 	tmp_name.guid = ppropname->guid;
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
-	case KIND_LID:
+	case MNID_ID:
 		tmp_name.plid = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
 		if (NULL == tmp_name.plid) {
 			return FALSE;
@@ -125,7 +125,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 		tmp_name.pname = NULL;
 		snprintf(tmp_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
 		break;
-	case KIND_NAME:
+	case MNID_STRING:
 		tmp_name.plid = NULL;
 		tmp_name.pname = strdup(ppropname->pname);
 		if (NULL == tmp_name.pname) {
@@ -226,10 +226,10 @@ void store_object_free(STORE_OBJECT *pstore)
 			int_hash_iter_forward(piter)) {
 			ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(piter, nullptr));
 			switch( ppropname->kind) {
-			case KIND_LID:
+			case MNID_ID:
 				free(ppropname->plid);
 				break;
-			case KIND_NAME:
+			case MNID_STRING:
 				free(ppropname->pname);
 				break;
 			}
@@ -289,7 +289,7 @@ BOOL store_object_get_named_propname(STORE_OBJECT *pstore,
 	
 	if (propid < 0x8000) {
 		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
-		ppropname->kind = KIND_LID;
+		ppropname->kind = MNID_ID;
 		ppropname->plid = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 		if (NULL == ppropname->plid) {
 			return FALSE;
@@ -307,10 +307,8 @@ BOOL store_object_get_named_propname(STORE_OBJECT *pstore,
 		pstore->dir, propid, ppropname)) {
 		return FALSE;	
 	}
-	if (KIND_LID == ppropname->kind ||
-		KIND_NAME == ppropname->kind) {
+	if (ppropname->kind == MNID_ID || ppropname->kind == MNID_STRING)
 		store_object_cache_propname(pstore, propid, ppropname);
-	}
 	return TRUE;
 }
 
@@ -346,7 +344,7 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 		if (ppropids->ppropid[i] < 0x8000) {
 			rop_util_get_common_pset(PS_MAPI,
 				&ppropnames->ppropname[i].guid);
-			ppropnames->ppropname[i].kind = KIND_LID;
+			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].plid =
 				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 			if (NULL == ppropnames->ppropname[i].plid) {
@@ -382,11 +380,10 @@ BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 		if (pindex_map[i] < 0) {
 			ppropnames->ppropname[i] =
 				tmp_propnames.ppropname[(-1)*pindex_map[i] - 1];
-			if (KIND_LID == ppropnames->ppropname[i].kind ||
-				KIND_NAME == ppropnames->ppropname[i].kind) {
+			if (ppropnames->ppropname[i].kind == MNID_ID ||
+			    ppropnames->ppropname[i].kind == MNID_STRING)
 				store_object_cache_propname(pstore,
 					ppropids->ppropid[i], ppropnames->ppropname + i);
-			}
 		}
 	}
 	return TRUE;
@@ -403,19 +400,18 @@ BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
 	
 	rop_util_get_common_pset(PS_MAPI, &guid);
 	if (0 == guid_compare(&ppropname->guid, &guid)) {
-		if (KIND_LID == ppropname->kind) {
+		if (ppropname->kind == MNID_ID)
 			*ppropid = *ppropname->plid;
-		} else {
+		else
 			*ppropid = 0;
-		}
 		return TRUE;
 	}
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
-	case KIND_LID:
+	case MNID_ID:
 		snprintf(tmp_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
 		break;
-	case KIND_NAME:
+	case MNID_STRING:
 		snprintf(tmp_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
 		HX_strlower(tmp_string);
 		break;
@@ -476,21 +472,20 @@ BOOL store_object_get_named_propids(STORE_OBJECT *pstore,
 	}
 	for (i=0; i<ppropnames->count; i++) {
 		if (0 == guid_compare(&ppropnames->ppropname[i].guid, &guid)) {
-			if (KIND_LID == ppropnames->ppropname[i].kind) {
+			if (ppropnames->ppropname[i].kind == MNID_ID)
 				ppropids->ppropid[i] = *ppropnames->ppropname[i].plid;
-			} else {
+			else
 				ppropids->ppropid[i] = 0;
-			}
 			pindex_map[i] = i;
 			continue;
 		}
 		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
 		switch (ppropnames->ppropname[i].kind) {
-		case KIND_LID:
+		case MNID_ID:
 			snprintf(tmp_string, 256, "%s:lid:%u",
 				tmp_guid, *ppropnames->ppropname[i].plid);
 			break;
-		case KIND_NAME:
+		case MNID_STRING:
 			snprintf(tmp_string, 256, "%s:name:%s",
 				tmp_guid, ppropnames->ppropname[i].pname);
 			HX_strlower(tmp_string);

@@ -56,9 +56,11 @@ typedef struct _GUID_ARRAY {
 	GUID *pguid;
 } GUID_ARRAY;
 
-#define KIND_LID									0x00
-#define KIND_NAME									0x01
-#define KIND_NONE									0xFF
+enum {
+	MNID_ID = 0,
+	MNID_STRING = 1,
+	KIND_NONE = 0xff,
+};
 
 typedef struct _PROPERTY_NAME {
 	uint8_t kind;

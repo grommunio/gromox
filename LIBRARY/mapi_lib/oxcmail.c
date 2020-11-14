@@ -1256,8 +1256,8 @@ static BOOL oxcmail_parse_content_class(
 			ptoken ++;
 			if (TRUE == guid_from_string(&tmp_guid, field + 13)) {
 				/* PidLidInfoPathFromName */
-				propname.kind = KIND_LID;
 				rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+				propname.kind = MNID_ID;
 				propname.plid = const_cast(uint32_t *, &lid_infopathfromname);
 				if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 					return FALSE;
@@ -1279,8 +1279,8 @@ static BOOL oxcmail_parse_content_class(
 		propval.pvalue = tmp_class;
 	} else {
 		/* PidNameContentClass */
-		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.kind = MNID_STRING;
 		propname.pname = const_cast(char *, "Content-Class");
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
@@ -1319,8 +1319,8 @@ static BOOL oxcmail_parse_message_flag(
 	static const uint32_t lid_percent_complete = 0x00008102;
 	
 	/* PidLidFlagRequest */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = const_cast(uint32_t *, &lid_flag_request);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -1353,8 +1353,8 @@ static BOOL oxcmail_parse_message_flag(
 			pproplist, PROP_TAG_SUBJECT_STRING8);
 	}
 	if (NULL != pvalue) {
-		propname.kind = KIND_LID;
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.kind = MNID_ID;
 		propname.plid = const_cast(uint32_t *, &lid_todo_title);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
@@ -1372,8 +1372,8 @@ static BOOL oxcmail_parse_message_flag(
 	}
 	
 	/* PidLidTaskStatus */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = const_cast(uint32_t *, &lid_task_status);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -1387,8 +1387,8 @@ static BOOL oxcmail_parse_message_flag(
 	(*plast_propid) ++;
 	
 	/* PidLidTaskComplete */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = const_cast(uint32_t *, &lid_task_complete);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -1402,8 +1402,8 @@ static BOOL oxcmail_parse_message_flag(
 	(*plast_propid) ++;
 	
 	/* PidLidPercentComplete */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = const_cast(uint32_t *, &lid_percent_complete);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -1433,8 +1433,8 @@ static BOOL oxcmail_parse_classified(char *field,
 	
 	/* PidLidClassified */
 	if (0 == strcasecmp(field, "true")) {
-		propname.kind = KIND_LID;
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.kind = MNID_ID;
 		propname.plid = const_cast(uint32_t *, &lid_classified);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
@@ -1461,8 +1461,8 @@ static BOOL oxcmail_parse_classkeep(char *field,
 	
 	/* PidLidClassificationKeep */
 	if (0 == strcasecmp(field, "true") || 0 == strcasecmp(field, "false")) {
-		propname.kind = KIND_LID;
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.kind = MNID_ID;
 		propname.plid = const_cast(uint32_t *, &lid_classification_keep);
 		if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 			return FALSE;
@@ -1491,8 +1491,8 @@ static BOOL oxcmail_parse_classification(char *field,
 	static const uint32_t lid_classification = 0x000085B6;
 	
 	/* PidLidClassification */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = const_cast(uint32_t *, &lid_classification);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -1519,8 +1519,8 @@ static BOOL oxcmail_parse_classdesc(char *field,
 	static const uint32_t lid_classification_description = 0x000085B7;
 	
 	/* PidLidClassificationDescription */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = const_cast(uint32_t *, &lid_classification_description);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -1547,8 +1547,8 @@ static BOOL oxcmail_parse_classid(char *field,
 	static const uint32_t lid_classification_guid = 0x000085B8;
 	
 	/* PidLidClassificationGuid */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = const_cast(uint32_t *, &lid_classification_guid);
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -1856,8 +1856,8 @@ static BOOL oxcmail_enum_mail_head(
 		}
 	} else if (0 == strcasecmp(tag, "Accept-Language") ||
 		0 == strcasecmp(tag, "X-Accept-Language")) {
-		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.kind = MNID_STRING;
 		propname.pname = const_cast(char *, "Accept-Language");
 		if (1 != int_hash_add(penum_param->phash,
 			penum_param->last_propid, &propname)) {
@@ -1876,8 +1876,8 @@ static BOOL oxcmail_enum_mail_head(
 		}
 	} else if (0 == strcasecmp(tag, "Keywords")) {
 		/* PidNameKeywords */
-		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
+		propname.kind = MNID_STRING;
 		propname.pname = const_cast(char *, "Keywords");
 		if (1 != int_hash_add(penum_param->phash,
 			penum_param->last_propid, &propname)) {
@@ -2136,8 +2136,8 @@ static BOOL oxcmail_enum_mail_head(
 			}
 		}
 	} else if (0 == strcasecmp(tag, "Content-Base")) {
-		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.kind = MNID_STRING;
 		propname.pname = const_cast(char *, "Content-Base");
 		if (1 != int_hash_add(penum_param->phash,
 			penum_param->last_propid, &propname)) {
@@ -2171,8 +2171,8 @@ static BOOL oxcmail_enum_mail_head(
 		0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthSource") ||
 		0 == strcasecmp(tag, "X-Mailer") ||
 		0 == strcasecmp(tag, "User-Agent")) {
-		propname.kind = KIND_NAME;
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.kind = MNID_STRING;
 		propname.pname = penum_param->alloc(strlen(tag) + 1);
 		if (NULL == propname.pname) {
 			return FALSE;
@@ -2425,8 +2425,8 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 		return FALSE;
 	}
 	/* PidNameAttachmentMacInfo */
-	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.kind = MNID_STRING;
 	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		rop_util_free_binary(pbin);
@@ -2517,8 +2517,8 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		return FALSE;
 	}
 	/* PidNameAttachmentMacContentType */
-	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.kind = MNID_STRING;
 	propname.pname = const_cast(char *, "AttachmentMacContentType");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -2540,8 +2540,8 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		return FALSE;
 	}
 	/* PidNameAttachmentMacInfo */
-	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.kind = MNID_STRING;
 	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		free(pcontent);
@@ -2683,8 +2683,8 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 		return FALSE;
 	}
 	/* PidNameAttachmentMacInfo */
-	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.kind = MNID_STRING;
 	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		rop_util_free_binary(pbin);
@@ -2766,8 +2766,8 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		return FALSE;
 	}
 	/* PidNameAttachmentMacInfo */
-	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.kind = MNID_STRING;
 	propname.pname = const_cast(char *, "AttachmentMacInfo");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		free(pcontent);
@@ -3516,19 +3516,19 @@ static void oxcmail_remove_flag_propties(
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
 	/* PidLidTaskDueDate */
-	propname_buff[0].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK,
 		&propname_buff[0].guid);
+	propname_buff[0].kind = MNID_ID;
 	propname_buff[0].plid = const_cast(uint32_t *, &lid_task_duedate);
 	/* PidLidTaskStartDate */
-	propname_buff[1].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK,
 		&propname_buff[1].guid);
+	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].plid = const_cast(uint32_t *, &lid_task_startdate);
 	/* PidLidTaskDateCompleted */
-	propname_buff[2].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_TASK,
 		&propname_buff[2].guid);
+	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].plid = const_cast(uint32_t *, &lid_task_datecompleted);
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return;
@@ -4321,8 +4321,8 @@ static BOOL oxcmail_parse_encrypted(MIME *phead,
 		"Content-Type", tmp_buff, 1024)) {
 		return FALSE;
 	}
-	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+	propname.kind = MNID_STRING;
 	propname.pname = const_cast(char *, "Content-Type");
 	if (1 != int_hash_add(phash, *plast_propid, &propname)) {
 		return FALSE;
@@ -5140,8 +5140,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 		if (i >= pattachments->count) {
 			/* PidLidSmartNoAttach */
-			propname.kind = KIND_LID;
 			rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+			propname.kind = MNID_ID;
 			propname.plid = &tmp_int32;
 			tmp_int32 = 0x00008514;
 			propnames.count = 1;
@@ -5868,8 +5868,8 @@ EXPORT_CONTENT_CLASS:
 		pskeleton->pmessage_class,
 		"IPM.InfoPathForm.", 17)) {
 		/* PidLidInfoPathFromName */
-		propname.kind = KIND_LID;
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.kind = MNID_ID;
 		propname.plid = &lid;
 		lid = 0x000085B1;
 		propnames.count = 1;
@@ -6081,8 +6081,8 @@ EXPORT_CONTENT_CLASS:
 		}
 	}
 	/* PidNameKeywords */
-	propname.kind = KIND_NAME;
 	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
+	propname.kind = MNID_STRING;
 	propname.pname = const_cast(char *, "Keywords");
 	propnames.count = 1;
 	propnames.ppropname = &propname;
@@ -6156,8 +6156,8 @@ EXPORT_CONTENT_CLASS:
 		}
 	}
 	/* PidLidClassified */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = &lid;
 	lid = 0x000085B5;
 	propnames.count = 1;
@@ -6175,8 +6175,8 @@ EXPORT_CONTENT_CLASS:
 		}
 	}
 	/* PidLidClassificationKeep */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = &lid;
 	lid = 0x000085BA;
 	propnames.count = 1;
@@ -6194,8 +6194,8 @@ EXPORT_CONTENT_CLASS:
 		}
 	}
 	/* PidLidClassification */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = &lid;
 	lid = 0x000085B6;
 	propnames.count = 1;
@@ -6213,8 +6213,8 @@ EXPORT_CONTENT_CLASS:
 		}
 	}
 	/* PidLidClassificationDescription */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = &lid;
 	lid = 0x000085B7;
 	propnames.count = 1;
@@ -6232,8 +6232,8 @@ EXPORT_CONTENT_CLASS:
 		}
 	}
 	/* PidLidClassificationGuid */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = &lid;
 	lid = 0x000085B8;
 	propnames.count = 1;
@@ -6413,8 +6413,8 @@ EXPORT_CONTENT_CLASS:
 	}
 	
 	/* PidLidFlagRequest */
-	propname.kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.kind = MNID_ID;
 	propname.plid = &lid;
 	lid = 0x00008530;
 	propnames.count = 1;
@@ -6824,14 +6824,14 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	propnames.count = 2;
 	propnames.ppropname = propname_buff;
 	/* PidNameAttachmentMacInfo */
-	propname_buff[0].kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT,
 		&propname_buff[0].guid);
+	propname_buff[0].kind = MNID_STRING;
 	propname_buff[0].pname = const_cast(char *, "AttachmentMacInfo");
 	/* PidNameAttachmentMacContentType */
-	propname_buff[1].kind = KIND_NAME;
 	rop_util_get_common_pset(PSETID_ATTACHMENT,
 		&propname_buff[1].guid);
+	propname_buff[1].kind = MNID_STRING;
 	propname_buff[1].pname = const_cast(char *, "AttachmentMacContentType");
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;

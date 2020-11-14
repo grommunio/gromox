@@ -666,19 +666,19 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
 	/* PidLidEmail1EmailAddress */
-	propname_buff[0].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
 	lids[0] = 0x8083;
+	propname_buff[0].kind = MNID_ID;
 	propname_buff[0].plid = &lids[0];
 	/* PidLidEmail2EmailAddress */
-	propname_buff[1].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
 	lids[1] = 0x8093;
+	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].plid = &lids[1];
 	/* PidLidEmail3EmailAddress */
-	propname_buff[2].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
 	lids[2] = 0x80A3;
+	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].plid = &lids[2];
 	if (FALSE == common_util_get_named_propids(pdb->psqlite,
 		FALSE, &propnames, &propids) || 3 != propids.count) {

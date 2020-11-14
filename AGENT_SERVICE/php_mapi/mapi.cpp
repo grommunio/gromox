@@ -4212,13 +4212,12 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 		add_assoc_stringl(pzprop, "guid",
 			(char*)&propnames.ppropname[i].guid,
 			sizeof(GUID));
-		if (KIND_LID == propnames.ppropname[i].kind) {
+		if (propnames.ppropname[i].kind == MNID_ID)
 			add_assoc_long(pzprop, "id",
 				*propnames.ppropname[i].plid);
-		} else {
+		else
 			add_assoc_string(pzprop, "name",
 				propnames.ppropname[i].pname);
-		}
 		add_assoc_zval(return_value, num_buff, pzprop);
 	}
 	MAPI_G(hr) = ecSuccess;

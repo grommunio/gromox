@@ -67,10 +67,10 @@ static void msgchg_grouping_free_group_node(GROUP_NODE *pgp_node)
 		ptag_node = (TAG_NODE*)pnode->pdata;
 		if (0 == ptag_node->propid) {
 			switch (ptag_node->ppropname->kind) {
-			case KIND_LID:
+			case MNID_ID:
 				free(ptag_node->ppropname->plid);
 				break;
-			case KIND_NAME:
+			case MNID_STRING:
 				free(ptag_node->ppropname->pname);
 				break;
 			}
@@ -319,7 +319,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				return NULL;
 			}
 			if (0 == strncasecmp(ptoken, "LID=", 4)) {
-				ptag_node->ppropname->kind = KIND_LID;
+				ptag_node->ppropname->kind = MNID_ID;
 				ptag_node->ppropname->plid = malloc(sizeof(uint32_t));
 				if (NULL == ptag_node->ppropname->plid) {
 					free(ptag_node->ppropname);
@@ -343,7 +343,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				double_list_append_as_tail(
 					&pgp_node->tag_list, &ptag_node->node);
 			} else if (0 == strncasecmp(ptoken, "NAME=", 5)) {
-				ptag_node->ppropname->kind = KIND_NAME;
+				ptag_node->ppropname->kind = MNID_STRING;
 				HX_strrtrim(ptoken + 5);
 				HX_strltrim(ptoken + 5);
 				if ('\0' == ptoken[5]) {

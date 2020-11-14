@@ -645,13 +645,11 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 			continue;
 		}
 		if ((query_flags & QUERY_FLAG_NOSTRINGS) &&
-			KIND_NAME == propnames.ppropname[i].kind) {
+		    propnames.ppropname[i].kind == MNID_STRING)
 			continue;
-		}
 		if ((query_flags & QUERY_FLAG_NOIDS) &&
-			KIND_LID == ppropidnames->ppropname[i].kind) {
+		    ppropidnames->ppropname[i].kind == MNID_ID)
 			continue;
-		}
 		ppropidnames->ppropid[ppropidnames->count] =
 										propids.ppropid[i];
 		ppropidnames->ppropname[ppropidnames->count] =

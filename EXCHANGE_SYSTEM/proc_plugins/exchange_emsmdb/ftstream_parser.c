@@ -341,7 +341,7 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 	pname->plid = NULL;
 	pname->pname = NULL;
 	switch (pname->kind) {
-	case KIND_LID:
+	case MNID_ID:
 		pname->plid = common_util_alloc(sizeof(uint32_t));
 		if (NULL == pname->plid) {
 			return NULL;
@@ -351,7 +351,7 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 			return FALSE;
 		}
 		return pname;
-	case KIND_NAME:
+	case MNID_STRING:
 		pname->pname = ftstream_parser_read_naked_wstring(pstream);
 		if (NULL == pname->pname) {
 			return NULL;

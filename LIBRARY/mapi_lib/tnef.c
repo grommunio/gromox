@@ -225,14 +225,14 @@ static int tnef_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r)
 		return status;
 	}
 	if (0 == tmp_int) {
-		r->kind = KIND_LID;
+		r->kind = MNID_ID;
 		r->plid = pext->alloc(sizeof(uint32_t));
 		if (NULL == r->plid) {
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_uint32(pext, r->plid);
 	} else if (1 == tmp_int) {
-		r->kind = KIND_NAME;
+		r->kind = MNID_STRING;
 		status = ext_buffer_pull_uint32(pext, &tmp_int);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -1241,11 +1241,10 @@ static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
 	char tmp_guid[64];
 	
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
-	if (KIND_LID == ppropname->kind) {
+	if (ppropname->kind == MNID_ID)
 		snprintf(tag_string, 256, "%s:lid:%u", tmp_guid, *ppropname->plid);
-	} else {
+	else
 		snprintf(tag_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
-	}
 	HX_strlower(tag_string);
 }
 
@@ -1265,7 +1264,7 @@ static BOOL tnef_convert_to_propname(char *tag_string,
 	}
 	ptr ++;
 	if (0 == strncmp(ptr, "lid:", 4)) {
-		ppropname->kind = KIND_LID;
+		ppropname->kind = MNID_ID;
 		ppropname->pname = NULL;
 		ppropname->plid = alloc(sizeof(uint32_t));
 		if (NULL == ppropname->plid) {
@@ -1274,7 +1273,7 @@ static BOOL tnef_convert_to_propname(char *tag_string,
 		*ppropname->plid = atoi(ptr + 4);
 		return TRUE;
 	} else if (0 == strncmp(ptr, "name:", 5)) {
-		ppropname->kind = KIND_NAME;
+		ppropname->kind = MNID_STRING;
 		ppropname->plid = NULL;
 		len = strlen(ptr + 5) + 1;
 		ppropname->pname = alloc(len);
@@ -2210,13 +2209,12 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (KIND_LID == r->kind) {
+	if (r->kind == MNID_ID)
 		tmp_int = 0;
-	} else if (KIND_NAME == r->kind) {
+	else if (r->kind == MNID_STRING)
 		tmp_int = 1;
-	} else {
+	else
 		return EXT_ERR_FORMAT;
-	}
 	status = ext_buffer_push_uint32(pext, tmp_int);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;

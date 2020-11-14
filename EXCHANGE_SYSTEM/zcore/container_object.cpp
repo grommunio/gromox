@@ -217,49 +217,49 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
 	/* PidLidEmail1DisplayName */
-	propname_buff[0].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
 	lids[0] = 0x8080;
+	propname_buff[0].kind = MNID_ID;
 	propname_buff[0].plid = &lids[0];
 	/* PidLidEmail1AddressType */
-	propname_buff[1].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
 	lids[1] = 0x8082;
+	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].plid = &lids[1];
 	/* PidLidEmail1EmailAddress */
-	propname_buff[2].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
 	lids[2] = 0x8083;
+	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].plid = &lids[2];
 	/* PidLidEmail2DisplayName */
-	propname_buff[3].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[3].guid);
 	lids[3] = 0x8090;
+	propname_buff[3].kind = MNID_ID;
 	propname_buff[3].plid = &lids[3];
 	/* PidLidEmail2AddressType */
-	propname_buff[4].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[4].guid);
 	lids[4] = 0x8092;
+	propname_buff[4].kind = MNID_ID;
 	propname_buff[4].plid = &lids[4];
 	/* PidLidEmail2EmailAddress */
-	propname_buff[5].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[5].guid);
 	lids[5] = 0x8093;
+	propname_buff[5].kind = MNID_ID;
 	propname_buff[5].plid = &lids[5];
 	/* PidLidEmail3DisplayName */
-	propname_buff[6].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[6].guid);
 	lids[6] = 0x80A0;
+	propname_buff[6].kind = MNID_ID;
 	propname_buff[6].plid = &lids[6];
 	/* PidLidEmail3AddressType */
-	propname_buff[7].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[7].guid);
 	lids[7] = 0x80A2;
+	propname_buff[7].kind = MNID_ID;
 	propname_buff[7].plid = &lids[7];
 	/* PidLidEmail3EmailAddress */
-	propname_buff[8].kind = KIND_LID;
 	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[8].guid);
 	lids[8] = 0x80A3;
+	propname_buff[8].kind = MNID_ID;
 	propname_buff[8].plid = &lids[8];
 	if (FALSE == store_object_get_named_propids(
 		pstore, FALSE, &propnames, &propids) ||

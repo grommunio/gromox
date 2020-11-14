@@ -377,13 +377,13 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 		sizeof(uint16_t)*ppropnames->count);
 	for (i=0; i<ppropnames->count; i++) {
 		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
-		if (KIND_LID == ppropnames->ppropname[i].kind) {
+		if (ppropnames->ppropname[i].kind == MNID_ID)
 			snprintf(tmp_string, 256, "GUID=%s,LID=%u",
 				tmp_guid, *ppropnames->ppropname[i].plid);
-		} else {
+		else
 			snprintf(tmp_string, 256, "GUID=%s,NAME=%s",
 				tmp_guid, ppropnames->ppropname[i].pname);
-		}
+
 		HX_strlower(tmp_string);
 		ppropid = str_hash_query(g_str_hash, tmp_string);
 		if (NULL == ppropid) {
