@@ -82,132 +82,78 @@ static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	GET_PROPIDS get_propids)
 {
-	PROPNAME_ARRAY propnames;
-	PROPERTY_NAME propname_buff[17];
+	PROPERTY_NAME bf[17];
+	size_t z = 0;
 	
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_workaddresspostofficebox;
 	
-	propnames.count = 0;
-	propnames.ppropname = propname_buff;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_workaddressstreet;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_workaddresspostofficebox;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_workaddresscity;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_workaddressstreet;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_workaddressstate;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_workaddresscity;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_workaddresspostalcode;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_workaddressstate;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_workaddresscountry;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_workaddresspostalcode;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_email1address;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_workaddresscountry;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_email2address;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_email1address;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_email3address;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_email2address;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_imaddress;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_email3address;
-	propnames.count ++;
+	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_categories;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_imaddress;
-	propnames.count ++;
+	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_bcdisplaydefinition;
 	
-	rop_util_get_common_pset(PS_PUBLIC_STRINGS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_categories;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_contactuserfield1;
 	
-	rop_util_get_common_pset(PS_PUBLIC_STRINGS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_bcdisplaydefinition;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_contactuserfield2;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_contactuserfield1;
-	propnames.count ++;
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_contactuserfield3;
 	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_contactuserfield2;
-	propnames.count ++;
-	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_contactuserfield3;
-	propnames.count ++;
-	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_contactuserfield4;
-	propnames.count ++;
-	
-	rop_util_get_common_pset(PSETID_ADDRESS,
-		&propname_buff[propnames.count].guid);
-	propname_buff[propnames.count].kind = MNID_ID;
-	propname_buff[propnames.count].plid =
-		&g_kind_freebusylocation;
-	propnames.count ++;
-	
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_contactuserfield4;
+
+	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
+	bf[z].kind = MNID_ID;
+	bf[z++].plid = &g_kind_freebusylocation;
+
+	PROPNAME_ARRAY propnames = {z, bf};
 	return get_propids(&propnames, ppropids);
 }
 
