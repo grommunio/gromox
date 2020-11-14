@@ -1072,6 +1072,8 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 		if (FALSE == vcard_append_paramval(pvparam, "INTERNET")) {
 			goto EXPORT_FAILURE;
 		}
+		if (i == 0 && !vcard_append_paramval(pvparam, "PREF"))
+			goto EXPORT_FAILURE;
 		pvvalue = vcard_new_value();
 		if (NULL == pvvalue) {
 			goto EXPORT_FAILURE;
