@@ -3790,7 +3790,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		strcpy(timezone, g_default_timezone);
 	}
 	pmsgctnt = oxcmail_import(charset, timezone, &imail,
-			common_util_alloc, common_util_get_propids);
+	           common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
 	free(pbuff);
 	if (NULL == pmsgctnt) {
@@ -4324,7 +4324,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		strcpy(timezone, g_default_timezone);
 	}
 	pmsgctnt = oxcmail_import(charset, timezone, &imail,
-			common_util_alloc, common_util_get_propids);
+	           common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
 	free(pbuff);
 	if (NULL == pmsgctnt) {

@@ -1490,7 +1490,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 
 BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids);
-
+extern BOOL common_util_get_propids_create(const PROPNAME_ARRAY *, PROPID_ARRAY *);
 BOOL common_util_get_propname(
 	uint16_t propid, PROPERTY_NAME **pppropname);
 

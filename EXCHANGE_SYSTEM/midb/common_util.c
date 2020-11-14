@@ -345,6 +345,12 @@ BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
 		ppropnames, ppropids);
 }
 
+BOOL common_util_get_propids_create(const PROPNAME_ARRAY *names, PROPID_ARRAY *ids)
+{
+	return exmdb_client_get_named_propids(common_util_get_maildir(),
+	       TRUE, names, ids);
+}
+
 BOOL common_util_get_propname(
 	uint16_t propid, PROPERTY_NAME **pppropname)
 {
