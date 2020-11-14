@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <libHX/defs.h>
 #include "pcl.h"
 #include "guid.h"
 #include "rop_util.h"
@@ -246,7 +247,7 @@ void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
 
 BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 {
-	static GUID guids[17];
+	static GUID guids[18];
 	static BOOL b_parsed;
 	
 	if (FALSE == b_parsed) {
@@ -267,9 +268,10 @@ BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 		guid_from_string(&guids[PSETID_XMLEXTRACTEDENTITIES], "23239608-685D-4732-9C55-4C95CB4E8E33");
 		guid_from_string(&guids[PS_MAPI], "00020328-0000-0000-c000-000000000046");
 		guid_from_string(&guids[PSETID_ATTACHMENT], "96357F7F-59E1-47D0-99A7-46515C183B54");
+		guid_from_string(&guids[PSETID_GROMOX], "1de937e2-85c6-40a1-bd9d-a6e2b7b787b1");
 		b_parsed = TRUE;
 	}
-	if (pset_type > PSETID_ATTACHMENT)
+	if (pset_type >= ARRAY_SIZE(guids))
 		return FALSE;
 	*pguid = guids[pset_type];
 	return TRUE;

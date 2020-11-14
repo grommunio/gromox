@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "rop_util.h"
@@ -50,7 +51,7 @@ static const uint32_t g_bcd_proptag = 0x800B0102;
 static const uint32_t g_ufld_proptags[] = 
 	{0x800C001F, 0x800D001F, 0x800E001F, 0x800F001F};
 static const uint32_t g_fbl_proptag = 0x8010001F;
-
+static const uint32_t g_vcarduid_proptag = 0x8011001F;
 
 static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 {
@@ -82,7 +83,7 @@ static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	GET_PROPIDS get_propids)
 {
-	PROPERTY_NAME bf[17];
+	PROPERTY_NAME bf[18];
 	size_t z = 0;
 	
 	rop_util_get_common_pset(PSETID_ADDRESS, &bf[z].guid);
@@ -153,6 +154,10 @@ static BOOL oxvcard_get_propids(PROPID_ARRAY *ppropids,
 	bf[z].kind = MNID_ID;
 	bf[z++].plid = &g_kind_freebusylocation;
 
+	rop_util_get_common_pset(PSETID_GROMOX, &bf[z].guid);
+	bf[z].kind = MNID_STRING;
+	bf[z++].pname = const_cast(char *, "vcarduid");
+
 	PROPNAME_ARRAY propnames = {z, bf};
 	return get_propids(&propnames, ppropids);
 }
@@ -217,7 +222,16 @@ MESSAGE_CONTENT* oxvcard_import(
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
 		pvline = (VCARD_LINE*)pnode->pdata;
-		if (0 == strcasecmp(pvline->name, "FN")) {
+		if (strcasecmp(pvline->name, "UID") == 0) {
+			/* MS-OXVCARD § 2.1.3.7.7 deviation */
+			pstring = vcard_get_first_subvalue(pvline);
+			if (pstring == nullptr)
+				goto IMPORT_FAILURE;
+			propval.proptag = g_vcarduid_proptag;
+			propval.pvalue = const_cast(char *, pstring);
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+				goto IMPORT_FAILURE;
+		} else if (0 == strcasecmp(pvline->name, "FN")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				goto IMPORT_FAILURE;
@@ -1625,6 +1639,16 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
+	pvalue  = tpropval_array_get_propval(&pmsg->proplist,
+	          PROP_TAG(PROP_TYPE(g_vcarduid_proptag),
+	                   propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]));
+	if (pvalue != nullptr) {
+		pvline = vcard_new_simple_line("UID", pvalue);
+		if (pvline == nullptr)
+			goto EXPORT_FAILURE;
+		vcard_append_line(pvcard, pvline);
+	}
+
 	propid = PROP_ID(g_fbl_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = tpropval_array_get_propval(
