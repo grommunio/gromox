@@ -523,35 +523,9 @@ MESSAGE_CONTENT* oxvcard_import(
 				continue;
 			}
 			propval.pvalue = (void*)pstring;
-			pnode1 = double_list_get_head(&pvline->param_list);
-			if (NULL == pnode1) {
-				if (mail_count > 2) {
-					continue;
-				}
-				propval.proptag = g_email_proptags[mail_count];
-				mail_count ++;
-			} else {
-				pvparam = (VCARD_PARAM*)pnode1->pdata;
-				if (0 != strcasecmp(pvparam->name, "TYPE")) {
-					goto IMPORT_FAILURE;
-				}
-				if (NULL == pvparam->pparamval_list) {
-					goto IMPORT_FAILURE;
-				}
-				pnode2 = double_list_get_head(pvparam->pparamval_list);
-				if (NULL == pnode2) {
-					goto IMPORT_FAILURE;
-				}
-				if (0 == strcasecmp(pnode2->pdata, "INTERNET")) {
-					if (mail_count > 2) {
-						continue;
-					}
-					propval.proptag = g_email_proptags[mail_count];
-					mail_count ++;
-				} else {
-					continue;
-				}
-			}
+			if (mail_count > 2)
+				continue;
+			propval.proptag = g_email_proptags[mail_count++];
 			if (FALSE == tpropval_array_set_propval(
 				&pmsg->proplist, &propval)) {
 				goto IMPORT_FAILURE;
