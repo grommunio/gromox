@@ -28,6 +28,8 @@ Default: \fI510K\fP
 Default: \fI1000000\fP
 .SS max_rcpt_num
 .PP
+The maximum number of recipients that an e-mail is allowed to have.
+.PP
 Default: \fI256\fP
 .SS separator_for_bounce
 .PP
