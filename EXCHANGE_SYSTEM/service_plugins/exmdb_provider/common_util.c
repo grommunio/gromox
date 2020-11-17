@@ -222,59 +222,27 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	
 void common_util_pass_service(int service_id, void *func)
 {
+#define E(v, ptr) case (v): (ptr) = func; break;
 	switch (service_id) {
-	case SERVICE_ID_LANG_TO_CHARSET:
-		common_util_lang_to_charset = func;
-		break;
-	case SERVICE_ID_CPID_TO_CHARSET:
-		common_util_cpid_to_charset = func;
-		break;
-	case SERVICE_ID_GET_USER_DISPLAYNAME:
-		common_util_get_user_displayname = func;
-		break;
-	case SERVICE_ID_CHECK_MLIST_INCLUDE:
-		common_util_check_mlist_include = func;
-		break;
-	case SERVICE_ID_GET_USER_LANG:
-		common_util_get_user_lang = func;
-		break;
-	case SERVICE_ID_GET_TIMEZONE:
-		common_util_get_timezone = func;
-		break;
-	case SERVICE_ID_GET_MAILDIR:
-		common_util_get_maildir = func;
-		break;
-	case SERVICE_ID_GET_ID_FFROM_USERNAME:
-		common_util_get_id_from_username = func;
-		break;
-	case SERVICE_ID_GET_USERNAME_FROM_ID:
-		common_util_get_username_from_id = func;
-		break;
-	case SERVICE_ID_GET_USER_IDS:
-		common_util_get_user_ids = func;
-		break;
-	case SERVICE_ID_GET_DOMAIN_IDS:
-		common_util_get_domain_ids = func;
-		break;
-	case SERVICE_ID_GET_ID_FROM_MAILDIR:
-		common_util_get_id_from_maildir = func;
-		break;
-	case SERVICE_ID_GET_ID_FROM_HOMEDIR:
-		common_util_get_id_from_homedir = func;
-		break;
-	case SERVICE_ID_SEND_MAIL:
-		common_util_send_mail = func;
-		break;
-	case SERVICE_ID_GET_MIME_POOL:
-		common_util_get_mime_pool = func;
-		break;
-	case SERVICE_ID_LOG_INFO:
-		common_util_log_info = func;
-		break;
-	case SERVICE_ID_GET_HANDLE:
-		common_util_get_handle = func;
-		break;
+	E(SERVICE_ID_LANG_TO_CHARSET, common_util_lang_to_charset);
+	E(SERVICE_ID_CPID_TO_CHARSET, common_util_cpid_to_charset);
+	E(SERVICE_ID_GET_USER_DISPLAYNAME, common_util_get_user_displayname);
+	E(SERVICE_ID_CHECK_MLIST_INCLUDE, common_util_check_mlist_include);
+	E(SERVICE_ID_GET_USER_LANG, common_util_get_user_lang);
+	E(SERVICE_ID_GET_TIMEZONE, common_util_get_timezone);
+	E(SERVICE_ID_GET_MAILDIR, common_util_get_maildir);
+	E(SERVICE_ID_GET_ID_FFROM_USERNAME, common_util_get_id_from_username);
+	E(SERVICE_ID_GET_USERNAME_FROM_ID, common_util_get_username_from_id);
+	E(SERVICE_ID_GET_USER_IDS, common_util_get_user_ids);
+	E(SERVICE_ID_GET_DOMAIN_IDS, common_util_get_domain_ids);
+	E(SERVICE_ID_GET_ID_FROM_MAILDIR, common_util_get_id_from_maildir);
+	E(SERVICE_ID_GET_ID_FROM_HOMEDIR, common_util_get_id_from_homedir);
+	E(SERVICE_ID_SEND_MAIL, common_util_send_mail);
+	E(SERVICE_ID_GET_MIME_POOL, common_util_get_mime_pool);
+	E(SERVICE_ID_LOG_INFO, common_util_log_info);
+	E(SERVICE_ID_GET_HANDLE, common_util_get_handle);
 	}
+#undef E
 }
 
 void common_util_init(const char *org_name, uint32_t max_msg,
