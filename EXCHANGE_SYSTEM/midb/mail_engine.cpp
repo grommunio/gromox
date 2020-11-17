@@ -1,4 +1,5 @@
 #include <atomic>
+#include <climits>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -197,7 +198,7 @@ static int mail_engine_get_sequence_id()
 	int sequence_id;
 	
 	pthread_mutex_lock(&g_sequence_lock);
-	if (g_sequence_id == 0xFFFFFFF)
+	if (g_sequence_id == INT_MAX)
 		g_sequence_id = 0;
 	++g_sequence_id;
 	sequence_id = g_sequence_id;
