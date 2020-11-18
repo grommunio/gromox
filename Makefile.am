@@ -39,7 +39,6 @@ mta_plugins = \
 	libmtahook_os_inspection.la \
 	libmtahook_redirect_agent.la \
 	libmtahook_remote_postman.la \
-	libmtahook_status_forms.la \
 	libmtahook_system_sign.la \
 	libmtahook_user_forwarder.la \
 	libmtasvc_backup_list.la \
@@ -95,7 +94,6 @@ noinst_DATA += \
 	libmtahook_os_inspection.ldd \
 	libmtahook_redirect_agent.ldd \
 	libmtahook_remote_postman.ldd \
-	libmtahook_status_forms.ldd \
 	libmtahook_system_sign.ldd \
 	libmtahook_user_forwarder.ldd \
 	libmtasvc_backup_list.ldd \
@@ -290,10 +288,6 @@ libmtahook_remote_postman_la_SOURCES = MTA_SYSTEM/mpc_plugins/remote_postman/bou
 libmtahook_remote_postman_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_remote_postman_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_remote_postman_la_DEPENDENCIES = ${default_sym}
-libmtahook_status_forms_la_SOURCES = MTA_SYSTEM/mpc_plugins/status_forms.c
-libmtahook_status_forms_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_status_forms_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_status_forms_la_DEPENDENCIES = ${default_sym}
 libmtahook_system_sign_la_SOURCES = MTA_SYSTEM/mpc_plugins/system_sign/main.c MTA_SYSTEM/mpc_plugins/system_sign/message_sign.c
 libmtahook_system_sign_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_system_sign_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
