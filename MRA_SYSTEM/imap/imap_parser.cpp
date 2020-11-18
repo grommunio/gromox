@@ -199,7 +199,7 @@ int imap_parser_run()
 			return -4;
 		}
 
-		g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
+		g_ssl_mutex_buf = static_cast<pthread_mutex_t *>(malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t)));
 		if (NULL == g_ssl_mutex_buf) {
 			printf("[imap_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
@@ -268,7 +268,7 @@ int imap_parser_run()
 		return -9;
 	}
 	
-    g_context_list = malloc(sizeof(IMAP_CONTEXT)*g_context_num);
+	g_context_list = static_cast<IMAP_CONTEXT *>(malloc(sizeof(IMAP_CONTEXT) * g_context_num));
     if (NULL== g_context_list) {
 		printf("[imap_parser]: Failed to allocate IMAP contexts\n");
         return -10;
@@ -296,7 +296,7 @@ int imap_parser_run()
 		return -12;
 	}
 	pthread_setname_np(g_scan_id, "parser/scan");
-	system_services_install_event_stub(imap_parser_event_proc);
+	system_services_install_event_stub(reinterpret_cast<void *>(imap_parser_event_proc));
     return 0;
 }
 
@@ -582,8 +582,9 @@ LITERAL_CHECKING:
 		}
 LITERAL_PROCESSING:
 		for (i=0; i<pcontext->read_offset-3; i++) {
-			if ('{' == pcontext->read_buffer[i] && NULL != (ptr = memchr(pcontext->read_buffer + i,
-				'}', pcontext->read_offset - 2 - i)) && '\r' == ptr[1] && '\n' == ptr[2]) {
+			if (pcontext->read_buffer[i] == '{' &&
+			    (ptr = static_cast<char *>(memchr(pcontext->read_buffer + i, '}', pcontext->read_offset - 2 - i))) != nullptr &&
+			    ptr[1] == '\r' && ptr[2] == '\n') {
 				if (ptr - pcontext->read_buffer - i > 16) {
 					/* IMAP_CODE_2180017: BAD literal size too large */
 					imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
@@ -833,7 +834,7 @@ CMD_PROCESSING:
 		}
 		return PROCESS_CONTINUE;
 	} else if (SCHED_STAT_APPENDING == pcontext->sched_stat) {
-		pbuff = stream_getbuffer_for_writing(&pcontext->stream, &len);
+		pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream, reinterpret_cast<unsigned int *>(&len)));
 		if (NULL == pbuff) {
 			imap_parser_log_info(pcontext, 8, "out of memory");
 			/* IMAP_CODE_2180009: BAD internal error: fail to get stream buffer */
@@ -993,8 +994,8 @@ CMD_PROCESSING:
 	} else if (SCHED_STAT_WRLST == pcontext->sched_stat) {
 		if (0 == pcontext->write_length) {
 			temp_len = MAX_LINE_LENGTH;
-			pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream,
-									&temp_len);
+			pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream,
+			                       reinterpret_cast<unsigned int *>(&temp_len)));
 			pcontext->write_length = temp_len;
 		}
 		if (NULL != pcontext->connection.ssl) {
@@ -1039,8 +1040,8 @@ CMD_PROCESSING:
 
 		pcontext->write_offset = 0;
 		temp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = stream_getbuffer_for_reading(
-								&pcontext->stream, &temp_len);
+		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
+		                       &pcontext->stream, reinterpret_cast<unsigned int *>(&temp_len)));
 		pcontext->write_length = temp_len;
 		if (NULL == pcontext->write_buff) {
 			stream_clear(&pcontext->stream);
@@ -1107,7 +1108,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 		/* make room for CRLF */
 		line_length -= 2;
 		copy_result = stream_copyline(&pcontext->stream, pcontext->write_buff +
-						pcontext->write_length, &line_length);
+		              pcontext->write_length, reinterpret_cast<unsigned int *>(&line_length));
 		switch (copy_result) {
 		case STREAM_COPY_END:
 			return IMAP_RETRIEVE_TERM;
@@ -1214,7 +1215,6 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder)
 {
 	char buff[1024];
-	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	
@@ -1222,7 +1222,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 	strncpy(buff, username, 256);
 	HX_strlower(buff);
 	pthread_mutex_lock(&g_hash_lock);
-	plist = str_hash_query(g_select_hash, buff);
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
 	if (NULL == plist) {
 		pthread_mutex_unlock(&g_hash_lock);
 		return;
@@ -1242,7 +1242,6 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 
 static void imap_parser_event_touch(char *username, char *folder)
 {
-	DOUBLE_LIST *plist;
 	char temp_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
@@ -1250,7 +1249,7 @@ static void imap_parser_event_touch(char *username, char *folder)
 	strncpy(temp_string, username, 256);
 	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_hash_lock);
-	plist = str_hash_query(g_select_hash, temp_string);
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
 	if (NULL == plist) {
 		pthread_mutex_unlock(&g_hash_lock);
 		return;
@@ -1268,14 +1267,13 @@ static void imap_parser_event_touch(char *username, char *folder)
 void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 {
 	char buff[1024];
-	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	
 	strncpy(buff, pcontext->username, 256);
 	HX_strlower(buff);
 	pthread_mutex_lock(&g_hash_lock);
-	plist = str_hash_query(g_select_hash, buff);
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
 	if (NULL == plist) {
 		pthread_mutex_unlock(&g_hash_lock);
 		return;
@@ -1297,7 +1295,6 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 static void imap_parser_event_flag(const char *username, const char *folder,
 	const char *mid_string)
 {
-	DOUBLE_LIST *plist;
 	char temp_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
@@ -1305,7 +1302,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	strncpy(temp_string, username, 256);
 	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_hash_lock);
-	plist = str_hash_query(g_select_hash, temp_string);
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
 	if (NULL == plist) {
 		pthread_mutex_unlock(&g_hash_lock);
 		return;
@@ -1367,8 +1364,9 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	}
 	
 	while (MEM_END_OF_FILE != mem_file_readline(&temp_file, mid_string, sizeof(mid_string))) {
-		if (MIDB_RESULT_OK == system_services_get_id(pcontext->maildir,
-			pcontext->selected_folder, mid_string, &id) &&
+		if (system_services_get_id(pcontext->maildir,
+		    pcontext->selected_folder, mid_string,
+		    reinterpret_cast<unsigned int *>(&id)) == MIDB_RESULT_OK &&
 			MIDB_RESULT_OK == system_services_get_flags(pcontext->maildir,
 			pcontext->selected_folder, mid_string, &flag_bits, &err)) {
 			tmp_len = snprintf(buff, 1024, "* %d FETCH (FLAGS (", id);
