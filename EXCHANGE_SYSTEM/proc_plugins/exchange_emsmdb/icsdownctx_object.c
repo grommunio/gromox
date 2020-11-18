@@ -600,47 +600,45 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				fldchgs.pfldchgs + i,
 				PROP_TAG_ADDITIONALRENENTRYIDS)) {
 				tmp_propval.proptag = PROP_TAG_ADDITIONALRENENTRYIDS;
-				pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+				BINARY_ARRAY *ba = pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
 				if (NULL == pvalue) {
 					return FALSE;
 				}
 				tmp_propval.pvalue = pvalue;
-				((BINARY_ARRAY*)pvalue)->count = 5;
-				((BINARY_ARRAY*)pvalue)->pbin = common_util_alloc(
-					sizeof(BINARY)*((BINARY_ARRAY*)pvalue)->count);
-				if (NULL == ((BINARY_ARRAY*)pvalue)->pbin) {
+				ba->count = 5;
+				ba->pbin = common_util_alloc(sizeof(BINARY) * ba->count);
+				if (ba->pbin == nullptr)
 					return FALSE;
-				}
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
 							rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 				if (NULL == pbin) {
 					return FALSE;
 				}
-				((BINARY_ARRAY*)pvalue)->pbin[0] = *pbin;
+				ba->pbin[0] = *pbin;
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
 						rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 				if (NULL == pbin) {
 					return FALSE;
 				}
-				((BINARY_ARRAY*)pvalue)->pbin[1] = *pbin;
+				ba->pbin[1] = *pbin;
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
 						rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 				if (NULL == pbin) {
 					return FALSE;
 				}
-				((BINARY_ARRAY*)pvalue)->pbin[2] = *pbin;
+				ba->pbin[2] = *pbin;
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
 						rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 				if (NULL == pbin) {
 					return FALSE;
 				}
-				((BINARY_ARRAY*)pvalue)->pbin[3] = *pbin;
+				ba->pbin[3] = *pbin;
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
 								rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 				if (NULL == pbin) {
 					return FALSE;
 				}
-				((BINARY_ARRAY*)pvalue)->pbin[4] = *pbin;
+				ba->pbin[4] = *pbin;
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}
@@ -648,7 +646,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 				fldchgs.pfldchgs + i,
 				PROP_TAG_ADDITIONALRENENTRYIDSEX)) {
 				tmp_propval.proptag = PROP_TAG_ADDITIONALRENENTRYIDSEX;
-				pvalue = common_util_alloc(sizeof(BINARY));
+				BINARY *bv = pvalue = common_util_alloc(sizeof(BINARY));
 				if (NULL == pvalue) {
 					return FALSE;
 				}
@@ -687,41 +685,38 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 					&ext_push, &persistdatas)) {
 					return FALSE;	
 				}
-				((BINARY*)pvalue)->cb = ext_push.offset;
-				((BINARY*)pvalue)->pb = common_util_alloc(ext_push.offset);
-				if (NULL == ((BINARY*)pvalue)->pb) {
+				bv->cb = ext_push.offset;
+				bv->pv = common_util_alloc(ext_push.offset);
+				if (bv->pv == nullptr)
 					return FALSE;
-				}
-				memcpy(((BINARY*)pvalue)->pb, ext_push.data, ext_push.offset);
+				memcpy(bv->pv, ext_push.data, ext_push.offset);
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}
 			if (NULL == common_util_get_propvals(
 				fldchgs.pfldchgs + i, PROP_TAG_FREEBUSYENTRYIDS)) {
 				tmp_propval.proptag = PROP_TAG_FREEBUSYENTRYIDS;
-				pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+				BINARY_ARRAY *ba = pvalue = common_util_alloc(sizeof(BINARY_ARRAY));
 				if (NULL == pvalue) {
 					return FALSE;
 				}
 				tmp_propval.pvalue = pvalue;
-				((BINARY_ARRAY*)pvalue)->count = 4;
-				((BINARY_ARRAY*)pvalue)->pbin = common_util_alloc(
-					sizeof(BINARY)*((BINARY_ARRAY*)pvalue)->count);
-				if (NULL == ((BINARY_ARRAY*)pvalue)->pbin) {
+				ba->count = 4;
+				ba->pbin = common_util_alloc(sizeof(BINARY) * ba->count);
+				if (ba->pbin == nullptr)
 					return FALSE;
-				}
-				((BINARY_ARRAY*)pvalue)->pbin[0].cb = 0;
-				((BINARY_ARRAY*)pvalue)->pbin[0].pb = NULL;
-				((BINARY_ARRAY*)pvalue)->pbin[1].cb = 0;
-				((BINARY_ARRAY*)pvalue)->pbin[1].pb = NULL;
-				((BINARY_ARRAY*)pvalue)->pbin[2].cb = 0;
-				((BINARY_ARRAY*)pvalue)->pbin[2].pb = NULL;
+				ba->pbin[0].cb = 0;
+				ba->pbin[0].pb = nullptr;
+				ba->pbin[1].cb = 0;
+				ba->pbin[1].pb = nullptr;
+				ba->pbin[2].cb = 0;
+				ba->pbin[2].pb = nullptr;
 				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
 						rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 				if (NULL == pbin) {
 					return FALSE;
 				}
-				((BINARY_ARRAY*)pvalue)->pbin[3] = *pbin;
+				ba->pbin[3] = *pbin;
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}

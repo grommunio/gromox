@@ -106,16 +106,17 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	}
 	switch (PROP_TYPE(proptag)) {
 	case PT_BINARY:
-	case PT_OBJECT:
-		pstream->content_bin.cb = ((BINARY*)pvalue)->cb;
-		pstream->content_bin.pb = malloc(((BINARY*)pvalue)->cb);
-		if (NULL == pstream->content_bin.pb) {
+	case PT_OBJECT: {
+		BINARY *bv = pvalue;
+		pstream->content_bin.cb = bv->cb;
+		pstream->content_bin.pv = malloc(bv->cb);
+		if (pstream->content_bin.pv == nullptr) {
 			free(pstream);
 			return NULL;
 		}
-		memcpy(pstream->content_bin.pb,
-			((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb);
+		memcpy(pstream->content_bin.pv, bv->pv, bv->cb);
 		return pstream;
+	}
 	case PT_STRING8:
 		pstream->content_bin.cb = strlen(pvalue) + 1;
 		pstream->content_bin.pb = malloc(pstream->content_bin.cb);

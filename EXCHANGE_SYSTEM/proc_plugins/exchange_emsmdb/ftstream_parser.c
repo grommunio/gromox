@@ -809,8 +809,8 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_MV_BINARY:
-		ppropval->pvalue =
+	case PT_MV_BINARY: {
+		BINARY_ARRAY *ba = ppropval->pvalue =
 			common_util_alloc(sizeof(BINARY_ARRAY));
 		if (NULL == ppropval->pvalue) {
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -822,20 +822,17 @@ static int ftstream_parser_read_element(
 		if (pstream->st_size == pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
-		((BINARY_ARRAY*)ppropval->pvalue)->count = count;
+		ba->count = count;
 		if (0 == count) {
-			((BINARY_ARRAY*)ppropval->pvalue)->pbin = NULL;
+			ba->pbin = nullptr;
 		} else {
-			((BINARY_ARRAY*)ppropval->pvalue)->pbin =
-				common_util_alloc(sizeof(BINARY)*count);
-			if (NULL == ((BINARY_ARRAY*)ppropval->pvalue)->pbin) {
+			ba->pbin = common_util_alloc(sizeof(BINARY) * count);
+			if (ba->pbin == nullptr)
 				return FTSTREAM_PARSER_READ_FAIL;
-			}
 		}
 		for (i=0; i<count; i++) {
-			if (FALSE == ftstream_parser_read_binary(pstream,
-				((BINARY_ARRAY*)ppropval->pvalue)->pbin + i,
-				&b_continue)) {
+			if (!ftstream_parser_read_binary(pstream,
+			    ba->pbin + i, &b_continue)) {
 				if (TRUE == b_continue) {
 					if (pstream->offset - origin_offset > 0x10000) {
 						return FTSTREAM_PARSER_READ_FAIL;
@@ -853,6 +850,7 @@ static int ftstream_parser_read_element(
 			}
 		}
 		return FTSTREAM_PARSER_READ_OK;
+	}
 	}
 	return FTSTREAM_PARSER_READ_FAIL;
 	

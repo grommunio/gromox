@@ -456,7 +456,7 @@ static BOOL folder_object_get_calculated_property(
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDITIONALRENENTRYIDS:
+	case PROP_TAG_ADDITIONALRENENTRYIDS: {
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
 		}
@@ -474,48 +474,47 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+		BINARY_ARRAY *ba = *ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->count = 5;
-		((BINARY_ARRAY*)*ppvalue)->pbin = common_util_alloc(
-			sizeof(BINARY)*((BINARY_ARRAY*)*ppvalue)->count);
-		if (NULL == ((BINARY_ARRAY*)*ppvalue)->pbin) {
+		ba->count = 5;
+		ba->pbin = common_util_alloc(sizeof(BINARY) * ba->count);
+		if (ba->pbin == nullptr)
 			return FALSE;
-		}
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->pbin[0] = *pbin;
+		ba->pbin[0] = *pbin;
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->pbin[1] = *pbin;
+		ba->pbin[1] = *pbin;
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->pbin[2] = *pbin;
+		ba->pbin[2] = *pbin;
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->pbin[3] = *pbin;
+		ba->pbin[3] = *pbin;
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->pbin[4] = *pbin;
+		ba->pbin[4] = *pbin;
 		return TRUE;
-	case PROP_TAG_ADDITIONALRENENTRYIDSEX:
+	}
+	case PROP_TAG_ADDITIONALRENENTRYIDSEX: {
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
 		}
@@ -533,7 +532,7 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+		BINARY *bv = *ppvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -571,14 +570,14 @@ static BOOL folder_object_get_calculated_property(
 			&ext_push, &persistdatas)) {
 			return FALSE;	
 		}
-		((BINARY*)(*ppvalue))->cb = ext_push.offset;
-		((BINARY*)(*ppvalue))->pb = common_util_alloc(ext_push.offset);
-		if (NULL == ((BINARY*)(*ppvalue))->pb) {
+		bv->cb = ext_push.offset;
+		bv->pv = common_util_alloc(ext_push.offset);
+		if (bv->pv == nullptr)
 			return FALSE;
-		}
-		memcpy(((BINARY*)(*ppvalue))->pb, ext_push.data, ext_push.offset);
+		memcpy(bv->pv, ext_push.data, ext_push.offset);
 		return TRUE;
-	case PROP_TAG_FREEBUSYENTRYIDS:
+	}
+	case PROP_TAG_FREEBUSYENTRYIDS: {
 		if (FALSE == logon_object_check_private(pfolder->plogon)) {
 			return FALSE;
 		}
@@ -596,29 +595,28 @@ static BOOL folder_object_get_calculated_property(
 			*ppvalue = pvalue;
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
+		BINARY_ARRAY *ba = *ppvalue = common_util_alloc(sizeof(BINARY_ARRAY));
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->count = 4;
-		((BINARY_ARRAY*)*ppvalue)->pbin = common_util_alloc(
-			sizeof(BINARY)*((BINARY_ARRAY*)*ppvalue)->count);
-		if (NULL == ((BINARY_ARRAY*)*ppvalue)->pbin) {
+		ba->count = 4;
+		ba->pbin = common_util_alloc(sizeof(BINARY) * ba->count);
+		if (ba->pbin == nullptr)
 			return FALSE;
-		}
-		((BINARY_ARRAY*)*ppvalue)->pbin[0].cb = 0;
-		((BINARY_ARRAY*)*ppvalue)->pbin[0].pb = NULL;
-		((BINARY_ARRAY*)*ppvalue)->pbin[1].cb = 0;
-		((BINARY_ARRAY*)*ppvalue)->pbin[1].pb = NULL;
-		((BINARY_ARRAY*)*ppvalue)->pbin[2].cb = 0;
-		((BINARY_ARRAY*)*ppvalue)->pbin[2].pb = NULL;
+		ba->pbin[0].cb = 0;
+		ba->pbin[0].pb = nullptr;
+		ba->pbin[1].cb = 0;
+		ba->pbin[1].pb = nullptr;
+		ba->pbin[2].cb = 0;
+		ba->pbin[2].pb = nullptr;
 		pbin = common_util_to_folder_entryid(pfolder->plogon,
 				rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		((BINARY_ARRAY*)*ppvalue)->pbin[3] = *pbin;
+		ba->pbin[3] = *pbin;
 		return TRUE;
+	}
 	}
 	return FALSE;
 }
