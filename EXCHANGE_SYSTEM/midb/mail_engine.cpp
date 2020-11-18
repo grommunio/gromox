@@ -175,7 +175,7 @@ static BOOL g_wal;
 static BOOL g_async;
 static int g_mime_num;
 static int g_table_size;              /* hash table size */
-static int g_sequence_id;
+static std::atomic<int> g_sequence_id{0};
 static BOOL g_notify_stop;            /* stop signal for scaning thread */
 static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
@@ -187,7 +187,6 @@ static char g_default_charset[32];
 static char g_default_timezone[64];
 static pthread_mutex_t g_hash_lock;
 static STR_HASH_TABLE *g_hash_table;
-static pthread_mutex_t g_sequence_lock;
 
 static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string);
 static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist, unsigned int num, unsigned int max_uid);
@@ -195,15 +194,12 @@ static void mail_engine_ct_free_sequence(DOUBLE_LIST *plist);
 
 static int mail_engine_get_sequence_id()
 {
-	int sequence_id;
-	
-	pthread_mutex_lock(&g_sequence_lock);
-	if (g_sequence_id == INT_MAX)
-		g_sequence_id = 0;
-	++g_sequence_id;
-	sequence_id = g_sequence_id;
-	pthread_mutex_unlock(&g_sequence_lock);
-	return sequence_id;
+	int old = 0, nu = 0;
+	do {
+		old = g_sequence_id.load(std::memory_order_relaxed);
+		nu  = old != INT_MAX ? old + 1 : 1;
+	} while (!g_sequence_id.compare_exchange_weak(old, nu));
+	return nu;
 }
 
 static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
@@ -6932,7 +6928,6 @@ void mail_engine_init(const char *default_charset,
 	g_mime_num = mime_num;
 	g_cache_interval = cache_interval;
 	pthread_mutex_init(&g_hash_lock, NULL);
-	pthread_mutex_init(&g_sequence_lock, NULL);
 }
 
 int mail_engine_run()
@@ -7032,7 +7027,6 @@ int mail_engine_stop()
 void mail_engine_free()
 {
 	pthread_mutex_destroy(&g_hash_lock);
-	pthread_mutex_destroy(&g_sequence_lock);
 }
 
 int mail_engine_get_param(int param)

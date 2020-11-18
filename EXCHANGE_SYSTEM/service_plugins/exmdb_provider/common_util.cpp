@@ -1,3 +1,5 @@
+#include <atomic>
+#include <climits>
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -62,7 +64,7 @@ static pthread_key_t g_var_key;
 static pthread_key_t g_opt_key;
 static unsigned int g_max_rule_num;
 static unsigned int g_max_ext_rule_num;
-static pthread_mutex_t g_sequence_lock;
+static std::atomic<int> g_sequence_id{0};
 
 BOOL (*common_util_lang_to_charset)(
 	const char *lang, char *charset);
@@ -254,7 +256,6 @@ void common_util_init(const char *org_name, uint32_t max_msg,
 	g_max_ext_rule_num = max_ext_rule_num;
 	pthread_key_create(&g_var_key, NULL);
 	pthread_key_create(&g_opt_key, NULL);
-	pthread_mutex_init(&g_sequence_lock, NULL);
 }
 
 int common_util_run()
@@ -271,7 +272,6 @@ void common_util_free()
 {
 	pthread_key_delete(g_var_key);
 	pthread_key_delete(g_opt_key);
-	pthread_mutex_destroy(&g_sequence_lock);
 }
 
 void common_util_build_tls()
@@ -292,18 +292,12 @@ const void* common_util_get_tls_var()
 
 int common_util_sequence_ID()
 {
-	int temp_ID;
-	static int sequence_ID;
-	
-	pthread_mutex_lock(&g_sequence_lock);
-	if (sequence_ID >= 0X7FFFFFFF) {
-		sequence_ID = 1;
-	} else {
-		sequence_ID ++;
-	}
-	temp_ID = sequence_ID;
-	pthread_mutex_unlock(&g_sequence_lock);
-	return temp_ID;
+	int old = 0, nu = 0;
+	do {
+		old = g_sequence_id.load(std::memory_order_relaxed);
+		nu  = old != INT_MAX ? old + 1 : 1;
+	} while (!g_sequence_id.compare_exchange_weak(old, nu));
+	return nu;
 }
 
 /* can directly be called in local rpc thread without

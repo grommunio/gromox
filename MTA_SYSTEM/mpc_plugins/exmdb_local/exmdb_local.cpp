@@ -1,4 +1,6 @@
+#include <atomic>
 #include <errno.h>
+#include <climits>
 #include <string.h>
 #include <unistd.h>
 #include <libHX/defs.h>
@@ -37,7 +39,7 @@ static pthread_key_t g_alloc_key;
 static STR_HASH_TABLE *g_str_hash;
 static char g_default_charset[32];
 static char g_default_timezone[64];
-static pthread_mutex_t g_sequence_lock;
+static std::atomic<int> g_sequence_id{0};
 
 BOOL (*exmdb_local_check_domain)(const char *domainname);
 
@@ -71,18 +73,12 @@ static BOOL (*exmdb_local_get_username)(int, char*);
 
 static int exmdb_local_sequence_ID()
 {
-	int temp_ID;
-	static int sequence_ID = 1;
-	
-	pthread_mutex_lock(&g_sequence_lock);
-	if (sequence_ID >= 0X7FFFFFFF) {
-		sequence_ID = 1;
-	} else {
-		sequence_ID ++;
-	}
-	temp_ID = sequence_ID;
-	pthread_mutex_unlock(&g_sequence_lock);
-	return temp_ID;
+	int old = 0, nu = 0;
+	do {
+		old = g_sequence_id.load(std::memory_order_relaxed);
+		nu  = old != INT_MAX ? old + 1 : 1;
+	} while (!g_sequence_id.compare_exchange_weak(old, nu));
+	return nu;
 }
 
 
@@ -96,7 +92,6 @@ void exmdb_local_init(const char *config_path,
 	strcpy(g_default_timezone, default_timezone);
 	strcpy(g_propname_path, propname_path);
 	pthread_key_create(&g_alloc_key, NULL);
-	pthread_mutex_init(&g_sequence_lock, NULL);
 }
 
 int exmdb_local_run()
@@ -173,7 +168,6 @@ int exmdb_local_stop()
 
 void exmdb_local_free()
 {
-	pthread_mutex_destroy(&g_sequence_lock);
 	pthread_key_delete(g_alloc_key);
 }
 
