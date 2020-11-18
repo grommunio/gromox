@@ -11,6 +11,10 @@ enum{
 	NET_FAILURE_ALARM_INTERVAL
 };
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 void net_failure_init(int times, int interval, int alarm_interval);
 extern int net_failure_run(void);
 extern int net_failure_stop(void);
@@ -21,3 +25,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 int net_failure_get_param(int param);
 
 void net_failure_set_param(int param, int val);
+
+#ifdef  __cplusplus
+}
+#endif
