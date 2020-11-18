@@ -1305,27 +1305,19 @@ static int db_engine_compare_propval(
 		return strcasecmp(static_cast<char *>(pvalue1), static_cast<char *>(pvalue2));
 	case PT_CLSID:
 		return guid_compare(static_cast<GUID *>(pvalue1), static_cast<GUID *>(pvalue2));
-	case PT_BINARY:
-		if (0 == ((BINARY*)pvalue1)->cb &&
-			0 != ((BINARY*)pvalue2)->cb) {
+	case PT_BINARY: {
+		auto bv1 = static_cast<BINARY *>(pvalue1), bv2 = static_cast<BINARY *>(pvalue2);
+		if (bv1->cb == 0 && bv2->cb != 0)
 			return -1;
-		} else if (0 != ((BINARY*)pvalue1)->cb
-			&& 0 == ((BINARY*)pvalue2)->cb) {
+		else if (bv1->cb != 0 && bv2->cb == 0)
 			return 1;
-		} else if (0 == ((BINARY*)pvalue1)->cb
-			&& 0 == ((BINARY*)pvalue2)->cb) {
+		else if (bv1->cb == 0 && bv2->cb == 0)
 			return 0;	
-		}
-		if (((BINARY*)pvalue1)->cb >
-			((BINARY*)pvalue2)->cb) {
-			return 	memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue2)->cb);
-		} else {
-			return memcmp(((BINARY*)pvalue1)->pb,
-						((BINARY*)pvalue2)->pb,
-						((BINARY*)pvalue1)->cb);
-		}
+		if (bv1->cb > bv2->cb)
+			return memcmp(bv1->pb, bv2->pb, bv2->cb);
+		else
+			return memcmp(bv1->pb, bv2->pb, bv1->cb);
+	}
 	}
 	return 0;
 }

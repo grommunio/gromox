@@ -1290,16 +1290,14 @@ BIND_NULL_INSTANCE:
 						sqlite3_reset(pstmt1);
 					}
 					break;
-				case PT_MV_BINARY:
-					if (0 == ((BINARY_ARRAY*)pvalue)->count) {
+				case PT_MV_BINARY: {
+					auto ba = static_cast<BINARY_ARRAY *>(pvalue);
+					if (ba->count == 0)
 						goto BIND_NULL_INSTANCE;
-					}
-					for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
+					for (i = 0; i < ba->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_BINARY,
-							((BINARY_ARRAY*)pvalue)->pbin + i)) {
+						    pstmt1, multi_index, PT_BINARY, ba->pbin + i))
 							goto LOAD_CONTENT_FAIL;
-						}
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);
 						if (SQLITE_DONE != sqlite3_step(pstmt1)) {
@@ -1308,6 +1306,7 @@ BIND_NULL_INSTANCE:
 						sqlite3_reset(pstmt1);
 					}
 					break;
+				}
 				default:
 					goto LOAD_CONTENT_FAIL;
 				}

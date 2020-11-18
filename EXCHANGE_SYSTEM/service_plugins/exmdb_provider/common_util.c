@@ -3287,24 +3287,21 @@ BOOL common_util_get_properties(int table_type,
 				}
 				break;
 			case PT_OBJECT:
-			case PT_BINARY:
-				pvalue = common_util_alloc(sizeof(BINARY));
+			case PT_BINARY: {
+				BINARY *bv = pvalue = common_util_alloc(sizeof(BINARY));
 				if (NULL != pvalue) {
-					((BINARY*)pvalue)->cb =
-						sqlite3_column_bytes(pstmt, 0);
-					((BINARY*)pvalue)->pb =
-						common_util_alloc(((BINARY*)pvalue)->cb);
-					if (NULL == ((BINARY*)pvalue)->pb) {
+					bv->cb = sqlite3_column_bytes(pstmt, 0);
+					bv->pv = common_util_alloc(bv->cb);
+					if (bv->pv == nullptr) {
 						if (FALSE == b_optimize) {
 							sqlite3_finalize(pstmt);
 						}
 						return FALSE;
 					}
-					memcpy(((BINARY*)pvalue)->pb,
-						sqlite3_column_blob(pstmt, 0),
-						((BINARY*)pvalue)->cb);
+					memcpy(bv->pv, sqlite3_column_blob(pstmt, 0), bv->cb);
 				}
 				break;
+			}
 			case PT_MV_SHORT:
 				pvalue = common_util_alloc(sizeof(SHORT_ARRAY));
 				if (NULL != pvalue) {
@@ -3705,9 +3702,8 @@ static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	if (-1 == fd) {
 		return FALSE;
 	}
-	if (((BINARY*)ppropval->pvalue)->cb != write(
-		fd, ((BINARY*)ppropval->pvalue)->pb,
-		((BINARY*)ppropval->pvalue)->cb)) {
+	BINARY *bv = ppropval->pvalue;
+	if (write(fd, bv->pv, bv->cb) != bv->cb) {
 		close(fd);
 		remove(path);
 		return FALSE;
@@ -3764,9 +3760,8 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	if (-1 == fd) {
 		return FALSE;
 	}
-	if (((BINARY*)ppropval->pvalue)->cb != write(
-		fd, ((BINARY*)ppropval->pvalue)->pb,
-		((BINARY*)ppropval->pvalue)->cb)) {
+	BINARY *bv = ppropval->pvalue;
+	if (write(fd, bv->pv, bv->cb) != bv->cb) {
 		close(fd);
 		remove(path);
 		return FALSE;
@@ -4266,17 +4261,15 @@ BOOL common_util_set_properties(int table_type,
 			ext_buffer_push_free(&ext_push);
 			break;
 		case PT_OBJECT:
-		case PT_BINARY:
-			if (0 == ((BINARY*)ppropvals->ppropval[i].pvalue)->cb) {
+		case PT_BINARY: {
+			BINARY *bv = ppropvals->ppropval[i].pvalue;
+			if (bv->cb == 0)
 				sqlite3_bind_blob(pstmt, 2, &i, 0, SQLITE_STATIC);
-			} else {
-				sqlite3_bind_blob(pstmt, 2,
-					((BINARY*)ppropvals->ppropval[i].pvalue)->pb,
-					((BINARY*)ppropvals->ppropval[i].pvalue)->cb,
-					SQLITE_STATIC);
-			}
+			else
+				sqlite3_bind_blob(pstmt, 2, bv->pv, bv->cb, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
 			break;
+		}
 		case PT_MV_SHORT:
 			if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 				sqlite3_finalize(pstmt);
@@ -4631,24 +4624,21 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 			return FALSE;
 		}
 		break;
-	case PROP_TAG_RULEPROVIDERDATA:
-		*ppvalue = common_util_alloc(sizeof(BINARY));
+	case PROP_TAG_RULEPROVIDERDATA: {
+		BINARY *bv = *ppvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == *ppvalue) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
 		}
-		((BINARY*)*ppvalue)->cb =
-			sqlite3_column_bytes(pstmt, 0);
-		((BINARY*)*ppvalue)->pb =
-			common_util_alloc(((BINARY*)*ppvalue)->cb);
-		if (NULL == ((BINARY*)*ppvalue)->pb) {
+		bv->cb = sqlite3_column_bytes(pstmt, 0);
+		bv->pv = common_util_alloc(bv->cb);
+		if (bv->pv == nullptr) {
 			sqlite3_finalize(pstmt);
 			return FALSE;
 		}
-		memcpy(((BINARY*)*ppvalue)->pb,
-			sqlite3_column_blob(pstmt, 0),
-			((BINARY*)*ppvalue)->cb);
+		memcpy(bv->pv, sqlite3_column_blob(pstmt, 0), bv->cb);
 		break;
+	}
 	case PROP_TAG_RULECONDITION:
 		*ppvalue = common_util_alloc(sizeof(RESTRICTION));
 		if (NULL == *ppvalue) {
@@ -6821,15 +6811,14 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 							ext_push.offset, SQLITE_STATIC);
 		break;
 	case PT_OBJECT:
-	case PT_BINARY:
-		if (0 == ((BINARY*)pvalue)->cb) {
+	case PT_BINARY: {
+		BINARY *bv = pvalue;
+		if (bv->cb == 0)
 			sqlite3_bind_null(pstmt, bind_index);
-		} else {
-			sqlite3_bind_blob(pstmt,
-				bind_index, ((BINARY*)pvalue)->pb,
-				((BINARY*)pvalue)->cb, SQLITE_STATIC);
-		}
+		else
+			sqlite3_bind_blob(pstmt, bind_index, bv->pv, bv->cb, SQLITE_STATIC);
 		break;
+	}
 	default:
 		return FALSE;
 	}
@@ -6939,29 +6928,25 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		}
 		return pvalue;
 	case PT_OBJECT:
-	case PT_BINARY:
+	case PT_BINARY: {
 		if (sqlite3_column_bytes(pstmt, column_index) > 512) {
 			return NULL;
 		}
-		pvalue = common_util_alloc(sizeof(BINARY));
+		BINARY *bv = pvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		((BINARY*)pvalue)->cb =
-			sqlite3_column_bytes(pstmt, column_index);
-		if (0 == ((BINARY*)pvalue)->cb) {
-			((BINARY*)pvalue)->pb = NULL;
+		bv->cb = sqlite3_column_bytes(pstmt, column_index);
+		if (bv->cb == 0) {
+			bv->pb = NULL;
 		} else {
-			((BINARY*)pvalue)->pb =
-				common_util_alloc(((BINARY*)pvalue)->cb);
-			if (NULL == ((BINARY*)pvalue)->pb) {
+			bv->pv = common_util_alloc(bv->cb);
+			if (bv->pv == nullptr)
 				return NULL;
-			}
-			memcpy(((BINARY*)pvalue)->pb,
-				sqlite3_column_blob(pstmt, column_index),
-				((BINARY*)pvalue)->cb);
+			memcpy(bv->pv, sqlite3_column_blob(pstmt, column_index), bv->cb);
 		}
 		return pvalue;
+	}
 	}
 	return NULL;
 }

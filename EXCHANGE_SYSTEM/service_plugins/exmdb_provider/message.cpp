@@ -4717,11 +4717,11 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			PROP_TAG_EXTENDEDRULEMESSAGECONDITION, &pvalue)) {
 			return FALSE;
 		}
-		if (NULL == pvalue || 0 == ((BINARY*)pvalue)->cb) {
+		auto bv = static_cast<BINARY *>(pvalue);
+		if (pvalue == nullptr || bv->cb == 0)
 			continue;
-		}
-		ext_buffer_pull_init(&ext_pull, ((BINARY*)pvalue)->pb,
-			((BINARY*)pvalue)->cb, common_util_alloc,
+		ext_buffer_pull_init(&ext_pull, bv->pb,
+			bv->cb, common_util_alloc,
 			EXT_FLAG_WCOUNT|EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS !=
 			ext_buffer_pull_namedproperty_information(
@@ -4748,8 +4748,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		if (NULL == pvalue) {
 			continue;
 		}
-		ext_buffer_pull_init(&ext_pull, ((BINARY*)pvalue)->pb,
-			((BINARY*)pvalue)->cb, common_util_alloc,
+		ext_buffer_pull_init(&ext_pull, bv->pb,
+			bv->cb, common_util_alloc,
 			EXT_FLAG_WCOUNT|EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != ext_buffer_pull_namedproperty_information(
 			&ext_pull, &propname_info) || EXT_ERR_SUCCESS !=
