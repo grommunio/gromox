@@ -2040,11 +2040,12 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	case PROP_TAG_ENTRYID:
 	case PROP_TAG_RECORDKEY:
 	case PROP_TAG_TEMPLATEID:
-	case PROP_TAG_ORIGINALENTRYID:
+	case PROP_TAG_ORIGINALENTRYID: {
 		pvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == pvalue) {
 			return FALSE;
 		}
+		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
 		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 									ab_entryid.provider_uid);
@@ -2060,18 +2061,19 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		ab_entryid.px500dn = dn;
-		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(1280);
-		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
+		bv->pv = common_util_alloc(1280);
+		if (bv->pv == nullptr)
 			return FALSE;
-		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 1280, 0);
+		ext_buffer_push_init(&ext_push, bv->pv, 1280, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 			&ext_push, &ab_entryid)) {
 			return FALSE;
 		}
-		((BINARY*)pvalue)->cb = ext_push.offset;
+		bv->cb = ext_push.offset;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_SEARCHKEY:
+	}
+	case PROP_TAG_SEARCHKEY: {
 		if (node_type > 0x80) {
 			*ppvalue = NULL;
 			return TRUE;
@@ -2080,33 +2082,37 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
+		auto bv = static_cast<BINARY *>(pvalue);
 		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
 			return FALSE;
 		}
-		((BINARY*)pvalue)->cb = strlen(dn) + 4;
-		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(static_cast<BINARY *>(pvalue)->cb);
-		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
+		bv->cb = strlen(dn) + 4;
+		bv->pv = common_util_alloc(bv->cb);
+		if (bv->pv == nullptr)
 			return FALSE;
-		sprintf(static_cast<BINARY *>(pvalue)->pc, "EX:%s", dn);
-		HX_strupper(static_cast<BINARY *>(pvalue)->pc);
+		sprintf(bv->pc, "EX:%s", dn);
+		HX_strupper(bv->pc);
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_INSTANCEKEY:
+	}
+	case PROP_TAG_INSTANCEKEY: {
 		pvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		((BINARY*)pvalue)->cb = 4;
-		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(4);
-		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
+		auto bv = static_cast<BINARY *>(pvalue);
+		bv->cb = 4;
+		bv->pv = common_util_alloc(4);
+		if (bv->pv == nullptr)
 			return FALSE;
 		minid = ab_tree_get_node_minid(pnode);
-		((BINARY*)pvalue)->pb[0] = minid & 0xFF;
-		((BINARY*)pvalue)->pb[1] = (minid >> 8) & 0xFF;
-		((BINARY*)pvalue)->pb[2] = (minid >> 16) & 0xFF;
-		((BINARY*)pvalue)->pb[3] = (minid >> 24) & 0xFF;
+		bv->pb[0] = minid & 0xFF;
+		bv->pb[1] = (minid >> 8) & 0xFF;
+		bv->pb[2] = (minid >> 16) & 0xFF;
+		bv->pb[3] = (minid >> 24) & 0xFF;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 		if (node_type > 0x80) {
 			*ppvalue = NULL;

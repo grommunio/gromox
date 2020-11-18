@@ -714,11 +714,12 @@ BOOL container_object_fetch_special_property(
 		((BINARY*)*ppvalue)->cb = 16;
 		static_cast<BINARY *>(*ppvalue)->pb = const_cast<uint8_t *>(common_util_get_muidecsab());
 		return TRUE;
-	case PROP_TAG_ENTRYID:
+	case PROP_TAG_ENTRYID: {
 		pvalue = common_util_alloc(sizeof(BINARY));
 		if (NULL == pvalue) {
 			return FALSE;
 		}
+		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
 		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
 									ab_entryid.provider_uid);
@@ -729,17 +730,18 @@ BOOL container_object_fetch_special_property(
 		} else {
 			ab_entryid.px500dn = const_cast<char *>("/");
 		}
-		static_cast<BINARY *>(pvalue)->pv = common_util_alloc(128);
-		if (static_cast<BINARY *>(pvalue)->pv == nullptr)
+		bv->pv = common_util_alloc(128);
+		if (bv->pv == nullptr)
 			return FALSE;
 		ext_buffer_push_init(&ext_push, ((BINARY*)pvalue)->pb, 128, 0);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 			&ext_push, &ab_entryid)) {
 			return FALSE;
 		}
-		((BINARY*)pvalue)->cb = ext_push.offset;
+		bv->cb = ext_push.offset;
 		*ppvalue = pvalue;
 		return TRUE;
+	}
 	case PROP_TAG_CONTAINERFLAGS:
 		pvalue = common_util_alloc(sizeof(uint32_t));
 		if (NULL == pvalue) {
