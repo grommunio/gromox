@@ -293,7 +293,7 @@ const void* common_util_get_tls_var()
 int common_util_sequence_ID()
 {
 	int temp_ID;
-	static int sequence_ID = 1;
+	static int sequence_ID;
 	
 	pthread_mutex_lock(&g_sequence_lock);
 	if (sequence_ID >= 0X7FFFFFFF) {
