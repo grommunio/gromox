@@ -1954,9 +1954,9 @@ LIB_BUFFER* imap_parser_get_jpool()
 int imap_parser_get_sequence_ID()
 {
 	pthread_mutex_lock(&g_sequence_lock);
-	int temp_id = g_sequence_ID++;
 	if (g_sequence_ID == INT_MAX)
 		g_sequence_ID = 0;
+	int temp_id = ++g_sequence_ID;
 	pthread_mutex_unlock(&g_sequence_lock);
 	return temp_id;
 }
