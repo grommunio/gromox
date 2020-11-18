@@ -107,7 +107,7 @@ int exmdb_local_run()
 	char temp_line[256];
 	
 #define E(f, s) do { \
-	(f) = query_service(s); \
+	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "exmdb_local", (s)); \
 		return -1; \
@@ -146,7 +146,7 @@ int exmdb_local_run()
 		return -3;
 	}
 	num = list_file_get_item_num(plist);
-	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist));
+	auto pitem = reinterpret_cast<struct srcitem *>(list_file_get_list(plist));
 	g_str_hash = str_hash_init(num + 1, sizeof(uint16_t), NULL);
 	if (NULL == g_str_hash) {
 		printf("[exmdb_local]: Failed to init hash table\n");
@@ -355,9 +355,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 
 static void* exmdb_local_alloc(size_t size)
 {
-	ALLOC_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_alloc_key);
+	auto pctx = static_cast<ALLOC_CONTEXT *>(pthread_getspecific(g_alloc_key));
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -373,8 +371,7 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 	char tmp_string[256];
 	
 	ppropids->count = ppropnames->count;
-	ppropids->ppropid = exmdb_local_alloc(
-		sizeof(uint16_t)*ppropnames->count);
+	ppropids->ppropid = static_cast<uint16_t *>(exmdb_local_alloc(sizeof(uint16_t) * ppropnames->count));
 	for (i=0; i<ppropnames->count; i++) {
 		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
 		if (ppropnames->ppropname[i].kind == MNID_ID)
@@ -385,7 +382,7 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 				tmp_guid, ppropnames->ppropname[i].pname);
 
 		HX_strlower(tmp_string);
-		ppropid = str_hash_query(g_str_hash, tmp_string);
+		ppropid = static_cast<uint16_t *>(str_hash_query(g_str_hash, tmp_string));
 		if (NULL == ppropid) {
 			ppropids->ppropid[i] = 0;
 		} else {
