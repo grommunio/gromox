@@ -2315,7 +2315,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			uidnext ++;
 			mail_engine_insert_message(
 				pstmt2, &uidnext, message_id,
-				reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 1)),
+				S2A(sqlite3_column_text(pstmt, 1)),
 				sqlite3_column_int64(pstmt, 3),
 				sqlite3_column_int64(pstmt, 4),
 				sqlite3_column_int64(pstmt, 2));
@@ -2323,8 +2323,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			mail_engine_sync_message(pidb,
 				pstmt2, pstmt3, &uidnext, message_id,
 				sqlite3_column_int64(pstmt, 4),
-				reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 1)),
-				reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 1)),
+				S2A(sqlite3_column_text(pstmt, 1)),
+				S2A(sqlite3_column_text(pstmt1, 1)),
 				sqlite3_column_int64(pstmt, 2),
 				sqlite3_column_int64(pstmt1, 2),
 				sqlite3_column_int64(pstmt, 3),
@@ -2447,7 +2447,7 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 			return FALSE;
 		}
 		folder_id = sqlite3_column_int64(pstmt, 0);
-		pnode->pdata = static_cast<char *>(common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 1))));
+		pnode->pdata = static_cast<char *>(common_util_dup(S2A(sqlite3_column_text(pstmt, 1))));
 		if (NULL == pnode->pdata) {
 			return FALSE;
 		}
@@ -2676,7 +2676,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 					LLU(parent_fid), LLU(folder_id));
 				sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 			}
-			if (strcmp(encoded_name, reinterpret_cast<const char *>(sqlite3_column_text(pstmt1, 3))) != 0) {
+			if (strcmp(encoded_name, S2A(sqlite3_column_text(pstmt1, 3))) != 0) {
 				sprintf(sql_string, "UPDATE folders SET name='%s' "
 				        "WHERE folder_id=%llu", encoded_name, LLU(folder_id));
 				sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
@@ -2867,7 +2867,7 @@ static IDB_ITEM* mail_engine_get_idb(const char *path)
 			pthread_mutex_unlock(&g_hash_lock);
 			return NULL;
 		}
-		pidb->username = strdup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
+		pidb->username = strdup(S2A(sqlite3_column_text(pstmt, 0)));
 		sqlite3_finalize(pstmt);
 		if (NULL == pidb->username) {
 			sqlite3_close(pidb->psqlite);
@@ -3533,7 +3533,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	write(sockd, temp_buff, temp_len);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (mail_engine_get_digest(pidb->psqlite,
-		    reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)),
+		    S2A(sqlite3_column_text(pstmt, 0)),
 		    temp_buff) == 0) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
@@ -3593,7 +3593,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 			return 4;
 		}
 		pinode->node.pdata = pinode;
-		pinode->mid_string = common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
+		pinode->mid_string = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
 		if (NULL == pinode->mid_string) {
 			sqlite3_finalize(pstmt);
 			mail_engine_put_idb(pidb);
@@ -6654,7 +6654,7 @@ static void mail_engine_modify_notification_folder(
 		sqlite3_finalize(pstmt);
 		return;
 	}
-	if (!decode_hex_binary(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)),
+	if (!decode_hex_binary(S2A(sqlite3_column_text(pstmt, 0)),
 	    decoded_name, sizeof(decoded_name))) {
 		sqlite3_finalize(pstmt);
 		return;
