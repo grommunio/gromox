@@ -8,7 +8,7 @@ str_table implements checking for a trivial presence lookup of something in a
 text file. The plugin can be used in any Gromox process, but in practice
 only makes an appeareance in smtp(8gx) and delivery(8gx).
 .PP
-The str_table plugin has multiple instances. These are: \fBbackup_list\fP,
+The str_table plugin has multiple instances. These are:
 \fBboundary_list\fP, \fBdomain_list\fP, \fBdomain_whitelist\fP,
 \fBforbidden_from\fP, \fBforbidden_domain\fP, \fBforbidden_rcpt\fP,
 \fBmonitor_domains\fP, \fBrelay_domains\fP, \fBremote_mx_hello\fP,
@@ -17,7 +17,7 @@ The str_table plugin has multiple instances. These are: \fBbackup_list\fP,
 These instances are factual copies of the module to please the plugin loader
 and make it load different .cfg files. (This is clearly inefficient and may be
 fixed in a future release.) For example, the plugin loader will derive the name
-"backup_list.cfg" from the module name "libmtasvc_backup_list.so", and then
+"boundary_list.cfg" from the module name "libmtasvc_boundary_list.so", and then
 pass this filename to the module so it can be loaded as a config file.
 .PP
 The plugin supports temporary modification of the string table as it exists in
@@ -48,11 +48,11 @@ Default: varies per instance
 .SH Files
 .IP \(bu 4
 \fIconfig_file_path\fP/\fIinstance\fP.cfg: configuration file for the instance
-of str_table (e.g. /etc/gromox/delivery/backup_list.cfg when delivery(8gx) was
-made to load libmtasvc_backup_list.so.)
+of str_table (e.g. /etc/gromox/delivery/boundary_list.cfg when delivery(8gx) was
+made to load libmtasvc_boundary_list.so.)
 .IP \(bu 4
 \fIstate_path\fP/\fIinstance\fP.txt: string table on which matches are
-carried out (e.g. /var/lib/gromox/backup_list.txt)
+carried out (e.g. /var/lib/gromox/boundary_list.txt)
 .SH See also
 .PP
 \fBgromox\fP(7)

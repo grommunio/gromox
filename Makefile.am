@@ -41,7 +41,6 @@ mta_plugins = \
 	libmtahook_remote_postman.la \
 	libmtahook_system_sign.la \
 	libmtahook_user_forwarder.la \
-	libmtasvc_backup_list.la \
 	libmtasvc_boundary_list.la \
 	libmtasvc_delivery_console_control.la \
 	libmtasvc_dns_adaptor.la \
@@ -96,7 +95,6 @@ noinst_DATA += \
 	libmtahook_remote_postman.ldd \
 	libmtahook_system_sign.ldd \
 	libmtahook_user_forwarder.ldd \
-	libmtasvc_backup_list.ldd \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_delivery_console_control.ldd \
 	libmtasvc_dns_adaptor.la \
@@ -296,25 +294,21 @@ libmtahook_user_forwarder_la_SOURCES = MTA_SYSTEM/mpc_plugins/user_forwarder.c
 libmtahook_user_forwarder_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_user_forwarder_la_LIBADD = libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_user_forwarder_la_DEPENDENCIES = ${default_sym}
-libmtasvc_backup_list_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_table/main.c EXCHANGE_SYSTEM/service_plugins/str_table/str_table.c
-libmtasvc_backup_list_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_backup_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_backup_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_boundary_list_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_boundary_list_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_boundary_list_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_boundary_list_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_table/main.c EXCHANGE_SYSTEM/service_plugins/str_table/str_table.c
+libmtasvc_boundary_list_la_LDFLAGS = ${plugin_LDFLAGS}
+libmtasvc_boundary_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_boundary_list_la_DEPENDENCIES = ${default_sym}
 libmtasvc_delivery_console_control_la_SOURCES = MTA_SYSTEM/service_plugins/console_control.c
 libmtasvc_delivery_console_control_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_delivery_console_control_la_LIBADD = ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_delivery_console_control_la_DEPENDENCIES = ${default_sym}
-libmtasvc_domain_list_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_domain_list_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_domain_list_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_domain_list_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_domain_whitelist_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_domain_whitelist_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_domain_whitelist_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_domain_whitelist_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_domain_whitelist_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_domain_whitelist_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_whitelist_la_DEPENDENCIES = ${default_sym}
 libmtasvc_dns_adaptor_la_SOURCES = MTA_SYSTEM/service_plugins/dns_adaptor/dns_adaptor.c MTA_SYSTEM/service_plugins/dns_adaptor/inbound_ips.c MTA_SYSTEM/service_plugins/dns_adaptor/main.c
 libmtasvc_dns_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -324,17 +318,17 @@ libmtasvc_esmtp_auth_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/auth_cac
 libmtasvc_esmtp_auth_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_esmtp_auth_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_esmtp_auth_la_DEPENDENCIES = ${default_sym}
-libmtasvc_forbidden_from_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_forbidden_from_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_forbidden_from_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_forbidden_from_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_forbidden_from_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_forbidden_from_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_forbidden_from_la_DEPENDENCIES = ${default_sym}
-libmtasvc_forbidden_domain_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_forbidden_domain_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_forbidden_domain_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_forbidden_domain_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_forbidden_domain_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_forbidden_domain_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_forbidden_domain_la_DEPENDENCIES = ${default_sym}
-libmtasvc_forbidden_rcpt_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_forbidden_rcpt_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_forbidden_rcpt_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_forbidden_rcpt_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_forbidden_rcpt_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_forbidden_rcpt_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_forbidden_rcpt_la_DEPENDENCIES = ${default_sym}
 libmtasvc_inmail_frequency_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmtasvc_inmail_frequency_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
@@ -380,9 +374,9 @@ libmtasvc_mime_extension_la_SOURCES = ${libexsvc_mime_extension_la_SOURCES}
 libmtasvc_mime_extension_la_LDFLAGS = ${libexsvc_mime_extension_la_LDFLAGS}
 libmtasvc_mime_extension_la_LIBADD = ${libexsvc_mime_extension_la_LIBADD}
 EXTRA_libmtasvc_mime_extension_la_DEPENDENCIES = ${default_sym}
-libmtasvc_monitor_domains_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_monitor_domains_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_monitor_domains_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_monitor_domains_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_monitor_domains_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_monitor_domains_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_monitor_domains_la_DEPENDENCIES = ${default_sym}
 libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
@@ -404,9 +398,9 @@ libmtasvc_protection_ip_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmtasvc_protection_ip_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
 libmtasvc_protection_ip_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
 EXTRA_libmtasvc_protection_ip_audit_la_DEPENDENCIES = ${default_sym}
-libmtasvc_relay_domains_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_relay_domains_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_relay_domains_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_relay_domains_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_relay_domains_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_relay_domains_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_relay_domains_la_DEPENDENCIES = ${default_sym}
 libmtasvc_relay_list_la_SOURCES = ${libmtasvc_ip_whitelist_la_SOURCES}
 libmtasvc_relay_list_la_LDFLAGS = ${libmtasvc_ip_whitelist_la_LDFLAGS}
@@ -416,13 +410,13 @@ libmtasvc_remote_delivery_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmtasvc_remote_delivery_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
 libmtasvc_remote_delivery_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
 EXTRA_libmtasvc_remote_delivery_audit_la_DEPENDENCIES = ${default_sym}
-libmtasvc_remote_mx_hello_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_remote_mx_hello_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_remote_mx_hello_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_remote_mx_hello_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_remote_mx_hello_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_remote_mx_hello_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_remote_mx_hello_la_DEPENDENCIES = ${default_sym}
-libmtasvc_single_rcpt_la_SOURCES = ${libmtasvc_backup_list_la_SOURCES}
-libmtasvc_single_rcpt_la_LDFLAGS = ${libmtasvc_backup_list_la_LDFLAGS}
-libmtasvc_single_rcpt_la_LIBADD = ${libmtasvc_backup_list_la_LIBADD}
+libmtasvc_single_rcpt_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
+libmtasvc_single_rcpt_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
+libmtasvc_single_rcpt_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_single_rcpt_la_DEPENDENCIES = ${default_sym}
 libmtasvc_smtp_console_control_la_SOURCES = ${libmtasvc_delivery_console_control_la_SOURCES}
 libmtasvc_smtp_console_control_la_LDFLAGS = ${libmtasvc_delivery_console_control_la_LDFLAGS}
@@ -641,7 +635,7 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx \
 	doc/archive.8gx doc/archive_agent.4gx doc/at_client.4gx \
-	doc/authmgr.4gx doc/backup_list.4gx \
+	doc/authmgr.4gx \
 	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx doc/domain_whitelist.4gx \
