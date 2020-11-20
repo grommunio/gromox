@@ -19,7 +19,6 @@ static pthread_t g_thread_id2;
 static char g_mount_path[256];
 static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];
-static char g_backup_path[256];
 static char g_unchkusr_path[256];
 
 static void* thread_work_func1(void *param);
@@ -27,13 +26,11 @@ static void* thread_work_func1(void *param);
 static void* thread_work_func2(void *param);
 
 void engine_init(const char *mount_path, const char *domainlist_path,
-	const char *aliasaddress_path,
-	const char *backup_path, const char *unchkusr_path)
+	const char *aliasaddress_path, const char *unchkusr_path)
 {
 	strcpy(g_mount_path, mount_path);
 	strcpy(g_domainlist_path, domainlist_path);
 	strcpy(g_aliasaddress_path, aliasaddress_path);
-	strcpy(g_backup_path, backup_path);
 	strcpy(g_unchkusr_path, unchkusr_path);
 }
 
@@ -152,38 +149,6 @@ static void* thread_work_func1(void *param)
 			file_operation_broadcast(g_aliasaddress_path,
 				"data/delivery/alias_addresses.txt");
 			gateway_control_notify("libmtahook_alias_translator.so reload addresses",
-				NOTIFY_DELIVERY);
-		}
-
-		data_source_collect_clear(pcollect);
-
-		if (FALSE == data_source_get_backup_list(pcollect)) {
-			data_source_collect_free(pcollect);
-			goto NEXT_LOOP;
-		}
-		
-		sprintf(temp_path, "%s.tmp", g_backup_path);
-		
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			data_source_collect_free(pcollect);
-			goto NEXT_LOOP;
-		}
-		
-		for (data_source_collect_begin(pcollect);
-			!data_source_collect_done(pcollect);
-			data_source_collect_forward(pcollect)) {
-			pdomain_item = (DOMAIN_ITEM*)data_source_collect_get_value(pcollect);
-			len = sprintf(temp_line, "%s\n", pdomain_item->domainname);
-			write(fd, temp_line, len);
-		}
-		close(fd);
-		
-		if (0 != file_operation_compare(temp_path, g_backup_path)) {
-			rename(temp_path, g_backup_path);
-			file_operation_broadcast(g_backup_path,
-				"data/delivery/backup_list.txt");
-			gateway_control_notify("libmtasvc_backup_list.so reload",
 				NOTIFY_DELIVERY);
 		}
 

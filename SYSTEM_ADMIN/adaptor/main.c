@@ -38,7 +38,6 @@ int main(int argc, const char **argv)
 	char log_path[256];
 	char state_dir[256], domainlist_path[256];
 	char aliasaddress_path[256];
-	char backup_path[256];
 	char unchkusr_path[256];
 	char console_path[256];
 	char mysql_host[256];
@@ -70,7 +69,6 @@ int main(int argc, const char **argv)
 	printf("[system]: state path is %s\n", state_dir);
 	snprintf(domainlist_path, sizeof(domainlist_path), "%s/domain_list.txt", state_dir);
 	snprintf(aliasaddress_path, sizeof(aliasaddress_path), "%s/alias_addresses.txt", state_dir);
-	snprintf(backup_path, sizeof(backup_path), "%s/backup_list.txt", state_dir);
 	snprintf(unchkusr_path, sizeof(unchkusr_path), "%s/uncheck_domains.txt", state_dir);
 	snprintf(console_path, sizeof(console_path), "%s/console_table.txt", state_dir);
 
@@ -151,9 +149,7 @@ int main(int argc, const char **argv)
 	gateway_control_init(console_path);
 	
 	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
-	
-	engine_init(mount_path, domainlist_path,
-		aliasaddress_path, backup_path, unchkusr_path);
+	engine_init(mount_path, domainlist_path, aliasaddress_path, unchkusr_path);
 	config_file_free(pconfig);
 	
 	if (0 != system_log_run()) {

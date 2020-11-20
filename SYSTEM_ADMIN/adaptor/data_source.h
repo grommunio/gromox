@@ -48,9 +48,6 @@ void data_source_init(const char *host, int port, const char *user,
 BOOL data_source_get_domain_list(DATA_COLLECT *pcollect);
 
 BOOL data_source_get_alias_list(DATA_COLLECT *pcollect);
-
-BOOL data_source_get_backup_list(DATA_COLLECT *pcollect);
-
 BOOL data_source_get_monitor_domains(DATA_COLLECT *pcollect);
 
 BOOL data_source_get_uncheckusr_list(DATA_COLLECT *pcollect);
