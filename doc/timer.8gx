@@ -25,17 +25,16 @@ Output version information and exit.
 Display option summary.
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/timer.txt: The state file of timer(8gx), used to carry
-timers across reboots.
+/etc/gromox/timer_acl.txt: This file may contain a trivial list of IP
+addresses, and that list will be evaluted when timer_listen_ip is explicitly
+set.
 .IP \(bu 4
-\fIdata_file_path\fP/timer_acl.txt: A list of IP addresses that are allowed to
-connect, for when timer_listen_ip is not set in the configuration file.
+/var/lib/gromox/timer.txt: This file is used to save the state of timer(8gx)
+and persist them across restarts.
 .SH Configuration file directives
-.SS data_file_path
+.SS acl_path
 .PP
-Directory where plugin instances will look for their data files.
-.PP
-Default: \fI/usr/share/gromox/sa\fP
+Default: \fI/etc/gromox/timer_acl.txt\fP
 .SS timer_listen_ip
 .PP
 The IPv4 address for exposing the timer service on. When an address is set,
@@ -48,6 +47,9 @@ Default: \fI127.0.0.1\fP and ACL is ignored
 The TCP port number for exposing the timer service on.
 .PP
 Default: \fI6666\fP
+.SS timer_state_path
+.PP
+Default: \fI/var/lib/gromox/timer.txt\fP
 .SS timer_threads_num
 .PP
 The minimum number of client processing threads to keep around.

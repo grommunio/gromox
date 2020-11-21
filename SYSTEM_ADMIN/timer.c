@@ -137,14 +137,12 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 
-	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
-	if (NULL == str_value) {
-		HX_strlcpy(g_acl_path, PKGDATASADIR "/timer_acl.txt", sizeof(g_acl_path));
-		HX_strlcpy(g_list_path, PKGDATASADIR "/timer.txt", sizeof(g_list_path));
-	} else {
-		snprintf(g_acl_path, 255, "%s/timer_acl.txt", str_value);
-		snprintf(g_list_path, 255, "%s/timer.txt", str_value);
-	}
+	str_value = config_file_get_value(pconfig, "acl_path");
+	HX_strlcpy(g_acl_path, str_value != nullptr ? str_value :
+	           PKGSYSCONFDIR "/timer_acl.txt", sizeof(g_acl_path));
+	str_value = config_file_get_value(pconfig, "timer_state_path");
+	HX_strlcpy(g_list_path, str_value != nullptr ? str_value :
+	           PKGSTATEDIR "/timer.txt", sizeof(g_list_path));
 
 	printf("[system]: acl file path is %s\n", g_acl_path);
 
