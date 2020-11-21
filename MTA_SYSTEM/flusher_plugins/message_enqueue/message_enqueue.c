@@ -1,8 +1,6 @@
 /*
- *  mail queue have three parts, tape, mess, message queue.when a mail 
- *	is put into mail queue, first, check whether it is less
- *  than 64K, if it is, get a block (128K) from tape, and write the mail
- *  into this block; or, create a file in mess directory and write the
+ *  mail queue have two parts, mess, message queue.when a mail 
+ *	is put into mail queue, and create a file in mess directory and write the
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
@@ -14,7 +12,6 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <sys/shm.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -24,10 +21,7 @@
 #include <pthread.h>
 
 
-#define DEF_MODE			S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 #define TOKEN_MESSAGE_QUEUE     1
-#define TOKEN_SHARE_MEMORY      2
-#define BLOCK_SIZE              64*1024*2
 #define MAX_LINE_LENGTH			64*1024
 
 typedef struct _MSG_BUFF {
@@ -40,13 +34,7 @@ static BOOL message_enqueue_check(void);
 static int message_enqueue_retrieve_max_ID(void);
 BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity);
 
-int message_enqueue_try_save_tape(FLUSH_ENTITY *pentity);
-
 static char         g_path[256];
-static BOOL			g_with_tape;
-static int			g_tape_units;
-static void         *g_tape_begin;
-static int			g_shm_id;
 static int			g_msg_id;
 static pthread_t    g_flushing_thread;
 static BOOL         g_notify_stop;
@@ -59,19 +47,11 @@ static int			g_last_pos;
  *    message queue's construct function
  *    @param
  *    	path [in]    	path for saving files
- *		tape_units		tape units number if 0 means without tape
  */
-void message_enqueue_init(const char *path, int tape_units)
+void message_enqueue_init(const char *path)
 {
     strcpy(g_path, path);
-	if (0 == tape_units) {
-		g_with_tape = FALSE;
-	} else {
-		g_with_tape = TRUE;
-	}
     g_notify_stop = TRUE;
-	g_tape_units = tape_units;
-	g_tape_begin = NULL;
     g_last_flush_ID = 0;
 	g_enqueued_num = 0;
 	g_last_pos = 0;
@@ -85,8 +65,7 @@ void message_enqueue_init(const char *path, int tape_units)
  */
 int message_enqueue_run()
 {
-	key_t k_msg, k_shm;
-	int size;
+	key_t k_msg;
     char name[256];
     pthread_attr_t attr;
 
@@ -99,32 +78,10 @@ int message_enqueue_run()
 		printf("[message_enqueue]: ftok %s: %s\n", name, strerror(errno));
         return -2;
     }
-    k_shm = ftok(name, TOKEN_SHARE_MEMORY);
-    if (-1 == k_shm) {
-		printf("[message_enqueue]: ftok %s: %s\n", name, strerror(errno));
-        return -3;
-    }
-	if (TRUE == g_with_tape) {
-    	size = g_tape_units*BLOCK_SIZE;
-		/* open or create shared memory for tape */
-		g_shm_id = shmget(k_shm, size, 0666|IPC_CREAT);
-		if (-1 == g_shm_id) {
-			printf("[message_enqueue]: shmget: %s\n", strerror(errno));
-			return -4;
-		}
-    	g_tape_begin = shmat(g_shm_id, NULL, 0);
-    	if ((void*)-1 == g_tape_begin) {
-			printf("[message_enqueue]: shmat: %s\n", strerror(errno));
-        	g_tape_begin = NULL;
-        	return -5;
-		}
-    }
     /* create the message queue */
     g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
     if (-1 == g_msg_id) {
 		printf("[message_enqueue]: msgget: %s\n", strerror(errno));
-        shmdt(g_tape_begin);
-        g_tape_begin = NULL;
         return -6;
     }
     g_last_flush_ID = message_enqueue_retrieve_max_ID();
@@ -134,10 +91,6 @@ int message_enqueue_run()
 	int ret = pthread_create(&g_flushing_thread, &attr, thread_work_func, nullptr);
 	if (ret != 0) {
 		printf("[message_enqueue]: failed to create flushing thread: %s\n", strerror(ret));
-		if (NULL != g_tape_begin) {
-			shmdt(g_tape_begin);
-			g_tape_begin = NULL;
-		}
         return -7;
     }
 	pthread_setname_np(g_flushing_thread, "flusher");
@@ -174,11 +127,6 @@ int message_enqueue_stop()
 		g_notify_stop = TRUE;
 		pthread_join(g_flushing_thread, NULL);
 	}
-
-	if (NULL != g_tape_begin) {
-		shmdt(g_tape_begin);
-		g_tape_begin = NULL;
-	}
     return 0;
 }
 
@@ -199,11 +147,8 @@ void message_enqueue_free()
 {
     g_path[0] = '\0';
     g_notify_stop = TRUE;
-	g_tape_units = 0;
-    g_tape_begin = NULL;
     g_last_flush_ID = 0;
 	g_last_pos = 0;
-	g_shm_id = -1;
 	g_msg_id = -1;
 }
 
@@ -227,7 +172,6 @@ static BOOL message_enqueue_check()
         printf("[message_enqueue]: %s is not a directory\n", g_path);
         return FALSE;
     }
-    /* mess directory is used to save the message larger than BLOCK_SIZE */
     sprintf(name, "%s/mess", g_path);
     if (0 != stat(name, &node_stat)) {
         printf("[message_enqueue]: cannot find directory %s\n", name);
@@ -267,7 +211,6 @@ static BOOL message_enqueue_check()
 static void* thread_work_func(void* arg)
 {
     FLUSH_ENTITY *pentity = NULL;
-    int pos;
 	MSG_BUFF msg;
 
     while (TRUE != g_notify_stop) {
@@ -275,21 +218,6 @@ static void* thread_work_func(void* arg)
             usleep(50000);
             continue;
         }
-        /* check if the context has already been flushed to disk last time.*/
-        if (NULL == pentity->pflusher->flush_ptr &&
-			FLUSH_WHOLE_MAIL == pentity->pflusher->flush_action &&
-			stream_get_total_length(pentity->pstream) < BLOCK_SIZE/2) {
-			pos = message_enqueue_try_save_tape(pentity);
-			if (pos >= 0) {
-    			msg.msg_type = MESSAGE_TAPE;
-    			msg.msg_content = pos;
-    			msgsnd(g_msg_id, &msg, sizeof(int), IPC_NOWAIT);
-				g_enqueued_num ++;
-        		pentity->pflusher->flush_result = FLUSH_RESULT_OK;
-        		feedback_entity(pentity);
-				continue;
-			}
-		}
 		if (TRUE == message_enqueue_try_save_mess(pentity)) {
 			if (FLUSH_WHOLE_MAIL == pentity->pflusher->flush_action) {
     			msg.msg_type = MESSAGE_MESS;
@@ -442,124 +370,6 @@ REMOVE_MESS:
 	return FALSE;
 }
 
-int message_enqueue_try_save_tape(FLUSH_ENTITY *pentity)
-{
-	int i, j, tmp_len, copy_result;
-    char time_buff[128];
-	char *ptr, *origin_ptr;
-	size_t mail_len;
-    time_t cur_time;
-	struct tm tm_buff;
-	
-	if (FALSE == g_with_tape) {
-		return -1;
-	}
-
-	/* try to find an empty block */
-	for (i=g_last_pos; i<g_tape_units; i++) {
-		ptr = (char*)g_tape_begin + BLOCK_SIZE*i;
-		if (0 == *(int*)ptr) {
-			break;
-		}
-	}
-	if (i == g_tape_units) {
-		for (i=0; i<g_last_pos; i++) {
-			ptr = (char*)g_tape_begin + BLOCK_SIZE*i;
-			if (0 == *(int*)ptr) {
-				break;
-			}
-		}
-		if (i == g_last_pos) {
-			return -2;
-		}
-	}
-	g_last_pos = i + 1;
-	if (g_last_pos == g_tape_units)
-		g_last_pos = 0;
-	/* found an empty block */
-	
-	origin_ptr = ptr;
-	ptr += sizeof(size_t);
-	
-	cur_time = time(NULL);
-	strftime(time_buff, 128,"%a, %d %b %Y %H:%M:%S %z",
-		localtime_r(&cur_time, &tm_buff));
-    tmp_len = sprintf(ptr, "X-Lasthop: %s\r\nReceived: from %s "
-            "(helo %s)(%s@%s)\r\n\tby %s with SMTP; %s\r\n",
-            pentity->pconnection->client_ip, pentity->penvelop->parsed_domain,
-            pentity->penvelop->hello_domain, pentity->penvelop->parsed_domain,
-            pentity->pconnection->client_ip, get_host_ID(), time_buff);
-	ptr += tmp_len;
-	mail_len = tmp_len;
-	for (j=0; j<get_extra_num(pentity->context_ID); j++) {
-		tmp_len = sprintf(ptr, "%s: %s\r\n",
-					get_extra_tag(pentity->context_ID, j),
-					get_extra_value(pentity->context_ID, j));
-		ptr += tmp_len;
-		mail_len += tmp_len;
-	}
-	/* write stream into mess file */
-    while (TRUE) {
-		tmp_len = MAX_LINE_LENGTH;
-		copy_result = stream_copyline(pentity->pstream, ptr, &tmp_len);
-		if (STREAM_COPY_OK != copy_result &&
-			STREAM_COPY_PART != copy_result) {
-			break;
-		}
-        ptr += tmp_len;
-		mail_len += tmp_len;
-		if (STREAM_COPY_OK == copy_result) {
-			*ptr = '\r';
-			ptr ++;
-			*ptr = '\n';
-			ptr ++;
-			mail_len += 2;
-		}
-    }
-	if (STREAM_COPY_END != copy_result) {
-		return -3;
-	}
-	*(int*)ptr = pentity->pflusher->flush_ID;
-	ptr += sizeof(int);
-	/* bound type */
-	if (TRUE == pentity->penvelop->is_relay) {
-        *(int*)ptr = SMTP_RELAY;
-    } else {
-        if (TRUE == pentity->penvelop->is_outbound) {
-            *(int*)ptr = SMTP_OUT;
-        } else {
-            *(int*)ptr = SMTP_IN;
-        }
-    }
-	ptr += sizeof(int);
-	/* is spam mail */
-	*(int*)ptr = pentity->is_spam;
-	ptr += sizeof(int);
-	/* envelop from */
-	tmp_len = strlen(pentity->penvelop->from);
-	tmp_len ++;
-	memcpy(ptr, pentity->penvelop->from, tmp_len);
-	ptr += tmp_len;
-	
-	if (BLOCK_SIZE - (ptr - origin_ptr) <
-		mem_file_get_total_length(&pentity->penvelop->f_rcpt_to)) {
-		return -4;
-	}
-	/* write envelop rcpts */
-    mem_file_seek(&pentity->penvelop->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-        MEM_FILE_SEEK_BEGIN);
-    while (MEM_END_OF_FILE != (tmp_len = mem_file_readline(
-        &pentity->penvelop->f_rcpt_to, ptr, 256))) {
-        ptr += tmp_len;
-        *ptr = 0;
-		ptr ++;
-    }
-	/* last null character for indicating end of rcpt to array */
-	*ptr = 0;
-	*(size_t*)origin_ptr = mail_len;
-	return i;
-}
-
 /*
  *    retrieve the maximum ID from queue
  *    @return
@@ -574,18 +384,6 @@ static int message_enqueue_retrieve_max_ID()
 	char *ptr;
 
 	max_ID = 0;
-	/* get maximum flushID in tape */
-	for (i=0; i<g_tape_units; i++) {
-		ptr = g_tape_begin + i*BLOCK_SIZE;
-		size = *(int*)ptr;
-		if (0 != size) {
-			temp_ID = *(int*)(ptr + sizeof(int) + size);
-			if (temp_ID > max_ID) {
-            	max_ID = temp_ID;
-        	}
-		}
-	}
-
 	/* get maximum flushID in mess */
    	sprintf(temp_path, "%s/mess", g_path);
     dirp = opendir(temp_path);

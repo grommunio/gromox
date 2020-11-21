@@ -2,8 +2,7 @@
 #include <gromox/flusher_common.h>
 
 enum{
-	MESSAGE_TAPE = 1,
-	MESSAGE_MESS
+	MESSAGE_MESS = 2,
 };
 
 enum{
@@ -12,7 +11,7 @@ enum{
 	SMTP_RELAY
 };
 
-void message_enqueue_init(const char *path, int tapse_units);
+extern void message_enqueue_init(const char *path);
 extern int message_enqueue_run(void);
 extern int message_enqueue_stop(void);
 extern void message_enqueue_free(void);

@@ -16,7 +16,6 @@ BOOL FLH_LibMain(int reason, void** ppdata)
     char file_name[256], temp_path[256];
 	char temp_buff[64];
     CONFIG_FILE *pfile;
-    int tape_units;
 
     switch (reason) {
     case PLUGIN_INIT:
@@ -39,21 +38,8 @@ BOOL FLH_LibMain(int reason, void** ppdata)
 			config_file_set_value(pfile, "ENQUEUE_PATH", queue_path);
         }
 		printf("[message_enqueue]: enqueue path is %s\n", queue_path);
-        str_value = config_file_get_value(pfile, "ENQUEUE_TAPE_SIZE");
-        if (NULL == str_value) {
-			tape_units = 0;
-			config_file_set_value(pfile, "ENQUEUE_TAPE_SIZE", "0");
-		} else {
-			tape_units = atobyte(str_value)/(2*64*1024);
-			if (tape_units < 0) {
-				tape_units = 0;
-				config_file_set_value(pfile, "ENQUEUE_TAPE_SIZE", "0");
-			}
-        }
-		bytetoa(tape_units*2*64*1024, temp_buff);
-		printf("[message_enqueue]: enqueue tape size is %s\n", temp_buff);
 
-        message_enqueue_init(queue_path, tape_units);
+		message_enqueue_init(queue_path);
         if (0 != message_enqueue_run()) {
 			printf("[message_enqueue]: failed to run the module\n");
 			config_file_free(pfile);
