@@ -27,7 +27,6 @@ mta_system = delivery smtp
 mta_plugins = \
 	libmtaflh_message_enqueue.la \
 	libmtahook_alias_translator.la \
-	libmtahook_archive_agent.la \
 	libmtahook_cdner_caching.la \
 	libmtahook_domain_sign.la \
 	libmtahook_exmdb_local.la \
@@ -81,7 +80,6 @@ mta_plugins = \
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
 	libmtahook_alias_translator.ldd \
-	libmtahook_archive_agent.ldd \
 	libmtahook_cdner_caching.ldd \
 	libmtahook_domain_sign.ldd \
 	libmtahook_exmdb_local.ldd \
@@ -238,10 +236,6 @@ libmtahook_alias_translator_la_SOURCES = MTA_SYSTEM/mpc_plugins/alias_translator
 libmtahook_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtahook_alias_translator_la_DEPENDENCIES = ${default_sym}
-libmtahook_archive_agent_la_SOURCES = MTA_SYSTEM/mpc_plugins/archive_agent/main.c
-libmtahook_archive_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_archive_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_archive_agent_la_DEPENDENCIES = ${default_sym}
 libmtahook_cdner_caching_la_SOURCES = MTA_SYSTEM/mpc_plugins/cdner_caching.c
 libmtahook_cdner_caching_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_cdner_caching_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
@@ -634,7 +628,7 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 # doc
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx \
-	doc/archive.8gx doc/archive_agent.4gx doc/at_client.4gx \
+	doc/archive.8gx doc/at_client.4gx \
 	doc/authmgr.4gx \
 	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \
