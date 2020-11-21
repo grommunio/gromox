@@ -5,6 +5,7 @@ PartOf=gromox-sa.target
 
 [Service]
 Type=simple
+User=gromox
 ExecStart=@libexecdir@/gromox/timer
 
 [Install]
