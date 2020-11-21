@@ -334,7 +334,7 @@ int main(int argc, const char **argv)
 
 	if ('\0' != g_acl_path[0]) {
 		struct ipitem { char ip_addr[16]; };
-		plist = list_file_init(g_acl_path, "%s:16");
+		plist = list_file_init3(g_acl_path, "%s:16", false);
 		if (NULL == plist) {
 			for (i=g_threads_num-1; i>=0; i--) {
 				pthread_cancel(thr_ids[i]);
