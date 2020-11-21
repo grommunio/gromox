@@ -199,8 +199,7 @@ int main(int argc, const char **argv)
 		long exectime;
 		char command[512];
 	} __attribute__((packed));
-	pfile = list_file_init(g_list_path, "%d%l%s:512");
-
+	pfile = list_file_init3(g_list_path, "%d%l%s:512", false);
 	if (NULL == pfile) {
 		printf("[system]: Failed to read timers from %s: %s\n",
 			g_list_path, strerror(errno));
@@ -282,7 +281,7 @@ int main(int argc, const char **argv)
 		return 6;
 	}
 
-	g_list_fd = open(g_list_path, O_APPEND|O_WRONLY);
+	g_list_fd = open(g_list_path, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (-1 == g_list_fd) {
 		printf("[system]: Failed to open %s: %s\n", g_list_path, strerror(errno));
 		close(sockd);
