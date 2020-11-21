@@ -75,7 +75,7 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 { 
-    size_t tape_size, max_mem; 
+	size_t max_mem;
 	int retcode = EXIT_FAILURE, threads_min, threads_max;
 	int free_contexts, mime_ratio;
     const char *dequeue_path, *mpc_plugin_path, *service_plugin_path; 
@@ -206,20 +206,6 @@ int main(int argc, const char **argv)
     }
     printf("[message_dequeue]: dequeue path %s\n", dequeue_path);
 	
-	str_val = resource_get_string("DEQUEUE_TAPE_SIZE");
-	if (str_val == NULL) {
-		tape_size = 0; 
-		resource_set_string("DEQUEUE_TAPE_SIZE", "0");
-    } else { 
-		tape_size = atobyte(str_val)/(64*1024*2);
-		if (tape_size < 0) {
-			tape_size = 0;
-			resource_set_string("DEQUEUE_TAPE_SIZE", "0");
-		}
-    } 
-	bytetoa(tape_size*64*1024*2, temp_buff);
-	printf("[message_dequeue]: dequeue tape size is %s\n", temp_buff);
- 
 	str_val = resource_get_string("DEQUEUE_MAXIMUM_MEM");
 	if (str_val == NULL) {
 		max_mem = 1UL << 30;
@@ -349,8 +335,7 @@ int main(int argc, const char **argv)
     }
 	auto cleanup_6 = make_scope_exit(system_services_stop);
 
-    message_dequeue_init(dequeue_path, tape_size, max_mem);
- 
+	message_dequeue_init(dequeue_path, max_mem);
     if (0 != message_dequeue_run()) { 
 		printf("[system]: failed to run message dequeue\n");
 		return EXIT_FAILURE;

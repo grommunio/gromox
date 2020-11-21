@@ -3,8 +3,7 @@
 #include "single_list.h"
 
 enum{
-	MESSAGE_TAPE = 1,
-	MESSAGE_MESS
+	MESSAGE_MESS = 2,
 };
 
 enum{
@@ -42,8 +41,7 @@ typedef struct _MESSAGE {
 extern "C" {
 #endif
 
-void message_dequeue_init(const char *path, int tapse_units,
-	size_t max_memory);
+extern void message_dequeue_init(const char *path, size_t max_memory);
 extern int message_dequeue_run(void);
 extern int message_dequeue_stop(void);
 extern void message_dequeue_free(void);

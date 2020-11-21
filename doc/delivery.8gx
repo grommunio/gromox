@@ -57,9 +57,6 @@ Default: \fI1024M\fP
 .SS dequeue_path
 .PP
 Default: \fI/var/lib/gromox/queue\fP
-.SS dequeue_tape_size
-.PP
-Default: \fI0\fP
 .SS domain_list_valid
 .PP
 Default: \fItrue\fP

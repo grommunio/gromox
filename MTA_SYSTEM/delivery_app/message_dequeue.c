@@ -16,7 +16,6 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <sys/shm.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -27,7 +26,6 @@
 
 #define DEF_MODE    S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 #define TOKEN_MESSAGE_QUEUE		1
-#define TOKEN_SHARE_MEMORY		2
 #define BLOCK_SIZE				64*1024*2
 #define SLEEP_INTERVAL			50000
 
@@ -37,18 +35,13 @@ typedef struct _MSG_BUFF {
 } MSG_BUFF;
 
 static char				g_path[256];    /* directory name for message queue */
-static int g_shm_id; /* shared memory id */
 static int				g_msg_id;	    /* message queue id */
-static BOOL         	g_with_tape;    /* with tape to accelerate */
-static void *g_tape_begin; /* shared memory start address */
-static int   			g_tape_units;   /* units in tape file */
 static size_t			g_message_units;/* allocated message units number */
 static size_t			g_max_memory;   /* maximum allocated memory for mess*/
 static size_t			g_current_mem;  /*current allocated memory */
 static MESSAGE			*g_message_ptr;
 static SINGLE_LIST				g_used_list;
 static INT_HASH_TABLE	*g_mess_hash;
-static INT_HASH_TABLE	*g_tape_hash;
 static SINGLE_LIST				g_free_list;
 static pthread_mutex_t	g_hash_mutex;
 static pthread_mutex_t	g_used_mutex;
@@ -66,9 +59,6 @@ static void message_dequeue_put_to_free(MESSAGE *pmessage);
 
 static void message_dequeue_put_to_used(MESSAGE *pmessage);
 static void message_dequeue_load_from_mess(int mess);
-
-static void message_dequeue_load_from_tape(int pos);
-
 static void message_dequeue_collect_resource(void);
 
 static void* thread_work_func(void* arg);
@@ -77,19 +67,11 @@ static void* thread_work_func(void* arg);
  * message dequeue's construct function
  *	@param
  *		path [in]	path of directory
- *		tape_units	units in tape file
  *		max_memory	maximum memory system allowed concurrently
  */
-void message_dequeue_init(const char *path, int tape_units,
-	size_t max_memory)
+void message_dequeue_init(const char *path, size_t max_memory)
 {	
 	strcpy(g_path, path);
-	g_tape_units = tape_units;
-	if (0 == g_tape_units) {
-		g_with_tape = FALSE;
-	} else {
-		g_with_tape = TRUE;
-	}
 	g_max_memory = ((max_memory-1)/(BLOCK_SIZE/2) + 1) * (BLOCK_SIZE/2);
 	single_list_init(&g_used_list);
 	single_list_init(&g_free_list);
@@ -99,11 +81,8 @@ void message_dequeue_init(const char *path, int tape_units,
 	pthread_mutex_init(&g_mess_mutex, NULL);
 	g_current_mem = 0;
 	g_msg_id = -1;
-	g_shm_id = -1;
-	g_tape_begin= NULL;
 	g_message_ptr = NULL;
 	g_mess_hash = NULL;
-	g_tape_hash = NULL;	
 	g_notify_stop = FALSE;
 	g_dequeued_num = 0;
 }
@@ -166,10 +145,6 @@ static BOOL message_dequeue_check()
  */
 static void message_dequeue_collect_resource(void)
 {
-	if (NULL != g_tape_begin) {
-		shmdt(g_tape_begin);
-		g_tape_begin = NULL;
-	}
 	if (NULL != g_message_ptr) {
 		free(g_message_ptr);
 		g_message_ptr = NULL;	
@@ -177,10 +152,6 @@ static void message_dequeue_collect_resource(void)
 	if (NULL != g_mess_hash) {
 		int_hash_free(g_mess_hash);
 		g_mess_hash = NULL;
-	}
-	if (NULL != g_tape_hash) {
-		int_hash_free(g_tape_hash);
-		g_tape_hash = NULL;
 	}
 }
 
@@ -193,7 +164,7 @@ static void message_dequeue_collect_resource(void)
 int message_dequeue_run()
 {
 	size_t size;
-	key_t k_msg, k_shm;
+	key_t k_msg;
 	int i;
     char name[256];
 	MESSAGE *pmessage;
@@ -208,26 +179,6 @@ int message_dequeue_run()
 		printf("[message_dequeue]: ftok %s: %s\n", name, strerror(errno));
         return -2;
     }
-    k_shm = ftok(name, TOKEN_SHARE_MEMORY);
-    if (-1 == k_shm) {
-		printf("[message_dequeue]: ftok %s: %s\n", name, strerror(errno));
-        return -3;
-    }
-	if (TRUE == g_with_tape) {
-    	size = g_tape_units*BLOCK_SIZE;
-		/* open or create shared memory for tape */
-        g_shm_id = shmget(k_shm, size, 0666|IPC_CREAT);
-        if (-1 == g_shm_id) {
-			printf("[message_enqueue]: shmget: %s\n", strerror(errno));
-            return -4;
-        }
-		g_tape_begin = shmat(g_shm_id, NULL, 0);
-        if ((void*)-1 == g_tape_begin) {
-			printf("[message_enqueue]: shmat: %s\n", strerror(errno));
-            g_tape_begin = NULL;
-            return -5;
-        }
-	}
 	/* create the message queue */
 	g_msg_id = msgget(k_msg, 0666|IPC_CREAT);
 	if (-1 == g_msg_id) {
@@ -235,7 +186,7 @@ int message_dequeue_run()
 		message_dequeue_collect_resource();
 		return -6;
 	}
-	g_message_units = g_tape_units + g_max_memory/(BLOCK_SIZE/2);
+	g_message_units = g_max_memory/(BLOCK_SIZE/2);
 	size = sizeof(MESSAGE)*g_message_units;
 	g_message_ptr = (MESSAGE*)malloc(size);
 	if (NULL == g_message_ptr) {
@@ -251,8 +202,7 @@ int message_dequeue_run()
 		single_list_append_as_tail(&g_free_list, &pmessage->node);
 	}
 	g_mess_hash = int_hash_init(2 * g_message_units + 1, sizeof(void *));
-	g_tape_hash = int_hash_init(2 * g_tape_units + 1, sizeof(void *));
-	if (NULL == g_mess_hash || NULL == g_tape_hash) {
+	if (g_mess_hash == nullptr) {
 		printf("[message_dequeue]: failed to initialize hash table\n");
 		message_dequeue_collect_resource();
 		return -8;
@@ -294,24 +244,13 @@ MESSAGE* message_dequeue_get()
 void message_dequeue_put(MESSAGE *pmessage)
 {
 	char name[256];
-	int *pstart;
 
-	if (MESSAGE_MESS == pmessage->message_option) {
-		free(pmessage->begin_address);
-		pmessage->begin_address = NULL;
-		sprintf(name, "%s/mess/%d", g_path, pmessage->message_data);
-		remove(name);
-	} else {
-		pstart = (int*)((char*)g_tape_begin + 
-				 pmessage->message_data*BLOCK_SIZE);
-		*pstart = 0;
-	}
+	free(pmessage->begin_address);
+	pmessage->begin_address = NULL;
+	sprintf(name, "%s/mess/%d", g_path, pmessage->message_data);
+	remove(name);
 	pthread_mutex_lock(&g_hash_mutex);
-    if (MESSAGE_MESS == pmessage->message_option) {
-        int_hash_remove(g_mess_hash, pmessage->message_data);
-    } else {
-        int_hash_remove(g_tape_hash, pmessage->message_data);
-    }
+	int_hash_remove(g_mess_hash, pmessage->message_data);
     pthread_mutex_unlock(&g_hash_mutex);
 	message_dequeue_put_to_free(pmessage);
 	g_dequeued_num ++;
@@ -338,7 +277,6 @@ int message_dequeue_stop()
 void message_dequeue_free()
 {
 	g_path[0] = '\0';
-    g_tape_units = 0;
     g_max_memory = 0;
     single_list_free(&g_used_list);
     single_list_free(&g_free_list);
@@ -348,11 +286,8 @@ void message_dequeue_free()
     pthread_mutex_destroy(&g_mess_mutex);
 	g_current_mem  = 0;
     g_msg_id = -1;
-	g_shm_id = -1;
-    g_tape_begin= NULL;
 	g_message_ptr = NULL;
 	g_mess_hash = NULL;
-	g_tape_hash = NULL;	
     g_notify_stop = TRUE;
 }
 
@@ -383,7 +318,6 @@ static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
  *	get a message node back from free list
  *	@param
  *		message_option			MESSAGE_MESS
- *								MESSAGE_TAPE
  *	@return
  *		message pointer, NULL means fail to get
  */
@@ -521,38 +455,6 @@ static void message_dequeue_load_from_mess(int mess)
 	pthread_mutex_unlock(&g_hash_mutex);
 }
 
-/*
- *	load a tape message into used list
- *	@param
- *		pos			indicate block position in tape
- */
-static void message_dequeue_load_from_tape(int pos)
-{
-	MESSAGE *pmessage;
-
-	pthread_mutex_lock(&g_hash_mutex);
-    pmessage = (MESSAGE*)int_hash_query(g_tape_hash, pos);
-    pthread_mutex_unlock(&g_hash_mutex);
-	if (NULL != pmessage || 0 == *(int*)((char*)g_tape_begin +
-		BLOCK_SIZE*((long)pos))) {
-		return;
-	}
-	pmessage = message_dequeue_get_from_free(MESSAGE_TAPE, 0);
-    if (NULL == pmessage) {
-		debug_info("[message_dequeue]: error while loading message "
-			"%d in tape", pos);
-        return;
-	}
-	pmessage->message_data = pos;
-	message_dequeue_retrieve_to_message(pmessage, (char*)g_tape_begin +
-		((long)pos) * BLOCK_SIZE);
-	message_dequeue_put_to_used(pmessage);
-
-	pthread_mutex_lock(&g_hash_mutex);
-	int_hash_add(g_tape_hash, pos, pmessage);
-	pthread_mutex_unlock(&g_hash_mutex);
-}
-
 static void* thread_work_func(void* arg)
 {
 	MSG_BUFF msg;
@@ -573,37 +475,18 @@ static void* thread_work_func(void* arg)
 	while (TRUE != g_notify_stop) {
 		if (-1 != msgrcv(g_msg_id, &msg, sizeof(int), 0, IPC_NOWAIT)) {
 			switch(msg.msg_type) {
-			case MESSAGE_TAPE:
-				if (TRUE == g_with_tape) {
-					if (msg.msg_content >= g_tape_units) {
-						printf("[message_dequeue]: error: enqueue tape"
-							" size may be larger than dequeue tape size\n");
-					} else {
-						message_dequeue_load_from_tape(msg.msg_content);
-					}
-				} else {
-					printf("[message_dequeue]: error: should turn off"
-						" tape option in message enqueue flusher plugin\n");
-				}
-				break;
 			case MESSAGE_MESS:
 				message_dequeue_load_from_mess(msg.msg_content);
 				break;
 			default:
 				printf("[message_dequeue]: unknown message queue type %ld, "
-					"should be MESSAGE_TAPE or MESSAGE_MESS\n", msg.msg_type);
+					"should be MESSAGE_MESS\n", msg.msg_type);
 			}
 			continue;
 		}
 		usleep(SLEEP_INTERVAL);
 		if (single_list_get_nodes_num(&g_free_list) != g_message_units) {
 			continue;
-		}
-		/* clean up tape */
-		for (i=0; i<g_tape_units; i++) {
-			if (0 != *(int*)((char*)g_tape_begin + BLOCK_SIZE*i)) {
-				message_dequeue_load_from_tape(i);
-			}
 		}
 		/* clean up mess */
 		seekdir(dirp, 0);
