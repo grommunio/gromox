@@ -4016,7 +4016,8 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170020: OK FETCH completed */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2170020, 1, &string_length);
-	string_length = snprintf(buff, 4096, "%s %s", argv[0], imap_reply_str);
+	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+	string_length = strlen(buff);
 	stream_write(&pcontext->stream, buff, string_length);
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
@@ -4168,7 +4169,8 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170021: OK STORE completed */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2170021, 1, &string_length);
-	string_length = snprintf(buff, 4096, "%s %s", argv[0], imap_reply_str);
+	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+	string_length = strlen(buff);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -4682,7 +4684,8 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170024: OK UID STORE completed */
 	imap_reply_str = resource_get_imap_code(
 		IMAP_CODE_2170024, 1, &string_length);
-	string_length = snprintf(buff, 4096, "%s %s", argv[0], imap_reply_str);
+	snprintf(buff, sizeof(buff), "%s %s", argv[0], imap_reply_str);
+	string_length = strlen(buff);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
