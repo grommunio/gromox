@@ -2013,7 +2013,6 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
 	int fd;
-	void *pbuff;
 	uint64_t cid;
 	char path[256];
 	const char *dir;
@@ -2047,7 +2046,7 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
-	pbuff = common_util_alloc(node_stat.st_size);
+	auto pbuff = static_cast<char *>(common_util_alloc(node_stat.st_size));
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -2076,7 +2075,6 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
 	int fd;
-	void *pbuff;
 	uint64_t cid;
 	char path[256];
 	const char *dir;
@@ -2111,7 +2109,7 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	if (0 != stat(path, &node_stat)) {
 		return NULL;
 	}
-	pbuff = common_util_alloc(node_stat.st_size);
+	auto pbuff = static_cast<char *>(common_util_alloc(node_stat.st_size));
 	if (NULL == pbuff) {
 		return NULL;
 	}

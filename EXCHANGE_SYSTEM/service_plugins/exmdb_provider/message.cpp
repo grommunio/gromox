@@ -2310,13 +2310,12 @@ static BOOL message_rectify_message(const char *account,
 		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
 		memmove(cid_string, cid_string + 16, 32);
 		cid_string[32] = '@';
-		pvalue = const_cast<char *>(strchr(static_cast<const char *>(account), '@'));
-		if (NULL == pvalue) {
-			pvalue = (void*)account;
-		} else {
-			pvalue ++;
-		}
-		strncpy(cid_string + 33, static_cast<char *>(pvalue), 128);
+		auto pc = strchr(static_cast<const char *>(account), '@');
+		if (pc == nullptr)
+			pc = account;
+		else
+			++pc;
+		strncpy(cid_string + 33, pc, 128);
 		pvalue = common_util_dup(cid_string);
 		if (NULL == pvalue) {
 			return FALSE;
@@ -4798,14 +4797,12 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						}
 						continue;
 					}
-					pvalue = const_cast<char *>(strchr(account, '@'));
-					if (NULL == pvalue) {
-						pvalue = (void*)account;
-					} else {
-						pvalue ++;
-					}
-					if (!common_util_get_domain_ids(static_cast<char *>(pvalue),
-					    &tmp_id, &tmp_id1))
+					auto pc = strchr(account, '@');
+					if (pc == nullptr)
+						pc = account;
+					else
+						++pc;
+					if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
 						continue;
 					tmp_guid = rop_util_make_domain_guid(tmp_id);
 					if (0 != guid_compare(&tmp_guid,
@@ -4928,13 +4925,11 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						continue;
 					}
 				} else {
-					pvalue = const_cast<char *>(strchr(account, '@'));
-					if (NULL == pvalue) {
+					auto pc = strchr(account, '@');
+					if (pc == nullptr)
 						continue;
-					}
-					pvalue ++;
-					if (!common_util_get_domain_ids(static_cast<char *>(pvalue),
-					    &tmp_id, &tmp_id1))
+					++pc;
+					if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
 						continue;
 					tmp_guid = rop_util_make_domain_guid(tmp_id);
 					if (0 != guid_compare(&tmp_guid,

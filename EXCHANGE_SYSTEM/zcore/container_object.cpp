@@ -895,18 +895,15 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
-		case PROP_TAG_DEPTH:
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_FOLDERPATHNAME);
-			if (NULL == pvalue) {
+		case PROP_TAG_DEPTH: {
+			auto pc = static_cast<char *>(common_util_get_propvals(
+			          ppropvals, PROP_TAG_FOLDERPATHNAME));
+			if (pc == nullptr)
 				return FALSE;
-			}
 			count = 0;
-			for (; '\0'!=*(char*)pvalue; pvalue++) {
-				if ('\\' == *(char*)pvalue) {
+			for (; *pc != '\0'; ++pc)
+				if (*pc == '\\')
 					count ++;
-				}
-			}
 			if (count < 3) {
 				return FALSE;
 			}
@@ -919,6 +916,7 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
+		}
 		case PROP_TAG_DISPLAYNAME:
 			pvalue = common_util_get_propvals(
 				ppropvals, PROP_TAG_DISPLAYNAME);
