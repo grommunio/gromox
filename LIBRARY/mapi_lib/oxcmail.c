@@ -2943,7 +2943,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					mime_get_content_type(pmime));
 			if (pext != NULL) {
 				sprintf(extension, ".%s", pext);
-				strncat(file_name, extension, sizeof(file_name));
+				HX_strlcat(file_name, extension, sizeof(file_name));
 			}
 		}
 	} else {
@@ -2953,7 +2953,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					mime_get_content_type(pmime));
 			if (NULL != pext) {
 				sprintf(extension, ".%s", pext);
-				strncat(file_name, extension, sizeof(file_name));
+				HX_strlcat(file_name, extension, sizeof(file_name));
 			} else {
 				strcpy(extension, ".dat");
 			}
