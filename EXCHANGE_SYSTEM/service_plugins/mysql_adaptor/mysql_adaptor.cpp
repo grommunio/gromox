@@ -2941,7 +2941,7 @@ static BOOL mysql_adaptor_hierarchy_include(
 	MYSQL_RES *pmyres;
 	char sql_string[512];
 	
-	snprintf(sql_string, 1024, "SELECT username FROM members WHERE"
+	snprintf(sql_string, sizeof(sql_string), "SELECT username FROM members WHERE"
 		" class_id=%d AND username='%s'", class_id, account);
 	if (0 != mysql_query(pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pmysql))) {
@@ -2952,7 +2952,7 @@ static BOOL mysql_adaptor_hierarchy_include(
 		return TRUE;
 	}
 	mysql_free_result(pmyres);
-	snprintf(sql_string, 1024, "SELECT child_id FROM"
+	snprintf(sql_string, sizeof(sql_string), "SELECT child_id FROM"
 			" hierarchy WHERE class_id=%d", class_id);
 	if (0 != mysql_query(pmysql, sql_string) ||
 		NULL == (pmyres = mysql_store_result(pmysql))) {
