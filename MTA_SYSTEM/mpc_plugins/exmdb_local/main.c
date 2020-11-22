@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+#include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "config_file.h"
 #include "exmdb_local.h"
