@@ -19,11 +19,11 @@ template<typename Tp> class resource_pool {
 		token(resource_pool &pool, Tp &&r) :
 			m_pool(pool), res(std::move(r)) {}
 		token(token &&o) = delete;
-		~token() try {
+		~token() { try {
 			m_pool.put(std::move(res));
 		} catch (...) {
 			m_pool.put_slot();
-		}
+		}}
 		protected:
 		resource_pool &m_pool;
 		public:
