@@ -47,7 +47,6 @@ Makefile.in
 /scanner
 /sendmail
 /sensor
-/session
 /smtp
 /supervisor
 /timer
