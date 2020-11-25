@@ -4,7 +4,7 @@ Documentation=man:gromox-sa.target(8gx)
 Wants=gromox-adaptor.service gromox-cdnd.service gromox-event.service
 Wants=gromox-locker.service
 Wants=gromox-sa_daemon.service gromox-scanner.service
-Wants=gromox-supervisor.service gromox-timer.service
+Wants=gromox-timer.service
 
 [Install]
 WantedBy=multi-user.target

@@ -47,7 +47,6 @@ Makefile.in
 /scanner
 /sendmail
 /smtp
-/supervisor
 /timer
 /zcore
 
