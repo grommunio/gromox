@@ -45,7 +45,6 @@ Makefile.in
 /rtf2html
 /sa_daemon
 /scanner
-/sendmail
 /smtp
 /timer
 /zcore

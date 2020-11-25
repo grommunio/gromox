@@ -190,7 +190,7 @@ noinst_DATA += \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker scanner timer
-system_admin_tools = areadb mkmidb mkprivate mkpublic rebuild sendmail
+system_admin_tools = areadb mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
@@ -595,8 +595,6 @@ rebuild_SOURCES = SYSTEM_ADMIN/rebuild.c
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 scanner_SOURCES = LIBRARY/locker_client.c LIBRARY/system_log.c SYSTEM_ADMIN/scanner/data_source.c SYSTEM_ADMIN/scanner/engine.c SYSTEM_ADMIN/scanner/main.c SYSTEM_ADMIN/scanner/message.c SYSTEM_ADMIN/scanner/midb_client.c SYSTEM_ADMIN/scanner/smtp.c
 scanner_LDADD = -lresolv -lpthread ${HX_LIBS} ${mysql_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_resolv.la
-sendmail_SOURCES = SYSTEM_ADMIN/sendmail/main.c SYSTEM_ADMIN/sendmail/midb_client.c
-sendmail_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 timer_SOURCES = SYSTEM_ADMIN/timer.c
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
@@ -645,7 +643,7 @@ man_MANS = \
 	doc/pam_gromox.8gx doc/pop3.8gx \
 	doc/rebuild.8gx doc/relay_domains.4gx doc/remote_mx_hello.4gx \
 	doc/rtf2html.1gx \
-	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx doc/sendmail.8gx \
+	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx \
 	doc/single_rcpt.4gx doc/smtp.8gx \
 	doc/str_table.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
