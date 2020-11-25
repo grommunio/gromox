@@ -46,7 +46,6 @@ Makefile.in
 /sa_daemon
 /scanner
 /sendmail
-/sensor
 /smtp
 /supervisor
 /timer
