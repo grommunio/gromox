@@ -44,7 +44,6 @@ Makefile.in
 /rebuild
 /rtf2html
 /sa_daemon
-/scanner
 /smtp
 /timer
 /zcore

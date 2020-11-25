@@ -19,7 +19,7 @@ noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pop3.service system/gromox-sa_daemon.service system/gromox-scanner.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
+unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pop3.service system/gromox-sa_daemon.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
 unit_targets = system/gromox-archive.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
@@ -189,7 +189,7 @@ noinst_DATA += \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
-system_admin_progs = adaptor cdnd sa_daemon event locker scanner timer
+system_admin_progs = adaptor cdnd sa_daemon event locker timer
 system_admin_tools = areadb mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
@@ -593,8 +593,6 @@ mkpublic_SOURCES = SYSTEM_ADMIN/mkpublic.c
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 rebuild_SOURCES = SYSTEM_ADMIN/rebuild.c
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-scanner_SOURCES = LIBRARY/locker_client.c LIBRARY/system_log.c SYSTEM_ADMIN/scanner/data_source.c SYSTEM_ADMIN/scanner/engine.c SYSTEM_ADMIN/scanner/main.c SYSTEM_ADMIN/scanner/message.c SYSTEM_ADMIN/scanner/midb_client.c SYSTEM_ADMIN/scanner/smtp.c
-scanner_LDADD = -lresolv -lpthread ${HX_LIBS} ${mysql_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_resolv.la
 timer_SOURCES = SYSTEM_ADMIN/timer.c
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
@@ -643,7 +641,7 @@ man_MANS = \
 	doc/pam_gromox.8gx doc/pop3.8gx \
 	doc/rebuild.8gx doc/relay_domains.4gx doc/remote_mx_hello.4gx \
 	doc/rtf2html.1gx \
-	doc/sa.cfg.5gx doc/sa_daemon.8gx doc/scanner.8gx \
+	doc/sa.cfg.5gx doc/sa_daemon.8gx \
 	doc/single_rcpt.4gx doc/smtp.8gx \
 	doc/str_table.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
