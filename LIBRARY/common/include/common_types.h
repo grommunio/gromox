@@ -16,7 +16,7 @@
 #endif
 
 #ifndef TRUE
-#define TRUE    0xFFFFFFFF
+#define TRUE    (-1)
 #endif
 
 #ifndef FALSE
