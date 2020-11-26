@@ -8,8 +8,6 @@
 #include <string.h>
 #include <mysql/mysql.h>
 
-#define DOMAIN_PRIVILEGE_MONITOR            0x2
-
 #define DOMAIN_PRIVILEGE_UNCHECKUSR         0x4
 
 #define DOMAIN_PRIVILEGE_SUBSYSTEM          0x8
@@ -17,9 +15,6 @@
 #define DOMAIN_PRIVILEGE_NETDISK            0x10
 
 #define DOMAIN_PRIVILEGE_EXTPASSWD          0x20
-
-#define GROUP_PRIVILEGE_MONITOR				0x2
-
 #define GROUP_PRIVILEGE_DOMAIN_MONITOR		0x200
 
 static char g_host[256];
@@ -268,80 +263,6 @@ RETRYING:
 	return TRUE;
 }
 
-BOOL data_source_get_monitor_domains(DATA_COLLECT *pcollect)
-{
-	int i, rows;
-	int privilege_bits;
-	char sql_string[4096];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
-	MYSQL *pmysql;
-	DOUBLE_LIST_NODE *pnode;
-	DOMAIN_ITEM *pitem;
-	
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	
-	if (NULL == (pmysql = mysql_init(NULL)) ||
-		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
-		g_db_name, g_port, NULL, 0)) {
-		if (NULL != pmysql) {
-			system_log_info("[data_source]: Failed to connect to mysql server, "
-				"reason: %s", mysql_error(pmysql));
-		}
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	sprintf(sql_string, "SELECT domainname, homedir, privilege_bits FROM "
-		"domains WHERE domain_status=0 AND domain_type=0");
-	
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
-		system_log_info("[data_source]: fail to query mysql server, "
-			"reason: %s", mysql_error(pmysql));
-		mysql_close(pmysql);
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-	
-	rows = mysql_num_rows(pmyres);
-
-	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
-		privilege_bits = atoi(myrow[2]);
-		if ((privilege_bits & DOMAIN_PRIVILEGE_MONITOR) == 0) {
-			continue;
-		}
-		pnode = (DOUBLE_LIST_NODE*)malloc(sizeof(DOUBLE_LIST_NODE));
-		if (NULL == pnode) {
-			continue;
-		}
-		pitem = (DOMAIN_ITEM*)malloc(sizeof(DOMAIN_ITEM));
-		if (NULL == pitem) {
-			free(pnode);
-			continue;
-		}
-		pnode->pdata = pitem;
-		
-		strcpy(pitem->domainname, myrow[0]);
-		HX_strlower(pitem->domainname);
-		strcpy(pitem->homedir, myrow[1]);
-		double_list_append_as_tail(&pcollect->list, pnode);
-	}
-	
-	mysql_free_result(pmyres);
-	mysql_close(pmysql);
-	return TRUE;
-}
-
 BOOL data_source_get_uncheckusr_list(DATA_COLLECT *pcollect)
 {
 	int i, rows;
@@ -415,96 +336,3 @@ RETRYING:
 	mysql_close(pmysql);
 	return TRUE;
 }
-
-BOOL data_source_get_monitor_groups(DATA_COLLECT *pcollect)
-{
-	int i, rows;
-	int privilege_bits;
-	char sql_string[4096];
-	MYSQL_RES *pmyres;
-	MYSQL_RES *pmyres1;
-	MYSQL_ROW myrow;
-	MYSQL_ROW myrow1;
-	MYSQL *pmysql;
-	DOUBLE_LIST_NODE *pnode;
-	GROUP_ITEM *pitem;
-	
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	
-	if (NULL == (pmysql = mysql_init(NULL)) ||
-		NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
-		g_db_name, g_port, NULL, 0)) {
-		if (NULL != pmysql) {
-			system_log_info("[data_source]: Failed to connect to mysql server, "
-				"reason: %s", mysql_error(pmysql));
-		}
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	sprintf(sql_string, "SELECT groupname, domain_id, privilege_bits FROM "
-		"groups WHERE group_status=0");
-	
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
-		system_log_info("[data_source]: fail to query mysql server, "
-			"reason: %s", mysql_error(pmysql));
-		mysql_close(pmysql);
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-	
-	rows = mysql_num_rows(pmyres);
-
-	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
-		privilege_bits = atoi(myrow[2]);
-		if ((privilege_bits & GROUP_PRIVILEGE_DOMAIN_MONITOR) == 0 ||
-			(privilege_bits & GROUP_PRIVILEGE_MONITOR) == 0) {
-			continue;
-		}
-		pnode = (DOUBLE_LIST_NODE*)malloc(sizeof(DOUBLE_LIST_NODE));
-		if (NULL == pnode) {
-			continue;
-		}
-		pitem = (GROUP_ITEM*)malloc(sizeof(GROUP_ITEM));
-		if (NULL == pitem) {
-			free(pnode);
-			continue;
-		}
-		pnode->pdata = pitem;
-		strcpy(pitem->groupname, myrow[0]);
-		HX_strlower(pitem->groupname);
-		sprintf(sql_string, "SELECT homedir FROM domains WHERE id=%s", myrow[1]);
-		if (0 != mysql_query(pmysql, sql_string) ||
-			NULL == (pmyres1 = mysql_store_result(pmysql))) {
-			system_log_info("[data_source]: fail to query mysql server, "
-				"reason: %s", mysql_error(pmysql));
-			free(pnode->pdata);
-			free(pnode);
-			continue;
-		}
-		if (0 == mysql_num_rows(pmyres1)) {
-			free(pnode->pdata);
-			free(pnode);
-		} else {
-			myrow1 = mysql_fetch_row(pmyres1);
-			strcpy(pitem->homedir, myrow1[0]);
-			double_list_append_as_tail(&pcollect->list, pnode);
-		}
-		mysql_free_result(pmyres1);
-	}
-	
-	mysql_free_result(pmyres);
-	mysql_close(pmysql);
-	return TRUE;
-}
-

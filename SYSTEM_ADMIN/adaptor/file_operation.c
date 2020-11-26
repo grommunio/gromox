@@ -116,43 +116,6 @@ void file_operation_broadcast(const char *src_file, const char *dst_file)
 	free(pbuff);
 }
 
-void file_operation_copy_monitor(const char *src_file, const char *dst_file)
-{
-	LIST_FILE *pfile;
-	int i, fd, len, item_num;
-	char temp_line[1024];
-	struct srcitem { char a[256], b[12], c[256]; };
-
-	pfile = list_file_init((char*)src_file, "%s:256%s:12%s:256");
-	if (NULL == pfile) {
-		return;
-	}
-	item_num = list_file_get_item_num(pfile);
-	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
-	fd = open(dst_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-	if (-1 == fd) {
-		list_file_free(pfile);
-		return;
-	}
-	for (i=0; i<item_num; i++) {
-		if (strcmp(pitem[i].b, "IN") == 0) {
-			len = sprintf(temp_line, "F_IN\t%s\t%s\n", pitem[i].a,
-					pitem[i].c);
-		} else if (strcmp(pitem[i].b, "OUT") == 0) {
-			len = sprintf(temp_line, "F_OUT\t%s\t%s\n", pitem[i].a,
-					pitem[i].c);
-		} else if (strcmp(pitem[i].b, "ALL") == 0) {
-			len = sprintf(temp_line, "F_ALL\t%s\t%s\n", pitem[i].a,
-					pitem[i].c);
-		} else {
-			len = 0;
-		}
-		write(fd, temp_line, len);
-	}
-	close(fd);
-	list_file_free(pfile);
-
-}
 void file_operation_transfer(const char *src_file, const char *dst_file)
 {
 	struct srcitem { char a[256], b[256]; };
