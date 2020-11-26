@@ -2,7 +2,13 @@
 #define PROP_ID(x) ((x) >> 16)
 #define PROP_TYPE(x) ((x) & 0xFFFF)
 #define CHANGE_PROP_TYPE(tag, newtype) (((tag) & ~0xFFFF) | (newtype))
-#define PROP_TAG(type, tag) (((tag) << 16) | (type))
+/*
+ * x|y yields an unsigned result if either x or y are unsigned.
+ * x<<y yields unsigned only if x is unsigned.
+ * All the while | and << only make *sense* in an unsigned _context_ anyway
+ * (i.e. the operator should have returned unsigned all the time)
+ */
+#define PROP_TAG(type, tag) ((((unsigned int)tag) << 16) | (type))
 enum {
 	PT_UNSPECIFIED = 0x0000, /* VT_EMPTY */
 	PT_NULL = 0x0001, /* VT_NULL */
