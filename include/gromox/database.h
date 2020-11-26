@@ -67,7 +67,7 @@ static inline bool gx_sql_prep(sqlite3 *db, const char *query, sqlite3_stmt **ou
 	int ret = sqlite3_prepare_v2(db, query, -1, out, nullptr);
 	if (ret == SQLITE_OK)
 		return true;
-	printf("sqlite3_prepare_v2: %s\n", sqlite3_errstr(ret));
+	printf("sqlite3_prepare_v2 \"%s\": %s\n", query, sqlite3_errstr(ret));
 	return false;
 }
 
