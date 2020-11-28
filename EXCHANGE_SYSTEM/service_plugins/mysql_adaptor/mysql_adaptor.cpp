@@ -9,7 +9,6 @@
 #include "mysql_adaptor.h"
 #include "double_list.h"
 #include "mem_file.h"
-#include "uncheck_domains.h"
 #include "util.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -3354,12 +3353,6 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 	CONNECTION_NODE *pconnection;
 
 	const char *pdomain = strchr(username, '@');
-	if (NULL != pdomain && TRUE == uncheck_domains_query(pdomain + 1)) {
-		if (NULL != path) {
-			path[0] = '\0';
-		}
-		return TRUE;
-	}
 	/*
 	 * if no valid connection node available, it means the
 	 * database is down, return TRUE immediately.

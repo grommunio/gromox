@@ -3,7 +3,6 @@
 #include <gromox/svc_common.h>
 #include "cdner_agent.h"
 #include "mysql_adaptor.h"
-#include "uncheck_domains.h"
 #include "util.h"
 #include "config_file.h"
 #include <string.h>
@@ -183,17 +182,12 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			upg = S_AUTOUP;
 
 		cdner_agent_init(cdner_conn_num, cdner_host_ip, cdner_host_port);
-		uncheck_domains_init(uncheck_path);
 		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
 			db_name, mysql_port, conn_num, scan_interval, timeout, upg});
 		config_file_free(pfile);
 		
 		if (cdner_agent_run() != 0) {
 			printf("[mysql_adaptor]: failed to run cdner agent\n");
-			return false;
-		}
-		if (uncheck_domains_run() != 0) {
-			printf("[mysql_adaptor]: failed to run uncheck domains\n");
 			return false;
 		}
 		if (0 != mysql_adaptor_run()) {
