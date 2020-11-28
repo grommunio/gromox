@@ -1,7 +1,7 @@
 [Unit]
 Description=Gromox archive service group
 Documentation=man:gromox-archive.target(8gx)
-Wants=gromox-cidb.service
+Wants=
 
 [Install]
 WantedBy=multi-user.target

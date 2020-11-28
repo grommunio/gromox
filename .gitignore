@@ -23,7 +23,6 @@ Makefile.in
 
 /adaptor
 /cdnd
-/cidb
 /delivery
 /digest
 /event

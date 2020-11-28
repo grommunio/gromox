@@ -19,7 +19,7 @@ noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-cidb.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pop3.service system/gromox-sa_daemon.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
+unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pop3.service system/gromox-sa_daemon.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
 unit_targets = system/gromox-archive.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
@@ -193,8 +193,6 @@ system_admin_progs = adaptor cdnd sa_daemon event locker timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
-
-archiver_system_progs = cidb
 
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h
@@ -594,10 +592,6 @@ rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la
 timer_SOURCES = SYSTEM_ADMIN/timer.c
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
-# ARCHIVE_SYSTEM
-cidb_SOURCES = ARCHIVE_SYSTEM/cidb/classify_engine.c ARCHIVE_SYSTEM/cidb/sphinxclient.c ARCHIVE_SYSTEM/cidb/cmd_parser.c ARCHIVE_SYSTEM/cidb/listener.c ARCHIVE_SYSTEM/cidb/main.c ARCHIVE_SYSTEM/cidb/mysql_pool.c LIBRARY/system_log.c
-cidb_LDADD = -lpthread -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
-
 # php_mapi
 mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
 mapi_la_SOURCES = AGENT_SERVICE/php_mapi/ext_pack.c AGENT_SERVICE/php_mapi/mapi.cpp AGENT_SERVICE/php_mapi/rpc_ext.c AGENT_SERVICE/php_mapi/type_conversion.cpp AGENT_SERVICE/php_mapi/zarafa_client.cpp
@@ -613,7 +607,7 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
 	doc/authmgr.4gx \
-	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
+	doc/boundary_list.4gx doc/cdnd.8gx \
 	doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx doc/domain_whitelist.4gx \
 	doc/esmtp_auth.4gx \
