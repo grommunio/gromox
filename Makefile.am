@@ -194,7 +194,7 @@ system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
-archiver_system_progs = archive cidb migrator
+archiver_system_progs = cidb migrator
 
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h
@@ -595,8 +595,6 @@ timer_SOURCES = SYSTEM_ADMIN/timer.c
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
 # ARCHIVE_SYSTEM
-archive_SOURCES = ARCHIVE_SYSTEM/archive.c
-archive_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 cidb_SOURCES = ARCHIVE_SYSTEM/cidb/classify_engine.c ARCHIVE_SYSTEM/cidb/sphinxclient.c ARCHIVE_SYSTEM/cidb/cmd_parser.c ARCHIVE_SYSTEM/cidb/listener.c ARCHIVE_SYSTEM/cidb/main.c ARCHIVE_SYSTEM/cidb/mysql_pool.c LIBRARY/system_log.c
 cidb_LDADD = -lpthread -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
 migrator_SOURCES = ARCHIVE_SYSTEM/migrator.c
@@ -615,8 +613,7 @@ tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 
 # doc
 man_MANS = \
-	doc/adaptor.8gx doc/alias_translator.4gx \
-	doc/archive.8gx doc/at_client.4gx \
+	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
 	doc/authmgr.4gx \
 	doc/boundary_list.4gx doc/cdnd.8gx doc/cidb.8gx \
 	doc/delivery.8gx \
