@@ -153,37 +153,6 @@ static void* thread_work_func1(void *param)
 		}
 
 		data_source_collect_clear(pcollect);
-
-		if (FALSE == data_source_get_uncheckusr_list(pcollect)) {
-			data_source_collect_free(pcollect);
-			goto NEXT_LOOP;
-		}
-		
-		sprintf(temp_path, "%s.tmp", g_unchkusr_path);
-		
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-		if (-1 == fd) {
-			data_source_collect_free(pcollect);
-			goto NEXT_LOOP;
-		}
-		
-		for (data_source_collect_begin(pcollect);
-			!data_source_collect_done(pcollect);
-			data_source_collect_forward(pcollect)) {
-			pdomain_item = (DOMAIN_ITEM*)data_source_collect_get_value(pcollect);
-			len = sprintf(temp_line, "%s\n", pdomain_item->domainname);
-			write(fd, temp_line, len);
-		}
-		close(fd);
-		
-		if (0 != file_operation_compare(temp_path, g_unchkusr_path)) {
-			rename(temp_path, g_unchkusr_path);
-			file_operation_broadcast(g_unchkusr_path,
-				"data/smtp/uncheck_domains.txt");
-			gateway_control_notify("libgxsvc_mysql_adaptor.so reload uncheck-domains",
-				NOTIFY_SMTP);
-		}
-	
 NEXT_LOOP:
 		count = 0;
 	}

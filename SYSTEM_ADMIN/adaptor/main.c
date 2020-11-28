@@ -69,7 +69,6 @@ int main(int argc, const char **argv)
 	printf("[system]: state path is %s\n", state_dir);
 	snprintf(domainlist_path, sizeof(domainlist_path), "%s/domain_list.txt", state_dir);
 	snprintf(aliasaddress_path, sizeof(aliasaddress_path), "%s/alias_addresses.txt", state_dir);
-	snprintf(unchkusr_path, sizeof(unchkusr_path), "%s/uncheck_domains.txt", state_dir);
 	snprintf(console_path, sizeof(console_path), "%s/console_table.txt", state_dir);
 
 	str_value = config_file_get_value(pconfig, "LOG_FILE_PATH");
