@@ -7,7 +7,7 @@ AM_CXXFLAGS = ${my_CXXFLAGS}
 
 lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_resolv.la libgromox_rpc.la libgromox_webkit.la
 noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_webkit.ldd libgromox_rpc.ldd libgromox_mapi.ldd
-pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools} ${archiver_system_progs}
+pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
 pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -20,7 +20,7 @@ endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 unit_services = system/gromox-adaptor.service system/gromox-cdnd.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pop3.service system/gromox-sa_daemon.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
-unit_targets = system/gromox-archive.target system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
+unit_targets = system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
 mta_system = delivery smtp
@@ -616,7 +616,7 @@ man_MANS = \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
 	doc/forbidden_domain.4gx doc/forbidden_from.4gx \
 	doc/forbidden_rcpt.4gx doc/freebusy.8gx doc/gromox.7 \
-	doc/gromox-archive.target.8gx doc/gromox-dbop.8gx \
+	doc/gromox-dbop.8gx \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \

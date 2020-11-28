@@ -1,7 +1,0 @@
-[Unit]
-Description=Gromox archive service group
-Documentation=man:gromox-archive.target(8gx)
-Wants=
-
-[Install]
-WantedBy=multi-user.target
