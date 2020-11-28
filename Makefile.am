@@ -194,7 +194,7 @@ system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
 
-archiver_system_progs = cidb migrator
+archiver_system_progs = cidb
 
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h
@@ -597,8 +597,6 @@ timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 # ARCHIVE_SYSTEM
 cidb_SOURCES = ARCHIVE_SYSTEM/cidb/classify_engine.c ARCHIVE_SYSTEM/cidb/sphinxclient.c ARCHIVE_SYSTEM/cidb/cmd_parser.c ARCHIVE_SYSTEM/cidb/listener.c ARCHIVE_SYSTEM/cidb/main.c ARCHIVE_SYSTEM/cidb/mysql_pool.c LIBRARY/system_log.c
 cidb_LDADD = -lpthread -lresolv ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_email.la
-migrator_SOURCES = ARCHIVE_SYSTEM/migrator.c
-migrator_LDADD = ${HX_LIBS}
 
 # php_mapi
 mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
@@ -630,7 +628,7 @@ man_MANS = \
 	doc/gromox-sa.target.8gx doc/http.8gx \
 	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
-	doc/migrator.8gx doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
+	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/monitor_domains.4gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx \

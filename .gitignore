@@ -34,7 +34,6 @@ Makefile.in
 /imap
 /locker
 /midb
-/migrator
 /mkmidb
 /mkprivate
 /mkpublic
