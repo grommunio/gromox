@@ -192,7 +192,7 @@ agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor cdnd sa_daemon event locker timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
-pkglibexec_SCRIPTS = ARCHIVE_SYSTEM/scripts/arc_format_area.sh SYSTEM_ADMIN/scripts/sa_format_area.sh
+pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
 
 # LIBRARY
 BUILT_SOURCES = include/gromox/paths.h
