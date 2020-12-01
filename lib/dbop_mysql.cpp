@@ -334,7 +334,7 @@ static const char tbl_domains_top[] =
 "  `domain_status` tinyint(4) NOT NULL DEFAULT 0,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `domainname` (`domainname`),"
-"  KEY `homedir` (`homedir`,`domain_type`),"
+"  KEY `homedir` (`homedir`),"
 "  KEY `org_id` (`org_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
