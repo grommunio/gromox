@@ -132,7 +132,6 @@ noinst_DATA += \
 	libmtasvc_user_filter.ldd
 mra_system = pop3 imap
 mra_plugins = \
-	libmrasvc_cdner_agent.la \
 	libgxsvc_event_proxy.la \
 	libmrasvc_event_stub.la \
 	libmrasvc_ip_container.la \
@@ -141,7 +140,6 @@ mra_plugins = \
 	libmrasvc_midb_agent.la \
 	libmrasvc_user_filter.la
 noinst_DATA += \
-	libmrasvc_cdner_agent.ldd \
 	libgxsvc_event_proxy.ldd \
 	libmrasvc_event_stub.ldd \
 	libmrasvc_ip_container.ldd \
@@ -440,10 +438,6 @@ pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/serv
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 imap_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/imap/console_server.c MRA_SYSTEM/imap/console_cmd_handler.c MRA_SYSTEM/imap/imap_cmd_parser.c MRA_SYSTEM/imap/imap_parser.cpp MRA_SYSTEM/imap/listener.c MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.c MRA_SYSTEM/imap/system_services.c
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la
-libmrasvc_cdner_agent_la_SOURCES = MRA_SYSTEM/service_plugins/cdner_agent.c
-libmrasvc_cdner_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libmrasvc_cdner_agent_la_LIBADD = -lcrypt -lpthread libgromox_common.la
-EXTRA_libmrasvc_cdner_agent_la_DEPENDENCIES = ${default_sym}
 libgxsvc_event_proxy_la_SOURCES = MRA_SYSTEM/service_plugins/event_proxy.c
 libgxsvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_event_proxy_la_LIBADD = -lpthread libgromox_common.la
