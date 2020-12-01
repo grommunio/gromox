@@ -31,11 +31,6 @@ used by mysql_adaptor(4gx).
 .SS collector_mailbox
 .PP
 Default: (unset)
-.SS data_file_path
-.PP
-Directory for additional files.
-.PP
-Default: \fI/usr/share/gromox/sa\fP
 .SS gateway_mount_path
 .PP
 Default: \fI/var/lib/gromox/gateway\fP
@@ -61,6 +56,11 @@ Default: (unset)
 The TCP port number for contacting the SQL server.
 .PP
 Default: \fI3306\fP
+.SS state_path
+.PP
+Directory for additional files.
+.PP
+Default: \fI/var/lib/gromox\fP
 .SS subsystem_address
 .PP
 Default: (unset)
