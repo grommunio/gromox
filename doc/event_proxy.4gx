@@ -17,4 +17,4 @@ In practice, midb(8gx), imap(8gx) and pop3(8gx) issue FOLDER-TOUCH
 notifications. Only imap(8gx) issues MESSAGE-FLAG notifications.
 .SH See also
 .PP
-\fBevent\fP(8gx), \fBevent_proxy\fP(4gx)
+\fBevent\fP(8gx), \fBevent_stub\fP(4gx)
