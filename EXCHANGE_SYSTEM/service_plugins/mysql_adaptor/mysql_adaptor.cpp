@@ -5,7 +5,6 @@
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
-#include "cdner_agent.h"
 #include "mysql_adaptor.h"
 #include "double_list.h"
 #include "mem_file.h"
@@ -288,10 +287,6 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	MYSQL_RES *pmyres;
 	CONNECTION_NODE *pconnection;
 
-	if (mode == USER_PRIVILEGE_SMTP && cdner_agent_check_user(username) &&
-	    cdner_agent_login(username, password))
-		return TRUE;
-	
 	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
 		snprintf(reason, length, "these's no database connection alive, "
 			"please contact system administrator!");
@@ -507,8 +502,6 @@ static BOOL verify_password(const char *username, const char *password,
 {
 		pthread_mutex_lock(&g_crypt_lock);
 		if (0 == strcmp(crypt(password, encrypt_passwd), encrypt_passwd)) {
-			if (mode == USER_PRIVILEGE_SMTP)
-				cdner_agent_create_user(username);
 			pthread_mutex_unlock(&g_crypt_lock);
 			return TRUE;
 		} else {

@@ -1,7 +1,6 @@
 #include <errno.h>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
-#include "cdner_agent.h"
 #include "mysql_adaptor.h"
 #include "util.h"
 #include "config_file.h"
@@ -22,11 +21,10 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 	char config_path[256];
 	char uncheck_path[256];
 	char temp_buff[128];
-	char *str_value, *psearch, cdner_host_ip[16];
+	char *str_value, *psearch;
 	char mysql_host[256], mysql_user[256];
 	char *mysql_passwd, db_name[256]; 
 	int conn_num, scan_interval, mysql_port, timeout;
-	int cdner_conn_num, cdner_host_port;
 
     switch(reason) {
     case PLUGIN_INIT:
@@ -139,57 +137,18 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			printf("[mysql_adaptor]: mysql read write timeout is %d\n",
 				timeout);
 		}
-		
-		str_value = config_file_get_value(pfile, "CDNER_CONNECTION_NUM");
-		if (str_value == nullptr) {
-			cdner_conn_num = 0;
-		} else {
-			cdner_conn_num = atoi(str_value);
-			if (cdner_conn_num < 0 || cdner_conn_num > 20)
-				cdner_conn_num = 0;
-		}
-		if (cdner_conn_num == 0)
-			printf("[mysql_adaptor]: cdner agent is switched off\n");
-		else
-			printf("[mysql_adaptor]: cdner connection number is %d\n", cdner_conn_num);
 
-		str_value = config_file_get_value(pfile, "CDNER_HOST_IP");
-		if (str_value == nullptr)
-			strcpy(cdner_host_ip, "127.0.0.1");
-		else
-			strcpy(cdner_host_ip, str_value);
-		if (cdner_conn_num > 0)
-			printf("[mysql_adaptor]: cdner host is %s\n", cdner_host_ip);
-
-		str_value = config_file_get_value(pfile, "CDNER_HOST_PORT");
-		if (str_value == nullptr) {
-			cdner_host_port = 10001;
-			config_file_set_value(pfile, "CDNER_HOST_PORT", "10001");
-		} else {
-			cdner_host_port = atoi(str_value);
-			if (cdner_host_port <= 0) {
-				cdner_host_port = 10001;
-				config_file_set_value(pfile, "CDNER_HOST_PORT", "10001");
-			}
-		}
-		if (cdner_conn_num > 0)
-			printf("[mysql_adaptor]: cdner port is %d\n", cdner_host_port);
 		str_value = config_file_get_value(pfile, "schema_upgrades");
 		enum sql_schema_upgrade upg;
 		if (str_value != nullptr && strcmp(str_value, "skip") == 0)
 			upg = S_SKIP;
 		else if (str_value != nullptr && strcmp(str_value, "autoupgrade") == 0)
 			upg = S_AUTOUP;
-
-		cdner_agent_init(cdner_conn_num, cdner_host_ip, cdner_host_port);
+		
 		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
 			db_name, mysql_port, conn_num, scan_interval, timeout, upg});
 		config_file_free(pfile);
 		
-		if (cdner_agent_run() != 0) {
-			printf("[mysql_adaptor]: failed to run cdner agent\n");
-			return false;
-		}
 		if (0 != mysql_adaptor_run()) {
 			printf("[mysql_adaptor]: failed to run mysql adaptor\n");
 			return FALSE;
