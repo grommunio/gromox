@@ -15,14 +15,6 @@ typedef struct _ALIAS_ITEM {
 	char mainname[128];
 } ALIAS_ITEM;
 
-typedef struct _GROUP_ITEM {
-	char groupname[64];
-	char homedir[128];
-	int type;
-} GROUP_ITEM;
-
-
-
 typedef struct _DATA_COLLECT {
 	DOUBLE_LIST list;
 	DOUBLE_LIST_NODE *pnode;
@@ -32,9 +24,6 @@ extern DATA_COLLECT *data_source_collect_init(void);
 void data_source_collect_free(DATA_COLLECT *pcollect);
 
 void data_source_collect_clear(DATA_COLLECT *pcollect);
-
-int data_source_collect_total(DATA_COLLECT *pcollect);
-
 void data_source_collect_begin(DATA_COLLECT *pcollect);
 
 int data_source_collect_done(DATA_COLLECT *pcollect);

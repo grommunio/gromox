@@ -65,11 +65,6 @@ void data_source_collect_clear(DATA_COLLECT *pcollect)
 	pcollect->pnode = NULL;
 }
 
-int data_source_collect_total(DATA_COLLECT *pcollect)
-{
-	return double_list_get_nodes_num(&pcollect->list);
-}
-
 void data_source_collect_begin(DATA_COLLECT *pcollect)
 {
 	pcollect->pnode = double_list_get_head(&pcollect->list);

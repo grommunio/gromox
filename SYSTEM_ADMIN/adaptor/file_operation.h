@@ -13,4 +13,3 @@ void file_operation_init(const char *gateway_path);
 int file_operation_compare(const char *file1, const char *file2);
 
 void file_operation_broadcast(const char *src_file, const char *dst_file);
-void file_operation_transfer(const char *src_file, const char *dst_file);

@@ -115,30 +115,3 @@ void file_operation_broadcast(const char *src_file, const char *dst_file)
 	closedir(dirp);
 	free(pbuff);
 }
-
-void file_operation_transfer(const char *src_file, const char *dst_file)
-{
-	struct srcitem { char a[256], b[256]; };
-	LIST_FILE *pfile;
-	char temp_buff[256];
-	int fd, i, len, item_num;
-	
-	pfile = list_file_init((char*)src_file, "%s:256%s:256");
-	if (NULL == pfile) {
-		return;
-	}
-	fd = open(dst_file, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
-	if (-1 == fd) {
-		list_file_free(pfile);
-		return;
-	}
-	item_num = list_file_get_item_num(pfile);
-	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
-	for (i=0; i<item_num; i++) {
-		snprintf(temp_buff, sizeof(temp_buff), "%s\n", pitem[i].a);
-		len = strlen(temp_buff);
-		write(fd, temp_buff, len);
-	}
-	close(fd);
-	list_file_free(pfile);
-}
