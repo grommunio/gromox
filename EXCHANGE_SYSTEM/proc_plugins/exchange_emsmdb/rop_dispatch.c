@@ -352,9 +352,9 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				return ecMAPIOOM;
 			}
 			((NULL_DST_RESPONSE*)perr_response)->hindex =
-				((MOVECOPYMESSAGES_REQUEST*)prequest->ppayload)->hindex;
+				((MOVEFOLDER_REQUEST *)prequest->ppayload)->hindex;
 			((NULL_DST_RESPONSE*)perr_response)->partial_completion =
-				((MOVECOPYMESSAGES_RESPONSE*)(*ppresponse)->ppayload)->partial_completion;
+				((MOVEFOLDER_RESPONSE *)(*ppresponse)->ppayload)->partial_completion;
 			(*ppresponse)->ppayload = perr_response;
 		}
 		break;
@@ -382,9 +382,9 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				return ecMAPIOOM;
 			}
 			((NULL_DST_RESPONSE*)perr_response)->hindex =
-				((MOVECOPYMESSAGES_REQUEST*)prequest->ppayload)->hindex;
+				((COPYFOLDER_REQUEST *)prequest->ppayload)->hindex;
 			((NULL_DST_RESPONSE*)perr_response)->partial_completion =
-				((MOVECOPYMESSAGES_RESPONSE*)(*ppresponse)->ppayload)->partial_completion;
+				((COPYFOLDER_RESPONSE *)(*ppresponse)->ppayload)->partial_completion;
 			(*ppresponse)->ppayload = perr_response;
 		}
 		break;
@@ -1206,7 +1206,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				return ecMAPIOOM;
 			}
 			*(uint32_t*)(*ppresponse)->ppayload =
-				((COPYPROPERTIES_REQUEST*)prequest->ppayload)->hindex;
+				((COPYTO_REQUEST *)prequest->ppayload)->hindex;
 		}
 		break;
 	case ropProgress:
