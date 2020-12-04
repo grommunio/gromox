@@ -2915,8 +2915,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		return FALSE;
 	}
 	/* ATTRIBUTE_ID_OEMCODEPAGE */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_INTERNETCODEPAGE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_INTERNETCODEPAGE);
 	if (NULL == pvalue) {
 		debug_info("[tnef]: cannot find PROP_TAG_INTERNETCODEPAGE");
 		return FALSE;
@@ -2935,8 +2934,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_MESSAGESTATUS */
 	if (TRUE == b_embedded) {
 		tmp_byte = 0;
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-					&pmsg->proplist, PROP_TAG_MESSAGEFLAGS);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_MESSAGEFLAGS);
 		if (NULL != pvalue) {
 			if ((*(uint32_t*)pvalue) & MESSAGE_FLAG_UNSENT) {
 				tmp_byte |= FMS_LOCAL;
@@ -2945,15 +2943,12 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				tmp_byte |= FMS_SUBMITTED;
 			}
 		}
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-							&pmsg->proplist, PROP_TAG_READ);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_READ);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			tmp_byte |= FMS_READ;
 		}
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-					&pmsg->proplist, PROP_TAG_CREATIONTIME);
-		pvalue1 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_LASTMODIFICATIONTIME);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_CREATIONTIME);
+		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_LASTMODIFICATIONTIME);
 		if (NULL != pvalue && NULL != pvalue1 &&
 			*(uint64_t*)pvalue1 > *(uint64_t*)pvalue) {
 			tmp_byte |= FMS_MODIFIED;
@@ -2976,12 +2971,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	tmp_proptags.count ++;
 	/* ATTRIBUTE_ID_FROM */
 	if (TRUE == b_embedded) {
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_SENDERNAME_STRING8);
-		pvalue1 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE_STRING8);
-		pvalue2 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDERNAME_STRING8);
+		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE_STRING8);
+		pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS_STRING8);
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_FROM;
 			attribute.lvl = LVL_MESSAGE;
@@ -2999,11 +2991,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 	}
 	/* ATTRIBUTE_ID_MESSAGECLASS */
-	message_class = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-				&pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8);
+	message_class = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8);
 	if (NULL == message_class) {
-		message_class = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-							&pmsg->proplist, PROP_TAG_MESSAGECLASS);
+		message_class = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_MESSAGECLASS);
 		if (NULL == message_class) {
 			debug_info("[tnef]: cannot find PROP_TAG_MESSAGECLASS");
 			return FALSE;
@@ -3023,8 +3013,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 						PROP_TAG_MESSAGECLASS;
 	tmp_proptags.count ++;
 	/* ATTRIBUTE_ID_ORIGNINALMESSAGECLASS */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-		&pmsg->proplist, PROP_TAG_ORIGINALMESSAGECLASS_STRING8);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_ORIGINALMESSAGECLASS_STRING8);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_ORIGNINALMESSAGECLASS;
 		attribute.lvl = LVL_MESSAGE;
@@ -3042,8 +3031,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	/* ATTRIBUTE_ID_SUBJECT */
 	if (FALSE == b_embedded) {
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-					&pmsg->proplist, PROP_TAG_SUBJECT_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SUBJECT_STRING8);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_SUBJECT;
 			attribute.lvl = LVL_MESSAGE;
@@ -3057,8 +3045,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	/* ATTRIBUTE_ID_BODY */
 	if (TRUE == b_embedded) {
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-					&pmsg->proplist, PROP_TAG_BODY_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_BODY_STRING8);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_BODY;
 			attribute.lvl = LVL_MESSAGE;
@@ -3073,8 +3060,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 	}
 	/* ATTRIBUTE_ID_MESSAGEID */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-					&pmsg->proplist, PROP_TAG_SEARCHKEY);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SEARCHKEY);
 	if (NULL != pvalue) {
 		if (FALSE == encode_hex_binary(((BINARY*)pvalue)->pb,
 			((BINARY*)pvalue)->cb, tmp_buff, sizeof(tmp_buff))) {
@@ -3096,12 +3082,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		"IPM.Schedule.Meeting.Request") ||
 		0 == strcasecmp(message_class,
 		"IPM.Schedule.Meeting.Canceled")) {
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME_STRING8);
-		pvalue1 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8);
-		pvalue2 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME_STRING8);
+		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8);
+		pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8);
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_OWNER;
 			attribute.lvl = LVL_MESSAGE;
@@ -3123,12 +3106,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		"IPM.Schedule.Meeting.Resp.Neg") ||
 		0 == strcasecmp(message_class,
 		"IPM.Schedule.Meeting.Resp.Tent")) {
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGNAME_STRING8);
-		pvalue1 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE_STRING8);
-		pvalue2 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGNAME_STRING8);
+		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE_STRING8);
+		pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS_STRING8);
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_OWNER;
 			attribute.lvl = LVL_MESSAGE;
@@ -3146,12 +3126,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 	}
 	/* ATTRIBUTE_ID_SENTFOR */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-		&pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME_STRING8);
-	pvalue1 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-		&pmsg->proplist, PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8);
-	pvalue2 = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-		&pmsg->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME_STRING8);
+	pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8);
+	pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8);
 	if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 		attribute.attr_id = ATTRIBUTE_ID_SENTFOR;
 		attribute.lvl = LVL_MESSAGE;
@@ -3168,8 +3145,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		/* keep these properties for attMsgProps */
 	}
 	/* ATTRIBUTE_ID_DELEGATE */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-		&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGENTRYID);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGENTRYID);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DELEGATE;
 		attribute.lvl = LVL_MESSAGE;
@@ -3183,8 +3159,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_DATESTART */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-					&pmsg->proplist, PROP_TAG_STARTDATE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_STARTDATE);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DATESTART;
 		attribute.lvl = LVL_MESSAGE;
@@ -3198,8 +3173,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_DATEEND */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-						&pmsg->proplist, PROP_TAG_ENDDATE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_ENDDATE);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DATEEND;
 		attribute.lvl = LVL_MESSAGE;
@@ -3213,8 +3187,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_AIDOWNER */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_OWNERAPPOINTMENTID);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_OWNERAPPOINTMENTID);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_AIDOWNER;
 		attribute.lvl = LVL_MESSAGE;
@@ -3228,8 +3201,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_REQUESTRES */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_RESPONSEREQUESTED);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RESPONSEREQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_REQUESTRES;
 		attribute.lvl = LVL_MESSAGE;
@@ -3244,8 +3216,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_DATESENT */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_CLIENTSUBMITTIME);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DATESENT;
 		attribute.lvl = LVL_MESSAGE;
@@ -3257,8 +3228,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		/* keep this property for attMsgProps */
 	}
 	/* ATTRIBUTE_ID_DATERECD */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_MESSAGEDELIVERYTIME);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_MESSAGEDELIVERYTIME);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DATERECD;
 		attribute.lvl = LVL_MESSAGE;
@@ -3272,8 +3242,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_PRIORITY */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-					&pmsg->proplist, PROP_TAG_IMPORTANCE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_IMPORTANCE);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_PRIORITY;
 		attribute.lvl = LVL_MESSAGE;
@@ -3301,8 +3270,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_DATEMODIFY */
-	pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pmsg->proplist, PROP_TAG_LASTMODIFICATIONTIME);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_LASTMODIFICATIONTIME);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DATEMODIFY;
 		attribute.lvl = LVL_MESSAGE;
@@ -3389,9 +3357,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tnef_proplist.count ++;
 	}
 	if (FALSE == b_key) {
-		pvalue = tpropval_array_get_propval(
-			(TPROPVAL_ARRAY*)&pmsg->proplist,
-			PROP_TAG_INTERNETMESSAGEID);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_INTERNETMESSAGEID);
 		if (NULL != pvalue) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(PROP_TAG_TNEFCORRELATIONKEY);
@@ -3421,8 +3387,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		pattachment = pmsg->children.pattachments->pplist[i];
 		tmp_proptags.count = 0;
 		/* ATTRIBUTE_ID_ATTACHRENDDATA */
-		pmethod = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-				&pattachment->proplist, PROP_TAG_ATTACHMETHOD);
+		pmethod = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHMETHOD);
 		if (NULL == pmethod) {
 			tmp_rend.attach_type = ATTACH_TYPE_FILE;
 			break;
@@ -3449,8 +3414,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		} else {
 			tmp_rend.attach_position = *(uint32_t*)pvalue;
 		}
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pattachment->proplist, PROP_TAG_ATTACHENCODING);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHENCODING);
 		if (NULL != pvalue && 9 == ((BINARY*)pvalue)->cb &&
 			0 == memcmp(((BINARY*)pvalue)->pb, MACBINARY_ENCODING, 9)) {
 			tmp_rend.data_flags = FILE_DATA_MACBINARY;
@@ -3468,8 +3432,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 		/* ATTRIBUTE_ID_ATTACHDATA */
 		if (NULL != pmethod && ATTACH_METHOD_BY_VALUE == *pmethod) {
-			pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-				&pattachment->proplist, PROP_TAG_ATTACHDATABINARY);
+			pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHDATABINARY);
 			if (NULL != pvalue) {
 				attribute.attr_id = ATTRIBUTE_ID_ATTACHDATA;
 				attribute.lvl = LVL_ATTACHMENT;
@@ -3484,8 +3447,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			}
 		}
 		/* ATTRIBUTE_ID_ATTACHTITLE */
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pattachment->proplist, PROP_TAG_ATTACHLONGFILENAME_STRING8);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHLONGFILENAME_STRING8);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHTITLE;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -3498,8 +3460,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 					PROP_TAG_ATTACHLONGFILENAME_STRING8;
 			tmp_proptags.count ++;
 		} else {
-			pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-				&pattachment->proplist, PROP_TAG_ATTACHFILENAME_STRING8);
+			pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHFILENAME_STRING8);
 			if (NULL != pvalue) {
 				attribute.attr_id = ATTRIBUTE_ID_ATTACHTITLE;
 				attribute.lvl = LVL_ATTACHMENT;
@@ -3514,8 +3475,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			}
 		}
 		/* ATTRIBUTE_ID_ATTACHMETAFILE */
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pattachment->proplist, PROP_TAG_ATTACHRENDERING);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHRENDERING);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHMETAFILE;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -3530,8 +3490,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			
 		}
 		/* ATTRIBUTE_ID_ATTACHCREATEDATE */
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pattachment->proplist, PROP_TAG_CREATIONTIME);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_CREATIONTIME);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHCREATEDATE;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -3545,8 +3504,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tmp_proptags.count ++;
 		}
 		/* ATTRIBUTE_ID_ATTACHMODIFYDATE */
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pattachment->proplist, PROP_TAG_LASTMODIFICATIONTIME);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_LASTMODIFICATIONTIME);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHMODIFYDATE;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -3560,8 +3518,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tmp_proptags.count ++;
 		}
 		/* ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME */
-		pvalue = tpropval_array_get_propval((TPROPVAL_ARRAY*)
-			&pattachment->proplist, PROP_TAG_ATTACHTRANSPORTNAME_STRING8);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHTRANSPORTNAME_STRING8);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME;
 			attribute.lvl = LVL_ATTACHMENT;
