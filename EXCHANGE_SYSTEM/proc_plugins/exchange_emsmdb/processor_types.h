@@ -1198,3 +1198,13 @@ typedef struct _ROP_BUFFER {
 	uint8_t hnum;
 	uint32_t *phandles;
 } ROP_BUFFER;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern const char *rop_idtoname(unsigned int i);
+
+#ifdef __cplusplus
+}
+#endif
