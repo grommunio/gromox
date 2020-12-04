@@ -240,7 +240,7 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 		ext_buffer_push_free(&ext_push);
 		return nullptr;
 	}
-	BINARY *pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (pbin == nullptr) {
 		ext_buffer_push_free(&ext_push);
 		return nullptr;
