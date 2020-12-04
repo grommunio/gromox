@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
@@ -384,7 +385,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			return EXT_ERR_ALLOC;
 		}
 		return ext_buffer_pull_svreid(pext, r->pvalue);
-	case PT_OBJECT:
+	case PT_OBJECT: {
 		r->pvalue = pext->alloc(sizeof(BINARY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -396,36 +397,29 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (1 != tmp_int) {
 			return EXT_ERR_FORMAT;
 		}
-		status = ext_buffer_pull_uint32(pext,
-					&((BINARY*)r->pvalue)->cb);
+		BINARY *bv = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &bv->cb);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((BINARY*)r->pvalue)->cb < 16 ||
-			((BINARY*)r->pvalue)->cb >
-			pext->data_size - pext->offset) {
+		if (bv->cb < 16 || bv->cb > pext->data_size - pext->offset)
 			return EXT_ERR_FORMAT;
-		}
-		((BINARY*)r->pvalue)->pb =
-			pext->alloc(((BINARY*)r->pvalue)->cb);
-		if (NULL == ((BINARY*)r->pvalue)->pb) {
+		bv->pv = pext->alloc(bv->cb);
+		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		offset = pext->offset;
-		status = ext_buffer_pull_bytes(pext,
-					((BINARY*)r->pvalue)->pb,
-					((BINARY*)r->pvalue)->cb);
+		status = ext_buffer_pull_bytes(pext, bv->pv, bv->cb);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (0 != memcmp(((BINARY*)r->pvalue)->pb, IID_IMessage, 16) &&
-			0 != memcmp(((BINARY*)r->pvalue)->pb, IID_IStorage, 16) &&
-			0 != memcmp(((BINARY*)r->pvalue)->pb, IID_IStream, 16)) {
+		if (memcmp(bv->pv, IID_IMessage, 16) != 0 &&
+		    memcmp(bv->pv, IID_IStorage, 16) != 0 &&
+		    memcmp(bv->pv, IID_IStream, 16) != 0)
 			return EXT_ERR_FORMAT;
-		}
 		return ext_buffer_pull_advance(pext,
 			tnef_align(pext->offset - offset));
-	case PT_BINARY:
+	}
+	case PT_BINARY: {
 		r->pvalue = pext->alloc(sizeof(BINARY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -437,54 +431,45 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		if (1 != tmp_int) {
 			return EXT_ERR_FORMAT;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((BINARY*)r->pvalue)->cb);
+		BINARY *bv = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &bv->cb);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((BINARY*)r->pvalue)->cb +
-			pext->offset > pext->data_size) {
+		if (bv->cb + pext->offset > pext->data_size)
 			return EXT_ERR_FORMAT;
-		}
-		((BINARY*)r->pvalue)->pb =
-			pext->alloc(((BINARY*)r->pvalue)->cb);
-		if (NULL == ((BINARY*)r->pvalue)->pb) {
+		bv->pv = pext->alloc(bv->cb);
+		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
-		}
 		offset = pext->offset;
-		status = ext_buffer_pull_bytes(pext,
-					((BINARY*)r->pvalue)->pb,
-					((BINARY*)r->pvalue)->cb);
+		status = ext_buffer_pull_bytes(pext, bv->pv, bv->cb);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		return ext_buffer_pull_advance(pext,
 			tnef_align(pext->offset - offset));
-	case PT_MV_SHORT:
+	}
+	case PT_MV_SHORT: {
 		r->pvalue = pext->alloc(sizeof(SHORT_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((SHORT_ARRAY*)r->pvalue)->count);
+		SHORT_ARRAY *sa = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &sa->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((SHORT_ARRAY*)r->pvalue)->count > 0xFFFF) {
+		if (sa->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((SHORT_ARRAY*)r->pvalue)->count) {
-			((SHORT_ARRAY*)r->pvalue)->ps = NULL;
+		if (sa->count == 0) {
+			sa->ps = NULL;
 		} else {
-			((SHORT_ARRAY*)r->pvalue)->ps = pext->alloc(
-				sizeof(uint16_t)*((SHORT_ARRAY*)r->pvalue)->count);
-			if (NULL == ((SHORT_ARRAY*)r->pvalue)->ps) {
+			sa->ps = pext->alloc(sizeof(uint16_t) * sa->count);
+			if (sa->ps == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((SHORT_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_pull_uint16(pext, 
-				((SHORT_ARRAY*)r->pvalue)->ps + i);
+		for (i = 0; i < sa->count; ++i) {
+			status = ext_buffer_pull_uint16(pext, sa->ps + i);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -494,96 +479,87 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_LONG:
+	}
+	case PT_MV_LONG: {
 		r->pvalue = pext->alloc(sizeof(LONG_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((LONG_ARRAY*)r->pvalue)->count);
+		LONG_ARRAY *la = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &la->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((LONG_ARRAY*)r->pvalue)->count > 0xFFFF) {
+		if (la->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((LONG_ARRAY*)r->pvalue)->count) {
-			((LONG_ARRAY*)r->pvalue)->pl = NULL;
+		if (la->count == 0) {
+			la->pl = nullptr;
 		} else {
-			((LONG_ARRAY*)r->pvalue)->pl = pext->alloc(
-				sizeof(uint32_t)*((LONG_ARRAY*)r->pvalue)->count);
-			if (NULL == ((LONG_ARRAY*)r->pvalue)->pl) {
+			la->pl = pext->alloc(sizeof(uint32_t) * la->count);
+			if (la->pl == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((LONG_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_pull_uint32(pext, 
-				((LONG_ARRAY*)r->pvalue)->pl + i);
+		for (i = 0; i < la->count; ++i) {
+			status = ext_buffer_pull_uint32(pext, la->pl + i);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_I8:
+	}
+	case PT_MV_I8: {
 		r->pvalue = pext->alloc(sizeof(LONGLONG_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((LONGLONG_ARRAY*)r->pvalue)->count);
+		LONGLONG_ARRAY *la = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &la->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((LONGLONG_ARRAY*)r->pvalue)->count > 0xFFFF) {
+		if (la->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((LONGLONG_ARRAY*)r->pvalue)->count) {
-			((LONGLONG_ARRAY*)r->pvalue)->pll = NULL;
+		if (la->count == 0) {
+			la->pll = nullptr;
 		} else {
-			((LONGLONG_ARRAY*)r->pvalue)->pll = pext->alloc(
-				sizeof(uint64_t)*((LONGLONG_ARRAY*)r->pvalue)->count);
-			if (NULL == ((LONGLONG_ARRAY*)r->pvalue)->pll) {
+			la->pll = pext->alloc(sizeof(uint64_t) * la->count);
+			if (la->pll == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((LONGLONG_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_pull_uint64(pext, 
-				((LONGLONG_ARRAY*)r->pvalue)->pll + i);
+		for (i = 0; i < la->count; ++i) {
+			status = ext_buffer_pull_uint64(pext, la->pll + i);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_STRING8:
+	}
+	case PT_MV_STRING8: {
 		r->pvalue = pext->alloc(sizeof(STRING_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((STRING_ARRAY*)r->pvalue)->count);
+		STRING_ARRAY *sa = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &sa->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((STRING_ARRAY*)r->pvalue)->count > 0xFFFF) {
+		if (sa->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((STRING_ARRAY*)r->pvalue)->count) {
-			((STRING_ARRAY*)r->pvalue)->ppstr = NULL;
+		if (sa->count == 0) {
+			sa->ppstr = nullptr;
 		} else {
-			((STRING_ARRAY*)r->pvalue)->ppstr = pext->alloc(
-				sizeof(void*)*((STRING_ARRAY*)r->pvalue)->count);
-			if (NULL == ((STRING_ARRAY*)r->pvalue)->ppstr) {
+			sa->ppstr = pext->alloc(sizeof(void *) * sa->count);
+			if (sa->ppstr == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((STRING_ARRAY*)r->pvalue)->count; i++) {
+		for (i = 0; i < sa->count; ++i) {
 			status = ext_buffer_pull_uint32(pext, &tmp_int);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 			offset = pext->offset + tmp_int;
-			status = ext_buffer_pull_string(pext,
-				&((STRING_ARRAY*)r->pvalue)->ppstr[i]);
+			status = ext_buffer_pull_string(pext, &sa->ppstr[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -597,36 +573,33 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_UNICODE:
+	}
+	case PT_MV_UNICODE: {
 		r->pvalue = pext->alloc(sizeof(STRING_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((STRING_ARRAY*)r->pvalue)->count);
+		STRING_ARRAY *sa = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &sa->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((STRING_ARRAY*)r->pvalue)->count > 0xFFFF) {
+		if (sa->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((STRING_ARRAY*)r->pvalue)->count) {
-			((STRING_ARRAY*)r->pvalue)->ppstr = NULL;
+		if (sa->count == 0) {
+			sa->ppstr = nullptr;
 		} else {
-			((STRING_ARRAY*)r->pvalue)->ppstr = pext->alloc(
-				sizeof(void*)*((STRING_ARRAY*)r->pvalue)->count);
-			if (NULL == ((STRING_ARRAY*)r->pvalue)->ppstr) {
+			sa->ppstr = pext->alloc(sizeof(void *) * sa->count);
+			if (sa->ppstr == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((STRING_ARRAY*)r->pvalue)->count; i++) {
+		for (i = 0; i < sa->count; ++i) {
 			status = ext_buffer_pull_uint32(pext, &tmp_int);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 			offset = pext->offset + tmp_int;
-			status = ext_buffer_pull_wstring(pext,
-				&((STRING_ARRAY*)r->pvalue)->ppstr[i]);
+			status = ext_buffer_pull_wstring(pext, &sa->ppstr[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -640,81 +613,69 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_CLSID:
+	}
+	case PT_MV_CLSID: {
 		r->pvalue = pext->alloc(sizeof(GUID_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((GUID_ARRAY*)r->pvalue)->count);
+		GUID_ARRAY *ga = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &ga->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((GUID_ARRAY*)r->pvalue)->count > 0xFFFF) {
+		if (ga->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((GUID_ARRAY*)r->pvalue)->count) {
-			((GUID_ARRAY*)r->pvalue)->pguid = NULL;
+		if (ga->count == 0) {
+			ga->pguid = nullptr;
 		} else {
-			((GUID_ARRAY*)r->pvalue)->pguid = pext->alloc(
-				sizeof(GUID*)*((GUID_ARRAY*)r->pvalue)->count);
-			if (NULL == ((GUID_ARRAY*)r->pvalue)->pguid) {
+			ga->pguid = pext->alloc(sizeof(GUID *) * ga->count);
+			if (ga->pguid == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((GUID_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_pull_guid(pext,
-				((GUID_ARRAY*)r->pvalue)->pguid + i);
+		for (i = 0; i < ga->count; ++i) {
+			status = ext_buffer_pull_guid(pext, ga->pguid + i);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_BINARY:
+	}
+	case PT_MV_BINARY: {
 		r->pvalue = pext->alloc(sizeof(BINARY_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((BINARY_ARRAY*)r->pvalue)->count);
+		BINARY_ARRAY *ba = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &ba->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((BINARY_ARRAY*)r->pvalue)->count > 0xFFFF) {
+		if (ba->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((BINARY_ARRAY*)r->pvalue)->count) {
-			((BINARY_ARRAY*)r->pvalue)->pbin = NULL;
+		if (ba->count == 0) {
+			ba->pbin = nullptr;
 		} else {
-			((BINARY_ARRAY*)r->pvalue)->pbin = pext->alloc(
-				sizeof(BINARY)*((BINARY_ARRAY*)r->pvalue)->count);
-			if (NULL == ((BINARY_ARRAY*)r->pvalue)->pbin) {
+			ba->pbin = pext->alloc(sizeof(BINARY) * ba->count);
+			if (ba->pbin == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((BINARY_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_pull_uint32(pext,
-				&((BINARY_ARRAY*)r->pvalue)->pbin[i].cb);
+		for (i = 0; i < ba->count; ++i) {
+			status = ext_buffer_pull_uint32(pext, &ba->pbin[i].cb);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
-			if (((BINARY_ARRAY*)r->pvalue)->pbin[i].cb +
-				pext->offset > pext->data_size) {
+			if (ba->pbin[i].cb + pext->offset > pext->data_size)
 				return EXT_ERR_FORMAT;
-			}
-			if (0 == ((BINARY_ARRAY*)r->pvalue)->pbin[i].cb) {
-				((BINARY*)r->pvalue)->pb = NULL;
+			if (ba->pbin[i].cb == 0) {
+				ba->pbin[i].pb = nullptr;
 			} else {
-				((BINARY_ARRAY*)r->pvalue)->pbin[i].pb =
-					pext->alloc(((BINARY_ARRAY*)r->pvalue)->pbin[i].cb);
-				if (NULL == ((BINARY*)r->pvalue)->pb) {
+				ba->pbin[i].pb = pext->alloc(ba->pbin[i].cb);
+				if (ba->pbin[i].pb == nullptr)
 					return EXT_ERR_ALLOC;
-				}
 			}
 			offset = pext->offset;
-			status = ext_buffer_pull_bytes(pext,
-				((BINARY_ARRAY*)r->pvalue)->pbin[i].pb,
-				((BINARY_ARRAY*)r->pvalue)->pbin[i].cb);
+			status = ext_buffer_pull_bytes(pext, ba->pbin[i].pb, ba->pbin[i].cb);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -725,6 +686,7 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			}
 		}
 		return EXT_ERR_SUCCESS;
+	}
 	}
 	return EXT_ERR_BAD_SWITCH;
 }
@@ -966,91 +928,78 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		((char*)r->pvalue)[len] = '\0';
 		break;
 	case ATTRIBUTE_ID_MSGPROPS:
-	case ATTRIBUTE_ID_ATTACHMENT:
+	case ATTRIBUTE_ID_ATTACHMENT: {
 		r->pvalue = pext->alloc(sizeof(TNEF_PROPLIST));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((TNEF_PROPLIST*)r->pvalue)->count);
+		TNEF_PROPLIST *tf = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &tf->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((TNEF_PROPLIST*)r->pvalue)->count > 0xFFFF) {
+		if (tf->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((TNEF_PROPLIST*)r->pvalue)->count) {
-			((TNEF_PROPLIST*)r->pvalue)->ppropval = NULL;
+		if (tf->count == 0) {
+			tf->ppropval = nullptr;
 		} else {
-			((TNEF_PROPLIST*)r->pvalue)->ppropval = pext->alloc(
-				sizeof(TNEF_PROPVAL)*((TNEF_PROPLIST*)r->pvalue)->count);
-			if (NULL == ((TNEF_PROPLIST*)r->pvalue)->ppropval) {
+			tf->ppropval = pext->alloc(sizeof(TNEF_PROPVAL) * tf->count);
+			if (tf->ppropval == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((TNEF_PROPLIST*)r->pvalue)->count; i++) {
-			status = tnef_pull_propval(pext,
-				((TNEF_PROPLIST*)r->pvalue)->ppropval + i);
+		for (i = 0; i < tf->count; ++i) {
+			status = tnef_pull_propval(pext, tf->ppropval + i);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		break;
-	case ATTRIBUTE_ID_RECIPTABLE:
+	}
+	case ATTRIBUTE_ID_RECIPTABLE: {
 		r->pvalue = pext->alloc(sizeof(TNEF_PROPSET));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((TNEF_PROPSET*)r->pvalue)->count);
+		TNEF_PROPSET *tf = r->pvalue;
+		status = ext_buffer_pull_uint32(pext, &tf->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (((TNEF_PROPSET*)r->pvalue)->count > 0xFFFF) {
+		if (tf->count > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		}
-		if (0 == ((TNEF_PROPSET*)r->pvalue)->count) {
-			((TNEF_PROPSET*)r->pvalue)->pplist = NULL;
+		if (tf->count == 0) {
+			tf->pplist = nullptr;
 		} else {
-			((TNEF_PROPSET*)r->pvalue)->pplist = pext->alloc(
-				sizeof(TNEF_PROPLIST*)*((TNEF_PROPSET*)r->pvalue)->count);
-			if (NULL == ((TNEF_PROPSET*)r->pvalue)->pplist) {
+			tf->pplist = pext->alloc(sizeof(TNEF_PROPLIST *) * tf->count);
+			if (tf->pplist == nullptr)
 				return EXT_ERR_ALLOC;
-			}
 		}
-		for (i=0; i<((TNEF_PROPSET*)r->pvalue)->count; i++) {
-			((TNEF_PROPSET*)r->pvalue)->pplist[i] =
-				pext->alloc(sizeof(TNEF_PROPLIST));
-			if (NULL == ((TNEF_PROPSET*)r->pvalue)->pplist[i]) {
+		for (i = 0; i < tf->count; ++i) {
+			tf->pplist[i] = pext->alloc(sizeof(TNEF_PROPLIST));
+			if (tf->pplist[i] == nullptr)
 				return EXT_ERR_ALLOC;
-			}
-			status = ext_buffer_pull_uint32(pext,
-				&((TNEF_PROPSET*)r->pvalue)->pplist[i]->count);
+			status = ext_buffer_pull_uint32(pext, &tf->pplist[i]->count);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
-			if (((TNEF_PROPSET*)r->pvalue)->pplist[i]->count > 0xFFFF) {
+			if (tf->pplist[i]->count > 0xFFFF)
 				return EXT_ERR_FORMAT;
-			}
-			if (0 == ((TNEF_PROPSET*)r->pvalue)->pplist[i]->count) {
-				((TNEF_PROPSET*)r->pvalue)->pplist[i]->ppropval = NULL;
+			if (tf->pplist[i]->count == 0) {
+				tf->pplist[i]->ppropval = nullptr;
 			} else {
-				((TNEF_PROPSET*)r->pvalue)->pplist[i]->ppropval =
-					pext->alloc(sizeof(TNEF_PROPVAL)*
-					((TNEF_PROPSET*)r->pvalue)->pplist[i]->count);
-				if (NULL == ((TNEF_PROPSET*)r->pvalue)->pplist[i]->ppropval) {
+				tf->pplist[i]->ppropval = pext->alloc(sizeof(TNEF_PROPVAL) * tf->pplist[i]->count);
+				if (tf->pplist[i]->ppropval == nullptr)
 					return EXT_ERR_ALLOC;
-				}
 			}
-			for (j=0; j<((TNEF_PROPSET*)r->pvalue)->pplist[i]->count; j++) {
-				status = tnef_pull_propval(pext, ((TNEF_PROPSET*)
-							r->pvalue)->pplist[i]->ppropval + j);
+			for (j = 0; j < tf->pplist[i]->count; ++j) {
+				status = tnef_pull_propval(pext, tf->pplist[i]->ppropval + j);
 				if (EXT_ERR_SUCCESS != status) {
 					return status;
 				}
 			}
 		}
 		break;
+	}
 	case ATTRIBUTE_ID_OWNER:
 	case ATTRIBUTE_ID_SENTFOR:
 		r->pvalue = pext->alloc(sizeof(ATTR_ADDR));
@@ -1088,75 +1037,72 @@ static int tnef_pull_attribute(EXT_PULL *pext, TNEF_ATTRIBUTE *r)
 		}
 		pext->offset = offset1;
 		break;
-	case ATTRIBUTE_ID_ATTACHRENDDATA:
+	case ATTRIBUTE_ID_ATTACHRENDDATA: {
 		r->pvalue = pext->alloc(sizeof(REND_DATA));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		status = ext_buffer_pull_uint16(pext,
-			&((REND_DATA*)r->pvalue)->attach_type);
+		REND_DATA *rd = r->pvalue;
+		status = ext_buffer_pull_uint16(pext, &rd->attach_type);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((REND_DATA*)r->pvalue)->attach_position);
+		status = ext_buffer_pull_uint32(pext, &rd->attach_position);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint16(pext,
-			&((REND_DATA*)r->pvalue)->render_width);
+		status = ext_buffer_pull_uint16(pext, &rd->render_width);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint16(pext,
-			&((REND_DATA*)r->pvalue)->render_height);
+		status = ext_buffer_pull_uint16(pext, &rd->render_height);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_pull_uint32(pext,
-			&((REND_DATA*)r->pvalue)->data_flags);
+		status = ext_buffer_pull_uint32(pext, &rd->data_flags);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		break;
+	}
 	case ATTRIBUTE_ID_DELEGATE:
 	case ATTRIBUTE_ID_ATTACHDATA:
 	case ATTRIBUTE_ID_ATTACHMETAFILE:
-	case ATTRIBUTE_ID_MESSAGESTATUS:
+	case ATTRIBUTE_ID_MESSAGESTATUS: {
 		r->pvalue = pext->alloc(sizeof(BINARY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		((BINARY*)r->pvalue)->cb = len;
-		((BINARY*)r->pvalue)->pb = pext->alloc(len);
-		if (NULL == ((BINARY*)r->pvalue)->pb) {
+		BINARY *bv = r->pvalue;
+		bv->cb = len;
+		bv->pv = pext->alloc(len);
+		if (bv->pv == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_bytes(pext,
-			((BINARY*)r->pvalue)->pb, len);
+		status = ext_buffer_pull_bytes(pext, bv->pv, len);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		break;
+	}
 	case ATTRIBUTE_ID_TNEFVERSION:
-	case ATTRIBUTE_ID_OEMCODEPAGE:
+	case ATTRIBUTE_ID_OEMCODEPAGE: {
 		r->pvalue = pext->alloc(sizeof(LONG_ARRAY));
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
 		}
-		((LONG_ARRAY*)r->pvalue)->count = len / sizeof(uint32_t);
-		((LONG_ARRAY*)r->pvalue)->pl = pext->alloc(len);
-		if (NULL == ((LONG_ARRAY*)r->pvalue)->pl) {
+		LONG_ARRAY *la = r->pvalue;
+		la->count = len / sizeof(uint32_t);
+		la->pl = pext->alloc(len);
+		if (la->pl == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		for (i=0; i<((LONG_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_pull_uint32(pext,
-				((LONG_ARRAY*)r->pvalue)->pl + i);
+		for (i = 0; i < la->count; ++i) {
+			status = ext_buffer_pull_uint32(pext, la->pl + i);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		break;
+	}
 	}
 	if (pext->offset > offset + len) {
 		debug_info("[tnef]: attribute data length error");
@@ -1689,15 +1635,14 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			}
 			break;
-		case ATTRIBUTE_ID_MESSAGESTATUS:
-			if (TRUE == b_embedded && 0 != ((BINARY*)attribute.pvalue)->cb) {
+		case ATTRIBUTE_ID_MESSAGESTATUS: {
+			BINARY *bv = attribute.pvalue;
+			if (b_embedded && bv->cb != 0) {
 				tmp_int32 = 0;
-				if (FMS_LOCAL & (*((BINARY*)attribute.pvalue)->pb)) {
+				if (*bv->pb & FMS_LOCAL)
 					tmp_int32 |= MESSAGE_FLAG_UNSENT;
-				}
-				if (FMS_SUBMITTED & (*((BINARY*)attribute.pvalue)->pb)) {
+				if (*bv->pb & FMS_SUBMITTED)
 					tmp_int32 |= MESSAGE_FLAG_SUBMITTED;
-				}
 				if (0 != tmp_int32) {
 					propval.proptag = PROP_TAG_MESSAGEFLAGS;
 					propval.pvalue = &tmp_int32;
@@ -1710,6 +1655,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				}
 			}
 			break;
+		}
 		case ATTRIBUTE_ID_MESSAGECLASS:
 			message_class = tnef_to_msgclass(attribute.pvalue);
 			propval.proptag = PROP_TAG_MESSAGECLASS_STRING8;
@@ -1963,11 +1909,10 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					}
 				}
 				if (ptnef_propval->proptype == PT_OBJECT) {
-					if (0 == memcmp(IID_IMessage, ((BINARY*)
-						ptnef_propval->pvalue)->pb, 16)) {
+					BINARY *bv = ptnef_propval->pvalue;
+					if (memcmp(IID_IMessage, bv->pb, 16) == 0) {
 						pembedded = tnef_deserialize_internal(
-							((BINARY*)ptnef_propval->pvalue)->pb + 16,
-							((BINARY*)ptnef_propval->pvalue)->cb - 16,
+							bv->pb + 16, bv->cb - 16,
 							TRUE, alloc, get_propids, username_to_entryid);
 						if (NULL == pembedded) {
 							str_hash_free(phash);
@@ -1976,10 +1921,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 						}
 						attachment_content_set_embedded_internal(pattachment, pembedded);
 					} else {
-						((BINARY*)ptnef_propval->pvalue)->cb -= 16;
-						memmove(((BINARY*)ptnef_propval->pvalue)->pb,
-							((BINARY*)ptnef_propval->pvalue)->pb + 16,
-						((BINARY*)ptnef_propval->pvalue)->cb);
+						bv->cb -= 16;
+						memmove(bv->pb, bv->pb + 16, bv->cb);
 					}
 					continue;
 				}
@@ -2345,14 +2288,14 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		return ext_buffer_push_guid(pext, r->pvalue);
 	case PT_SVREID:
 		return ext_buffer_push_svreid(pext, r->pvalue);
-	case PT_OBJECT:
+	case PT_OBJECT: {
 		status = ext_buffer_push_uint32(pext, 1);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		if (0xFFFFFFFF != ((BINARY*)r->pvalue)->cb) {
-			status = ext_buffer_push_uint32(pext,
-					((BINARY*)r->pvalue)->cb + 16);
+		BINARY *bv = r->pvalue;
+		if (bv->cb != 0xFFFFFFFF) {
+			status = ext_buffer_push_uint32(pext, bv->cb + 16);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -2360,14 +2303,12 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
-			status = ext_buffer_push_bytes(pext,
-					((BINARY*)r->pvalue)->pb,
-					((BINARY*)r->pvalue)->cb);
+			status = ext_buffer_push_bytes(pext, bv->pb, bv->cb);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 			return ext_buffer_push_bytes(pext, g_pad_bytes,
-				tnef_align(((BINARY*)r->pvalue)->cb + 16));
+			       tnef_align(bv->cb + 16));
 		} else {
 			offset = pext->offset;
 			status = ext_buffer_push_advance(pext, sizeof(uint32_t));
@@ -2379,10 +2320,8 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 				return status;
 			}
 			if (FALSE == tnef_serialize_internal(pext, TRUE,
-				(MESSAGE_CONTENT*)((BINARY*)r->pvalue)->pb,
-				alloc, get_propname)) {
+			    static_cast(MESSAGE_CONTENT *, bv->pv), alloc, get_propname))
 				return EXT_ERR_FORMAT;
-			}
 			offset1 = pext->offset;
 			tmp_int = offset1 - (offset + sizeof(uint32_t));
 			pext->offset = offset;
@@ -2394,33 +2333,31 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			return ext_buffer_push_bytes(pext,
 				g_pad_bytes, tnef_align(tmp_int));
 		}
-	case PT_BINARY:
+	}
+	case PT_BINARY: {
 		status = ext_buffer_push_uint32(pext, 1);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_uint32(pext,
-			((BINARY*)r->pvalue)->cb);
+		BINARY *bv = r->pvalue;
+		status = ext_buffer_push_uint32(pext, bv->cb);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_bytes(pext,
-					((BINARY*)r->pvalue)->pb,
-					((BINARY*)r->pvalue)->cb);
+		status = ext_buffer_push_bytes(pext, bv->pb, bv->cb);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		return ext_buffer_push_bytes(pext, g_pad_bytes,
-			tnef_align(((BINARY*)r->pvalue)->cb));
-	case PT_MV_SHORT:
-		status = ext_buffer_push_uint32(pext,
-			((SHORT_ARRAY*)r->pvalue)->count);
+		return ext_buffer_push_bytes(pext, g_pad_bytes, tnef_align(bv->cb));
+	}
+	case PT_MV_SHORT: {
+		SHORT_ARRAY *sa = r->pvalue;
+		status = ext_buffer_push_uint32(pext, sa->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((SHORT_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_push_uint16(pext, 
-				((SHORT_ARRAY*)r->pvalue)->ps[i]);
+		for (i = 0; i < sa->count; ++i) {
+			status = ext_buffer_push_uint16(pext, sa->ps[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -2430,48 +2367,48 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_LONG:
-		status = ext_buffer_push_uint32(pext,
-			((LONG_ARRAY*)r->pvalue)->count);
+	}
+	case PT_MV_LONG: {
+		LONG_ARRAY *la = r->pvalue;
+		status = ext_buffer_push_uint32(pext, la->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((LONG_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_push_uint32(pext, 
-				((LONG_ARRAY*)r->pvalue)->pl[i]);
+		for (i = 0; i < la->count; ++i) {
+			status = ext_buffer_push_uint32(pext, la->pl[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_I8:
-		status = ext_buffer_push_uint32(pext,
-			((LONGLONG_ARRAY*)r->pvalue)->count);
+	}
+	case PT_MV_I8: {
+		LONGLONG_ARRAY *la = r->pvalue;
+		status = ext_buffer_push_uint32(pext, la->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((LONGLONG_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_push_uint64(pext, 
-				((LONGLONG_ARRAY*)r->pvalue)->pll[i]);
+		for (i = 0; i < la->count; ++i) {
+			status = ext_buffer_push_uint64(pext, la->pll[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_STRING8:
-		status = ext_buffer_push_uint32(pext,
-			((STRING_ARRAY*)r->pvalue)->count);
+	}
+	case PT_MV_STRING8: {
+		STRING_ARRAY *sa = r->pvalue;
+		status = ext_buffer_push_uint32(pext, sa->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((STRING_ARRAY*)r->pvalue)->count; i++) {
+		for (i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
 			status = ext_buffer_push_advance(pext, sizeof(uint32_t));
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
-			status = ext_buffer_push_string(pext,
-				((STRING_ARRAY*)r->pvalue)->ppstr[i]);
+			status = ext_buffer_push_string(pext, sa->ppstr[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -2490,20 +2427,20 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_UNICODE:
-		status = ext_buffer_push_uint32(pext,
-			((STRING_ARRAY*)r->pvalue)->count);
+	}
+	case PT_MV_UNICODE: {
+		STRING_ARRAY *sa = r->pvalue;
+		status = ext_buffer_push_uint32(pext, sa->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((STRING_ARRAY*)r->pvalue)->count; i++) {
+		for (i = 0; i < sa->count; ++i) {
 			offset = pext->offset;
 			status = ext_buffer_push_advance(pext, sizeof(uint32_t));
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
-			status = ext_buffer_push_wstring(pext,
-				((STRING_ARRAY*)r->pvalue)->ppstr[i]);
+			status = ext_buffer_push_wstring(pext, sa->ppstr[i]);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
@@ -2522,45 +2459,44 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_CLSID:
-		status = ext_buffer_push_uint32(pext,
-			((GUID_ARRAY*)r->pvalue)->count);
+	}
+	case PT_MV_CLSID: {
+		GUID_ARRAY *ga = r->pvalue;
+		status = ext_buffer_push_uint32(pext, ga->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((GUID_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_push_guid(pext,
-				((GUID_ARRAY*)r->pvalue)->pguid + i);
+		for (i = 0; i < ga->count; ++i) {
+			status = ext_buffer_push_guid(pext, ga->pguid + i);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		return EXT_ERR_SUCCESS;
-	case PT_MV_BINARY:
-		status = ext_buffer_push_uint32(pext,
-			((BINARY_ARRAY*)r->pvalue)->count);
+	}
+	case PT_MV_BINARY: {
+		BINARY_ARRAY *ba = r->pvalue;
+		status = ext_buffer_push_uint32(pext, ba->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((BINARY_ARRAY*)r->pvalue)->count; i++) {
-			status = ext_buffer_push_uint32(pext,
-				((BINARY_ARRAY*)r->pvalue)->pbin[i].cb);
+		for (i = 0; i < ba->count; ++i) {
+			status = ext_buffer_push_uint32(pext, ba->pbin[i].cb);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
-			status = ext_buffer_push_bytes(pext,
-				((BINARY_ARRAY*)r->pvalue)->pbin[i].pb,
-				((BINARY_ARRAY*)r->pvalue)->pbin[i].cb);
+			status = ext_buffer_push_bytes(pext, ba->pbin[i].pb, ba->pbin[i].cb);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 			status = ext_buffer_push_bytes(pext, g_pad_bytes,
-				tnef_align(((BINARY_ARRAY*)r->pvalue)->pbin[i].cb));
+			         tnef_align(ba->pbin[i].cb));
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
 		}
 		return EXT_ERR_SUCCESS;
+	}
 	}
 	return EXT_ERR_BAD_SWITCH;
 }
@@ -2720,21 +2656,19 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 			}
 		}
 		break;
-	case ATTRIBUTE_ID_RECIPTABLE:
-		status = ext_buffer_push_uint32(pext,
-			((TNEF_PROPSET*)r->pvalue)->count);
+	case ATTRIBUTE_ID_RECIPTABLE: {
+		TNEF_PROPSET *tf = r->pvalue;
+		status = ext_buffer_push_uint32(pext, tf->count);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		for (i=0; i<((TNEF_PROPSET*)r->pvalue)->count; i++) {
-			status = ext_buffer_push_uint32(pext,
-				((TNEF_PROPSET*)r->pvalue)->pplist[i]->count);
+		for (i = 0; i < tf->count; ++i) {
+			status = ext_buffer_push_uint32(pext, tf->pplist[i]->count);
 			if (EXT_ERR_SUCCESS != status) {
 				return status;
 			}
-			for (j=0; j<((TNEF_PROPSET*)r->pvalue)->pplist[i]->count; j++) {
-				status = tnef_push_propval(pext, ((TNEF_PROPSET*)
-							r->pvalue)->pplist[i]->ppropval + j,
+			for (j = 0; j < tf->pplist[i]->count; ++j) {
+				status = tnef_push_propval(pext, tf->pplist[i]->ppropval + j,
 							alloc, get_propname);
 				if (EXT_ERR_SUCCESS != status) {
 					return status;
@@ -2742,56 +2676,54 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 			}
 		}
 		break;
+	}
 	case ATTRIBUTE_ID_OWNER:
-	case ATTRIBUTE_ID_SENTFOR:
-		tmp_len = strlen(((ATTR_ADDR*)r->pvalue)->displayname) + 1;
+	case ATTRIBUTE_ID_SENTFOR: {
+		ATTR_ADDR *aa = r->pvalue;
+		tmp_len = strlen(aa->displayname) + 1;
 		status = ext_buffer_push_uint16(pext, tmp_len);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_string(pext,
-			((ATTR_ADDR*)r->pvalue)->displayname);
+		status = ext_buffer_push_string(pext, aa->displayname);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		tmp_len = strlen(((ATTR_ADDR*)r->pvalue)->address) + 1;
+		tmp_len = strlen(aa->address) + 1;
 		status = ext_buffer_push_uint16(pext, tmp_len);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_string(pext,
-			((ATTR_ADDR*)r->pvalue)->address);
+		status = ext_buffer_push_string(pext, aa->address);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		break;
-	case ATTRIBUTE_ID_ATTACHRENDDATA:
-		status = ext_buffer_push_uint16(pext,
-			((REND_DATA*)r->pvalue)->attach_type);
+	}
+	case ATTRIBUTE_ID_ATTACHRENDDATA: {
+		REND_DATA *rd = r->pvalue;
+		status = ext_buffer_push_uint16(pext, rd->attach_type);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_uint32(pext,
-			((REND_DATA*)r->pvalue)->attach_position);
+		status = ext_buffer_push_uint32(pext, rd->attach_position);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_uint16(pext,
-			((REND_DATA*)r->pvalue)->render_width);
+		status = ext_buffer_push_uint16(pext, rd->render_width);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_uint16(pext,
-			((REND_DATA*)r->pvalue)->render_height);
+		status = ext_buffer_push_uint16(pext, rd->render_height);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
-		status = ext_buffer_push_uint32(pext,
-			((REND_DATA*)r->pvalue)->data_flags);
+		status = ext_buffer_push_uint32(pext, rd->data_flags);
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		break;
+	}
 	case ATTRIBUTE_ID_DELEGATE:
 	case ATTRIBUTE_ID_ATTACHDATA:
 	case ATTRIBUTE_ID_ATTACHMETAFILE:
