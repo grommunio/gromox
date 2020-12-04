@@ -5,6 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "dsn.h"
 #include "rtf.h"
@@ -1199,7 +1200,7 @@ static BOOL oxcmail_parse_content_class(
 			mime_get_content_type(pmime))) {
 			return TRUE;
 		}
-		pmime = mime_get_slibling(pmime);
+		pmime = mime_get_sibling(pmime);
 		if (NULL == pmime) {
 			return TRUE;
 		}
@@ -2494,7 +2495,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	} else {
 		pdmime = psub;
 	}
-	psub = mime_get_slibling(psub);
+	psub = mime_get_sibling(psub);
 	if (NULL == psub) {
 		return FALSE;
 	}
@@ -2898,11 +2899,10 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		if (NULL == pmime) {
 			return;
 		}
-		if (NULL == mime_get_slibling(pmime)) {
+		if (mime_get_sibling(pmime) == nullptr)
 			pmime1 = NULL;
-		} else {
-			pmime = mime_get_slibling(pmime);
-		}
+		else
+			pmime = mime_get_sibling(pmime);
 	}
 	pattachment = attachment_content_init();
 	if (NULL == pattachment) {
@@ -4066,7 +4066,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 			mime_get_content_type(pmime))) {
 			break;
 		}
-	} while ((pmime = mime_get_slibling(pmime)) != NULL);
+	} while ((pmime = mime_get_sibling(pmime)) != nullptr);
 	if (NULL == pmime) {
 		return NULL;
 	}
@@ -4261,7 +4261,7 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 				mime_get_content_type(pmime))) {
 				break;
 			}
-		} while ((pmime = mime_get_slibling(pmime)) != NULL);
+		} while ((pmime = mime_get_sibling(pmime)) != nullptr);
 	}
 	if (NULL == pmime) {
 		return NULL;
@@ -4727,7 +4727,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		mime_get_content_type(phead))) {
 		if (2 == mime_get_children_num(phead) &&
 			(pmime = mime_get_child(phead)) &&
-			(pmime1 = mime_get_slibling(pmime)) &&
+		    (pmime1 = mime_get_sibling(pmime)) != nullptr &&
 			0 == strcasecmp("text/plain",
 			mime_get_content_type(pmime)) &&
 			0 == strcasecmp("application/ms-tnef",
@@ -4885,11 +4885,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 						mime_enum.pcalendar = pmime1;
 					}
 				}
-				pmime1 = mime_get_slibling(pmime1);
+				pmime1 = mime_get_sibling(pmime1);
 			}
 		}
-	} while (TRUE == b_alternative && NULL !=
-		(pmime = mime_get_slibling(pmime)));
+	} while (b_alternative && (pmime = mime_get_sibling(pmime)) != nullptr);
 	
 	if (NULL != mime_enum.pplain) {
 		if (FALSE == oxcmail_parse_message_body(default_charset,

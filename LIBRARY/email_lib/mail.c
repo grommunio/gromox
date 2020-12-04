@@ -220,7 +220,7 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
             	simple_tree_add_child(&pmail->tree, &pmime_parent->node,
 					&pmime->node,SIMPLE_TREE_ADD_LAST);
             } else {
-                simple_tree_insert_slibling(&pmail->tree, &pmime_last->node,
+				simple_tree_insert_sibling(&pmail->tree, &pmime_last->node,
 					&pmime->node, SIMPLE_TREE_INSERT_AFTER);
             }
 			pmime_last = pmime;
@@ -270,7 +270,7 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			&pmime->node,SIMPLE_TREE_ADD_LAST);
 		pmime_last = pmime;
     } else {
-        simple_tree_insert_slibling(&pmail->tree, &pmime_last->node,
+		simple_tree_insert_sibling(&pmail->tree, &pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 	}
 	if (MULTIPLE_MIME == pmime->mime_type) {
@@ -1009,7 +1009,7 @@ MIME* mail_get_mime_vertical(MAIL *pmail, MIME *pmime_base,
 }
 
 /*
- *  add a slibling mime after pmime_base
+ *  add a sibling mime after pmime_base
  *  @param
  *      pmail [in]      indicate the mail object
  *      pmime_base [in] base mime to be compared with
@@ -1018,13 +1018,13 @@ MIME* mail_get_mime_vertical(MAIL *pmail, MIME *pmime_base,
  *  @return
  *      new created mime
  */
-MIME* mail_insert_slibling(MAIL *pmail, MIME *pmime_base, int opt)
+MIME *mail_insert_sibling(MAIL *pmail, MIME *pmime_base, int opt)
 {
 	MIME *pmime;
 
 #ifdef _DEBUG_UMTA
     if (NULL == pmail || NULL == pmime_base) {
-        debug_info("[mail]: NULL pointer in mail_insert_slibling");
+		debug_info("[mail]: NULL pointer in mail_insert_sibling");
         return NULL;
     }
 #endif
@@ -1033,7 +1033,7 @@ MIME* mail_insert_slibling(MAIL *pmail, MIME *pmime_base, int opt)
 		return NULL;
 	}
 	mime_clear(pmime);
-	if (FALSE == simple_tree_insert_slibling(&pmail->tree,
+	if (!simple_tree_insert_sibling(&pmail->tree,
 		&pmime_base->node, &pmime->node, opt)) {
 		mime_pool_put(pmime);
 		return NULL;
@@ -1178,7 +1178,7 @@ BOOL mail_move_mime_to_child(MAIL *pmail_dst, MIME *pmime_dst,
 
 /*
  *  move mime and its descendant to a none-child multipl mime as
- *  its slibling
+ *  its sibling
  *  @param
  *      pmail_dst [in]          indicate the destination mail object
  *      pmime_dst [in]      	destination mime where we begin from
@@ -1190,17 +1190,17 @@ BOOL mail_move_mime_to_child(MAIL *pmail_dst, MIME *pmime_dst,
  *      TRUE                	OK
  *      FALSE               	fail
  */
-BOOL mail_move_mime_to_slibling(MAIL *pmail_dst, MIME *pmime_dst,
+BOOL mail_move_mime_to_sibling(MAIL *pmail_dst, MIME *pmime_dst,
 	MAIL *pmail_src, MIME *pmime_src, int opt)
 {
 #ifdef _DEBUG_UMTA
     if (NULL == pmail_dst || NULL == pmime_dst ||
 		NULL == pmail_src || NULL == pmime_src) {
-        debug_info("[mail]: NULL pointer in mail_move_mime_to_slibling");
+		debug_info("[mail]: NULL pointer in mail_move_mime_to_sibling");
         return FALSE;
     }
 #endif
-	return simple_tree_move_node_to_slibling(&pmail_dst->tree,
+	return simple_tree_move_node_to_sibling(&pmail_dst->tree,
         &pmime_dst->node, &pmail_src->tree, &pmime_src->node, opt);
 }
 
@@ -1237,7 +1237,7 @@ BOOL mail_move_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
 
 /*
  *  move mime's descendant to a none-child multipl mime as
- *  its slibling
+ *  its sibling
  *  @param
  *      pmail_dst [in]          indicate the destination mail object
  *      pmime_dst [in]      	destination mime where we begin from
@@ -1249,17 +1249,17 @@ BOOL mail_move_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
  *      TRUE                	OK
  *      FALSE               	fail
  */
-BOOL mail_move_children_to_slibling(MAIL *pmail_dst, MIME *pmime_dst,
+BOOL mail_move_children_to_sibling(MAIL *pmail_dst, MIME *pmime_dst,
 	MAIL *pmail_src, MIME *pmime_src, int opt)
 {
 #ifdef _DEBUG_UMTA
     if (NULL == pmail_dst || NULL == pmime_dst ||
 		NULL == pmail_src || NULL == pmime_src) {
-        debug_info("[mail]: NULL pointer in mail_move_children_to_slibling");
+		debug_info("[mail]: NULL pointer in mail_move_children_to_sibling");
         return FALSE;
     }
 #endif
-    return simple_tree_move_children_to_slibling(&pmail_dst->tree,
+	return simple_tree_move_children_to_sibling(&pmail_dst->tree,
         &pmime_dst->node, &pmail_src->tree, &pmime_src->node, opt);
 }
 
@@ -1313,7 +1313,7 @@ static SIMPLE_TREE_NODE* mail_enum_copy(SIMPLE_TREE_NODE *pnode, void *param)
 }
 
 /*
- *  copy mime to a none-child multipl mime as its slibling
+ *  copy mime to a none-child multipl mime as its sibling
  *  @param
  *      pmail_dst [in]      indicate the destination mail object
  *      pmime_dst [in]      destination mime where we begin from
@@ -1325,16 +1325,16 @@ static SIMPLE_TREE_NODE* mail_enum_copy(SIMPLE_TREE_NODE *pnode, void *param)
  *      TRUE                OK
  *      FALSE               fail
  */
-BOOL mail_copy_mime_to_slibling(MAIL *pmail_dst, MIME *pmime_dst,
+BOOL mail_copy_mime_to_sibling(MAIL *pmail_dst, MIME *pmime_dst,
 	MIME *pmime_src, int opt)
 {
 #ifdef _DEBUG_UMTA
     if (NULL == pmail_dst || NULL == pmime_dst || NULL == pmime_src) {
-        debug_info("[mail]: NULL pointer in mail_copy_mime_to_slibling");
+		debug_info("[mail]: NULL pointer in mail_copy_mime_to_sibling");
         return FALSE;
     }
 #endif
-    return simple_tree_copy_node_to_slibling(&pmail_dst->tree,
+	return simple_tree_copy_node_to_sibling(&pmail_dst->tree,
 		&pmime_dst->node, &pmime_src->node, opt, mail_enum_copy,
 		pmail_dst->pmime_pool);
 }
@@ -1370,7 +1370,7 @@ BOOL mail_copy_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
 }
 
 /*
- *  copy mime's descendant to a none-child multipl mime as its slibling
+ *  copy mime's descendant to a none-child multipl mime as its sibling
  *  @param
  *      pmail_dst [in]      indicate the destination mail object
  *      pmime_dst [in]      destination mime where we begin from
@@ -1382,7 +1382,7 @@ BOOL mail_copy_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
  *      TRUE                OK
  *      FALSE               fail
  */
-BOOL mail_copy_children_to_slibling(MAIL *pmail_dst, MIME *pmime_dst,
+BOOL mail_copy_children_to_sibling(MAIL *pmail_dst, MIME *pmime_dst,
 	MIME *pmime_src, int opt)
 {
 #ifdef _DEBUG_UMTA
@@ -1391,7 +1391,7 @@ BOOL mail_copy_children_to_slibling(MAIL *pmail_dst, MIME *pmime_dst,
         return FALSE;
     }
 #endif
-	return simple_tree_copy_children_to_slibling(&pmail_dst->tree,
+	return simple_tree_copy_children_to_sibling(&pmail_dst->tree,
         &pmime_dst->node, &pmime_src->node, opt, mail_enum_copy,
 		pmail_dst->pmime_pool);
 }

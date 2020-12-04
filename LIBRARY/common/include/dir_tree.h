@@ -39,9 +39,7 @@ BOOL dir_tree_pwd(DIR_TREE *ptree, DIR_NODE *pdir, char *path);
 DIR_NODE* dir_tree_get_child(DIR_NODE* pdir);
 
 DIR_NODE* dir_tree_get_parent(DIR_NODE* pdir);
-
-DIR_NODE* dir_tree_get_slibling(DIR_NODE* pdir);
-
+extern DIR_NODE *dir_tree_get_sibling(DIR_NODE *);
 void dir_tree_enum_from_dir(DIR_NODE *pdir,
 	DIR_TREE_ENUM enum_func, void *param);
 

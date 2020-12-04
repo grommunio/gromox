@@ -100,7 +100,7 @@ void mime_free(MIME *pmime)
         while (NULL != pnode) {
 			pmime_child = (MIME*)pnode->pdata;
             mime_free(pmime_child);
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
         }
 	}
 	mem_file_free(&pmime->f_type_params);
@@ -1226,7 +1226,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 			if (FALSE == mime_serialize(pmime_child, pstream)) {
 				return FALSE;
 			}
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
 			stream_write(pstream, "--", 2);
@@ -1297,7 +1297,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 			lib_buffer_free(pallocator);
 			return FALSE;
 		}
-		pnode = simple_tree_node_get_slibling(pnode);
+		pnode = simple_tree_node_get_sibling(pnode);
 	}
 	if (FALSE == has_submime) {
 		stream_write(&tmp_stream, "--", 2);
@@ -1783,7 +1783,7 @@ BOOL mime_to_file(MIME *pmime, int fd)
 			if (FALSE == mime_to_file(pmime_child, fd)) {
 				return FALSE;
 			}
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
 			memcpy(tmp_buff, "--", 2);
@@ -1989,7 +1989,7 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 			if (FALSE == mime_to_ssl(pmime_child, ssl)) {
 				return FALSE;
 			}
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
 			memcpy(tmp_buff, "--", 2);
@@ -2116,7 +2116,7 @@ BOOL mime_check_dot(MIME *pmime)
 			if (TRUE == mime_check_dot(pmime_child)) {
 				return TRUE;
 			}
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		
 		if (NULL != pmime->last_boundary) {
@@ -2233,7 +2233,7 @@ long mime_get_length(MIME *pmime)
 				return -1;
 			}
 			mime_len += tmp_len;
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
 			mime_len += pmime->boundary_len + 6;
@@ -2592,7 +2592,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 				return -1;
 			}
 			buff_len += tmp_len;
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 			count ++;
 		}
 		if (FALSE == has_submime) {
@@ -2760,7 +2760,7 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 				return -1;
 			}
 			buff_len += tmp_len;
-            pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 			count ++;
 		}
 		if (FALSE == has_submime) {
@@ -3033,17 +3033,17 @@ MIME* mime_get_parent(MIME *pmime)
 	return (MIME*)pnode->pdata;
 }
 
-MIME* mime_get_slibling(MIME *pmime)
+MIME *mime_get_sibling(MIME *pmime)
 {
 	SIMPLE_TREE_NODE *pnode;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_slibling");
+		debug_info("[mime]: NULL pointer found in mime_get_sibling");
 		return NULL;
 	}
 #endif
-	pnode = simple_tree_node_get_slibling(&pmime->node);
+	pnode = simple_tree_node_get_sibling(&pmime->node);
 	if (NULL == pnode) {
 		return NULL;
 	}

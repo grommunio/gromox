@@ -503,7 +503,7 @@ uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 			    store_object_get_account_id(static_cast<STORE_OBJECT *>(pobjnode->pobject)) == account_id) {
 				return pobjnode->handle;	
 			}
-		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
 	pinfo = zarafa_server_get_info();
 	if (TRUE == b_private) {

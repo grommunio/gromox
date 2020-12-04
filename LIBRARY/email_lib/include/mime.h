@@ -120,9 +120,7 @@ void mime_copy(MIME *pmime_src, MIME *pmime_dst);
 MIME* mime_get_child(MIME *pmime);
 
 MIME* mime_get_parent(MIME *pmime);
-
-MIME* mime_get_slibling(MIME *pmime);
-
+extern MIME *mime_get_sibling(MIME *);
 size_t mime_get_children_num(MIME *pmime);
 
 #ifdef __cplusplus

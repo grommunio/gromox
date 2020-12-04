@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <gromox/defs.h>
 #include "util.h"
 #include "simple_tree.h"
 #include <string.h>
@@ -46,7 +47,7 @@ BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode)
 	if (NULL != ptree->root) {
 		return FALSE;
 	}
-	pnode->pnode_slibling = NULL;
+	pnode->pnode_sibling = nullptr;
 	pnode->pnode_parent	  = NULL;
 	pnode->pnode_child	  = NULL;
 	pnode->node_children  = 0;
@@ -114,9 +115,9 @@ SIMPLE_TREE_NODE* simple_tree_get_node_horizontal(SIMPLE_TREE *ptree,
 	if (pnode->pnode_parent->node_children < y + 1) {
 		return NULL;
 	}
-	/* find the slibling node */
+	/* find the sibling node */
 	for (i=0; i<y; i++) {
-		pnode = pnode->pnode_slibling;
+		pnode = pnode->pnode_sibling;
 	}
 	return pnode;
 }
@@ -165,9 +166,9 @@ SIMPLE_TREE_NODE* simple_tree_get_node_vertical(SIMPLE_TREE *ptree,
 	if (pnode->pnode_parent->node_children < y + 1) {
 		return NULL;
 	}
-	/* find the slibling node */
+	/* find the sibling node */
 	for (i=0; i<y; i++) {
-		pnode = pnode->pnode_slibling;
+		pnode = pnode->pnode_sibling;
 	}
 	/* first reach the depth */
 	for (i=0; i<x; i++) {
@@ -180,7 +181,7 @@ SIMPLE_TREE_NODE* simple_tree_get_node_vertical(SIMPLE_TREE *ptree,
 }
 
 /*
- *	add a slibling node after pnode_base
+ *	add a sibling node after pnode_base
  *	@param
  *		ptree [in]		indicate the tree object
  *		pnode_base [in]	base node to be comparee with
@@ -191,29 +192,28 @@ SIMPLE_TREE_NODE* simple_tree_get_node_vertical(SIMPLE_TREE *ptree,
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL simple_tree_insert_slibling(SIMPLE_TREE *ptree,
+BOOL simple_tree_insert_sibling(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt)
 {
 	SIMPLE_TREE_NODE *pnode_temp;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree || NULL == pnode || NULL == pnode_base) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_add_slibling");
+		debug_info("[simple_tree]: NULL pointer in simple_tree_add_sibling");
 		return FALSE;
 	}
 #endif
-	/* can not insert a slibling node into root node! */
+	/* can not insert a sibling node into root node! */
 	if (pnode_base == ptree->root) {
 		return FALSE;
 	}
 	if (SIMPLE_TREE_INSERT_AFTER == opt) {
-		pnode->pnode_slibling = pnode_base->pnode_slibling;
+		pnode->pnode_sibling = pnode_base->pnode_sibling;
 		pnode->pnode_parent	  = pnode_base->pnode_parent;
 		pnode->pnode_child	  = NULL;
 		pnode->node_depth	  = pnode_base->node_depth;
 		pnode->node_children  = 0;
-		pnode_base->pnode_slibling = pnode;
+		pnode_base->pnode_sibling = pnode;
 		pnode_base->pnode_parent->node_children ++;
 		ptree->nodes_num ++;
 		return TRUE;
@@ -225,15 +225,14 @@ BOOL simple_tree_insert_slibling(SIMPLE_TREE *ptree,
 		pnode->node_depth	  = pnode_base->node_depth;
 		pnode->node_children  = 0;
 		pnode->pnode_parent	  = pnode_base->pnode_parent;
-		pnode->pnode_slibling = pnode_base;
+		pnode->pnode_sibling = pnode_base;
 		if (pnode_temp == pnode_base) {
 			pnode_base->pnode_parent->pnode_child = pnode;
 			return TRUE;
 		}
-		while (pnode_temp->pnode_slibling != pnode_base) {
-			pnode_temp = pnode_temp->pnode_slibling;
-		}
-		pnode_temp->pnode_slibling = pnode;
+		while (pnode_temp->pnode_sibling != pnode_base)
+			pnode_temp = pnode_temp->pnode_sibling;
+		pnode_temp->pnode_sibling = pnode;
 		return TRUE;
 	}
 	return FALSE;
@@ -266,7 +265,7 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	}
 #endif
 	if (0 == pnode_base->node_children) {
-		pnode->pnode_slibling	  = NULL;
+		pnode->pnode_sibling = nullptr;
 		pnode->pnode_parent		  = pnode_base;
 		pnode->pnode_child		  = NULL;
 		pnode->node_depth		  = pnode_base->node_depth + 1;
@@ -281,7 +280,7 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 		pnode->node_depth		= pnode_base->node_depth + 1;
 		pnode->node_children	= 0;
 		pnode->pnode_parent		= pnode_base;
-		pnode->pnode_slibling	= pnode_base->pnode_child;
+		pnode->pnode_sibling = pnode_base->pnode_child;
 		pnode_base->pnode_child = pnode;
 		pnode_base->node_children ++;
 		ptree->nodes_num ++;
@@ -289,14 +288,14 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	} else if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_base->pnode_child;
 		pnode_last = pnode_temp;
-		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
+		while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr)
 			pnode_last = pnode_temp;
 		pnode->pnode_child		   = NULL;
 		pnode->node_depth		   = pnode_base->node_depth + 1;
 		pnode->node_children	   = 0;
 		pnode->pnode_parent		   = pnode_base;
-		pnode->pnode_slibling	   = NULL;
-		pnode_last->pnode_slibling = pnode;
+		pnode->pnode_sibling = nullptr;
+		pnode_last->pnode_sibling = pnode;
 		pnode_base->node_children ++;
 		ptree->nodes_num ++;
 		return TRUE;
@@ -402,22 +401,21 @@ SIMPLE_TREE_NODE* simple_tree_node_get_parent(SIMPLE_TREE_NODE *pnode)
 }
 
 /*
- *	get the slibling node of pnode
+ *	get the sibling node of pnode
  *	@param
  *		pnode [in]		indicate the node object
  *	@return
- *		the slibling node of pnode, NULL if there's no slibling node
+ *		the sibling node of pnode, NULL if there's no sibling node
  */
-SIMPLE_TREE_NODE* simple_tree_node_get_slibling(SIMPLE_TREE_NODE *pnode)
+SIMPLE_TREE_NODE *simple_tree_node_get_sibling(SIMPLE_TREE_NODE *pnode)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_node_get_slibling");
+		debug_info("[simple_tree]: NULL pointer in simple_tree_node_get_sibling");
 		return NULL;
 	}
 #endif
-	return pnode->pnode_slibling;
+	return pnode->pnode_sibling;
 }
 
 /*
@@ -487,11 +485,11 @@ void simple_tree_destroy_node(SIMPLE_TREE *ptree,
 		if (pnode_parent->node_children == 1) {
 			pnode_parent->pnode_child = NULL;
 		} else {
-			pnode_parent->pnode_child = pnode->pnode_slibling;
+			pnode_parent->pnode_child = pnode->pnode_sibling;
 		}
 		pnode_parent->node_children --;
 		pnode->pnode_parent	  = NULL;
-		pnode->pnode_slibling = NULL;
+		pnode->pnode_sibling = nullptr;
 		pnode->pnode_child	  = NULL;
 		pnode->node_depth	  = 0;
 		pnode->node_children  = 0;
@@ -500,14 +498,13 @@ void simple_tree_destroy_node(SIMPLE_TREE *ptree,
 		return;
 	}
 	/* find the prevoious node */
-	while (pnode_temp->pnode_slibling != pnode) {
-		pnode_temp = pnode_temp->pnode_slibling;
-	}
+	while (pnode_temp->pnode_sibling != pnode)
+		pnode_temp = pnode_temp->pnode_sibling;
 	pnode_parent->node_children --;
-	pnode_temp->pnode_slibling = pnode->pnode_slibling;
+	pnode_temp->pnode_sibling = pnode->pnode_sibling;
 	pnode->pnode_child		   = NULL;
 	pnode->pnode_parent		   = NULL;
-	pnode->pnode_slibling	   = NULL;
+	pnode->pnode_sibling = nullptr;
 	pnode->node_depth		   = 0;
 	pnode->node_children	   = 0;
 	del_func(pnode);
@@ -543,9 +540,9 @@ static void simple_tree_destroy_group(SIMPLE_TREE *ptree,
 		}
 		pnode->pnode_child = NULL;
 		pnode_temp = pnode;
-		pnode = pnode->pnode_slibling;
+		pnode = pnode->pnode_sibling;
 		pnode_temp->pnode_parent   = NULL;
-		pnode_temp->pnode_slibling = NULL;
+		pnode_temp->pnode_sibling = nullptr;
 		pnode_temp->pnode_child	   = NULL;
 		pnode_temp->node_depth	   = 0;
 		pnode_temp->node_children  = 0;
@@ -596,7 +593,7 @@ static void simple_tree_node_enum(SIMPLE_TREE_NODE *pnode,
 		if (NULL != pnode->pnode_child) {
 			simple_tree_node_enum(pnode->pnode_child, enum_func, param);
 		}
-		pnode = pnode->pnode_slibling;
+		pnode = pnode->pnode_sibling;
 	} while (NULL != pnode);
 }
 
@@ -622,7 +619,7 @@ static void simple_tree_strip_group(SIMPLE_TREE *ptree,
 		}
 		pnode->node_depth = 0;
 		ptree->nodes_num --;
-		pnode = pnode->pnode_slibling;
+		pnode = pnode->pnode_sibling;
 	} while (NULL != pnode);
 }
 
@@ -648,7 +645,7 @@ static void simple_tree_cohere_group(SIMPLE_TREE *ptree,
 			simple_tree_cohere_group(ptree, pnode->pnode_child);
 		}
 		ptree->nodes_num ++;
-		pnode = pnode->pnode_slibling;
+		pnode = pnode->pnode_sibling;
 	} while (NULL != pnode);
 }
 
@@ -708,13 +705,12 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 			if (pnode_parent->node_children == 1) {
 				pnode_parent->pnode_child = NULL;
 			} else {
-				pnode_parent->pnode_child = pnode_src->pnode_slibling;
+				pnode_parent->pnode_child = pnode_src->pnode_sibling;
 			}
 		} else {
-			while (pnode_temp->pnode_slibling != pnode_src) {
-				pnode_temp = pnode_temp->pnode_slibling;
-			}
-			pnode_temp->pnode_slibling = pnode_src->pnode_slibling;
+			while (pnode_temp->pnode_sibling != pnode_src)
+				pnode_temp = pnode_temp->pnode_sibling;
+			pnode_temp->pnode_sibling = pnode_src->pnode_sibling;
 		}
 		pnode_parent->node_children --;
 	} else {
@@ -726,7 +722,7 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 	pnode_dst->node_children ++;
 	ptree_dst->nodes_num ++;
 	if (NULL == pnode_dst->pnode_child) {	
-		pnode_src->pnode_slibling = NULL;
+		pnode_src->pnode_sibling = nullptr;
 		pnode_dst->pnode_child	  = pnode_src;
 		/* add the relationship to the destination */
 		if (NULL != pnode_child) {
@@ -735,20 +731,20 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 		return TRUE;
 	}
 	if (SIMPLE_TREE_ADD_FIRST == opt) {
-		pnode_src->pnode_slibling = NULL;
+		pnode_src->pnode_sibling = nullptr;
 		pnode_temp = pnode_dst->pnode_child;
 		pnode_dst->pnode_child = pnode_src;
 		/* add the relationship to the destination */
 		if (NULL != pnode_child) {
 			simple_tree_cohere_group(ptree_dst, pnode_child);
 		}
-		pnode_src->pnode_slibling = pnode_temp;
+		pnode_src->pnode_sibling = pnode_temp;
 	} else if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
+		while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr)
 			pnode_last = pnode_temp;
-		pnode_src->pnode_slibling = NULL;
-		pnode_last->pnode_slibling = pnode_src;
+		pnode_src->pnode_sibling = nullptr;
+		pnode_last->pnode_sibling = pnode_src;
 		/* add the relationship to the destination */
 		if (NULL != pnode_child) {
 			simple_tree_cohere_group(ptree_dst, pnode_child);
@@ -759,7 +755,7 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 }
 
 /*
- *	move node and its descendant to a node as its slibling node
+ *	move node and its descendant to a node as its sibling node
  *	@param
  *		ptree_dst [in]		destination tree
  *		pnode_dst [in]		destination node where we begin from
@@ -771,7 +767,7 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL simple_tree_move_node_to_slibling(SIMPLE_TREE *ptree_dst,
+BOOL simple_tree_move_node_to_sibling(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE *ptree_src,
 	SIMPLE_TREE_NODE *pnode_src, int opt)
 {
@@ -782,8 +778,7 @@ BOOL simple_tree_move_node_to_slibling(SIMPLE_TREE *ptree_dst,
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree_dst || NULL == pnode_dst ||
 		NULL == ptree_src || NULL == pnode_src) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_move_node_to_slibling");
+		debug_info("[simple_tree]: NULL pointer in simple_tree_move_node_to_sibling");
 		return FALSE;
 	}
 #endif
@@ -819,13 +814,12 @@ BOOL simple_tree_move_node_to_slibling(SIMPLE_TREE *ptree_dst,
 			if (pnode_parent->node_children == 1) {
 				pnode_parent->pnode_child = NULL;
 			} else {
-				pnode_parent->pnode_child = pnode_src->pnode_slibling;
+				pnode_parent->pnode_child = pnode_src->pnode_sibling;
 			}
 		} else {
-			while (pnode_temp->pnode_slibling != pnode_src) {
-				pnode_temp = pnode_temp->pnode_slibling;
-			}
-			pnode_temp->pnode_slibling = pnode_src->pnode_slibling;
+			while (pnode_temp->pnode_sibling != pnode_src)
+				pnode_temp = pnode_temp->pnode_sibling;
+			pnode_temp->pnode_sibling = pnode_src->pnode_sibling;
 		}
 		pnode_parent->node_children --;
 	} else {
@@ -838,18 +832,17 @@ BOOL simple_tree_move_node_to_slibling(SIMPLE_TREE *ptree_dst,
 	pnode_src->pnode_parent	  = pnode_dst->pnode_parent;
 	pnode_src->node_depth	  = pnode_dst->node_depth;
 	if (SIMPLE_TREE_INSERT_AFTER == opt) {
-		pnode_src->pnode_slibling = pnode_dst->pnode_slibling;
-		pnode_dst->pnode_slibling = pnode_src;
+		pnode_src->pnode_sibling = pnode_dst->pnode_sibling;
+		pnode_dst->pnode_sibling = pnode_src;
 	} else if (SIMPLE_TREE_INSERT_BEFORE == opt) {
 		pnode_temp = pnode_dst->pnode_parent->pnode_child;
 		if (pnode_temp == pnode_dst) {
 			pnode_dst->pnode_parent->pnode_child = pnode_src;
-			pnode_src->pnode_slibling = pnode_dst;
+			pnode_src->pnode_sibling = pnode_dst;
 		} else {
-			while (pnode_temp->pnode_slibling != pnode_dst) {
-				pnode_temp = pnode_temp->pnode_slibling;
-			}
-			pnode_temp->pnode_slibling = pnode_dst;
+			while (pnode_temp->pnode_sibling != pnode_dst)
+				pnode_temp = pnode_temp->pnode_sibling;
+			pnode_temp->pnode_sibling = pnode_dst;
 		}
 	}
 	/* add the relationship to the destination */
@@ -919,7 +912,7 @@ BOOL simple_tree_move_children_to_child(SIMPLE_TREE *ptree_dst,
 	pnode_temp = pnode_child;
 	do {
 		pnode_temp->pnode_parent = pnode_dst;
-	} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
+	} while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr);
 	if (NULL == pnode_dst->pnode_child) {
 		pnode_dst->pnode_child = pnode_child;
 		simple_tree_cohere_group(ptree_dst, pnode_child);
@@ -927,23 +920,23 @@ BOOL simple_tree_move_children_to_child(SIMPLE_TREE *ptree_dst,
 	}
 	if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
+		while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr)
 			pnode_last = pnode_temp;
-		pnode_last->pnode_slibling = pnode_child;
+		pnode_last->pnode_sibling = pnode_child;
 		simple_tree_cohere_group(ptree_dst, pnode_child);
 	} else if (SIMPLE_TREE_ADD_FIRST == opt) {
 		pnode_temp = pnode_child;
-		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
+		while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr)
 			pnode_last = pnode_temp;
 		simple_tree_cohere_group(ptree_dst, pnode_child);
-		pnode_last->pnode_slibling = pnode_dst->pnode_child;
+		pnode_last->pnode_sibling = pnode_dst->pnode_child;
 		pnode_dst->pnode_child = pnode_child;
 	}
 	return TRUE;
 }
 
 /*
- *	move a node's descendant to a node as its slibling
+ *	move a node's descendant to a node as its sibling
  *	@param
  *		ptree_dst [in]		destination tree
  *		pnode_dst [in]		destination node where we begin from
@@ -955,7 +948,7 @@ BOOL simple_tree_move_children_to_child(SIMPLE_TREE *ptree_dst,
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL simple_tree_move_children_to_slibling(SIMPLE_TREE *ptree_dst,
+BOOL simple_tree_move_children_to_sibling(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE *ptree_src,
 	SIMPLE_TREE_NODE *pnode_src, int opt)
 {
@@ -967,8 +960,7 @@ BOOL simple_tree_move_children_to_slibling(SIMPLE_TREE *ptree_dst,
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree_dst || NULL == pnode_dst ||
 		NULL == ptree_src || NULL == pnode_src) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_move_children_to_slibling");
+		debug_info("[simple_tree]: NULL pointer in simple_tree_move_children_to_sibling");
 		return FALSE;
 	}
 #endif
@@ -1005,24 +997,23 @@ BOOL simple_tree_move_children_to_slibling(SIMPLE_TREE *ptree_dst,
 	do {
 		pnode_final = pnode_temp;
 		pnode_temp->pnode_parent = pnode_dst->pnode_parent;
-	} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
+	} while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr);
 	simple_tree_cohere_group(ptree_dst, pnode_child);
 	if (SIMPLE_TREE_INSERT_BEFORE == opt) {
 		pnode_temp = pnode_dst->pnode_parent->pnode_child;
 		pnode_first = pnode_temp;
 		if (pnode_temp == pnode_dst) {
-			pnode_final->pnode_slibling = pnode_first;
+			pnode_final->pnode_sibling = pnode_first;
 			pnode_dst->pnode_parent->pnode_child = pnode_child;
 		} else {
-			while (pnode_temp->pnode_slibling != pnode_dst) {
-				pnode_temp = pnode_temp->pnode_slibling;
-			}
-			pnode_temp->pnode_slibling = pnode_child;
-			pnode_final->pnode_slibling = pnode_dst;
+			while (pnode_temp->pnode_sibling != pnode_dst)
+				pnode_temp = pnode_temp->pnode_sibling;
+			pnode_temp->pnode_sibling = pnode_child;
+			pnode_final->pnode_sibling = pnode_dst;
 		}
 	} else if (SIMPLE_TREE_INSERT_AFTER == opt) {
-		pnode_final->pnode_slibling = pnode_dst->pnode_slibling;
-		pnode_dst->pnode_slibling = pnode_child;
+		pnode_final->pnode_sibling = pnode_dst->pnode_sibling;
+		pnode_dst->pnode_sibling = pnode_child;
 	}
 	return TRUE;
 }
@@ -1071,12 +1062,12 @@ static SIMPLE_TREE_NODE* simple_tree_dup_group(SIMPLE_TREE_NODE *pnode,
 							pnode_dup, dup_func, param);
 			pnode_dup->pnode_child = pnode_temp;
 		}
-		pnode = pnode->pnode_slibling;
+		pnode = pnode->pnode_sibling;
 		if (NULL != pnode_prev) {
-			pnode_prev->pnode_slibling = pnode_dup;
+			pnode_prev->pnode_sibling = pnode_dup;
 		}
 	} while (NULL != pnode);
-	pnode_dup->pnode_slibling = NULL;
+	pnode_dup->pnode_sibling = nullptr;
 	return pnode_ret;
 }
 
@@ -1133,7 +1124,7 @@ BOOL simple_tree_copy_node_to_child(SIMPLE_TREE *ptree_dst,
 		pnode_temp = pnode_child;
 		do {
 			pnode_temp->pnode_parent = pnode_parent;
-		} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
+		} while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr);
 	}
 	ptree_dst->nodes_num ++;
 	pnode_dst->node_children ++;
@@ -1142,25 +1133,25 @@ BOOL simple_tree_copy_node_to_child(SIMPLE_TREE *ptree_dst,
 		simple_tree_cohere_group(ptree_dst, pnode_child);
 	}
 	if (NULL == pnode_dst->pnode_child) {
-		pnode_parent->pnode_slibling = NULL;
+		pnode_parent->pnode_sibling = nullptr;
 		pnode_dst->pnode_child = pnode_parent;
 		return TRUE;
 	}
 	if (SIMPLE_TREE_ADD_FIRST == opt) {
-		pnode_parent->pnode_slibling = pnode_dst->pnode_child;
+		pnode_parent->pnode_sibling = pnode_dst->pnode_child;
 		pnode_dst->pnode_child = pnode_parent;
 	} else if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
+		while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr)
 			pnode_last = pnode_temp;
-		pnode_last->pnode_slibling = pnode_parent;
-		pnode_parent->pnode_slibling = NULL;
+		pnode_last->pnode_sibling = pnode_parent;
+		pnode_parent->pnode_sibling = nullptr;
 	}
 	return TRUE;
 }
 
 /*
- *	copy a node to	target as its slibling nodes ...
+ *	copy a node to	target as its sibling nodes ...
  *	@param
  *		ptree_dst [in]			destination tree
  *		pnode_dst [in]			destination node
@@ -1173,7 +1164,7 @@ BOOL simple_tree_copy_node_to_child(SIMPLE_TREE *ptree_dst,
  *		TRUE					OK
  *		FALSE					fail
  */
-BOOL simple_tree_copy_node_to_slibling(SIMPLE_TREE *ptree_dst,
+BOOL simple_tree_copy_node_to_sibling(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE_NODE *pnode_src,
 	int opt, SIMPLE_TREE_DUPLICATE dup_func, void *param)
 {
@@ -1184,8 +1175,7 @@ BOOL simple_tree_copy_node_to_slibling(SIMPLE_TREE *ptree_dst,
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree_dst || NULL == pnode_dst 
 		|| NULL == dup_func || NULL == pnode_src) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_copy_node_to_slibling");
+		debug_info("[simple_tree]: NULL pointer in simple_tree_copy_node_to_sibling");
 		return FALSE;
 	}
 #endif
@@ -1217,7 +1207,7 @@ BOOL simple_tree_copy_node_to_slibling(SIMPLE_TREE *ptree_dst,
 		pnode_temp = pnode_child;
 		do {
 			pnode_temp->pnode_parent = pnode_parent;
-		} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
+		} while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr);
 	}
 	ptree_dst->nodes_num ++;
 	/* add the relationship to the destination */
@@ -1227,18 +1217,17 @@ BOOL simple_tree_copy_node_to_slibling(SIMPLE_TREE *ptree_dst,
 	if (SIMPLE_TREE_INSERT_BEFORE == opt) {
 		pnode_temp = pnode_dst->pnode_parent->pnode_child;
 		if (pnode_temp == pnode_dst) {
-			pnode_parent->pnode_slibling = pnode_dst;
+			pnode_parent->pnode_sibling = pnode_dst;
 			pnode_dst->pnode_parent->pnode_child = pnode_parent;
 		} else {
-			while (pnode_temp->pnode_slibling != pnode_dst) {
-				pnode_temp = pnode_temp->pnode_slibling;
-			}
-			pnode_temp->pnode_slibling = pnode_parent;
-			pnode_parent->pnode_slibling = pnode_dst;
+			while (pnode_temp->pnode_sibling != pnode_dst)
+				pnode_temp = pnode_temp->pnode_sibling;
+			pnode_temp->pnode_sibling = pnode_parent;
+			pnode_parent->pnode_sibling = pnode_dst;
 		}
 	} else if (SIMPLE_TREE_INSERT_AFTER == opt) {
-		pnode_parent->pnode_slibling = pnode_dst->pnode_slibling;
-		pnode_dst->pnode_slibling	 = pnode_parent;
+		pnode_parent->pnode_sibling = pnode_dst->pnode_sibling;
+		pnode_dst->pnode_sibling = pnode_parent;
 	}
 	return TRUE;
 }
@@ -1295,21 +1284,21 @@ BOOL simple_tree_copy_children_to_child(SIMPLE_TREE *ptree_dst,
 	}
 	if (SIMPLE_TREE_ADD_LAST == opt) {
 		pnode_temp = pnode_dst->pnode_child;
-		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
+		while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr)
 			pnode_last = pnode_temp;
-		pnode_last->pnode_slibling = pnode_child;
+		pnode_last->pnode_sibling = pnode_child;
 	} else if (SIMPLE_TREE_ADD_FIRST == opt) {
 		pnode_temp = pnode_child;
-		while ((pnode_temp = pnode_temp->pnode_slibling) != NULL)
+		while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr)
 			pnode_last = pnode_temp;
-		pnode_last->pnode_slibling = pnode_dst->pnode_child;
+		pnode_last->pnode_sibling = pnode_dst->pnode_child;
 		pnode_dst->pnode_child = pnode_child;
 	}
 	return TRUE;
 }
 
 /*
- *	copy node's descendant to  target as its slibling nodes ...
+ *	copy node's descendant to  target as its sibling nodes ...
  *	@param
  *		ptree_dst [in]			destination tree
  *		pnode_dst [in]			destination node
@@ -1322,7 +1311,7 @@ BOOL simple_tree_copy_children_to_child(SIMPLE_TREE *ptree_dst,
  *		TRUE					OK
  *		FALSE					fail
  */
-BOOL simple_tree_copy_children_to_slibling(SIMPLE_TREE *ptree_dst,
+BOOL simple_tree_copy_children_to_sibling(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE_NODE *pnode_src,
 	int opt, SIMPLE_TREE_DUPLICATE dup_func, void *param)
 {
@@ -1335,8 +1324,7 @@ BOOL simple_tree_copy_children_to_slibling(SIMPLE_TREE *ptree_dst,
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree_dst || NULL == pnode_dst ||
 		NULL == dup_func || NULL == pnode_src) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_copy_children_to_slibling");
+		debug_info("[simple_tree]: NULL pointer in simple_tree_copy_children_to_sibling");
 		return FALSE;
 	}
 #endif
@@ -1359,27 +1347,26 @@ BOOL simple_tree_copy_children_to_slibling(SIMPLE_TREE *ptree_dst,
 	pnode_temp = pnode_child;
 	pnode_final = pnode_child;
 	children_num = 1;
-	while ((pnode_temp = pnode_temp->pnode_slibling) != NULL) {
+	while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr) {
 		children_num ++;
 		pnode_final = pnode_temp;
 	};
 	simple_tree_cohere_group(ptree_dst, pnode_child);
 	pnode_dst->pnode_parent->node_children += children_num;
 	if (SIMPLE_TREE_INSERT_AFTER == opt) {
-		pnode_final->pnode_slibling = pnode_dst->pnode_slibling;
-		pnode_dst->pnode_slibling = pnode_child;
+		pnode_final->pnode_sibling = pnode_dst->pnode_sibling;
+		pnode_dst->pnode_sibling = pnode_child;
 	} else if (SIMPLE_TREE_INSERT_BEFORE == opt) {
 		pnode_temp = pnode_dst->pnode_parent->pnode_child;
 		pnode_first = pnode_temp;
 		if (pnode_temp == pnode_dst) {
-			pnode_final->pnode_slibling = pnode_first;
+			pnode_final->pnode_sibling = pnode_first;
 			pnode_dst->pnode_parent->pnode_child = pnode_child;
 		} else {
-			while (pnode_temp->pnode_slibling != pnode_dst) {
-				pnode_temp = pnode_temp->pnode_slibling;
-			}
-			pnode_temp->pnode_slibling = pnode_child;
-			pnode_final->pnode_slibling = pnode_dst;
+			while (pnode_temp->pnode_sibling != pnode_dst)
+				pnode_temp = pnode_temp->pnode_sibling;
+			pnode_temp->pnode_sibling = pnode_child;
+			pnode_final->pnode_sibling = pnode_dst;
 		}	
 	}
 	return TRUE;
@@ -1415,7 +1402,7 @@ BOOL simple_tree_dup(SIMPLE_TREE *ptree_src, SIMPLE_TREE *ptree_dst,
 	if (NULL == pnode_root) {
 		return FALSE;
 	}
-	pnode_root->pnode_slibling = NULL;
+	pnode_root->pnode_sibling = nullptr;
 	pnode_root->pnode_child	   = NULL;
 	pnode_root->pnode_parent   = NULL;
 	pnode_root->node_children  = 0;
@@ -1431,7 +1418,7 @@ BOOL simple_tree_dup(SIMPLE_TREE *ptree_src, SIMPLE_TREE *ptree_dst,
 		pnode_temp = pnode_child;
 		do{
 			children_num ++;
-		} while ((pnode_temp = pnode_temp->pnode_slibling) != NULL);
+		} while ((pnode_temp = pnode_temp->pnode_sibling) != nullptr);
 	}
 	pnode_root->pnode_child	 = pnode_child;
 	pnode_root->node_children= children_num;

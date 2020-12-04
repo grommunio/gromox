@@ -157,7 +157,7 @@ uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode)
 		if (ab_tree_get_node_type(pnode) < 0x80) {
 			count ++;
 		}
-	} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	return count;
 }
 
@@ -1830,7 +1830,7 @@ BOOL ab_tree_has_child(SIMPLE_TREE_NODE *pnode)
 		if (ab_tree_get_node_type(pnode) > 0x80) {
 			return TRUE;
 		}
-	} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	return FALSE;
 }
 
@@ -2706,7 +2706,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 				psnode1->pdata = pnode;
 				single_list_append_as_tail(&temp_list, psnode1);
 			}
-		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
 	pminids->count = single_list_get_nodes_num(&temp_list);
 	if (0 == pminids->count) {

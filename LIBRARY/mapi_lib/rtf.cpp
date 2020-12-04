@@ -1619,7 +1619,7 @@ static BOOL rtf_load_element_tree(RTF_READER *preader)
 					(SIMPLE_TREE_NODE*)pgroup);
 			} else {
 				if (NULL != plast_node) {
-					simple_tree_insert_slibling(&preader->element_tree,
+					simple_tree_insert_sibling(&preader->element_tree,
 						plast_node, (SIMPLE_TREE_NODE*)pgroup,
 						SIMPLE_TREE_INSERT_AFTER);
 				} else {
@@ -1665,7 +1665,7 @@ static BOOL rtf_load_element_tree(RTF_READER *preader)
 					(SIMPLE_TREE_NODE*)plast_group, pword,
 					SIMPLE_TREE_ADD_LAST);
 			} else {
-				simple_tree_insert_slibling(&preader->element_tree,
+				simple_tree_insert_sibling(&preader->element_tree,
 					plast_node, pword, SIMPLE_TREE_INSERT_AFTER);
 			}
 			plast_node = pword;
@@ -1911,7 +1911,7 @@ static BOOL rtf_build_font_table(
 				&& 0 == strcmp(tmp_name, "f")) {
 				break;
 			}
-		} while ((pword2 = simple_tree_node_get_slibling(pword2)) != NULL);
+		} while ((pword2 = simple_tree_node_get_sibling(pword2)) != nullptr);
 		if (NULL == pword2) {
 			continue;
 		}
@@ -1923,7 +1923,7 @@ static BOOL rtf_build_font_table(
 		cpid = -1;
 		fcharsetcp = -1;
 		tmp_offset = 0;
-		while ((pword2 = simple_tree_node_get_slibling(pword2)) != NULL) {
+		while ((pword2 = simple_tree_node_get_sibling(pword2)) != nullptr) {
 			if (NULL == pword2->pdata) {
 				continue;
 			}
@@ -2015,7 +2015,7 @@ static BOOL rtf_build_font_table(
 		}
 		strncpy(tmp_entry.name, name, MAX_FINTNAME_LEN);
 		int_hash_add(preader->pfont_hash, num, &tmp_entry);
-	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
+	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 	if ('\0' == preader->default_encoding[0]) {
 		strcpy(preader->default_encoding, "windows-1252");
 	}
@@ -2071,7 +2071,7 @@ static BOOL rtf_word_output_date(
 				hour = atoi(string + 2);
 			}
 		}
-	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
+	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 	tmp_len = sprintf(tmp_buff, "%04d-%02d-%02d ", year, month, day);
 	if (hour >= 0 && minute >= 0) {
 		tmp_len += sprintf(tmp_buff + tmp_len, "%02d:%02d ", hour, minute);
@@ -2102,7 +2102,7 @@ static BOOL rtf_process_info_group(
 					sizeof(TAG_DOCUMENT_TITLE_BEGIN) - 1)) {
 					return FALSE;
 				}
-				pword2 = simple_tree_node_get_slibling(pchild);
+				pword2 = simple_tree_node_get_sibling(pchild);
 				while (NULL != pword2) {
 					if (NULL != pword2->pdata) {
 						if ('\\' != ((char*)pword2->pdata)[0]) {
@@ -2119,7 +2119,7 @@ static BOOL rtf_process_info_group(
 							}
 						}
 					}
-					pword2 = simple_tree_node_get_slibling(pword2);
+					pword2 = simple_tree_node_get_sibling(pword2);
 				}
 				if (FALSE == rtf_flush_iconv_cache(preader)) {
 					return FALSE;
@@ -2135,7 +2135,7 @@ static BOOL rtf_process_info_group(
 					sizeof(TAG_DOCUMENT_AUTHOR_BEGIN) - 1)) {
 					return FALSE;
 				}
-				pword2 = simple_tree_node_get_slibling(pchild);
+				pword2 = simple_tree_node_get_sibling(pchild);
 				while (NULL != pword2) {
 					if (NULL != pword2->pdata) {
 						if ('\\' != ((char*)pword2->pdata)[0]) {
@@ -2152,7 +2152,7 @@ static BOOL rtf_process_info_group(
 							}
 						}
 					}
-					pword2 = simple_tree_node_get_slibling(pword2);
+					pword2 = simple_tree_node_get_sibling(pword2);
 				}
 				if (FALSE == rtf_flush_iconv_cache(preader)) {
 					return FALSE;
@@ -2172,12 +2172,10 @@ static BOOL rtf_process_info_group(
 					&preader->ext_push, "creation date: ", 15)) {
 					return FALSE;
 				}
-				if (NULL != simple_tree_node_get_slibling(pchild)) {
+				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (FALSE == rtf_word_output_date(preader,
-						simple_tree_node_get_slibling(pchild))) {
+					    simple_tree_node_get_sibling(pchild)))
 						return FALSE;
-					}
-				}
 				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 					&preader->ext_push, TAG_COMMENT_END,
 					sizeof(TAG_COMMENT_END) - 1)) {
@@ -2193,12 +2191,10 @@ static BOOL rtf_process_info_group(
 					&preader->ext_push, "last print date: ", 17)) {
 					return FALSE;
 				}
-				if (NULL != simple_tree_node_get_slibling(pchild)) {
+				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (FALSE == rtf_word_output_date(preader,
-						simple_tree_node_get_slibling(pchild))) {
+					    simple_tree_node_get_sibling(pchild)))
 						return FALSE;
-					}
-				}
 				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 					&preader->ext_push, TAG_COMMENT_END,
 					sizeof(TAG_COMMENT_END) - 1)) {
@@ -2214,12 +2210,10 @@ static BOOL rtf_process_info_group(
 					&preader->ext_push, "last backup date: ", 18)) {
 					return FALSE;
 				}
-				if (NULL != simple_tree_node_get_slibling(pchild)) {
+				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (FALSE == rtf_word_output_date(preader,
-						simple_tree_node_get_slibling(pchild))) {
+					    simple_tree_node_get_sibling(pchild)))
 						return FALSE;
-					}
-				}
 				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 					&preader->ext_push, TAG_COMMENT_END,
 					sizeof(TAG_COMMENT_END) - 1)) {
@@ -2235,12 +2229,10 @@ static BOOL rtf_process_info_group(
 					&preader->ext_push, "modified date: ", 15)) {
 					return FALSE;
 				}
-				if (NULL != simple_tree_node_get_slibling(pchild)) {
+				if (simple_tree_node_get_sibling(pchild) != nullptr)
 					if (FALSE == rtf_word_output_date(preader,
-						simple_tree_node_get_slibling(pchild))) {
+					    simple_tree_node_get_sibling(pchild)))
 						return FALSE;
-					}
-				}
 				if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 					&preader->ext_push, TAG_COMMENT_END,
 					sizeof(TAG_COMMENT_END) - 1)) {
@@ -2248,7 +2240,7 @@ static BOOL rtf_process_info_group(
 				}
 			}
 		}
-		pword = simple_tree_node_get_slibling(pword);
+		pword = simple_tree_node_get_sibling(pword);
 	}
 	return TRUE;
 }
@@ -2296,7 +2288,7 @@ static void rtf_process_color_table(
 				b = 0;
 			}
 		}
-	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
+	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 }
 
 /*------------------------begin of cmd functions-----------------------------*/
@@ -2386,17 +2378,17 @@ static int rtf_cmd_field(RTF_READER *preader,
 			return CMD_RESULT_CONTINUE;
 		if (strcmp(static_cast<char *>(pchild->pdata), "\\*") != 0)
 			continue;
-		pword2 = simple_tree_node_get_slibling(pchild);
+		pword2 = simple_tree_node_get_sibling(pchild);
 		while (NULL != pword2) {
 			if (pword2->pdata != nullptr &&
 			    strcmp(static_cast<char *>(pword2->pdata), "\\fldinst") == 0) {
-				pword3 = simple_tree_node_get_slibling(pword2);
+				pword3 = simple_tree_node_get_sibling(pword2);
 				if (pword3 != nullptr && pword3->pdata != nullptr &&
 				    strcmp(static_cast<char *>(pword3->pdata), "SYMBOL") == 0) {
-					pword4 = simple_tree_node_get_slibling(pword3);
+					pword4 = simple_tree_node_get_sibling(pword3);
 					while (pword4 != nullptr && pword4->pdata != nullptr &&
 					    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
-						pword4 = simple_tree_node_get_slibling(pword4);
+						pword4 = simple_tree_node_get_sibling(pword4);
 					if (NULL != pword4 && NULL != pword4->pdata) {
 						ch = atoi(static_cast<char *>(pword4->pdata));
 						if (FALSE == rtf_attrstack_push_express(
@@ -2414,7 +2406,7 @@ static int rtf_cmd_field(RTF_READER *preader,
 					if (NULL != simple_tree_node_get_child(pword3)) {
 						break;
 					}
-					pword3 = simple_tree_node_get_slibling(pword3);
+					pword3 = simple_tree_node_get_sibling(pword3);
 				}
 				if (NULL != pword3) {
 					pword3 = simple_tree_node_get_child(pword3);
@@ -2427,10 +2419,10 @@ static int rtf_cmd_field(RTF_READER *preader,
 						b_endnotecitations = TRUE;
 					} else if (strcmp(static_cast<char *>(pword3->pdata), "HYPERLINK") == 0) {
 						if (FALSE == b_endnotecitations) {
-							pword4 = simple_tree_node_get_slibling(pword3);
+							pword4 = simple_tree_node_get_sibling(pword3);
 							while (pword4 != nullptr && pword4->pdata != nullptr &&
 							    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
-								pword4 = simple_tree_node_get_slibling(pword4);
+								pword4 = simple_tree_node_get_sibling(pword4);
 							if (NULL != pword4 && NULL != pword4->pdata) {
 								tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
 									TAG_HYPERLINK_BEGIN, static_cast(const char *, pword4->pdata));
@@ -2442,12 +2434,12 @@ static int rtf_cmd_field(RTF_READER *preader,
 							}
 						}
 					}
-					pword3 = simple_tree_node_get_slibling(pword3);
+					pword3 = simple_tree_node_get_sibling(pword3);
 				}
 			}
-			pword2 = simple_tree_node_get_slibling(pword2);
+			pword2 = simple_tree_node_get_sibling(pword2);
 		}
-	} while ((pword = simple_tree_node_get_slibling(pword)) != NULL);
+	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 	return TRUE;
 }
 
@@ -3351,7 +3343,7 @@ static int rtf_cmd_colortbl(RTF_READER *preader,
 	SIMPLE_TREE_NODE *pword, int align,
 	BOOL b_param, int num)
 {
-	pword = simple_tree_node_get_slibling(pword);
+	pword = simple_tree_node_get_sibling(pword);
 	if (NULL != pword) {
 		rtf_process_color_table(preader, pword);
 	}
@@ -3362,7 +3354,7 @@ static int rtf_cmd_fonttbl(RTF_READER *preader,
 	SIMPLE_TREE_NODE *pword, int align,
 	BOOL b_param, int num)
 {
-	pword = simple_tree_node_get_slibling(pword);
+	pword = simple_tree_node_get_sibling(pword);
 	if (NULL != pword) {
 		if (FALSE == rtf_build_font_table(preader, pword)) {
 			return CMD_RESULT_ERROR;
@@ -3385,7 +3377,7 @@ static int rtf_cmd_maybe_ignore(RTF_READER *preader,
 	int param;
 	char name[MAX_CONTROL_LEN];
 	
-	pword = simple_tree_node_get_slibling(pword);
+	pword = simple_tree_node_get_sibling(pword);
 	if (NULL != pword && NULL != pword->pdata &&
 		'\\' == ((char*)pword->pdata)[0]) {
 		if (rtf_parse_control(static_cast<char *>(pword->pdata) + 1,
@@ -3403,9 +3395,7 @@ static int rtf_cmd_info(RTF_READER *preader,
 	SIMPLE_TREE_NODE *pword, int align,
 	BOOL b_param, int num)
 {
-	SIMPLE_TREE_NODE *pword1;
-	
-	pword1 = simple_tree_node_get_slibling(pword);
+	SIMPLE_TREE_NODE *pword1 = simple_tree_node_get_sibling(pword);
 	if (NULL != pword1) {
 		rtf_process_info_group(preader, pword1);
 	}
@@ -3645,7 +3635,7 @@ static BOOL rtf_convert_group_node(
 					preader->is_within_htmlrtf = FALSE;
 				}
 				if (TRUE == preader->is_within_htmlrtf) {
-					pnode = simple_tree_node_get_slibling(pnode);
+					pnode = simple_tree_node_get_sibling(pnode);
 					continue;
 				}
 			}
@@ -3849,7 +3839,7 @@ static BOOL rtf_convert_group_node(
 							b_hyberlinked = TRUE;
 							break;
 						case CMD_RESULT_IGNORE_REST:
-							while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL)
+							while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr)
 								/* nothing */;
 							break;
 						}
@@ -3872,7 +3862,7 @@ static BOOL rtf_convert_group_node(
 			}
 		}
 		if (NULL != pnode) {
-			pnode = simple_tree_node_get_slibling(pnode);
+			pnode = simple_tree_node_get_sibling(pnode);
 		}
 	}
 	if (TRUE == preader->is_within_picture
@@ -4027,7 +4017,7 @@ BOOL rtf_to_html(const char *pbuff_in, size_t length,
 		}
 		if (strcmp(static_cast<char *>(pnode->pdata), "\\fromhtml1") == 0)
 			reader.have_fromhtml = TRUE;
-		pnode = simple_tree_node_get_slibling(pnode);
+		pnode = simple_tree_node_get_sibling(pnode);
 	}
 	if (FALSE == reader.have_fromhtml) {
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(

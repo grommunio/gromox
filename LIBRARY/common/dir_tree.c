@@ -1,3 +1,4 @@
+#include <gromox/defs.h>
 #include "dir_tree.h"
 
 static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
@@ -65,7 +66,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 					if (0 == strcmp(pdir->name, ptr1)) {
 						break;
 					}
-				} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+				} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 			}
 
 			if (NULL == pnode) {
@@ -139,7 +140,7 @@ DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path)
 			if (0 == strcmp(pdir->name, ptr1)) {
 				break;
 			}
-		} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 
 		if (NULL == pnode) {
 			return NULL;
@@ -209,11 +210,9 @@ DIR_NODE* dir_tree_get_parent(DIR_NODE* pdir)
 	}
 }
 
-DIR_NODE* dir_tree_get_slibling(DIR_NODE* pdir)
+DIR_NODE *dir_tree_get_sibling(DIR_NODE *pdir)
 {
-	SIMPLE_TREE_NODE *pnode;
-
-	pnode = simple_tree_node_get_slibling(&pdir->node);
+	SIMPLE_TREE_NODE *pnode = simple_tree_node_get_sibling(&pdir->node);
 	if (NULL != pnode) {
 		return pnode->pdata;
 	} else {
@@ -287,7 +286,7 @@ void dir_tree_add_path(DIR_TREE *ptree, const char *path)
 				if (0 == strcmp(pdir->name, ptr1)) {
 					break;
 				}
-			} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+			} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 		}
 
 		if (NULL == pnode) {

@@ -1458,14 +1458,14 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 				}
 				
 				for (j=1; j<offset; j++) {
-					pnode = simple_tree_node_get_slibling(&pmime->node);
+					pnode = simple_tree_node_get_sibling(&pmime->node);
 					if (NULL == pnode) {
 						pnode = &pmime->node;
 						pmime = (MJSON_MIME*)lib_buffer_get(pjson->ppool);
 						pmime->node.pdata = pmime;
 						pmime->ppool = pjson->ppool;
 						pmime->mime_type = MJSON_MIME_NONE;
-						if (FALSE == simple_tree_insert_slibling(&pjson->tree,
+						if (!simple_tree_insert_sibling(&pjson->tree,
 							pnode, &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
 							lib_buffer_put(pjson->ppool, pmime);
 							return FALSE;
@@ -1813,7 +1813,7 @@ RFC822_SUCCESS:
 		return -1;
 	}
 	
-	pnode = simple_tree_node_get_slibling(&pmime->node);
+	pnode = simple_tree_node_get_sibling(&pmime->node);
 	if (NULL != pnode) {
 		pmime = (MJSON_MIME*)pnode->pdata;
 		goto FETCH_STRUCTURE_LOOP;

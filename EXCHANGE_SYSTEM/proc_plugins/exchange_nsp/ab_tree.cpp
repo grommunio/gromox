@@ -144,7 +144,7 @@ uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode)
 		if (ab_tree_get_node_type(pnode) < 0x80) {
 			count ++;
 		}
-	} while ((pnode = simple_tree_node_get_slibling(pnode)) != NULL);
+	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	return count;
 }
 
