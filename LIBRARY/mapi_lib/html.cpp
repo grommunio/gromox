@@ -230,12 +230,11 @@ BOOL html_init_library(CPID_TO_CHARSET cpid_to_charset)
 
 static void html_set_fonttable(RTF_WRITER *pwriter, const char* font_name) 
 {
-	FONT_NODE *pfnode;
 	FONT_NODE tmp_node;
 	
 	strncpy(tmp_node.font_name, font_name, sizeof(tmp_node.font_name));
 	HX_strlower(tmp_node.font_name);
-	pfnode = str_hash_query(pwriter->pfont_hash, tmp_node.font_name);
+	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_node.font_name));
 	if (NULL != pfnode) {
 		return;
 	}
@@ -244,19 +243,18 @@ static void html_set_fonttable(RTF_WRITER *pwriter, const char* font_name)
 		tmp_node.font_name, &tmp_node)) {
 		return;
 	}
-	pfnode = str_hash_query(pwriter->pfont_hash, tmp_node.font_name);
+	pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_node.font_name));
 	pfnode->node.pdata = pfnode;
 	double_list_append_as_tail(&pwriter->font_table, &pfnode->node);
 }
 
 static int html_get_fonttable(RTF_WRITER *pwriter, const char* font_name)
 {
-	FONT_NODE *pfnode;
 	char tmp_buff[128];
 	
 	strncpy(tmp_buff, font_name, 128);
 	HX_strlower(tmp_buff);
-	pfnode = str_hash_query(pwriter->pfont_hash, tmp_buff);
+	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_buff));
 	if (NULL == pfnode) {
 		return -1;
 	}
@@ -265,10 +263,9 @@ static int html_get_fonttable(RTF_WRITER *pwriter, const char* font_name)
 
 static void html_set_colortable(RTF_WRITER *pwriter, int color) 
 { 
-	COLOR_NODE *pcnode;
 	COLOR_NODE tmp_node;
 	
-	pcnode = int_hash_query(pwriter->pcolor_hash, color);
+	auto pcnode = static_cast<COLOR_NODE *>(int_hash_query(pwriter->pcolor_hash, color));
 	if (NULL != pcnode) {
 		return;
 	}
@@ -277,16 +274,14 @@ static void html_set_colortable(RTF_WRITER *pwriter, int color)
 	if (1 != int_hash_add(pwriter->pcolor_hash, color, &tmp_node)) {
 		return;
 	}
-	pcnode = int_hash_query(pwriter->pcolor_hash, color);
+	pcnode = static_cast<COLOR_NODE *>(int_hash_query(pwriter->pcolor_hash, color));
 	pcnode->node.pdata = pcnode;
 	double_list_append_as_tail(&pwriter->color_table, &pcnode->node);
 }
 
 static int html_get_colortable(RTF_WRITER *pwriter, int color)
 {
-	COLOR_NODE *pcnode;
-	
-	pcnode = int_hash_query(pwriter->pcolor_hash, color);
+	auto pcnode = static_cast<COLOR_NODE *>(int_hash_query(pwriter->pcolor_hash, color));
 	if (NULL == pcnode) {
 		return -1;
 	}
@@ -615,7 +610,6 @@ static int html_convert_color(const char *value)
 {
 	int color;
 	int tmp_val;
-	int *pcolor;
 	const char *ptr;
 	const char *ptr1;
 	char color_string[128], tmp_buff[8];
@@ -673,7 +667,7 @@ static int html_convert_color(const char *value)
 	}
 	strcpy(color_string, value);
 	HX_strlower(color_string);
-	pcolor = str_hash_query(g_color_hash, color_string);
+	auto pcolor = static_cast<int *>(str_hash_query(g_color_hash, color_string));
 	if (NULL != pcolor) {
 		return *pcolor;
 	}
@@ -1337,12 +1331,10 @@ static BOOL html_write_children(RTF_WRITER *pwriter, GumboNode *pnode)
 	if (FALSE == html_write_style(pwriter, &pnode->v.element)) {
 		return FALSE;
 	}
-	for (i=0; i<pnode->v.element.children.length; i++) {
-		if (FALSE == html_enum_write(pwriter,
-			pnode->v.element.children.data[i])) {
+	for (i = 0; i < pnode->v.element.children.length; ++i)
+		if (!html_enum_write(pwriter,
+		    static_cast<GumboNode *>(pnode->v.element.children.data[i])))
 			return FALSE;
-		}
-	}
 	return TRUE;
 }
 
@@ -1645,7 +1637,7 @@ static void html_enum_tables(RTF_WRITER *pwriter, GumboNode *pnode)
 	}
 	for (i=0; i<pnode->v.element.children.length; i++) {
 		html_enum_tables(pwriter,
-			pnode->v.element.children.data[i]);
+			static_cast<GumboNode *>(pnode->v.element.children.data[i]));
 	}
 }
 
@@ -1674,11 +1666,10 @@ static void html_string_to_utf8(uint32_t cpid,
 BOOL html_to_rtf(const char *pbuff_in, size_t length,
 	uint32_t cpid, char *pbuff_out, size_t *plength)
 {
-	char *pbuffer;
 	RTF_WRITER writer;
 	GumboOutput *pgumbo_html;
 	
-	pbuffer = malloc(3*(length + 1));
+	auto pbuffer = static_cast<char *>(malloc(3 * (length + 1)));
 	if (NULL == pbuffer) {
 		return FALSE;
 	}
