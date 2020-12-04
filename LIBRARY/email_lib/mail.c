@@ -1146,7 +1146,7 @@ void mail_empty_children(MAIL *pmail, MIME *pmime)
 }
 
 /*
- *  move mime and its descendant to a none-child multipl mime as 
+ *  move mime and its descendant to a none-child multiple mime as
  *	its descendant
  *  @param
  *      pmail_dst [in]			indicate the destination mail object
@@ -1177,7 +1177,7 @@ BOOL mail_move_mime_to_child(MAIL *pmail_dst, MIME *pmime_dst,
 }
 
 /*
- *  move mime and its descendant to a none-child multipl mime as
+ *  move mime and its descendant to a none-child multiple mime as
  *  its sibling
  *  @param
  *      pmail_dst [in]          indicate the destination mail object
@@ -1205,7 +1205,7 @@ BOOL mail_move_mime_to_sibling(MAIL *pmail_dst, MIME *pmime_dst,
 }
 
 /*
- *  move mime's descendant to a none-child multipl mime as
+ *  move mime's descendant to a none-child multiple mime as
  *  its descendant
  *  @param
  *      pmail_dst [in]          indicate the destination mail object
@@ -1236,7 +1236,7 @@ BOOL mail_move_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
 }
 
 /*
- *  move mime's descendant to a none-child multipl mime as
+ *  move mime's descendant to a none-child multiple mime as
  *  its sibling
  *  @param
  *      pmail_dst [in]          indicate the destination mail object
@@ -1264,7 +1264,7 @@ BOOL mail_move_children_to_sibling(MAIL *pmail_dst, MIME *pmime_dst,
 }
 
 /*
- *  copy mime's descendant to a none-child multipl mime as
+ *  copy mime's descendant to a none-child multiple mime as
  *  its child
  *  @param
  *      pmail_dst [in]      indicate the destination mail object
@@ -1313,7 +1313,7 @@ static SIMPLE_TREE_NODE* mail_enum_copy(SIMPLE_TREE_NODE *pnode, void *param)
 }
 
 /*
- *  copy mime to a none-child multipl mime as its sibling
+ *  copy mime to a none-child multiple mime as its sibling
  *  @param
  *      pmail_dst [in]      indicate the destination mail object
  *      pmime_dst [in]      destination mime where we begin from
@@ -1340,7 +1340,7 @@ BOOL mail_copy_mime_to_sibling(MAIL *pmail_dst, MIME *pmime_dst,
 }
 
 /*
- *  copy mime's descendant to a none-child multipl mime as its child
+ *  copy mime's descendant to a none-child multiple mime as its child
  *  @param
  *      pmail_dst [in]      indicate the destination mail object
  *      pmime_dst [in]      destination mime where we begin from
@@ -1370,7 +1370,7 @@ BOOL mail_copy_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
 }
 
 /*
- *  copy mime's descendant to a none-child multipl mime as its sibling
+ *  copy mime's descendant to a none-child multiple mime as its sibling
  *  @param
  *      pmail_dst [in]      indicate the destination mail object
  *      pmime_dst [in]      destination mime where we begin from
