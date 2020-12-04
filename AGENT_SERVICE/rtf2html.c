@@ -77,7 +77,12 @@ int main(int argc, const char **argv)
 	}
 	rtf_bin.pv = pbuff;
 	rtf_bin.cb = offset;
-	pbuff = malloc(8*buff_len + 1024*1024);
+	ssize_t unc_size = rtfcp_uncompressed_size(&rtf_bin);
+	if (unc_size < 0) {
+		fprintf(stderr, "Input does not appear to be RTFCP\n");
+		return EXIT_FAILURE;
+	}
+	pbuff = malloc(unc_size);
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
 		return 1;

@@ -5566,13 +5566,14 @@ FIND_RTF:
 			prtf = tpropval_array_get_propval(&pmsg->proplist,
 									PROP_TAG_RTFCOMPRESSED);
 			if (NULL != prtf) {
-				tmp_len = 8*prtf->cb + 1024*1024;
-				rtf_len = tmp_len;
-				pbuff = malloc(rtf_len);
-				if (NULL == pbuff) {
-					return FALSE;
+				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
+				pbuff = nullptr;
+				if (unc_size >= 0) {
+					pbuff = malloc(unc_size);
+					if (pbuff == nullptr)
+						return false;
 				}
-				if (TRUE == rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
+				if (unc_size >= 0 && rtfcp_uncompress(prtf, pbuff, &rtf_len)) {
 					pskeleton->pattachments = attachment_list_init();
 					if (NULL == pskeleton->pattachments) {
 						free(pbuff);

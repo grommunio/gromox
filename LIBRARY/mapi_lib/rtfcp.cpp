@@ -1,3 +1,4 @@
+#include <climits>
 #include <gromox/defs.h>
 #include "ext_buffer.h"
 #include "endian_macro.h"
@@ -248,4 +249,18 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	pbin->cb = ext_push.offset;
 	pbin->pb = ext_push.data;
 	return pbin;
+}
+
+ssize_t rtfcp_uncompressed_size(const BINARY *rtf)
+{
+	if (rtf->cb < 4 * sizeof(uint32_t))
+		return -1;
+	DECOMPRESSION_STATE state;
+	COMPRESS_HEADER header;
+	rtfcp_init_decompress_state(rtf->pb, rtf->cb, &state);
+	if (!rtfcp_verify_header(rtf->pb, state.in_size, &header))
+		return -1;
+	if (header.rawsize > SIZE_MAX)
+		return -1; /* just a limitation of this function */
+	return header.rawsize;
 }
