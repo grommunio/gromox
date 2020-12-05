@@ -5002,16 +5002,12 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				} else {
 					tmp_int32 = *(uint32_t*)pvalue;
 				}
-				content_len = 2*phtml_bin->cb + 4096;
-				pvalue = alloc(content_len);
-				if (NULL == pvalue) {
-					message_content_free(pmsg);
-					return NULL;
-				}
-				if (html_to_rtf(phtml_bin->pc, phtml_bin->cb, tmp_int32,
-				    static_cast<char *>(pvalue), &content_len)) {
+				char *rtfout = nullptr;
+				if (html_to_rtf(phtml_bin->pv, phtml_bin->cb, tmp_int32,
+				    &rtfout, &content_len)) {
 					propval.proptag = PROP_TAG_RTFCOMPRESSED;
-					propval.pvalue = rtfcp_compress(static_cast<char *>(pvalue), content_len);
+					propval.pvalue = rtfcp_compress(rtfout, content_len);
+					free(rtfout);
 					if (NULL != propval.pvalue) {
 						tpropval_array_set_propval(
 							&pmsg->proplist, &propval);

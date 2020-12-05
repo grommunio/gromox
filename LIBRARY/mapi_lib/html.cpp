@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stdint.h>
+#include <memory>
 #include <libHX/string.h>
 #include "html.h"
 #include "util.h"
@@ -1657,31 +1658,35 @@ static void html_string_to_utf8(uint32_t cpid,
 		replace_iconv_charset(charset));
 	pin = (char*)src;
 	pout = dst;
-	in_len = strlen(src) + 1;
+	in_len = strlen(src);
 	memset(dst, 0, len);
 	iconv(conv_id, &pin, &in_len, &pout, &len);	
+	*pout = '\0';
 	iconv_close(conv_id);
 }
 
-BOOL html_to_rtf(const char *pbuff_in, size_t length,
-	uint32_t cpid, char *pbuff_out, size_t *plength)
+BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
+    char **pbuff_out, size_t *plength)
 {
 	RTF_WRITER writer;
 	GumboOutput *pgumbo_html;
-	
+
+	std::unique_ptr<char[]> buff_inz(new(std::nothrow) char[length+1]);
+	if (buff_inz == nullptr)
+		return false;
+	memcpy(buff_inz.get(), pbuff_in, length);
+	buff_inz[length] = '\0';
+
 	auto pbuffer = static_cast<char *>(malloc(3 * (length + 1)));
 	if (NULL == pbuffer) {
 		return FALSE;
 	}
-	memcpy(pbuffer, pbuff_in, length);
-	pbuffer[length] = '\0';
-	html_string_to_utf8(cpid, pbuffer,
-		pbuffer + length + 1, 2*length + 2);
+	html_string_to_utf8(cpid, buff_inz.get(), pbuffer, 3 * length + 1);
 	if (FALSE == html_init_writer(&writer)) {
 		free(pbuffer);
 		return FALSE;
 	}
-	pgumbo_html = gumbo_parse(pbuffer + length + 1);
+	pgumbo_html = gumbo_parse(pbuffer);
 	if (NULL == pgumbo_html) {
 		html_free_writer(&writer);
 		free(pbuffer);
@@ -1698,12 +1703,12 @@ BOOL html_to_rtf(const char *pbuff_in, size_t length,
 			return FALSE;
 		}
 	}
-	if (*plength > writer.ext_push.offset) {
-		*plength = writer.ext_push.offset;
-	}
-	memcpy(pbuff_out, writer.ext_push.data, *plength);
+	*plength = writer.ext_push.offset;
+	*pbuff_out = static_cast<char *>(malloc(*plength));
+	if (*pbuff_out != nullptr)
+		memcpy(*pbuff_out, writer.ext_push.data, *plength);
 	gumbo_destroy_output(&kGumboDefaultOptions, pgumbo_html);
 	html_free_writer(&writer);
 	free(pbuffer);
-	return TRUE;
+	return *pbuff_out != nullptr ? TRUE : FALSE;
 }
