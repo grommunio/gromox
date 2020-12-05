@@ -2626,8 +2626,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 	return TRUE;
 }	
 
-static int instance_get_message_bodyU(DB_ITEM *db, MESSAGE_CONTENT *mc,
-    TPROPVAL_ARRAY *pval)
+static int instance_get_message_bodyU(MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
 {
 	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY);
 	bool use_first = data != nullptr;
@@ -2650,8 +2649,8 @@ static int instance_get_message_bodyU(DB_ITEM *db, MESSAGE_CONTENT *mc,
 	return 1;
 }
 
-static int instance_get_message_body(DB_ITEM *db, INSTANCE_NODE *inst,
-    MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
+static int instance_get_message_bodyW(INSTANCE_NODE *inst, MESSAGE_CONTENT *mc,
+    TPROPVAL_ARRAY *pval)
 {
 	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY);
 	auto use_first = data != nullptr;
@@ -2675,8 +2674,8 @@ static int instance_get_message_body(DB_ITEM *db, INSTANCE_NODE *inst,
 	return 1;
 }
 
-static int instance_get_message_body8(DB_ITEM *db, INSTANCE_NODE *inst,
-    MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
+static int instance_get_message_body8(INSTANCE_NODE *inst, MESSAGE_CONTENT *mc,
+    TPROPVAL_ARRAY *pval)
 {
 	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY_STRING8);
 	auto use_first = data != nullptr;
@@ -2700,7 +2699,7 @@ static int instance_get_message_body8(DB_ITEM *db, INSTANCE_NODE *inst,
 	return 1;
 }
 
-static int instance_get_message_htmlU(DB_ITEM *pdb, MESSAGE_CONTENT *mc,
+static int instance_get_message_htmlU(MESSAGE_CONTENT *mc,
     const PROPTAG_ARRAY *ptag, TPROPVAL_ARRAY *pval, unsigned int i)
 {
 	auto bin = static_cast<BINARY *>(tpropval_array_get_propval(&mc->proplist, PROP_TAG_HTML));
@@ -2730,7 +2729,7 @@ static int instance_get_message_htmlU(DB_ITEM *pdb, MESSAGE_CONTENT *mc,
 	return 1;
 }
 
-static int instance_get_message_htmrtf(DB_ITEM *db, MESSAGE_CONTENT *mc,
+static int instance_get_message_htmrtf(MESSAGE_CONTENT *mc,
     const PROPTAG_ARRAY *ptag, TPROPVAL_ARRAY *pval, unsigned int i)
 {
 	auto tagid = ptag->pproptag[i] == PROP_TAG_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
@@ -2906,7 +2905,7 @@ BOOL exmdb_server_get_instance_properties(
 		}
 		switch (pproptags->pproptag[i]) {
 		case PROP_TAG_BODY_UNSPECIFIED: {
-			auto ret = instance_get_message_bodyU(pdb, pmsgctnt, ppropvals);
+			auto ret = instance_get_message_bodyU(pmsgctnt, ppropvals);
 			if (ret < 0) {
 				db_engine_put_db(pdb);
 				return false;
@@ -2985,7 +2984,7 @@ BOOL exmdb_server_get_instance_properties(
 			}
 			break;
 		case PROP_TAG_BODY: {
-			auto ret = instance_get_message_body(pdb, pinstance, pmsgctnt, ppropvals);
+			auto ret = instance_get_message_bodyW(pinstance, pmsgctnt, ppropvals);
 			if (ret < 0) {
 				db_engine_put_db(pdb);
 				return false;
@@ -2993,7 +2992,7 @@ BOOL exmdb_server_get_instance_properties(
 			break;
 		}
 		case PROP_TAG_BODY_STRING8: {
-			auto ret = instance_get_message_body8(pdb, pinstance, pmsgctnt, ppropvals);
+			auto ret = instance_get_message_body8(pinstance, pmsgctnt, ppropvals);
 			if (ret < 0) {
 				db_engine_put_db(pdb);
 				return false;
@@ -3001,7 +3000,7 @@ BOOL exmdb_server_get_instance_properties(
 			break;
 		}
 		case PROP_TAG_HTML_UNSPECIFIED: {
-			auto ret = instance_get_message_htmlU(pdb, pmsgctnt, pproptags, ppropvals, i);
+			auto ret = instance_get_message_htmlU(pmsgctnt, pproptags, ppropvals, i);
 			if (ret < 0) {
 				db_engine_put_db(pdb);
 				return false;
@@ -3010,7 +3009,7 @@ BOOL exmdb_server_get_instance_properties(
 		}
 		case PROP_TAG_HTML:
 		case PROP_TAG_RTFCOMPRESSED: {
-			auto ret = instance_get_message_htmrtf(pdb, pmsgctnt, pproptags, ppropvals, i);
+			auto ret = instance_get_message_htmrtf(pmsgctnt, pproptags, ppropvals, i);
 			if (ret < 0) {
 				db_engine_put_db(pdb);
 				return false;
