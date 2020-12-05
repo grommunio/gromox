@@ -3983,9 +3983,8 @@ CONVERT_FAILURE:
 	return FALSE;
 }
 
-BOOL rtf_to_html(const char *pbuff_in, size_t length,
-	const char *charset, char *pbuff_out, size_t *plength,
-	ATTACHMENT_LIST *pattachments)
+BOOL rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
+    char **pbuff_out, size_t *plength, ATTACHMENT_LIST *pattachments)
 {
 	int i;
 	int tmp_len;
@@ -3993,7 +3992,6 @@ BOOL rtf_to_html(const char *pbuff_in, size_t length,
 	char *pin, *pout;
 	RTF_READER reader;
 	char tmp_buff[128];
-	size_t in_len, out_len;
 	SIMPLE_TREE_NODE *proot;
 	SIMPLE_TREE_NODE *pnode;
 	
@@ -4064,11 +4062,12 @@ BOOL rtf_to_html(const char *pbuff_in, size_t length,
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
-		if (*plength < reader.ext_push.offset) {
+		*pbuff_out = static_cast<char *>(malloc(reader.ext_push.offset));
+		if (*pbuff_out == nullptr) {
 			rtf_free_reader(&reader);
-			return FALSE;
+			return false;
 		}
-		memcpy(pbuff_out, reader.ext_push.data,
+		memcpy(*pbuff_out, reader.ext_push.data,
 			reader.ext_push.offset);
 		*plength = reader.ext_push.offset;
 		rtf_free_reader(&reader);
@@ -4082,9 +4081,16 @@ BOOL rtf_to_html(const char *pbuff_in, size_t length,
 		return FALSE;
 	}
 	pin = (char*)reader.ext_push.data;
-	pout = pbuff_out;
-	in_len = reader.ext_push.offset;
-	out_len = *plength;
+	/* Assumption for 3x is that no codepage maps to points beyond BMP */
+	*plength = 3 * reader.ext_push.offset;
+	size_t out_len = *plength;
+	*pbuff_out = static_cast<char *>(malloc(out_len + 1));
+	if (*pbuff_out == nullptr) {
+		rtf_free_reader(&reader);
+		return false;
+	}
+	pout = *pbuff_out;
+	size_t in_len = reader.ext_push.offset;
 	if (-1 == iconv(conv_id, &pin, &in_len, &pout, &out_len)) {
 		iconv_close(conv_id);
 		rtf_free_reader(&reader);

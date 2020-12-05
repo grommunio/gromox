@@ -1,4 +1,5 @@
 #pragma once
+#include <gromox/defs.h>
 #include "element_data.h"
 
 
@@ -7,11 +8,7 @@ extern "C" {
 #endif
 
 BOOL rtf_init_library(CPID_TO_CHARSET cpid_to_charset);
-
-BOOL rtf_to_html(const char *pbuff_in, size_t length,
-	const char *charset, char *pbuff_out, size_t *plength,
-	ATTACHMENT_LIST *pattachments);
-
+extern GX_EXPORT BOOL rtf_to_html(const char *in, size_t inlen, const char *charset, char **outp, size_t *outlen, ATTACHMENT_LIST *);
 
 #ifdef __cplusplus
 }

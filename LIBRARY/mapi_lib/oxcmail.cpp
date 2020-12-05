@@ -5543,16 +5543,10 @@ FIND_RTF:
 						return FALSE;
 					}
 					tmp_len -= rtf_len;
-					if (TRUE == rtf_to_html(pbuff, rtf_len,
-						pcharset, pbuff + rtf_len, &tmp_len,
-						pskeleton->pattachments)) {
-						pskeleton->rtf_bin.pv = malloc(tmp_len);
-						if (pskeleton->rtf_bin.pv == nullptr) {
-							free(pbuff);
-							return FALSE;
-						}
-						memcpy(pskeleton->rtf_bin.pv,
-							pbuff + rtf_len, tmp_len);
+					char *htmlout = nullptr;
+					if (rtf_to_html(pbuff, rtf_len, pcharset, &htmlout,
+					    &tmp_len, pskeleton->pattachments)) {
+						pskeleton->rtf_bin.pv = htmlout;
 						free(pbuff);
 						pskeleton->rtf_bin.cb = tmp_len;
 						pskeleton->phtml = &pskeleton->rtf_bin;

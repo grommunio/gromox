@@ -105,10 +105,10 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Failed to init RTF library\n");
 		return 4;
 	}
-	tmp_len = 8*buff_len + 1024*1024 - rtf_len;
-	if (TRUE == rtf_to_html(pbuff, rtf_len, "utf-8",
-		pbuff + rtf_len, &tmp_len, pattachments)) {
-		write(STDOUT_FILENO, pbuff + rtf_len, tmp_len);
+	char *htmlout = nullptr;
+	if (rtf_to_html(pbuff, rtf_len, "utf-8", &htmlout, &tmp_len, pattachments)) {
+		write(STDOUT_FILENO, htmlout, tmp_len);
+		free(htmlout);
 		exit(0);
 	} else {
 		fprintf(stderr, "fail to convert rtf\n");
