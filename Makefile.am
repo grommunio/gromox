@@ -466,7 +466,7 @@ libexsvc_codepage_lang_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/codepage_lan
 libexsvc_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_codepage_lang_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexsvc_codepage_lang_la_DEPENDENCIES = ${default_sym}
-libexsvc_exmdb_provider_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/exmdb_provider/bounce_producer.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/common_util.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/db_engine.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_ext.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_listener.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_parser.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/notification_agent.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_server.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/folder.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/ics.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instance.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/main.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/message.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/store.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/table.cpp
+libexsvc_exmdb_provider_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/exmdb_provider/bounce_producer.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/common_util.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/db_engine.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_ext.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_listener.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_parser.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/notification_agent.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_server.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/folder.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/ics.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instance.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instbody.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/main.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/message.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/store.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/table.cpp
 libexsvc_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 EXTRA_libexsvc_exmdb_provider_la_DEPENDENCIES = ${default_sym}
@@ -580,7 +580,9 @@ mapi_la_LIBADD = ${HX_LIBS}
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 # tests
-noinst_PROGRAMS = tests/getmxbyname
+noinst_PROGRAMS = tests/bodyconv tests/getmxbyname
+tests_bodyconv_SOURCES = tests/bodyconv.cpp
+tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
 tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 
 # doc

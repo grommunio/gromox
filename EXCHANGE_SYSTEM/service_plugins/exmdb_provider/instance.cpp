@@ -838,7 +838,7 @@ BOOL exmdb_server_clear_message_instance(
 	return TRUE;
 }
 
-static void* instance_read_cid_content(uint64_t cid, uint32_t *plen)
+void *instance_read_cid_content(uint64_t cid, uint32_t *plen)
 {
 	int fd;
 	char *pbuff;
@@ -2631,130 +2631,6 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 	return TRUE;
 }	
 
-static int instance_get_message_bodyU(MESSAGE_CONTENT *mc, TPROPVAL_ARRAY *pval)
-{
-	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY);
-	bool use_first = data != nullptr;
-	if (data == nullptr)
-		data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY_STRING8);
-	if (data == nullptr)
-		return 0;
-	auto content = static_cast<char *>(instance_read_cid_content(*static_cast<uint64_t *>(data), nullptr));
-	if (content == nullptr)
-		return -1;
-	auto &pv = pval->ppropval[pval->count];
-	pv.proptag = PROP_TAG_BODY_UNSPECIFIED;
-	pv.pvalue = common_util_alloc(sizeof(TYPED_PROPVAL));
-	auto tpv = static_cast<TYPED_PROPVAL *>(pv.pvalue);
-	if (tpv == nullptr)
-		return -1;
-	tpv->type   = use_first ? PT_UNICODE : PT_STRING8;
-	tpv->pvalue = use_first ? content + sizeof(int) : content;
-	++pval->count;
-	return 1;
-}
-
-static int instance_get_message_bodyW(INSTANCE_NODE *inst, MESSAGE_CONTENT *mc,
-    TPROPVAL_ARRAY *pval)
-{
-	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY);
-	auto use_first = data != nullptr;
-	if (data == nullptr)
-		data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY_STRING8);
-	if (data == nullptr)
-		return 0;
-	auto content = static_cast<char *>(instance_read_cid_content(*static_cast<uint64_t *>(data), nullptr));
-	if (content == nullptr)
-		return -1;
-	auto &pv = pval->ppropval[pval->count];
-	pv.proptag = PROP_TAG_BODY;
-	if (use_first) {
-		pv.pvalue = content + sizeof(int);
-	} else {
-		pv.pvalue = common_util_convert_copy(true, inst->cpid, content);
-		if (pv.pvalue == nullptr)
-			return 0;
-	}
-	++pval->count;
-	return 1;
-}
-
-static int instance_get_message_body8(INSTANCE_NODE *inst, MESSAGE_CONTENT *mc,
-    TPROPVAL_ARRAY *pval)
-{
-	auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY_STRING8);
-	auto use_first = data != nullptr;
-	if (data == nullptr)
-		data = tpropval_array_get_propval(&mc->proplist, ID_TAG_BODY);
-	if (data == nullptr)
-		return 0;
-	auto content = static_cast<char *>(instance_read_cid_content(*static_cast<uint64_t *>(data), nullptr));
-	if (content == nullptr)
-		return -1;
-	auto &pv = pval->ppropval[pval->count];
-	pv.proptag = PROP_TAG_BODY_STRING8;
-	if (use_first) {
-		pv.pvalue = content;
-	} else {
-		pv.pvalue = common_util_convert_copy(false, inst->cpid, content + sizeof(int));
-		if (pv.pvalue == nullptr)
-			return 0;
-	}
-	++pval->count;
-	return 1;
-}
-
-static int instance_get_message_htmlU(MESSAGE_CONTENT *mc,
-    const PROPTAG_ARRAY *ptag, TPROPVAL_ARRAY *pval, unsigned int i)
-{
-	auto bin = static_cast<BINARY *>(tpropval_array_get_propval(&mc->proplist, PROP_TAG_HTML));
-	if (bin == nullptr) {
-		auto data = tpropval_array_get_propval(&mc->proplist, ID_TAG_HTML);
-		if (data == nullptr)
-			return 0;
-		uint32_t length = 0;
-		auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length);
-		if (content == nullptr)
-			return -1;
-		bin = static_cast<BINARY *>(common_util_alloc(sizeof(*bin)));
-		if (bin == nullptr)
-			return -1;
-		bin->cb = length;
-		bin->pv = content;
-	}
-	auto &pv = pval->ppropval[pval->count];
-	pv.proptag = ptag->pproptag[i];
-	pv.pvalue = common_util_alloc(sizeof(TYPED_PROPVAL));
-	auto tpv = static_cast<TYPED_PROPVAL *>(pv.pvalue);
-	if (tpv == nullptr)
-		return -1;
-	tpv->type = PT_BINARY;
-	tpv->pvalue = bin;
-	++pval->count;
-	return 1;
-}
-
-static int instance_get_message_htmrtf(MESSAGE_CONTENT *mc,
-    const PROPTAG_ARRAY *ptag, TPROPVAL_ARRAY *pval, unsigned int i)
-{
-	auto tagid = ptag->pproptag[i] == PROP_TAG_HTML ? ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
-	auto data  = tpropval_array_get_propval(&mc->proplist, tagid);
-	if (data == nullptr)
-		return 0;
-	uint32_t length = 0;
-	auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length);
-	if (content == nullptr)
-		return -1;
-	auto bin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
-	if (bin == nullptr)
-		return -1;
-	bin->cb = length;
-	bin->pv = content;
-	pval->ppropval[pval->count].proptag  = ptag->pproptag[i];
-	pval->ppropval[pval->count++].pvalue = bin;
-	return 1;
-}
-
 BOOL exmdb_server_get_instance_properties(
 	const char *dir, uint32_t size_limit, uint32_t instance_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
@@ -2909,8 +2785,13 @@ BOOL exmdb_server_get_instance_properties(
 			continue;
 		}
 		switch (pproptags->pproptag[i]) {
-		case PROP_TAG_BODY_UNSPECIFIED: {
-			auto ret = instance_get_message_bodyU(pmsgctnt, ppropvals);
+		case PR_BODY_A:
+		case PR_BODY_W:
+		case CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED):
+		case PR_HTML:
+		case CHANGE_PROP_TYPE(PR_HTML, PT_UNSPECIFIED):
+		case PR_RTF_COMPRESSED: {
+			auto ret = instance_get_message_body(pmsgctnt, pproptags->pproptag[i], pinstance->cpid, ppropvals);
 			if (ret < 0) {
 				db_engine_put_db(pdb);
 				return false;
@@ -2988,39 +2869,6 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			break;
-		case PROP_TAG_BODY: {
-			auto ret = instance_get_message_bodyW(pinstance, pmsgctnt, ppropvals);
-			if (ret < 0) {
-				db_engine_put_db(pdb);
-				return false;
-			}
-			break;
-		}
-		case PROP_TAG_BODY_STRING8: {
-			auto ret = instance_get_message_body8(pinstance, pmsgctnt, ppropvals);
-			if (ret < 0) {
-				db_engine_put_db(pdb);
-				return false;
-			}
-			break;
-		}
-		case PROP_TAG_HTML_UNSPECIFIED: {
-			auto ret = instance_get_message_htmlU(pmsgctnt, pproptags, ppropvals, i);
-			if (ret < 0) {
-				db_engine_put_db(pdb);
-				return false;
-			}
-			break;
-		}
-		case PROP_TAG_HTML:
-		case PROP_TAG_RTFCOMPRESSED: {
-			auto ret = instance_get_message_htmrtf(pmsgctnt, pproptags, ppropvals, i);
-			if (ret < 0) {
-				db_engine_put_db(pdb);
-				return false;
-			}
-			break;
-		}
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 			pvalue = tpropval_array_get_propval(
 				&pmsgctnt->proplist, ID_TAG_TRANSPORTMESSAGEHEADERS);

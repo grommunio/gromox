@@ -43,3 +43,11 @@ enum {
 	PT_MV_CLSID = 0x1048,
 	PT_MV_BINARY = 0x1102,
 };
+
+enum {
+	PR_BODY_A = PROP_TAG(PT_STRING8, 0x1000),
+	PR_BODY_W = PROP_TAG(PT_UNICODE, 0x1000),
+	PR_BODY = PR_BODY_W, /* pidTagBody */
+	PR_HTML = PROP_TAG(PT_BINARY, 0x1013), /* pidTagHtml */
+	PR_RTF_COMPRESSED = PROP_TAG(PT_BINARY, 0x1009), /* pidTagRtfCompressed */
+};
