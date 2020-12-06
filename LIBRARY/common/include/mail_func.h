@@ -75,8 +75,7 @@ BOOL mime_string_to_utf8(const char *charset,
 
 void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
-
-int html_to_plain(char *rbuf, int len);
+extern GX_EXPORT int html_to_plain(const void *inbuf, int inlen, char **outbufp);
 extern GX_EXPORT char *plain_to_html(const char *rbuf);
 
 #ifdef __cplusplus

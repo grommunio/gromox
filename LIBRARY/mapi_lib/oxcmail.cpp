@@ -5031,16 +5031,21 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			} else {
 				tmp_int32 = *(uint32_t*)pvalue;
 			}
-			pvalue = alloc(3*phtml_bin->cb + 3);
+			char *plainout = nullptr;
+			if (html_to_plain(phtml_bin->pc, phtml_bin->cb, &plainout) < 0) {
+				message_content_free(pmsg);
+				return NULL;
+			}
+			pvalue = alloc(3 * strlen(plainout) + 1);
 			if (NULL == pvalue) {
+				free(plainout);
 				message_content_free(pmsg);
 				return NULL;
 			}
 			propval.proptag = PROP_TAG_BODY;
-			propval.pvalue = pvalue + phtml_bin->cb + 1;
-			memcpy(pvalue, phtml_bin->pb, phtml_bin->cb);
-			((char*)pvalue)[phtml_bin->cb] = '\0';
-			html_to_plain(static_cast<char *>(pvalue), phtml_bin->cb + 1);
+			propval.pvalue = pvalue;
+			memcpy(pvalue, plainout, strlen(plainout) + 1);
+			free(plainout);
 			encoding = oxcmail_cpid_to_charset(tmp_int32);
 			if (NULL == encoding) {
 				encoding = "windows-1252";

@@ -1875,7 +1875,7 @@ void enriched_to_html(const char *enriched_txt,
 	html[offset] = '\0';
 }
 
-int html_to_plain(char *rbuf, int len)
+int html_to_plain(const void *inbuf, int len, char **outbufp)
 {
 	int i = 0;
 	char is_xml = 0;
@@ -1883,9 +1883,14 @@ int html_to_plain(char *rbuf, int len)
 	int depth = 0, in_q = 0;
 	char *tbuf, *buf, *p, *tp, *rp, c, lc;
 	
+	char *rbuf = malloc(len + 1);
+	if (rbuf == nullptr)
+		return -1;
+	memcpy(rbuf, inbuf, len);
+	rbuf[len] = '\0';
 	buf = malloc(len + 1);
 	if (NULL == buf) {
-		return 0;
+		return -1;
 	}
 	memcpy(buf, rbuf, len);
 	buf[len] = '\0';
@@ -2060,6 +2065,7 @@ REG_CHAR:
 	if (rp < rbuf + len) {
 		*rp = '\0';
 	}
+	*outbufp = rbuf;
 	free(buf);
 	return (int)(rp - rbuf);
 }
