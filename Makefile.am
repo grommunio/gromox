@@ -610,6 +610,10 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 		<$< >$@.tmp
 	${AM_V_at}if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi; rm -f $@.tmp
 
+install-data-local:
+	${MKDIR_P} ${DESTDIR}${pkgdatadir}
+	install -pm0644 data/* ${DESTDIR}${pkgdatadir}/
+
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
 %.service: ${top_builddir}/config.status
