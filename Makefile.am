@@ -5,7 +5,7 @@ AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include -I${top_srcdir}/LIBRARY/comm
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
-lib_LTLIBRARIES = libgromox_common.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_resolv.la libgromox_rpc.la libgromox_webkit.la
+lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_resolv.la libgromox_rpc.la libgromox_webkit.la
 noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_webkit.ldd libgromox_rpc.ldd libgromox_mapi.ldd
 pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
 pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
@@ -158,6 +158,7 @@ exchange_plugins = \
 	libgxsvc_at_client.la \
 	libgxsvc_authmgr.la \
 	libgxsvc_ldap_adaptor.la \
+	libgxsvc_localemap.la \
 	libgxsvc_mysql_adaptor.la
 noinst_DATA += \
 	libexsvc_codepage_lang.ldd \
@@ -177,6 +178,7 @@ noinst_DATA += \
 	libgxsvc_at_client.ldd \
 	libgxsvc_authmgr.ldd \
 	libgxsvc_ldap_adaptor.ldd \
+	libgxsvc_localemap.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor sa_daemon event locker timer
@@ -189,6 +191,8 @@ BUILT_SOURCES = include/gromox/paths.h
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/long_hash.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/fileio.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
+libgromox_cplus_la_SOURCES = lib/localemap.cpp
+libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS}
 libgromox_dbop_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_dbop_la_SOURCES = lib/dbop_mysql.cpp
 libgromox_dbop_la_LIBADD = ${mysql_LIBS}
@@ -518,6 +522,10 @@ libgxsvc_ldap_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ldap_adaptor.
 libgxsvc_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ldap_adaptor_la_LIBADD = libgromox_common.la -lldap_r
 EXTRA_libgxsvc_ldap_adaptor_la_DEPENDENCIES = ${default_sym}
+libgxsvc_localemap_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/localeplug.cpp
+libgxsvc_localemap_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_localemap_la_LIBADD = libgromox_cplus.la
+EXTRA_libgxsvc_localemap_la_DEPENDENCIES = ${default_sym}
 libgxsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.cpp EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.cpp
 libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
@@ -588,7 +596,7 @@ man_MANS = \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
-	doc/imap.8gx doc/ldap_adaptor.4gx doc/locker.8gx \
+	doc/imap.8gx doc/ldap_adaptor.4gx doc/localemap.4gx doc/locker.8gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/monitor_domains.4gx \

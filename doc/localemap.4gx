@@ -1,0 +1,18 @@
+.TH localemap 4gx "" "Gromox" "Gromox admin reference"
+.SH Description
+.PP
+localemap is a service plugin that reads the character set and locale maps into
+memory and offers lookups in them.
+.PP
+It is vital that localemap is able to load the text files and initialize the
+mappings, as otherwise, character set conversions cannot be performed and e.g.
+exchange_nsp(4gx) responds with failure to RPCs made by Outlook that involve
+character set IDs or locale IDs.
+.SH Files
+.IP \(bu 4
+\fI/usr/share/gromox/cpid.txt\fP: character set map
+.IP \(bu 4
+\fI/usr/share/gromox/lcid.txt\fP: locale map
+.SH See also
+.PP
+\fBgromox\fP(7)
