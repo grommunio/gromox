@@ -623,6 +623,7 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${pkgdatadir}
 	install -pm0644 data/* ${DESTDIR}${pkgdatadir}/
+	install -pm0644 data/*.abkt ${DESTDIR}${pkgdatadir}/
 
 .la.ldd:
 	${AM_V_GEN}${top_srcdir}/lddcheck ${top_builddir}/libtool $< $@
