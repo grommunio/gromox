@@ -174,6 +174,9 @@ int message_dequeue_run()
 		return -1;
 	}
     sprintf(name, "%s/token.ipc", g_path);
+	int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	if (fd >= 0)
+		close(fd);
     k_msg = ftok(name, TOKEN_MESSAGE_QUEUE);
     if (-1 == k_msg) {
 		printf("[message_dequeue]: ftok %s: %s\n", name, strerror(errno));
