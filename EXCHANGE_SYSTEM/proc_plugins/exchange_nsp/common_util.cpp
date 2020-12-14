@@ -162,7 +162,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 	ppermeid->pdn = NULL;
 	if (DT_CONTAINER == display_type) {
 		if (NULL == pobj_guid) {
-			ppermeid->pdn = const_cast(char *, "/");
+			ppermeid->pdn = const_cast<char *>("/");
 		} else {
 			len = snprintf(buff, 128,
 				"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
@@ -173,7 +173,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 				pobj_guid->node[0], pobj_guid->node[1],
 				pobj_guid->node[2], pobj_guid->node[3],
 				pobj_guid->node[4], pobj_guid->node[5]);
-			ppermeid->pdn = ndr_stack_alloc(NDR_STACK_OUT, len + 1);
+			ppermeid->pdn = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, len + 1));
 			if (NULL == ppermeid->pdn) {
 				return FALSE;
 			}
@@ -181,7 +181,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 		}
 	}  else {
 		len = strlen(pdn);
-		ppermeid->pdn = ndr_stack_alloc(NDR_STACK_OUT, len + 1);
+		ppermeid->pdn = static_cast<char *>(ndr_stack_alloc(NDR_STACK_OUT, len + 1));
 		if (NULL == ppermeid->pdn) {
 			return FALSE;
 		}
@@ -197,10 +197,9 @@ BOOL common_util_permanent_entryid_to_binary(
 	
 	len = strlen(ppermeid->pdn) + 1;
 	pbin->cb = 28 + len;
-	pbin->pb = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
-	if (NULL == pbin->pb) {
+	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
+	if (pbin->pv == nullptr)
 		return FALSE;
-	}
 	memset(pbin->pb, 0, pbin->cb);
 	pbin->pb[0] = ppermeid->id_type;
 	pbin->pb[1] = ppermeid->r1;
@@ -223,10 +222,9 @@ BOOL common_util_ephemeral_entryid_to_binary(
 	const EPHEMERAL_ENTRYID *pephid, BINARY *pbin)
 {
 	pbin->cb = sizeof(EPHEMERAL_ENTRYID);
-	pbin->pb = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
-	if (NULL == pbin->pb) {
+	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, pbin->cb);
+	if (pbin->pv == nullptr)
 		return FALSE;
-	}
 	memset(pbin->pb, 0, pbin->cb);
 	pbin->pb[0] = pephid->id_type;
 	pbin->pb[1] = pephid->r1;
@@ -250,15 +248,13 @@ BOOL common_util_ephemeral_entryid_to_binary(
 
 PROPROW_SET* common_util_proprowset_init()
 {
-	PROPROW_SET *pset;
-
-	pset = ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPROW_SET));
+	auto pset = static_cast<PROPROW_SET *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPROW_SET)));
 	if (NULL == pset) {
 		return NULL;
 	}
 	memset(pset, 0, sizeof(PROPROW_SET));
-	pset->prows = ndr_stack_alloc(
-		NDR_STACK_OUT, sizeof(PROPERTY_ROW)*100);
+	pset->prows = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(
+	              NDR_STACK_OUT, sizeof(PROPERTY_ROW) * 100));
 	if (NULL == pset->prows) {
 		return NULL;
 	}
@@ -273,8 +269,8 @@ PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset)
 	count = (pset->crows/100 + 1) * 100;
 	if (pset->crows + 1 >= count) {
 		count += 100;
-		prows = ndr_stack_alloc(NDR_STACK_OUT,
-				count*sizeof(PROPERTY_ROW));
+		prows = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(NDR_STACK_OUT,
+		        count * sizeof(PROPERTY_ROW)));
 		if (NULL == prows) {
 			return NULL;
 		}
@@ -288,14 +284,14 @@ PROPERTY_ROW* common_util_proprowset_enlarge(PROPROW_SET *pset)
 PROPERTY_ROW* common_util_propertyrow_init(PROPERTY_ROW *prow)
 {
 	if (NULL == prow) {
-		prow = ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPERTY_ROW));
+		prow = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPERTY_ROW)));
 		if (NULL == prow) {
 			return NULL;
 		}
 	}
 	memset(prow, 0, sizeof(PROPERTY_ROW));
-	prow->pprops = ndr_stack_alloc(
-		NDR_STACK_OUT, sizeof(PROPERTY_VALUE)*40);
+	prow->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(
+	               NDR_STACK_OUT, sizeof(PROPERTY_VALUE) * 40));
 	if (NULL == prow->pprops) {
 		return NULL;
 	}
@@ -310,8 +306,8 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow)
 	count = (prow->cvalues/40 + 1) * 40;
 	if (prow->cvalues + 1 >= count) {
 		count += 40;
-		pprops = ndr_stack_alloc(NDR_STACK_OUT,
-				count*sizeof(PROPERTY_VALUE));
+		pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(NDR_STACK_OUT,
+		         count * sizeof(PROPERTY_VALUE)));
 		if (NULL == pprops) {
 			return NULL;
 		}
@@ -325,15 +321,13 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(PROPERTY_ROW *prow)
 
 PROPTAG_ARRAY* common_util_proptagarray_init()
 {
-	PROPTAG_ARRAY *pproptags;
-
-	pproptags = ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY));
+	auto pproptags = static_cast<PROPTAG_ARRAY *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(PROPTAG_ARRAY)));
 	if (NULL == pproptags) {
 		return NULL;
 	}
 	memset(pproptags, 0, sizeof(PROPTAG_ARRAY));
-	pproptags->pproptag = ndr_stack_alloc(
-		NDR_STACK_OUT, sizeof(uint32_t)*100);
+	pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(
+	                      NDR_STACK_OUT, sizeof(uint32_t) * 100));
 	if (NULL == pproptags->pproptag) {
 		return NULL;
 	}
@@ -348,8 +342,8 @@ uint32_t* common_util_proptagarray_enlarge(PROPTAG_ARRAY *pproptags)
 	count = (pproptags->cvalues/100 + 1) * 100;
 	if (pproptags->cvalues + 1 >= count) {
 		count += 100;
-		pproptag = ndr_stack_alloc(
-			NDR_STACK_OUT, count*sizeof(uint32_t));
+		pproptag = static_cast<uint32_t *>(ndr_stack_alloc(
+		           NDR_STACK_OUT, count * sizeof(uint32_t)));
 		if (NULL == pproptag) {
 			return NULL;
 		}
@@ -370,16 +364,14 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 		return FALSE;
 	}
 	pbin->cb = node_state.st_size;
-	pbin->pb = ndr_stack_alloc(NDR_STACK_OUT, node_state.st_size);
-	if (NULL == pbin->pb) {
+	pbin->pv = ndr_stack_alloc(NDR_STACK_OUT, node_state.st_size);
+	if (pbin->pv == nullptr)
 		return FALSE;
-	}
 	fd = open(path, O_RDONLY);
 	if (-1 == fd) {
 		return FALSE;
 	}
-	if (node_state.st_size != read(fd,
-		pbin->pb, node_state.st_size)) {
+	if (read(fd, pbin->pv, node_state.st_size) != node_state.st_size) {
 		close(fd);
 		return FALSE;
 	}
@@ -389,7 +381,7 @@ BOOL common_util_load_file(const char *path, BINARY *pbin)
 
 int common_util_run()
 {
-	cpid_to_charset = query_service("cpid_to_charset");
+	cpid_to_charset = reinterpret_cast<decltype(cpid_to_charset)>(query_service("cpid_to_charset"));
 	if (NULL == cpid_to_charset) {
 		printf("[exchange_nsp]: failed to get service \"cpid_to_charset\"\n");
 		return -1;
