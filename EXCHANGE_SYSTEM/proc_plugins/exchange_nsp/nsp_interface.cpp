@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <stdbool.h>
@@ -6,6 +7,9 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/oxoabkt.hpp>
+#include <gromox/paths.h>
+#include <gromox/scope.hpp>
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
@@ -33,6 +37,11 @@ struct dlgitem {
 	char user[256];
 };
 
+enum {
+	TI_TEMPLATE = 0x1,
+	TI_SCRIPT = 0x4,
+};
+
 static BOOL g_session_check;
 
 static BOOL (*verify_cpid)(uint32_t cpid);
@@ -40,6 +49,8 @@ static BOOL (*get_domain_ids)(const char *domainname,
 	int *pdomain_id, int *porg_id);
 static BOOL (*get_maildir)(const char *username, char *maildir);
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
+static decltype(gromox::abkt_tojson) *nsp_abktojson;
+static decltype(gromox::abkt_tobinary) *nsp_abktobinary;
 
 static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	BOOL b_ephid, uint32_t codepage, uint32_t proptag,
@@ -795,6 +806,10 @@ int nsp_interface_run()
 	E(get_maildir, "get_maildir");
 	E(get_id_from_username, "get_id_from_username");
 	E(verify_cpid, "verify_cpid");
+	nsp_abktojson = reinterpret_cast<decltype(nsp_abktojson)>(query_service("abkt_tojson"));
+	nsp_abktobinary = reinterpret_cast<decltype(nsp_abktobinary)>(query_service("abkt_tobinary"));
+	if (nsp_abktojson == nullptr || nsp_abktobinary == nullptr)
+		fprintf(stderr, "[exchange_nsp]: address book user interface templates not available\n");
 	return 0;
 #undef E
 }
@@ -3589,4 +3604,57 @@ EXIT_RESOLVE_NAMESW:
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc)
 {
 	/* do nothing */
+}
+
+int nsp_interface_get_templateinfo(NSPI_HANDLE handle, uint32_t flags,
+    uint32_t type, char *dn, uint32_t codepage, uint32_t locale_id,
+    PROPERTY_ROW **ppdata)
+{
+	*ppdata = nullptr;
+	if ((flags & (TI_TEMPLATE | TI_SCRIPT)) != TI_TEMPLATE)
+		return ecNotSupported;
+	if (!verify_cpid(codepage))
+		return MAPI_E_UNKNOWN_CPID;
+	if (dn != nullptr) {
+		fprintf(stderr, "[exchange_nsp]: unimplemented templateinfo dn=%s\n", dn);
+		return MAPI_E_UNKNOWN_LCID;
+	}
+
+	char buf[4096];
+	snprintf(buf, sizeof(buf), PKGDATADIR "/displayTable-%X-%X.abkt", locale_id, type);
+	int fd = open(buf, O_RDONLY);
+	if (fd < 0)
+		return MAPI_E_UNKNOWN_LCID;
+
+	auto cleanup_fd = gromox::make_scope_exit([&]() { if (fd >= 0) close(fd); });
+	std::string tpldata;
+	ssize_t have_read;
+	while ((have_read = read(fd, buf, sizeof(buf))) > 0)
+		tpldata += std::string_view(buf, have_read);
+	close(fd);
+	fd = -1;
+	try {
+		tpldata = nsp_abktobinary(nsp_abktojson(tpldata, 0), codepage, false);
+	} catch (const std::runtime_error &e) {
+		return MAPI_E_UNKNOWN_LCID;
+	}
+
+	auto row = *ppdata = static_cast<PROPERTY_ROW *>(ndr_stack_alloc(
+	           NDR_STACK_OUT, sizeof(PROPERTY_ROW)));
+	if (row == nullptr)
+		return ecMAPIOOM;
+	row->reserved = 0;
+	row->cvalues  = 1;
+	auto val = row->pprops = static_cast<PROPERTY_VALUE *>(ndr_stack_alloc(
+	           NDR_STACK_OUT, sizeof(PROPERTY_VALUE)));
+	if (val == nullptr)
+		return ecMAPIOOM;
+	val->proptag  = PROP_TAG_TEMPLATEDATA;
+	val->reserved = 0;
+	val->value.bin.cb = tpldata.size();
+	val->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, tpldata.size());
+	if (val->value.bin.pv == nullptr)
+		return ecMAPIOOM;
+	memcpy(val->value.bin.pv, tpldata.data(), tpldata.size());
+	return 0;
 }

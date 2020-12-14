@@ -155,6 +155,7 @@ exchange_plugins = \
 	libexproc_exchange_nsp.la \
 	libexproc_exchange_rfr.la \
 	libexhpm_proxy.la \
+	libgxsvc_abktplug.la \
 	libgxsvc_at_client.la \
 	libgxsvc_authmgr.la \
 	libgxsvc_ldap_adaptor.la \
@@ -175,6 +176,7 @@ noinst_DATA += \
 	libexproc_exchange_nsp.ldd \
 	libexproc_exchange_rfr.ldd \
 	libexhpm_proxy.ldd \
+	libgxsvc_abktplug.ldd \
 	libgxsvc_at_client.ldd \
 	libgxsvc_authmgr.ldd \
 	libgxsvc_ldap_adaptor.ldd \
@@ -498,7 +500,7 @@ libexproc_exchange_emsmdb_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/exchange_ems
 libexproc_exchange_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_exchange_emsmdb_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
 EXTRA_libexproc_exchange_emsmdb_la_DEPENDENCIES = ${default_sym}
-libexproc_exchange_nsp_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/ab_tree.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/common_util.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/main.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/nsp_interface.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/nsp_ndr.c EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/template.cpp
+libexproc_exchange_nsp_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/ab_tree.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/common_util.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/main.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/nsp_interface.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/nsp_ndr.c
 libexproc_exchange_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_exchange_nsp_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libexproc_exchange_nsp_la_DEPENDENCIES = ${default_sym}
@@ -510,6 +512,10 @@ libexhpm_proxy_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/mod_proxy.c
 libexhpm_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexhpm_proxy_la_DEPENDENCIES = ${default_sym}
+libgxsvc_abktplug_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/abktplug.cpp
+libgxsvc_abktplug_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_abktplug_la_LIBADD = libgromox_cplus.la
+EXTRA_libgxsvc_abktplug_la_DEPENDENCIES = ${default_sym}
 libgxsvc_at_client_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/at_client.c
 libgxsvc_at_client_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_at_client_la_LIBADD = ${HX_LIBS}
