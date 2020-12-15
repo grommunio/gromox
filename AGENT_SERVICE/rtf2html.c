@@ -91,7 +91,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to uncompress rtf\n");
 		return 2;
 	}
-	g_list_file = list_file_init(PKGDATAAGENTDIR "/cpid.txt", "%d%s:64");
+	g_list_file = list_file_init(PKGDATADIR "/cpid.txt", "%d%s:64");
 	if (NULL == g_list_file) {
 		fprintf(stderr, "list_file_init %s: %s\n",
 			PKGDATAAGENTDIR "/cpid.txt", strerror(errno));

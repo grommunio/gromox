@@ -16,7 +16,7 @@ Output version information and exit.
 Display option summary.
 .SH Files
 .IP \(bu 4
-/usr/share/gromox/agent/cpid.txt: codepage number <-> name definition table
+\fI/usr/share/gromox/cpid.txt\fP: codepage number <-> name definition table
 .SH See also
 .PP
 \fBgromox\fP(7)
