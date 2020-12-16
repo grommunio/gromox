@@ -15,19 +15,30 @@ namespace gromox {
 template<typename Tp> class resource_pool {
 	public:
 	class token {
+		/* automatically return connection back to pool when going out of scope */
 		public:
 		token(resource_pool &pool, Tp &&r) :
 			m_pool(pool), res(std::move(r)) {}
-		token(token &&o) = delete;
-		~token() { try {
-			m_pool.put(std::move(res));
-		} catch (...) {
-			m_pool.put_slot();
-		}}
+		token(token &&o) :
+			m_pool(o.m_pool), res(std::move(o.res)), m_done(o.m_done)
+		{
+			o.m_done = true;
+		}
+		~token() { if (!m_done) finish(); }
+		void finish() {
+			try {
+				m_pool.put(std::move(res));
+			} catch (...) {
+				m_pool.put_slot();
+			}
+			m_done = true;
+			res = Tp();
+		}
 		protected:
 		resource_pool &m_pool;
 		public:
 		Tp res;
+		bool m_done = false;
 	};
 
 	token get_wait() {

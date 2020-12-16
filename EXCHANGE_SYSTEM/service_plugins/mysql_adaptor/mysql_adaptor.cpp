@@ -1,12 +1,13 @@
 #include <map>
+#include <memory>
 #include <string>
 #include <string.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
+#include <gromox/resource_pool.hpp>
 #include "mysql_adaptor.h"
-#include "double_list.h"
 #include "mem_file.h"
 #include "util.h"
 #include <stdio.h>
@@ -46,11 +47,15 @@
 
 using namespace gromox;
 
-typedef struct _CONNECTION_NODE {
-	DOUBLE_LIST_NODE node;
-	DOUBLE_LIST_NODE node_temp;
-	MYSQL *pmysql;
-} CONNECTION_NODE;
+struct sqlfree {
+	void operator()(MYSQL *m) { mysql_close(m); }
+};
+
+using sqlconn_ptr = std::unique_ptr<MYSQL, sqlfree>;
+
+static struct sqlconnpool final : public resource_pool<sqlconn_ptr> {
+	resource_pool::token get_wait();
+} g_sqlconn_pool;
 
 static int g_conn_num;
 static int g_scan_interval;
@@ -61,15 +66,8 @@ static char g_user[256];
 static char *g_password;
 static char g_password_buff[256];
 static char g_db_name[256];
-static pthread_mutex_t g_list_lock;
 static pthread_mutex_t g_crypt_lock;
-static DOUBLE_LIST g_connection_list;
-static DOUBLE_LIST g_invalid_list;
-static pthread_t g_thread_id;
-static BOOL g_notify_stop = TRUE;
 static enum sql_schema_upgrade g_schema_upgrade;
-
-static void *thread_work_func(void *param);
 
 static void mysql_adaptor_encode_squote(const char *in, char *out);
 
@@ -85,7 +83,6 @@ static inline const char *z_null(const char *s)
 
 void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 {
-	g_notify_stop = TRUE;
 	g_conn_num = parm.conn_num;
 	g_scan_interval = parm.scan_interval;
 	HX_strlcpy(g_host, parm.host, sizeof(g_host));
@@ -100,9 +97,6 @@ void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 	}
 	HX_strlcpy(g_db_name, parm.dbname, sizeof(g_db_name));
 	g_schema_upgrade = parm.schema_upgrade;
-	double_list_init(&g_connection_list);
-	double_list_init(&g_invalid_list);
-	pthread_mutex_init(&g_list_lock, NULL);
 	pthread_mutex_init(&g_crypt_lock, NULL);
 }
 
@@ -127,208 +121,96 @@ static bool db_upgrade_check_2(MYSQL *conn)
 
 static bool db_upgrade_check()
 {
-	pthread_mutex_lock(&g_list_lock);
-	auto node = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	if (node == nullptr)
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
 		return false;
-	auto conn = static_cast<CONNECTION_NODE *>(node->pdata);
-	auto ret = db_upgrade_check_2(conn->pmysql);
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &conn->node);
-	pthread_mutex_unlock(&g_list_lock);
-	return ret;
+	return db_upgrade_check_2(conn.res.get());
+}
+
+static sqlconn_ptr sql_make_conn()
+{
+	sqlconn_ptr conn(mysql_init(nullptr));
+	if (conn == nullptr)
+		return conn;
+	if (g_timeout > 0) {
+		mysql_options(conn.get(), MYSQL_OPT_READ_TIMEOUT,
+			&g_timeout);
+		mysql_options(conn.get(), MYSQL_OPT_WRITE_TIMEOUT,
+			&g_timeout);
+	}
+	mysql_options(conn.get(), MYSQL_SET_CHARSET_NAME, "utf8mb4");
+	if (mysql_real_connect(conn.get(), g_host, g_user, g_password,
+	    g_db_name, g_port, nullptr, 0) != nullptr)
+		return conn;
+	printf("[mysql_adaptor]: Failed to connect to mysql server: %s\n",
+	       mysql_error(conn.get()));
+	return nullptr;
+}
+
+resource_pool<sqlconn_ptr>::token sqlconnpool::get_wait()
+{
+	auto c = resource_pool::get_wait();
+	if (c.res == nullptr)
+		c.res = sql_make_conn();
+	return c;
 }
 
 int mysql_adaptor_run()
 {
-	int i;
-	CONNECTION_NODE *pconnection;
-
-	
-	for (i=0; i<g_conn_num; i++) {
-		pconnection = (CONNECTION_NODE*)malloc(sizeof(CONNECTION_NODE));
-		if (NULL == pconnection) {
-			continue;
-		}
-		pconnection->node.pdata = pconnection;
-		pconnection->node_temp.pdata = pconnection;
-		pconnection->pmysql = mysql_init(NULL);
-		if (NULL != pconnection->pmysql) {
-			mysql_options(pconnection->pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
-			if (g_timeout > 0) {
-				mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-					&g_timeout);
-				mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-					&g_timeout);
-			}
-			if (NULL != mysql_real_connect(pconnection->pmysql, g_host, g_user,
-				g_password, g_db_name, g_port, NULL, 0)) {
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-			} else {
-				printf("[mysql_adaptor]: Failed to connect to mysql server, "
-					"reason: %s\n", mysql_error(pconnection->pmysql));
-				mysql_close(pconnection->pmysql);
-				pconnection->pmysql = NULL;
-				double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			}
-		} else {
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-		}
-	}
-
-	if (0 == double_list_get_nodes_num(&g_connection_list) &&
-		0 == double_list_get_nodes_num(&g_invalid_list)) {
-		printf("[mysql_adaptor]: Failed to init connection list\n");
-		return -1;
+	for (int i = 0; i < g_conn_num; ++i) {
+		auto conn = sql_make_conn();
+		if (conn == nullptr)
+			break;
+		g_sqlconn_pool.put(std::move(conn));
 	}
 
 	if (!db_upgrade_check())
 		return -1;
-	g_notify_stop = FALSE;
-	int ret = pthread_create(&g_thread_id, nullptr, thread_work_func, nullptr);
-	if (ret != 0) {
-		g_notify_stop = TRUE;
-		printf("[mysql_adaptor]: failed to create scanning thread: %s\n", strerror(ret));
-		return -2;
-	}
-	pthread_setname_np(g_thread_id, "mysql_adaptor");
+	g_sqlconn_pool.resize(g_conn_num);
 	return 0;
 
 }
 
 int mysql_adaptor_stop()
 {
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-
-	if (FALSE == g_notify_stop) {
-		g_notify_stop = TRUE;
-		pthread_join(g_thread_id, NULL);
-	}
-	
-	while ((pnode = double_list_get_from_head(&g_connection_list)) != NULL) {
-		pconnection = (CONNECTION_NODE*)pnode->pdata;
-		if (NULL != pconnection->pmysql) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-		}
-		free(pconnection);
-	}
-	
-	while ((pnode = double_list_get_from_head(&g_invalid_list)) != NULL) {
-		pconnection = (CONNECTION_NODE*)pnode->pdata;
-		free(pconnection);
-	}
-	
+	g_sqlconn_pool.clear();
 	return 0;
 }
 
 void mysql_adaptor_free()
 {
-	double_list_free(&g_connection_list);
-	double_list_free(&g_invalid_list);
-	pthread_mutex_destroy(&g_list_lock);
 	pthread_mutex_destroy(&g_crypt_lock);
-}
-
-static bool reco(CONNECTION_NODE *conn, int &i, const char *sql_string,
-    MYSQL_RES *&pmyres, bool result_matters = true)
-{
-	mysql_close(conn->pmysql);
-	conn->pmysql = mysql_init(nullptr);
-	if (conn->pmysql == nullptr) {
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_invalid_list, &conn->node);
-		pthread_mutex_unlock(&g_list_lock);
-		++i;
-		sleep(1);
-		return true;
-	}
-
-	mysql_options(conn->pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
-	if (g_timeout > 0) {
-		mysql_options(conn->pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-		mysql_options(conn->pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-	}
-
-	if (mysql_real_connect(conn->pmysql, g_host, g_user, g_password,
-	    g_db_name, g_port, nullptr, 0) == nullptr ||
-	    mysql_query(conn->pmysql, sql_string) != 0 ||
-	    ((pmyres = mysql_store_result(conn->pmysql)) == nullptr && result_matters)) {
-		mysql_close(conn->pmysql);
-		conn->pmysql = nullptr;
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_invalid_list, &conn->node);
-		pthread_mutex_unlock(&g_list_lock);
-		++i;
-		sleep(1);
-		return true;
-	}
-	if (!result_matters) {
-		mysql_free_result(pmyres);
-		pmyres = nullptr;
-	}
-	return false;
 }
 
 BOOL mysql_adaptor_meta(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode,
     char *encrypt_passwd, size_t encrypt_size)
 {
-	int i;
 	int temp_type;
 	int temp_status;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
 	MYSQL_RES *pmyres;
-	CONNECTION_NODE *pconnection;
-
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		snprintf(reason, length, "these's no database connection alive, "
-			"please contact system administrator!");
-		return FALSE;
-	}
 
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		if (mode != USER_PRIVILEGE_SMTP)
-			snprintf(reason, length, "system too busy, no free database connection available");
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT password, address_type, address_status, "
 		"privilege_bits, maildir, lang FROM users WHERE username='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr)
+			return false;
+		if (mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		snprintf(reason, length, "user \"%s\" does not exist; check if "
@@ -395,56 +277,39 @@ static BOOL firsttime_password(const char *username, const char *password,
 	strcpy(encrypt_passwd, md5_crypt_wrapper(password));
 	pthread_mutex_unlock(&g_crypt_lock);
 
-	MYSQL *pmysql;
-	pmysql = mysql_init(NULL);
-	if (NULL == pmysql) {
-		strncpy(reason, "database error, please try later!", length);
-		return FALSE;
-	}
-
-	mysql_options(pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
-	if (g_timeout > 0) {
-		mysql_options(pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-		mysql_options(pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-	}
-		
-	if (NULL == mysql_real_connect(pmysql, g_host, g_user, g_password,
-	    g_db_name, g_port, NULL, 0)) {
-		mysql_close(pmysql);
-		strncpy(reason, "database error, please try later!", length);
-		return FALSE;
-	}
-
 	char sql_string[1024], temp_name[512];
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 	         "username='%s'", encrypt_passwd, temp_name);
-	if (0 != mysql_query(pmysql, sql_string)) {
-		mysql_close(pmysql);
-		strncpy(reason, "database error, please try later!", length);
-		return FALSE;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr)
+			return false;
+		if (mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
 	MYSQL_RES *pmyres, *pmyres1;
 	snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
 	         "mainname='%s'", temp_name);
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
-		mysql_close(pmysql);
-		strncpy(reason, "database error, please try later!", length);
-		return FALSE;
-	}
+	if (mysql_query(conn.res.get(), sql_string) != 0)
+		return false;
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
 
 	mysql_adaptor_encode_squote(pdomain, temp_name);
 	snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
 	         "mainname='%s'", temp_name);
-	if (0 != mysql_query(pmysql, sql_string) ||
-	    NULL == (pmyres1 = mysql_store_result(pmysql))) {
-		mysql_free_result(pmyres);
-		mysql_close(pmysql);
-		strncpy(reason, "database error, please try later!", length);
-		return FALSE;
-	}
+	if (mysql_query(conn.res.get(), sql_string) != 0)
+		return false;
+	pmyres1 = mysql_store_result(conn.res.get());
+	if (pmyres1 == nullptr)
+		return false;
+
 	size_t rows, rows1, k;
 	rows = mysql_num_rows(pmyres);
 	rows1 = mysql_num_rows(pmyres1);
@@ -461,7 +326,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 		         "username='%s'", encrypt_passwd, temp_name);
-		mysql_query(pmysql, sql_string);
+		mysql_query(conn.res.get(), sql_string);
 	}
 
 	size_t j;
@@ -472,7 +337,7 @@ static BOOL firsttime_password(const char *username, const char *password,
 		mysql_adaptor_encode_squote(myrow[0], temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 		         "username='%s'", encrypt_passwd, temp_name);
-		mysql_query(pmysql, sql_string);
+		mysql_query(conn.res.get(), sql_string);
 
 		mysql_data_seek(pmyres1, 0);
 		size_t k;
@@ -487,13 +352,12 @@ static BOOL firsttime_password(const char *username, const char *password,
 			mysql_adaptor_encode_squote(virtual_address, temp_name);
 			snprintf(sql_string, 1024, "UPDATE users SET password='%s' "
 				"WHERE username='%s'", encrypt_passwd, temp_name);
-			mysql_query(pmysql, sql_string);
+			mysql_query(conn.res.get(), sql_string);
 		}
 	}
 
 	mysql_free_result(pmyres1);
 	mysql_free_result(pmyres);
-	mysql_close(pmysql);
 	return TRUE;
 }
 
@@ -530,7 +394,7 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password)
 {
-	int i, j, k;
+	int j, k;
 	int temp_type;
 	int temp_status;
 	int rows, rows1;
@@ -540,48 +404,26 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	char sql_string[1024];
 	char encrypt_passwd[40];
 	char virtual_address[256];
-	MYSQL *pmysql;
 	MYSQL_ROW myrow, myrow1;
-	DOUBLE_LIST_NODE *pnode;
 	MYSQL_RES *pmyres, *pmyres1;
-	CONNECTION_NODE *pconnection;
 	
-	
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT password, address_type,"
 			" address_status, privilege_bits FROM users WHERE "
 			"username='%s'", temp_name);
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -626,47 +468,31 @@ RETRYING:
 	strcpy(encrypt_passwd, md5_crypt_wrapper(new_password));
 	pthread_mutex_unlock(&g_crypt_lock);
 
-	pmysql = mysql_init(NULL);
-	if (NULL == pmysql) {
-		return FALSE;
-	}
-
-	mysql_options(pconnection->pmysql, MYSQL_SET_CHARSET_NAME, "utf8mb4");
-	if (g_timeout > 0) {
-		mysql_options(pmysql, MYSQL_OPT_READ_TIMEOUT, &g_timeout);
-		mysql_options(pmysql, MYSQL_OPT_WRITE_TIMEOUT, &g_timeout);
-	}
-		
-	if (NULL == mysql_real_connect(pmysql, g_host, g_user,
-		g_password, g_db_name, g_port, NULL, 0)) {
-		mysql_close(pmysql);
-		return FALSE;
-	}
-
 	snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 			" WHERE username='%s'", encrypt_passwd, temp_name);
-	if (0 != mysql_query(pmysql, sql_string)) {
-		mysql_close(pmysql);
-		return FALSE;
-	}
+	if (conn.res == nullptr ||
+	    mysql_query(conn.res.get(), sql_string) != 0)
+		return false;
 
 	snprintf(sql_string, 1024, "SELECT aliasname FROM"
 			" aliases WHERE mainname='%s'", temp_name);
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
-		mysql_close(pmysql);
-		return FALSE;
-	}
+	if (conn.res == nullptr ||
+	    mysql_query(conn.res.get(), sql_string) != 0)
+		return false;
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
 
 	mysql_adaptor_encode_squote(pdomain, temp_name);
 	snprintf(sql_string, 1024, "SELECT aliasname FROM"
 			" aliases WHERE mainname='%s'", temp_name);
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres1 = mysql_store_result(pmysql))) {
-		mysql_free_result(pmyres);
-		mysql_close(pmysql);
-		return FALSE;
-	}
+	if (conn.res == nullptr ||
+	    mysql_query(conn.res.get(), sql_string) != 0)
+		return false;
+
+	pmyres1 = mysql_store_result(conn.res.get());
+	if (pmyres1 == nullptr)
+		return false;
 	rows = mysql_num_rows(pmyres);
 	rows1 = mysql_num_rows(pmyres1);
 
@@ -678,7 +504,7 @@ RETRYING:
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 				" WHERE username='%s'", encrypt_passwd, temp_name);
-		mysql_query(pmysql, sql_string);
+		mysql_query(conn.res.get(), sql_string);
 	}
 
 	for (j=0; j<rows; j++) {
@@ -686,7 +512,7 @@ RETRYING:
 		mysql_adaptor_encode_squote(myrow[0], temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 				" WHERE username='%s'", encrypt_passwd, temp_name);
-		mysql_query(pmysql, sql_string);
+		mysql_query(conn.res.get(), sql_string);
 
 		mysql_data_seek(pmyres1, 0);
 		for (k=0; k<rows1; k++) {
@@ -697,64 +523,36 @@ RETRYING:
 			mysql_adaptor_encode_squote(virtual_address, temp_name);
 			snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 					" WHERE username='%s'", encrypt_passwd, temp_name);
-			mysql_query(pmysql, sql_string);
+			mysql_query(conn.res.get(), sql_string);
 		}
 	}
 	mysql_free_result(pmyres1);
 	mysql_free_result(pmyres);
-	mysql_close(pmysql);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_username_from_id(int user_id, char *username)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
 	
 	snprintf(sql_string, 1024, "SELECT username FROM users "
 		"WHERE id=%d", user_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -768,55 +566,29 @@ RETRYING:
 
 BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT id FROM users "
 		"WHERE username='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr)
+			return false;
+		if (mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -830,55 +602,28 @@ RETRYING:
 
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_dir[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(maildir, temp_dir);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT id FROM users "
 		"WHERE maildir='%s' AND address_type=0", temp_dir);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -893,58 +638,34 @@ RETRYING:
 BOOL mysql_adaptor_get_user_displayname(
 	const char *username, char *pdisplayname)
 {
-	int i;
 	MYSQL_ROW myrow;
 	int address_type;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
 	snprintf(sql_string, sizeof(sql_string),
 	         "SELECT u2.propval_str AS real_name, "
 	         "u3.propval_str AS nickname, u.address_type FROM users AS u "
 	         "LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 "
 	         "LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 "
 	         "WHERE u.username='%s'", temp_name);
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr)
+			return false;
+		if (mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -964,55 +685,28 @@ RETRYING:
 BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT privilege_bits"
 		" FROM users WHERE username='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1026,53 +720,28 @@ RETRYING:
 
 BOOL mysql_adaptor_get_user_lang(const char *username, char *lang)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT lang FROM users "
 		"WHERE username='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-	
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		lang[0] = '\0';	
 	} else {
@@ -1085,45 +754,21 @@ RETRYING:
 
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	mysql_adaptor_encode_squote(username, temp_name);
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "UPDATE users set "
 		"lang='%s' WHERE username='%s'", lang, temp_name);
-	
-	if (mysql_query(pconnection->pmysql, sql_string) != 0) {
-		MYSQL_RES *pmyres = nullptr;
-		if (reco(pconnection, i, sql_string, pmyres, false))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 	return TRUE;
 }
 
@@ -1140,10 +785,20 @@ static BOOL mysql_adaptor_expand_hierarchy(
 
 	snprintf(sql_string, 1024, "SELECT child_id FROM"
 		" hierarchy WHERE class_id=%d", class_id);
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
-		return FALSE;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	rows = mysql_num_rows(pmyres);
 
 	for (i = 0; i < rows; i++) {
@@ -1172,53 +827,28 @@ static BOOL mysql_adaptor_expand_hierarchy(
 
 BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT timezone FROM users "
 		"WHERE username='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-	
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		timezone[0] = '\0';	
 	} else {
@@ -1231,101 +861,50 @@ RETRYING:
 
 BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone)
 {
-	int i;
 	char temp_name[512];
 	char temp_zone[128];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	mysql_adaptor_encode_squote(username, temp_name);
 	mysql_adaptor_encode_squote(timezone, temp_zone);
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "UPDATE users set timezone='%s'"
 				" WHERE username='%s'", temp_zone, temp_name);
-	
-	if (mysql_query(pconnection->pmysql, sql_string) != 0) {
-		MYSQL_RES *pmyres = nullptr;
-		if (reco(pconnection, i, sql_string, pmyres, false))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_maildir(const char *username, char *maildir)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT maildir FROM users "
 		"WHERE username='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1339,53 +918,26 @@ RETRYING:
 
 BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT domainname FROM domains "
 		"WHERE id=%d", domain_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1400,53 +952,28 @@ RETRYING:
 static bool mysql_adaptor_get_homedir_impl(const char *domainname,
     char *homedir, bool domain_home)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(domainname, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT homedir, domain_status FROM domains "
 		"WHERE domainname='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 
 	if (domain_home) {
 		if (mysql_num_rows(pmyres) != 1) {
@@ -1485,52 +1012,26 @@ BOOL mysql_adaptor_get_domain_homedir(const char *domainname, char *homedir)
 
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT homedir FROM domains "
 		"WHERE id=%d", domain_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1544,55 +1045,28 @@ RETRYING:
 
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_dir[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(homedir, temp_dir);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT id FROM domains "
 		"WHERE homedir='%s' AND domain_type=0", temp_dir);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1607,52 +1081,28 @@ RETRYING:
 BOOL mysql_adaptor_get_user_ids(const char *username,
 	int *puser_id, int *pdomain_id, int *paddress_type)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* if no valid connection node available, return immediately */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT id, domain_id, address_type,"
 			" sub_type FROM users WHERE username='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-	
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;	
@@ -1678,55 +1128,28 @@ RETRYING:
 BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	int *pdomain_id, int *porg_id)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(domainname, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT id, org_id FROM domains "
 		"WHERE domainname='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1742,52 +1165,26 @@ RETRYING:
 BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	int *pgroup_id, int *pdomain_id)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT address_type, domain_id, "
 		"group_id FROM users WHERE id='%d'", user_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1813,48 +1210,23 @@ BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile)
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024,
 		"SELECT id FROM domains WHERE org_id=%d", org_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	rows = mysql_num_rows(pmyres);
 	for (i=0; i<rows; i++) {
 		myrow = mysql_fetch_row(pmyres);
@@ -1868,52 +1240,26 @@ RETRYING:
 BOOL mysql_adaptor_get_domain_info(int domain_id,
 	char *name, char *title, char *address)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT domainname, title, address, homedir "
 		"FROM domains WHERE id=%d", domain_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -1929,54 +1275,28 @@ RETRYING:
 
 BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 {
-	int i;
 	int org_id1;
 	int org_id2;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT org_id FROM domains "
 		"WHERE id=%d OR id=%d", domain_id1, domain_id2);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (2 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -2002,48 +1322,23 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT id, groupname, title "
 		"FROM groups WHERE domain_id=%d", domain_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	rows = mysql_num_rows(pmyres);
 	for (i=0; i<rows; i++) {
 		myrow = mysql_fetch_row(pmyres);
@@ -2069,49 +1364,24 @@ BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile)
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
 			"hierarchy INNER JOIN classes ON class_id=0 AND "
 			"hierarchy.group_id=%d AND child_id=classes.id", group_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	rows = mysql_num_rows(pmyres);
 	for (i=0; i<rows; i++) {
 		myrow = mysql_fetch_row(pmyres);
@@ -2134,49 +1404,24 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile)
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
 		"hierarchy INNER JOIN classes ON class_id=%d AND "
 		"child_id=classes.id", class_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	rows = mysql_num_rows(pmyres);
 	for (i=0; i<rows; i++) {
 		myrow = mysql_fetch_row(pmyres);
@@ -2192,55 +1437,28 @@ RETRYING:
 
 static BOOL mysql_adaptor_get_group_title(const char *groupname, char *title)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	
 	mysql_adaptor_encode_squote(groupname, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT title FROM"
 		" groups WHERE groupname='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -2254,55 +1472,28 @@ RETRYING:
 static BOOL mysql_adaptor_get_class_title(
 	const char *listname, char *classname)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	
 	mysql_adaptor_encode_squote(listname, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT classname FROM"
 			" classes WHERE listname='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -2316,55 +1507,28 @@ RETRYING:
 static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 	int *plist_type, int *plist_privilege, char *title)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	
 	mysql_adaptor_encode_squote(listname, temp_name);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT list_type, list_privilege"
 					" FROM mlists WHERE listname='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -2397,34 +1561,6 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 	int address_type;
 	int list_privilege;
 	char sql_string[1600];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return -1;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return -1;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
 
 	snprintf(sql_string, sizeof(sql_string),
 	         "SELECT u.id, u.privilege_bits, u.username, "
@@ -2442,16 +1578,20 @@ RETRYING:
 	         "LEFT JOIN user_properties AS u7 ON u.id=u7.user_id AND u7.proptag=978255903 "
 	         "LEFT JOIN user_properties AS u8 ON u.id=u8.user_id AND u8.proptag=979173407",
 	         class_id);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	
 	count = 0;
 	rows = mysql_num_rows(pmyres);
@@ -2561,34 +1701,7 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 	MYSQL_RES *pmyres;
 	int list_privilege;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return -1;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return -1;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
 
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
 	snprintf(sql_string, sizeof(sql_string),
 	         "SELECT u.id, u.privilege_bits, u.username, "
 	         "u2.propval_str AS real_name, u3.propval_str AS title, "
@@ -2605,15 +1718,20 @@ RETRYING:
 	         "LEFT JOIN user_properties AS u8 ON u.id=u8.user_id AND u8.proptag=979173407 "
 	         "WHERE u.group_id=%d AND (SELECT COUNT(*) AS num FROM members WHERE u.username=members.username)=0",
 	         group_id);
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	
 	count = 0;
 	rows = mysql_num_rows(pmyres);
@@ -2710,7 +1828,7 @@ RETRYING:
 
 using alias_map_type = std::multimap<std::string, std::string>;
 
-static bool get_domain_aliases(CONNECTION_NODE *co,
+static bool get_domain_aliases(sqlconn_ptr &conn,
     int domain_id, alias_map_type &out) try
 {
 	char query[160];
@@ -2718,9 +1836,13 @@ static bool get_domain_aliases(CONNECTION_NODE *co,
 		"SELECT u.username, a.aliasname FROM users AS u "
 		"INNER JOIN aliases AS a ON u.username=a.mainname "
 		"WHERE u.domain_id=%d", domain_id);
-	if (mysql_query(co->pmysql, query) != 0)
-		return false;
-	DB_RESULT res(mysql_store_result(co->pmysql));
+	if (mysql_query(conn.get(), query) != 0) {
+		conn = sql_make_conn();
+		if (conn == nullptr ||
+		    mysql_query(conn.get(), query) != 0)
+			return false;
+	}
+	DB_RESULT res(mysql_store_result(conn.get()));
 	if (res == nullptr)
 		return false;
 	out.clear();
@@ -2758,36 +1880,12 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 	MYSQL_RES *pmyres;
 	int list_privilege;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
-	/* 
-	 * if no valid connection node available, it means the
-	 * database is down, return immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return -1;
-	}
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return -1;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
 	alias_map_type dom_alias;
-	get_domain_aliases(pconnection, domain_id, dom_alias);
+
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	get_domain_aliases(conn.res, domain_id, dom_alias);
 	snprintf(sql_string, sizeof(sql_string),
 	         "SELECT u.id, u.privilege_bits, u.username, "
 	         "u2.propval_str AS real_name, u3.propval_str AS title, "
@@ -2803,16 +1901,17 @@ RETRYING:
 	         "LEFT JOIN user_properties AS u7 ON u.id=u7.user_id AND u7.proptag=978255903 "
 	         "LEFT JOIN user_properties AS u8 ON u.id=u8.user_id AND u8.proptag=979173407 "
 	         "WHERE u.domain_id=%d AND u.group_id=0", domain_id);
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-	
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	count = 0;
 	rows = mysql_num_rows(pmyres);
 	for (i=0; i<rows; i++) {
@@ -2971,59 +2070,37 @@ BOOL mysql_adaptor_check_mlist_include(
 	int class_id;
 	int domain_id;
 	BOOL b_result;
-	int i, id, type;
+	int id, type;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char *pencode_domain;
 	char temp_account[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-	
 	
 	if (NULL == strchr(mlist_name, '@')) {
 		return FALSE;
 	}
-	/* if no valid connection node available, return immediately */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
+	
 	mysql_adaptor_encode_squote(mlist_name, temp_name);
 	pencode_domain = strchr(temp_name, '@') + 1;
 	mysql_adaptor_encode_squote(account, temp_account);
-	
-	i = 0;
-	
-RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-	
-	if (NULL == pnode) {
-		i ++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE*)pnode->pdata;
-	
 	snprintf(sql_string, 1024, "SELECT id, list_type "
 		"FROM mlists WHERE listname='%s'", temp_name);
-	
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
-	
+
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
 	if (1 != mysql_num_rows(pmyres)) {
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		mysql_free_result(pmyres);
 		return FALSE;
 	}
@@ -3038,40 +2115,27 @@ RETRYING:
 	case MLIST_TYPE_NORMAL:
 		snprintf(sql_string, 1024, "SELECT username FROM associations"
 			" WHERE list_id=%d AND username='%s'", id, temp_account);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			return FALSE;
-		}
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (mysql_num_rows(pmyres) > 0) {
 			b_result = TRUE;
 		}
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		return b_result;
 	case MLIST_TYPE_GROUP:
 		snprintf(sql_string, 1024, "SELECT id FROM "
 			"groups WHERE groupname='%s'", temp_name);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			return FALSE;
-		}
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (1 != mysql_num_rows(pmyres)) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list,
-				&pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			return FALSE;
 		}
@@ -3081,39 +2145,27 @@ RETRYING:
 		
 		snprintf(sql_string, 1024, "SELECT username FROM users WHERE"
 			" group_id=%d AND username='%s'", group_id, temp_account);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			return FALSE;
-		}
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (mysql_num_rows(pmyres) > 0) {
 			b_result = TRUE;
 		}
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		return b_result;
 	case MLIST_TYPE_DOMAIN:
 		snprintf(sql_string, 1024, "SELECT id FROM domains"
 				" WHERE domainname='%s'", pencode_domain);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			return FALSE;
-		}
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (1 != mysql_num_rows(pmyres)) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			return FALSE;
 		}
@@ -3123,114 +2175,38 @@ RETRYING:
 		
 		snprintf(sql_string, 1024, "SELECT username FROM users WHERE"
 			" domain_id=%d AND username='%s'", domain_id, temp_account);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			return FALSE;
-		}
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (mysql_num_rows(pmyres) > 0) {
 			b_result = TRUE;
 		}
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		return b_result;
 	case MLIST_TYPE_CLASS:
 		snprintf(sql_string, 1024, "SELECT id FROM "
 			"classes WHERE listname='%s'", temp_name);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			return FALSE;
-		}
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (1 != mysql_num_rows(pmyres)) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list,
-				&pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			return FALSE;		
 		}
 		myrow = mysql_fetch_row(pmyres);
 		class_id = atoi(myrow[0]);
 		mysql_free_result(pmyres);
-		b_result = mysql_adaptor_hierarchy_include(
-			pconnection->pmysql, temp_account, class_id);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
+		b_result = mysql_adaptor_hierarchy_include(conn.res.get(), temp_account, class_id);
 		return b_result;
 	default:
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		return FALSE;
 	}
-}
-
-static void* thread_work_func(void *arg)
-{
-	int i;
-	CONNECTION_NODE *pconnection;
-	DOUBLE_LIST_NODE *phead, *ptail, *pnode;
-	DOUBLE_LIST temp_list;
-	
-	i = 0;
-	double_list_init(&temp_list);
-	while (FALSE == g_notify_stop) {
-		if (i < g_scan_interval) {
-			sleep(1);
-			i ++;
-			continue;
-		}
-		pthread_mutex_lock(&g_list_lock);
-		phead = double_list_get_head(&g_invalid_list);
-		ptail = double_list_get_tail(&g_invalid_list);
-		pthread_mutex_unlock(&g_list_lock);
-		for (pnode=phead; NULL!=pnode; pnode=double_list_get_after(
-			&g_invalid_list, pnode)) {
-			pconnection = (CONNECTION_NODE*)pnode->pdata;
-			pconnection->pmysql = mysql_init(NULL);
-			if (NULL != pconnection->pmysql) {
-				if (g_timeout > 0) {
-					mysql_options(pconnection->pmysql, MYSQL_OPT_READ_TIMEOUT,
-						&g_timeout);
-					mysql_options(pconnection->pmysql, MYSQL_OPT_WRITE_TIMEOUT,
-						&g_timeout);
-				}
-				if (NULL != mysql_real_connect(pconnection->pmysql, g_host,
-					g_user, g_password, g_db_name, g_port, NULL, 0)) {
-					double_list_append_as_tail(&temp_list,
-						&pconnection->node_temp);
-				} else {
-					mysql_close(pconnection->pmysql);
-					pconnection->pmysql = NULL;
-				}
-			}
-			if (pnode == ptail) {
-				break;
-			}
-		}
-		pthread_mutex_lock(&g_list_lock);
-		while ((pnode = double_list_get_from_head(&temp_list)) != NULL) {
-			pconnection = (CONNECTION_NODE*)pnode->pdata;
-			double_list_remove(&g_invalid_list, &pconnection->node);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		}
-		pthread_mutex_unlock(&g_list_lock);
-		i = 0;
-	}
-	double_list_free(&temp_list);
-	return NULL;
 }
 
 int mysql_adaptor_get_param(int param)
@@ -3240,7 +2216,7 @@ int mysql_adaptor_get_param(int param)
 	} else if (MYSQL_ADAPTOR_CONNECTION_NUMBER == param) {
 		return g_conn_num;
 	} else if (MYSQL_ADAPTOR_ALIVECONN_NUMBER == param) {
-		return double_list_get_nodes_num(&g_connection_list);
+		return 0;
 	}
 	return 0;
 
@@ -3272,7 +2248,6 @@ static void mysql_adaptor_encode_squote(const char *in, char *out)
 BOOL mysql_adaptor_check_same_org2(
 	const char *domainname1, const char *domainname2)
 {
-	int i;
 	int org_id1;
 	int org_id2;
 	MYSQL_ROW myrow;
@@ -3280,45 +2255,26 @@ BOOL mysql_adaptor_check_same_org2(
 	char temp_name1[512];
 	char temp_name2[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
-
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 
 	mysql_adaptor_encode_squote(domainname1, temp_name1);
 	mysql_adaptor_encode_squote(domainname2, temp_name2);
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT org_id FROM domains "
 		"WHERE domainname='%s' OR domainname='%s'",
 		temp_name1, temp_name2);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (2 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -3337,59 +2293,30 @@ BOOL mysql_adaptor_check_same_org2(
 
 BOOL mysql_adaptor_check_user(const char *username, char *path)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
-	const char *pdomain = strchr(username, '@');
-	/*
-	 * if no valid connection node available, it means the
-	 * database is down, return TRUE immediately.
-	 */
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		if (NULL != path) {
-			path[0] = '\0';
-		}
-		return TRUE;
-	}
+	if (path != nullptr)
+		*path = '\0';
 	mysql_adaptor_encode_squote(username, temp_name);
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		/* database may break down, so return TRUE to avoid checking problem */
-		if (NULL != path) {
-			path[0] = '\0';
-		}
-		return TRUE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT address_status, maildir FROM users "
 		"WHERE username='%s'", temp_name);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -3414,7 +2341,6 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
     BOOL *pb_expanded, MEM_FILE *pfile)
 {
-	int i;
 	int result;
 	BOOL b_ret;
 	int privilege;
@@ -3422,44 +2348,24 @@ BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		*pb_expanded = FALSE;
-		return FALSE;
-	}
 	mysql_adaptor_encode_squote(from, temp_name);
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		*pb_expanded = FALSE;
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT list_privilege FROM "
 		"mlists WHERE listname='%s'", temp_name);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		*pb_expanded = FALSE;
@@ -3487,47 +2393,28 @@ BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
 BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
     char *destination)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	mysql_adaptor_encode_squote(username, temp_name);
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT destination, forward_type FROM "
 		"forwards WHERE username='%s'", temp_name);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(),	sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		destination[0] = '\0';
 	} else {
@@ -3541,58 +2428,37 @@ BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
 
 BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 {
-	int i, group_id;
+	int group_id;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	mysql_adaptor_encode_squote(username, temp_name);
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT group_id, address_status FROM users "
 		"WHERE username='%s'", temp_name);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
 	if (1 != mysql_num_rows(pmyres)) {
 		groupname[0] = '\0';
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		return TRUE;
 	}
 
 	myrow = mysql_fetch_row(pmyres);
 	if (0 != atoi(myrow[1])) {
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		groupname[0] = '\0';
 		return TRUE;
 	}
@@ -3600,30 +2466,19 @@ BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 	mysql_free_result(pmyres);
 
 	if (0 == group_id) {
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		groupname[0] = '\0';
 		return TRUE;
 	}
 
 	snprintf(sql_string, 1024, "SELECT groupname FROM groups WHERE id=%d",
 		group_id);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		mysql_close(pconnection->pmysql);
-		pconnection->pmysql = NULL;
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
-		return FALSE;
-	}
-
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-
+	if (conn.res == nullptr ||
+	    mysql_query(conn.res.get(), sql_string) != 0)
+		return false;
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		groupname[0] = '\0';
 	} else {
@@ -3650,60 +2505,39 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 	MYSQL_ROW myrow;
 	MEM_FILE file_temp;
 	MEM_FILE file_temp1;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
+	*presult = MLIST_RESULT_NONE;
 	const char *pdomain = strchr(username, '@');
 	if (NULL == pdomain) {
-		*presult = MLIST_RESULT_NONE;
 		return TRUE;
 	}
 
 	pdomain++;
 	const char *pfrom_domain = strchr(from, '@');
 	if (NULL == pfrom_domain) {
-		*presult = MLIST_RESULT_NONE;
 		return TRUE;
 	}
 
 	pfrom_domain++;
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		*presult = MLIST_RESULT_NONE;
-		return FALSE;
-	}
-
 	mysql_adaptor_encode_squote(username, temp_name);
 	pencode_domain = strchr(temp_name, '@') + 1;
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		*presult = MLIST_RESULT_NONE;
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
 
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT id, list_type, list_privilege"
 		" FROM mlists WHERE listname='%s'", temp_name);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
 	if (1 != mysql_num_rows(pmyres)) {
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		mysql_free_result(pmyres);
 		*presult = MLIST_RESULT_NONE;
 		return TRUE;
@@ -3727,10 +2561,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			break;
 		case MLIST_PRIVILEGE_DOMAIN:
 			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
 				return TRUE;
 			}
@@ -3739,17 +2569,16 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		case MLIST_PRIVILEGE_SPECIFIED:
 			snprintf(sql_string, 1024, "SELECT username"
 				" FROM specifieds WHERE list_id=%d", id);
-			if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-				NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-				mysql_close(pconnection->pmysql);
-				pconnection->pmysql = NULL;
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
-				*presult = MLIST_RESULT_NONE;
-				return FALSE;
+			if (mysql_query(conn.res.get(), sql_string) != 0) {
+				conn.res = sql_make_conn();
+				if (conn.res == nullptr ||
+				    mysql_query(conn.res.get(), sql_string) != 0)
+					return false;
 			}
 
+			pmyres = mysql_store_result(conn.res.get());
+			if (pmyres == nullptr)
+				return false;
 			rows = mysql_num_rows(pmyres);
 			for (i = 0; i < rows; i++) {
 				myrow = mysql_fetch_row(pmyres);
@@ -3761,36 +2590,27 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			mysql_free_result(pmyres);
 
 			if (i == rows) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
 			}
 			b_chkintl = FALSE;
 			break;
 		default:
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list,
-				&pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
 		snprintf(sql_string, 1024, "SELECT username "
 			"FROM associations WHERE list_id=%d", id);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			*presult = MLIST_RESULT_NONE;
-			return FALSE;
+		if (mysql_query(conn.res.get(), sql_string) != 0) {
+			conn.res = sql_make_conn();
+			if (conn.res == nullptr ||
+			    mysql_query(conn.res.get(), sql_string) != 0)
+				return false;
 		}
 
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		rows = mysql_num_rows(pmyres);
 
 		if (TRUE == b_chkintl) {
@@ -3804,9 +2624,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		if (TRUE == b_chkintl) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
@@ -3818,9 +2635,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			mem_file_writeline(pfile, myrow[0]);
 		}
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 
@@ -3835,10 +2649,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			break;
 		case MLIST_PRIVILEGE_DOMAIN:
 			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
 				return TRUE;
 			}
@@ -3847,17 +2657,16 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		case MLIST_PRIVILEGE_SPECIFIED:
 			snprintf(sql_string, 1024, "SELECT username"
 				" FROM specifieds WHERE list_id=%d", id);
-			if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-				NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-				mysql_close(pconnection->pmysql);
-				pconnection->pmysql = NULL;
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
-				*presult = MLIST_RESULT_NONE;
-				return FALSE;
+			if (mysql_query(conn.res.get(), sql_string) != 0) {
+				conn.res = sql_make_conn();
+				if (conn.res == nullptr ||
+				    mysql_query(conn.res.get(), sql_string) != 0)
+					return false;
 			}
 
+			pmyres = mysql_store_result(conn.res.get());
+			if (pmyres == nullptr)
+				return false;
 			rows = mysql_num_rows(pmyres);
 			for (i = 0; i < rows; i++) {
 				myrow = mysql_fetch_row(pmyres);
@@ -3869,40 +2678,28 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			mysql_free_result(pmyres);
 
 			if (i == rows) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
 			}
 			b_chkintl = FALSE;
 			break;
 		default:
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
 		snprintf(sql_string, 1024, "SELECT id FROM "
 			"groups WHERE groupname='%s'", temp_name);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			*presult = MLIST_RESULT_NONE;
-			return FALSE;
+		if (mysql_query(conn.res.get(), sql_string) != 0) {
+			conn.res = sql_make_conn();
+			if (conn.res == nullptr ||
+			    mysql_query(conn.res.get(), sql_string) != 0)
+				return false;
 		}
+
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (1 != mysql_num_rows(pmyres)) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list,
-				&pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
@@ -3911,18 +2708,16 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		mysql_free_result(pmyres);
 		snprintf(sql_string, 1024, "SELECT username, address_type,"
 				" sub_type FROM users WHERE group_id=%d", group_id);
-
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			*presult = MLIST_RESULT_NONE;
-			return FALSE;
+		if (mysql_query(conn.res.get(), sql_string) != 0) {
+			conn.res = sql_make_conn();
+			if (conn.res == nullptr ||
+			    mysql_query(conn.res.get(), sql_string) != 0)
+				return false;
 		}
 
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		rows = mysql_num_rows(pmyres);
 		if (TRUE == b_chkintl) {
 			for (i = 0; i < rows; i++) {
@@ -3937,9 +2732,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		if (TRUE == b_chkintl) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
@@ -3955,9 +2747,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 
@@ -3972,10 +2761,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			break;
 		case MLIST_PRIVILEGE_DOMAIN:
 			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
 				return TRUE;
 			}
@@ -3984,17 +2769,16 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		case MLIST_PRIVILEGE_SPECIFIED:
 			snprintf(sql_string, 1024, "SELECT username"
 				" FROM specifieds WHERE list_id=%d", id);
-			if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-				NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-				mysql_close(pconnection->pmysql);
-				pconnection->pmysql = NULL;
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
-				*presult = MLIST_RESULT_NONE;
-				return FALSE;
+			if (mysql_query(conn.res.get(), sql_string) != 0) {
+				conn.res = sql_make_conn();
+				if (conn.res == nullptr ||
+				    mysql_query(conn.res.get(), sql_string) != 0)
+					return false;
 			}
 
+			pmyres = mysql_store_result(conn.res.get());
+			if (pmyres == nullptr)
+				return false;
 			rows = mysql_num_rows(pmyres);
 			for (i = 0; i < rows; i++) {
 				myrow = mysql_fetch_row(pmyres);
@@ -4006,38 +2790,28 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			mysql_free_result(pmyres);
 
 			if (i == rows) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
 			}
 			b_chkintl = FALSE;
 			break;
 		default:
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
 		snprintf(sql_string, 1024, "SELECT id FROM domains"
 				" WHERE domainname='%s'", pencode_domain);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			*presult = MLIST_RESULT_NONE;
-			return FALSE;
+		if (mysql_query(conn.res.get(), sql_string) != 0) {
+			conn.res = sql_make_conn();
+			if (conn.res == nullptr ||
+			    mysql_query(conn.res.get(), sql_string) != 0)
+				return false;
 		}
+
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (1 != mysql_num_rows(pmyres)) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
@@ -4047,18 +2821,16 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		mysql_free_result(pmyres);
 		snprintf(sql_string, 1024, "SELECT username, address_type,"
 			" sub_type FROM users WHERE domain_id=%d", domain_id);
-
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			*presult = MLIST_RESULT_NONE;
-			return FALSE;
+		if (mysql_query(conn.res.get(), sql_string) != 0) {
+			conn.res = sql_make_conn();
+			if (conn.res == nullptr ||
+			    mysql_query(conn.res.get(), sql_string) != 0)
+				return false;
 		}
 
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		rows = mysql_num_rows(pmyres);
 		if (TRUE == b_chkintl) {
 			for (i = 0; i < rows; i++) {
@@ -4073,9 +2845,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		if (TRUE == b_chkintl) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
@@ -4091,9 +2860,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		mysql_free_result(pmyres);
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 
@@ -4108,10 +2874,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			break;
 		case MLIST_PRIVILEGE_DOMAIN:
 			if (0 != strcasecmp(pdomain, pfrom_domain)) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_DOMAIN;
 				return TRUE;
 			}
@@ -4120,17 +2882,16 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		case MLIST_PRIVILEGE_SPECIFIED:
 			snprintf(sql_string, 1024, "SELECT username"
 				" FROM specifieds WHERE list_id=%d", id);
-			if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-				NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-				mysql_close(pconnection->pmysql);
-				pconnection->pmysql = NULL;
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
-				*presult = MLIST_RESULT_NONE;
-				return FALSE;
+			if (mysql_query(conn.res.get(), sql_string) != 0) {
+				conn.res = sql_make_conn();
+				if (conn.res == nullptr ||
+				    mysql_query(conn.res.get(), sql_string) != 0)
+					return false;
 			}
 
+			pmyres = mysql_store_result(conn.res.get());
+			if (pmyres == nullptr)
+				return false;
 			rows = mysql_num_rows(pmyres);
 			for (i = 0; i < rows; i++) {
 				myrow = mysql_fetch_row(pmyres);
@@ -4142,40 +2903,29 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			mysql_free_result(pmyres);
 
 			if (i == rows) {
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_connection_list,
-					&pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
 			}
 			b_chkintl = FALSE;
 			break;
 		default:
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
 
 		snprintf(sql_string, 1024, "SELECT id FROM "
 			"classes WHERE listname='%s'", temp_name);
-		if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-			NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
-			*presult = MLIST_RESULT_NONE;
-			return FALSE;
+		if (mysql_query(conn.res.get(), sql_string) != 0) {
+			conn.res = sql_make_conn();
+			if (conn.res == nullptr ||
+			    mysql_query(conn.res.get(), sql_string) != 0)
+				return false;
 		}
+
+		pmyres = mysql_store_result(conn.res.get());
+		if (pmyres == nullptr)
+			return false;
 		if (1 != mysql_num_rows(pmyres)) {
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_connection_list,
-				&pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
@@ -4187,14 +2937,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		mem_file_init(&file_temp, pfile->allocator);
 		mem_file_write(&file_temp, (char*)&class_id, sizeof(int));
 
-		if (FALSE == mysql_adaptor_expand_hierarchy(
-			pconnection->pmysql, &file_temp, class_id)) {
+		if (!mysql_adaptor_expand_hierarchy(conn.res.get(), &file_temp, class_id)) {
 			mem_file_free(&file_temp);
-			mysql_close(pconnection->pmysql);
-			pconnection->pmysql = NULL;
-			pthread_mutex_lock(&g_list_lock);
-			double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-			pthread_mutex_unlock(&g_list_lock);
 			*presult = MLIST_RESULT_NONE;
 			return FALSE;
 		}
@@ -4206,19 +2950,16 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			&class_id, sizeof(int))) {
 			snprintf(sql_string, 1024, "SELECT username "
 				"FROM members WHERE class_id=%d", class_id);
-			if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-				NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-				mem_file_free(&file_temp);
-				mem_file_free(&file_temp1);
-				mysql_close(pconnection->pmysql);
-				pconnection->pmysql = NULL;
-				pthread_mutex_lock(&g_list_lock);
-				double_list_append_as_tail(&g_invalid_list, &pconnection->node);
-				pthread_mutex_unlock(&g_list_lock);
-				*presult = MLIST_RESULT_NONE;
-				return FALSE;
+			if (mysql_query(conn.res.get(), sql_string) != 0) {
+				conn.res = sql_make_conn();
+				if (conn.res == nullptr ||
+				    mysql_query(conn.res.get(), sql_string) != 0)
+					return false;
 			}
 
+			pmyres = mysql_store_result(conn.res.get());
+			if (pmyres == nullptr)
+				return false;
 			rows = mysql_num_rows(pmyres);
 			for (i = 0; i < rows; i++) {
 				myrow = mysql_fetch_row(pmyres);
@@ -4249,10 +2990,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			}
 		}
 
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
-
 		if (TRUE == b_chkintl) {
 			mem_file_free(&file_temp1);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
@@ -4269,9 +3006,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		return TRUE;
 
 	default:
-		pthread_mutex_lock(&g_list_lock);
-		double_list_append_as_tail(&g_connection_list, &pconnection->node);
-		pthread_mutex_unlock(&g_list_lock);
 		*presult = MLIST_RESULT_NONE;
 		return TRUE;
 	}
@@ -4280,46 +3014,28 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 BOOL mysql_adaptor_get_user_info(const char *username,
     char *maildir, char *lang, char *timezone)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
 	MYSQL_RES *pmyres;
 	MYSQL_ROW myrow;
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
 	mysql_adaptor_encode_squote(username, temp_name);
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT maildir, address_status, "
 		"lang, timezone FROM users WHERE username='%s'", temp_name);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 
 	if (1 != mysql_num_rows(pmyres)) {
 		maildir[0] = '\0';
@@ -4340,44 +3056,26 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 
 BOOL mysql_adaptor_get_username(int user_id, char *username)
 {
-	int i;
 	MYSQL_ROW myrow;
 	MYSQL_RES *pmyres;
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return FALSE;
-	}
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		return FALSE;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "SELECT username FROM users "
 		"WHERE id=%d", user_id);
-
-	if (0 != mysql_query(pconnection->pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pconnection->pmysql))) {
-		if (reco(pconnection, i, sql_string, pmyres))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return false;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return false;
 	}
 
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-
+	pmyres = mysql_store_result(conn.res.get());
+	if (pmyres == nullptr)
+		return false;
+	conn.finish();
 	if (1 != mysql_num_rows(pmyres)) {
 		mysql_free_result(pmyres);
 		return FALSE;
@@ -4391,43 +3089,20 @@ BOOL mysql_adaptor_get_username(int user_id, char *username)
 
 void mysql_adaptor_disable_smtp(const char *username)
 {
-	int i;
 	char temp_name[512];
 	char sql_string[1024];
-	DOUBLE_LIST_NODE *pnode;
-	CONNECTION_NODE *pconnection;
 
-	if (g_conn_num == double_list_get_nodes_num(&g_invalid_list)) {
-		return;
-	}
 	mysql_adaptor_encode_squote(username, temp_name);
-	i = 0;
- RETRYING:
-	if (i > 3) {
-		return;
-	}
-	pthread_mutex_lock(&g_list_lock);
-	pnode = double_list_get_from_head(&g_connection_list);
-	pthread_mutex_unlock(&g_list_lock);
-
-	if (NULL == pnode) {
-		i++;
-		sleep(1);
-		goto RETRYING;
-	}
-
-	pconnection = (CONNECTION_NODE *)pnode->pdata;
 	snprintf(sql_string, 1024, "UPDATE users SET"
 		" privilege_bits=privilege_bits&%u WHERE"
 		" username='%s'", ~USER_PRIVILEGE_SMTP, temp_name);
-
-	if (mysql_query(pconnection->pmysql, sql_string) != 0) {
-		MYSQL_RES *pmyres = nullptr;
-		if (reco(pconnection, i, sql_string, pmyres, false))
-			goto RETRYING;
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr)
+		return;
+	if (mysql_query(conn.res.get(), sql_string) != 0) {
+		conn.res = sql_make_conn();
+		if (conn.res == nullptr ||
+		    mysql_query(conn.res.get(), sql_string) != 0)
+			return;
 	}
-	pthread_mutex_lock(&g_list_lock);
-	double_list_append_as_tail(&g_connection_list, &pconnection->node);
-	pthread_mutex_unlock(&g_list_lock);
-	return;
 }
