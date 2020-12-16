@@ -371,7 +371,7 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 	int len;
 	int tmp_len;
 	uint16_t wchar;
-	char tmp_buff[8];
+	char tmp_buff[9];
 	const char *ptr = string, *pend = string + strlen(string);
 
 	while ('\0' != *ptr) {
@@ -406,7 +406,8 @@ static BOOL html_write_string(RTF_WRITER *pwriter, const char *string)
 			if (0 == wchar) {
 				return FALSE;
 			}
-			tmp_len = sprintf(tmp_buff, "\\u%d?", (int)wchar);
+			snprintf(tmp_buff, sizeof(tmp_buff), "\\u%hu?", wchar);
+			tmp_len = strlen(tmp_buff);
 			if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 				&pwriter->ext_push, tmp_buff, tmp_len)) {
 				return FALSE;
