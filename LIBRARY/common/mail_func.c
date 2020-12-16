@@ -1883,6 +1883,7 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 	int depth = 0, in_q = 0;
 	char *tbuf, *buf, *p, *tp, *rp, c, lc;
 	
+	*outbufp = nullptr;
 	char *rbuf = malloc(len + 1);
 	if (rbuf == nullptr)
 		return -1;

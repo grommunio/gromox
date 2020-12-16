@@ -3995,6 +3995,7 @@ BOOL rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	SIMPLE_TREE_NODE *proot;
 	SIMPLE_TREE_NODE *pnode;
 	
+	*pbuff_out = nullptr;
 	if (FALSE == rtf_init_reader(&reader,
 		pbuff_in, length, pattachments)) {
 		return FALSE;

@@ -1677,6 +1677,7 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
 	memcpy(buff_inz.get(), pbuff_in, length);
 	buff_inz[length] = '\0';
 
+	*pbuff_out = nullptr;
 	auto pbuffer = static_cast<char *>(malloc(3 * (length + 1)));
 	if (NULL == pbuffer) {
 		return FALSE;
