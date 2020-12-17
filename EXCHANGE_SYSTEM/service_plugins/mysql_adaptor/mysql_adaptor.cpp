@@ -190,8 +190,6 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	int temp_status;
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT password, address_type, address_status, "
@@ -207,23 +205,21 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1) {
 		snprintf(reason, length, "user \"%s\" does not exist; check if "
 			"it is properly composed", username);
 		return FALSE;
 	}
 	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	temp_type = atoi(myrow[1]);
 	if (temp_type != ADDRESS_TYPE_NORMAL) {
 		snprintf(reason, length, "\"%s\" is not a real user; "
 			"correct the account name and retry.", username);
-		mysql_free_result(pmyres);
 		return FALSE;
 	}
 	temp_status = atoi(myrow[2]);
@@ -237,17 +233,14 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		} else {
 			snprintf(reason, length, "user \"%s\" is disabled!", username);
 		}
-		mysql_free_result(pmyres);
 		return FALSE;
 	}
 
 	if (mode == USER_PRIVILEGE_POP3_IMAP && !(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_POP3_IMAP)) {
-		mysql_free_result(pmyres);
 		strncpy(reason, "you are not authorized to download email through the POP3 or IMAP server", length);
 		return false;
 	}
 	if (mode == USER_PRIVILEGE_SMTP && !(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_SMTP)) {
-		mysql_free_result(pmyres);
 		strncpy(reason, "you are not authorized to download email through the SMTP server", length);
 		return false;
 	}
@@ -258,7 +251,6 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		strcpy(lang, myrow[5]);
 	}
 	encrypt_passwd[encrypt_size-1] = '\0';
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -292,12 +284,11 @@ static BOOL firsttime_password(const char *username, const char *password,
 			return false;
 	}
 
-	MYSQL_RES *pmyres, *pmyres1;
 	snprintf(sql_string, 1024, "SELECT aliasname FROM aliases WHERE "
 	         "mainname='%s'", temp_name);
 	if (mysql_query(conn.res.get(), sql_string) != 0)
 		return false;
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 
@@ -306,20 +297,16 @@ static BOOL firsttime_password(const char *username, const char *password,
 	         "mainname='%s'", temp_name);
 	if (mysql_query(conn.res.get(), sql_string) != 0)
 		return false;
-	pmyres1 = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres1 = mysql_store_result(conn.res.get());
 	if (pmyres1 == nullptr)
 		return false;
 
-	size_t rows, rows1, k;
-	rows = mysql_num_rows(pmyres);
-	rows1 = mysql_num_rows(pmyres1);
-
+	size_t k, rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
 	for (k = 0; k < rows1; k++) {
 		char virtual_address[256];
-		MYSQL_ROW myrow1;
 		char *pat;
 
-		myrow1 = mysql_fetch_row(pmyres1);
+		auto myrow1 = pmyres1.fetch_row();
 		strcpy(virtual_address, username);
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow1[0]);
@@ -331,21 +318,17 @@ static BOOL firsttime_password(const char *username, const char *password,
 
 	size_t j;
 	for (j = 0; j < rows; j++) {
-		MYSQL_ROW myrow;
-
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		mysql_adaptor_encode_squote(myrow[0], temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s' WHERE "
 		         "username='%s'", encrypt_passwd, temp_name);
 		mysql_query(conn.res.get(), sql_string);
-
-		mysql_data_seek(pmyres1, 0);
+		mysql_data_seek(pmyres1.get(), 0);
 		size_t k;
 		for (k = 0; k < rows1; k++) {
 			char virtual_address[256], *pat;
-			MYSQL_ROW myrow1;
 
-			myrow1 = mysql_fetch_row(pmyres1);
+			auto myrow1 = pmyres1.fetch_row();
 			strcpy(virtual_address, myrow[0]);
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
@@ -355,9 +338,6 @@ static BOOL firsttime_password(const char *username, const char *password,
 			mysql_query(conn.res.get(), sql_string);
 		}
 	}
-
-	mysql_free_result(pmyres1);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -397,15 +377,12 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	int j, k;
 	int temp_type;
 	int temp_status;
-	int rows, rows1;
 	const char *pdomain;
 	char *pat;
 	char temp_name[512];
 	char sql_string[1024];
 	char encrypt_passwd[40];
 	char virtual_address[256];
-	MYSQL_ROW myrow, myrow1;
-	MYSQL_RES *pmyres, *pmyres1;
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT password, address_type,"
@@ -421,34 +398,27 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	temp_type = atoi(myrow[1]);
 	if (temp_type != ADDRESS_TYPE_NORMAL) {
-		mysql_free_result(pmyres);
 		return FALSE;
 	}
 	temp_status = atoi(myrow[2]);
 	if (0 != temp_status) {
-		mysql_free_result(pmyres);
 		return FALSE;
 	}
 	
 	if (0 == (atoi(myrow[3])&USER_PRIVILEGE_CHGPASSWD)) {
-		mysql_free_result(pmyres);
 		return FALSE;
 	}
 
 	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
 	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
-	mysql_free_result(pmyres);
 	
 	pthread_mutex_lock(&g_crypt_lock);
 	if ('\0' != encrypt_passwd[0] && 0 != strcmp(crypt(
@@ -490,14 +460,12 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	    mysql_query(conn.res.get(), sql_string) != 0)
 		return false;
 
-	pmyres1 = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres1 = mysql_store_result(conn.res.get());
 	if (pmyres1 == nullptr)
 		return false;
-	rows = mysql_num_rows(pmyres);
-	rows1 = mysql_num_rows(pmyres1);
-
+	size_t rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
 	for (k=0; k<rows1; k++) {
-		myrow1 = mysql_fetch_row(pmyres1);
+		auto myrow1 = pmyres1.fetch_row();
 		strcpy(virtual_address, username);
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow1[0]);
@@ -508,15 +476,14 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	}
 
 	for (j=0; j<rows; j++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		mysql_adaptor_encode_squote(myrow[0], temp_name);
 		snprintf(sql_string, 1024, "UPDATE users SET password='%s'"
 				" WHERE username='%s'", encrypt_passwd, temp_name);
 		mysql_query(conn.res.get(), sql_string);
-
-		mysql_data_seek(pmyres1, 0);
+		mysql_data_seek(pmyres1.get(), 0);
 		for (k=0; k<rows1; k++) {
-			myrow1 = mysql_fetch_row(pmyres1);
+			auto myrow1 = pmyres1.fetch_row();
 			strcpy(virtual_address, myrow[0]);
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
@@ -526,15 +493,11 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 			mysql_query(conn.res.get(), sql_string);
 		}
 	}
-	mysql_free_result(pmyres1);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_username_from_id(int user_id, char *username)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 	
 	snprintf(sql_string, 1024, "SELECT username FROM users "
@@ -549,25 +512,19 @@ BOOL mysql_adaptor_get_username_from_id(int user_id, char *username)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(username, myrow[0], 256);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -585,25 +542,19 @@ BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	*puser_id = atoi(myrow[0]);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_dir[512];
 	char sql_string[1024];
 	
@@ -620,27 +571,21 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	*puser_id = atoi(myrow[0]);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_user_displayname(
 	const char *username, char *pdisplayname)
 {
-	MYSQL_ROW myrow;
 	int address_type;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -662,31 +607,25 @@ BOOL mysql_adaptor_get_user_displayname(
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	address_type = atoi(myrow[2]);
 	strcpy(pdisplayname,
 	       address_type == ADDRESS_TYPE_MLIST ? username :
 	       myrow[0] != nullptr && *myrow[0] != '\0' ? myrow[0] :
 	       myrow[1] != nullptr && *myrow[1] != '\0' ? myrow[1] :
 	       username);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -703,18 +642,14 @@ BOOL mysql_adaptor_get_user_privilege_bits(
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	*pprivilege_bits = atoi(myrow[0]);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -722,8 +657,6 @@ BOOL mysql_adaptor_get_user_lang(const char *username, char *lang)
 {
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT lang FROM users "
@@ -738,17 +671,16 @@ BOOL mysql_adaptor_get_user_lang(const char *username, char *lang)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
+	if (pmyres.num_rows() != 1) {
 		lang[0] = '\0';	
 	} else {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		strcpy(lang, myrow[0]);
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -775,13 +707,10 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang)
 static BOOL mysql_adaptor_expand_hierarchy(
     MYSQL *pmysql, MEM_FILE *pfile, int class_id)
 {
-	int i, rows;
 	int temp_id;
 	int child_id;
 	BOOL b_include;
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 
 	snprintf(sql_string, 1024, "SELECT child_id FROM"
 		" hierarchy WHERE class_id=%d", class_id);
@@ -795,14 +724,14 @@ static BOOL mysql_adaptor_expand_hierarchy(
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	rows = mysql_num_rows(pmyres);
 
+	size_t i, rows = pmyres.num_rows();
 	for (i = 0; i < rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		child_id = atoi(myrow[0]);
 		b_include = FALSE;
 		mem_file_seek(pfile, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -816,12 +745,10 @@ static BOOL mysql_adaptor_expand_hierarchy(
 			mem_file_write(pfile, (char *)&child_id, sizeof(int));
 			if (FALSE == mysql_adaptor_expand_hierarchy(
 				pmysql, pfile, child_id)) {
-				mysql_free_result(pmyres);
 				return FALSE;
 			}
 		}
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -829,8 +756,6 @@ BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
 {
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT timezone FROM users "
@@ -845,17 +770,16 @@ BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
+	if (pmyres.num_rows() != 1) {
 		timezone[0] = '\0';	
 	} else {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		strcpy(timezone, myrow[0]);
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -883,8 +807,6 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone)
 
 BOOL mysql_adaptor_get_maildir(const char *username, char *maildir)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -901,25 +823,19 @@ BOOL mysql_adaptor_get_maildir(const char *username, char *maildir)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(maildir, myrow[0], 256);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT domainname FROM domains "
@@ -934,26 +850,20 @@ BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(domainname, myrow[0], 256);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 static bool mysql_adaptor_get_homedir_impl(const char *domainname,
     char *homedir, bool domain_home)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -970,33 +880,27 @@ static bool mysql_adaptor_get_homedir_impl(const char *domainname,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
 
 	if (domain_home) {
-		if (mysql_num_rows(pmyres) != 1) {
+		if (pmyres.num_rows() != 1) {
 			homedir[0] = '\0';
 		} else {
-			myrow = mysql_fetch_row(pmyres);
+			auto myrow = pmyres.fetch_row();
 			if (atoi(myrow[1]) != 0)
 				strcpy(homedir, myrow[0]);
 			else
 				homedir[0] = '\0';
 		}
-		mysql_free_result(pmyres);
 		return TRUE;
 	}
-
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(homedir, myrow[0], 256);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -1012,8 +916,6 @@ BOOL mysql_adaptor_get_domain_homedir(const char *domainname, char *homedir)
 
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT homedir FROM domains "
@@ -1028,25 +930,19 @@ BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(homedir, myrow[0], 256);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_dir[512];
 	char sql_string[1024];
 	
@@ -1063,18 +959,14 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	*pdomain_id = atoi(myrow[0]);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -1083,8 +975,6 @@ BOOL mysql_adaptor_get_user_ids(const char *username,
 {
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT id, domain_id, address_type,"
@@ -1099,15 +989,13 @@ BOOL mysql_adaptor_get_user_ids(const char *username,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;	
-	}
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	*puser_id = atoi(myrow[0]);
 	*pdomain_id = atoi(myrow[1]);
 	*paddress_type = atoi(myrow[2]);
@@ -1121,15 +1009,12 @@ BOOL mysql_adaptor_get_user_ids(const char *username,
 			break;
 		}
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	int *pdomain_id, int *porg_id)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -1146,27 +1031,21 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	*pdomain_id = atoi(myrow[0]);
 	*porg_id = atoi(myrow[1]);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	int *pgroup_id, int *pdomain_id)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT address_type, domain_id, "
@@ -1181,34 +1060,25 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	if (myrow == nullptr || strtol(myrow[0], nullptr, 0) != ADDRESS_TYPE_MLIST) {
-		mysql_free_result(pmyres);
 		return FALSE;
 	}
 	
 	*pdomain_id = atoi(myrow[1]);
 	*pgroup_id = atoi(myrow[2]);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile)
 {
-	int i;
-	int rows;
 	int domain_id;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024,
@@ -1223,25 +1093,22 @@ BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		domain_id = atoi(myrow[0]);
 		mem_file_write(pfile, &domain_id, sizeof(int));
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_domain_info(int domain_id,
 	char *name, char *title, char *address)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT domainname, title, address, homedir "
@@ -1256,20 +1123,16 @@ BOOL mysql_adaptor_get_domain_info(int domain_id,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(name, myrow[0], 256);
 	strncpy(title, myrow[1], 1024);
 	strncpy(address, myrow[2], 1024);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -1277,8 +1140,6 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 {
 	int org_id1;
 	int org_id2;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT org_id FROM domains "
@@ -1293,20 +1154,16 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (2 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 2)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	org_id1 = atoi(myrow[0]);
-	myrow = mysql_fetch_row(pmyres);
+	myrow = pmyres.fetch_row();
 	org_id2 = atoi(myrow[0]);
-	mysql_free_result(pmyres);
 	if (0 == org_id1 || 0 == org_id2 || org_id1 != org_id2) {
 		return FALSE;
 	}
@@ -1315,12 +1172,8 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 
 BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
 {
-	int i;
-	int rows;
 	int temp_len;
 	int group_id;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT id, groupname, title "
@@ -1335,13 +1188,13 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		group_id = atoi(myrow[0]);
 		mem_file_write(pfile, &group_id, sizeof(int));
 		temp_len = strlen(myrow[1]);
@@ -1351,18 +1204,13 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
 		mem_file_write(pfile, &temp_len, sizeof(int));
 		mem_file_write(pfile, myrow[2], temp_len);
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile)
 {
-	int i;
-	int rows;
 	int temp_len;
 	int class_id;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
@@ -1378,31 +1226,26 @@ BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		class_id = atoi(myrow[0]);
 		mem_file_write(pfile, &class_id, sizeof(int));
 		temp_len = strlen(myrow[1]);
 		mem_file_write(pfile, &temp_len, sizeof(int));
 		mem_file_write(pfile, myrow[1], temp_len);
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile)
 {
-	int i;
-	int rows;
 	int temp_len;
 	int child_id;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
@@ -1418,27 +1261,24 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		child_id = atoi(myrow[0]);
 		mem_file_write(pfile, &child_id, sizeof(int));
 		temp_len = strlen(myrow[1]);
 		mem_file_write(pfile, &temp_len, sizeof(int));
 		mem_file_write(pfile, myrow[1], temp_len);
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 static BOOL mysql_adaptor_get_group_title(const char *groupname, char *title)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -1455,25 +1295,20 @@ static BOOL mysql_adaptor_get_group_title(const char *groupname, char *title)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(title, myrow[0], 1024);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 static BOOL mysql_adaptor_get_class_title(
 	const char *listname, char *classname)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -1490,25 +1325,20 @@ static BOOL mysql_adaptor_get_class_title(
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(classname, myrow[0], 1024);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 	int *plist_type, int *plist_privilege, char *title)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char sql_string[1024];
 	
@@ -1525,19 +1355,15 @@ static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	*plist_type = atoi(myrow[0]);
 	*plist_privilege = atoi(myrow[1]);
-	mysql_free_result(pmyres);
 	if (MLIST_TYPE_GROUP == *plist_type) {
 		return mysql_adaptor_get_group_title(listname, title);
 	} else if (MLIST_TYPE_CLASS == *plist_type) {
@@ -1548,16 +1374,12 @@ static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 
 int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 {
-	int i;
-	int rows;
 	int count;
 	int temp_id;
 	int temp_len;
 	char *ptoken;
 	int list_type;
-	MYSQL_ROW myrow;
 	char title[1024];
-	MYSQL_RES *pmyres;
 	int address_type;
 	int list_privilege;
 	char sql_string[1600];
@@ -1588,15 +1410,15 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
 	
 	count = 0;
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		address_type = atoi(myrow[10]);
 		if (ADDRESS_TYPE_NORMAL == address_type) {
 			switch (atoi(myrow[12])) {
@@ -1659,7 +1481,6 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 			if (FALSE == mysql_adaptor_get_mlist_info(myrow[2],
 				&list_type, &list_privilege, title)) {
 				mem_file_clear(pfile);
-				mysql_free_result(pmyres);
 				return -1;
 			}
 			mem_file_write(pfile, &address_type, sizeof(int));
@@ -1682,23 +1503,18 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 			break;
 		}
 	}
-	mysql_free_result(pmyres);
 	return count;
 }
 
 int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 {
-	int i;
-	int rows;
 	int count;
 	int temp_id;
 	int temp_len;
 	char *ptoken;
 	int list_type;
-	MYSQL_ROW myrow;
 	int address_type;
 	char title[1024];
-	MYSQL_RES *pmyres;
 	int list_privilege;
 	char sql_string[1024];
 
@@ -1728,15 +1544,15 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
 	
 	count = 0;
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		address_type = atoi(myrow[10]);
 		if (ADDRESS_TYPE_NORMAL == address_type) {
 			switch (atoi(myrow[12])) {
@@ -1799,7 +1615,6 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 			if (FALSE == mysql_adaptor_get_mlist_info(myrow[2],
 				&list_type, &list_privilege, title)) {
 				mem_file_clear(pfile);
-				mysql_free_result(pmyres);
 				return -1;
 			}
 			mem_file_write(pfile, &address_type, sizeof(int));
@@ -1822,7 +1637,6 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 			break;
 		}
 	}
-	mysql_free_result(pmyres);
 	return count;
 }
 
@@ -1867,17 +1681,13 @@ static std::string aliases_serialize(const alias_map_type &amap, const std::stri
 
 int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 {
-	int i;
-	int rows;
 	int count;
 	int temp_id;
 	int temp_len;
 	char *ptoken;
 	int list_type;
-	MYSQL_ROW myrow;
 	int address_type;
 	char title[1024];
-	MYSQL_RES *pmyres;
 	int list_privilege;
 	char sql_string[1024];
 	alias_map_type dom_alias;
@@ -1908,14 +1718,14 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
 	count = 0;
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		address_type = atoi(myrow[10]);
 		if (ADDRESS_TYPE_NORMAL == address_type) {
 			switch (atoi(myrow[12])) {
@@ -1987,7 +1797,6 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 			if (FALSE == mysql_adaptor_get_mlist_info(myrow[2],
 				&list_type, &list_privilege, title)) {
 				mem_file_clear(pfile);
-				mysql_free_result(pmyres);
 				return -1;
 			}
 			mem_file_write(pfile, &address_type, sizeof(int));
@@ -2019,47 +1828,41 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 			break;
 		}
 	}
-	mysql_free_result(pmyres);
 	return count;
 }
 
 static BOOL mysql_adaptor_hierarchy_include(
 	MYSQL *pmysql, const char *account, int class_id)
 {
-	int i, rows;
 	int child_id;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[512];
 	
 	snprintf(sql_string, sizeof(sql_string), "SELECT username FROM members WHERE"
 		" class_id=%d AND username='%s'", class_id, account);
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
+	if (mysql_query(pmysql, sql_string) != 0)
+		return false;
+	DB_RESULT pmyres = mysql_store_result(pmysql);
+	if (pmyres == nullptr)
 		return FALSE;
-	}
-	if (mysql_num_rows(pmyres) > 0) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() > 0)
 		return TRUE;
-	}
-	mysql_free_result(pmyres);
+
 	snprintf(sql_string, sizeof(sql_string), "SELECT child_id FROM"
 			" hierarchy WHERE class_id=%d", class_id);
-	if (0 != mysql_query(pmysql, sql_string) ||
-		NULL == (pmyres = mysql_store_result(pmysql))) {
+	if (mysql_query(pmysql, sql_string) != 0)
+		return false;
+	pmyres = mysql_store_result(pmysql);
+	if (pmyres == nullptr)
 		return FALSE;
-	}
-	rows = mysql_num_rows(pmyres);
+	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		child_id = atoi(myrow[0]);
 		if (TRUE == mysql_adaptor_hierarchy_include(
 			pmysql, account, child_id)) {
-			mysql_free_result(pmyres);
 			return TRUE;
 		}
 	}
-	mysql_free_result(pmyres);
 	return FALSE;
 }
 
@@ -2071,8 +1874,6 @@ BOOL mysql_adaptor_check_mlist_include(
 	int domain_id;
 	BOOL b_result;
 	int id, type;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name[512];
 	char *pencode_domain;
 	char temp_account[512];
@@ -2097,18 +1898,15 @@ BOOL mysql_adaptor_check_mlist_include(
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	
 	id = atoi(myrow[0]);
 	type = atoi(myrow[1]);
-	mysql_free_result(pmyres);
 	
 	b_result = FALSE;
 	switch (type) {
@@ -2121,10 +1919,8 @@ BOOL mysql_adaptor_check_mlist_include(
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (mysql_num_rows(pmyres) > 0) {
+		if (pmyres.num_rows() > 0)
 			b_result = TRUE;
-		}
-		mysql_free_result(pmyres);
 		return b_result;
 	case MLIST_TYPE_GROUP:
 		snprintf(sql_string, 1024, "SELECT id FROM "
@@ -2135,13 +1931,10 @@ BOOL mysql_adaptor_check_mlist_include(
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (1 != mysql_num_rows(pmyres)) {
-			mysql_free_result(pmyres);
+		if (pmyres.num_rows() != 1)
 			return FALSE;
-		}
-		myrow = mysql_fetch_row(pmyres);
+		myrow = pmyres.fetch_row();
 		group_id = atoi(myrow[0]);
-		mysql_free_result(pmyres);
 		
 		snprintf(sql_string, 1024, "SELECT username FROM users WHERE"
 			" group_id=%d AND username='%s'", group_id, temp_account);
@@ -2151,10 +1944,8 @@ BOOL mysql_adaptor_check_mlist_include(
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (mysql_num_rows(pmyres) > 0) {
+		if (pmyres.num_rows() > 0)
 			b_result = TRUE;
-		}
-		mysql_free_result(pmyres);
 		return b_result;
 	case MLIST_TYPE_DOMAIN:
 		snprintf(sql_string, 1024, "SELECT id FROM domains"
@@ -2165,13 +1956,10 @@ BOOL mysql_adaptor_check_mlist_include(
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (1 != mysql_num_rows(pmyres)) {
-			mysql_free_result(pmyres);
+		if (pmyres.num_rows() != 1)
 			return FALSE;
-		}
-		myrow = mysql_fetch_row(pmyres);
+		myrow = pmyres.fetch_row();
 		domain_id = atoi(myrow[0]);
-		mysql_free_result(pmyres);
 		
 		snprintf(sql_string, 1024, "SELECT username FROM users WHERE"
 			" domain_id=%d AND username='%s'", domain_id, temp_account);
@@ -2181,10 +1969,8 @@ BOOL mysql_adaptor_check_mlist_include(
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (mysql_num_rows(pmyres) > 0) {
+		if (pmyres.num_rows() > 0)
 			b_result = TRUE;
-		}
-		mysql_free_result(pmyres);
 		return b_result;
 	case MLIST_TYPE_CLASS:
 		snprintf(sql_string, 1024, "SELECT id FROM "
@@ -2195,13 +1981,10 @@ BOOL mysql_adaptor_check_mlist_include(
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (1 != mysql_num_rows(pmyres)) {
-			mysql_free_result(pmyres);
+		if (pmyres.num_rows() != 1)
 			return FALSE;		
-		}
-		myrow = mysql_fetch_row(pmyres);
+		myrow = pmyres.fetch_row();
 		class_id = atoi(myrow[0]);
-		mysql_free_result(pmyres);
 		b_result = mysql_adaptor_hierarchy_include(conn.res.get(), temp_account, class_id);
 		return b_result;
 	default:
@@ -2250,8 +2033,6 @@ BOOL mysql_adaptor_check_same_org2(
 {
 	int org_id1;
 	int org_id2;
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char temp_name1[512];
 	char temp_name2[512];
 	char sql_string[1024];
@@ -2271,20 +2052,16 @@ BOOL mysql_adaptor_check_same_org2(
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (2 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 2)
 		return FALSE;
-	}
-
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	org_id1 = atoi(myrow[0]);
-	myrow = mysql_fetch_row(pmyres);
+	myrow = pmyres.fetch_row();
 	org_id2 = atoi(myrow[0]);
-	mysql_free_result(pmyres);
 	if (0 == org_id1 || 0 == org_id2 || org_id1 != org_id2) {
 		return FALSE;
 	}
@@ -2295,8 +2072,6 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 {
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 
 	if (path != nullptr)
 		*path = '\0';
@@ -2313,26 +2088,23 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1) {
 		return FALSE;
 	} else {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		if (0 != atoi(myrow[0])) {
 			if (NULL != path) {
 				strcpy(path, myrow[1]);
 			}
-			mysql_free_result(pmyres);
 			return FALSE;
 		} else {
 			if (NULL != path) {
 				strcpy(path, myrow[1]);
 			}
-			mysql_free_result(pmyres);
 			return TRUE;
 		}
 	}
@@ -2346,8 +2118,6 @@ BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
 	int privilege;
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 
 	mysql_adaptor_encode_squote(from, temp_name);
 	snprintf(sql_string, 1024, "SELECT list_privilege FROM "
@@ -2362,20 +2132,17 @@ BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1) {
 		*pb_expanded = FALSE;
 		return TRUE;
 	}
 
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	privilege = atoi(myrow[0]);
-	mysql_free_result(pmyres);
-
 	if (MLIST_PRIVILEGE_OUTGOING != privilege) {
 		*pb_expanded = FALSE;
 		return TRUE;
@@ -2395,8 +2162,6 @@ BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
 {
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT destination, forward_type FROM "
@@ -2411,18 +2176,17 @@ BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
+	if (pmyres.num_rows() != 1) {
 		destination[0] = '\0';
 	} else {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		strcpy(destination, myrow[0]);
 		*ptype = atoi(myrow[1]);
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -2431,8 +2195,6 @@ BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 	int group_id;
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT group_id, address_status FROM users "
@@ -2447,24 +2209,20 @@ BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
-	if (1 != mysql_num_rows(pmyres)) {
+	if (pmyres.num_rows() != 1) {
 		groupname[0] = '\0';
-		mysql_free_result(pmyres);
 		return TRUE;
 	}
 
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	if (0 != atoi(myrow[1])) {
-		mysql_free_result(pmyres);
 		groupname[0] = '\0';
 		return TRUE;
 	}
 	group_id = atoi(myrow[0]);
-	mysql_free_result(pmyres);
-
 	if (0 == group_id) {
 		groupname[0] = '\0';
 		return TRUE;
@@ -2479,13 +2237,12 @@ BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
+	if (pmyres.num_rows() != 1) {
 		groupname[0] = '\0';
 	} else {
-		myrow = mysql_fetch_row(pmyres);
+		myrow = pmyres.fetch_row();
 		strcpy(groupname, myrow[0]);
 	}
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
@@ -2501,8 +2258,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 	char *pencode_domain;
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 	MEM_FILE file_temp;
 	MEM_FILE file_temp1;
 
@@ -2534,19 +2289,17 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1) {
 		*presult = MLIST_RESULT_NONE;
 		return TRUE;
 	}
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	id = atoi(myrow[0]);
 	type = atoi(myrow[1]);
 	privilege = atoi(myrow[2]);
-	mysql_free_result(pmyres);
 	b_chkintl = FALSE;
 
 	switch (type) {
@@ -2579,16 +2332,14 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			pmyres = mysql_store_result(conn.res.get());
 			if (pmyres == nullptr)
 				return false;
-			rows = mysql_num_rows(pmyres);
+			rows = pmyres.num_rows();
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				if (0 == strcasecmp(myrow[0], from) ||
 					0 == strcasecmp(myrow[0], pfrom_domain)) {
 					break;
 				}
 			}
-			mysql_free_result(pmyres);
-
 			if (i == rows) {
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
@@ -2611,11 +2362,10 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		rows = mysql_num_rows(pmyres);
-
+		rows = pmyres.num_rows();
 		if (TRUE == b_chkintl) {
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				if (0 == strcasecmp(myrow[0], from)) {
 					b_chkintl = FALSE;
 					break;
@@ -2624,17 +2374,14 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		if (TRUE == b_chkintl) {
-			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
-
-		mysql_data_seek(pmyres, 0);
+		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
-			myrow = mysql_fetch_row(pmyres);
+			myrow = pmyres.fetch_row();
 			mem_file_writeline(pfile, myrow[0]);
 		}
-		mysql_free_result(pmyres);
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 
@@ -2667,16 +2414,14 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			pmyres = mysql_store_result(conn.res.get());
 			if (pmyres == nullptr)
 				return false;
-			rows = mysql_num_rows(pmyres);
+			rows = pmyres.num_rows();
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				if (0 == strcasecmp(myrow[0], from) ||
 					0 == strcasecmp(myrow[0], pfrom_domain)) {
 					break;
 				}
 			}
-			mysql_free_result(pmyres);
-
 			if (i == rows) {
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
@@ -2699,13 +2444,12 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (1 != mysql_num_rows(pmyres)) {
+		if (pmyres.num_rows() != 1) {
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
-		myrow = mysql_fetch_row(pmyres);
+		myrow = pmyres.fetch_row();
 		group_id = atoi(myrow[0]);
-		mysql_free_result(pmyres);
 		snprintf(sql_string, 1024, "SELECT username, address_type,"
 				" sub_type FROM users WHERE group_id=%d", group_id);
 		if (mysql_query(conn.res.get(), sql_string) != 0) {
@@ -2718,10 +2462,10 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		rows = mysql_num_rows(pmyres);
+		rows = pmyres.num_rows();
 		if (TRUE == b_chkintl) {
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
 					&& SUB_TYPE_USER == atoi(myrow[2]) &&
 					0 == strcasecmp(myrow[0], from)) {
@@ -2732,21 +2476,17 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		if (TRUE == b_chkintl) {
-			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
-
-		mysql_data_seek(pmyres, 0);
+		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
-			myrow = mysql_fetch_row(pmyres);
+			myrow = pmyres.fetch_row();
 			if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
 				&& SUB_TYPE_USER == atoi(myrow[2])) {
 				mem_file_writeline(pfile, myrow[0]);
 			}
 		}
-
-		mysql_free_result(pmyres);
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 
@@ -2779,16 +2519,14 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			pmyres = mysql_store_result(conn.res.get());
 			if (pmyres == nullptr)
 				return false;
-			rows = mysql_num_rows(pmyres);
+			rows = pmyres.num_rows();
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				if (0 == strcasecmp(myrow[0], from) ||
 					0 == strcasecmp(myrow[0], pfrom_domain)) {
 					break;
 				}
 			}
-			mysql_free_result(pmyres);
-
 			if (i == rows) {
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
@@ -2811,14 +2549,12 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (1 != mysql_num_rows(pmyres)) {
-			mysql_free_result(pmyres);
+		if (pmyres.num_rows() != 1) {
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
-		myrow = mysql_fetch_row(pmyres);
+		myrow = pmyres.fetch_row();
 		domain_id = atoi(myrow[0]);
-		mysql_free_result(pmyres);
 		snprintf(sql_string, 1024, "SELECT username, address_type,"
 			" sub_type FROM users WHERE domain_id=%d", domain_id);
 		if (mysql_query(conn.res.get(), sql_string) != 0) {
@@ -2831,10 +2567,10 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		rows = mysql_num_rows(pmyres);
+		rows = pmyres.num_rows();
 		if (TRUE == b_chkintl) {
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
 					&& SUB_TYPE_USER == atoi(myrow[2]) &&
 					0 == strcasecmp(myrow[0], from)) {
@@ -2845,21 +2581,17 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		}
 
 		if (TRUE == b_chkintl) {
-			mysql_free_result(pmyres);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
-
-		mysql_data_seek(pmyres, 0);
+		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
-			myrow = mysql_fetch_row(pmyres);
+			myrow = pmyres.fetch_row();
 			if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
 				&& SUB_TYPE_USER == atoi(myrow[2])) {
 				mem_file_writeline(pfile, myrow[0]);
 			}
 		}
-
-		mysql_free_result(pmyres);
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 
@@ -2892,16 +2624,14 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			pmyres = mysql_store_result(conn.res.get());
 			if (pmyres == nullptr)
 				return false;
-			rows = mysql_num_rows(pmyres);
+			rows = pmyres.num_rows();
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				if (0 == strcasecmp(myrow[0], from) ||
 					0 == strcasecmp(myrow[0], pfrom_domain)) {
 					break;
 				}
 			}
-			mysql_free_result(pmyres);
-
 			if (i == rows) {
 				*presult = MLIST_RESULT_PRIVIL_SPECIFIED;
 				return TRUE;
@@ -2925,15 +2655,13 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		pmyres = mysql_store_result(conn.res.get());
 		if (pmyres == nullptr)
 			return false;
-		if (1 != mysql_num_rows(pmyres)) {
-			mysql_free_result(pmyres);
+		if (pmyres.num_rows() != 1) {
 			*presult = MLIST_RESULT_NONE;
 			return TRUE;
 		}
 
-		myrow = mysql_fetch_row(pmyres);
+		myrow = pmyres.fetch_row();
 		class_id = atoi(myrow[0]);
-		mysql_free_result(pmyres);
 		mem_file_init(&file_temp, pfile->allocator);
 		mem_file_write(&file_temp, (char*)&class_id, sizeof(int));
 
@@ -2960,9 +2688,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			pmyres = mysql_store_result(conn.res.get());
 			if (pmyres == nullptr)
 				return false;
-			rows = mysql_num_rows(pmyres);
+			rows = pmyres.num_rows();
 			for (i = 0; i < rows; i++) {
-				myrow = mysql_fetch_row(pmyres);
+				myrow = pmyres.fetch_row();
 				mem_file_seek(&file_temp1, MEM_FILE_READ_PTR, 0,
 					MEM_FILE_SEEK_BEGIN);
 				b_same = FALSE;
@@ -2977,7 +2705,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 					mem_file_writeline(&file_temp1, myrow[0]);
 				}
 			}
-			mysql_free_result(pmyres);
 		}
 
 		mem_file_free(&file_temp);
@@ -3016,8 +2743,6 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 {
 	char temp_name[512];
 	char sql_string[1024];
-	MYSQL_RES *pmyres;
-	MYSQL_ROW myrow;
 
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT maildir, address_status, "
@@ -3032,15 +2757,15 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
 
-	if (1 != mysql_num_rows(pmyres)) {
+	if (pmyres.num_rows() != 1) {
 		maildir[0] = '\0';
 	} else {
-		myrow = mysql_fetch_row(pmyres);
+		auto myrow = pmyres.fetch_row();
 		if (0 == atoi(myrow[1])) {
 			strcpy(maildir, myrow[0]);
 			strcpy(lang, myrow[2]);
@@ -3049,15 +2774,11 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 			maildir[0] = '\0';
 		}
 	}
-
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 
 BOOL mysql_adaptor_get_username(int user_id, char *username)
 {
-	MYSQL_ROW myrow;
-	MYSQL_RES *pmyres;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT username FROM users "
@@ -3072,18 +2793,14 @@ BOOL mysql_adaptor_get_username(int user_id, char *username)
 			return false;
 	}
 
-	pmyres = mysql_store_result(conn.res.get());
+	DB_RESULT pmyres = mysql_store_result(conn.res.get());
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (1 != mysql_num_rows(pmyres)) {
-		mysql_free_result(pmyres);
+	if (pmyres.num_rows() != 1)
 		return FALSE;
-	}
-
-	myrow = mysql_fetch_row(pmyres);
+	auto myrow = pmyres.fetch_row();
 	strncpy(username, myrow[0], 256);
-	mysql_free_result(pmyres);
 	return TRUE;
 }
 

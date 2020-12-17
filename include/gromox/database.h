@@ -39,7 +39,7 @@ class GX_EXPORT DB_RESULT final {
 	operator bool() const noexcept { return m_res != nullptr; }
 	bool operator==(std::nullptr_t) const noexcept { return m_res == nullptr; }
 	bool operator!=(std::nullptr_t) const noexcept { return m_res != nullptr; }
-	void *get() const noexcept { return m_res; }
+	MYSQL_RES *get() const noexcept { return m_res; }
 	void *release() noexcept
 	{
 		void *p = m_res;
@@ -47,7 +47,7 @@ class GX_EXPORT DB_RESULT final {
 		return p;
 	}
 
-	size_t get_num_rows() const { return mysql_num_rows(m_res); }
+	size_t num_rows() const { return mysql_num_rows(m_res); }
 	DB_ROW fetch_row() { return mysql_fetch_row(m_res); }
 	DB_LENGTHS fetch_row_lengths() { return mysql_fetch_lengths(m_res); }
 
