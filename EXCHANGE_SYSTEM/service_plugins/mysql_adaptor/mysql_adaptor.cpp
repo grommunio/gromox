@@ -4,6 +4,8 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
@@ -2195,8 +2197,8 @@ BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_mlist(const char *username,
-    const char *from, int *presult, MEM_FILE *pfile)
+BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
+    int *presult, std::vector<std::string> &pfile)
 {
 	int i, id, rows;
 	int type, privilege;
@@ -2327,7 +2329,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
 			myrow = pmyres.fetch_row();
-			mem_file_writeline(pfile, myrow[0]);
+			pfile.push_back(myrow[0]);
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
@@ -2431,7 +2433,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			myrow = pmyres.fetch_row();
 			if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
 				&& SUB_TYPE_USER == atoi(myrow[2])) {
-				mem_file_writeline(pfile, myrow[0]);
+				pfile.push_back(myrow[0]);
 			}
 		}
 		*presult = MLIST_RESULT_OK;
@@ -2536,7 +2538,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			myrow = pmyres.fetch_row();
 			if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
 				&& SUB_TYPE_USER == atoi(myrow[2])) {
-				mem_file_writeline(pfile, myrow[0]);
+				pfile.push_back(myrow[0]);
 			}
 		}
 		*presult = MLIST_RESULT_OK;
@@ -2643,8 +2645,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
-		for (const auto &temp_name : file_temp1)
-			mem_file_writeline(pfile, temp_name.c_str());
+		for (auto &&temp_name : file_temp1)
+			pfile.push_back(std::move(temp_name));
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 	}

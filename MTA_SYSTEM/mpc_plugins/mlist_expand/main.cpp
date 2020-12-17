@@ -2,6 +2,7 @@
 #include <gromox/hook_common.h>
 #include "bounce_producer.h"
 #include <stdio.h>
+#include "../../../EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.h"
 
 DECLARE_API;
 
@@ -11,8 +12,7 @@ DECLARE_API;
 #define MLIST_RESULT_PRIVIL_INTERNAL    3
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
 
-static BOOL (*get_mlist)(const char *username, const char *from, int *presult,
-	MEM_FILE *pfile);
+static decltype(mysql_adaptor_get_mlist) *get_mlist;
 
 static BOOL expand_process(MESSAGE_CONTEXT *pcontext);
 
@@ -66,18 +66,16 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	BOOL b_touched;
 	char rcpt_to[256];
 	char delivered_to[256];
-	MEM_FILE temp_file1;
+	std::vector<std::string> temp_file1;
 	MEM_FILE temp_file2;
 	MIME *phead;
 	MESSAGE_CONTEXT *pcontext_expand;
 	MESSAGE_CONTEXT *pbounce_context;
 
-	mem_file_init(&temp_file1, pcontext->pcontrol->f_rcpt_to.allocator);
 	mem_file_init(&temp_file2, pcontext->pcontrol->f_rcpt_to.allocator);
 	
 	phead = mail_get_head(pcontext->pmail);
 	if (NULL == phead) {
-		mem_file_free(&temp_file1);
 		mem_file_free(&temp_file2);
 		return FALSE;
 	}
@@ -88,7 +86,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	b_touched = FALSE;
 	while (MEM_END_OF_FILE != mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
 		rcpt_to, 256)) {
-		get_mlist(rcpt_to, pcontext->pcontrol->from, &result, &temp_file1);
+		get_mlist(rcpt_to, pcontext->pcontrol->from, &result, temp_file1);
 		switch (result) {
 		case MLIST_RESULT_OK:
 			b_touched = TRUE;
@@ -222,7 +220,6 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	}
 
 	if (FALSE == b_touched) {
-		mem_file_free(&temp_file1);
 		mem_file_free(&temp_file2);
 		return FALSE;
 	}
@@ -230,47 +227,36 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	mem_file_copy(&temp_file2, &pcontext->pcontrol->f_rcpt_to);
 	mem_file_free(&temp_file2);
 
-	if (0 == mem_file_get_total_length(&temp_file1)) {
-		mem_file_free(&temp_file1);
+	if (temp_file1.size() == 0) {
 		goto EXIT_EXPAND;
 	}
 
 	pcontext_expand =  get_context();
 	if (NULL == pcontext_expand) {
-		mem_file_seek(&temp_file1, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (MEM_END_OF_FILE != mem_file_readline(&temp_file1, rcpt_to, 256)) {
-			for (i=0; i<num; i++) {
-				if (TRUE == mime_search_field(phead, "Delivered-To", i,
-					delivered_to, 256) && 0 == strcasecmp(delivered_to,
-					rcpt_to)) {
+		for (const auto &rcpt_to : temp_file1) {
+			for (i = 0; i < num; ++i)
+				if (mime_search_field(phead, "Delivered-To", i, delivered_to, 256) &&
+				    strcasecmp(delivered_to, rcpt_to.c_str()) == 0)
 					break;
-				}
-			}
 			if (i == num) {
-				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, rcpt_to);
+				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, rcpt_to.c_str());
 			}
 		}
-		mem_file_free(&temp_file1);
 		goto EXIT_EXPAND;
 	}
 
 	strcpy(pcontext_expand->pcontrol->from, pcontext->pcontrol->from);
 	pcontext_expand->pcontrol->need_bounce = pcontext->pcontrol->need_bounce;
 
-	mem_file_seek(&temp_file1, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (MEM_END_OF_FILE != mem_file_readline(&temp_file1, rcpt_to, 256)) {
-		for (i=0; i<num; i++) {
-			if (TRUE == mime_search_field(phead, "Delivered-To", i,
-				delivered_to, 256) && 0 == strcasecmp(delivered_to, rcpt_to)) {
+	for (auto &&rcpt_to : temp_file1) {
+		for (i = 0; i < num; ++i)
+			if (mime_search_field(phead, "Delivered-To", i, delivered_to, 256) &&
+			    strcasecmp(delivered_to, rcpt_to.c_str()) == 0)
 				break;
-			}
-		}
 		if (i == num) {
-			mem_file_writeline(&pcontext_expand->pcontrol->f_rcpt_to, rcpt_to);
+			mem_file_writeline(&pcontext_expand->pcontrol->f_rcpt_to, rcpt_to.c_str());
 		}
 	}
-	mem_file_free(&temp_file1);
-
 	mail_dup(pcontext->pmail, pcontext_expand->pmail);
 	throw_context(pcontext_expand);
 

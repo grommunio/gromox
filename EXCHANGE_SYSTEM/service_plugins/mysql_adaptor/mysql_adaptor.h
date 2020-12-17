@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+#include <vector>
 #include "mem_file.h"
 
 enum {
@@ -107,7 +109,7 @@ extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *d
 extern BOOL mysql_adaptor_check_user(const char *username, char *path);
 extern BOOL mysql_adaptor_get_forward(const char *username, int *ptype, char *destination);
 extern BOOL mysql_adaptor_get_groupname(const char *username, char *groupname);
-extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int *presult, MEM_FILE *pfile);
+extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int *presult, std::vector<std::string> &);
 extern BOOL mysql_adaptor_get_user_info(const char *username, char *maildir, char *lang, char *timezone);
 extern BOOL mysql_adaptor_get_username(int user_id, char *username);
 extern void mysql_adaptor_disable_smtp(const char *username);
