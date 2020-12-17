@@ -25,7 +25,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		get_mlist = query_service("get_mail_list");
+		get_mlist = reinterpret_cast<decltype(get_mlist)>(query_service("get_mail_list"));
 		if (NULL == get_mlist) {
 			printf("[mlist_expand]: failed to get service \"get_mail_list\"\n");
 			return FALSE;

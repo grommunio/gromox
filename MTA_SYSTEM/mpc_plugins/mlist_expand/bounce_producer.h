@@ -8,6 +8,9 @@ enum{
 	BOUNCE_TOTAL_NUM
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void bounce_producer_init(const char *path, const char *separator);
 extern int bounce_producer_run(void);
@@ -16,3 +19,7 @@ extern void bounce_producer_free(void);
 extern BOOL bounce_producer_refresh(void);
 void bounce_producer_make(const char *from, const char *rcpt,
 	MAIL *pmail_original, int bounce_type, MAIL *pmail);
+
+#ifdef __cplusplus
+}
+#endif
