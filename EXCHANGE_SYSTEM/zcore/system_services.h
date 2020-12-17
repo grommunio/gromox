@@ -1,6 +1,7 @@
 #pragma once
 #include "common_types.h"
 #include "mem_file.h"
+#include "../service_plugins/mysql_adaptor/mysql_adaptor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +33,7 @@ extern BOOL (*system_services_set_password)(
 	const char*, const char*, const char*);
 extern BOOL (*system_services_get_user_displayname)(const char*, char*);
 extern BOOL (*system_services_get_user_privilege_bits)(const char*, uint32_t*);
-extern BOOL (*system_services_get_org_domains)(int, MEM_FILE*);
+extern decltype(mysql_adaptor_get_org_domains) *system_services_get_org_domains;
 extern BOOL (*system_services_get_domain_info)(int, char*, char*, char*);
 extern BOOL (*system_services_get_domain_groups)(int, MEM_FILE*);
 extern BOOL (*system_services_get_group_classes)(int, MEM_FILE*);

@@ -2,6 +2,7 @@
 #include "system_services.h"
 #include "service.h"
 #include <stdio.h>
+#include "../service_plugins/mysql_adaptor/mysql_adaptor.h"
 
 BOOL (*system_services_get_user_lang)(const char*, char*);
 BOOL (*system_services_set_user_lang)(const char*, const char*);
@@ -26,7 +27,7 @@ BOOL (*system_services_set_password)(
 	const char*, const char*, const char*);
 BOOL (*system_services_get_user_displayname)(const char*, char*);
 BOOL (*system_services_get_user_privilege_bits)(const char*, uint32_t*);
-BOOL (*system_services_get_org_domains)(int, MEM_FILE*);
+decltype(mysql_adaptor_get_org_domains) *system_services_get_org_domains;
 BOOL (*system_services_get_domain_info)(int, char*, char*, char*);
 BOOL (*system_services_get_domain_groups)(int, MEM_FILE*);
 BOOL (*system_services_get_group_classes)(int, MEM_FILE*);

@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openssl/md5.h>
-
+#include "../../service_plugins/mysql_adaptor/mysql_adaptor.h"
 
 #define ADDRESS_TYPE_NORMAL					0
 #define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
@@ -85,8 +85,7 @@ static pthread_mutex_t g_list_lock;
 static LIB_BUFFER *g_file_allocator;
 static pthread_mutex_t g_remote_lock;
 
-static BOOL (*get_org_domains)(int org_id, MEM_FILE *pfile);
-
+static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
 static BOOL (*get_domain_info)(int domain_id,
 	char *name, char *title, char *address);
 
@@ -924,24 +923,19 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	int i, num;
 	int domain_id;
 	SORT_ITEM *parray;
-	MEM_FILE temp_file;
 	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
 	SINGLE_LIST_NODE *pnode;
 	
 	if (pbase->base_id > 0) {
-		mem_file_init(&temp_file, g_file_allocator);
-		if (FALSE == get_org_domains(pbase->base_id, &temp_file)) {
-			mem_file_free(&temp_file);
+		std::vector<int> temp_file;
+		if (!get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
-		}
-		while (MEM_END_OF_FILE != mem_file_read(
-			&temp_file, &domain_id, sizeof(int))) {
+		for (auto domain_id : temp_file) {
 			pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
 			if (NULL == pdomain) {
 				ab_tree_unload_base(pbase);
-				mem_file_free(&temp_file);
 				return FALSE;
 			}
 			pdomain->node.pdata = pdomain;
@@ -952,12 +946,10 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 				ab_tree_destruct_tree(&pdomain->tree);
 				free(pdomain);
 				ab_tree_unload_base(pbase);
-				mem_file_free(&temp_file);
 				return FALSE;
 			}
 			single_list_append_as_tail(&pbase->list, &pdomain->node);
 		}
-		mem_file_free(&temp_file);
 	} else {
 		pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
 		if (NULL == pdomain) {

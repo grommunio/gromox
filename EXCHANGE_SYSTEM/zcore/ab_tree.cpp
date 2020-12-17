@@ -899,24 +899,19 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	int i, num;
 	int domain_id;
 	SORT_ITEM *parray;
-	MEM_FILE temp_file;
 	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
 	SINGLE_LIST_NODE *pnode;
 	
 	if (pbase->base_id > 0) {
-		mem_file_init(&temp_file, g_file_allocator);
-		if (FALSE == system_services_get_org_domains(pbase->base_id, &temp_file)) {
-			mem_file_free(&temp_file);
+		std::vector<int> temp_file;
+		if (!system_services_get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
-		}
-		while (MEM_END_OF_FILE != mem_file_read(
-			&temp_file, &domain_id, sizeof(int))) {
+		for (auto domain_id : temp_file) {
 			pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
 			if (NULL == pdomain) {
 				ab_tree_unload_base(pbase);
-				mem_file_free(&temp_file);
 				return FALSE;
 			}
 			pdomain->node.pdata = pdomain;
@@ -927,12 +922,10 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 				ab_tree_destruct_tree(&pdomain->tree);
 				free(pdomain);
 				ab_tree_unload_base(pbase);
-				mem_file_free(&temp_file);
 				return FALSE;
 			}
 			single_list_append_as_tail(&pbase->list, &pdomain->node);
 		}
-		mem_file_free(&temp_file);
 	} else {
 		pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
 		if (NULL == pdomain) {

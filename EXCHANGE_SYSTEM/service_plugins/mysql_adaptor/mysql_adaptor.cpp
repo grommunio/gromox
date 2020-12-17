@@ -1074,9 +1074,8 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile)
+BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &pfile)
 {
-	int domain_id;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024,
@@ -1096,10 +1095,10 @@ BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile)
 		return false;
 	conn.finish();
 	size_t i, rows = pmyres.num_rows();
+	pfile = std::vector<int>(rows);
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
-		domain_id = atoi(myrow[0]);
-		mem_file_write(pfile, &domain_id, sizeof(int));
+		pfile[i] = strtoul(myrow[0], nullptr, 0);
 	}
 	return TRUE;
 }

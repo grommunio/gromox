@@ -79,9 +79,7 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	
 BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	int *pgroup_id, int *pdomain_id);
-
-BOOL mysql_adaptor_get_org_domains(int org_id, MEM_FILE *pfile);
-
+extern BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &);
 BOOL mysql_adaptor_get_domain_info(int domain_id,
 	char *name, char *title, char *address);
 
