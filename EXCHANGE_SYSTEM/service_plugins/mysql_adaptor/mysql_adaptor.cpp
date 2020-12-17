@@ -2106,53 +2106,6 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 	}
 }
 
-BOOL mysql_adaptor_check_virtual(const char *username, const char *from,
-    BOOL *pb_expanded, MEM_FILE *pfile)
-{
-	int result;
-	BOOL b_ret;
-	int privilege;
-	char temp_name[512];
-	char sql_string[1024];
-
-	mysql_adaptor_encode_squote(from, temp_name);
-	snprintf(sql_string, 1024, "SELECT list_privilege FROM "
-		"mlists WHERE listname='%s'", temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
-		return false;
-	if (mysql_query(conn.res.get(),	sql_string) != 0) {
-		conn.res = sql_make_conn();
-		if (conn.res == nullptr ||
-		    mysql_query(conn.res.get(), sql_string) != 0)
-			return false;
-	}
-
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1) {
-		*pb_expanded = FALSE;
-		return TRUE;
-	}
-
-	auto myrow = pmyres.fetch_row();
-	privilege = atoi(myrow[0]);
-	if (MLIST_PRIVILEGE_OUTGOING != privilege) {
-		*pb_expanded = FALSE;
-		return TRUE;
-	}
-
-	b_ret = mysql_adaptor_get_mlist(from, username, &result, pfile);
-	if (MLIST_RESULT_OK == result) {
-		*pb_expanded = TRUE;
-	} else {
-		*pb_expanded = FALSE;
-	}
-	return b_ret;
-}
-
 BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
     char *destination)
 {

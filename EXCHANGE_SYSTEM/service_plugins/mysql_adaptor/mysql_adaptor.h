@@ -105,7 +105,6 @@ int mysql_adaptor_get_param(int param);
 void mysql_adaptor_set_param(int param, int value);
 extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
 extern BOOL mysql_adaptor_check_user(const char *username, char *path);
-extern BOOL mysql_adaptor_check_virtual(const char *username, const char *from, BOOL *pb_expanded, MEM_FILE *pfile);
 extern BOOL mysql_adaptor_get_forward(const char *username, int *ptype, char *destination);
 extern BOOL mysql_adaptor_get_groupname(const char *username, char *groupname);
 extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int *presult, MEM_FILE *pfile);
