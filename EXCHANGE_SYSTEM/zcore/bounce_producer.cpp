@@ -260,7 +260,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
-		presource->content[i] = malloc(node_stat.st_size);
+		presource->content[i] = static_cast<char *>(malloc(node_stat.st_size));
 		if (NULL == presource->content[i]) {
 			closedir(sub_dirp);
 			goto FREE_RESOURCE;
@@ -394,7 +394,7 @@ static int bounce_producer_get_mail_parts(
 		if (NULL == pvalue) {
 			continue;
 		}
-		tmp_len = strlen(pvalue);
+		tmp_len = strlen(static_cast<char *>(pvalue));
 		if (offset + tmp_len < 128*1024) {
 			if (TRUE == b_first) {
 				strcpy(parts + offset, g_separator);
@@ -425,7 +425,7 @@ static int bounce_producer_get_rcpts(
 		if (NULL == pvalue) {
 			continue;
 		}
-		tmp_len = strlen(pvalue);
+		tmp_len = strlen(static_cast<char *>(pvalue));
 		if (offset + tmp_len < 128*1024) {
 			if (TRUE == b_first) {
 				strcpy(rcpts + offset, g_separator);
@@ -469,8 +469,8 @@ static BOOL bounce_producer_make_content(const char *username,
 	} else {
 		tmp_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 	}
-	from = common_util_get_propvals(&pbrief->proplist,
-				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
+	from = static_cast<const char *>(common_util_get_propvals(&pbrief->proplist,
+	       PROP_TAG_SENTREPRESENTINGSMTPADDRESS));
 	if (NULL == from) {
 		from = "none@none";
 	}
@@ -554,7 +554,7 @@ static BOOL bounce_producer_make_content(const char *username,
 			pvalue = common_util_get_propvals(
 				&pbrief->proplist, PROP_TAG_SUBJECT);
 			if (NULL != pvalue) {
-				len = strlen(pvalue);
+				len = strlen(static_cast<char *>(pvalue));
 				memcpy(ptr, pvalue, len);
 				ptr += len;
 			}
@@ -640,7 +640,7 @@ BOOL bounce_producer_make(const char *username,
 						PROP_TAG_SENTREPRESENTINGNAME);
 	if (NULL != pvalue && '\0' != ((char*)pvalue)[0]) {
 		memcpy(mime_to, "\"=?utf-8?b?", 11);
-		encode64(pvalue, strlen(pvalue), mime_to + 11,
+		encode64(pvalue, strlen(static_cast<char *>(pvalue)), mime_to + 11,
 			sizeof(mime_to) - 15, &out_len);
 		memcpy(mime_to + 11 + out_len, "?=\"", 4);
 	} else {
@@ -694,7 +694,7 @@ BOOL bounce_producer_make(const char *username,
 	pvalue = common_util_get_propvals(
 		&pbrief->proplist, PROP_TAG_INTERNETMESSAGEID);
 	if (NULL != pvalue) {
-		dsn_append_field(pdsn_fields, "Original-Message-ID", pvalue);
+		dsn_append_field(pdsn_fields, "Original-Message-ID", static_cast<char *>(pvalue));
 	}
 	pvalue = common_util_get_propvals(
 		&pbrief->proplist, PROP_TAG_PARENTKEY);
