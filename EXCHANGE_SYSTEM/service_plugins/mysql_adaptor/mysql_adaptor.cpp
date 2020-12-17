@@ -1,7 +1,9 @@
+#include <algorithm>
+#include <cstring>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
-#include <string.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/dbop.h>
@@ -46,6 +48,12 @@
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
 
 using namespace gromox;
+
+struct icasecmp {
+	bool operator()(const std::string &a, const std::string &b) const {
+		return strcasecmp(a.c_str(), b.c_str()) == 0;
+	}
+};
 
 struct sqlfree {
 	void operator()(MYSQL *m) { mysql_close(m); }
@@ -704,12 +712,10 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang)
 	return TRUE;
 }
 
-static BOOL mysql_adaptor_expand_hierarchy(
-    MYSQL *pmysql, MEM_FILE *pfile, int class_id)
+static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
+    std::vector<int> &seen, int class_id)
 {
-	int temp_id;
 	int child_id;
-	BOOL b_include;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT child_id FROM"
@@ -733,21 +739,11 @@ static BOOL mysql_adaptor_expand_hierarchy(
 	for (i = 0; i < rows; i++) {
 		auto myrow = pmyres.fetch_row();
 		child_id = atoi(myrow[0]);
-		b_include = FALSE;
-		mem_file_seek(pfile, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (MEM_END_OF_FILE != mem_file_read(pfile, &temp_id, sizeof(int))) {
-			if (temp_id == child_id) {
-				b_include = TRUE;
-				break;
-			}
-		}
-		if (FALSE == b_include) {
-			mem_file_write(pfile, (char *)&child_id, sizeof(int));
-			if (FALSE == mysql_adaptor_expand_hierarchy(
-				pmysql, pfile, child_id)) {
-				return FALSE;
-			}
-		}
+		if (std::find(seen.cbegin(), seen.cend(), child_id) != seen.cend())
+			continue;
+		seen.push_back(child_id);
+		if (!mysql_adaptor_expand_hierarchy(pmysql, seen, child_id))
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -2254,12 +2250,10 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 	int group_id;
 	int domain_id;
 	int class_id;
-	BOOL b_chkintl, b_same;
+	BOOL b_chkintl;
 	char *pencode_domain;
 	char temp_name[512];
 	char sql_string[1024];
-	MEM_FILE file_temp;
-	MEM_FILE file_temp1;
 
 	*presult = MLIST_RESULT_NONE;
 	const char *pdomain = strchr(username, '@');
@@ -2595,7 +2589,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
 
-	case MLIST_TYPE_CLASS:
+	case MLIST_TYPE_CLASS: {
 		switch (privilege) {
 		case MLIST_PRIVILEGE_ALL:
 		case MLIST_PRIVILEGE_OUTGOING:
@@ -2662,20 +2656,15 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 
 		myrow = pmyres.fetch_row();
 		class_id = atoi(myrow[0]);
-		mem_file_init(&file_temp, pfile->allocator);
-		mem_file_write(&file_temp, (char*)&class_id, sizeof(int));
-
-		if (!mysql_adaptor_expand_hierarchy(conn.res.get(), &file_temp, class_id)) {
-			mem_file_free(&file_temp);
+		std::vector<int> file_temp{class_id};
+		if (!mysql_adaptor_expand_hierarchy(conn.res.get(),
+		    file_temp, class_id)) {
 			*presult = MLIST_RESULT_NONE;
 			return FALSE;
 		}
 
-		mem_file_init(&file_temp1, pfile->allocator);
-		mem_file_seek(&file_temp, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-
-		while (MEM_END_OF_FILE != mem_file_read(&file_temp,
-			&class_id, sizeof(int))) {
+		std::set<std::string, icasecmp> file_temp1;
+		for (auto class_id : file_temp) {
 			snprintf(sql_string, 1024, "SELECT username "
 				"FROM members WHERE class_id=%d", class_id);
 			if (mysql_query(conn.res.get(), sql_string) != 0) {
@@ -2691,47 +2680,21 @@ BOOL mysql_adaptor_get_mlist(const char *username,
 			rows = pmyres.num_rows();
 			for (i = 0; i < rows; i++) {
 				myrow = pmyres.fetch_row();
-				mem_file_seek(&file_temp1, MEM_FILE_READ_PTR, 0,
-					MEM_FILE_SEEK_BEGIN);
-				b_same = FALSE;
-				while (MEM_END_OF_FILE != mem_file_readline(&file_temp1,
-					temp_name, 256)) {
-					if (0 == strcasecmp(myrow[0], temp_name)) {
-						b_same = TRUE;
-						break;
-					}
-				}
-				if (FALSE == b_same) {
-					mem_file_writeline(&file_temp1, myrow[0]);
-				}
+				file_temp1.emplace(myrow[0]);
 			}
 		}
 
-		mem_file_free(&file_temp);
+		if (TRUE == b_chkintl)
+			b_chkintl = file_temp1.find(from) == file_temp1.cend();
 		if (TRUE == b_chkintl) {
-			while (MEM_END_OF_FILE != mem_file_readline(&file_temp1,
-				temp_name, 256)) {
-				if (0 == strcasecmp(temp_name, from)) {
-					b_chkintl = FALSE;
-				}
-			}
-		}
-
-		if (TRUE == b_chkintl) {
-			mem_file_free(&file_temp1);
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
-
-		mem_file_seek(&file_temp1, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		while (MEM_END_OF_FILE != mem_file_readline(&file_temp1,
-			temp_name, 256)) {
-			mem_file_writeline(pfile, temp_name);
-		}
-		mem_file_free(&file_temp1);
+		for (const auto &temp_name : file_temp1)
+			mem_file_writeline(pfile, temp_name.c_str());
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
-
+	}
 	default:
 		*presult = MLIST_RESULT_NONE;
 		return TRUE;
