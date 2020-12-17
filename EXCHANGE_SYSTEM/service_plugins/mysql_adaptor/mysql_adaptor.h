@@ -26,6 +26,11 @@ struct mysql_adaptor_init_param {
 	enum sql_schema_upgrade schema_upgrade;
 };
 
+struct sql_group {
+	int id;
+	std::string name, title;
+};
+
 #ifdef __cplusplus
 extern void mysql_adaptor_init(const struct mysql_adaptor_init_param &);
 #endif
@@ -84,9 +89,7 @@ BOOL mysql_adaptor_get_domain_info(int domain_id,
 	char *name, char *title, char *address);
 
 BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2);
-
-BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile);
-
+extern BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &);
 BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile);
 
 BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile);

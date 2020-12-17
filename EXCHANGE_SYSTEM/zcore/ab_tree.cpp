@@ -608,14 +608,12 @@ static BOOL ab_tree_load_tree(int domain_id,
 	int i;
 	int rows;
 	int temp_len;
-	int group_id;
 	int class_id;
 	int user_type;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
 	char address[1024];
 	MEM_FILE file_user;
-	MEM_FILE file_group;
 	MEM_FILE file_class;
 	char temp_buff[1024];
 	char group_name[256];
@@ -662,28 +660,23 @@ static BOOL ab_tree_load_tree(int domain_id,
 	mem_file_write(&pabnode->f_info, address, temp_len);
 	pdomain = (SIMPLE_TREE_NODE*)pabnode;
 	simple_tree_set_root(ptree, pdomain);
-	mem_file_init(&file_group, g_file_allocator);
-	if (FALSE == system_services_get_domain_groups(domain_id, &file_group)) {
-		mem_file_free(&file_group);
+
+	std::vector<sql_group> file_group;
+	if (!system_services_get_domain_groups(domain_id, file_group))
 		return FALSE;
-	}
-	while (MEM_END_OF_FILE != mem_file_read(
-		&file_group, &group_id, sizeof(int))) {
+	for (const auto &grp : file_group) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
-			mem_file_free(&file_group);
 			return FALSE;
 		}
 		pabnode->node_type = NODE_TYPE_GROUP;
-		pabnode->id = group_id;
-		pabnode->minid = ab_tree_make_minid(MINID_TYPE_GROUP, group_id);
+		pabnode->id = grp.id;
+		pabnode->minid = ab_tree_make_minid(MINID_TYPE_GROUP, grp.id);
 		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
 			return FALSE;
 		}
 		/* groupname */
-		mem_file_read(&file_group, &temp_len, sizeof(int));	
-		mem_file_read(&file_group, group_name, temp_len);
-		group_name[temp_len] = '\0';
+		HX_strlcpy(group_name, grp.name.c_str(), sizeof(group_name));
 		if (FALSE == utf8_check(group_name)) {
 			utf8_filter(group_name);
 			temp_len = strlen(group_name);
@@ -691,9 +684,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 		mem_file_write(&pabnode->f_info, group_name, temp_len);
 		/* group title */
-		mem_file_read(&file_group, &temp_len, sizeof(int));
-		mem_file_read(&file_group, temp_buff, temp_len);
-		temp_buff[temp_len] = '\0';
+		HX_strlcpy(temp_buff, grp.title.c_str(), sizeof(temp_buff));
 		if (FALSE == utf8_check(temp_buff)) {
 			utf8_filter(temp_buff);
 			temp_len = strlen(temp_buff);
@@ -704,9 +695,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 		simple_tree_add_child(ptree, pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
 		
 		mem_file_init(&file_class, g_file_allocator);
-		if (FALSE == system_services_get_group_classes(group_id, &file_class)) {
+		if (!system_services_get_group_classes(grp.id, &file_class)) {
 			mem_file_free(&file_class);
-			mem_file_free(&file_group);
 			return FALSE;
 		}
 		while (MEM_END_OF_FILE != mem_file_read(
@@ -714,7 +704,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 			pabnode = ab_tree_get_abnode();
 			if (NULL == pabnode) {
 				mem_file_free(&file_class);
-				mem_file_free(&file_group);
 				return FALSE;
 			}
 			pabnode->node_type = NODE_TYPE_CLASS;
@@ -724,7 +713,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 				if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
 					ab_tree_put_abnode(pabnode);
 					mem_file_free(&file_class);
-					mem_file_free(&file_group);
 					return FALSE;
 				}
 			}
@@ -744,17 +732,15 @@ static BOOL ab_tree_load_tree(int domain_id,
 			if (FALSE == ab_tree_load_class(
 				class_id, ptree, pclass, pbase)) {
 				mem_file_free(&file_class);
-				mem_file_free(&file_group);
 				return FALSE;
 			}
 		}
 		mem_file_free(&file_class);
 		
 		mem_file_init(&file_user, g_file_allocator);
-		rows = system_services_get_group_users(group_id, &file_user);
+		rows = system_services_get_group_users(grp.id, &file_user);
 		if (-1 == rows) {
 			mem_file_free(&file_user);
-			mem_file_free(&file_group);
 			return FALSE;
 		} else if (0 == rows) {
 			mem_file_free(&file_user);
@@ -763,7 +749,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 		parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 		if (NULL == parray) {
 			mem_file_free(&file_user);
-			mem_file_free(&file_group);
 			return FALSE;
 		}
 		i = 0;
@@ -771,21 +756,18 @@ static BOOL ab_tree_load_tree(int domain_id,
 			&file_user, &user_type, sizeof(int))) {
 			pabnode = ab_tree_get_abnode();
 			if (NULL == pabnode) {
-				mem_file_free(&file_group);
 				goto LOAD_FAIL;
 			}
 			if (ADDRESS_TYPE_MLIST == user_type) {
 				if (FALSE == ab_tree_load_mlist(
 					pabnode, &file_user, pbase)) {
 					ab_tree_put_abnode(pabnode);
-					mem_file_free(&file_group);
 					goto LOAD_FAIL;
 				}
 			} else {
 				if (FALSE == ab_tree_load_user(pabnode,
 					user_type, &file_user, pbase)) {
 					ab_tree_put_abnode(pabnode);
-					mem_file_free(&file_group);
 					goto LOAD_FAIL;
 				}
 			}
@@ -794,7 +776,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 			parray[i].string = strdup(temp_buff);
 			if (NULL == parray[i].string) {
 				ab_tree_put_abnode(pabnode);
-				mem_file_free(&file_group);
 				goto LOAD_FAIL;
 			}
 			i ++;
@@ -809,7 +790,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		free(parray);
 	}
-	mem_file_free(&file_group);
 	
 	mem_file_init(&file_user, g_file_allocator);
 	rows = system_services_get_domain_users(domain_id, &file_user);

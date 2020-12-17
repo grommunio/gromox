@@ -35,7 +35,7 @@ extern BOOL (*system_services_get_user_displayname)(const char*, char*);
 extern BOOL (*system_services_get_user_privilege_bits)(const char*, uint32_t*);
 extern decltype(mysql_adaptor_get_org_domains) *system_services_get_org_domains;
 extern BOOL (*system_services_get_domain_info)(int, char*, char*, char*);
-extern BOOL (*system_services_get_domain_groups)(int, MEM_FILE*);
+extern decltype(mysql_adaptor_get_domain_groups) *system_services_get_domain_groups;
 extern BOOL (*system_services_get_group_classes)(int, MEM_FILE*);
 extern BOOL (*system_services_get_sub_classes)(int, MEM_FILE*);
 extern int (*system_services_get_class_users)(int, MEM_FILE*);

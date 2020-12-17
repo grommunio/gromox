@@ -1167,10 +1167,8 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
+BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &pfile)
 {
-	int temp_len;
-	int group_id;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT id, groupname, title "
@@ -1190,17 +1188,14 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, MEM_FILE *pfile)
 		return false;
 	conn.finish();
 	size_t i, rows = pmyres.num_rows();
+	std::vector<sql_group> gv(rows);
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
-		group_id = atoi(myrow[0]);
-		mem_file_write(pfile, &group_id, sizeof(int));
-		temp_len = strlen(myrow[1]);
-		mem_file_write(pfile, &temp_len, sizeof(int));
-		mem_file_write(pfile, myrow[1], temp_len);
-		temp_len = strlen(myrow[2]);
-		mem_file_write(pfile, &temp_len, sizeof(int));
-		mem_file_write(pfile, myrow[2], temp_len);
+		gv[i].id = strtoul(myrow[0], nullptr, 0);
+		gv[i].name = myrow[1];
+		gv[i].title = myrow[2];
 	}
+	pfile = std::move(gv);
 	return TRUE;
 }
 
