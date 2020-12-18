@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
 #include "mem_file.h"
@@ -24,6 +25,14 @@ struct mysql_adaptor_init_param {
 	const char *host, *user, *pass, *dbname;
 	int port, conn_num, scan_interval, timeout;
 	enum sql_schema_upgrade schema_upgrade;
+};
+
+struct sql_user {
+	using alias_map_type = std::multimap<std::string, std::string>;
+
+	int addr_type = 0, id = 0, list_type = 0, list_priv = 0;
+	std::string username, realname, title, memo, cell, tel, nickname, homeaddr, maildir;
+	alias_map_type aliases;
 };
 
 struct sql_group {
@@ -97,12 +106,9 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2);
 extern BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &);
 extern BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &);
 extern BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &);
-int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile);
-
-int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile);
-
-int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile);
-
+extern int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &);
+extern int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &);
+extern int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &);
 BOOL mysql_adaptor_check_mlist_include(
 	const char *mlist_name, const char *account);
 

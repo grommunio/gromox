@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -91,12 +92,9 @@ static BOOL (*get_domain_info)(int domain_id,
 static decltype(mysql_adaptor_get_domain_groups) *get_domain_groups;
 static decltype(mysql_adaptor_get_group_classes) *get_group_classes;
 static decltype(mysql_adaptor_get_sub_classes) *get_sub_classes;
-static int (*get_class_users)(int class_id, MEM_FILE *pfile);
-
-static int (*get_group_users)(int group_id, MEM_FILE *pfile);
-
-static int (*get_domain_users)(int domain_id, MEM_FILE *pfile);
-
+static decltype(mysql_adaptor_get_class_users) *get_class_users;
+static decltype(mysql_adaptor_get_group_users) *get_group_users;
+static decltype(mysql_adaptor_get_domain_users) *get_domain_users;
 static BOOL (*get_mlist_ids)(int mlist_id,
 	int *pgroup_id, int *pdomain_id);
 
@@ -392,15 +390,26 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
 	return TRUE;
 }
 
+static std::string aliases_serialize(const sql_user::alias_map_type &amap,
+   const std::string &addr)
+{
+	auto stop = amap.upper_bound(addr);
+	std::string s;
+	for (auto i = amap.lower_bound(addr); i != stop; ++i) {
+		s += i->second;
+		s.push_back('\0');
+	}
+	return s;
+}
+
 static BOOL ab_tree_load_user(AB_NODE *pabnode,
-	int address_type, MEM_FILE *pfile_user, AB_BASE *pbase)
+    sql_user &&usr, AB_BASE *pbase)
 {
 	int i;
-	int user_id;
 	int temp_len;
 	char temp_buff[1024];
 	
-	switch (address_type) {
+	switch (usr.addr_type) {
 	case ADDRESS_TYPE_ROOM:
 		pabnode->node_type = NODE_TYPE_ROOM;
 		break;
@@ -411,9 +420,8 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 		pabnode->node_type = NODE_TYPE_PERSON;
 		break;
 	}
-	mem_file_read(pfile_user, &user_id, sizeof(int));
-	pabnode->id = user_id;
-	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
+	pabnode->id = usr.id;
+	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
 	((SIMPLE_TREE_NODE*)pabnode)->pdata = int_hash_query(
 							pbase->phash, pabnode->minid);
 	if (NULL == ((SIMPLE_TREE_NODE*)pabnode)->pdata) {
@@ -421,11 +429,16 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 			return FALSE;
 		}
 	}
+	static const std::string empty;
+	const std::string *const ar[] = {
+		&usr.username, &usr.realname, &usr.title, &usr.memo, &usr.cell,
+		&usr.tel, &usr.nickname, &usr.homeaddr, &empty, &usr.maildir,
+	};
 	for (i=0; i<10; i++) {
 		/* username,  real_name, title, memo, cell, tell,
 			nickname, homeaddress, create_day, maildir */
-		mem_file_read(pfile_user, &temp_len, sizeof(int));
-		mem_file_read(pfile_user, temp_buff, temp_len);
+		HX_strlcpy(temp_buff, ar[i]->c_str(), sizeof(temp_buff));
+		temp_len = ar[i]->size();
 		temp_buff[temp_len] = '\0';
 		if (FALSE == utf8_check(temp_buff)) {
 			utf8_filter(temp_buff);
@@ -435,26 +448,22 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 		mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	}
 	/* alias list */
-	mem_file_read(pfile_user, &temp_len, sizeof(int));
-	mem_file_read(pfile_user, temp_buff, temp_len);
+	auto atxt = aliases_serialize(usr.aliases, usr.username);
+	temp_len = atxt.size();
 	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	return TRUE;
 }
 
 static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
-	MEM_FILE *pfile_user, AB_BASE *pbase)
+    sql_user &&usr, AB_BASE *pbase)
 {
-	int user_id;
 	int temp_len;
-	int list_type;
-	int list_privilege;
 	char temp_buff[1024];
 	
 	pabnode->node_type = NODE_TYPE_MLIST;
-	mem_file_read(pfile_user, &user_id, sizeof(int));
-	pabnode->id = user_id;
-	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
+	pabnode->id = usr.id;
+	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
 	((SIMPLE_TREE_NODE*)pabnode)->pdata = int_hash_query(
 							pbase->phash, pabnode->minid);
 	if (NULL == ((SIMPLE_TREE_NODE*)pabnode)->pdata) {
@@ -463,9 +472,8 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 		}
 	}
 	/* listname */
-	mem_file_read(pfile_user, &temp_len, sizeof(int));
-	mem_file_read(pfile_user, temp_buff, temp_len);
-	temp_buff[temp_len] = '\0';
+	HX_strlcpy(temp_buff, usr.username.c_str(), sizeof(temp_buff));
+	temp_len = usr.username.size();
 	if (FALSE == utf8_check(temp_buff)) {
 		utf8_filter(temp_buff);
 		temp_len = strlen(temp_buff);
@@ -473,26 +481,24 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	/* create_day */
-	mem_file_read(pfile_user, &temp_len, sizeof(int));
-	mem_file_read(pfile_user, temp_buff, temp_len);
+	*temp_buff = '\0';
+	temp_len = 0;
 	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	/* list_type */
-	mem_file_read(pfile_user, &list_type, sizeof(int));
-	mem_file_write(&pabnode->f_info, &list_type, sizeof(int));
+	mem_file_write(&pabnode->f_info, &usr.list_type, sizeof(int));
 	/* list_privilege */
-	mem_file_read(pfile_user, &list_privilege, sizeof(int));
-	mem_file_write(&pabnode->f_info, &list_privilege, sizeof(int));
-	if (MLIST_TYPE_GROUP == list_type || MLIST_TYPE_CLASS == list_type) {
+	mem_file_write(&pabnode->f_info, &usr.list_priv, sizeof(int));
+	if (usr.list_type == MLIST_TYPE_GROUP ||
+	    usr.list_type == MLIST_TYPE_CLASS) {
 		/* title */
-		mem_file_read(pfile_user, &temp_len, sizeof(int));
-		mem_file_read(pfile_user, temp_buff, temp_len);
+		temp_len = usr.title.size();
 		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-		mem_file_write(&pabnode->f_info, temp_buff, temp_len);
+		mem_file_write(&pabnode->f_info, usr.title.c_str(), temp_len);
 	}
 	/* alias list */
-	mem_file_read(pfile_user, &temp_len, sizeof(int));
-	mem_file_read(pfile_user, temp_buff, temp_len);
+	auto atxt = aliases_serialize(usr.aliases, usr.username);
+	temp_len = atxt.size();
 	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
 	return TRUE;
@@ -510,10 +516,8 @@ static BOOL ab_tree_load_class(
 	int i;
 	int rows;
 	int temp_len;
-	int user_type;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
-	MEM_FILE file_user;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *pclass;
 	
@@ -548,36 +552,31 @@ static BOOL ab_tree_load_class(
 		if (!ab_tree_load_class(cls.child_id, ptree, pclass, pbase))
 			return FALSE;
 	}
-	mem_file_init(&file_user, g_file_allocator);
-	rows = get_class_users(class_id, &file_user);
+
+	std::vector<sql_user> file_user;
+	rows = get_class_users(class_id, file_user);
 	if (-1 == rows) {
-		mem_file_free(&file_user);
 		return FALSE;
 	} else if (0 == rows) {
-		mem_file_free(&file_user);
 		return TRUE;
 	}
 	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 	if (NULL == parray) {
-		mem_file_free(&file_user);
 		return FALSE;
 	}
 	i = 0;
-	while (MEM_END_OF_FILE != mem_file_read(
-		&file_user, &user_type, sizeof(int))) {
+	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
 			goto LOAD_FAIL;
 		}
-		if (ADDRESS_TYPE_MLIST == user_type) {
-			if (FALSE == ab_tree_load_mlist(
-				pabnode, &file_user, pbase)) {
+		if (usr.addr_type == ADDRESS_TYPE_MLIST) {
+			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
 				goto LOAD_FAIL;
 			}
 		} else {
-			if (FALSE == ab_tree_load_user(pabnode,
-				user_type, &file_user, pbase)) {
+			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
 				goto LOAD_FAIL;
 			}
@@ -591,7 +590,7 @@ static BOOL ab_tree_load_class(
 		}
 		i ++;
 	}
-	mem_file_free(&file_user);
+
 	qsort(parray, rows, sizeof(SORT_ITEM), ab_tree_cmpstring);
 	for (i=0; i<rows; i++) {
 		simple_tree_add_child(ptree, pnode,
@@ -606,7 +605,6 @@ LOAD_FAIL:
 		ab_tree_put_abnode((AB_NODE*)parray[i].pnode);
 	}
 	free(parray);
-	mem_file_free(&file_user);
 	return FALSE;
 }
 
@@ -616,11 +614,9 @@ static BOOL ab_tree_load_tree(int domain_id,
 	int i;
 	int rows;
 	int temp_len;
-	int user_type;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
 	char address[1024];
-	MEM_FILE file_user;
 	char temp_buff[1024];
 	char group_name[256];
 	char domain_name[256];
@@ -628,7 +624,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	SIMPLE_TREE_NODE *pclass;
 	SIMPLE_TREE_NODE *pdomain;
 	
-	
+    {
 	if (FALSE == get_domain_info(domain_id,
 		domain_name, temp_buff, address)) {
 		return FALSE;
@@ -733,36 +729,30 @@ static BOOL ab_tree_load_tree(int domain_id,
 				return FALSE;
 		}
 		
-		mem_file_init(&file_user, g_file_allocator);
-		rows = get_group_users(grp.id, &file_user);
+		std::vector<sql_user> file_user;
+		rows = get_group_users(grp.id, file_user);
 		if (-1 == rows) {
-			mem_file_free(&file_user);
 			return FALSE;
 		} else if (0 == rows) {
-			mem_file_free(&file_user);
 			continue;
 		}
 		parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 		if (NULL == parray) {
-			mem_file_free(&file_user);
 			return FALSE;
 		}
 		i = 0;
-		while (MEM_END_OF_FILE != mem_file_read(
-			&file_user, &user_type, sizeof(int))) {
+		for (auto &&usr : file_user) {
 			pabnode = ab_tree_get_abnode();
 			if (NULL == pabnode) {
 				goto LOAD_FAIL;
 			}
-			if (ADDRESS_TYPE_MLIST == user_type) {
-				if (FALSE == ab_tree_load_mlist(
-					pabnode, &file_user, pbase)) {
+			if (usr.addr_type == ADDRESS_TYPE_MLIST) {
+				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 					ab_tree_put_abnode(pabnode);
 					goto LOAD_FAIL;
 				}
 			} else {
-				if (FALSE == ab_tree_load_user(pabnode,
-					user_type, &file_user, pbase)) {
+				if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
 					ab_tree_put_abnode(pabnode);
 					goto LOAD_FAIL;
 				}
@@ -776,7 +766,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 			i ++;
 		}
-		mem_file_free(&file_user);
 		
 		qsort(parray, rows, sizeof(SORT_ITEM), ab_tree_cmpstring);
 		for (i=0; i<rows; i++) {
@@ -787,36 +776,30 @@ static BOOL ab_tree_load_tree(int domain_id,
 		free(parray);
 	}
 	
-	mem_file_init(&file_user, g_file_allocator);
-	rows = get_domain_users(domain_id, &file_user);
+	std::vector<sql_user> file_user;
+	rows = get_domain_users(domain_id, file_user);
 	if (-1 == rows) {
-		mem_file_free(&file_user);
 		return FALSE;
 	} else if (0 == rows) {
-		mem_file_free(&file_user);
 		return TRUE;
 	}
 	parray = static_cast<decltype(parray)>(malloc(sizeof(*parray) * rows));
 	if (NULL == parray) {
-		mem_file_free(&file_user);
 		return FALSE;	
 	}
 	i = 0;
-	while (MEM_END_OF_FILE != mem_file_read(
-		&file_user, &user_type, sizeof(int))) {
+	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
 			goto LOAD_FAIL;
 		}
-		if (ADDRESS_TYPE_MLIST == user_type) {
-			if (FALSE == ab_tree_load_mlist(
-				pabnode, &file_user, pbase)) {
+		if (usr.addr_type == ADDRESS_TYPE_MLIST) {
+			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
 				goto LOAD_FAIL;
 			}
 		} else {
-			if (FALSE == ab_tree_load_user(pabnode,
-				user_type, &file_user, pbase)) {
+			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
 				goto LOAD_FAIL;
 			}
@@ -830,7 +813,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		i ++;
 	}
-	mem_file_free(&file_user);
 	
 	qsort(parray, rows, sizeof(SORT_ITEM), ab_tree_cmpstring);
 	for (i=0; i<rows; i++) {
@@ -840,13 +822,13 @@ static BOOL ab_tree_load_tree(int domain_id,
 	}
 	free(parray);
 	return TRUE;
+    }
 LOAD_FAIL:
 	for (i-=1; i>=0; i--) {
 		free(parray[i].string);
 		ab_tree_put_abnode((AB_NODE*)parray[i].pnode);
 	}
 	free(parray);
-	mem_file_free(&file_user);
 	return FALSE;
 }
 

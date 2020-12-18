@@ -1358,16 +1358,12 @@ static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 	return TRUE;
 }
 
-int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
+int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile)
 {
-	int count;
-	int temp_id;
 	int temp_len;
 	char *ptoken;
-	int list_type;
 	char title[1024];
 	int address_type;
-	int list_privilege;
 	char sql_string[1600];
 
 	snprintf(sql_string, sizeof(sql_string),
@@ -1401,8 +1397,9 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 		return false;
 	conn.finish();
 	
-	count = 0;
 	size_t i, rows = pmyres.num_rows();
+	pfile.clear();
+	pfile.reserve(rows);
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
 		address_type = atoi(myrow[10]);
@@ -1416,92 +1413,54 @@ int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile)
 				break;
 			}
 		}
+		sql_user u;
 		switch (address_type) {
 		case ADDRESS_TYPE_NORMAL:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
-			mem_file_write(pfile, &address_type, sizeof(int));
-			temp_id = atoi(myrow[0]);
-			mem_file_write(pfile, &temp_id, sizeof(int));
-			temp_len = strlen(myrow[2]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[2], temp_len);
+			u.addr_type = address_type;
+			u.id = strtoul(myrow[0], nullptr, 0);
+			u.username = myrow[2];
 			temp_len = z_strlen(myrow[3]);
 			if (0 == temp_len) {
 				ptoken = strchr(myrow[2], '@');
 				temp_len = ptoken - myrow[2];
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, myrow[2], temp_len);
+				u.realname = std::string(myrow[2], temp_len);
 			} else {
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, z_null(myrow[3]), temp_len);
+				u.realname = z_null(myrow[3]);
 			}
-			temp_len = z_strlen(myrow[4]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[4]), temp_len);
-			temp_len = z_strlen(myrow[5]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[5]), temp_len);
-			temp_len = z_strlen(myrow[6]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[6]), temp_len);
-			temp_len = z_strlen(myrow[7]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[7]), temp_len);
-			temp_len = z_strlen(myrow[8]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[8]), temp_len);
-			temp_len = z_strlen(myrow[9]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[9]), temp_len);
-			temp_len = strlen(myrow[11]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[11], temp_len);
-			temp_len = strlen(myrow[13]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[13], temp_len);
-			count ++;
+			u.title = z_null(myrow[4]);
+			u.memo = z_null(myrow[5]);
+			u.cell = z_null(myrow[6]);
+			u.tel = z_null(myrow[7]);
+			u.nickname = z_null(myrow[8]);
+			u.homeaddr = z_null(myrow[9]);
+			u.maildir = myrow[13];
+			pfile.push_back(std::move(u));
 			break;
 		case ADDRESS_TYPE_MLIST:
-			temp_id = atoi(myrow[0]);
-			if (FALSE == mysql_adaptor_get_mlist_info(myrow[2],
-				&list_type, &list_privilege, title)) {
-				mem_file_clear(pfile);
+			if (!mysql_adaptor_get_mlist_info(myrow[2],
+			    &u.list_type, &u.list_priv, title))
 				return -1;
-			}
-			mem_file_write(pfile, &address_type, sizeof(int));
-			mem_file_write(pfile, &temp_id, sizeof(int));
-			temp_len = strlen(myrow[2]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[2], temp_len);
-			temp_len = strlen(myrow[11]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[11], temp_len);
-			mem_file_write(pfile, &list_type, sizeof(int));
-			mem_file_write(pfile, &list_privilege, sizeof(int));
-			if (MLIST_TYPE_GROUP == list_type ||
-				MLIST_TYPE_CLASS == list_type) {
-				temp_len = strlen(title);
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, title, temp_len);
-			}
-			count ++;
+			u.addr_type = address_type;
+			u.id = strtoul(myrow[0], nullptr, 0);
+			u.username = myrow[2];
+			if (u.list_type == MLIST_TYPE_GROUP ||
+			    u.list_type == MLIST_TYPE_CLASS)
+				u.title = z_null(myrow[4]);
+			pfile.push_back(std::move(u));
 			break;
 		}
 	}
-	return count;
+	return pfile.size();
 }
 
-int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
+int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile)
 {
-	int count;
-	int temp_id;
 	int temp_len;
 	char *ptoken;
-	int list_type;
 	int address_type;
 	char title[1024];
-	int list_privilege;
 	char sql_string[1024];
 
 	snprintf(sql_string, sizeof(sql_string),
@@ -1535,8 +1494,9 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 		return false;
 	conn.finish();
 	
-	count = 0;
 	size_t i, rows = pmyres.num_rows();
+	pfile.clear();
+	pfile.reserve(rows);
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
 		address_type = atoi(myrow[10]);
@@ -1550,86 +1510,50 @@ int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile)
 				break;
 			}
 		}
+		sql_user u;
 		switch (address_type) {
 		case ADDRESS_TYPE_NORMAL:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
-			mem_file_write(pfile, &address_type, sizeof(int));
-			temp_id = atoi(myrow[0]);
-			mem_file_write(pfile, &temp_id, sizeof(int));
-			temp_len = strlen(myrow[2]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[2], temp_len);
+			u.addr_type = address_type;
+			u.id = strtoul(myrow[0], nullptr, 0);
+			u.username = myrow[2];
 			temp_len = z_strlen(myrow[3]);
 			if (0 == temp_len) {
 				ptoken = strchr(myrow[2], '@');
 				temp_len = ptoken - myrow[2];
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, myrow[2], temp_len);
+				u.realname = std::string(myrow[2], temp_len);
 			} else {
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, z_null(myrow[3]), temp_len);
+				u.realname = z_null(myrow[3]);
 			}
-			temp_len = z_strlen(myrow[4]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[4]), temp_len);
-			temp_len = z_strlen(myrow[5]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[5]), temp_len);
-			temp_len = z_strlen(myrow[6]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[6]), temp_len);
-			temp_len = z_strlen(myrow[7]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[7]), temp_len);
-			temp_len = z_strlen(myrow[8]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[8]), temp_len);
-			temp_len = z_strlen(myrow[9]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[9]), temp_len);
-			temp_len = strlen(myrow[11]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[11], temp_len);
-			temp_len = strlen(myrow[13]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[13], temp_len);
-			count ++;
+			u.title = z_null(myrow[4]);
+			u.memo = z_null(myrow[5]);
+			u.cell = z_null(myrow[6]);
+			u.tel = z_null(myrow[7]);
+			u.nickname = z_null(myrow[8]);
+			u.homeaddr = z_null(myrow[9]);
+			u.maildir = myrow[13];
+			pfile.push_back(std::move(u));
 			break;
 		case ADDRESS_TYPE_MLIST:
-			temp_id = atoi(myrow[0]);
-			if (FALSE == mysql_adaptor_get_mlist_info(myrow[2],
-				&list_type, &list_privilege, title)) {
-				mem_file_clear(pfile);
+			if (!mysql_adaptor_get_mlist_info(myrow[2],
+			    &u.list_type, &u.list_priv, title))
 				return -1;
-			}
-			mem_file_write(pfile, &address_type, sizeof(int));
-			mem_file_write(pfile, &temp_id, sizeof(int));
-			temp_len = strlen(myrow[2]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[2], temp_len);
-			temp_len = strlen(myrow[11]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[11], temp_len);
-			mem_file_write(pfile, &list_type, sizeof(int));
-			mem_file_write(pfile, &list_privilege, sizeof(int));
-			if (MLIST_TYPE_GROUP == list_type ||
-				MLIST_TYPE_CLASS == list_type) {
-				temp_len = strlen(title);
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, title, temp_len);
-			}
-			count ++;
+			u.addr_type = address_type;
+			u.id = strtoul(myrow[0], nullptr, 0);
+			u.username = myrow[2];
+			if (u.list_type == MLIST_TYPE_GROUP ||
+			    u.list_type == MLIST_TYPE_CLASS)
+				u.title = z_null(myrow[4]);
+			pfile.push_back(std::move(u));
 			break;
 		}
 	}
-	return count;
+	return pfile.size();
 }
 
-using alias_map_type = std::multimap<std::string, std::string>;
-
-static bool get_domain_aliases(sqlconn_ptr &conn,
-    int domain_id, alias_map_type &out) try
+static bool get_domain_aliases(sqlconn_ptr &conn, int domain_id,
+    sql_user::alias_map_type &out)
 {
 	char query[160];
 	snprintf(query, sizeof(query),
@@ -1650,33 +1574,16 @@ static bool get_domain_aliases(sqlconn_ptr &conn,
 	while ((row = res.fetch_row()) != nullptr)
 		out.emplace(row[0], row[1]);
 	return true;
-} catch (...) {
-	return false;
 }
 
-static std::string aliases_serialize(const alias_map_type &amap, const std::string &addr)
+int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile)
 {
-	auto stop = amap.upper_bound(addr);
-	std::string s;
-	for (auto i = amap.lower_bound(addr); i != stop; ++i) {
-		s += i->second;
-		s.push_back('\0');
-	}
-	return s;
-}
-
-int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
-{
-	int count;
-	int temp_id;
 	int temp_len;
 	char *ptoken;
-	int list_type;
 	int address_type;
 	char title[1024];
-	int list_privilege;
 	char sql_string[1024];
-	alias_map_type dom_alias;
+	sql_user::alias_map_type dom_alias;
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
@@ -1708,8 +1615,10 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	count = 0;
+
 	size_t i, rows = pmyres.num_rows();
+	pfile.clear();
+	pfile.reserve(rows);
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
 		address_type = atoi(myrow[10]);
@@ -1723,98 +1632,48 @@ int mysql_adaptor_get_domain_users(int domain_id, MEM_FILE *pfile)
 				break;
 			}
 		}
+		sql_user u;
 		switch (address_type) {
 		case ADDRESS_TYPE_NORMAL:
 		case ADDRESS_TYPE_ROOM:
 		case ADDRESS_TYPE_EQUIPMENT:
-			mem_file_write(pfile, &address_type, sizeof(int));
-			temp_id = atoi(myrow[0]);
-			mem_file_write(pfile, &temp_id, sizeof(int));
-			temp_len = strlen(myrow[2]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[2], temp_len);
+			u.addr_type = address_type;
+			u.id = strtoul(myrow[0], nullptr, 0);
+			u.username = myrow[2];
 			temp_len = z_strlen(myrow[3]);
 			if (0 == temp_len) {
 				ptoken = strchr(myrow[2], '@');
 				temp_len = ptoken - myrow[2];
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, myrow[2], temp_len);
+				u.realname = std::string(myrow[2], temp_len);
 			} else {
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, z_null(myrow[3]), temp_len);
+				u.realname = z_null(myrow[3]);
 			}
-			temp_len = z_strlen(myrow[4]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[4]), temp_len);
-			temp_len = z_strlen(myrow[5]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[5]), temp_len);
-			temp_len = z_strlen(myrow[6]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[6]), temp_len);
-			temp_len = z_strlen(myrow[7]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[7]), temp_len);
-			temp_len = z_strlen(myrow[8]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[8]), temp_len);
-			temp_len = z_strlen(myrow[9]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, z_null(myrow[9]), temp_len);
-			temp_len = strlen(myrow[11]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[11], temp_len);
-			temp_len = strlen(myrow[13]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[13], temp_len);
-			try {
-				auto astring = aliases_serialize(dom_alias, myrow[2]);
-				temp_len = astring.size() + 1;
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, astring.data(), temp_len);
-			} catch (...) {
-				temp_len = 0;
-				mem_file_write(pfile, &temp_len, sizeof(int));
-			}
-			count ++;
+			u.title = z_null(myrow[4]);
+			u.memo = z_null(myrow[5]);
+			u.cell = z_null(myrow[6]);
+			u.tel = z_null(myrow[7]);
+			u.nickname = z_null(myrow[8]);
+			u.homeaddr = z_null(myrow[9]);
+			u.maildir = myrow[13];
+			u.aliases = std::move(dom_alias);
+			pfile.push_back(std::move(u));
 			break;
 		case ADDRESS_TYPE_MLIST:
-			temp_id = atoi(myrow[0]);
-			if (FALSE == mysql_adaptor_get_mlist_info(myrow[2],
-				&list_type, &list_privilege, title)) {
-				mem_file_clear(pfile);
+			if (!mysql_adaptor_get_mlist_info(myrow[2],
+			    &u.list_type, &u.list_priv, title))
 				return -1;
-			}
-			mem_file_write(pfile, &address_type, sizeof(int));
-			mem_file_write(pfile, &temp_id, sizeof(int));
-			temp_len = strlen(myrow[2]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[2], temp_len);
-			temp_len = strlen(myrow[11]);
-			mem_file_write(pfile, &temp_len, sizeof(int));
-			mem_file_write(pfile, myrow[11], temp_len);
-			mem_file_write(pfile, &list_type, sizeof(int));
-			mem_file_write(pfile, &list_privilege, sizeof(int));
-			if (MLIST_TYPE_GROUP == list_type ||
-				MLIST_TYPE_CLASS == list_type) {
-				temp_len = strlen(title);
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, title, temp_len);
-			}
-			try {
-				auto astring = aliases_serialize(dom_alias, myrow[2]);
-				temp_len = astring.size() + 1;
-				mem_file_write(pfile, &temp_len, sizeof(int));
-				mem_file_write(pfile, astring.data(), temp_len);
-			} catch (...) {
-				temp_len = 0;
-				mem_file_write(pfile, &temp_len, sizeof(int));
-			}
-			count ++;
+			u.addr_type = address_type;
+			u.id = strtoul(myrow[0], nullptr, 0);
+			u.username = myrow[2];
+			if (u.list_type == MLIST_TYPE_GROUP ||
+			    u.list_type == MLIST_TYPE_CLASS)
+				u.title = z_null(myrow[4]);
+			u.aliases = std::move(dom_alias);
+			pfile.push_back(std::move(u));
 			break;
 		}
 	}
-	return count;
+	return pfile.size();
 }
 
 static BOOL mysql_adaptor_hierarchy_include(
