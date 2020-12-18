@@ -1199,10 +1199,8 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &pfil
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile)
+BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &pfile)
 {
-	int temp_len;
-	int class_id;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
@@ -1223,21 +1221,18 @@ BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile)
 		return false;
 	conn.finish();
 	size_t i, rows = pmyres.num_rows();
+	std::vector<sql_class> cv(rows);
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
-		class_id = atoi(myrow[0]);
-		mem_file_write(pfile, &class_id, sizeof(int));
-		temp_len = strlen(myrow[1]);
-		mem_file_write(pfile, &temp_len, sizeof(int));
-		mem_file_write(pfile, myrow[1], temp_len);
+		cv[i].child_id = strtoul(myrow[0], nullptr, 0);
+		cv[i].name = myrow[1];
 	}
+	pfile = std::move(cv);
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile)
+BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile)
 {
-	int temp_len;
-	int child_id;
 	char sql_string[1024];
 
 	snprintf(sql_string, 1024, "SELECT child_id, classname FROM "
@@ -1258,14 +1253,13 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile)
 		return false;
 	conn.finish();
 	size_t i, rows = pmyres.num_rows();
+	std::vector<sql_class> cv(rows);
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
-		child_id = atoi(myrow[0]);
-		mem_file_write(pfile, &child_id, sizeof(int));
-		temp_len = strlen(myrow[1]);
-		mem_file_write(pfile, &temp_len, sizeof(int));
-		mem_file_write(pfile, myrow[1], temp_len);
+		cv[i].child_id = strtoul(myrow[0], nullptr, 0);
+		cv[i].name = myrow[1];
 	}
+	pfile = std::move(cv);
 	return TRUE;
 }
 

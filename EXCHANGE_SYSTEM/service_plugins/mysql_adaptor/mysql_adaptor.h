@@ -31,6 +31,11 @@ struct sql_group {
 	std::string name, title;
 };
 
+struct sql_class {
+	int child_id;
+	std::string name;
+};
+
 #ifdef __cplusplus
 extern void mysql_adaptor_init(const struct mysql_adaptor_init_param &);
 #endif
@@ -90,10 +95,8 @@ BOOL mysql_adaptor_get_domain_info(int domain_id,
 
 BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2);
 extern BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &);
-BOOL mysql_adaptor_get_group_classes(int group_id, MEM_FILE *pfile);
-
-BOOL mysql_adaptor_get_sub_classes(int class_id, MEM_FILE *pfile);
-
+extern BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &);
+extern BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &);
 int mysql_adaptor_get_class_users(int class_id, MEM_FILE *pfile);
 
 int mysql_adaptor_get_group_users(int group_id, MEM_FILE *pfile);

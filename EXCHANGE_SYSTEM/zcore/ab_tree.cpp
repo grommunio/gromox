@@ -489,41 +489,32 @@ static BOOL ab_tree_load_class(
 {
 	int i;
 	int rows;
-	int child_id;
 	int temp_len;
 	int user_type;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
 	MEM_FILE file_user;
 	char temp_buff[1024];
-	MEM_FILE file_subclass;
+	std::vector<sql_class> file_subclass;
 	SIMPLE_TREE_NODE *pclass;
 	
-	mem_file_init(&file_subclass, g_file_allocator);
-	if (FALSE == system_services_get_sub_classes(class_id, &file_subclass)) {
-		mem_file_free(&file_subclass);
+	if (!system_services_get_sub_classes(class_id, file_subclass))
 		return FALSE;
-	}
-	while (MEM_END_OF_FILE != mem_file_read(
-		&file_subclass, &child_id, sizeof(int))) {
+	for (const auto &cls : file_subclass) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
-			mem_file_free(&file_subclass);
 			return FALSE;
 		}
 		pabnode->node_type = NODE_TYPE_CLASS;
-		pabnode->id = child_id;
-		pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, child_id);
+		pabnode->id = cls.child_id;
+		pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, cls.child_id);
 		if (NULL == int_hash_query(pbase->phash, pabnode->minid)) {
 			if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
-				mem_file_free(&file_subclass);
 				return FALSE;
 			}
 		}
 		/* classname */
-		mem_file_read(&file_subclass, &temp_len, sizeof(int));
-		mem_file_read(&file_subclass, temp_buff, temp_len);
-		temp_buff[temp_len] = '\0';
+		HX_strlcpy(temp_buff, cls.name.c_str(), sizeof(temp_buff));
 		if (FALSE == utf8_check(temp_buff)) {
 			utf8_filter(temp_buff);
 			temp_len = strlen(temp_buff);
@@ -533,13 +524,9 @@ static BOOL ab_tree_load_class(
 		pclass = (SIMPLE_TREE_NODE*)pabnode;
 		simple_tree_add_child(ptree, pnode,
 			pclass, SIMPLE_TREE_ADD_LAST);
-		if (FALSE == ab_tree_load_class(
-			child_id, ptree, pclass, pbase)) {
-			mem_file_free(&file_subclass);
+		if (!ab_tree_load_class(cls.child_id, ptree, pclass, pbase))
 			return FALSE;
-		}
 	}
-	mem_file_free(&file_subclass);
 	mem_file_init(&file_user, g_file_allocator);
 	rows = system_services_get_class_users(class_id, &file_user);
 	if (-1 == rows) {
@@ -608,13 +595,11 @@ static BOOL ab_tree_load_tree(int domain_id,
 	int i;
 	int rows;
 	int temp_len;
-	int class_id;
 	int user_type;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
 	char address[1024];
 	MEM_FILE file_user;
-	MEM_FILE file_class;
 	char temp_buff[1024];
 	char group_name[256];
 	char domain_name[256];
@@ -694,32 +679,25 @@ static BOOL ab_tree_load_tree(int domain_id,
 		pgroup = (SIMPLE_TREE_NODE*)pabnode;
 		simple_tree_add_child(ptree, pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
 		
-		mem_file_init(&file_class, g_file_allocator);
-		if (!system_services_get_group_classes(grp.id, &file_class)) {
-			mem_file_free(&file_class);
+		std::vector<sql_class> file_class;
+		if (!system_services_get_group_classes(grp.id, file_class))
 			return FALSE;
-		}
-		while (MEM_END_OF_FILE != mem_file_read(
-			&file_class, &class_id, sizeof(int))) {
+		for (const auto &cls : file_class) {
 			pabnode = ab_tree_get_abnode();
 			if (NULL == pabnode) {
-				mem_file_free(&file_class);
 				return FALSE;
 			}
 			pabnode->node_type = NODE_TYPE_CLASS;
-			pabnode->id = class_id;
-			pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, class_id);
+			pabnode->id = cls.child_id;
+			pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, cls.child_id);
 			if (NULL == int_hash_query(pbase->phash, pabnode->minid)) {
 				if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
 					ab_tree_put_abnode(pabnode);
-					mem_file_free(&file_class);
 					return FALSE;
 				}
 			}
 			/* classname */
-			mem_file_read(&file_class, &temp_len, sizeof(int));
-			mem_file_read(&file_class, temp_buff, temp_len);
-			temp_buff[temp_len] = '\0';
+			HX_strlcpy(temp_buff, cls.name.c_str(), sizeof(temp_buff));
 			if (FALSE == utf8_check(temp_buff)) {
 				utf8_filter(temp_buff);
 				temp_len = strlen(temp_buff);
@@ -729,13 +707,9 @@ static BOOL ab_tree_load_tree(int domain_id,
 			pclass = (SIMPLE_TREE_NODE*)pabnode;
 			simple_tree_add_child(ptree, pgroup,
 				pclass, SIMPLE_TREE_ADD_LAST);
-			if (FALSE == ab_tree_load_class(
-				class_id, ptree, pclass, pbase)) {
-				mem_file_free(&file_class);
+			if (!ab_tree_load_class(cls.child_id, ptree, pclass, pbase))
 				return FALSE;
-			}
 		}
-		mem_file_free(&file_class);
 		
 		mem_file_init(&file_user, g_file_allocator);
 		rows = system_services_get_group_users(grp.id, &file_user);
