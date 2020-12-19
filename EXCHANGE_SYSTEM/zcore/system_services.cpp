@@ -25,19 +25,19 @@ BOOL (*system_services_auth_login)(const char*,
 	const char*, char*, char*, char*, int);
 BOOL (*system_services_set_password)(
 	const char*, const char*, const char*);
-BOOL (*system_services_get_user_displayname)(const char*, char*);
-BOOL (*system_services_get_user_privilege_bits)(const char*, uint32_t*);
+decltype(mysql_adaptor_get_user_displayname) *system_services_get_user_displayname;
+decltype(mysql_adaptor_get_user_privilege_bits) *system_services_get_user_privilege_bits;
 decltype(mysql_adaptor_get_org_domains) *system_services_get_org_domains;
-BOOL (*system_services_get_domain_info)(int, char*, char*, char*);
+decltype(mysql_adaptor_get_domain_info) *system_services_get_domain_info;
 decltype(mysql_adaptor_get_domain_groups) *system_services_get_domain_groups;
 decltype(mysql_adaptor_get_group_classes) *system_services_get_group_classes;
 decltype(mysql_adaptor_get_sub_classes) *system_services_get_sub_classes;
 decltype(mysql_adaptor_get_class_users) *system_services_get_class_users;
 decltype(mysql_adaptor_get_group_users) *system_services_get_group_users;
 decltype(mysql_adaptor_get_domain_users) *system_services_get_domain_users;
-BOOL (*system_services_get_mlist_ids)(int, int*, int*);
+decltype(mysql_adaptor_get_mlist_ids) *system_services_get_mlist_ids;
 BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
-BOOL (*system_services_check_same_org)(int, int);
+decltype(mysql_adaptor_check_same_org) *system_services_check_same_org;
 int (*system_services_add_timer)(const char *, int);
 void (*system_services_log_info)(int, const char *, ...);
 

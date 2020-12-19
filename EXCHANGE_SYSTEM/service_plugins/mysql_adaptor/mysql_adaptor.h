@@ -85,7 +85,6 @@ BOOL mysql_adaptor_get_maildir(const char *username, char *maildir);
 
 BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname);
 extern BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir);
-extern BOOL mysql_adaptor_get_domain_homedir(const char *domainname, char *homedir);
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir);
 
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id);
@@ -118,11 +117,9 @@ void mysql_adaptor_set_param(int param, int value);
 extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
 extern BOOL mysql_adaptor_check_user(const char *username, char *path);
 extern BOOL mysql_adaptor_get_forward(const char *username, int *ptype, char *destination);
-extern BOOL mysql_adaptor_get_groupname(const char *username, char *groupname);
 extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int *presult, std::vector<std::string> &);
 extern BOOL mysql_adaptor_get_user_info(const char *username, char *maildir, char *lang, char *timezone);
 extern BOOL mysql_adaptor_get_username(int user_id, char *username);
-extern void mysql_adaptor_disable_smtp(const char *username);
 
 #ifdef __cplusplus
 } /* extern "C" */

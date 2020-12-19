@@ -87,16 +87,14 @@ static LIB_BUFFER *g_file_allocator;
 static pthread_mutex_t g_remote_lock;
 
 static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
-static BOOL (*get_domain_info)(int domain_id,
-	char *name, char *title, char *address);
+static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
 static decltype(mysql_adaptor_get_domain_groups) *get_domain_groups;
 static decltype(mysql_adaptor_get_group_classes) *get_group_classes;
 static decltype(mysql_adaptor_get_sub_classes) *get_sub_classes;
 static decltype(mysql_adaptor_get_class_users) *get_class_users;
 static decltype(mysql_adaptor_get_group_users) *get_group_users;
 static decltype(mysql_adaptor_get_domain_users) *get_domain_users;
-static BOOL (*get_mlist_ids)(int mlist_id,
-	int *pgroup_id, int *pdomain_id);
+static decltype(mysql_adaptor_get_mlist_ids) *get_mlist_ids;
 
 static BOOL (*get_lang)(uint32_t codepage,
 	const char *tag, char *value, int len);

@@ -859,8 +859,7 @@ BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname)
 	return TRUE;
 }
 
-static bool mysql_adaptor_get_homedir_impl(const char *domainname,
-    char *homedir, bool domain_home)
+BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir)
 {
 	char temp_name[512];
 	char sql_string[1024];
@@ -882,34 +881,11 @@ static bool mysql_adaptor_get_homedir_impl(const char *domainname,
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-
-	if (domain_home) {
-		if (pmyres.num_rows() != 1) {
-			homedir[0] = '\0';
-		} else {
-			auto myrow = pmyres.fetch_row();
-			if (atoi(myrow[1]) != 0)
-				strcpy(homedir, myrow[0]);
-			else
-				homedir[0] = '\0';
-		}
-		return TRUE;
-	}
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
 	strncpy(homedir, myrow[0], 256);
 	return TRUE;
-}
-
-BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir)
-{
-	return mysql_adaptor_get_homedir_impl(domainname, homedir, false);
-}
-
-BOOL mysql_adaptor_get_domain_homedir(const char *domainname, char *homedir)
-{
-	return mysql_adaptor_get_homedir_impl(domainname, homedir, true);
 }
 
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir)
@@ -1988,62 +1964,6 @@ BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_groupname(const char *username, char *groupname)
-{
-	int group_id;
-	char temp_name[512];
-	char sql_string[1024];
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	snprintf(sql_string, 1024, "SELECT group_id, address_status FROM users "
-		"WHERE username='%s'", temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
-		return false;
-	if (mysql_query(conn.res.get(), sql_string) != 0) {
-		conn.res = sql_make_conn();
-		if (conn.res == nullptr ||
-		    mysql_query(conn.res.get(), sql_string) != 0)
-			return false;
-	}
-
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-	if (pmyres.num_rows() != 1) {
-		groupname[0] = '\0';
-		return TRUE;
-	}
-
-	auto myrow = pmyres.fetch_row();
-	if (0 != atoi(myrow[1])) {
-		groupname[0] = '\0';
-		return TRUE;
-	}
-	group_id = atoi(myrow[0]);
-	if (0 == group_id) {
-		groupname[0] = '\0';
-		return TRUE;
-	}
-
-	snprintf(sql_string, 1024, "SELECT groupname FROM groups WHERE id=%d",
-		group_id);
-	if (conn.res == nullptr ||
-	    mysql_query(conn.res.get(), sql_string) != 0)
-		return false;
-	pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1) {
-		groupname[0] = '\0';
-	} else {
-		myrow = pmyres.fetch_row();
-		strcpy(groupname, myrow[0]);
-	}
-	return TRUE;
-}
-
 BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
     int *presult, std::vector<std::string> &pfile)
 {
@@ -2567,24 +2487,4 @@ BOOL mysql_adaptor_get_username(int user_id, char *username)
 	auto myrow = pmyres.fetch_row();
 	strncpy(username, myrow[0], 256);
 	return TRUE;
-}
-
-void mysql_adaptor_disable_smtp(const char *username)
-{
-	char temp_name[512];
-	char sql_string[1024];
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	snprintf(sql_string, 1024, "UPDATE users SET"
-		" privilege_bits=privilege_bits&%u WHERE"
-		" username='%s'", ~USER_PRIVILEGE_SMTP, temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
-		return;
-	if (mysql_query(conn.res.get(), sql_string) != 0) {
-		conn.res = sql_make_conn();
-		if (conn.res == nullptr ||
-		    mysql_query(conn.res.get(), sql_string) != 0)
-			return;
-	}
 }

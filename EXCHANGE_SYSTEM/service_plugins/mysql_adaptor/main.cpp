@@ -175,7 +175,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		E(mysql_adaptor_get_maildir, "get_maildir");
 		E(mysql_adaptor_get_domainname_from_id, "get_domainname_from_id");
 		E(mysql_adaptor_get_homedir, "get_homedir");
-		E(mysql_adaptor_get_domain_homedir, "get_domain_homedir");
 		E(mysql_adaptor_get_homedir_by_id, "get_homedir_by_id");
 		E(mysql_adaptor_get_id_from_homedir, "get_id_from_homedir");
 		E(mysql_adaptor_get_user_ids, "get_user_ids");
@@ -194,11 +193,9 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		E(mysql_adaptor_check_same_org2, "check_same_org2");
 		E(mysql_adaptor_check_user, "check_user");
 		E(mysql_adaptor_get_forward, "get_forward_address");
-		E(mysql_adaptor_get_groupname, "get_user_groupname");
 		E(mysql_adaptor_get_mlist, "get_mail_list");
 		E(mysql_adaptor_get_user_info, "get_user_info");
 		E(mysql_adaptor_get_username, "get_username");
-		E(mysql_adaptor_disable_smtp, "disable_smtp");
 #undef E
 		register_talk(console_talk);
         return TRUE;
