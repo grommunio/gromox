@@ -1376,7 +1376,8 @@ static BOOL store_object_get_calculated_property(
 			'\0' == temp_buff[0]) {
 			return FALSE;	
 		}
-		*ppvalue = (void*)common_util_lang_to_i18n(temp_buff);
+		HX_strlcat(temp_buff, ".UTF-8", sizeof(temp_buff));
+		*ppvalue = common_util_dup(temp_buff);
 		return TRUE;
 	case PROP_TAG_ECUSERTIMEZONE:
 		if (FALSE == store_object_check_private(pstore)) {
@@ -1819,8 +1820,16 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 				store_object_set_folder_name(
 					pstore, PRIVATE_FID_SERVER_FAILURES,
 					folder_lang[RES_ID_SERVER]);
-				system_services_set_user_lang(
-						pstore->account, plang);
+
+				char tmp[32];
+				HX_strlcpy(tmp, static_cast<char *>(ppropvals->ppropval[i].pvalue), sizeof(tmp));
+				auto p = strchr(tmp, '.');
+				if (p != nullptr)
+					*p = '\0';
+				p = strchr(tmp, '@');
+				if (p != nullptr)
+					*p = '\0';
+				system_services_set_user_lang(pstore->account, tmp);
 			}
 			break;
 		case PROP_TAG_ECUSERTIMEZONE:
