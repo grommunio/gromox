@@ -548,6 +548,7 @@ const char* common_util_i18n_to_lang(const char *i18n);
 extern const char *common_util_get_default_timezone(void);
 extern const char *common_util_get_submit_command(void);
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
+extern const char *zcore_rpc_idtoname(unsigned int i);
 
 #ifdef __cplusplus
 } /* extern "C" */
