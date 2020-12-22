@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "processor_types.h"
 
 #define E(s) [s] = #s
@@ -138,5 +139,6 @@ static const char *const rop_names[] = {
 
 const char *rop_idtoname(unsigned int i)
 {
-	return i < ARRAY_SIZE(rop_names) ? rop_names[i] : "";
+	const char *s = i < ARRAY_SIZE(rop_names) ? rop_names[i] : nullptr;
+	return s != nullptr ? s : "";
 }
