@@ -1759,6 +1759,7 @@ uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment);
 
 unsigned int common_util_get_param(int param);
+extern const char *exmdb_rpc_idtoname(unsigned int i);
 
 #ifdef __cplusplus
 } /* extern "C" */
