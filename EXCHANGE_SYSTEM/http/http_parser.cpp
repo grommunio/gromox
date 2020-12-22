@@ -463,7 +463,7 @@ CONTEXT_PROCESSING:
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
 				http_parser_log_info(pcontext, 8, "out of SSL object");
-				goto INERTNAL_SERVER_ERROR;
+				goto INTERNAL_SERVER_ERROR;
 			}
 			SSL_set_fd(pcontext->connection.ssl, pcontext->connection.sockd);
 		}
@@ -493,7 +493,7 @@ CONTEXT_PROCESSING:
 		        reinterpret_cast<unsigned int *>(&size));
 		if (NULL == pbuff) {
 			http_parser_log_info(pcontext, 8, "out of memory");
-			goto INERTNAL_SERVER_ERROR;
+			goto INTERNAL_SERVER_ERROR;
 		}
 		if (NULL != pcontext->connection.ssl) {
 			actual_read = SSL_read(pcontext->connection.ssl, pbuff, size);
@@ -662,7 +662,7 @@ CONTEXT_PROCESSING:
 			if (http_parser_reconstruct_stream(
 				&pcontext->stream_in, &stream) < 0) {
 				http_parser_log_info(pcontext, 8, "out of memory");
-				goto INERTNAL_SERVER_ERROR;
+				goto INTERNAL_SERVER_ERROR;
 			}
 			stream_free(&pcontext->stream_in);
 			pcontext->stream_in = stream;
@@ -841,7 +841,7 @@ CONTEXT_PROCESSING:
 						pcontext->pchannel =
 							lib_buffer_get(g_inchannel_allocator);
 						if (NULL == pcontext->pchannel) {
-							goto INERTNAL_SERVER_ERROR;
+							goto INTERNAL_SERVER_ERROR;
 						}	
 						memset(pcontext->pchannel, 0, sizeof(RPC_IN_CHANNEL));
 						double_list_init(&((RPC_IN_CHANNEL*)
@@ -851,7 +851,7 @@ CONTEXT_PROCESSING:
 						pcontext->pchannel =
 							lib_buffer_get(g_outchannel_allocator);
 						if (NULL == pcontext->pchannel) {
-							goto INERTNAL_SERVER_ERROR;
+							goto INTERNAL_SERVER_ERROR;
 						}
 						memset(pcontext->pchannel, 0, sizeof(RPC_OUT_CHANNEL));
 						double_list_init(&((RPC_OUT_CHANNEL*)
@@ -869,17 +869,17 @@ CONTEXT_PROCESSING:
 				pcontext->total_length = 0;
 				
 				if (FALSE == hpm_processor_write_request(pcontext)) {
-					goto INERTNAL_SERVER_ERROR;
+					goto INTERNAL_SERVER_ERROR;
 				}
 				if (TRUE == hpm_processor_check_end_of_request(pcontext)) {
 					if (FALSE == hpm_processor_proc(pcontext)) {
-						goto INERTNAL_SERVER_ERROR;
+						goto INTERNAL_SERVER_ERROR;
 					}
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					if (http_parser_reconstruct_stream(
 						&pcontext->stream_in, &stream) < 0) {
 						http_parser_log_info(pcontext, 8, "out of memory");
-						goto INERTNAL_SERVER_ERROR;
+						goto INTERNAL_SERVER_ERROR;
 					}
 					stream_free(&pcontext->stream_in);
 					pcontext->stream_in = stream;
@@ -904,17 +904,17 @@ CONTEXT_PROCESSING:
 				pcontext->total_length = 0;
 				
 				if (FALSE == mod_fastcgi_write_request(pcontext)) {
-					goto INERTNAL_SERVER_ERROR;
+					goto INTERNAL_SERVER_ERROR;
 				}
 				if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
 					if (FALSE == mod_fastcgi_relay_content(pcontext)) {
-						goto INERTNAL_SERVER_ERROR;
+						goto INTERNAL_SERVER_ERROR;
 					}
 					pcontext->sched_stat = SCHED_STAT_WRREP;
 					if (http_parser_reconstruct_stream(
 						&pcontext->stream_in, &stream) < 0) {
 						http_parser_log_info(pcontext, 8, "out of memory");
-						goto INERTNAL_SERVER_ERROR;
+						goto INTERNAL_SERVER_ERROR;
 					}
 					stream_free(&pcontext->stream_in);
 					pcontext->stream_in = stream;
@@ -931,7 +931,7 @@ CONTEXT_PROCESSING:
 				if (http_parser_reconstruct_stream(
 					&pcontext->stream_in, &stream) < 0) {
 					http_parser_log_info(pcontext, 8, "out of memory");
-					goto INERTNAL_SERVER_ERROR;
+					goto INTERNAL_SERVER_ERROR;
 				}
 				stream_free(&pcontext->stream_in);
 				pcontext->stream_in = stream;
@@ -962,7 +962,7 @@ CONTEXT_PROCESSING:
 			if (TRUE == hpm_processor_check_context(pcontext)) {
 				switch (hpm_processor_retrieve_response(pcontext)) {
 				case HPM_RETRIEVE_ERROR:
-					goto INERTNAL_SERVER_ERROR;
+					goto INTERNAL_SERVER_ERROR;
 				case HPM_RETRIEVE_WRITE:
 					break;
 				case HPM_RETRIEVE_NONE:
@@ -1011,7 +1011,7 @@ CONTEXT_PROCESSING:
 				case RESPONSE_TIMEOUT:
 					http_parser_log_info(pcontext, 8,
 						"fastcgi excution time out");
-					goto INERTNAL_SERVER_ERROR;
+					goto INTERNAL_SERVER_ERROR;
 				}
 				if (TRUE == mod_fastcgi_check_responded(pcontext)) {
 					if (FALSE == mod_fastcgi_read_response(pcontext)) {
@@ -1029,13 +1029,13 @@ CONTEXT_PROCESSING:
 					}
 				} else {
 					if (FALSE == mod_fastcgi_read_response(pcontext)) {
-						goto INERTNAL_SERVER_ERROR;
+						goto INTERNAL_SERVER_ERROR;
 					}
 				}
 			} else if (TRUE == mod_cache_check_caching(pcontext)) {
 				if (FALSE == mod_cache_read_response(pcontext)) {
 					if (FALSE == mod_cache_check_responded(pcontext)) {
-						goto INERTNAL_SERVER_ERROR;
+						goto INTERNAL_SERVER_ERROR;
 					}
 					if (0 == stream_get_total_length(&pcontext->stream_out)) {
 						if (TRUE == pcontext->b_close) {
@@ -1235,7 +1235,7 @@ CONTEXT_PROCESSING:
 				        reinterpret_cast<unsigned int *>(&size));
 				if (NULL == pbuff) {
 					http_parser_log_info(pcontext, 8, "out of memory");
-					goto INERTNAL_SERVER_ERROR;
+					goto INTERNAL_SERVER_ERROR;
 				}
 				if (NULL != pcontext->connection.ssl) {
 					actual_read = SSL_read(
@@ -1254,19 +1254,19 @@ CONTEXT_PROCESSING:
 						&pcontext->stream_in, actual_read);
 					if (TRUE == hpm_processor_check_context(pcontext)) {
 						if (FALSE == hpm_processor_write_request(pcontext)) {
-							goto INERTNAL_SERVER_ERROR;
+							goto INTERNAL_SERVER_ERROR;
 						}
 						if (TRUE == hpm_processor_check_end_of_request(
 							pcontext)) {
 							if (FALSE == hpm_processor_proc(pcontext)) {
-								goto INERTNAL_SERVER_ERROR;
+								goto INTERNAL_SERVER_ERROR;
 							}
 							pcontext->sched_stat = SCHED_STAT_WRREP;
 							if (http_parser_reconstruct_stream(
 								&pcontext->stream_in, &stream) < 0) {
 								http_parser_log_info(pcontext,
 										8, "out of memory");
-								goto INERTNAL_SERVER_ERROR;
+								goto INTERNAL_SERVER_ERROR;
 							}
 							stream_free(&pcontext->stream_in);
 							pcontext->stream_in = stream;
@@ -1283,18 +1283,18 @@ CONTEXT_PROCESSING:
 						return PROCESS_CONTINUE;
 					} else if (NULL != pcontext->pfast_context) {
 						if (FALSE == mod_fastcgi_write_request(pcontext)) {
-							goto INERTNAL_SERVER_ERROR;
+							goto INTERNAL_SERVER_ERROR;
 						}
 						if (TRUE == mod_fastcgi_check_end_of_read(pcontext)) {
 							if (FALSE == mod_fastcgi_relay_content(pcontext)) {
-								goto INERTNAL_SERVER_ERROR;
+								goto INTERNAL_SERVER_ERROR;
 							}
 							pcontext->sched_stat = SCHED_STAT_WRREP;
 							if (http_parser_reconstruct_stream(
 								&pcontext->stream_in, &stream) < 0) {
 								http_parser_log_info(pcontext,
 									8, "out of memory");
-								goto INERTNAL_SERVER_ERROR;
+								goto INTERNAL_SERVER_ERROR;
 							}
 							stream_free(&pcontext->stream_in);
 							pcontext->stream_in = stream;
@@ -1345,7 +1345,7 @@ CONTEXT_PROCESSING:
 			if (http_parser_reconstruct_stream(
 				&pcontext->stream_in, &stream) < 0) {
 				http_parser_log_info(pcontext, 8, "out of memory");
-				goto INERTNAL_SERVER_ERROR;
+				goto INTERNAL_SERVER_ERROR;
 			}
 			stream_free(&pcontext->stream_in);
 			pcontext->stream_in = stream;
@@ -1368,7 +1368,7 @@ CONTEXT_PROCESSING:
 			        reinterpret_cast<unsigned int *>(&size));
 			if (NULL == pbuff) {
 				http_parser_log_info(pcontext, 8, "out of memory");
-				goto INERTNAL_SERVER_ERROR;
+				goto INTERNAL_SERVER_ERROR;
 			}
 			
 			if (NULL != pcontext->connection.ssl) {
@@ -1496,7 +1496,7 @@ CONTEXT_PROCESSING:
 		if (http_parser_reconstruct_stream(
 			&pcontext->stream_in, &stream) < 0) {
 			http_parser_log_info(pcontext, 8, "out of memory");
-			goto INERTNAL_SERVER_ERROR;
+			goto INTERNAL_SERVER_ERROR;
 		}
 		stream_free(&pcontext->stream_in);
 		pcontext->stream_in = stream;
@@ -1815,7 +1815,7 @@ BAD_HTTP_REQUEST:
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	goto CONTEXT_PROCESSING;
 
-INERTNAL_SERVER_ERROR:
+INTERNAL_SERVER_ERROR:
 	if (TRUE == hpm_processor_check_context(pcontext)) {
 		hpm_processor_put_context(pcontext);
 	} else if (NULL != pcontext->pfast_context) {
