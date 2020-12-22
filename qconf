@@ -1,0 +1,5 @@
+#!/bin/sh -e
+if test ! -e configure; then
+	autoreconf -fiv
+fi
+exec ./configure --sysconfdir=/etc --localstatedir=/var CFLAGS="-Og -g" CXXFLAGS="-Og -g" "$@"

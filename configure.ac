@@ -1,6 +1,7 @@
 AC_INIT([gromox], [0])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
+AC_PREFIX_DEFAULT([/usr])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.10 foreign subdir-objects])
 LT_INIT([disable-static])
