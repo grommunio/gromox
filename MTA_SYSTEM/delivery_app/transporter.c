@@ -106,9 +106,7 @@ typedef struct _THREAD_DATA{
 static char				g_path[256];
 static const char *const *g_plugin_names;
 static char				g_local_path[256];
-static char				g_remote_path[256];
 static HOOK_FUNCTION	g_local_hook;
-static HOOK_FUNCTION	g_remote_hook;
 static int				g_threads_max;
 static int				g_threads_min;
 static int				g_mime_num;
@@ -149,9 +147,6 @@ static void* transporter_queryservice(char *service);
 
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
-
-static BOOL transporter_register_remote(HOOK_FUNCTION func);
-
 static BOOL transporter_register_talk(TALK_MAIN talk);
 static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data); 
@@ -190,7 +185,6 @@ void transporter_init(const char *path, const char *const *names,
 	strcpy(g_path, path);
 	g_plugin_names = names;
 	g_local_path[0] = '\0';
-	g_remote_path[0] = '\0';
 	g_notify_stop = FALSE;
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
@@ -315,12 +309,6 @@ int transporter_run()
 		transporter_collect_hooks();
 		transporter_collect_resource();
 		return -8;
-	}
-	if ('\0' == g_remote_path[0]) {
-		printf("[transporter]: there's no remote hook registered in system\n");
-		transporter_collect_hooks();
-		transporter_collect_resource();
-		return -9;
 	}
 
 	for (i=g_threads_min; i<g_threads_max; i++) {
@@ -546,14 +534,6 @@ NEXT_LOOP:
 				return TRUE;	
 			}
 		}
-		if (pthr_data->last_thrower != g_remote_hook) {
-			mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-				MEM_FILE_SEEK_BEGIN);
-			pthr_data->last_hook = g_remote_hook;
-			if (TRUE == g_remote_hook(pcontext)) {
-				return TRUE;
-			}
-		}
 		return FALSE;
 	} else {
 		return TRUE;
@@ -749,7 +729,7 @@ int transporter_load_library(const char* path)
 
 	transporter_clean_up_unloading();
 	/* check whether the plugin is same as local or remote plugin */
-	if (strcmp(path, g_local_path) == 0 || strcmp(path, g_remote_path) == 0) {
+	if (strcmp(path, g_local_path) == 0) {
 		printf("[transporter]: %s is already loaded in module\n", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
@@ -958,9 +938,6 @@ static void* transporter_queryservice(char *service)
     }
     if (strcmp(service, "register_local") == 0) {
         return transporter_register_local;
-    }
-    if (strcmp(service, "register_remote") == 0) {
-        return transporter_register_remote;
     }
 	if (strcmp(service, "register_talk") == 0) {
         return transporter_register_talk;
@@ -1292,24 +1269,6 @@ static BOOL transporter_register_local(HOOK_FUNCTION func)
 }
 
 /*
- *	register the remote delivery hook
- *	@param
- *		func [in]			function address
- *	@return
- *		TRUE				OK
- *		FALSE				fail
- */
-static BOOL transporter_register_remote(HOOK_FUNCTION func)
-{
-	if (g_remote_path[0] != '\0') {
-		return FALSE;
-	}
-	g_remote_hook = func;
-	strcpy(g_remote_path, g_cur_lib->file_name);
-    return TRUE;
-}
-
-/*
  *	register a console talk function
  *	@param
  *		talk [in]			talk function
@@ -1466,13 +1425,10 @@ void transporter_enum_plugins(ENUM_PLUGINS enum_func)
 	for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_lib_list, pnode)) {
 		file_name = ((PLUG_ENTITY*)(pnode->pdata))->file_name;
-		if (0 == strcmp(file_name, g_local_path)) {
+		if (strcmp(file_name, g_local_path) == 0)
 			sprintf(tmp_buff, "%s\t\t--local", file_name);
-		} else if (0 == strcmp(file_name, g_remote_path)) {
-			sprintf(tmp_buff, "%s\t\t--remote", file_name);
-		} else {
+		else
 			sprintf(tmp_buff, "%s\t\t--normal", file_name);
-		}
 		enum_func(tmp_buff);
 	}
 	for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
@@ -1491,16 +1447,6 @@ void transporter_enum_plugins(ENUM_PLUGINS enum_func)
 const char* transporter_get_local()
 {
 	return g_local_path;
-}
-
-/*
- *	get the remote delivery plugin name
- *	@return
- *		remote delivery plugin string
- */
-const char* transporter_get_remote()
-{
-	return g_remote_path;
 }
 
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,

@@ -17,13 +17,10 @@ filenames begin with libmtahook_. There are three classes:
 .IP \(bu 4
 local transports: libmtahook_exmdb_local.so, libmtahook_gateway_dispatch.so
 .IP \(bu 4
-remote transports: libmtahook_remote_postman.so
-.IP \(bu 4
 hooks: other libmtahook_* plugins
 .PP
-Exactly one local transport plugin and one remote transport plugin needs to be
-loaded for proper operation. By default, this is exmdb_local and
-remote_postman.
+Exactly one local transport plugin needs to be loaded for proper operation. By
+default, this is exmdb_local.
 .SH Configuration file directives
 .SS admin_mailbox
 .PP

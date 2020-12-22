@@ -51,7 +51,7 @@ extern "C" {
 
 extern QUERY_SERVICE query_service;
 extern HOOK_REGISTRATION register_hook;
-extern HOOK_REGISTRATION register_local, register_remote;
+extern HOOK_REGISTRATION register_local;
 extern TALK_REGISTRATION register_talk;
 extern LOG_INFO log_info;
 extern GET_ENVIRONMENT get_host_ID;
@@ -74,7 +74,7 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 #define DECLARE_API \
 	QUERY_SERVICE query_service; \
 	HOOK_REGISTRATION register_hook; \
-	HOOK_REGISTRATION register_local, register_remote; \
+	HOOK_REGISTRATION register_local; \
 	TALK_REGISTRATION register_talk; \
 	LOG_INFO log_info; \
 	GET_ENVIRONMENT get_host_ID; \
@@ -97,7 +97,6 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	query_service = (QUERY_SERVICE)param[0]; \
 	register_hook = (HOOK_REGISTRATION)query_service("register_hook"); \
 	register_local = (HOOK_REGISTRATION)query_service("register_local");\
-	register_remote = (HOOK_REGISTRATION)query_service("register_remote"); \
 	register_talk = (TALK_REGISTRATION)query_service("register_talk"); \
 	log_info = (LOG_INFO)query_service("log_info"); \
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \

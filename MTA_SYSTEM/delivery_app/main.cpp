@@ -41,7 +41,6 @@ static const char *const g_dfl_mpc_plugins[] = {
 	"libmtahook_message_insulation.so",
 	"libmtahook_mlist_expand.so",
 	"libmtahook_os_inspection.so",
-	"libmtahook_remote_postman.so",
 	"libmtahook_user_forwarder.so",
 	NULL,
 };

@@ -29,7 +29,6 @@ int transporter_load_library(const char* path);
 
 int transporter_console_talk(int argc, char** argv, char *result, int length);
 extern const char *transporter_get_local(void);
-extern const char *transporter_get_remote(void);
 void transporter_enum_plugins(ENUM_PLUGINS enum_func);
 
 int transporter_get_param(int param);

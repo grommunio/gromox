@@ -34,7 +34,6 @@ mta_plugins = \
 	libmtahook_message_insulation.la \
 	libmtahook_mlist_expand.la \
 	libmtahook_os_inspection.la \
-	libmtahook_remote_postman.la \
 	libmtahook_user_forwarder.la \
 	libmtasvc_boundary_list.la \
 	libmtasvc_delivery_console_control.la \
@@ -83,7 +82,6 @@ noinst_DATA += \
 	libmtahook_message_insulation.ldd \
 	libmtahook_mlist_expand.ldd \
 	libmtahook_os_inspection.ldd \
-	libmtahook_remote_postman.ldd \
 	libmtahook_user_forwarder.ldd \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_delivery_console_control.ldd \
@@ -258,10 +256,6 @@ libmtahook_os_inspection_la_SOURCES = MTA_SYSTEM/mpc_plugins/os_inspection.c
 libmtahook_os_inspection_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_os_inspection_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_os_inspection_la_DEPENDENCIES = ${default_sym}
-libmtahook_remote_postman_la_SOURCES = MTA_SYSTEM/mpc_plugins/remote_postman/bounce_producer.c MTA_SYSTEM/mpc_plugins/remote_postman/main.c MTA_SYSTEM/mpc_plugins/remote_postman/net_failure.c MTA_SYSTEM/mpc_plugins/remote_postman/remote_postman.c MTA_SYSTEM/mpc_plugins/remote_postman/sender_routing.c MTA_SYSTEM/mpc_plugins/remote_postman/smtp_deliverer.c MTA_SYSTEM/mpc_plugins/remote_postman/timer_queue.c
-libmtahook_remote_postman_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_remote_postman_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_remote_postman_la_DEPENDENCIES = ${default_sym}
 libmtahook_user_forwarder_la_SOURCES = MTA_SYSTEM/mpc_plugins/user_forwarder.c
 libmtahook_user_forwarder_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_user_forwarder_la_LIBADD = libgromox_common.la libgromox_email.la
