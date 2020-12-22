@@ -55,7 +55,6 @@ mta_plugins = \
 	libmtasvc_mail_subject_audit.la \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
-	libmtasvc_monitor_domains.la \
 	libmtasvc_ms_locale.la \
 	libmtasvc_multiple_retrying.la \
 	libmtasvc_outmail_frequency_audit.la \
@@ -103,7 +102,6 @@ noinst_DATA += \
 	libmtasvc_mail_subject_audit.ldd \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
-	libmtasvc_monitor_domains.ldd \
 	libmtasvc_ms_locale.la \
 	libmtasvc_multiple_retrying.la \
 	libmtasvc_outmail_frequency_audit.ldd \
@@ -340,10 +338,6 @@ libmtasvc_mime_extension_la_SOURCES = ${libexsvc_mime_extension_la_SOURCES}
 libmtasvc_mime_extension_la_LDFLAGS = ${libexsvc_mime_extension_la_LDFLAGS}
 libmtasvc_mime_extension_la_LIBADD = ${libexsvc_mime_extension_la_LIBADD}
 EXTRA_libmtasvc_mime_extension_la_DEPENDENCIES = ${default_sym}
-libmtasvc_monitor_domains_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
-libmtasvc_monitor_domains_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
-libmtasvc_monitor_domains_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
-EXTRA_libmtasvc_monitor_domains_la_DEPENDENCIES = ${default_sym}
 libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
 libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
@@ -601,7 +595,6 @@ man_MANS = \
 	doc/imap.8gx doc/ldap_adaptor.4gx doc/localemap.4gx doc/locker.8gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
-	doc/monitor_domains.4gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx \
 	doc/rebuild.8gx doc/relay_domains.4gx doc/remote_mx_hello.4gx \
