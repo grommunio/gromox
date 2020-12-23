@@ -1373,7 +1373,7 @@ static zend_bool rpc_ext_pull_getsearchcriteria_response(
 		ppayload->getsearchcriteria.prestriction = NULL;
 	} else {
 		ppayload->getsearchcriteria.prestriction =
-						emalloc(sizeof(RESTRICTION));
+			static_cast<RESTRICTION *>(emalloc(sizeof(RESTRICTION)));
 		if (NULL == ppayload->getsearchcriteria.prestriction) {
 			return 0;
 		}
@@ -1935,7 +1935,7 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	pbin_out->cb = push_ctx.offset;
 	push_ctx.offset = 0;
 	ext_pack_push_uint32(&push_ctx, pbin_out->cb - sizeof(uint32_t));
-	pbin_out->pb = push_ctx.data;
+	pbin_out->pv = push_ctx.data;
 	return 1;
 }
 
