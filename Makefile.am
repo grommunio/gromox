@@ -34,7 +34,6 @@ mta_plugins = \
 	libmtasvc_delivery_console_control.la \
 	libmtasvc_domain_list.la \
 	libmtasvc_domain_whitelist.la \
-	libmtasvc_esmtp_auth.la \
 	libmtasvc_forbidden_domain.la \
 	libmtasvc_forbidden_from.la \
 	libmtasvc_forbidden_rcpt.la \
@@ -75,7 +74,6 @@ noinst_DATA += \
 	libmtasvc_delivery_console_control.ldd \
 	libmtasvc_domain_list.ldd \
 	libmtasvc_domain_whitelist.ldd \
-	libmtasvc_esmtp_auth.la \
 	libmtasvc_forbidden_domain.ldd \
 	libmtasvc_forbidden_from.ldd \
 	libmtasvc_forbidden_rcpt.ldd \
@@ -239,10 +237,6 @@ libmtasvc_domain_whitelist_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_domain_whitelist_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_domain_whitelist_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_whitelist_la_DEPENDENCIES = ${default_sym}
-libmtasvc_esmtp_auth_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/auth_cache.c MTA_SYSTEM/service_plugins/esmtp_auth/esmtp_auth.c MTA_SYSTEM/service_plugins/esmtp_auth/host_list.c MTA_SYSTEM/service_plugins/esmtp_auth/main.c MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
-libmtasvc_esmtp_auth_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_esmtp_auth_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_esmtp_auth_la_DEPENDENCIES = ${default_sym}
 libmtasvc_forbidden_from_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_forbidden_from_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_forbidden_from_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
@@ -540,7 +534,6 @@ man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/boundary_list.4gx doc/delivery.8gx \
 	doc/digest.8gx doc/domain_list.4gx doc/domain_whitelist.4gx \
-	doc/esmtp_auth.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
