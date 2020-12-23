@@ -6,7 +6,7 @@
 #include <climits>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "util.h"
 #include "mjson.h"
 #include "str_hash.h"
@@ -462,7 +462,7 @@ CONTEXT_PROCESSING:
 				}
 				/* IMAP_CODE_2180011: BAD time out */
 				imap_reply_str = resource_get_imap_code(IMAP_CODE_2180011, 1, &string_length);
-				len = snprintf(reply_buff, 1024, "* %s", imap_reply_str);
+				len = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
 				write(pcontext->connection.sockd, reply_buff, len);
 				imap_parser_log_info(pcontext, 0, "time out");
 				SLEEP_BEFORE_CLOSE;
@@ -490,7 +490,7 @@ CONTEXT_PROCESSING:
 	} else if (SCHED_STAT_NOTIFYING == pcontext->sched_stat) {
 		if (MIDB_RESULT_OK == system_services_summary_folder(pcontext->maildir,
 			pcontext->selected_folder, &exists, &recent, NULL, NULL, NULL, NULL, &err)) {
-			len = snprintf(temp_buff,  sizeof(temp_buff),
+			len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
 							"* %d RECENT\r\n"
 							"* %d EXISTS\r\n",
 							recent, exists);
@@ -652,7 +652,7 @@ LITERAL_PROCESSING:
 					
 					/* IMAP_CODE_2180017: BAD literal size too large */
 					imap_reply_str = resource_get_imap_code(IMAP_CODE_2180017, 1, &string_length);
-					len = snprintf(reply_buff, 1024, "* %s", imap_reply_str);
+					len = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
 					if (NULL != pcontext->connection.ssl) {
 						SSL_write(pcontext->connection.ssl, reply_buff, len);
 					} else {
@@ -740,7 +740,7 @@ CMD_PROCESSING:
 						}
 						imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1,
 											&string_length);
-						string_length = snprintf(reply_buff, 1024, "%s %s",
+						string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s",
 											pcontext->tag_string, imap_reply_str);
 						if (NULL != pcontext->connection.ssl) {
 							SSL_write(pcontext->connection.ssl, reply_buff, string_length);
@@ -769,7 +769,7 @@ CMD_PROCESSING:
 						imap_reply_str = resource_get_imap_code(IMAP_CODE_2170027, 1,
 											&string_length);
 					}
-					string_length = snprintf(reply_buff, 1024, "%s %s",
+					string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s",
 								pcontext->tag_string, imap_reply_str);
 					if (NULL != pcontext->connection.ssl) {
 						SSL_write(pcontext->connection.ssl, reply_buff, string_length);
@@ -784,9 +784,9 @@ CMD_PROCESSING:
 				if (argc < 2 || strlen(argv[0]) >= 32) {
 					imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
 					if (argc <= 0 || strlen(argv[0]) >= 32) {
-						string_length = snprintf(reply_buff, 1024, "* %s", imap_reply_str);
+						string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
 					} else {
-						string_length = snprintf(reply_buff, 1024, "%s %s", argv[0], imap_reply_str);
+						string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s", argv[0], imap_reply_str);
 					}
 					if (NULL != pcontext->connection.ssl) {
 						SSL_write(pcontext->connection.ssl, reply_buff, string_length);
@@ -1056,7 +1056,7 @@ CMD_PROCESSING:
 END_PROCESSING:
 	
 	if (NULL != imap_reply_str) {
-		len = snprintf(reply_buff, 1024, "* %s", imap_reply_str);
+		len = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "* %s", imap_reply_str);
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, reply_buff, len);
 		} else {
@@ -1343,7 +1343,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	if (TRUE == b_modify && MIDB_RESULT_OK == system_services_summary_folder(
 		pcontext->maildir, pcontext->selected_folder, &exists, &recent, 
 		NULL, NULL, NULL, NULL, &err)) {
-		tmp_len = snprintf(buff, 1024, "* %d RECENT\r\n"
+		tmp_len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %d RECENT\r\n"
 									   "* %d EXISTS\r\n",
 									   recent, exists);
 		if (NULL == pstream) {
@@ -1368,10 +1368,10 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		    reinterpret_cast<unsigned int *>(&id)) == MIDB_RESULT_OK &&
 			MIDB_RESULT_OK == system_services_get_flags(pcontext->maildir,
 			pcontext->selected_folder, mid_string, &flag_bits, &err)) {
-			tmp_len = snprintf(buff, 1024, "* %d FETCH (FLAGS (", id);
+			tmp_len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %d FETCH (FLAGS (", id);
 			b_first = FALSE;
 			if (flag_bits & FLAG_RECENT) {
-				tmp_len += snprintf(buff + tmp_len, 1024 - tmp_len, "\\Recent");
+				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Recent");
 				b_first = TRUE;
 			}
 			if (flag_bits & FLAG_ANSWERED) {
@@ -1379,7 +1379,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 					buff[tmp_len] = ' ';
 					tmp_len ++;
 				}
-				tmp_len += snprintf(buff + tmp_len, 1024 - tmp_len, "\\Answered");
+				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Answered");
 				b_first = TRUE;
 			}
 			if (flag_bits & FLAG_FLAGGED) {
@@ -1387,7 +1387,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 					buff[tmp_len] = ' ';
 					tmp_len ++;
 				}
-				tmp_len += snprintf(buff + tmp_len, 1024 - tmp_len, "\\Flagged");
+				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Flagged");
 				b_first = TRUE;
 			}
 			if (flag_bits & FLAG_DELETED) {
@@ -1395,7 +1395,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 					buff[tmp_len] = ' ';
 					tmp_len ++;
 				}
-				tmp_len += snprintf(buff + tmp_len, 1024 - tmp_len, "\\Deleted");
+				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Deleted");
 				b_first = TRUE;
 			}
 			if (flag_bits & FLAG_SEEN) {
@@ -1403,7 +1403,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 					buff[tmp_len] = ' ';
 					tmp_len ++;
 				}
-				tmp_len += snprintf(buff + tmp_len, 1024 - tmp_len, "\\Seen");
+				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Seen");
 				b_first = TRUE;
 			}
 			if (flag_bits & FLAG_DRAFT) {
@@ -1411,9 +1411,9 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 					buff[tmp_len] = ' ';
 					tmp_len ++;
 				}
-				tmp_len += snprintf(buff + tmp_len, 1024 - tmp_len, "\\Draft");
+				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Draft");
 			}
-			tmp_len += snprintf(buff + tmp_len, 1024 - tmp_len, "))\r\n");
+			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "))\r\n");
 			if (NULL == pstream) {
 				if (NULL != pcontext->connection.ssl) {
 					SSL_write(pcontext->connection.ssl, buff, tmp_len);
@@ -1615,7 +1615,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontex
     /*========================================================================*/
     } else {
 		imap_reply_str = resource_get_imap_code(IMAP_CODE_2180000, 1, &string_length);
-		string_length = snprintf(reply_buff, 1024, "%s %s", argv[0], imap_reply_str);
+		string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s", argv[0], imap_reply_str);
         if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, reply_buff, string_length);
 		} else {
