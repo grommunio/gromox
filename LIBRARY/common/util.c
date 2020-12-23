@@ -1657,6 +1657,7 @@ void debug_info(const char *format, ...)
 	memset(msg, 0, sizeof(msg));
 	va_start(ap, format);
 	vsprintf(msg, format, ap);
+	va_end(ap);
 	printf("%s\n", msg);
 #endif
 }

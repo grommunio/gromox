@@ -1,6 +1,7 @@
 #include <atomic>
 #include <errno.h>
 #include <climits>
+#include <cstdarg>
 #include <string.h>
 #include <unistd.h>
 #include <libHX/defs.h>
@@ -611,6 +612,7 @@ void exmdb_local_log_info(MESSAGE_CONTEXT *pcontext,
 
 	va_start(ap, format);
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
+	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 
 	switch (pcontext->pcontrol->bound_type) {

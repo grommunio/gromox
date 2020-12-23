@@ -55,6 +55,7 @@ void system_log_info(const char *format, ...)
 			localtime(&time_now));
 	va_start(ap, format);
 	len += vsnprintf(log_buf + len, sizeof(log_buf) - len - 1, format, ap);
+	va_end(ap);
 	log_buf[len++]  = '\n';
 	write(g_log_fd, log_buf, len);
 }

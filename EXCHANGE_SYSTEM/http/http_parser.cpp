@@ -2148,6 +2148,7 @@ void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
 
 	va_start(ap, format);
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
+	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
 	if ('\0' == pcontext->username[0]) {

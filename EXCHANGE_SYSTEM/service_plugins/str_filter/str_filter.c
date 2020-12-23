@@ -504,6 +504,7 @@ void str_filter_echo(const char *format, ...)
 	memset(msg, 0, sizeof(msg));
 	va_start(ap, format);
 	vsprintf(msg, format, ap);
+	va_end(ap);
 	printf("[%s]: %s\n", g_module_name, msg);
 
 }

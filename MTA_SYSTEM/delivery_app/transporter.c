@@ -1458,6 +1458,7 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 
 	va_start(ap, format);
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
+	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
 
 	/* maximum record 8 rcpt to address */

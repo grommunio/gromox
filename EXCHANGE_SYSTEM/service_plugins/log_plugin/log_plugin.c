@@ -180,6 +180,7 @@ void log_plugin_log_info(int level, const char *format, ...)
 			
 	va_start(ap, format);
 	len += vsnprintf(log_buf + len, sizeof(log_buf) - len - 1, format, ap);
+	va_end(ap);
 	log_buf[len++]  = '\n';
 	log_plugin_cache_log(log_buf, len);
 

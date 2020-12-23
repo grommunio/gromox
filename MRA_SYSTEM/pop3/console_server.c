@@ -212,6 +212,7 @@ int console_server_reply_to_client(const char* format, ...)
 	va_start(ap, format);
 	bytes = gx_vsnprintf(message, GX_ARRAY_SIZE(message), format, ap);
 	bytes += gx_snprintf(message + bytes, GX_ARRAY_SIZE(message) - bytes, "\r\n");
+	va_end(ap);
 	return write(client_fd, message, bytes);
 }
 
