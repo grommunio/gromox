@@ -29,7 +29,6 @@ mta_plugins = \
 	libmtahook_alias_translator.la \
 	libmtahook_exmdb_local.la \
 	libmtahook_from_replace.la \
-	libmtahook_mail_forwarder.la \
 	libmtahook_mlist_expand.la \
 	libmtasvc_boundary_list.la \
 	libmtasvc_delivery_console_control.la \
@@ -71,7 +70,6 @@ noinst_DATA += \
 	libmtahook_alias_translator.ldd \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_from_replace.ldd \
-	libmtahook_mail_forwarder.ldd \
 	libmtahook_mlist_expand.ldd \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_delivery_console_control.ldd \
@@ -221,10 +219,6 @@ libmtahook_from_replace_la_SOURCES = MTA_SYSTEM/mpc_plugins/from_replace.c
 libmtahook_from_replace_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_from_replace_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtahook_from_replace_la_DEPENDENCIES = ${default_sym}
-libmtahook_mail_forwarder_la_SOURCES = MTA_SYSTEM/mpc_plugins/mail_forwarder/mail_forwarder.c MTA_SYSTEM/mpc_plugins/mail_forwarder/main.c
-libmtahook_mail_forwarder_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_mail_forwarder_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_mail_forwarder_la_DEPENDENCIES = ${default_sym}
 libmtahook_mlist_expand_la_SOURCES = MTA_SYSTEM/mpc_plugins/mlist_expand/bounce_producer.c MTA_SYSTEM/mpc_plugins/mlist_expand/main.cpp
 libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mlist_expand_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la

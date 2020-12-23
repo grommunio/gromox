@@ -37,7 +37,6 @@ static const char *const g_dfl_mpc_plugins[] = {
 	"libmtahook_alias_translator.so",
 	"libmtahook_exmdb_local.so",
 	"libmtahook_from_replace.so",
-	"libmtahook_mail_forwarder.so",
 	"libmtahook_mlist_expand.so",
 	NULL,
 };

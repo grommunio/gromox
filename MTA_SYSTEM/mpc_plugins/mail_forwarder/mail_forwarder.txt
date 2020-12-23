@@ -1,1 +1,0 @@
-#F_IN|F_OUT|F_ALL|F_INTERNAL|F_EXTERNAL			domain|address		forward address
