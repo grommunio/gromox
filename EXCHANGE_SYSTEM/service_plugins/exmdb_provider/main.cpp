@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <stdbool.h>
 #include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/svc_common.h>

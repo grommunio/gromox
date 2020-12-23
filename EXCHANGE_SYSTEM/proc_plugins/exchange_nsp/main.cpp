@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <stdbool.h>
 #include "guid.h"
 #include "util.h"
 #include "nsp_ndr.h"

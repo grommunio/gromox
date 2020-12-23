@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <gromox/hook_common.h>
 #include "bounce_producer.h"
 #include <stdio.h>

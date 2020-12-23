@@ -1,7 +1,6 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "console_server.h"
 #include "zarafa_server.h"

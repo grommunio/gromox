@@ -1,7 +1,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdbool.h>
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>

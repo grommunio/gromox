@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <stdbool.h>
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/option.h>

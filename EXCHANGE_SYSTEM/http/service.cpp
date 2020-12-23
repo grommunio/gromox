@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>

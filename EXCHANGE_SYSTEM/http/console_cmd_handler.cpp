@@ -1,7 +1,6 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <stdbool.h>
 #include <gromox/fileio.h>
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
