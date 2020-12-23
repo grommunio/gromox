@@ -31,7 +31,6 @@ mta_plugins = \
 	libmtahook_from_replace.la \
 	libmtahook_mail_forwarder.la \
 	libmtahook_mlist_expand.la \
-	libmtahook_os_inspection.la \
 	libmtasvc_boundary_list.la \
 	libmtasvc_delivery_console_control.la \
 	libmtasvc_domain_list.la \
@@ -74,7 +73,6 @@ noinst_DATA += \
 	libmtahook_from_replace.ldd \
 	libmtahook_mail_forwarder.ldd \
 	libmtahook_mlist_expand.ldd \
-	libmtahook_os_inspection.ldd \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_delivery_console_control.ldd \
 	libmtasvc_domain_list.ldd \
@@ -231,10 +229,6 @@ libmtahook_mlist_expand_la_SOURCES = MTA_SYSTEM/mpc_plugins/mlist_expand/bounce_
 libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mlist_expand_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_mlist_expand_la_DEPENDENCIES = ${default_sym}
-libmtahook_os_inspection_la_SOURCES = MTA_SYSTEM/mpc_plugins/os_inspection.c
-libmtahook_os_inspection_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_os_inspection_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_os_inspection_la_DEPENDENCIES = ${default_sym}
 libmtasvc_boundary_list_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_table/main.c EXCHANGE_SYSTEM/service_plugins/str_table/str_table.c
 libmtasvc_boundary_list_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_boundary_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
