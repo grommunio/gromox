@@ -1,6 +1,0 @@
-000005		bounce mails from remote postman
-
-000006		alarm mails
-
-000007		should be ignored by local delivery hook
-
