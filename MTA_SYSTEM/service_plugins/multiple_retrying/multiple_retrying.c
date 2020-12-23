@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <gromox/fileio.h>
 #include "config_file.h"
 #include "multiple_retrying.h"
 #include "retrying_table.h"
@@ -158,7 +159,7 @@ void multiple_retrying_console_talk(int argc, char **argv,
 		return;
 	}
 	if (2 == argc && 0 == strcmp("info", argv[1])) {
-		len = snprintf(result, length,
+		len = gx_snprintf(result, length,
 			"250 retrying table information:\r\n"
 			"\ttable capacity      %d\r\n"
 			"\tcurrent used        %d\r\n"
@@ -249,7 +250,7 @@ void multiple_retrying_console_talk(int argc, char **argv,
 		}
 		if (interval <= proxy_retrying_get_param(
 			PROXY_RETRYING_PING_INTERVAL)) {
-			len = snprintf(result, length, "550 time-out value must be larger "
+			len = gx_snprintf(result, length, "550 time-out value must be larger "
 					"than ping interval ");
 			itvltoa(proxy_retrying_get_param(PROXY_RETRYING_PING_INTERVAL),
 				result + len);
@@ -287,7 +288,7 @@ void multiple_retrying_console_talk(int argc, char **argv,
 			return;
 		}
 		if (interval >= proxy_retrying_get_param(PROXY_RETRYING_TIME_OUT)) {
-			len = snprintf(result, length, "550 ping interval must be less "
+			len = gx_snprintf(result, length, "550 ping interval must be less "
 					"than time-out ");
 			itvltoa(proxy_retrying_get_param(PROXY_RETRYING_TIME_OUT),
 				result + len);

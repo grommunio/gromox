@@ -1,3 +1,4 @@
+#include <gromox/fileio.h>
 #include "message_insulation.h"
 #include "bounce_producer.h"
 #include "config_file.h"
@@ -323,7 +324,7 @@ void message_insulation_console_talk(int argc, char **argv, char *result,
     }
 
     if (2 == argc && 0 == strcmp(argv[1], "info")) {
-        len = snprintf(result, length, "250 %s information:\r\n"
+		len = gx_snprintf(result, length, "250 %s information:\r\n"
                                         "\tscan interval                   ",
                                         argv[0]);
         itvltoa(g_scan_interval, result + len);

@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include "util.h"
@@ -357,8 +358,7 @@ static BOOL check_full(char *path)
 	if (NULL == pback) {
 		return TRUE;
 	}
-
-	length = snprintf(buff, 1024, "M-CKFL %s\r\n", path);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-CKFL %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto CHECK_ERROR;
 	}

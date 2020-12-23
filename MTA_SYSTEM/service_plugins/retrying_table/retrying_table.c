@@ -1,4 +1,5 @@
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "retrying_table.h"
 #include "config_file.h"
 #include "str_hash.h"
@@ -209,7 +210,7 @@ void retrying_table_console_talk(int argc, char **argv,
 		time(&current_time);
 		retrying_table_collect_entry(current_time, &valid_num);
 		pthread_mutex_unlock(&g_table_lock);
-		len = snprintf(result, length,
+		len = gx_snprintf(result, length,
 			"250 retrying table information:\r\n"
 			"\ttable capacity      %d\r\n"
 			"\tcurrent used        %d\r\n"

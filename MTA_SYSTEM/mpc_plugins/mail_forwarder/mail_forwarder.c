@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "mail_forwarder.h"
 #include "mail_func.h"
 #include "list_file.h"
@@ -273,7 +274,7 @@ BOOL mail_forwarder_process(MESSAGE_CONTEXT *pcontext)
 		MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != (length = mem_file_readline(
 		&pcontext->pcontrol->f_rcpt_to, rcpt_to, 256))) {
-		offset += snprintf(rcpt_buf + offset, 1024 - offset, "<%s>, ", rcpt_to);
+		offset += gx_snprintf(rcpt_buf + offset, GX_ARRAY_SIZE(rcpt_buf) - offset, "<%s>, ", rcpt_to);
 		if (offset >= 1024) {
 			offset = 1023;
 			break;

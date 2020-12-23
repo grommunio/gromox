@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <gromox/fileio.h>
 #include "bounce_producer.h"
 #include "single_list.h"
 #include "mail_func.h"
@@ -452,7 +453,7 @@ void bounce_producer_make(MESSAGE_CONTEXT *pcontext,
 		ptr += len;
 		switch (presource->format[i].tag) {
 		case TAG_TIME:
-			len = snprintf(ptr, 128, "%s", date_buff);
+			len = gx_snprintf(ptr, 128, "%s", date_buff);
 			ptr += len;
 			break;
 		case TAG_FROM:

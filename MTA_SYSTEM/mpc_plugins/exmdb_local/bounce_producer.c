@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <gromox/fileio.h>
 #include "bounce_producer.h"
 #include "exmdb_local.h"
 #include "single_list.h"
@@ -528,7 +529,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		ptr += len;
 		switch (presource->format[bounce_type][i].tag) {
 		case TAG_TIME:
-			len = snprintf(ptr, 128, "%s", date_buff);
+			len = gx_snprintf(ptr, 128, "%s", date_buff);
 			ptr += len;
 			break;
 		case TAG_FROM:

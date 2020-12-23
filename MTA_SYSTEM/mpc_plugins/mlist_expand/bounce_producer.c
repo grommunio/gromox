@@ -2,6 +2,7 @@
 #include <string.h>
 #include "bounce_producer.h"
 #include "single_list.h"
+#include <gromox/fileio.h>
 #include <gromox/hook_common.h>
 #include "mail_func.h"
 #include "timezone.h"
@@ -551,7 +552,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		ptr += len;
 		switch (presource->format[bounce_type][i].tag) {
 		case TAG_TIME:
-			len = snprintf(ptr, 128, "%s", date_buff);
+			len = gx_snprintf(ptr, 128, "%s", date_buff);
 			ptr += len;
 			break;
 		case TAG_FROM:

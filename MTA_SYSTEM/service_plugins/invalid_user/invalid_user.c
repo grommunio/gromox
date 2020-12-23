@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "invalid_user.h"
 #include "config_file.h"
 #include "mail_func.h"
@@ -271,7 +272,7 @@ void invalid_user_console_talk(int argc, char **argv, char *result, int length)
 		time(&current_time);
 		invalid_user_collect_entry(current_time, &valid_num);
 		pthread_mutex_unlock(&g_table_lock);
-		len = snprintf(result, length,
+		len = gx_snprintf(result, length,
 			"250 invalid user information:\r\n"
 			"\ttable capacity      %d\r\n"
 			"\tcurrent used        %d\r\n"
