@@ -5,7 +5,7 @@ AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include -I${top_srcdir}/LIBRARY/comm
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
-lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_resolv.la libgromox_rpc.la libgromox_webkit.la
+lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la libgromox_webkit.la
 noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_webkit.ldd libgromox_rpc.ldd libgromox_mapi.ldd
 pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
 pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
@@ -199,9 +199,6 @@ libgromox_epoll_la_LIBADD = -lpthread -lrt libgromox_common.la
 libgromox_mapi_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_mapi_la_SOURCES = LIBRARY/mapi_lib/apple_util.c LIBRARY/mapi_lib/applefile.c LIBRARY/mapi_lib/binhex.c LIBRARY/mapi_lib/eid_array.c LIBRARY/mapi_lib/element_data.c LIBRARY/mapi_lib/ext_buffer.c LIBRARY/mapi_lib/html.cpp LIBRARY/mapi_lib/idset.c LIBRARY/mapi_lib/macbinary.c LIBRARY/mapi_lib/oxcical.c LIBRARY/mapi_lib/oxcmail.cpp LIBRARY/mapi_lib/oxvcard.c LIBRARY/mapi_lib/pcl.c LIBRARY/mapi_lib/proptag_array.c LIBRARY/mapi_lib/propval.c LIBRARY/mapi_lib/restriction.c LIBRARY/mapi_lib/rop_util.c LIBRARY/mapi_lib/rtf.cpp LIBRARY/mapi_lib/rtfcp.cpp LIBRARY/mapi_lib/rule_actions.c LIBRARY/mapi_lib/sortorder_set.c LIBRARY/mapi_lib/tarray_set.c LIBRARY/mapi_lib/tnef.c LIBRARY/mapi_lib/tpropval_array.c
 libgromox_mapi_la_LIBADD = ${gumbo_LIBS} ${HX_LIBS} libgromox_common.la libgromox_email.la
-libgromox_resolv_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
-libgromox_resolv_la_SOURCES = lib/getmxbyname.c
-libgromox_resolv_la_LIBADD = -lresolv ${HX_LIBS}
 libgromox_rpc_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_rpc_la_SOURCES = LIBRARY/rpc_lib/ntlmssp.c LIBRARY/rpc_lib/ntlmdes.c LIBRARY/rpc_lib/ndr.c LIBRARY/rpc_lib/hmacmd5.c LIBRARY/rpc_lib/crc32.c LIBRARY/rpc_lib/arcfour.c
 libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la
@@ -556,12 +553,11 @@ mapi_la_LIBADD = ${HX_LIBS}
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
 
 # tests
-noinst_PROGRAMS = tests/abktconv tests/bodyconv tests/getmxbyname
+noinst_PROGRAMS = tests/abktconv tests/bodyconv
 tests_abktconv_SOURCES = tests/abktconv.cpp
 tests_abktconv_LDADD = libgromox_cplus.la
 tests_bodyconv_SOURCES = tests/bodyconv.cpp
 tests_bodyconv_LDADD = libgromox_common.la libgromox_mapi.la
-tests_getmxbyname_LDADD = ${HX_LIBS} libgromox_resolv.la
 
 # doc
 man_MANS = \
