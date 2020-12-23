@@ -1,0 +1,49 @@
+#!/usr/bin/perl
+#
+#	Extract templates from an ActiveDirectory dump
+#
+#	Usage: ldapsearch -b dc=whatever ... | gromox-abktpull
+#
+#	Files will be created in the current directory (so better mkdir & cd to
+#	something beforehand).
+#
+use File::Path qw(make_path);
+use MIME::Base64;
+use strict;
+use warnings;
+our %k;
+our $dn;
+our $attr = "";
+
+while (<>) {
+	$_ =~ s{[\r\n]}{}g;
+	if (/^dn: (.*)/) {
+		$dn = $1;
+	}
+	if ($attr ne "") {
+		if (/^ /) {
+			$k{$attr} .= $';
+		} elsif ($attr =~ /DisplayTable/) {
+			my @xdn = ($attr, split(/,/, $dn));
+			for (my $i = 0; $i < scalar(@xdn); ++$i) {
+				if ($xdn[$i] eq "CN=Display-Templates") {
+					splice(@xdn, $i);
+					last;
+				}
+			}
+			my $path = join(",", reverse(@xdn)); # or pick any delimiter you like
+			if ($path =~ m{/}) {
+				my $dir = $path;
+				$dir =~ s{/[^/]+$}{};
+				&make_path($dir);
+			}
+			open(FH, "> $path");
+			print FH decode_base64($k{$attr});
+			close FH;
+		}
+	}
+	if (/^(\w+):+(.*)/) {
+		$attr = $1;
+		$k{$attr} = $2;
+	}
+}
