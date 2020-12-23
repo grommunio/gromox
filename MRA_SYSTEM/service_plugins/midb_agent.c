@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include "util.h"
@@ -516,8 +517,7 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-UIDL %s %s\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-UIDL %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -664,8 +664,7 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-DELE %s %s", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
 	for (pnode=single_list_get_head(plist); NULL!=pnode;
@@ -688,7 +687,7 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 				goto DELETE_ERROR;
 			} else {
 				if (0 == strncmp(buff, "TRUE", 4)) {
-					length = snprintf(buff, 1024, "M-DELE %s %s", path, folder);
+					length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
 					pthread_mutex_lock(&g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list,
@@ -757,12 +756,11 @@ static int imap_search(char *path, char *folder, char *charset,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, sizeof(buff), "P-SRHL %s %s %s ",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SRHL %s %s %s ",
 				path, folder, charset);
 	length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += snprintf(buff1 + length1, sizeof(buff1) - length1,
+		length1 += gx_snprintf(buff1 + length1, GX_ARRAY_SIZE(buff1) - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
@@ -841,12 +839,11 @@ static int imap_search_uid(char *path, char *folder, char *charset,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, sizeof(buff), "P-SRHU %s %s %s ",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SRHU %s %s %s ",
 				path, folder, charset);
 	length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += snprintf(buff1 + length1, sizeof(buff1) - length1,
+		length1 += gx_snprintf(buff1 + length1, GX_ARRAY_SIZE(buff1) - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
@@ -922,8 +919,7 @@ static int get_mail_id(char *path, char *folder, char *mid_string,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-OFST %s %s %s UID ASC\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-OFST %s %s %s UID ASC\r\n",
 				path, folder, mid_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -972,8 +968,7 @@ static int get_mail_uid(char *path, char *folder, char *mid_string,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-UNID %s %s %s\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-UNID %s %s %s\r\n",
 				path, folder, mid_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -1026,8 +1021,7 @@ static int summary_folder(char *path, char *folder, int *pexists,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-FDDT %s %s UID ASC\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-FDDT %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1101,8 +1095,7 @@ static int make_folder(char *path, char *folder, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-MAKF %s %s\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-MAKF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1148,8 +1141,7 @@ static int remove_folder(char *path, char *folder, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-REMF %s %s\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-REMF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1195,8 +1187,7 @@ static int ping_mailbox(char *path, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-PING %s\r\n", path);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-PING %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1243,8 +1234,7 @@ static int rename_folder(char *path, char *src_name, char *dst_name,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-RENF %s %s %s\r\n", path,
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-RENF %s %s %s\r\n", path,
 				src_name, dst_name);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -1291,8 +1281,7 @@ static int subscribe_folder(char *path, char *folder, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-SUBF %s %s\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SUBF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1338,8 +1327,7 @@ static int unsubscribe_folder(char *path, char *folder, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-UNSF %s %s\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-UNSF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1396,8 +1384,7 @@ static int enum_folders(char *path, MEM_FILE *pfile, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-ENUM %s\r\n", path);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-ENUM %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1526,8 +1513,7 @@ static int enum_subscriptions(char *path, MEM_FILE *pfile, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-SUBL %s\r\n", path);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SUBL %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1646,8 +1632,7 @@ static int insert_mail(char *path, char *folder, char *file_name,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, sizeof(buff), "M-INST %s %s %s %s %ld\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-INST %s %s %s %s %ld\r\n",
 				path, folder, file_name, flags_string, time_stamp);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -1701,8 +1686,7 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-DELE %s %s", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
 	for (pnode=single_list_get_head(plist); NULL!=pnode;
@@ -1725,7 +1709,7 @@ static int remove_mail(char *path, char *folder, SINGLE_LIST *plist,
 				goto RDWR_ERROR;
 			} else {
 				if (0 == strncmp(buff, "TRUE", 4)) {
-					length = snprintf(buff, 1024, "M-DELE %s %s", path, folder);
+					length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
 				} else if (0 == strncmp(buff, "FALSE ", 6)) {
 					pthread_mutex_lock(&g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list,
@@ -1807,8 +1791,7 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-SIML %s %s UID ASC\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1984,8 +1967,7 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-DELL %s %s UID ASC\r\n", path, folder);
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-DELL %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -2146,8 +2128,7 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-LIST %s %s UID ASC\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC\r\n",
 				path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -2366,14 +2347,14 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 		SEQUENCE_NODE *pseq = pnode->pdata;
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
-				length = snprintf(buff, 1024, "P-SIML %s %s UID ASC -1 1\r\n",
+				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC -1 1\r\n",
 						path, folder);
 			else
-				length = snprintf(buff, 1024, "P-SIML %s %s UID ASC %d "
+				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC %d "
 						"1000000000\r\n", path, folder,
 						pseq->min - 1);
 		} else {
-			length = snprintf(buff, 1024, "P-SIML %s %s UID ASC %d %d\r\n",
+			length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC %d %d\r\n",
 						path, folder, pseq->min - 1,
 						pseq->max - pseq->min + 1);
 		}
@@ -2571,14 +2552,14 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 		SEQUENCE_NODE *pseq = pnode->pdata;
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
-				length = snprintf(buff, 1024, "M-LIST %s %s UID ASC -1 1\r\n",
+				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC -1 1\r\n",
 						path, folder);
 			else
-				length = snprintf(buff, 1024, "M-LIST %s %s UID ASC %d "
+				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC %d "
 						"1000000000\r\n", path, folder,
 						pseq->min - 1);
 		} else {
-			length = snprintf(buff, 1024, "M-LIST %s %s UID ASC %d %d\r\n",
+			length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC %d %d\r\n",
 						path, folder, pseq->min - 1,
 						pseq->max - pseq->min + 1);
 		}
@@ -2791,7 +2772,7 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
 		SEQUENCE_NODE *pseq = pnode->pdata;
-		length = snprintf(buff, 1024, "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
+		length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
@@ -2994,7 +2975,7 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
 		SEQUENCE_NODE *pseq = pnode->pdata;
-		length = snprintf(buff, 1024, "P-DTLU %s %s UID ASC %d %d\r\n", path,
+		length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
@@ -3223,8 +3204,7 @@ static int set_mail_flags(char *path, char *folder, char *mid_string,
 	flags_string[length] = ')';
 	length ++;
 	flags_string[length] = '\0';
-	
-	length = snprintf(buff, 1024, "P-SFLG %s %s %s %s\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -3308,9 +3288,7 @@ static int unset_mail_flags(char *path, char *folder, char *mid_string,
 	flags_string[length] = ')';
 	length ++;
 	flags_string[length] = '\0';
-	
-	
-	length = snprintf(buff, 1024, "P-RFLG %s %s %s %s\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-RFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -3358,8 +3336,7 @@ static int get_mail_flags(char *path, char *folder, char *mid_string,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "P-GFLG %s %s %s\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-GFLG %s %s %s\r\n",
 				path, folder, mid_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -3428,8 +3405,7 @@ static int copy_mail(char *path, char *src_folder, char *mid_string,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-
-	length = snprintf(buff, 1024, "M-COPY %s %s %s %s\r\n",
+	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-COPY %s %s %s %s\r\n",
 				path, src_folder, mid_string, dst_folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -3575,11 +3551,10 @@ static void console_talk(int argc, char **argv, char *result, int length)
 static BOOL get_digest_string(const char *src, int length, const char *tag,
     char *buff, int buff_len)
 {
-	int len;
 	char *ptr1, *ptr2;
 	char temp_tag[256];
 	
-	len = snprintf(temp_tag, 255, "\"%s\"", tag);
+	int len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, length);
 	if (NULL == ptr1) {
 		return FALSE;

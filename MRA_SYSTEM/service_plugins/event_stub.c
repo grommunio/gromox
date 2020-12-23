@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
 #include "double_list.h"
@@ -212,7 +213,7 @@ static int connect_event()
         return -1;
 	}
 	
-	temp_len = snprintf(temp_buff, 1024, "LISTEN %s:%d\r\n",
+	temp_len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), "LISTEN %s:%d\r\n",
 				get_host_ID(), getpid());
 	if (temp_len != write(sockd, temp_buff, temp_len)) {
 		close(sockd);

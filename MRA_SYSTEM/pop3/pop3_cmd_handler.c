@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "pop3_cmd_handler.h"
 #include "system_services.h"
 #include "resource.h"
@@ -928,7 +929,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 						&pcontext->list)) {
 					goto NORMAL_DELETE;
 				}
-				string_length = snprintf(temp_buff, 1024,
+				string_length = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
 					"FOLDER-TOUCH %s inbox", pcontext->username);
 				system_services_broadcast_event(temp_buff);
 
@@ -983,7 +984,7 @@ NORMAL_DELETE:
 					"command with midb server!");
 				return DISPATCH_SHOULD_CLOSE;
 			}
-			string_length = snprintf(temp_buff, 1024,
+			string_length = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
 				"FOLDER-TOUCH %s inbox", pcontext->username);
 			system_services_broadcast_event(temp_buff);
 
