@@ -3,14 +3,15 @@
 #include "common_util.h"
 
 #define EXP(s) CALL_ID_ ## s
-#define E(s) [EXP(s)] = #s
-static const char *const zcore_rpc_names[] = {
+#define E(s) #s
+static constexpr const char *zcore_rpc_names[] = {
 	E(LOGON),
 	E(UNLOADOBJECT),
 	E(OPENENTRY),
 	E(OPENSTOREENTRY),
 	E(OPENABENTRY),
 	E(RESOLVENAME),
+	nullptr,
 	E(GETPERMISSIONS),
 	E(MODIFYPERMISSIONS),
 	E(MODIFYRULES),
@@ -21,6 +22,7 @@ static const char *const zcore_rpc_names[] = {
 	E(LOADHIERARCHYTABLE),
 	E(LOADCONTENTTABLE),
 	E(LOADRECIPIENTTABLE),
+	nullptr,
 	E(LOADRULETABLE),
 	E(CREATEMESSAGE),
 	E(DELETEMESSAGES),
@@ -95,6 +97,7 @@ static const char *const zcore_rpc_names[] = {
 
 const char *zcore_rpc_idtoname(unsigned int i)
 {
-	const char *s = i < ARRAY_SIZE(zcore_rpc_names) ? zcore_rpc_names[i] : nullptr;
+	static_assert(GX_ARRAY_SIZE(zcore_rpc_names) == CALL_ID_LINKMESSAGE + 1);
+	const char *s = i < GX_ARRAY_SIZE(zcore_rpc_names) ? zcore_rpc_names[i] : nullptr;
 	return s != nullptr ? s : "";
 }
