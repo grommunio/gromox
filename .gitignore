@@ -45,3 +45,4 @@ Makefile.in
 /include/gromox/paths.h
 /system/*.service
 /tests/abktconv
+/tests/bodyconv
