@@ -30,7 +30,6 @@ mta_plugins = \
 	libmtahook_exmdb_local.la \
 	libmtahook_from_replace.la \
 	libmtahook_mail_forwarder.la \
-	libmtahook_message_insulation.la \
 	libmtahook_mlist_expand.la \
 	libmtahook_os_inspection.la \
 	libmtahook_user_forwarder.la \
@@ -75,7 +74,6 @@ noinst_DATA += \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_from_replace.ldd \
 	libmtahook_mail_forwarder.ldd \
-	libmtahook_message_insulation.ldd \
 	libmtahook_mlist_expand.ldd \
 	libmtahook_os_inspection.ldd \
 	libmtahook_user_forwarder.ldd \
@@ -231,10 +229,6 @@ libmtahook_mail_forwarder_la_SOURCES = MTA_SYSTEM/mpc_plugins/mail_forwarder/mai
 libmtahook_mail_forwarder_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mail_forwarder_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_mail_forwarder_la_DEPENDENCIES = ${default_sym}
-libmtahook_message_insulation_la_SOURCES = MTA_SYSTEM/mpc_plugins/message_insulation/bounce_producer.c MTA_SYSTEM/mpc_plugins/message_insulation/main.c MTA_SYSTEM/mpc_plugins/message_insulation/message_insulation.c
-libmtahook_message_insulation_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_message_insulation_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_message_insulation_la_DEPENDENCIES = ${default_sym}
 libmtahook_mlist_expand_la_SOURCES = MTA_SYSTEM/mpc_plugins/mlist_expand/bounce_producer.c MTA_SYSTEM/mpc_plugins/mlist_expand/main.cpp
 libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mlist_expand_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
