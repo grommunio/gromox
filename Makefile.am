@@ -36,7 +36,6 @@ mta_plugins = \
 	libmtahook_user_forwarder.la \
 	libmtasvc_boundary_list.la \
 	libmtasvc_delivery_console_control.la \
-	libmtasvc_dns_adaptor.la \
 	libmtasvc_domain_list.la \
 	libmtasvc_domain_whitelist.la \
 	libmtasvc_esmtp_auth.la \
@@ -82,7 +81,6 @@ noinst_DATA += \
 	libmtahook_user_forwarder.ldd \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_delivery_console_control.ldd \
-	libmtasvc_dns_adaptor.la \
 	libmtasvc_domain_list.ldd \
 	libmtasvc_domain_whitelist.ldd \
 	libmtasvc_esmtp_auth.la \
@@ -268,10 +266,6 @@ libmtasvc_domain_whitelist_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_domain_whitelist_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_domain_whitelist_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_whitelist_la_DEPENDENCIES = ${default_sym}
-libmtasvc_dns_adaptor_la_SOURCES = MTA_SYSTEM/service_plugins/dns_adaptor/dns_adaptor.c MTA_SYSTEM/service_plugins/dns_adaptor/inbound_ips.c MTA_SYSTEM/service_plugins/dns_adaptor/main.c
-libmtasvc_dns_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_dns_adaptor_la_LIBADD = -lpthread -lresolv ${HX_LIBS} libgromox_common.la libgromox_resolv.la
-EXTRA_libmtasvc_dns_adaptor_la_DEPENDENCIES = ${default_sym}
 libmtasvc_esmtp_auth_la_SOURCES = MTA_SYSTEM/service_plugins/esmtp_auth/auth_cache.c MTA_SYSTEM/service_plugins/esmtp_auth/esmtp_auth.c MTA_SYSTEM/service_plugins/esmtp_auth/host_list.c MTA_SYSTEM/service_plugins/esmtp_auth/main.c MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.c
 libmtasvc_esmtp_auth_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_esmtp_auth_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
