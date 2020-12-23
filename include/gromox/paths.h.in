@@ -23,7 +23,6 @@
 #define PKGDATASMTPDIR PKGDATADIR "/smtp"
 #define PKGDATAZCOREDIR PKGDATADIR "/zcore"
 #define PKGRUNDIR "/run/gromox"
-#define PKGRUNSADIR PKGRUNDIR "/sa_daemon"
 #define PKGSTATEDIR "/var/lib/gromox"
 #define PKGSTATEGATEWAYDIR PKGSTATEDIR "/gateway"
 #define PKGSTATEQUEUEDIR PKGSTATEDIR "/queue"

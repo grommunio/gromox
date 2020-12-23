@@ -1,7 +1,7 @@
 .TH sa.cfg 5gx "" "Gromox" "Gromox admin reference"
 .SH Name
 .PP
-\fBsa.cfg\fP \(em configuration file for the sa_daemon service
+\fBsa.cfg\fP \(em configuration file for mkmidb, mkprivate, mkpublic
 .SH Directives
 .SS backup_hash_num
 .PP
@@ -82,4 +82,4 @@ Default: \fI/run/gromox/sa\fP
 Default: \fI10 minutes\fP
 .SH See also
 .PP
-\fBgromox\fP(7), \fBsa_daemon\fP(8gx)
+\fBgromox\fP(7)

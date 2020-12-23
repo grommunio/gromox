@@ -1,9 +1,0 @@
-CHARSET					utf-8
-FROM_NAME				=?UTF-8?B?6YO15Lu257O757Wx6Ieq5YuV6YCa55+l?=
-SUBJECT_TURN_OUTOFDATE	=?UTF-8?B?5oKo6KiX566h5Zyo5oiR5YCR57O757Wx5Lit55qE5Z+f5bey57aT6YGO5pyf?=
-SUBJECT_WILL_OUTOFDATE	=?UTF-8?B?5oKo6KiX566h5Zyo5oiR5YCR57O757Wx5Lit55qE5Z+f5Y2z5bCH6YGO5pyf?=
-SUBJECT_PASSWORD_AGING	=?UTF-8?B?6KuL55uh5b+r5pu05pS56YO1566x5a+G56K8?=
-HTML_TITLE				通知郵件
-CONTENT_TURN_OUTOFDATE	請注意！域名%s已經過期，該域名下所有用戶將不再被允許通過我們的系統收發郵件，域名下的所有數據將在一個星期后被徹底刪除
-CONTENT_WILL_OUTOFDATE	請注意！域名%s即將在一個星期后過期，請盡快聯繫郵件系統管理員解決此問題，以避免給你所在的單位造成不必要的麻煩，謝謝！
-CONTENT_PASSWORD_AGING	郵箱%s的密碼將在一個星期后過期，請盡快更改，以免影響郵箱的正常使用！

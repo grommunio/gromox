@@ -2,7 +2,7 @@
 Description=Gromox system administration service group
 Documentation=man:gromox-sa.target(8gx)
 Wants=gromox-adaptor.service gromox-event.service
-Wants=gromox-locker.service gromox-sa_daemon.service gromox-timer.service
+Wants=gromox-locker.service gromox-timer.service
 
 [Install]
 WantedBy=multi-user.target

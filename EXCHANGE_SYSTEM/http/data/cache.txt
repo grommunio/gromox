@@ -1,7 +1,3 @@
 #domain(asterisk supported) uri_path directory
-* /data/css /usr/share/gromox/da/css
-* /data/script /usr/share/gromox/da/script
-* /data/picture /usr/share/gromox/da/picture
-* /html /usr/share/gromox/da/html
 * /webapp /usr/share/webapp
 * / /srv/www/htdocs
