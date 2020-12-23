@@ -1432,7 +1432,7 @@ BOOL exmdb_client_movecopy_messages(const char *dir,
 	request.payload.movecopy_messages.src_fid = src_fid;
 	request.payload.movecopy_messages.dst_fid = dst_fid;
 	request.payload.movecopy_messages.b_copy = b_copy;
-	request.payload.movecopy_messages.pmessage_ids = const_cast<EID_ARRAY *>(pmessage_ids);
+	request.payload.movecopy_messages.pmessage_ids = deconst(pmessage_ids);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1482,7 +1482,7 @@ BOOL exmdb_client_delete_messages(const char *dir,
 	request.payload.delete_messages.cpid = cpid;
 	request.payload.delete_messages.username = deconst(username);
 	request.payload.delete_messages.folder_id = folder_id;
-	request.payload.delete_messages.pmessage_ids = const_cast<EID_ARRAY *>(pmessage_ids);
+	request.payload.delete_messages.pmessage_ids = deconst(pmessage_ids);
 	request.payload.delete_messages.b_hard = b_hard;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1540,7 +1540,7 @@ BOOL exmdb_client_load_hierarchy_table(const char *dir,
 	request.payload.load_hierarchy_table.folder_id = folder_id;
 	request.payload.load_hierarchy_table.username = deconst(username);
 	request.payload.load_hierarchy_table.table_flags = table_flags;
-	request.payload.load_hierarchy_table.prestriction = const_cast<RESTRICTION *>(prestriction);
+	request.payload.load_hierarchy_table.prestriction = deconst(prestriction);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1581,8 +1581,8 @@ BOOL exmdb_client_load_content_table(const char *dir, uint32_t cpid,
 	request.payload.load_content_table.folder_id = folder_id;
 	request.payload.load_content_table.username = deconst(username);
 	request.payload.load_content_table.table_flags = table_flags;
-	request.payload.load_content_table.prestriction = const_cast<RESTRICTION *>(prestriction);
-	request.payload.load_content_table.psorts = const_cast<SORTORDER_SET *>(psorts);
+	request.payload.load_content_table.prestriction = deconst(prestriction);
+	request.payload.load_content_table.psorts = deconst(psorts);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1636,7 +1636,7 @@ BOOL exmdb_client_load_rule_table(const char *dir,
 	request.dir = deconst(dir);
 	request.payload.load_rule_table.folder_id = folder_id;
 	request.payload.load_rule_table.table_flags = table_flags;
-	request.payload.load_rule_table.prestriction = const_cast<RESTRICTION *>(prestriction);
+	request.payload.load_rule_table.prestriction = deconst(prestriction);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1687,7 +1687,7 @@ BOOL exmdb_client_query_table(const char *dir, const char *username,
 	request.payload.query_table.username = deconst(username);
 	request.payload.query_table.cpid = cpid;
 	request.payload.query_table.table_id = table_id;
-	request.payload.query_table.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
+	request.payload.query_table.pproptags = deconst(pproptags);
 	request.payload.query_table.start_pos = start_pos;
 	request.payload.query_table.row_needed = row_needed;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1712,8 +1712,8 @@ BOOL exmdb_client_match_table(const char *dir, const char *username,
 	request.payload.match_table.table_id = table_id;
 	request.payload.match_table.b_forward = b_forward;
 	request.payload.match_table.start_pos = start_pos;
-	request.payload.match_table.pres = const_cast<RESTRICTION *>(pres);
-	request.payload.match_table.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
+	request.payload.match_table.pres = deconst(pres);
+	request.payload.match_table.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1754,7 +1754,7 @@ BOOL exmdb_client_read_table_row(const char *dir, const char *username,
 	request.payload.read_table_row.username = deconst(username);
 	request.payload.read_table_row.cpid = cpid;
 	request.payload.read_table_row.table_id = table_id;
-	request.payload.read_table_row.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
+	request.payload.read_table_row.pproptags = deconst(pproptags);
 	request.payload.read_table_row.inst_id = inst_id;
 	request.payload.read_table_row.inst_num = inst_num;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2510,7 +2510,7 @@ BOOL exmdb_client_set_message_properties(const char *dir,
 	request.payload.set_message_properties.username = deconst(username);
 	request.payload.set_message_properties.cpid = cpid;
 	request.payload.set_message_properties.message_id = message_id;
-	request.payload.set_message_properties.pproperties = const_cast<TPROPVAL_ARRAY *>(pproperties);
+	request.payload.set_message_properties.pproperties = deconst(pproperties);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2548,7 +2548,7 @@ BOOL exmdb_client_remove_message_properties(
 	request.dir = deconst(dir);
 	request.payload.remove_message_properties.cpid = cpid;
 	request.payload.remove_message_properties.message_id = message_id;
-	request.payload.remove_message_properties.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
+	request.payload.remove_message_properties.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2628,8 +2628,8 @@ BOOL exmdb_client_save_change_indices(const char *dir,
 	request.dir = deconst(dir);
 	request.payload.save_change_indices.message_id = message_id;
 	request.payload.save_change_indices.cn = cn;
-	request.payload.save_change_indices.pindices = const_cast<INDEX_ARRAY *>(pindices);
-	request.payload.save_change_indices.pungroup_proptags = const_cast<PROPTAG_ARRAY *>(pungroup_proptags);
+	request.payload.save_change_indices.pindices = deconst(pindices);
+	request.payload.save_change_indices.pungroup_proptags = deconst(pungroup_proptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2815,7 +2815,7 @@ BOOL exmdb_client_update_folder_permission(const char *dir,
 	request.payload.update_folder_permission.folder_id = folder_id;
 	request.payload.update_folder_permission.b_freebusy = b_freebusy;
 	request.payload.update_folder_permission.count = count;
-	request.payload.update_folder_permission.prow = const_cast<PERMISSION_DATA *>(prow);
+	request.payload.update_folder_permission.prow = deconst(prow);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2848,7 +2848,7 @@ BOOL exmdb_client_update_folder_rule(const char *dir,
 	request.dir = deconst(dir);
 	request.payload.update_folder_rule.folder_id = folder_id;
 	request.payload.update_folder_rule.count = count;
-	request.payload.update_folder_rule.prow = const_cast<RULE_DATA *>(prow);
+	request.payload.update_folder_rule.prow = deconst(prow);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2869,7 +2869,7 @@ BOOL exmdb_client_delivery_message(const char *dir,
 	request.payload.delivery_message.from_address = deconst(from_address);
 	request.payload.delivery_message.account = deconst(account);
 	request.payload.delivery_message.cpid = cpid;
-	request.payload.delivery_message.pmsg = const_cast<MESSAGE_CONTENT *>(pmsg);
+	request.payload.delivery_message.pmsg = deconst(pmsg);
 	request.payload.delivery_message.pdigest = deconst(pdigest);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2890,7 +2890,7 @@ BOOL exmdb_client_write_message(const char *dir, const char *account,
 	request.payload.write_message.account = deconst(account);
 	request.payload.write_message.cpid = cpid;
 	request.payload.write_message.folder_id = folder_id;
-	request.payload.write_message.pmsgctnt = const_cast<MESSAGE_CONTENT *>(pmsgctnt);
+	request.payload.write_message.pmsgctnt = deconst(pmsgctnt);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2933,12 +2933,12 @@ BOOL exmdb_client_get_content_sync(const char *dir,
 	request.dir = deconst(dir);
 	request.payload.get_content_sync.folder_id = folder_id;
 	request.payload.get_content_sync.username = deconst(username);
-	request.payload.get_content_sync.pgiven = const_cast<IDSET *>(pgiven);
-	request.payload.get_content_sync.pseen = const_cast<IDSET *>(pseen);
-	request.payload.get_content_sync.pseen_fai = const_cast<IDSET *>(pseen_fai);
-	request.payload.get_content_sync.pread = const_cast<IDSET *>(pread);
+	request.payload.get_content_sync.pgiven = deconst(pgiven);
+	request.payload.get_content_sync.pseen = deconst(pseen);
+	request.payload.get_content_sync.pseen_fai = deconst(pseen_fai);
+	request.payload.get_content_sync.pread = deconst(pread);
 	request.payload.get_content_sync.cpid = cpid;
-	request.payload.get_content_sync.prestriction = const_cast<RESTRICTION *>(prestriction);
+	request.payload.get_content_sync.prestriction = deconst(prestriction);
 	request.payload.get_content_sync.b_ordered = b_ordered;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2971,8 +2971,8 @@ BOOL exmdb_client_get_hierarchy_sync(const char *dir,
 	request.dir = deconst(dir);
 	request.payload.get_hierarchy_sync.folder_id = folder_id;
 	request.payload.get_hierarchy_sync.username = deconst(username);
-	request.payload.get_hierarchy_sync.pgiven = const_cast<IDSET *>(pgiven);
-	request.payload.get_hierarchy_sync.pseen = const_cast<IDSET *>(pseen);
+	request.payload.get_hierarchy_sync.pgiven = deconst(pgiven);
+	request.payload.get_hierarchy_sync.pseen = deconst(pseen);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}

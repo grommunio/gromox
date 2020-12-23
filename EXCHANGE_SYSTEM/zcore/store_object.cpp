@@ -933,7 +933,7 @@ static void* store_object_get_oof_property(
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
 		pconfig = config_file_init2(NULL, temp_path);
 		if (NULL == pconfig) {
-			return const_cast<uint8_t *>(&fake_false);
+			return deconst(&fake_false);
 		}
 		if (PROP_TAG_OOFALLOWEXTERNAL == proptag) {
 			str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
@@ -941,9 +941,9 @@ static void* store_object_get_oof_property(
 			str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
 		}
 		if (NULL == str_value || 0 == atoi(str_value)) {
-			pvalue = const_cast<uint8_t *>(&fake_false);
+			pvalue = deconst(&fake_false);
 		} else {
-			pvalue = const_cast<uint8_t *>(&fake_true);
+			pvalue = deconst(&fake_true);
 		}
 		config_file_free(pconfig);
 		return pvalue;
@@ -980,7 +980,7 @@ static BOOL store_object_get_calculated_property(
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		static_cast<BINARY *>(*ppvalue)->pb = const_cast<uint8_t *>(
+		static_cast<BINARY *>(*ppvalue)->pb = deconst(
 			!pstore->b_private ? public_uid :
 			store_object_check_owner_mode(pstore) ?
 			private_uid : share_uid);
@@ -1174,7 +1174,7 @@ static BOOL store_object_get_calculated_property(
 		*(uint32_t*)(*ppvalue) = OBJECT_STORE;
 		return TRUE;
 	case PROP_TAG_PROVIDERDISPLAY:
-		*ppvalue = const_cast<char *>("Exchange Message Store");
+		*ppvalue = deconst("Exchange Message Store");
 		return TRUE;
 	case PROP_TAG_RESOURCEFLAGS:
 		*ppvalue = common_util_alloc(sizeof(uint32_t));
@@ -1347,7 +1347,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ECSERVERVERSION:
-		*ppvalue = const_cast<char *>(PROJECT_VERSION);
+		*ppvalue = deconst(PROJECT_VERSION);
 		return TRUE;
 	case PROP_TAG_OOFSTATE:
 	case PROP_TAG_OOFINTERNALREPLY:
@@ -1905,7 +1905,7 @@ static BOOL store_object_get_folder_permissions(
 		return FALSE;
 	}
 	proptags.count = 2;
-	proptags.pproptag = const_cast<uint32_t *>(proptag_buff);
+	proptags.pproptag = deconst(proptag_buff);
 	if (FALSE == exmdb_client_query_table(pstore->dir, NULL,
 		0, table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client_unload_table(pstore->dir, table_id);

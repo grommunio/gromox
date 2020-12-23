@@ -159,7 +159,7 @@ int main(int argc, const char **argv)
 	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
-		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
+		service_plugin_list = deconst(read_file_by_line(str_value));
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return 2;

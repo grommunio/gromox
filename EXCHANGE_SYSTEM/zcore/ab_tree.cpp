@@ -1781,7 +1781,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		static_cast<BINARY *>(*ppvalue)->pb = const_cast<uint8_t *>(common_util_get_muidecsab());
+		static_cast<BINARY *>(*ppvalue)->pb = deconst(common_util_get_muidecsab());
 		return TRUE;
 	case PROP_TAG_CONTAINERFLAGS:
 		if (node_type < 0x80) {
@@ -1867,7 +1867,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		*ppvalue = const_cast<char *>("EX");
+		*ppvalue = deconst("EX");
 		return TRUE;
 	case PROP_TAG_EMAILADDRESS:
 		if (node_type > 0x80) {
@@ -1940,7 +1940,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		((BINARY*)pvalue)->cb = 16;
-		static_cast<BINARY *>(pvalue)->pb = const_cast<uint8_t *>(g_guid_nspi);
+		static_cast<BINARY *>(pvalue)->pb = deconst(g_guid_nspi);
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_SENDRICHINFO:

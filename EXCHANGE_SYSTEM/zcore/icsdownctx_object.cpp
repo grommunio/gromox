@@ -492,7 +492,7 @@ BOOL icsdownctx_object_sync_folder_change(ICSDOWNCTX_OBJECT *pctx,
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	} else {
-		pproplist->ppropval[pproplist->count].pvalue = const_cast<uint8_t *>(&fake_false);
+		pproplist->ppropval[pproplist->count].pvalue = deconst(&fake_false);
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag =

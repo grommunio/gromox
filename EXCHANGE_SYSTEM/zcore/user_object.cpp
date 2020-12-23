@@ -85,15 +85,14 @@ BOOL user_object_get_properties(USER_OBJECT *puser,
 				PROP_TAG_OBJECTTYPE) >= 0) {
 				ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_OBJECTTYPE;
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					const_cast<uint32_t *>(&fake_type);
+				ppropvals->ppropval[ppropvals->count].pvalue = deconst(&fake_type);
 				ppropvals->count ++;
 			}
 			if (common_util_index_proptags(pproptags,
 				PROP_TAG_ADDRESSTYPE) >= 0) {
 				ppropvals->ppropval[ppropvals->count].proptag =
 											PROP_TAG_ADDRESSTYPE;
-				ppropvals->ppropval[ppropvals->count].pvalue = const_cast<char *>("EX");
+				ppropvals->ppropval[ppropvals->count].pvalue = deconst("EX");
 				ppropvals->count ++;
 			}
 			if ((common_util_index_proptags(pproptags,

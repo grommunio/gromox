@@ -233,7 +233,7 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_MESSAGECLASS;
-	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("IPM.Note");
+	propvals.ppropval[propvals.count].pvalue  = deconst("IPM.Note");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
@@ -248,17 +248,17 @@ BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYBCC;
-	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("");
+	propvals.ppropval[propvals.count].pvalue  = deconst("");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYCC;
-	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("");
+	propvals.ppropval[propvals.count].pvalue  = deconst("");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYTO;
-	propvals.ppropval[propvals.count].pvalue  = const_cast<char *>("");
+	propvals.ppropval[propvals.count].pvalue  = deconst("");
 	propvals.count ++;
 	
 	propvals.ppropval[propvals.count].proptag =
@@ -1198,8 +1198,7 @@ BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
 		ppropvals, PROP_TAG_MESSAGELOCALEID)) {
 		ppropvals->ppropval[ppropvals->count].proptag =
 								PROP_TAG_MESSAGELOCALEID;
-		ppropvals->ppropval[ppropvals->count].pvalue =
-			const_cast<uint32_t *>(&lcid_default);
+		ppropvals->ppropval[ppropvals->count].pvalue = deconst(&lcid_default);
 		ppropvals->count ++;
 	}
 	if (common_util_index_proptags(pproptags,
@@ -1756,9 +1755,9 @@ BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;
 		propval_buff[0].proptag = PROP_TAG_READRECEIPTREQUESTED;
-		propval_buff[0].pvalue = const_cast<uint8_t *>(&fake_false);
+		propval_buff[0].pvalue = deconst(&fake_false);
 		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-		propval_buff[1].pvalue = const_cast<uint8_t *>(&fake_false);
+		propval_buff[1].pvalue = deconst(&fake_false);
 		exmdb_client_set_instance_properties(dir,
 			pmessage->instance_id, &propvals, &problems);
 		exmdb_client_set_message_properties(dir, username,

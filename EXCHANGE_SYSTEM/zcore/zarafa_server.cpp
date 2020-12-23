@@ -1853,7 +1853,7 @@ uint32_t zarafa_server_openpropfilesec(GUID hsession,
 	TPROPVAL_ARRAY *ppropvals;
 	
 	bin.cb = 16;
-	bin.pv = const_cast<FLATUID *>(puid);
+	bin.pv = deconst(puid);
 	guid = rop_util_binary_to_guid(&bin);
 	pinfo = zarafa_server_query_session(hsession);
 	if (NULL == pinfo) {
@@ -2631,7 +2631,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		}
 		res_prop.proptag = PROP_TAG_READ;
 		res_prop.propval.proptag = PROP_TAG_READ;
-		res_prop.propval.pvalue = const_cast<uint8_t *>(&fake_false);
+		res_prop.propval.pvalue = deconst(&fake_false);
 		if (FALSE == exmdb_client_load_content_table(
 			store_object_get_dir(pstore), 0,
 			folder_object_get_id(pfolder), username,
@@ -2746,10 +2746,10 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 			propvals.ppropval = propval_buff;
 			propval_buff[0].proptag =
 				PROP_TAG_READRECEIPTREQUESTED;
-			propval_buff[0].pvalue = const_cast<uint8_t *>(&fake_false);
+			propval_buff[0].pvalue = deconst(&fake_false);
 			propval_buff[1].proptag =
 				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
-			propval_buff[1].pvalue = const_cast<uint8_t *>(&fake_false);
+			propval_buff[1].pvalue = deconst(&fake_false);
 			exmdb_client_set_message_properties(
 				store_object_get_dir(pstore), username,
 				0, message_id, &propvals, &problems);
@@ -3401,7 +3401,7 @@ uint32_t zarafa_server_getstoreentryid(
 		store_entryid.wrapped_provider_uid);
 	store_entryid.wrapped_type = 0x0000000C;
 	store_entryid.pserver_name = username;
-	store_entryid.pmailbox_dn = const_cast<char *>(mailbox_dn);
+	store_entryid.pmailbox_dn = deconst(mailbox_dn);
 	pentryid->pv = common_util_alloc(1024);
 	if (pentryid->pv == nullptr)
 		return ecError;
@@ -3867,16 +3867,16 @@ uint32_t zarafa_server_queryrows(
 	}
 	switch (table_type) {
 	case STORE_TABLE:
-		pobject_type = const_cast<uint32_t *>(&object_type_store);
+		pobject_type = deconst(&object_type_store);
 		break;
 	case HIERARCHY_TABLE:
-		pobject_type = const_cast<uint32_t *>(&object_type_folder);
+		pobject_type = deconst(&object_type_folder);
 		break;
 	case CONTENT_TABLE:
-		pobject_type = const_cast<uint32_t *>(&object_type_message);
+		pobject_type = deconst(&object_type_message);
 		break;
 	case ATTACHMENT_TABLE:
-		pobject_type = const_cast<uint32_t *>(&object_type_attachment);
+		pobject_type = deconst(&object_type_attachment);
 		break;
 	}
 	for (i=0; i<prowset->count; i++) {
@@ -4584,7 +4584,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
 				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
-				tmp_propval.pvalue  = const_cast<char *>("EX");
+				tmp_propval.pvalue  = deconst("EX");
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PROP_TAG_EMAILADDRESS;
 				tmp_propval.pvalue = common_util_dup(ab_entryid.px500dn);
@@ -4635,7 +4635,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
 				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
-				tmp_propval.pvalue  = const_cast<char *>("SMTP");
+				tmp_propval.pvalue  = deconst("SMTP");
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PROP_TAG_EMAILADDRESS;
 				tmp_propval.pvalue = common_util_dup(

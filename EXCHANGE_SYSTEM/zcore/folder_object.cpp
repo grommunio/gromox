@@ -309,13 +309,13 @@ static BOOL folder_object_get_calculated_property(
 		if (TRUE == store_object_check_private(pfolder->pstore)) {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PRIVATE_FID_ROOT)) {
-				*ppvalue = const_cast<BINARY *>(&fake_bin);
+				*ppvalue = deconst(&fake_bin);
 				return TRUE;
 			}
 		} else {
 			if (pfolder->folder_id == rop_util_make_eid_ex(
 				1, PUBLIC_FID_ROOT)) {
-				*ppvalue = const_cast<BINARY *>(&fake_bin);
+				*ppvalue = deconst(&fake_bin);
 				return TRUE;
 			}
 		}
@@ -342,7 +342,7 @@ static BOOL folder_object_get_calculated_property(
 		return TRUE;
 	case PROP_TAG_DELETEDFOLDERTOTAL:
 		/* just like exchange 2013, alway return 0 */
-		*ppvalue = const_cast<uint32_t *>(&fake_del);
+		*ppvalue = deconst(&fake_del);
 		return TRUE;
 	case PROP_TAG_IPMDRAFTSENTRYID:
 		if (FALSE == store_object_check_private(pfolder->pstore)) {
@@ -866,7 +866,7 @@ BOOL folder_object_get_permissions(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	proptags.count = 2;
-	proptags.pproptag = const_cast<uint32_t *>(proptag_buff);
+	proptags.pproptag = deconst(proptag_buff);
 	if (FALSE == exmdb_client_query_table(dir, NULL, 0,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client_unload_table(dir, table_id);
@@ -925,7 +925,7 @@ BOOL folder_object_set_permissions(FOLDER_OBJECT *pfolder,
 		return FALSE;
 	}
 	proptags.count = 2;
-	proptags.pproptag = const_cast<uint32_t *>(proptag_buff);
+	proptags.pproptag = deconst(proptag_buff);
 	if (FALSE == exmdb_client_query_table(dir, NULL, 0,
 		table_id, &proptags, 0, row_num, &permission_set)) {
 		exmdb_client_unload_table(dir, table_id);

@@ -561,22 +561,19 @@ BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
 		case PROP_TAG_DISPLAYNAME:
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue =
-				const_cast<char *>("Exchange Directory Service");
+			ppropvals->ppropval[ppropvals->count].pvalue = deconst("Exchange Directory Service");
 			ppropvals->count ++;
 			break;
 		case PROP_TAG_RESOURCETYPE:
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue =
-				const_cast<uint32_t *>(&resource_type);
+			ppropvals->ppropval[ppropvals->count].pvalue = deconst(&resource_type);
 			ppropvals->count ++;
 			break;
 		case PROP_TAG_ABPROVIDERID:
 			ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue =
-				const_cast<uint8_t *>(common_util_get_muidecsab());
+			ppropvals->ppropval[ppropvals->count].pvalue = deconst(common_util_get_muidecsab());
 			ppropvals->count ++;
 			break;
 		}

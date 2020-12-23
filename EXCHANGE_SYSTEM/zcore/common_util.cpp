@@ -265,7 +265,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = (void*)account;
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
-	propval_buff[5].pvalue  = const_cast<char *>("EX");
+	propval_buff[5].pvalue  = deconst("EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
 		return GXERR_CALL_FAILED;
 	}
@@ -310,7 +310,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
-	propval_buff[11].pvalue  = const_cast<char *>("EX");
+	propval_buff[11].pvalue  = deconst("EX");
 	propval_buff[12].proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	propval_buff[12].pvalue = essdn_buff1;
 	propval_buff[13].proptag = PROP_TAG_SENTREPRESENTINGNAME;
@@ -1277,7 +1277,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 							tmp_entryid.provider_uid);
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
-	tmp_entryid.px500dn = const_cast<char *>(essdn);
+	tmp_entryid.px500dn = deconst(essdn);
 	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_addressbook_entryid(
 		&ext_push, &tmp_entryid)) {
@@ -1337,7 +1337,7 @@ BOOL common_util_username_to_entryid(const char *username,
 	} else {
 		oneoff_entry.pdisplay_name = (char*)username;
 	}
-	oneoff_entry.paddress_type = const_cast<char *>("SMTP");
+	oneoff_entry.paddress_type = deconst("SMTP");
 	oneoff_entry.pmail_address = (char*)username;
 	ext_buffer_push_init(&ext_push, pbin->pv, 1280, EXT_FLAG_UTF16);
 	status = ext_buffer_push_oneoff_entryid(&ext_push, &oneoff_entry);
@@ -2638,7 +2638,7 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 			PROVIDER_UID_WRAPPED_PRIVATE,
 			store_entryid.wrapped_provider_uid);
 		store_entryid.wrapped_type = 0x0000000C;
-		store_entryid.pserver_name = const_cast<char *>(store_object_get_account(pstore));
+		store_entryid.pserver_name = deconst(store_object_get_account(pstore));
 		if (FALSE == common_util_username_to_essdn(
 			store_object_get_account(pstore), tmp_buff)) {
 			return NULL;	
@@ -3521,21 +3521,21 @@ void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
 		break;
 	}
 	if (i >= line_num) {
-		ppfolder_lang[RES_ID_IPM]      = const_cast<char *>("Top of Information Store");
-		ppfolder_lang[RES_ID_INBOX]    = const_cast<char *>("Inbox");
-		ppfolder_lang[RES_ID_DRAFT]    = const_cast<char *>("Drafts");
-		ppfolder_lang[RES_ID_OUTBOX]   = const_cast<char *>("Outbox");
-		ppfolder_lang[RES_ID_SENT]     = const_cast<char *>("Sent Items");
-		ppfolder_lang[RES_ID_DELETED]  = const_cast<char *>("Deleted Items");
-		ppfolder_lang[RES_ID_CONTACTS] = const_cast<char *>("Contacts");
-		ppfolder_lang[RES_ID_CALENDAR] = const_cast<char *>("Calendar");
-		ppfolder_lang[RES_ID_JOURNAL]  = const_cast<char *>("Journal");
-		ppfolder_lang[RES_ID_NOTES]    = const_cast<char *>("Notes");
-		ppfolder_lang[RES_ID_TASKS]    = const_cast<char *>("Tasks");
-		ppfolder_lang[RES_ID_JUNK]     = const_cast<char *>("Junk E-mail");
-		ppfolder_lang[RES_ID_SYNC]     = const_cast<char *>("Sync Issues");
-		ppfolder_lang[RES_ID_CONFLICT] = const_cast<char *>("Conflicts");
-		ppfolder_lang[RES_ID_LOCAL]    = const_cast<char *>("Local Failures");
-		ppfolder_lang[RES_ID_SERVER]   = const_cast<char *>("Server Failures");
+		ppfolder_lang[RES_ID_IPM]      = deconst("Top of Information Store");
+		ppfolder_lang[RES_ID_INBOX]    = deconst("Inbox");
+		ppfolder_lang[RES_ID_DRAFT]    = deconst("Drafts");
+		ppfolder_lang[RES_ID_OUTBOX]   = deconst("Outbox");
+		ppfolder_lang[RES_ID_SENT]     = deconst("Sent Items");
+		ppfolder_lang[RES_ID_DELETED]  = deconst("Deleted Items");
+		ppfolder_lang[RES_ID_CONTACTS] = deconst("Contacts");
+		ppfolder_lang[RES_ID_CALENDAR] = deconst("Calendar");
+		ppfolder_lang[RES_ID_JOURNAL]  = deconst("Journal");
+		ppfolder_lang[RES_ID_NOTES]    = deconst("Notes");
+		ppfolder_lang[RES_ID_TASKS]    = deconst("Tasks");
+		ppfolder_lang[RES_ID_JUNK]     = deconst("Junk E-mail");
+		ppfolder_lang[RES_ID_SYNC]     = deconst("Sync Issues");
+		ppfolder_lang[RES_ID_CONFLICT] = deconst("Conflicts");
+		ppfolder_lang[RES_ID_LOCAL]    = deconst("Local Failures");
+		ppfolder_lang[RES_ID_SERVER]   = deconst("Server Failures");
 	}
 }

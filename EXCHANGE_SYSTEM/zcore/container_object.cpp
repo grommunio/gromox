@@ -562,7 +562,7 @@ BOOL container_object_load_user_table(
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
-			propval.pvalue  = const_cast<char *>("SMTP");
+			propval.pvalue  = deconst("SMTP");
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -654,7 +654,7 @@ BOOL container_object_load_user_table(
 			propval.proptag = PROP_TAG_ABPROVIDERID;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 16;
-			tmp_bin.pb = const_cast<uint8_t *>(common_util_get_muidzcsab());
+			tmp_bin.pb = deconst(common_util_get_muidzcsab());
 			if (FALSE == tpropval_array_set_propval(
 				ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
@@ -712,7 +712,7 @@ BOOL container_object_fetch_special_property(
 			return FALSE;
 		}
 		((BINARY*)*ppvalue)->cb = 16;
-		static_cast<BINARY *>(*ppvalue)->pb = const_cast<uint8_t *>(common_util_get_muidecsab());
+		static_cast<BINARY *>(*ppvalue)->pb = deconst(common_util_get_muidecsab());
 		return TRUE;
 	case PROP_TAG_ENTRYID: {
 		pvalue = common_util_alloc(sizeof(BINARY));
@@ -726,9 +726,9 @@ BOOL container_object_fetch_special_property(
 		ab_entryid.version = 1;
 		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 		if (SPECIAL_CONTAINER_GAL == special_type) {
-			ab_entryid.px500dn = const_cast<char *>("");
+			ab_entryid.px500dn = deconst("");
 		} else {
-			ab_entryid.px500dn = const_cast<char *>("/");
+			ab_entryid.px500dn = deconst("/");
 		}
 		bv->pv = common_util_alloc(128);
 		if (bv->pv == nullptr)
@@ -761,9 +761,9 @@ BOOL container_object_fetch_special_property(
 		return TRUE;
 	case PROP_TAG_DISPLAYNAME:
 		if (SPECIAL_CONTAINER_GAL == special_type) {
-			*ppvalue = const_cast<char *>("Global Address List");
+			*ppvalue = deconst("Global Address List");
 		} else {
-			*ppvalue = const_cast<char *>("Gromox Contact Folders");
+			*ppvalue = deconst("Gromox Contact Folders");
 		}
 		return TRUE;
 	case PROP_TAG_ADDRESSBOOKISMASTER:
@@ -840,7 +840,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			((BINARY*)pvalue)->cb = 16;
-			static_cast<BINARY *>(pvalue)->pb = const_cast<uint8_t *>(common_util_get_muidzcsab());
+			static_cast<BINARY *>(pvalue)->pb = deconst(common_util_get_muidzcsab());
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
@@ -1033,7 +1033,7 @@ void container_object_get_container_table_all_proptags(
 	};
 	
 	pproptags->count = 7;
-	pproptags->pproptag = const_cast<uint32_t *>(proptag_buff);
+	pproptags->pproptag = deconst(proptag_buff);
 }
 
 static BOOL container_object_get_specialtables_from_node(
@@ -1382,7 +1382,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_THUMBNAILPHOTO
 	};
 	pproptags->count = 34;
-	pproptags->pproptag = const_cast<uint32_t *>(proptag_buff);
+	pproptags->pproptag = deconst(proptag_buff);
 }
 
 BOOL container_object_query_user_table(
