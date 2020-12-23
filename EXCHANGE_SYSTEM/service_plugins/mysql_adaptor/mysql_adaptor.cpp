@@ -922,7 +922,7 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 	
 	mysql_adaptor_encode_squote(homedir, temp_dir);
 	snprintf(sql_string, 1024, "SELECT id FROM domains "
-		"WHERE homedir='%s' AND domain_type=0", temp_dir);
+		"WHERE homedir='%s'", temp_dir);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
 		return false;
