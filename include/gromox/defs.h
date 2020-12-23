@@ -110,4 +110,6 @@ extern GX_EXPORT unsigned int gxerr_to_hresult(gxerr_t);
 
 #ifdef __cplusplus
 } /* extern "C" */
+
+template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
 #endif

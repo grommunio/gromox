@@ -102,19 +102,17 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
 				pbin->cb = 1;
-				pbin->pb = common_util_alloc(1);
-				if (NULL == pbin->pb) {
+				pbin->pv = common_util_alloc(1);
+				if (pbin->pv == nullptr)
 					return FALSE;
-				}
 				*(uint8_t*)pbin->pb = resp_buff[0];
 				return TRUE;
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pb = common_util_alloc(pbin->cb);
-				if (NULL == pbin->pb) {
+				pbin->pv = common_util_alloc(pbin->cb);
+				if (pbin->pv == nullptr)
 					return FALSE;
-				}
-				memcpy(pbin->pb, resp_buff, 5);
+				memcpy(pbin->pv, resp_buff, 5);
 				offset = 5;
 				if (offset == pbin->cb) {
 					return TRUE;
@@ -528,7 +526,7 @@ int exmdb_client_run()
 			g_notify_stop = TRUE;
 			return 2;
 		}
-		pserver = malloc(sizeof(REMOTE_SVR));
+		pserver = static_cast<REMOTE_SVR *>(malloc(sizeof(REMOTE_SVR)));
 		if (NULL == pserver) {
 			printf("[exmdb_client]: Failed to allocate memory for exmdb\n");
 			list_file_free(plist);
@@ -544,7 +542,7 @@ int exmdb_client_run()
 		double_list_init(&pserver->conn_list);
 		double_list_append_as_tail(&g_server_list, &pserver->node);
 		for (j=0; j<g_conn_num; j++) {
-		   pconn = malloc(sizeof(REMOTE_CONN));
+			pconn = static_cast<REMOTE_CONN *>(malloc(sizeof(REMOTE_CONN)));
 			if (NULL == pconn) {
 				printf("[exmdb_client]: fail to "
 					"allocate memory for exmdb\n");
@@ -558,7 +556,7 @@ int exmdb_client_run()
 			double_list_append_as_tail(&g_lost_list, &pconn->node);
 		}
 		for (j=0; j<g_threads_num; j++) {
-			pagent = malloc(sizeof(AGENT_THREAD));
+			pagent = static_cast<AGENT_THREAD *>(malloc(sizeof(AGENT_THREAD)));
 			if (NULL == pagent) {
 				printf("[exmdb_client]: fail to "
 					"allocate memory for exmdb\n");
@@ -893,7 +891,7 @@ BOOL exmdb_client_ping_store(const char *dir)
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_PING_STORE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -907,7 +905,7 @@ BOOL exmdb_client_get_all_named_propids(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_ALL_NAMED_PROPIDS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -923,9 +921,9 @@ BOOL exmdb_client_get_named_propids(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_NAMED_PROPIDS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_named_propids.b_create = b_create;
-	request.payload.get_named_propids.ppropnames = (void*)ppropnames;
+	request.payload.get_named_propids.ppropnames = deconst(ppropnames);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -940,8 +938,8 @@ BOOL exmdb_client_get_named_propnames(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_NAMED_PROPNAMES;
-	request.dir = (void*)dir;
-	request.payload.get_named_propnames.ppropids = (void*)ppropids;
+	request.dir = deconst(dir);
+	request.payload.get_named_propnames.ppropids = deconst(ppropids);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -956,7 +954,7 @@ BOOL exmdb_client_get_mapping_guid(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MAPPING_GUID;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_mapping_guid.replid = replid;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -973,7 +971,7 @@ BOOL exmdb_client_get_mapping_replid(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MAPPING_REPLID;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_mapping_replid.guid = guid;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -990,7 +988,7 @@ BOOL exmdb_client_get_store_all_proptags(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_STORE_ALL_PROPTAGS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1006,9 +1004,9 @@ BOOL exmdb_client_get_store_properties(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_STORE_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_store_properties.cpid = cpid;
-	request.payload.get_store_properties.pproptags = (void*)pproptags;
+	request.payload.get_store_properties.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1024,9 +1022,9 @@ BOOL exmdb_client_set_store_properties(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_STORE_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_store_properties.cpid = cpid;
-	request.payload.set_store_properties.ppropvals = (void*)ppropvals;
+	request.payload.set_store_properties.ppropvals = deconst(ppropvals);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1041,8 +1039,8 @@ BOOL exmdb_client_remove_store_properties(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_REMOVE_STORE_PROPERTIES;
-	request.dir = (void*)dir;
-	request.payload.remove_store_properties.pproptags = (void*)pproptags;
+	request.dir = deconst(dir);
+	request.payload.remove_store_properties.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1056,8 +1054,8 @@ BOOL exmdb_client_check_mailbox_permission(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_MAILBOX_PERMISSION;
-	request.dir = (void*)dir;
-	request.payload.check_mailbox_permission.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.check_mailbox_permission.username = deconst(username);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1072,8 +1070,8 @@ BOOL exmdb_client_get_folder_by_class(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_FOLDER_BY_CLASS;
-	request.dir = (void*)dir;
-	request.payload.get_folder_by_class.str_class = (void*)str_class;
+	request.dir = deconst(dir);
+	request.payload.get_folder_by_class.str_class = deconst(str_class);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1089,9 +1087,9 @@ BOOL exmdb_client_set_folder_by_class(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_FOLDER_BY_CLASS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_folder_by_class.folder_id = folder_id;
-	request.payload.set_folder_by_class.str_class = (void*)str_class;
+	request.payload.set_folder_by_class.str_class = deconst(str_class);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1106,7 +1104,7 @@ BOOL exmdb_client_get_folder_class_table(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_FOLDER_CLASS_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1121,7 +1119,7 @@ BOOL exmdb_client_check_folder_id(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_FOLDER_ID;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.check_folder_id.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1137,7 +1135,7 @@ BOOL exmdb_client_check_folder_deleted(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_FOLDER_DELETED;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.check_folder_deleted.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1154,9 +1152,9 @@ BOOL exmdb_client_get_folder_by_name(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_FOLDER_BY_NAME;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_folder_by_name.parent_id = parent_id;
-	request.payload.get_folder_by_name.str_name = (void*)str_name;
+	request.payload.get_folder_by_name.str_name = deconst(str_name);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1172,9 +1170,9 @@ BOOL exmdb_client_check_folder_permission(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_FOLDER_PERMISSION;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.check_folder_permission.folder_id = folder_id;
-	request.payload.check_folder_permission.username = (void*)username;
+	request.payload.check_folder_permission.username = deconst(username);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1190,10 +1188,9 @@ BOOL exmdb_client_create_folder_by_properties(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CREATE_FOLDER_BY_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.create_folder_by_properties.cpid = cpid;
-	request.payload.create_folder_by_properties.pproperties =
-											(void*)pproperties;
+	request.payload.create_folder_by_properties.pproperties = deconst(pproperties);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1208,7 +1205,7 @@ BOOL exmdb_client_get_folder_all_proptags(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_FOLDER_ALL_PROPTAGS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_folder_all_proptags.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1225,10 +1222,10 @@ BOOL exmdb_client_get_folder_properties(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_FOLDER_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_folder_properties.cpid = cpid;
 	request.payload.get_folder_properties.folder_id = folder_id;
-	request.payload.get_folder_properties.pproptags = (void*)pproptags;
+	request.payload.get_folder_properties.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1245,10 +1242,10 @@ BOOL exmdb_client_set_folder_properties(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_FOLDER_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_folder_properties.cpid = cpid;
 	request.payload.set_folder_properties.folder_id = folder_id;
-	request.payload.set_folder_properties.pproperties = (void*)pproperties;
+	request.payload.set_folder_properties.pproperties = deconst(pproperties);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1263,9 +1260,9 @@ BOOL exmdb_client_remove_folder_properties(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_REMOVE_FOLDER_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.remove_folder_properties.folder_id = folder_id;
-	request.payload.remove_folder_properties.pproptags = (void*)pproptags;
+	request.payload.remove_folder_properties.pproptags = deconst(pproptags);
 	return exmdb_client_do_rpc(dir, &request, &response);
 }
 
@@ -1276,7 +1273,7 @@ BOOL exmdb_client_delete_folder(const char *dir, uint32_t cpid,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_DELETE_FOLDER;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.delete_folder.cpid = cpid;
 	request.payload.delete_folder.folder_id = folder_id;
 	request.payload.delete_folder.b_hard = b_hard;
@@ -1295,9 +1292,9 @@ BOOL exmdb_client_empty_folder(const char *dir, uint32_t cpid,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_EMPTY_FOLDER;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.empty_folder.cpid = cpid;
-	request.payload.empty_folder.username = (void*)username;
+	request.payload.empty_folder.username = deconst(username);
 	request.payload.empty_folder.folder_id = folder_id;
 	request.payload.empty_folder.b_hard = b_hard;
 	request.payload.empty_folder.b_normal = b_normal;
@@ -1317,7 +1314,7 @@ BOOL exmdb_client_check_folder_cycle(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_FOLDER_CYCLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.check_folder_cycle.src_fid = src_fid;
 	request.payload.check_folder_cycle.dst_fid = dst_fid;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1336,11 +1333,11 @@ BOOL exmdb_client_copy_folder_internal(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_COPY_FOLDER_INTERNAL;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.copy_folder_internal.account_id = account_id;
 	request.payload.copy_folder_internal.cpid = cpid;
 	request.payload.copy_folder_internal.b_guest = b_guest;
-	request.payload.copy_folder_internal.username = (void*)username;
+	request.payload.copy_folder_internal.username = deconst(username);
 	request.payload.copy_folder_internal.src_fid = src_fid;
 	request.payload.copy_folder_internal.b_normal = b_normal;
 	request.payload.copy_folder_internal.b_fai = b_fai;
@@ -1362,7 +1359,7 @@ BOOL exmdb_client_get_search_criteria(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_SEARCH_CRITERIA;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_search_criteria.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1382,12 +1379,12 @@ BOOL exmdb_client_set_search_criteria(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_SEARCH_CRITERIA;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_search_criteria.cpid = cpid;
 	request.payload.set_search_criteria.folder_id = folder_id;
 	request.payload.set_search_criteria.search_flags = search_flags;
-	request.payload.set_search_criteria.prestriction = (void*)prestriction;
-	request.payload.set_search_criteria.pfolder_ids = (void*)pfolder_ids;
+	request.payload.set_search_criteria.prestriction = deconst(prestriction);
+	request.payload.set_search_criteria.pfolder_ids = deconst(pfolder_ids);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1404,7 +1401,7 @@ BOOL exmdb_client_movecopy_message(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_MOVECOPY_MESSAGE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.movecopy_message.account_id = account_id;
 	request.payload.movecopy_message.cpid = cpid;
 	request.payload.movecopy_message.message_id = message_id;
@@ -1427,15 +1424,15 @@ BOOL exmdb_client_movecopy_messages(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_MOVECOPY_MESSAGES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.movecopy_messages.account_id = account_id;
 	request.payload.movecopy_messages.cpid = cpid;
 	request.payload.movecopy_messages.b_guest = b_guest;
-	request.payload.movecopy_messages.username = (void*)username;
+	request.payload.movecopy_messages.username = deconst(username);
 	request.payload.movecopy_messages.src_fid = src_fid;
 	request.payload.movecopy_messages.dst_fid = dst_fid;
 	request.payload.movecopy_messages.b_copy = b_copy;
-	request.payload.movecopy_messages.pmessage_ids = (void*)pmessage_ids;
+	request.payload.movecopy_messages.pmessage_ids = const_cast<EID_ARRAY *>(pmessage_ids);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1453,15 +1450,15 @@ BOOL exmdb_client_movecopy_folder(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_MOVECOPY_FOLDER;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.movecopy_folder.account_id = account_id;
 	request.payload.movecopy_folder.cpid = cpid;
 	request.payload.movecopy_folder.b_guest = b_guest;
-	request.payload.movecopy_folder.username = (void*)username;
+	request.payload.movecopy_folder.username = deconst(username);
 	request.payload.movecopy_folder.src_pid = src_pid;
 	request.payload.movecopy_folder.src_fid = src_fid;
 	request.payload.movecopy_folder.dst_fid = dst_fid;
-	request.payload.movecopy_folder.str_new = (void*)str_new;
+	request.payload.movecopy_folder.str_new = deconst(str_new);
 	request.payload.movecopy_folder.b_copy = b_copy;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1480,12 +1477,12 @@ BOOL exmdb_client_delete_messages(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_DELETE_MESSAGES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.delete_messages.account_id = account_id;
 	request.payload.delete_messages.cpid = cpid;
-	request.payload.delete_messages.username = (void*)username;
+	request.payload.delete_messages.username = deconst(username);
 	request.payload.delete_messages.folder_id = folder_id;
-	request.payload.delete_messages.pmessage_ids = (void*)pmessage_ids;
+	request.payload.delete_messages.pmessage_ids = const_cast<EID_ARRAY *>(pmessage_ids);
 	request.payload.delete_messages.b_hard = b_hard;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1501,7 +1498,7 @@ BOOL exmdb_client_get_message_brief(const char *dir, uint32_t cpid,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_BRIEF;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_brief.cpid = cpid;
 	request.payload.get_message_brief.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1519,9 +1516,9 @@ BOOL exmdb_client_sum_hierarchy(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SUM_HIERARCHY;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.sum_hierarchy.folder_id = folder_id;
-	request.payload.sum_hierarchy.username = (void*)username;
+	request.payload.sum_hierarchy.username = deconst(username);
 	request.payload.sum_hierarchy.b_depth = b_depth;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1539,11 +1536,11 @@ BOOL exmdb_client_load_hierarchy_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOAD_HIERARCHY_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.load_hierarchy_table.folder_id = folder_id;
-	request.payload.load_hierarchy_table.username = (void*)username;
+	request.payload.load_hierarchy_table.username = deconst(username);
 	request.payload.load_hierarchy_table.table_flags = table_flags;
-	request.payload.load_hierarchy_table.prestriction = (void*)prestriction;
+	request.payload.load_hierarchy_table.prestriction = const_cast<RESTRICTION *>(prestriction);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1559,7 +1556,7 @@ BOOL exmdb_client_sum_content(const char *dir, uint64_t folder_id,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SUM_CONTENT;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.sum_content.folder_id = folder_id;
 	request.payload.sum_content.b_fai = b_fai;
 	request.payload.sum_content.b_deleted = b_deleted;
@@ -1579,13 +1576,13 @@ BOOL exmdb_client_load_content_table(const char *dir, uint32_t cpid,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOAD_CONTENT_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.load_content_table.cpid = cpid;
 	request.payload.load_content_table.folder_id = folder_id;
-	request.payload.load_content_table.username = (void*)username;
+	request.payload.load_content_table.username = deconst(username);
 	request.payload.load_content_table.table_flags = table_flags;
-	request.payload.load_content_table.prestriction = (void*)prestriction;
-	request.payload.load_content_table.psorts = (void*)psorts;
+	request.payload.load_content_table.prestriction = const_cast<RESTRICTION *>(prestriction);
+	request.payload.load_content_table.psorts = const_cast<SORTORDER_SET *>(psorts);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1600,7 +1597,7 @@ BOOL exmdb_client_reload_content_table(const char *dir, uint32_t table_id)
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_RELOAD_CONTENT_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.reload_content_table.table_id = table_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1616,7 +1613,7 @@ BOOL exmdb_client_load_permission_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOAD_PERMISSION_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.load_permission_table.folder_id = folder_id;
 	request.payload.load_permission_table.table_flags = table_flags;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1636,10 +1633,10 @@ BOOL exmdb_client_load_rule_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOAD_RULE_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.load_rule_table.folder_id = folder_id;
 	request.payload.load_rule_table.table_flags = table_flags;
-	request.payload.load_rule_table.prestriction = (void*)prestriction;
+	request.payload.load_rule_table.prestriction = const_cast<RESTRICTION *>(prestriction);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1654,7 +1651,7 @@ BOOL exmdb_client_unload_table(const char *dir, uint32_t table_id)
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UNLOAD_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.unload_table.table_id = table_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1669,7 +1666,7 @@ BOOL exmdb_client_sum_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SUM_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.sum_table.table_id = table_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1686,11 +1683,11 @@ BOOL exmdb_client_query_table(const char *dir, const char *username,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_QUERY_TABLE;
-	request.dir = (void*)dir;
-	request.payload.query_table.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.query_table.username = deconst(username);
 	request.payload.query_table.cpid = cpid;
 	request.payload.query_table.table_id = table_id;
-	request.payload.query_table.pproptags = (void*)pproptags;
+	request.payload.query_table.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	request.payload.query_table.start_pos = start_pos;
 	request.payload.query_table.row_needed = row_needed;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1709,14 +1706,14 @@ BOOL exmdb_client_match_table(const char *dir, const char *username,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_MATCH_TABLE;
-	request.dir = (void*)dir;
-	request.payload.match_table.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.match_table.username = deconst(username);
 	request.payload.match_table.cpid = cpid;
 	request.payload.match_table.table_id = table_id;
 	request.payload.match_table.b_forward = b_forward;
 	request.payload.match_table.start_pos = start_pos;
-	request.payload.match_table.pres = (void*)pres;
-	request.payload.match_table.pproptags = (void*)pproptags;
+	request.payload.match_table.pres = const_cast<RESTRICTION *>(pres);
+	request.payload.match_table.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -1733,7 +1730,7 @@ BOOL exmdb_client_locate_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOCATE_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.locate_table.table_id = table_id;
 	request.payload.locate_table.inst_id = inst_id;
 	request.payload.locate_table.inst_num = inst_num;
@@ -1753,11 +1750,11 @@ BOOL exmdb_client_read_table_row(const char *dir, const char *username,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_READ_TABLE_ROW;
-	request.dir = (void*)dir;
-	request.payload.read_table_row.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.read_table_row.username = deconst(username);
 	request.payload.read_table_row.cpid = cpid;
 	request.payload.read_table_row.table_id = table_id;
-	request.payload.read_table_row.pproptags = (void*)pproptags;
+	request.payload.read_table_row.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	request.payload.read_table_row.inst_id = inst_id;
 	request.payload.read_table_row.inst_num = inst_num;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1775,7 +1772,7 @@ BOOL exmdb_client_mark_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_MARK_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.mark_table.table_id = table_id;
 	request.payload.mark_table.position = position;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1794,7 +1791,7 @@ BOOL exmdb_client_get_table_all_proptags(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_TABLE_ALL_PROPTAGS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_table_all_proptags.table_id = table_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1811,7 +1808,7 @@ BOOL exmdb_client_expand_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_EXPAND_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.expand_table.table_id = table_id;
 	request.payload.expand_table.inst_id = inst_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1831,7 +1828,7 @@ BOOL exmdb_client_collapse_table(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_COLLAPSE_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.collapse_table.table_id = table_id;
 	request.payload.collapse_table.inst_id = inst_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1851,7 +1848,7 @@ BOOL exmdb_client_store_table_state(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_STORE_TABLE_STATE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.store_table_state.table_id = table_id;
 	request.payload.store_table_state.table_id = inst_id;
 	request.payload.store_table_state.table_id = inst_num;
@@ -1869,7 +1866,7 @@ BOOL exmdb_client_restore_table_state(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_RESTORE_TABLE_STATE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.restore_table_state.table_id = table_id;
 	request.payload.restore_table_state.state_id = state_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1886,7 +1883,7 @@ BOOL exmdb_client_check_message(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_MESSAGE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.check_message.folder_id = folder_id;
 	request.payload.check_message.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -1903,7 +1900,7 @@ BOOL exmdb_client_check_message_deleted(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_MESSAGE_DELETED;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.check_message_deleted.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1921,8 +1918,8 @@ BOOL exmdb_client_load_message_instance(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOAD_MESSAGE_INSTANCE;
-	request.dir = (void*)dir;
-	request.payload.load_message_instance.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.load_message_instance.username = deconst(username);
 	request.payload.load_message_instance.cpid = cpid;
 	request.payload.load_message_instance.b_new = b_new;
 	request.payload.load_message_instance.folder_id = folder_id;
@@ -1942,7 +1939,7 @@ BOOL exmdb_client_load_embedded_instance(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOAD_EMBEDDED_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.load_embedded_instance.b_new = b_new;
 	request.payload.load_embedded_instance.attachment_instance_id =
 											attachment_instance_id;
@@ -1960,7 +1957,7 @@ BOOL exmdb_client_get_embedded_cn(const char *dir, uint32_t instance_id,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_EMBEDDED_CN;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_embedded_cn.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1976,7 +1973,7 @@ BOOL exmdb_client_reload_message_instance(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_RELOAD_MESSAGE_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.reload_message_instance.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -1992,7 +1989,7 @@ BOOL exmdb_client_clear_message_instance(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CLEAR_MESSAGE_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.clear_message_instance.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2007,7 +2004,7 @@ BOOL exmdb_client_read_message_instance(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_READ_MESSAGE_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.read_message_instance.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2025,9 +2022,9 @@ BOOL exmdb_client_write_message_instance(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_WRITE_MESSAGE_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.write_message_instance.instance_id = instance_id;
-	request.payload.write_message_instance.pmsgctnt = (void*)pmsgctnt;
+	request.payload.write_message_instance.pmsgctnt = deconst(pmsgctnt);
 	request.payload.write_message_instance.b_force = b_force;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2045,7 +2042,7 @@ BOOL exmdb_client_load_attachment_instance(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LOAD_ATTACHMENT_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.load_attachment_instance.message_instance_id =
 												message_instance_id;
 	request.payload.load_attachment_instance.attachment_num =
@@ -2065,7 +2062,7 @@ BOOL exmdb_client_create_attachment_instance(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CREATE_ATTACHMENT_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.create_attachment_instance.message_instance_id =
 												message_instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2085,7 +2082,7 @@ BOOL exmdb_client_read_attachment_instance(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_READ_ATTACHMENT_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.read_attachment_instance.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2102,9 +2099,9 @@ BOOL exmdb_client_write_attachment_instance(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_WRITE_ATTACHMENT_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.write_attachment_instance.instance_id = instance_id;
-	request.payload.write_attachment_instance.pattctnt = (void*)pattctnt;
+	request.payload.write_attachment_instance.pattctnt = deconst(pattctnt);
 	request.payload.write_attachment_instance.b_force = b_force;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2121,7 +2118,7 @@ BOOL exmdb_client_delete_message_instance_attachment(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_DELETE_MESSAGE_INSTANCE_ATTACHMENT;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.delete_message_instance_attachment.message_instance_id =
 														message_instance_id;
 	request.payload.delete_message_instance_attachment.attachment_num =
@@ -2139,9 +2136,9 @@ BOOL exmdb_client_flush_instance(const char *dir, uint32_t instance_id,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_FLUSH_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.flush_instance.instance_id = instance_id;
-	request.payload.flush_instance.account = (void*)account;
+	request.payload.flush_instance.account = deconst(account);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2156,7 +2153,7 @@ BOOL exmdb_client_unload_instance(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UNLOAD_INSTANCE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.unload_instance.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2172,7 +2169,7 @@ BOOL exmdb_client_get_instance_all_proptags(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_INSTANCE_ALL_PROPTAGS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_instance_all_proptags.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2189,10 +2186,10 @@ BOOL exmdb_client_get_instance_properties(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_INSTANCE_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_instance_properties.size_limit = size_limit;
 	request.payload.get_instance_properties.instance_id = instance_id;
-	request.payload.get_instance_properties.pproptags = (void*)pproptags;
+	request.payload.get_instance_properties.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2208,9 +2205,9 @@ BOOL exmdb_client_set_instance_properties(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_INSTANCE_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_instance_properties.instance_id = instance_id;
-	request.payload.set_instance_properties.pproperties = (void*)pproperties;
+	request.payload.set_instance_properties.pproperties = deconst(pproperties);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2226,9 +2223,9 @@ BOOL exmdb_client_remove_instance_properties(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_REMOVE_INSTANCE_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.remove_instance_properties.instance_id = instance_id;
-	request.payload.remove_instance_properties.pproptags = (void*)pproptags;
+	request.payload.remove_instance_properties.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2243,7 +2240,7 @@ BOOL exmdb_client_check_instance_cycle(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_INSTANCE_CYCLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.check_instance_cycle.src_instance_id = src_instance_id;
 	request.payload.check_instance_cycle.dst_instance_id = dst_instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2260,7 +2257,7 @@ BOOL exmdb_client_empty_message_instance_rcpts(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_EMPTY_MESSAGE_INSTANCE_RCPTS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.empty_message_instance_rcpts.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2275,7 +2272,7 @@ BOOL exmdb_client_get_message_instance_rcpts_num(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_NUM;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_instance_rcpts_num.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2291,7 +2288,7 @@ BOOL exmdb_client_get_message_instance_rcpts_all_proptags(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_instance_rcpts_all_proptags.instance_id = instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2308,7 +2305,7 @@ BOOL exmdb_client_get_message_instance_rcpts(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_INSTANCE_RCPTS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_instance_rcpts.instance_id = instance_id;
 	request.payload.get_message_instance_rcpts.row_id = row_id;
 	request.payload.get_message_instance_rcpts.need_count = need_count;
@@ -2326,9 +2323,9 @@ BOOL exmdb_client_update_message_instance_rcpts(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UPDATE_MESSAGE_INSTANCE_RCPTS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.update_message_instance_rcpts.instance_id = instance_id;
-	request.payload.update_message_instance_rcpts.pset = (void*)pset;
+	request.payload.update_message_instance_rcpts.pset = deconst(pset);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2343,7 +2340,7 @@ BOOL exmdb_client_copy_instance_rcpts(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_COPY_INSTANCE_RCPTS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.copy_instance_rcpts.b_force = b_force;
 	request.payload.copy_instance_rcpts.src_instance_id = src_instance_id;
 	request.payload.copy_instance_rcpts.dst_instance_id = dst_instance_id;
@@ -2361,7 +2358,7 @@ BOOL exmdb_client_empty_message_instance_attachments(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.empty_message_instance_attachments.instance_id =
 														instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2377,7 +2374,7 @@ BOOL exmdb_client_get_message_instance_attachments_num(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_instance_attachments_num.instance_id =
 															instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2394,7 +2391,7 @@ BOOL exmdb_client_get_message_instance_attachment_table_all_proptags(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_instance_attachment_table_all_proptags.instance_id =
 																		instance_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2413,11 +2410,10 @@ BOOL exmdb_client_query_message_instance_attachment_table(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.query_message_instance_attachment_table.instance_id =
 															instance_id;
-	request.payload.query_message_instance_attachment_table.pproptags =
-														(void*)pproptags;
+	request.payload.query_message_instance_attachment_table.pproptags = deconst(pproptags);
 	request.payload.query_message_instance_attachment_table.start_pos =
 															start_pos;
 	request.payload.query_message_instance_attachment_table.row_needed =
@@ -2437,7 +2433,7 @@ BOOL exmdb_client_copy_instance_attachments(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_COPY_INSTANCE_ATTACHMENTS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.copy_instance_attachments.b_force = b_force;
 	request.payload.copy_instance_attachments.src_instance_id =
 												src_instance_id;
@@ -2457,9 +2453,9 @@ BOOL exmdb_client_set_message_instance_conflict(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_MESSAGE_INSTANCE_CONFLICT;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_message_instance_conflict.instance_id = instance_id;
-	request.payload.set_message_instance_conflict.pmsgctnt = (void*)pmsgctnt;
+	request.payload.set_message_instance_conflict.pmsgctnt = deconst(pmsgctnt);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2473,7 +2469,7 @@ BOOL exmdb_client_get_message_rcpts(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_RCPTS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_rcpts.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2490,11 +2486,11 @@ BOOL exmdb_client_get_message_properties(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_PROPERTIES;
-	request.dir = (void*)dir;
-	request.payload.get_message_properties.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.get_message_properties.username = deconst(username);
 	request.payload.get_message_properties.cpid = cpid;
 	request.payload.get_message_properties.message_id = message_id;
-	request.payload.get_message_properties.pproptags = (void*)pproptags;
+	request.payload.get_message_properties.pproptags = deconst(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2510,11 +2506,11 @@ BOOL exmdb_client_set_message_properties(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_MESSAGE_PROPERTIES;
-	request.dir = (void*)dir;
-	request.payload.set_message_properties.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.set_message_properties.username = deconst(username);
 	request.payload.set_message_properties.cpid = cpid;
 	request.payload.set_message_properties.message_id = message_id;
-	request.payload.set_message_properties.pproperties = (void*)pproperties;
+	request.payload.set_message_properties.pproperties = const_cast<TPROPVAL_ARRAY *>(pproperties);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2530,8 +2526,8 @@ BOOL exmdb_client_set_message_read_state(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_MESSAGE_READ_STATE;
-	request.dir = (void*)dir;
-	request.payload.set_message_read_state.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.set_message_read_state.username = deconst(username);
 	request.payload.set_message_read_state.message_id = message_id;
 	request.payload.set_message_read_state.mark_as_read = mark_as_read;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2549,10 +2545,10 @@ BOOL exmdb_client_remove_message_properties(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_REMOVE_MESSAGE_PROPERTIES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.remove_message_properties.cpid = cpid;
 	request.payload.remove_message_properties.message_id = message_id;
-	request.payload.remove_message_properties.pproptags = (void*)pproptags;
+	request.payload.remove_message_properties.pproptags = const_cast<PROPTAG_ARRAY *>(pproptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2566,7 +2562,7 @@ BOOL exmdb_client_allocate_message_id(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_ALLOCATE_MESSAGE_ID;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.allocate_message_id.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2581,7 +2577,7 @@ BOOL exmdb_client_allocate_cn(const char *dir, uint64_t *pcn)
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_ALLOCATE_CN;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2596,7 +2592,7 @@ BOOL exmdb_client_get_message_group_id(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_GROUP_ID;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_group_id.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2612,7 +2608,7 @@ BOOL exmdb_client_set_message_group_id(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_MESSAGE_GROUP_ID;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_message_group_id.message_id = message_id;
 	request.payload.set_message_group_id.group_id = group_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2629,12 +2625,11 @@ BOOL exmdb_client_save_change_indices(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SAVE_CHANGE_INDICES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.save_change_indices.message_id = message_id;
 	request.payload.save_change_indices.cn = cn;
-	request.payload.save_change_indices.pindices = (void*)pindices;
-	request.payload.save_change_indices.pungroup_proptags =
-									(void*)pungroup_proptags;
+	request.payload.save_change_indices.pindices = const_cast<INDEX_ARRAY *>(pindices);
+	request.payload.save_change_indices.pungroup_proptags = const_cast<PROPTAG_ARRAY *>(pungroup_proptags);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2649,7 +2644,7 @@ BOOL exmdb_client_get_change_indices(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_CHANGE_INDICES;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_change_indices.message_id = message_id;
 	request.payload.get_change_indices.cn = cn;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2666,7 +2661,7 @@ BOOL exmdb_client_mark_modified(const char *dir, uint64_t message_id)
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_MARK_MODIFIED;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.mark_modified.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2681,7 +2676,7 @@ BOOL exmdb_client_try_mark_submit(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_TRY_MARK_SUBMIT;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.try_mark_submit.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2697,7 +2692,7 @@ BOOL exmdb_client_clear_submit(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CLEAR_SUBMIT;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.clear_submit.message_id = message_id;
 	request.payload.clear_submit.b_unsent = b_unsent;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2713,7 +2708,7 @@ BOOL exmdb_client_link_message(const char *dir, uint32_t cpid,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_LINK_MESSAGE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.link_message.cpid = cpid;
 	request.payload.link_message.folder_id = folder_id;
 	request.payload.link_message.message_id = message_id;
@@ -2731,7 +2726,7 @@ BOOL exmdb_client_unlink_message(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UNLINK_MESSAGE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.unlink_message.cpid = cpid;
 	request.payload.unlink_message.folder_id = folder_id;
 	request.payload.unlink_message.message_id = message_id;
@@ -2749,9 +2744,9 @@ BOOL exmdb_client_rule_new_message(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_RULE_NEW_MESSAGE;
-	request.dir = (void*)dir;
-	request.payload.rule_new_message.username = (void*)username;
-	request.payload.rule_new_message.account = (void*)account;
+	request.dir = deconst(dir);
+	request.payload.rule_new_message.username = deconst(username);
+	request.payload.rule_new_message.account = deconst(account);
 	request.payload.rule_new_message.cpid = cpid;
 	request.payload.rule_new_message.folder_id = folder_id;
 	request.payload.rule_new_message.message_id = message_id;
@@ -2768,7 +2763,7 @@ BOOL exmdb_client_set_message_timer(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SET_MESSAGE_TIMER;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.set_message_timer.message_id = message_id;
 	request.payload.set_message_timer.timer_id = timer_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2784,7 +2779,7 @@ BOOL exmdb_client_get_message_timer(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_MESSAGE_TIMER;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_message_timer.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2800,7 +2795,7 @@ BOOL exmdb_client_empty_folder_permission(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_EMPTY_FOLDER_PERMISSION;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.empty_folder_permission.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2816,11 +2811,11 @@ BOOL exmdb_client_update_folder_permission(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UPDATE_FOLDER_PERMISSION;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.update_folder_permission.folder_id = folder_id;
 	request.payload.update_folder_permission.b_freebusy = b_freebusy;
 	request.payload.update_folder_permission.count = count;
-	request.payload.update_folder_permission.prow = (void*)prow;
+	request.payload.update_folder_permission.prow = const_cast<PERMISSION_DATA *>(prow);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2834,7 +2829,7 @@ BOOL exmdb_client_empty_folder_rule(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_EMPTY_FOLDER_RULE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.empty_folder_rule.folder_id = folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2850,10 +2845,10 @@ BOOL exmdb_client_update_folder_rule(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UPDATE_FOLDER_RULE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.update_folder_rule.folder_id = folder_id;
 	request.payload.update_folder_rule.count = count;
-	request.payload.update_folder_rule.prow = (void*)prow;
+	request.payload.update_folder_rule.prow = const_cast<RULE_DATA *>(prow);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2870,12 +2865,12 @@ BOOL exmdb_client_delivery_message(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_DELIVERY_MESSAGE;
-		request.dir = (void*)dir;
-	request.payload.delivery_message.from_address = (void*)from_address;
-	request.payload.delivery_message.account = (void*)account;
+		request.dir = deconst(dir);
+	request.payload.delivery_message.from_address = deconst(from_address);
+	request.payload.delivery_message.account = deconst(account);
 	request.payload.delivery_message.cpid = cpid;
-	request.payload.delivery_message.pmsg = (void*)pmsg;
-	request.payload.delivery_message.pdigest = (void*)pdigest;
+	request.payload.delivery_message.pmsg = const_cast<MESSAGE_CONTENT *>(pmsg);
+	request.payload.delivery_message.pdigest = deconst(pdigest);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2891,11 +2886,11 @@ BOOL exmdb_client_write_message(const char *dir, const char *account,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_WRITE_MESSAGE;
-	request.dir = (void*)dir;
-	request.payload.write_message.account = (void*)account;
+	request.dir = deconst(dir);
+	request.payload.write_message.account = deconst(account);
 	request.payload.write_message.cpid = cpid;
 	request.payload.write_message.folder_id = folder_id;
-	request.payload.write_message.pmsgctnt = (void*)pmsgctnt;
+	request.payload.write_message.pmsgctnt = const_cast<MESSAGE_CONTENT *>(pmsgctnt);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2910,8 +2905,8 @@ BOOL exmdb_client_read_message(const char *dir, const char *username,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_READ_MESSAGE;
-	request.dir = (void*)dir;
-	request.payload.read_message.username = (void*)username;
+	request.dir = deconst(dir);
+	request.payload.read_message.username = deconst(username);
 	request.payload.read_message.cpid = cpid;
 	request.payload.read_message.message_id = message_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -2935,15 +2930,15 @@ BOOL exmdb_client_get_content_sync(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_CONTENT_SYNC;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_content_sync.folder_id = folder_id;
-	request.payload.get_content_sync.username = (void*)username;
-	request.payload.get_content_sync.pgiven = (void*)pgiven;
-	request.payload.get_content_sync.pseen = (void*)pseen;
-	request.payload.get_content_sync.pseen_fai = (void*)pseen_fai;
-	request.payload.get_content_sync.pread = (void*)pread;
+	request.payload.get_content_sync.username = deconst(username);
+	request.payload.get_content_sync.pgiven = const_cast<IDSET *>(pgiven);
+	request.payload.get_content_sync.pseen = const_cast<IDSET *>(pseen);
+	request.payload.get_content_sync.pseen_fai = const_cast<IDSET *>(pseen_fai);
+	request.payload.get_content_sync.pread = const_cast<IDSET *>(pread);
 	request.payload.get_content_sync.cpid = cpid;
-	request.payload.get_content_sync.prestriction = (void*)prestriction;
+	request.payload.get_content_sync.prestriction = const_cast<RESTRICTION *>(prestriction);
 	request.payload.get_content_sync.b_ordered = b_ordered;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -2973,11 +2968,11 @@ BOOL exmdb_client_get_hierarchy_sync(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_HIERARCHY_SYNC;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.get_hierarchy_sync.folder_id = folder_id;
-	request.payload.get_hierarchy_sync.username = (void*)username;
-	request.payload.get_hierarchy_sync.pgiven = (void*)pgiven;
-	request.payload.get_hierarchy_sync.pseen = (void*)pseen;
+	request.payload.get_hierarchy_sync.username = deconst(username);
+	request.payload.get_hierarchy_sync.pgiven = const_cast<IDSET *>(pgiven);
+	request.payload.get_hierarchy_sync.pseen = const_cast<IDSET *>(pseen);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -2995,7 +2990,7 @@ BOOL exmdb_client_allocate_ids(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_ALLOCATE_IDS;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.allocate_ids.count = count;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -3012,7 +3007,7 @@ BOOL exmdb_client_subscribe_notification(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_SUBSCRIBE_NOTIFICATION;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.subscribe_notification.notificaton_type = notificaton_type;
 	request.payload.subscribe_notification.b_whole = b_whole;
 	request.payload.subscribe_notification.folder_id = folder_id;
@@ -3031,7 +3026,7 @@ BOOL exmdb_client_unsubscribe_notification(
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UNSUBSCRIBE_NOTIFICATION;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.unsubscribe_notification.sub_id = sub_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
@@ -3047,11 +3042,11 @@ BOOL exmdb_client_transport_new_mail(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_TRANSPORT_NEW_MAIL;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	request.payload.transport_new_mail.folder_id = folder_id;
 	request.payload.transport_new_mail.message_id = message_id;
 	request.payload.transport_new_mail.message_flags = message_flags;
-	request.payload.transport_new_mail.pstr_class = (void*)pstr_class;
+	request.payload.transport_new_mail.pstr_class = deconst(pstr_class);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -3065,8 +3060,8 @@ BOOL exmdb_client_check_contact_address(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_CHECK_CONTACT_ADDRESS;
-	request.dir = (void*)dir;
-	request.payload.check_contact_address.paddress = (void*)paddress;
+	request.dir = deconst(dir);
+	request.payload.check_contact_address.paddress = deconst(paddress);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -3081,9 +3076,8 @@ BOOL exmdb_client_get_public_folder_unread_count(const char *dir,
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT;
-	request.dir = (void*)dir;
-	request.payload.get_public_folder_unread_count.username =
-											(void*)username;
+	request.dir = deconst(dir);
+	request.payload.get_public_folder_unread_count.username = deconst(username);
 	request.payload.get_public_folder_unread_count.folder_id =
 													folder_id;
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
@@ -3099,7 +3093,7 @@ BOOL exmdb_client_unload_store(const char *dir)
 	EXMDB_RESPONSE response;
 	
 	request.call_id = CALL_ID_UNLOAD_STORE;
-	request.dir = (void*)dir;
+	request.dir = deconst(dir);
 	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
 		return FALSE;
 	}
@@ -3108,5 +3102,5 @@ BOOL exmdb_client_unload_store(const char *dir)
 
 void exmdb_client_register_proc(void *pproc)
 {
-	exmdb_client_event_proc = pproc;
+	exmdb_client_event_proc = reinterpret_cast<decltype(exmdb_client_event_proc)>(pproc);
 }
