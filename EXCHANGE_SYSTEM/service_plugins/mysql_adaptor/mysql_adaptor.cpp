@@ -68,7 +68,6 @@ static struct sqlconnpool final : public resource_pool<sqlconn_ptr> {
 } g_sqlconn_pool;
 
 static int g_conn_num;
-static int g_scan_interval;
 static int g_port;
 static int g_timeout;
 static char g_host[256];
@@ -94,7 +93,6 @@ static inline const char *z_null(const char *s)
 void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
 {
 	g_conn_num = parm.conn_num;
-	g_scan_interval = parm.scan_interval;
 	HX_strlcpy(g_host, parm.host, sizeof(g_host));
 	g_port = parm.port;
 	g_timeout = parm.timeout;
@@ -1810,27 +1808,6 @@ BOOL mysql_adaptor_check_mlist_include(
 		return b_result;
 	default:
 		return FALSE;
-	}
-}
-
-int mysql_adaptor_get_param(int param)
-{
-	if (MYSQL_ADAPTOR_SCAN_INTERVAL == param) {
-		return g_scan_interval;
-	} else if (MYSQL_ADAPTOR_CONNECTION_NUMBER == param) {
-		return g_conn_num;
-	} else if (MYSQL_ADAPTOR_ALIVECONN_NUMBER == param) {
-		return 0;
-	}
-	return 0;
-
-}
-
-void mysql_adaptor_set_param(int param, int value)
-{
-	if (MYSQL_ADAPTOR_SCAN_INTERVAL == param) {
-		g_scan_interval = value;
-		return;
 	}
 }
 

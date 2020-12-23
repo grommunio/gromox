@@ -5,12 +5,6 @@
 #include "mem_file.h"
 
 enum {
-	MYSQL_ADAPTOR_SCAN_INTERVAL,
-	MYSQL_ADAPTOR_CONNECTION_NUMBER,
-	MYSQL_ADAPTOR_ALIVECONN_NUMBER
-};
-
-enum {
 	USER_PRIVILEGE_POP3_IMAP = 1 << 0,
 	USER_PRIVILEGE_SMTP = 1 << 1,
 	USER_PRIVILEGE_CHGPASSWD = 1 << 2,
@@ -23,7 +17,7 @@ enum sql_schema_upgrade {
 
 struct mysql_adaptor_init_param {
 	const char *host, *user, *pass, *dbname;
-	int port, conn_num, scan_interval, timeout;
+	int port, conn_num, timeout;
 	enum sql_schema_upgrade schema_upgrade;
 };
 
@@ -110,10 +104,6 @@ extern int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &);
 extern int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &);
 BOOL mysql_adaptor_check_mlist_include(
 	const char *mlist_name, const char *account);
-
-int mysql_adaptor_get_param(int param);
-
-void mysql_adaptor_set_param(int param, int value);
 extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
 extern BOOL mysql_adaptor_check_user(const char *username, char *path);
 extern BOOL mysql_adaptor_get_forward(const char *username, int *ptype, char *destination);

@@ -12,8 +12,6 @@ DECLARE_API;
 
 static char g_config_path[256];
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 BOOL SVC_LibMain(int reason, void** ppdata)
 {
 	CONFIG_FILE  *pfile;
@@ -24,7 +22,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 	char *str_value, *psearch;
 	char mysql_host[256], mysql_user[256];
 	char *mysql_passwd, db_name[256]; 
-	int conn_num, scan_interval, mysql_port, timeout;
+	int conn_num, mysql_port, timeout;
 
     switch(reason) {
     case PLUGIN_INIT:
@@ -56,21 +54,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			}
 		}
 		printf("[mysql_adaptor]: mysql connection number is %d\n", conn_num);
-
-		str_value = config_file_get_value(pfile, "SCAN_INTERVAL");
-		if (NULL == str_value) {
-			scan_interval = 60;
-			config_file_set_value(pfile, "SCAN_INTERVAL", "1minute");
-		} else {
-			scan_interval = atoitvl(str_value);
-			if (scan_interval <= 0) {
-				scan_interval = 60;
-				config_file_set_value(pfile, "SCAN_INTERVAL", "1minute");
-			}
-		}
-		itvltoa(scan_interval, temp_buff);
-		printf("[mysql_adaptor]: reconnecting thread scanning interval is %s\n",
-			temp_buff);
 
 		str_value = config_file_get_value(pfile, "MYSQL_HOST");
 		if (NULL == str_value) {
@@ -146,7 +129,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			upg = S_AUTOUP;
 		
 		mysql_adaptor_init({mysql_host, mysql_user, mysql_passwd,
-			db_name, mysql_port, conn_num, scan_interval, timeout, upg});
+			db_name, mysql_port, conn_num, timeout, upg});
 		config_file_free(pfile);
 		
 		if (0 != mysql_adaptor_run()) {
@@ -197,7 +180,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 		E(mysql_adaptor_get_user_info, "get_user_info");
 		E(mysql_adaptor_get_username, "get_username");
 #undef E
-		register_talk(console_talk);
         return TRUE;
 
     case PLUGIN_FREE:
@@ -207,65 +189,3 @@ BOOL SVC_LibMain(int reason, void** ppdata)
     }
     return FALSE;
 }
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-	CONFIG_FILE *pfile;
-	int scan_interval, offset;
-	char help_string[] = "250 mysql auth help information:\r\n"
-						 "\t%s info\r\n"
-						 "\t    --print the module information\r\n"
-						 "\t%s set scan-interval <interval>\r\n"
-						 "\t    --set reconnecting thread's scanning interval";
-
-	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
-		return;
-	}
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0], argv[0], argv[0]);
-		result[length - 1] = '\0';
-		return;
-	}
-
-	if (2 == argc && 0 == strcmp("info", argv[1])) {
-		offset = snprintf(result, length,
-					"250 mysql auth information:\r\n"
-					"\ttotal mysql connections    %d\r\n"
-					"\talive mysql connections    %d\r\n"
-					"\tscan interval              ",
-					mysql_adaptor_get_param(MYSQL_ADAPTOR_CONNECTION_NUMBER),
-					mysql_adaptor_get_param(MYSQL_ADAPTOR_ALIVECONN_NUMBER));
-		itvltoa(mysql_adaptor_get_param(MYSQL_ADAPTOR_SCAN_INTERVAL),
-			result + offset);
-		return;
-	}
-
-	if (4 == argc && 0 == strcmp("set", argv[1]) &&
-		0 == strcmp("scan-interval", argv[2])) {
-		scan_interval = atoitvl(argv[3]);
-		if (scan_interval <= 0) {
-			snprintf(result, length, "550 interval should larger than 0");
-			return;
-		}
-		pfile = config_file_init2(NULL, g_config_path);
-		if (NULL == pfile) {
-			snprintf(result, length, "550 Failed to open config file");
-			return;
-		}
-		config_file_set_value(pfile, "SCAN_INTERVAL", argv[3]);
-		if (FALSE == config_file_save(pfile)) {
-			snprintf(result, length, "550 fail to save config file");
-			config_file_free(pfile);
-			return;
-		}
-		config_file_free(pfile);
-		mysql_adaptor_set_param(MYSQL_ADAPTOR_SCAN_INTERVAL, scan_interval);
-		snprintf(result, length, "250 scan-interval set OK");
-		return;
-	}
-
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-	return;
-}
-
