@@ -1408,38 +1408,6 @@ int transporter_console_talk(int argc, char** argv, char *result, int length)
 }
 
 /*
- *	enumerate plugins of mpc except local and remote
- *	@param
- *		enumeration function pointer
- */
-void transporter_enum_plugins(ENUM_PLUGINS enum_func)
-{
-	DOUBLE_LIST_NODE *pnode;
-	const char *file_name;
-	char tmp_buff[256];
-
-	transporter_clean_up_unloading();
-	if (NULL == enum_func) {
-		return;
-	}
-	for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_lib_list, pnode)) {
-		file_name = ((PLUG_ENTITY*)(pnode->pdata))->file_name;
-		if (strcmp(file_name, g_local_path) == 0)
-			sprintf(tmp_buff, "%s\t\t--local", file_name);
-		else
-			sprintf(tmp_buff, "%s\t\t--normal", file_name);
-		enum_func(tmp_buff);
-	}
-	for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_unloading_list, pnode)) {
-		file_name = ((PLUG_ENTITY*)(pnode->pdata))->file_name;
-		sprintf(tmp_buff, "%s\t\t--unloading", file_name);
-		enum_func(tmp_buff);
-	}
-}
-
-/*
  *	get the local delivery plugin name
  *	@return
  *		local delivery plugin string

@@ -3893,19 +3893,6 @@ int pdu_processor_console_talk(int argc, char** argv, char *result, int length)
 	return PLUGIN_NO_FILE;
 }
 
-void pdu_processor_enum_plugins(ENUM_PLUGINS enum_func)
-{
-	DOUBLE_LIST_NODE *pnode;
-
-	if (NULL == enum_func) {
-		return;
-	}
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		enum_func(((PROC_PLUGIN*)(pnode->pdata))->file_name);
-	}
-}
-
 void pdu_processor_enum_endpoints(void (*enum_ep)(DCERPC_ENDPOINT*))
 {
 	DOUBLE_LIST_NODE *pnode;

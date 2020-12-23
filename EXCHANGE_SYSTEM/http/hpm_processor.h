@@ -66,8 +66,6 @@ BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
 int hpm_processor_receive(HTTP_CONTEXT *phttp,
 	char *pbuff, int length);
 
-void hpm_processor_enum_plugins(ENUM_PLUGINS enum_func);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

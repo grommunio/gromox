@@ -182,9 +182,6 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 
 int pdu_processor_console_talk(int argc, char** argv,
 	char *result, int length);
-
-void pdu_processor_enum_plugins(ENUM_PLUGINS enum_func);
-
 void pdu_processor_enum_endpoints(void (*enum_ep)(DCERPC_ENDPOINT*));
 
 void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,

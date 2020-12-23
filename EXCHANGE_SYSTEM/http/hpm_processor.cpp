@@ -527,19 +527,6 @@ int hpm_processor_console_talk(int argc,
 	return PLUGIN_NO_FILE;
 }
 
-void hpm_processor_enum_plugins(ENUM_PLUGINS enum_func)
-{
-	DOUBLE_LIST_NODE *pnode;
-
-	if (NULL == enum_func) {
-		return;
-	}
-	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		enum_func(((HPM_PLUGIN*)(pnode->pdata))->file_name);
-	}
-}
-
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 {
 	int tmp_len;
