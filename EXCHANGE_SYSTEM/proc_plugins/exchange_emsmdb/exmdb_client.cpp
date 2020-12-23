@@ -464,7 +464,7 @@ int exmdb_client_run()
 	void (*pass_service)(int, void*);
 	
 #define E(f, s) do { \
-	(f) = query_service(s); \
+	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "exchange_emsmdb", (s)); \
 		return -1; \
@@ -593,43 +593,30 @@ int exmdb_client_run()
 	E(exmdb_client_get_public_folder_unread_count, "exmdb_client_get_public_folder_unread_count");
 
 	E(register_proc, "exmdb_client_register_proc");
-	register_proc(emsmdb_interface_event_proc);
+	register_proc(reinterpret_cast<void *>(emsmdb_interface_event_proc));
 
 	E(pass_service, "pass_service");
+#undef E
 	/* pass the service functions to exmdb_provider */
-	pass_service(SERVICE_ID_LANG_TO_CHARSET,
-		common_util_lang_to_charset);
-	pass_service(SERVICE_ID_CPID_TO_CHARSET,
-		common_util_cpid_to_charset);
-	pass_service(SERVICE_ID_GET_USER_DISPLAYNAME,
-		common_util_get_user_displayname);
-	pass_service(SERVICE_ID_CHECK_MLIST_INCLUDE,
-		common_util_check_mlist_include);
-	pass_service(SERVICE_ID_GET_USER_LANG,
-		common_util_get_user_lang);
-	pass_service(SERVICE_ID_GET_TIMEZONE,
-		common_util_get_timezone);
-	pass_service(SERVICE_ID_GET_MAILDIR,
-		common_util_get_maildir);
-	pass_service(SERVICE_ID_GET_ID_FFROM_USERNAME,
-		common_util_get_id_from_username);
-	pass_service(SERVICE_ID_GET_USERNAME_FROM_ID,
-		common_util_get_username_from_id);
-	pass_service(SERVICE_ID_GET_USER_IDS,
-		common_util_get_user_ids);
-	pass_service(SERVICE_ID_GET_DOMAIN_IDS,
-		common_util_get_domain_ids);
-	pass_service(SERVICE_ID_GET_ID_FROM_MAILDIR,
-		common_util_get_id_from_maildir);
-	pass_service(SERVICE_ID_GET_ID_FROM_HOMEDIR,
-		common_util_get_id_from_homedir);
-	pass_service(SERVICE_ID_SEND_MAIL,
-		common_util_send_mail);
-	pass_service(SERVICE_ID_GET_MIME_POOL,
-		common_util_get_mime_pool);
-	pass_service(SERVICE_ID_LOG_INFO, log_info);
-	pass_service(SERVICE_ID_GET_HANDLE,
-		emsmdb_interface_get_handle);
+#define E(s) reinterpret_cast<void *>(s)
+	pass_service(SERVICE_ID_LANG_TO_CHARSET, E(common_util_lang_to_charset));
+	pass_service(SERVICE_ID_CPID_TO_CHARSET, E(common_util_cpid_to_charset));
+	pass_service(SERVICE_ID_GET_USER_DISPLAYNAME, E(common_util_get_user_displayname));
+	pass_service(SERVICE_ID_CHECK_MLIST_INCLUDE, E(common_util_check_mlist_include));
+	pass_service(SERVICE_ID_GET_USER_LANG, E(common_util_get_user_lang));
+	pass_service(SERVICE_ID_GET_TIMEZONE, E(common_util_get_timezone));
+	pass_service(SERVICE_ID_GET_MAILDIR, E(common_util_get_maildir));
+	pass_service(SERVICE_ID_GET_ID_FFROM_USERNAME, E(common_util_get_id_from_username));
+	pass_service(SERVICE_ID_GET_USERNAME_FROM_ID, E(common_util_get_username_from_id));
+	pass_service(SERVICE_ID_GET_USER_IDS, E(common_util_get_user_ids));
+	pass_service(SERVICE_ID_GET_DOMAIN_IDS, E(common_util_get_domain_ids));
+	pass_service(SERVICE_ID_GET_ID_FROM_MAILDIR, E(common_util_get_id_from_maildir));
+	pass_service(SERVICE_ID_GET_ID_FROM_HOMEDIR, E(common_util_get_id_from_homedir));
+	pass_service(SERVICE_ID_SEND_MAIL, E(common_util_send_mail));
+	pass_service(SERVICE_ID_GET_MIME_POOL, E(common_util_get_mime_pool));
+	pass_service(SERVICE_ID_LOG_INFO, E(log_info));
+	pass_service(SERVICE_ID_GET_HANDLE, E(emsmdb_interface_get_handle));
+#undef E
 	return 0;
 }
 
