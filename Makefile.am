@@ -483,7 +483,7 @@ EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
 # AGENT_SERVICE
 digest_SOURCES = AGENT_SERVICE/digest.c
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
-freebusy_SOURCES = AGENT_SERVICE/freebusy.c
+freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp EXCHANGE_SYSTEM/http/service.cpp
