@@ -1908,39 +1908,6 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 	}
 }
 
-BOOL mysql_adaptor_get_forward(const char *username, int *ptype,
-    char *destination)
-{
-	char temp_name[512];
-	char sql_string[1024];
-
-	mysql_adaptor_encode_squote(username, temp_name);
-	snprintf(sql_string, 1024, "SELECT destination, forward_type FROM "
-		"forwards WHERE username='%s'", temp_name);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (conn.res == nullptr)
-		return false;
-	if (mysql_query(conn.res.get(),	sql_string) != 0) {
-		conn.res = sql_make_conn();
-		if (conn.res == nullptr ||
-		    mysql_query(conn.res.get(), sql_string) != 0)
-			return false;
-	}
-
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1) {
-		destination[0] = '\0';
-	} else {
-		auto myrow = pmyres.fetch_row();
-		strcpy(destination, myrow[0]);
-		*ptype = atoi(myrow[1]);
-	}
-	return TRUE;
-}
-
 BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
     int *presult, std::vector<std::string> &pfile)
 {
