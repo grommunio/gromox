@@ -159,7 +159,6 @@ static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
 
 BOOL address_table_query(const char *aliasname, char *mainname)
 {
-	char *presult;
 	char temp_string[256];
 	
 	strncpy(temp_string, aliasname, sizeof(temp_string));
@@ -167,7 +166,7 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	HX_strlower(temp_string);
 	
 	pthread_rwlock_rdlock(&g_address_lock);
-	presult = str_hash_query(g_address_hash, temp_string);
+	auto presult = static_cast<char *>(str_hash_query(g_address_hash, temp_string));
 	if (NULL != presult) {
 		strcpy(mainname, presult);
 	}
@@ -192,7 +191,7 @@ static int address_table_refresh()
 			g_address_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	struct addritem *pitem = reinterpret_cast(struct addritem *, list_file_get_list(plist_file));
+	auto pitem = static_cast<struct addritem *>(list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
