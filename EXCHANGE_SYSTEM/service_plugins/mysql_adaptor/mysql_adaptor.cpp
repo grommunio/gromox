@@ -57,13 +57,23 @@ struct icasecmp {
 	}
 };
 
-struct sqlfree {
-	void operator()(MYSQL *m) { mysql_close(m); }
+class sqlconn final {
+	public:
+	sqlconn() = default;
+	sqlconn(MYSQL *m) : m_conn(m) {}
+	sqlconn(sqlconn &&o) : m_conn(o.m_conn) { o.m_conn = nullptr; }
+	~sqlconn() { mysql_close(m_conn); }
+	sqlconn &operator=(sqlconn &&o);
+	operator bool() const { return m_conn; }
+	bool operator==(std::nullptr_t) const { return m_conn == nullptr; }
+	bool operator!=(std::nullptr_t) const { return m_conn != nullptr; }
+	MYSQL *get() const { return m_conn; }
+
+	protected:
+	MYSQL *m_conn = nullptr;
 };
 
-using sqlconn_ptr = std::unique_ptr<MYSQL, sqlfree>;
-
-static struct sqlconnpool final : public resource_pool<sqlconn_ptr> {
+static struct sqlconnpool final : public resource_pool<sqlconn> {
 	resource_pool::token get_wait();
 } g_sqlconn_pool;
 
@@ -88,6 +98,14 @@ static inline size_t z_strlen(const char *s)
 static inline const char *z_null(const char *s)
 {
 	return s != nullptr ? s : "";
+}
+
+sqlconn &sqlconn::operator=(sqlconn &&o)
+{
+	mysql_close(m_conn);
+	m_conn = o.m_conn;
+	o.m_conn = nullptr;
+	return *this;
 }
 
 void mysql_adaptor_init(const struct mysql_adaptor_init_param &parm)
@@ -135,9 +153,9 @@ static bool db_upgrade_check()
 	return db_upgrade_check_2(conn.res.get());
 }
 
-static sqlconn_ptr sql_make_conn()
+static sqlconn sql_make_conn()
 {
-	sqlconn_ptr conn(mysql_init(nullptr));
+	sqlconn conn(mysql_init(nullptr));
 	if (conn == nullptr)
 		return conn;
 	if (g_timeout > 0) {
@@ -155,7 +173,7 @@ static sqlconn_ptr sql_make_conn()
 	return nullptr;
 }
 
-resource_pool<sqlconn_ptr>::token sqlconnpool::get_wait()
+resource_pool<sqlconn>::token sqlconnpool::get_wait()
 {
 	auto c = resource_pool::get_wait();
 	if (c.res == nullptr)
@@ -171,12 +189,10 @@ int mysql_adaptor_run()
 			break;
 		g_sqlconn_pool.put(std::move(conn));
 	}
-
 	if (!db_upgrade_check())
 		return -1;
 	g_sqlconn_pool.resize(g_conn_num);
 	return 0;
-
 }
 
 int mysql_adaptor_stop()
@@ -1526,7 +1542,7 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile)
 	return pfile.size();
 }
 
-static bool get_domain_aliases(sqlconn_ptr &conn, int domain_id,
+static bool get_domain_aliases(sqlconn &conn, int domain_id,
     sql_user::alias_map_type &out)
 {
 	char query[160];
