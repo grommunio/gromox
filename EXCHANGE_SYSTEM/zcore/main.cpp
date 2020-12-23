@@ -193,7 +193,7 @@ int main(int argc, const char **argv)
 	sprintf(folderlang_path, "%s/folder_lang.txt", data_path);
 	
 	msgchg_grouping_init(grouping_path);
-	service_init({"zcore", service_path, config_path, data_path, state_dir,
+	service_init({service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
 		threads_num});

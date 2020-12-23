@@ -409,7 +409,7 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init({"pop3", service_plugin_path, config_dir, data_dir, state_dir,
+	service_init({service_plugin_path, config_dir, data_dir, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		svcplug_ignerr, context_num});
 	printf("--------------------------- service plugins begin"

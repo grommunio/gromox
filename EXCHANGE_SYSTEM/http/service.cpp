@@ -53,7 +53,7 @@ static DOUBLE_LIST      g_list_plug;
 static DOUBLE_LIST		g_list_service;
 static PLUG_ENTITY		*g_cur_plug;
 static int				g_context_num;
-static const char *const *g_plugin_names, *g_program_identifier;
+static const char *const *g_plugin_names;
 static bool g_ign_loaderr;
 static PLUG_ENTITY g_system_image;
 
@@ -63,7 +63,6 @@ static PLUG_ENTITY g_system_image;
  */
 void service_init(const struct service_init_param &parm)
 {
-	g_program_identifier = parm.prog_id;
 	g_context_num = parm.context_num;
 	HX_strlcpy(g_init_path, parm.plugin_dir, sizeof(g_init_path));
 	HX_strlcpy(g_config_dir, parm.config_dir, sizeof(g_config_dir));
@@ -321,8 +320,6 @@ static void* service_query_service(const char *service)
 	if (0 == strcmp(service, "get_host_ID")) {
 		return reinterpret_cast<void *>(service_get_host_ID);
 	}
-	if (strcmp(service, "_program_identifier") == 0)
-		return const_cast<char *>(g_program_identifier);
 	return service_query(service, nullptr);
 }
 

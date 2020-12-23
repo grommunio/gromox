@@ -6,7 +6,7 @@
 #include "plugin.h"
 
 struct service_init_param {
-	const char *prog_id, *plugin_dir, *config_dir, *data_dir, *state_dir;
+	const char *plugin_dir, *config_dir, *data_dir, *state_dir;
 	const char *const *plugin_list;
 	bool plugin_ignloaderr;
 	int context_num;
