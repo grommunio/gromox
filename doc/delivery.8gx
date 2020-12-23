@@ -13,14 +13,7 @@ Display option summary.
 .SH Plugins
 .PP
 The delivery daemon can be extended by a number of plugins. In Gromox, their
-filenames begin with libmtahook_. There are three classes:
-.IP \(bu 4
-local transports: libmtahook_exmdb_local.so, libmtahook_gateway_dispatch.so
-.IP \(bu 4
-hooks: other libmtahook_* plugins
-.PP
-Exactly one local transport plugin needs to be loaded for proper operation. By
-default, this is exmdb_local.
+filenames begin with libmtahook_.
 .SH Configuration file directives
 .SS admin_mailbox
 .PP

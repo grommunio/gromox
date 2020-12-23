@@ -29,7 +29,6 @@ mta_plugins = \
 	libmtahook_alias_translator.la \
 	libmtahook_exmdb_local.la \
 	libmtahook_from_replace.la \
-	libmtahook_gateway_dispatch.la \
 	libmtahook_mail_forwarder.la \
 	libmtahook_message_insulation.la \
 	libmtahook_mlist_expand.la \
@@ -76,7 +75,6 @@ noinst_DATA += \
 	libmtahook_alias_translator.ldd \
 	libmtahook_exmdb_local.ldd \
 	libmtahook_from_replace.ldd \
-	libmtahook_gateway_dispatch.ldd \
 	libmtahook_mail_forwarder.ldd \
 	libmtahook_message_insulation.ldd \
 	libmtahook_mlist_expand.ldd \
@@ -234,10 +232,6 @@ libmtahook_from_replace_la_SOURCES = MTA_SYSTEM/mpc_plugins/from_replace.c
 libmtahook_from_replace_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_from_replace_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtahook_from_replace_la_DEPENDENCIES = ${default_sym}
-libmtahook_gateway_dispatch_la_SOURCES = MTA_SYSTEM/mpc_plugins/gateway_dispatch/backend_list.c MTA_SYSTEM/mpc_plugins/gateway_dispatch/bounce_producer.c MTA_SYSTEM/mpc_plugins/gateway_dispatch/cache_queue.c MTA_SYSTEM/mpc_plugins/gateway_dispatch/gateway_dispatch.c MTA_SYSTEM/mpc_plugins/gateway_dispatch/main.c MTA_SYSTEM/mpc_plugins/gateway_dispatch/net_failure.c MTA_SYSTEM/mpc_plugins/gateway_dispatch/smtp_dispatch.c
-libmtahook_gateway_dispatch_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtahook_gateway_dispatch_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
-EXTRA_libmtahook_gateway_dispatch_la_DEPENDENCIES = ${default_sym}
 libmtahook_mail_forwarder_la_SOURCES = MTA_SYSTEM/mpc_plugins/mail_forwarder/mail_forwarder.c MTA_SYSTEM/mpc_plugins/mail_forwarder/main.c
 libmtahook_mail_forwarder_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mail_forwarder_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
