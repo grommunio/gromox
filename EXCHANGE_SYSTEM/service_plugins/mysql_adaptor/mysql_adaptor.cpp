@@ -677,7 +677,7 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang)
 }
 
 static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
-    std::vector<int> &seen, int class_id)
+    std::vector<int> &seen, int class_id) try
 {
 	int child_id;
 	char sql_string[1024];
@@ -703,6 +703,9 @@ static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
 			return FALSE;
 	}
 	return TRUE;
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
 BOOL mysql_adaptor_get_timezone(const char *username, char *timezone)
@@ -936,7 +939,7 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &pfile)
+BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &pfile) try
 {
 	char sql_string[1024];
 
@@ -956,6 +959,9 @@ BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &pfile)
 		pfile[i] = strtoul(myrow[0], nullptr, 0);
 	}
 	return TRUE;
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
 BOOL mysql_adaptor_get_domain_info(int domain_id,
@@ -1008,7 +1014,7 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &pfile)
+BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &pfile) try
 {
 	char sql_string[1024];
 
@@ -1031,9 +1037,12 @@ BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &pfil
 	}
 	pfile = std::move(gv);
 	return TRUE;
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
-BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &pfile)
+BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &pfile) try
 {
 	char sql_string[1024];
 
@@ -1056,9 +1065,12 @@ BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &pfile
 	}
 	pfile = std::move(cv);
 	return TRUE;
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
-BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile)
+BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile) try
 {
 	char sql_string[1024];
 
@@ -1081,6 +1093,9 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile)
 	}
 	pfile = std::move(cv);
 	return TRUE;
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
 static BOOL mysql_adaptor_get_group_title(const char *groupname, char *title)
@@ -1157,7 +1172,7 @@ static BOOL mysql_adaptor_get_mlist_info(const char *listname,
 	return TRUE;
 }
 
-int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile)
+int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) try
 {
 	int temp_len;
 	char *ptoken;
@@ -1245,9 +1260,12 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile)
 		}
 	}
 	return pfile.size();
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
-int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile)
+int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) try
 {
 	int temp_len;
 	char *ptoken;
@@ -1335,6 +1353,9 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile)
 		}
 	}
 	return pfile.size();
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
 static bool get_domain_aliases(sqlconn &conn, int domain_id,
@@ -1357,7 +1378,7 @@ static bool get_domain_aliases(sqlconn &conn, int domain_id,
 	return true;
 }
 
-int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile)
+int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) try
 {
 	int temp_len;
 	char *ptoken;
@@ -1450,6 +1471,9 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile)
 		}
 	}
 	return pfile.size();
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
 static BOOL mysql_adaptor_hierarchy_include(sqlconn &conn,
@@ -1682,7 +1706,7 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 }
 
 BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
-    int *presult, std::vector<std::string> &pfile)
+    int *presult, std::vector<std::string> &pfile) try
 {
 	int i, id, rows;
 	int type, privilege;
@@ -2076,6 +2100,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		*presult = MLIST_RESULT_NONE;
 		return TRUE;
 	}
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
 
 BOOL mysql_adaptor_get_user_info(const char *username,
