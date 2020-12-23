@@ -131,7 +131,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 	size_t  block_interval_auths, block_interval_sessions;
 	BOOL need_auth, support_pipeline;
 	BOOL support_tls, necessary_tls;
-	char str_mode[16];
 	char str_flush[32];
 	char str_length[32];
 	char str_timeout[64];
@@ -163,17 +162,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 		if (FALSE == support_tls) {
 			necessary_tls = FALSE;
 		}
-		switch(smtp_parser_get_param(SMTP_RUNNING_MODE)) {
-		case SMTP_MODE_OUTBOUND:
-			strcpy(str_mode, "out-bound");
-			break;
-		case SMTP_MODE_INBOUND:
-			strcpy(str_mode, "in-bound");
-			break;
-		case SMTP_MODE_MIXTURE:
-			strcpy(str_mode, "mixture");
-			break;
-		}
 		bytetoa(mail_length, str_length);
 		bytetoa(flushing_size, str_flush);
 		itvltoa(time_out, str_timeout);
@@ -189,7 +177,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			"\tsupport TLS?                         %s\r\n"
 			"\tforce TLS?                           %s\r\n"
 			"\tauthentication times                 %ld\r\n"
-			"\trunning mode                         %s\r\n"
 			"\tauth failure block interval          %s\r\n"
 			"\tsession-exceed block interval        %s",
 			resource_get_string("HOST_ID"),
@@ -202,7 +189,6 @@ BOOL cmd_handler_smtp_control(int argc, char** argv)
 			support_tls == FALSE ? "FALSE" : "TRUE",
 			necessary_tls == FALSE ? "FALSE" : "TRUE",
 			auth_times,
-			str_mode,
 			str_authblock,
 			str_sessionblock);
 		return TRUE;
@@ -371,11 +357,6 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			console_server_reply_to_client("250 domain-list valid set OK");
 			return TRUE;
 		} else if (0 == strcasecmp(argv[3], "FALSE")) {
-			if (SMTP_MODE_MIXTURE == smtp_parser_get_param(SMTP_RUNNING_MODE)) {
-				console_server_reply_to_client("550 fail to invalidate domain "
-					"list under mixture mode");
-				return TRUE;
-			}
 			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
 			smtp_parser_validate_domainlist(FALSE);
 			console_server_reply_to_client("250 domain-list invalid set OK");

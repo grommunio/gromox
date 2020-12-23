@@ -13,13 +13,6 @@
 #define MAX_EXTRA_DATA_TAGLEN               16
 #define MAX_EXTRA_DATA_DATALEN              48
 
-/* enumeration for distinguishing mta running mode */
-enum{
-    SMTP_MODE_OUTBOUND,
-    SMTP_MODE_INBOUND,
-    SMTP_MODE_MIXTURE
-};
-
 /* enum for state of context */
 enum{
     STEP_BEGIN = 0,
@@ -70,7 +63,6 @@ enum{
 /* enumeration of smtp_parser */
 enum{
     MAX_MAIL_LENGTH,
-    SMTP_RUNNING_MODE,
     SMTP_NEED_AUTH,
     BLOCK_TIME_EXCEED_AUTHS,
     BLOCK_TIME_EXCEED_SESSIONS,
@@ -198,7 +190,7 @@ typedef struct _SMTP_CONTEXT{
 extern "C" {
 #endif
 
-void smtp_parser_init(int context_num, int threads_num, int mode,
+extern void smtp_parser_init(int context_num, int threads_num,
 	BOOL dm_valid, BOOL need_auth, size_t max_mail_length,
 	size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size,
 	size_t timeout,  size_t auth_times, size_t blktime_auths,

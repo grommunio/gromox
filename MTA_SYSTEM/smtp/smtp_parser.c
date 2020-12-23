@@ -62,7 +62,6 @@ static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 static int g_context_num;
 static int g_threads_num;
 static int g_ssl_port;
-static int g_mode;
 static BOOL g_domainlist_valid;
 static BOOL g_need_auth;
 static BOOL g_support_pipeline;
@@ -89,7 +88,6 @@ static pthread_mutex_t *g_ssl_mutex_buf;
  * @param
  *        context_num        number of contexts
  *        threads_num        number of threads in the pool
- *        mode               indicate the running mode of smtp parser
  *        dm_valid           is domain list valid
  *        max_mail_length    maximum mail size
  *        max_mail_sessions  maximum mail sessions per connection
@@ -99,7 +97,7 @@ static pthread_mutex_t *g_ssl_mutex_buf;
  *        auth_times         maximum authentification times, session permit
  *        blktime_auths      block interval if max auths is exceeded
  */
-void smtp_parser_init(int context_num, int threads_num, int mode,
+void smtp_parser_init(int context_num, int threads_num,
 	BOOL dm_valid, BOOL need_auth, size_t max_mail_length,
 	size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size,
 	size_t timeout,  size_t auth_times, size_t blktime_auths,
@@ -108,7 +106,6 @@ void smtp_parser_init(int context_num, int threads_num, int mode,
 {
 	g_context_num           = context_num;
 	g_threads_num           = threads_num;
-	g_mode                  = mode;
 	g_domainlist_valid      = dm_valid;
 	g_need_auth             = need_auth;
 	g_max_mail_length       = max_mail_length;
@@ -262,7 +259,6 @@ int smtp_parser_stop()
 void smtp_parser_free()
 {
 	g_context_num       = 0;
-	g_mode              = -1;
 	g_max_mail_length   = 0;
 	g_max_mail_sessions = 0;
 	g_flushing_size     = 0;
@@ -795,8 +791,6 @@ long smtp_parser_get_param(int param)
 		return g_max_mail_sessions;
 	case BLOCK_TIME_EXCEED_SESSIONS:
 		return g_blktime_sessions;
-	case SMTP_RUNNING_MODE:
-		return g_mode;
 	case SMTP_NEED_AUTH:
 		return g_need_auth;
 	case MAX_FLUSHING_SIZE:
@@ -886,21 +880,13 @@ int smtp_parser_set_param(int param, long value)
 
 BOOL smtp_parser_validate_domainlist(BOOL b_valid)
 {
-	if (g_mode != SMTP_MODE_MIXTURE) {
-		g_domainlist_valid = b_valid;
-		return TRUE;
-	} else {
-		return FALSE;
-	}
+	g_domainlist_valid = b_valid;
+	return TRUE;
 }
 
 BOOL smtp_parser_domainlist_valid()
 {
-	if (SMTP_MODE_OUTBOUND == g_mode) {
-		return TRUE;
-	} else {
-		return g_domainlist_valid;
-	}
+	return g_domainlist_valid;
 }
 
 /* 
@@ -1199,31 +1185,9 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	}
 	rcpt_buff[rcpt_len] = '\0';
 	
-	switch (g_mode) {
-	case SMTP_MODE_OUTBOUND:
-		system_services_log_info(level, "user: %s, IP: %s, TO: %s %s", 
-				pcontext->mail.envelop.username, 
-				pcontext->connection.client_ip, rcpt_buff, log_buf);
-		break;
-	case SMTP_MODE_INBOUND:
-		system_services_log_info(level,"remote MTA IP: %s, FROM: %s, TO: %s %s",
-				pcontext->connection.client_ip,
-				pcontext->mail.envelop.from, rcpt_buff, log_buf);
-		break;
-	case SMTP_MODE_MIXTURE:
-		if (TRUE == pcontext->mail.envelop.is_outbound) {
-			system_services_log_info(level, "user: %s, IP: %s, FROM: %s, TO: %s %s",
-				pcontext->mail.envelop.username,
-				pcontext->connection.client_ip,
-				pcontext->mail.envelop.from,    
-				rcpt_buff, log_buf);
-		} else {
-			system_services_log_info(level,"remote MTA IP: %s, FROM: %s, TO: %s %s",
-				pcontext->connection.client_ip,
-				pcontext->mail.envelop.from, rcpt_buff, log_buf);
-		}
-		break;
-	}
+	system_services_log_info(level,"remote MTA IP: %s, FROM: %s, TO: %s %s",
+		pcontext->connection.client_ip,
+		pcontext->mail.envelop.from, rcpt_buff, log_buf);
 }
 
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext)

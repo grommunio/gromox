@@ -110,13 +110,6 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
     /* inform client side the esmtp type*/
     pcontext->last_cmd = T_EHLO_CMD;
 	string_length = sprintf(buff, "250-%s\r\n", resource_get_string("HOST_ID"));
-    if (SMTP_MODE_INBOUND != smtp_parser_get_param(SMTP_RUNNING_MODE) &&
-		NULL != system_services_auth_ehlo) {
-        string_length += sprintf(buff + string_length, "250-AUTH %s\r\n",
-				system_services_auth_ehlo());
-        string_length += sprintf(buff + string_length, "250-AUTH=%s\r\n",
-				system_services_auth_ehlo());
-    }
     if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_PIPELINE)) {
         string_length += sprintf(buff + string_length, 
                              "250-PIPELINING\r\n");
@@ -195,8 +188,7 @@ int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
 	 * if the running mode is "inbound" or there's no "auth" service
 	 * tell the client no this command 
 	 */ 
-    if (SMTP_MODE_INBOUND == smtp_parser_get_param(SMTP_RUNNING_MODE) ||
-		NULL == system_services_auth_ehlo) {
+    if (true) {
         /* 502 Command not implemented */
         smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175006, 1,
                          &string_length);
@@ -290,8 +282,6 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
         return DISPATCH_CONTINUE;
     }
     /* check the running mode */
-    switch (smtp_parser_get_param(SMTP_RUNNING_MODE)) {
-    case SMTP_MODE_INBOUND:
         if (T_NONE_CMD == pcontext->last_cmd ||
             T_HELO_CMD == pcontext->last_cmd ||
             T_EHLO_CMD == pcontext->last_cmd ||
@@ -311,88 +301,6 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
             smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175007, 1,
                              &string_length);    
         }
-        break;
-    case SMTP_MODE_OUTBOUND:
-        if (FALSE != smtp_parser_get_param(SMTP_NEED_AUTH)) {
-            if (TRUE == pcontext->mail.envelop.is_relay ||
-				TRUE == pcontext->mail.envelop.is_login) {
-                pcontext->last_cmd = T_MAIL_CMD;
-                pcontext->mail.envelop.is_outbound = TRUE;
-                snprintf(pcontext->mail.envelop.from, 256, "%s@%s",
-                    email_addr.local_part, email_addr.domain);
-                /* 250 OK */
-                smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172005, 1,
-                                 &string_length);
-            } else {
-                /* 530 Authentication required */
-                smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175013, 1,
-                                 &string_length);
-            }
-        } else {
-            pcontext->last_cmd = T_MAIL_CMD;
-            pcontext->mail.envelop.is_outbound = TRUE;
-            snprintf(pcontext->mail.envelop.from, 256, "%s@%s",
-                email_addr.local_part, email_addr.domain);
-            /* 250 OK */
-            smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172005, 1,
-                             &string_length);
-        }
-        break;
-    case SMTP_MODE_MIXTURE:
-        /* 
-         under mixture mode, check whether the domain is system domain, if
-         it is, check whether user has logged in. else, it is a mail comes
-         from other mta
-         */
-        if (FALSE == system_services_check_domain(email_addr.domain)) {
-            if (T_NONE_CMD == pcontext->last_cmd ||
-                T_HELO_CMD == pcontext->last_cmd ||
-                T_EHLO_CMD == pcontext->last_cmd ||
-				T_STARTTLS_CMD == pcontext->last_cmd ||
-                T_MAIL_CMD == pcontext->last_cmd ||
-                T_RSET_CMD == pcontext->last_cmd ||
-                T_END_MAIL == pcontext->last_cmd) {
-                
-                    pcontext->last_cmd = T_MAIL_CMD;
-                    snprintf(pcontext->mail.envelop.from, 256, "%s@%s",
-                        email_addr.local_part, email_addr.domain);
-                    /* 250 OK */
-                    pcontext->mail.envelop.is_outbound = FALSE;
-                    smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172005,
-                                    1, &string_length);
-            } else {
-                /* bad sequence */
-                smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175007, 1,
-                                 &string_length);    
-            }
-        } else {
-            if (FALSE != smtp_parser_get_param(SMTP_NEED_AUTH)) {
-                if (TRUE == pcontext->mail.envelop.is_relay ||
-					TRUE == pcontext->mail.envelop.is_login) {
-                    pcontext->last_cmd = T_MAIL_CMD;
-                    pcontext->mail.envelop.is_outbound = TRUE;
-                    snprintf(pcontext->mail.envelop.from, 256, "%s@%s",
-                        email_addr.local_part, email_addr.domain);
-                    /* 250 OK */
-                    smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172005, 
-                                     1, &string_length);
-                } else {
-                    /* 530 Authentication required */
-                    smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175013,
-                                     1, &string_length);
-                }
-            } else {
-                pcontext->last_cmd = T_MAIL_CMD;
-                pcontext->mail.envelop.is_outbound = TRUE;
-                snprintf(pcontext->mail.envelop.from, 256, "%s@%s",
-                    email_addr.local_part, email_addr.domain);
-                /* 250 OK */
-                smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172005, 
-                                 1, &string_length);
-            }
-        }
-        break;
-    }
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 	} else {

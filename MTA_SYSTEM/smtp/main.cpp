@@ -82,7 +82,7 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 { 
 	int retcode = EXIT_FAILURE, listen_port, listen_ssl_port;
-	int context_num, smtp_running_mode; 
+	int context_num;
 	size_t max_mail_len;
 	size_t context_aver_mem, context_max_mem;
 	int smtp_max_mail_num;
@@ -229,53 +229,18 @@ int main(int argc, const char **argv)
 	bytetoa(context_max_mem, temp_buff);
 	printf("[smtp]: context maximum memory is %s\n", temp_buff);
  
-	if (!resource_get_integer("SMTP_RUNNING_MODE", &smtp_running_mode)) {
-		smtp_running_mode = SMTP_MODE_MIXTURE; 
-		resource_set_integer("SMTP_RUNNING_MODE", smtp_running_mode);
-	} else if (smtp_running_mode < SMTP_MODE_OUTBOUND || 
-		smtp_running_mode >	 SMTP_MODE_MIXTURE) { 
-		smtp_running_mode = SMTP_MODE_MIXTURE; 
-		resource_set_integer("SMTP_RUNNING_MODE", smtp_running_mode);
-	}
-	switch(smtp_running_mode) {
-	case SMTP_MODE_OUTBOUND:
-		printf("[smtp]: running mode is out-bound\n");
-		break;
-	case SMTP_MODE_INBOUND:
-		printf("[smtp]: running mode is in-bound\n");
-		break;
-	case SMTP_MODE_MIXTURE:
-		printf("[smtp]: running mode is mixture\n");
-		break;
-	}
-
 	str_val = resource_get_string("DOMAIN_LIST_VALID");
 	if (str_val == NULL) {
-		if (SMTP_MODE_MIXTURE == smtp_running_mode) {
-			resource_set_string("DOMAIN_LIST_VALID", "TRUE");
+		resource_set_string("DOMAIN_LIST_VALID", "FALSE");
+		domainlist_valid = FALSE;
+	} else {
+		if (0 == strcasecmp(str_val, "FALSE")) {
+			domainlist_valid = FALSE;
+		} else if (0 == strcasecmp(str_val, "TRUE")) {
 			domainlist_valid = TRUE;
 		} else {
 			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
 			domainlist_valid = FALSE;
-		}
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			if (SMTP_MODE_MIXTURE == smtp_running_mode) {
-				resource_set_string("DOMAIN_LIST_VALID", "TRUE");
-				domainlist_valid = TRUE;
-			} else {
-				domainlist_valid = FALSE;
-			}
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			domainlist_valid = TRUE;
-		} else {
-			if (SMTP_MODE_MIXTURE == smtp_running_mode) {
-				resource_set_string("DOMAIN_LIST_VALID", "TRUE");
-				domainlist_valid = TRUE;
-			} else {
-				resource_set_string("DOMAIN_LIST_VALID", "FALSE");
-				domainlist_valid = FALSE;
-			}
 		}
 	}
 	if (FALSE == domainlist_valid) {
@@ -625,7 +590,7 @@ int main(int argc, const char **argv)
 		(context_num / thread_charge_num + 1);
 							
 	smtp_parser_init(context_num, threads_max_num, 
-		smtp_running_mode, domainlist_valid, smtp_auth_needed, max_mail_len, 
+		domainlist_valid, smtp_auth_needed, max_mail_len,
 		smtp_max_mail_num, block_interval_sessions, 
 		context_max_mem, smtp_conn_timeout, smtp_auth_times,
 		block_interval_auth, smtp_support_pipeline, smtp_support_starttls,
