@@ -1994,7 +1994,7 @@ static BOOL common_util_get_message_display_recipients(
 	}
 	sqlite3_finalize(pstmt);
 	if  (0 == offset) {
-		*ppvalue = const_cast<uint8_t *>(&fake_empty);
+		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
 	if (TRUE == b_unicode) {
@@ -4651,7 +4651,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	switch (proptag) {
 	case PROP_TAG_ENTRYID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
-			*ppvalue = const_cast<BINARY *>(&fake_bin);
+			*ppvalue = deconst(&fake_bin);
 			return TRUE;
 		}
 		sprintf(sql_string, "SELECT username FROM"
@@ -4659,10 +4659,10 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		break;
 	case PROP_TAG_MEMBERNAME:
 		if (0 == member_id) {
-			*ppvalue = const_cast<char *>("default");
+			*ppvalue = deconst("default");
 			return TRUE;
 		} else if (-1 == (int64_t)member_id) {
-			*ppvalue = const_cast<char *>("anonymous");
+			*ppvalue = deconst("anonymous");
 			return TRUE;
 		}
 		sprintf(sql_string, "SELECT username FROM"
@@ -4736,7 +4736,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	case PROP_TAG_ENTRYID:
 		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0] || 0 == strcasecmp(pusername, "default")) {
-			*ppvalue = const_cast<BINARY *>(&fake_bin);
+			*ppvalue = deconst(&fake_bin);
 			sqlite3_finalize(pstmt);
 			return TRUE;
 		}
@@ -4745,11 +4745,11 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	case PROP_TAG_MEMBERNAME:
 		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0]) {
-			*ppvalue = const_cast<char *>("default");
+			*ppvalue = deconst("default");
 			sqlite3_finalize(pstmt);
 			return TRUE;
 		} else if (0 == strcasecmp(pusername, "default")) {
-			*ppvalue = const_cast<char *>("anonymous");
+			*ppvalue = deconst("anonymous");
 			sqlite3_finalize(pstmt);
 			return TRUE;
 		}
@@ -6228,7 +6228,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 			return FALSE;
 		}
 		if (NULL == pvalue) {
-			pvalue = const_cast<uint32_t *>(&fake_uid);
+			pvalue = deconst(&fake_uid);
 		}
 		next = *(uint32_t*)pvalue + 1;
 		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;

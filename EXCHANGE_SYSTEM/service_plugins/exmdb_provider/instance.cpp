@@ -1062,14 +1062,14 @@ static BOOL instance_read_message(
 					pmsgctnt->proplist.ppropval[i].proptag =
 									PROP_TAG_SUBJECT_STRING8;
 					pmsgctnt->proplist.ppropval[i].pvalue =
-						const_cast<char *>(psubject_prefix);
+						deconst(psubject_prefix);
 					pmsgctnt->proplist.count ++;
 				}
 			} else {
 				pmsgctnt->proplist.ppropval[i].proptag =
 										PROP_TAG_SUBJECT;
 				pmsgctnt->proplist.ppropval[i].pvalue =
-					const_cast<char *>(psubject_prefix);
+					deconst(psubject_prefix);
 				pmsgctnt->proplist.count ++;
 			}
 		}
@@ -2279,7 +2279,7 @@ static BOOL instance_get_message_display_recipients(
 		}
 	}
 	if  (0 == offset) {
-		*ppvalue = const_cast<uint8_t *>(&fake_empty);
+		*ppvalue = deconst(&fake_empty);
 		return TRUE;
 	}
 	if (TRUE == b_unicode) {

@@ -2272,7 +2272,7 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count].proptag =
 		PROP_TAG_MESSAGESTATUS;
 	pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-		const_cast<uint32_t *>(&fake_int32);
+		deconst(&fake_int32);
 	pmsgctnt1->proplist.count ++;
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS)) {
@@ -2280,7 +2280,7 @@ static BOOL message_rectify_message(const char *account,
 			pmsgctnt1->proplist.count].proptag =
 			PROP_TAG_MESSAGEFLAGS;
 		pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-			const_cast<uint32_t *>(&fake_flags);
+			deconst(&fake_flags);
 		pmsgctnt1->proplist.count ++;
 	}
 	if (NULL == common_util_get_propvals(
@@ -2402,7 +2402,7 @@ static BOOL message_rectify_message(const char *account,
 			pmsgctnt1->proplist.count].proptag =
 			PROP_TAG_READ;
 		pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-			const_cast<uint8_t *>(&fake_false);
+			deconst(&fake_false);
 		pmsgctnt1->proplist.count ++;
 	}
 	pbin1 = static_cast<BINARY *>(common_util_get_propvals(
@@ -2438,7 +2438,7 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count].proptag =
 		PROP_TAG_CONVERSATIONINDEXTRACKING;
 	pmsgctnt1->proplist.ppropval[pmsgctnt1->proplist.count].pvalue =
-		const_cast<uint8_t *>(&fake_true);
+		deconst(&fake_true);
 	pmsgctnt1->proplist.count ++;
 	if (NULL == pbin1) {
 		pbin1 = static_cast<BINARY *>(common_util_alloc(sizeof(*pbin1)));
@@ -2792,7 +2792,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		}
 		if (NULL == pvalue) {
-			pvalue = const_cast<uint32_t *>(&fake_uid);
+			pvalue = deconst(&fake_uid);
 		}
 		next = *(uint32_t*)pvalue + 1;
 		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
@@ -3353,7 +3353,7 @@ static BOOL message_make_deferred_error_message(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
-	propval.pvalue  = const_cast<char *>("IPC.Microsoft Exchange 4.0.Deferred Error");
+	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Error");
 	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
@@ -4060,7 +4060,7 @@ static BOOL message_make_deferred_action_message(
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
-	propval.pvalue  = const_cast<char *>("IPC.Microsoft Exchange 4.0.Deferred Action");
+	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Action");
 	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
@@ -4617,7 +4617,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					propval.pvalue = pvalue;
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
-					propval.pvalue  = const_cast<char *>("EX");
+					propval.pvalue  = deconst("EX");
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag =
 						PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
@@ -4637,7 +4637,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				}
 				propval.proptag = PROP_TAG_DELEGATEDBYRULE;
-				propval.pvalue = const_cast<uint8_t *>(&fake_true);
+				propval.pvalue = deconst(&fake_true);
 				common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				if (FALSE == message_recipient_blocks_to_list(
 					pfwddlgt->count, pfwddlgt->pblock, &rcpt_list)) {
@@ -4687,7 +4687,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					continue;
 				}
 				propval.proptag = PROP_TAG_READ;
-				propval.pvalue = const_cast<uint8_t *>(&fake_true);
+				propval.pvalue = deconst(&fake_true);
 				if (FALSE == common_util_set_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					0, psqlite, &propval, &b_result)) {
@@ -5061,7 +5061,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					propval.pvalue = pvalue;
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
-					propval.pvalue  = const_cast<char *>("EX");
+					propval.pvalue  = deconst("EX");
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 					propval.proptag =
 						PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
@@ -5081,7 +5081,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				}
 				propval.proptag = PROP_TAG_DELEGATEDBYRULE;
-				propval.pvalue = const_cast<uint8_t *>(&fake_true);
+				propval.pvalue = deconst(&fake_true);
 				common_util_set_propvals(&pmsgctnt->proplist, &propval);
 				if (FALSE == message_ext_recipient_blocks_to_list(
 					pextfwddlgt->count, pextfwddlgt->pblock, &rcpt_list)) {
@@ -5131,7 +5131,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					continue;
 				}
 				propval.proptag = PROP_TAG_READ;
-				propval.pvalue = const_cast<uint8_t *>(&fake_true);
+				propval.pvalue = deconst(&fake_true);
 				if (FALSE == common_util_set_property(
 					MESSAGE_PROPERTIES_TABLE, message_id,
 					0, psqlite, &propval, &b_result)) {
@@ -5321,7 +5321,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		propval.pvalue = pentryid;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		propval.proptag = PROP_TAG_RECEIVEDBYADDRESSTYPE;
-		propval.pvalue  = const_cast<char *>("EX");
+		propval.pvalue  = deconst("EX");
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		propval.proptag = PROP_TAG_RECEIVEDBYEMAILADDRESS;
 		propval.pvalue = essdn_buff + 3;
@@ -5345,7 +5345,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			propval.pvalue = pentryid;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);	
 			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
-			propval.pvalue  = const_cast<char *>("EX");
+			propval.pvalue  = deconst("EX");
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
 			propval.pvalue = essdn_buff + 3;
@@ -5361,11 +5361,11 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		}
 		if (TRUE == b_to_me) {
 			propval.proptag = PROP_TAG_MESSAGETOME;
-			propval.pvalue = const_cast<uint8_t *>(&fake_true);
+			propval.pvalue = deconst(&fake_true);
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		} else if (TRUE == b_cc_me) {
 			propval.proptag = PROP_TAG_MESSAGECCME;
-			propval.pvalue = const_cast<uint8_t *>(&fake_true);
+			propval.pvalue = deconst(&fake_true);
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		}
 	}
