@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <gromox/database.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "proptag_array.h"
@@ -2270,11 +2270,11 @@ static BOOL instance_get_message_display_recipients(
 			continue;
 		}
 		if (0 == offset) {
-			offset = snprintf(tmp_buff, sizeof(tmp_buff), "%s",
+			offset = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s",
 			         static_cast<const char *>(pvalue));
 		} else {
-			offset += snprintf(tmp_buff + offset,
-			          sizeof(tmp_buff) - offset, "; %s",
+			offset += gx_snprintf(tmp_buff + offset,
+			          GX_ARRAY_SIZE(tmp_buff) - offset, "; %s",
 			          static_cast<const char *>(pvalue));
 		}
 	}

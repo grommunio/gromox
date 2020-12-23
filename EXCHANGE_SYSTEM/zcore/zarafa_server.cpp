@@ -3,7 +3,7 @@
 #include <sys/wait.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include "util.h"
 #include "guid.h"
@@ -7679,11 +7679,11 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		return ecSuccess;
 	}
 	if (0 == strcasecmp(pinfo->username, username)) {
-		tmp_len = snprintf(cookie_buff, sizeof(cookie_buff),
+		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
 			"starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
 			starttime, endtime, maildir);
 	} else {
-		tmp_len = snprintf(cookie_buff, sizeof(cookie_buff),
+		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
 			"username=%s;starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
 			pinfo->username, starttime, endtime, maildir);
 	}

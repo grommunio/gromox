@@ -4,7 +4,7 @@
 #include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
@@ -1322,7 +1322,7 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	char prefix_string[1024];
 	SIMPLE_TREE_NODE **ppnode;
 	
-	temp_len = snprintf(prefix_string, 1024, "/o=%s/ou=Exchange "
+	temp_len = gx_snprintf(prefix_string, GX_ARRAY_SIZE(prefix_string), "/o=%s/ou=Exchange "
 			"Administrative Group (FYDIBOHF23SPDLT)", g_org_name);
 	if (0 != strncasecmp(pdn, prefix_string, temp_len)) {
 		return NULL;

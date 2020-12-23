@@ -6,6 +6,7 @@
  *
  */
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "common_types.h"
 #include "config_file.h"
 #include "ip_filter.h"
@@ -305,7 +306,7 @@ void ip_filter_console_talk(int argc, char **argv, char *result, int length)
 			audit_times      = audit_filter_get_param(AUDIT_TIMES);
 			audit_interval   = audit_filter_get_param(AUDIT_INTERVAL);
 			audit_capability = audit_filter_get_param(AUDIT_CAPABILITY);
-			offset = snprintf(result, length,
+			offset = gx_snprintf(result, length,
 					"250 %s audit information:\r\n"
 			        "\ttable capacity    %d\r\n"
 			        "\ttimes             %d\r\n"
@@ -453,13 +454,13 @@ void ip_filter_console_talk(int argc, char **argv, char *result, int length)
 					snprintf(result, length, "550 %s is not found in grey list",
 						temp_ip);
 				} else {
-					offset = snprintf(result, length, "250 %s is found in grey "
+					offset = gx_snprintf(result, length, "250 %s is found in grey "
 						"list and it is allowed, original frequency is %d times"
 						" within ", temp_ip, grey_times);
 					itvltoa(grey_interval, result + offset);
 				}
 			} else {
-				offset = snprintf(result, length, "250 %s is in grey list, and "
+				offset = gx_snprintf(result, length, "250 %s is in grey list, and "
 					"it is forbidden, original frequency is %d times within ",
 					temp_ip, grey_times);
 				itvltoa(grey_interval, result + offset);

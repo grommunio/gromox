@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <gromox/database.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include "proptag_array.h"
 #include "sortorder_set.h"
@@ -427,17 +428,17 @@ static void table_condition_list_to_where_clause(
 		pnode=double_list_get_after(pcondition_list, pnode)) {
 		pcnode = (CONDITION_NODE*)pnode->pdata;
 		if (0 == offset) {
-			offset = snprintf(where_clause, length, "WHERE ");
+			offset = gx_snprintf(where_clause, length, "WHERE ");
 		} else {
-			offset += snprintf(where_clause + offset,
+			offset += gx_snprintf(where_clause + offset,
 						length - offset, " AND ");
 		}
 		if (NULL == pcnode->pvalue) {
-			offset += snprintf(where_clause + offset,
+			offset += gx_snprintf(where_clause + offset,
 					length - offset, "v%x IS NULL",
 					pcnode->proptag);
 		} else {
-			offset += snprintf(where_clause + offset,
+			offset += gx_snprintf(where_clause + offset,
 				length - offset, "v%x=?", pcnode->proptag);
 		}
 	}
@@ -483,15 +484,15 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		}
 		if (-1 == multi_index) {
 			if (psorts->ccategories > 0) {
-				sql_len = snprintf(sql_string, sizeof(sql_string),
+				sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 					"SELECT message_id, read_state FROM stbl %s",
 					where_clause);
 			} else {
-				sql_len = snprintf(sql_string, sizeof(sql_string),
+				sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 					"SELECT message_id FROM stbl %s", where_clause);
 			}
 		} else {
-			sql_len = snprintf(sql_string, sizeof(sql_string),
+			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 				"SELECT message_id, read_state, inst_num, v%x"
 				" FROM stbl %s", tmp_proptag, where_clause);
 		}
@@ -505,22 +506,22 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 				continue;
 			}
 			if (FALSE == b_orderby) {
-				sql_len += snprintf(sql_string + sql_len,
-							sizeof(sql_string) - sql_len,
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len,
 							" ORDER BY v%x ", tmp_proptag);
 				b_orderby = TRUE;
 			} else {
-				sql_len += snprintf(sql_string + sql_len,
-							sizeof(sql_string) - sql_len,
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len,
 							", v%x ", tmp_proptag);
 			}
 			if (TABLE_SORT_ASCEND ==
 				psorts->psort[i].table_sort) {
-				sql_len += snprintf(sql_string + sql_len,
-					sizeof(sql_string) - sql_len, " ASC");
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len, " ASC");
 			} else {
-				sql_len += snprintf(sql_string + sql_len,
-					sizeof(sql_string) - sql_len, " DESC");
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len, " DESC");
 			}
 		}
 		if (!gx_sql_prep(psqlite, sql_string, &pstmt))
@@ -603,13 +604,13 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		tmp_proptag1 = PROP_TAG(psorts->psort[depth+1].type, psorts->psort[depth+1].propid);
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psorts->psort[depth + 1].table_sort) {
-			sql_len = snprintf(sql_string, sizeof(sql_string),
+			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 					"SELECT v%x, count(*), max(v%x) AS max_field "
 					"FROM stbl %s GROUP BY v%x ORDER BY max_field",
 					tmp_proptag, tmp_proptag1, where_clause,
 					tmp_proptag);
 		} else {
-			sql_len = snprintf(sql_string, sizeof(sql_string),
+			sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 					"SELECT v%x, count(*), min(v%x) AS max_field "
 					"FROM stbl %s GROUP BY v%x ORDER BY max_field",
 					tmp_proptag, tmp_proptag1, where_clause,
@@ -617,17 +618,17 @@ static BOOL table_load_content(DB_ITEM *pdb, sqlite3 *psqlite,
 		}
 	} else {
 		b_extremum = FALSE;
-		sql_len = snprintf(sql_string, sizeof(sql_string),
+		sql_len = gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 				"SELECT v%x, count(*) FROM stbl %s GROUP"
 				" BY v%x ORDER BY v%x", tmp_proptag,
 				where_clause, tmp_proptag, tmp_proptag);
 	}
 	if (TABLE_SORT_ASCEND == psorts->psort[depth].table_sort) {
-		sql_len += snprintf(sql_string + sql_len,
-			sizeof(sql_string) - sql_len, " ASC");
+		sql_len += gx_snprintf(sql_string + sql_len,
+		           GX_ARRAY_SIZE(sql_string) - sql_len, " ASC");
 	} else {
-		sql_len += snprintf(sql_string + sql_len,
-			sizeof(sql_string) - sql_len, " DESC");
+		sql_len += gx_snprintf(sql_string + sql_len,
+		           GX_ARRAY_SIZE(sql_string) - sql_len, " DESC");
 	}
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return FALSE;
@@ -924,15 +925,15 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			switch (type) {
 			case PT_STRING8:
 			case PT_UNICODE:
-				sql_len += snprintf(sql_string + sql_len,
-							sizeof(sql_string) - sql_len,
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len,
 							", v%x TEXT COLLATE NOCASE", tmp_proptag);
 				break;
 			case PT_FLOAT:
 			case PT_DOUBLE:
 			case PT_APPTIME:
-				sql_len += snprintf(sql_string + sql_len,
-							sizeof(sql_string) - sql_len,
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len,
 							", v%x REAL", tmp_proptag);
 				break;
 			case PT_CURRENCY:
@@ -941,16 +942,16 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			case PT_SHORT:
 			case PT_LONG:
 			case PT_BOOLEAN:
-				sql_len += snprintf(sql_string + sql_len,
-							sizeof(sql_string) - sql_len,
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len,
 							", v%x INTEGER", tmp_proptag);
 				break;
 			case PT_CLSID:
 			case PT_SVREID:
 			case PT_OBJECT:
 			case PT_BINARY:
-				sql_len += snprintf(sql_string + sql_len,
-							sizeof(sql_string) - sql_len,
+				sql_len += gx_snprintf(sql_string + sql_len,
+				           GX_ARRAY_SIZE(sql_string) - sql_len,
 							", v%x BLOB", tmp_proptag);
 				break;
 			default:
@@ -958,13 +959,13 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 			}
 		}
 		if (psorts->ccategories > 0) {
-			sql_len += snprintf(sql_string + sql_len,
-						sizeof(sql_string) - sql_len,
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", read_state INTEGER");
 		}
 		if (0 != ptnode->instance_tag) {
-			sql_len += snprintf(sql_string + sql_len,
-						sizeof(sql_string) - sql_len,
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", inst_num INTEGER");
 		}
 		sql_string[sql_len] = ')';
@@ -996,16 +997,16 @@ static BOOL table_load_content_table(DB_ITEM *pdb, uint32_t cpid,
 		}
 		sql_len = sprintf(sql_string, "INSERT INTO stbl VALUES (?");
 		for (i=0; i<tag_count; i++) {
-			sql_len += snprintf(sql_string + sql_len,
-				sizeof(sql_string) - sql_len, ", ?");
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
 		}
 		if (psorts->ccategories > 0) {
-			sql_len += snprintf(sql_string + sql_len,
-				sizeof(sql_string) - sql_len, ", ?");
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
 		}
 		if (0 != ptnode->instance_tag) {
-			sql_len += snprintf(sql_string + sql_len,
-				sizeof(sql_string) - sql_len, ", ?");
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
 		}
 		sql_string[sql_len] = ')';
 		sql_len ++;
@@ -4455,15 +4456,15 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		switch (type) {
 		case PT_STRING8:
 		case PT_UNICODE:
-			sql_len += snprintf(sql_string + sql_len,
-						sizeof(sql_string) - sql_len,
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", v%x TEXT", tmp_proptag);
 			break;
 		case PT_FLOAT:
 		case PT_DOUBLE:
 		case PT_APPTIME:
-			sql_len += snprintf(sql_string + sql_len,
-						sizeof(sql_string) - sql_len,
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", v%x REAL", tmp_proptag);
 			break;
 		case PT_CURRENCY:
@@ -4472,16 +4473,16 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		case PT_SHORT:
 		case PT_LONG:
 		case PT_BOOLEAN:
-			sql_len += snprintf(sql_string + sql_len,
-						sizeof(sql_string) - sql_len,
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", v%x INTEGER", tmp_proptag);
 			break;
 		case PT_CLSID:
 		case PT_SVREID:
 		case PT_OBJECT:
 		case PT_BINARY:
-			sql_len += snprintf(sql_string + sql_len,
-						sizeof(sql_string) - sql_len,
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", v%x BLOB", tmp_proptag);
 			break;
 		default:
@@ -4512,8 +4513,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	sql_len = sprintf(sql_string, "INSERT"
 		" INTO s%u VALUES (?", *pstate_id);
 	for (i=0; i<ptnode->psorts->ccategories; i++) {
-		sql_len += snprintf(sql_string + sql_len,
-			sizeof(sql_string) - sql_len, ", ?");
+		sql_len += gx_snprintf(sql_string + sql_len,
+		           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
 	}
 	sql_string[sql_len] = ')';
 	sql_len ++;

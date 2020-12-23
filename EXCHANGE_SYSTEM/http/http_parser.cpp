@@ -4,6 +4,7 @@
 #include <atomic>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "util.h"
 #include "pdu_ndr.h"
 #include "resource.h"
@@ -680,8 +681,8 @@ CONTEXT_PROCESSING:
 				
 				if (FALSE == system_services_judge_user(pcontext->username)) {
 					http_parser_rfc1123_dstring(dstring);
-					response_len = snprintf(
-						response_buff, sizeof(response_buff),
+					response_len = gx_snprintf(
+						response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 503 Service Unavailable\r\n"
 						"Date: %s\r\n"
 						"Server: %s\r\n"
@@ -704,8 +705,8 @@ CONTEXT_PROCESSING:
 					pcontext->maildir, pcontext->lang, reason, 256)) {
 					if ('\0' == pcontext->maildir[0]) {
 						http_parser_rfc1123_dstring(dstring);
-						response_len = snprintf(
-							response_buff, sizeof(response_buff),
+						response_len = gx_snprintf(
+							response_buff, GX_ARRAY_SIZE(response_buff),
 							"HTTP/1.1 401 Unauthorized\r\n"
 							"Date: %s\r\n"
 							"Server: %s\r\n"
@@ -739,8 +740,8 @@ CONTEXT_PROCESSING:
 							pcontext->username, g_block_auth_fail);
 					}
 					http_parser_rfc1123_dstring(dstring);
-					response_len = snprintf(
-						response_buff, sizeof(response_buff),
+					response_len = gx_snprintf(
+						response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 401 Unauthorized\r\n"
 						"Date: %s\r\n"
 						"Server: %s\r\n"
@@ -803,8 +804,8 @@ CONTEXT_PROCESSING:
 				
 				if (FALSE == pcontext->b_authed) {
 					http_parser_rfc1123_dstring(dstring);
-					response_len = snprintf(
-						response_buff, sizeof(response_buff),
+					response_len = gx_snprintf(
+						response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 401 Unauthorized\r\n"
 						"Date: %s\r\n"
 						"Server: %s\r\n"
@@ -939,7 +940,7 @@ CONTEXT_PROCESSING:
 			}
 			/* other http request here if wanted */
 			http_parser_rfc1123_dstring(dstring);
-			response_len = snprintf(response_buff, sizeof(response_buff),
+			response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 						"HTTP/1.1 404 Not Found\r\n"
 						"Date: %s\r\n"
 						"Server: %s\r\n"
@@ -1325,7 +1326,7 @@ CONTEXT_PROCESSING:
 			if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
 				0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
 				/* ECHO request */
-				response_len = snprintf(response_buff, sizeof(response_buff),
+				response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 								"HTTP/1.1 200 Success\r\n"
 								"Connection: Keep-Alive\r\n"
 								"Content-length: 20\r\n"
@@ -1517,8 +1518,8 @@ CONTEXT_PROCESSING:
 					CHANNEL_STAT_RECYCLING == pchannel_out->channel_stat) {
 					/* first send http response head */
 					http_parser_rfc1123_dstring(dstring);
-					response_len = snprintf(
-						response_buff, sizeof(response_buff),
+					response_len = gx_snprintf(
+						response_buff, GX_ARRAY_SIZE(response_buff),
 							"HTTP/1.1 200 Success\r\n"
 							"Date: %s\r\n"
 							"Cache-Control: private\r\n"
@@ -1801,7 +1802,7 @@ BAD_HTTP_REQUEST:
 		mod_cache_put_context(pcontext);
 	}
 	http_parser_rfc1123_dstring(dstring);
-	response_len = snprintf(response_buff, sizeof(response_buff),
+	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 400 Bad Request\r\n"
 					"Date: %s\r\n"
 					"Server: %s\r\n"
@@ -1824,7 +1825,7 @@ INTERNAL_SERVER_ERROR:
 		mod_cache_put_context(pcontext);
 	}
 	http_parser_rfc1123_dstring(dstring);
-	response_len = snprintf(response_buff, sizeof(response_buff),
+	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 500 Internal Server Error\r\n"
 					"Date: %s\r\n"
 					"Server: %s\r\n"
@@ -1847,7 +1848,7 @@ REQUEST_TIME_OUT:
 		mod_cache_put_context(pcontext);
 	}
 	http_parser_rfc1123_dstring(dstring);
-	response_len = snprintf(response_buff, sizeof(response_buff),
+	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 408 Request Timeout\r\n"
 					"Date: %s\r\n"
 					"Server: %s\r\n"

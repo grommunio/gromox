@@ -6,7 +6,7 @@
  */
 #include <errno.h>
 #include <libHX/defs.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "listener.h"
 #include "system_services.h"
 #include "contexts_pool.h"
@@ -254,7 +254,7 @@ static void* thread_work_func(void* arg)
 		if (NULL == pcontext) {
 			system_services_log_info(8, "out of http context");
 			host_ID = resource_get_string("HOST_ID");
-			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -267,7 +267,7 @@ static void* thread_work_func(void* arg)
 		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -284,7 +284,7 @@ static void* thread_work_func(void* arg)
 		/* pass the client ipaddr into the ipaddr container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -393,7 +393,7 @@ static void* thread_work_ssl_func(void* arg)
 		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
@@ -410,7 +410,7 @@ static void* thread_work_ssl_func(void* arg)
 		/* pass the client ipaddr into the ipaddr container */
 		if (FALSE == system_services_container_add_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
-			len = snprintf(buff, 1024, "HTTP/1.1 503 Service Unavailable\r\n"
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"

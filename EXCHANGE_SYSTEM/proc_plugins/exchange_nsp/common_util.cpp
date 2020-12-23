@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include "common_util.h"
+#include <gromox/fileio.h>
 #include <gromox/proc_common.h>
 #include "guid.h"
 #include <sys/types.h>
@@ -164,7 +165,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 		if (NULL == pobj_guid) {
 			ppermeid->pdn = const_cast<char *>("/");
 		} else {
-			len = snprintf(buff, 128,
+			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
 				pobj_guid->time_low, pobj_guid->time_mid,
 				pobj_guid->time_hi_and_version,

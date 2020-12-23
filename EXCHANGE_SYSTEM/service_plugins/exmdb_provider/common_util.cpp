@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "pcl.h"
 #include "util.h"
@@ -15,7 +14,7 @@
 #include "exmdb_server.h"
 #include "alloc_context.h"
 #include <gromox/database.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/svc_common.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
@@ -1985,11 +1984,11 @@ static BOOL common_util_get_message_display_recipients(
 			continue;
 		}
 		if (0 == offset) {
-			offset = snprintf(tmp_buff, sizeof(tmp_buff), "%s",
+			offset = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s",
 			         static_cast<const char *>(pvalue));
 		} else {
-			offset += snprintf(tmp_buff + offset,
-			          sizeof(tmp_buff) - offset, "; %s",
+			offset += gx_snprintf(tmp_buff + offset,
+			          GX_ARRAY_SIZE(tmp_buff) - offset, "; %s",
 			          static_cast<const char *>(pvalue));
 		}
 	}

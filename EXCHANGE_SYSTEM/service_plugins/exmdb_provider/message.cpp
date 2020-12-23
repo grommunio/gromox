@@ -3,6 +3,7 @@
 #include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/database.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/svc_common.h>
 #include "tpropval_array.h"
@@ -3954,10 +3955,11 @@ static BOOL message_forward_message(const char *from_address,
 		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
 			pnode=double_list_get_after(&rcpt_list, pnode)) {
 			if (0 == offset) {
-				offset = sprintf(tmp_buff, "<%s>", static_cast<const char *>(pnode->pdata));
+				offset = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+				         "<%s>", static_cast<const char *>(pnode->pdata));
 			} else {
-				offset += snprintf(tmp_buff + offset,
-				          64 * 1024 - offset, ", <%s>",
+				offset += gx_snprintf(tmp_buff + offset,
+				          GX_ARRAY_SIZE(tmp_buff) - offset, ", <%s>",
 				          static_cast<const char *>(pnode->pdata));
 			}
 			mime_append_field(pmime, "Delivered-To", static_cast<char *>(pnode->pdata));

@@ -2,7 +2,7 @@
 #include <string.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "util.h"
 #include "str_hash.h"
 #include "resource.h"
@@ -388,7 +388,7 @@ static BOOL mod_cache_response_unmodified(HTTP_CONTEXT *phttp)
 	time(&cur_time);
 	gmtime_r(&cur_time, &tmp_tm);
 	strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
-	response_len = snprintf(response_buff, sizeof(response_buff),
+	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 304 Not Modified\r\n"
 					"Server: %s\r\n"
 					"Date: %s\r\n\r\n",
@@ -426,16 +426,16 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 		pcontent_type = "application/octet-stream";
 	}
 	if (pcontext->until != pcontext->pitem->blob.length) {
-		response_len = snprintf(response_buff,
-					sizeof(response_buff),
+		response_len = gx_snprintf(response_buff,
+		               GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 206 Partial Content\r\n");
 	} else {
-		response_len = snprintf(response_buff,
-					sizeof(response_buff),
+		response_len = gx_snprintf(response_buff,
+		               GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 200 OK\r\n");
 	}
-	response_len += snprintf(response_buff + response_len,
-					sizeof(response_buff) - response_len,
+	response_len += gx_snprintf(response_buff + response_len,
+	                GX_ARRAY_SIZE(response_buff) - response_len,
 					"Server: %s\r\n"
 					"Date: %s\r\n"
 					"Content-Type: %s\r\n"
@@ -448,8 +448,8 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 					pcontext->until - pcontext->offset,
 					modified_string, etag);
 	if (pcontext->until != pcontext->pitem->blob.length) {
-		response_len += snprintf(response_buff + response_len,
-					sizeof(response_buff) - response_len,
+		response_len += gx_snprintf(response_buff + response_len,
+		                GX_ARRAY_SIZE(response_buff) - response_len,
 					"Content-Range: bytes %u-%u/%u\r\n\r\n",
 					pcontext->offset, pcontext->until - 1,
 					pcontext->pitem->blob.length);
@@ -520,7 +520,7 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	mod_cache_serialize_etag(pcontext->pitem->ino,
 		pcontext->pitem->blob.length, pcontext->pitem->mtime, etag);
 	content_length =  mod_cache_calculate_content_length(pcontext);	
-	response_len = snprintf(response_buff, sizeof(response_buff),
+	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 206 Partial Content\r\n"
 					"Server: %s\r\n"
 					"Date: %s\r\n"

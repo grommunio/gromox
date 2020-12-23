@@ -4,6 +4,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
+#include <gromox/fileio.h>
 #include "util.h"
 #include "mail.h"
 #include "mjson.h"
@@ -3337,8 +3338,8 @@ static int mail_engine_minfo(int argc, char**argv, int sockd)
 		}
 		unreads = sqlite3_column_int64(pstmt1, 0);
 		total_mail = sqlite3_column_int64(pstmt2, 0);
-		temp_len += snprintf(temp_buff + temp_len,
-				256*1024 - temp_len, "%s %u %u\r\n",
+		temp_len += gx_snprintf(temp_buff + temp_len,
+		            GX_ARRAY_SIZE(temp_buff) - temp_len, "%s %u %u\r\n",
 				sqlite3_column_text(pstmt, 1),
 				unreads, total_mail);
 		count ++;
@@ -3347,7 +3348,7 @@ static int mail_engine_minfo(int argc, char**argv, int sockd)
 	sqlite3_finalize(pstmt1);
 	sqlite3_finalize(pstmt2);
 	mail_engine_put_idb(pidb);
-	offset = snprintf(temp_buff, 32, "TRUE %d\r\n", count);
+	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
 	memmove(temp_buff + 32 - offset, temp_buff, offset);
 	write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 	return 0;
@@ -3386,14 +3387,14 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 		case PRIVATE_FID_JUNK:
 			continue;
 		}
-		temp_len += snprintf(temp_buff + temp_len,
-					256*1024 - temp_len, "%s\r\n",
+		temp_len += gx_snprintf(temp_buff + temp_len,
+		            GX_ARRAY_SIZE(temp_buff) - temp_len, "%s\r\n",
 					sqlite3_column_text(pstmt, 1));
 		count ++;
 	}
 	sqlite3_finalize(pstmt);
 	mail_engine_put_idb(pidb);
-	offset = snprintf(temp_buff, 32, "TRUE %d\r\n", count);
+	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
 	memmove(temp_buff + 32 - offset, temp_buff, offset);
 	write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 	return 0;
@@ -3611,7 +3612,7 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 		double_list_get_nodes_num(&tmp_list));
 	while ((pnode = double_list_get_from_head(&tmp_list)) != NULL) {
 		pinode = (IDL_NODE*)pnode->pdata;
-		temp_len = snprintf(temp_line, 512, "%s %u\r\n",
+		temp_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line), "%s %u\r\n",
 						pinode->mid_string, pinode->size);
 		if (256*1024 - offset < temp_len) {
 			write(sockd, list_buff, offset);
@@ -5056,14 +5057,14 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	count = 0;
 	temp_len = 32;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		temp_len += snprintf(temp_buff + temp_len,
-					256*1024 - temp_len,  "%s\r\n",
+		temp_len += gx_snprintf(temp_buff + temp_len,
+		            GX_ARRAY_SIZE(temp_buff) - temp_len,  "%s\r\n",
 					sqlite3_column_text(pstmt, 0));
 		count ++;
 	}
 	sqlite3_finalize(pstmt);
 	mail_engine_put_idb(pidb);
-	offset = snprintf(temp_buff, 32, "TRUE %d\r\n", count);
+	offset = gx_snprintf(temp_buff, 32, "TRUE %d\r\n", count);
 	memmove(temp_buff + 32 - offset, temp_buff, offset);
 	write(sockd, temp_buff + 32 - offset, offset + temp_len - 32);
 	return 0;
@@ -5244,7 +5245,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		flags_buff[flags_len] = ')';
 		flags_len ++;
 		flags_buff[flags_len] = '\0';
-		buff_len = snprintf(temp_line, 512,
+		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line),
 			"%s %u %s\r\n", mid_string, uid,
 			flags_buff);
 		if (256*1024 - temp_len < buff_len) {
@@ -5469,7 +5470,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	for (pnode=double_list_get_head(&temp_list); NULL!=pnode;
 		pnode=double_list_get_after(&temp_list, pnode)) {
 		auto psm_node = static_cast<SIMU_NODE *>(pnode->pdata);
-		buff_len = snprintf(temp_line, 512, "%u %s %u %s\r\n",
+		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line), "%u %s %u %s\r\n",
 					psm_node->idx - 1, psm_node->mid_string,
 					psm_node->uid, psm_node->flags_buff);
 		if (256*1024 - temp_len < buff_len) {
@@ -5576,7 +5577,7 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 		idx = sqlite3_column_int64(pstmt, 0);
 		mid_string = S2A(sqlite3_column_text(pstmt, 1));
 		uid = sqlite3_column_int64(pstmt, 2);
-		buff_len = snprintf(temp_line, 512,
+		buff_len = gx_snprintf(temp_line, GX_ARRAY_SIZE(temp_line),
 			"%u %s %u\r\n", idx - 1, mid_string, uid);
 		if (256*1024 - temp_len < buff_len) {
 			write(sockd, temp_buff, temp_len);
@@ -6114,8 +6115,8 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	tmp_len = 4;
     memcpy(list_buff, "TRUE", 4);
     while (-1 != (result = mail_engine_ct_fetch_result(presult))) {
-        tmp_len += snprintf(list_buff + tmp_len,
-			256*1024 - tmp_len, " %d", result);
+		tmp_len += gx_snprintf(list_buff + tmp_len,
+		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
 			write(sockd, list_buff, tmp_len);
 			tmp_len = 0;
@@ -6202,8 +6203,8 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	tmp_len = 4;
     memcpy(list_buff, "TRUE", 4);
     while (-1 != (result = mail_engine_ct_fetch_result(presult))) {
-        tmp_len += snprintf(list_buff + tmp_len,
-			256*1024 - tmp_len, " %d", result);
+		tmp_len += gx_snprintf(list_buff + tmp_len,
+		           GX_ARRAY_SIZE(list_buff) - tmp_len, " %d", result);
 		if (tmp_len >= 255*1024) {
 			write(sockd, list_buff, tmp_len);
 			tmp_len = 0;

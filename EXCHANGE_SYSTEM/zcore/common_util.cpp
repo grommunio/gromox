@@ -5,7 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/socket.h>
 #include "pcl.h"
@@ -277,7 +277,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	if (NULL == pentryid) {
 		return GXERR_CALL_FAILED;
 	}
-	search_bin.cb = snprintf(search_buff, 1024, "EX:%s", essdn_buff) + 1;
+	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
 	propval_buff[6].proptag = PROP_TAG_SENDEREMAILADDRESS;
 	propval_buff[6].pvalue = essdn_buff;
@@ -305,7 +305,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 		strcpy(essdn_buff1, essdn_buff);
 		strcpy(tmp_display1, tmp_display);
 	}
-	search_bin1.cb = snprintf(search_buff1, 1024, "EX:%s", essdn_buff1) + 1;
+	search_bin1.cb = gx_snprintf(search_buff1, GX_ARRAY_SIZE(search_buff1), "EX:%s", essdn_buff1) + 1;
 	search_bin1.pv = search_buff1;
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;

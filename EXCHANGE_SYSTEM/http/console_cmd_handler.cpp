@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <stdbool.h>
+#include <gromox/fileio.h>
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
 #include "console_server.h"
@@ -173,7 +174,7 @@ static void cmd_handler_dump_interfaces(DCERPC_INTERFACE *pinterface)
 		} else {
 			format_string = "\t\tinterface(%s) %s(%u.%02u)\r\n";
 		}
-		g_plugname_buffer_size += snprintf(g_plugname_buffer + 
+		g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
 			g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
 			format_string, pinterface->name, uuid_string,
 			version&0xFFFF, (version&0xFFFF0000)>>16);
@@ -183,7 +184,7 @@ static void cmd_handler_dump_interfaces(DCERPC_INTERFACE *pinterface)
 static void cmd_handler_dump_endpoints(DCERPC_ENDPOINT *pendpoint)
 {
 	if (g_plugname_buffer_size < PLUG_BUFFER_SIZE) {
-		g_plugname_buffer_size += snprintf(g_plugname_buffer + 
+		g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
 			g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
 			"\tendpoint %s:%d:\r\n", pendpoint->host, pendpoint->tcp_port);
 		pdu_processor_enum_interfaces(pendpoint, cmd_handler_dump_interfaces);

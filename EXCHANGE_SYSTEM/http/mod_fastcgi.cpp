@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "contexts_pool.h"
 #include "threads_pool.h"
 #include "mod_fastcgi.h"
@@ -1657,7 +1658,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			gmtime_r(&cur_time, &tmp_tm);
 			strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
 			if (0 == strcasecmp(phttp->request.method, "HEAD")) {
-				tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
+				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 								"HTTP/1.1 %s\r\n"
 								"Server: %s\r\n"
 								"Date: %s\r\n"
@@ -1666,7 +1667,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 								dstring, response_buff);
 			} else {
 				if (TRUE == phttp->pfast_context->b_chunked) {
-					tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
+					tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 								"HTTP/1.1 %s\r\n"
 								"Server: %s\r\n"
 								"Date: %s\r\n"
@@ -1675,7 +1676,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 								resource_get_string("HOST_ID"),
 								dstring, response_buff);
 				} else {
-					tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
+					tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 								"HTTP/1.1 %s\r\n"
 								"Server: %s\r\n"
 								"Date: %s\r\n"

@@ -3,7 +3,7 @@
  */
 #include <errno.h>
 #include <libHX/defs.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "console_server.h"
 #include "console_cmd_handler.h"
 #include "util.h"
@@ -208,8 +208,8 @@ int console_server_reply_to_client(const char* format, ...)
 	}
     memset(message, 0, sizeof(message));
     va_start(ap, format);
-    bytes = vsnprintf(message, sizeof(message), format, ap);
-    bytes+= snprintf(message+bytes, sizeof(message) - bytes, "\r\n");
+	bytes = gx_vsnprintf(message, GX_ARRAY_SIZE(message), format, ap);
+	bytes += gx_snprintf(message + bytes, GX_ARRAY_SIZE(message) - bytes, "\r\n");
     return write(client_fd, message, bytes);
 }
 
