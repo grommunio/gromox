@@ -14,10 +14,6 @@ BOOL (*system_services_check_domain)(const char*);
 BOOL (*system_services_check_user)(const char*, char*);
 BOOL (*system_services_check_full)(const char*);
 void (*system_services_log_info)(int, const char *, ...);
-const char* (*system_services_auth_ehlo)();
-int (*system_services_auth_process)(int,const char*, int, char*, int);
-BOOL (*system_services_auth_retrieve)(int, char*, int);
-void (*system_services_auth_clear)(int);
 void (*system_services_etrn_process)(const char*, int, char*, int);
 void (*system_services_vrfy_process)(const char*, int, char*, int);
 
@@ -45,12 +41,6 @@ int system_services_run()
 	E(system_services_log_info, "log_info");
 	E(system_services_judge_user, "user_filter_judge");
 	E(system_services_add_user_into_temp_list, "user_filter_add");
-	E(system_services_auth_ehlo, "auth_ehlo");
-	if (NULL != system_services_auth_ehlo) {
-		E(system_services_auth_process, "auth_process");
-		E(system_services_auth_retrieve, "auth_retrieve");
-		E(system_services_auth_clear, "auth_clear");
-	}
 	E(system_services_check_domain, "check_domain");
 	system_services_check_user = service_query("check_user", "system");
 	system_services_check_full = service_query("check_full", "system");
@@ -86,11 +76,5 @@ int system_services_stop()
 		service_release("vrfy_process", "system");
 	}
 	service_release("log_info", "system");
-	if (NULL != system_services_auth_ehlo) {
-		service_release("auth_ehlo", "system");
-		service_release("auth_process", "system");
-		service_release("auth_retrieve", "system");
-		service_release("auth_clear", "system");
-	}
 	return 0;
 }

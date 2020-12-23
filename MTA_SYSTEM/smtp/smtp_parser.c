@@ -996,10 +996,6 @@ void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext)
 	/* pcontext->mail.envelop.username[0] = '\0'; */
 	strcpy(pcontext->mail.envelop.parsed_domain, "unknown");
 	mem_file_clear(&pcontext->mail.envelop.f_rcpt_to);
-	if (NULL != system_services_auth_clear) {
-		system_services_auth_clear(pcontext - 
-		smtp_parser_get_contexts_list());
-	}
 }
 
 /*

@@ -31,7 +31,6 @@ enum{
     T_HELO_CMD,    
     T_EHLO_CMD,
 	T_STARTTLS_CMD,
-    T_AUTH_PROCESS,
     T_LOGGED_CMD,    
     T_MAIL_CMD,
     T_RCPT_CMD,

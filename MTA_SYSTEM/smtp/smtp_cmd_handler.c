@@ -15,9 +15,6 @@
 static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
     int line_length, SMTP_CONTEXT *pcontext);
 
-static int smtp_cmd_handler_auth_service_interact(const char *cmd_line,
-	int line_length, SMTP_CONTEXT *pcontext);
-
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
@@ -183,12 +180,6 @@ int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
 		write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		return DISPATCH_CONTINUE;
 	}
-
-    /* 
-	 * if the running mode is "inbound" or there's no "auth" service
-	 * tell the client no this command 
-	 */ 
-    if (true) {
         /* 502 Command not implemented */
         smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175006, 1,
                          &string_length);
@@ -200,33 +191,6 @@ int smtp_cmd_handler_auth(const char* cmd_line, int line_length,
 				string_length);
 		}
         return DISPATCH_CONTINUE;
-    }
-
-    if (cmd_line[4] != ' ') {
-        /* command not implemented */
-        smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175006, 1, 
-                         &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;    
-    }
-    /* check whether the user has already logged in */
-    if (TRUE == pcontext->mail.envelop.is_login && 0 == pcontext->session_num) {
-		/* bad sequence of command */
-        smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175007, 1,
-                         &string_length);
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
-        return DISPATCH_CONTINUE;    
-    }
-	return smtp_cmd_handler_auth_service_interact(cmd_line, line_length,
-			pcontext);
 }
 
 int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
@@ -743,10 +707,6 @@ int smtp_cmd_handler_else(const char* cmd_line, int line_length,
     int string_length;
     const char* smtp_reply_str;
     
-    if (T_AUTH_PROCESS == pcontext->last_cmd) {
-		return smtp_cmd_handler_auth_service_interact(cmd_line, line_length,
-				pcontext);
-	} 
     /* command not implement*/
     smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175006, 1, 
                      &string_length);
@@ -779,105 +739,3 @@ static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
     }
     return TRUE;
 }
-
-static int smtp_cmd_handler_auth_service_interact(const char *cmd_line,
-	int line_length, SMTP_CONTEXT *pcontext)
-{
-	char reply_string[1024];
-	const char *smtp_reply_str;
-	int interaction_result, string_length;
-	BOOL b_has_username;
-	
-	interaction_result = system_services_auth_process(pcontext - 
-		smtp_parser_get_contexts_list(), cmd_line, line_length, 
-		reply_string, sizeof(reply_string) - 1);
-	reply_string[sizeof(reply_string) - 1] = '\0';
-	/* append \r\n at the end of reply string */
-	strcat(reply_string, "\r\n");
-	string_length = strlen(reply_string);
-	b_has_username = system_services_auth_retrieve(pcontext -
-			smtp_parser_get_contexts_list(),
-			pcontext->mail.envelop.username,
-			sizeof(pcontext->mail.envelop.username));
-	
-	switch (interaction_result) {
-	case SERVICE_AUTH_ERROR:
-		if (TRUE == b_has_username && (FALSE == system_services_judge_user(
-			pcontext->mail.envelop.username))) {
-			/* 554 Temporary authentication failure */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175035, 1,
-					             &string_length);
-			smtp_parser_log_info(pcontext, 8, "user %s is denied by user "
-					"filter", pcontext->mail.envelop.username);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-			}
-			return DISPATCH_SHOULD_CLOSE;
-		}
-		pcontext->mail.envelop.auth_times ++;
-		if (pcontext->mail.envelop.auth_times >= 
-			smtp_parser_get_param(MAX_AUTH_TIMES)) {
-			
-			/* 554 Authentication has failed too many times */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175028, 1,
-					             &string_length);
-			if (TRUE == b_has_username) {
-				system_services_add_user_into_temp_list(
-					pcontext->mail.envelop.username,
-					smtp_parser_get_param(BLOCK_TIME_EXCEED_AUTHS));
-				smtp_parser_log_info(pcontext, 8, "auth times is over than "
-								"system setting, block the user for a while");	
-			}
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-			}
-			return DISPATCH_SHOULD_CLOSE;
-		}
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reply_string, string_length);
-		} else {
-			write(pcontext->connection.sockd, reply_string, string_length);
-		}
-		pcontext->last_cmd = T_NONE_CMD;
-		return DISPATCH_CONTINUE;
-	case SERVICE_AUTH_CONTINUE:
-		smtp_reply_str = reply_string;
-		string_length = strlen(reply_string);
-		pcontext->last_cmd = T_AUTH_PROCESS;
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reply_string, string_length);
-		} else {
-			write(pcontext->connection.sockd, reply_string, string_length);
-		}
-		return DISPATCH_CONTINUE;
-	case SERVICE_AUTH_FINISH:
-		if (FALSE == system_services_judge_user(
-			pcontext->mail.envelop.username)) {
-			/* 554 Temporary authentication failure */
-			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2175035, 1,
-					             &string_length);
-			if (NULL != pcontext->connection.ssl) {
-				SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-			} else {
-				write(pcontext->connection.sockd, smtp_reply_str,string_length);
-			}
-			smtp_parser_log_info(pcontext, 8, "user %s is denied by user "
-					"filter", pcontext->mail.envelop.username);
-			return DISPATCH_SHOULD_CLOSE;
-		}
-		pcontext->mail.envelop.is_login = TRUE;
-		pcontext->last_cmd              = T_LOGGED_CMD;
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, reply_string, string_length);
-		} else {
-			write(pcontext->connection.sockd, reply_string, string_length);
-		}
-		return DISPATCH_CONTINUE;
-	}
-	return DISPATCH_SHOULD_CLOSE;
-}
-
