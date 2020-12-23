@@ -172,24 +172,21 @@ static int exmdb_client_push_request(uint8_t call_id,
 	}
 	switch (call_id) {
 	case CALL_ID_CONNECT:
-		status = exmdb_client_push_connect_request(
-								&ext_push, prequest);
+		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
 	case CALL_ID_DELIVERY_MESSAGE:
-		status = exmdb_client_push_delivery_message_request(
-										&ext_push, prequest);
+		status = exmdb_client_push_delivery_message_request(&ext_push, static_cast<DELIVERY_MESSAGE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
 	case CALL_ID_CHECK_CONTACT_ADDRESS:
-		status = exmdb_client_push_check_contact_address_request(
-											&ext_push, prequest);
+		status = exmdb_client_push_check_contact_address_request(&ext_push, static_cast<CHECK_CONTACT_ADDRESS_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
@@ -589,7 +586,7 @@ int exmdb_client_run()
 			g_notify_stop = TRUE;
 			return 2;
 		}
-		pserver = malloc(sizeof(REMOTE_SVR));
+		pserver = static_cast<REMOTE_SVR *>(malloc(sizeof(REMOTE_SVR)));
 		if (NULL == pserver) {
 			printf("[exmdb_local]: Failed to allocate memory for exmdb\n");
 			list_file_free(plist);
@@ -605,7 +602,7 @@ int exmdb_client_run()
 		double_list_init(&pserver->conn_list);
 		double_list_append_as_tail(&g_server_list, &pserver->node);
 		for (j=0; j<g_conn_num; j++) {
-		   pconn = malloc(sizeof(REMOTE_CONN));
+			pconn = static_cast<REMOTE_CONN *>(malloc(sizeof(REMOTE_CONN)));
 			if (NULL == pconn) {
 				printf("[exmdb_local]: fail to "
 					"allocate memory for exmdb\n");
