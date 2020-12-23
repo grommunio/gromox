@@ -3032,7 +3032,7 @@ static int exmdb_ext_pull_get_search_criteria_response(
 		ppayload->get_search_criteria.prestriction = NULL;
 	} else {
 		ppayload->get_search_criteria.prestriction =
-			common_util_alloc(sizeof(RESTRICTION));
+			static_cast<RESTRICTION *>(common_util_alloc(sizeof(RESTRICTION)));
 		if (NULL == ppayload->get_search_criteria.prestriction) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3100,7 +3100,7 @@ static int exmdb_ext_pull_get_message_brief_response(
 		return EXT_ERR_SUCCESS;
 	} else {
 		ppayload->get_message_brief.pbrief =
-			common_util_alloc(sizeof(MESSAGE_CONTENT));
+			static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(MESSAGE_CONTENT)));
 		if (NULL == ppayload->get_message_brief.pbrief) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3348,7 +3348,7 @@ static int exmdb_ext_pull_get_embedded_cn_response(EXT_PULL *pext,
 		ppayload->get_embedded_cn.pcn = nullptr;
 		return EXT_ERR_SUCCESS;
 	} else {
-		ppayload->get_embedded_cn.pcn = common_util_alloc(sizeof(uint64_t));
+		ppayload->get_embedded_cn.pcn = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t)));
 		if (ppayload->get_embedded_cn.pcn == nullptr)
 			return EXT_ERR_ALLOC;
 		return ext_buffer_pull_uint64(pext, ppayload->get_embedded_cn.pcn);
@@ -3421,7 +3421,7 @@ static int exmdb_ext_pull_read_attachment_instance_response(
 	}
 	if (0 != tmp_byte) {
 		ppayload->read_attachment_instance.attctnt.pembedded =
-					common_util_alloc(sizeof(MESSAGE_CONTENT));
+			static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(MESSAGE_CONTENT)));
 		if (NULL == ppayload->read_attachment_instance.attctnt.pembedded) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3443,7 +3443,7 @@ static int exmdb_ext_pull_write_attachment_instance_response(
 static int exmdb_ext_pull_flush_instance_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_uint32(pext, &ppayload->flush_instance.e_result);
+	return ext_buffer_pull_uint32(pext, reinterpret_cast<uint32_t *>(&ppayload->flush_instance.e_result));
 }
 
 static int exmdb_ext_pull_get_instance_all_proptags_response(
@@ -3594,7 +3594,7 @@ static int exmdb_ext_pull_get_message_group_id_response(
 		return EXT_ERR_SUCCESS;
 	} else {
 		ppayload->get_message_group_id.pgroup_id =
-				common_util_alloc(sizeof(uint32_t));
+			static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 		if (NULL == ppayload->get_message_group_id.pgroup_id) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3646,7 +3646,7 @@ static int exmdb_ext_pull_get_message_timer_response(
 		return EXT_ERR_SUCCESS;
 	} else {
 		ppayload->get_message_timer.ptimer_id =
-			common_util_alloc(sizeof(uint32_t));
+			static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 		if (NULL == ppayload->get_message_timer.ptimer_id) {
 			return EXT_ERR_ALLOC;
 		}
@@ -3672,7 +3672,7 @@ static int exmdb_ext_pull_delivery_message_response(
 static int exmdb_ext_pull_write_message_response(
 	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_buffer_pull_uint32(pext, &ppayload->write_message.e_result);
+	return ext_buffer_pull_uint32(pext, reinterpret_cast<uint32_t *>(&ppayload->write_message.e_result));
 }
 
 static int exmdb_ext_pull_read_message_response(
@@ -3690,7 +3690,7 @@ static int exmdb_ext_pull_read_message_response(
 		return EXT_ERR_SUCCESS;
 	}
 	ppayload->read_message.pmsgctnt =
-		common_util_alloc(sizeof(MESSAGE_CONTENT));
+		static_cast<MESSAGE_CONTENT *>(common_util_alloc(sizeof(MESSAGE_CONTENT)));
 	if (NULL == ppayload->read_message.pmsgctnt) {
 		return EXT_ERR_ALLOC;
 	}
@@ -3782,8 +3782,8 @@ static int exmdb_ext_pull_get_hierarchy_sync_response(
 		ppayload->get_hierarchy_sync.fldchgs.pfldchgs = NULL;
 	} else {
 		ppayload->get_hierarchy_sync.fldchgs.pfldchgs =
-			common_util_alloc(sizeof(TPROPVAL_ARRAY)*
-			ppayload->get_hierarchy_sync.fldchgs.count);
+			static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY) *
+			ppayload->get_hierarchy_sync.fldchgs.count));
 		if (NULL == ppayload->get_hierarchy_sync.fldchgs.pfldchgs) {
 			return EXT_ERR_ALLOC;
 		}
@@ -4375,7 +4375,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		} else {
 			((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->ptotal =
-				common_util_alloc(sizeof(uint32_t));
+				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 			if (NULL == ((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->ptotal) {
 				return EXT_ERR_ALLOC;	
@@ -4397,7 +4397,7 @@ int exmdb_ext_pull_db_notify(const BINARY *pbin_in,
 		} else {
 			((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->punread =
-				common_util_alloc(sizeof(uint32_t));
+				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 			if (NULL == ((DB_NOTIFY_FOLDER_MODIFIED*)
 				pnotify->db_notify.pdata)->punread) {
 				return EXT_ERR_ALLOC;	
