@@ -1,5 +1,6 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "mail_func.h"
 #include "timezone.h"
 #include "ical.h"
@@ -681,7 +682,6 @@ static size_t ical_serialize_value_string(char *pbuff,
 static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	char *out_buff, size_t max_length)
 {
-	size_t offset;
 	size_t offset1;
 	BOOL need_comma;
 	size_t line_begin;
@@ -693,8 +693,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	DOUBLE_LIST_NODE *pnode1;
 	DOUBLE_LIST_NODE *pnode2;
 	
-	
-	offset = snprintf(out_buff, max_length, "BEGIN:%s\r\n", pcomponent->name);
+	size_t offset = gx_snprintf(out_buff, max_length, "BEGIN:%s\r\n", pcomponent->name);
 	if (offset >= max_length) {
 		return 0;
 	}
@@ -702,7 +701,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		pnode=double_list_get_after(&pcomponent->line_list, pnode)) {
 		line_begin = offset;
 		piline = (ICAL_LINE*)pnode->pdata;
-		offset += snprintf(out_buff + offset,
+		offset += gx_snprintf(out_buff + offset,
 			max_length - offset, "%s", piline->name);
 		if (offset >= max_length) {
 			return 0;
@@ -715,7 +714,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 			}
 			out_buff[offset] = ';';
 			offset ++;
-			offset += snprintf(out_buff + offset,
+			offset += gx_snprintf(out_buff + offset,
 				max_length - offset, "%s=", piparam->name);
 			if (offset >= max_length) {
 				return 0;
@@ -759,7 +758,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 				offset ++;
 			}
 			if ('\0' != pivalue->name[0]) {
-				offset += snprintf(out_buff + offset,
+				offset += gx_snprintf(out_buff + offset,
 					max_length - offset, "%s=", pivalue->name);
 				if (offset >= max_length) {
 					return 0;
@@ -805,7 +804,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		}
 		offset += offset1;
 	}
-	offset += snprintf(out_buff + offset, max_length - 
+	offset += gx_snprintf(out_buff + offset, max_length -
 				offset, "END:%s\r\n", pcomponent->name);
 	if (offset >= max_length) {
 		return 0;

@@ -1,5 +1,6 @@
 #include <time.h>
 #include <unistd.h>
+#include <gromox/fileio.h>
 #include <gromox/locker_client.h>
 #include <gromox/socket.h>
 #include "common_types.h"
@@ -41,7 +42,7 @@ LOCKD locker_client_lock(const char *resource)
 		close(sockd);
 		return -1;
 	}
-	int len = snprintf(temp_buff, 1024, "LOCK %s\r\n", resource);
+	int len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), "LOCK %s\r\n", resource);
 	write(sockd, temp_buff, len);
 	
 	if (FALSE == locker_client_readline_timeout(sockd, temp_buff, 1024) ||

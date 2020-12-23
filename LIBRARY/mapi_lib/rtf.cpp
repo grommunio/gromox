@@ -1,6 +1,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "rtf.h"
 #include "util.h"
 #include "int_hash.h"
@@ -831,11 +832,11 @@ static BOOL rtf_express_attr_begin(
 		if (NULL == pentry) {
 			encoding = preader->default_encoding;
 			debug_info("[rtf]: invalid font number %d", param);
-			tmp_len = snprintf(tmp_buff, 256,
+			tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				TAG_FONT_BEGIN, DEFAULT_FONT_STR);
 		} else {
 			encoding = pentry->encoding;
-			tmp_len = snprintf(tmp_buff, 256,
+			tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				TAG_FONT_BEGIN, pentry->name);
 		}
 		if (FALSE == preader->have_fromhtml) {
@@ -849,7 +850,7 @@ static BOOL rtf_express_attr_begin(
 		}
 		return TRUE;
 	case ATTR_FOREGROUND:
-		tmp_len = snprintf(tmp_buff, 256,
+		tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 			TAG_FOREGROUND_BEGIN, param);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&preader->ext_push, tmp_buff, tmp_len)) {
@@ -857,7 +858,7 @@ static BOOL rtf_express_attr_begin(
 		}
 		return TRUE;
 	case ATTR_BACKGROUND: 
-		tmp_len = snprintf(tmp_buff, 256,
+		tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 			TAG_BACKGROUND_BEGIN, param);
 		if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 			&preader->ext_push, tmp_buff, tmp_len)) {
@@ -2424,7 +2425,7 @@ static int rtf_cmd_field(RTF_READER *preader,
 							    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
 								pword4 = simple_tree_node_get_sibling(pword4);
 							if (NULL != pword4 && NULL != pword4->pdata) {
-								tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
+								tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 									TAG_HYPERLINK_BEGIN, static_cast(const char *, pword4->pdata));
 								if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 									&preader->ext_push, tmp_buff, tmp_len)) {

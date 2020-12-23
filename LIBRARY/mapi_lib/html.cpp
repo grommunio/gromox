@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <memory>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "html.h"
 #include "util.h"
 #include "int_hash.h"
@@ -787,10 +788,8 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 
 static BOOL html_write_a_begin(RTF_WRITER *pwriter, const char *link)
 {
-	int length;
 	char tmp_buff[1024];
-	
-	length = snprintf(tmp_buff, sizeof(tmp_buff),
+	int length = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 			"{\\field{\\*\\fldinst{HYPERLINK %s}}"
 			"{\\fldrslt\\cf0 ", link);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(

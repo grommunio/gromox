@@ -1,3 +1,4 @@
+#include <gromox/fileio.h>
 #include "mail_func.h"
 #include "dsn.h"
 #include <stdio.h>
@@ -186,7 +187,7 @@ BOOL dsn_serialize(DSN *pdsn, char *out_buff, size_t max_length)
 	for (pnode=double_list_get_head(&pdsn->message_fields); NULL!=pnode;
 		pnode=double_list_get_after(&pdsn->message_fields, pnode)) {
 		pfield = (DSN_FIELD*)pnode->pdata;
-		offset += snprintf(out_buff + offset, max_length - offset,
+		offset += gx_snprintf(out_buff + offset, max_length - offset,
 					"%s: %s\r\n", pfield->tag, pfield->value);
 	}
 	if (offset + 2 >= max_length - 1) {
@@ -203,7 +204,7 @@ BOOL dsn_serialize(DSN *pdsn, char *out_buff, size_t max_length)
 		for (pnode=double_list_get_head(pfields); NULL!=pnode;
 			pnode=double_list_get_after(pfields, pnode)) {
 			pfield = (DSN_FIELD*)pnode->pdata;
-			offset += snprintf(out_buff + offset, max_length - offset,
+			offset += gx_snprintf(out_buff + offset, max_length - offset,
 						"%s: %s\r\n", pfield->tag, pfield->value);
 		}
 		if (offset + 2 >= max_length - 1) {

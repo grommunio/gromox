@@ -5,6 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "util.h"
 #include <time.h>
 #include <stdio.h>
@@ -395,7 +396,7 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 	char temp_tag[256];
 
 	length = strlen(src);
-	len = snprintf(temp_tag, 255, "\"%s\"", tag);
+	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, length);
 	if (NULL == ptr1) {
 		return FALSE;
@@ -456,7 +457,7 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	char temp_tag[256];
 
 	temp_len = strlen(src) + 1;
-	len = snprintf(temp_tag, 255, "\"%s\"", tag);
+	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, temp_len);
 	if (NULL == ptr1) {
 		return FALSE;
@@ -525,7 +526,7 @@ BOOL add_digest(char *src, size_t length, const char *tag, const char *value)
 	
 	for (i=temp_len-1; i>0; i--) {
 		if ('}' == src[i]) {
-			len = snprintf(temp_buff, 1024, ",\"%s\":%s", tag, value);
+			len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff), ",\"%s\":%s", tag, value);
 			if (length - i < len + 2) {
 				return FALSE;
 			}
@@ -545,7 +546,7 @@ void remove_digest(char *src, const char *tag)
 	char temp_tag[256];
 
 	temp_len = strlen(src) + 1;
-	len = snprintf(temp_tag, 255, "\"%s\"", tag);
+	len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, temp_len);
 	if (NULL == ptr1) {
 		return;
@@ -1991,7 +1992,7 @@ int uuencode(int mode, const char *file_name, const char *in,
 	int c1, c2, c3, c4;
 	
 	if (NULL != file_name) {
-		offset = snprintf(out, outmax, "begin %o %s\r\n", mode, file_name);
+		offset = gx_snprintf(out, outmax, "begin %o %s\r\n", mode, file_name);
 		if (offset >= outmax) {
 			return -1;
 		}

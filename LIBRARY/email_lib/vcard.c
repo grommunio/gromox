@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <gromox/fileio.h>
 #define MAX_LINE							73
 
 typedef struct _LINE_ITEM {
@@ -562,7 +562,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 		pnode=double_list_get_after(pvcard, pnode)) {
 		line_begin = offset;
 		pvline = (VCARD_LINE*)pnode->pdata;
-		offset += snprintf(out_buff + offset,
+		offset += gx_snprintf(out_buff + offset,
 			max_length - offset, "%s", pvline->name);
 		if (offset >= max_length) {
 			return FALSE;
@@ -576,14 +576,14 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 			out_buff[offset] = ';';
 			offset ++;
 			if (NULL == pvparam->pparamval_list) {
-				offset += snprintf(out_buff + offset,
+				offset += gx_snprintf(out_buff + offset,
 					max_length - offset, "%s", pvparam->name);
 				if (offset >= max_length) {
 					return FALSE;
 				}
 				continue;
 			}
-			offset += snprintf(out_buff + offset,
+			offset += gx_snprintf(out_buff + offset,
 				max_length - offset, "%s=", pvparam->name);
 			if (offset >= max_length) {
 				return FALSE;

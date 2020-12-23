@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "mail.h"
 #include "util.h"
 #include "mail_func.h"
@@ -685,7 +686,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 		email_charset[0] = '\0';
 	}
 
-	buff_len = snprintf(pbuff, length, "\"uid\":0,\"recent\":1,"
+	buff_len = gx_snprintf(pbuff, length, "\"uid\":0,\"recent\":1,"
 				"\"read\":0,\"replied\":0,\"unsent\":0,\"forwarded\":0,"
 				"\"flag\":0,\"priority\":%d,\"msgid\":\"%s\",\"from\":"
 				"\"%s\",\"to\":\"%s\",\"cc\":\"%s\",\"subject\":\"%s\","
@@ -704,7 +705,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 				email_charset[i] = ' ';
 			}
 		}
-		buff_len += snprintf(pbuff + buff_len, length - buff_len,
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"charset\":\"%s\"", email_charset);
 		if (buff_len >= length - 1) {
 			goto PARSE_FAILURE;
@@ -712,7 +713,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	}
 
 	if ('\0' != mime_sender[0]) {
-		buff_len += snprintf(pbuff + buff_len, length - buff_len,
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"sender\":\"%s\"", mime_sender);
 		if (buff_len >= length - 1) {
 			goto PARSE_FAILURE;
@@ -720,7 +721,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	}
 
 	if ('\0' != mime_reply_to[0]) {
-		buff_len += snprintf(pbuff + buff_len, length - buff_len,
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"reply\":\"%s\"", mime_reply_to);
 		if (buff_len >= length - 1) {
 			goto PARSE_FAILURE;
@@ -728,7 +729,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	}
 
 	if ('\0' != mime_in_reply_to[0]) {
-		buff_len += snprintf(pbuff + buff_len, length - buff_len,
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"inreply\":\"%s\"", mime_in_reply_to);
 		if (buff_len >= length - 1) {
 			goto PARSE_FAILURE;
@@ -738,7 +739,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	if (TRUE == mime_get_field(pmime, "Disposition-Notification-To",
 		temp_buff, 1024)) {
 		encode64(temp_buff, strlen(temp_buff), mime_notification, 1024, NULL);
-		buff_len += snprintf(pbuff + buff_len, length - buff_len,
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"notification\":\"%s\"", mime_notification);
 
 		if (buff_len >= length - 1) {
@@ -748,7 +749,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 
 	if (TRUE == mime_get_field(pmime, "References", temp_buff, 1024)) {
 		encode64(temp_buff, strlen(temp_buff), mime_reference, 2048, NULL);
-		buff_len += snprintf(pbuff + buff_len, length - buff_len,
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"ref\":\"%s\"", mime_reference);
 	}
 

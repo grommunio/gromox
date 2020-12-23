@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "mail.h"
 #include "mime.h"
 #include "util.h"
@@ -2446,7 +2446,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 		if (FALSE == mime_get_field(pmime, "Content-Transfer-Encoding",
 			encoding_buff, 128) || FALSE == mime_check_ascii_printable(
 			encoding_buff)) {
-			buff_len += snprintf(pbuff + buff_len, length - buff_len,
+			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\","
 						"\"encoding\":\"8bit\",\"head\":%zu,\"begin\":%zu,",
 						id_string, content_type, head_offset, *poffset);
@@ -2459,7 +2459,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 			}
 			HX_strrtrim(encoding_buff);
 			HX_strltrim(encoding_buff);
-			buff_len += snprintf(pbuff + buff_len, length - buff_len,
+			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\","
 						"\"encoding\":\"%s\",\"head\":%zu,\"begin\":%zu,",
 						id_string, content_type, encoding_buff, head_offset,
@@ -2489,8 +2489,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 		}
 
 		*pcount += 1;
-
-		buff_len += snprintf(pbuff + buff_len, length - buff_len,
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 		            "\"length\":%zu", content_len);
 		if (buff_len >= length - 1) {
 			return -1;
@@ -2507,7 +2506,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 			}
 			HX_strrtrim(charset_buff);
 			HX_strltrim(charset_buff);
-			buff_len += snprintf(pbuff + buff_len, length - buff_len,
+			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 						",\"charset\":\"%s\"", charset_buff);
 			if (buff_len >= length - 1) {
 				return -1;
@@ -2516,7 +2515,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 		
 		if (TRUE == mime_get_filename(pmime, file_name)) {
 			encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
-			buff_len += snprintf(pbuff + buff_len, length - buff_len,
+			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 							",\"filename\":\"%s\"", temp_buff);
 		}
 		if (TRUE == mime_get_field(pmime,
@@ -2536,7 +2535,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 						content_disposition[i] = ' ';
 					}
 				}
-				buff_len += snprintf(pbuff + buff_len, length - buff_len,
+				buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 								",\"cntdspn\":\"%s\"", content_disposition);
 			}
 		}
@@ -2548,7 +2547,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 		if (TRUE == mime_get_field(pmime, "Content-ID", content_ID, 128)) {
 			tmp_len = strlen(content_ID);
 			encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
-			buff_len += snprintf(pbuff + buff_len, length - buff_len,
+			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 							",\"cid\":\"%s\"", temp_buff);
 			if (buff_len >= length - 1) {
 				return -1;
@@ -2559,7 +2558,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 			content_location, 256)) {
 			tmp_len = strlen(content_location);
 			encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
-			buff_len += snprintf(pbuff + buff_len, length - buff_len,
+			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 							",\"cntl\":\"%s\"", temp_buff);
 			if (buff_len >= length - 1) {
 				return -1;
@@ -2726,7 +2725,7 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 		}
 		HX_strrtrim(content_type);
 		HX_strltrim(content_type);
-		buff_len += snprintf(pbuff + buff_len, length - buff_len, 
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%zu,"
 						"\"begin\":%zu, \"length\":%zu}", id_string,
 						content_type, head_offset, *poffset,

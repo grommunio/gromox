@@ -5,7 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include "dsn.h"
 #include "rtf.h"
@@ -873,7 +873,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 			if (0 == str_offset) {
 				str_offset = sprintf(str_buff, "%s", utf8_field);
 			} else {
-				str_offset += snprintf(str_buff + str_offset,
+				str_offset += gx_snprintf(str_buff + str_offset,
 					sizeof(str_buff) - str_offset, ";%s", utf8_field);
 			}
 			if ('\0' != email_addr.local_part[0] && '\0' != email_addr.domain[0]
@@ -5147,7 +5147,7 @@ static int oxcmail_encode_mime_string(const char *charset,
 		if (TRUE == string_from_utf8(
 			charset, pstring, tmp_buff)) {
 			string_len = strlen(tmp_buff);
-			offset = snprintf(pout_string,
+			offset = gx_snprintf(pout_string,
 				max_length, "=?%s?B?", charset);
 			if (0 != encode64(tmp_buff, string_len,
 				pout_string + offset, max_length - offset,
@@ -5156,7 +5156,7 @@ static int oxcmail_encode_mime_string(const char *charset,
 			}
 		} else {
 			string_len = strlen(pstring);
-			offset = snprintf(pout_string,
+			offset = gx_snprintf(pout_string,
 				max_length, "=?utf-8?B?");
 			if (0 != encode64(pstring, string_len,
 				pout_string + offset, max_length - offset,
@@ -5270,11 +5270,11 @@ static BOOL oxcmail_export_addresses(
 			PROP_TAG_SMTPADDRESS, PROP_TAG_ADDRESSTYPE,
 			PROP_TAG_EMAILADDRESS, PROP_TAG_ENTRYID, username)) {
 			if (NULL != pdisplay_name) {
-				offset += snprintf(field + offset,
+				offset += gx_snprintf(field + offset,
 						MIME_FIELD_LEN - offset,
 						" <%s>", username);
 			} else {
-				offset += snprintf(field,
+				offset += gx_snprintf(field,
 					MIME_FIELD_LEN - offset,
 					"<%s>", username);
 			}
@@ -5345,10 +5345,10 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 		if (NULL != pstrings) {
-			offset += snprintf(field, MIME_FIELD_LEN - offset,
+			offset += gx_snprintf(field, MIME_FIELD_LEN - offset,
 				" <%s>", address_array.pentry_id[i].pmail_address);
 		} else {
-			offset += snprintf(field, MIME_FIELD_LEN - offset,
+			offset += gx_snprintf(field, MIME_FIELD_LEN - offset,
 				"<%s>", address_array.pentry_id[i].pmail_address);
 		}
 	}
@@ -5384,9 +5384,9 @@ EXPORT_ADDRESS:
 	if (TRUE == oxcmail_get_smtp_address(&pmsg->proplist, alloc,
 		proptag4, proptag2, proptag3, proptag5, address)) {
 		if (0 == offset) {
-			offset = snprintf(field, 1024, "<%s>", address);
+			offset = gx_snprintf(field, 1024, "<%s>", address);
 		} else {
-			offset += snprintf(field + offset,
+			offset += gx_snprintf(field + offset,
 				1024 - offset, " <%s>", address);
 		}
 	}

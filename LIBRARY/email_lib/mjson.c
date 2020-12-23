@@ -1,6 +1,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/fileio.h>
 #include "mail.h"
 #include "util.h"
 #include "mjson.h"
@@ -1553,7 +1554,7 @@ FETCH_STRUCTURE_LOOP:
 	}
 	
 	if (MJSON_MIME_SINGLE == pmime->mime_type) {
-		offset += snprintf(buff + offset, length - offset, 
+		offset += gx_snprintf(buff + offset, length - offset,
 					"(\"%s\" \"%s\"", ctype, psubtype);
 		if ('\0' != pmime->charset[0] || '\0' != pmime->filename[0]) {
 			buff[offset] = ' ';
@@ -1563,13 +1564,13 @@ FETCH_STRUCTURE_LOOP:
 			
 			b_space = FALSE;
 			if ('\0' != pmime->charset[0]) {
-				offset += snprintf(buff + offset, length - offset, 
+				offset += gx_snprintf(buff + offset, length - offset,
 							"\"CHARSET\" \"%s\"", pmime->charset);
 				b_space = TRUE;
 			} else {
 				if (0 == strcasecmp(ctype, "text") &&
 					'\0' != email_charset[0]) {
-					offset += snprintf(buff + offset, length - offset, 
+					offset += gx_snprintf(buff + offset, length - offset,
 							"\"CHARSET\" \"%s\"", email_charset);
 					b_space = TRUE;
 				}
@@ -1582,10 +1583,10 @@ FETCH_STRUCTURE_LOOP:
 				}
 				if (TRUE == mjson_check_ascii_printable(pmime->filename)) {
 					mjson_convert_quoted_printable(pmime->filename, temp_buff);
-					offset += snprintf(buff + offset, length - offset, 
+					offset += gx_snprintf(buff + offset, length - offset,
 								"\"NAME\" \"%s\"", temp_buff);
 				} else {
-					offset += snprintf(buff + offset, length - offset,
+					offset += gx_snprintf(buff + offset, length - offset,
 								"\"NAME\" \"=?%s?b?",
 								('\0' != email_charset[0])?email_charset:charset);
 					if (0 != encode64(pmime->filename, strlen(pmime->filename),
@@ -1608,7 +1609,7 @@ FETCH_STRUCTURE_LOOP:
 		if ('\0' != pmime->cid[0] &&
 			TRUE == mjson_check_ascii_printable(pmime->cid)) {
 			mjson_convert_quoted_printable(pmime->cid, temp_buff);
-			offset += snprintf(buff + offset, length - offset,
+			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
 		} else {
 			memcpy(buff + offset, " NIL", 4);
@@ -1625,14 +1626,14 @@ FETCH_STRUCTURE_LOOP:
 				/* revision for APPLE device */
 				if (0 == strcasecmp(pmime->encoding, "base64") ||
 					0 == strcasecmp(pmime->encoding, "quoted-printable")) {
-					offset += snprintf(buff + offset, length - offset,
+					offset += gx_snprintf(buff + offset, length - offset,
 								" \"7bit\"");
 				} else {
-					offset += snprintf(buff + offset, length - offset,
+					offset += gx_snprintf(buff + offset, length - offset,
 								" \"%s\"", pmime->encoding);
 				}
 			} else {
-				offset += snprintf(buff + offset, length - offset,
+				offset += gx_snprintf(buff + offset, length - offset,
 							" \"%s\"", pmime->encoding);
 			}
 		} else {
@@ -1656,14 +1657,14 @@ FETCH_STRUCTURE_LOOP:
 			}
 			
 			if (0 == stat(temp_path, &node_stat)) {
-				offset += snprintf(buff + offset, length - offset,
+				offset += gx_snprintf(buff + offset, length - offset,
 				          " %llu", reinterpret_cast(unsigned long long, node_stat.st_size));
 			} else {
 				memcpy(buff + offset, " NIL", 4);
 				offset += 4;
 			}
 		} else {
-			offset += snprintf(buff + offset, length - offset,
+			offset += gx_snprintf(buff + offset, length - offset,
 			          " %zu", pmime->length);
 		}
 					
@@ -1761,7 +1762,7 @@ RFC822_FAILURE:
 			
 		
 			if ('\0' != pmime->cntdspn[0]) {
-				offset += snprintf(buff + offset, length - offset,
+				offset += gx_snprintf(buff + offset, length - offset,
 							" (\"%s\" NIL)", pmime->cntdspn);
 			} else {
 				memcpy(buff + offset, " NIL", 4);
@@ -1776,7 +1777,7 @@ RFC822_FAILURE:
 			if ('\0' != pmime->cntl[0] &&
 				TRUE == mjson_check_ascii_printable(pmime->cntl)) {
 				mjson_convert_quoted_printable(pmime->cntl, temp_buff);
-				offset += snprintf(buff + offset, length - offset,
+				offset += gx_snprintf(buff + offset, length - offset,
 							" \"%s\"", temp_buff);
 			} else {
 				memcpy(buff + offset, " NIL", 4);
@@ -1801,7 +1802,7 @@ RFC822_SUCCESS:
 			return -1;
 		}
 		offset += ret_len;
-		offset += snprintf(buff + offset, length - offset,
+		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", psubtype);
 		if (TRUE == b_ext) {
 			memcpy(buff + offset, " NIL NIL NIL", 12);
@@ -1867,10 +1868,10 @@ static int mjson_convert_address(char *address, const char *charset,
 	if ('\0' != email_addr.display_name[0]) {
 		if (TRUE == mjson_check_ascii_printable(email_addr.display_name)) {
 			mjson_convert_quoted_printable(email_addr.display_name, temp_buff);
-			offset += snprintf(buff + offset, length - offset,
+			offset += gx_snprintf(buff + offset, length - offset,
 						"(\"%s\"", temp_buff);
 		} else {
-			offset += snprintf(buff + offset, length - offset, "(\"=?%s?b?",
+			offset += gx_snprintf(buff + offset, length - offset, "(\"=?%s?b?",
 						('\0' != email_charset[0])?email_charset:charset);
 			if (0 != encode64(email_addr.display_name,
 				strlen(email_addr.display_name), buff + offset,
@@ -1893,7 +1894,7 @@ static int mjson_convert_address(char *address, const char *charset,
 	if ('\0' != email_addr.local_part[0] &&
 		TRUE == mjson_check_ascii_printable(email_addr.local_part)) {
 		mjson_convert_quoted_printable(email_addr.local_part, temp_buff);
-		offset += snprintf(buff + offset, length - offset,
+		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
 	} else {
 		memcpy(buff + offset, " NIL", 4);
@@ -1903,7 +1904,7 @@ static int mjson_convert_address(char *address, const char *charset,
 	if ('\0' != email_addr.domain[0] &&
 		TRUE == mjson_check_ascii_printable(email_addr.domain)) {
 		mjson_convert_quoted_printable(email_addr.domain, temp_buff);
-		offset += snprintf(buff + offset, length - offset,
+		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\")", temp_buff);
 	} else {
 		memcpy(buff + offset, " NIL)", 5);
@@ -1945,7 +1946,7 @@ int mjson_fetch_envelope(MJSON *pjson, const char *charset,
 	if ('\0' != pjson->date[0] &&
 		TRUE == mjson_check_ascii_printable(pjson->date)) {
 		mjson_convert_quoted_printable(pjson->date, temp_buff);
-		offset += snprintf(buff + offset, length - offset,
+		offset += gx_snprintf(buff + offset, length - offset,
 					"\"%s\"", temp_buff);
 	} else {
 		memcpy(buff + offset, "NIL", 3);
@@ -1955,10 +1956,10 @@ int mjson_fetch_envelope(MJSON *pjson, const char *charset,
 	if ('\0' != pjson->subject[0]) {
 		if (TRUE == mjson_check_ascii_printable(pjson->subject)) {
 			mjson_convert_quoted_printable(pjson->subject, temp_buff);
-			offset += snprintf(buff + offset, length - offset,
+			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
 		} else {
-			offset += snprintf(buff + offset, length - offset, " \"=?%s?b?",
+			offset += gx_snprintf(buff + offset, length - offset, " \"=?%s?b?",
 						('\0' != pjson->charset[0])?pjson->charset:charset);
 			if (0 != encode64(pjson->subject, strlen(pjson->subject),
 				buff + offset, length - offset, &ecode_len)) {
@@ -2108,7 +2109,7 @@ int mjson_fetch_envelope(MJSON *pjson, const char *charset,
 	if ('\0' != pjson->inreply[0] &&
 		TRUE == mjson_check_ascii_printable(pjson->inreply)) {
 		mjson_convert_quoted_printable(pjson->inreply, temp_buff);
-		offset += snprintf(buff + offset, length - offset,
+		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
 	} else {
 		memcpy(buff + offset, " NIL", 4);
@@ -2118,7 +2119,7 @@ int mjson_fetch_envelope(MJSON *pjson, const char *charset,
 	if ('\0' != pjson->msgid[0] &&
 		TRUE == mjson_check_ascii_printable(pjson->msgid)) {
 		mjson_convert_quoted_printable(pjson->msgid, temp_buff);
-		offset += snprintf(buff + offset, length - offset,
+		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
 	} else {
 		memcpy(buff + offset, " NIL", 4);

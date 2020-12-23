@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include "tpropval_array.h"
 #include "tarray_set.h"
@@ -2512,7 +2512,7 @@ static BOOL oxcical_parse_attachment(
 				attachment_content_free(pattachment);
 				return FALSE;
 			}
-			tmp_bin.cb = snprintf(tmp_buff, 1024,
+			tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				"[InternetShortcut]\r\nURL=%s", pvalue);
 			tmp_bin.pc = tmp_buff;
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
