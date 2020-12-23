@@ -3,8 +3,8 @@
 #include "common_util.h"
 
 #define EXP(s) CALL_ID_ ## s
-#define E(s) [EXP(s)] = #s
-static const char *const exmdb_rpc_names[] = {
+#define E(s) #s
+static constexpr const char *exmdb_rpc_names[] = {
 	E(CONNECT),
 	E(LISTEN_NOTIFICATION),
 	E(PING_STORE),
@@ -128,6 +128,11 @@ static const char *const exmdb_rpc_names[] = {
 	E(COPY_INSTANCE_ATTACHMENTS),
 	E(CHECK_CONTACT_ADDRESS),
 	E(GET_PUBLIC_FOLDER_UNREAD_COUNT),
+	nullptr, /* x7b */
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
 	E(UNLOAD_STORE),
 };
 #undef E
@@ -135,6 +140,7 @@ static const char *const exmdb_rpc_names[] = {
 
 const char *exmdb_rpc_idtoname(unsigned int i)
 {
-	const char *s = i < ARRAY_SIZE(exmdb_rpc_names) ? exmdb_rpc_names[i] : nullptr;
+	static_assert(GX_ARRAY_SIZE(exmdb_rpc_names) == CALL_ID_UNLOAD_STORE + 1);
+	const char *s = i < GX_ARRAY_SIZE(exmdb_rpc_names) ? exmdb_rpc_names[i] : nullptr;
 	return s != nullptr ? s : "";
 }
