@@ -146,8 +146,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.check_mailbox_permission.username,
 			&presponse->payload.check_mailbox_permission.permission);
 	case CALL_ID_GET_FOLDER_BY_CLASS:
-		presponse->payload.get_folder_by_class.str_explicit =
-										common_util_alloc(256);
+		presponse->payload.get_folder_by_class.str_explicit = static_cast<char *>(common_util_alloc(256));
 		if (NULL == presponse->payload.get_folder_by_class.str_explicit) {
 			return FALSE;
 		}
@@ -896,7 +895,7 @@ static void *thread_work_func(void *pparam)
 			continue;
 		}
 		exmdb_server_build_environment(FALSE, b_private, NULL);
-		tmp_bin.pb = pbuff;
+		tmp_bin.pv = pbuff;
 		tmp_bin.cb = buff_len;
 		status = exmdb_ext_pull_request(&tmp_bin, &request);
 		free(pbuff);
@@ -927,7 +926,7 @@ static void *thread_work_func(void *pparam)
 						}
 					}
 				} else if (CALL_ID_LISTEN_NOTIFICATION == request.call_id) {
-					prouter = malloc(sizeof(ROUTER_CONNECTION));
+					prouter = static_cast<ROUTER_CONNECTION *>(malloc(sizeof(ROUTER_CONNECTION)));
 					if (NULL == prouter) {
 						tmp_byte = RESPONSE_CODE_LACK_MEMORY;
 					} else {
@@ -1098,7 +1097,7 @@ int exmdb_parser_run()
 		if (FALSE == common_util_check_local_ip(pitem[i].ip_addr)) {
 			continue;
 		}
-		plocal = malloc(sizeof(LOCAL_SVR));
+		plocal = static_cast<LOCAL_SVR *>(malloc(sizeof(LOCAL_SVR)));
 		if (NULL == plocal) {
 			printf("[exmdb_provider]: Failed to allocate memory\n");
 			list_file_free(plist);
@@ -1129,7 +1128,7 @@ int exmdb_parser_stop()
 	pthread_mutex_lock(&g_connection_lock);
 	num = double_list_get_nodes_num(&g_connection_list);
 	if (num > 0) {
-		pthr_ids = malloc(sizeof(pthread_t)*num);
+		pthr_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * num));
 		if (NULL == pthr_ids) {
 			return -1;
 		}
@@ -1153,7 +1152,7 @@ int exmdb_parser_stop()
 	pthread_mutex_lock(&g_router_lock);
 	num = double_list_get_nodes_num(&g_router_list);
 	if (num > 0) {
-		pthr_ids = malloc(sizeof(pthread_t)*num);
+		pthr_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * num));
 		if (NULL == pthr_ids) {
 			return -2;
 		}
