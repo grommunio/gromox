@@ -5,19 +5,12 @@
 #include "common_types.h"
 #include "config_file.h"
 #include "mysql_adaptor/mysql_adaptor.h"
-#include "../../MTA_SYSTEM/service_plugins/esmtp_auth/service_auth.h"
 
 using namespace std::string_literals;
 
 DECLARE_API;
 static decltype(mysql_adaptor_meta) *fptr_mysql_meta;
 static decltype(mysql_adaptor_login2) *fptr_login;
-
-static bool is_mta()
-{
-	auto i = static_cast<const char *>(query_service("_program_identifier"));
-	return strcmp(i, "smtp") == 0 || strcmp(i, "delivery") == 0;
-}
 
 static BOOL login_gen(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode)
@@ -87,19 +80,9 @@ static BOOL authmgr_init()
 			return false;
 		}
 	}
-	if (is_mta())
-		service_auth_init(get_context_num(), login_smtp);
-	if (is_mta() && service_auth_run() != 0) {
-		printf("[authmgr]: failed to run service auth\n");
-		return false;
-	}
 	if (!register_service("auth_login_exch", reinterpret_cast<void *>(login_exch)) ||
 	    !register_service("auth_login_pop3", reinterpret_cast<void *>(login_pop3)) ||
-	    !register_service("auth_login_smtp", reinterpret_cast<void *>(login_smtp)) ||
-	    !register_service("auth_ehlo", reinterpret_cast<void *>(service_auth_ehlo)) ||
-	    !register_service("auth_process", reinterpret_cast<void *>(service_auth_process)) ||
-	    !register_service("auth_retrieve", reinterpret_cast<void *>(service_auth_retrieve)) ||
-	    !register_service("auth_clear", reinterpret_cast<void *>(service_auth_clear))) {
+	    !register_service("auth_login_smtp", reinterpret_cast<void *>(login_smtp))) {
 		printf("[authmgr]: failed to register auth services\n");
 		return false;
 	}
