@@ -12,8 +12,8 @@
 #include "type_conversion.h"
 #include <memory>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include "ext/standard/info.h"
 #include "Zend/zend_exceptions.h"
 #include <sys/wait.h>

@@ -1,7 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -22,10 +22,10 @@
 #include "msgchg_grouping.h"
 #include "bounce_producer.h"
 #include "system_services.h"
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <string.h>
-#include <signal.h>
+#include <cstring>
+#include <csignal>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>

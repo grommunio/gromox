@@ -1,11 +1,11 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include "system_services.h"
 #include "zarafa_server.h"
 #include "user_object.h"
 #include "common_util.h"
 #include "ab_tree.h"
-#include <stdio.h>
+#include <cstdio>
 
 USER_OBJECT* user_object_create(int base_id, uint32_t minid)
 {

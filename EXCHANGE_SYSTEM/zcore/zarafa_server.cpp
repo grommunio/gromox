@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <libHX/defs.h>
@@ -27,7 +27,7 @@
 #include "exmdb_client.h"
 #include "idset.h"
 #include <sys/socket.h>
-#include <stdio.h>
+#include <cstdio>
 #include <poll.h>
 
 typedef struct _NOTIFY_ITEM {

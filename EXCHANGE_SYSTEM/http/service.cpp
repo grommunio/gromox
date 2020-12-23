@@ -7,10 +7,10 @@
 #include "vstack.h"
 #include "util.h"
 #include <sys/types.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <dlfcn.h>
-#include <stdio.h>
+#include <cstdio>
 
 typedef struct _REFERENCE_NODE{
 	DOUBLE_LIST_NODE	node;

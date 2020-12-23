@@ -6,8 +6,7 @@
 #include "eid_array.h"
 #include "rop_util.h"
 #include "idset.h"
-#include <stdio.h>
-
+#include <cstdio>
 #define IDSET_CACHE_MIN_RANGE				10
 
 typedef struct _ENUM_PARAM {

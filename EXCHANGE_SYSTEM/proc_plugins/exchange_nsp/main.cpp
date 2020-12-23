@@ -1,4 +1,4 @@
-#include <errno.h>
+#include <cerrno>
 #include "guid.h"
 #include "util.h"
 #include "nsp_ndr.h"
@@ -7,8 +7,8 @@
 #include <gromox/proc_common.h>
 #include "config_file.h"
 #include "nsp_interface.h"
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 DECLARE_API;
 

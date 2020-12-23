@@ -8,11 +8,10 @@
 #include "rop_util.h"
 #include "guid.h"
 #include "util.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <time.h>
-
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <ctime>
 #define MAXIMUM_ALLOCATION_NUMBER				1000000
 
 #define ALLOCATION_INTERVAL						24*60*60

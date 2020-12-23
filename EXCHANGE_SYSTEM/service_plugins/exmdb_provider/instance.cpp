@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/database.h>
 #include <gromox/fileio.h>
@@ -13,11 +13,11 @@
 #include "rop_util.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #define UI(x) static_cast<unsigned int>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
 

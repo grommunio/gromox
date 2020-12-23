@@ -15,12 +15,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/un.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstddef>
+#include <cstdio>
 #include <fcntl.h>
-#include <errno.h>
+#include <cerrno>
 #include <poll.h>
 
 

@@ -1,6 +1,6 @@
 #include <gromox/hook_common.h>
 #include "bounce_producer.h"
-#include <stdio.h>
+#include <cstdio>
 #include "../../../EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.h"
 
 DECLARE_API;

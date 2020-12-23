@@ -2,8 +2,8 @@
 #include <gromox/defs.h>
 #include "ext_buffer.h"
 #include "endian_macro.h"
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include "rtfcp.h"
 
 #define	RTF_COMPRESSED			0x75465a4c

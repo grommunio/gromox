@@ -14,10 +14,10 @@
 #include "sortorder_set.h"
 #include "proptag_array.h"
 #include "notification_agent.h"
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <ctime>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <pthread.h>
 #define LLD(x) static_cast<long long>(x)

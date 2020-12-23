@@ -1,5 +1,5 @@
-#include <ctype.h>
-#include <stdint.h>
+#include <cctype>
+#include <cstdint>
 #include <memory>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
@@ -9,12 +9,11 @@
 #include "str_hash.h"
 #include "ext_buffer.h"
 #include "double_list.h"
-#include <stdio.h>
+#include <cstdio>
 #include <gumbo.h>
 #include <iconv.h>
-#include <stdlib.h> 
-#include <string.h>
-
+#include <cstdlib>
+#include <cstring>
 #define RTF_PARAGRAPHALIGN_DEFAULT			0
 #define RTF_PARAGRAPHALIGN_LEFT				1
 #define RTF_PARAGRAPHALIGN_CENTER			2

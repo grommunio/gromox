@@ -1,6 +1,6 @@
 #include <atomic>
 #include <climits>
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
@@ -23,9 +23,9 @@
 #include <ifaddrs.h>
 #include <unistd.h>
 #include <net/if.h>
-#include <string.h>
+#include <cstring>
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #include <iconv.h>
 #define UI(x) static_cast<unsigned int>(x)
 #define LLD(x) static_cast<long long>(x)

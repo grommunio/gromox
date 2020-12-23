@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/paths.h>
 #include "pdu_processor.h"
@@ -14,10 +14,10 @@
 #include "guid.h"
 #include "util.h"
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #include <dlfcn.h>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <sys/types.h>
 #include <sys/stat.h>
 #define ASSOC_GROUP_HASH_SIZE			10000

@@ -20,10 +20,10 @@
 #include "system_services.h"
 #include "blocks_allocator.h"
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <string.h>
-#include <stdarg.h>
+#include <cstring>
+#include <cstdarg>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>

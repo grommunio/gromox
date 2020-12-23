@@ -4,7 +4,7 @@
  *    connection is legal, construct a context to represent the connection and 
  *    throw it into contexts pool, or close the connection
  */
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <gromox/fileio.h>
 #include "listener.h"
@@ -13,10 +13,10 @@
 #include "http_parser.h"
 #include "util.h"
 #include "resource.h"
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -24,7 +24,7 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <pthread.h>
-#include <string.h>
+#include <cstring>
 
 static void* thread_work_func(void* arg);
 

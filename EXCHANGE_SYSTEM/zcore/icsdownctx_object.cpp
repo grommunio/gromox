@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include "icsdownctx_object.h"
 #include "tpropval_array.h"
@@ -10,8 +10,8 @@
 #include "eid_array.h"
 #include "rop_util.h"
 #include "idset.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 ICSDOWNCTX_OBJECT* icsdownctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type)

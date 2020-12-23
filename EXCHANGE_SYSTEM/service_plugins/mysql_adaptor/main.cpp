@@ -1,11 +1,11 @@
-#include <errno.h>
+#include <cerrno>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include "mysql_adaptor.h"
 #include "util.h"
 #include "config_file.h"
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include <pthread.h>
 
 DECLARE_API;

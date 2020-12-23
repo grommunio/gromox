@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <gromox/mapidefs.h>
@@ -9,10 +9,10 @@
 #include "exmdb_client.h"
 #include "ext_buffer.h"
 #include "rop_util.h"
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
 

@@ -1,6 +1,6 @@
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
@@ -16,9 +16,9 @@
 #include "service.h" 
 #include "util.h"
 #include <sys/types.h>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <pwd.h>
 
 using namespace gromox;

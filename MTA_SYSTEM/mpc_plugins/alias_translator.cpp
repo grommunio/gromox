@@ -1,12 +1,12 @@
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "str_hash.h"
 #include "list_file.h"
 #include "util.h"
-#include <stdarg.h>
+#include <cstdarg>
 #include <pthread.h>
 #include <fcntl.h>
 #include <sys/stat.h>

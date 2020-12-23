@@ -12,10 +12,10 @@
 #include "element_data.h"
 #include "endian_macro.h"
 #include "tpropval_array.h"
-#include <stdio.h>
+#include <cstdio>
 #include <iconv.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 #define MAX_ATTRS						10000
 #define MAX_GROUP_DEPTH					1000

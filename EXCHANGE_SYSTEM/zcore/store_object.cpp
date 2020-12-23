@@ -1,8 +1,8 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <ctype.h>
-#include <stdint.h>
+#include <cctype>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
@@ -18,11 +18,11 @@
 #include "rop_util.h"
 #include "util.h"
 #include "guid.h"
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
 

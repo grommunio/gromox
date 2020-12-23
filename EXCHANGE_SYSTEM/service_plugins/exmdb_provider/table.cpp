@@ -16,10 +16,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <iconv.h>
-#include <stdio.h>
+#include <cstdio>
 #define LLU(x) static_cast<unsigned long long>(x)
 
 typedef struct _CONDITION_NODE {

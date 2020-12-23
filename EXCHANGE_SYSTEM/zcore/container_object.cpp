@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/mapidefs.h>
 #include "container_object.h"
@@ -11,7 +11,7 @@
 #include "ab_tree.h"
 #include "exmdb_client.h"
 #include "propval.h"
-#include <stdio.h>
+#include <cstdio>
 
 CONTAINER_OBJECT* container_object_create(
 	uint8_t type, CONTAINER_ID id)

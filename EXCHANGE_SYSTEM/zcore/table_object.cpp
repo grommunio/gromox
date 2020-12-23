@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <gromox/mapidefs.h>
 #include "tarray_set.h"
 #include "object_tree.h"
@@ -12,8 +12,8 @@
 #include "message_object.h"
 #include "container_object.h"
 #include "propval.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 typedef struct _BOOKMARK_NODE {
 	DOUBLE_LIST_NODE node;

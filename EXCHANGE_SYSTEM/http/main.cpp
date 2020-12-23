@@ -1,5 +1,5 @@
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
@@ -23,9 +23,9 @@
 #include "system_services.h"
 #include "blocks_allocator.h"
 #include <pwd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>

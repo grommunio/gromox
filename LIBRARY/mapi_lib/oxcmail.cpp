@@ -1,7 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -25,10 +25,10 @@
 #include "apple_util.h"
 #include "tpropval_array.h"
 #include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 
 /* uncomment below macro if you need system to verify X-MS-TNEF-Correlator */
 /* #define VERIFY_TNEF_CORRELATOR */

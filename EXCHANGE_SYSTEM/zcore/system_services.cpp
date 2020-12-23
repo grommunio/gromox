@@ -1,7 +1,7 @@
 #include <gromox/defs.h>
 #include "system_services.h"
 #include "service.h"
-#include <stdio.h>
+#include <cstdio>
 #include "../service_plugins/mysql_adaptor/mysql_adaptor.h"
 
 BOOL (*system_services_get_user_lang)(const char*, char*);

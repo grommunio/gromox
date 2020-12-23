@@ -4,8 +4,7 @@
 #include "lib_buffer.h"
 #include "db_engine.h"
 #include <pthread.h>
-#include <stdio.h>
-
+#include <cstdio>
 
 typedef struct _ENVIRONMENT_CONTEXT {
 	BOOL b_local;

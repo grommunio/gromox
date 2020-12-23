@@ -2,7 +2,7 @@
  * commands and then do the corresponding action. 
  */ 
 #include <atomic>
-#include <errno.h>
+#include <cerrno>
 #include <climits>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -21,10 +21,10 @@
 #include "system_services.h"
 #include "blocks_allocator.h"
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <string.h>
-#include <stdarg.h>
+#include <cstring>
+#include <cstdarg>
 #include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>

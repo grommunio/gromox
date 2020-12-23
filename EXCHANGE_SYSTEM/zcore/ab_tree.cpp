@@ -1,7 +1,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -15,12 +15,12 @@
 #include "propval.h"
 #include "rop_util.h"
 #include "system_services.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cstddef>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <fcntl.h>
 #include <pthread.h> 
 #include <sys/stat.h>

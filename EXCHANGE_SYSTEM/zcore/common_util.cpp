@@ -1,5 +1,5 @@
-#include <errno.h>
-#include <stdint.h>
+#include <cerrno>
+#include <cstdint>
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
@@ -33,13 +33,12 @@
 #include <sys/stat.h>
 #include <pthread.h>
 #include <ifaddrs.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdarg>
+#include <cstdlib>
 #include <fcntl.h>
 #include <iconv.h>
-#include <stdio.h>
-
+#include <cstdio>
 
 enum {
 	SMTP_SEND_OK = 0,

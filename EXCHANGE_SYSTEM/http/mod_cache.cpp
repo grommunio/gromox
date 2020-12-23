@@ -1,5 +1,5 @@
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
@@ -17,9 +17,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <time.h>
-
-
+#include <ctime>
 #define HASH_GROWING_NUM			1000
 
 #define BOUNDARY_STRING				"00000000000000000001"

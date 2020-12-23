@@ -7,10 +7,10 @@
 #include "mapi_types.h"
 #include <sys/socket.h>
 #include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <poll.h>
 
 enum {

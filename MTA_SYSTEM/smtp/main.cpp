@@ -1,6 +1,6 @@
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/fileio.h>
@@ -22,9 +22,9 @@
 #include "util.h"
 #include "lib_buffer.h"
 #include <pwd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>

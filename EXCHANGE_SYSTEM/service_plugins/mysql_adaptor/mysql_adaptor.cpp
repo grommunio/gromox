@@ -14,7 +14,7 @@
 #include "mysql_adaptor.h"
 #include "mem_file.h"
 #include "util.h"
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <pthread.h>
 #include <mysql/mysql.h>

@@ -1,4 +1,4 @@
-#include <errno.h>
+#include <cerrno>
 #include <libHX/string.h>
 #include "bounce_producer.h"
 #include <gromox/svc_common.h>
@@ -10,9 +10,9 @@
 #include "config_file.h"
 #include "db_engine.h"
 #include "util.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 
 DECLARE_API;
 

@@ -6,11 +6,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <fcntl.h>
 #include <iconv.h>
-#include <stdio.h>
-#include <time.h>
+#include <cstdio>
+#include <ctime>
 
 static GUID g_server_guid;
 static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,

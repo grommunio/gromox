@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -19,9 +19,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <fcntl.h>
 
 typedef struct _SORT_ITEM {

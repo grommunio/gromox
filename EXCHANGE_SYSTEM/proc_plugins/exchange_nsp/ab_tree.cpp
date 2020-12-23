@@ -8,12 +8,12 @@
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stddef.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cstddef>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <fcntl.h>
 #include <pthread.h> 
 #include <sys/stat.h>

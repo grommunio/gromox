@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "bounce_producer.h"
@@ -22,9 +22,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #define UI(x) static_cast<unsigned int>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
 

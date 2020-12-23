@@ -1,8 +1,8 @@
 #include <atomic>
-#include <errno.h>
+#include <cerrno>
 #include <climits>
 #include <cstdarg>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -24,8 +24,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <fcntl.h>
 
 

@@ -6,8 +6,8 @@
 #include "db_engine.h"
 #include "rop_util.h"
 #include "proptags.h"
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #define LLD(x) static_cast<long long>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
 

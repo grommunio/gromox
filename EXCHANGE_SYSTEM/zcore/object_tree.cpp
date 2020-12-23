@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include "util.h"
 #include "guid.h"
@@ -21,8 +21,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
-
+#include <cstdio>
 #define HGROWING_SIZE					250
 
 /* maximum handle number per session */
