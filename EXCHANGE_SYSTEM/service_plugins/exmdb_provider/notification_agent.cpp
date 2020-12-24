@@ -30,7 +30,7 @@ void notification_agent_backward_notify(
 	if (NULL == prouter) {
 		return;
 	}
-	pdnode = malloc(sizeof(DATAGRAM_NODE));
+	pdnode = static_cast<DATAGRAM_NODE *>(malloc(sizeof(DATAGRAM_NODE)));
 	if (NULL == pdnode) {
 		exmdb_parser_put_router(prouter);
 		return;
