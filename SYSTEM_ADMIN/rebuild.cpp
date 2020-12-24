@@ -117,16 +117,14 @@ static int exmdb_client_push_request(uint8_t call_id,
 	}
 	switch (call_id) {
 	case CALL_ID_CONNECT:
-		status = exmdb_client_push_connect_request(
-								&ext_push, prequest);
+		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
 	case CALL_ID_UNLOAD_STORE:
-		status = exmdb_client_push_unload_store_request(
-									&ext_push, prequest);
+		status = exmdb_client_push_unload_store_request(&ext_push, static_cast<UNLOAD_STORE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
@@ -171,19 +169,17 @@ static BOOL exmdb_client_read_socket(int sockd, BINARY *pbin)
 			read_len = read(sockd, resp_buff, 5);
 			if (1 == read_len) {
 				pbin->cb = 1;
-				pbin->pb = malloc(1);
-				if (NULL == pbin->pb) {
+				pbin->pv = malloc(1);
+				if (pbin->pv == nullptr)
 					return FALSE;
-				}
 				*(uint8_t*)pbin->pb = resp_buff[0];
 				return TRUE;
 			} else if (5 == read_len) {
 				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
-				pbin->pb = malloc(pbin->cb);
-				if (NULL == pbin->pb) {
+				pbin->pv = malloc(pbin->cb);
+				if (pbin->pv == nullptr)
 					return FALSE;
-				}
-				memcpy(pbin->pb, resp_buff, 5);
+				memcpy(pbin->pv, resp_buff, 5);
 				offset = 5;
 				if (offset == pbin->cb) {
 					return TRUE;
@@ -417,7 +413,7 @@ int main(int argc, const char **argv)
 	}
 	str_size1 = node_stat.st_size;
 	
-	sql_string = malloc(str_size + str_size1 + 1);
+	sql_string = static_cast<char *>(malloc(str_size + str_size1 + 1));
 	if (NULL == sql_string) {
 		printf("Failed to allocate memory\n");
 		return 6;
@@ -665,7 +661,7 @@ int main(int argc, const char **argv)
 	csql_string = "PRAGMA integrity_check";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
-			presult = reinterpret_cast(const char *, sqlite3_column_text(pstmt, 0));
+			presult = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0));
 			if (NULL == presult || 0 != strcmp(presult, "ok")) {
 				printf("new database is still "
 					"malformed, can not be fixed!\n");
@@ -690,7 +686,7 @@ int main(int argc, const char **argv)
 		if (0 != strcasecmp(pitem[i].type, "private")) {
 			continue;
 		}
-		pexnode = malloc(sizeof(EXMDB_NODE));
+		pexnode = static_cast<EXMDB_NODE *>(malloc(sizeof(EXMDB_NODE)));
 		if (NULL == pexnode) {
 			continue;
 		}
