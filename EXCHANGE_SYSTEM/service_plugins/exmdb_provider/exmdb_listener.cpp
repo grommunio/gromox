@@ -67,7 +67,7 @@ static void *thread_work_func(void *param)
 		if (-1 == sockd) {
 			continue;
 		}
-		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &peer_name),
+		int ret = getnameinfo(reinterpret_cast<struct sockaddr *>(&peer_name),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICSERV | NI_NUMERICHOST);
 		if (ret != 0) {
@@ -180,7 +180,7 @@ int exmdb_listener_run()
 			return -5;
 		}
 		num = list_file_get_item_num(plist);
-		const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
+		auto pitem = reinterpret_cast<struct ipitem *>(list_file_get_list(plist));
 		for (i=0; i<num; i++) {
 			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
 			if (NULL == pacl) {
