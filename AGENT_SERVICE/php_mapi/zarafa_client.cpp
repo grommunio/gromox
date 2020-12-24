@@ -2,6 +2,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
+#include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
 #include "zarafa_client.h"
 #include "rpc_ext.h"
@@ -15,7 +16,6 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <cerrno>
-#define RESPONSE_CODE_SUCCESS      			0x00
 
 static int zarafa_client_connect()
 {
@@ -128,7 +128,7 @@ static zend_bool zarafa_client_do_rpc(
 		return 0;
 	}
 	close(sockd);
-	if (tmp_bin.cb < 5 || RESPONSE_CODE_SUCCESS != tmp_bin.pb[0]) {
+	if (tmp_bin.cb < 5 || tmp_bin.pb[0] != zcore_response::SUCCESS) {
 		if (NULL != tmp_bin.pb) {
 			efree(tmp_bin.pb);
 		}
@@ -151,7 +151,7 @@ uint32_t zarafa_client_logon(const char *username,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LOGON;
+	request.call_id = zcore_callid::LOGON;
 	request.payload.logon.username = deconst(username);
 	request.payload.logon.password = deconst(password);
 	request.payload.logon.flags = flags;
@@ -168,7 +168,7 @@ uint32_t zarafa_client_checksession(GUID hsession)
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CHECKSESSION;
+	request.call_id = zcore_callid::CHECKSESSION;
 	request.payload.checksession.hsession = hsession;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return ecRpcFailed;
@@ -182,7 +182,7 @@ uint32_t zarafa_client_uinfo(const char *username, BINARY *pentryid,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_UINFO;
+	request.call_id = zcore_callid::UINFO;
 	request.payload.uinfo.username = deconst(username);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return ecRpcFailed;
@@ -201,7 +201,7 @@ uint32_t zarafa_client_unloadobject(GUID hsession, uint32_t hobject)
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_UNLOADOBJECT;
+	request.call_id = zcore_callid::UNLOADOBJECT;
 	request.payload.unloadobject.hsession = hsession;
 	request.payload.unloadobject.hobject = hobject;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -216,7 +216,7 @@ uint32_t zarafa_client_openentry(GUID hsession, BINARY entryid,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_OPENENTRY;
+	request.call_id = zcore_callid::OPENENTRY;
 	request.payload.openentry.hsession = hsession;
 	request.payload.openentry.entryid = entryid;
 	request.payload.openentry.flags = flags;
@@ -236,7 +236,7 @@ uint32_t zarafa_client_openstoreentry(GUID hsession, uint32_t hobject,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_OPENSTOREENTRY;
+	request.call_id = zcore_callid::OPENSTOREENTRY;
 	request.payload.openstoreentry.hsession = hsession;
 	request.payload.openstoreentry.hobject = hobject;
 	request.payload.openstoreentry.entryid = entryid;
@@ -257,7 +257,7 @@ uint32_t zarafa_client_openabentry(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_OPENABENTRY;
+	request.call_id = zcore_callid::OPENABENTRY;
 	request.payload.openabentry.hsession = hsession;
 	request.payload.openabentry.entryid = entryid;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -276,7 +276,7 @@ uint32_t zarafa_client_resolvename(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_RESOLVENAME;
+	request.call_id = zcore_callid::RESOLVENAME;
 	request.payload.resolvename.hsession = hsession;
 	request.payload.resolvename.pcond_set = deconst(pcond_set);
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -293,7 +293,7 @@ uint32_t zarafa_client_getpermissions(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETPERMISSIONS;
+	request.call_id = zcore_callid::GETPERMISSIONS;
 	request.payload.getpermissions.hsession = hsession;
 	request.payload.getpermissions.hobject = hobject;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -310,7 +310,7 @@ uint32_t zarafa_client_modifypermissions(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_MODIFYPERMISSIONS;
+	request.call_id = zcore_callid::MODIFYPERMISSIONS;
 	request.payload.modifypermissions.hsession = hsession;
 	request.payload.modifypermissions.hfolder = hfolder;
 	request.payload.modifypermissions.pset = deconst(pset);
@@ -326,7 +326,7 @@ uint32_t zarafa_client_modifyrules(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_MODIFYRULES;
+	request.call_id = zcore_callid::MODIFYRULES;
 	request.payload.modifyrules.hsession = hsession;
 	request.payload.modifyrules.hfolder = hfolder;
 	request.payload.modifyrules.flags = flags;
@@ -342,7 +342,7 @@ uint32_t zarafa_client_getabgal(GUID hsession, BINARY *pentryid)
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETABGAL;
+	request.call_id = zcore_callid::GETABGAL;
 	request.payload.getabgal.hsession = hsession;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return ecRpcFailed;
@@ -358,7 +358,7 @@ uint32_t zarafa_client_loadstoretable(
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LOADSTORETABLE;
+	request.call_id = zcore_callid::LOADSTORETABLE;
 	request.payload.loadstoretable.hsession = hsession;
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return ecRpcFailed;
@@ -374,7 +374,7 @@ uint32_t zarafa_client_openstore(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_OPENSTORE;
+	request.call_id = zcore_callid::OPENSTORE;
 	request.payload.openstore.hsession = hsession;
 	request.payload.openstore.entryid = entryid;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -391,7 +391,7 @@ uint32_t zarafa_client_openpropfilesec(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_OPENPROPFILESEC;
+	request.call_id = zcore_callid::OPENPROPFILESEC;
 	request.payload.openpropfilesec.hsession = hsession;
 	request.payload.openpropfilesec.puid = puid;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -408,7 +408,7 @@ uint32_t zarafa_client_loadhierarchytable(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LOADHIERARCHYTABLE;
+	request.call_id = zcore_callid::LOADHIERARCHYTABLE;
 	request.payload.loadhierarchytable.hsession = hsession;
 	request.payload.loadhierarchytable.hfolder = hfolder;
 	request.payload.loadhierarchytable.flags = flags;
@@ -426,7 +426,7 @@ uint32_t zarafa_client_loadcontenttable(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LOADCONTENTTABLE;
+	request.call_id = zcore_callid::LOADCONTENTTABLE;
 	request.payload.loadcontenttable.hsession = hsession;
 	request.payload.loadcontenttable.hfolder = hfolder;
 	request.payload.loadcontenttable.flags = flags;
@@ -444,7 +444,7 @@ uint32_t zarafa_client_loadrecipienttable(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LOADRECIPIENTTABLE;
+	request.call_id = zcore_callid::LOADRECIPIENTTABLE;
 	request.payload.loadrecipienttable.hsession = hsession;
 	request.payload.loadrecipienttable.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -461,7 +461,7 @@ uint32_t zarafa_client_loadruletable(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LOADRULETABLE;
+	request.call_id = zcore_callid::LOADRULETABLE;
 	request.payload.loadruletable.hsession = hsession;
 	request.payload.loadruletable.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -478,7 +478,7 @@ uint32_t zarafa_client_createmessage(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CREATEMESSAGE;
+	request.call_id = zcore_callid::CREATEMESSAGE;
 	request.payload.createmessage.hsession = hsession;
 	request.payload.createmessage.hfolder = hfolder;
 	request.payload.createmessage.flags = flags;
@@ -497,7 +497,7 @@ uint32_t zarafa_client_deletemessages(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_DELETEMESSAGES;
+	request.call_id = zcore_callid::DELETEMESSAGES;
 	request.payload.deletemessages.hsession = hsession;
 	request.payload.deletemessages.hfolder = hfolder;
 	request.payload.deletemessages.pentryids = deconst(pentryids);
@@ -515,7 +515,7 @@ uint32_t zarafa_client_copymessages(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_COPYMESSAGES;
+	request.call_id = zcore_callid::COPYMESSAGES;
 	request.payload.copymessages.hsession = hsession;
 	request.payload.copymessages.hsrcfolder = hsrcfolder;
 	request.payload.copymessages.hdstfolder = hdstfolder;
@@ -534,7 +534,7 @@ uint32_t zarafa_client_setreadflags(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SETREADFLAGS;
+	request.call_id = zcore_callid::SETREADFLAGS;
 	request.payload.setreadflags.hsession = hsession;
 	request.payload.setreadflags.hfolder = hfolder;
 	request.payload.setreadflags.pentryids = deconst(pentryids);
@@ -553,7 +553,7 @@ uint32_t zarafa_client_createfolder(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CREATEFOLDER;
+	request.call_id = zcore_callid::CREATEFOLDER;
 	request.payload.createfolder.hsession = hsession;
 	request.payload.createfolder.hparent_folder = hparent_folder;
 	request.payload.createfolder.folder_type = folder_type;
@@ -574,7 +574,7 @@ uint32_t zarafa_client_deletefolder(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_DELETEFOLDER;
+	request.call_id = zcore_callid::DELETEFOLDER;
 	request.payload.deletefolder.hsession = hsession;
 	request.payload.deletefolder.hparent_folder = hparent_folder;
 	request.payload.deletefolder.entryid = entryid;
@@ -591,7 +591,7 @@ uint32_t zarafa_client_emptyfolder(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_EMPTYFOLDER;
+	request.call_id = zcore_callid::EMPTYFOLDER;
 	request.payload.emptyfolder.hsession = hsession;
 	request.payload.emptyfolder.hfolder = hfolder;
 	request.payload.emptyfolder.flags = flags;
@@ -608,7 +608,7 @@ uint32_t zarafa_client_copyfolder(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_COPYFOLDER;
+	request.call_id = zcore_callid::COPYFOLDER;
 	request.payload.copyfolder.hsession = hsession;
 	request.payload.copyfolder.hsrc_folder = hsrc_folder;
 	request.payload.copyfolder.entryid = entryid;
@@ -627,7 +627,7 @@ uint32_t zarafa_client_getstoreentryid(
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETSTOREENTRYID;
+	request.call_id = zcore_callid::GETSTOREENTRYID;
 	request.payload.getstoreentryid.mailbox_dn = deconst(mailbox_dn);
 	if (!zarafa_client_do_rpc(&request, &response)) {
 		return ecRpcFailed;
@@ -644,7 +644,7 @@ uint32_t zarafa_client_entryidfromsourcekey(
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_ENTRYIDFROMSOURCEKEY;
+	request.call_id = zcore_callid::ENTRYIDFROMSOURCEKEY;
 	request.payload.entryidfromsourcekey.hsession = hsession;
 	request.payload.entryidfromsourcekey.hstore = hstore;
 	request.payload.entryidfromsourcekey.folder_key = folder_key;
@@ -664,7 +664,7 @@ uint32_t zarafa_client_storeadvise(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_STOREADVISE;
+	request.call_id = zcore_callid::STOREADVISE;
 	request.payload.storeadvise.hsession = hsession;
 	request.payload.storeadvise.hstore = hstore;
 	request.payload.storeadvise.pentryid = deconst(pentryid);
@@ -683,7 +683,7 @@ uint32_t zarafa_client_unadvise(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_UNADVISE;
+	request.call_id = zcore_callid::UNADVISE;
 	request.payload.unadvise.hsession = hsession;
 	request.payload.unadvise.hstore = hstore;
 	request.payload.unadvise.sub_id = sub_id;
@@ -699,7 +699,7 @@ uint32_t zarafa_client_notifdequeue(const NOTIF_SINK *psink,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_NOTIFDEQUEUE;
+	request.call_id = zcore_callid::NOTIFDEQUEUE;
 	request.payload.notifdequeue.psink = deconst(psink);
 	request.payload.notifdequeue.timeval = timeval;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -718,7 +718,7 @@ uint32_t zarafa_client_queryrows(
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_QUERYROWS;
+	request.call_id = zcore_callid::QUERYROWS;
 	request.payload.queryrows.hsession = hsession;
 	request.payload.queryrows.htable = htable;
 	request.payload.queryrows.start = start;
@@ -739,7 +739,7 @@ uint32_t zarafa_client_setcolumns(GUID hsession, uint32_t htable,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SETCOLUMNS;
+	request.call_id = zcore_callid::SETCOLUMNS;
 	request.payload.setcolumns.hsession = hsession;
 	request.payload.setcolumns.htable = htable;
 	request.payload.setcolumns.pproptags = deconst(pproptags);
@@ -757,7 +757,7 @@ uint32_t zarafa_client_seekrow(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SEEKROW;
+	request.call_id = zcore_callid::SEEKROW;
 	request.payload.seekrow.hsession = hsession;
 	request.payload.seekrow.htable = htable;
 	request.payload.seekrow.bookmark = bookmark;
@@ -776,7 +776,7 @@ uint32_t zarafa_client_sorttable(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SORTTABLE;
+	request.call_id = zcore_callid::SORTTABLE;
 	request.payload.sorttable.hsession = hsession;
 	request.payload.sorttable.htable = htable;
 	request.payload.sorttable.psortset = deconst(psortset);
@@ -792,7 +792,7 @@ uint32_t zarafa_client_getrowcount(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETROWCOUNT;
+	request.call_id = zcore_callid::GETROWCOUNT;
 	request.payload.getrowcount.hsession = hsession;
 	request.payload.getrowcount.htable = htable;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -809,7 +809,7 @@ uint32_t zarafa_client_restricttable(GUID hsession, uint32_t htable,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_RESTRICTTABLE;
+	request.call_id = zcore_callid::RESTRICTTABLE;
 	request.payload.restricttable.hsession = hsession;
 	request.payload.restricttable.htable = htable;
 	request.payload.restricttable.prestriction = deconst(prestriction);
@@ -827,7 +827,7 @@ uint32_t zarafa_client_findrow(GUID hsession, uint32_t htable,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_FINDROW;
+	request.call_id = zcore_callid::FINDROW;
 	request.payload.findrow.hsession = hsession;
 	request.payload.findrow.htable = htable;
 	request.payload.findrow.bookmark = bookmark;
@@ -847,7 +847,7 @@ uint32_t zarafa_client_createbookmark(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CREATEBOOKMARK;
+	request.call_id = zcore_callid::CREATEBOOKMARK;
 	request.payload.createbookmark.hsession = hsession;
 	request.payload.createbookmark.htable = htable;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -864,7 +864,7 @@ uint32_t zarafa_client_freebookmark(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_FREEBOOKMARK;
+	request.call_id = zcore_callid::FREEBOOKMARK;
 	request.payload.freebookmark.hsession = hsession;
 	request.payload.freebookmark.htable = htable;
 	request.payload.freebookmark.bookmark = bookmark;
@@ -880,7 +880,7 @@ uint32_t zarafa_client_getreceivefolder(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETRECEIVEFOLDER;
+	request.call_id = zcore_callid::GETRECEIVEFOLDER;
 	request.payload.getreceivefolder.hsession = hsession;
 	request.payload.getreceivefolder.hstore = hstore;
 	request.payload.getreceivefolder.pstrclass = deconst(pstrclass);
@@ -898,7 +898,7 @@ uint32_t zarafa_client_modifyrecipients(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_MODIFYRECIPIENTS;
+	request.call_id = zcore_callid::MODIFYRECIPIENTS;
 	request.payload.modifyrecipients.hsession = hsession;
 	request.payload.modifyrecipients.hmessage = hmessage;
 	request.payload.modifyrecipients.flags = flags;
@@ -914,7 +914,7 @@ uint32_t zarafa_client_submitmessage(GUID hsession, uint32_t hmessage)
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SUBMITMESSAGE;
+	request.call_id = zcore_callid::SUBMITMESSAGE;
 	request.payload.submitmessage.hsession = hsession;
 	request.payload.submitmessage.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -929,7 +929,7 @@ uint32_t zarafa_client_loadattachmenttable(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LOADATTACHMENTTABLE;
+	request.call_id = zcore_callid::LOADATTACHMENTTABLE;
 	request.payload.loadattachmenttable.hsession = hsession;
 	request.payload.loadattachmenttable.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -946,7 +946,7 @@ uint32_t zarafa_client_openattachment(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_OPENATTACHMENT;
+	request.call_id = zcore_callid::OPENATTACHMENT;
 	request.payload.openattachment.hsession = hsession;
 	request.payload.openattachment.hmessage = hmessage;
 	request.payload.openattachment.attach_id = attach_id;
@@ -964,7 +964,7 @@ uint32_t zarafa_client_createattachment(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CREATEATTACHMENT;
+	request.call_id = zcore_callid::CREATEATTACHMENT;
 	request.payload.createattachment.hsession = hsession;
 	request.payload.createattachment.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -981,7 +981,7 @@ uint32_t zarafa_client_deleteattachment(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_DELETEATTACHMENT;
+	request.call_id = zcore_callid::DELETEATTACHMENT;
 	request.payload.deleteattachment.hsession = hsession;
 	request.payload.deleteattachment.hmessage = hmessage;
 	request.payload.deleteattachment.attach_id = attach_id;
@@ -1010,7 +1010,7 @@ uint32_t zarafa_client_setpropvals(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SETPROPVALS;
+	request.call_id = zcore_callid::SETPROPVALS;
 	request.payload.setpropvals.hsession = hsession;
 	request.payload.setpropvals.hobject = hobject;
 	request.payload.setpropvals.ppropvals = deconst(ppropvals);
@@ -1048,7 +1048,7 @@ uint32_t zarafa_client_getpropvals(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETPROPVALS;
+	request.call_id = zcore_callid::GETPROPVALS;
 	request.payload.getpropvals.hsession = hsession;
 	request.payload.getpropvals.hobject = hobject;
 	request.payload.getpropvals.pproptags = deconst(pproptags);
@@ -1066,7 +1066,7 @@ uint32_t zarafa_client_deletepropvals(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_DELETEPROPVALS;
+	request.call_id = zcore_callid::DELETEPROPVALS;
 	request.payload.deletepropvals.hsession = hsession;
 	request.payload.deletepropvals.hobject = hobject;
 	request.payload.deletepropvals.pproptags = deconst(pproptags);
@@ -1082,7 +1082,7 @@ uint32_t zarafa_client_setmessagereadflag(
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SETMESSAGEREADFLAG;
+	request.call_id = zcore_callid::SETMESSAGEREADFLAG;
 	request.payload.setmessagereadflag.hsession = hsession;
 	request.payload.setmessagereadflag.hmessage = hmessage;
 	request.payload.setmessagereadflag.flags = flags;
@@ -1098,7 +1098,7 @@ uint32_t zarafa_client_openembedded(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_OPENEMBEDDED;
+	request.call_id = zcore_callid::OPENEMBEDDED;
 	request.payload.openembedded.hsession = hsession;
 	request.payload.openembedded.hattachment = hattachment;
 	request.payload.openembedded.flags = flags;
@@ -1116,7 +1116,7 @@ uint32_t zarafa_client_getnamedpropids(GUID hsession, uint32_t hstore,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETNAMEDPROPIDS;
+	request.call_id = zcore_callid::GETNAMEDPROPIDS;
 	request.payload.getnamedpropids.hsession = hsession;
 	request.payload.getnamedpropids.hstore = hstore;
 	request.payload.getnamedpropids.ppropnames = deconst(ppropnames);
@@ -1134,7 +1134,7 @@ uint32_t zarafa_client_getpropnames(GUID hsession, uint32_t hstore,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETPROPNAMES;
+	request.call_id = zcore_callid::GETPROPNAMES;
 	request.payload.getpropnames.hsession = hsession;
 	request.payload.getpropnames.hstore = hstore;
 	request.payload.getpropnames.ppropids = deconst(ppropids);
@@ -1153,7 +1153,7 @@ uint32_t zarafa_client_copyto(GUID hsession, uint32_t hsrcobject,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_COPYTO;
+	request.call_id = zcore_callid::COPYTO;
 	request.payload.copyto.hsession = hsession;
 	request.payload.copyto.hsrcobject = hsrcobject;
 	request.payload.copyto.pexclude_proptags = deconst(pexclude_proptags);
@@ -1170,7 +1170,7 @@ uint32_t zarafa_client_savechanges(GUID hsession, uint32_t hobject)
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SAVECHANGES;
+	request.call_id = zcore_callid::SAVECHANGES;
 	request.payload.savechanges.hsession = hsession;
 	request.payload.savechanges.hobject = hobject;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1185,7 +1185,7 @@ uint32_t zarafa_client_hierarchysync(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_HIERARCHYSYNC;
+	request.call_id = zcore_callid::HIERARCHYSYNC;
 	request.payload.hierarchysync.hsession = hsession;
 	request.payload.hierarchysync.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1202,7 +1202,7 @@ uint32_t zarafa_client_contentsync(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CONTENTSYNC;
+	request.call_id = zcore_callid::CONTENTSYNC;
 	request.payload.contentsync.hsession = hsession;
 	request.payload.contentsync.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1221,7 +1221,7 @@ uint32_t zarafa_client_configsync(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CONFIGSYNC;
+	request.call_id = zcore_callid::CONFIGSYNC;
 	request.payload.configsync.hsession = hsession;
 	request.payload.configsync.hctx = hctx;
 	request.payload.configsync.flags = flags;
@@ -1243,7 +1243,7 @@ uint32_t zarafa_client_statesync(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_STATESYNC;
+	request.call_id = zcore_callid::STATESYNC;
 	request.payload.statesync.hsession = hsession;
 	request.payload.statesync.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1260,7 +1260,7 @@ uint32_t zarafa_client_syncmessagechange(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SYNCMESSAGECHANGE;
+	request.call_id = zcore_callid::SYNCMESSAGECHANGE;
 	request.payload.syncmessagechange.hsession = hsession;
 	request.payload.syncmessagechange.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1280,7 +1280,7 @@ uint32_t zarafa_client_syncfolderchange(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SYNCFOLDERCHANGE;
+	request.call_id = zcore_callid::SYNCFOLDERCHANGE;
 	request.payload.syncfolderchange.hsession = hsession;
 	request.payload.syncfolderchange.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1297,7 +1297,7 @@ uint32_t zarafa_client_syncreadstatechanges(
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SYNCREADSTATECHANGES;
+	request.call_id = zcore_callid::SYNCREADSTATECHANGES;
 	request.payload.syncreadstatechanges.hsession = hsession;
 	request.payload.syncreadstatechanges.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1314,7 +1314,7 @@ uint32_t zarafa_client_syncdeletions(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SYNCDELETIONS;
+	request.call_id = zcore_callid::SYNCDELETIONS;
 	request.payload.syncdeletions.hsession = hsession;
 	request.payload.syncdeletions.hctx = hctx;
 	request.payload.syncdeletions.flags = flags;
@@ -1332,7 +1332,7 @@ uint32_t zarafa_client_hierarchyimport(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_HIERARCHYIMPORT;
+	request.call_id = zcore_callid::HIERARCHYIMPORT;
 	request.payload.hierarchyimport.hsession = hsession;
 	request.payload.hierarchyimport.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1349,7 +1349,7 @@ uint32_t zarafa_client_contentimport(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CONTENTIMPORT;
+	request.call_id = zcore_callid::CONTENTIMPORT;
 	request.payload.contentimport.hsession = hsession;
 	request.payload.contentimport.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1366,7 +1366,7 @@ uint32_t zarafa_client_configimport(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_CONFIGIMPORT;
+	request.call_id = zcore_callid::CONFIGIMPORT;
 	request.payload.configimport.hsession = hsession;
 	request.payload.configimport.hctx = hctx;
 	request.payload.configimport.sync_type = sync_type;
@@ -1383,7 +1383,7 @@ uint32_t zarafa_client_stateimport(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_STATEIMPORT;
+	request.call_id = zcore_callid::STATEIMPORT;
 	request.payload.stateimport.hsession = hsession;
 	request.payload.stateimport.hctx = hctx;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1400,7 +1400,7 @@ uint32_t zarafa_client_importmessage(GUID hsession, uint32_t hctx,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_IMPORTMESSAGE;
+	request.call_id = zcore_callid::IMPORTMESSAGE;
 	request.payload.importmessage.hsession = hsession;
 	request.payload.importmessage.hctx = hctx;
 	request.payload.importmessage.flags = flags;
@@ -1419,7 +1419,7 @@ uint32_t zarafa_client_importfolder(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_IMPORTFOLDER;
+	request.call_id = zcore_callid::IMPORTFOLDER;
 	request.payload.importfolder.hsession = hsession;
 	request.payload.importfolder.hctx = hctx;
 	request.payload.importfolder.pproplist = deconst(pproplist);
@@ -1435,7 +1435,7 @@ uint32_t zarafa_client_importdeletion(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_IMPORTDELETION;
+	request.call_id = zcore_callid::IMPORTDELETION;
 	request.payload.importdeletion.hsession = hsession;
 	request.payload.importdeletion.hctx = hctx;
 	request.payload.importdeletion.flags = flags;
@@ -1452,7 +1452,7 @@ uint32_t zarafa_client_importreadstates(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_IMPORTREADSTATES;
+	request.call_id = zcore_callid::IMPORTREADSTATES;
 	request.payload.importreadstates.hsession = hsession;
 	request.payload.importreadstates.hctx = hctx;
 	request.payload.importreadstates.pstates = deconst(pstates);
@@ -1469,7 +1469,7 @@ uint32_t zarafa_client_getsearchcriteria(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETSEARCHCRITERIA;
+	request.call_id = zcore_callid::GETSEARCHCRITERIA;
 	request.payload.getsearchcriteria.hsession = hsession;
 	request.payload.getsearchcriteria.hfolder = hfolder;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1491,7 +1491,7 @@ uint32_t zarafa_client_setsearchcriteria(
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SETSEARCHCRITERIA;
+	request.call_id = zcore_callid::SETSEARCHCRITERIA;
 	request.payload.setsearchcriteria.hsession = hsession;
 	request.payload.setsearchcriteria.hfolder = hfolder;
 	request.payload.setsearchcriteria.flags = flags;
@@ -1509,7 +1509,7 @@ uint32_t zarafa_client_messagetorfc822(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_MESSAGETORFC822;
+	request.call_id = zcore_callid::MESSAGETORFC822;
 	request.payload.messagetorfc822.hsession = hsession;
 	request.payload.messagetorfc822.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1526,7 +1526,7 @@ uint32_t zarafa_client_rfc822tomessage(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_RFC822TOMESSAGE;
+	request.call_id = zcore_callid::RFC822TOMESSAGE;
 	request.payload.rfc822tomessage.hsession = hsession;
 	request.payload.rfc822tomessage.hmessage = hmessage;
 	request.payload.rfc822tomessage.peml_bin = deconst(peml_bin);
@@ -1542,7 +1542,7 @@ uint32_t zarafa_client_messagetoical(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_MESSAGETOICAL;
+	request.call_id = zcore_callid::MESSAGETOICAL;
 	request.payload.messagetoical.hsession = hsession;
 	request.payload.messagetoical.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1559,7 +1559,7 @@ uint32_t zarafa_client_icaltomessage(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_ICALTOMESSAGE;
+	request.call_id = zcore_callid::ICALTOMESSAGE;
 	request.payload.icaltomessage.hsession = hsession;
 	request.payload.icaltomessage.hmessage = hmessage;
 	request.payload.icaltomessage.pical_bin = deconst(pical_bin);
@@ -1575,7 +1575,7 @@ uint32_t zarafa_client_messagetovcf(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_MESSAGETOVCF;
+	request.call_id = zcore_callid::MESSAGETOVCF;
 	request.payload.messagetovcf.hsession = hsession;
 	request.payload.messagetovcf.hmessage = hmessage;
 	if (!zarafa_client_do_rpc(&request, &response)) {
@@ -1592,7 +1592,7 @@ uint32_t zarafa_client_vcftomessage(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_VCFTOMESSAGE;
+	request.call_id = zcore_callid::VCFTOMESSAGE;
 	request.payload.vcftomessage.hsession = hsession;
 	request.payload.vcftomessage.hmessage = hmessage;
 	request.payload.vcftomessage.pvcf_bin = deconst(pvcf_bin);
@@ -1609,7 +1609,7 @@ uint32_t zarafa_client_getuseravailability(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_GETUSERAVAILABILITY;
+	request.call_id = zcore_callid::GETUSERAVAILABILITY;
 	request.payload.getuseravailability.hsession = hsession;
 	request.payload.getuseravailability.entryid = entryid;
 	request.payload.getuseravailability.starttime = starttime;
@@ -1628,7 +1628,7 @@ uint32_t zarafa_client_setpasswd(const char *username,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_SETPASSWD;
+	request.call_id = zcore_callid::SETPASSWD;
 	request.payload.setpasswd.username = deconst(username);
 	request.payload.setpasswd.passwd = deconst(passwd);
 	request.payload.setpasswd.new_passwd = deconst(new_passwd);
@@ -1644,7 +1644,7 @@ uint32_t zarafa_client_linkmessage(GUID hsession,
 	RPC_REQUEST request;
 	RPC_RESPONSE response;
 	
-	request.call_id = CALL_ID_LINKMESSAGE;
+	request.call_id = zcore_callid::LINKMESSAGE;
 	request.payload.linkmessage.hsession = hsession;
 	request.payload.linkmessage.search_entryid = search_entryid;
 	request.payload.linkmessage.message_entryid = message_entryid;

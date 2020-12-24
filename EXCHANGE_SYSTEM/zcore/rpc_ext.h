@@ -7,12 +7,6 @@
 #include "mapi_types.h"
 #include "common_util.h"
 
-#define RESPONSE_CODE_SUCCESS						0x00
-#define RESPONSE_CODE_LACK_MEMORY					0x01
-#define RESPONSE_CODE_PULL_ERROR					0x02
-#define RESPONSE_CODE_DISPATCH_ERROR				0x03
-#define RESPONSE_CODE_PUSH_ERROR					0x04
-
 typedef struct _REQ_LOGON {
 	char *username;
 	char *password;

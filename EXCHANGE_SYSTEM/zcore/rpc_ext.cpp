@@ -1,4 +1,5 @@
 #include <gromox/mapidefs.h>
+#include <gromox/zcore_rpc.hpp>
 #include "rpc_ext.h"
 #include "ext_buffer.h"
 #include "common_util.h"
@@ -3433,256 +3434,256 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 		return FALSE;	
 	}
 	switch (prequest->call_id) {
-	case CALL_ID_LOGON:
+	case zcore_callid::LOGON:
 		return rpc_ext_pull_logon_request(
 			&ext_pull, &prequest->payload);
-	case CALL_ID_CHECKSESSION:
+	case zcore_callid::CHECKSESSION:
 		return rpc_ext_pull_checksession_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_UINFO:
+	case zcore_callid::UINFO:
 		return rpc_ext_pull_uinfo_request(
 			&ext_pull, &prequest->payload);
-	case CALL_ID_UNLOADOBJECT:
+	case zcore_callid::UNLOADOBJECT:
 		return rpc_ext_pull_unloadobject_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_OPENENTRY:
+	case zcore_callid::OPENENTRY:
 		return rpc_ext_pull_openentry_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_OPENSTOREENTRY:
+	case zcore_callid::OPENSTOREENTRY:
 		return rpc_ext_pull_openstoreentry_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_OPENABENTRY:
+	case zcore_callid::OPENABENTRY:
 		return rpc_ext_pull_openabentry_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_RESOLVENAME:
+	case zcore_callid::RESOLVENAME:
 		return rpc_ext_pull_resolvename_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_GETPERMISSIONS:
+	case zcore_callid::GETPERMISSIONS:
 		return rpc_ext_pull_getpermissions_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_MODIFYPERMISSIONS:
+	case zcore_callid::MODIFYPERMISSIONS:
 		return rpc_ext_pull_modifypermissions_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_MODIFYRULES:
+	case zcore_callid::MODIFYRULES:
 		return rpc_ext_pull_modifyrules_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GETABGAL:
+	case zcore_callid::GETABGAL:
 		return rpc_ext_pull_getabgal_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_LOADSTORETABLE:
+	case zcore_callid::LOADSTORETABLE:
 		return rpc_ext_pull_loadstoretable_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_OPENSTORE:
+	case zcore_callid::OPENSTORE:
 		return rpc_ext_pull_openstore_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_OPENPROPFILESEC:
+	case zcore_callid::OPENPROPFILESEC:
 		return rpc_ext_pull_openpropfilesec_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_LOADHIERARCHYTABLE:
+	case zcore_callid::LOADHIERARCHYTABLE:
 		return rpc_ext_pull_loadhierarchytable_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_LOADCONTENTTABLE:
+	case zcore_callid::LOADCONTENTTABLE:
 		return rpc_ext_pull_loadcontenttable_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_LOADRECIPIENTTABLE:
+	case zcore_callid::LOADRECIPIENTTABLE:
 		return rpc_ext_pull_loadrecipienttable_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_LOADRULETABLE:
+	case zcore_callid::LOADRULETABLE:
 		return rpc_ext_pull_loadruletable_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CREATEMESSAGE:
+	case zcore_callid::CREATEMESSAGE:
 		return rpc_ext_pull_createmessage_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_DELETEMESSAGES:
+	case zcore_callid::DELETEMESSAGES:
 		return rpc_ext_pull_deletemessages_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_COPYMESSAGES:
+	case zcore_callid::COPYMESSAGES:
 		return rpc_ext_pull_copymessages_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_SETREADFLAGS:
+	case zcore_callid::SETREADFLAGS:
 		return rpc_ext_pull_setreadflags_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CREATEFOLDER:
+	case zcore_callid::CREATEFOLDER:
 		return rpc_ext_pull_createfolder_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_DELETEFOLDER:
+	case zcore_callid::DELETEFOLDER:
 		return rpc_ext_pull_deletefolder_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_EMPTYFOLDER:
+	case zcore_callid::EMPTYFOLDER:
 		return rpc_ext_pull_emptyfolder_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_COPYFOLDER:
+	case zcore_callid::COPYFOLDER:
 		return rpc_ext_pull_copyfolder_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_GETSTOREENTRYID:
+	case zcore_callid::GETSTOREENTRYID:
 		return rpc_ext_pull_getstoreentryid_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_ENTRYIDFROMSOURCEKEY:
+	case zcore_callid::ENTRYIDFROMSOURCEKEY:
 		return rpc_ext_pull_entryidfromsourcekey_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_STOREADVISE:
+	case zcore_callid::STOREADVISE:
 		return rpc_ext_pull_storeadvise_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_UNADVISE:
+	case zcore_callid::UNADVISE:
 		return rpc_ext_pull_unadvise_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_NOTIFDEQUEUE:
+	case zcore_callid::NOTIFDEQUEUE:
 		return rpc_ext_pull_notifdequeue_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_QUERYROWS:
+	case zcore_callid::QUERYROWS:
 		return rpc_ext_pull_queryrows_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_SETCOLUMNS:
+	case zcore_callid::SETCOLUMNS:
 		return rpc_ext_pull_setcolumns_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_SEEKROW:
+	case zcore_callid::SEEKROW:
 		return rpc_ext_pull_seekrow_request(
 			&ext_pull, &prequest->payload);
-	case CALL_ID_SORTTABLE:
+	case zcore_callid::SORTTABLE:
 		return rpc_ext_pull_sorttable_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_GETROWCOUNT:
+	case zcore_callid::GETROWCOUNT:
 		return rpc_ext_pull_getrowcount_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_RESTRICTTABLE:
+	case zcore_callid::RESTRICTTABLE:
 		return rpc_ext_pull_restricttable_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_FINDROW:
+	case zcore_callid::FINDROW:
 		return rpc_ext_pull_findrow_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_CREATEBOOKMARK:
+	case zcore_callid::CREATEBOOKMARK:
 		return rpc_ext_pull_createbookmark_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_FREEBOOKMARK:
+	case zcore_callid::FREEBOOKMARK:
 		return rpc_ext_pull_freebookmark_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GETRECEIVEFOLDER:
+	case zcore_callid::GETRECEIVEFOLDER:
 		return rpc_ext_pull_getreceivefolder_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_MODIFYRECIPIENTS:
+	case zcore_callid::MODIFYRECIPIENTS:
 		return rpc_ext_pull_modifyrecipients_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_SUBMITMESSAGE:
+	case zcore_callid::SUBMITMESSAGE:
 		return rpc_ext_pull_submitmessage_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_LOADATTACHMENTTABLE:
+	case zcore_callid::LOADATTACHMENTTABLE:
 		return rpc_ext_pull_loadattachmenttable_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_OPENATTACHMENT:
+	case zcore_callid::OPENATTACHMENT:
 		return rpc_ext_pull_openattachment_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CREATEATTACHMENT:
+	case zcore_callid::CREATEATTACHMENT:
 		return rpc_ext_pull_createattachment_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_DELETEATTACHMENT:
+	case zcore_callid::DELETEATTACHMENT:
 		return rpc_ext_pull_deleteattachment_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_SETPROPVALS:
+	case zcore_callid::SETPROPVALS:
 		return rpc_ext_pull_setpropvals_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GETPROPVALS:
+	case zcore_callid::GETPROPVALS:
 		return rpc_ext_pull_getpropvals_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_DELETEPROPVALS:
+	case zcore_callid::DELETEPROPVALS:
 		return rpc_ext_pull_deletepropvals_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_SETMESSAGEREADFLAG:
+	case zcore_callid::SETMESSAGEREADFLAG:
 		return rpc_ext_pull_setmessagereadflag_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_OPENEMBEDDED:
+	case zcore_callid::OPENEMBEDDED:
 		return rpc_ext_pull_openembedded_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GETNAMEDPROPIDS:
+	case zcore_callid::GETNAMEDPROPIDS:
 		return rpc_ext_pull_getnamedpropids_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GETPROPNAMES:
+	case zcore_callid::GETPROPNAMES:
 		return rpc_ext_pull_getpropnames_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_COPYTO:
+	case zcore_callid::COPYTO:
 		return rpc_ext_pull_copyto_request(
 			&ext_pull, &prequest->payload);
-	case CALL_ID_SAVECHANGES:
+	case zcore_callid::SAVECHANGES:
 		return rpc_ext_pull_savechanges_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_HIERARCHYSYNC:
+	case zcore_callid::HIERARCHYSYNC:
 		return rpc_ext_pull_hierarchysync_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CONTENTSYNC:
+	case zcore_callid::CONTENTSYNC:
 		return rpc_ext_pull_contentsync_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CONFIGSYNC:
+	case zcore_callid::CONFIGSYNC:
 		return rpc_ext_pull_configsync_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_STATESYNC:
+	case zcore_callid::STATESYNC:
 		return rpc_ext_pull_statesync_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_SYNCMESSAGECHANGE:
+	case zcore_callid::SYNCMESSAGECHANGE:
 		return rpc_ext_pull_syncmessagechange_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_SYNCFOLDERCHANGE:
+	case zcore_callid::SYNCFOLDERCHANGE:
 		return rpc_ext_pull_syncfolderchange_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_SYNCREADSTATECHANGES:
+	case zcore_callid::SYNCREADSTATECHANGES:
 		return rpc_ext_pull_syncreadstatechanges_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SYNCDELETIONS:
+	case zcore_callid::SYNCDELETIONS:
 		return rpc_ext_pull_syncdeletions_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_HIERARCHYIMPORT:
+	case zcore_callid::HIERARCHYIMPORT:
 		return rpc_ext_pull_hierarchyimport_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CONTENTIMPORT:
+	case zcore_callid::CONTENTIMPORT:
 		return rpc_ext_pull_contentimport_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CONFIGIMPORT:
+	case zcore_callid::CONFIGIMPORT:
 		return rpc_ext_pull_configimport_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_STATEIMPORT:
+	case zcore_callid::STATEIMPORT:
 		return rpc_ext_pull_stateimport_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_IMPORTMESSAGE:
+	case zcore_callid::IMPORTMESSAGE:
 		return rpc_ext_pull_importmessage_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_IMPORTFOLDER:
+	case zcore_callid::IMPORTFOLDER:
 		return rpc_ext_pull_importfolder_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_IMPORTDELETION:
+	case zcore_callid::IMPORTDELETION:
 		return rpc_ext_pull_importdeletion_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_IMPORTREADSTATES:
+	case zcore_callid::IMPORTREADSTATES:
 		return rpc_ext_pull_importreadstates_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_GETSEARCHCRITERIA:
+	case zcore_callid::GETSEARCHCRITERIA:
 		return rpc_ext_pull_getsearchcriteria_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_SETSEARCHCRITERIA:
+	case zcore_callid::SETSEARCHCRITERIA:
 		return rpc_ext_pull_setsearchcriteria_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_MESSAGETORFC822:
+	case zcore_callid::MESSAGETORFC822:
 		return rpc_ext_pull_messagetorfc822_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_RFC822TOMESSAGE:
+	case zcore_callid::RFC822TOMESSAGE:
 		return rpc_ext_pull_rfc822tomessage_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_MESSAGETOICAL:
+	case zcore_callid::MESSAGETOICAL:
 		return rpc_ext_pull_messagetoical_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_ICALTOMESSAGE:
+	case zcore_callid::ICALTOMESSAGE:
 		return rpc_ext_pull_icaltomessage_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_MESSAGETOVCF:
+	case zcore_callid::MESSAGETOVCF:
 		return rpc_ext_pull_messagetovcf_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_VCFTOMESSAGE:
+	case zcore_callid::VCFTOMESSAGE:
 		return rpc_ext_pull_vcftomessage_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GETUSERAVAILABILITY:
+	case zcore_callid::GETUSERAVAILABILITY:
 		return rpc_ext_pull_getuseravailability_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_SETPASSWD:
+	case zcore_callid::SETPASSWD:
 		return rpc_ext_pull_setpasswd_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_LINKMESSAGE:
+	case zcore_callid::LINKMESSAGE:
 		return rpc_ext_pull_linkmessage_request(
 				&ext_pull, &prequest->payload);
 	default:
@@ -3700,10 +3701,8 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		&ext_push, NULL, 0, EXT_FLAG_WCOUNT)) {
 		return FALSE;
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint8(
-		&ext_push, RESPONSE_CODE_SUCCESS)) {
+	if (ext_buffer_push_uint8(&ext_push, zcore_response::SUCCESS) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	if (EXT_ERR_SUCCESS != presponse->result) {
 		if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
 			&ext_push, 4)) {
@@ -3730,289 +3729,289 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		return FALSE;
 	}
 	switch (presponse->call_id) {
-	case CALL_ID_LOGON:
+	case zcore_callid::LOGON:
 		b_result = rpc_ext_push_logon_response(
 				&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECKSESSION:
+	case zcore_callid::CHECKSESSION:
 		b_result = TRUE;
 		break;
-	case CALL_ID_UINFO:
+	case zcore_callid::UINFO:
 		b_result = rpc_ext_push_uinfo_response(
 				&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UNLOADOBJECT:
+	case zcore_callid::UNLOADOBJECT:
 		b_result = TRUE;
 		break;
-	case CALL_ID_OPENENTRY:
+	case zcore_callid::OPENENTRY:
 		b_result = rpc_ext_push_openentry_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_OPENSTOREENTRY:
+	case zcore_callid::OPENSTOREENTRY:
 		b_result = rpc_ext_push_openstoreentry_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_OPENABENTRY:
+	case zcore_callid::OPENABENTRY:
 		b_result = rpc_ext_push_openabentry_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_RESOLVENAME:
+	case zcore_callid::RESOLVENAME:
 		b_result = rpc_ext_push_resolvename_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GETPERMISSIONS:
+	case zcore_callid::GETPERMISSIONS:
 		b_result = rpc_ext_push_getpermissions_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MODIFYPERMISSIONS:
-	case CALL_ID_MODIFYRULES:
+	case zcore_callid::MODIFYPERMISSIONS:
+	case zcore_callid::MODIFYRULES:
 		b_result = TRUE;
 		break;
-	case CALL_ID_GETABGAL:
+	case zcore_callid::GETABGAL:
 		b_result = rpc_ext_push_getabgal_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOADSTORETABLE:
+	case zcore_callid::LOADSTORETABLE:
 		b_result = rpc_ext_push_loadstoretable_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_OPENSTORE:
+	case zcore_callid::OPENSTORE:
 		b_result = rpc_ext_push_openstore_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_OPENPROPFILESEC:
+	case zcore_callid::OPENPROPFILESEC:
 		b_result = rpc_ext_push_openpropfilesec_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOADHIERARCHYTABLE:
+	case zcore_callid::LOADHIERARCHYTABLE:
 		b_result = rpc_ext_push_loadhierarchytable_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOADCONTENTTABLE:
+	case zcore_callid::LOADCONTENTTABLE:
 		b_result = rpc_ext_push_loadcontenttable_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOADRECIPIENTTABLE:
+	case zcore_callid::LOADRECIPIENTTABLE:
 		b_result = rpc_ext_push_loadrecipienttable_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOADRULETABLE:
+	case zcore_callid::LOADRULETABLE:
 		b_result = rpc_ext_push_loadruletable_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CREATEMESSAGE:
+	case zcore_callid::CREATEMESSAGE:
 		b_result = rpc_ext_push_createmessage_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_DELETEMESSAGES:
-	case CALL_ID_COPYMESSAGES:
-	case CALL_ID_SETREADFLAGS:
+	case zcore_callid::DELETEMESSAGES:
+	case zcore_callid::COPYMESSAGES:
+	case zcore_callid::SETREADFLAGS:
 		b_result = TRUE;
 		break;
-	case CALL_ID_CREATEFOLDER:
+	case zcore_callid::CREATEFOLDER:
 		b_result = rpc_ext_push_createfolder_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_DELETEFOLDER:
-	case CALL_ID_EMPTYFOLDER:
-	case CALL_ID_COPYFOLDER:
+	case zcore_callid::DELETEFOLDER:
+	case zcore_callid::EMPTYFOLDER:
+	case zcore_callid::COPYFOLDER:
 		b_result = TRUE;
 		break;
-	case CALL_ID_GETSTOREENTRYID:
+	case zcore_callid::GETSTOREENTRYID:
 		b_result = rpc_ext_push_getstoreentryid_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_ENTRYIDFROMSOURCEKEY:
+	case zcore_callid::ENTRYIDFROMSOURCEKEY:
 		b_result = rpc_ext_push_entryidfromsourcekey_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_STOREADVISE:
+	case zcore_callid::STOREADVISE:
 		b_result = rpc_ext_push_storeadvise_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UNADVISE:
+	case zcore_callid::UNADVISE:
 		b_result = TRUE;
 		break;
-	case CALL_ID_NOTIFDEQUEUE:
+	case zcore_callid::NOTIFDEQUEUE:
 		b_result = rpc_ext_push_notifdequeue_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_QUERYROWS:
+	case zcore_callid::QUERYROWS:
 		b_result = rpc_ext_push_queryrows_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SETCOLUMNS:
+	case zcore_callid::SETCOLUMNS:
 		b_result = TRUE;
 		break;
-	case CALL_ID_SEEKROW:
+	case zcore_callid::SEEKROW:
 		b_result = rpc_ext_push_seekrow_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SORTTABLE:
+	case zcore_callid::SORTTABLE:
 		b_result = TRUE;
 		break;
-	case CALL_ID_GETROWCOUNT:
+	case zcore_callid::GETROWCOUNT:
 		b_result = rpc_ext_push_getrowcount_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_RESTRICTTABLE:
+	case zcore_callid::RESTRICTTABLE:
 		b_result = TRUE;
 		break;
-	case CALL_ID_FINDROW:
+	case zcore_callid::FINDROW:
 		b_result = rpc_ext_push_findrow_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CREATEBOOKMARK:
+	case zcore_callid::CREATEBOOKMARK:
 		b_result = rpc_ext_push_createbookmark_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_FREEBOOKMARK:
+	case zcore_callid::FREEBOOKMARK:
 		b_result = TRUE;
 		break;
-	case CALL_ID_GETRECEIVEFOLDER:
+	case zcore_callid::GETRECEIVEFOLDER:
 		b_result = rpc_ext_push_getreceivefolder_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MODIFYRECIPIENTS:
-	case CALL_ID_SUBMITMESSAGE:
+	case zcore_callid::MODIFYRECIPIENTS:
+	case zcore_callid::SUBMITMESSAGE:
 		b_result = TRUE;
 		break;
-	case CALL_ID_LOADATTACHMENTTABLE:
+	case zcore_callid::LOADATTACHMENTTABLE:
 		b_result = rpc_ext_push_loadattachmenttable_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_OPENATTACHMENT:
+	case zcore_callid::OPENATTACHMENT:
 		b_result = rpc_ext_push_openattachment_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CREATEATTACHMENT:
+	case zcore_callid::CREATEATTACHMENT:
 		b_result = rpc_ext_push_createattachment_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_DELETEATTACHMENT:
+	case zcore_callid::DELETEATTACHMENT:
 		b_result = TRUE;
 		break;
-	case CALL_ID_SETPROPVALS:
+	case zcore_callid::SETPROPVALS:
 		b_result = TRUE;
 		break;
-	case CALL_ID_GETPROPVALS:
+	case zcore_callid::GETPROPVALS:
 		b_result = rpc_ext_push_getpropvals_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_DELETEPROPVALS:
-	case CALL_ID_SETMESSAGEREADFLAG:
+	case zcore_callid::DELETEPROPVALS:
+	case zcore_callid::SETMESSAGEREADFLAG:
 		b_result = TRUE;
 		break;
-	case CALL_ID_OPENEMBEDDED:
+	case zcore_callid::OPENEMBEDDED:
 		b_result = rpc_ext_push_openembedded_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GETNAMEDPROPIDS:
+	case zcore_callid::GETNAMEDPROPIDS:
 		b_result = rpc_ext_push_getnamedpropids_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GETPROPNAMES:
+	case zcore_callid::GETPROPNAMES:
 		b_result = rpc_ext_push_getpropnames_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_COPYTO:
-	case CALL_ID_SAVECHANGES:
+	case zcore_callid::COPYTO:
+	case zcore_callid::SAVECHANGES:
 		b_result = TRUE;
 		break;
-	case CALL_ID_HIERARCHYSYNC:
+	case zcore_callid::HIERARCHYSYNC:
 		b_result = rpc_ext_push_hierarchysync_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CONTENTSYNC:
+	case zcore_callid::CONTENTSYNC:
 		b_result = rpc_ext_push_contentsync_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CONFIGSYNC:
+	case zcore_callid::CONFIGSYNC:
 		b_result = rpc_ext_push_configsync_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_STATESYNC:
+	case zcore_callid::STATESYNC:
 		b_result = rpc_ext_push_statesync_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SYNCMESSAGECHANGE:
+	case zcore_callid::SYNCMESSAGECHANGE:
 		b_result = rpc_ext_push_syncmessagechange_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SYNCFOLDERCHANGE:
+	case zcore_callid::SYNCFOLDERCHANGE:
 		b_result = rpc_ext_push_syncfolderchange_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SYNCREADSTATECHANGES:
+	case zcore_callid::SYNCREADSTATECHANGES:
 		b_result = rpc_ext_push_syncreadstatechanges_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SYNCDELETIONS:
+	case zcore_callid::SYNCDELETIONS:
 		b_result = rpc_ext_push_syncdeletions_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_HIERARCHYIMPORT:
+	case zcore_callid::HIERARCHYIMPORT:
 		b_result = rpc_ext_push_hierarchyimport_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CONTENTIMPORT:
+	case zcore_callid::CONTENTIMPORT:
 		b_result = rpc_ext_push_contentimport_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CONFIGIMPORT:
+	case zcore_callid::CONFIGIMPORT:
 		b_result = TRUE;
 		break;
-	case CALL_ID_STATEIMPORT:
+	case zcore_callid::STATEIMPORT:
 		b_result = rpc_ext_push_stateimport_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_IMPORTMESSAGE:
+	case zcore_callid::IMPORTMESSAGE:
 		b_result = rpc_ext_push_importmessage_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_IMPORTFOLDER:
+	case zcore_callid::IMPORTFOLDER:
 		b_result = TRUE;
 		break;
-	case CALL_ID_IMPORTDELETION:
-	case CALL_ID_IMPORTREADSTATES:
+	case zcore_callid::IMPORTDELETION:
+	case zcore_callid::IMPORTREADSTATES:
 		b_result = TRUE;
 		break;
-	case CALL_ID_GETSEARCHCRITERIA:
+	case zcore_callid::GETSEARCHCRITERIA:
 		b_result = rpc_ext_push_getsearchcriteria_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SETSEARCHCRITERIA:
+	case zcore_callid::SETSEARCHCRITERIA:
 		b_result = TRUE;
 		break;
-	case CALL_ID_MESSAGETORFC822:
+	case zcore_callid::MESSAGETORFC822:
 		b_result = rpc_ext_push_messagetorfc822_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_RFC822TOMESSAGE:
+	case zcore_callid::RFC822TOMESSAGE:
 		b_result = TRUE;
 		break;
-	case CALL_ID_MESSAGETOICAL:
+	case zcore_callid::MESSAGETOICAL:
 		b_result = rpc_ext_push_messagetoical_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_ICALTOMESSAGE:
+	case zcore_callid::ICALTOMESSAGE:
 		b_result = TRUE;
 		break;
-	case CALL_ID_MESSAGETOVCF:
+	case zcore_callid::MESSAGETOVCF:
 		b_result = rpc_ext_push_messagetovcf_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_VCFTOMESSAGE:
+	case zcore_callid::VCFTOMESSAGE:
 		b_result = TRUE;
 		break;
-	case CALL_ID_GETUSERAVAILABILITY:
+	case zcore_callid::GETUSERAVAILABILITY:
 		b_result = rpc_ext_push_getuseravailability_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SETPASSWD:
+	case zcore_callid::SETPASSWD:
 		b_result = TRUE;
 		break;
-	case CALL_ID_LINKMESSAGE:
+	case zcore_callid::LINKMESSAGE:
 		b_result = TRUE;
 		break;
 	default:

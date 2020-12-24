@@ -5,6 +5,7 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/zcore_rpc.hpp>
 #include "util.h"
 #include "guid.h"
 #include "rpc_ext.h"
@@ -125,7 +126,7 @@ static void* scan_work_func(void *param)
 	count = 0;
 	double_list_init(&temp_list);
 	double_list_init(&temp_list1);
-	response.call_id = CALL_ID_NOTIFDEQUEUE;
+	response.call_id = zcore_callid::NOTIFDEQUEUE;
 	response.result = ecSuccess;
 	response.payload.notifdequeue.notifications.count = 0;
 	response.payload.notifdequeue.notifications.ppnotification = NULL;
@@ -640,7 +641,7 @@ static void zarafa_server_notification_proc(const char *dir,
 			if (psink_node->sink.padvise[i].sub_id == notify_id
 				&& hstore == psink_node->sink.padvise[i].hstore) {
 				double_list_remove(&pinfo->sink_list, pnode);
-				response.call_id = CALL_ID_NOTIFDEQUEUE;
+				response.call_id = zcore_callid::NOTIFDEQUEUE;
 				response.result = ecSuccess;
 				response.payload.notifdequeue.notifications.count = 1;
 				response.payload.notifdequeue.notifications.ppnotification =
@@ -650,7 +651,7 @@ static void zarafa_server_notification_proc(const char *dir,
 				fdpoll.events = POLLOUT|POLLWRBAND;
 				if (FALSE == rpc_ext_push_response(
 					&response, &tmp_bin)) {
-					tmp_byte = RESPONSE_CODE_PUSH_ERROR;
+					tmp_byte = zcore_response::PUSH_ERROR;
 					if (1 == poll(&fdpoll, 1, tv_msec)) {
 						write(psink_node->clifd, &tmp_byte, 1);
 					}

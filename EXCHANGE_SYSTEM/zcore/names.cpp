@@ -1,8 +1,8 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
-#include "common_util.h"
+#include <gromox/zcore_rpc.hpp>
 
-#define EXP(s) CALL_ID_ ## s
+#define EXP(s) zcore_callid::s
 #define E(s) #s
 static constexpr const char *zcore_rpc_names[] = {
 	E(LOGON),
@@ -97,7 +97,7 @@ static constexpr const char *zcore_rpc_names[] = {
 
 const char *zcore_rpc_idtoname(unsigned int i)
 {
-	static_assert(GX_ARRAY_SIZE(zcore_rpc_names) == CALL_ID_LINKMESSAGE + 1);
+	static_assert(GX_ARRAY_SIZE(zcore_rpc_names) == zcore_callid::LINKMESSAGE + 1);
 	const char *s = i < GX_ARRAY_SIZE(zcore_rpc_names) ? zcore_rpc_names[i] : nullptr;
 	return s != nullptr ? s : "";
 }
