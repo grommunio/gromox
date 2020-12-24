@@ -23,12 +23,6 @@ specified, /etc/gromox/smtp.cfg will be read if it exists.
 \fB\-?\fP
 Display option summary.
 .SH Configuration file directives
-.SS block_interval_auths
-.PP
-The amount of time a user is blocked from connecting to the service after too
-many failed logins.
-.PP
-Default: \fI1 minute\fP
 .SS block_interval_sessions
 .PP
 The amount of time a source IP address is blocked from connecting to the
@@ -120,11 +114,6 @@ Path to a secondary directory where service plugins will be loaded from if a
 primary search in standard directories (as per ld.so(8)) was unsuccessful.
 .PP
 Default: \fI/usr/lib/gromox\fP
-.SS smtp_auth_times
-.PP
-The number of login tries a user is allowed before the account is blocked.
-.PP
-Default: \fI3\fP
 .SS smtp_certificate_passwd
 .PP
 The password to unlock TLS certificates.
@@ -155,22 +144,11 @@ The maximum number of messages that a client is allowed to queue within one
 connection before its source IP address is blocked.
 .PP
 Default: \fI10\fP
-.SS smtp_need_auth
-.PP
-This flag controls whether SMTP connections require authentication at all
-times.
-.PP
-Default: \fIfalse\fP
 .SS smtp_private_key_path
 .PP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .PP
 Default: (unset)
-.SS smtp_running_mode
-.PP
-Possible values: \fI0\fP (outbound), \fI1\fP (inbound), \fI2\fP (mixed)
-.PP
-Default: \fI2\fP
 .SS smtp_support_pipeline
 .PP
 This flag controls the offering of the PIPELINING extension (RFC 2920) to
