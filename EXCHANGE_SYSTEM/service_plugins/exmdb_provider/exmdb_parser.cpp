@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <gromox/exmdb_rpc.hpp>
 #include "notification_agent.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
@@ -101,51 +102,51 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 	presponse->call_id = prequest->call_id;
 	exmdb_server_set_dir(prequest->dir);
 	switch (prequest->call_id) {
-	case CALL_ID_PING_STORE:
+	case exmdb_callid::PING_STORE:
 		return exmdb_server_ping_store(prequest->dir);
-	case CALL_ID_GET_ALL_NAMED_PROPIDS:
+	case exmdb_callid::GET_ALL_NAMED_PROPIDS:
 		return exmdb_server_get_all_named_propids(prequest->dir,
 			&presponse->payload.get_all_named_propids.propids);
-	case CALL_ID_GET_NAMED_PROPIDS:
+	case exmdb_callid::GET_NAMED_PROPIDS:
 		return exmdb_server_get_named_propids(prequest->dir,
 			prequest->payload.get_named_propids.b_create,
 			prequest->payload.get_named_propids.ppropnames,
 			&presponse->payload.get_named_propids.propids);
-	case CALL_ID_GET_NAMED_PROPNAMES:
+	case exmdb_callid::GET_NAMED_PROPNAMES:
 		return exmdb_server_get_named_propnames(prequest->dir,
 			prequest->payload.get_named_propnames.ppropids,
 			&presponse->payload.get_named_propnames.propnames);
-	case CALL_ID_GET_MAPPING_GUID:
+	case exmdb_callid::GET_MAPPING_GUID:
 		return exmdb_server_get_mapping_guid(prequest->dir,
 			prequest->payload.get_mapping_guid.replid,
 			&presponse->payload.get_mapping_guid.b_found,
 			&presponse->payload.get_mapping_guid.guid);
-	case CALL_ID_GET_MAPPING_REPLID:
+	case exmdb_callid::GET_MAPPING_REPLID:
 		return exmdb_server_get_mapping_replid(prequest->dir,
 			prequest->payload.get_mapping_replid.guid,
 			&presponse->payload.get_mapping_replid.b_found,
 			&presponse->payload.get_mapping_replid.replid);
-	case CALL_ID_GET_STORE_ALL_PROPTAGS:
+	case exmdb_callid::GET_STORE_ALL_PROPTAGS:
 		return exmdb_server_get_store_all_proptags(prequest->dir,
 			&presponse->payload.get_store_all_proptags.proptags);
-	case CALL_ID_GET_STORE_PROPERTIES:
+	case exmdb_callid::GET_STORE_PROPERTIES:
 		return exmdb_server_get_store_properties(prequest->dir,
 			prequest->payload.get_store_properties.cpid,
 			prequest->payload.get_store_properties.pproptags,
 			&presponse->payload.get_store_properties.propvals);
-	case CALL_ID_SET_STORE_PROPERTIES:
+	case exmdb_callid::SET_STORE_PROPERTIES:
 		return exmdb_server_set_store_properties(prequest->dir,
 			prequest->payload.set_store_properties.cpid,
 			prequest->payload.set_store_properties.ppropvals,
 			&presponse->payload.set_store_properties.problems);
-	case CALL_ID_REMOVE_STORE_PROPERTIES:
+	case exmdb_callid::REMOVE_STORE_PROPERTIES:
 		return exmdb_server_remove_store_properties(prequest->dir,
 			prequest->payload.remove_store_properties.pproptags);
-	case CALL_ID_CHECK_MAILBOX_PERMISSION:
+	case exmdb_callid::CHECK_MAILBOX_PERMISSION:
 		return exmdb_server_check_mailbox_permission(prequest->dir,
 			prequest->payload.check_mailbox_permission.username,
 			&presponse->payload.check_mailbox_permission.permission);
-	case CALL_ID_GET_FOLDER_BY_CLASS:
+	case exmdb_callid::GET_FOLDER_BY_CLASS:
 		presponse->payload.get_folder_by_class.str_explicit = static_cast<char *>(common_util_alloc(256));
 		if (NULL == presponse->payload.get_folder_by_class.str_explicit) {
 			return FALSE;
@@ -154,68 +155,68 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.get_folder_by_class.str_class,
 			&presponse->payload.get_folder_by_class.id,
 			presponse->payload.get_folder_by_class.str_explicit);
-	case CALL_ID_SET_FOLDER_BY_CLASS:
+	case exmdb_callid::SET_FOLDER_BY_CLASS:
 		return exmdb_server_set_folder_by_class(prequest->dir,
 			prequest->payload.set_folder_by_class.folder_id,
 			prequest->payload.set_folder_by_class.str_class,
 			&presponse->payload.set_folder_by_class.b_result);
-	case CALL_ID_GET_FOLDER_CLASS_TABLE:
+	case exmdb_callid::GET_FOLDER_CLASS_TABLE:
 		return exmdb_server_get_folder_class_table(prequest->dir,
 			&presponse->payload.get_folder_class_table.table);
-	case CALL_ID_CHECK_FOLDER_ID:
+	case exmdb_callid::CHECK_FOLDER_ID:
 		return exmdb_server_check_folder_id(prequest->dir,
 			prequest->payload.check_folder_id.folder_id,
 			&presponse->payload.check_folder_id.b_exist);
-	case CALL_ID_QUERY_FOLDER_MESSAGES:
+	case exmdb_callid::QUERY_FOLDER_MESSAGES:
 		return exmdb_server_query_folder_messages(prequest->dir,
 			prequest->payload.query_folder_messages.folder_id,
 			&presponse->payload.query_folder_messages.set);
-	case CALL_ID_CHECK_FOLDER_DELETED:
+	case exmdb_callid::CHECK_FOLDER_DELETED:
 		return exmdb_server_check_folder_deleted(prequest->dir,
 			prequest->payload.check_folder_deleted.folder_id,
 			&presponse->payload.check_folder_deleted.b_del);
-	case CALL_ID_GET_FOLDER_BY_NAME:
+	case exmdb_callid::GET_FOLDER_BY_NAME:
 		return exmdb_server_get_folder_by_name(prequest->dir,
 			prequest->payload.get_folder_by_name.parent_id,
 			prequest->payload.get_folder_by_name.str_name,
 			&presponse->payload.get_folder_by_name.folder_id);
-	case CALL_ID_CHECK_FOLDER_PERMISSION:
+	case exmdb_callid::CHECK_FOLDER_PERMISSION:
 		return exmdb_server_check_folder_permission(prequest->dir,
 			prequest->payload.check_folder_permission.folder_id,
 			prequest->payload.check_folder_permission.username,
 			&presponse->payload.check_folder_permission.permission);
-	case CALL_ID_CREATE_FOLDER_BY_PROPERTIES:
+	case exmdb_callid::CREATE_FOLDER_BY_PROPERTIES:
 		return exmdb_server_create_folder_by_properties(prequest->dir,
 			prequest->payload.create_folder_by_properties.cpid,
 			prequest->payload.create_folder_by_properties.pproperties,
 			&presponse->payload.create_folder_by_properties.folder_id);
-	case CALL_ID_GET_FOLDER_ALL_PROPTAGS:
+	case exmdb_callid::GET_FOLDER_ALL_PROPTAGS:
 		return exmdb_server_get_folder_all_proptags(prequest->dir,
 			prequest->payload.get_folder_all_proptags.folder_id,
 			&presponse->payload.get_folder_all_proptags.proptags);
-	case CALL_ID_GET_FOLDER_PROPERTIES:
+	case exmdb_callid::GET_FOLDER_PROPERTIES:
 		return exmdb_server_get_folder_properties(prequest->dir,
 			prequest->payload.get_folder_properties.cpid,
 			prequest->payload.get_folder_properties.folder_id,
 			prequest->payload.get_folder_properties.pproptags,
 			&presponse->payload.get_folder_properties.propvals);
-	case CALL_ID_SET_FOLDER_PROPERTIES:
+	case exmdb_callid::SET_FOLDER_PROPERTIES:
 		return exmdb_server_set_folder_properties(prequest->dir,
 			prequest->payload.set_folder_properties.cpid,
 			prequest->payload.set_folder_properties.folder_id,
 			prequest->payload.set_folder_properties.pproperties,
 			&presponse->payload.set_folder_properties.problems);
-	case CALL_ID_REMOVE_FOLDER_PROPERTIES:
+	case exmdb_callid::REMOVE_FOLDER_PROPERTIES:
 		return exmdb_server_remove_folder_properties(prequest->dir,
 			prequest->payload.remove_folder_properties.folder_id,
 			prequest->payload.remove_folder_properties.pproptags);
-	case CALL_ID_DELETE_FOLDER:
+	case exmdb_callid::DELETE_FOLDER:
 		return exmdb_server_delete_folder(prequest->dir,
 			prequest->payload.delete_folder.cpid,
 			prequest->payload.delete_folder.folder_id,
 			prequest->payload.delete_folder.b_hard,
 			&presponse->payload.delete_folder.b_result);
-	case CALL_ID_EMPTY_FOLDER:
+	case exmdb_callid::EMPTY_FOLDER:
 		return exmdb_server_empty_folder(prequest->dir,
 			prequest->payload.empty_folder.cpid,
 			prequest->payload.empty_folder.username,
@@ -225,12 +226,12 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.empty_folder.b_fai,
 			prequest->payload.empty_folder.b_sub,
 			&presponse->payload.empty_folder.b_partial);
-	case CALL_ID_CHECK_FOLDER_CYCLE:
+	case exmdb_callid::CHECK_FOLDER_CYCLE:
 		return exmdb_server_check_folder_cycle(prequest->dir,
 			prequest->payload.check_folder_cycle.src_fid,
 			prequest->payload.check_folder_cycle.dst_fid,
 			&presponse->payload.check_folder_cycle.b_cycle);
-	case CALL_ID_COPY_FOLDER_INTERNAL:
+	case exmdb_callid::COPY_FOLDER_INTERNAL:
 		return exmdb_server_copy_folder_internal(prequest->dir,
 			prequest->payload.copy_folder_internal.account_id,
 			prequest->payload.copy_folder_internal.cpid,
@@ -243,13 +244,13 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.copy_folder_internal.dst_fid,
 			&presponse->payload.copy_folder_internal.b_collid,
 			&presponse->payload.copy_folder_internal.b_partial);
-	case CALL_ID_GET_SEARCH_CRITERIA:
+	case exmdb_callid::GET_SEARCH_CRITERIA:
 		return exmdb_server_get_search_criteria(prequest->dir,
 			prequest->payload.get_search_criteria.folder_id,
 			&presponse->payload.get_search_criteria.search_status,
 			&presponse->payload.get_search_criteria.prestriction,
 			&presponse->payload.get_search_criteria.folder_ids);
-	case CALL_ID_SET_SEARCH_CRITERIA:
+	case exmdb_callid::SET_SEARCH_CRITERIA:
 		return exmdb_server_set_search_criteria(prequest->dir,
 			prequest->payload.set_search_criteria.cpid,
 			prequest->payload.set_search_criteria.folder_id,
@@ -257,7 +258,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.set_search_criteria.prestriction,
 			prequest->payload.set_search_criteria.pfolder_ids,
 			&presponse->payload.set_search_criteria.b_result);
-	case CALL_ID_MOVECOPY_MESSAGE:
+	case exmdb_callid::MOVECOPY_MESSAGE:
 		return exmdb_server_movecopy_message(prequest->dir,
 			prequest->payload.movecopy_message.account_id,
 			prequest->payload.movecopy_message.cpid,
@@ -266,7 +267,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.movecopy_message.dst_id,
 			prequest->payload.movecopy_message.b_move,
 			&presponse->payload.movecopy_message.b_result);
-	case CALL_ID_MOVECOPY_MESSAGES:
+	case exmdb_callid::MOVECOPY_MESSAGES:
 		return exmdb_server_movecopy_messages(prequest->dir,
 			prequest->payload.movecopy_messages.account_id,
 			prequest->payload.movecopy_messages.cpid,
@@ -277,7 +278,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.movecopy_messages.b_copy,
 			prequest->payload.movecopy_messages.pmessage_ids,
 			&presponse->payload.movecopy_messages.b_partial);
-	case CALL_ID_MOVECOPY_FOLDER:
+	case exmdb_callid::MOVECOPY_FOLDER:
 		return exmdb_server_movecopy_folder(prequest->dir,
 			prequest->payload.movecopy_folder.account_id,
 			prequest->payload.movecopy_folder.cpid,
@@ -290,7 +291,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.movecopy_folder.b_copy,
 			&presponse->payload.movecopy_folder.b_exist,
 			&presponse->payload.movecopy_folder.b_partial);
-	case CALL_ID_DELETE_MESSAGES:
+	case exmdb_callid::DELETE_MESSAGES:
 		return exmdb_server_delete_messages(prequest->dir,
 			prequest->payload.delete_messages.account_id,
 			prequest->payload.delete_messages.cpid,
@@ -299,18 +300,18 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.delete_messages.pmessage_ids,
 			prequest->payload.delete_messages.b_hard,
 			&presponse->payload.delete_messages.b_partial);
-	case CALL_ID_GET_MESSAGE_BRIEF:
+	case exmdb_callid::GET_MESSAGE_BRIEF:
 		return exmdb_server_get_message_brief(prequest->dir,
 			prequest->payload.get_message_brief.cpid,
 			prequest->payload.get_message_brief.message_id,
 			&presponse->payload.get_message_brief.pbrief);
-	case CALL_ID_SUM_HIERARCHY:
+	case exmdb_callid::SUM_HIERARCHY:
 		return exmdb_server_sum_hierarchy(prequest->dir,
 			prequest->payload.sum_hierarchy.folder_id,
 			prequest->payload.sum_hierarchy.username,
 			prequest->payload.sum_hierarchy.b_depth,
 			&presponse->payload.sum_hierarchy.count);
-	case CALL_ID_LOAD_HIERARCHY_TABLE:
+	case exmdb_callid::LOAD_HIERARCHY_TABLE:
 		return exmdb_server_load_hierarchy_table(prequest->dir,
 			prequest->payload.load_hierarchy_table.folder_id,
 			prequest->payload.load_hierarchy_table.username,
@@ -318,13 +319,13 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.load_hierarchy_table.prestriction,
 			&presponse->payload.load_hierarchy_table.table_id,
 			&presponse->payload.load_hierarchy_table.row_count);
-	case CALL_ID_SUM_CONTENT:
+	case exmdb_callid::SUM_CONTENT:
 		return exmdb_server_sum_content(prequest->dir,
 			prequest->payload.sum_content.folder_id,
 			prequest->payload.sum_content.b_fai,
 			prequest->payload.sum_content.b_deleted,
 			&presponse->payload.sum_content.count);
-	case CALL_ID_LOAD_CONTENT_TABLE:
+	case exmdb_callid::LOAD_CONTENT_TABLE:
 		return exmdb_server_load_content_table(prequest->dir,
 			prequest->payload.load_content_table.cpid,
 			prequest->payload.load_content_table.folder_id,
@@ -334,27 +335,27 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.load_content_table.psorts,
 			&presponse->payload.load_content_table.table_id,
 			&presponse->payload.load_content_table.row_count);
-	case CALL_ID_LOAD_PERMISSION_TABLE:
+	case exmdb_callid::LOAD_PERMISSION_TABLE:
 		return exmdb_server_load_permission_table(prequest->dir,
 			prequest->payload.load_permission_table.folder_id,
 			prequest->payload.load_permission_table.table_flags,
 			&presponse->payload.load_permission_table.table_id,
 			&presponse->payload.load_permission_table.row_count);
-	case CALL_ID_LOAD_RULE_TABLE:
+	case exmdb_callid::LOAD_RULE_TABLE:
 		return exmdb_server_load_rule_table(prequest->dir,
 			prequest->payload.load_rule_table.folder_id,
 			prequest->payload.load_rule_table.table_flags,
 			prequest->payload.load_rule_table.prestriction,
 			&presponse->payload.load_rule_table.table_id,
 			&presponse->payload.load_rule_table.row_count);
-	case CALL_ID_UNLOAD_TABLE:
+	case exmdb_callid::UNLOAD_TABLE:
 		return exmdb_server_unload_table(prequest->dir,
 				prequest->payload.unload_table.table_id);
-	case CALL_ID_SUM_TABLE:
+	case exmdb_callid::SUM_TABLE:
 		return exmdb_server_sum_table(prequest->dir,
 			prequest->payload.sum_table.table_id,
 			&presponse->payload.sum_table.rows);
-	case CALL_ID_QUERY_TABLE:
+	case exmdb_callid::QUERY_TABLE:
 		return exmdb_server_query_table(prequest->dir,
 			prequest->payload.query_table.username,
 			prequest->payload.query_table.cpid,
@@ -363,7 +364,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.query_table.start_pos,
 			prequest->payload.query_table.row_needed,
 			&presponse->payload.query_table.set);
-	case CALL_ID_MATCH_TABLE:
+	case exmdb_callid::MATCH_TABLE:
 		return exmdb_server_match_table(prequest->dir,
 			prequest->payload.match_table.username,
 			prequest->payload.match_table.cpid,
@@ -374,14 +375,14 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.match_table.pproptags,
 			&presponse->payload.match_table.position,
 			&presponse->payload.match_table.propvals);
-	case CALL_ID_LOCATE_TABLE:
+	case exmdb_callid::LOCATE_TABLE:
 		return exmdb_server_locate_table(prequest->dir,
 			prequest->payload.locate_table.table_id,
 			prequest->payload.locate_table.inst_id,
 			prequest->payload.locate_table.inst_num,
 			&presponse->payload.locate_table.position,
 			&presponse->payload.locate_table.row_type);
-	case CALL_ID_READ_TABLE_ROW:
+	case exmdb_callid::READ_TABLE_ROW:
 		return exmdb_server_read_table_row(prequest->dir,
 			prequest->payload.read_table_row.username,
 			prequest->payload.read_table_row.cpid,
@@ -390,52 +391,52 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.read_table_row.inst_id,
 			prequest->payload.read_table_row.inst_num,
 			&presponse->payload.read_table_row.propvals);
-	case CALL_ID_MARK_TABLE:
+	case exmdb_callid::MARK_TABLE:
 		return exmdb_server_mark_table(prequest->dir,
 			prequest->payload.mark_table.table_id,
 			prequest->payload.mark_table.position,
 			&presponse->payload.mark_table.inst_id,
 			&presponse->payload.mark_table.inst_num,
 			&presponse->payload.mark_table.row_type);
-	case CALL_ID_GET_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_TABLE_ALL_PROPTAGS:
 		return exmdb_server_get_table_all_proptags(prequest->dir,
 			prequest->payload.get_table_all_proptags.table_id,
 			&presponse->payload.get_table_all_proptags.proptags);
-	case CALL_ID_EXPAND_TABLE:
+	case exmdb_callid::EXPAND_TABLE:
 		return exmdb_server_expand_table(prequest->dir,
 			prequest->payload.expand_table.table_id,
 			prequest->payload.expand_table.inst_id,
 			&presponse->payload.expand_table.b_found,
 			&presponse->payload.expand_table.position,
 			&presponse->payload.expand_table.row_count);
-	case CALL_ID_COLLAPSE_TABLE:
+	case exmdb_callid::COLLAPSE_TABLE:
 		return exmdb_server_collapse_table(prequest->dir,
 			prequest->payload.collapse_table.table_id,
 			prequest->payload.collapse_table.inst_id,
 			&presponse->payload.collapse_table.b_found,
 			&presponse->payload.collapse_table.position,
 			&presponse->payload.collapse_table.row_count);
-	case CALL_ID_STORE_TABLE_STATE:
+	case exmdb_callid::STORE_TABLE_STATE:
 		return exmdb_server_store_table_state(prequest->dir,
 			prequest->payload.store_table_state.table_id,
 			prequest->payload.store_table_state.inst_id,
 			prequest->payload.store_table_state.inst_num,
 			&presponse->payload.store_table_state.state_id);
-	case CALL_ID_RESTORE_TABLE_STATE:
+	case exmdb_callid::RESTORE_TABLE_STATE:
 		return exmdb_server_restore_table_state(prequest->dir,
 			prequest->payload.restore_table_state.table_id,
 			prequest->payload.restore_table_state.state_id,
 			&presponse->payload.restore_table_state.position);
-	case CALL_ID_CHECK_MESSAGE:
+	case exmdb_callid::CHECK_MESSAGE:
 		return exmdb_server_check_message(prequest->dir,
 			prequest->payload.check_message.folder_id,
 			prequest->payload.check_message.message_id,
 			&presponse->payload.check_message.b_exist);
-	case CALL_ID_CHECK_MESSAGE_DELETED:
+	case exmdb_callid::CHECK_MESSAGE_DELETED:
 		return exmdb_server_check_message_deleted(prequest->dir,
 			prequest->payload.check_message_deleted.message_id,
 			&presponse->payload.check_message_deleted.b_del);
-	case CALL_ID_LOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::LOAD_MESSAGE_INSTANCE:
 		return exmdb_server_load_message_instance(prequest->dir,
 			prequest->payload.load_message_instance.username,
 			prequest->payload.load_message_instance.cpid,
@@ -443,251 +444,251 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.load_message_instance.folder_id,
 			prequest->payload.load_message_instance.message_id,
 			&presponse->payload.load_message_instance.instance_id);
-	case CALL_ID_LOAD_EMBEDDED_INSTANCE:
+	case exmdb_callid::LOAD_EMBEDDED_INSTANCE:
 		return exmdb_server_load_embedded_instance(prequest->dir,
 			prequest->payload.load_embedded_instance.b_new,
 			prequest->payload.load_embedded_instance.attachment_instance_id,
 			&presponse->payload.load_embedded_instance.instance_id);
-	case CALL_ID_GET_EMBEDDED_CN:
+	case exmdb_callid::GET_EMBEDDED_CN:
 		return exmdb_server_get_embedded_cn(prequest->dir,
 		       prequest->payload.get_embedded_cn.instance_id,
 		       &presponse->payload.get_embedded_cn.pcn);
-	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::RELOAD_MESSAGE_INSTANCE:
 		return exmdb_server_reload_message_instance(prequest->dir,
 			prequest->payload.reload_message_instance.instance_id,
 			&presponse->payload.reload_message_instance.b_result);
-	case CALL_ID_CLEAR_MESSAGE_INSTANCE:
+	case exmdb_callid::CLEAR_MESSAGE_INSTANCE:
 		return exmdb_server_clear_message_instance(prequest->dir,
 			prequest->payload.clear_message_instance.instance_id);
-	case CALL_ID_READ_MESSAGE_INSTANCE:
+	case exmdb_callid::READ_MESSAGE_INSTANCE:
 		return exmdb_server_read_message_instance(prequest->dir,
 			prequest->payload.read_message_instance.instance_id,
 			&presponse->payload.read_message_instance.msgctnt);
-	case CALL_ID_WRITE_MESSAGE_INSTANCE:
+	case exmdb_callid::WRITE_MESSAGE_INSTANCE:
 		return exmdb_server_write_message_instance(prequest->dir,
 			prequest->payload.write_message_instance.instance_id,
 			prequest->payload.write_message_instance.pmsgctnt,
 			prequest->payload.write_message_instance.b_force,
 			&presponse->payload.write_message_instance.proptags,
 			&presponse->payload.write_message_instance.problems);
-	case CALL_ID_LOAD_ATTACHMENT_INSTANCE:
+	case exmdb_callid::LOAD_ATTACHMENT_INSTANCE:
 		return exmdb_server_load_attachment_instance(prequest->dir,
 			prequest->payload.load_attachment_instance.message_instance_id,
 			prequest->payload.load_attachment_instance.attachment_num,
 			&presponse->payload.load_attachment_instance.instance_id);
-	case CALL_ID_CREATE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::CREATE_ATTACHMENT_INSTANCE:
 		return exmdb_server_create_attachment_instance(prequest->dir,
 			prequest->payload.create_attachment_instance.message_instance_id,
 			&presponse->payload.create_attachment_instance.instance_id,
 			&presponse->payload.create_attachment_instance.attachment_num);
-	case CALL_ID_READ_ATTACHMENT_INSTANCE:
+	case exmdb_callid::READ_ATTACHMENT_INSTANCE:
 		return exmdb_server_read_attachment_instance(prequest->dir,
 			prequest->payload.read_attachment_instance.instance_id,
 			&presponse->payload.read_attachment_instance.attctnt);
-	case CALL_ID_WRITE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::WRITE_ATTACHMENT_INSTANCE:
 		return exmdb_server_write_attachment_instance(prequest->dir,
 			prequest->payload.write_attachment_instance.instance_id,
 			prequest->payload.write_attachment_instance.pattctnt,
 			prequest->payload.write_attachment_instance.b_force,
 			&presponse->payload.write_attachment_instance.problems);
-	case CALL_ID_DELETE_MESSAGE_INSTANCE_ATTACHMENT:
+	case exmdb_callid::DELETE_MESSAGE_INSTANCE_ATTACHMENT:
 		return exmdb_server_delete_message_instance_attachment(prequest->dir,
 			prequest->payload.delete_message_instance_attachment.message_instance_id,
 			prequest->payload.delete_message_instance_attachment.attachment_num);
-	case CALL_ID_FLUSH_INSTANCE:
+	case exmdb_callid::FLUSH_INSTANCE:
 		return exmdb_server_flush_instance(prequest->dir,
 			prequest->payload.flush_instance.instance_id,
 			prequest->payload.flush_instance.account,
 			&presponse->payload.flush_instance.e_result);
-	case CALL_ID_UNLOAD_INSTANCE:
+	case exmdb_callid::UNLOAD_INSTANCE:
 		return exmdb_server_unload_instance(prequest->dir,
 			prequest->payload.unload_instance.instance_id);
-	case CALL_ID_GET_INSTANCE_ALL_PROPTAGS:
+	case exmdb_callid::GET_INSTANCE_ALL_PROPTAGS:
 		return exmdb_server_get_instance_all_proptags(prequest->dir,
 			prequest->payload.get_instance_all_proptags.instance_id,
 			&presponse->payload.get_instance_all_proptags.proptags);
-	case CALL_ID_GET_INSTANCE_PROPERTIES:
+	case exmdb_callid::GET_INSTANCE_PROPERTIES:
 		return exmdb_server_get_instance_properties(prequest->dir,
 			prequest->payload.get_instance_properties.size_limit,
 			prequest->payload.get_instance_properties.instance_id,
 			prequest->payload.get_instance_properties.pproptags,
 			&presponse->payload.get_instance_properties.propvals);
-	case CALL_ID_SET_INSTANCE_PROPERTIES:
+	case exmdb_callid::SET_INSTANCE_PROPERTIES:
 		return exmdb_server_set_instance_properties(prequest->dir,
 			prequest->payload.set_instance_properties.instance_id,
 			prequest->payload.set_instance_properties.pproperties,
 			&presponse->payload.set_instance_properties.problems);
-	case CALL_ID_REMOVE_INSTANCE_PROPERTIES:
+	case exmdb_callid::REMOVE_INSTANCE_PROPERTIES:
 		return exmdb_server_remove_instance_properties(prequest->dir,
 			prequest->payload.remove_instance_properties.instance_id,
 			prequest->payload.remove_instance_properties.pproptags,
 			&presponse->payload.remove_instance_properties.problems);
-	case CALL_ID_CHECK_INSTANCE_CYCLE:
+	case exmdb_callid::CHECK_INSTANCE_CYCLE:
 		return exmdb_server_check_instance_cycle(prequest->dir,
 			prequest->payload.check_instance_cycle.src_instance_id,
 			prequest->payload.check_instance_cycle.dst_instance_id,
 			&presponse->payload.check_instance_cycle.b_cycle);
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_RCPTS:
 		return exmdb_server_empty_message_instance_rcpts(prequest->dir,
 			prequest->payload.empty_message_instance_rcpts.instance_id);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_NUM:
 		return exmdb_server_get_message_instance_rcpts_num(prequest->dir,
 			prequest->payload.get_message_instance_rcpts_num.instance_id,
 			&presponse->payload.get_message_instance_rcpts_num.num);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
 		return exmdb_server_get_message_instance_rcpts_all_proptags(prequest->dir,
 			prequest->payload.get_message_instance_rcpts_all_proptags.instance_id,
 			&presponse->payload.get_message_instance_rcpts_all_proptags.proptags);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS:
 		return exmdb_server_get_message_instance_rcpts(prequest->dir,
 			prequest->payload.get_message_instance_rcpts.instance_id,
 			prequest->payload.get_message_instance_rcpts.row_id,
 			prequest->payload.get_message_instance_rcpts.need_count,
 			&presponse->payload.get_message_instance_rcpts.set);
-	case CALL_ID_UPDATE_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::UPDATE_MESSAGE_INSTANCE_RCPTS:
 		return exmdb_server_update_message_instance_rcpts(prequest->dir,
 			prequest->payload.update_message_instance_rcpts.instance_id,
 			prequest->payload.update_message_instance_rcpts.pset);
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
 		return exmdb_server_empty_message_instance_attachments(prequest->dir,
 			prequest->payload.empty_message_instance_attachments.instance_id);
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
 		return exmdb_server_get_message_instance_attachments_num(prequest->dir,
 			prequest->payload.get_message_instance_attachments_num.instance_id,
 			&presponse->payload.get_message_instance_attachments_num.num);
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
 		return exmdb_server_get_message_instance_attachment_table_all_proptags(prequest->dir,
 			prequest->payload.get_message_instance_attachment_table_all_proptags.instance_id,
 			&presponse->payload.get_message_instance_attachment_table_all_proptags.proptags);
-	case CALL_ID_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
+	case exmdb_callid::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
 		return exmdb_server_query_message_instance_attachment_table(prequest->dir,
 			prequest->payload.query_message_instance_attachment_table.instance_id,
 			prequest->payload.query_message_instance_attachment_table.pproptags,
 			prequest->payload.query_message_instance_attachment_table.start_pos,
 			prequest->payload.query_message_instance_attachment_table.row_needed,
 			&presponse->payload.query_message_instance_attachment_table.set);
-	case CALL_ID_COPY_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::COPY_INSTANCE_ATTACHMENTS:
 		return exmdb_server_copy_instance_attachments(prequest->dir,
 			prequest->payload.copy_instance_attachments.b_force,
 			prequest->payload.copy_instance_attachments.src_instance_id,
 			prequest->payload.copy_instance_attachments.dst_instance_id,
 			&presponse->payload.copy_instance_attachments.b_result);
-	case CALL_ID_SET_MESSAGE_INSTANCE_CONFLICT:
+	case exmdb_callid::SET_MESSAGE_INSTANCE_CONFLICT:
 		return exmdb_server_set_message_instance_conflict(prequest->dir,
 			prequest->payload.set_message_instance_conflict.instance_id,
 			prequest->payload.set_message_instance_conflict.pmsgctnt);
-	case CALL_ID_GET_MESSAGE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_RCPTS:
 		return exmdb_server_get_message_rcpts(prequest->dir,
 			prequest->payload.get_message_rcpts.message_id,
 			&presponse->payload.get_message_rcpts.set);
-	case CALL_ID_GET_MESSAGE_PROPERTIES:
+	case exmdb_callid::GET_MESSAGE_PROPERTIES:
 		return exmdb_server_get_message_properties(prequest->dir,
 			prequest->payload.get_message_properties.username,
 			prequest->payload.get_message_properties.cpid,
 			prequest->payload.get_message_properties.message_id,
 			prequest->payload.get_message_properties.pproptags,
 			&presponse->payload.get_message_properties.propvals);
-	case CALL_ID_SET_MESSAGE_PROPERTIES:
+	case exmdb_callid::SET_MESSAGE_PROPERTIES:
 		return exmdb_server_set_message_properties(prequest->dir,
 			prequest->payload.set_message_properties.username,
 			prequest->payload.set_message_properties.cpid,
 			prequest->payload.set_message_properties.message_id,
 			prequest->payload.set_message_properties.pproperties,
 			&presponse->payload.set_message_properties.problems);
-	case CALL_ID_SET_MESSAGE_READ_STATE:
+	case exmdb_callid::SET_MESSAGE_READ_STATE:
 		return exmdb_server_set_message_read_state(prequest->dir,
 			prequest->payload.set_message_read_state.username,
 			prequest->payload.set_message_read_state.message_id,
 			prequest->payload.set_message_read_state.mark_as_read,
 			&presponse->payload.set_message_read_state.read_cn);
-	case CALL_ID_REMOVE_MESSAGE_PROPERTIES:
+	case exmdb_callid::REMOVE_MESSAGE_PROPERTIES:
 		return exmdb_server_remove_message_properties(prequest->dir,
 			prequest->payload.remove_message_properties.cpid,
 			prequest->payload.remove_message_properties.message_id,
 			prequest->payload.remove_message_properties.pproptags);
-	case CALL_ID_ALLOCATE_MESSAGE_ID:
+	case exmdb_callid::ALLOCATE_MESSAGE_ID:
 		return exmdb_server_allocate_message_id(prequest->dir,
 			prequest->payload.allocate_message_id.folder_id,
 			&presponse->payload.allocate_message_id.message_id);
-	case CALL_ID_ALLOCATE_CN:
+	case exmdb_callid::ALLOCATE_CN:
 		return exmdb_server_allocate_cn(prequest->dir,
 			&presponse->payload.allocate_cn.cn);
-	case CALL_ID_GET_MESSAGE_GROUP_ID:
+	case exmdb_callid::GET_MESSAGE_GROUP_ID:
 		return exmdb_server_get_message_group_id(prequest->dir,
 			prequest->payload.get_message_group_id.message_id,
 			&presponse->payload.get_message_group_id.pgroup_id);
-	case CALL_ID_SET_MESSAGE_GROUP_ID:
+	case exmdb_callid::SET_MESSAGE_GROUP_ID:
 		return exmdb_server_set_message_group_id(prequest->dir,
 			prequest->payload.set_message_group_id.message_id,
 			prequest->payload.set_message_group_id.group_id);
-	case CALL_ID_SAVE_CHANGE_INDICES:
+	case exmdb_callid::SAVE_CHANGE_INDICES:
 		return exmdb_server_save_change_indices(prequest->dir,
 			prequest->payload.save_change_indices.message_id,
 			prequest->payload.save_change_indices.cn,
 			prequest->payload.save_change_indices.pindices,
 			prequest->payload.save_change_indices.pungroup_proptags);
-	case CALL_ID_GET_CHANGE_INDICES:
+	case exmdb_callid::GET_CHANGE_INDICES:
 		return exmdb_server_get_change_indices(prequest->dir,
 			prequest->payload.get_change_indices.message_id,
 			prequest->payload.get_change_indices.cn,
 			&presponse->payload.get_change_indices.indices,
 			&presponse->payload.get_change_indices.ungroup_proptags);
-	case CALL_ID_MARK_MODIFIED:
+	case exmdb_callid::MARK_MODIFIED:
 		return exmdb_server_mark_modified(prequest->dir,
 			prequest->payload.mark_modified.message_id);
-	case CALL_ID_TRY_MARK_SUBMIT:
+	case exmdb_callid::TRY_MARK_SUBMIT:
 		return exmdb_server_try_mark_submit(prequest->dir,
 			prequest->payload.try_mark_submit.message_id,
 			&presponse->payload.try_mark_submit.b_marked);
-	case CALL_ID_CLEAR_SUBMIT:
+	case exmdb_callid::CLEAR_SUBMIT:
 		return exmdb_server_clear_submit(prequest->dir,
 			prequest->payload.clear_submit.message_id,
 			prequest->payload.clear_submit.b_unsent);
-	case CALL_ID_LINK_MESSAGE:
+	case exmdb_callid::LINK_MESSAGE:
 		return exmdb_server_link_message(prequest->dir,
 			prequest->payload.link_message.cpid,
 			prequest->payload.link_message.folder_id,
 			prequest->payload.link_message.message_id,
 			&presponse->payload.link_message.b_result);
-	case CALL_ID_UNLINK_MESSAGE:
+	case exmdb_callid::UNLINK_MESSAGE:
 		return exmdb_server_unlink_message(prequest->dir,
 			prequest->payload.unlink_message.cpid,
 			prequest->payload.unlink_message.folder_id,
 			prequest->payload.unlink_message.message_id);
-	case CALL_ID_RULE_NEW_MESSAGE:
+	case exmdb_callid::RULE_NEW_MESSAGE:
 		return exmdb_server_rule_new_message(prequest->dir,
 			prequest->payload.rule_new_message.username,
 			prequest->payload.rule_new_message.account,
 			prequest->payload.rule_new_message.cpid,
 			prequest->payload.rule_new_message.folder_id,
 			prequest->payload.rule_new_message.message_id);
-	case CALL_ID_SET_MESSAGE_TIMER:
+	case exmdb_callid::SET_MESSAGE_TIMER:
 		return exmdb_server_set_message_timer(prequest->dir,
 			prequest->payload.set_message_timer.message_id,
 			prequest->payload.set_message_timer.timer_id);
-	case CALL_ID_GET_MESSAGE_TIMER:
+	case exmdb_callid::GET_MESSAGE_TIMER:
 		return exmdb_server_get_message_timer(prequest->dir,
 			prequest->payload.get_message_timer.message_id,
 			&presponse->payload.get_message_timer.ptimer_id);
-	case CALL_ID_EMPTY_FOLDER_PERMISSION:
+	case exmdb_callid::EMPTY_FOLDER_PERMISSION:
 		return exmdb_server_empty_folder_permission(prequest->dir,
 			prequest->payload.empty_folder_permission.folder_id);
-	case CALL_ID_UPDATE_FOLDER_PERMISSION:
+	case exmdb_callid::UPDATE_FOLDER_PERMISSION:
 		return exmdb_server_update_folder_permission(prequest->dir,
 			prequest->payload.update_folder_permission.folder_id,
 			prequest->payload.update_folder_permission.b_freebusy,
 			prequest->payload.update_folder_permission.count,
 			prequest->payload.update_folder_permission.prow);
-	case CALL_ID_EMPTY_FOLDER_RULE:
+	case exmdb_callid::EMPTY_FOLDER_RULE:
 		return exmdb_server_empty_folder_rule(prequest->dir,
 			prequest->payload.empty_folder_rule.folder_id);
-	case CALL_ID_UPDATE_FOLDER_RULE:
+	case exmdb_callid::UPDATE_FOLDER_RULE:
 		return exmdb_server_update_folder_rule(prequest->dir,
 			prequest->payload.update_folder_rule.folder_id,
 			prequest->payload.update_folder_rule.count,
 			prequest->payload.update_folder_rule.prow,
 			&presponse->payload.update_folder_rule.b_exceed);
-	case CALL_ID_DELIVERY_MESSAGE:
+	case exmdb_callid::DELIVERY_MESSAGE:
 		return exmdb_server_delivery_message(prequest->dir,
 			prequest->payload.delivery_message.from_address,
 			prequest->payload.delivery_message.account,
@@ -695,20 +696,20 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			prequest->payload.delivery_message.pmsg,
 			prequest->payload.delivery_message.pdigest,
 			&presponse->payload.delivery_message.result);
-	case CALL_ID_WRITE_MESSAGE:
+	case exmdb_callid::WRITE_MESSAGE:
 		return exmdb_server_write_message(prequest->dir,
 			prequest->payload.write_message.account,
 			prequest->payload.write_message.cpid,
 			prequest->payload.write_message.folder_id,
 			prequest->payload.write_message.pmsgctnt,
 			&presponse->payload.write_message.e_result);
-	case CALL_ID_READ_MESSAGE:
+	case exmdb_callid::READ_MESSAGE:
 		return exmdb_server_read_message(prequest->dir,
 			prequest->payload.read_message.username,
 			prequest->payload.read_message.cpid,
 			prequest->payload.read_message.message_id,
 			&presponse->payload.read_message.pmsgctnt);
-	case CALL_ID_GET_CONTENT_SYNC:
+	case exmdb_callid::GET_CONTENT_SYNC:
 		b_return = exmdb_server_get_content_sync(prequest->dir,
 			prequest->payload.get_content_sync.folder_id,
 			prequest->payload.get_content_sync.username,
@@ -745,7 +746,7 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			idset_free(prequest->payload.get_content_sync.pread);
 		}
 		return b_return;
-	case CALL_ID_GET_HIERARCHY_SYNC:
+	case exmdb_callid::GET_HIERARCHY_SYNC:
 		b_return = exmdb_server_get_hierarchy_sync(prequest->dir,
 			prequest->payload.get_hierarchy_sync.folder_id,
 			prequest->payload.get_hierarchy_sync.username,
@@ -762,45 +763,45 @@ static BOOL exmdb_parser_dispatch(const EXMDB_REQUEST *prequest,
 			idset_free(prequest->payload.get_hierarchy_sync.pseen);
 		}
 		return b_return;
-	case CALL_ID_ALLOCATE_IDS:
+	case exmdb_callid::ALLOCATE_IDS:
 		return exmdb_server_allocate_ids(prequest->dir,
 			prequest->payload.allocate_ids.count,
 			&presponse->payload.allocate_ids.begin_eid);
-	case CALL_ID_SUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::SUBSCRIBE_NOTIFICATION:
 		return exmdb_server_subscribe_notification(prequest->dir,
 			prequest->payload.subscribe_notification.notificaton_type,
 			prequest->payload.subscribe_notification.b_whole,
 			prequest->payload.subscribe_notification.folder_id,
 			prequest->payload.subscribe_notification.message_id,
 			&presponse->payload.subscribe_notification.sub_id);
-	case CALL_ID_UNSUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::UNSUBSCRIBE_NOTIFICATION:
 		return exmdb_server_unsubscribe_notification(prequest->dir,
 			prequest->payload.unsubscribe_notification.sub_id);
-	case CALL_ID_TRANSPORT_NEW_MAIL:
+	case exmdb_callid::TRANSPORT_NEW_MAIL:
 		return exmdb_server_transport_new_mail(prequest->dir,
 			prequest->payload.transport_new_mail.folder_id,
 			prequest->payload.transport_new_mail.message_id,
 			prequest->payload.transport_new_mail.message_flags,
 			prequest->payload.transport_new_mail.pstr_class);
-	case CALL_ID_RELOAD_CONTENT_TABLE:
+	case exmdb_callid::RELOAD_CONTENT_TABLE:
 		return exmdb_server_reload_content_table(prequest->dir,
 			prequest->payload.reload_content_table.table_id);
-	case CALL_ID_COPY_INSTANCE_RCPTS:
+	case exmdb_callid::COPY_INSTANCE_RCPTS:
 		return exmdb_server_copy_instance_rcpts(prequest->dir,
 			prequest->payload.copy_instance_rcpts.b_force,
 			prequest->payload.copy_instance_rcpts.src_instance_id,
 			prequest->payload.copy_instance_rcpts.dst_instance_id,
 			&presponse->payload.copy_instance_rcpts.b_result);
-	case CALL_ID_CHECK_CONTACT_ADDRESS:
+	case exmdb_callid::CHECK_CONTACT_ADDRESS:
 		return exmdb_server_check_contact_address(prequest->dir,
 			prequest->payload.check_contact_address.paddress,
 			&presponse->payload.check_contact_address.b_found);
-	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+	case exmdb_callid::GET_PUBLIC_FOLDER_UNREAD_COUNT:
 		return exmdb_server_get_public_folder_unread_count(prequest->dir,
 				prequest->payload.get_public_folder_unread_count.username,
 				prequest->payload.get_public_folder_unread_count.folder_id,
 				&presponse->payload.get_public_folder_unread_count.count);
-	case CALL_ID_UNLOAD_STORE:
+	case exmdb_callid::UNLOAD_STORE:
 		return exmdb_server_unload_store(prequest->dir);
 	default:
 		return FALSE;
@@ -875,7 +876,7 @@ static void *thread_work_func(void *pparam)
 			}
 			pbuff = malloc(buff_len);
 			if (NULL == pbuff) {
-				tmp_byte = RESPONSE_CODE_LACK_MEMORY;
+				tmp_byte = exmdb_response::LACK_MEMORY;
 				write(pconnection->sockd, &tmp_byte, 1);
 				if (FALSE == is_connected) {
 					break;
@@ -901,16 +902,16 @@ static void *thread_work_func(void *pparam)
 		free(pbuff);
 		pbuff = NULL;
 		if (EXT_ERR_SUCCESS != status) {
-			tmp_byte = RESPONSE_CODE_PULL_ERROR;
+			tmp_byte = exmdb_response::PULL_ERROR;
 		} else {
 			if (FALSE == is_connected) {
-				if (CALL_ID_CONNECT == request.call_id) {
+				if (request.call_id == exmdb_callid::CONNECT) {
 					if (FALSE == exmdb_parser_check_local(
 						request.payload.connect.prefix, &b_private)) {
-						tmp_byte = RESPONSE_CODE_MISCONFIG_PREFIX;
+						tmp_byte = exmdb_response::MISCONFIG_PREFIX;
 					} else {
 						if (b_private != request.payload.connect.b_private) {
-							tmp_byte = RESPONSE_CODE_MISCONFIG_MODE;
+							tmp_byte = exmdb_response::MISCONFIG_MODE;
 						} else {
 							strcpy(pconnection->remote_id,
 								request.payload.connect.remote_id);
@@ -925,15 +926,15 @@ static void *thread_work_func(void *pparam)
 							continue;
 						}
 					}
-				} else if (CALL_ID_LISTEN_NOTIFICATION == request.call_id) {
+				} else if (request.call_id == exmdb_callid::LISTEN_NOTIFICATION) {
 					prouter = static_cast<ROUTER_CONNECTION *>(malloc(sizeof(ROUTER_CONNECTION)));
 					if (NULL == prouter) {
-						tmp_byte = RESPONSE_CODE_LACK_MEMORY;
+						tmp_byte = exmdb_response::LACK_MEMORY;
 					} else {
 						if (0 != g_max_routers && double_list_get_nodes_num(
 							&g_router_list) >= g_max_routers) {
 							free(prouter);
-							tmp_byte = RESPONSE_CODE_MAX_REACHED;
+							tmp_byte = exmdb_response::MAX_REACHED;
 						} else {
 							strcpy(prouter->remote_id,
 								request.payload.listen_notification.remote_id);
@@ -965,15 +966,15 @@ static void *thread_work_func(void *pparam)
 						}
 					}
 				} else {
-					tmp_byte = RESPONSE_CODE_CONNECT_INCOMPLETE;
+					tmp_byte = exmdb_response::CONNECT_INCOMPLETE;
 				}
 			} else {
 				if (FALSE == exmdb_parser_dispatch(&request, &response)) {
-					tmp_byte = RESPONSE_CODE_DISPATCH_ERROR;
+					tmp_byte = exmdb_response::DISPATCH_ERROR;
 				} else {
 					if (EXT_ERR_SUCCESS != exmdb_ext_push_response(
 						&response, &tmp_bin)) {
-						tmp_byte = RESPONSE_CODE_PUSH_ERROR;
+						tmp_byte = exmdb_response::PUSH_ERROR;
 					} else {
 						exmdb_server_free_environment();
 						offset = 0;

@@ -2,6 +2,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_rpc.hpp>
 #include "list_file.h"
 #include "double_list.h"
 #include "common_util.h"
@@ -84,7 +85,7 @@ static void *thread_work_func(void *param)
 				}
 			}
 			if (NULL == pnode) {
-				tmp_byte = RESPONSE_CODE_ACCESS_DENY;
+				tmp_byte = exmdb_response::ACCESS_DENY;
 				write(sockd, &tmp_byte, 1);
 				close(sockd);
 				continue;
@@ -92,7 +93,7 @@ static void *thread_work_func(void *param)
 		}
 		pconnection = exmdb_parser_get_connection();
 		if (NULL == pconnection) {
-			tmp_byte = RESPONSE_CODE_MAX_REACHED;
+			tmp_byte = exmdb_response::MAX_REACHED;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
 			continue;

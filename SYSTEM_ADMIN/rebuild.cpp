@@ -4,6 +4,7 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/database.h>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/socket.h>
 #include "list_file.h"
@@ -27,20 +28,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #define SOCKET_TIMEOUT								60
-
-#define RESPONSE_CODE_SUCCESS						0x00
-#define RESPONSE_CODE_ACCESS_DENY					0x01
-#define RESPONSE_CODE_MAX_REACHED					0x02
-#define RESPONSE_CODE_LACK_MEMORY					0x03
-#define RESPONSE_CODE_MISCONFIG_PREFIX				0x04
-#define RESPONSE_CODE_MISCONFIG_MODE				0x05
-#define RESPONSE_CODE_CONNECT_INCOMPLETE			0x06
-#define RESPONSE_CODE_PULL_ERROR					0x07
-#define RESPONSE_CODE_DISPATCH_ERROR				0x08
-#define RESPONSE_CODE_PUSH_ERROR					0x09
-
-#define CALL_ID_CONNECT								0x00
-#define CALL_ID_UNLOAD_STORE						0x80
 
 typedef struct _EXMDB_ITEM {
 	char prefix[256];
@@ -116,14 +103,14 @@ static int exmdb_client_push_request(uint8_t call_id,
 		return status;
 	}
 	switch (call_id) {
-	case CALL_ID_CONNECT:
+	case exmdb_callid::CONNECT:
 		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_UNLOAD_STORE:
+	case exmdb_callid::UNLOAD_STORE:
 		status = exmdb_client_push_unload_store_request(&ext_push, static_cast<UNLOAD_STORE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
@@ -256,8 +243,8 @@ static int connect_exmdb(const char *dir)
 	request.prefix = pexnode->exmdb_info.prefix;
 	request.remote_id = remote_id;
 	request.b_private = TRUE;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_CONNECT, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
+	    &tmp_bin) != EXT_ERR_SUCCESS) {
 		close(sockd);
 		return -1;
 	}
@@ -271,7 +258,7 @@ static int connect_exmdb(const char *dir)
 		return -1;
 	}
 	response_code = tmp_bin.pb[0];
-	if (RESPONSE_CODE_SUCCESS == response_code) {
+	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
 			fprintf(stderr, "response format error when connect to "
 				"%s:%d for prefix \"%s\"\n", pexnode->exmdb_info.ip_addr,
@@ -282,29 +269,29 @@ static int connect_exmdb(const char *dir)
 		return sockd;
 	}
 	switch (response_code) {
-	case RESPONSE_CODE_ACCESS_DENY:
+	case exmdb_response::ACCESS_DENY:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix "
 			"\"%s\", access denied.\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_MAX_REACHED:
+	case exmdb_response::MAX_REACHED:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix"
 			" \"%s\",maximum connections reached in server!\n",
 			pexnode->exmdb_info.ip_addr, pexnode->exmdb_info.port,
 			pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_LACK_MEMORY:
+	case exmdb_response::LACK_MEMORY:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			"server out of memory!\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_MISCONFIG_PREFIX:
+	case exmdb_response::MISCONFIG_PREFIX:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			"server does not serve the prefix, configuation file of "
 			"client or server may be incorrect!", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_MISCONFIG_MODE:
+	case exmdb_response::MISCONFIG_MODE:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			" work mode with the prefix in server is different from "
 			"the mode in client, configuation file of client or server"
@@ -329,10 +316,9 @@ static BOOL exmdb_client_unload_store(const char *dir)
 	UNLOAD_STORE_REQUEST request;
 	
 	request.dir = dir;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_UNLOAD_STORE, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::UNLOAD_STORE,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	sockd = connect_exmdb(dir);
 	if (-1 == sockd) {
 		return FALSE;
@@ -345,7 +331,7 @@ static BOOL exmdb_client_unload_store(const char *dir)
 		close(sockd);
 		return FALSE;
 	}
-	if (5 != tmp_bin.cb || RESPONSE_CODE_SUCCESS != tmp_bin.pb[0]) {
+	if (tmp_bin.cb != 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS) {
 		close(sockd);
 		return FALSE;
 	}

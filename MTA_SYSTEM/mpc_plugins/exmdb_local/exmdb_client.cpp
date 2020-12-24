@@ -2,6 +2,7 @@
 #include "endian_macro.h"
 #include "exmdb_client.h"
 #include "double_list.h"
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/socket.h>
 #include "ext_buffer.h"
@@ -24,22 +25,6 @@
 #include <time.h>
 
 #define SOCKET_TIMEOUT								60
-
-#define RESPONSE_CODE_SUCCESS						0x00
-#define RESPONSE_CODE_ACCESS_DENY					0x01
-#define RESPONSE_CODE_MAX_REACHED					0x02
-#define RESPONSE_CODE_LACK_MEMORY					0x03
-#define RESPONSE_CODE_MISCONFIG_PREFIX				0x04
-#define RESPONSE_CODE_MISCONFIG_MODE				0x05
-#define RESPONSE_CODE_CONNECT_INCOMPLETE			0x06
-#define RESPONSE_CODE_PULL_ERROR					0x07
-#define RESPONSE_CODE_DISPATCH_ERROR				0x08
-#define RESPONSE_CODE_PUSH_ERROR					0x09
-
-#define CALL_ID_CONNECT								0x00
-#define CALL_ID_DELIVERY_MESSAGE					0x6d
-#define CALL_ID_CHECK_CONTACT_ADDRESS				0x79
-
 
 typedef struct _EXMDB_ITEM {
 	char prefix[256];
@@ -171,21 +156,21 @@ static int exmdb_client_push_request(uint8_t call_id,
 		return status;
 	}
 	switch (call_id) {
-	case CALL_ID_CONNECT:
+	case exmdb_callid::CONNECT:
 		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_DELIVERY_MESSAGE:
+	case exmdb_callid::DELIVERY_MESSAGE:
 		status = exmdb_client_push_delivery_message_request(&ext_push, static_cast<DELIVERY_MESSAGE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_CHECK_CONTACT_ADDRESS:
+	case exmdb_callid::CHECK_CONTACT_ADDRESS:
 		status = exmdb_client_push_check_contact_address_request(&ext_push, static_cast<CHECK_CONTACT_ADDRESS_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
@@ -304,8 +289,8 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 	request.prefix = pserver->prefix;
 	request.remote_id = remote_id;
 	request.b_private = pserver->b_private;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_CONNECT, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
+	    &tmp_bin) != EXT_ERR_SUCCESS) {
 		close(sockd);
 		return -1;
 	}
@@ -321,7 +306,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 		return -1;
 	}
 	response_code = tmp_bin.pb[0];
-	if (RESPONSE_CODE_SUCCESS == response_code) {
+	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
 			printf("[exmdb_local]: response format error "
 				"when connect to %s:%d for prefix \"%s\"\n",
@@ -332,28 +317,28 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
 		return sockd;
 	}
 	switch (response_code) {
-	case RESPONSE_CODE_ACCESS_DENY:
+	case exmdb_response::ACCESS_DENY:
 		printf("[exmdb_local]: Failed to connect to "
 			"%s:%d for prefix \"%s\", access denied.\n",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
-	case RESPONSE_CODE_MAX_REACHED:
+	case exmdb_response::MAX_REACHED:
 		printf("[exmdb_local]: Failed to connect to %s:%d for "
 			"prefix \"%s\",maximum connections reached in server!\n",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
-	case RESPONSE_CODE_LACK_MEMORY:
+	case exmdb_response::LACK_MEMORY:
 		printf("[exmdb_local]: Failed to connect to %s:%d "
 			"for prefix \"%s\", server out of memory!\n",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
-	case RESPONSE_CODE_MISCONFIG_PREFIX:
+	case exmdb_response::MISCONFIG_PREFIX:
 		printf("[exmdb_local]: Failed to connect to %s:%d for "
 			"prefix \"%s\", server does not serve the prefix, "
 			"configuation file of client or server may be incorrect!",
 			pserver->ip_addr, pserver->port, pserver->prefix);
 		break;
-	case RESPONSE_CODE_MISCONFIG_MODE:
+	case exmdb_response::MISCONFIG_MODE:
 		printf("[exmdb_local]: Failed to connect to %s:%d for "
 			"prefix \"%s\", work mode with the prefix in server is"
 			"different from the mode in client, configuation file "
@@ -434,7 +419,7 @@ static void *scan_work_func(void *pparam)
 			FD_SET(pconn->sockd, &myset);
 			if (select(pconn->sockd + 1, &myset, NULL, NULL, &tv) <= 0 ||
 				1 != read(pconn->sockd, &resp_buff, 1) ||
-				RESPONSE_CODE_SUCCESS != resp_buff) {
+			    resp_buff != exmdb_response::SUCCESS) {
 				close(pconn->sockd);
 				pconn->sockd = -1;
 				pthread_mutex_lock(&g_server_lock);
@@ -676,10 +661,9 @@ int exmdb_client_delivery_message(const char *dir,
 	request.cpid = cpid;
 	request.pmsg = pmsg;
 	request.pdigest = pdigest;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_DELIVERY_MESSAGE, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::DELIVERY_MESSAGE,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
-	}
 	pconn = exmdb_client_get_connection(dir);
 	if (NULL == pconn) {
 		free(tmp_bin.pb);
@@ -699,9 +683,8 @@ int exmdb_client_delivery_message(const char *dir,
 	time(&pconn->last_time);
 	exmdb_client_put_connection(pconn, FALSE);
 	if (5 + sizeof(uint32_t) != tmp_bin.cb ||
-		RESPONSE_CODE_SUCCESS != tmp_buff[0]) {
+	    tmp_buff[0] != exmdb_response::SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
-	}
 	result = IVAL(tmp_buff, 5);
 	if (0 == result) {
 		return EXMDB_RESULT_OK;
@@ -722,10 +705,9 @@ int exmdb_client_check_contact_address(const char *dir,
 	
 	request.dir = dir;
 	request.paddress = paddress;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_CHECK_CONTACT_ADDRESS, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::CHECK_CONTACT_ADDRESS,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
-	}
 	pconn = exmdb_client_get_connection(dir);
 	if (NULL == pconn) {
 		free(tmp_bin.pb);
@@ -745,9 +727,8 @@ int exmdb_client_check_contact_address(const char *dir,
 	time(&pconn->last_time);
 	exmdb_client_put_connection(pconn, FALSE);
 	if (5 + sizeof(uint8_t) != tmp_bin.cb ||
-		RESPONSE_CODE_SUCCESS != tmp_buff[0]) {
+	    tmp_buff[0] != exmdb_response::SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
-	}
 	if (0 == tmp_bin.pb[5]) {
 		*pb_found = FALSE;
 	} else {

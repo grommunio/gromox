@@ -1,8 +1,8 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
-#include "common_util.h"
+#include <gromox/exmdb_rpc.hpp>
 
-#define EXP(s) CALL_ID_ ## s
+#define EXP(s) exmdb_callid::s
 #define E(s) #s
 static constexpr const char *exmdb_rpc_names[] = {
 	E(CONNECT),
@@ -140,7 +140,7 @@ static constexpr const char *exmdb_rpc_names[] = {
 
 const char *exmdb_rpc_idtoname(unsigned int i)
 {
-	static_assert(GX_ARRAY_SIZE(exmdb_rpc_names) == CALL_ID_UNLOAD_STORE + 1);
+	static_assert(GX_ARRAY_SIZE(exmdb_rpc_names) == exmdb_callid::UNLOAD_STORE + 1);
 	const char *s = i < GX_ARRAY_SIZE(exmdb_rpc_names) ? exmdb_rpc_names[i] : nullptr;
 	return s != nullptr ? s : "";
 }

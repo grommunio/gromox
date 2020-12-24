@@ -1,3 +1,4 @@
+#include <gromox/exmdb_rpc.hpp>
 #include "notification_agent.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
@@ -60,9 +61,8 @@ static BOOL notification_agent_read_response(ROUTER_CONNECTION *prouter)
 	pfd_read.events = POLLIN|POLLPRI;
 	if (1 != poll(&pfd_read, 1, tv_msec) ||
 		1 != read(prouter->sockd, &resp_code, 1) ||
-		RESPONSE_CODE_SUCCESS != resp_code) {
+	    resp_code != exmdb_response::SUCCESS)
 		return FALSE;
-	}
 	return TRUE;
 }
 

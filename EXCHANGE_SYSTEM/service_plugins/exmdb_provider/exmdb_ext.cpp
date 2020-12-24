@@ -1,5 +1,6 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_rpc.hpp>
 #include "exmdb_ext.h"
 #include "rop_util.h"
 #include "idset.h"
@@ -4789,10 +4790,10 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	if (CALL_ID_CONNECT == prequest->call_id) {
+	if (prequest->call_id == exmdb_callid::CONNECT) {
 		return exmdb_ext_pull_connect_request(
 				&ext_pull, &prequest->payload);
-	} else if (CALL_ID_LISTEN_NOTIFICATION == prequest->call_id) {
+	} else if (prequest->call_id == exmdb_callid::LISTEN_NOTIFICATION) {
 		return exmdb_ext_pull_listen_notification_request(
 							&ext_pull, &prequest->payload);
 	}
@@ -4801,364 +4802,364 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 		return status;
 	}
 	switch (prequest->call_id) {
-	case CALL_ID_PING_STORE:
+	case exmdb_callid::PING_STORE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_ALL_NAMED_PROPIDS:
+	case exmdb_callid::GET_ALL_NAMED_PROPIDS:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_NAMED_PROPIDS:
+	case exmdb_callid::GET_NAMED_PROPIDS:
 		return exmdb_ext_pull_get_named_propids_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_NAMED_PROPNAMES:
+	case exmdb_callid::GET_NAMED_PROPNAMES:
 		return exmdb_ext_pull_get_named_propnames_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MAPPING_GUID:
+	case exmdb_callid::GET_MAPPING_GUID:
 		return exmdb_ext_pull_get_mapping_guid_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MAPPING_REPLID:
+	case exmdb_callid::GET_MAPPING_REPLID:
 		return exmdb_ext_pull_get_mapping_replid_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_STORE_ALL_PROPTAGS:
+	case exmdb_callid::GET_STORE_ALL_PROPTAGS:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_STORE_PROPERTIES:
+	case exmdb_callid::GET_STORE_PROPERTIES:
 		return exmdb_ext_pull_get_store_properties_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SET_STORE_PROPERTIES:
+	case exmdb_callid::SET_STORE_PROPERTIES:
 		return exmdb_ext_pull_set_store_properties_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_REMOVE_STORE_PROPERTIES:
+	case exmdb_callid::REMOVE_STORE_PROPERTIES:
 		return exmdb_ext_pull_remove_store_properties_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_MAILBOX_PERMISSION:
+	case exmdb_callid::CHECK_MAILBOX_PERMISSION:
 		return exmdb_ext_pull_check_mailbox_permission_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_GET_FOLDER_BY_CLASS:
+	case exmdb_callid::GET_FOLDER_BY_CLASS:
 		return exmdb_ext_pull_get_folder_by_class_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SET_FOLDER_BY_CLASS:
+	case exmdb_callid::SET_FOLDER_BY_CLASS:
 		return exmdb_ext_pull_set_folder_by_class_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_FOLDER_CLASS_TABLE:
+	case exmdb_callid::GET_FOLDER_CLASS_TABLE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_CHECK_FOLDER_ID:
+	case exmdb_callid::CHECK_FOLDER_ID:
 		return exmdb_ext_pull_check_folder_id_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_QUERY_FOLDER_MESSAGES:
+	case exmdb_callid::QUERY_FOLDER_MESSAGES:
 		return exmdb_ext_pull_query_folder_messages_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_FOLDER_DELETED:
+	case exmdb_callid::CHECK_FOLDER_DELETED:
 		return exmdb_ext_pull_check_folder_deleted_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_FOLDER_BY_NAME:
+	case exmdb_callid::GET_FOLDER_BY_NAME:
 		return exmdb_ext_pull_get_folder_by_name_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_FOLDER_PERMISSION:
+	case exmdb_callid::CHECK_FOLDER_PERMISSION:
 		return exmdb_ext_pull_check_folder_permission_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_CREATE_FOLDER_BY_PROPERTIES:
+	case exmdb_callid::CREATE_FOLDER_BY_PROPERTIES:
 		return exmdb_ext_pull_create_folder_by_properties_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_GET_FOLDER_ALL_PROPTAGS:
+	case exmdb_callid::GET_FOLDER_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_folder_all_proptags_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_GET_FOLDER_PROPERTIES:
+	case exmdb_callid::GET_FOLDER_PROPERTIES:
 		return exmdb_ext_pull_get_folder_properties_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SET_FOLDER_PROPERTIES:
+	case exmdb_callid::SET_FOLDER_PROPERTIES:
 		return exmdb_ext_pull_set_folder_properties_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_REMOVE_FOLDER_PROPERTIES:
+	case exmdb_callid::REMOVE_FOLDER_PROPERTIES:
 		return exmdb_ext_pull_remove_folder_properties_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_DELETE_FOLDER:
+	case exmdb_callid::DELETE_FOLDER:
 		return exmdb_ext_pull_delete_folder_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_EMPTY_FOLDER:
+	case exmdb_callid::EMPTY_FOLDER:
 		return exmdb_ext_pull_empty_folder_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_FOLDER_CYCLE:
+	case exmdb_callid::CHECK_FOLDER_CYCLE:
 		return exmdb_ext_pull_check_folder_cycle_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_COPY_FOLDER_INTERNAL:
+	case exmdb_callid::COPY_FOLDER_INTERNAL:
 		return exmdb_ext_pull_copy_folder_internal_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_SEARCH_CRITERIA:
+	case exmdb_callid::GET_SEARCH_CRITERIA:
 		return exmdb_ext_pull_get_search_criteria_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SET_SEARCH_CRITERIA:
+	case exmdb_callid::SET_SEARCH_CRITERIA:
 		return exmdb_ext_pull_set_search_criteria_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_MOVECOPY_MESSAGE:
+	case exmdb_callid::MOVECOPY_MESSAGE:
 		return exmdb_ext_pull_movecopy_message_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_MOVECOPY_MESSAGES:
+	case exmdb_callid::MOVECOPY_MESSAGES:
 		return exmdb_ext_pull_movecopy_messages_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_MOVECOPY_FOLDER:
+	case exmdb_callid::MOVECOPY_FOLDER:
 		return exmdb_ext_pull_movecopy_folder_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_DELETE_MESSAGES:
+	case exmdb_callid::DELETE_MESSAGES:
 		return exmdb_ext_pull_delete_messages_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_BRIEF:
+	case exmdb_callid::GET_MESSAGE_BRIEF:
 		return exmdb_ext_pull_get_message_brief_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SUM_HIERARCHY:
+	case exmdb_callid::SUM_HIERARCHY:
 		return exmdb_ext_pull_sum_hierarchy_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_LOAD_HIERARCHY_TABLE:
+	case exmdb_callid::LOAD_HIERARCHY_TABLE:
 		return exmdb_ext_pull_load_hierarchy_table_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SUM_CONTENT:
+	case exmdb_callid::SUM_CONTENT:
 		return exmdb_ext_pull_sum_content_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_LOAD_CONTENT_TABLE:
+	case exmdb_callid::LOAD_CONTENT_TABLE:
 		return exmdb_ext_pull_load_content_table_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_RELOAD_CONTENT_TABLE:
+	case exmdb_callid::RELOAD_CONTENT_TABLE:
 		return exmdb_ext_pull_reload_content_table_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_LOAD_PERMISSION_TABLE:
+	case exmdb_callid::LOAD_PERMISSION_TABLE:
 		return exmdb_ext_pull_load_permission_table_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_LOAD_RULE_TABLE:
+	case exmdb_callid::LOAD_RULE_TABLE:
 		return exmdb_ext_pull_load_rule_table_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_UNLOAD_TABLE:
+	case exmdb_callid::UNLOAD_TABLE:
 		return exmdb_ext_pull_unload_table_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_SUM_TABLE:
+	case exmdb_callid::SUM_TABLE:
 		return exmdb_ext_pull_sum_table_request(
 				&ext_pull, &prequest->payload);
-	case CALL_ID_QUERY_TABLE:
+	case exmdb_callid::QUERY_TABLE:
 		return exmdb_ext_pull_query_table_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_MATCH_TABLE:
+	case exmdb_callid::MATCH_TABLE:
 		return exmdb_ext_pull_match_table_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_LOCATE_TABLE:
+	case exmdb_callid::LOCATE_TABLE:
 		return exmdb_ext_pull_locate_table_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_READ_TABLE_ROW:
+	case exmdb_callid::READ_TABLE_ROW:
 		return exmdb_ext_pull_read_table_row_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_MARK_TABLE:
+	case exmdb_callid::MARK_TABLE:
 		return exmdb_ext_pull_mark_table_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GET_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_TABLE_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_table_all_proptags_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_EXPAND_TABLE:
+	case exmdb_callid::EXPAND_TABLE:
 		return exmdb_ext_pull_expand_table_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_COLLAPSE_TABLE:
+	case exmdb_callid::COLLAPSE_TABLE:
 		return exmdb_ext_pull_collapse_table_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_STORE_TABLE_STATE:
+	case exmdb_callid::STORE_TABLE_STATE:
 		return exmdb_ext_pull_store_table_state_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_RESTORE_TABLE_STATE:
+	case exmdb_callid::RESTORE_TABLE_STATE:
 		return exmdb_ext_pull_restore_table_state_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_MESSAGE:
+	case exmdb_callid::CHECK_MESSAGE:
 		return exmdb_ext_pull_check_message_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_MESSAGE_DELETED:
+	case exmdb_callid::CHECK_MESSAGE_DELETED:
 		return exmdb_ext_pull_check_message_deleted_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_LOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::LOAD_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_load_message_instance_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_LOAD_EMBEDDED_INSTANCE:
+	case exmdb_callid::LOAD_EMBEDDED_INSTANCE:
 		return exmdb_ext_pull_load_embedded_instance_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_GET_EMBEDDED_CN:
+	case exmdb_callid::GET_EMBEDDED_CN:
 		return exmdb_ext_pull_get_embedded_cn_request(&ext_pull, &prequest->payload);
-	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::RELOAD_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_reload_message_instance_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_CLEAR_MESSAGE_INSTANCE:
+	case exmdb_callid::CLEAR_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_clear_message_instance_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_READ_MESSAGE_INSTANCE:
+	case exmdb_callid::READ_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_read_message_instance_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_WRITE_MESSAGE_INSTANCE:
+	case exmdb_callid::WRITE_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_write_message_instance_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_LOAD_ATTACHMENT_INSTANCE:
+	case exmdb_callid::LOAD_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_load_attachment_instance_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_CREATE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::CREATE_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_create_attachment_instance_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_READ_ATTACHMENT_INSTANCE:
+	case exmdb_callid::READ_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_read_attachment_instance_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_WRITE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::WRITE_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_write_attachment_instance_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_DELETE_MESSAGE_INSTANCE_ATTACHMENT:
+	case exmdb_callid::DELETE_MESSAGE_INSTANCE_ATTACHMENT:
 		return exmdb_ext_pull_delete_message_instance_attachment_request(
 											&ext_pull, &prequest->payload);
-	case CALL_ID_FLUSH_INSTANCE:
+	case exmdb_callid::FLUSH_INSTANCE:
 		return exmdb_ext_pull_flush_instance_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_UNLOAD_INSTANCE:
+	case exmdb_callid::UNLOAD_INSTANCE:
 		return exmdb_ext_pull_unload_instance_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_GET_INSTANCE_ALL_PROPTAGS:
+	case exmdb_callid::GET_INSTANCE_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_instance_all_proptags_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_GET_INSTANCE_PROPERTIES:
+	case exmdb_callid::GET_INSTANCE_PROPERTIES:
 		return exmdb_ext_pull_get_instance_properties_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_SET_INSTANCE_PROPERTIES:
+	case exmdb_callid::SET_INSTANCE_PROPERTIES:
 		return exmdb_ext_pull_set_instance_properties_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_REMOVE_INSTANCE_PROPERTIES:
+	case exmdb_callid::REMOVE_INSTANCE_PROPERTIES:
 		return exmdb_ext_pull_remove_instance_properties_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_INSTANCE_CYCLE:
+	case exmdb_callid::CHECK_INSTANCE_CYCLE:
 		return exmdb_ext_pull_check_instance_cycle_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_RCPTS:
 		return exmdb_ext_pull_empty_message_instance_rcpts_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_NUM:
 		return exmdb_ext_pull_get_message_instance_rcpts_num_request(
 										&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_message_instance_rcpts_all_proptags_request(
 												&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS:
 		return exmdb_ext_pull_get_message_instance_rcpts_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_UPDATE_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::UPDATE_MESSAGE_INSTANCE_RCPTS:
 		return exmdb_ext_pull_update_message_instance_rcpts_request(
 									&ext_pull, &prequest->payload);
-	case CALL_ID_COPY_INSTANCE_RCPTS:
+	case exmdb_callid::COPY_INSTANCE_RCPTS:
 		return exmdb_ext_pull_copy_instance_rcpts_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
 		return exmdb_ext_pull_empty_message_instance_attachments_request(
 											&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
 		return exmdb_ext_pull_get_message_instance_attachments_num_request(
 											&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_message_instance_attachment_table_all_proptags_request(
 															&ext_pull, &prequest->payload);
-	case CALL_ID_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
+	case exmdb_callid::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
 		return exmdb_ext_pull_query_message_instance_attachment_table_request(
 												&ext_pull, &prequest->payload);
-	case CALL_ID_COPY_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::COPY_INSTANCE_ATTACHMENTS:
 		return exmdb_ext_pull_copy_instance_attachments_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_SET_MESSAGE_INSTANCE_CONFLICT:
+	case exmdb_callid::SET_MESSAGE_INSTANCE_CONFLICT:
 		return exmdb_ext_pull_set_message_instance_conflict_request(
 										&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_RCPTS:
 		return exmdb_ext_pull_get_message_rcpts_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_PROPERTIES:
+	case exmdb_callid::GET_MESSAGE_PROPERTIES:
 		return exmdb_ext_pull_get_message_properties_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_SET_MESSAGE_PROPERTIES:
+	case exmdb_callid::SET_MESSAGE_PROPERTIES:
 		return exmdb_ext_pull_set_message_properties_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_SET_MESSAGE_READ_STATE:
+	case exmdb_callid::SET_MESSAGE_READ_STATE:
 		return exmdb_ext_pull_set_message_read_state_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_REMOVE_MESSAGE_PROPERTIES:
+	case exmdb_callid::REMOVE_MESSAGE_PROPERTIES:
 		return exmdb_ext_pull_remove_message_properties_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_ALLOCATE_MESSAGE_ID:
+	case exmdb_callid::ALLOCATE_MESSAGE_ID:
 		return exmdb_ext_pull_allocate_message_id_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_ALLOCATE_CN:
+	case exmdb_callid::ALLOCATE_CN:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_MESSAGE_GROUP_ID:
+	case exmdb_callid::GET_MESSAGE_GROUP_ID:
 		return exmdb_ext_pull_get_message_group_id_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SET_MESSAGE_GROUP_ID:
+	case exmdb_callid::SET_MESSAGE_GROUP_ID:
 		return exmdb_ext_pull_set_message_group_id_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_SAVE_CHANGE_INDICES:
+	case exmdb_callid::SAVE_CHANGE_INDICES:
 		return exmdb_ext_pull_save_change_indices_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_CHANGE_INDICES:
+	case exmdb_callid::GET_CHANGE_INDICES:
 		return exmdb_ext_pull_get_change_indices_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_MARK_MODIFIED:
+	case exmdb_callid::MARK_MODIFIED:
 		return exmdb_ext_pull_mark_modified_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_TRY_MARK_SUBMIT:
+	case exmdb_callid::TRY_MARK_SUBMIT:
 		return exmdb_ext_pull_try_mark_submit_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_CLEAR_SUBMIT:
+	case exmdb_callid::CLEAR_SUBMIT:
 		return exmdb_ext_pull_clear_submit_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_LINK_MESSAGE:
+	case exmdb_callid::LINK_MESSAGE:
 		return exmdb_ext_pull_link_message_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_UNLINK_MESSAGE:
+	case exmdb_callid::UNLINK_MESSAGE:
 		return exmdb_ext_pull_unlink_message_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_RULE_NEW_MESSAGE:
+	case exmdb_callid::RULE_NEW_MESSAGE:
 		return exmdb_ext_pull_rule_new_message_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_SET_MESSAGE_TIMER:
+	case exmdb_callid::SET_MESSAGE_TIMER:
 		return exmdb_ext_pull_set_message_timer_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_GET_MESSAGE_TIMER:
+	case exmdb_callid::GET_MESSAGE_TIMER:
 		return exmdb_ext_pull_get_message_timer_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_EMPTY_FOLDER_PERMISSION:
+	case exmdb_callid::EMPTY_FOLDER_PERMISSION:
 		return exmdb_ext_pull_empty_folder_permission_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_UPDATE_FOLDER_PERMISSION:
+	case exmdb_callid::UPDATE_FOLDER_PERMISSION:
 		return exmdb_ext_pull_update_folder_permission_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_EMPTY_FOLDER_RULE:
+	case exmdb_callid::EMPTY_FOLDER_RULE:
 		return exmdb_ext_pull_empty_folder_rule_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_UPDATE_FOLDER_RULE:
+	case exmdb_callid::UPDATE_FOLDER_RULE:
 		return exmdb_ext_pull_update_folder_rule_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_DELIVERY_MESSAGE:
+	case exmdb_callid::DELIVERY_MESSAGE:
 		return exmdb_ext_pull_delivery_message_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_WRITE_MESSAGE:
+	case exmdb_callid::WRITE_MESSAGE:
 		return exmdb_ext_pull_write_message_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_READ_MESSAGE:
+	case exmdb_callid::READ_MESSAGE:
 		return exmdb_ext_pull_read_message_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_GET_CONTENT_SYNC:
+	case exmdb_callid::GET_CONTENT_SYNC:
 		return exmdb_ext_pull_get_content_sync_request(
 						&ext_pull, &prequest->payload);
-	case CALL_ID_GET_HIERARCHY_SYNC:
+	case exmdb_callid::GET_HIERARCHY_SYNC:
 		return exmdb_ext_pull_get_hierarchy_sync_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_ALLOCATE_IDS:
+	case exmdb_callid::ALLOCATE_IDS:
 		return exmdb_ext_pull_allocate_ids_request(
 					&ext_pull, &prequest->payload);
-	case CALL_ID_SUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::SUBSCRIBE_NOTIFICATION:
 		return exmdb_ext_pull_subscribe_notification_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_UNSUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::UNSUBSCRIBE_NOTIFICATION:
 		return exmdb_ext_pull_unsubscribe_notification_request(
 								&ext_pull, &prequest->payload);
-	case CALL_ID_TRANSPORT_NEW_MAIL:
+	case exmdb_callid::TRANSPORT_NEW_MAIL:
 		return exmdb_ext_pull_transport_new_mail_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_CHECK_CONTACT_ADDRESS:
+	case exmdb_callid::CHECK_CONTACT_ADDRESS:
 		return exmdb_ext_pull_check_contact_address_request(
 							&ext_pull, &prequest->payload);
-	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+	case exmdb_callid::GET_PUBLIC_FOLDER_UNREAD_COUNT:
 		return exmdb_ext_pull_get_public_folder_unread_count_request(
 										&ext_pull, &prequest->payload);
-	case CALL_ID_UNLOAD_STORE:
+	case exmdb_callid::UNLOAD_STORE:
 		return EXT_ERR_SUCCESS;
 	default:
 		return EXT_ERR_BAD_SWITCH;
@@ -5185,11 +5186,11 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 		ext_buffer_push_free(&ext_push);
 		return status;
 	}
-	if (CALL_ID_CONNECT == prequest->call_id) {
+	if (prequest->call_id == exmdb_callid::CONNECT) {
 		status = exmdb_ext_push_connect_request(
 				&ext_push, &prequest->payload);
 		goto END_PUSH_REQUEST;
-	} else if (CALL_ID_LISTEN_NOTIFICATION == prequest->call_id) {
+	} else if (prequest->call_id == exmdb_callid::LISTEN_NOTIFICATION) {
 		status = exmdb_ext_push_listen_notification_request(
 							&ext_push, &prequest->payload);
 		goto END_PUSH_REQUEST;
@@ -5200,485 +5201,485 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 		return status;
 	}
 	switch (prequest->call_id) {
-	case CALL_ID_PING_STORE:
+	case exmdb_callid::PING_STORE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_ALL_NAMED_PROPIDS:
+	case exmdb_callid::GET_ALL_NAMED_PROPIDS:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_NAMED_PROPIDS:
+	case exmdb_callid::GET_NAMED_PROPIDS:
 		status = exmdb_ext_push_get_named_propids_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_NAMED_PROPNAMES:
+	case exmdb_callid::GET_NAMED_PROPNAMES:
 		status = exmdb_ext_push_get_named_propnames_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MAPPING_GUID:
+	case exmdb_callid::GET_MAPPING_GUID:
 		status = exmdb_ext_push_get_mapping_guid_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MAPPING_REPLID:
+	case exmdb_callid::GET_MAPPING_REPLID:
 		status = exmdb_ext_push_get_mapping_replid_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_STORE_ALL_PROPTAGS:
+	case exmdb_callid::GET_STORE_ALL_PROPTAGS:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_STORE_PROPERTIES:
+	case exmdb_callid::GET_STORE_PROPERTIES:
 		status = exmdb_ext_push_get_store_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_STORE_PROPERTIES:
+	case exmdb_callid::SET_STORE_PROPERTIES:
 		status = exmdb_ext_push_set_store_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_REMOVE_STORE_PROPERTIES:
+	case exmdb_callid::REMOVE_STORE_PROPERTIES:
 		status = exmdb_ext_push_remove_store_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_MAILBOX_PERMISSION:
+	case exmdb_callid::CHECK_MAILBOX_PERMISSION:
 		status = exmdb_ext_push_check_mailbox_permission_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_FOLDER_BY_CLASS:
+	case exmdb_callid::GET_FOLDER_BY_CLASS:
 		status = exmdb_ext_push_get_folder_by_class_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_FOLDER_BY_CLASS:
+	case exmdb_callid::SET_FOLDER_BY_CLASS:
 		status = exmdb_ext_push_set_folder_by_class_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_FOLDER_CLASS_TABLE:
+	case exmdb_callid::GET_FOLDER_CLASS_TABLE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_CHECK_FOLDER_ID:
+	case exmdb_callid::CHECK_FOLDER_ID:
 		status = exmdb_ext_push_check_folder_id_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_QUERY_FOLDER_MESSAGES:
+	case exmdb_callid::QUERY_FOLDER_MESSAGES:
 		status = exmdb_ext_push_query_folder_messages_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_FOLDER_DELETED:
+	case exmdb_callid::CHECK_FOLDER_DELETED:
 		status = exmdb_ext_push_check_folder_deleted_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_FOLDER_BY_NAME:
+	case exmdb_callid::GET_FOLDER_BY_NAME:
 		status = exmdb_ext_push_get_folder_by_name_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_FOLDER_PERMISSION:
+	case exmdb_callid::CHECK_FOLDER_PERMISSION:
 		status = exmdb_ext_push_check_folder_permission_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CREATE_FOLDER_BY_PROPERTIES:
+	case exmdb_callid::CREATE_FOLDER_BY_PROPERTIES:
 		status = exmdb_ext_push_create_folder_by_properties_request(
 										&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_FOLDER_ALL_PROPTAGS:
+	case exmdb_callid::GET_FOLDER_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_folder_all_proptags_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_FOLDER_PROPERTIES:
+	case exmdb_callid::GET_FOLDER_PROPERTIES:
 		status = exmdb_ext_push_get_folder_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_FOLDER_PROPERTIES:
+	case exmdb_callid::SET_FOLDER_PROPERTIES:
 		status = exmdb_ext_push_set_folder_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_REMOVE_FOLDER_PROPERTIES:
+	case exmdb_callid::REMOVE_FOLDER_PROPERTIES:
 		status = exmdb_ext_push_remove_folder_properties_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_DELETE_FOLDER:
+	case exmdb_callid::DELETE_FOLDER:
 		status = exmdb_ext_push_delete_folder_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_EMPTY_FOLDER:
+	case exmdb_callid::EMPTY_FOLDER:
 		status = exmdb_ext_push_empty_folder_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_FOLDER_CYCLE:
+	case exmdb_callid::CHECK_FOLDER_CYCLE:
 		status = exmdb_ext_push_check_folder_cycle_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_COPY_FOLDER_INTERNAL:
+	case exmdb_callid::COPY_FOLDER_INTERNAL:
 		status = exmdb_ext_push_copy_folder_internal_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_SEARCH_CRITERIA:
+	case exmdb_callid::GET_SEARCH_CRITERIA:
 		status = exmdb_ext_push_get_search_criteria_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_SEARCH_CRITERIA:
+	case exmdb_callid::SET_SEARCH_CRITERIA:
 		status = exmdb_ext_push_set_search_criteria_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_MOVECOPY_MESSAGE:
+	case exmdb_callid::MOVECOPY_MESSAGE:
 		status = exmdb_ext_push_movecopy_message_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_MOVECOPY_MESSAGES:
+	case exmdb_callid::MOVECOPY_MESSAGES:
 		status = exmdb_ext_push_movecopy_messages_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_MOVECOPY_FOLDER:
+	case exmdb_callid::MOVECOPY_FOLDER:
 		status = exmdb_ext_push_movecopy_folder_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_DELETE_MESSAGES:
+	case exmdb_callid::DELETE_MESSAGES:
 		status = exmdb_ext_push_delete_messages_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_BRIEF:
+	case exmdb_callid::GET_MESSAGE_BRIEF:
 		status = exmdb_ext_push_get_message_brief_request(
 							&ext_push,  &prequest->payload);
 		break;
-	case CALL_ID_SUM_HIERARCHY:
+	case exmdb_callid::SUM_HIERARCHY:
 		status = exmdb_ext_push_sum_hierarchy_request(
 						&ext_push,  &prequest->payload);
 		break;
-	case CALL_ID_LOAD_HIERARCHY_TABLE:
+	case exmdb_callid::LOAD_HIERARCHY_TABLE:
 		status = exmdb_ext_push_load_hierarchy_table_request(
 							&ext_push,  &prequest->payload);
 		break;
-	case CALL_ID_SUM_CONTENT:
+	case exmdb_callid::SUM_CONTENT:
 		status = exmdb_ext_push_sum_content_request(
 					&ext_push,  &prequest->payload);
 		break;
-	case CALL_ID_LOAD_CONTENT_TABLE:
+	case exmdb_callid::LOAD_CONTENT_TABLE:
 		status = exmdb_ext_push_load_content_table_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_RELOAD_CONTENT_TABLE:
+	case exmdb_callid::RELOAD_CONTENT_TABLE:
 		status = exmdb_ext_push_reload_content_table_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_LOAD_PERMISSION_TABLE:
+	case exmdb_callid::LOAD_PERMISSION_TABLE:
 		status = exmdb_ext_push_load_permission_table_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_LOAD_RULE_TABLE:
+	case exmdb_callid::LOAD_RULE_TABLE:
 		status = exmdb_ext_push_load_rule_table_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UNLOAD_TABLE:
+	case exmdb_callid::UNLOAD_TABLE:
 		status = exmdb_ext_push_unload_table_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SUM_TABLE:
+	case exmdb_callid::SUM_TABLE:
 		status = exmdb_ext_push_sum_table_request(
 					&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_QUERY_TABLE:
+	case exmdb_callid::QUERY_TABLE:
 		status = exmdb_ext_push_query_table_request(
 					&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_MATCH_TABLE:
+	case exmdb_callid::MATCH_TABLE:
 		status = exmdb_ext_push_match_table_request(
 					&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_LOCATE_TABLE:
+	case exmdb_callid::LOCATE_TABLE:
 		status = exmdb_ext_push_locate_table_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_READ_TABLE_ROW:
+	case exmdb_callid::READ_TABLE_ROW:
 		status = exmdb_ext_push_read_table_row_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_MARK_TABLE:
+	case exmdb_callid::MARK_TABLE:
 		status = exmdb_ext_push_mark_table_request(
 					&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_TABLE_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_table_all_proptags_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_EXPAND_TABLE:
+	case exmdb_callid::EXPAND_TABLE:
 		status = exmdb_ext_push_expand_table_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_COLLAPSE_TABLE:
+	case exmdb_callid::COLLAPSE_TABLE:
 		status = exmdb_ext_push_collapse_table_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_STORE_TABLE_STATE:
+	case exmdb_callid::STORE_TABLE_STATE:
 		status = exmdb_ext_push_store_table_state_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_RESTORE_TABLE_STATE:
+	case exmdb_callid::RESTORE_TABLE_STATE:
 		status = exmdb_ext_push_restore_table_state_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_MESSAGE:
+	case exmdb_callid::CHECK_MESSAGE:
 		status = exmdb_ext_push_check_message_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_MESSAGE_DELETED:
+	case exmdb_callid::CHECK_MESSAGE_DELETED:
 		status = exmdb_ext_push_check_message_deleted_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_LOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::LOAD_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_load_message_instance_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_LOAD_EMBEDDED_INSTANCE:
+	case exmdb_callid::LOAD_EMBEDDED_INSTANCE:
 		status = exmdb_ext_push_load_embedded_instance_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_EMBEDDED_CN:
+	case exmdb_callid::GET_EMBEDDED_CN:
 		status = exmdb_ext_push_get_embedded_cn_request(&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::RELOAD_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_reload_message_instance_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CLEAR_MESSAGE_INSTANCE:
+	case exmdb_callid::CLEAR_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_clear_message_instance_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_READ_MESSAGE_INSTANCE:
+	case exmdb_callid::READ_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_read_message_instance_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_WRITE_MESSAGE_INSTANCE:
+	case exmdb_callid::WRITE_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_write_message_instance_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_LOAD_ATTACHMENT_INSTANCE:
+	case exmdb_callid::LOAD_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_load_attachment_instance_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CREATE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::CREATE_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_create_attachment_instance_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_READ_ATTACHMENT_INSTANCE:
+	case exmdb_callid::READ_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_read_attachment_instance_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_WRITE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::WRITE_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_write_attachment_instance_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_DELETE_MESSAGE_INSTANCE_ATTACHMENT:
+	case exmdb_callid::DELETE_MESSAGE_INSTANCE_ATTACHMENT:
 		status = exmdb_ext_push_delete_message_instance_attachment_request(
 											&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_FLUSH_INSTANCE:
+	case exmdb_callid::FLUSH_INSTANCE:
 		status = exmdb_ext_push_flush_instance_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UNLOAD_INSTANCE:
+	case exmdb_callid::UNLOAD_INSTANCE:
 		status = exmdb_ext_push_unload_instance_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_INSTANCE_ALL_PROPTAGS:
+	case exmdb_callid::GET_INSTANCE_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_instance_all_proptags_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_INSTANCE_PROPERTIES:
+	case exmdb_callid::GET_INSTANCE_PROPERTIES:
 		status = exmdb_ext_push_get_instance_properties_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_INSTANCE_PROPERTIES:
+	case exmdb_callid::SET_INSTANCE_PROPERTIES:
 		status = exmdb_ext_push_set_instance_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_REMOVE_INSTANCE_PROPERTIES:
+	case exmdb_callid::REMOVE_INSTANCE_PROPERTIES:
 		status = exmdb_ext_push_remove_instance_properties_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_INSTANCE_CYCLE:
+	case exmdb_callid::CHECK_INSTANCE_CYCLE:
 		status = exmdb_ext_push_check_instance_cycle_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_RCPTS:
 		status = exmdb_ext_push_empty_message_instance_rcpts_request(
 										&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_NUM:
 		status = exmdb_ext_push_get_message_instance_rcpts_num_request(
 										&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_message_instance_rcpts_all_proptags_request(
 												&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS:
 		status = exmdb_ext_push_get_message_instance_rcpts_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UPDATE_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::UPDATE_MESSAGE_INSTANCE_RCPTS:
 		status = exmdb_ext_push_update_message_instance_rcpts_request(
 										&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_COPY_INSTANCE_RCPTS:
+	case exmdb_callid::COPY_INSTANCE_RCPTS:
 		status = exmdb_ext_push_copy_instance_rcpts_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
 		status = exmdb_ext_push_empty_message_instance_attachments_request(
 											&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
 		status = exmdb_ext_push_get_message_instance_attachments_num_request(
 												&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_message_instance_attachment_table_all_proptags_request(
 															&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
+	case exmdb_callid::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
 		status = exmdb_ext_push_query_message_instance_attachment_table_request(
 												&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_COPY_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::COPY_INSTANCE_ATTACHMENTS:
 		status = exmdb_ext_push_copy_instance_attachments_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_INSTANCE_CONFLICT:
+	case exmdb_callid::SET_MESSAGE_INSTANCE_CONFLICT:
 		status = exmdb_ext_push_set_message_instance_conflict_request(
 										&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_RCPTS:
 		status = exmdb_ext_push_get_message_rcpts_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_PROPERTIES:
+	case exmdb_callid::GET_MESSAGE_PROPERTIES:
 		status = exmdb_ext_push_get_message_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_PROPERTIES:
+	case exmdb_callid::SET_MESSAGE_PROPERTIES:
 		status = exmdb_ext_push_set_message_properties_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_READ_STATE:
+	case exmdb_callid::SET_MESSAGE_READ_STATE:
 		status = exmdb_ext_push_set_message_read_state_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_REMOVE_MESSAGE_PROPERTIES:
+	case exmdb_callid::REMOVE_MESSAGE_PROPERTIES:
 		status = exmdb_ext_push_remove_message_properties_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_ALLOCATE_MESSAGE_ID:
+	case exmdb_callid::ALLOCATE_MESSAGE_ID:
 		status = exmdb_ext_push_allocate_message_id_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_ALLOCATE_CN:
+	case exmdb_callid::ALLOCATE_CN:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_MESSAGE_GROUP_ID:
+	case exmdb_callid::GET_MESSAGE_GROUP_ID:
 		status = exmdb_ext_push_get_message_group_id_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_GROUP_ID:
+	case exmdb_callid::SET_MESSAGE_GROUP_ID:
 		status = exmdb_ext_push_set_message_group_id_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SAVE_CHANGE_INDICES:
+	case exmdb_callid::SAVE_CHANGE_INDICES:
 		status = exmdb_ext_push_save_change_indices_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_CHANGE_INDICES:
+	case exmdb_callid::GET_CHANGE_INDICES:
 		status = exmdb_ext_push_get_change_indices_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_MARK_MODIFIED:
+	case exmdb_callid::MARK_MODIFIED:
 		status = exmdb_ext_push_mark_modified_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_TRY_MARK_SUBMIT:
+	case exmdb_callid::TRY_MARK_SUBMIT:
 		status = exmdb_ext_push_try_mark_submit_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CLEAR_SUBMIT:
+	case exmdb_callid::CLEAR_SUBMIT:
 		status = exmdb_ext_push_clear_submit_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_LINK_MESSAGE:
+	case exmdb_callid::LINK_MESSAGE:
 		status = exmdb_ext_push_link_message_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UNLINK_MESSAGE:
+	case exmdb_callid::UNLINK_MESSAGE:
 		status = exmdb_ext_push_unlink_message_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_RULE_NEW_MESSAGE:
+	case exmdb_callid::RULE_NEW_MESSAGE:
 		status = exmdb_ext_push_rule_new_message_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_TIMER:
+	case exmdb_callid::SET_MESSAGE_TIMER:
 		status = exmdb_ext_push_set_message_timer_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_TIMER:
+	case exmdb_callid::GET_MESSAGE_TIMER:
 		status = exmdb_ext_push_get_message_timer_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_EMPTY_FOLDER_PERMISSION:
+	case exmdb_callid::EMPTY_FOLDER_PERMISSION:
 		status = exmdb_ext_push_empty_folder_permission_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UPDATE_FOLDER_PERMISSION:
+	case exmdb_callid::UPDATE_FOLDER_PERMISSION:
 		status = exmdb_ext_push_update_folder_permission_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_EMPTY_FOLDER_RULE:
+	case exmdb_callid::EMPTY_FOLDER_RULE:
 		status = exmdb_ext_push_empty_folder_rule_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UPDATE_FOLDER_RULE:
+	case exmdb_callid::UPDATE_FOLDER_RULE:
 		status = exmdb_ext_push_update_folder_rule_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_DELIVERY_MESSAGE:
+	case exmdb_callid::DELIVERY_MESSAGE:
 		status = exmdb_ext_push_delivery_message_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_WRITE_MESSAGE:
+	case exmdb_callid::WRITE_MESSAGE:
 		status = exmdb_ext_push_write_message_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_READ_MESSAGE:
+	case exmdb_callid::READ_MESSAGE:
 		status = exmdb_ext_push_read_message_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_CONTENT_SYNC:
+	case exmdb_callid::GET_CONTENT_SYNC:
 		status = exmdb_ext_push_get_content_sync_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_HIERARCHY_SYNC:
+	case exmdb_callid::GET_HIERARCHY_SYNC:
 		status = exmdb_ext_push_get_hierarchy_sync_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_ALLOCATE_IDS:
+	case exmdb_callid::ALLOCATE_IDS:
 		status = exmdb_ext_push_allocate_ids_request(
 						&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_SUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::SUBSCRIBE_NOTIFICATION:
 		status = exmdb_ext_push_subscribe_notification_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UNSUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::UNSUBSCRIBE_NOTIFICATION:
 		status = exmdb_ext_push_unsubscribe_notification_request(
 									&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_TRANSPORT_NEW_MAIL:
+	case exmdb_callid::TRANSPORT_NEW_MAIL:
 		status = exmdb_ext_push_transport_new_mail_request(
 							&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_CHECK_CONTACT_ADDRESS:
+	case exmdb_callid::CHECK_CONTACT_ADDRESS:
 		status = exmdb_ext_push_check_contact_address_request(
 								&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+	case exmdb_callid::GET_PUBLIC_FOLDER_UNREAD_COUNT:
 		status = exmdb_ext_push_get_public_folder_unread_count_request(
 										&ext_push, &prequest->payload);
 		break;
-	case CALL_ID_UNLOAD_STORE:
+	case exmdb_callid::UNLOAD_STORE:
 		status = EXT_ERR_SUCCESS;
 		break;
 	default:
@@ -7704,7 +7705,7 @@ static int exmdb_ext_push_get_public_folder_unread_count_response(
 		ppayload->get_public_folder_unread_count.count);
 }
 
-/* CALL_ID_CONNECT, CALL_ID_LISTEN_NOTIFICATION not included */
+/* exmdb_callid::CONNECT, exmdb_callid::LISTEN_NOTIFICATION not included */
 int exmdb_ext_pull_response(const BINARY *pbin_in,
 	EXMDB_RESPONSE *presponse)
 {
@@ -7713,351 +7714,351 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	ext_buffer_pull_init(&ext_pull, pbin_in->pb,
 		pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT);
 	switch (presponse->call_id) {
-	case CALL_ID_PING_STORE:
+	case exmdb_callid::PING_STORE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_ALL_NAMED_PROPIDS:
+	case exmdb_callid::GET_ALL_NAMED_PROPIDS:
 		return exmdb_ext_pull_get_all_named_propids_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_GET_NAMED_PROPIDS:
+	case exmdb_callid::GET_NAMED_PROPIDS:
 		return exmdb_ext_pull_get_named_propids_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_GET_NAMED_PROPNAMES:
+	case exmdb_callid::GET_NAMED_PROPNAMES:
 		return exmdb_ext_pull_get_named_propnames_response(
 							&ext_pull,  &presponse->payload);
-	case CALL_ID_GET_MAPPING_GUID:
+	case exmdb_callid::GET_MAPPING_GUID:
 		return exmdb_ext_pull_get_mapping_guid_response(
 						&ext_pull,  &presponse->payload);
-	case CALL_ID_GET_MAPPING_REPLID:
+	case exmdb_callid::GET_MAPPING_REPLID:
 		return exmdb_ext_pull_get_mapping_replid_response(
 						&ext_pull,  &presponse->payload);
-	case CALL_ID_GET_STORE_ALL_PROPTAGS:
+	case exmdb_callid::GET_STORE_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_store_all_proptags_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_GET_STORE_PROPERTIES:
+	case exmdb_callid::GET_STORE_PROPERTIES:
 		return exmdb_ext_pull_get_store_properties_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_SET_STORE_PROPERTIES:
+	case exmdb_callid::SET_STORE_PROPERTIES:
 		return exmdb_ext_pull_set_store_properties_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_REMOVE_STORE_PROPERTIES:
+	case exmdb_callid::REMOVE_STORE_PROPERTIES:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_CHECK_MAILBOX_PERMISSION:
+	case exmdb_callid::CHECK_MAILBOX_PERMISSION:
 		return exmdb_ext_pull_check_mailbox_permission_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_GET_FOLDER_BY_CLASS:
+	case exmdb_callid::GET_FOLDER_BY_CLASS:
 		return exmdb_ext_pull_get_folder_by_class_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_SET_FOLDER_BY_CLASS:
+	case exmdb_callid::SET_FOLDER_BY_CLASS:
 		return exmdb_ext_pull_set_folder_by_class_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_GET_FOLDER_CLASS_TABLE:
+	case exmdb_callid::GET_FOLDER_CLASS_TABLE:
 		return exmdb_ext_pull_get_folder_class_table_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_CHECK_FOLDER_ID:
+	case exmdb_callid::CHECK_FOLDER_ID:
 		return exmdb_ext_pull_check_folder_id_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_QUERY_FOLDER_MESSAGES:
+	case exmdb_callid::QUERY_FOLDER_MESSAGES:
 		return exmdb_ext_pull_query_folder_messages_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_CHECK_FOLDER_DELETED:
+	case exmdb_callid::CHECK_FOLDER_DELETED:
 		return exmdb_ext_pull_check_folder_deleted_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_GET_FOLDER_BY_NAME:
+	case exmdb_callid::GET_FOLDER_BY_NAME:
 		return exmdb_ext_pull_get_folder_by_name_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_CHECK_FOLDER_PERMISSION:
+	case exmdb_callid::CHECK_FOLDER_PERMISSION:
 		return exmdb_ext_pull_check_folder_permission_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_CREATE_FOLDER_BY_PROPERTIES:
+	case exmdb_callid::CREATE_FOLDER_BY_PROPERTIES:
 		return exmdb_ext_pull_create_folder_by_properties_response(
 									&ext_pull, &presponse->payload);
-	case CALL_ID_GET_FOLDER_ALL_PROPTAGS:
+	case exmdb_callid::GET_FOLDER_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_folder_all_proptags_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_GET_FOLDER_PROPERTIES:
+	case exmdb_callid::GET_FOLDER_PROPERTIES:
 		return exmdb_ext_pull_get_folder_properties_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_SET_FOLDER_PROPERTIES:
+	case exmdb_callid::SET_FOLDER_PROPERTIES:
 		return exmdb_ext_pull_set_folder_properties_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_REMOVE_FOLDER_PROPERTIES:
+	case exmdb_callid::REMOVE_FOLDER_PROPERTIES:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_DELETE_FOLDER:
+	case exmdb_callid::DELETE_FOLDER:
 		return exmdb_ext_pull_delete_folder_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_EMPTY_FOLDER:
+	case exmdb_callid::EMPTY_FOLDER:
 		return exmdb_ext_pull_empty_folder_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_CHECK_FOLDER_CYCLE:
+	case exmdb_callid::CHECK_FOLDER_CYCLE:
 		return exmdb_ext_pull_check_folder_cycle_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_COPY_FOLDER_INTERNAL:
+	case exmdb_callid::COPY_FOLDER_INTERNAL:
 		return exmdb_ext_pull_copy_folder_internal_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_GET_SEARCH_CRITERIA:
+	case exmdb_callid::GET_SEARCH_CRITERIA:
 		return exmdb_ext_pull_get_search_criteria_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_SET_SEARCH_CRITERIA:
+	case exmdb_callid::SET_SEARCH_CRITERIA:
 		return exmdb_ext_pull_set_search_criteria_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_MOVECOPY_MESSAGE:
+	case exmdb_callid::MOVECOPY_MESSAGE:
 		return exmdb_ext_pull_movecopy_message_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_MOVECOPY_MESSAGES:
+	case exmdb_callid::MOVECOPY_MESSAGES:
 		return exmdb_ext_pull_movecopy_messages_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_MOVECOPY_FOLDER:
+	case exmdb_callid::MOVECOPY_FOLDER:
 		return exmdb_ext_pull_movecopy_folder_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_DELETE_MESSAGES:
+	case exmdb_callid::DELETE_MESSAGES:
 		return exmdb_ext_pull_delete_messages_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_GET_MESSAGE_BRIEF:
+	case exmdb_callid::GET_MESSAGE_BRIEF:
 		return exmdb_ext_pull_get_message_brief_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_SUM_HIERARCHY:
+	case exmdb_callid::SUM_HIERARCHY:
 		return exmdb_ext_pull_sum_hierarchy_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_LOAD_HIERARCHY_TABLE:
+	case exmdb_callid::LOAD_HIERARCHY_TABLE:
 		return exmdb_ext_pull_load_hierarchy_table_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_SUM_CONTENT:
+	case exmdb_callid::SUM_CONTENT:
 		return exmdb_ext_pull_sum_content_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_LOAD_CONTENT_TABLE:
+	case exmdb_callid::LOAD_CONTENT_TABLE:
 		return exmdb_ext_pull_load_content_table_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_RELOAD_CONTENT_TABLE:
+	case exmdb_callid::RELOAD_CONTENT_TABLE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_LOAD_PERMISSION_TABLE:
+	case exmdb_callid::LOAD_PERMISSION_TABLE:
 		return exmdb_ext_pull_load_permission_table_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_LOAD_RULE_TABLE:
+	case exmdb_callid::LOAD_RULE_TABLE:
 		return exmdb_ext_pull_load_rule_table_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_UNLOAD_TABLE:
+	case exmdb_callid::UNLOAD_TABLE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_SUM_TABLE:
+	case exmdb_callid::SUM_TABLE:
 		return exmdb_ext_pull_sum_table_response(
 				&ext_pull, &presponse->payload);
-	case CALL_ID_QUERY_TABLE:
+	case exmdb_callid::QUERY_TABLE:
 		return exmdb_ext_pull_query_table_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_MATCH_TABLE:
+	case exmdb_callid::MATCH_TABLE:
 		return exmdb_ext_pull_match_table_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_LOCATE_TABLE:
+	case exmdb_callid::LOCATE_TABLE:
 		return exmdb_ext_pull_locate_table_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_READ_TABLE_ROW:
+	case exmdb_callid::READ_TABLE_ROW:
 		return exmdb_ext_pull_read_table_row_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_MARK_TABLE:
+	case exmdb_callid::MARK_TABLE:
 		return exmdb_ext_pull_mark_table_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_GET_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_TABLE_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_table_all_proptags_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_EXPAND_TABLE:
+	case exmdb_callid::EXPAND_TABLE:
 		return exmdb_ext_pull_expand_table_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_COLLAPSE_TABLE:
+	case exmdb_callid::COLLAPSE_TABLE:
 		return exmdb_ext_pull_collapse_table_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_STORE_TABLE_STATE:
+	case exmdb_callid::STORE_TABLE_STATE:
 		return exmdb_ext_pull_store_table_state_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_RESTORE_TABLE_STATE:
+	case exmdb_callid::RESTORE_TABLE_STATE:
 		return exmdb_ext_pull_restore_table_state_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_CHECK_MESSAGE:
+	case exmdb_callid::CHECK_MESSAGE:
 		return exmdb_ext_pull_check_message_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_CHECK_MESSAGE_DELETED:
+	case exmdb_callid::CHECK_MESSAGE_DELETED:
 		return exmdb_ext_pull_check_message_deleted_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_LOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::LOAD_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_load_message_instance_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_LOAD_EMBEDDED_INSTANCE:
+	case exmdb_callid::LOAD_EMBEDDED_INSTANCE:
 		return exmdb_ext_pull_load_embedded_instance_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_GET_EMBEDDED_CN:
+	case exmdb_callid::GET_EMBEDDED_CN:
 		return exmdb_ext_pull_get_embedded_cn_response(&ext_pull, &presponse->payload);
-	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::RELOAD_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_reload_message_instance_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_CLEAR_MESSAGE_INSTANCE:
+	case exmdb_callid::CLEAR_MESSAGE_INSTANCE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_READ_MESSAGE_INSTANCE:
+	case exmdb_callid::READ_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_read_message_instance_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_WRITE_MESSAGE_INSTANCE:
+	case exmdb_callid::WRITE_MESSAGE_INSTANCE:
 		return exmdb_ext_pull_write_message_instance_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_LOAD_ATTACHMENT_INSTANCE:
+	case exmdb_callid::LOAD_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_load_attachment_instance_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_CREATE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::CREATE_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_create_attachment_instance_response(
 									&ext_pull, &presponse->payload);
-	case CALL_ID_READ_ATTACHMENT_INSTANCE:
+	case exmdb_callid::READ_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_read_attachment_instance_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_WRITE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::WRITE_ATTACHMENT_INSTANCE:
 		return exmdb_ext_pull_write_attachment_instance_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_DELETE_MESSAGE_INSTANCE_ATTACHMENT:
+	case exmdb_callid::DELETE_MESSAGE_INSTANCE_ATTACHMENT:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_FLUSH_INSTANCE:
+	case exmdb_callid::FLUSH_INSTANCE:
 		return exmdb_ext_pull_flush_instance_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_UNLOAD_INSTANCE:
+	case exmdb_callid::UNLOAD_INSTANCE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_INSTANCE_ALL_PROPTAGS:
+	case exmdb_callid::GET_INSTANCE_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_instance_all_proptags_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_GET_INSTANCE_PROPERTIES:
+	case exmdb_callid::GET_INSTANCE_PROPERTIES:
 		return exmdb_ext_pull_get_instance_properties_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_SET_INSTANCE_PROPERTIES:
+	case exmdb_callid::SET_INSTANCE_PROPERTIES:
 		return exmdb_ext_pull_set_instance_properties_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_REMOVE_INSTANCE_PROPERTIES:
+	case exmdb_callid::REMOVE_INSTANCE_PROPERTIES:
 		return exmdb_ext_pull_remove_instance_properties_response(
 									&ext_pull, &presponse->payload);
-	case CALL_ID_CHECK_INSTANCE_CYCLE:
+	case exmdb_callid::CHECK_INSTANCE_CYCLE:
 		return exmdb_ext_pull_check_instance_cycle_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_RCPTS:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_NUM:
 		return exmdb_ext_pull_get_message_instance_rcpts_num_response(
 										&ext_pull, &presponse->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_message_instance_rcpts_all_proptags_response(
 												&ext_pull, &presponse->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS:
 		return exmdb_ext_pull_get_message_instance_rcpts_response(
 									&ext_pull, &presponse->payload);
-	case CALL_ID_UPDATE_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::UPDATE_MESSAGE_INSTANCE_RCPTS:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_COPY_INSTANCE_RCPTS:
+	case exmdb_callid::COPY_INSTANCE_RCPTS:
 		return exmdb_ext_pull_copy_instance_rcpts_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
 		return exmdb_ext_pull_get_message_instance_attachments_num_response(
 											&ext_pull, &presponse->payload);
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
 		return exmdb_ext_pull_get_message_instance_attachment_table_all_proptags_response(
 															&ext_pull, &presponse->payload);
-	case CALL_ID_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
+	case exmdb_callid::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
 		return exmdb_ext_pull_query_message_instance_attachment_table_response(
 												&ext_pull, &presponse->payload);
-	case CALL_ID_COPY_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::COPY_INSTANCE_ATTACHMENTS:
 		return exmdb_ext_pull_copy_instance_attachments_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_SET_MESSAGE_INSTANCE_CONFLICT:
+	case exmdb_callid::SET_MESSAGE_INSTANCE_CONFLICT:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_MESSAGE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_RCPTS:
 		return exmdb_ext_pull_get_message_rcpts_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_GET_MESSAGE_PROPERTIES:
+	case exmdb_callid::GET_MESSAGE_PROPERTIES:
 		return exmdb_ext_pull_get_message_properties_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_SET_MESSAGE_PROPERTIES:
+	case exmdb_callid::SET_MESSAGE_PROPERTIES:
 		return exmdb_ext_pull_set_message_properties_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_SET_MESSAGE_READ_STATE:
+	case exmdb_callid::SET_MESSAGE_READ_STATE:
 		return exmdb_ext_pull_set_message_read_state_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_REMOVE_MESSAGE_PROPERTIES:
+	case exmdb_callid::REMOVE_MESSAGE_PROPERTIES:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_ALLOCATE_MESSAGE_ID:
+	case exmdb_callid::ALLOCATE_MESSAGE_ID:
 		return exmdb_ext_pull_allocate_message_id_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_ALLOCATE_CN:
+	case exmdb_callid::ALLOCATE_CN:
 		return exmdb_ext_pull_allocate_cn_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_GET_MESSAGE_GROUP_ID:
+	case exmdb_callid::GET_MESSAGE_GROUP_ID:
 		return exmdb_ext_pull_get_message_group_id_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_SET_MESSAGE_GROUP_ID:
+	case exmdb_callid::SET_MESSAGE_GROUP_ID:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_SAVE_CHANGE_INDICES:
+	case exmdb_callid::SAVE_CHANGE_INDICES:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_CHANGE_INDICES:
+	case exmdb_callid::GET_CHANGE_INDICES:
 		return exmdb_ext_pull_get_change_indices_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_MARK_MODIFIED:
+	case exmdb_callid::MARK_MODIFIED:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_TRY_MARK_SUBMIT:
+	case exmdb_callid::TRY_MARK_SUBMIT:
 		return exmdb_ext_pull_try_mark_submit_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_CLEAR_SUBMIT:
+	case exmdb_callid::CLEAR_SUBMIT:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_LINK_MESSAGE:
+	case exmdb_callid::LINK_MESSAGE:
 		return exmdb_ext_pull_link_message_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_UNLINK_MESSAGE:
+	case exmdb_callid::UNLINK_MESSAGE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_RULE_NEW_MESSAGE:
+	case exmdb_callid::RULE_NEW_MESSAGE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_SET_MESSAGE_TIMER:
+	case exmdb_callid::SET_MESSAGE_TIMER:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_GET_MESSAGE_TIMER:
+	case exmdb_callid::GET_MESSAGE_TIMER:
 		return exmdb_ext_pull_get_message_timer_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_EMPTY_FOLDER_PERMISSION:
+	case exmdb_callid::EMPTY_FOLDER_PERMISSION:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_UPDATE_FOLDER_PERMISSION:
+	case exmdb_callid::UPDATE_FOLDER_PERMISSION:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_EMPTY_FOLDER_RULE:
+	case exmdb_callid::EMPTY_FOLDER_RULE:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_UPDATE_FOLDER_RULE:
+	case exmdb_callid::UPDATE_FOLDER_RULE:
 		return exmdb_ext_pull_update_folder_rule_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_DELIVERY_MESSAGE:
+	case exmdb_callid::DELIVERY_MESSAGE:
 		return exmdb_ext_pull_delivery_message_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_WRITE_MESSAGE:
+	case exmdb_callid::WRITE_MESSAGE:
 		return exmdb_ext_pull_write_message_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_READ_MESSAGE:
+	case exmdb_callid::READ_MESSAGE:
 		return exmdb_ext_pull_read_message_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_GET_CONTENT_SYNC:
+	case exmdb_callid::GET_CONTENT_SYNC:
 		return exmdb_ext_pull_get_content_sync_response(
 						&ext_pull, &presponse->payload);
-	case CALL_ID_GET_HIERARCHY_SYNC:
+	case exmdb_callid::GET_HIERARCHY_SYNC:
 		return exmdb_ext_pull_get_hierarchy_sync_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_ALLOCATE_IDS:
+	case exmdb_callid::ALLOCATE_IDS:
 		return exmdb_ext_pull_allocate_ids_response(
 					&ext_pull, &presponse->payload);
-	case CALL_ID_SUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::SUBSCRIBE_NOTIFICATION:
 		return exmdb_ext_pull_subscribe_notification_response(
 								&ext_pull, &presponse->payload);
-	case CALL_ID_UNSUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::UNSUBSCRIBE_NOTIFICATION:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_TRANSPORT_NEW_MAIL:
+	case exmdb_callid::TRANSPORT_NEW_MAIL:
 		return EXT_ERR_SUCCESS;
-	case CALL_ID_CHECK_CONTACT_ADDRESS:
+	case exmdb_callid::CHECK_CONTACT_ADDRESS:
 		return exmdb_ext_pull_check_contact_address_response(
 							&ext_pull, &presponse->payload);
-	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+	case exmdb_callid::GET_PUBLIC_FOLDER_UNREAD_COUNT:
 		return exmdb_ext_pull_get_public_folder_unread_count_response(
 										&ext_pull, &presponse->payload);
-	case CALL_ID_UNLOAD_STORE:
+	case exmdb_callid::UNLOAD_STORE:
 		return EXT_ERR_SUCCESS;
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
 }
 
-/* CALL_ID_CONNECT, CALL_ID_LISTEN_NOTIFICATION not included */
+/* exmdb_callid::CONNECT, exmdb_callid::LISTEN_NOTIFICATION not included */
 int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	BINARY *pbin_out)
 {
@@ -8068,7 +8069,7 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 		&ext_push, NULL, 0, EXT_FLAG_WCOUNT)) {
 		return EXT_ERR_ALLOC;
 	}
-	status = ext_buffer_push_uint8(&ext_push, RESPONSE_CODE_SUCCESS);
+	status = ext_buffer_push_uint8(&ext_push, exmdb_response::SUCCESS);
 	if (EXT_ERR_SUCCESS != status) {
 		ext_buffer_push_free(&ext_push);
 		return status;
@@ -8079,465 +8080,465 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 		return status;
 	}
 	switch (presponse->call_id) {
-	case CALL_ID_PING_STORE:
+	case exmdb_callid::PING_STORE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_ALL_NAMED_PROPIDS:
+	case exmdb_callid::GET_ALL_NAMED_PROPIDS:
 		status = exmdb_ext_push_get_all_named_propids_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_NAMED_PROPIDS:
+	case exmdb_callid::GET_NAMED_PROPIDS:
 		status = exmdb_ext_push_get_named_propids_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_NAMED_PROPNAMES:
+	case exmdb_callid::GET_NAMED_PROPNAMES:
 		status = exmdb_ext_push_get_named_propnames_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MAPPING_GUID:
+	case exmdb_callid::GET_MAPPING_GUID:
 		status = exmdb_ext_push_get_mapping_guid_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MAPPING_REPLID:
+	case exmdb_callid::GET_MAPPING_REPLID:
 		status = exmdb_ext_push_get_mapping_replid_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_STORE_ALL_PROPTAGS:
+	case exmdb_callid::GET_STORE_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_store_all_proptags_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_STORE_PROPERTIES:
+	case exmdb_callid::GET_STORE_PROPERTIES:
 		status = exmdb_ext_push_get_store_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_STORE_PROPERTIES:
+	case exmdb_callid::SET_STORE_PROPERTIES:
 		status = exmdb_ext_push_set_store_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_REMOVE_STORE_PROPERTIES:
+	case exmdb_callid::REMOVE_STORE_PROPERTIES:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_CHECK_MAILBOX_PERMISSION:
+	case exmdb_callid::CHECK_MAILBOX_PERMISSION:
 		status = exmdb_ext_push_check_mailbox_permission_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_FOLDER_BY_CLASS:
+	case exmdb_callid::GET_FOLDER_BY_CLASS:
 		status = exmdb_ext_push_get_folder_by_class_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_FOLDER_BY_CLASS:
+	case exmdb_callid::SET_FOLDER_BY_CLASS:
 		status = exmdb_ext_push_set_folder_by_class_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_FOLDER_CLASS_TABLE:
+	case exmdb_callid::GET_FOLDER_CLASS_TABLE:
 		status = exmdb_ext_push_get_folder_class_table_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECK_FOLDER_ID:
+	case exmdb_callid::CHECK_FOLDER_ID:
 		status = exmdb_ext_push_check_folder_id_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_QUERY_FOLDER_MESSAGES:
+	case exmdb_callid::QUERY_FOLDER_MESSAGES:
 		status = exmdb_ext_push_query_folder_messages_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECK_FOLDER_DELETED:
+	case exmdb_callid::CHECK_FOLDER_DELETED:
 		status = exmdb_ext_push_check_folder_deleted_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_FOLDER_BY_NAME:
+	case exmdb_callid::GET_FOLDER_BY_NAME:
 		status = exmdb_ext_push_get_folder_by_name_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECK_FOLDER_PERMISSION:
+	case exmdb_callid::CHECK_FOLDER_PERMISSION:
 		status = exmdb_ext_push_check_folder_permission_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CREATE_FOLDER_BY_PROPERTIES:
+	case exmdb_callid::CREATE_FOLDER_BY_PROPERTIES:
 		status = exmdb_ext_push_create_folder_by_properties_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_FOLDER_ALL_PROPTAGS:
+	case exmdb_callid::GET_FOLDER_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_folder_all_proptags_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_FOLDER_PROPERTIES:
+	case exmdb_callid::GET_FOLDER_PROPERTIES:
 		status = exmdb_ext_push_get_folder_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_FOLDER_PROPERTIES:
+	case exmdb_callid::SET_FOLDER_PROPERTIES:
 		status = exmdb_ext_push_set_folder_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_REMOVE_FOLDER_PROPERTIES:
+	case exmdb_callid::REMOVE_FOLDER_PROPERTIES:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_DELETE_FOLDER:
+	case exmdb_callid::DELETE_FOLDER:
 		status = exmdb_ext_push_delete_folder_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_EMPTY_FOLDER:
+	case exmdb_callid::EMPTY_FOLDER:
 		status = exmdb_ext_push_empty_folder_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECK_FOLDER_CYCLE:
+	case exmdb_callid::CHECK_FOLDER_CYCLE:
 		status = exmdb_ext_push_check_folder_cycle_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_COPY_FOLDER_INTERNAL:
+	case exmdb_callid::COPY_FOLDER_INTERNAL:
 		status = exmdb_ext_push_copy_folder_internal_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_SEARCH_CRITERIA:
+	case exmdb_callid::GET_SEARCH_CRITERIA:
 		status = exmdb_ext_push_get_search_criteria_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_SEARCH_CRITERIA:
+	case exmdb_callid::SET_SEARCH_CRITERIA:
 		status = exmdb_ext_push_set_search_criteria_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MOVECOPY_MESSAGE:
+	case exmdb_callid::MOVECOPY_MESSAGE:
 		status = exmdb_ext_push_movecopy_message_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MOVECOPY_MESSAGES:
+	case exmdb_callid::MOVECOPY_MESSAGES:
 		status = exmdb_ext_push_movecopy_messages_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MOVECOPY_FOLDER:
+	case exmdb_callid::MOVECOPY_FOLDER:
 		status = exmdb_ext_push_movecopy_folder_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_DELETE_MESSAGES:
+	case exmdb_callid::DELETE_MESSAGES:
 		status = exmdb_ext_push_delete_messages_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_BRIEF:
+	case exmdb_callid::GET_MESSAGE_BRIEF:
 		status = exmdb_ext_push_get_message_brief_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SUM_HIERARCHY:
+	case exmdb_callid::SUM_HIERARCHY:
 		status = exmdb_ext_push_sum_hierarchy_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOAD_HIERARCHY_TABLE:
+	case exmdb_callid::LOAD_HIERARCHY_TABLE:
 		status = exmdb_ext_push_load_hierarchy_table_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SUM_CONTENT:
+	case exmdb_callid::SUM_CONTENT:
 		status = exmdb_ext_push_sum_content_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOAD_CONTENT_TABLE:
+	case exmdb_callid::LOAD_CONTENT_TABLE:
 		status = exmdb_ext_push_load_content_table_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_RELOAD_CONTENT_TABLE:
+	case exmdb_callid::RELOAD_CONTENT_TABLE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_LOAD_PERMISSION_TABLE:
+	case exmdb_callid::LOAD_PERMISSION_TABLE:
 		status = exmdb_ext_push_load_permission_table_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOAD_RULE_TABLE:
+	case exmdb_callid::LOAD_RULE_TABLE:
 		status = exmdb_ext_push_load_rule_table_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UNLOAD_TABLE:
+	case exmdb_callid::UNLOAD_TABLE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_SUM_TABLE:
+	case exmdb_callid::SUM_TABLE:
 		status = exmdb_ext_push_sum_table_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_QUERY_TABLE:
+	case exmdb_callid::QUERY_TABLE:
 		status = exmdb_ext_push_query_table_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MATCH_TABLE:
+	case exmdb_callid::MATCH_TABLE:
 		status = exmdb_ext_push_match_table_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOCATE_TABLE:
+	case exmdb_callid::LOCATE_TABLE:
 		status = exmdb_ext_push_locate_table_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_READ_TABLE_ROW:
+	case exmdb_callid::READ_TABLE_ROW:
 		status = exmdb_ext_push_read_table_row_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MARK_TABLE:
+	case exmdb_callid::MARK_TABLE:
 		status = exmdb_ext_push_mark_table_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_TABLE_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_table_all_proptags_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_EXPAND_TABLE:
+	case exmdb_callid::EXPAND_TABLE:
 		status = exmdb_ext_push_expand_table_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_COLLAPSE_TABLE:
+	case exmdb_callid::COLLAPSE_TABLE:
 		status = exmdb_ext_push_collapse_table_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_STORE_TABLE_STATE:
+	case exmdb_callid::STORE_TABLE_STATE:
 		status = exmdb_ext_push_store_table_state_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_RESTORE_TABLE_STATE:
+	case exmdb_callid::RESTORE_TABLE_STATE:
 		status = exmdb_ext_push_restore_table_state_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECK_MESSAGE:
+	case exmdb_callid::CHECK_MESSAGE:
 		status = exmdb_ext_push_check_message_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECK_MESSAGE_DELETED:
+	case exmdb_callid::CHECK_MESSAGE_DELETED:
 		status = exmdb_ext_push_check_message_deleted_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::LOAD_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_load_message_instance_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOAD_EMBEDDED_INSTANCE:
+	case exmdb_callid::LOAD_EMBEDDED_INSTANCE:
 		status = exmdb_ext_push_load_embedded_instance_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_EMBEDDED_CN:
+	case exmdb_callid::GET_EMBEDDED_CN:
 		status = exmdb_ext_push_get_embedded_cn_response(&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_RELOAD_MESSAGE_INSTANCE:
+	case exmdb_callid::RELOAD_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_reload_message_instance_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CLEAR_MESSAGE_INSTANCE:
+	case exmdb_callid::CLEAR_MESSAGE_INSTANCE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_READ_MESSAGE_INSTANCE:
+	case exmdb_callid::READ_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_read_message_instance_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_WRITE_MESSAGE_INSTANCE:
+	case exmdb_callid::WRITE_MESSAGE_INSTANCE:
 		status = exmdb_ext_push_write_message_instance_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_LOAD_ATTACHMENT_INSTANCE:
+	case exmdb_callid::LOAD_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_load_attachment_instance_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CREATE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::CREATE_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_create_attachment_instance_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_READ_ATTACHMENT_INSTANCE:
+	case exmdb_callid::READ_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_read_attachment_instance_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_WRITE_ATTACHMENT_INSTANCE:
+	case exmdb_callid::WRITE_ATTACHMENT_INSTANCE:
 		status = exmdb_ext_push_write_attachment_instance_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_DELETE_MESSAGE_INSTANCE_ATTACHMENT:
+	case exmdb_callid::DELETE_MESSAGE_INSTANCE_ATTACHMENT:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_FLUSH_INSTANCE:
+	case exmdb_callid::FLUSH_INSTANCE:
 		status = exmdb_ext_push_flush_instance_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UNLOAD_INSTANCE:
+	case exmdb_callid::UNLOAD_INSTANCE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_INSTANCE_ALL_PROPTAGS:
+	case exmdb_callid::GET_INSTANCE_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_instance_all_proptags_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_INSTANCE_PROPERTIES:
+	case exmdb_callid::GET_INSTANCE_PROPERTIES:
 		status = exmdb_ext_push_get_instance_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_INSTANCE_PROPERTIES:
+	case exmdb_callid::SET_INSTANCE_PROPERTIES:
 		status = exmdb_ext_push_set_instance_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_REMOVE_INSTANCE_PROPERTIES:
+	case exmdb_callid::REMOVE_INSTANCE_PROPERTIES:
 		status = exmdb_ext_push_remove_instance_properties_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CHECK_INSTANCE_CYCLE:
+	case exmdb_callid::CHECK_INSTANCE_CYCLE:
 		status = exmdb_ext_push_check_instance_cycle_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_RCPTS:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_NUM:
 		status = exmdb_ext_push_get_message_instance_rcpts_num_response(
 										&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_message_instance_rcpts_all_proptags_response(
 												&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_RCPTS:
 		status = exmdb_ext_push_get_message_instance_rcpts_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UPDATE_MESSAGE_INSTANCE_RCPTS:
+	case exmdb_callid::UPDATE_MESSAGE_INSTANCE_RCPTS:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_COPY_INSTANCE_RCPTS:
+	case exmdb_callid::COPY_INSTANCE_RCPTS:
 		status = exmdb_ext_push_copy_instance_rcpts_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::EMPTY_MESSAGE_INSTANCE_ATTACHMENTS:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM:
 		status = exmdb_ext_push_get_message_instance_attachments_num_response(
 												&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
+	case exmdb_callid::GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS:
 		status = exmdb_ext_push_get_message_instance_attachment_table_all_proptags_response(
 															&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
+	case exmdb_callid::QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE:
 		status = exmdb_ext_push_query_message_instance_attachment_table_response(
 												&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_COPY_INSTANCE_ATTACHMENTS:
+	case exmdb_callid::COPY_INSTANCE_ATTACHMENTS:
 		status = exmdb_ext_push_copy_instance_attachments_response(
 									&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_INSTANCE_CONFLICT:
+	case exmdb_callid::SET_MESSAGE_INSTANCE_CONFLICT:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_MESSAGE_RCPTS:
+	case exmdb_callid::GET_MESSAGE_RCPTS:
 		status = exmdb_ext_push_get_message_rcpts_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_PROPERTIES:
+	case exmdb_callid::GET_MESSAGE_PROPERTIES:
 		status = exmdb_ext_push_get_message_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_PROPERTIES:
+	case exmdb_callid::SET_MESSAGE_PROPERTIES:
 		status = exmdb_ext_push_set_message_properties_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_READ_STATE:
+	case exmdb_callid::SET_MESSAGE_READ_STATE:
 		status = exmdb_ext_push_set_message_read_state_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_REMOVE_MESSAGE_PROPERTIES:
+	case exmdb_callid::REMOVE_MESSAGE_PROPERTIES:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_ALLOCATE_MESSAGE_ID:
+	case exmdb_callid::ALLOCATE_MESSAGE_ID:
 		status = exmdb_ext_push_allocate_message_id_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_ALLOCATE_CN:
+	case exmdb_callid::ALLOCATE_CN:
 		status = exmdb_ext_push_allocate_cn_response(
 					&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_MESSAGE_GROUP_ID:
+	case exmdb_callid::GET_MESSAGE_GROUP_ID:
 		status = exmdb_ext_push_get_message_group_id_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SET_MESSAGE_GROUP_ID:
+	case exmdb_callid::SET_MESSAGE_GROUP_ID:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_SAVE_CHANGE_INDICES:
+	case exmdb_callid::SAVE_CHANGE_INDICES:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_CHANGE_INDICES:
+	case exmdb_callid::GET_CHANGE_INDICES:
 		status = exmdb_ext_push_get_change_indices_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_MARK_MODIFIED:
+	case exmdb_callid::MARK_MODIFIED:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_TRY_MARK_SUBMIT:
+	case exmdb_callid::TRY_MARK_SUBMIT:
 		status = exmdb_ext_push_try_mark_submit_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_CLEAR_SUBMIT:
+	case exmdb_callid::CLEAR_SUBMIT:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_LINK_MESSAGE:
+	case exmdb_callid::LINK_MESSAGE:
 		status = exmdb_ext_push_link_message_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UNLINK_MESSAGE:
+	case exmdb_callid::UNLINK_MESSAGE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_RULE_NEW_MESSAGE:
+	case exmdb_callid::RULE_NEW_MESSAGE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_SET_MESSAGE_TIMER:
+	case exmdb_callid::SET_MESSAGE_TIMER:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_GET_MESSAGE_TIMER:
+	case exmdb_callid::GET_MESSAGE_TIMER:
 		status = exmdb_ext_push_get_message_timer_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_EMPTY_FOLDER_PERMISSION:
+	case exmdb_callid::EMPTY_FOLDER_PERMISSION:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_EMPTY_FOLDER_RULE:
+	case exmdb_callid::EMPTY_FOLDER_RULE:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_UPDATE_FOLDER_RULE:
+	case exmdb_callid::UPDATE_FOLDER_RULE:
 		status = exmdb_ext_push_update_folder_rule_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UPDATE_FOLDER_PERMISSION:
+	case exmdb_callid::UPDATE_FOLDER_PERMISSION:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_DELIVERY_MESSAGE:
+	case exmdb_callid::DELIVERY_MESSAGE:
 		status = exmdb_ext_push_delivery_message_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_WRITE_MESSAGE:
+	case exmdb_callid::WRITE_MESSAGE:
 		status = exmdb_ext_push_write_message_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_READ_MESSAGE:
+	case exmdb_callid::READ_MESSAGE:
 		status = exmdb_ext_push_read_message_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_CONTENT_SYNC:
+	case exmdb_callid::GET_CONTENT_SYNC:
 		status = exmdb_ext_push_get_content_sync_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_HIERARCHY_SYNC:
+	case exmdb_callid::GET_HIERARCHY_SYNC:
 		status = exmdb_ext_push_get_hierarchy_sync_response(
 							&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_ALLOCATE_IDS:
+	case exmdb_callid::ALLOCATE_IDS:
 		status = exmdb_ext_push_allocate_ids_response(
 						&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_SUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::SUBSCRIBE_NOTIFICATION:
 		status = exmdb_ext_push_subscribe_notification_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UNSUBSCRIBE_NOTIFICATION:
+	case exmdb_callid::UNSUBSCRIBE_NOTIFICATION:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_TRANSPORT_NEW_MAIL:
+	case exmdb_callid::TRANSPORT_NEW_MAIL:
 		status = EXT_ERR_SUCCESS;
 		break;
-	case CALL_ID_CHECK_CONTACT_ADDRESS:
+	case exmdb_callid::CHECK_CONTACT_ADDRESS:
 		status = exmdb_ext_push_check_contact_address_response(
 								&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_GET_PUBLIC_FOLDER_UNREAD_COUNT:
+	case exmdb_callid::GET_PUBLIC_FOLDER_UNREAD_COUNT:
 		status = exmdb_ext_push_get_public_folder_unread_count_response(
 										&ext_push, &presponse->payload);
 		break;
-	case CALL_ID_UNLOAD_STORE:
+	case exmdb_callid::UNLOAD_STORE:
 		status = EXT_ERR_SUCCESS;
 		break;
 	default:

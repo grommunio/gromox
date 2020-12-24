@@ -1,4 +1,5 @@
 #include <libHX/string.h>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/socket.h>
 #include <gromox/paths.h>
@@ -31,25 +32,6 @@
 #include <time.h>
 
 #define SOCKET_TIMEOUT								60
-
-#define RESPONSE_CODE_SUCCESS						0x00
-#define RESPONSE_CODE_ACCESS_DENY					0x01
-#define RESPONSE_CODE_MAX_REACHED					0x02
-#define RESPONSE_CODE_LACK_MEMORY					0x03
-#define RESPONSE_CODE_MISCONFIG_PREFIX				0x04
-#define RESPONSE_CODE_MISCONFIG_MODE				0x05
-#define RESPONSE_CODE_CONNECT_INCOMPLETE			0x06
-#define RESPONSE_CODE_PULL_ERROR					0x07
-#define RESPONSE_CODE_DISPATCH_ERROR				0x08
-#define RESPONSE_CODE_PUSH_ERROR					0x09
-
-#define CALL_ID_CONNECT								0x00
-#define CALL_ID_GET_NAMED_PROPIDS					0x04
-#define CALL_ID_CHECK_FOLDER_PERMISSION				0x14
-#define CALL_ID_LOAD_CONTENT_TABLE					0x28
-#define CALL_ID_UNLOAD_TABLE						0x2b
-#define CALL_ID_QUERY_TABLE							0x2d
-
 
 typedef struct _EXMDB_ITEM {
 	char prefix[256];
@@ -307,42 +289,42 @@ static int exmdb_client_push_request(uint8_t call_id,
 		return status;
 	}
 	switch (call_id) {
-	case CALL_ID_CONNECT:
+	case exmdb_callid::CONNECT:
 		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_GET_NAMED_PROPIDS:
+	case exmdb_callid::GET_NAMED_PROPIDS:
 		status = exmdb_client_push_get_named_propids(&ext_push, static_cast<GET_NAMED_PROPIDS_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_CHECK_FOLDER_PERMISSION:
+	case exmdb_callid::CHECK_FOLDER_PERMISSION:
 		status = exmdb_client_push_check_folder_permission_request(&ext_push, static_cast<CHECK_FOLDER_PERMISSION_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_LOAD_CONTENT_TABLE:
+	case exmdb_callid::LOAD_CONTENT_TABLE:
 		status = exmdb_client_push_load_content_table_request(&ext_push, static_cast<LOAD_CONTENT_TABLE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_UNLOAD_TABLE:
+	case exmdb_callid::UNLOAD_TABLE:
 		status = exmdb_client_push_unload_table_request(&ext_push, static_cast<UNLOAD_TABLE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
 			return status;
 		}
 		break;
-	case CALL_ID_QUERY_TABLE:
+	case exmdb_callid::QUERY_TABLE:
 		status = exmdb_client_push_query_table_request(&ext_push, static_cast<QUERY_TABLE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			ext_buffer_push_free(&ext_push);
@@ -454,19 +436,17 @@ static BOOL exmdb_client_get_named_propids(int sockd, const char *dir,
 	request.dir = dir;
 	request.b_create = b_create;
 	request.ppropnames = ppropnames;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_GET_NAMED_PROPIDS, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::GET_NAMED_PROPIDS,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
-	if (tmp_bin.cb < 5 || RESPONSE_CODE_SUCCESS != tmp_bin.pb[0]) {
+	if (tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	}
 	ext_buffer_pull_init(&ext_pull, tmp_bin.pb + 5,
 		tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_propid_array(
@@ -486,19 +466,17 @@ static BOOL exmdb_client_check_folder_permission(int sockd,
 	request.dir = dir;
 	request.folder_id = folder_id;
 	request.username = username;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_CHECK_FOLDER_PERMISSION, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::CHECK_FOLDER_PERMISSION,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
-	if (9 != tmp_bin.cb || RESPONSE_CODE_SUCCESS != tmp_bin.pb[0]) {
+	if (tmp_bin.cb != 9 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	}
 	*ppermission = *(uint32_t*)(tmp_bin.pb + 5);
 	return TRUE;
 }
@@ -518,19 +496,17 @@ static BOOL exmdb_client_load_content_table(int sockd, const char *dir,
 	request.table_flags = table_flags;
 	request.prestriction = prestriction;
 	request.psorts = psorts;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_LOAD_CONTENT_TABLE, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::LOAD_CONTENT_TABLE,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
-	if (13 != tmp_bin.cb || RESPONSE_CODE_SUCCESS != tmp_bin.pb[0]) {
+	if (tmp_bin.cb != 13 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	}
 	*ptable_id = *(uint32_t*)(tmp_bin.pb + 5);
 	*prow_count = *(uint32_t*)(tmp_bin.pb + 9);
 	return TRUE;
@@ -544,19 +520,17 @@ static BOOL exmdb_client_unload_table(int sockd,
 	
 	request.dir = dir;
 	request.table_id = table_id;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_UNLOAD_TABLE, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::UNLOAD_TABLE,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
-	if (5 != tmp_bin.cb || RESPONSE_CODE_SUCCESS != tmp_bin.pb[0]) {
+	if (tmp_bin.cb != 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -576,19 +550,17 @@ static BOOL exmdb_client_query_table(int sockd, const char *dir,
 	request.pproptags = pproptags;
 	request.start_pos = start_pos;
 	request.row_needed = row_needed;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_QUERY_TABLE, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::QUERY_TABLE,
+	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
 	if (FALSE == exmdb_client_read_socket(sockd, &tmp_bin)) {
 		return FALSE;
 	}
-	if (RESPONSE_CODE_SUCCESS != tmp_bin.pb[0]) {
+	if (tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	}
 	ext_buffer_pull_init(&ext_pull, tmp_bin.pb + 5,
 		tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_tarray_set(
@@ -655,8 +627,8 @@ static int connect_exmdb(const char *dir)
 	request.prefix = pexnode->exmdb_info.prefix;
 	request.remote_id = remote_id;
 	request.b_private = TRUE;
-	if (EXT_ERR_SUCCESS != exmdb_client_push_request(
-		CALL_ID_CONNECT, &request, &tmp_bin)) {
+	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
+	    &tmp_bin) != EXT_ERR_SUCCESS) {
 		close(sockd);
 		return -1;
 	}
@@ -670,7 +642,7 @@ static int connect_exmdb(const char *dir)
 		return -1;
 	}
 	response_code = tmp_bin.pb[0];
-	if (RESPONSE_CODE_SUCCESS == response_code) {
+	if (response_code == exmdb_response::SUCCESS) {
 		if (5 != tmp_bin.cb || 0 != *(uint32_t*)(tmp_bin.pb + 1)) {
 			fprintf(stderr, "response format error when connect to "
 				"%s:%d for prefix \"%s\"\n", pexnode->exmdb_info.ip_addr,
@@ -681,29 +653,29 @@ static int connect_exmdb(const char *dir)
 		return sockd;
 	}
 	switch (response_code) {
-	case RESPONSE_CODE_ACCESS_DENY:
+	case exmdb_response::ACCESS_DENY:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix "
 			"\"%s\", access denied.\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_MAX_REACHED:
+	case exmdb_response::MAX_REACHED:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix"
 			" \"%s\",maximum connections reached in server!\n",
 			pexnode->exmdb_info.ip_addr, pexnode->exmdb_info.port,
 			pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_LACK_MEMORY:
+	case exmdb_response::LACK_MEMORY:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			"server out of memory!\n", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_MISCONFIG_PREFIX:
+	case exmdb_response::MISCONFIG_PREFIX:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			"server does not serve the prefix, configuation file of "
 			"client or server may be incorrect!", pexnode->exmdb_info.ip_addr,
 			pexnode->exmdb_info.port, pexnode->exmdb_info.prefix);
 		break;
-	case RESPONSE_CODE_MISCONFIG_MODE:
+	case exmdb_response::MISCONFIG_MODE:
 		fprintf(stderr, "Failed to connect to %s:%d for prefix \"%s\","
 			" work mode with the prefix in server is different from "
 			"the mode in client, configuation file of client or server"
