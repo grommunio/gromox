@@ -4,7 +4,7 @@
 #include "exmdb_server.h"
 #include "exmdb_ext.h"
 #include <unistd.h>
-#include <time.h>
+#include <ctime>
 #include <poll.h>
 
 

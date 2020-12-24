@@ -21,15 +21,15 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <net/if.h>
-#include <errno.h>
+#include <cerrno>
 #include <netdb.h>
-#include <stdio.h>
-#include <time.h>
+#include <cstdio>
+#include <ctime>
 
 #define SOCKET_TIMEOUT								60
 

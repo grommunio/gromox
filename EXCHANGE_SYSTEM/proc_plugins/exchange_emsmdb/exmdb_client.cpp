@@ -3,7 +3,7 @@
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include "ext_buffer.h"
-#include <stdio.h>
+#include <cstdio>
 
 #define SERVICE_ID_LANG_TO_CHARSET							1
 #define SERVICE_ID_CPID_TO_CHARSET							2

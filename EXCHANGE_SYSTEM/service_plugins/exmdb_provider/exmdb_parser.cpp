@@ -1,4 +1,4 @@
-#include <errno.h>
+#include <cerrno>
 #include <gromox/exmdb_rpc.hpp>
 #include "notification_agent.h"
 #include "exmdb_parser.h"
@@ -14,11 +14,11 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
-#include <signal.h>
-#include <stdio.h>
+#include <csignal>
+#include <cstdio>
 #include <netdb.h>
 #include <poll.h>
 

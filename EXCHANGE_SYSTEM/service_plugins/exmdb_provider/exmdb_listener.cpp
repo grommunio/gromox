@@ -1,4 +1,4 @@
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -14,9 +14,9 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 #include <fcntl.h>
 #include <netdb.h>
 
