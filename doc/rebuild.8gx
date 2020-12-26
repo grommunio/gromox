@@ -3,12 +3,8 @@
 .PP
 \fBrebuild\fP \fImaildir\fP
 .SH Options
-.TP
-\fB\-\-version\fP
-Output version information and exit.
-.TP
-\fB\-?\fP
-Display option summary.
+.PP
+The program has no options.
 .SH See also
 .PP
 \fBgromox\fP(7)

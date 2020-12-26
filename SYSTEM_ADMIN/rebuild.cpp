@@ -2,7 +2,6 @@
 #	include "config.h"
 #endif
 #include <libHX/defs.h>
-#include <libHX/option.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
@@ -52,13 +51,6 @@ typedef struct _UNLOAD_STORE_REQUEST {
 } UNLOAD_STORE_REQUEST;
 
 static DOUBLE_LIST g_exmdb_list;
-static unsigned int opt_show_version;
-
-static struct HXoption g_options_table[] = {
-	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
-	HXOPT_AUTOHELP,
-	HXOPT_TABLEEND,
-};
 
 static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
@@ -359,13 +351,6 @@ int main(int argc, const char **argv)
 	struct stat node_stat;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
-		return EXIT_FAILURE;
-	if (opt_show_version) {
-		printf("version: %s\n", PROJECT_VERSION);
-		return 0;
-	}
-
 	if (2 != argc) {
 		printf("usage: %s <maildir>\n", argv[0]);
 		return 1;
