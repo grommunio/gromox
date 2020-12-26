@@ -1,9 +1,11 @@
 #pragma once
 #ifdef __cplusplus
 #	include <cstdarg>
+#	include <cstddef>
 #	include <string>
 #else
 #	include <stdarg.h>
+#	include <stddef.h>
 #endif
 #include <gromox/defs.h>
 
