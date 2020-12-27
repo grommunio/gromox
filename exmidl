@@ -1,0 +1,49 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+print "#include <cstring>\n";
+print "#include <gromox/exmdb_rpc.hpp>\n";
+for (qw(common_util exmdb_client exmdb_ext)) {
+	print "#include \"$_.h\"\n";
+}
+
+while (<>) {
+	next if (!/^\s*EXMIDL\(\s*(\w+)\s*\)\s*\(const\s+char\s*\*dir(.*)\);/);
+	my $func = $1;
+	my $args = $2;
+	my($iargs, $oargs) = ($args);
+	my(@iargs, @oargs);
+	if ($args =~ s{^(.*),\s*IDLOUT\s+(.*)}{$1, $2}) {
+		$iargs = $1;
+		$oargs = $2;
+		@oargs = split(/\s*,\s*/, $oargs);
+	}
+	@iargs = split(/\s*,\s*/, $iargs);
+	print "BOOL exmdb_client_$func(const char *dir$args)\n{\n";
+	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n\n";
+	print "\trequest.call_id = exmdb_callid::".uc($func).";\n";
+	print "\trequest.dir = deconst(dir);\n";
+	for (@iargs) {
+		next if ($_ eq "");
+		my($field) = (/(\w+\s*)$/);
+		my $type = substr($_, 0, -length($field));
+		if ($type =~ /\*\s*$/) {
+			print "\trequest.payload.$func.$field = deconst($field);\n";
+		} else {
+			print "\trequest.payload.$func.$field = $field;\n";
+		}
+	}
+	print "\tif (!exmdb_client_do_rpc(dir, &request, &response))\n\t\treturn false;\n";
+	for (@oargs) {
+		my($field) = (/(\w+)\s*$/);
+		my $type = substr($_, 0, -length($field));
+		if ($type =~ /^char\s*\*$/) {
+			print "\tstrcpy($field, response.payload.$func.$field);\n";
+		} else {
+			print "\t*$& = response.payload.$func.$field;\n";
+		}
+	}
+	print "\treturn TRUE;\n}\n\n";
+}

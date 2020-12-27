@@ -171,7 +171,7 @@ sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
 
 # LIBRARY
-BUILT_SOURCES = include/gromox/paths.h
+BUILT_SOURCES = include/gromox/paths.h EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/long_hash.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
@@ -397,7 +397,7 @@ http_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/cons
 http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la libgromox_webkit.la
 midb_SOURCES = EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/midb/cmd_parser.cpp EXCHANGE_SYSTEM/midb/common_util.cpp EXCHANGE_SYSTEM/midb/console_cmd_handler.cpp EXCHANGE_SYSTEM/midb/console_server.cpp EXCHANGE_SYSTEM/midb/exmdb_client.cpp EXCHANGE_SYSTEM/midb/exmdb_ext.cpp EXCHANGE_SYSTEM/midb/listener.cpp EXCHANGE_SYSTEM/midb/mail_engine.cpp EXCHANGE_SYSTEM/midb/main.cpp EXCHANGE_SYSTEM/midb/system_services.cpp
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-zcore_SOURCES = EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/zcore/ab_tree.cpp EXCHANGE_SYSTEM/zcore/attachment_object.cpp EXCHANGE_SYSTEM/zcore/bounce_producer.cpp EXCHANGE_SYSTEM/zcore/common_util.cpp EXCHANGE_SYSTEM/zcore/console_cmd_handler.cpp EXCHANGE_SYSTEM/zcore/console_server.cpp EXCHANGE_SYSTEM/zcore/container_object.cpp EXCHANGE_SYSTEM/zcore/exmdb_client.cpp EXCHANGE_SYSTEM/zcore/exmdb_ext.cpp EXCHANGE_SYSTEM/zcore/folder_object.cpp EXCHANGE_SYSTEM/zcore/ics_state.cpp EXCHANGE_SYSTEM/zcore/icsdownctx_object.cpp EXCHANGE_SYSTEM/zcore/icsupctx_object.cpp EXCHANGE_SYSTEM/zcore/listener.cpp EXCHANGE_SYSTEM/zcore/main.cpp EXCHANGE_SYSTEM/zcore/message_object.cpp EXCHANGE_SYSTEM/zcore/msgchg_grouping.cpp EXCHANGE_SYSTEM/zcore/names.cpp EXCHANGE_SYSTEM/zcore/object_tree.cpp EXCHANGE_SYSTEM/zcore/rpc_ext.cpp EXCHANGE_SYSTEM/zcore/rpc_parser.cpp EXCHANGE_SYSTEM/zcore/store_object.cpp EXCHANGE_SYSTEM/zcore/system_services.cpp EXCHANGE_SYSTEM/zcore/table_object.cpp EXCHANGE_SYSTEM/zcore/user_object.cpp EXCHANGE_SYSTEM/zcore/zarafa_server.cpp
+zcore_SOURCES = EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/zcore/ab_tree.cpp EXCHANGE_SYSTEM/zcore/attachment_object.cpp EXCHANGE_SYSTEM/zcore/bounce_producer.cpp EXCHANGE_SYSTEM/zcore/common_util.cpp EXCHANGE_SYSTEM/zcore/console_cmd_handler.cpp EXCHANGE_SYSTEM/zcore/console_server.cpp EXCHANGE_SYSTEM/zcore/container_object.cpp EXCHANGE_SYSTEM/zcore/exmdb_client.cpp EXCHANGE_SYSTEM/zcore/exmdb_ext.cpp EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp EXCHANGE_SYSTEM/zcore/folder_object.cpp EXCHANGE_SYSTEM/zcore/ics_state.cpp EXCHANGE_SYSTEM/zcore/icsdownctx_object.cpp EXCHANGE_SYSTEM/zcore/icsupctx_object.cpp EXCHANGE_SYSTEM/zcore/listener.cpp EXCHANGE_SYSTEM/zcore/main.cpp EXCHANGE_SYSTEM/zcore/message_object.cpp EXCHANGE_SYSTEM/zcore/msgchg_grouping.cpp EXCHANGE_SYSTEM/zcore/names.cpp EXCHANGE_SYSTEM/zcore/object_tree.cpp EXCHANGE_SYSTEM/zcore/rpc_ext.cpp EXCHANGE_SYSTEM/zcore/rpc_parser.cpp EXCHANGE_SYSTEM/zcore/store_object.cpp EXCHANGE_SYSTEM/zcore/system_services.cpp EXCHANGE_SYSTEM/zcore/table_object.cpp EXCHANGE_SYSTEM/zcore/user_object.cpp EXCHANGE_SYSTEM/zcore/zarafa_server.cpp
 zcore_LDADD = -ldl -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 libexsvc_codepage_lang_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/codepage_lang/codepage_lang.c EXCHANGE_SYSTEM/service_plugins/codepage_lang/main.c
 libexsvc_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -561,6 +561,9 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 	 -e 's|#define PKGLOGDIR .*|#define PKGLOGDIR "${localstatedir}/log/${PACKAGE_NAME}"|' \
 		<$< >$@.tmp
 	${AM_V_at}if ! cmp $@ $@.tmp 2>/dev/null; then mv $@.tmp $@; fi; rm -f $@.tmp
+
+EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp: EXCHANGE_SYSTEM/zcore/exmdb_client.h exmidl
+	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${pkgdatadir}
