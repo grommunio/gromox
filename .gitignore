@@ -43,6 +43,7 @@ Makefile.in
 /zcore
 
 /include/gromox/paths.h
+/EXCHANGE_SYSTEM/midb/exmdb_rpc.cpp
 /EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp
 /system/*.service
 /tests/abktconv
