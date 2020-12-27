@@ -171,7 +171,8 @@ sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
 
 # LIBRARY
-BUILT_SOURCES = include/gromox/paths.h EXCHANGE_SYSTEM/midb/exmdb_rpc.cpp EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp
+BUILT_SOURCES = include/gromox/paths.h EXCHANGE_SYSTEM/midb/exmdb_rpc.cpp EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_rpc.cpp
+CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/long_hash.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
@@ -403,7 +404,7 @@ libexsvc_codepage_lang_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/codepage_lan
 libexsvc_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_codepage_lang_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexsvc_codepage_lang_la_DEPENDENCIES = ${default_sym}
-libexsvc_exmdb_provider_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/exmdb_provider/bounce_producer.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/common_util.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/db_engine.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_ext.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_listener.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_parser.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/notification_agent.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_server.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/folder.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/ics.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instance.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instbody.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/main.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/message.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/names.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/store.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/table.cpp
+libexsvc_exmdb_provider_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/exmdb_provider/bounce_producer.c EXCHANGE_SYSTEM/service_plugins/exmdb_provider/common_util.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/db_engine.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_ext.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_listener.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_parser.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_rpc.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/notification_agent.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_server.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/folder.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/ics.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instance.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instbody.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/main.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/message.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/names.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/store.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/table.cpp
 libexsvc_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 EXTRA_libexsvc_exmdb_provider_la_DEPENDENCIES = ${default_sym}
@@ -567,6 +568,9 @@ EXCHANGE_SYSTEM/midb/exmdb_rpc.cpp: EXCHANGE_SYSTEM/midb/exmdb_client.h exmidl
 
 EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp: EXCHANGE_SYSTEM/zcore/exmdb_client.h exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
+
+EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_rpc.cpp: EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.h exmidl
+	${AM_V_GEN}${top_srcdir}/exmidl -p <$< >$@
 
 install-data-local:
 	${MKDIR_P} ${DESTDIR}${pkgdatadir}

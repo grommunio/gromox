@@ -2,14 +2,18 @@
 
 use strict;
 use warnings;
+my $provider = grep("-p", @ARGV);
 
 print "#include <cstring>\n";
 print "#include <gromox/exmdb_rpc.hpp>\n";
 for (qw(common_util exmdb_client exmdb_ext)) {
 	print "#include \"$_.h\"\n";
 }
+if ($provider) {
+	print "#include \"exmdb_server.h\"\n";
+}
 
-while (<>) {
+while (<STDIN>) {
 	next if (!/^\s*EXMIDL\(\s*(\w+)\s*\)\s*\(const\s+char\s*\*dir(.*)\);/);
 	my $func = $1;
 	my $args = $2;
@@ -22,7 +26,23 @@ while (<>) {
 	}
 	@iargs = split(/\s*,\s*/, $iargs);
 	print "BOOL exmdb_client_$func(const char *dir$args)\n{\n";
-	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n\n";
+	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
+	if ($provider) {
+		print "\tBOOL xb_private;\n\n";
+		print "\tif (exmdb_client_check_local(dir, &xb_private) == TRUE) {\n";
+		print "\t\texmdb_server_build_environment(TRUE, xb_private, dir);\n";
+		my @zargs;
+		for (@iargs, @oargs) {
+			next if ($_ eq "");
+			my($field) = (/(\w+\s*)$/);
+			push(@zargs, $field);
+		}
+		print "\t\tauto xbresult = exmdb_server_$func(".join(", ", "dir", @zargs).");\n";
+		print "\t\texmdb_server_free_environment();\n";
+		print "\t\treturn xbresult;\n";
+		print "\t}\n";
+	}
+	print "\n";
 	print "\trequest.call_id = exmdb_callid::".uc($func).";\n";
 	print "\trequest.dir = deconst(dir);\n";
 	for (@iargs) {
