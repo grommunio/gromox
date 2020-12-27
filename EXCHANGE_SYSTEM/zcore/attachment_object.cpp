@@ -12,9 +12,7 @@
 ATTACHMENT_OBJECT* attachment_object_create(
 	MESSAGE_OBJECT *pparent, uint32_t attachment_num)
 {
-	ATTACHMENT_OBJECT *pattachment;
-	
-	pattachment = malloc(sizeof(ATTACHMENT_OBJECT));
+	auto pattachment = static_cast<ATTACHMENT_OBJECT *>(malloc(sizeof(ATTACHMENT_OBJECT)));
 	if (NULL == pattachment) {
 		return NULL;
 	}
@@ -71,7 +69,7 @@ BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
 		return FALSE;
 	}
 	propvals.count = 0;
-	propvals.ppropval = common_util_alloc(sizeof(TAGGED_PROPVAL)*5);
+	propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 5));
 	if (NULL == propvals.ppropval) {
 		return FALSE;
 	}
@@ -177,8 +175,8 @@ BOOL attachment_object_get_all_proptags(
 		return FALSE;	
 	}
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag = common_util_alloc(
-		sizeof(uint32_t)*(tmp_proptags.count + 5));
+	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                      sizeof(uint32_t) * (tmp_proptags.count + 5)));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -274,14 +272,14 @@ BOOL attachment_object_get_properties(ATTACHMENT_OBJECT *pattachment,
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -328,8 +326,8 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*ppropvals->count);
+	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
@@ -364,8 +362,8 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 	PROPTAG_ARRAY tmp_proptags;
 	
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-		sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}

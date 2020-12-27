@@ -25,7 +25,7 @@ static void* thread_work_func(void *param)
 	while (FALSE == g_notify_stop) {
 		socklen_t len = sizeof(unix_addr);
 		memset(&unix_addr, 0, sizeof(unix_addr));
-		int clifd = accept(g_listen_sockd, reinterpret_cast(struct sockaddr *, &unix_addr), &len);
+		int clifd = accept(g_listen_sockd, reinterpret_cast<struct sockaddr *>(&unix_addr), &len);
 		if (-1 == clifd) {
 			continue;
 		}

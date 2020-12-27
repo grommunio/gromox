@@ -6,9 +6,7 @@
 ICSUPCTX_OBJECT* icsupctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type)
 {
-	ICSUPCTX_OBJECT *pctx;
-	
-	pctx = malloc(sizeof(ICSUPCTX_OBJECT));
+	auto pctx = static_cast<ICSUPCTX_OBJECT *>(malloc(sizeof(ICSUPCTX_OBJECT)));
 	if (NULL == pctx) {
 		return NULL;
 	}

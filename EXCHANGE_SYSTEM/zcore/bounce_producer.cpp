@@ -656,7 +656,7 @@ BOOL bounce_producer_make(const char *username,
 			out_len ++;
 		}
 		snprintf(mime_to + out_len, sizeof(mime_to) - out_len, "<%s>",
-		         static_cast(const char *, pvalue));
+		         static_cast<const char *>(pvalue));
 	}
 	if ('\0' != mime_to[0]) {
 		mime_set_field(pmime, "To", mime_to);

@@ -55,9 +55,7 @@ static BOOL ics_state_init(ICS_STATE *pstate)
 
 ICS_STATE* ics_state_create(uint8_t type)
 {
-	ICS_STATE *pstate;
-	
-	pstate = malloc(sizeof(ICS_STATE));
+	auto pstate = static_cast<ICS_STATE *>(malloc(sizeof(ICS_STATE)));
 	if (NULL == pstate) {
 		return NULL;
 	}
@@ -91,12 +89,12 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 			TRUE == idset_check_empty(pstate->pseen) &&
 			TRUE == idset_check_empty(pstate->pseen_fai) &&
 			TRUE == idset_check_empty(pstate->pread)) {
-			return const_cast(BINARY *, &fake_bin);
+			return deconst(&fake_bin);
 		}
 	} else {
 		if (TRUE == idset_check_empty(pstate->pgiven) &&
 			TRUE == idset_check_empty(pstate->pseen)) {
-			return const_cast(BINARY *, &fake_bin);
+			return deconst(&fake_bin);
 		}
 	}
 	pproplist = tpropval_array_init();
@@ -174,14 +172,14 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		return NULL;	
 	}
 	tpropval_array_free(pproplist);
-	pbin = common_util_alloc(sizeof(BINARY));
+	pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	pbin->cb = ext_push.offset;
-	pbin->pb = common_util_alloc(pbin->cb);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(pbin->cb);
+	if (pbin->pv == nullptr) {
 		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
-	memcpy(pbin->pb, ext_push.data, pbin->cb);
+	memcpy(pbin->pv, ext_push.data, pbin->cb);
 	ext_buffer_push_free(&ext_push);
 	return pbin;
 }
@@ -211,8 +209,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 			if (NULL == pset) {
 				return FALSE;
 			}
-			if (FALSE == idset_deserialize(pset,
-				propvals.ppropval[i].pvalue) ||
+			if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 				FALSE == idset_convert(pset)) {
 				idset_free(pset);
 				return FALSE;
@@ -225,8 +222,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 			if (NULL == pset) {
 				return FALSE;
 			}
-			if (FALSE == idset_deserialize(pset,
-				propvals.ppropval[i].pvalue) ||
+			if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 				FALSE == idset_convert(pset)) {
 				idset_free(pset);
 				return FALSE;
@@ -240,8 +236,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 				if (NULL == pset) {
 					return FALSE;
 				}
-				if (FALSE == idset_deserialize(pset,
-					propvals.ppropval[i].pvalue) ||
+				if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 					FALSE == idset_convert(pset)) {
 					idset_free(pset);
 					return FALSE;
@@ -256,8 +251,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 				if (NULL == pset) {
 					return FALSE;
 				}
-				if (FALSE == idset_deserialize(pset,
-					propvals.ppropval[i].pvalue) ||
+				if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 					FALSE == idset_convert(pset)) {
 					idset_free(pset);
 					return FALSE;
