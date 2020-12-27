@@ -43,9 +43,7 @@ void common_util_free()
 
 BOOL common_util_build_environment(const char *maildir)
 {
-	COMMAND_CONTEXT *pctx;
-	
-	pctx = malloc(sizeof(COMMAND_CONTEXT));
+	auto pctx = static_cast<COMMAND_CONTEXT *>(malloc(sizeof(COMMAND_CONTEXT)));
 	if (NULL == pctx) {
 		return FALSE;
 	}
@@ -58,9 +56,7 @@ BOOL common_util_build_environment(const char *maildir)
 
 void common_util_free_environment()
 {
-	COMMAND_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_ctx_key);
+	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
 	if (NULL == pctx) {
 		return;
 	}
@@ -76,9 +72,7 @@ void common_util_free_environment()
 
 void* common_util_alloc(size_t size)
 {
-	COMMAND_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_ctx_key);
+	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -90,9 +84,7 @@ void* common_util_alloc(size_t size)
 
 BOOL common_util_switch_allocator()
 {
-	COMMAND_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_ctx_key);
+	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
 	if (NULL == pctx) {
 		return FALSE;
 	}
@@ -101,7 +93,7 @@ BOOL common_util_switch_allocator()
 		free(pctx->ptmp_ctx);
 		pctx->ptmp_ctx = NULL;
 	} else {
-		pctx->ptmp_ctx = malloc(sizeof(ALLOC_CONTEXT));
+		pctx->ptmp_ctx = static_cast<ALLOC_CONTEXT *>(malloc(sizeof(ALLOC_CONTEXT)));
 		if (NULL == pctx->ptmp_ctx) {
 			return FALSE;
 		}
@@ -112,9 +104,7 @@ BOOL common_util_switch_allocator()
 
 void common_util_set_maildir(const char *maildir)
 {
-	COMMAND_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_ctx_key);
+	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
 	if (NULL != pctx) {
 		strcpy(pctx->maildir, maildir);
 	}
@@ -122,9 +112,7 @@ void common_util_set_maildir(const char *maildir)
 
 const char* common_util_get_maildir()
 {
-	COMMAND_CONTEXT *pctx;
-	
-	pctx = pthread_getspecific(g_ctx_key);
+	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -134,10 +122,9 @@ const char* common_util_get_maildir()
 char* common_util_dup(const char *pstr)
 {
 	int len;
-	char *pstr1;
 
 	len = strlen(pstr) + 1;
-	pstr1 = common_util_alloc(len);
+	auto pstr1 = static_cast<char *>(common_util_alloc(len));
 	if (NULL == pstr1) {
 		return NULL;
 	}
@@ -181,18 +168,16 @@ void* common_util_get_propvals(const TPROPVAL_ARRAY *parray, uint32_t proptag)
 
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 {
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
-	pbin->pb = common_util_alloc(24);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(24);
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
-	ext_buffer_push_init(&ext_push, pbin->pb, 24, 0);
+	ext_buffer_push_init(&ext_push, pbin->pv, 24, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_xid(
 		&ext_push, size, pxid)) {
 		return NULL;
@@ -221,11 +206,10 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
 	PCL *ppcl;
-	BINARY *pbin;
 	SIZED_XID xid;
 	BINARY *ptmp_bin;
 
-	pbin = common_util_alloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(common_util_alloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -254,12 +238,12 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		return NULL;
 	}
 	pbin->cb = ptmp_bin->cb;
-	pbin->pb = common_util_alloc(ptmp_bin->cb);
-	if (NULL == pbin->pb) {
+	pbin->pv = common_util_alloc(ptmp_bin->cb);
+	if (pbin->pv == nullptr) {
 		rop_util_free_binary(ptmp_bin);
 		return NULL;
 	}
-	memcpy(pbin->pb, ptmp_bin->pb, pbin->cb);
+	memcpy(pbin->pv, ptmp_bin->pb, pbin->cb);
 	rop_util_free_binary(ptmp_bin);
 	return pbin;
 }
@@ -293,7 +277,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	propval_buff[2].proptag = PROP_TAG_DISPLAYNAME;
 	propval_buff[2].pvalue = (void*)folder_name;
 	propval_buff[3].proptag = PROP_TAG_CONTAINERCLASS;
-	propval_buff[3].pvalue  = const_cast(char *, "IPF.Note");
+	propval_buff[3].pvalue  = deconst("IPF.Note");
 	propval_buff[4].proptag = PROP_TAG_CREATIONTIME;
 	propval_buff[4].pvalue = &last_time;
 	propval_buff[5].proptag = PROP_TAG_LASTMODIFICATIONTIME;
