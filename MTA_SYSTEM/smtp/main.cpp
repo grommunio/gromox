@@ -48,7 +48,6 @@ static const char *const g_dfl_as_plugins[] = {
 static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_boundary_list.so",
 	"libmtasvc_domain_list.so",
-	"libmtasvc_inmail_frequency_audit.so",
 	"libmtasvc_ip_container.so",
 	"libmtasvc_ip_filter.so",
 	"libmtasvc_log_plugin.so",

@@ -33,7 +33,6 @@ mta_plugins = \
 	libmtasvc_boundary_list.la \
 	libmtasvc_delivery_console_control.la \
 	libmtasvc_domain_list.la \
-	libmtasvc_inmail_frequency_audit.la \
 	libmtasvc_invalid_user.la \
 	libmtasvc_ip_container.la \
 	libmtasvc_ip_filter.la \
@@ -63,7 +62,6 @@ noinst_DATA += \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_delivery_console_control.ldd \
 	libmtasvc_domain_list.ldd \
-	libmtasvc_inmail_frequency_audit.ldd \
 	libmtasvc_invalid_user.la \
 	libmtasvc_ip_container.la \
 	libmtasvc_ip_filter.la \
@@ -214,10 +212,6 @@ libmtasvc_domain_list_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_domain_list_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_inmail_frequency_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
-libmtasvc_inmail_frequency_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
-libmtasvc_inmail_frequency_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
-EXTRA_libmtasvc_inmail_frequency_audit_la_DEPENDENCIES = ${default_sym}
 libmtasvc_invalid_user_la_SOURCES = MTA_SYSTEM/service_plugins/invalid_user/invalid_user.c MTA_SYSTEM/service_plugins/invalid_user/main.c
 libmtasvc_invalid_user_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_invalid_user_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
