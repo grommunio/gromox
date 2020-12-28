@@ -4,40 +4,31 @@ use strict;
 use warnings;
 my $provider = grep("-p", @ARGV);
 
-print "#include <cstring>\n";
-print "#include <gromox/exmdb_rpc.hpp>\n";
-for (qw(common_util exmdb_client exmdb_ext)) {
-	print "#include \"$_.h\"\n";
-}
+print "#include <$_>\n" for qw(cstring gromox/exmdb_rpc.hpp);
+print "#include \"$_\"\n" for qw(common_util.h exmdb_client.h exmdb_ext.h);
 if ($provider) {
 	print "#include \"exmdb_server.h\"\n";
 }
 
 while (<STDIN>) {
-	next if (!/^\s*EXMIDL\(\s*(\w+)\s*\)\s*\(const\s+char\s*\*dir(.*)\);/);
-	my $func = $1;
-	my $args = $2;
-	my($iargs, $oargs) = ($args);
-	my(@iargs, @oargs);
-	if ($args =~ s{^(.*),\s*IDLOUT\s+(.*)}{$1, $2}) {
+	next if (!m{^\s*EXMIDL\(\s*(\w+)\s*\)\s*\(const\s+char\s*\*dir(.*)\);});
+	my($func, $iargs, $oargs, $iargf, $oargf) = ($1, $2, [], [], []);
+	if ($iargs =~ s{^(.*),\s*IDLOUT\s+(.*)}{$1, $2}) {
 		$iargs = $1;
-		$oargs = $2;
-		@oargs = split(/\s*,\s*/, $oargs);
+		$oargf = [&split_argl($2)];
+		$oargs = [&split_adcl(@$oargf)];
 	}
-	@iargs = split(/\s*,\s*/, $iargs);
-	print "BOOL exmdb_client_$func(const char *dir$args)\n{\n";
+	$iargf = [&split_argl($iargs)];
+	$iargs = [&split_adcl(@$iargf)];
+	my $rbsig = join(", ", "const char *dir", @$iargf, @$oargf);
+	print "BOOL exmdb_client_$func($rbsig)\n{\n";
 	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
 	if ($provider) {
 		print "\tBOOL xb_private;\n\n";
 		print "\tif (exmdb_client_check_local(dir, &xb_private) == TRUE) {\n";
 		print "\t\texmdb_server_build_environment(TRUE, xb_private, dir);\n";
-		my @zargs;
-		for (@iargs, @oargs) {
-			next if ($_ eq "");
-			my($field) = (/(\w+\s*)$/);
-			push(@zargs, $field);
-		}
-		print "\t\tauto xbresult = exmdb_server_$func(".join(", ", "dir", @zargs).");\n";
+		my @anames = ("dir", map { $_->[1] } (@$iargs, @$oargs));
+		print "\t\tauto xbresult = exmdb_server_$func(".join(", ", @anames).");\n";
 		print "\t\texmdb_server_free_environment();\n";
 		print "\t\treturn xbresult;\n";
 		print "\t}\n";
@@ -45,25 +36,31 @@ while (<STDIN>) {
 	print "\n";
 	print "\trequest.call_id = exmdb_callid::".uc($func).";\n";
 	print "\trequest.dir = deconst(dir);\n";
-	for (@iargs) {
-		next if ($_ eq "");
-		my($field) = (/(\w+\s*)$/);
-		my $type = substr($_, 0, -length($field));
-		if ($type =~ /\*\s*$/) {
+	for (@$iargs) {
+		my($type, $field) = @$_;
+		if (substr($type, -1, 1) eq "*") {
 			print "\trequest.payload.$func.$field = deconst($field);\n";
 		} else {
 			print "\trequest.payload.$func.$field = $field;\n";
 		}
 	}
 	print "\tif (!exmdb_client_do_rpc(dir, &request, &response))\n\t\treturn false;\n";
-	for (@oargs) {
-		my($field) = (/(\w+)\s*$/);
-		my $type = substr($_, 0, -length($field));
-		if ($type =~ /^char\s*\*$/) {
+	for (@$oargs) {
+		my($type, $field) = @$_;
+		if ($type =~ m{^char\s*\*}) {
 			print "\tstrcpy($field, response.payload.$func.$field);\n";
 		} else {
-			print "\t*$& = response.payload.$func.$field;\n";
+			print "\t*$field = response.payload.$func.$field;\n";
 		}
 	}
 	print "\treturn TRUE;\n}\n\n";
+}
+
+sub split_adcl { return map { [&fname($_)] } @_; }
+sub split_argl { return map { $_ eq "" ? () : ($_) } split(qr{\s*,\s*}, shift(@_)); }
+sub fname
+{
+	$_[0] =~ /(\s*(\w+)\s*)$/;
+	my $type = substr($_[0], 0, -length($1));
+	return ($type, $2);
 }
