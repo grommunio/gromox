@@ -57,7 +57,6 @@ mta_plugins = \
 	libmtasvc_remote_delivery_audit.la \
 	libmtasvc_remote_delivery_forbidden.la \
 	libmtasvc_remote_mx_hello.la \
-	libmtasvc_retrying_table.la \
 	libmtasvc_single_rcpt.la \
 	libmtasvc_smtp_console_control.la \
 	libmtasvc_special_protection_audit.la \
@@ -96,7 +95,6 @@ noinst_DATA += \
 	libmtasvc_remote_delivery_audit.ldd \
 	libmtasvc_remote_delivery_forbidden.ldd \
 	libmtasvc_remote_mx_hello.ldd \
-	libmtasvc_retrying_table.la \
 	libmtasvc_single_rcpt.ldd \
 	libmtasvc_smtp_console_control.ldd \
 	libmtasvc_special_protection_audit.ldd \
@@ -340,10 +338,6 @@ libmtasvc_remote_delivery_forbidden_la_SOURCES = ${libmtasvc_ip_whitelist_la_SOU
 libmtasvc_remote_delivery_forbidden_la_LDFLAGS = ${libmtasvc_ip_whitelist_la_LDFLAGS}
 libmtasvc_remote_delivery_forbidden_la_LIBADD = ${libmtasvc_ip_whitelist_la_LIBADD}
 EXTRA_libmtasvc_remote_delivery_forbidden_la_DEPENDENCIES = ${default_sym}
-libmtasvc_retrying_table_la_SOURCES = MTA_SYSTEM/service_plugins/retrying_table/main.c MTA_SYSTEM/service_plugins/retrying_table/retrying_table.c
-libmtasvc_retrying_table_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_retrying_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_retrying_table_la_DEPENDENCIES = ${default_sym}
 libmtasvc_tagging_table_la_SOURCES = MTA_SYSTEM/service_plugins/tagging_table/main.c MTA_SYSTEM/service_plugins/tagging_table/tagging_table.c
 libmtasvc_tagging_table_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_tagging_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
