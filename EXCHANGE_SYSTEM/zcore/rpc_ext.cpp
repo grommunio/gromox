@@ -1227,10 +1227,8 @@ static BOOL rpc_ext_push_openstoreentry_response(
 		pext, ppayload->openstoreentry.mapi_type)) {
 		return FALSE;
 	}
-	if (EXT_ERR_SUCCESS != ext_buffer_push_uint32(
-		pext, ppayload->openstoreentry.hobject)) {
+	if (ext_buffer_push_uint32(pext, ppayload->openstoreentry.hxobject) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	}
 	return TRUE;
 }
 

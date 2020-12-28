@@ -109,7 +109,7 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.openstoreentry.entryid,
 			prequest->payload.openstoreentry.flags,
 			&presponse->payload.openstoreentry.mapi_type,
-			&presponse->payload.openstoreentry.hobject);
+			&presponse->payload.openstoreentry.hxobject);
 		break;
 	case zcore_callid::OPENABENTRY:
 		presponse->result = zarafa_server_openabentry(

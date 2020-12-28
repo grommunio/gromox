@@ -619,7 +619,7 @@ typedef struct _RESP_OPENENTRY {
 
 typedef struct _RESP_OPENSTOREENTRY {
 	uint8_t mapi_type;
-	uint32_t hobject;
+	uint32_t hxobject;
 } RESP_OPENSTOREENTRY;
 
 typedef struct _RESP_OPENABENTRY {

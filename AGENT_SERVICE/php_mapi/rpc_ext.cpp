@@ -107,7 +107,7 @@ static zend_bool rpc_ext_pull_openstoreentry_response(
 	if (!ext_pack_pull_uint8(pctx, &ppayload->openstoreentry.mapi_type)) {
 		return 0;
 	}
-	return ext_pack_pull_uint32(pctx, &ppayload->openstoreentry.hobject);
+	return ext_pack_pull_uint32(pctx, &ppayload->openstoreentry.hxobject);
 }
 
 static zend_bool rpc_ext_push_openabentry_request(
