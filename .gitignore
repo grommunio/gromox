@@ -30,7 +30,6 @@ Makefile.in
 /gromox-mailq
 /http
 /imap
-/locker
 /midb
 /mkmidb
 /mkprivate

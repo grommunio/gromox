@@ -19,7 +19,7 @@ noinst_DATA += pam_gromox.ldd
 endif
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
-unit_services = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-locker.service system/gromox-midb.service system/gromox-pop3.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
+unit_services = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
 unit_targets = system/gromox-exch.target system/gromox-mra.target system/gromox-mta.target system/gromox-sa.target
 unit_DATA = ${unit_services} ${unit_targets}
 
@@ -119,7 +119,7 @@ noinst_DATA += \
 	libgxsvc_localemap.ldd \
 	libgxsvc_mysql_adaptor.ldd
 agent_service_progs = digest freebusy rtf2html
-system_admin_progs = adaptor event locker timer
+system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
 sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
@@ -365,8 +365,6 @@ event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 gromox_mailq_SOURCES = SYSTEM_ADMIN/mailq.cpp
-locker_SOURCES = SYSTEM_ADMIN/locker.c
-locker_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 mkmidb_SOURCES = SYSTEM_ADMIN/mkmidb.c
 mkmidb_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la
 mkprivate_SOURCES = SYSTEM_ADMIN/mkprivate.c
@@ -405,7 +403,7 @@ man_MANS = \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
-	doc/imap.8gx doc/ldap_adaptor.4gx doc/localemap.4gx doc/locker.8gx \
+	doc/imap.8gx doc/ldap_adaptor.4gx doc/localemap.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mysql_adaptor.4gx \
