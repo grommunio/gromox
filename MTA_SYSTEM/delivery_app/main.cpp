@@ -52,7 +52,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libgxsvc_authmgr.so",
 	"libmtasvc_relay_domains.so",
 	"libmtasvc_remote_delivery_audit.so",
-	"libmtasvc_remote_delivery_forbidden.so",
 	"libmtasvc_remote_mx_hello.so",
 	"libmtasvc_single_rcpt.so",
 	"libmtasvc_smtp_console_control.so",
