@@ -48,7 +48,6 @@ static const char *const g_dfl_as_plugins[] = {
 static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_boundary_list.so",
 	"libmtasvc_domain_list.so",
-	"libmtasvc_domain_whitelist.so",
 	"libmtasvc_forbidden_domain.so",
 	"libmtasvc_forbidden_from.so",
 	"libmtasvc_forbidden_rcpt.so",
