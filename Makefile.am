@@ -41,7 +41,6 @@ mta_plugins = \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_smtp_console_control.la \
 	libmtasvc_user_filter.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
@@ -60,7 +59,6 @@ noinst_DATA += \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_smtp_console_control.ldd \
 	libmtasvc_user_filter.ldd
 mra_system = pop3 imap
 mra_plugins = \
@@ -224,10 +222,6 @@ libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
 libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
 EXTRA_libmtasvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libmtasvc_smtp_console_control_la_SOURCES = ${libmtasvc_delivery_console_control_la_SOURCES}
-libmtasvc_smtp_console_control_la_LDFLAGS = ${libmtasvc_delivery_console_control_la_LDFLAGS}
-libmtasvc_smtp_console_control_la_LIBADD = ${libmtasvc_delivery_console_control_la_LIBADD}
-EXTRA_libmtasvc_smtp_console_control_la_DEPENDENCIES = ${default_sym}
 libmtasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
 libmtasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
 libmtasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}

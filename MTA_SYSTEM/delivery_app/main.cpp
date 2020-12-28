@@ -50,7 +50,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",
 	"libgxsvc_authmgr.so",
-	"libmtasvc_smtp_console_control.so",
 	NULL,
 };
 
