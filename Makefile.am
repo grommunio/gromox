@@ -41,7 +41,6 @@ mta_plugins = \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_protection_ip_audit.la \
 	libmtasvc_relay_domains.la \
 	libmtasvc_remote_delivery_audit.la \
 	libmtasvc_remote_mx_hello.la \
@@ -66,7 +65,6 @@ noinst_DATA += \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_protection_ip_audit.ldd \
 	libmtasvc_relay_domains.ldd \
 	libmtasvc_remote_delivery_audit.ldd \
 	libmtasvc_remote_mx_hello.ldd \
@@ -236,10 +234,6 @@ libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
 libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
 EXTRA_libmtasvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libmtasvc_protection_ip_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
-libmtasvc_protection_ip_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
-libmtasvc_protection_ip_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
-EXTRA_libmtasvc_protection_ip_audit_la_DEPENDENCIES = ${default_sym}
 libmtasvc_relay_domains_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_relay_domains_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_relay_domains_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
