@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -13,8 +14,21 @@
 
 namespace gromox {
 
+struct icasehash {
+	size_t operator()(std::string s) const {
+		std::transform(s.begin(), s.end(), s.begin(), HX_toupper);
+		return std::hash<std::string>{}(std::move(s));
+	}
+};
+
+struct icasecmp {
+	bool operator()(const std::string &a, const std::string &b) const {
+		return strcasecmp(a.c_str(), b.c_str()) == 0;
+	}
+};
+
 using fwd_map_t  = std::unordered_map<unsigned int, std::string>;
-using back_map_t = std::unordered_map<std::string, unsigned int>;
+using back_map_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
 static fwd_map_t g_cpid_map, g_lcid_map;
 static back_map_t g_charset_map, g_ltag_map;
 static std::once_flag g_cpid_done;
