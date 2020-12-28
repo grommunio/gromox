@@ -41,7 +41,6 @@ mta_plugins = \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_single_rcpt.la \
 	libmtasvc_smtp_console_control.la \
 	libmtasvc_user_filter.la
 noinst_DATA += \
@@ -61,7 +60,6 @@ noinst_DATA += \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_single_rcpt.ldd \
 	libmtasvc_smtp_console_control.ldd \
 	libmtasvc_user_filter.ldd
 mra_system = pop3 imap
@@ -226,10 +224,6 @@ libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
 libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
 EXTRA_libmtasvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libmtasvc_single_rcpt_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
-libmtasvc_single_rcpt_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
-libmtasvc_single_rcpt_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
-EXTRA_libmtasvc_single_rcpt_la_DEPENDENCIES = ${default_sym}
 libmtasvc_smtp_console_control_la_SOURCES = ${libmtasvc_delivery_console_control_la_SOURCES}
 libmtasvc_smtp_console_control_la_LDFLAGS = ${libmtasvc_delivery_console_control_la_LDFLAGS}
 libmtasvc_smtp_console_control_la_LIBADD = ${libmtasvc_delivery_console_control_la_LIBADD}
@@ -428,7 +422,7 @@ man_MANS = \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
-	doc/rtf2html.1gx doc/sa.cfg.5gx doc/single_rcpt.4gx doc/smtp.8gx \
+	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \
 	doc/str_table.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 
