@@ -41,7 +41,6 @@ mta_plugins = \
 	libmtasvc_invalid_user.la \
 	libmtasvc_ip_container.la \
 	libmtasvc_ip_filter.la \
-	libmtasvc_ip_whitelist.la \
 	libmtasvc_lang_charset.la \
 	libmtasvc_log_plugin.la \
 	libmtasvc_mail_from_audit.la \
@@ -76,7 +75,6 @@ noinst_DATA += \
 	libmtasvc_invalid_user.la \
 	libmtasvc_ip_container.la \
 	libmtasvc_ip_filter.la \
-	libmtasvc_ip_whitelist.ldd \
 	libmtasvc_lang_charset.la \
 	libmtasvc_log_plugin.la \
 	libmtasvc_mail_from_audit.ldd \
@@ -256,10 +254,6 @@ libmtasvc_ip_filter_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmtasvc_ip_filter_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
 libmtasvc_ip_filter_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
 EXTRA_libmtasvc_ip_filter_la_DEPENDENCIES = ${default_sym}
-libmtasvc_ip_whitelist_la_SOURCES = MTA_SYSTEM/service_plugins/ip_table/ip_table.c MTA_SYSTEM/service_plugins/ip_table/main.c
-libmtasvc_ip_whitelist_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_ip_whitelist_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libmtasvc_ip_whitelist_la_DEPENDENCIES = ${default_sym}
 libmtasvc_lang_charset_la_SOURCES = ${libexsvc_lang_charset_la_SOURCES}
 libmtasvc_lang_charset_la_LDFLAGS = ${libexsvc_lang_charset_la_LDFLAGS}
 libmtasvc_lang_charset_la_LIBADD = ${libexsvc_lang_charset_la_LIBADD}

@@ -55,7 +55,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_inmail_frequency_audit.so",
 	"libmtasvc_ip_container.so",
 	"libmtasvc_ip_filter.so",
-	"libmtasvc_ip_whitelist.so",
 	"libmtasvc_log_plugin.so",
 	"libmtasvc_mail_from_audit.so",
 	"libmtasvc_mail_subject_audit.so",
