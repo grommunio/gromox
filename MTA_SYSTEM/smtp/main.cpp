@@ -51,7 +51,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_ip_container.so",
 	"libmtasvc_ip_filter.so",
 	"libmtasvc_log_plugin.so",
-	"libmtasvc_mail_subject_audit.so",
 	"libmtasvc_midb_agent.so",
 	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",
