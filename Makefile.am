@@ -46,7 +46,6 @@ mta_plugins = \
 	libmtasvc_remote_mx_hello.la \
 	libmtasvc_single_rcpt.la \
 	libmtasvc_smtp_console_control.la \
-	libmtasvc_special_protection_audit.la \
 	libmtasvc_user_filter.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
@@ -70,7 +69,6 @@ noinst_DATA += \
 	libmtasvc_remote_mx_hello.ldd \
 	libmtasvc_single_rcpt.ldd \
 	libmtasvc_smtp_console_control.ldd \
-	libmtasvc_special_protection_audit.ldd \
 	libmtasvc_user_filter.ldd
 mra_system = pop3 imap
 mra_plugins = \
@@ -254,10 +252,6 @@ libmtasvc_smtp_console_control_la_SOURCES = ${libmtasvc_delivery_console_control
 libmtasvc_smtp_console_control_la_LDFLAGS = ${libmtasvc_delivery_console_control_la_LDFLAGS}
 libmtasvc_smtp_console_control_la_LIBADD = ${libmtasvc_delivery_console_control_la_LIBADD}
 EXTRA_libmtasvc_smtp_console_control_la_DEPENDENCIES = ${default_sym}
-libmtasvc_special_protection_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
-libmtasvc_special_protection_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
-libmtasvc_special_protection_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
-EXTRA_libmtasvc_special_protection_audit_la_DEPENDENCIES = ${default_sym}
 libmtasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
 libmtasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
 libmtasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
