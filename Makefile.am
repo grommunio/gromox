@@ -33,14 +33,7 @@ mta_plugins = \
 	libmtasvc_boundary_list.la \
 	libmtasvc_domain_list.la \
 	libmtasvc_invalid_user.la \
-	libmtasvc_ip_container.la \
-	libmtasvc_ip_filter.la \
-	libmtasvc_lang_charset.la \
-	libmtasvc_log_plugin.la \
-	libmtasvc_midb_agent.la \
-	libmtasvc_mime_extension.la \
-	libmtasvc_ms_locale.la \
-	libmtasvc_user_filter.la
+	libmtasvc_midb_agent.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
 	libmtahook_alias_translator.ldd \
@@ -50,42 +43,20 @@ noinst_DATA += \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_domain_list.ldd \
 	libmtasvc_invalid_user.la \
-	libmtasvc_ip_container.la \
-	libmtasvc_ip_filter.la \
-	libmtasvc_lang_charset.la \
-	libmtasvc_log_plugin.la \
-	libmtasvc_midb_agent.la \
-	libmtasvc_mime_extension.la \
-	libmtasvc_ms_locale.la \
-	libmtasvc_user_filter.ldd
+	libmtasvc_midb_agent.la
 mra_system = pop3 imap
 mra_plugins = \
 	libgxsvc_event_proxy.la \
 	libmrasvc_event_stub.la \
-	libmrasvc_ip_container.la \
-	libmrasvc_ip_filter.la \
-	libmrasvc_log_plugin.la \
-	libmrasvc_midb_agent.la \
-	libmrasvc_user_filter.la
+	libmrasvc_midb_agent.la
 noinst_DATA += \
 	libgxsvc_event_proxy.ldd \
 	libmrasvc_event_stub.ldd \
-	libmrasvc_ip_container.ldd \
-	libmrasvc_ip_filter.ldd \
-	libmrasvc_log_plugin.ldd \
-	libmrasvc_midb_agent.ldd \
-	libmrasvc_user_filter.ldd
+	libmrasvc_midb_agent.ldd
 exchange_progs = http midb zcore
 exchange_plugins = \
 	libexsvc_codepage_lang.la \
 	libexsvc_exmdb_provider.la \
-	libexsvc_ip_container.la \
-	libexsvc_ip_filter.la \
-	libexsvc_lang_charset.la \
-	libexsvc_log_plugin.la \
-	libexsvc_mime_extension.la \
-	libexsvc_ms_locale.la \
-	libexsvc_user_filter.la \
 	libexsvc_timer_agent.la \
 	libexproc_exchange_emsmdb.la \
 	libexproc_exchange_nsp.la \
@@ -94,19 +65,19 @@ exchange_plugins = \
 	libgxsvc_abktplug.la \
 	libgxsvc_at_client.la \
 	libgxsvc_authmgr.la \
+	libgxsvc_ip_container.la \
+	libgxsvc_ip_filter.la \
+	libgxsvc_lang_charset.la \
 	libgxsvc_ldap_adaptor.la \
 	libgxsvc_localemap.la \
-	libgxsvc_mysql_adaptor.la
+	libgxsvc_log_plugin.la \
+	libgxsvc_mime_extension.la \
+	libgxsvc_ms_locale.la \
+	libgxsvc_mysql_adaptor.la \
+	libgxsvc_user_filter.la
 noinst_DATA += \
 	libexsvc_codepage_lang.ldd \
 	libexsvc_exmdb_provider.ldd \
-	libexsvc_ip_container.ldd \
-	libexsvc_ip_filter.ldd \
-	libexsvc_lang_charset.ldd \
-	libexsvc_log_plugin.ldd \
-	libexsvc_mime_extension.ldd \
-	libexsvc_ms_locale.ldd \
-	libexsvc_user_filter.ldd \
 	libexsvc_timer_agent.ldd \
 	libexproc_exchange_emsmdb.ldd \
 	libexproc_exchange_nsp.ldd \
@@ -115,9 +86,16 @@ noinst_DATA += \
 	libgxsvc_abktplug.ldd \
 	libgxsvc_at_client.ldd \
 	libgxsvc_authmgr.ldd \
+	libgxsvc_ip_container.ldd \
+	libgxsvc_ip_filter.ldd \
+	libgxsvc_lang_charset.ldd \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_localemap.ldd \
-	libgxsvc_mysql_adaptor.ldd
+	libgxsvc_log_plugin.ldd \
+	libgxsvc_mime_extension.ldd \
+	libgxsvc_ms_locale.ldd \
+	libgxsvc_mysql_adaptor.ldd \
+	libgxsvc_user_filter.ldd
 agent_service_progs = digest freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
@@ -188,38 +166,10 @@ libmtasvc_invalid_user_la_SOURCES = MTA_SYSTEM/service_plugins/invalid_user/inva
 libmtasvc_invalid_user_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_invalid_user_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_invalid_user_la_DEPENDENCIES = ${default_sym}
-libmtasvc_ip_container_la_SOURCES = ${libexsvc_ip_container_la_SOURCES}
-libmtasvc_ip_container_la_LDFLAGS = ${libexsvc_ip_container_la_LDFLAGS}
-libmtasvc_ip_container_la_LIBADD = ${libexsvc_ip_container_la_LIBADD}
-EXTRA_libmtasvc_ip_container_la_DEPENDENCIES = ${default_sym}
-libmtasvc_ip_filter_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
-libmtasvc_ip_filter_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
-libmtasvc_ip_filter_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
-EXTRA_libmtasvc_ip_filter_la_DEPENDENCIES = ${default_sym}
-libmtasvc_lang_charset_la_SOURCES = ${libexsvc_lang_charset_la_SOURCES}
-libmtasvc_lang_charset_la_LDFLAGS = ${libexsvc_lang_charset_la_LDFLAGS}
-libmtasvc_lang_charset_la_LIBADD = ${libexsvc_lang_charset_la_LIBADD}
-EXTRA_libmtasvc_lang_charset_la_DEPENDENCIES = ${default_sym}
-libmtasvc_log_plugin_la_SOURCES = ${libexsvc_log_plugin_la_SOURCES}
-libmtasvc_log_plugin_la_LDFLAGS = ${libexsvc_log_plugin_la_LDFLAGS}
-libmtasvc_log_plugin_la_LIBADD = ${libexsvc_log_plugin_la_LIBADD}
-EXTRA_libmtasvc_log_plugin_la_DEPENDENCIES = ${default_sym}
 libmtasvc_midb_agent_la_SOURCES = MTA_SYSTEM/service_plugins/midb_agent.c
 libmtasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmtasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
-libmtasvc_mime_extension_la_SOURCES = ${libexsvc_mime_extension_la_SOURCES}
-libmtasvc_mime_extension_la_LDFLAGS = ${libexsvc_mime_extension_la_LDFLAGS}
-libmtasvc_mime_extension_la_LIBADD = ${libexsvc_mime_extension_la_LIBADD}
-EXTRA_libmtasvc_mime_extension_la_DEPENDENCIES = ${default_sym}
-libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
-libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
-libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
-EXTRA_libmtasvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libmtasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
-libmtasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
-libmtasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
-EXTRA_libmtasvc_user_filter_la_DEPENDENCIES = ${default_sym}
 
 # MRA_SYSTEM
 pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/pop3/console_server.c MRA_SYSTEM/pop3/console_cmd_handler.c MRA_SYSTEM/pop3/pop3_parser.c MRA_SYSTEM/pop3/pop3_cmd_handler.c MRA_SYSTEM/pop3/resource.c MRA_SYSTEM/pop3/system_services.c MRA_SYSTEM/pop3/units_allocator.c MRA_SYSTEM/pop3/main.cpp MRA_SYSTEM/pop3/listener.c
@@ -234,26 +184,10 @@ libmrasvc_event_stub_la_SOURCES = MRA_SYSTEM/service_plugins/event_stub.c
 libmrasvc_event_stub_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_event_stub_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_event_stub_la_DEPENDENCIES = ${default_sym}
-libmrasvc_ip_container_la_SOURCES = ${libexsvc_ip_container_la_SOURCES}
-libmrasvc_ip_container_la_LDFLAGS = ${libexsvc_ip_container_la_LDFLAGS}
-libmrasvc_ip_container_la_LIBADD = ${libexsvc_ip_container_la_LIBADD}
-EXTRA_libmrasvc_ip_container_la_DEPENDENCIES = ${default_sym}
-libmrasvc_ip_filter_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
-libmrasvc_ip_filter_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
-libmrasvc_ip_filter_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
-EXTRA_libmrasvc_ip_filter_la_DEPENDENCIES = ${default_sym}
-libmrasvc_log_plugin_la_SOURCES = ${libexsvc_log_plugin_la_SOURCES}
-libmrasvc_log_plugin_la_LDFLAGS = ${libexsvc_log_plugin_la_LDFLAGS}
-libmrasvc_log_plugin_la_LIBADD = ${libexsvc_log_plugin_la_LIBADD}
-EXTRA_libmrasvc_log_plugin_la_DEPENDENCIES = ${default_sym}
 libmrasvc_midb_agent_la_SOURCES = MRA_SYSTEM/service_plugins/midb_agent.c
 libmrasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
-libmrasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
-libmrasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
-libmrasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
-EXTRA_libmrasvc_user_filter_la_DEPENDENCIES = ${default_sym}
 
 # EXCHANGE_SYSTEM
 http_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.c EXCHANGE_SYSTEM/http/console_server.c EXCHANGE_SYSTEM/http/console_cmd_handler.cpp EXCHANGE_SYSTEM/http/hpm_processor.cpp EXCHANGE_SYSTEM/http/http_parser.cpp EXCHANGE_SYSTEM/http/listener.cpp EXCHANGE_SYSTEM/http/main.cpp EXCHANGE_SYSTEM/http/mod_cache.cpp EXCHANGE_SYSTEM/http/mod_fastcgi.cpp EXCHANGE_SYSTEM/http/mod_rewrite.c EXCHANGE_SYSTEM/http/pdu_processor.cpp EXCHANGE_SYSTEM/http/pdu_ndr.c EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/http/system_services.c
@@ -270,34 +204,6 @@ libexsvc_exmdb_provider_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/exmdb_provi
 libexsvc_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 EXTRA_libexsvc_exmdb_provider_la_DEPENDENCIES = ${default_sym}
-libexsvc_ip_container_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_container/ip_container.c EXCHANGE_SYSTEM/service_plugins/ip_container/main.c
-libexsvc_ip_container_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_ip_container_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libexsvc_ip_container_la_DEPENDENCIES = ${default_sym}
-libexsvc_ip_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/ip_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/ip_filter/ip_filter.c EXCHANGE_SYSTEM/service_plugins/ip_filter/main.c EXCHANGE_SYSTEM/service_plugins/ip_filter/temp_list.c
-libexsvc_ip_filter_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_ip_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libexsvc_ip_filter_la_DEPENDENCIES = ${default_sym}
-libexsvc_lang_charset_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/lang_charset.c
-libexsvc_lang_charset_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_lang_charset_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libexsvc_lang_charset_la_DEPENDENCIES = ${default_sym}
-libexsvc_log_plugin_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/log_plugin/log_plugin.c EXCHANGE_SYSTEM/service_plugins/log_plugin/main.c
-libexsvc_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_log_plugin_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libexsvc_log_plugin_la_DEPENDENCIES = ${default_sym}
-libexsvc_mime_extension_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mime_extension.c
-libexsvc_mime_extension_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_mime_extension_la_LIBADD = ${HX_LIBS} libgromox_common.la
-EXTRA_libexsvc_mime_extension_la_DEPENDENCIES = ${default_sym}
-libexsvc_ms_locale_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ms_locale.c
-libexsvc_ms_locale_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_ms_locale_la_LIBADD = ${HX_LIBS} libgromox_common.la
-EXTRA_libexsvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libexsvc_user_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/str_filter/main.c EXCHANGE_SYSTEM/service_plugins/str_filter/str_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/temp_list.c
-libexsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
-libexsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libexsvc_user_filter_la_DEPENDENCIES = ${default_sym}
 libexsvc_timer_agent_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/timer_agent.c
 libexsvc_timer_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_timer_agent_la_LIBADD = -lpthread libgromox_common.la
@@ -330,6 +236,18 @@ libgxsvc_authmgr_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/authmgr.cpp
 libgxsvc_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_authmgr_la_LIBADD = libgromox_common.la
 EXTRA_libgxsvc_authmgr_la_DEPENDENCIES = ${default_sym}
+libgxsvc_ip_container_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_container/ip_container.c EXCHANGE_SYSTEM/service_plugins/ip_container/main.c
+libgxsvc_ip_container_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_ip_container_la_LIBADD = -lpthread libgromox_common.la
+EXTRA_libgxsvc_ip_container_la_DEPENDENCIES = ${default_sym}
+libgxsvc_ip_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/ip_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/ip_filter/ip_filter.c EXCHANGE_SYSTEM/service_plugins/ip_filter/main.c EXCHANGE_SYSTEM/service_plugins/ip_filter/temp_list.c
+libgxsvc_ip_filter_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_ip_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxsvc_ip_filter_la_DEPENDENCIES = ${default_sym}
+libgxsvc_lang_charset_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/lang_charset.c
+libgxsvc_lang_charset_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_lang_charset_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxsvc_lang_charset_la_DEPENDENCIES = ${default_sym}
 libgxsvc_ldap_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ldap_adaptor.cpp
 libgxsvc_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ldap_adaptor_la_LIBADD = libgromox_common.la -lldap_r
@@ -338,10 +256,26 @@ libgxsvc_localemap_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/localeplug.cpp
 libgxsvc_localemap_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_localemap_la_LIBADD = libgromox_cplus.la
 EXTRA_libgxsvc_localemap_la_DEPENDENCIES = ${default_sym}
+libgxsvc_log_plugin_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/log_plugin/log_plugin.c EXCHANGE_SYSTEM/service_plugins/log_plugin/main.c
+libgxsvc_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_log_plugin_la_LIBADD = -lpthread libgromox_common.la
+EXTRA_libgxsvc_log_plugin_la_DEPENDENCIES = ${default_sym}
+libgxsvc_mime_extension_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mime_extension.c
+libgxsvc_mime_extension_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_mime_extension_la_LIBADD = ${HX_LIBS} libgromox_common.la
+EXTRA_libgxsvc_mime_extension_la_DEPENDENCIES = ${default_sym}
+libgxsvc_ms_locale_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ms_locale.c
+libgxsvc_ms_locale_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_ms_locale_la_LIBADD = ${HX_LIBS} libgromox_common.la
+EXTRA_libgxsvc_ms_locale_la_DEPENDENCIES = ${default_sym}
 libgxsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.cpp EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.cpp
 libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
+libgxsvc_user_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_filter/audit_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/grey_list.c EXCHANGE_SYSTEM/service_plugins/str_filter/main.c EXCHANGE_SYSTEM/service_plugins/str_filter/str_filter.c EXCHANGE_SYSTEM/service_plugins/str_filter/temp_list.c
+libgxsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxsvc_user_filter_la_DEPENDENCIES = ${default_sym}
 
 # AGENT_SERVICE
 digest_SOURCES = AGENT_SERVICE/digest.c

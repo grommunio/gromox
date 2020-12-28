@@ -47,9 +47,9 @@ static struct HXoption g_options_table[] = {
 
 static const char *const g_dfl_svc_plugins[] = {
 	"libexsvc_codepage_lang.so",
-	"libexsvc_lang_charset.so",
-	"libexsvc_log_plugin.so",
-	"libexsvc_mime_extension.so",
+	"libgxsvc_lang_charset.so",
+	"libgxsvc_log_plugin.so",
+	"libgxsvc_mime_extension.so",
 	"libgxsvc_localemap.so",
 	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",

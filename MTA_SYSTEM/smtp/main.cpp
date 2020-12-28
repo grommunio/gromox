@@ -48,14 +48,14 @@ static const char *const g_dfl_as_plugins[] = {
 static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_boundary_list.so",
 	"libmtasvc_domain_list.so",
-	"libmtasvc_ip_container.so",
-	"libmtasvc_ip_filter.so",
-	"libmtasvc_log_plugin.so",
+	"libgxsvc_ip_container.so",
+	"libgxsvc_ip_filter.so",
+	"libgxsvc_log_plugin.so",
 	"libmtasvc_midb_agent.so",
 	"libgxsvc_ldap_adaptor.so",
 	"libgxsvc_mysql_adaptor.so",
 	"libgxsvc_authmgr.so",
-	"libmtasvc_user_filter.so",
+	"libgxsvc_user_filter.so",
 	NULL,
 };
 
