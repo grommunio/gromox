@@ -60,7 +60,6 @@ mta_plugins = \
 	libmtasvc_single_rcpt.la \
 	libmtasvc_smtp_console_control.la \
 	libmtasvc_special_protection_audit.la \
-	libmtasvc_tagging_table.la \
 	libmtasvc_user_filter.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
@@ -98,7 +97,6 @@ noinst_DATA += \
 	libmtasvc_single_rcpt.ldd \
 	libmtasvc_smtp_console_control.ldd \
 	libmtasvc_special_protection_audit.ldd \
-	libmtasvc_tagging_table.ldd \
 	libmtasvc_user_filter.ldd
 mra_system = pop3 imap
 mra_plugins = \
@@ -338,10 +336,6 @@ libmtasvc_remote_delivery_forbidden_la_SOURCES = ${libmtasvc_ip_whitelist_la_SOU
 libmtasvc_remote_delivery_forbidden_la_LDFLAGS = ${libmtasvc_ip_whitelist_la_LDFLAGS}
 libmtasvc_remote_delivery_forbidden_la_LIBADD = ${libmtasvc_ip_whitelist_la_LIBADD}
 EXTRA_libmtasvc_remote_delivery_forbidden_la_DEPENDENCIES = ${default_sym}
-libmtasvc_tagging_table_la_SOURCES = MTA_SYSTEM/service_plugins/tagging_table/main.c MTA_SYSTEM/service_plugins/tagging_table/tagging_table.c
-libmtasvc_tagging_table_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_tagging_table_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_tagging_table_la_DEPENDENCIES = ${default_sym}
 libmtasvc_user_filter_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
 libmtasvc_user_filter_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
 libmtasvc_user_filter_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}

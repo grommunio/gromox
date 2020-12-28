@@ -68,7 +68,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_protection_ip_audit.so",
 	"libmtasvc_relay_list.so",
 	"libmtasvc_special_protection_audit.so",
-	"libmtasvc_tagging_table.so",
 	"libmtasvc_user_filter.so",
 	NULL,
 };
