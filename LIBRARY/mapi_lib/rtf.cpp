@@ -2426,7 +2426,7 @@ static int rtf_cmd_field(RTF_READER *preader,
 								pword4 = simple_tree_node_get_sibling(pword4);
 							if (NULL != pword4 && NULL != pword4->pdata) {
 								tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
-									TAG_HYPERLINK_BEGIN, static_cast(const char *, pword4->pdata));
+								          TAG_HYPERLINK_BEGIN, static_cast<const char *>(pword4->pdata));
 								if (EXT_ERR_SUCCESS != ext_buffer_push_bytes(
 									&preader->ext_push, tmp_buff, tmp_len)) {
 									return CMD_RESULT_ERROR;

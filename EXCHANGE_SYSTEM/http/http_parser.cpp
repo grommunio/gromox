@@ -108,7 +108,7 @@ static void http_parser_ssl_locking(int mode, int n, const char *file, int line)
 
 static void http_parser_ssl_id(CRYPTO_THREADID* id)
 {
-	CRYPTO_THREADID_set_numeric(id, reinterpret_cast(uintptr_t, pthread_self()));
+	CRYPTO_THREADID_set_numeric(id, static_cast<uintptr_t>(pthread_self()));
 }
 #endif
 

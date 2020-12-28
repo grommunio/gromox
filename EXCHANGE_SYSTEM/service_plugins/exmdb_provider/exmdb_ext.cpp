@@ -6775,7 +6775,7 @@ static int exmdb_ext_push_get_embedded_cn_response(EXT_PUSH *pext,
 			return status;
 		}
 		return ext_buffer_push_uint64(pext,
-		       *static_cast(uint64_t *, ppayload->get_embedded_cn.pcn));
+		       *static_cast<uint64_t *>(ppayload->get_embedded_cn.pcn));
 	}
 }
 
