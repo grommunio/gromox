@@ -41,7 +41,6 @@ mta_plugins = \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_relay_domains.la \
 	libmtasvc_remote_delivery_audit.la \
 	libmtasvc_remote_mx_hello.la \
 	libmtasvc_single_rcpt.la \
@@ -64,7 +63,6 @@ noinst_DATA += \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_relay_domains.ldd \
 	libmtasvc_remote_delivery_audit.ldd \
 	libmtasvc_remote_mx_hello.ldd \
 	libmtasvc_single_rcpt.ldd \
@@ -232,10 +230,6 @@ libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
 libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
 EXTRA_libmtasvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libmtasvc_relay_domains_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
-libmtasvc_relay_domains_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
-libmtasvc_relay_domains_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
-EXTRA_libmtasvc_relay_domains_la_DEPENDENCIES = ${default_sym}
 libmtasvc_remote_delivery_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmtasvc_remote_delivery_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
 libmtasvc_remote_delivery_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
@@ -446,7 +440,7 @@ man_MANS = \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx \
-	doc/rebuild.8gx doc/relay_domains.4gx doc/remote_mx_hello.4gx \
+	doc/rebuild.8gx doc/remote_mx_hello.4gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx doc/single_rcpt.4gx doc/smtp.8gx \
 	doc/str_table.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
