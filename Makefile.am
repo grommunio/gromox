@@ -33,7 +33,6 @@ mta_plugins = \
 	libmtasvc_boundary_list.la \
 	libmtasvc_delivery_console_control.la \
 	libmtasvc_domain_list.la \
-	libmtasvc_forbidden_from.la \
 	libmtasvc_forbidden_rcpt.la \
 	libmtasvc_inmail_frequency_audit.la \
 	libmtasvc_invalid_user.la \
@@ -65,7 +64,6 @@ noinst_DATA += \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_delivery_console_control.ldd \
 	libmtasvc_domain_list.ldd \
-	libmtasvc_forbidden_from.ldd \
 	libmtasvc_forbidden_rcpt.ldd \
 	libmtasvc_inmail_frequency_audit.ldd \
 	libmtasvc_invalid_user.la \
@@ -218,10 +216,6 @@ libmtasvc_domain_list_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_domain_list_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_forbidden_from_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
-libmtasvc_forbidden_from_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
-libmtasvc_forbidden_from_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
-EXTRA_libmtasvc_forbidden_from_la_DEPENDENCIES = ${default_sym}
 libmtasvc_forbidden_rcpt_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_forbidden_rcpt_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_forbidden_rcpt_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
@@ -490,7 +484,6 @@ man_MANS = \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx doc/exmdb_provider.4gx \
-	doc/forbidden_from.4gx \
 	doc/forbidden_rcpt.4gx doc/freebusy.8gx doc/gromox.7 \
 	doc/gromox-dbop.8gx \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
