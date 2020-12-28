@@ -247,10 +247,6 @@ static void* thread_work_func(void* arg)
 			continue;        
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
-		if (TRUE == system_services_check_relay(client_hostip)) {
-			pcontext->mail.envelop.is_relay = TRUE;
-			goto SERVICE_AVAILABLE;
-		}
 		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			/* access denied */
@@ -386,10 +382,6 @@ static void* thread_work_ssl_func(void* arg)
 			continue;        
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
-		if (TRUE == system_services_check_relay(client_hostip)) {
-			pcontext->mail.envelop.is_relay = TRUE;
-			goto SERVICE_AVAILABLE;
-		}
 		/* pass the client ipaddr into the ipaddr filter */
 		if (FALSE == system_services_judge_ip(client_hostip)) {
 			/* access denied */

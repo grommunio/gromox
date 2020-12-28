@@ -21,7 +21,6 @@ extern BOOL (*system_services_container_add_ip)(const char*);
 extern BOOL (*system_services_container_remove_ip)(const char*);
 extern BOOL (*system_services_judge_user)(const char*);
 extern int (*system_services_add_user_into_temp_list)(const char*, int);
-extern BOOL (*system_services_check_relay)(const char*);
 extern BOOL (*system_services_check_domain)(const char*);
 extern BOOL (*system_services_check_user)(const char*, char*);
 extern BOOL (*system_services_check_full)(const char*);

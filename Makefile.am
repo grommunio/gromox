@@ -53,7 +53,6 @@ mta_plugins = \
 	libmtasvc_outmail_limitation_audit.la \
 	libmtasvc_protection_ip_audit.la \
 	libmtasvc_relay_domains.la \
-	libmtasvc_relay_list.la \
 	libmtasvc_remote_delivery_audit.la \
 	libmtasvc_remote_mx_hello.la \
 	libmtasvc_single_rcpt.la \
@@ -89,7 +88,6 @@ noinst_DATA += \
 	libmtasvc_outmail_limitation_audit.ldd \
 	libmtasvc_protection_ip_audit.ldd \
 	libmtasvc_relay_domains.ldd \
-	libmtasvc_relay_list.ldd \
 	libmtasvc_remote_delivery_audit.ldd \
 	libmtasvc_remote_mx_hello.ldd \
 	libmtasvc_single_rcpt.ldd \
@@ -306,10 +304,6 @@ libmtasvc_relay_domains_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_relay_domains_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_relay_domains_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_relay_domains_la_DEPENDENCIES = ${default_sym}
-libmtasvc_relay_list_la_SOURCES = ${libmtasvc_ip_whitelist_la_SOURCES}
-libmtasvc_relay_list_la_LDFLAGS = ${libmtasvc_ip_whitelist_la_LDFLAGS}
-libmtasvc_relay_list_la_LIBADD = ${libmtasvc_ip_whitelist_la_LIBADD}
-EXTRA_libmtasvc_relay_list_la_DEPENDENCIES = ${default_sym}
 libmtasvc_remote_delivery_audit_la_SOURCES = ${libexsvc_ip_filter_la_SOURCES}
 libmtasvc_remote_delivery_audit_la_LDFLAGS = ${libexsvc_ip_filter_la_LDFLAGS}
 libmtasvc_remote_delivery_audit_la_LIBADD = ${libexsvc_ip_filter_la_LIBADD}
