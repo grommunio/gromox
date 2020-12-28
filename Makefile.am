@@ -49,7 +49,6 @@ mta_plugins = \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_multiple_retrying.la \
 	libmtasvc_outmail_frequency_audit.la \
 	libmtasvc_outmail_limitation_audit.la \
 	libmtasvc_protection_ip_audit.la \
@@ -89,7 +88,6 @@ noinst_DATA += \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
 	libmtasvc_ms_locale.la \
-	libmtasvc_multiple_retrying.la \
 	libmtasvc_outmail_frequency_audit.ldd \
 	libmtasvc_outmail_limitation_audit.ldd \
 	libmtasvc_protection_ip_audit.ldd \
@@ -298,10 +296,6 @@ libmtasvc_ms_locale_la_SOURCES = ${libexsvc_ms_locale_la_SOURCES}
 libmtasvc_ms_locale_la_LDFLAGS = ${libexsvc_ms_locale_la_LDFLAGS}
 libmtasvc_ms_locale_la_LIBADD = ${libexsvc_ms_locale_la_LIBADD}
 EXTRA_libmtasvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libmtasvc_multiple_retrying_la_SOURCES = MTA_SYSTEM/service_plugins/multiple_retrying/main.c MTA_SYSTEM/service_plugins/multiple_retrying/multiple_retrying.c MTA_SYSTEM/service_plugins/multiple_retrying/proxy_retrying.c MTA_SYSTEM/service_plugins/multiple_retrying/retrying_table.c MTA_SYSTEM/service_plugins/multiple_retrying/stub_retrying.c
-libmtasvc_multiple_retrying_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_multiple_retrying_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_multiple_retrying_la_DEPENDENCIES = ${default_sym}
 libmtasvc_outmail_frequency_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
 libmtasvc_outmail_frequency_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
 libmtasvc_outmail_frequency_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
