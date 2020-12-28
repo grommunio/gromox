@@ -1768,6 +1768,11 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 			}
 			break;
 		case PROP_TAG_ECUSERLANGUAGE:
+			/*
+			 * If Offline Mode happens to write this prop even
+			 * though it is unchanged, it may appear as if folder
+			 * names reset.
+			 */
 			if (TRUE == pstore->b_private) {
 				plang = common_util_i18n_to_lang(
 				        static_cast<char *>(ppropvals->ppropval[i].pvalue));
