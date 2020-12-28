@@ -31,7 +31,6 @@ mta_plugins = \
 	libmtahook_from_replace.la \
 	libmtahook_mlist_expand.la \
 	libmtasvc_boundary_list.la \
-	libmtasvc_delivery_console_control.la \
 	libmtasvc_domain_list.la \
 	libmtasvc_invalid_user.la \
 	libmtasvc_ip_container.la \
@@ -49,7 +48,6 @@ noinst_DATA += \
 	libmtahook_from_replace.ldd \
 	libmtahook_mlist_expand.ldd \
 	libmtasvc_boundary_list.ldd \
-	libmtasvc_delivery_console_control.ldd \
 	libmtasvc_domain_list.ldd \
 	libmtasvc_invalid_user.la \
 	libmtasvc_ip_container.la \
@@ -182,10 +180,6 @@ libmtasvc_boundary_list_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_table/m
 libmtasvc_boundary_list_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_boundary_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_boundary_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_delivery_console_control_la_SOURCES = MTA_SYSTEM/service_plugins/console_control.c
-libmtasvc_delivery_console_control_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_delivery_console_control_la_LIBADD = ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_delivery_console_control_la_DEPENDENCIES = ${default_sym}
 libmtasvc_domain_list_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_domain_list_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}

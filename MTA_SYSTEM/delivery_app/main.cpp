@@ -41,7 +41,6 @@ static const char *const g_dfl_mpc_plugins[] = {
 };
 
 static const char *const g_dfl_svc_plugins[] = {
-	"libmtasvc_delivery_console_control.so",
 	"libmtasvc_domain_list.so",
 	"libmtasvc_lang_charset.so",
 	"libmtasvc_log_plugin.so",
