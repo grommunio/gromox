@@ -38,7 +38,6 @@ mta_plugins = \
 	libmtasvc_ip_filter.la \
 	libmtasvc_lang_charset.la \
 	libmtasvc_log_plugin.la \
-	libmtasvc_mail_from_audit.la \
 	libmtasvc_mail_subject_audit.la \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
@@ -67,7 +66,6 @@ noinst_DATA += \
 	libmtasvc_ip_filter.la \
 	libmtasvc_lang_charset.la \
 	libmtasvc_log_plugin.la \
-	libmtasvc_mail_from_audit.ldd \
 	libmtasvc_mail_subject_audit.ldd \
 	libmtasvc_midb_agent.la \
 	libmtasvc_mime_extension.la \
@@ -232,10 +230,6 @@ libmtasvc_log_plugin_la_SOURCES = ${libexsvc_log_plugin_la_SOURCES}
 libmtasvc_log_plugin_la_LDFLAGS = ${libexsvc_log_plugin_la_LDFLAGS}
 libmtasvc_log_plugin_la_LIBADD = ${libexsvc_log_plugin_la_LIBADD}
 EXTRA_libmtasvc_log_plugin_la_DEPENDENCIES = ${default_sym}
-libmtasvc_mail_from_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
-libmtasvc_mail_from_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
-libmtasvc_mail_from_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
-EXTRA_libmtasvc_mail_from_audit_la_DEPENDENCIES = ${default_sym}
 libmtasvc_mail_subject_audit_la_SOURCES = ${libexsvc_user_filter_la_SOURCES}
 libmtasvc_mail_subject_audit_la_LDFLAGS = ${libexsvc_user_filter_la_LDFLAGS}
 libmtasvc_mail_subject_audit_la_LIBADD = ${libexsvc_user_filter_la_LIBADD}
