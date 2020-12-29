@@ -283,7 +283,6 @@ static void* thread_work_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-SERVICE_AVAILABLE:
 		/* 220 <domain> Service ready */
 		smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2172002, 1,
 						 &string_length);
@@ -418,7 +417,6 @@ static void* thread_work_ssl_func(void* arg)
 									  CONTEXT_FREE);
 			continue;
 		}
-SERVICE_AVAILABLE:
 		/* construct the context object */
 		gettimeofday(&pcontext->connection.last_timestamp, NULL);
 		pcontext->connection.sockd             = sockd2;
