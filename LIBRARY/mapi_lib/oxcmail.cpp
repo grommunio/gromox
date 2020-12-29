@@ -5840,7 +5840,7 @@ EXPORT_CONTENT_CLASS:
 		if (NULL != pvalue) {
 			pvalue1 = strrchr(static_cast<char *>(pvalue), '.');
 			if (NULL != pvalue1) {
-				pvalue = pvalue1 + 1;
+				pvalue = static_cast<char *>(pvalue1) + 1;
 			}
 			snprintf(tmp_field, 1024, "InfoPathForm.%s",
 			         static_cast<const char *>(pvalue));

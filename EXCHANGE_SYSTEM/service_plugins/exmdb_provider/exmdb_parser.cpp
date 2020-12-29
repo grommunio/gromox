@@ -841,7 +841,7 @@ static void *thread_work_func(void *pparam)
     while (FALSE == pconnection->b_stop) {
 		if (TRUE == is_writing) {
 			written_len = write(pconnection->sockd,
-				pbuff + offset, buff_len - offset);
+			              static_cast<char *>(pbuff) + offset, buff_len - offset);
 			if (written_len <= 0) {
 				break;
 			}
@@ -887,7 +887,7 @@ static void *thread_work_func(void *pparam)
 			continue;
 		}
 		read_len = read(pconnection->sockd,
-				pbuff + offset, buff_len - offset);
+		           static_cast<char *>(pbuff) + offset, buff_len - offset);
 		if (read_len <= 0) {
 			break;
 		}
