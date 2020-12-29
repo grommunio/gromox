@@ -1,6 +1,7 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
+#include "common_util.h"
 
 #define EXP(s) zcore_callid::s
 #define E(s) #s

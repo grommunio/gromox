@@ -1,6 +1,7 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
+#include "common_util.h"
 
 #define EXP(s) exmdb_callid::s
 #define E(s) #s
