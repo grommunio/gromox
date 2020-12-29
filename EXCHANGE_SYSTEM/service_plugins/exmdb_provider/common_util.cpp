@@ -315,7 +315,7 @@ void* common_util_alloc(size_t size)
 BOOL common_util_check_local_ip(const char *ip_addr)
 {
 	void *paddr;
-	char tmp_ip[16];
+	char tmp_ip[32];
 	struct ifaddrs *ifa;
 	struct ifaddrs *if_addr;
 	

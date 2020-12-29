@@ -577,7 +577,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 		return FALSE;
 	}
 	if (0 == tmp_len) {
-		strcpy(domain, phttp->connection.server_ip);
+		HX_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
 		mem_file_seek(&phttp->request.f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -773,7 +773,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		return FALSE;
 	}
 	if (0 == tmp_len) {
-		strcpy(domain, phttp->connection.server_ip);
+		HX_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
 		mem_file_seek(&phttp->request.f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);

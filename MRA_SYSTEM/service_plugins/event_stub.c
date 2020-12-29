@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
@@ -34,7 +35,7 @@ typedef struct _BACK_CONN {
 typedef void (*EVENT_STUB_FUNC)(char *);
 
 static BOOL g_notify_stop;
-static char g_event_ip[16];
+static char g_event_ip[32];
 static int g_event_port;
 static DOUBLE_LIST g_back_list;
 static EVENT_STUB_FUNC g_event_stub_func;

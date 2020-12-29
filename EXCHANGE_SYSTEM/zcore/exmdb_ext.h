@@ -6,7 +6,7 @@
 typedef struct _EXMDB_ITEM {
 	char prefix[256];
 	char type[16];
-	char ip_addr[16];
+	char ip_addr[32];
 	int port;
 } EXMDB_ITEM;
 

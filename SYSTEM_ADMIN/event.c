@@ -43,7 +43,7 @@
 
 typedef struct _ACL_ITEM {
 	DOUBLE_LIST_NODE node;
-	char ip_addr[16];
+	char ip_addr[32];
 } ACL_ITEM;
 
 typedef struct _ENQUEUE_NODE {
@@ -128,7 +128,7 @@ int main(int argc, const char **argv)
 	pthread_t thr_id;
 	pthread_t *en_ids;
 	pthread_t *de_ids;
-	char listen_ip[16];
+	char listen_ip[32];
 	CONFIG_FILE *pconfig;
 	ENQUEUE_NODE *penqueue;
 	DEQUEUE_NODE *pdequeue;
@@ -176,7 +176,7 @@ int main(int argc, const char **argv)
 			strcpy(listen_ip, "127.0.0.1");
 			config_file_set_value(pconfig, "EVENT_LISTEN_IP", "127.0.0.1");
 		} else {
-			strncpy(listen_ip, str_value, 16);
+			HX_strlcpy(listen_ip, str_value, sizeof(listen_ip));
 		}
 		g_list_path[0] ='\0';
 		printf("[system]: listen ipaddr is %s\n", listen_ip);
@@ -386,8 +386,8 @@ int main(int argc, const char **argv)
 	pthread_attr_destroy(&thr_attr);
 
 	if ('\0' != g_list_path[0]) {
-		struct ipitem { char ip_addr[16]; };
-		plist = list_file_init(g_list_path, "%s:16");
+		struct ipitem { char ip_addr[32]; };
+		plist = list_file_init(g_list_path, "%s:32");
 		if (NULL == plist) {
 			for (i=0; i<g_threads_num; i++) {
 				pthread_cancel(en_ids[i]);
@@ -603,7 +603,7 @@ static void* accept_work_func(void *param)
 	ACL_ITEM *pacl;
 	socklen_t addrlen;
 	int sockd, sockd2;
-	char client_hostip[16];
+	char client_hostip[32];
 	DOUBLE_LIST_NODE *pnode;
 	struct sockaddr_storage peer_name;
 	ENQUEUE_NODE *penqueue;

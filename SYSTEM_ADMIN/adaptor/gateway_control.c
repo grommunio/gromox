@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/gateway_control.h>
 #include <gromox/socket.h>
 #include "util.h"
@@ -15,9 +16,9 @@
 #include <sys/socket.h>
 
 typedef struct CONSOLE_PORT {
-	char smtp_ip[16];
+	char smtp_ip[32];
 	int smtp_port;
-	char delivery_ip[16];
+	char delivery_ip[32];
 	int delivery_port;
 } CONSOLE_PORT;
 
@@ -44,7 +45,7 @@ void gateway_control_init(const char *path)
 int gateway_control_run()
 {
 	int i, list_len;
-	LIST_FILE *plist_file = list_file_init3(g_list_path, "%s:16%d%s:16%d", false);
+	LIST_FILE *plist_file = list_file_init3(g_list_path, /* CONSOLE_PORT */ "%s:32%d%s:32%d", false);
 	if (NULL == plist_file) {
 		printf("[gateway_control]: Failed to read console list from %s: %s\n",
 			g_list_path, strerror(errno));

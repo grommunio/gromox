@@ -74,7 +74,7 @@ int main(int argc, const char **argv)
 	int max_length;
 	int table_size, threads_num = 0;
 	const char *str_value;
-	char smtp_ip[16];
+	char smtp_ip[32];
 	int max_item_num;
 	int max_rule_len;
 	int console_port;
@@ -86,7 +86,7 @@ int main(int argc, const char **argv)
 	int cache_interval;
 	char temp_buff[32];
 	char host_name[256];
-	char console_ip[16];
+	char console_ip[32];
 	char data_path[256], state_dir[256];
 	char exmdb_path[256];
 	CONFIG_FILE *pconfig;

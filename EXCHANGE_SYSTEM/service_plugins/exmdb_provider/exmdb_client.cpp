@@ -1,6 +1,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
+#include <libHX/string.h>
 #include "exmdb_client.h"
 #include "exmdb_server.h"
 #include "common_util.h"
@@ -29,7 +30,7 @@
 typedef struct _REMOTE_SVR {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST conn_list;
-	char ip_addr[16];
+	char ip_addr[32];
 	char prefix[256];
 	int prefix_len;
 	BOOL b_private;
@@ -511,14 +512,13 @@ int exmdb_client_run()
 	int i, j;
 	int list_num;
 	BOOL b_private;
-	LIST_FILE *plist;
 	LOCAL_SVR *plocal;
 	EXMDB_ITEM *pitem;
 	REMOTE_CONN *pconn;
 	REMOTE_SVR *pserver;
 	AGENT_THREAD *pagent;
 	
-	plist = list_file_init3(g_list_path, "%s:256%s:16%s:16%d", false);
+	auto plist = list_file_init3(g_list_path, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		printf("[exmdb_provider]: Failed to read exmdb list from %s: %s\n",
 			g_list_path, strerror(errno));
@@ -572,7 +572,7 @@ int exmdb_client_run()
 		strcpy(pserver->prefix, pitem[i].prefix);
 		pserver->prefix_len = strlen(pserver->prefix);
 		pserver->b_private = b_private;
-		strcpy(pserver->ip_addr, pitem[i].ip_addr);
+		HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
 		pserver->port = pitem[i].port;
 		double_list_init(&pserver->conn_list);
 		double_list_append_as_tail(&g_server_list, &pserver->node);

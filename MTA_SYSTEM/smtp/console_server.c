@@ -3,6 +3,7 @@
  */
 #include <errno.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/fileio.h>
 #include "console_server.h"
 #include "console_cmd_handler.h"
@@ -54,7 +55,7 @@ extern BOOL g_notify_stop;
 /* declare private global variables */
 static BOOL g_terminate;
 static size_t g_cmd_num;
-static char g_listen_ip[16];
+static char g_listen_ip[32];
 static int g_listen_port;
 static pthread_t g_listening_tid;
 static CONSOLE_NODE *g_console_buff;
@@ -80,7 +81,7 @@ static void* console_work_func(void *argp);
  */
 void console_server_init(const char* bind_ip, int port)
 {
-	strcpy(g_listen_ip, bind_ip);
+	HX_strlcpy(g_listen_ip, bind_ip, sizeof(g_listen_ip));
 	g_listen_port = port;
 	console_server_install_command();	/* need to be implements */
 	pthread_mutex_init(&g_list_lock, NULL);

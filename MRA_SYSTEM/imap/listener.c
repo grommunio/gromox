@@ -6,6 +6,7 @@
  */
 #include <errno.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "listener.h"
 #include "system_services.h"
@@ -185,7 +186,7 @@ static void* thread_work_func(void* arg)
 	int sockd2, client_port;
 	int string_length, len, flag;
 	struct sockaddr_storage fact_addr, client_peer;
-	char client_hostip[16], client_txtport[16], server_hostip[16];
+	char client_hostip[32], client_txtport[32], server_hostip[32];
 	IMAP_CONTEXT *pcontext;
 	const char *imap_reply_str, *imap_reply_str2, *host_ID;
 	char buff[1024];
@@ -298,8 +299,8 @@ static void* thread_work_func(void* arg)
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
-		strcpy(pcontext->connection.client_ip, client_hostip);
-		strcpy(pcontext->connection.server_ip, server_hostip);
+		HX_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
+		HX_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
 		pcontext->sched_stat                = SCHED_STAT_RDCMD;
 		/* 
 		valid the context and wake up one thread if there're some threads 
@@ -321,7 +322,7 @@ static void* thread_work_ssl_func(void* arg)
 	int sockd2, client_port;
 	int string_length, len, flag;
 	struct sockaddr_storage fact_addr, client_peer;
-	char client_hostip[16], client_txtport[16], server_hostip[16];
+	char client_hostip[32], client_txtport[32], server_hostip[32];
 	IMAP_CONTEXT *pcontext;
 	const char *imap_reply_str, *imap_reply_str2, *host_ID;
 	char buff[1024];
@@ -426,8 +427,8 @@ static void* thread_work_ssl_func(void* arg)
 		pcontext->sched_stat                = SCHED_STAT_STLS;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_ssl_port;
-		strcpy(pcontext->connection.client_ip, client_hostip);
-		strcpy(pcontext->connection.server_ip, server_hostip);
+		HX_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
+		HX_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
 		/* 
 		valid the context and wake up one thread if there're some threads 
 		block on the condition variable 

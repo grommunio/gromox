@@ -1,4 +1,5 @@
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "alloc_context.h"
 #include "exmdb_client.h"
 #include "common_util.h"
@@ -135,7 +136,7 @@ char* common_util_dup(const char *pstr)
 BOOL common_util_check_local_ip(const char *ip_addr)
 {
 	void *paddr;
-	char tmp_ip[16];
+	char tmp_ip[32];
 	struct ifaddrs *ifa;
 	struct ifaddrs *if_addr;
 	

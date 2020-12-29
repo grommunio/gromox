@@ -1,5 +1,6 @@
 #include <cerrno>
 #include <gromox/exmdb_rpc.hpp>
+#include <libHX/string.h>
 #include "notification_agent.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
@@ -1069,14 +1070,13 @@ int exmdb_parser_run()
 	int i;
 	int list_num;
 	BOOL b_private;
-	LIST_FILE *plist;
 	LOCAL_SVR *plocal;
 	EXMDB_ITEM *pitem;
 	
 	if ('\0' == g_list_path[0]) {
 		return 0;
 	}
-	plist = list_file_init3(g_list_path, "%s:256%s:16%s:16%d", false);
+	auto plist = list_file_init3(g_list_path, /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		printf("[exmdb_provider]: Failed to read exmdb list from %s: %s\n",
 			g_list_path, strerror(errno));

@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
@@ -36,18 +37,11 @@
 
 #define MIDB_MAILBOX_FULL		4
 
-
-typedef struct _MIDB_ITEM {
-	char prefix[256];
-	char ip_addr[16];
-	int port;
-} MIDB_ITEM;
-
 typedef struct _BACK_SVR {
 	DOUBLE_LIST_NODE node;
 	char prefix[256];
 	int prefix_len;
-	char ip_addr[16];
+	char ip_addr[32];
 	int port;
 	DOUBLE_LIST conn_list;
 } BACK_SVR;
@@ -87,8 +81,6 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char config_path[256];
     BACK_CONN *pback;
 	BACK_SVR *pserver;
-	LIST_FILE *plist;
-	MIDB_ITEM *pitem;
 	CONFIG_FILE *pconfig;
     DOUBLE_LIST_NODE *pnode;
 
@@ -131,7 +123,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[midb_agent]: midb connection number is %d\n", g_conn_num);
 		config_file_free(pconfig);
 
-		plist = list_file_init(list_path, "%s:256%s:16%d");
+		LIST_FILE *plist = list_file_init(list_path, /* MIDB_ITEM */ "%s:256%s:32%d");
 		if (NULL == plist) {
 			printf("[midb_agent]: Failed to read midb list from %s: %s\n",
 				list_path, strerror(errno));
@@ -140,7 +132,11 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 
 		list_num = list_file_get_item_num(plist);
-		pitem = (MIDB_ITEM*)list_file_get_list(plist);
+		typedef struct _MIDB_ITEM {
+			char prefix[256], ip_addr[32];
+			int port;
+		} MIDB_ITEM;
+		MIDB_ITEM *pitem = (MIDB_ITEM*)list_file_get_list(plist);
 		for (i=0; i<list_num; i++) {
 			pserver = (BACK_SVR*)malloc(sizeof(BACK_SVR));
 			if (NULL == pserver) {
@@ -151,7 +147,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			pserver->node.pdata = pserver;
 			strcpy(pserver->prefix, pitem[i].prefix);
 			pserver->prefix_len = strlen(pserver->prefix);
-			strcpy(pserver->ip_addr, pitem[i].ip_addr);
+			HX_strlcpy(pserver->ip_addr, pitem[i].ip_addr, sizeof(pserver->ip_addr));
 			pserver->port = pitem[i].port;
 			double_list_init(&pserver->conn_list);
 			double_list_append_as_tail(&g_server_list, &pserver->node);

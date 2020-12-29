@@ -50,7 +50,7 @@ enum {
 static int g_max_rcpt;
 static int g_smtp_port;
 static int g_max_message;
-static char g_smtp_ip[16];
+static char g_smtp_ip[32];
 static char g_org_name[256];
 static int g_faststream_id;
 static int g_average_blocks;
@@ -2652,7 +2652,7 @@ void common_util_init(const char *org_name, int average_blocks,
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = max_rule_len;
-	strcpy(g_smtp_ip, smtp_ip);
+	HX_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
 	strcpy(g_submit_command, submit_command);
 	g_faststream_id = 0;

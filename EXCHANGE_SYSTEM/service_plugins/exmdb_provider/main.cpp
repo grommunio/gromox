@@ -85,7 +85,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	int cache_interval;
 	int connection_num;
 	int populating_num;
-	char listen_ip[16];
+	char listen_ip[32];
 	char acl_path[256];
 	char org_name[256];
 	char file_name[256];
@@ -136,7 +136,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
 			printf("[exmdb_provider]: listen ipaddr is 127.0.0.1\n");
 		} else {
-			strncpy(listen_ip, str_value, 16);
+			HX_strlcpy(listen_ip, str_value, GX_ARRAY_SIZE(listen_ip));
 			printf("[exmdb_provider]: listen ipaddr is %s\n", listen_ip);
 		}
 		

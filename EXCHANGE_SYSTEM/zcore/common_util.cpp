@@ -64,7 +64,7 @@ static int g_max_rcpt;
 static int g_mime_num;
 static int g_smtp_port;
 static int g_max_message;
-static char g_smtp_ip[16];
+static char g_smtp_ip[32];
 static char g_org_name[256];
 static char g_hostname[256];
 static MIME_POOL *g_mime_pool;
@@ -637,7 +637,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
 	g_max_rule_len = max_rule_len;
-	strcpy(g_smtp_ip, smtp_ip);
+	HX_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
 	strcpy(g_freebusy_path, freebusy_path);
 	strcpy(g_langmap_path, langmap_path);
@@ -1119,7 +1119,7 @@ int common_util_convert_string(BOOL to_utf8,
 BOOL common_util_check_local_ip(const char *ip_addr)
 {
 	void *paddr;
-	char tmp_ip[16];
+	char tmp_ip[32];
 	struct ifaddrs *ifa;
 	struct ifaddrs *if_addr;
 	

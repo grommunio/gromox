@@ -1,6 +1,8 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
+#include <libHX/string.h>
 #include "ip_filter.h"
 #include "grey_list.h"
 #include "list_file.h"
@@ -17,12 +19,6 @@ typedef struct _GREY_LIST_ENTRY {
 	int				interval;
 	struct timeval  last_access;
 } GREY_LIST_ENTRY;
-
-typedef struct _LIST_ITEM {
-	char	ip[16];
-	int		allow_times;
-	char	interval[32];
-} LIST_ITEM;
 
 static IP4_HASH_TABLE *g_grey_table;
 static pthread_rwlock_t  g_refresh_lock;
@@ -212,23 +208,27 @@ BOOL grey_list_echo(const char *ip, int *ptimes, int *pinterval)
  */
 int grey_list_refresh()
 {
-	LIST_FILE *plist_file;
     IP4_HASH_TABLE *phash;
     GREY_LIST_ENTRY entry;
     struct timeval current_time;
     int list_len, i, hash_cap;
-	LIST_ITEM *pitem;
 
 	if (0 == g_growing_num) {
 		return GREY_REFRESH_OK;
 	}
-	plist_file = list_file_init3(g_list_path, "%s:16%d%s:32", false);
+	LIST_FILE *plist_file = list_file_init3(g_list_path, /* LIST_ITEM */ "%s:32%d%s:32", false);
 	if (NULL == plist_file) {
 		ip_filter_echo("Failed to read graylist from %s: %s",
 			g_list_path, strerror(errno));
         return GREY_REFRESH_FILE_ERROR;
 	}
-	pitem = (LIST_ITEM*)list_file_get_list(plist_file);
+
+	typedef struct _LIST_ITEM {
+		char ip[32];
+		int allow_times;
+		char interval[32];
+	} LIST_ITEM;
+	LIST_ITEM *pitem = reinterpret_cast(LIST_ITEM *, list_file_get_list(plist_file));
     list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;
 	

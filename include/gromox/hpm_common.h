@@ -27,9 +27,9 @@ typedef struct _HPM_INTERFACE {
 } HPM_INTERFACE;
 
 typedef struct _CONNECTION {
-	char			client_ip[16];
+	char client_ip[32];
 	int				client_port;
-	char			server_ip[16];
+	char server_ip[32];
 	int				server_port;
 	int				sockd;
 	SSL				*ssl;

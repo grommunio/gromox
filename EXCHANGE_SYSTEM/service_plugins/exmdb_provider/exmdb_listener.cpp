@@ -23,13 +23,13 @@
 
 typedef struct _ACL_ITEM {
 	DOUBLE_LIST_NODE node;
-	char ip_addr[16];
+	char ip_addr[32];
 } ACL_ITEM;
 
 static int g_listen_port;
 static int g_listen_sockd;
 static BOOL g_notify_stop;
-static char g_listen_ip[16];
+static char g_listen_ip[32];
 static char g_list_path[256];
 static DOUBLE_LIST g_acl_list;
 static pthread_t g_listener_id;
@@ -40,7 +40,7 @@ static void *thread_work_func(void *param)
 	ACL_ITEM *pacl;
 	uint8_t tmp_byte;
 	socklen_t addrlen;
-	char client_hostip[16];
+	char client_hostip[32];
 	DOUBLE_LIST_NODE *pnode;
 	struct sockaddr_storage peer_name;
 	EXMDB_CONNECTION *pconnection;
@@ -109,7 +109,7 @@ void exmdb_listener_init(const char *ip,
 	int port, const char *list_path)
 {
 	if ('\0' != ip[0]) {
-		strcpy(g_listen_ip, ip);
+		HX_strlcpy(g_listen_ip, ip, GX_ARRAY_SIZE(g_listen_ip));
 		g_list_path[0] = '\0';
 	} else {
 		g_listen_ip[0] = '\0';
@@ -172,8 +172,8 @@ int exmdb_listener_run()
 	}
 
 	if ('\0' != g_list_path[0]) {
-		struct ipitem { char ip_addr[16]; };
-		plist = list_file_init(g_list_path, "%s:16");
+		struct ipitem { char ip_addr[32]; };
+		plist = list_file_init(g_list_path, "%s:32");
 		if (NULL == plist) {
 			printf("[exmdb_provider]: Failed to read ACLs from %s: %s\n",
 				g_list_path, strerror(errno));

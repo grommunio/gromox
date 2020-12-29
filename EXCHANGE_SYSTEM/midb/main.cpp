@@ -76,10 +76,10 @@ int main(int argc, const char **argv)
 	char org_name[256];
 	int cache_interval;
 	char temp_buff[32];
-	char listen_ip[16];
+	char listen_ip[32];
 	char acl_path[256];
 	uint64_t mmap_size;
-	char console_ip[16];
+	char console_ip[32];
 	char data_path[256], state_dir[256];
 	char exmdb_path[256];
 	CONFIG_FILE *pconfig;
@@ -174,7 +174,7 @@ int main(int argc, const char **argv)
 	if (str_value == nullptr)
 		HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
 	else
-		strncpy(listen_ip, str_value, 16);
+		HX_strlcpy(listen_ip, str_value, GX_ARRAY_SIZE(listen_ip));
 	printf("[system]: listen ipaddr is %s\n", listen_ip);
 
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_PORT");

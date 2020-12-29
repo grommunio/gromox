@@ -53,7 +53,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	int max_length;
 	void *pendpoint;
 	int max_rule_len;
-	char smtp_ip[16];
+	char smtp_ip[32];
 	int ping_interval;
 	int average_blocks;
 	char size_buff[32];

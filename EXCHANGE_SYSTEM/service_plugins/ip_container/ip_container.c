@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <libHX/string.h>
 #include "ip_container.h"
 #include "ip4_hash.h"
 #include "util.h"
@@ -142,7 +143,7 @@ BOOL ip_container_remove(const char *ip)
 void ip_container_console_talk(int argc, char **argv, char *result, int length)
 {
 	int fd, len, *pnum;
-	char ip[16], temp_string[32];
+	char ip[32], temp_string[32];
 	IP4_HASH_ITER *iter;
 	
 	char help_string[] = "250 ipaddr container help information:\r\n"

@@ -36,7 +36,7 @@
 
 typedef struct _ACL_ITEM {
 	DOUBLE_LIST_NODE node;
-	char ip_addr[16];
+	char ip_addr[32];
 } ACL_ITEM;
 
 typedef struct _CONNECTION_NODE {
@@ -110,7 +110,7 @@ int main(int argc, const char **argv)
 	time_t last_cltime;
 	pthread_t thr_accept_id;
 	pthread_t *thr_ids;
-	char listen_ip[16];
+	char listen_ip[32];
 	char temp_path[256];
 	char temp_line[2048];
 	char *str_value;
@@ -153,7 +153,7 @@ int main(int argc, const char **argv)
 		HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
 		printf("[system]: listen ipaddr is 127.0.0.1\n");
 	} else {
-		strncpy(listen_ip, str_value, 16);
+		HX_strlcpy(listen_ip, str_value, sizeof(listen_ip));
 		g_acl_path[0] = '\0';
 		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	}
@@ -331,8 +331,8 @@ int main(int argc, const char **argv)
 
 
 	if ('\0' != g_acl_path[0]) {
-		struct ipitem { char ip_addr[16]; };
-		plist = list_file_init3(g_acl_path, "%s:16", false);
+		struct ipitem { char ip_addr[32]; };
+		plist = list_file_init3(g_acl_path, "%s:32", false);
 		if (NULL == plist) {
 			for (i=g_threads_num-1; i>=0; i--) {
 				pthread_cancel(thr_ids[i]);
@@ -362,7 +362,7 @@ int main(int argc, const char **argv)
 				continue;
 			}
 			pacl->node.pdata = pacl;
-			strcpy(pacl->ip_addr, parray[i].ip_addr);
+			HX_strlcpy(pacl->ip_addr, parray[i].ip_addr, sizeof(pacl->ip_addr));
 			double_list_append_as_tail(&g_acl_list, &pacl->node);
 		}
 		list_file_free(plist);
@@ -536,7 +536,7 @@ static void *accept_work_func(void *param)
 	int sockd, sockd2;
 	ACL_ITEM *pacl;
 	socklen_t addrlen;
-	char client_hostip[16];
+	char client_hostip[32];
 	DOUBLE_LIST_NODE *pnode;
 	struct sockaddr_storage peer_name;
 	CONNECTION_NODE *pconnection;	

@@ -3,6 +3,7 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
+#include <libHX/string.h>
 #include "double_list.h"
 #include "config_file.h"
 #include <stdio.h>
@@ -34,7 +35,7 @@ typedef struct _BACK_CONN {
 
 
 static BOOL g_notify_stop;
-static char g_timer_ip[16];
+static char g_timer_ip[32];
 static int g_timer_port;
 static pthread_t g_scan_id;
 static pthread_mutex_t g_back_lock;

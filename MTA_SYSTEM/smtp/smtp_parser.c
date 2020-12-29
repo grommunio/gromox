@@ -3,6 +3,7 @@
  */ 
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "smtp_parser.h"
 #include "smtp_cmd_handler.h"
@@ -1103,7 +1104,7 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	memset(&pcontext->block_info.cur_bndstr.bndstr, 0,
 			MAX_BOUNDARY_STRING_LENGTH);
 	pcontext->block_info.cur_bndstr.bndstr_len = 0;
-	memset(&pcontext->mail.head.x_original_ip, 0, 16);
+	memset(&pcontext->mail.head.x_original_ip, 0, sizeof(pcontext->mail.head.x_original_ip));
 	memset(&pcontext->mail.head.compose_time, 0, 64);
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
 }

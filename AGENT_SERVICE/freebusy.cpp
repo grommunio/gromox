@@ -36,7 +36,7 @@
 typedef struct _EXMDB_ITEM {
 	char prefix[256];
 	char type[16];
-	char ip_addr[16];
+	char ip_addr[32];
 	int port;
 } EXMDB_ITEM;
 
@@ -2213,7 +2213,6 @@ int main(int argc, const char **argv)
 	char *ptoken;
 	char *ptoken1;
 	const char *pdir;
-	LIST_FILE *plist;
 	const char *pdirs;
 	EXMDB_ITEM *pitem;
 	const char *pbias;
@@ -2240,7 +2239,8 @@ int main(int argc, const char **argv)
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	double_list_init(&g_exmdb_list);
-	plist = list_file_init3(PKGDATAAGENTDIR "/exmdb_list.txt", "%s:256%s:16%s:16%d", false);
+	auto plist = list_file_init3(PKGDATAAGENTDIR "/exmdb_list.txt",
+	             /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		fprintf(stderr, "Failed to read exmdb list from %s: %s\n",
 			PKGDATAAGENTDIR "/exmdb_list.txt", strerror(errno));

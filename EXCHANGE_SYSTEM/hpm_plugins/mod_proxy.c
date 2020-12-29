@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include "double_list.h"
 #include <gromox/defs.h>
 #include <gromox/hpm_common.h>
@@ -319,7 +320,7 @@ static BOOL proxy_preproc(int context_id)
 	}
 	if (0 == tmp_len) {
 		pconnection = get_connection(context_id);
-		strcpy(domain, pconnection->server_ip);
+		HX_strlcpy(domain, pconnection->server_ip, GX_ARRAY_SIZE(domain));
 	} else {
 		mem_file_seek(&prequest->f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);

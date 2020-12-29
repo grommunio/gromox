@@ -2,6 +2,7 @@
 #	include "config.h"
 #endif
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/database.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
@@ -31,7 +32,7 @@
 typedef struct _EXMDB_ITEM {
 	char prefix[256];
 	char type[16];
-	char ip_addr[16];
+	char ip_addr[32];
 	int port;
 } EXMDB_ITEM;
 
@@ -338,7 +339,6 @@ int main(int argc, const char **argv)
 	int str_size;
 	int str_size1;
 	char *err_msg;
-	LIST_FILE *plist;
 	char *sql_string;
 	sqlite3 *psqlite;
 	EXMDB_ITEM *pitem;
@@ -645,7 +645,7 @@ int main(int argc, const char **argv)
 	sqlite3_shutdown();
 	
 	double_list_init(&g_exmdb_list);
-	plist = list_file_init3(PKGDATASADIR "/exmdb_list.txt", "%s:256%s:16%s:16%d", false);
+	auto plist = list_file_init3(PKGDATASADIR "/exmdb_list.txt", /* EXMDB_ITEM */ "%s:256%s:16%s:32%d", false);
 	if (NULL == plist) {
 		printf("Failed to read exmdb list from %s: %s\n",
 			PKGDATASADIR "/exmdb_list.txt", strerror(errno));

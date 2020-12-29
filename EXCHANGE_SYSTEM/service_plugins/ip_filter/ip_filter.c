@@ -225,7 +225,7 @@ void ip_filter_console_talk(int argc, char **argv, char *result, int length)
 	struct tm time_buff;
 	time_t first_access, last_access;
 	time_t until_time;
-	char temp_ip[16];
+	char temp_ip[32];
 	char first_time[64];
 	char last_time[64];
 	char *pslash;
