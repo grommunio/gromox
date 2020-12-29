@@ -466,7 +466,7 @@ static void* thread_work_func(void* arg)
     char file_name[256];
     DIR *dirp;
     struct dirent *direntp;
-    int mess_fd, i, len, mess;
+	int mess_fd, len, mess;
 
     sprintf(dir_name, "%s/mess", g_path);
     while (NULL == (dirp = opendir(dir_name))) {

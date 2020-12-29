@@ -12,9 +12,8 @@ DECLARE_API;
 BOOL FLH_LibMain(int reason, void** ppdata)
 {
 	const char *queue_path;
-	char *str_value, *psearch;
+	char *psearch;
     char file_name[256], temp_path[256];
-	char temp_buff[64];
     CONFIG_FILE *pfile;
 
     switch (reason) {

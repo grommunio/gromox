@@ -383,8 +383,7 @@ static int message_enqueue_retrieve_max_ID()
     DIR *dirp;
     struct dirent *direntp;
     char   temp_path[256];
-    int i, fd, size, max_ID, temp_ID;
-	char *ptr;
+	int fd, size, max_ID, temp_ID;
 
 	max_ID = 0;
 	/* get maximum flushID in mess */

@@ -18,7 +18,6 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 	char file_name[256];
 	char config_path[256];
 	char uncheck_path[256];
-	char temp_buff[128];
 	char *str_value, *psearch;
 	char mysql_host[256], mysql_user[256];
 	char *mysql_passwd, db_name[256]; 

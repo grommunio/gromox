@@ -2636,7 +2636,6 @@ BOOL exmdb_server_get_instance_properties(
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	int i, j;
-	BINARY *pbin;
 	DB_ITEM *pdb;
 	void *pvalue;
 	uint16_t propid;
