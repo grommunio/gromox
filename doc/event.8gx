@@ -37,7 +37,7 @@ Default: \fIfalse\fP
 .PP
 The IPv4 address for exposing the event service on.
 .PP
-Default: \fI127.0.0.1\fP
+Default: \fI::1\fP
 .SS event_listen_port
 .PP
 The TCP port number for exposing the event service on.

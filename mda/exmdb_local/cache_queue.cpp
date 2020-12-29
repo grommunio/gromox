@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
-#include <netdb.h>
 #include <cstring>
 #include <unistd.h>
 #include <gromox/defs.h>

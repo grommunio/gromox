@@ -370,7 +370,7 @@ int main(int argc, const char **argv)
 
 	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
 	if (console_server_ip == NULL) {
-		console_server_ip = "127.0.0.1"; 
+		console_server_ip = "::1";
 		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
 	}
 	printf("[console_server]: console server ipaddr %s\n", console_server_ip);

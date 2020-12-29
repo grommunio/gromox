@@ -100,12 +100,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[timer_agent]: timer connection number is %d\n", conn_num);
 
 		str_value = config_file_get_value(pfile, "TIMER_HOST");
-		if (NULL == str_value) {
-			strcpy(g_timer_ip, "127.0.0.1");
-			config_file_set_value(pfile, "TIMER_HOST", "127.0.0.1");
-		} else {
-			strcpy(g_timer_ip, str_value);
-		}
+		HX_strlcpy(g_timer_ip, str_value != nullptr ? str_value : "::1",
+		           GX_ARRAY_SIZE(g_timer_ip));
 		printf("[timer_agent]: timer host is %s\n", g_timer_ip);
 
 		str_value = config_file_get_value(pfile, "TIMER_PORT");

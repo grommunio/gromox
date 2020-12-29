@@ -195,15 +195,8 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 		printf("[exchange_emsmdb]: mailbox ping interval is %s\n",
 			temp_buff);
 		str_value = config_file_get_value(pfile, "SMTP_SERVER_IP");
-		if (NULL == str_value) {
-			strcpy(smtp_ip, "127.0.0.1");
-			config_file_set_value(pfile, "SMTP_SERVER_IP", "127.0.0.1");
-		} else {
-			if (NULL == extract_ip(str_value, smtp_ip)) {
-				strcpy(smtp_ip, "127.0.0.1");
-				config_file_set_value(pfile, "SMTP_SERVER_IP", "127.0.0.1");
-			}
-		}
+		HX_strlcpy(smtp_ip, str_value != nullptr ? str_value : "::1",
+		           GX_ARRAY_SIZE(smtp_ip));
 		str_value = config_file_get_value(pfile, "SMTP_SERVER_PORT");
 		if (NULL == str_value) {
 			smtp_port = 25;

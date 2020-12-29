@@ -96,10 +96,13 @@ int gx_addrport_split(const char *spec, char *host,
 	return 1;
 }
 
-int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
+static std::unique_ptr<addrinfo, gx_sock_free>
+gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 {
-	static constexpr struct addrinfo hints =
-		{AI_V4MAPPED | AI_ADDRCONFIG, 0, SOCK_STREAM, IPPROTO_TCP};
+	struct addrinfo hints{};
+	hints.ai_flags    = AI_V4MAPPED | xflags;
+	hints.ai_family   = AF_INET6;
+	hints.ai_socktype = SOCK_STREAM;
 	std::unique_ptr<addrinfo, gx_sock_free> aires;
 
 	char portbuf[16];
@@ -108,8 +111,16 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 	if (ret != 0) {
 		printf("Could not resolve [%s]:%s: %s\n",
 		       host, portbuf, gai_strerror(ret));
-		return EHOSTUNREACH;
+		return nullptr;
 	}
+	return aires;
+}
+
+int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
+{
+	auto aires = gx_inet_lookup(host, port, AI_ADDRCONFIG);
+	if (aires == nullptr)
+		return EHOSTUNREACH;
 	int saved_errno = 0, fd = -1;
 	for (auto r = aires.get(); r != nullptr; r = r->ai_next) {
 		fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
@@ -128,7 +139,7 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 				continue;
 			}
 		}
-		ret = connect(fd, r->ai_addr, r->ai_addrlen);
+		auto ret = connect(fd, r->ai_addr, r->ai_addrlen);
 		if (ret != 0) {
 			if ((errno == EWOULDBLOCK || errno == EINPROGRESS) &&
 			    (oflags & O_NONBLOCK))
@@ -137,6 +148,41 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 			close(fd);
 			fd = -1;
 			continue;
+		}
+		break;
+	}
+	if (fd >= 0)
+		return fd;
+	return -(errno = saved_errno);
+}
+
+int gx_inet_listen(const char *host, uint16_t port)
+{
+	auto aires = gx_inet_lookup(host, port, AI_PASSIVE);
+	if (aires == nullptr)
+		return EHOSTUNREACH;
+	int saved_errno = 0, fd = -1;
+	for (auto r = aires.get(); r != nullptr; r = r->ai_next) {
+		fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
+		if (fd < 0) {
+			saved_errno = errno;
+			continue;
+		}
+		static const int y = 1;
+		setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(y));
+		auto ret = bind(fd, r->ai_addr, r->ai_addrlen);
+		if (ret != 0) {
+			saved_errno = errno;
+			close(fd);
+			fd = -1;
+			break;
+		}
+		ret = listen(fd, SOMAXCONN);
+		if (ret != 0) {
+			saved_errno = errno;
+			close(fd);
+			fd = -1;
+			break;
 		}
 		break;
 	}

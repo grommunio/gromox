@@ -41,7 +41,7 @@ The IPv4 address for exposing the timer service on. When an address is set,
 timer_acl.txt will be ignored; be aware that if the address is 0.0.0.0, this
 would enable global access.
 .PP
-Default: \fI127.0.0.1\fP and ACL is ignored
+Default: \fI::1\fP and ACL is ignored
 .SS timer_listen_port
 .PP
 The TCP port number for exposing the timer service on.

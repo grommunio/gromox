@@ -20,7 +20,7 @@ Default: \fI8\fP
 .PP
 The hostname/IP address for contacting the timer daemon.
 .PP
-Default: \fI127.0.0.1\fP
+Default: \fI::1\fP
 .SS timer_port
 .PP
 The TCP port number for contacting the timer daemon.

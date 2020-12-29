@@ -6,6 +6,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
+#include <gromox/socket.h>
 #include "console_server.h"
 #include "console_cmd_handler.h"
 #include "util.h"
@@ -113,42 +114,12 @@ void console_server_free()
  */
 int console_server_run()
 {
-    int i, sock, optval;
 	CONSOLE_NODE *pnodes;
-    struct sockaddr_in host;
 
-	optval = -1;
-    /* create a socket descriptor */
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	auto sock = gx_inet_listen(g_listen_ip, g_listen_port);
+	if (sock < 0) {
 		printf("[console_server]: failed to create socket: %s\n", strerror(errno));
         return -1;
-	}
-    /* eliminates "Address already in use" error from bind */
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval,
-		sizeof(int)) < 0) {
-		printf("[console_server] fail to set socket option\n");
-		close(sock);
-        return -2;
-	}
-    /* 
-	 * sock will be an endpoint for all requests
-	 * to port on any IP address for this host
-	 */
-    memset((char*)&host, 0, sizeof(host));
-    host.sin_family = AF_INET;
-	host.sin_addr.s_addr = inet_addr(g_listen_ip);
-    host.sin_port = htons(g_listen_port);
-
-    if (bind(sock, (SA*)&host, sizeof(host)) < 0) {
-		printf("[console_server] bind %s:%u: %s\n", g_listen_ip, g_listen_port, strerror(errno));
-		close(sock);
-        return -3;
-	}
-    /* Make it a listening socket ready to accept connection requests */
-    if (listen(sock, 1024) < 0) {
-		printf("[console_server] fail to listen on port %d\n", g_listen_port);
-		close(sock);
-        return -4;
 	}
 	pnodes = (CONSOLE_NODE*)malloc(MAX_CONSOLE_NUMBER*sizeof(CONSOLE_NODE));
 	if (NULL == pnodes) {
@@ -156,7 +127,7 @@ int console_server_run()
 		close(sock);
 		return -5;
 	}
-	for (i=0; i<MAX_CONSOLE_NUMBER; i++) {
+	for (unsigned int i = 0; i < MAX_CONSOLE_NUMBER; ++i) {
 		pnodes[i].node.pdata = pnodes + i;
 		double_list_append_as_tail(&g_free_list, &pnodes[i].node);
 	}

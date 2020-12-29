@@ -4,13 +4,13 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/socket.h>
 #include "list_file.h"
 #include "double_list.h"
 #include "common_util.h"
 #include "exmdb_parser.h"
 #include "exmdb_listener.h"
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <pthread.h>
@@ -126,49 +126,14 @@ int exmdb_listener_run()
 	int i, num;
 	ACL_ITEM *pacl;
 	LIST_FILE *plist;
-	int status, optval;
-	struct sockaddr_in my_name;
-	
 	
 	if (0 == g_listen_port) {
 		return 0;
 	}
-	/* create a socket */
-	g_listen_sockd = socket(AF_INET, SOCK_STREAM, 0);
+	g_listen_sockd = gx_inet_listen(g_listen_ip, g_listen_port);
 	if (g_listen_sockd == -1) {
 		printf("[exmdb_provider]: failed to create listen socket: %s\n", strerror(errno));
 		return -1;
-	}
-	optval = -1;
-	/* eliminates "Address already in use" error from bind */
-	if (setsockopt(g_listen_sockd, SOL_SOCKET, SO_REUSEADDR,
-		(const void *)&optval, sizeof(int)) < 0) {
-		return -2;
-	}
-	
-	/* socket binding */
-	memset(&my_name, 0, sizeof(my_name));
-	my_name.sin_family = AF_INET;
-	if ('\0' != g_listen_ip[0]) {
-		my_name.sin_addr.s_addr = inet_addr(g_listen_ip);
-	} else {
-		my_name.sin_addr.s_addr = INADDR_ANY;
-	}
-	my_name.sin_port = htons(g_listen_port);
-	
-	status = bind(g_listen_sockd, (struct sockaddr*)&my_name, sizeof(my_name));
-	if (-1 == status) {
-		printf("[exmdb_provider]: bind %s:%u: %s\n", g_listen_ip, g_listen_port, strerror(errno));
-        close(g_listen_sockd);
-		return -3;
-    }
-	
-	status = listen(g_listen_sockd, 5);
-
-	if (-1 == status) {
-		printf("[exmdb_provider]: fail to listen socket\n");
-		close(g_listen_sockd);
-		return -4;
 	}
 
 	if ('\0' != g_list_path[0]) {

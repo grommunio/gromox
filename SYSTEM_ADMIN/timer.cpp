@@ -7,6 +7,7 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
+#include <gromox/socket.h>
 #include "util.h"
 #include "double_list.h"
 #include "list_file.h"
@@ -99,12 +100,10 @@ int main(int argc, const char **argv)
 {
 	int num;
 	int i, j;
-	int optval;
 	int temp_fd;
 	int temp_len;
 	int item_num;
 	int listen_port;
-	int sockd, status;
 	time_t cur_time;
 	time_t last_cltime;
 	pthread_t thr_accept_id;
@@ -114,7 +113,6 @@ int main(int argc, const char **argv)
 	char temp_line[2048];
 	char *str_value;
 	ACL_ITEM *pacl;
-	struct sockaddr_in my_name;
 	TIMER *ptimer;
 	LIST_FILE *pfile;
 	LIST_FILE *plist;
@@ -149,8 +147,8 @@ int main(int argc, const char **argv)
 
 	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_IP");
 	if (NULL == str_value) {
-		HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
-		printf("[system]: listen ipaddr is 127.0.0.1\n");
+		HX_strlcpy(listen_ip, "::1", GX_ARRAY_SIZE(listen_ip));
+		printf("[system]: listen ipaddr is ::1\n");
 	} else {
 		HX_strlcpy(listen_ip, str_value, sizeof(listen_ip));
 		printf("[system]: listen ipaddr is %s\n", listen_ip);
@@ -240,43 +238,11 @@ int main(int argc, const char **argv)
 
 	list_file_free(pfile);
 
-	
-	/* create a socket */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
+	auto sockd = gx_inet_listen(listen_ip, listen_port);
 	if (sockd == -1) {
 		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
 		return 4;
 	}
-	optval = -1;
-	/* eliminates "Address already in use" error from bind */
-	setsockopt(sockd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval,
-		sizeof(int));
-	
-	/* socket binding */
-	memset(&my_name, 0, sizeof(my_name));
-	my_name.sin_family = AF_INET;
-	if ('\0' == listen_ip[0]) {
-		my_name.sin_addr.s_addr = INADDR_ANY;
-	} else {
-		my_name.sin_addr.s_addr = inet_addr(listen_ip);
-	}
-	my_name.sin_port = htons(listen_port);
-	
-	status = bind(sockd, (struct sockaddr*)&my_name, sizeof(my_name));
-	if (-1 == status) {
-		printf("[system]: bind %s:%u: %s\n", listen_ip, listen_port, strerror(errno));
-        close(sockd);
-		return 5;
-    }
-	
-	status = listen(sockd, 5);
-
-	if (-1 == status) {
-		printf("[system]: fail to listen socket\n");
-		close(sockd);
-		return 6;
-	}
-
 	g_list_fd = open(g_list_path, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (-1 == g_list_fd) {
 		printf("[system]: Failed to open %s: %s\n", g_list_path, strerror(errno));

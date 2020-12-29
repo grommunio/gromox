@@ -102,12 +102,8 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[event_proxy]: event connection number is %d\n", conn_num);
 
 		str_value = config_file_get_value(pfile, "EVENT_HOST");
-		if (NULL == str_value) {
-			strcpy(g_event_ip, "127.0.0.1");
-			config_file_set_value(pfile, "EVENT_HOST", "127.0.0.1");
-		} else {
-			strcpy(g_event_ip, str_value);
-		}
+		HX_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
+		           GX_ARRAY_SIZE(g_event_ip));
 		printf("[event_proxy]: event host is %s\n", g_event_ip);
 
 		str_value = config_file_get_value(pfile, "EVENT_PORT");

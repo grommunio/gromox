@@ -133,13 +133,9 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		printf("[exmdb_provider]: x500 org name is \"%s\"\n", org_name);
 		
 		str_value = config_file_get_value(pconfig, "LISTEN_IP");
-		if (NULL == str_value) {
-			HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
-			printf("[exmdb_provider]: listen ipaddr is 127.0.0.1\n");
-		} else {
-			HX_strlcpy(listen_ip, str_value, GX_ARRAY_SIZE(listen_ip));
-			printf("[exmdb_provider]: listen ipaddr is %s\n", listen_ip);
-		}
+		HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
+		           GX_ARRAY_SIZE(listen_ip));
+		printf("[exmdb_provider]: listen ipaddr is %s\n", listen_ip);
 		
 		str_value = config_file_get_value(pconfig, "LISTEN_PORT");
 		if (NULL == str_value) {

@@ -172,10 +172,8 @@ int main(int argc, const char **argv)
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_IP");
-	if (str_value == nullptr)
-		HX_strlcpy(listen_ip, "127.0.0.1", sizeof(listen_ip));
-	else
-		HX_strlcpy(listen_ip, str_value, GX_ARRAY_SIZE(listen_ip));
+	HX_strlcpy(listen_ip, str_value != nullptr ? nullptr : "::1",
+	           GX_ARRAY_SIZE(listen_ip));
 	printf("[system]: listen ipaddr is %s\n", listen_ip);
 
 	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_PORT");
@@ -326,10 +324,8 @@ int main(int argc, const char **argv)
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_IP");
-	if (NULL == str_value || NULL == extract_ip(str_value, console_ip)) {
-		strcpy(console_ip, "127.0.0.1");
-		config_file_set_value(pconfig, "CONSOLE_SERVER_IP", "127.0.0.1");
-	}
+	HX_strlcpy(console_ip, str_value != nullptr ? str_value : "::1",
+	           GX_ARRAY_SIZE(console_ip));
 	printf("[system]: console server ipaddr is %s\n", console_ip);
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {

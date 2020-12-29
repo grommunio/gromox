@@ -8,6 +8,7 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
+#include <gromox/socket.h>
 #include "util.h"
 #include "fifo.h"
 #include "str_hash.h"
@@ -118,12 +119,10 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 {
 	int i, num;
-	int optval;
 	BOOL b_listen;
 	ACL_ITEM *pacl;
 	int listen_port;
 	LIST_FILE *plist;
-	int sockd, status;
 	pthread_t thr_id;
 	pthread_t *en_ids;
 	pthread_t *de_ids;
@@ -134,7 +133,6 @@ int main(int argc, const char **argv)
 	DOUBLE_LIST_NODE *pnode;
 	char *str_value;
 	pthread_attr_t thr_attr;
-	struct sockaddr_in my_name;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -171,12 +169,8 @@ int main(int argc, const char **argv)
 
 	if (FALSE == b_listen) {
 		str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");
-		if (NULL == str_value) {
-			strcpy(listen_ip, "127.0.0.1");
-			config_file_set_value(pconfig, "EVENT_LISTEN_IP", "127.0.0.1");
-		} else {
-			HX_strlcpy(listen_ip, str_value, sizeof(listen_ip));
-		}
+		HX_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
+		           GX_ARRAY_SIZE(listen_ip));
 		g_list_path[0] ='\0';
 		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	} else {
@@ -234,49 +228,13 @@ int main(int argc, const char **argv)
 		return 4;
 	}
 	
-	
-	/* create a socket */
-	sockd = socket(AF_INET, SOCK_STREAM, 0);
+	auto sockd = gx_inet_listen(listen_ip, listen_port);
 	if (sockd == -1) {
 		lib_buffer_free(g_file_alloc);
 		fifo_allocator_free(g_fifo_alloc);
 		printf("[system]: failed to create listen socket: %s\n", strerror(errno));
 		return 5;
 	}
-	optval = -1;
-	/* eliminates "Address already in use" error from bind */
-	setsockopt(sockd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval,
-		sizeof(int));
-	
-	/* socket binding */
-	memset(&my_name, 0, sizeof(my_name));
-	my_name.sin_family = AF_INET;
-	if ('\0' != listen_ip[0]) {
-		my_name.sin_addr.s_addr = inet_addr(listen_ip);
-	} else {
-		my_name.sin_addr.s_addr = INADDR_ANY;
-	}   
-	my_name.sin_port = htons(listen_port);
-	
-	status = bind(sockd, (struct sockaddr*)&my_name, sizeof(my_name));
-	if (-1 == status) {
-        close(sockd);
-		lib_buffer_free(g_file_alloc);
-		fifo_allocator_free(g_fifo_alloc);
-		printf("[system]: bind %s:%u: %s\n", listen_ip, listen_port, strerror(errno));
-		return 6;
-    }
-	
-	status = listen(sockd, 5);
-
-	if (-1 == status) {
-		close(sockd);
-		lib_buffer_free(g_file_alloc);
-		fifo_allocator_free(g_fifo_alloc);
-		printf("[system]: fail to listen socket\n");
-		return 7;
-	}
-	
 	pthread_mutex_init(&g_enqueue_lock, NULL);
 	pthread_mutex_init(&g_dequeue_lock, NULL);
 	pthread_mutex_init(&g_host_lock, NULL);

@@ -9,6 +9,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/socket.h>
 #include "listener.h"
 #include "system_services.h"
 #include "contexts_pool.h"
@@ -62,71 +63,16 @@ void listener_init(int port, int ssl_port)
  */
 int listener_run()
 {
-	struct sockaddr_in server_peer;
-
-	int status, optval = 1;
-
-	/* create a socket */
-	g_listener_sock = socket(AF_INET, SOCK_STREAM, 0);
+	g_listener_sock = gx_inet_listen("::", g_listener_port);
 	if (g_listener_sock == -1) {
 		printf("[listener]: failed to create socket: %s\n", strerror(errno));
 		return -1;
 	}
-
-	/* Eliminates "Address already in use" error from bind */
-	if (setsockopt(g_listener_sock, SOL_SOCKET, SO_REUSEADDR,
-		(const void *)&optval, sizeof(int)) < 0) {
-		return -2;
-	}
-
-	/* socket binding */
-	server_peer.sin_family        = AF_INET;
-	server_peer.sin_addr.s_addr = INADDR_ANY;
-	server_peer.sin_port         = htons(g_listener_port);
-
-	status = bind(g_listener_sock, (struct sockaddr*)&server_peer, 
-		sizeof(server_peer));
-	if (status == -1) {
-		printf("[listener]: bind *:%u: %s\n", g_listener_port, strerror(errno));
-		close(g_listener_sock);
-		return -3;
-	}
-	status = listen(g_listener_sock, 1024);
-	if (status == -1) {
-		printf("[listener]: fail to listen\n");
-		return -4;
-	}
-
 	if (g_listener_ssl_port > 0) {
-		/* create a socket */
-		g_listener_ssl_sock = socket(AF_INET, SOCK_STREAM, 0);
+		g_listener_ssl_sock = gx_inet_listen("::", g_listener_ssl_port);
 		if (g_listener_ssl_sock == -1) {
 			printf("[listener]: failed to create socket: %s\n", strerror(errno));
 			return -1;
-		}
-
-	    /* Eliminates "Address already in use" error from bind */
-		if (setsockopt(g_listener_ssl_sock, SOL_SOCKET, SO_REUSEADDR,
-			(const void *)&optval, sizeof(int)) < 0) {
-			return -2;
-		}
-
-		/* socket binding */
-		server_peer.sin_family       = AF_INET;
-		server_peer.sin_addr.s_addr  = INADDR_ANY;
-		server_peer.sin_port         = htons(g_listener_ssl_port);
-
-		status = bind(g_listener_ssl_sock, (struct sockaddr*)&server_peer, 
-			sizeof(server_peer));
-		if (status == -1) {
-			printf("[listener]: bind *:%u: %s\n", g_listener_ssl_port, strerror(errno));
-			close(g_listener_ssl_sock);
-			return -3;
-		}
-		status = listen(g_listener_ssl_sock, 1024);
-		if (status == -1) {
-			printf("[listener]: fail to listen\n");
-			return -4;
 		}
 	}
 

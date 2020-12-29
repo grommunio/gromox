@@ -86,7 +86,7 @@ Default: \fI/etc/gromox/http\fP
 .PP
 The IPv4 address to expose the management console frontend on.
 .PP
-Default: \fI127.0.0.1\fP
+Default: \fI::1\fP
 .SS console_server_port
 .PP
 The TCP port number to expose the management console frontend on.

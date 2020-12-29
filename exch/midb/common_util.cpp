@@ -7,6 +7,8 @@
 #include "ext_buffer.h"
 #include "rop_util.h"
 #include "pcl.h"
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <pthread.h>
 #include <cstring>

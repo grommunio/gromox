@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <cstdio>
-#include <netdb.h>
 #include <poll.h>
 
 

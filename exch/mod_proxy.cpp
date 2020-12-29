@@ -18,7 +18,6 @@
 #include <sys/time.h>
 #include <cstring>
 #include <unistd.h>
-#include <netdb.h>
 #include <poll.h>
 #include <ctime>
 #define SOCKET_TIMEOUT							180

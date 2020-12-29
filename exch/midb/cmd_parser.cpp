@@ -6,7 +6,6 @@
 #include "cmd_parser.h"
 #include <poll.h>
 #include <cstdio>
-#include <netdb.h>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
