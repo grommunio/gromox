@@ -130,7 +130,7 @@ int mod_rewrite_run()
 				" find replace sequence number\n", line_no);
 			continue;
 		}
-		prnode = malloc(sizeof(REWRITE_NODE));
+		prnode = static_cast<REWRITE_NODE *>(malloc(sizeof(REWRITE_NODE)));
 		if (NULL == prnode) {
 			printf("[mod_rewrite]: cannot load line"
 					" %d, out of memory\n", line_no);

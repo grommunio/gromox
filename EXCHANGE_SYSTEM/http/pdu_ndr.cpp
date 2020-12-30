@@ -306,7 +306,7 @@ static int pdu_ndr_pull_dcerpc_fault(NDR_PULL *pndr, DCERPC_FAULT *r)
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ndr_pull_uint32(pndr, &r->status);
+	status = ndr_pull_uint32(pndr, reinterpret_cast<uint32_t *>(&r->status));
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
