@@ -14,9 +14,7 @@
 ATTACHMENT_OBJECT* attachment_object_create(MESSAGE_OBJECT *pparent,
 	uint32_t attachment_num, uint8_t open_flags)
 {
-	ATTACHMENT_OBJECT *pattachment;
-	
-	pattachment = malloc(sizeof(ATTACHMENT_OBJECT));
+	auto pattachment = static_cast<ATTACHMENT_OBJECT *>(malloc(sizeof(ATTACHMENT_OBJECT)));
 	if (NULL == pattachment) {
 		return NULL;
 	}
@@ -74,8 +72,7 @@ BOOL attachment_object_init_attachment(
 		return FALSE;
 	}
 	propvals.count = 0;
-	propvals.ppropval =
-		common_util_alloc(sizeof(TAGGED_PROPVAL)*5);
+	propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(sizeof(TAGGED_PROPVAL) * 5));
 	if (NULL == propvals.ppropval) {
 		return FALSE;
 	}
@@ -193,7 +190,7 @@ BOOL attachment_object_append_stream_object(
 			return TRUE;
 		}
 	}
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -236,7 +233,7 @@ BOOL attachment_object_flush_streams(ATTACHMENT_OBJECT *pattachment)
 	TAGGED_PROPVAL tmp_propval;
 	
 	while ((pnode = double_list_get_from_head(&pattachment->stream_list)) != NULL) {
-		pstream = pnode->pdata;
+		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
 		tmp_propval.proptag = stream_object_get_proptag(pstream);
 		tmp_propval.pvalue = stream_object_get_content(pstream);
 		if (FALSE == exmdb_client_set_instance_property(
@@ -267,8 +264,8 @@ BOOL attachment_object_get_all_proptags(
 	nodes_num = double_list_get_nodes_num(&pattachment->stream_list);
 	nodes_num ++;
 	pproptags->count = tmp_proptags.count;
-	pproptags->pproptag = common_util_alloc(sizeof(
-		uint32_t)*(tmp_proptags.count + nodes_num));
+	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                      sizeof(uint32_t) * (tmp_proptags.count + nodes_num)));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -276,7 +273,7 @@ BOOL attachment_object_get_all_proptags(
 				sizeof(uint32_t)*tmp_proptags.count);
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		proptag = stream_object_get_proptag(pnode->pdata);
+		proptag = stream_object_get_proptag(static_cast<STREAM_OBJECT *>(pnode->pdata));
 		if (common_util_index_proptags(pproptags, proptag) < 0) {
 			pproptags->pproptag[pproptags->count] = proptag;
 			pproptags->count ++;
@@ -356,9 +353,9 @@ static void* attachment_object_get_stream_property_value(
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		if (stream_object_get_proptag(pnode->pdata) == proptag) {
-			return stream_object_get_content(pnode->pdata);
-		}
+		auto so = static_cast<STREAM_OBJECT *>(pnode->pdata);
+		if (stream_object_get_proptag(so) == proptag)
+			return stream_object_get_content(so);
 	}
 	return NULL;
 }
@@ -373,14 +370,14 @@ BOOL attachment_object_get_properties(
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint32_t err_code = ecError;
 	
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -395,7 +392,7 @@ BOOL attachment_object_get_properties(
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
 					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
-				ppropvals->ppropval[ppropvals->count].pvalue = const_cast(uint32_t *, &err_code);
+				ppropvals->ppropval[ppropvals->count].pvalue = deconst(&err_code);
 			}
 			ppropvals->count ++;
 			continue;
@@ -438,9 +435,8 @@ static BOOL attachment_object_check_stream_property(
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		if (stream_object_get_proptag(pnode->pdata) == proptag) {
+		if (stream_object_get_proptag(static_cast<STREAM_OBJECT *>(pnode->pdata)) == proptag)
 			return TRUE;
-		}
 	}
 	return FALSE;
 }
@@ -454,19 +450,19 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 	uint16_t *poriginal_indices;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = common_util_alloc(
-		sizeof(PROPERTY_PROBLEM)*ppropvals->count);
+	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
+	                      sizeof(PROPERTY_PROBLEM) * ppropvals->count));
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*ppropvals->count);
+	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = common_util_alloc(
-		sizeof(uint16_t)*ppropvals->count);
+	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
+	                    sizeof(uint16_t) * ppropvals->count));
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -532,19 +528,19 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 	uint16_t *poriginal_indices;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = common_util_alloc(
-		sizeof(PROPERTY_PROBLEM)*pproptags->count);
+	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
+	                      sizeof(PROPERTY_PROBLEM) * pproptags->count));
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-		sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
-	poriginal_indices = common_util_alloc(
-		sizeof(uint16_t)*pproptags->count);
+	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
+	                    sizeof(uint16_t) * pproptags->count));
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
