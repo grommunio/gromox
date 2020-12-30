@@ -95,9 +95,9 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);
-		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+		auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
 		for (i=0; i<item_num; i++) {
-			pxnode = malloc(sizeof(PROXY_NODE));
+			pxnode = static_cast<PROXY_NODE *>(malloc(sizeof(PROXY_NODE)));
 			if (NULL == pxnode) {
 				continue;
 			}
@@ -127,7 +127,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 				ptoken = ptoken1 + strlen(ptoken1);
 			}
 			size_t remotehostlen = ptoken - ptoken1 + 1;
-			pxnode->remote_host = malloc(remotehostlen);
+			pxnode->remote_host = static_cast<char *>(malloc(remotehostlen));
 			if (NULL == pxnode->remote_host) {
 				break;
 			}
@@ -144,7 +144,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 				if (0 == tmp_len) {
 					pxnode->remote_path = NULL;
 				} else {
-					pxnode->remote_path = malloc(tmp_len + 1);
+					pxnode->remote_path = static_cast<char *>(malloc(tmp_len + 1));
 					if (NULL == pxnode->remote_path) {
 						break;
 					}
@@ -181,7 +181,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		context_num = get_context_num();
-		g_context_list = malloc(sizeof(PROXY_CONTEXT)*context_num);
+		g_context_list = static_cast<PROXY_CONTEXT *>(malloc(sizeof(PROXY_CONTEXT) * context_num));
 		if (NULL == g_context_list) {
 			return FALSE;
 		}
@@ -194,7 +194,7 @@ BOOL HPM_LibMain(int reason, void **ppdata)
 			printf("[mod_proxy]: failed to create epoll instance: %s\n", strerror(errno));
 			return FALSE;
 		}
-		g_events = malloc(sizeof(struct epoll_event)*context_num);
+		g_events = static_cast<epoll_event *>(malloc(sizeof(epoll_event) * context_num));
 		if (NULL == g_events) {
 			printf("[mod_proxy]: Failed to allocate memory for events\n");
 			return FALSE;
@@ -271,7 +271,7 @@ static void* thread_work_func(void *pparam)
 			continue;
 		}
 		for (i=0; i<num; i++) {
-			pcontext = g_events[i].data.ptr;
+			pcontext = static_cast<PROXY_CONTEXT *>(g_events[i].data.ptr);
 			activate_context(pcontext - g_context_list);
 		}
 	}
@@ -461,7 +461,7 @@ static BOOL proxy_proc(int context_id,
 		}
 	}
 	offset += sprintf(tmp_buff + offset,
-	          "Content-Length: %llu\r\n", static_cast(unsigned long long, length));
+	          "Content-Length: %llu\r\n", static_cast<unsigned long long>(length));
 	if (offset >= sizeof(tmp_buff)) {
 		close(pcontext->sockd);
 		pcontext->sockd = -1;
@@ -628,7 +628,7 @@ static BOOL proxy_proc(int context_id,
 		pcontext->sockd = -1;
 		return FALSE;
 	}
-	ptoken = memchr(tmp_buff, ' ', offset);
+	ptoken = static_cast<char *>(memchr(tmp_buff, ' ', offset));
 	if (NULL == ptoken || ' ' != ptoken[4]) {
 		close(pcontext->sockd);
 		pcontext->sockd = -1;
@@ -637,10 +637,10 @@ static BOOL proxy_proc(int context_id,
 	ptoken ++;
 	if (0 == strncmp(ptoken, "101", 3)) {
 		pcontext->b_upgrated = TRUE;
-		ptoken = memmem(tmp_buff, offset, "\r\n\r\n", 4);
+		ptoken = static_cast<char *>(memmem(tmp_buff, offset, "\r\n\r\n", 4));
 		if (offset > ptoken + 4 - tmp_buff) {
 			tmp_len = tmp_buff + offset - (ptoken + 4);
-			pcontext->pmore_buff = malloc(tmp_len);
+			pcontext->pmore_buff = static_cast<char *>(malloc(tmp_len));
 			if (NULL == pcontext->pmore_buff) {
 				close(pcontext->sockd);
 				pcontext->sockd = -1;
@@ -665,7 +665,7 @@ static BOOL proxy_proc(int context_id,
 		do {
 			ptoken ++;
 		} while (' ' == *ptoken);
-		ptoken1 = memmem(ptoken, offset - (ptoken - tmp_buff), "\r\n", 2);
+		ptoken1 = static_cast<char *>(memmem(ptoken, offset - (ptoken - tmp_buff), "\r\n", 2));
 		if (NULL == ptoken1 || ptoken1 - ptoken >= sizeof(tmp_uri)) {
 			write_response(context_id, tmp_buff, offset);
 			return TRUE;
