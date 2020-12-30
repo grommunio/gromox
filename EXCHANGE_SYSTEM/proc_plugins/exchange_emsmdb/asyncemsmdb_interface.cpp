@@ -67,7 +67,7 @@ int asyncemsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_thread_ids = malloc(sizeof(pthread_t)*g_threads_num);
+	g_thread_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * g_threads_num));
 	if (NULL == g_thread_ids) {
 		printf("[exchange_emsmdb]: Failed to allocate thread id buffer\n");
 		return -1;
@@ -155,11 +155,10 @@ void asyncemsmdb_interface_free()
 int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	ECDOASYNCWAITEX_IN *pin, ECDOASYNCWAITEX_OUT *pout)
 {
-	ASYNC_WAIT *pwait;
 	char tmp_tag[256];
 	DCERPC_INFO rpc_info;
 	
-	pwait = lib_buffer_get(g_wait_allocator);
+	auto pwait = static_cast<ASYNC_WAIT *>(lib_buffer_get(g_wait_allocator));
 	if (NULL == pwait) {
 		pout->flags_out = 0;
 		pout->result = ecRejected;
@@ -219,10 +218,9 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 {
 	char tmp_tag[256];
 	ASYNC_WAIT *pwait;
-	ASYNC_WAIT **ppwait;
 	
 	pthread_mutex_lock(&g_async_lock);
-	ppwait = int_hash_query(g_async_hash, async_id);
+	auto ppwait = static_cast<ASYNC_WAIT **>(int_hash_query(g_async_hash, async_id));
 	if (NULL == ppwait) {
 		pthread_mutex_unlock(&g_async_lock);
 		return;
@@ -260,12 +258,11 @@ void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)
 {
 	char tmp_tag[256];
 	ASYNC_WAIT *pwait;
-	ASYNC_WAIT **ppwait;
 	
 	sprintf(tmp_tag, "%s:%d", username, (int)cxr);
 	HX_strlower(tmp_tag);
 	pthread_mutex_lock(&g_async_lock);
-	ppwait = str_hash_query(g_tag_hash, tmp_tag);
+	auto ppwait = static_cast<ASYNC_WAIT **>(str_hash_query(g_tag_hash, tmp_tag));
 	if (NULL == ppwait) {
 		pthread_mutex_unlock(&g_async_lock);
 		return;
@@ -300,7 +297,7 @@ NEXT_WAKEUP:
 		if (NULL == pnode) {
 			continue;
 		}
-		asyncemsmdb_interface_activate(pnode->pdata, TRUE);
+		asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), TRUE);
 		goto NEXT_WAKEUP;
 	}
 	pthread_exit(0);
@@ -310,7 +307,6 @@ static void *scan_work_func(void *param)
 {
 	time_t cur_time;
 	ASYNC_WAIT *pwait;
-	ASYNC_WAIT **ppwait;
 	STR_HASH_ITER *iter;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
@@ -323,7 +319,7 @@ static void *scan_work_func(void *param)
 		iter = str_hash_iter_init(g_tag_hash);
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
-			ppwait = str_hash_iter_get_value(iter, NULL);
+			auto ppwait = static_cast<ASYNC_WAIT **>(str_hash_iter_get_value(iter, nullptr));
 			pwait = *ppwait;
 			if (cur_time - pwait->wait_time > WAITING_INTERVAL - 3) {
 				str_hash_iter_remove(iter);
@@ -336,7 +332,7 @@ static void *scan_work_func(void *param)
 		str_hash_iter_free(iter);
 		pthread_mutex_unlock(&g_async_lock);
 		while ((pnode = double_list_get_from_head(&temp_list)) != NULL)
-			asyncemsmdb_interface_activate(pnode->pdata, FALSE);
+			asyncemsmdb_interface_activate(static_cast<ASYNC_WAIT *>(pnode->pdata), FALSE);
 	}
 	double_list_free(&temp_list);
 	pthread_exit(0);
