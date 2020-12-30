@@ -53,7 +53,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		get_id_from_username = query_service("get_id_from_username");
+		get_id_from_username = reinterpret_cast<decltype(get_id_from_username)>(query_service("get_id_from_username"));
 		if (NULL == get_id_from_username) {
 			printf("[exchange_rfr]: failed to get service \"get_id_from_username\"\n");
 			return FALSE;
@@ -153,7 +153,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	
 	switch (opnum) {
 	case 0:
-		prfr = ndr_stack_alloc(NDR_STACK_IN, sizeof(RFRGETNEWDSA_IN));
+		prfr = static_cast<RFRGETNEWDSA_IN *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(RFRGETNEWDSA_IN)));
 		if (NULL == prfr) {
 			return NDR_ERR_ALLOC;
 		}
@@ -261,7 +261,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 		*ppin = prfr;
 		return NDR_ERR_SUCCESS;
 	case 1:
-		prfr_dn = ndr_stack_alloc(NDR_STACK_IN, sizeof(RFRGETFQDNFROMLEGACYDN_IN));
+		prfr_dn = static_cast<RFRGETFQDNFROMLEGACYDN_IN *>(ndr_stack_alloc(NDR_STACK_IN, sizeof(RFRGETFQDNFROMLEGACYDN_IN)));
 		if (NULL == prfr_dn) {
 			return NDR_ERR_ALLOC;
 		}
@@ -316,7 +316,7 @@ static BOOL exchange_rfr_dispatch(int opnum, const GUID *pobject,
 	switch (opnum) {
 	case 0:	
 		prfr_in = (RFRGETNEWDSA_IN*)pin;
-		prfr_out = ndr_stack_alloc(NDR_STACK_OUT, sizeof(RFRGETNEWDSA_OUT));
+		prfr_out = static_cast<RFRGETNEWDSA_OUT *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(RFRGETNEWDSA_OUT)));
 		if (NULL == prfr_out) {
 			return DISPATCH_FAIL;
 		}
@@ -328,7 +328,7 @@ static BOOL exchange_rfr_dispatch(int opnum, const GUID *pobject,
 		return DISPATCH_SUCCESS;
 	case 1:
 		prfr_dn_in = (RFRGETFQDNFROMLEGACYDN_IN*)pin;
-		prfr_dn_out = ndr_stack_alloc(NDR_STACK_OUT, sizeof(RFRGETFQDNFROMLEGACYDN_OUT));
+		prfr_dn_out = static_cast<RFRGETFQDNFROMLEGACYDN_OUT *>(ndr_stack_alloc(NDR_STACK_OUT, sizeof(RFRGETFQDNFROMLEGACYDN_OUT)));
 		if (NULL == prfr_dn_out) {
 			return DISPATCH_FAIL;
 		}
