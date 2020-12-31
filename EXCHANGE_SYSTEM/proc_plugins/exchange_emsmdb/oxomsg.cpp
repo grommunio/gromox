@@ -51,7 +51,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = (void*)account;
 	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
-	propval_buff[5].pvalue  = const_cast(char *, "EX");
+	propval_buff[5].pvalue  = deconst("EX");
 	if (FALSE == common_util_username_to_essdn(account, essdn_buff)) {
 		return GXERR_CALL_FAILED;
 	}
@@ -95,7 +95,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
 	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
-	propval_buff[11].pvalue  = const_cast(char *, "EX");
+	propval_buff[11].pvalue  = deconst("EX");
 	propval_buff[12].proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	propval_buff[12].pvalue = essdn_buff1;
 	propval_buff[13].proptag = PROP_TAG_SENTREPRESENTINGNAME;
@@ -135,17 +135,17 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
 	if (NULL != pvalue) {
-		if (0 == strcasecmp(pvalue, "EX")) {
+		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				return common_util_essdn_to_username(pvalue, username);
+				return common_util_essdn_to_username(static_cast<char *>(pvalue), username);
 			}
-		} else if (0 == strcasecmp(pvalue, "SMTP")) {
+		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				strncpy(username, pvalue, 256);
+				strncpy(username, static_cast<char *>(pvalue), 256);
 				return TRUE;
 			}
 		}
@@ -153,13 +153,13 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username)
 	pvalue = common_util_get_propvals(&tmp_propvals,
 				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
 	if (NULL != pvalue) {
-		strncpy(username, pvalue, 256);
+		strncpy(username, static_cast<char *>(pvalue), 256);
 		return TRUE;
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
 					PROP_TAG_SENTREPRESENTINGENTRYID);
 	if (NULL != pvalue) {
-		return common_util_entryid_to_username(pvalue, username);
+		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username);
 	}
 	username[0] = '\0';
 	return TRUE;
@@ -187,7 +187,7 @@ static BOOL oxomsg_check_permission(const char *account,
 		return FALSE;
 	}
 	item_num = list_file_get_item_num(pfile);
-	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
 		if (strcasecmp(pitem[i].a, account) == 0 ||
 		    common_util_check_mlist_include(pitem[i].a, account)) {
@@ -222,7 +222,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	uint32_t deferred_time;
 	uint32_t message_flags;
 	char command_buff[1024];
-	MESSAGE_OBJECT *pmessage;
 	uint32_t proptag_buff[6];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -246,8 +245,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		return ecAccessDenied;
 	}
 	
-	pmessage = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
+	                logon_id, hin, &object_type));
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -435,7 +434,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		snprintf(command_buff, 1024, "%s %s %llu",
 			common_util_get_submit_command(),
 			logon_object_get_account(plogon),
-			static_cast(unsigned long long, rop_util_get_gc_value(
+			static_cast<unsigned long long>(rop_util_get_gc_value(
 				message_object_get_id(pmessage))));
 		timer_id = common_util_add_timer(
 			command_buff, deferred_time);
@@ -558,7 +557,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
 		return ecNotSupported;
 	}
 	paddress_types->count = 2;
-	paddress_types->ppstr = const_cast(char **, address_types);
+	paddress_types->ppstr = const_cast<char **>(address_types);
 	return ecSuccess;
 }
 
@@ -643,17 +642,16 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 		b_delete = TRUE;
 	}
 	
-	ptarget = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_TARGETENTRYID);
+	ptarget = static_cast<BINARY *>(common_util_get_propvals(&tmp_propvals,
+	          PROP_TAG_TARGETENTRYID));
 	pvalue = common_util_get_propvals(&tmp_propvals,
 							PROP_TAG_PARENTENTRYID);
 	if (NULL == pvalue) {
 		return ecError;
 	}
-	if (FALSE == common_util_from_folder_entryid(
-		plogon, pvalue, &parent_id)) {
+	if (!common_util_from_folder_entryid(plogon,
+	    static_cast<BINARY *>(pvalue), &parent_id))
 		return ecError;
-	}
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(
 			plogon, ptarget, &folder_id, &new_id)) {
@@ -685,7 +683,6 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	PROPTAG_ARRAY proptags;
 	TAGGED_PROPVAL propval;
 	uint32_t proptag_buff[7];
-	MESSAGE_OBJECT *pmessage;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -697,8 +694,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	if (LOGON_MODE_GUEST == logon_object_get_mode(plogon)) {
 		return ecAccessDenied;
 	}
-	pmessage = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
+	                logon_id, hin, &object_type));
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -735,7 +732,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	gxerr_t err = oxomsg_rectify_message(pmessage, username);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
-	*pppropvals = common_util_alloc(sizeof(TPROPVAL_ARRAY));
+	*pppropvals = static_cast<TPROPVAL_ARRAY *>(common_util_alloc(sizeof(TPROPVAL_ARRAY)));
 	if (NULL != *pppropvals) {
 		proptags.count = 7;
 		proptags.pproptag = proptag_buff;
@@ -810,11 +807,10 @@ uint32_t rop_optionsdata(const char *paddress_type,
 {
 	*preserved = 1;
 	poptions_info->cb = 300;
-	poptions_info->pb = common_util_alloc(poptions_info->cb);
-	if (NULL == poptions_info->pb) {
+	poptions_info->pv = common_util_alloc(poptions_info->cb);
+	if (poptions_info->pv == nullptr)
 		return ecMAPIOOM;
-	}
-	memset(poptions_info->pb, 0, poptions_info->cb);
+	memset(poptions_info->pv, 0, poptions_info->cb);
 	phelp_file->cb = 0;
 	*ppfile_name = NULL;
 	return ecSuccess;
