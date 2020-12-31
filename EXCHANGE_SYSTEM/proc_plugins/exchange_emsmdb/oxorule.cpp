@@ -22,7 +22,6 @@ uint32_t rop_modifyrules(uint8_t flags,
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *pfolder;
 	
 	/* MS-OXORULE 3.2.5.2 */
 	if (flags & ~MODIFY_RULES_FLAG_REPLACE) {
@@ -32,8 +31,8 @@ uint32_t rop_modifyrules(uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pfolder = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -91,14 +90,13 @@ uint32_t rop_getrulestable(uint8_t flags,
 	int object_type;
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *pfolder;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pfolder = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -201,8 +199,8 @@ uint32_t rop_updatedeferredactionmessages(
 	tmp_byte = 1;
 	
 	for (i=0; i<tmp_set.count; i++) {
-		pmid = common_util_get_propvals(
-			tmp_set.pparray[i], PROP_TAG_MID);
+		pmid = static_cast<uint64_t *>(common_util_get_propvals(
+		       tmp_set.pparray[i], PROP_TAG_MID));
 		if (NULL == pmid) {
 			continue;
 		}
