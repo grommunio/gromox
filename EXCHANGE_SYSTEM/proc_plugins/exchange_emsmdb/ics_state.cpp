@@ -30,15 +30,14 @@ static void ics_state_clear(ICS_STATE *pstate)
 ICS_STATE* ics_state_create(LOGON_OBJECT *plogon, int type)
 {
 	BINARY tmp_bin;
-	ICS_STATE *pstate;
 	
-	pstate = malloc(sizeof(ICS_STATE));
+	auto pstate = static_cast<ICS_STATE *>(malloc(sizeof(ICS_STATE)));
 	if (NULL == pstate) {
 		return NULL;
 	}
 	memset(pstate, 0, sizeof(ICS_STATE));
 	tmp_bin.cb = sizeof(void*);
-	tmp_bin.pb = (void*)&plogon;
+	tmp_bin.pv = &plogon;
 	pstate->pseen = idset_init(TRUE, REPL_TYPE_GUID);
 	if (NULL == pstate->pseen) {
 		ics_state_clear(pstate);
