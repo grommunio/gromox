@@ -24,12 +24,14 @@ typedef struct _NOTIFICATION_DATA_MEMORY {
 	uint8_t unicode_flag;
 } NOTIFICATION_DATA_MEMORY;
 
+static inline NOTIFICATION_DATA_MEMORY *notify_to_ndm(NOTIFY_RESPONSE *z)
+{
+	return reinterpret_cast<NOTIFICATION_DATA_MEMORY *>(z + 1);
+}
+
 NOTIFY_RESPONSE* notify_response_init(uint32_t handle, uint8_t logon_id)
 {
-	NOTIFY_RESPONSE *pnotify;
-	
-	pnotify = malloc(sizeof(NOTIFY_RESPONSE) +
-				sizeof(NOTIFICATION_DATA_MEMORY));
+	auto pnotify = static_cast<NOTIFY_RESPONSE *>(malloc(sizeof(NOTIFY_RESPONSE) + sizeof(NOTIFICATION_DATA_MEMORY)));
 	if (NULL == pnotify) {
 		return NULL;
 	}
@@ -56,9 +58,7 @@ static BOOL notify_response_specify_new_mail(NOTIFY_RESPONSE *pnotify,
 	uint64_t folder_id, uint64_t message_id, uint32_t message_flags,
 	BOOL b_unicode, const char *pmessage_class)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_NEWMAIL | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -84,9 +84,7 @@ static BOOL notify_response_specify_folder_created(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id,
 	uint64_t parent_id, PROPTAG_ARRAY *pproptags)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTCREATED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -104,7 +102,7 @@ static BOOL notify_response_specify_folder_created(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = malloc(sizeof(uint32_t)*pproptags->count);
+	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -117,9 +115,7 @@ static BOOL notify_response_specify_message_created(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id,
 	uint64_t message_id, PROPTAG_ARRAY *pproptags)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_OBJECTCREATED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -132,7 +128,7 @@ static BOOL notify_response_specify_message_created(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = malloc(sizeof(uint32_t)*pproptags->count);
+	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -146,9 +142,7 @@ static BOOL notify_response_specify_link_created(
 	uint64_t message_id, uint64_t parent_id,
 	PROPTAG_ARRAY *pproptags)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 						NOTIFICATION_FLAG_OBJECTCREATED |
 						NOTIFICATION_FLAG_MOST_SEARCH |
@@ -165,7 +159,7 @@ static BOOL notify_response_specify_link_created(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = malloc(sizeof(uint32_t)*pproptags->count);
+	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -177,9 +171,7 @@ static BOOL notify_response_specify_link_created(
 static BOOL notify_response_specify_folder_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id, uint64_t parent_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTDELETED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -197,9 +189,7 @@ static BOOL notify_response_specify_folder_deleted(
 static BOOL notify_response_specify_message_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id, uint64_t message_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_OBJECTDELETED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -213,9 +203,7 @@ static BOOL notify_response_specify_link_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id,
 	uint64_t message_id, uint64_t parent_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 						NOTIFICATION_FLAG_OBJECTDELETED |
 						NOTIFICATION_FLAG_MOST_SEARCH |
@@ -233,9 +221,7 @@ static BOOL notify_response_specify_folder_modified(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id,
 	uint32_t *ptotal, uint32_t *punread, PROPTAG_ARRAY *pproptags)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_OBJECTMODIFIED;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -263,7 +249,7 @@ static BOOL notify_response_specify_folder_modified(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = malloc(sizeof(uint32_t)*pproptags->count);
+	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -276,9 +262,7 @@ static BOOL notify_response_specify_message_modified(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id,
 	uint64_t message_id, PROPTAG_ARRAY *pproptags)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_OBJECTMODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -292,7 +276,7 @@ static BOOL notify_response_specify_message_modified(
 		pmemory->proptags.pproptag = NULL;
 		return TRUE;
 	}
-	pmemory->proptags.pproptag = malloc(sizeof(uint32_t)*pproptags->count);
+	pmemory->proptags.pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * pproptags->count));
 	if (NULL == pmemory->proptags.pproptag) {
 		return FALSE;
 	}
@@ -306,9 +290,7 @@ static BOOL notify_response_specify_folder_mvcp(
 	uint64_t folder_id, uint64_t parent_id,
 	uint64_t old_folder_id, uint64_t old_parent_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 								notification_flags;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -337,9 +319,7 @@ static BOOL notify_response_specify_message_mvcp(
 	uint64_t folder_id, uint64_t message_id,
 	uint64_t old_folder_id, uint64_t old_message_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		notification_flags | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -356,9 +336,7 @@ static BOOL notify_response_specify_message_mvcp(
 static BOOL notify_response_specify_folder_search_completed(
 	NOTIFY_RESPONSE *pnotify, uint64_t folder_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_SEARCHCOMPLETE;
 	pnotify->notification_data.pfolder_id = &pmemory->folder_id;
@@ -369,9 +347,7 @@ static BOOL notify_response_specify_folder_search_completed(
 static BOOL notify_response_specify_hierarchy_table_changed(
 	NOTIFY_RESPONSE *pnotify)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -382,9 +358,7 @@ static BOOL notify_response_specify_hierarchy_table_changed(
 static BOOL notify_response_specify_content_table_changed(
 	NOTIFY_RESPONSE *pnotify)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -395,9 +369,7 @@ static BOOL notify_response_specify_content_table_changed(
 static BOOL notify_response_specify_search_table_changed(
 	NOTIFY_RESPONSE *pnotify)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 					NOTIFICATION_FLAG_TABLE_MODIFIED |
 					NOTIFICATION_FLAG_MOST_SEARCH |
@@ -411,9 +383,7 @@ static BOOL notify_response_specify_hierarchy_table_row_added(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t after_folder_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -446,9 +416,7 @@ static BOOL notify_response_specify_content_table_row_added(
 	uint64_t after_folder_id, uint64_t after_row_id,
 	uint64_t after_instance)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -492,9 +460,7 @@ static BOOL notify_response_specify_search_table_row_added(
 	uint64_t after_folder_id, uint64_t after_row_id,
 	uint64_t after_instance)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 					NOTIFICATION_FLAG_TABLE_MODIFIED |
 					NOTIFICATION_FLAG_MOST_SEARCH |
@@ -537,9 +503,7 @@ static BOOL notify_response_specify_search_table_row_added(
 static BOOL notify_response_specify_hierarchy_table_row_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -558,9 +522,7 @@ static BOOL notify_response_specify_content_table_row_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -583,9 +545,7 @@ static BOOL notify_response_specify_search_table_row_deleted(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t row_message_id, uint64_t row_instance)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 					NOTIFICATION_FLAG_TABLE_MODIFIED |
 					NOTIFICATION_FLAG_MOST_SEARCH |
@@ -610,9 +570,7 @@ static BOOL notify_response_specify_hierarchy_table_row_modified(
 	NOTIFY_RESPONSE *pnotify, uint64_t row_folder_id,
 	uint64_t after_folder_id)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 							NOTIFICATION_FLAG_TABLE_MODIFIED;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -645,9 +603,7 @@ static BOOL notify_response_specify_content_table_row_modified(
 	uint64_t after_folder_id, uint64_t after_row_id,
 	uint64_t after_instance)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 		NOTIFICATION_FLAG_TABLE_MODIFIED | NOTIFICATION_FLAG_MOST_MESSAGE;
 	pnotify->notification_data.ptable_event = &pmemory->table_event;
@@ -691,9 +647,7 @@ static BOOL notify_response_specify_search_table_row_modified(
 	uint64_t after_folder_id, uint64_t after_row_id,
 	uint64_t after_instance)
 {
-	NOTIFICATION_DATA_MEMORY *pmemory;
-	
-	pmemory = (void*)pnotify + sizeof(NOTIFY_RESPONSE);
+	auto pmemory = notify_to_ndm(pnotify);
 	pnotify->notification_data.notification_flags =
 					NOTIFICATION_FLAG_TABLE_MODIFIED |
 					NOTIFICATION_FLAG_MOST_SEARCH |
