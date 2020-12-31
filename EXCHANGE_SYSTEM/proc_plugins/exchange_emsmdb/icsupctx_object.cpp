@@ -8,14 +8,13 @@ ICSUPCTX_OBJECT* icsupctx_object_create(
 	uint8_t sync_type)
 {
 	int state_type;
-	ICSUPCTX_OBJECT *pctx;
 	
 	if (SYNC_TYPE_CONTENTS == sync_type) {
 		state_type = ICS_STATE_CONTENTS_UP;
 	} else {
 		state_type = ICS_STATE_HIERARCHY_UP;
 	}
-	pctx = malloc(sizeof(ICSUPCTX_OBJECT));
+	auto pctx = static_cast<ICSUPCTX_OBJECT *>(malloc(sizeof(ICSUPCTX_OBJECT)));
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -122,12 +121,12 @@ BOOL icsupctx_object_end_state_stream(ICSUPCTX_OBJECT *pctx)
 		return FALSE;
 	}
 	tmp_bin.cb = mem_file_get_total_length(&pctx->f_state_stream);
-	tmp_bin.pb = common_util_alloc(tmp_bin.cb);
-	if (NULL == tmp_bin.pb) {
+	tmp_bin.pv = common_util_alloc(tmp_bin.cb);
+	if (tmp_bin.pv == nullptr) {
 		idset_free(pset);
 		return FALSE;
 	}
-	mem_file_read(&pctx->f_state_stream, tmp_bin.pb, tmp_bin.cb);
+	mem_file_read(&pctx->f_state_stream, tmp_bin.pv, tmp_bin.cb);
 	mem_file_free(&pctx->f_state_stream);
 	state_property = pctx->state_property;
 	pctx->state_property = 0;
@@ -136,7 +135,7 @@ BOOL icsupctx_object_end_state_stream(ICSUPCTX_OBJECT *pctx)
 		return FALSE;
 	}
 	tmp_bin.cb = sizeof(void*);
-	tmp_bin.pb = (void*)&pctx->plogon;
+	tmp_bin.pv = &pctx->plogon;
 	if (FALSE == idset_register_mapping(pset,
 		&tmp_bin, common_util_mapping_replica)) {
 		idset_free(pset);
