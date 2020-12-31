@@ -45,14 +45,13 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 	int i;
 	uint16_t type;
 	int object_type;
-	TABLE_OBJECT *ptable;
 	const SORTORDER_SET *psorts;
 	
 	if (0 == pproptags->count) {
 		return ecInvalidParam;
 	}
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -126,14 +125,13 @@ uint32_t rop_sorttable(uint8_t table_flags,
 	int object_type;
 	BOOL b_multi_inst;
 	uint32_t tmp_proptag;
-	TABLE_OBJECT *ptable;
 	const PROPTAG_ARRAY *pcolumns;
 	
 	if (psort_criteria->count > MAXIMUM_SORT_COUNT) {
 		return ecTooComplex;
 	}
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -255,10 +253,9 @@ uint32_t rop_restrict(uint8_t res_flags,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -299,12 +296,11 @@ uint32_t rop_queryrows(uint8_t flags,
 	BOOL b_forward;
 	int object_type;
 	TARRAY_SET tmp_set;
-	TABLE_OBJECT *ptable;
 	PROPERTY_ROW tmp_row;
 	uint32_t last_offset;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -372,10 +368,9 @@ uint32_t rop_abort(uint8_t *ptable_status,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -389,10 +384,9 @@ uint32_t rop_getstatus(uint8_t *ptable_status,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -408,10 +402,9 @@ uint32_t rop_queryposition(uint32_t *pnumerator,
 	uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -432,11 +425,10 @@ uint32_t rop_seekrow(uint8_t seek_pos,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	int32_t original_position;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -505,13 +497,12 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 {
 	BOOL b_exist;
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
 	if (pbookmark->cb != sizeof(uint32_t)) {
 		return ecInvalidBookmark;
 	}
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -541,7 +532,7 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark,
 		*prow_invisible = 0;
 	}
 	return rop_seekrow(SEEK_POS_CURRENT, offset, want_moved_count,
-			phas_soughtless, poffset_sought, plogmap, logon_id, hin);
+	       phas_soughtless, reinterpret_cast<int32_t *>(poffset_sought), plogmap, logon_id, hin);
 }
 
 uint32_t rop_seekrowfractional(uint32_t numerator,
@@ -550,13 +541,12 @@ uint32_t rop_seekrowfractional(uint32_t numerator,
 {
 	int object_type;
 	uint32_t position;
-	TABLE_OBJECT *ptable;
 	
 	if (0 == denominator) {
 		return ecInvalidBookmark;
 	}
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -575,10 +565,9 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -599,14 +588,11 @@ uint32_t rop_createbookmark(BINARY *pbookmark,
 		return ecError;
 	}
 	pbookmark->cb = sizeof(uint32_t);
-	pbookmark->pb = common_util_alloc(sizeof(uint32_t));
-	if (NULL == pbookmark->pb) {
+	pbookmark->pv = common_util_alloc(sizeof(uint32_t));
+	if (pbookmark->pb == nullptr)
 		return ecMAPIOOM;
-	}
-	if (FALSE == table_object_create_bookmark(
-		ptable, (uint32_t*)pbookmark->pb)) {
+	if (!table_object_create_bookmark(ptable, static_cast<uint32_t *>(pbookmark->pv)))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -614,10 +600,9 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -643,13 +628,12 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 	uint32_t result;
 	int object_type;
 	int32_t position;
-	TABLE_OBJECT *ptable;
 	uint8_t has_soughtless;
 	uint32_t offset_sought;
 	TPROPVAL_ARRAY propvals;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -715,7 +699,7 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres,
 		return ecNotFound;
 	}
 	table_object_set_position(ptable, position);
-	*pprow = common_util_alloc(sizeof(PROPERTY_ROW));
+	*pprow = static_cast<PROPERTY_ROW *>(common_util_alloc(sizeof(PROPERTY_ROW)));
 	if (NULL == *pprow) {
 		return ecMAPIOOM;
 	}
@@ -730,13 +714,12 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
 	if (pbookmark->cb != sizeof(uint32_t)) {
 		return ecInvalidBookmark;
 	}
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -760,9 +743,8 @@ uint32_t rop_freebookmark(const BINARY *pbookmark,
 uint32_t rop_resettable(void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -785,11 +767,10 @@ uint32_t rop_expandrow(uint16_t max_count,
 	TARRAY_SET tmp_set;
 	PROPERTY_ROW tmp_row;
 	uint32_t last_offset;
-	TABLE_OBJECT *ptable;
 	uint32_t old_position;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -850,11 +831,10 @@ uint32_t rop_collapserow(uint64_t category_id,
 	BOOL b_found;
 	int object_type;
 	int32_t position;
-	TABLE_OBJECT *ptable;
 	uint32_t table_position;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -893,10 +873,9 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -914,14 +893,12 @@ uint32_t rop_getcollapsestate(uint64_t row_id,
 		return ecError;
 	}
 	pcollapse_state->cb = sizeof(uint32_t);
-	pcollapse_state->pb = common_util_alloc(sizeof(uint32_t));
-	if (NULL == pcollapse_state->pb) {
+	pcollapse_state->pv = common_util_alloc(sizeof(uint32_t));
+	if (pcollapse_state->pv == nullptr)
 		return ecMAPIOOM;
-	}
-	if (FALSE == table_object_store_state(ptable, row_id,
-		row_instance, (uint32_t*)pcollapse_state->pb)) {
+	if (!table_object_store_state(ptable, row_id, row_instance,
+	    static_cast<uint32_t *>(pcollapse_state->pv)))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -930,10 +907,9 @@ uint32_t rop_setcollapsestate(
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	TABLE_OBJECT *ptable;
 	
-	ptable = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto ptable = static_cast<TABLE_OBJECT *>(rop_processor_get_object(plogmap,
+	              logon_id, hin, &object_type));
 	if (NULL == ptable) {
 		return ecNullObject;
 	}
@@ -954,14 +930,12 @@ uint32_t rop_setcollapsestate(
 		return ecError;
 	}
 	pbookmark->cb = sizeof(uint32_t);
-	pbookmark->pb = common_util_alloc(sizeof(uint32_t));
-	if (NULL == pbookmark->pb) {
+	pbookmark->pv = common_util_alloc(sizeof(uint32_t));
+	if (pbookmark->pv == nullptr)
 		return ecMAPIOOM;
-	}
-	if (FALSE == table_object_restore_state(
-		ptable, *(uint32_t*)pcollapse_state->pb,
-		(uint32_t*)pbookmark->pb)) {
+	if (!table_object_restore_state(ptable,
+	    *static_cast<uint32_t *>(pcollapse_state->pv),
+	    static_cast<uint32_t *>(pbookmark->pv)))
 		return ecError;
-	}
 	return ecSuccess;
 }
