@@ -21,14 +21,13 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *pfolder;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pfolder = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -83,14 +82,13 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	DCERPC_INFO rpc_info;
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *pfolder;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pfolder = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
