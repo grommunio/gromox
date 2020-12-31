@@ -98,7 +98,7 @@ void http_parser_init(int context_num, unsigned int timeout,
 	}
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if defined(LIBRESSL_VERSION_NUMBER) || (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 static void http_parser_ssl_locking(int mode, int n, const char *file, int line)
 {
 	if (mode & CRYPTO_LOCK)
