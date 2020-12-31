@@ -93,7 +93,7 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case MNID_ID:
-		tmp_name.plid = malloc(sizeof(uint32_t));
+		tmp_name.plid = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
 		if (NULL == tmp_name.plid) {
 			return FALSE;
 		}
@@ -150,9 +150,7 @@ LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
 	uint32_t open_flags, int logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid)
 {
-	LOGON_OBJECT *plogon;
-	
-	plogon = malloc(sizeof(LOGON_OBJECT));
+	auto plogon = static_cast<LOGON_OBJECT *>(malloc(sizeof(LOGON_OBJECT)));
 	if (NULL == plogon) {
 		return NULL;
 	}
@@ -180,7 +178,7 @@ void logon_object_free(LOGON_OBJECT *plogon)
 		property_groupinfo_free(plogon->pgpinfo);
 	}
 	while ((pnode = double_list_get_from_head(&plogon->group_list)) != NULL) {
-		property_groupinfo_free(pnode->pdata);
+		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
 		free(pnode);
 	}
 	double_list_free(&plogon->group_list);
@@ -188,7 +186,7 @@ void logon_object_free(LOGON_OBJECT *plogon)
 		piter = int_hash_iter_init(plogon->ppropid_hash);
 		for (int_hash_iter_begin(piter); !int_hash_iter_done(piter);
 			int_hash_iter_forward(piter)) {
-			ppropname = int_hash_iter_get_value(piter, NULL);
+			ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(piter, nullptr));
 			switch( ppropname->kind) {
 			case MNID_ID:
 				free(ppropname->plid);
@@ -249,14 +247,14 @@ BOOL logon_object_get_named_propname(LOGON_OBJECT *plogon,
 	if (propid < 0x8000) {
 		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
 		ppropname->kind = MNID_ID;
-		ppropname->plid = common_util_alloc(sizeof(uint32_t));
+		ppropname->plid = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 		if (NULL == ppropname->plid) {
 			return FALSE;
 		}
 		*ppropname->plid = propid;
 	}
 	if (NULL != plogon->ppropid_hash) {
-		pname = int_hash_query(plogon->ppropid_hash, propid);
+		pname = static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash, propid));
 		if (NULL != pname) {
 			*ppropname = *pname;
 			return TRUE;
@@ -275,7 +273,6 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	int i;
-	int *pindex_map;
 	PROPERTY_NAME *pname;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
@@ -284,19 +281,19 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 		ppropnames->count = 0;
 		return TRUE;
 	}
-	pindex_map = common_util_alloc(ppropids->count*sizeof(int));
+	auto pindex_map = static_cast<int *>(common_util_alloc(ppropids->count * sizeof(int)));
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
-	ppropnames->ppropname = common_util_alloc(
-		sizeof(PROPERTY_NAME)*ppropids->count);
+	ppropnames->ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
+	                        sizeof(PROPERTY_NAME) * ppropids->count));
 	if (NULL == ppropnames->ppropname) {
 		return FALSE;
 	}
 	ppropnames->count = ppropids->count;
 	tmp_propids.count = 0;
-	tmp_propids.ppropid = common_util_alloc(
-			sizeof(uint16_t)*ppropids->count);
+	tmp_propids.ppropid = static_cast<uint16_t *>(common_util_alloc(
+	                      sizeof(uint16_t) * ppropids->count));
 	if (NULL == tmp_propids.ppropid) {
 		return FALSE;
 	}
@@ -306,7 +303,7 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 				&ppropnames->ppropname[i].guid);
 			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].plid =
-				common_util_alloc(sizeof(uint32_t));
+				static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
 			if (NULL == ppropnames->ppropname[i].plid) {
 				return FALSE;
 			}
@@ -315,8 +312,7 @@ BOOL logon_object_get_named_propnames(LOGON_OBJECT *plogon,
 			continue;
 		}
 		if (NULL != plogon->ppropid_hash) {
-			pname = int_hash_query(plogon->ppropid_hash,
-								ppropids->ppropid[i]);
+			pname = static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash, ppropids->ppropid[i]));
 		} else {
 			pname = NULL;
 		}
@@ -381,7 +377,7 @@ BOOL logon_object_get_named_propid(LOGON_OBJECT *plogon,
 		return TRUE;
 	}
 	if (NULL != plogon->ppropname_hash) {
-		pid = str_hash_query(plogon->ppropname_hash, tmp_string);
+		pid = static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash, tmp_string));
 		if (NULL != pid) {
 			*ppropid = *pid;
 			return TRUE;
@@ -405,7 +401,6 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 	int i;
 	GUID guid;
 	uint16_t *pid;
-	int *pindex_map;
 	char tmp_guid[64];
 	char tmp_string[256];
 	PROPID_ARRAY tmp_propids;
@@ -416,19 +411,19 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 		return TRUE;
 	}
 	rop_util_get_common_pset(PS_MAPI, &guid);
-	pindex_map = common_util_alloc(ppropnames->count*sizeof(int));
+	auto pindex_map = static_cast<int *>(common_util_alloc(ppropnames->count * sizeof(int)));
 	if (NULL == pindex_map) {
 		return FALSE;
 	}
 	ppropids->count = ppropnames->count;
-	ppropids->ppropid = common_util_alloc(
-		sizeof(uint16_t)*ppropnames->count);
+	ppropids->ppropid = static_cast<uint16_t *>(common_util_alloc(
+	                    sizeof(uint16_t) * ppropnames->count));
 	if (NULL == ppropids->ppropid) {
 		return FALSE;
 	}
 	tmp_propnames.count = 0;
-	tmp_propnames.ppropname = common_util_alloc(
-		sizeof(PROPERTY_NAME)*ppropnames->count);
+	tmp_propnames.ppropname = static_cast<PROPERTY_NAME *>(common_util_alloc(
+	                          sizeof(PROPERTY_NAME) * ppropnames->count));
 	if (NULL == tmp_propnames.ppropname) {
 		return FALSE;
 	}
@@ -458,7 +453,7 @@ BOOL logon_object_get_named_propids(LOGON_OBJECT *plogon,
 			continue;
 		}
 		if (NULL != plogon->ppropname_hash) {
-			pid = str_hash_query(plogon->ppropname_hash, tmp_string);
+			pid = static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash, tmp_string));
 		} else {
 			pid = NULL;
 		}
@@ -518,7 +513,7 @@ PROPERTY_GROUPINFO* logon_object_get_property_groupinfo(
 			return pgpinfo;
 		}
 	}
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
 		return NULL;
 	}
@@ -541,8 +536,8 @@ BOOL logon_object_get_all_proptags(LOGON_OBJECT *plogon,
 		plogon->dir, &tmp_proptags)) {
 		return FALSE;	
 	}
-	pproptags->pproptag = common_util_alloc(
-		sizeof(uint32_t)*(tmp_proptags.count + 25));
+	pproptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                      sizeof(uint32_t) * (tmp_proptags.count + 25)));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -690,9 +685,9 @@ static BOOL logon_object_get_calculated_property(
 	EMSMDB_INFO *pinfo;
 	char temp_buff[1024];
 	DCERPC_INFO rpc_info;
-	static const uint64_t tmp_ll;
-	static const uint8_t test_buff[256];
-	static const BINARY test_bin = {.cb = sizeof(test_buff), .pb = (uint8_t *)test_buff};
+	static constexpr uint64_t tmp_ll = 0;
+	static constexpr uint8_t test_buff[256]{};
+	static constexpr BINARY test_bin = {sizeof(test_buff), (uint8_t *)test_buff};
 	
 	switch (proptag) {
 	case PROP_TAG_MESSAGESIZE:
@@ -752,15 +747,13 @@ static BOOL logon_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (FALSE == common_util_get_user_displayname(
-			plogon->account, *ppvalue)) {
+		if (!common_util_get_user_displayname(plogon->account, static_cast<char *>(*ppvalue)))
 			return FALSE;	
-		}
-		temp_len = strlen(*ppvalue);
+		temp_len = strlen(static_cast<char *>(*ppvalue));
 		for (i=0; i<temp_len; i++) {
 			if (0 == isascii(((char*)(*ppvalue))[i])) {
-				strcpy(*ppvalue, plogon->account);
-				pvalue = strchr(*ppvalue, '@');
+				strcpy(static_cast<char *>(*ppvalue), plogon->account);
+				pvalue = strchr(static_cast<char *>(*ppvalue), '@');
 				*(char*)pvalue = '\0';
 				break;
 			}
@@ -778,7 +771,7 @@ static BOOL logon_object_get_calculated_property(
 	case PROP_TAG_DELETEDMSGCOUNT:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZE:
 	case PROP_TAG_DELETEDNORMALMESSAGESIZEEXTENDED:
-		*ppvalue = const_cast(uint32_t *, &tmp_ll);
+		*ppvalue = deconst(&tmp_ll);
 		return TRUE;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
@@ -797,7 +790,7 @@ static BOOL logon_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		strcpy(*ppvalue, temp_buff);
+		strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		return TRUE;
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 		*ppvalue = common_util_alloc(sizeof(uint32_t));
@@ -816,7 +809,7 @@ static BOOL logon_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		strcpy(*ppvalue, temp_buff);
+		strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		return TRUE;
 	case PROP_TAG_LOCALEID:
 		pinfo = emsmdb_interface_get_emsmdb_info();
@@ -845,13 +838,13 @@ static BOOL logon_object_get_calculated_property(
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			strcpy(*ppvalue, plogon->account);
+			strcpy(static_cast<char *>(*ppvalue), plogon->account);
 		} else {
 			*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			strcpy(*ppvalue, temp_buff);
+			strcpy(static_cast<char *>(*ppvalue), temp_buff);
 		}
 		return TRUE;
 	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
@@ -867,12 +860,11 @@ static BOOL logon_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (common_util_convert_string(FALSE,
-			temp_buff, *ppvalue, temp_len) < 0) {
+		if (common_util_convert_string(FALSE, temp_buff,
+		    static_cast<char *>(*ppvalue), temp_len) < 0)
 			return FALSE;	
-		}
 		if ('\0' == ((char*)*ppvalue)[0]) {
-			strcpy(*ppvalue, plogon->account);
+			strcpy(static_cast<char *>(*ppvalue), plogon->account);
 		}
 		return TRUE;
 	case PROP_TAG_MAXIMUMSUBMITMESSAGESIZE:
@@ -899,7 +891,7 @@ static BOOL logon_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_TESTLINESPEED:
-		*ppvalue = const_cast(BINARY *, &test_bin);
+		*ppvalue = deconst(&test_bin);
 		return TRUE;
 	}
 	return FALSE;
@@ -919,14 +911,14 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 	if (NULL == pinfo) {
 		return FALSE;
 	}
-	ppropvals->ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*pproptags->count);
+	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                      sizeof(TAGGED_PROPVAL) * pproptags->count));
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-			sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
@@ -941,8 +933,7 @@ BOOL logon_object_get_properties(LOGON_OBJECT *plogon,
 			} else {
 				ppropvals->ppropval[ppropvals->count].proptag =
 					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					const_cast(uint32_t *, &err_code);
+				ppropvals->ppropval[ppropvals->count].pvalue = deconst(&err_code);
 			}
 			ppropvals->count ++;
 		} else {
@@ -982,19 +973,19 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 		return FALSE;
 	}
 	pproblems->count = 0;
-	pproblems->pproblem = common_util_alloc(
-		sizeof(PROPERTY_PROBLEM)*ppropvals->count);
+	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
+	                      sizeof(PROPERTY_PROBLEM) * ppropvals->count));
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_propvals.count = 0;
-	tmp_propvals.ppropval = common_util_alloc(
-		sizeof(TAGGED_PROPVAL)*ppropvals->count);
+	tmp_propvals.ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
+	                        sizeof(TAGGED_PROPVAL) * ppropvals->count));
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = common_util_alloc(
-		sizeof(uint16_t)*ppropvals->count);
+	poriginal_indices = static_cast<uint16_t *>(common_util_alloc(
+	                    sizeof(uint16_t) * ppropvals->count));
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -1043,14 +1034,14 @@ BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
 	PROPTAG_ARRAY tmp_proptags;
 	
 	pproblems->count = 0;
-	pproblems->pproblem = common_util_alloc(
-		sizeof(PROPERTY_PROBLEM)*pproptags->count);
+	pproblems->pproblem = static_cast<PROPERTY_PROBLEM *>(common_util_alloc(
+	                      sizeof(PROPERTY_PROBLEM) * pproptags->count));
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	tmp_proptags.count = 0;
-	tmp_proptags.pproptag = common_util_alloc(
-		sizeof(uint32_t)*pproptags->count);
+	tmp_proptags.pproptag = static_cast<uint32_t *>(common_util_alloc(
+	                        sizeof(uint32_t) * pproptags->count));
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
