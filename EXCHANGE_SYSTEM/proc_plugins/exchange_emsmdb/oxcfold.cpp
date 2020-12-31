@@ -49,7 +49,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	} else {
 		if (1 != replid) {
 			*phas_rules = 0;
-			*ppghost = common_util_alloc(sizeof(GHOST_SERVER));
+			*ppghost = static_cast<GHOST_SERVER *>(common_util_alloc(sizeof(GHOST_SERVER)));
 			if (NULL == ppghost) {
 				return ecMAPIOOM;
 			}
@@ -175,7 +175,6 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	LOGON_OBJECT *plogon;
 	char folder_name[256];
 	FOLDER_OBJECT *pfolder;
-	FOLDER_OBJECT *pparent;
 	char folder_comment[1024];
 	TPROPVAL_ARRAY tmp_propvals;
 	PERMISSION_DATA permission_row;
@@ -189,7 +188,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	default:
 		return ecInvalidParam;
 	}
-	pparent = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pparent = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pparent) {
 		return ecNullObject;
 	}
@@ -293,7 +292,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		}
 		propval_buff[8].proptag = PROP_TAG_PREDECESSORCHANGELIST;
 		propval_buff[8].pvalue = common_util_pcl_append(
-							NULL, propval_buff[7].pvalue);
+		                         NULL, static_cast<BINARY *>(propval_buff[7].pvalue));
 		if (NULL == propval_buff[8].pvalue) {
 			return ecMAPIOOM;
 		}
@@ -372,11 +371,10 @@ uint32_t rop_deletefolder(uint8_t flags,
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	const char *username;
-	FOLDER_OBJECT *pfolder;
 	
 	*ppartial_completion = 1;
-	pfolder = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -489,7 +487,6 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	uint32_t search_status;
-	FOLDER_OBJECT *pfolder;
 	
 	if (0 == (search_flags & SEARCH_FLAG_RESTART) &&
 		0 == (search_flags & SEARCH_FLAG_STOP)) {
@@ -508,7 +505,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	if (FALSE == logon_object_check_private(plogon)) {
 		return ecNotSupported;
 	}
-	pfolder = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -591,7 +588,6 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 {
 	int object_type;
 	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *pfolder;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -600,8 +596,8 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 	if (FALSE == logon_object_check_private(plogon)) {
 		return ecNotSupported;
 	}
-	pfolder = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	               logon_id, hin, &object_type));
 	if (NULL == pfolder || OBJECT_TYPE_FOLDER != object_type) {
 		return ecNullObject;
 	}
@@ -644,24 +640,22 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *psrc_folder;
-	FOLDER_OBJECT *pdst_folder;
 	
 	if (0 == pmessage_ids->count) {
 		*ppartial_completion = 0;
 		return ecSuccess;
 	}
 	*ppartial_completion = 1;
-	psrc_folder = rop_processor_get_object(plogmap,
-					logon_id, hsrc, &object_type);
+	auto psrc_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	                   logon_id, hsrc, &object_type));
 	if (NULL == psrc_folder) {
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	pdst_folder = rop_processor_get_object(plogmap,
-					logon_id, hdst, &object_type);
+	auto pdst_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	                   logon_id, hdst, &object_type));
 	if (NULL == pdst_folder) {
 		return ecNullObject;
 	}
@@ -737,21 +731,19 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	BINARY *pbin_changekey;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
-	FOLDER_OBJECT *psrc_parent;
-	FOLDER_OBJECT *pdst_folder;
 	TAGGED_PROPVAL propval_buff[4];
 	
 	*ppartial_completion = 1;
-	psrc_parent = rop_processor_get_object(plogmap,
-					logon_id, hsrc, &object_type);
+	auto psrc_parent = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	                   logon_id, hsrc, &object_type));
 	if (NULL == psrc_parent) {
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	pdst_folder = rop_processor_get_object(plogmap,
-					logon_id, hdst, &object_type);
+	auto pdst_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	                   logon_id, hdst, &object_type));
 	if (NULL == pdst_folder) {
 		return ecNullObject;
 	}
@@ -892,20 +884,18 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	uint32_t permission;
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
-	FOLDER_OBJECT *psrc_parent;
-	FOLDER_OBJECT *pdst_folder;
 	
 	*ppartial_completion = 1;
-	psrc_parent = rop_processor_get_object(plogmap,
-					logon_id, hsrc, &object_type);
+	auto psrc_parent = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	                   logon_id, hsrc, &object_type));
 	if (NULL == psrc_parent) {
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	pdst_folder = rop_processor_get_object(plogmap,
-					logon_id, hdst, &object_type);
+	auto pdst_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	                   logon_id, hdst, &object_type));
 	if (NULL == pdst_folder) {
 		return ecNullObject;
 	}
@@ -1002,11 +992,10 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	const char *username;
-	FOLDER_OBJECT *pfolder;
 	
 	*ppartial_completion = 1;
-	pfolder = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -1096,7 +1085,6 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	DCERPC_INFO rpc_info;
 	LOGON_OBJECT *plogon;
 	const char *username;
-	FOLDER_OBJECT *pfolder;
 	MESSAGE_CONTENT *pbrief;
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
@@ -1104,7 +1092,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	
 	*ppartial_completion = 1;
 	pinfo = emsmdb_interface_get_emsmdb_info();
-	pfolder = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -1153,7 +1141,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	}
 	b_partial = FALSE;
 	ids.count = 0;
-	ids.pids = common_util_alloc(sizeof(uint64_t)*pmessage_ids->count);
+	ids.pids = static_cast<uint64_t *>(common_util_alloc(sizeof(uint64_t) * pmessage_ids->count));
 	if (NULL == ids.pids) {
 		return ecError;
 	}
@@ -1245,7 +1233,6 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	LOGON_OBJECT *plogon;
 	const char *username;
 	DCERPC_INFO rpc_info;
-	FOLDER_OBJECT *pfolder;
 	
 	if (table_flags & (~(TABLE_FLAG_DEPTH | TABLE_FLAG_DEFERREDERRORS |
 		TABLE_FLAG_NONOTIFICATIONS | TABLE_FLAG_SOFTDELETES |
@@ -1256,7 +1243,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pfolder = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -1307,13 +1294,12 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	TABLE_OBJECT *ptable;
 	LOGON_OBJECT *plogon;
 	DCERPC_INFO rpc_info;
-	FOLDER_OBJECT *pfolder;
 	
 	plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pfolder = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
