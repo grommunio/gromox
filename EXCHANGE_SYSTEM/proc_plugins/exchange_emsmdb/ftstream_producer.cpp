@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/mapidefs.h>
 #include "ftstream_producer.h"
 #include "emsmdb_interface.h"

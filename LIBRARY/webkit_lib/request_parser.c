@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "idx_array.h"
 #include "request_parser.h"
 #include <stdio.h>

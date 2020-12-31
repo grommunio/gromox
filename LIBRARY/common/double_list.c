@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*	
  *	double list's operating functions, including inserting, appending, pop,
  *	push ... Caution: double_list is not thread-safe, use mutex to control

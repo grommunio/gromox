@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <stdlib.h>
 #include <libHX/ctype_helper.h>
 #include "engine.h"

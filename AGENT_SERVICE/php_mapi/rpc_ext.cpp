@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
 #include "rpc_ext.h"

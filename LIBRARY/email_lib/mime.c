@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  * normally, MIME object does'n maintain its own content buffer, it just take
  * the reference of a mail object buffer, mark the begin, end and the content

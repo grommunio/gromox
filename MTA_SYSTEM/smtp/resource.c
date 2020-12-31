@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *  user config resource file, which provide some interface for 
  *  programmer to set and get the configuration dynamicly

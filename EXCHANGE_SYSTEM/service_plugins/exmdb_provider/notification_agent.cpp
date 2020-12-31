@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/exmdb_rpc.hpp>
 #include "notification_agent.h"
 #include "exmdb_parser.h"

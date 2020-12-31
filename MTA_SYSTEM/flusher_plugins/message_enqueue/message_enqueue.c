@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020 grammm GmbH
+// This file is part of Gromox.
 /*
  *  mail queue have two parts, mess, message queue.when a mail 
  *	is put into mail queue, and create a file in mess directory and write the

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *    listener is a module, which listen a certain port and if a connection is
  *    coming, pass the connection in connection filter module and if the

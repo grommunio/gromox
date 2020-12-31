@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *	A simple vstack implements using single linked list. The core will be 
  *	maintain outside the vstack, but the vstack will give black a node size

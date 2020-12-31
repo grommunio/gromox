@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>

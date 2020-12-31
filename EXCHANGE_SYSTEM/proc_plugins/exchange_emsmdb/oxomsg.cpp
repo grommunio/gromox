@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/defs.h>
 #include <gromox/fileio.h>
 #include "emsmdb_interface.h"

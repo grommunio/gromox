@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *	 stack files allocator is a memory pool for bdn stack
  */

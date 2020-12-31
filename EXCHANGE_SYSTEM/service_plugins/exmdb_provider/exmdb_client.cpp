@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>

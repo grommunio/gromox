@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <libHX/defs.h>
 #include "icsdownctx_object.h"

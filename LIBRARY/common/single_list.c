@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *	A simple single linked list skeleton that provide some fundamental 
  *	function of a list. The client should maintain the Mem of the List 

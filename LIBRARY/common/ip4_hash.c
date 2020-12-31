@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  * A simple ip hash table data structure, which takes a string ip address as
  * the key. Remember the ip hash table is thread-unsafe!

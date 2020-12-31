@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *	  mem file is actually like the file in disk, but mem file get blocks form
  *	  memory, it is virtual file. Caution: Not thread-safe.

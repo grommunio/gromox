@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *  Audit filter module which is a sub module of the string filter.
  *  We check if in the specified interval a client comes from the same

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *	array is a certain data struct same as type of array, but the number of
  *	items is not fix. items can be appended into array any time. but when an 

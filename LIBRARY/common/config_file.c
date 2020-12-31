@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020 grammm GmbH
+// This file is part of Gromox.
 /*
  *	config file parser, which parse a (key = value) format config file.
  *	The comments is start with '#' at the leading of each comment line

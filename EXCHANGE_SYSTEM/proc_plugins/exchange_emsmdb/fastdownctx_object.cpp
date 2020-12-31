@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "fastdownctx_object.h"
 #include "emsmdb_interface.h"
 #include "tpropval_array.h"

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "pcl.h"
 #include "rop_util.h"
 #include <stdlib.h>

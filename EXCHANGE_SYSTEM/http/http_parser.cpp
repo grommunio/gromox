@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request
  */ 

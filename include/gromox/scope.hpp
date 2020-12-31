@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2020 grammm GmbH
+// This file is part of Gromox.
 #pragma once
 #include <exception>
 #include <utility>

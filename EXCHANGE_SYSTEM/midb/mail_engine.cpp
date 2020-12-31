@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2020 grammm GmbH
+// This file is part of Gromox.
 #include <atomic>
 #include <climits>
 #include <libHX/ctype_helper.h>

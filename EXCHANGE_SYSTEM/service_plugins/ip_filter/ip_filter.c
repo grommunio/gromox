@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *  Connection filter which take the ip and check if it is exist in the 
  *  white or black list, otherwise we let it pass the audit filter sub 

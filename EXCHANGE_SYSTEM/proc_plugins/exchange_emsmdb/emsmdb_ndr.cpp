@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "emsmdb_interface.h"
 #include "emsmdb_ndr.h"
 #include <cstring>

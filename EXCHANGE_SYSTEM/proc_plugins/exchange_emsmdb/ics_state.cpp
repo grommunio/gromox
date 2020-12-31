@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "tpropval_array.h"
 #include "common_util.h"
 #include "ics_state.h"

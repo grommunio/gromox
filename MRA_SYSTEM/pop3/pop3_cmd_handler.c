@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /* 
  * collection of functions for handling the pop3 command
  */ 

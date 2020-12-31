@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <libHX/string.h>
 #include "bounce_producer.h"

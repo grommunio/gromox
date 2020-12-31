@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// This file is part of Gromox.
 #include <cstdio>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/svc_common.h>

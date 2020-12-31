@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2003 Andrew Tridgell
+// This file is part of Gromox.
 #include <assert.h>
 #include <gromox/defs.h>
 #include "common_types.h"

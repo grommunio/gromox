@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
  *	A simple fifo implements using single linked list. The core will be 
  *	maintain outside the fifo, but the fifo will give black a node size

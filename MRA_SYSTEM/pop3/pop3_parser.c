@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /* pop3 parser is a module, which first read data from socket, parses the pop3 
  * commands and then do the corresponding action. 
  */ 

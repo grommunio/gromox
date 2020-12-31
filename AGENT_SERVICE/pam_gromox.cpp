@@ -1,4 +1,6 @@
-/* SPDX-License-Identifier: AGPL-3.0-or-later */
+// SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
+// SPDX-FileCopyrightText: 2020 grammm GmbH
+// This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif

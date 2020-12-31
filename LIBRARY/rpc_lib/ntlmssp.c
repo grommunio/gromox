@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include <libHX/string.h>
 #include "ndr.h"
 #include "util.h"

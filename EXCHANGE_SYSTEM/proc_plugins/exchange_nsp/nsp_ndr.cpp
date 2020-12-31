@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "nsp_ndr.h"

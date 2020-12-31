@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
+// SPDX-FileCopyrightText: 2020 grammm GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <memory>
 #include <gromox/mapidefs.h>

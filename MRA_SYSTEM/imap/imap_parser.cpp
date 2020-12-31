@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /* imap parser is a module, which first read data from socket, parses the imap 
  * commands and then do the corresponding action. 
  */ 

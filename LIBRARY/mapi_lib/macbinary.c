@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "endian_macro.h"
 #include "macbinary.h"
 #include "util.h"

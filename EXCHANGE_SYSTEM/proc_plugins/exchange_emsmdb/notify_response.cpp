@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "notify_response.h"
 #include "rop_util.h"
 #include <cstdlib>

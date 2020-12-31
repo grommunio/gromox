@@ -1,4 +1,6 @@
-/* SPDX-License: AGPL-3.0-or-later */
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2020 grammm GmbH
+// This file is part of Gromox.
 #include <cerrno>
 #include <cstdio>
 #include <cstring>

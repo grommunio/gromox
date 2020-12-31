@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "applefile.h"
 #include "endian_macro.h"
 #include <string.h>
