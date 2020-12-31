@@ -19,12 +19,11 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	int buff_len;
 	int utf16_len;
 	uint32_t *psize;
-	STREAM_OBJECT *pstream;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
 	
-	pstream = malloc(sizeof(STREAM_OBJECT));
+	auto pstream = static_cast<STREAM_OBJECT *>(malloc(sizeof(STREAM_OBJECT)));
 	if (NULL == pstream) {
 		return NULL;
 	}
@@ -41,13 +40,13 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
 		proptag_buff[1] = PROP_TAG_MESSAGESIZE;
-		if (FALSE == message_object_get_properties(
-			pparent, 0, &proptags, &propvals)) {
+		if (!message_object_get_properties(static_cast<MESSAGE_OBJECT *>(pparent),
+		    0, &proptags, &propvals)) {
 			free(pstream);
 			return NULL;
 		}
-		psize = common_util_get_propvals(
-			&propvals, PROP_TAG_MESSAGESIZE);
+		psize = static_cast<uint32_t *>(common_util_get_propvals(
+		        &propvals, PROP_TAG_MESSAGESIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
 			free(pstream);
@@ -59,13 +58,13 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
 		proptag_buff[1] = PROP_TAG_ATTACHSIZE;
-		if (FALSE == attachment_object_get_properties(
-			pparent, 0, &proptags, &propvals)) {
+		if (!attachment_object_get_properties(static_cast<ATTACHMENT_OBJECT *>(pparent),
+		    0, &proptags, &propvals)) {
 			free(pstream);
 			return NULL;
 		}
-		psize = common_util_get_propvals(
-			&propvals, PROP_TAG_ATTACHSIZE);
+		psize = static_cast<uint32_t *>(common_util_get_propvals(
+		        &propvals, PROP_TAG_ATTACHSIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
 			free(pstream);
@@ -75,8 +74,8 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	case OBJECT_TYPE_FOLDER:
 		proptags.count = 1;
 		proptags.pproptag = &proptag;
-		if (FALSE == folder_object_get_properties(
-			pparent, &proptags, &propvals)) {
+		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pparent),
+		    &proptags, &propvals)) {
 			free(pstream);
 			return NULL;
 		}
@@ -95,9 +94,9 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 			return pstream;
 		} else {
 			pstream->content_bin.cb = 0;
-			pstream->content_bin.pb =
+			pstream->content_bin.pv =
 				malloc(STREAM_INIT_BUFFER_LENGTH);
-			if (NULL == pstream->content_bin.pb) {
+			if (pstream->content_bin.pv == nullptr) {
 				free(pstream);
 				return NULL;
 			}
@@ -107,7 +106,7 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 	switch (PROP_TYPE(proptag)) {
 	case PT_BINARY:
 	case PT_OBJECT: {
-		BINARY *bv = pvalue;
+		auto bv = static_cast<BINARY *>(pvalue);
 		pstream->content_bin.cb = bv->cb;
 		pstream->content_bin.pv = malloc(bv->cb);
 		if (pstream->content_bin.pv == nullptr) {
@@ -118,23 +117,23 @@ STREAM_OBJECT* stream_object_create(void *pparent, int object_type,
 		return pstream;
 	}
 	case PT_STRING8:
-		pstream->content_bin.cb = strlen(pvalue) + 1;
-		pstream->content_bin.pb = malloc(pstream->content_bin.cb);
-		if (NULL == pstream->content_bin.pb) {
+		pstream->content_bin.cb = strlen(static_cast<char *>(pvalue)) + 1;
+		pstream->content_bin.pv = malloc(pstream->content_bin.cb);
+		if (pstream->content_bin.pv == nullptr) {
 			free(pstream);
 			return NULL;
 		}
-		memcpy(pstream->content_bin.pb,
-			((BINARY*)pvalue)->pb, pstream->content_bin.cb);
+		memcpy(pstream->content_bin.pv, static_cast<BINARY *>(pvalue)->pv,
+		       pstream->content_bin.cb);
 		return pstream;
 	case PT_UNICODE:
-		buff_len = 2*strlen(pvalue) + 2;
-		pstream->content_bin.pb = malloc(buff_len);
-		if (NULL == pstream->content_bin.pb) {
+		buff_len = 2 * strlen(static_cast<char *>(pvalue)) + 2;
+		pstream->content_bin.pv = malloc(buff_len);
+		if (pstream->content_bin.pv == nullptr) {
 			free(pstream);
 			return NULL;
 		}
-		utf16_len = utf8_to_utf16le(pvalue,
+		utf16_len = utf8_to_utf16le(static_cast<char *>(pvalue),
 			pstream->content_bin.pb, buff_len);
 		if (utf16_len < 2) {
 			pstream->content_bin.pb[0] = '\0';
@@ -198,15 +197,11 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 		}
 	}
 	if (OBJECT_TYPE_ATTACHMENT == pstream->object_type) {
-		if (FALSE == attachment_object_append_stream_object(
-			pstream->pparent, pstream)) {
+		if (!attachment_object_append_stream_object(static_cast<ATTACHMENT_OBJECT *>(pstream->pparent), pstream))
 			return 0;	
-		} 
 	} else if (OBJECT_TYPE_MESSAGE == pstream->object_type) {
-		if (FALSE == message_object_append_stream_object(
-			pstream->pparent, pstream)) {
+		if (!message_object_append_stream_object(static_cast<MESSAGE_OBJECT *>(pstream->pparent), pstream))
 			return 0;	
-		} 
 	}
 	memcpy(pstream->content_bin.pb +
 		pstream->seek_ptr, pbuff, buf_len);
@@ -246,12 +241,9 @@ void* stream_object_get_content(STREAM_OBJECT *pstream)
 		if (NULL == pcontent) {
 			return NULL;
 		}
-		if (FALSE == utf16le_to_utf8(
-			pstream->content_bin.pb,
-			pstream->content_bin.cb,
-			pcontent, length)) {
+		if (!utf16le_to_utf8(pstream->content_bin.pb,
+		    pstream->content_bin.cb, static_cast<char *>(pcontent), length))
 			return NULL;
-		}
 		return pcontent;
 	}
 	return NULL;
@@ -278,7 +270,7 @@ BOOL stream_object_set_length(
 		if (NULL == pdata) {
 			return FALSE;
 		}
-		pstream->content_bin.pb = pdata;
+		pstream->content_bin.pv = pdata;
 		memset(pstream->content_bin.pb + pstream->content_bin.cb,
 							0, length - pstream->content_bin.cb);
 	} else {
@@ -408,11 +400,9 @@ BOOL stream_object_commit(STREAM_OBJECT *pstream)
 	if (NULL == propval.pvalue) {
 		return FALSE;
 	}
-	if (FALSE == folder_object_set_properties(
-		pstream->pparent, &propvals, &problems) ||
-		problems.count > 0) {
+	if (!folder_object_set_properties(static_cast<FOLDER_OBJECT *>(pstream->pparent),
+	    &propvals, &problems) || problems.count > 0)
 		return FALSE;
-	}
 	pstream->b_touched = FALSE;
 	return TRUE;
 }
@@ -431,14 +421,12 @@ void stream_object_free(STREAM_OBJECT *pstream)
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
 		if (TRUE == pstream->b_touched) {
-			attachment_object_commit_stream_object(
-						pstream->pparent, pstream);
+			attachment_object_commit_stream_object(static_cast<ATTACHMENT_OBJECT *>(pstream->pparent), pstream);
 		}
 		break;
 	case OBJECT_TYPE_MESSAGE:
 		if (TRUE == pstream->b_touched) {
-			message_object_commit_stream_object(
-						pstream->pparent, pstream);
+			message_object_commit_stream_object(static_cast<MESSAGE_OBJECT *>(pstream->pparent), pstream);
 		}
 		break;
 	}
