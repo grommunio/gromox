@@ -30,9 +30,7 @@ static BOOL fastdownctx_object_record_subfolder(
 static BOOL fastdownctx_object_record_flow_node(
 	DOUBLE_LIST *pflow_list, int func_id, void *pparam)
 {
-	FAST_FLOW_NODE *pflow;
-	
-	pflow = malloc(sizeof(FAST_FLOW_NODE));
+	auto pflow = static_cast<FAST_FLOW_NODE *>(malloc(sizeof(FAST_FLOW_NODE)));
 	if (NULL == pflow) {
 		return FALSE;
 	}
@@ -399,8 +397,8 @@ static BOOL fastdownctx_object_get_buffer_internal(
 			}
 			break;
 		case FUNC_ID_PROPLIST:
-			if (FALSE == ftstream_producer_write_proplist(
-				pctx->pstream, pflow->pparam)) {
+			if (!ftstream_producer_write_proplist(pctx->pstream,
+			    static_cast<TPROPVAL_ARRAY *>(pflow->pparam))) {
 				free(pnode->pdata);
 				return FALSE;
 			}
@@ -509,9 +507,7 @@ BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
 FASTDOWNCTX_OBJECT* fastdownctx_object_create(
 	LOGON_OBJECT *plogon, uint8_t string_option)
 {
-	FASTDOWNCTX_OBJECT *pctx;
-	
-	pctx = malloc(sizeof(FASTDOWNCTX_OBJECT));
+	auto pctx = static_cast<FASTDOWNCTX_OBJECT *>(malloc(sizeof(FASTDOWNCTX_OBJECT)));
 	if (NULL == pctx) {
 		return NULL;
 	}
