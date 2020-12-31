@@ -19,7 +19,6 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 	int handle;
 	int user_id;
 	void *pvalue;
-	char *pdomain;
 	int logon_mode;
 	struct tm *ptm;
 	time_t cur_time;
@@ -35,7 +34,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 	
 	rpc_info = get_rpc_info();
 	if (open_flags & LOGON_OPEN_FLAG_ALTERNATE_SERVER) {
-		pdomain = strchr(rpc_info.username, '@');
+		auto pdomain = strchr(rpc_info.username, '@');
 		if (NULL == pdomain) {
 			return ecUnknownUser;
 		}
@@ -89,7 +88,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 	if (NULL == pvalue) {
 		return ecError;
 	}
-	*pmailbox_guid = rop_util_binary_to_guid(pvalue);
+	*pmailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	pvalue = common_util_get_propvals(&propvals, PROP_TAG_OUTOFOFFICESTATE);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		*presponse_flags |= RESPONSE_FLAG_OOF;
@@ -241,8 +240,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	if (NULL == pvalue) {
 		return ecError;
 	}
-	mailbox_guid = rop_util_binary_to_guid(pvalue);
-	
+	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	plogon = logon_object_create(logon_flags, open_flags,
 				LOGON_MODE_GUEST, domain_id, pdomain,
 				homedir, mailbox_guid);
@@ -265,12 +263,11 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
 	if (FALSE == common_util_check_message_class(pstr_class)) {
 		return ecInvalidParam;
 	}
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -280,7 +277,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	if (FALSE == logon_object_check_private(plogon)) {
 		return ecNotSupported;
 	}
-	*ppstr_explicit = common_util_alloc(256);
+	*ppstr_explicit = static_cast<char *>(common_util_alloc(256));
 	if (NULL == *ppstr_explicit) {
 		return ecMAPIOOM;
 	}
@@ -299,7 +296,6 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	void *pvalue;
 	BOOL b_result;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
 	if (FALSE == common_util_check_message_class(pstr_class)) {
 		return ecInvalidParam;
@@ -311,7 +307,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		0 == strcasecmp(pstr_class, "REPORT.IPM")) {
 		return ecAccessDenied;
 	}
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -353,7 +349,6 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 {
 	int i;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	PROPTAG_ARRAY columns;
 	TARRAY_SET class_table;
 	uint32_t proptags[3] = {PROP_TAG_FOLDERID,
@@ -362,7 +357,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	
 	columns.count = 3;
 	columns.pproptag = proptags;
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -380,7 +375,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 		return ecNoReceiveFolder;
 	}
 	prows->count = class_table.count;
-	prows->prows = common_util_alloc(sizeof(PROPERTY_ROW)*class_table.count);
+	prows->prows = static_cast<PROPERTY_ROW *>(common_util_alloc(sizeof(PROPERTY_ROW) * class_table.count));
 	if (NULL == prows->prows) {
 		return ecMAPIOOM;
 	}
@@ -410,9 +405,8 @@ uint32_t rop_getowningservers(
 	int domain_id;
 	int object_type;
 	uint16_t replid;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -424,7 +418,7 @@ uint32_t rop_getowningservers(
 	}
 	pghost->server_count = 1;
 	pghost->cheap_server_count = 1;
-	pghost->ppservers = common_util_alloc(sizeof(char*));
+	pghost->ppservers = static_cast<char **>(common_util_alloc(sizeof(char *)));
 	if (NULL == pghost->ppservers) {
 		return ecMAPIOOM;
 	}
@@ -451,7 +445,7 @@ uint32_t rop_getowningservers(
 	} else {
 		domain_id = logon_object_get_account_id(plogon);
 	}
-	pghost->ppservers[0] = common_util_alloc(256);
+	pghost->ppservers[0] = static_cast<char *>(common_util_alloc(256));
 	if (NULL == pghost->ppservers[0]) {
 		return ecMAPIOOM;
 	}
@@ -467,9 +461,8 @@ uint32_t rop_publicfolderisghosted(
 {
 	int object_type;
 	uint16_t replid;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -485,7 +478,7 @@ uint32_t rop_publicfolderisghosted(
 		*ppghost = NULL;
 		return ecSuccess;
 	}
-	*ppghost = common_util_alloc(sizeof(GHOST_SERVER));
+	*ppghost = static_cast<GHOST_SERVER *>(common_util_alloc(sizeof(GHOST_SERVER)));
 	if (NULL == *ppghost) {
 		return ecMAPIOOM;
 	}
@@ -500,9 +493,8 @@ uint32_t rop_longtermidfromid(uint64_t id,
 	BOOL b_found;
 	uint16_t replid;
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -545,9 +537,8 @@ uint32_t rop_idfromlongtermid(
 	GUID tmp_guid;
 	int object_type;
 	uint16_t replid;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -592,9 +583,8 @@ uint32_t rop_getperuserlongtermids(const GUID *pguid,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -613,9 +603,8 @@ uint32_t rop_getperuserguid(
 	void *plogmap,uint8_t logon_id,  uint32_t hin)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -636,9 +625,8 @@ uint32_t rop_readperuserinformation(
 	uint32_t hin)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -658,9 +646,8 @@ uint32_t rop_writeperuserinformation(
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	LOGON_OBJECT *plogon;
 	
-	plogon = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
+	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}

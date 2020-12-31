@@ -144,7 +144,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		cpid = pinfo->cpid;
 		break;
 	case OBJECT_TYPE_FOLDER:
-		if (folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pobject),
+		if (!folder_object_get_properties(static_cast<FOLDER_OBJECT *>(pobject),
 		    ptmp_proptags, &propvals))
 			return ecError;
 		pinfo = emsmdb_interface_get_emsmdb_info();
