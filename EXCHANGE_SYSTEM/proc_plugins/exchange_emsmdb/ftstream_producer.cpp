@@ -44,7 +44,7 @@ static void ftstream_producer_try_recode_nbp(
 	}
 	if (pstream->offset - last_seek >=
 		FTSTREAM_PRODUCER_POINT_LENGTH) {
-		ppoint = malloc(sizeof(POINT_NODE));
+		ppoint = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
 		if (NULL == ppoint) {
 			return;
 		}
@@ -65,7 +65,7 @@ static void ftstream_producer_record_nbp(
 	pnode = double_list_get_tail(&pstream->bp_list);
 	if (NULL == pnode || nbp > 
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = malloc(sizeof(POINT_NODE));
+		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -87,7 +87,7 @@ static void ftstream_producer_record_lvp(
 	pnode = double_list_get_tail(&pstream->bp_list);
 	if (NULL == pnode || position >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = malloc(sizeof(POINT_NODE));
+		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -100,7 +100,7 @@ static void ftstream_producer_record_lvp(
 	}
 	if (position + length >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = malloc(sizeof(POINT_NODE));
+		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -122,7 +122,7 @@ static void ftstream_producer_record_wsp(
 	pnode = double_list_get_tail(&pstream->bp_list);
 	if (NULL == pnode || position >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = malloc(sizeof(POINT_NODE));
+		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -135,7 +135,7 @@ static void ftstream_producer_record_wsp(
 	}
 	if (position + length >
 		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = malloc(sizeof(POINT_NODE));
+		pbpnode = static_cast<POINT_NODE *>(malloc(sizeof(POINT_NODE)));
 		if (NULL == pbpnode) {
 			return;
 		}
@@ -250,11 +250,10 @@ static BOOL ftstream_producer_write_wstring(
 	FTSTREAM_PRODUCER *pstream, const char *pstr)
 {
 	int len;
-	char *pbuff;
 	uint32_t position;
 	
 	len = 2*strlen(pstr) + 2;
-	pbuff = malloc(len);
+	auto pbuff = static_cast<char *>(malloc(len));
 	if (NULL == pbuff) {
 		return FALSE;
 	}
@@ -439,15 +438,14 @@ static BOOL ftstream_producer_write_propvalue(
 				if (proptype == PT_STRING8) {
 					proptype = PT_UNICODE;
 					write_type = PT_UNICODE;
-					len = 2*strlen(ppropval->pvalue) + 2;
-					pvalue = common_util_alloc(len);
+					len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
+					pvalue = static_cast<char *>(common_util_alloc(len));
 					if (NULL == pvalue) {
 						return FALSE;
 					}
 					if (common_util_convert_string(TRUE,
-						ppropval->pvalue, pvalue, len) <= 0) {
+					    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
 						*pvalue = '\0';	
-					}
 					ppropval->pvalue = pvalue;
 				}
 			} else if (pstream->string_option & STRING_OPTION_CPID) {
@@ -464,15 +462,14 @@ static BOOL ftstream_producer_write_propvalue(
 				if (proptype == PT_UNICODE) {
 					proptype = PT_STRING8;
 					write_type = PT_STRING8;
-					len = 2*strlen(ppropval->pvalue) + 2;
-					pvalue = common_util_alloc(len);
+					len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
+					pvalue = static_cast<char *>(common_util_alloc(len));
 					if (NULL == pvalue) {
 						return FALSE;
 					}
 					if (common_util_convert_string(FALSE,
-						ppropval->pvalue, pvalue, len) <= 0) {
+					    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
 						*pvalue = '\0';	
-					}
 					ppropval->pvalue = pvalue;
 				}
 			}
@@ -507,14 +504,11 @@ static BOOL ftstream_producer_write_propvalue(
 		return ftstream_producer_write_uint64(pstream,
 						*(uint64_t*)ppropval->pvalue);
 	case PT_STRING8:
-		return ftstream_producer_write_string(
-					pstream, ppropval->pvalue);
+		return ftstream_producer_write_string(pstream, static_cast<char *>(ppropval->pvalue));
 	case PT_UNICODE:
-		return ftstream_producer_write_wstring(
-					pstream, ppropval->pvalue);
+		return ftstream_producer_write_wstring(pstream, static_cast<char *>(ppropval->pvalue));
 	case PT_CLSID:
-		return ftstream_producer_write_guid(
-				pstream, ppropval->pvalue);
+		return ftstream_producer_write_guid(pstream, static_cast<GUID *>(ppropval->pvalue));
 	/*
 	case PT_SVREID:
 		return ftstream_producer_write_svreid(
@@ -522,8 +516,7 @@ static BOOL ftstream_producer_write_propvalue(
 	*/
 	case PT_OBJECT:
 	case PT_BINARY:
-		return ftstream_producer_write_binary(
-					pstream, ppropval->pvalue);
+		return ftstream_producer_write_binary(pstream, static_cast<BINARY *>(ppropval->pvalue));
 	case PT_MV_SHORT:
 		count = ((SHORT_ARRAY*)ppropval->pvalue)->count;
 		if (FALSE == ftstream_producer_write_uint32(
@@ -649,12 +642,10 @@ BOOL ftstream_producer_write_errorinfo(
 	} else {
 		tmp_bin.cb = 94 + perror->paux_bytes->cb;
 	}
-	tmp_bin.pb = common_util_alloc(tmp_bin.cb);
-	if (NULL == tmp_bin.pb) {
+	tmp_bin.pv = common_util_alloc(tmp_bin.cb);
+	if (tmp_bin.pv == nullptr)
 		return FALSE;
-	}
-	ext_buffer_push_init(&ext_push,
-		tmp_bin.pb, tmp_bin.cb, 0);
+	ext_buffer_push_init(&ext_push, tmp_bin.pv, tmp_bin.cb, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_push_uint16(
 		&ext_push, perror->version)) {
 		return FALSE;
@@ -856,11 +847,9 @@ BOOL ftstream_producer_write_message(
 	FTSTREAM_PRODUCER *pstream,
 	const MESSAGE_CONTENT *pmessage)
 {
-	uint8_t *pbool;
 	uint32_t marker;
 	
-	pbool = common_util_get_propvals((TPROPVAL_ARRAY*)
-			&pmessage->proplist, PROP_TAG_ASSOCIATED);
+	auto pbool = static_cast<uint8_t *>(common_util_get_propvals(&pmessage->proplist, PROP_TAG_ASSOCIATED));
 	if (NULL == pbool || 0 == *pbool) {
 		marker = STARTMESSAGE;
 	} else {
@@ -1314,9 +1303,8 @@ FTSTREAM_PRODUCER* ftstream_producer_create(
 	char path[256];
 	DCERPC_INFO rpc_info;
 	struct stat node_stat;
-	FTSTREAM_PRODUCER *pstream;
 	
-	pstream = malloc(sizeof(FTSTREAM_PRODUCER));
+	auto pstream = static_cast<FTSTREAM_PRODUCER *>(malloc(sizeof(FTSTREAM_PRODUCER)));
 	if (NULL == pstream) {
 		return NULL;
 	}
