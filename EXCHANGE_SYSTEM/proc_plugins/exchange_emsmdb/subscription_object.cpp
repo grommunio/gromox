@@ -6,9 +6,7 @@ SUBSCRIPTION_OBJECT* subscription_object_create(
 	uint16_t notification_types, BOOL b_whole,
 	uint64_t folder_id, uint64_t message_id)
 {
-	SUBSCRIPTION_OBJECT *psub;
-	
-	psub = malloc(sizeof(SUBSCRIPTION_OBJECT));
+	auto psub = static_cast<SUBSCRIPTION_OBJECT *>(malloc(sizeof(SUBSCRIPTION_OBJECT)));
 	if (NULL == psub) {
 		return NULL;
 	}
