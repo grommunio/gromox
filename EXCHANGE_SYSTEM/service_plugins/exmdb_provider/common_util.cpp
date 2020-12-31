@@ -5934,11 +5934,13 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 		pbin->cb, common_util_alloc, 0);
 	if (EXT_ERR_SUCCESS != ext_buffer_pull_addressbook_entryid(
 		&ext_pull, &ab_entryid)) {
-		return FALSE;
+		*pb_owner = false;
+		return TRUE;
 	}
 	if (FALSE == common_util_essdn_to_username(
 		ab_entryid.px500dn, tmp_name)) {
-		return FALSE;
+		*pb_owner = false;
+		return TRUE;
 	}
 	if (0 == strcasecmp(username, tmp_name)) {
 		*pb_owner = TRUE;
