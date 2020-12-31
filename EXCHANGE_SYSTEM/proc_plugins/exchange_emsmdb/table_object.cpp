@@ -78,13 +78,11 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 		} else {
 			username = rpc_info.username;
 		}
-		if (FALSE == exmdb_client_load_hierarchy_table(
-			logon_object_get_dir(ptable->plogon),
-			folder_object_get_id(ptable->pparent_obj),
-			username, ptable->table_flags,
-			ptable->prestriction, &table_id, &row_num)) {
+		if (!exmdb_client_load_hierarchy_table(logon_object_get_dir(ptable->plogon),
+		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    username, ptable->table_flags, ptable->prestriction,
+		    &table_id, &row_num))
 			return FALSE;
-		}
 		break;
 	case ropGetContentsTable:
 		rpc_info = get_rpc_info();
@@ -97,42 +95,34 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 			if (FALSE == logon_object_check_private(ptable->plogon)) {
 				username = rpc_info.username;
 			} else {
-				if (FALSE == exmdb_client_check_folder_permission(
-					logon_object_get_dir(ptable->plogon),
-					folder_object_get_id(ptable->pparent_obj),
-					rpc_info.username, &permission)) {
+				if (!exmdb_client_check_folder_permission(
+				    logon_object_get_dir(ptable->plogon),
+				    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+				    rpc_info.username, &permission))
 					return FALSE;	
-				}
 				if (0 == (permission & PERMISSION_READANY) &&
 					0 == (permission & PERMISSION_FOLDEROWNER)) {
 					username = rpc_info.username;
 				}
 			}
 		}
-		if (FALSE == exmdb_client_load_content_table(
-			logon_object_get_dir(ptable->plogon), pinfo->cpid,
-			folder_object_get_id(ptable->pparent_obj), username,
-			ptable->table_flags, ptable->prestriction,
-			ptable->psorts, &table_id, &row_num)) {
+		if (!exmdb_client_load_content_table(logon_object_get_dir(ptable->plogon),
+		    pinfo->cpid, folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    username, ptable->table_flags, ptable->prestriction,
+		    ptable->psorts, &table_id, &row_num))
 			return FALSE;
-		}
 		break;
 	case ropGetPermissionsTable:
-		if (FALSE == exmdb_client_load_permission_table(
-			logon_object_get_dir(ptable->plogon),
-			folder_object_get_id(ptable->pparent_obj),
-			ptable->table_flags, &table_id, &row_num)) {
+		if (!exmdb_client_load_permission_table(logon_object_get_dir(ptable->plogon),
+		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    ptable->table_flags, &table_id, &row_num))
 			return FALSE;
-		}
 		break;
 	case ropGetRulesTable:
-		if (FALSE == exmdb_client_load_rule_table(
-			logon_object_get_dir(ptable->plogon),
-			folder_object_get_id(ptable->pparent_obj),
-			ptable->table_flags, ptable->prestriction,
-			&table_id, &row_num)) {
+		if (!exmdb_client_load_rule_table(logon_object_get_dir(ptable->plogon),
+		    folder_object_get_id(static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)),
+		    ptable->table_flags, ptable->prestriction, &table_id, &row_num))
 			return FALSE;
-		}
 		break;
 	}
 	table_object_set_table_id(ptable, table_id);
@@ -175,8 +165,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 	}
 	if (ptable->rop_id == ropGetAttachmentTable) {
 		return message_object_query_attachment_table(
-			ptable->pparent_obj, ptable->pcolumns,
-			ptable->position, row_needed, pset);
+		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
+		       ptable->pcolumns, ptable->position, row_needed, pset);
 	}
 	if (FALSE == logon_object_check_private(ptable->plogon)) {
 		rpc_info = get_rpc_info();
@@ -319,7 +309,7 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 	
 	if (ptable->rop_id == ropGetAttachmentTable) {
 		num = 0;
-		message_object_get_attachments_num(ptable->pparent_obj, &num);
+		message_object_get_attachments_num(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), &num);
 		return num;
 	}
 	exmdb_client_sum_table(
@@ -332,9 +322,7 @@ TABLE_OBJECT* table_object_create(LOGON_OBJECT *plogon,
 	void *pparent_obj, uint8_t table_flags,
 	uint8_t rop_id, uint8_t logon_id)
 {
-	TABLE_OBJECT *ptable;
-	
-	ptable = malloc(sizeof(TABLE_OBJECT));
+	auto ptable = static_cast<TABLE_OBJECT *>(malloc(sizeof(TABLE_OBJECT)));
 	if (NULL == ptable) {
 		return NULL;
 	}
@@ -370,7 +358,6 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
-	BOOKMARK_NODE *pbookmark;
 	
 	if (FALSE == exmdb_client_mark_table(
 		logon_object_get_dir(ptable->plogon),
@@ -378,7 +365,7 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 		&inst_id, &inst_num, &row_type)) {
 		return FALSE;
 	}
-	pbookmark = malloc(sizeof(BOOKMARK_NODE));
+	auto pbookmark = static_cast<BOOKMARK_NODE *>(malloc(sizeof(BOOKMARK_NODE)));
 	if (NULL == pbookmark) {
 		return FALSE;
 	}
@@ -487,7 +474,7 @@ BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 {
 	if (ptable->rop_id == ropGetAttachmentTable)
 		return message_object_get_attachment_table_all_proptags(
-								ptable->pparent_obj, pcolumns);
+		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), pcolumns);
 	return exmdb_client_get_table_all_proptags(
 			logon_object_get_dir(ptable->plogon),
 			ptable->table_id, pcolumns);
@@ -588,12 +575,10 @@ BOOL table_object_restore_state(TABLE_OBJECT *ptable,
 		ptable->table_id, state_id, &position)) {
 		return FALSE;	
 	}
-	if (FALSE == exmdb_client_locate_table(
-		logon_object_get_dir(ptable->plogon),
-		ptable->table_id, inst_id, inst_num,
-		&new_position, &tmp_type)) {
+	if (!exmdb_client_locate_table(logon_object_get_dir(ptable->plogon),
+	    ptable->table_id, inst_id, inst_num,
+	    reinterpret_cast<int32_t *>(&new_position), &tmp_type))
 		return FALSE;
-	}
 	if (position < 0) {
 		/* assign an invalid bookmark index */
 		*pindex = ptable->bookmark_index;
