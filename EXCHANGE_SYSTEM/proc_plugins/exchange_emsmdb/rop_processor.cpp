@@ -1,4 +1,4 @@
-#include <string.h>
+#include <cstring>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include "subscription_object.h"
@@ -28,9 +28,7 @@
 #include "util.h"
 #include <pthread.h>
 #include <unistd.h>
-#include <stdio.h>
-
-
+#include <cstdio>
 #define RPCEXT2_FLAG_NOCOMPRESSION		0x00000001
 #define RPCEXT2_FLAG_NOXORMAGIC			0x00000002
 #define RPCEXT2_FLAG_CHAIN				0x00000004

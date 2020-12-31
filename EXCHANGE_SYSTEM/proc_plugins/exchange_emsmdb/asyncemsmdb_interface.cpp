@@ -1,4 +1,4 @@
-#include <string.h>
+#include <cstring>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
@@ -12,8 +12,7 @@
 #include "util.h"
 #include <pthread.h>
 #include <unistd.h>
-#include <stdio.h>
-
+#include <cstdio>
 #define WAITING_INTERVAL						300
 
 #define FLAG_NOTIFICATION_PENDING				0x00000001

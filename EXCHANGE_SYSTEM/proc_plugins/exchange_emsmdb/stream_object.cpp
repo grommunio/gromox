@@ -7,9 +7,8 @@
 #include "folder_object.h"
 #include "message_object.h"
 #include "attachment_object.h"
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdlib>
+#include <cstring>
 #define STREAM_INIT_BUFFER_LENGTH						4096
 
 STREAM_OBJECT* stream_object_create(void *pparent, int object_type,

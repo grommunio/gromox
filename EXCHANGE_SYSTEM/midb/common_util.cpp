@@ -11,8 +11,8 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <ifaddrs.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 typedef struct _COMMAND_CONTEXT {
 	ALLOC_CONTEXT alloc_ctx;

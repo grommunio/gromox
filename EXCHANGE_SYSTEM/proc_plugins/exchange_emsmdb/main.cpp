@@ -1,5 +1,4 @@
-#include <errno.h>
-#include <stdbool.h>
+#include <cerrno>
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "guid.h"
@@ -18,8 +17,8 @@
 #include "asyncemsmdb_ndr.h"
 #include "emsmdb_interface.h"
 #include "asyncemsmdb_interface.h"
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 DECLARE_API;
 

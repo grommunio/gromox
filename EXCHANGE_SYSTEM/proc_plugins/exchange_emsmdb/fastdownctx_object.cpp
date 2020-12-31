@@ -5,9 +5,8 @@
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include "eid_array.h"
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdlib>
+#include <cstring>
 
 enum {
 	FUNC_ID_UINT32,

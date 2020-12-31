@@ -1,6 +1,5 @@
-#include <errno.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <cerrno>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "double_list.h"
@@ -16,12 +15,11 @@
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <sys/time.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 #include <netdb.h>
 #include <poll.h>
-#include <time.h>
-
+#include <ctime>
 #define SOCKET_TIMEOUT							180
 
 typedef struct _PROXY_NODE {

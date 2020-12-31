@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -9,10 +9,9 @@
 #include "common_util.h"
 #include "ext_buffer.h"
 #include "rop_util.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 FOLDER_OBJECT* folder_object_create(LOGON_OBJECT *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)

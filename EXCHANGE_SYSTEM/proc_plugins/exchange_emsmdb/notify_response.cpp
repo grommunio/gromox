@@ -1,7 +1,7 @@
 #include "notify_response.h"
 #include "rop_util.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 typedef struct _NOTIFICATION_DATA_MEMORY {
 	uint16_t table_event;

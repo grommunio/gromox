@@ -2,9 +2,9 @@
 #include "mod_rewrite.h"
 #include "double_list.h"
 #include "util.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <regex.h>
 
 #define MAX_LINE					16*1024

@@ -11,8 +11,7 @@
 #include "common_util.h"
 #include "tarray_set.h"
 #include "rop_util.h"
-#include <stdlib.h>
-
+#include <cstdlib>
 
 typedef struct _MARKER_NODE {
 	DOUBLE_LIST_NODE node;

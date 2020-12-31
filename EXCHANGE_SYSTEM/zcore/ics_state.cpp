@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include "tpropval_array.h"
 #include "common_util.h"
@@ -6,9 +6,8 @@
 #include "ics_state.h"
 #include "rop_util.h"
 #include "idset.h"
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdlib>
+#include <cstring>
 
 static void ics_state_clear(ICS_STATE *pstate)
 {

@@ -1,4 +1,4 @@
-#include <errno.h>
+#include <cerrno>
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -10,9 +10,9 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
 static BOOL g_notify_stop;
 static int g_listen_sockd;

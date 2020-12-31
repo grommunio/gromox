@@ -4,12 +4,12 @@
 #include "common_util.h"
 #include "cmd_parser.h"
 #include <poll.h>
-#include <stdio.h>
+#include <cstdio>
 #include <netdb.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/types.h>

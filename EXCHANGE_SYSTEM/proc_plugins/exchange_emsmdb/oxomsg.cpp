@@ -10,7 +10,7 @@
 #include "list_file.h"
 #include "rop_util.h"
 #include "rops.h"
-#include <stdio.h>
+#include <cstdio>
 
 static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
     const char *representing_username)

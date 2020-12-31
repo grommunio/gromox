@@ -9,8 +9,8 @@
 #include "message_object.h"
 #include "processor_types.h"
 #include "emsmdb_interface.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 typedef struct _BOOKMARK_NODE {
 	DOUBLE_LIST_NODE node;

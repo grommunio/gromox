@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>

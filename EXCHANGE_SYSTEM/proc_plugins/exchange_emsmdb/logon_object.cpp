@@ -1,5 +1,5 @@
-#include <ctype.h>
-#include <stdint.h>
+#include <cctype>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -12,9 +12,9 @@
 #include "rop_util.h"
 #include "util.h"
 #include "guid.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #define HGROWING_SIZE									0x500
 

@@ -1,8 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -21,15 +20,15 @@
 #include "proptag_array.h"
 #include "bounce_producer.h"
 #include "emsmdb_interface.h"
-#include <time.h>
-#include <errno.h>
-#include <stdio.h>
+#include <ctime>
+#include <cerrno>
+#include <cstdio>
 #include <iconv.h>
 #include <fcntl.h>
-#include <stdarg.h>
-#include <stdlib.h>
+#include <cstdarg>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <arpa/inet.h>

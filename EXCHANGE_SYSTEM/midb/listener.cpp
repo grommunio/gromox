@@ -1,4 +1,4 @@
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -12,13 +12,12 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <netdb.h>
 #include <fcntl.h>
-#include <stdio.h>
-
+#include <cstdio>
 
 typedef struct _ACL_ITEM {
 	DOUBLE_LIST_NODE node;

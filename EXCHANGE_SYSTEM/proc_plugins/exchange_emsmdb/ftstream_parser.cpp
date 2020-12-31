@@ -8,13 +8,11 @@
 #include "util.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
-
-
+#include <cstdio>
 #define FSTREAM_SVAL(pdata)						SVAL(pdata,0)
 #define FSTREAM_IVAL(pdata)						IVAL(pdata,0)
 

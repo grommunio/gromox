@@ -2,8 +2,7 @@
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include "aux_ext.h"
-#include <string.h>
-
+#include <cstring>
 #define AUX_ALIGN_SIZE									4
 
 static int aux_ext_pull_aux_perf_requestid(

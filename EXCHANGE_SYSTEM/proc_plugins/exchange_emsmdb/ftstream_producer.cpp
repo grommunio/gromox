@@ -6,13 +6,11 @@
 #include "ext_buffer.h"
 #include "util.h"
 #include <sys/stat.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <fcntl.h>
-#include <stdio.h>
-
-
+#include <cstdio>
 #define FSTREAM_SSVAL(pdata,v)					SSVAL(pdata,0,v)
 #define FSTREAM_SIVAL(pdata,v)					SIVAL(pdata,0,v)
 

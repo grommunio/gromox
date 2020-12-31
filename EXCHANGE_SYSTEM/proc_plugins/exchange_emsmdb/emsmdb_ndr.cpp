@@ -1,6 +1,6 @@
 #include "emsmdb_interface.h"
 #include "emsmdb_ndr.h"
-#include <string.h>
+#include <cstring>
 
 int emsmdb_ndr_pull_ecdodisconnect(NDR_PULL *pndr, ECDODISCONNECT_IN *r)
 {

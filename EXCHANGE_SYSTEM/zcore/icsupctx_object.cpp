@@ -1,7 +1,7 @@
 #include "icsupctx_object.h"
 #include "common_util.h"
 #include "idset.h"
-#include <stdlib.h>
+#include <cstdlib>
 
 ICSUPCTX_OBJECT* icsupctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type)

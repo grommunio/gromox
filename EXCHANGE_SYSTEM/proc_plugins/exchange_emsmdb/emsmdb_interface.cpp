@@ -13,9 +13,9 @@
 #include "aux_ext.h"
 #include "util.h"
 #include "guid.h"
-#include <time.h>
-#include <stdio.h>
-#include <string.h>
+#include <ctime>
+#include <cstdio>
+#include <cstring>
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/time.h>

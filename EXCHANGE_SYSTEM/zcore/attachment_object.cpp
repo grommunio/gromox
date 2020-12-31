@@ -6,8 +6,8 @@
 #include "store_object.h"
 #include "common_util.h"
 #include "rop_util.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 ATTACHMENT_OBJECT* attachment_object_create(
 	MESSAGE_OBJECT *pparent, uint32_t attachment_num)

@@ -1,5 +1,5 @@
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
@@ -11,8 +11,7 @@
 #include "util.h"
 #include <sys/types.h>
 #include <dirent.h>
-#include <stdio.h>
-
+#include <cstdio>
 
 typedef struct _TAG_NODE {
 	DOUBLE_LIST_NODE node;

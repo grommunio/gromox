@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include "icsdownctx_object.h"
 #include "emsmdb_interface.h"
@@ -13,8 +13,8 @@
 #include "eid_array.h"
 #include "rop_util.h"
 #include "idset.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 enum {
 	FUNC_ID_UINT32,

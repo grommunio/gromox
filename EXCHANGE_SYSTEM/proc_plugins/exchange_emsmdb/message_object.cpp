@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -17,9 +17,9 @@
 #include "guid.h"
 #include "util.h"
 #include "pcl.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 	BOOL b_check, const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems);

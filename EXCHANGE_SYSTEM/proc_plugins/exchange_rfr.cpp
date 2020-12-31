@@ -1,12 +1,11 @@
-#include <stdbool.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
 #include "util.h"
 #include "guid.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 
 DECLARE_API;
 

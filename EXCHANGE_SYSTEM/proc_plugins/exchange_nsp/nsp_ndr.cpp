@@ -2,9 +2,8 @@
 #include <gromox/proc_common.h>
 #include "nsp_ndr.h"
 #include <iconv.h>
-#include <string.h>
-#include <stdlib.h>
-
+#include <cstring>
+#include <cstdlib>
 #define FLAG_HEADER			0x1
 #define FLAG_CONTENT		0x2
 

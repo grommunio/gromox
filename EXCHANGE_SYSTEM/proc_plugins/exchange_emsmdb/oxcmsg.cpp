@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include "rops.h"
