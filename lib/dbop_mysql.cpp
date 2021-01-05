@@ -271,14 +271,6 @@ static int dbop_mysql_create_int(MYSQL *conn, const struct tbl_init *entry)
 			return EXIT_FAILURE;
 		}
 	}
-	char uq[80];
-	snprintf(uq, sizeof(uq), "INSERT INTO `options` (`key`, `value`) VALUES ('schemaversion', %u)",
-	         dbop_mysql_recentversion());
-	auto ret = mysql_real_query(conn, uq, strlen(uq));
-	if (ret != 0) {
-		printf("Query \"%s\":\n%s\n", uq, mysql_error(conn));
-		return EXIT_FAILURE;
-	}
 	return EXIT_SUCCESS;
 }
 
@@ -450,7 +442,18 @@ static const struct tbl_init tbl_init_top[] = {
 
 int dbop_mysql_create_top(MYSQL *conn)
 {
-	return dbop_mysql_create_int(conn, tbl_init_top);
+	auto ret = dbop_mysql_create_int(conn, tbl_init_top);
+	if (ret != 0)
+		return ret;
+	char uq[80];
+	snprintf(uq, sizeof(uq), "INSERT INTO `options` (`key`, `value`) VALUES ('schemaversion', %u)",
+	         dbop_mysql_recentversion());
+	ret = mysql_real_query(conn, uq, strlen(uq));
+	if (ret != 0) {
+		printf("Query \"%s\":\n%s\n", uq, mysql_error(conn));
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 }
 
 /* Upgrade phases */
