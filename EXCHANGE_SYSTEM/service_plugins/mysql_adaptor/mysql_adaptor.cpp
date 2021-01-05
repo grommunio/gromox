@@ -1675,14 +1675,16 @@ BOOL mysql_adaptor_check_same_org2(
 
 BOOL mysql_adaptor_check_user(const char *username, char *path)
 {
-	char temp_name[512];
-	char sql_string[1024];
+	char temp_name[640];
+	char sql_string[1536];
 
 	if (path != nullptr)
 		*path = '\0';
 	mysql_adaptor_encode_squote(username, temp_name);
-	snprintf(sql_string, 1024, "SELECT address_status, maildir FROM users "
-		"WHERE username='%s'", temp_name);
+	snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
+		"SELECT DISTINCT u.address_status, u.maildir FROM users AS u "
+		"LEFT JOIN aliases AS a ON u.username=a.mainname "
+		"WHERE u.username='%s' OR a.aliasname='%s'", temp_name, temp_name);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(sql_string))
 		return false;
