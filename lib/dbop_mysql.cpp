@@ -417,6 +417,7 @@ static const char tbl_users_top[] =
 "  `sub_type` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_status` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_type` tinyint(4) NOT NULL DEFAULT 0,"
+"  `entryid` varbinary(64) DEFAULT NULL,"
 "  PRIMARY KEY (`id`),"
 "  UNIQUE KEY `username` (`username`),"
 "  UNIQUE KEY `domain_id_2` (`domain_id`,`username`),"
@@ -532,6 +533,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{52, "ALTER TABLE `domains` DROP COLUMN `max_size`"},
 	{53, "ALTER TABLE `domains` DROP COLUMN `privilege_bits`"},
 	{54, "ALTER TABLE `users` DROP COLUMN `max_file`"},
+	{55, "ALTER TABLE `users` ADD COLUMN `externid` varbinary(64) DEFAULT NULL"},
 	{0, nullptr},
 };
 
