@@ -50,8 +50,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[lang_charset]: Failed to load hash table\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("lang_to_charset",
-			table_query)) {
+		if (!register_service("lang_to_charset", reinterpret_cast<void *>(table_query))) {
 			printf("[lang_charset]: failed to register \"lang_to_charset\" service\n");
 			return FALSE;
 		}
@@ -89,7 +88,7 @@ static BOOL table_query(const char* lang, char *charset)
 	HX_strlower(temp_string);
 	
 	pthread_rwlock_rdlock(&g_refresh_lock);
-    pcharset = str_hash_query(g_hash_table, temp_string);
+	pcharset = static_cast<char *>(str_hash_query(g_hash_table, temp_string));
 	if (NULL == pcharset) {
 		charset[0] = '\0';
 	} else {
@@ -118,7 +117,7 @@ static int table_refresh()
 			g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
+	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + 1;
 	

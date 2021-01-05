@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <libHX/defs.h>
 #include <libHX/proc.h>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
@@ -15,7 +16,8 @@ static int at_add_timer(const char *command, int seconds)
 	char buf[HXSIZEOF_Z32+20];
 	snprintf(buf, sizeof(buf), "now + %d minutes", seconds / 60);
 	const char *cmd[] = {"at", "-M", buf, nullptr};
-	struct HXproc proc = {.p_flags = HXPROC_STDIN | HXPROC_NULL_STDOUT | HXPROC_STDERR};
+	struct HXproc proc{};
+	proc.p_flags = HXPROC_STDIN | HXPROC_NULL_STDOUT | HXPROC_STDERR;
 	if (HXproc_run_async(cmd, &proc) < 0)
 		return 0;
 	write(proc.p_stdin, command, strlen(command));
@@ -54,8 +56,8 @@ BOOL SVC_LibMain(int reason, void **data)
 	if (reason != PLUGIN_INIT)
 		return false;
 	LINK_API(data);
-	if (!register_service("add_timer", at_add_timer) ||
-	    !register_service("cancel_timer", at_del_timer)) {
+	if (!register_service("add_timer", reinterpret_cast<void *>(at_add_timer)) ||
+	    !register_service("cancel_timer", reinterpret_cast<void *>(at_del_timer))) {
 		printf("[at_client]: failed to register timer functions\n");
 		return false;
 	}

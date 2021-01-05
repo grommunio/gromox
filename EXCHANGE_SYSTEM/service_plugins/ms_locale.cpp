@@ -48,23 +48,20 @@ static BOOL verify_cpid(uint32_t cpid)
 
 static const char* cpid_to_charset(uint32_t cpid)
 {
-	const char *charset;
-	
 	pthread_mutex_lock(&g_cpid_lock);
-	charset = int_hash_query(g_cpid_hash, cpid);
+	auto charset = static_cast<char *>(int_hash_query(g_cpid_hash, cpid));
 	pthread_mutex_unlock(&g_cpid_lock);
 	return charset;
 }
 
 static uint32_t charset_to_cpid(const char *charset)
 {
-	uint32_t *pcpid;
 	char tmp_charset[32];
 	
 	strcpy(tmp_charset, charset);
 	HX_strlower(tmp_charset);
 	pthread_mutex_lock(&g_charset_lock);
-	pcpid = str_hash_query(g_charset_hash, tmp_charset);
+	auto pcpid = static_cast<uint32_t *>(str_hash_query(g_charset_hash, tmp_charset));
 	pthread_mutex_unlock(&g_charset_lock);
 	if (NULL == pcpid) {
 		return 0;
@@ -75,13 +72,12 @@ static uint32_t charset_to_cpid(const char *charset)
 
 static uint32_t ltag_to_lcid(const char *lang_tag)
 {
-	uint32_t *plcid;
 	char tmp_ltag[32];
 	
 	strncpy(tmp_ltag, lang_tag, sizeof(tmp_ltag));
 	HX_strlower(tmp_ltag);
 	pthread_mutex_lock(&g_ltag_lock);
-	plcid = str_hash_query(g_ltag_hash, tmp_ltag);
+	auto plcid = static_cast<uint32_t *>(str_hash_query(g_ltag_hash, tmp_ltag));
 	pthread_mutex_unlock(&g_ltag_lock);
 	if (NULL != plcid) {
 		return *plcid;
@@ -91,10 +87,8 @@ static uint32_t ltag_to_lcid(const char *lang_tag)
 
 static const char* lcid_to_ltag(uint32_t lcid)
 {
-	const char *pltag;
-	
 	pthread_mutex_lock(&g_lcid_lock);
-	pltag = int_hash_query(g_lcid_hash, lcid);
+	auto pltag = static_cast<char *>(int_hash_query(g_lcid_hash, lcid));
 	pthread_mutex_unlock(&g_lcid_lock);
 	return pltag;
 }
@@ -127,7 +121,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);
-		pcpid_item = list_file_get_list(pfile);
+		pcpid_item = static_cast<CPID_ITEM *>(list_file_get_list(pfile));
 		g_cpid_hash = int_hash_init(item_num + 1, 64);
 		if (NULL == g_cpid_hash) {
 			printf("[ms_locale]: Failed to init cpid hash table\n");
@@ -162,7 +156,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		item_num = list_file_get_item_num(pfile);
 		printf("[ms_locale]: lcid.txt contains %d items\n", item_num);
-		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+		auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
 		g_lcid_hash = int_hash_init(item_num + 1, 32);
 		if (NULL == g_lcid_hash) {
 			printf("[ms_locale]: Failed to init lcid hash table\n");
@@ -194,23 +188,23 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		list_file_free(pfile);
 		printf("[ms_locale]: loaded %zu locale IDs\n", g_lcid_hash->item_num);
 		printf("[ms_locale]: loaded %zu locale names\n", g_ltag_hash->item_num);
-		if (FALSE == register_service("verify_cpid", verify_cpid)) {
+		if (!register_service("verify_cpid", reinterpret_cast<void *>(verify_cpid))) {
 			printf("[ms_locale]: failed to register \"verify_cpid\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("cpid_to_charset", cpid_to_charset)) {
+		if (!register_service("cpid_to_charset", reinterpret_cast<void *>(cpid_to_charset))) {
 			printf("[ms_locale]: failed to register \"cpid_to_charset\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("charset_to_cpid", charset_to_cpid)) {
+		if (!register_service("charset_to_cpid", reinterpret_cast<void *>(charset_to_cpid))) {
 			printf("[ms_locale]: failed to register \"charset_to_cpid\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("ltag_to_lcid", ltag_to_lcid)) {
+		if (!register_service("ltag_to_lcid", reinterpret_cast<void *>(ltag_to_lcid))) {
 			printf("[ms_locale]: failed to register \"ltag_to_lcid\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("lcid_to_ltag", lcid_to_ltag)) {
+		if (!register_service("lcid_to_ltag", reinterpret_cast<void *>(lcid_to_ltag))) {
 			printf("[ms_locale]: failed to register \"lcid_to_ltag\" service\n");
 			return FALSE;
 		}

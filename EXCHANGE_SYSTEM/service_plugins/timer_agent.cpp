@@ -68,7 +68,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char *str_value, *psearch;
 	
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 
 		g_notify_stop = TRUE;
@@ -147,19 +147,16 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "timer_agent");
-		if (FALSE == register_service("add_timer", add_timer)) {
+		if (!register_service("add_timer", reinterpret_cast<void *>(add_timer)))
 			printf("[timer_agent]: failed to register add_timer\n");
-		}
-		
-		if (FALSE == register_service("cancel_timer", cancel_timer)) {
+		if (!register_service("cancel_timer", reinterpret_cast<void *>(cancel_timer)))
 			printf("[timer_agent]: failed to register cancel_timer\n");
-		}
-		
         if (FALSE == register_talk(console_talk)) {
 			printf("[timer_agent]: failed to register console talk\n");
 			return FALSE;
 		}
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 
 		if (FALSE == g_notify_stop) {

@@ -28,26 +28,24 @@ static pthread_mutex_t g_extension_lock;
 
 static const char* mime_to_extension(const char *ptype)
 {
-	char *pextension;
 	char tmp_type[256];
 	
 	strncpy(tmp_type, ptype, 256);
 	HX_strlower(tmp_type);
 	pthread_mutex_lock(&g_mime_lock);
-	pextension = str_hash_query(g_mime_hash, tmp_type);
+	auto pextension = static_cast<char *>(str_hash_query(g_mime_hash, tmp_type));
 	pthread_mutex_unlock(&g_mime_lock);
 	return pextension;
 }
 
 static const char* extension_to_mime(const char *pextension)
 {
-	char *ptype;
 	char tmp_extension[16];
 	
 	strncpy(tmp_extension, pextension, 16);
 	HX_strlower(tmp_extension);
 	pthread_mutex_lock(&g_extension_lock);
-	ptype = str_hash_query(g_extension_hash, tmp_extension);
+	auto ptype = static_cast<char *>(str_hash_query(g_extension_hash, tmp_extension));
 	pthread_mutex_unlock(&g_extension_lock);
 	return ptype;
 }
@@ -84,7 +82,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		item_num = list_file_get_item_num(pfile);
-		struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+		auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
 		g_mime_hash = str_hash_init(item_num + 1, 16, NULL);
 		if (NULL == g_mime_hash) {
 			printf("[mime_extension]: Failed to init MIME hash table\n");
@@ -104,12 +102,12 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			str_hash_add(g_mime_hash, pitem[i].mimetype, pitem[i].ext);
 		}
 		list_file_free(pfile);
-		if (FALSE == register_service("mime_to_extension", mime_to_extension)) {
+		if (!register_service("mime_to_extension", reinterpret_cast<void *>(mime_to_extension))) {
 			printf("[mime_extension]: failed to register"
 				" \"mime_to_extension\" service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("extension_to_mime", extension_to_mime)) {
+		if (!register_service("extension_to_mime", reinterpret_cast<void *>(extension_to_mime))) {
 			printf("[mime_extension]: failed to register"
 				" \"extension_to_mime\" service\n");
 			return FALSE;
