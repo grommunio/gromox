@@ -70,7 +70,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	char *str_value, *psearch;
 	
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 
 		g_notify_stop = TRUE;
@@ -149,24 +149,18 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "event_proxy");
-
-		if (FALSE == register_service("broadcast_event", broadcast_event)) {
+		if (!register_service("broadcast_event", reinterpret_cast<void *>(broadcast_event)))
 			printf("[event_proxy]: failed to register broadcast_event\n");
-		}
-		
-		if (FALSE == register_service("broadcast_select", broadcast_select)) {
+		if (!register_service("broadcast_select", reinterpret_cast<void *>(broadcast_select)))
 			printf("[event_proxy]: failed to register broadcast_select\n");
-		}
-		
-		if (FALSE == register_service("broadcast_unselect", broadcast_unselect)) {
+		if (!register_service("broadcast_unselect", reinterpret_cast<void *>(broadcast_unselect)))
 			printf("[event_proxy]: failed to register broadcast_unselect\n");
-		}
-		
         if (FALSE == register_talk(console_talk)) {
 			printf("[event_proxy]: failed to register console talk\n");
 			return FALSE;
 		}
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 
 		if (FALSE == g_notify_stop) {

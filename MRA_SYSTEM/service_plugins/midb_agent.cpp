@@ -203,7 +203,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
     DOUBLE_LIST_NODE *pnode;
 
 	switch(reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		
 		g_notify_stop = TRUE;
@@ -307,7 +307,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 		pthread_setname_np(g_scan_id, "midb_agent");
 
-#define E(f) register_service(#f, (f))
+#define E(f) register_service(#f, reinterpret_cast<void *>(f))
 		if (!E(list_mail) || !E(delete_mail) || !E(get_mail_id) ||
 		    !E(get_mail_uid) || !E(summary_folder) || !E(make_folder) ||
 		    !E(remove_folder) || !E(ping_mailbox) ||
@@ -331,6 +331,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		}
 
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		if (FALSE == g_notify_stop) {
 			g_notify_stop = TRUE;
@@ -576,7 +577,7 @@ static int list_mail(const char *path, const char *folder, ARRAY *parray,
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-				pspace = memchr(temp_line, ' ', line_pos);
+				pspace = static_cast<char *>(memchr(temp_line, ' ', line_pos));
 				if (NULL == pspace) {
 					goto RDWR_ERROR;
 				}
@@ -2112,7 +2113,6 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
 	int read_len;
 	int line_pos;
 	MITEM mitem;
-	MITEM *pitem;
 	int tv_msec;
 	BACK_CONN *pback;
 	char num_buff[32];
@@ -2248,7 +2248,7 @@ static int list_detail(char *path, char *folder, XARRAY *pxarray,
 			if (TRUE == b_format_error) {
 				num = xarray_get_capacity(pxarray);
 				for (i=0; i<num; i++) {
-					pitem = xarray_get_item(pxarray, i);
+					auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 					if (NULL != pitem) {
 						mem_file_free(&pitem->f_digest);
 					}
@@ -2288,7 +2288,7 @@ RDWR_ERROR:
 	pthread_mutex_unlock(&g_server_lock);
 	num = xarray_get_capacity(pxarray);
 	for (i=0; i<num; i++) {
-		pitem = xarray_get_item(pxarray, i);
+		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
 		}
@@ -2300,11 +2300,10 @@ RDWR_ERROR:
 static void free_result(XARRAY *pxarray)
 {
 	int i, num;
-	MITEM *pitem;
 	
 	num = xarray_get_capacity(pxarray);
 	for (i=0; i<num; i++) {
-		pitem = xarray_get_item(pxarray, i);
+		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
 		}
@@ -2326,7 +2325,6 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 	int line_pos;
 	int tv_msec;
 	MITEM mitem;
-	MITEM *pitem;
 	char *pspace;
 	char *pspace1;
 	BACK_CONN *pback;
@@ -2345,7 +2343,7 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SEQUENCE_NODE *pseq = pnode->pdata;
+		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC -1 1\r\n",
@@ -2428,7 +2426,7 @@ static int fetch_simple(char *path, char *folder, DOUBLE_LIST *plist,
 							uid = atoi(pspace);
 							if (xarray_append(pxarray, &mitem, uid) >= 0) {
 								num = xarray_get_capacity(pxarray);
-								pitem = xarray_get_item(pxarray, num - 1);
+								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
 								strncpy(pitem->mid, temp_line, sizeof(pitem->mid));
@@ -2529,7 +2527,6 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 	int line_pos;
 	int tv_msec;
 	MITEM mitem;
-	MITEM *pitem;
 	BACK_CONN *pback;
 	char num_buff[32];
 	char buff[64*1025];
@@ -2550,7 +2547,7 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SEQUENCE_NODE *pseq = pnode->pdata;
+		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC -1 1\r\n",
@@ -2607,7 +2604,7 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 							*perrno = atoi(buff + 6);
 							num = xarray_get_capacity(pxarray);
 							for (i=0; i<num; i++) {
-								pitem = xarray_get_item(pxarray, i);
+								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 								mem_file_free(&pitem->f_digest);
 							}
 							xarray_clear(pxarray);
@@ -2632,7 +2629,7 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 						temp_line, line_pos, "uid", &mitem.uid)) {
 						if (xarray_append(pxarray, &mitem, mitem.uid) >= 0) {
 							num = xarray_get_capacity(pxarray);
-							pitem = xarray_get_item(pxarray, num - 1);
+							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 							pitem->id = pseq->min + count - 1;
 							pitem->flag_bits = FLAG_LOADED;
 							if (TRUE == get_digest_integer(temp_line, line_pos,
@@ -2691,7 +2688,7 @@ static int fetch_detail(char *path, char *folder, DOUBLE_LIST *plist,
 					*perrno = -1;
 					num = xarray_get_capacity(pxarray);
 					for (i=0; i<num; i++) {
-						pitem = xarray_get_item(pxarray, i);
+						auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 						mem_file_free(&pitem->f_digest);
 					}
 					return MIDB_RESULT_ERROR;
@@ -2730,7 +2727,7 @@ RDWR_ERROR:
 	pthread_mutex_unlock(&g_server_lock);
 	num = xarray_get_capacity(pxarray);
 	for (i=0; i<num; i++) {
-		pitem = xarray_get_item(pxarray, i);
+		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		mem_file_free(&pitem->f_digest);
 	}
 	xarray_clear(pxarray);
@@ -2752,7 +2749,6 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	int line_pos;
 	int tv_msec;
 	MITEM mitem;
-	MITEM *pitem;
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
@@ -2772,7 +2768,7 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SEQUENCE_NODE *pseq = pnode->pdata;
+		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
 		length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
@@ -2848,7 +2844,7 @@ static int fetch_simple_uid(char *path, char *folder, DOUBLE_LIST *plist,
 								uid = atoi(pspace1);
 								if (xarray_append(pxarray, &mitem, uid) >= 0) {
 									num = xarray_get_capacity(pxarray);
-									pitem = xarray_get_item(pxarray, num - 1);
+									auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 									pitem->uid = uid;
 									pitem->id = atoi(temp_line) + 1;
 									strncpy(pitem->mid, pspace, sizeof(pitem->mid));
@@ -2954,7 +2950,6 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	char *pspace;
 	int tv_msec;
 	MITEM mitem;
-	MITEM *pitem;
 	BACK_CONN *pback;
 	char num_buff[32];
 	char buff[64*1025];
@@ -2975,7 +2970,7 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 	
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
-		SEQUENCE_NODE *pseq = pnode->pdata;
+		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
 		length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
@@ -3020,7 +3015,7 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 							*perrno = atoi(buff + 6);
 							num = xarray_get_capacity(pxarray);
 							for (i=0; i<num; i++) {
-								pitem = xarray_get_item(pxarray, i);
+								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 								mem_file_free(&pitem->f_digest);
 							}
 							xarray_clear(pxarray);
@@ -3050,7 +3045,7 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 						pspace ++;
 						if (xarray_append(pxarray, &mitem, mitem.uid) >= 0) {
 							num = xarray_get_capacity(pxarray);
-							pitem = xarray_get_item(pxarray, num - 1);
+							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 							pitem->id = atoi(temp_line) + 1;
 							pitem->flag_bits = FLAG_LOADED;
 							if (TRUE == get_digest_integer(pspace, temp_len,
@@ -3109,7 +3104,7 @@ static int fetch_detail_uid(char *path, char *folder, DOUBLE_LIST *plist,
 					*perrno = -1;
 					num = xarray_get_capacity(pxarray);
 					for (i=0; i<num; i++) {
-						pitem = xarray_get_item(pxarray, i);
+						auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 						mem_file_free(&pitem->f_digest);
 					}
 					return MIDB_RESULT_ERROR;
@@ -3148,7 +3143,7 @@ RDWR_ERROR:
 	pthread_mutex_unlock(&g_server_lock);
 	num = xarray_get_capacity(pxarray);
 	for (i=0; i<num; i++) {
-		pitem = xarray_get_item(pxarray, i);
+		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
 		mem_file_free(&pitem->f_digest);
 	}
 	xarray_clear(pxarray);
@@ -3562,7 +3557,7 @@ static BOOL get_digest_string(const char *src, int length, const char *tag,
 	}
 
 	ptr1 += len;
-	ptr1 = memchr(ptr1, ':', length - (ptr1 - src));
+	ptr1 = static_cast<char *>(memchr(ptr1, ':', length - (ptr1 - src)));
 	if (NULL == ptr1) {
 		return FALSE;
 	}
