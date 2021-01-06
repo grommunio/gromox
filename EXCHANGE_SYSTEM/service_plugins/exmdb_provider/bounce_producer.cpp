@@ -263,7 +263,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
-		presource->content[i] = malloc(node_stat.st_size);
+		presource->content[i] = static_cast<char *>(malloc(node_stat.st_size));
 		if (NULL == presource->content[i]) {
 			closedir(sub_dirp);
 			goto FREE_RESOURCE;
@@ -398,7 +398,7 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 	offset = 0;
 	b_first = FALSE;
 	sprintf(sql_string, "SELECT attachment_id FROM "
-	          "attachments WHERE message_id=%llu", static_cast(unsigned long long, message_id));
+	        "attachments WHERE message_id=%llu", static_cast<unsigned long long>(message_id));
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
 		return 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -412,7 +412,7 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 		if (NULL == pvalue) {
 			continue;
 		}
-		tmp_len = strlen(pvalue);
+		tmp_len = strlen(static_cast<char *>(pvalue));
 		if (offset + tmp_len < 128*1024) {
 			if (TRUE == b_first) {
 				strcpy(parts + offset, g_separator);
@@ -533,7 +533,7 @@ BOOL bounce_producer_make_content(const char *from,
 				return FALSE;
 			}
 			if (NULL != pvalue) {
-				len = strlen(pvalue);
+				len = strlen(static_cast<char *>(pvalue));
 				memcpy(ptr, pvalue, len);
 				 ptr += len;
 			}
