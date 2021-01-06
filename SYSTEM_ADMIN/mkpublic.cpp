@@ -26,7 +26,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <mysql/mysql.h>
-#define LLU(x) static_cast(unsigned long long, (x))
+#define LLU(x) static_cast<unsigned long long>(x)
 
 static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
@@ -34,7 +34,7 @@ static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
-	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -62,7 +62,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	max_eid = g_last_eid;
 	sprintf(sql_string, "INSERT INTO allocated_eids"
 	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
-	        LLU(max_eid), static_cast(long long, time(nullptr)));
+	        LLU(max_eid), static_cast<long long>(time(nullptr)));
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
@@ -232,7 +232,6 @@ int main(int argc, const char **argv)
 {
 	int i;
 	int fd;
-	char *pline;
 	int line_num;
 	int str_size;
 	int str_size1;
@@ -412,7 +411,7 @@ int main(int argc, const char **argv)
 	}
 	str_size1 = node_stat.st_size;
 	
-	sql_string = malloc(str_size + str_size1 + 1);
+	sql_string = static_cast<char *>(malloc(str_size + str_size1 + 1));
 	if (NULL == sql_string) {
 		printf("Failed to allocate memory\n");
 		return 8;
@@ -480,7 +479,7 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 	line_num = list_file_get_item_num(pfile);
-	pline = list_file_get_list(pfile);
+	auto pline = static_cast<char *>(list_file_get_list(pfile));
 	
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	if (!gx_sql_prep(psqlite, csql_string, &pstmt)) {
