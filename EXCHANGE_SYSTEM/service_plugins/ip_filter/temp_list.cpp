@@ -235,7 +235,6 @@ BOOL temp_list_dump(const char *path)
 	int fd, len;
 	char temp_string[512];
 	IP4_HASH_ITER *iter;
-	time_t *pwhen;
 	time_t current_time;
 	struct tm time_buff;
 
@@ -251,7 +250,7 @@ BOOL temp_list_dump(const char *path)
 	iter = ip4_hash_iter_init(g_ip4_hash);
 	for (ip4_hash_iter_begin(iter); FALSE == ip4_hash_iter_done(iter);
 		ip4_hash_iter_forward(iter)) {
-		pwhen = ip4_hash_iter_get_value(iter, temp_string);
+		auto pwhen = static_cast<time_t *>(ip4_hash_iter_get_value(iter, temp_string));
 		if (current_time >= *pwhen) {
 			ip4_hash_iter_remove(iter);
 		} else {

@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "ip_filter.h"
 #include "grey_list.h"
 #include "list_file.h"
@@ -94,7 +95,6 @@ int grey_list_stop()
  */
 int grey_list_query(const char *ip, BOOL b_count)
 {
-    GREY_LIST_ENTRY *pentry = NULL;
     struct timeval current_time;
 
 	if (NULL == ip) {
@@ -104,7 +104,7 @@ int grey_list_query(const char *ip, BOOL b_count)
 		return GREY_LIST_NOT_FOUND;
 	}
     pthread_rwlock_rdlock(&g_refresh_lock);
-    pentry = ip4_hash_query(g_grey_table, (char*)ip);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(ip4_hash_query(g_grey_table, deconst(ip)));
     if (NULL == pentry) {
 		pthread_rwlock_unlock(&g_refresh_lock);
         return GREY_LIST_NOT_FOUND; /* not in grey list */
@@ -153,7 +153,6 @@ int grey_list_query(const char *ip, BOOL b_count)
  */
 BOOL grey_list_echo(const char *ip, int *ptimes, int *pinterval)
 {
-	GREY_LIST_ENTRY *pentry = NULL;
 	struct timeval current_time;
 
 	if (NULL == ip || NULL == ptimes || NULL == pinterval) {
@@ -164,7 +163,7 @@ BOOL grey_list_echo(const char *ip, int *ptimes, int *pinterval)
 	}
 	pthread_rwlock_rdlock(&g_refresh_lock);
 	gettimeofday(&current_time, NULL);
-	pentry = ip4_hash_query(g_grey_table, (char*)ip);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(ip4_hash_query(g_grey_table, deconst(ip)));
 	if (NULL == pentry) {
 		*ptimes = 0;
 		*pinterval = 0;
@@ -229,7 +228,7 @@ int grey_list_refresh()
 		int allow_times;
 		char interval[32];
 	} LIST_ITEM;
-	LIST_ITEM *pitem = reinterpret_cast(LIST_ITEM *, list_file_get_list(plist_file));
+	auto pitem = reinterpret_cast<LIST_ITEM *>(list_file_get_list(plist_file));
     list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;
 	
@@ -278,7 +277,7 @@ BOOL grey_list_add_ip(const char *ip, int times, int interval)
 	int fd, string_len;
 	IP4_HASH_ITER *iter;
 	IP4_HASH_TABLE *phash;
-	GREY_LIST_ENTRY *pentry, entry;
+	GREY_LIST_ENTRY entry;
 
 	if (NULL == ip) {
 		return FALSE;
@@ -295,7 +294,7 @@ BOOL grey_list_add_ip(const char *ip, int times, int interval)
 	string_len ++;
 	/* check first if the string is already in the table */
 	pthread_rwlock_wrlock(&g_refresh_lock);
-	pentry = ip4_hash_query(g_grey_table, (char*)ip);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(ip4_hash_query(g_grey_table, deconst(ip)));
 	if (NULL != pentry) {
 		pentry->allowed_times = times;
 		pentry->interval = interval;
@@ -333,7 +332,7 @@ BOOL grey_list_add_ip(const char *ip, int times, int interval)
 	iter = ip4_hash_iter_init(g_grey_table);
 	for (ip4_hash_iter_begin(iter); FALSE == ip4_hash_iter_done(iter);
 		ip4_hash_iter_forward(iter)) {
-		pentry = ip4_hash_iter_get_value(iter, file_item);
+		pentry = static_cast<GREY_LIST_ENTRY *>(ip4_hash_iter_get_value(iter, file_item));
 		ip4_hash_add(phash, file_item, pentry);
 	}
 	ip4_hash_iter_free(iter);
@@ -358,8 +357,6 @@ BOOL grey_list_add_ip(const char *ip, int times, int interval)
  */
 BOOL grey_list_remove_ip(const char* ip)
 {
-	GREY_LIST_ENTRY *pentry;
-
 	if (NULL == ip) {
 		return TRUE;
 	}
@@ -368,7 +365,7 @@ BOOL grey_list_remove_ip(const char* ip)
 	}
 	/* check first if the string is in hash table */
 	pthread_rwlock_wrlock(&g_refresh_lock);
-	pentry = ip4_hash_query(g_grey_table, (char*)ip);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(ip4_hash_query(g_grey_table, deconst(ip)));
 	if (NULL == pentry) {
 		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
@@ -388,7 +385,6 @@ static void grey_list_flush()
 	int string_len;
 	char file_item[576];
 	IP4_HASH_ITER *iter;
-	GREY_LIST_ENTRY *pentry;
 
 	if (0 == g_growing_num) {
 		return;
@@ -400,7 +396,7 @@ static void grey_list_flush()
 	iter = ip4_hash_iter_init(g_grey_table);
 	for (ip4_hash_iter_begin(iter); FALSE == ip4_hash_iter_done(iter);
 		ip4_hash_iter_forward(iter)) {
-		pentry = ip4_hash_iter_get_value(iter, file_item);
+		auto pentry = static_cast<GREY_LIST_ENTRY *>(ip4_hash_iter_get_value(iter, file_item));
 		string_len = strlen(file_item);
 		string_len += sprintf(file_item + string_len, "\t%d\t", 
 						pentry->allowed_times);
@@ -419,7 +415,6 @@ BOOL grey_list_dump(const char *path)
 	int fd, len;
 	char temp_string[512];
 	IP4_HASH_ITER *iter;
-	GREY_LIST_ENTRY *pentry;
 	struct tm time_buff;
 	struct timeval current_times;
 
@@ -438,7 +433,7 @@ BOOL grey_list_dump(const char *path)
 	iter = ip4_hash_iter_init(g_grey_table);
 	for (ip4_hash_iter_begin(iter); FALSE == ip4_hash_iter_done(iter);
 		ip4_hash_iter_forward(iter)) {
-		pentry = ip4_hash_iter_get_value(iter, temp_string);
+		auto pentry = static_cast<GREY_LIST_ENTRY *>(ip4_hash_iter_get_value(iter, temp_string));
 		if (0 == pentry->allowed_times || 0 == pentry->interval) {
 			continue;
 		}
