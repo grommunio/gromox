@@ -1814,8 +1814,8 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errno;
 	int exists;
 	int recent;
-	int uidnext;
-	long uidvalid;
+	unsigned int uidnext;
+	unsigned long uidvalid;
 	int firstunseen;
 	int string_length;
 	char temp_name[1024];
@@ -1914,8 +1914,8 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errno;
 	int exists;
 	int recent;
-	int uidnext;
-	long uidvalid;
+	unsigned int uidnext;
+	unsigned long uidvalid;
 	int firstunseen;
 	int string_length;
 	char temp_name[1024];
@@ -2961,9 +2961,9 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int exists;
 	int recent;
 	int unseen;
-	int uidnext;
+	unsigned int uidnext;
 	BOOL b_first;
-	long uidvalid;
+	unsigned long uidvalid;
 	int temp_argc;
 	char buff[1024];
 	int string_length;
@@ -3083,13 +3083,13 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int uid;
+	unsigned int uid;
 	int errno;
 	int i, fd;
 	MAIL imail;
 	BOOL b_seen;
 	BOOL b_draft;
-	long uidvalid;
+	unsigned long uidvalid;
 	int temp_argc;
 	BOOL b_flagged;
 	BOOL b_answered;
@@ -3408,7 +3408,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int i;
 	int fd;
-	int uid;
+	unsigned int uid;
 	int errno;
 	MAIL imail;
 	int tmp_len;
@@ -3416,7 +3416,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_seen;
 	BOOL b_draft;
 	int name_len;
-	long uidvalid;
+	unsigned long uidvalid;
 	int flags_len;
 	char *str_name;
 	BOOL b_flagged;
@@ -4182,7 +4182,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int uid;
+	unsigned int uid;
 	int errno;
 	int result;
 	MITEM *pitem;
@@ -4190,7 +4190,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_copied;
 	XARRAY xarray;
 	int i, j, num;
-	long uidvalidity;
+	unsigned long uidvalidity;
 	int string_length;
 	int string_length1;
 	char buff[64*1024];
@@ -4697,7 +4697,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int uid;
+	unsigned int uid;
 	int errno;
 	int result;
 	BOOL b_first;
@@ -4705,7 +4705,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_copied;
 	XARRAY xarray;
 	int i, j, num;
-	long uidvalidity;
+	unsigned long uidvalidity;
 	int string_length;
 	int string_length1;
 	char buff[64*1024];

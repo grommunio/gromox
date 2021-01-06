@@ -1031,7 +1031,7 @@ static int summary_folder(char *path, char *folder, int *pexists,
 		goto RDWR_ERROR;
 	} else {
 		if (0 == strncmp(buff, "TRUE", 4)) {
-			if (6 != sscanf(buff, "TRUE %d %d %d %ld %d %d", &exists,
+			if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
 				&recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
 				*perrno = -1;
 				pthread_mutex_lock(&g_server_lock);
