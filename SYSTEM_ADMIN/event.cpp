@@ -97,8 +97,8 @@ static char *opt_config_file;
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
-	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
-	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -421,7 +421,7 @@ int main(int argc, const char **argv)
 			return 10;
 		}
 		num = list_file_get_item_num(plist);
-		const struct ipitem *pitem = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
+		auto pitem = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
 		for (i=0; i<num; i++) {
 			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
 			if (NULL == pacl) {
@@ -436,7 +436,7 @@ int main(int argc, const char **argv)
 
 	int ret = 0;
 	if ((ret = pthread_create(&thr_id, nullptr, accept_work_func,
-	    reinterpret_cast(void *, static_cast(intptr_t, sockd))) != 0) ||
+	    reinterpret_cast<void *>(static_cast<intptr_t>(sockd))) != 0) ||
 	    (ret = pthread_create(&thr_id, nullptr, scan_work_func, nullptr)) != 0) {
 		printf("[system]: failed to create accept or scanning thread: %s\n", strerror(ret));
 		for (i=0; i<g_threads_num; i++) {
@@ -617,7 +617,7 @@ static void* accept_work_func(void *param)
 		if (-1 == sockd2) {
 			continue;
 		}
-		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &peer_name),
+		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
@@ -680,7 +680,6 @@ static void* enqueue_work_func(void *param)
 	char *pspace;
 	char *pspace1;
 	char *pspace2;
-	time_t *ptime;
 	BOOL b_result;
 	time_t cur_time;
 	HOST_NODE *phost;
@@ -815,7 +814,7 @@ NEXT_LOOP:
 				phost = (HOST_NODE*)pnode->pdata;
 				if (0 == strcmp(penqueue->res_id, phost->res_id)) {
 					time(&cur_time);
-					ptime = str_hash_query(phost->phash, temp_string);
+					auto ptime = static_cast<time_t *>(str_hash_query(phost->phash, temp_string));
 					if (NULL != ptime) {
 						*ptime = cur_time;
 					} else {
@@ -997,7 +996,7 @@ NEXT_LOOP:
 		pthread_mutex_unlock(&pdequeue->cond_mutex);
 		
 		pthread_mutex_lock(&pdequeue->lock);
-		pfile = fifo_get_front(&pdequeue->fifo);
+		pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo));
 		if (NULL != pfile) {
 			temp_file = *pfile;
 			fifo_dequeue(&pdequeue->fifo);
@@ -1019,7 +1018,7 @@ NEXT_LOOP:
 					pthread_mutex_unlock(&g_dequeue_lock);
 					
 					close(pdequeue->sockd);
-					while ((pfile = fifo_get_front(&pdequeue->fifo)) != NULL) {
+					while ((pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo))) != nullptr) {
 						mem_file_free(pfile);
 						fifo_dequeue(&pdequeue->fifo);
 					}
@@ -1055,7 +1054,7 @@ NEXT_LOOP:
 			pthread_mutex_unlock(&g_dequeue_lock);
 			
 			close(pdequeue->sockd);
-			while ((pfile = fifo_get_front(&pdequeue->fifo)) != NULL) {
+			while ((pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo))) != nullptr) {
 				mem_file_free(pfile);
 				fifo_dequeue(&pdequeue->fifo);
 			}
