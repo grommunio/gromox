@@ -103,7 +103,6 @@ int grey_list_stop()
 int grey_list_query(const char *str, BOOL b_count)
 {
 	char temp_string [256];
-    GREY_LIST_ENTRY *pentry = NULL;
     struct timeval current_time;
 
     if (NULL == str) {
@@ -118,7 +117,7 @@ int grey_list_query(const char *str, BOOL b_count)
 		HX_strlower(temp_string);
 	}
     pthread_rwlock_rdlock(&g_refresh_lock);
-    pentry = str_hash_query(g_grey_table, temp_string);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
     if (NULL == pentry) {
 		pthread_rwlock_unlock(&g_refresh_lock);
         return GREY_LIST_NOT_FOUND; /* not in grey list */
@@ -166,7 +165,6 @@ int grey_list_query(const char *str, BOOL b_count)
  */
 BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
 {
-    GREY_LIST_ENTRY *pentry = NULL;
     struct timeval current_time;
 	char temp_string[256];
 
@@ -183,7 +181,7 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
 	}
     pthread_rwlock_rdlock(&g_refresh_lock);
 	gettimeofday(&current_time, NULL);
-    pentry = str_hash_query(g_grey_table, temp_string);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
     if (NULL == pentry) {
 		*ptimes = 0;
 		*pinterval = 0;
@@ -297,7 +295,7 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	int fd, string_len;
 	STR_HASH_ITER *iter;
 	STR_HASH_TABLE *phash;
-	GREY_LIST_ENTRY *pentry, entry;
+	GREY_LIST_ENTRY entry;
 
 	if (NULL == str) {
 		return FALSE;
@@ -327,7 +325,7 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	string_len ++;
 	/* check first if the string is already in the table */
 	pthread_rwlock_wrlock(&g_refresh_lock);
-	pentry = str_hash_query(g_grey_table, temp_string);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
 	if (NULL != pentry) {
 		pentry->allowed_times = times;
 		pentry->interval = interval;
@@ -365,7 +363,7 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	iter = str_hash_iter_init(g_grey_table);
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		pentry = str_hash_iter_get_value(iter, file_item);
+		pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_iter_get_value(iter, file_item));
 		str_hash_add(phash, file_item, pentry);
 	}
 	str_hash_iter_free(iter);
@@ -390,7 +388,6 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
  */
 BOOL grey_list_remove_string(const char* str)
 {
-	GREY_LIST_ENTRY *pentry;
 	char temp_string[256];
 	
 	if (NULL == str) {
@@ -406,7 +403,7 @@ BOOL grey_list_remove_string(const char* str)
 	}
 	/* check first if the string is in hash table */
 	pthread_rwlock_wrlock(&g_refresh_lock);
-	pentry = str_hash_query(g_grey_table, temp_string);
+	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
 	if (NULL == pentry) {
 		pthread_rwlock_unlock(&g_refresh_lock);
 		return TRUE;
@@ -427,7 +424,6 @@ static void grey_list_flush()
 	char temp_string[256];
 	char file_item[576];
 	STR_HASH_ITER *iter;
-	GREY_LIST_ENTRY *pentry;
 	
 	if (0 == g_growing_num) {
 		return;
@@ -439,7 +435,7 @@ static void grey_list_flush()
 	iter = str_hash_iter_init(g_grey_table);
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		pentry = str_hash_iter_get_value(iter, temp_string);
+		auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_iter_get_value(iter, temp_string));
 		string_len = strlen(temp_string);
 		for (i=0, j=0; i<string_len; i++, j++) {
 			if (' ' == temp_string[i] || '\\' == temp_string[i] ||
@@ -468,7 +464,6 @@ BOOL grey_list_dump(const char *path)
 	int fd, len;
 	char temp_string[512];
 	STR_HASH_ITER *iter;
-	GREY_LIST_ENTRY *pentry;
 	struct tm time_buff;
 	struct timeval current_times;
 	
@@ -487,7 +482,7 @@ BOOL grey_list_dump(const char *path)
 	iter = str_hash_iter_init(g_grey_table);
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		pentry = str_hash_iter_get_value(iter, temp_string);
+		auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_iter_get_value(iter, temp_string));
 		if (0 == pentry->allowed_times || 0 == pentry->interval) {
 			continue;
 		}

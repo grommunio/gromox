@@ -137,21 +137,21 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		if (NULL != judge_name &&
-			FALSE == register_service(judge_name, str_filter_judge)) {
+		    !register_service(judge_name, reinterpret_cast<void *>(str_filter_judge))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					judge_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
 		if (NULL != query_name &&
-			FALSE == register_service(query_name, str_filter_query)) {
+		    !register_service(query_name, reinterpret_cast<void *>(str_filter_query))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					query_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
-		if (NULL != add_name && FALSE == register_service(add_name,
-			str_filter_add_string_into_temp_list)) {
+		if (add_name != nullptr && !register_service(add_name,
+		    reinterpret_cast<void *>(str_filter_add_string_into_temp_list))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					add_name);
 			config_file_free(pfile);

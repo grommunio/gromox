@@ -263,7 +263,6 @@ BOOL temp_list_dump(const char *path)
 	char temp_string[512];
 	STR_HASH_ITER *iter;
 	struct tm time_buff;
-	time_t *pwhen;
 	time_t current_time;
 
 	if (NULL == g_string_hash || NULL == path) {
@@ -278,7 +277,7 @@ BOOL temp_list_dump(const char *path)
 	iter = str_hash_iter_init(g_string_hash); 
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		pwhen = str_hash_iter_get_value(iter, temp_string);
+		auto pwhen = static_cast<time_t *>(str_hash_iter_get_value(iter, temp_string));
 		if (current_time >= *pwhen) {
 			str_hash_iter_remove(iter);
 		} else {

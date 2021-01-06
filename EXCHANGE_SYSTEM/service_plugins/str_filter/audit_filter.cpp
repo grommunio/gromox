@@ -241,13 +241,12 @@ BOOL audit_filter_query(const char *str)
 static int audit_filter_collect_entry(struct timeval *current_time)
 {
     STR_HASH_ITER    *iter = NULL;
-    STR_AUDIT *iter_audit  = NULL;
     int num_of_collect  = 0;
 
     iter = str_hash_iter_init(g_audit_hash); 
     for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
         str_hash_iter_forward(iter)) {
-        iter_audit = str_hash_iter_get_value(iter, NULL);
+		auto iter_audit = static_cast<STR_AUDIT *>(str_hash_iter_get_value(iter, nullptr));
         if (CALCULATE_INTERVAL(*current_time, 
             iter_audit->last_time_stamp) >= g_audit_interval) {
             str_hash_iter_remove(iter);
@@ -344,7 +343,6 @@ BOOL audit_filter_dump(const char *path)
 	int fd, len;
 	char temp_string[512];
     STR_HASH_ITER *iter;
-    STR_AUDIT *iter_audit;
 	struct tm time_buff;
 	struct timeval current_time;
 
@@ -360,7 +358,7 @@ BOOL audit_filter_dump(const char *path)
     iter = str_hash_iter_init(g_audit_hash); 
     for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
         str_hash_iter_forward(iter)) {
-        iter_audit = str_hash_iter_get_value(iter, temp_string);
+		auto iter_audit = static_cast<STR_AUDIT *>(str_hash_iter_get_value(iter, temp_string));
         if (CALCULATE_INTERVAL(current_time, 
             iter_audit->last_time_stamp) > g_audit_interval) {
             str_hash_iter_remove(iter);
