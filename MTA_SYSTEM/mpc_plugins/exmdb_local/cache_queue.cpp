@@ -255,7 +255,7 @@ static void* thread_work_func(void* arg)
 	char temp_from[256];
 	char temp_rcpt[256];
     char temp_path[256];
-	char *pbuff, *ptr;
+	char *ptr;
 	MESSAGE_CONTEXT *pcontext, *pbounce_context;
 	BOOL need_bounce, need_remove;
 
@@ -312,7 +312,7 @@ static void* thread_work_func(void* arg)
 				continue;
 			}
 			size = node_stat.st_size - sizeof(time_t) - 2*sizeof(int);
-			pbuff = malloc(((size - 1)/(64 * 1024) + 1) * 64 * 1024);
+			auto pbuff = static_cast<char *>(malloc(((size - 1) / (64 * 1024) + 1) * 64 * 1024));
 			if (NULL == pbuff) {
 				printf("[exmdb_local]: Failed to allocate memory for %s "
 					"in timer queue thread\n", direntp->d_name);

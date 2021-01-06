@@ -121,13 +121,12 @@ BOOL bounce_audit_check(const char *audit_string)
 static int bounce_audit_collect_entry(time_t current_time)
 {
     STR_HASH_ITER    *iter = NULL;
-	time_t           *ptime;
     int num_of_collect  = 0;
 
     iter = str_hash_iter_init(g_audit_hash); 
     for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
         str_hash_iter_forward(iter)) {
-        ptime = str_hash_iter_get_value(iter, NULL);
+		auto ptime = static_cast<time_t *>(str_hash_iter_get_value(iter, nullptr));
         if (current_time - *ptime >= g_audit_interval) {
             str_hash_iter_remove(iter);
             num_of_collect++;

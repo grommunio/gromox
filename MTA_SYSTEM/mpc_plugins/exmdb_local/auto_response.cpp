@@ -24,9 +24,6 @@ void auto_response_reply(const char *user_home,
 {
 	MIME *pmime;
 	BOOL b_found;
-	char *ptoken;
-	char *ptoken1;
-	char *pdomain;
 	char *pcontent;
 	BOOL b_internal;
 	time_t cur_time;
@@ -54,8 +51,8 @@ void auto_response_reply(const char *user_home,
 		return;
 	}
 
-	ptoken = strchr(from, '@');
-	ptoken1 = strchr(rcpt, '@');
+	auto ptoken = strchr(from, '@');
+	auto ptoken1 = strchr(rcpt, '@');
 	if (NULL == ptoken || NULL == ptoken1) {
 		return;
 	}
@@ -175,7 +172,7 @@ void auto_response_reply(const char *user_home,
 					mime_field.field_value_len);
 				content_type[mime_field.field_value_len] = '\0';
 				charset[0] = '\0';
-				ptoken = strchr(content_type, ';');
+				auto ptoken = strchr(content_type, ';');
 				if (NULL != ptoken) {
 					*ptoken = '\0';
 					ptoken ++;
@@ -221,7 +218,7 @@ void auto_response_reply(const char *user_home,
 	if (NULL == pcontext) {
 		return;
 	}
-	pdomain = strchr(from, '@') + 1;
+	auto pdomain = strchr(from, '@') + 1;
 	sprintf(pcontext->pcontrol->from, "auto-reply@%s", pdomain);
 	
 	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, (char*)rcpt);

@@ -98,7 +98,6 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	MIME *pmime, *pmime_child;
 	struct tm *datetime;
 	struct tm time_buff;
-	char *pdomain;
 	char tmp_buff[4096];
 	time_t current_time;
 	int offset;
@@ -146,7 +145,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		}
 		pcontext->pcontrol->bound_type = BOUND_ALARM;
 		pcontext->pcontrol->need_bounce = FALSE;
-		pdomain = strchr(get_admin_mailbox(), '@');
+		auto pdomain = strchr(get_admin_mailbox(), '@');
 		if (NULL == pdomain) {
 			put_context(pcontext);
 			return;
