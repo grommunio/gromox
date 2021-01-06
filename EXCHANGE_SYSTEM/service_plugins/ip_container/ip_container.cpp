@@ -172,7 +172,7 @@ void ip_container_console_talk(int argc, char **argv, char *result, int length)
 		iter = ip4_hash_iter_init(g_container_table);
 		for (ip4_hash_iter_begin(iter); !ip4_hash_iter_done(iter);
 			ip4_hash_iter_forward(iter)) {
-			pnum = ip4_hash_iter_get_value(iter, temp_string);
+			pnum = static_cast<int *>(ip4_hash_iter_get_value(iter, temp_string));
 			len = strlen(temp_string);
 			temp_string[len] = '\t';
 			len ++;

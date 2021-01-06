@@ -56,13 +56,13 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[ip_container]: failed to run the module\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("ip_container_add", ip_container_add)) {
+		if (!register_service("ip_container_add", reinterpret_cast<void *>(ip_container_add))) {
 			printf("[ip_container]: failed to register \"ip_container_add\" "
 				"service\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("ip_container_remove",
-			ip_container_remove)) {
+		if (!register_service("ip_container_remove",
+		    reinterpret_cast<void *>(ip_container_remove))) {
 			printf("[ip_container]: failed to register \"ip_container_remove\" "
 				"service\n");
 			return FALSE;
