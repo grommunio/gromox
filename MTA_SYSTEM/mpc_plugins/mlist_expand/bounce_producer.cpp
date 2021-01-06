@@ -138,7 +138,7 @@ void bounce_producer_init(const char *path, const char* separator)
 int bounce_producer_run()
 {
 #define E(f, s) do { \
-	(f) = query_service(s); \
+	(f) = reinterpret_cast<decltype(f)>(query_service(s)); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "mlist_expand", (s)); \
 		return -1; \
@@ -339,7 +339,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
-		presource->content[i] = malloc(node_stat.st_size);
+		presource->content[i] = static_cast<char *>(malloc(node_stat.st_size));
 		if (NULL == presource->content[i]) {
     		closedir(sub_dirp);
 			goto FREE_RESOURCE;
@@ -482,7 +482,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	char *ptr;
 	MIME *pmime;
 	MIME *phead;
-	char *pdomain;
 	time_t cur_time;
 	char charset[32];
 	char mcharset[32];
@@ -503,7 +502,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	ptr = original_ptr;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
-	pdomain = strchr(from, '@');
+	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
 		if (TRUE == bounce_producer_check_domain(pdomain)) {

@@ -171,7 +171,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			return FALSE;
 		}
 		pthread_setname_np(g_scan_id, "midb_agent");
-		if (FALSE == register_service("check_full", check_full)) {
+		if (!register_service("check_full", reinterpret_cast<void *>(check_full))) {
 			printf("[midb_agent]: failed to register services\n");
 			return FALSE;
 		}

@@ -89,7 +89,6 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 
 static BOOL table_query(const char* str, char *buff)
 {
-	char *presult;
 	char temp_string[256];
 	
 	if (NULL == str) {
@@ -99,7 +98,7 @@ static BOOL table_query(const char* str, char *buff)
 	temp_string[sizeof(temp_string) - 1] = '\0';
 	HX_strlower(temp_string);
 	pthread_rwlock_rdlock(&g_refresh_lock);
-    presult = str_hash_query(g_hash_table, temp_string);
+	auto presult = static_cast<char *>(str_hash_query(g_hash_table, temp_string));
     if (NULL != presult) {
     	strcpy(buff, presult);	
     }
@@ -133,7 +132,7 @@ static int table_refresh()
 		printf("[from_replace]: list_file_init %s: %s\n", g_list_path, strerror(errno));
 		return REFRESH_FILE_ERROR;
 	}
-	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
+	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	
     phash = str_hash_init(list_len + 1, 256, NULL);
