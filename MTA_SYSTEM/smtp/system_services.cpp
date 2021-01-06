@@ -26,12 +26,13 @@ void (*system_services_vrfy_process)(const char*, int, char*, int);
 int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = service_query((s), "system"); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system")); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
 		return -1; \
 	} \
 } while (false)
+#define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system")))
 
 	E(system_services_judge_ip, "ip_filter_judge");
 	E(system_services_add_ip_into_temp_list, "ip_filter_add");
@@ -41,12 +42,13 @@ int system_services_run()
 	E(system_services_judge_user, "user_filter_judge");
 	E(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_check_domain, "check_domain");
-	system_services_check_user = service_query("check_user", "system");
-	system_services_check_full = service_query("check_full", "system");
-	system_services_etrn_process = service_query("etrn_process", "system");
-	system_services_vrfy_process = service_query("vrfy_process", "system");
+	E2(system_services_check_user, "check_user");
+	E2(system_services_check_full, "check_full");
+	E2(system_services_etrn_process, "etrn_process");
+	E2(system_services_vrfy_process, "vrfy_process");
 	return 0;
 #undef E
+#undef E2
 }
 
 /*

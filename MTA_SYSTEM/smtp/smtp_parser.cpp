@@ -193,7 +193,7 @@ int smtp_parser_run()
 			return -4;
 		}
 
-		g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
+		g_ssl_mutex_buf = static_cast<pthread_mutex_t *>(malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t)));
 		if (NULL == g_ssl_mutex_buf) {
 			printf("[smtp_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
@@ -204,7 +204,7 @@ int smtp_parser_run()
 		CRYPTO_THREADID_set_callback(smtp_parser_ssl_id);
 		CRYPTO_set_locking_callback(smtp_parser_ssl_locking);
 	}
-	g_context_list = malloc(sizeof(SMTP_CONTEXT)*g_context_num);
+	g_context_list = static_cast<SMTP_CONTEXT *>(malloc(sizeof(SMTP_CONTEXT) * g_context_num));
 	if (NULL== g_context_list) {
 		printf("[smtp_parser]: Failed to allocate SMTP contexts\n");
 		return -7;
@@ -306,6 +306,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	const char *host_ID;
 	char *smtp_reply_str;
 	char *smtp_reply_str2;
+	char *pbuff;
 	int len, string_length;
 	BOOL b_should_flush = FALSE;
 
@@ -340,7 +341,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 			stream_clear(&pcontext->stream);
 			size = STREAM_BLOCK_SIZE;
-			void *pbuff = stream_getbuffer_for_writing(&pcontext->stream, &size);
+			auto pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
+			             reinterpret_cast<unsigned int *>(&size)));
 			/* 
 			 * do not need to check the pbuff pointer because it will never
 			 * be NULL because of stream's characteristic
@@ -468,7 +470,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 
 	/*========================================================================*/
 	/* read buffer from socket into stream */
-	void *pbuff = stream_getbuffer_for_writing(&pcontext->stream, &size);
+	pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
+	        reinterpret_cast<unsigned int *>(&size)));
 	if (NULL == pbuff) {
 		smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174016, 1,
 						 &string_length);
@@ -604,8 +607,8 @@ CMD_PROCESS:
 						 * never been changed.
 						 */
 						actual_read = STREAM_BLOCK_SIZE;
-						pbuff = stream_getbuffer_for_reading(&pcontext->stream,
-								&actual_read);
+						pbuff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream,
+						        reinterpret_cast<unsigned int *>(&actual_read)));
 						stream_backward_reading_ptr(&pcontext->stream, 
 								actual_read);
 						goto DATA_PROCESS;

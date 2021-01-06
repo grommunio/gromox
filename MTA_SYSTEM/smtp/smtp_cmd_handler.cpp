@@ -421,8 +421,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
     int string_length;
     const char* smtp_reply_str;
     STREAM stream;
-    int size, size_copied;
-	int size2, size2_used;
+	unsigned int size, size_copied, size2, size2_used;
 
     if (T_RCPT_CMD != pcontext->last_cmd) {
         /* 503 bad sequence of command, RCPT first */

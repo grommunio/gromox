@@ -203,7 +203,7 @@ static void* thread_work_func(void* arg)
 		if (-1 == sockd2) {
 			continue;
 		}
-		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &client_peer),
+		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          client_txtport, sizeof(client_txtport),
 		          NI_NUMERICHOST | NI_NUMERICSERV);
@@ -213,13 +213,13 @@ static void* thread_work_func(void* arg)
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
-		ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
+		ret = getsockname(sockd2, reinterpret_cast<sockaddr *>(&fact_addr), &addrlen);
 		if (ret != 0) {
 			printf("getsockname: %s\n", strerror(errno));
 			close(sockd2);
 			continue;
 		}
-		ret = getnameinfo(reinterpret_cast(struct sockaddr *, &fact_addr),
+		ret = getnameinfo(reinterpret_cast<sockaddr *>(&fact_addr),
 		      addrlen, server_hostip, sizeof(server_hostip),
 		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
@@ -337,7 +337,7 @@ static void* thread_work_ssl_func(void* arg)
 		if (-1 == sockd2) {
 			continue;
 		}
-		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &client_peer),
+		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&client_peer),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          client_txtport, sizeof(client_txtport),
 		          NI_NUMERICHOST | NI_NUMERICSERV);
@@ -347,13 +347,13 @@ static void* thread_work_ssl_func(void* arg)
 			continue;
 		}
 		addrlen = sizeof(fact_addr); 
-		ret = getsockname(sockd2, reinterpret_cast(struct sockaddr *, &fact_addr), &addrlen);
+		ret = getsockname(sockd2, reinterpret_cast<sockaddr *>(&fact_addr), &addrlen);
 		if (ret != 0) {
 			printf("getsockname: %s\n", strerror(errno));
 			close(sockd2);
 			continue;
 		}
-		ret = getnameinfo(reinterpret_cast(struct sockaddr *, &fact_addr),
+		ret = getnameinfo(reinterpret_cast<sockaddr *>(&fact_addr),
 		      addrlen, server_hostip, sizeof(server_hostip),
 		      nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {

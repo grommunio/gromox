@@ -132,7 +132,7 @@ libgromox_webkit_la_LIBADD = ${HX_LIBS} libgromox_common.la
 # MTA_SYSTEM
 delivery_SOURCES = EXCHANGE_SYSTEM/http/service.cpp MTA_SYSTEM/delivery_app/console_server.c MTA_SYSTEM/delivery_app/console_cmd_handler.c MTA_SYSTEM/delivery_app/main.cpp MTA_SYSTEM/delivery_app/message_dequeue.c MTA_SYSTEM/delivery_app/system_services.c MTA_SYSTEM/delivery_app/transporter.c
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-smtp_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MTA_SYSTEM/smtp/bndstack_allocator.c MTA_SYSTEM/smtp/console_server.c MTA_SYSTEM/smtp/console_cmd_handler.c MTA_SYSTEM/smtp/flusher.c MTA_SYSTEM/smtp/listener.c MTA_SYSTEM/smtp/main.cpp MTA_SYSTEM/smtp/resource.c MTA_SYSTEM/smtp/smtp_parser.c MTA_SYSTEM/smtp/smtp_cmd_handler.c MTA_SYSTEM/smtp/system_services.c
+smtp_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MTA_SYSTEM/smtp/bndstack_allocator.cpp MTA_SYSTEM/smtp/console_cmd_handler.cpp MTA_SYSTEM/smtp/console_server.cpp MTA_SYSTEM/smtp/flusher.cpp MTA_SYSTEM/smtp/listener.cpp MTA_SYSTEM/smtp/main.cpp MTA_SYSTEM/smtp/resource.cpp MTA_SYSTEM/smtp/smtp_cmd_handler.cpp MTA_SYSTEM/smtp/smtp_parser.cpp MTA_SYSTEM/smtp/system_services.cpp
 smtp_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 libmtaflh_message_enqueue_la_SOURCES = MTA_SYSTEM/flusher_plugins/message_enqueue/main.c MTA_SYSTEM/flusher_plugins/message_enqueue/message_enqueue.c
 libmtaflh_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}

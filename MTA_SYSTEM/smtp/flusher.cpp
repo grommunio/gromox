@@ -82,9 +82,7 @@ static unsigned int    g_current_ID;
 
 void flusher_init(const char* path, size_t queue_len)
 {
-	char *pname;
-	
-	g_flusher_plug = malloc(sizeof(PLUG_ENTITY));
+	g_flusher_plug = static_cast<PLUG_ENTITY *>(malloc(sizeof(PLUG_ENTITY)));
 	if (NULL == g_flusher_plug) {
 		return;
 	}
@@ -93,7 +91,7 @@ void flusher_init(const char* path, size_t queue_len)
 	g_flusher_plug->flush_cancel = NULL;
 	g_flusher_plug->console_talk = NULL;
 	strcpy(g_flusher_plug->path, path);
-	pname = strrchr(path, '/');
+	auto pname = strrchr(path, '/');
 	strcpy(g_flusher_plug->file_name, pname != NULL ? pname + 1 : path);
 	single_list_init(&g_flusher_plug->list_reference);
 	g_max_queue_len = queue_len;
@@ -172,13 +170,11 @@ int flusher_stop()
  */
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext)
 {
-	FLUSH_ENTITY *pentity;
 	BOOL ret_val;
 
-	if (NULL == (pentity = lib_buffer_get(g_allocator))) {
+	auto pentity = static_cast<FLUSH_ENTITY *>(lib_buffer_get(g_allocator));
+	if (pentity == nullptr)
 		return FALSE;
-	}
-	
 	if (0 == pcontext->flusher.flush_ID) {
 		pcontext->flusher.flush_ID = flusher_increase_max_ID();
 	}
@@ -242,7 +238,7 @@ void flusher_cancel(SMTP_CONTEXT *pcontext)
 
 static BOOL flusher_load_plugin(char* path)
 {
-	static void *const server_funcs[] = {flusher_queryservice};
+	static void *const server_funcs[] = {reinterpret_cast<void *>(flusher_queryservice)};
 	PLUGIN_MAIN appmain     = NULL;
 	void    *phandle        = NULL;
 	BOOL    main_result;
@@ -252,9 +248,7 @@ static BOOL flusher_load_plugin(char* path)
 			 path, dlerror());
 		return FALSE;
 	}
-	
-	appmain = dlsym(phandle, "FLH_LibMain");
-
+	appmain = reinterpret_cast<decltype(appmain)>(dlsym(phandle, "FLH_LibMain"));
 	if (NULL == appmain) {
 		printf("[flusher]: fail to find FLH_LibMain in %s\n", path);
 		dlclose(phandle);
@@ -264,7 +258,7 @@ static BOOL flusher_load_plugin(char* path)
 	g_flusher_plug->appmain = appmain;
 	g_flusher_plug->handle  = phandle;
 	g_can_register = TRUE;
-	main_result = appmain(PLUGIN_INIT, const_cast(void **, server_funcs));
+	main_result = appmain(PLUGIN_INIT, const_cast<void **>(server_funcs));
 	g_can_register = FALSE;
 	if (FALSE == main_result) {
 		printf("[flusher]: fail to execute init in flusher plugin\n");
@@ -345,51 +339,27 @@ static void* flusher_queryservice(const char *service)
 	SERVICE_NODE *pservice;
 	SINGLE_LIST_NODE *pnode;
 	
-	if (0 == strcmp(service, "feedback_entity")) {
-		return flusher_feedback_entity;
-	}
-	if (0 == strcmp(service, "get_queue_length")) {
-		return flusher_get_queue_length;
-	}
-	if (0 == strcmp(service, "register_cancel")) {
-		return flusher_register_cancel;
-	}
-	if (0 == strcmp(service, "register_talk")) {
-		return flusher_register_talk;
-	}
-	if (0 == strcmp(service, "get_from_queue")) {
-		return flusher_get_from_queue;
-	}
-	if (0 == strcmp(service, "get_host_ID")) {
-		return flusher_get_host_ID;
-	}
-	if (0 == strcmp(service, "get_extra_num")) {
-		return flusher_get_extra_num;
-	}
-	if (0 == strcmp(service, "get_extra_tag")) {
-		return flusher_get_extra_tag;
-	}
-	if (0 == strcmp(service, "get_extra_value")) {
-		return flusher_get_extra_value;
-	}
-	if (0 == strcmp(service, "set_flush_ID")) {
-		return flusher_set_flush_ID;
-	}
-	if (0 == strcmp(service, "inc_flush_ID")) {
-		return flusher_increase_max_ID;
-	}
-	if (0 == strcmp(service, "get_plugin_name")) {
-		    return flusher_get_plugin_name;
-	}
-	if (0 == strcmp(service, "get_config_path")) {
-		    return flusher_get_config_path;
-	}
-	if (0 == strcmp(service, "get_data_path")) {
-		    return flusher_get_data_path;
-	}
-	if (0 == strcmp(service, "is_domainlist_valid")) {
-			return flusher_is_domainlist_valid;
-	}
+#define E(s, f) \
+	do { \
+		if (strcmp(service, (s)) == 0) \
+			return reinterpret_cast<void *>(f); \
+	} while (false)
+	E("feedback_entity", flusher_feedback_entity);
+	E("get_queue_length", flusher_get_queue_length);
+	E("register_cancel", flusher_register_cancel);
+	E("register_talk", flusher_register_talk);
+	E("get_from_queue", flusher_get_from_queue);
+	E("get_host_ID", flusher_get_host_ID);
+	E("get_extra_num", flusher_get_extra_num);
+	E("get_extra_tag", flusher_get_extra_tag);
+	E("get_extra_value", flusher_get_extra_value);
+	E("set_flush_ID", flusher_set_flush_ID);
+	E("inc_flush_ID", flusher_increase_max_ID);
+	E("get_plugin_name", flusher_get_plugin_name);
+	E("get_config_path", flusher_get_config_path);
+	E("get_data_path", flusher_get_data_path);
+	E("is_domainlist_valid", flusher_is_domainlist_valid);
+#undef E
 	/* check if already exists in the reference list */
 	for (pnode=single_list_get_head(&g_flusher_plug->list_reference); NULL!=pnode;
 		 pnode=single_list_get_after(&g_flusher_plug->list_reference, pnode)) {
@@ -402,13 +372,13 @@ static void* flusher_queryservice(const char *service)
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	pservice = malloc(sizeof(SERVICE_NODE));
+	pservice = static_cast<SERVICE_NODE *>(malloc(sizeof(SERVICE_NODE)));
 	if (NULL == pservice) {
 		debug_info("[flusher]: Failed to allocate memory for service node");
 		service_release(service, g_flusher_plug->file_name);
 		return NULL;
 	}
-	pservice->service_name = malloc(strlen(service) + 1);
+	pservice->service_name = static_cast<char *>(malloc(strlen(service) + 1));
 	if (NULL == pservice->service_name) {
 		debug_info("[flusher]: Failed to allocate memory for service name");
 		service_release(service, g_flusher_plug->file_name);
