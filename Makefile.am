@@ -174,7 +174,7 @@ EXTRA_libmtasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 # MRA_SYSTEM
 pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/pop3/console_server.c MRA_SYSTEM/pop3/console_cmd_handler.c MRA_SYSTEM/pop3/pop3_parser.c MRA_SYSTEM/pop3/pop3_cmd_handler.c MRA_SYSTEM/pop3/resource.c MRA_SYSTEM/pop3/system_services.c MRA_SYSTEM/pop3/units_allocator.c MRA_SYSTEM/pop3/main.cpp MRA_SYSTEM/pop3/listener.c
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
-imap_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/imap/console_server.c MRA_SYSTEM/imap/console_cmd_handler.c MRA_SYSTEM/imap/imap_cmd_parser.cpp MRA_SYSTEM/imap/imap_parser.cpp MRA_SYSTEM/imap/listener.c MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.c MRA_SYSTEM/imap/system_services.c
+imap_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/imap/console_server.cpp MRA_SYSTEM/imap/console_cmd_handler.cpp MRA_SYSTEM/imap/imap_cmd_parser.cpp MRA_SYSTEM/imap/imap_parser.cpp MRA_SYSTEM/imap/listener.cpp MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.cpp MRA_SYSTEM/imap/system_services.cpp
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la
 libgxsvc_event_proxy_la_SOURCES = MRA_SYSTEM/service_plugins/event_proxy.c
 libgxsvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}

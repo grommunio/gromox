@@ -148,7 +148,7 @@ int resource_run()
 {
     int i;
 
-    g_def_code_table = malloc(sizeof(g_default_code_table));
+	g_def_code_table = static_cast<IMAP_RETURN_CODE *>(malloc(sizeof(g_default_code_table)));
     if (NULL == g_def_code_table) {
 		printf("[resource]: Failed to allocate default code table\n");
         return -1;
@@ -211,7 +211,6 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
 {
     char line[MAX_FILE_LINE_LEN], buf[MAX_FILE_LINE_LEN];
 	char *pbackup, *ptr, code[32];
-    IMAP_RETURN_CODE *code_table;
     FILE *file_ptr = NULL;
 
     int total, index, native_code, len;
@@ -225,7 +224,7 @@ static int resource_construct_imap_table(IMAP_RETURN_CODE **pptable)
         return -1;
     }
 
-    code_table = malloc(sizeof(g_default_code_table));
+	auto code_table = static_cast<IMAP_RETURN_CODE *>(malloc(sizeof(g_default_code_table)));
 
     if (NULL == code_table) {
 		printf("[resource]: Failed to allocate memory for IMAP return code"
@@ -432,9 +431,7 @@ BOOL resource_refresh_imap_code_table()
 
 static BOOL resource_load_imap_lang_list()
 {
-	SINGLE_LIST *plist;
-
-	plist = malloc(sizeof(SINGLE_LIST));
+	auto plist = static_cast<SINGLE_LIST *>(malloc(sizeof(SINGLE_LIST)));
 	if (NULL == plist) {
 		return FALSE;
 	}

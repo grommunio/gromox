@@ -165,7 +165,7 @@ int console_server_run()
 	}
 	/* create accepting thread */
 	int ret = pthread_create(&g_listening_tid, nullptr, thread_work_func,
-	          reinterpret_cast(void *, static_cast(long, sock)));
+	          reinterpret_cast<void *>(static_cast<intptr_t>(sock)));
 	if (ret != 0) {
 		printf("[console_server]: failed to create accepting thread: %s\n", strerror(ret));
 		free(pnodes);
