@@ -65,11 +65,11 @@ static void xmap_read(const char *file, fwd_map_t &fm, back_map_t &bm)
 	fprintf(stderr, "[localemap]: %s: loaded %zu names\n", file, bm.size());
 }
 
-BOOL verify_cpid(uint32_t id)
+bool verify_cpid(uint32_t id)
 {
 	return g_cpid_map.find(id) != g_cpid_map.cend() &&
 	       id != 1200 && id != 1201 && id != 12000 && id != 12001 &&
-	       id != 65000 && id != 65001 ? TRUE : FALSE;
+	       id != 65000 && id != 65001;
 }
 
 const char *cpid_to_cset(uint32_t id)

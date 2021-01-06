@@ -229,10 +229,8 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	HANDLE_DATA *phandle;
 	HANDLE_DATA temp_handle;
 	
-	
-	if (FALSE == common_util_verify_cpid(cpid)) {
+	if (!common_util_verify_cpid(cpid))
 		return FALSE;
-	}
 	temp_handle.b_processing = FALSE;
 	temp_handle.b_occupied = FALSE;
 	temp_handle.guid = guid_random_new();

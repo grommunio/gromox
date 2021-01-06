@@ -113,9 +113,7 @@ static uint32_t (*common_util_charset_to_cpid)(const char *charset);
 const char* (*common_util_lcid_to_ltag)(uint32_t lcid);
 
 static uint32_t (*common_util_ltag_to_lcid)(const char *ltag);
-
-BOOL (*common_util_verify_cpid)(uint32_t cpid);
-
+bool (*common_util_verify_cpid)(uint32_t cpid);
 int (*common_util_add_timer)(const char *command, int interval);
 
 BOOL (*common_util_cancel_timer)(int timer_id);

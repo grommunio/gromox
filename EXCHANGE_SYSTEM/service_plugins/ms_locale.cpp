@@ -31,19 +31,19 @@ static pthread_mutex_t g_lcid_lock;
 static pthread_mutex_t g_ltag_lock;
 static pthread_mutex_t g_charset_lock;
 
-static BOOL verify_cpid(uint32_t cpid)
+static bool verify_cpid(uint32_t cpid)
 {
 	if (65000 == cpid || 65001 == cpid || 1200 == cpid ||
 		1200 == cpid || 12000 == cpid || 12001 == cpid) {
-		return FALSE;	
+		return false;
 	}
 	pthread_mutex_lock(&g_cpid_lock);
 	if (NULL != int_hash_query(g_cpid_hash, cpid)) {
 		pthread_mutex_unlock(&g_cpid_lock);
-		return TRUE;
+		return true;
 	}
 	pthread_mutex_unlock(&g_cpid_lock);
-	return FALSE;
+	return false;
 }
 
 static const char* cpid_to_charset(uint32_t cpid)

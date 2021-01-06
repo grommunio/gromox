@@ -45,8 +45,7 @@ enum {
 };
 
 static BOOL g_session_check;
-
-static BOOL (*verify_cpid)(uint32_t cpid);
+static bool (*verify_cpid)(uint32_t cpid);
 static BOOL (*get_domain_ids)(const char *domainname,
 	int *pdomain_id, int *porg_id);
 static BOOL (*get_maildir)(const char *username, char *maildir);
@@ -835,7 +834,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags,
 		return ecNotSupported;
 	}
 	/* check if valid cpid has been supplied */
-	if (FALSE == verify_cpid(pstat->codepage)) {
+	if (!verify_cpid(pstat->codepage)) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
 		return MAPI_E_UNKNOWN_CPID;
 	}
