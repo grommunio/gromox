@@ -2,6 +2,7 @@
 #include <libHX/string.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/paths.h>
 #include "tpropval_array.h"
@@ -98,6 +99,8 @@ typedef struct _EVENT_NODE {
 	EXCEPTIONINFO *pexception;
 	EXTENDEDEXCEPTION *pex_exception;
 } EVENT_NODE;
+
+using namespace gromox;
 
 static time_t g_end_time;
 static time_t g_start_time;
@@ -2270,6 +2273,7 @@ int main(int argc, const char **argv)
 		exit(2);
 	}
 	pparser = cookie_parser_init(line);
+	auto cleanup = make_scope_exit([&]() { cookie_parser_free(pparser); });
 	g_username = cookie_parser_get(pparser, "username");
 	pstarttime = cookie_parser_get(pparser, "starttime");
 	if (NULL == pstarttime) {
