@@ -26,7 +26,7 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <stdio.h>
-
+#include "transporter.h"
 #define DEF_MODE    S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 #define TOKEN_MESSAGE_QUEUE		1
 #define BLOCK_SIZE				64*1024*2
@@ -54,7 +54,6 @@ static pthread_t		g_thread_id;
 static BOOL g_notify_stop;
 static int				g_dequeued_num;
 
-extern void transporter_wakeup_one_thread(void);
 static BOOL message_dequeue_check(void);
 static MESSAGE *message_dequeue_get_from_free(int message_option, size_t size);
 
@@ -306,15 +305,15 @@ void message_dequeue_free()
 static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
     const char *in_buff)
 {
-	pmessage->begin_address = in_buff;
-	pmessage->mail_begin = in_buff + sizeof(size_t);
+	pmessage->begin_address = deconst(in_buff);
+	pmessage->mail_begin = deconst(in_buff) + sizeof(size_t);
 	memcpy(&pmessage->mail_length, in_buff, sizeof(size_t));
 	memcpy(&pmessage->flush_ID, in_buff + sizeof(size_t) + pmessage->mail_length, sizeof(int));
 	memcpy(&pmessage->bound_type, in_buff + sizeof(size_t) + sizeof(int) + pmessage->mail_length, sizeof(int));
 	int z;
 	memcpy(&z, in_buff + sizeof(size_t) + 2 * sizeof(int) + pmessage->mail_length, sizeof(int));
 	pmessage->is_spam = z;
-	pmessage->envelop_from = in_buff + sizeof(size_t) + 3*sizeof(int) +
+	pmessage->envelop_from = deconst(in_buff) + sizeof(size_t) + 3*sizeof(int) +
                          	 pmessage->mail_length;
 	pmessage->envelop_rcpt = pmessage->envelop_from +
 							 strlen(pmessage->envelop_from) + 1;

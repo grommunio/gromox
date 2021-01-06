@@ -371,7 +371,7 @@ static void transporter_collect_hooks()
         vstack_push(&stack, ((PLUG_ENTITY*)(pnode->pdata))->file_name);
     }
     while (FALSE == vstack_is_empty(&stack)) {
-        transporter_unload_library(vstack_get_top(&stack));
+		transporter_unload_library(static_cast<char *>(vstack_get_top(&stack)));
         vstack_pop(&stack);
     }
 	transporter_clean_up_unloading();
@@ -613,8 +613,9 @@ static void* thread_work_func(void* arg)
 		} else {
 			cannot_served_times = 0;
 			pcontext = &pthr_data->fake_context.context;
-			if (FALSE == mail_retrieve(pcontext->pmail, pmessage->mail_begin,
-				pmessage->mail_length)) {
+			if (!mail_retrieve(pcontext->pmail,
+			    static_cast<char *>(pmessage->mail_begin),
+			    pmessage->mail_length)) {
 				system_services_log_info(8, "queue-id: %d, fail to be "
 					"retrieved into mail object", pmessage->flush_ID);
 				message_dequeue_save(pmessage);
@@ -738,7 +739,7 @@ int transporter_load_library(const char* path)
     /* check whether the library is in unloading list */
     for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
          pnode=double_list_get_after(&g_unloading_list, pnode)) {
-		if (strcmp(static_cast(PLUG_ENTITY *, pnode->pdata)->file_name, path) == 0) {
+		if (strcmp(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
 			printf("[transporter]: %s is already loaded in module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
@@ -746,7 +747,7 @@ int transporter_load_library(const char* path)
     /* check whether the library is already loaded */
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)) {
-		if (strcmp(static_cast(PLUG_ENTITY *, pnode->pdata)->file_name, path) == 0) {
+		if (strcmp(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name, path) == 0) {
 			printf("[transporter]: %s is already loaded in module\n", path);
 			return PLUGIN_ALREADY_LOADED;
 		}
@@ -790,7 +791,7 @@ int transporter_load_library(const char* path)
     double_list_append_as_tail(&g_lib_list, &plib->node);
     g_cur_lib = plib;
     /* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!func(PLUGIN_INIT, const_cast(void **, server_funcs))) {
+	if (!func(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
 		printf("[transporter]: error executing the plugin's init function "
                 "in %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
@@ -820,9 +821,8 @@ int transporter_unload_library(const char* path)
     DOUBLE_LIST_NODE *pnode;
     PLUGIN_MAIN func;
     PLUG_ENTITY *plib;
-	char *ptr;
 
-    ptr = strrchr(path, '/');
+	auto ptr = strrchr(path, '/');
     if (NULL != ptr) {
         ptr++;
     } else {
@@ -934,59 +934,30 @@ static void* transporter_queryservice(char *service)
     if (NULL == g_cur_lib) {
         return NULL;
     }
-    if (strcmp(service, "register_hook") == 0) {
-        return transporter_register_hook;
-    }
-    if (strcmp(service, "register_local") == 0) {
-        return transporter_register_local;
-    }
-	if (strcmp(service, "register_talk") == 0) {
-        return transporter_register_talk;
-    }
-	if (strcmp(service, "get_host_ID") == 0) {
-		return transporter_get_host_ID;
-	}
-	if (strcmp(service, "get_default_domain") == 0) {
-		return transporter_get_default_domain;
-	}
-	if (strcmp(service, "get_admin_mailbox") == 0) {
-		return transporter_get_admin_mailbox;
-	}
-	if (strcmp(service, "get_plugin_name") == 0) {
-        return transporter_get_plugin_name;
-    }
-    if (strcmp(service, "get_config_path") == 0) {
-        return transporter_get_config_path;
-    }
-    if (strcmp(service, "get_data_path") == 0) {
-        return transporter_get_data_path;
-    }
-	if (strcmp(service, "get_state_path") == 0)
-		return transporter_get_state_path;
-	if (strcmp(service, "get_queue_path") == 0) {
-		return transporter_get_queue_path;
-	}
-	if (strcmp(service, "get_threads_num") == 0) {
-		return transporter_get_threads_num;
-	}
-	if (strcmp(service, "get_context_num") == 0) {
-        return transporter_get_context_num;
-    }
-	if (strcmp(service, "get_context") == 0) {
-		return transporter_get_context;
-	}
-	if (strcmp(service, "put_context") == 0) {
-		return transporter_put_context;
-	}
-	if (strcmp(service, "enqueue_context") == 0) {
-		return transporter_enqueue_context;
-	}
-	if (strcmp(service, "throw_context") == 0) {
-		return transporter_throw_context;
-	}
-	if (strcmp(service, "is_domainlist_valid") == 0) {
-		return transporter_domainlist_valid;
-	}
+#define E(s, f) \
+	do { \
+		if (strcmp(service, (s)) == 0) \
+			return reinterpret_cast<void *>(f); \
+	} while (false)
+	E("register_hook", transporter_register_hook);
+	E("register_local", transporter_register_local);
+	E("register_talk", transporter_register_talk);
+	E("get_host_ID", transporter_get_host_ID);
+	E("get_default_domain", transporter_get_default_domain);
+	E("get_admin_mailbox", transporter_get_admin_mailbox);
+	E("get_plugin_name", transporter_get_plugin_name);
+	E("get_config_path", transporter_get_config_path);
+	E("get_data_path", transporter_get_data_path);
+	E("get_state_path", transporter_get_state_path);
+	E("get_queue_path", transporter_get_queue_path);
+	E("get_threads_num", transporter_get_threads_num);
+	E("get_context_num", transporter_get_context_num);
+	E("get_context", transporter_get_context);
+	E("put_context", transporter_put_context);
+	E("enqueue_context", transporter_enqueue_context);
+	E("throw_context", transporter_throw_context);
+	E("is_domainlist_valid", transporter_domainlist_valid);
+#undef E
 	/* check if already exists in the reference list */
     for (pnode=double_list_get_head(&g_cur_lib->list_reference); NULL!=pnode;
          pnode=double_list_get_after(&g_cur_lib->list_reference, pnode)) {
