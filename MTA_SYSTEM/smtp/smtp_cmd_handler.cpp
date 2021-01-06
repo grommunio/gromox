@@ -478,7 +478,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
                 size2_used += size;
             } else {
                 size_copied = size2 - size2_used;
-                memcpy(pbuff2 + size2_used, pbuff, size_copied);
+				memcpy(static_cast<char *>(pbuff2) + size2_used, pbuff, size_copied);
                 size2 = STREAM_BLOCK_SIZE;
                 size2_used = 0;
                 stream_forward_writing_ptr(&stream, STREAM_BLOCK_SIZE);
@@ -498,7 +498,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
                     return DISPATCH_SHOULD_CLOSE;
                 }
                 size2_used = size - size_copied;
-                memcpy(pbuff2, pbuff + size_copied, size2_used);
+				memcpy(pbuff2, static_cast<char *>(pbuff) + size_copied, size2_used);
             }
             size = STREAM_BLOCK_SIZE;
             pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);

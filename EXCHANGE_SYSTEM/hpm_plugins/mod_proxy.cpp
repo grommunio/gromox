@@ -394,8 +394,7 @@ static int read_header(PROXY_CONTEXT *pcontext, void *pbuff, int length)
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return 0;
 		}
-		read_len = read(pcontext->sockd,
-			pbuff + offset, length - offset);
+		read_len = read(pcontext->sockd, static_cast<char *>(pbuff) + offset, length - offset);
 		if (read_len <= 0) {
 			return 0;
 		}

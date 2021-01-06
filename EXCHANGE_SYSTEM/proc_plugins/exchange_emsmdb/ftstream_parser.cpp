@@ -62,8 +62,7 @@ static BOOL ftstream_parser_read_uint64(
 		return FALSE;
 	}
 	*pv = FSTREAM_IVAL(&tmp_val);
-	*pv |= ((uint64_t)(FSTREAM_IVAL(
-			(void*)&tmp_val + 4))) << 32;
+	*pv |= static_cast<uint64_t>(FSTREAM_IVAL(reinterpret_cast<char *>(&tmp_val) + 4)) << 32;
 	pstream->offset += sizeof(uint64_t);
 	return TRUE;
 }

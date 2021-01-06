@@ -214,7 +214,7 @@ static BOOL ftstream_producer_write_uint64(
 	uint64_t tmp_val;
 	
 	FSTREAM_SIVAL(&tmp_val, (v&0xFFFFFFFF));
-	FSTREAM_SIVAL((void*)&tmp_val + 4, v >> 32);
+	FSTREAM_SIVAL(reinterpret_cast<char *>(&tmp_val) + 4, v >> 32);
 	if (FALSE == ftstream_producer_write_internal(
 		pstream, &tmp_val, sizeof(uint64_t))) {
 		return FALSE;
