@@ -336,9 +336,10 @@ int imap_parser_stop()
 		mime_pool_free(g_mime_pool);
 		g_mime_pool = NULL;
 	}
-	
+	mjson_allocator_free(g_alloc_mjson);
+	dir_tree_allocator_free(g_alloc_dir);
 	if (NULL != g_alloc_xarray) {
-		lib_buffer_free(g_alloc_xarray);
+		xarray_allocator_free(g_alloc_xarray);
 		g_alloc_xarray = NULL;
 	}
 	
