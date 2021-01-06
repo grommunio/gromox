@@ -133,7 +133,7 @@ static int str_table_refresh()
 		str_table_echo("list_file_init %s: %s", g_list_path, strerror(errno));
 		return STR_TABLE_REFRESH_FILE_ERROR;
 	}
-	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(plist_file));
+	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;
 	

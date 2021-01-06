@@ -80,22 +80,22 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			config_file_free(pfile);
 			return FALSE;
 		}
-		if (NULL != query_name && FALSE == register_service(query_name,
-			str_table_query)) {
+		if (query_name != nullptr && !register_service(query_name,
+		    reinterpret_cast<void *>(str_table_query))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					query_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
-		if (NULL != add_name && FALSE == register_service(add_name,
-			str_table_add)) {
+		if (add_name != nullptr && !register_service(add_name,
+		    reinterpret_cast<void *>(str_table_add))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					add_name);
 			config_file_free(pfile);
 			return FALSE;
 		}
-		if (NULL != remove_name && FALSE == register_service(remove_name,
-			str_table_remove)) {
+		if (remove_name != nullptr && !register_service(remove_name,
+		    reinterpret_cast<void *>(str_table_remove))) {
 			printf("[%s]: failed to register \"%s\" service\n", file_name,
 					remove_name);
 			config_file_free(pfile);
