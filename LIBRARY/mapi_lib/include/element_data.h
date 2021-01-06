@@ -80,8 +80,6 @@ extern "C" {
 #endif
 
 extern ATTACHMENT_CONTENT *attachment_content_init(void);
-TPROPVAL_ARRAY* attachment_content_get_proplist(
-	ATTACHMENT_CONTENT *pattachment);
 extern void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *, MESSAGE_CONTENT *embed);
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
 

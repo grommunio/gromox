@@ -93,7 +93,6 @@ unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size)
 
 int stream_dump(STREAM *pstream, int fd);
 extern int stream_write(STREAM *pstream, const void *pbuff, size_t size);
-void stream_truncate(STREAM *pstream);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -36,17 +36,7 @@ void xarray_allocator_free(LIB_BUFFER* buf);
 int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag);
 
 void* xarray_get_item(XARRAY* pxarray, int index);
-
-unsigned int xarray_get_xtag(XARRAY* pxarray, int index);
-
 void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag);
-
-int xarray_get_index(XARRAY* pxarray, unsigned int xtag);
-
-void xarray_remove_item(XARRAY *pxarray, int index);
-
-void xarray_remove_itemx(XARRAY *pxarray, unsigned int xtag);
-
 int xarray_get_capacity(XARRAY* pxarray);
 
 void xarray_clear(XARRAY* pxarray);

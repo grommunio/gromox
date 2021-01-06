@@ -40,9 +40,6 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length);
 VCARD_LINE* vcard_new_line(const char *name);
 
 void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline);
-
-void vcard_delete_line(VCARD *pvcard, VCARD_LINE *pvline);
-
 VCARD_PARAM* vcard_new_param(const char*name);
 
 BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval);

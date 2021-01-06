@@ -76,13 +76,7 @@ int ndr_pull_union_align(NDR_PULL *pndr, size_t size);
 int ndr_pull_trailer_align(NDR_PULL *pndr, size_t size);
 
 int ndr_pull_string(NDR_PULL *pndr, char *buff, uint32_t inbytes);
-	
-int ndr_pull_int8(NDR_PULL *pndr, int8_t *v);
-	
 int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v);
-
-int ndr_pull_int16(NDR_PULL *pndr, int16_t *v);
-
 int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v);
 
 int ndr_pull_int32(NDR_PULL *pndr, int32_t *v);
@@ -92,9 +86,6 @@ int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v);
 int ndr_pull_int64(NDR_PULL *pndr, int64_t *v);
 
 int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v);
-
-int ndr_pull_long(NDR_PULL *pndr, int32_t *v);
-
 int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v);
 
 int ndr_pull_array_uint8(NDR_PULL *pndr, uint8_t *data, uint32_t n);
@@ -127,13 +118,7 @@ int ndr_push_union_align(NDR_PUSH *pndr, size_t size);
 int ndr_push_trailer_align(NDR_PUSH *pndr, size_t size);
 
 int ndr_push_string(NDR_PUSH *pndr, const char *var, uint32_t required);
-
-int ndr_push_int8(NDR_PUSH *pndr, int8_t v);
-
 int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v);
-
-int ndr_push_int16(NDR_PUSH *pndr, int16_t v);
-
 int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v);
 
 int ndr_push_int32(NDR_PUSH *pndr, int32_t v);
@@ -143,9 +128,6 @@ int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v);
 int ndr_push_int64(NDR_PUSH *pndr, int64_t v);
 
 int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v);
-
-int ndr_push_long(NDR_PUSH *pndr, int32_t v);
-
 int ndr_push_ulong(NDR_PUSH *pndr, uint32_t v);
 
 int ndr_push_array_uint8(NDR_PUSH *pndr, const uint8_t *data, uint32_t n);
@@ -159,9 +141,6 @@ int ndr_push_data_blob(NDR_PUSH *pndr, DATA_BLOB blob);
 int ndr_push_zero(NDR_PUSH *pndr, uint32_t n);
 
 int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p);
-
-int ndr_push_full_ptr(NDR_PUSH *pndr, const void *p);
-
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r);
 
 #ifdef __cplusplus

@@ -686,12 +686,6 @@ void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline)
 	double_list_append_as_tail(pvcard, &pvline->node);
 }
 
-void vcard_delete_line(VCARD *pvcard, VCARD_LINE *pvline)
-{
-	double_list_remove(pvcard, &pvline->node);
-	vcard_free_line(pvline);
-}
-
 VCARD_PARAM* vcard_new_param(const char*name)
 {
 	VCARD_PARAM *pvparam;

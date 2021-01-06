@@ -156,17 +156,3 @@ struct tzhead {
 #define EPOCH_WDAY	TM_THURSDAY
 
 #define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
-
-/*
-** Since everything in isleap is modulo 400 (or a factor of 400), we know that
-**	isleap(y) == isleap(y % 400)
-** and so
-**	isleap(a + b) == isleap((a + b) % 400)
-** or
-**	isleap(a + b) == isleap(a % 400 + b % 400)
-** This is true even if % means modulo rather than Fortran remainder
-** (which is allowed by C89 but not C99).
-** We use this to avoid addition overflow problems.
-*/
-
-#define isleap_sum(a, b)	isleap((a) % 400 + (b) % 400)

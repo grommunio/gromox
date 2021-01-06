@@ -325,38 +325,6 @@ void mime_clear(MIME *pmime)
 }
 
 /*
- *	clear mime content
- *	@param
- *		pmime [in]		mime object pointer
- *	@return
- *		TRUE			OK
- *		FALSE			fail
- */
-BOOL mime_clear_content(MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_clear_content");
-		return FALSE;
-	}
-#endif
-	if (SINGLE_MIME != pmime->mime_type) {
-		return FALSE;
-	}
-	if (TRUE == pmime->content_touched && NULL != pmime->content_begin) {
-		if (0 != pmime->content_length) {
-			free(pmime->content_begin);
-		}
-		pmime->content_begin = NULL;
-		pmime->content_length = 0;
-	}
-	pmime->content_begin = NULL;
-	pmime->content_touched = TRUE;
-	pmime->content_length = 0;
-	return TRUE;
-}
-
-/*
  *	encode and write the mime content. if this function is invoked, 
  *	original content will be lost! MIME object maintains its own buffer now!
  *	@param
@@ -2875,27 +2843,6 @@ static BOOL mime_parse_multiple(MIME *pmime)
 		pmime->last_boundary = ptr + 1;
 	}
 	return TRUE;
-}
-
-/*
- *	get the boundary string of mime
- *	@param
- *		pmime [in]		indicate the mime object
- *	@return
- *		string pointer of mime object, NULL means single part MIME
- */
-const char* mime_get_boundary(MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_boundary");
-		return NULL;
-	}
-#endif
-	if (MULTIPLE_MIME != pmime->mime_type) {
-		return NULL;
-	}
-	return pmime->boundary_string;
 }
 
 static void mime_produce_boundary(MIME *pmime)

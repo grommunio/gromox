@@ -21,11 +21,6 @@ BOOL idset_append(IDSET *pset, uint64_t eid);
 
 BOOL idset_append_range(IDSET *pset, uint16_t replid,
 	uint64_t low_value, uint64_t high_value);
-
-/* only can be the firt globset of the replid */
-BOOL idset_batch_append(IDSET *pset, uint16_t replid,
-	uint64_t count, uint64_t *pvalues);
-
 void idset_remove(IDSET *pset, uint64_t eid);
 
 BOOL idset_concatenate(IDSET *pset_dst, const IDSET *pset_src);

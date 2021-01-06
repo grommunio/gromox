@@ -509,102 +509,6 @@ const char* mjson_get_mail_filename(MJSON *pjson)
 }
 
 /*
- *	get mail FROM from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_from(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_from");
-		return NULL;
-	}
-#endif
-	return pjson->from;
-}
-
-/*
- *	get mail sender from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_sender(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_sender");
-		return NULL;
-	}
-#endif
-	return pjson->sender;
-}
-
-/*
- *	get mail Reply-To from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_reply(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_reply");
-		return NULL;
-	}
-#endif
-	return pjson->reply;
-}
-
-/*
- *	get mail to recipients from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_to(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_to");
-		return NULL;
-	}
-#endif
-	return pjson->to;
-}
-
-/*
- *	get mail cc recipients from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_cc(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_cc");
-		return NULL;
-	}
-#endif
-	return pjson->cc;
-}
-
-/*
- *	get mail In-Reply-To from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_inreply(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_inreply");
-		return NULL;
-	}
-#endif
-	return pjson->inreply;
-}
-
-/*
  *	get mail received from mjson object
  *	@param
  *		pjson [in]			indicate the mjson object
@@ -621,22 +525,6 @@ const char* mjson_get_mail_received(MJSON *pjson)
 }
 
 /*
- *	get mail date from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_date(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_date");
-		return NULL;
-	}
-#endif
-	return pjson->date;
-}
-
-/*
  *	get mail Message-Id from mjson object
  *	@param
  *		pjson [in]			indicate the mjson object
@@ -650,88 +538,6 @@ const char* mjson_get_mail_messageid(MJSON *pjson)
 	}
 #endif
 	return pjson->msgid;
-}
-
-/*
- *	get mail References from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_references(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_messageid");
-		return NULL;
-	}
-#endif
-	return pjson->ref;
-}
-
-/*
- *	get mail flag from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- *		param				MJSON_FLAG_READ
- *							MJSON_FLAG_REPLIED
- *							MJSON_FLAG_FORWARDED
- *							MJSON_FLAG_UNSENT
- *							MJSON_FLAG_FLAG
- */
-int mjson_get_mail_flag(MJSON *pjson, int param)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_flag");
-		return 0;
-	}
-#endif
-	switch (param) {
-	case MJSON_FLAG_READ:
-		return pjson->read;
-	case MJSON_FLAG_REPLIED:
-		return pjson->replied;
-	case MJSON_FLAG_FORWARDED:
-		return pjson->forwarded;
-	case MJSON_FLAG_UNSENT:
-		return pjson->unsent;
-	case MJSON_FLAG_FLAG:
-		return pjson->flag;
-	default:
-		return 0;
-	}
-}
-
-/*
- *	get mail date from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-int mjson_get_mail_priority(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_priority");
-		return 0;
-	}
-#endif
-	return pjson->priority;
-}
-
-/*
- *	get mail notification from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_notification(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_notification");
-		return NULL;
-	}
-#endif
-	return pjson->notification;
 }
 
 /*
@@ -796,54 +602,6 @@ const char* mjson_get_mime_filename(MJSON_MIME *pmime)
 	}
 #endif
 	return pmime->filename;
-}
-
-/*
- *	get mime content ID from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_cid(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_cid");
-		return NULL;
-	}
-#endif
-	return pmime->cid;
-}
-
-/*
- *	get mime content location from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_cntl(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_cntl");
-		return NULL;
-	}
-#endif
-	return pmime->cntl;
-}
-
-/*
- *	get mime content disposition from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_cntdspn(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_cntdspn");
-		return NULL;
-	}
-#endif
-	return pmime->cntdspn;
 }
 
 /*

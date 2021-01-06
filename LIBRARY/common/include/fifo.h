@@ -29,12 +29,7 @@ void fifo_free(FIFO* pfifo);
 BOOL fifo_enqueue(FIFO* pfifo, void* pdata);
 
 void* fifo_get_front(FIFO* pfifo);
-
-void* fifo_remove_front(FIFO* pfifo);
-
 void fifo_dequeue(FIFO* pfifo);
-
-BOOL fifo_is_empty(FIFO* pfifo);
 
 #ifdef __cplusplus
 }

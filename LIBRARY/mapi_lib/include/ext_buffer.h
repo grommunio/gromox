@@ -138,9 +138,6 @@ int ext_buffer_pull_namedproperty_information(
 	EXT_PULL *pext, NAMEDPROPERTY_INFOMATION *r);
 
 int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r);
-
-int ext_buffer_pull_long_term_id_array(EXT_PULL *pext, LONG_TERM_ID_ARRAY *r);
-
 int ext_buffer_pull_long_term_id_rang(EXT_PULL *pext, LONG_TERM_ID_RANGE *r);
 
 int ext_buffer_pull_typed_propval(EXT_PULL *pext, TYPED_PROPVAL *r);
@@ -154,10 +151,6 @@ int ext_buffer_pull_flagged_propval(EXT_PULL *pext,
 
 int ext_buffer_pull_property_row(EXT_PULL *pext,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *r);
-
-int ext_buffer_pull_proprow_set(EXT_PULL *pext,
-	const PROPTAG_ARRAY *pcolumns, PROPROW_SET *r);
-
 int ext_buffer_pull_property_name(EXT_PULL *pext, PROPERTY_NAME *r);
 
 int ext_buffer_pull_propname_array(EXT_PULL *pext, PROPNAME_ARRAY *r);
@@ -179,9 +172,6 @@ int ext_buffer_pull_message_entryid(EXT_PULL *pext, MESSAGE_ENTRYID *r);
 int ext_buffer_pull_sort_order(EXT_PULL *pext, SORT_ORDER *r);
 
 int ext_buffer_pull_sortorder_set(EXT_PULL *pext, SORTORDER_SET *r);
-
-int ext_buffer_pull_typed_string(EXT_PULL *pext, TYPED_STRING *r);
-
 int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 	const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r);
 
@@ -190,10 +180,6 @@ int ext_buffer_pull_openrecipient_row(EXT_PULL *pext,
 
 int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 	PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r);
-
-int ext_buffer_pull_readrecipient_row(EXT_PULL *pext,
-	PROPTAG_ARRAY *pproptags, READRECIPIENT_ROW *r);
-
 int ext_buffer_pull_permission_data(EXT_PULL *pext, PERMISSION_DATA *r);
 
 int ext_buffer_pull_rule_data(EXT_PULL *pext, RULE_DATA *r);
@@ -204,9 +190,6 @@ int ext_buffer_pull_addressbook_entryid(
 int ext_buffer_pull_oneoff_entryid(EXT_PULL *pext, ONEOFF_ENTRYID *r);
 
 int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r);
-
-int ext_buffer_pull_persistdata_array(EXT_PULL *pext, PERSISTDATA_ARRAY *r);
-
 int ext_buffer_pull_eid_array(EXT_PULL *pext, EID_ARRAY *r);
 
 int ext_buffer_pull_systemtime(EXT_PULL *pext, SYSTEMTIME *r);
@@ -242,9 +225,6 @@ int ext_buffer_push_uint16(EXT_PUSH *pext, uint16_t v);
 int ext_buffer_push_int32(EXT_PUSH *pext, int32_t v);
 
 int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v);
-
-int ext_buffer_push_int64(EXT_PUSH *pext, int64_t v);
-
 int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v);
 
 int ext_buffer_push_float(EXT_PUSH *pext, float v);
@@ -292,21 +272,10 @@ int ext_buffer_push_svreid(EXT_PUSH *pext, const SVREID *r);
 int ext_buffer_push_store_entryid(EXT_PUSH *pext, const STORE_ENTRYID *r);
 
 int ext_buffer_push_rule_actions(EXT_PUSH *pext, const RULE_ACTIONS *r);
-
-int ext_buffer_push_ext_rule_actions(
-	EXT_PUSH *pext, const EXT_RULE_ACTIONS *r);
-
-int ext_buffer_push_namedproperty_information(
-	EXT_PUSH *pext, const NAMEDPROPERTY_INFOMATION *r);
-
 int ext_buffer_push_long_term_id(EXT_PUSH *pext, const LONG_TERM_ID *r);
 
 int ext_buffer_push_long_term_id_array(
 	EXT_PUSH *pext, const LONG_TERM_ID_ARRAY *r);
-
-int ext_buffer_push_long_term_id_rang(
-	EXT_PUSH *pext, const LONG_TERM_ID_RANGE *r);
-
 int ext_buffer_push_typed_propval(EXT_PUSH *pext, const TYPED_PROPVAL *r);
 
 int ext_buffer_push_propval(EXT_PUSH *pext, uint16_t type, const void *pval);
@@ -318,10 +287,6 @@ int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
 
 int ext_buffer_push_property_row(EXT_PUSH *pext,
 	const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r);
-
-int ext_buffer_push_proprow_set(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pcolumns, const PROPROW_SET *r);
-	
 int ext_buffer_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r);
 
 int ext_buffer_push_propname_array(EXT_PUSH *pext, const PROPNAME_ARRAY *r);
@@ -351,10 +316,6 @@ int ext_buffer_push_recipient_row(EXT_PUSH *pext,
 
 int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 	const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r);
-
-int ext_buffer_push_modifyrecipient_row(EXT_PUSH *pext,
-	PROPTAG_ARRAY *pproptags, const MODIFYRECIPIENT_ROW *r);
-
 int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
 	PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r);
 
@@ -367,9 +328,6 @@ int ext_buffer_push_addressbook_entryid(
 
 int ext_buffer_push_oneoff_entryid(EXT_PUSH *pext,
 	const ONEOFF_ENTRYID *r);
-
-int ext_buffer_push_oneoff_array(EXT_PUSH *pext, const ONEOFF_ARRAY *r);
-
 int ext_buffer_push_persistdata_array(
 	EXT_PUSH *pext, const PERSISTDATA_ARRAY *r);
 

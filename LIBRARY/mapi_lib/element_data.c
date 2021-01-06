@@ -28,12 +28,6 @@ ATTACHMENT_CONTENT* attachment_content_init()
 	return pattachment;
 }
 
-TPROPVAL_ARRAY* attachment_content_get_proplist(
-	ATTACHMENT_CONTENT *pattachment)
-{
-	return &pattachment->proplist;
-}
-
 void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *pattachment,
     MESSAGE_CONTENT *pembedded)
 {

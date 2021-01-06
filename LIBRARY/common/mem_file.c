@@ -494,29 +494,6 @@ ssize_t	mem_file_seek(MEM_FILE* pfile, int type, ssize_t offset, int opt)
 }
 
 /*
- *	tell the position of read or write pointer
- *	@param
- *		pfile [in]		indicate the file object
- *		type			 MEM_FILE_READ_PTR or MEM_FILE_WRITE_PTR
- *	@return
- *		position of pointer
- */
-size_t mem_file_tell(MEM_FILE *pfile, int type)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pfile) {
-		debug_info("[mem_file]: mem_file_tell, param NULL");
-		return 0;
-	}
-#endif
-	if (MEM_FILE_READ_PTR == type) {
-		return pfile->rd_total_pos;
-	} else {
-		return pfile->wr_total_pos;
-	}
-}
-
-/*
  *	  write buffer into mem file
  *	  @param
  *		  pfile [in]	  indicate the file object

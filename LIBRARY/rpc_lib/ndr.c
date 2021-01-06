@@ -163,16 +163,6 @@ int ndr_pull_string(NDR_PULL *pndr, char *buff, uint32_t inbytes)
 	return ndr_pull_advance(pndr, inbytes);
 }
 
-int ndr_pull_int8(NDR_PULL *pndr, int8_t *v)
-{
-	if (pndr->data_size < 1 || pndr->offset + 1 > pndr->data_size) {
-		return NDR_ERR_BUFSIZE;
-	}
-	*v = (int8_t)CVAL(pndr->data, pndr->offset);
-	pndr->offset += 1;
-	return NDR_ERR_SUCCESS;
-}
-
 int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v)
 {
 	if (pndr->data_size < 1 || pndr->offset + 1 > pndr->data_size) {
@@ -180,22 +170,6 @@ int ndr_pull_uint8(NDR_PULL *pndr, uint8_t *v)
 	}
 	*v = CVAL(pndr->data, pndr->offset);
 	pndr->offset += 1;
-	return NDR_ERR_SUCCESS;
-}
-
-int ndr_pull_int16(NDR_PULL *pndr, int16_t *v)
-{
-	int status;
-	
-	status = ndr_pull_align(pndr, 2);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (pndr->data_size < 2 || pndr->offset + 2 > pndr->data_size) {
-		return NDR_ERR_BUFSIZE;
-	}
-	*v = (int16_t)NDR_SVAL(pndr, pndr->offset);
-	pndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
 
@@ -290,25 +264,6 @@ int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v)
 	}
 	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
-}
-
-int ndr_pull_long(NDR_PULL *pndr, int32_t *v)
-{
-	int status;
-	int64_t v64;
-	
-	if (pndr->flags & NDR_FLAG_NDR64) {
-		status = ndr_pull_int64(pndr, &v64);
-		if (NDR_ERR_SUCCESS != status) {
-			return status;
-		}
-		*v = (int32_t)v64;
-		if (v64 != *v) {
-			return NDR_ERR_NDR64;
-		}
-		return NDR_ERR_SUCCESS;
-	}
-	return ndr_pull_int32(pndr, v);
 }
 
 int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v)
@@ -571,16 +526,6 @@ static int ndr_push_bytes(NDR_PUSH *pndr, const void *pdata, uint32_t n)
 	return NDR_ERR_SUCCESS;
 }
 
-int ndr_push_int8(NDR_PUSH *pndr, int8_t v)
-{
-	if (FALSE == ndr_push_check_overflow(pndr, 1)) {
-		return NDR_ERR_BUFSIZE;
-	}
-	SCVAL(pndr->data, pndr->offset, (uint8_t)v);
-	pndr->offset += 1;
-	return NDR_ERR_SUCCESS;
-}
-
 int ndr_push_uint8(NDR_PUSH *pndr, uint8_t v)
 {
 	if (FALSE == ndr_push_check_overflow(pndr, 1)) {
@@ -634,22 +579,6 @@ int ndr_push_trailer_align(NDR_PUSH *pndr, size_t size)
 	if (pndr->flags & NDR_FLAG_NDR64) {
 		return ndr_push_align(pndr, size);
 	}
-	return NDR_ERR_SUCCESS;
-}
-
-int ndr_push_int16(NDR_PUSH *pndr, int16_t v)
-{
-	int status;
-	
-	status = ndr_push_align(pndr, 2);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (FALSE == ndr_push_check_overflow(pndr, 2)) {
-		return NDR_ERR_BUFSIZE;
-	}
-	NDR_SSVAL(pndr, pndr->offset, (uint16_t)v);
-	pndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
 
@@ -743,15 +672,6 @@ int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v)
 	}
 	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
-}
-
-int ndr_push_long(NDR_PUSH *pndr, int32_t v)
-{
-	if (pndr->flags & NDR_FLAG_NDR64) {
-		return ndr_push_int64(pndr, v);
-	} else {
-		return ndr_push_int32(pndr, v);
-	}
 }
 
 int ndr_push_ulong(NDR_PUSH *pndr, uint32_t v)
@@ -897,46 +817,6 @@ int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p)
 		pndr->ptr_count++;
 	}
 	return ndr_push_ulong(pndr, ptr);
-}
-
-static uint32_t ndr_push_check_pointer(NDR_PUSH *pndr, const void *p)
-{
-	PTR_NODE *ptr_node;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pndr->full_ptr_list); NULL!=pnode;
-		pnode=double_list_get_after(&pndr->full_ptr_list, pnode)) {
-		ptr_node = (PTR_NODE*)pnode->pdata;
-		if (p == ptr_node->pointer) {
-			return ptr_node->ptr_count;
-		}
-	}
-	return 0;
-}
-
-int ndr_push_full_ptr(NDR_PUSH *pndr, const void *p)
-{
-	uint32_t ptr_count;
-	PTR_NODE *ptr_node;
-	
-	ptr_count = 0;
-	if (NULL != p) {
-		/* Check if the pointer already exists and has an id */
-		ptr_count = ndr_push_check_pointer(pndr, p);
-		if (0 == ptr_count) {
-			pndr->ptr_count++;
-			ptr_count = pndr->ptr_count;
-			ptr_node = malloc(sizeof(PTR_NODE));
-			if (NULL == ptr_node) {
-				return NDR_ERR_ALLOC;
-			}
-			ptr_node->node.pdata = ptr_node;
-			ptr_node->ptr_count = ptr_count;
-			ptr_node->pointer = p;
-			double_list_append_as_tail(&pndr->full_ptr_list, &ptr_node->node);
-		}
-	}
-	return ndr_push_ulong(pndr, ptr_count);
 }
 
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r)

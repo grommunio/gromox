@@ -841,12 +841,6 @@ void ical_append_line(ICAL *pical, ICAL_LINE *piline)
 	double_list_append_as_tail(&pical->line_list, &piline->node);
 }
 
-void ical_delete_line(ICAL *pical, ICAL_LINE *piline)
-{
-	double_list_remove(&pical->line_list, &piline->node);
-	ical_free_line(piline);
-}
-
 ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
 {
 	DOUBLE_LIST_NODE *pnode;
@@ -1386,17 +1380,6 @@ void ical_add_year(ICAL_TIME *pitime, int years)
 	}
 }
 
-void ical_subtract_year(ICAL_TIME *pitime, int year)
-{
-	pitime->year -= year;
-	if (0 == year % 4) {
-		return;
-	}
-	if (2 == pitime->month && 29 == pitime->day) {
-		pitime->day = 28;
-	}
-}
-
 void ical_add_month(ICAL_TIME *pitime, int months)
 {
 	int monthdays;
@@ -1406,22 +1389,6 @@ void ical_add_month(ICAL_TIME *pitime, int months)
 	if (pitime->month > 12) {
 		pitime->year ++;
 		pitime->month -= 12;
-	}
-	monthdays = ical_get_monthdays(pitime->year, pitime->month);
-	if (pitime->day > monthdays) {
-		pitime->day = monthdays;
-	}
-}
-
-void ical_subtract_month(ICAL_TIME *pitime, int month)
-{
-	int monthdays;
-	
-	pitime->year -= month/12;
-	pitime->month -= month%12;
-	if (pitime->month <= 0) {
-		pitime->year --;
-		pitime->month += 12;
 	}
 	monthdays = ical_get_monthdays(pitime->year, pitime->month);
 	if (pitime->day > monthdays) {
@@ -1568,18 +1535,6 @@ void ical_add_second(ICAL_TIME *pitime, int seconds)
 	if (pitime->second > 59) {
 		ical_add_minute(pitime, 1);
 		pitime->second -= 60;
-	}
-}
-
-void ical_subtract_second(ICAL_TIME *pitime, int seconds)
-{
-	if (seconds > 59) {
-		ical_subtract_minute(pitime, seconds/60);
-	}
-	pitime->second -= seconds%60;
-	if (pitime->second < 0) {
-		ical_subtract_minute(pitime, 1);
-		pitime->second += 60;
 	}
 }
 
@@ -2136,39 +2091,6 @@ BOOL ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 		}
 	}
 	return FALSE;
-}
-
-BOOL ical_date_to_utc(const char *str_date,
-	const char *str_zone, time_t *ptime)
-{
-	int day;
-	int year;
-	int month;
-	struct tm tmp_tm;
-	char tmp_buff[16];
-	const struct state *sp;
-	
-	strncpy(tmp_buff, str_date, 16);
-	HX_strrtrim(tmp_buff);
-	HX_strltrim(tmp_buff);
-	if (8 != strlen(tmp_buff)) {
-		return FALSE;
-	}
-	if (3 != sscanf(tmp_buff, "%04d%02d%02d", &year, &month, &day)) {
-		return FALSE;
-	}
-	memset(&tmp_tm, 0, sizeof(struct tm));
-	tmp_tm.tm_year = year - 1900;
-	tmp_tm.tm_mon = month - 1;
-	tmp_tm.tm_mday = day;
-	tmp_tm.tm_isdst = -1;
-	sp = tz_alloc(str_zone);
-	if (NULL == sp) {
-		return FALSE;
-	}
-	*ptime = tz_mktime(sp, &tmp_tm);
-	tz_free(sp);
-	return TRUE;
 }
 
 static BOOL ical_parse_until(ICAL_COMPONENT *ptz_component,
@@ -3272,11 +3194,6 @@ int ical_rrule_interval(ICAL_RRULE *pirrule)
 int ical_rrule_frequency(ICAL_RRULE *pirrule)
 {
 	return pirrule->frequency;
-}
-
-int ical_rrule_real_frequency(ICAL_RRULE *pirrule)
-{
-	return pirrule->real_frequency;
 }
 
 BOOL ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by)

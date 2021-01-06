@@ -1152,30 +1152,3 @@ void stream_split_eom(STREAM *pstream, STREAM *pstream_second)
 	pstream->eom_result = STREAM_EOM_WAITING;
 	pstream->last_eom_parse = 0;
 }
-
-/*
- *	  make stream as pipe
- *	  @param
- *		  pstream [in, out]	   indicate the stream object
- */
-void stream_truncate(STREAM *pstream)
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-#ifdef _DEBUG_UMTA	  
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_truncate, param NULL");
-		return;
-	}
-#endif
-	while (TRUE) {
-		pnode = double_list_get_from_head(&pstream->list);
-		if (pnode == pstream->pnode_rd || pnode == pstream->pnode_wr) {
-			double_list_insert_as_head(&pstream->list, pnode);
-			return;
-		}
-		lib_buffer_put(pstream->allocator, pnode);
-		pstream->rd_total_pos -= STREAM_BLOCK_SIZE;
-		pstream->wr_total_pos -= STREAM_BLOCK_SIZE;
-	}
-}

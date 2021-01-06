@@ -23,13 +23,7 @@ void    single_list_free(SINGLE_LIST* plist);
 BOOL    single_list_append_as_tail(SINGLE_LIST* plist, SINGLE_LIST_NODE* node);
 
 BOOL    single_list_insert_as_head(SINGLE_LIST* plist, SINGLE_LIST_NODE* node);
-
-BOOL    single_list_is_empty(SINGLE_LIST* plist);
-
 SINGLE_LIST_NODE*  single_list_get_from_head(SINGLE_LIST* plist);
-
-SINGLE_LIST_NODE*  single_list_get_from_tail(SINGLE_LIST* plist);
-
 SINGLE_LIST_NODE*  single_list_get_head(SINGLE_LIST* plist);
 
 SINGLE_LIST_NODE*  single_list_get_tail(SINGLE_LIST* plist);

@@ -17,6 +17,7 @@ typedef struct _RCPT_DSN_FIELDS {
 	DSN_FIELDS fields;
 } RCPT_DSN_FIELDS;
 
+static void dsn_delete_rcpt_fields(DSN *, DSN_FIELDS *);
 
 static void dsn_clear_fields(DSN_FIELDS *pfields)
 {
@@ -103,7 +104,7 @@ DSN_FIELDS* dsn_new_rcpt_fields(DSN *pdsn)
 	return &pfields->fields;
 }
 
-void dsn_delete_rcpt_fields(DSN *pdsn, DSN_FIELDS *pfields)
+static void dsn_delete_rcpt_fields(DSN *pdsn, DSN_FIELDS *pfields)
 {
 	DOUBLE_LIST_NODE *pnode;
 	

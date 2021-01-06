@@ -21,8 +21,6 @@ BOOL binhex_deserialize(BINHEX *pbinhex,
 
 void binhex_clear(BINHEX *pbinhex);
 
-BINARY* binhex_serialize(const BINHEX *pbinhex);
-
 #ifdef __cplusplus
 }
 #endif

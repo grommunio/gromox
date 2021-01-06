@@ -128,16 +128,6 @@ void tpropval_array_free(TPROPVAL_ARRAY *parray)
 	free(parray);
 }
 
-void tpropval_array_update(TPROPVAL_ARRAY *parray_dst,
-	const TPROPVAL_ARRAY *parray)
-{
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
-		tpropval_array_set_propval(parray_dst, parray->ppropval + i);
-	}
-}
-
 TPROPVAL_ARRAY* tpropval_array_dup(TPROPVAL_ARRAY *parray)
 {
 	int i;

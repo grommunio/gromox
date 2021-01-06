@@ -212,8 +212,6 @@ int gmt_is_set;
 ** Thanks to Paul Eggert for noting this.
 */
 
-static struct tm tm;
-
 static long detzcode(const char* const codep)
 {
 	long result;
@@ -1206,12 +1204,6 @@ static struct tm* localsub(register const struct state* const sp,
 	tmp->TM_ZONE = &sp->chars[ttisp->tt_abbrind];
 #endif /* defined TM_ZONE */
 	return result;
-}
-
-struct tm* tz_localtime(const struct state* const sp,
-	const time_t* const timep)
-{
-	return localsub(sp, timep, 0L, &tm);
 }
 
 /*

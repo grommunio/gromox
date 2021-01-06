@@ -1325,32 +1325,6 @@ int ext_buffer_pull_long_term_id(EXT_PULL *pext, LONG_TERM_ID *r)
 	return ext_buffer_pull_uint16(pext, &r->padding);
 }
 
-int ext_buffer_pull_long_term_id_array(EXT_PULL *pext, LONG_TERM_ID_ARRAY *r)
-{
-	int i;
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (0 == r->count) {
-		r->pids = NULL;
-		return EXT_ERR_SUCCESS;
-	}
-	r->pids = pext->alloc(sizeof(LONG_TERM_ID)*r->count);
-	if (NULL == r->pids) {
-		return EXT_ERR_ALLOC;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_long_term_id(pext, &r->pids[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_pull_long_term_id_rang(EXT_PULL *pext, LONG_TERM_ID_RANGE *r)
 {
 	int status;
@@ -1991,32 +1965,6 @@ int ext_buffer_pull_property_row(EXT_PULL *pext,
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int ext_buffer_pull_proprow_set(EXT_PULL *pext,
-	const PROPTAG_ARRAY *pcolumns, PROPROW_SET *r)
-{
-	int i;
-	int status;
-	
-	status = ext_buffer_pull_uint16(pext, &r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (0 == r->count) {
-		r->prows = NULL;
-	}
-	r->prows = pext->alloc(sizeof(PROPERTY_ROW)*r->count);
-	if (NULL == r->prows) {
-		return EXT_ERR_ALLOC;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_pull_property_row(pext, pcolumns, &r->prows[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_pull_sort_order(EXT_PULL *pext, SORT_ORDER *r)
 {
 	int status;
@@ -2067,28 +2015,6 @@ int ext_buffer_pull_sortorder_set(EXT_PULL *pext, SORTORDER_SET *r)
 		}
 	}
 	return EXT_ERR_SUCCESS;
-}
-
-int ext_buffer_pull_typed_string(EXT_PULL *pext, TYPED_STRING *r)
-{
-	int status;
-	
-	status = ext_buffer_pull_uint8(pext, &r->string_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	switch(r->string_type) {
-	case STRING_TYPE_NONE:
-	case STRING_TYPE_EMPTY:
-		return EXT_ERR_SUCCESS;
-	case STRING_TYPE_STRING8:
-	case STRING_TYPE_UNICODE_REDUCED:
-		return ext_buffer_pull_string(pext, &r->pstring);
-	case STRING_TYPE_UNICODE:
-		return ext_buffer_pull_wstring(pext, &r->pstring);
-	default:
-		return EXT_ERR_BAD_SWITCH;
-	}
 }
 
 int ext_buffer_pull_recipient_row(EXT_PULL *pext,
@@ -2300,45 +2226,6 @@ int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_pull_readrecipient_row(EXT_PULL *pext,
-	PROPTAG_ARRAY *pproptags, READRECIPIENT_ROW *r)
-{
-	int status;
-	uint32_t offset;
-	uint16_t row_size;
-	
-	status = ext_buffer_pull_uint32(pext, &r->row_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint8(pext, &r->recipient_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &row_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	offset = pext->offset + row_size;
-	status = ext_buffer_pull_recipient_row(pext, pproptags, &r->recipient_row);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (pext->offset > offset) {
-		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_pull_permission_data(EXT_PULL *pext, PERMISSION_DATA *r)
 {
 	int status;
@@ -2475,95 +2362,6 @@ int ext_buffer_pull_oneoff_array(EXT_PULL *pext, ONEOFF_ARRAY *r)
 	}
 	pext->offset = offset;
 	return EXT_ERR_SUCCESS;
-}
-
-static int ext_buffer_pull_persistelement(EXT_PULL *pext, PERSISTELEMENT *r)
-{
-	int status;
-	uint16_t tmp_size;
-	
-	status = ext_buffer_pull_uint16(pext, &r->element_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	switch (r->element_id) {
-	case RSF_ELID_HEADER:
-		status = ext_buffer_pull_uint16(pext, &tmp_size);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		if (4 != tmp_size) {
-			return EXT_ERR_FORMAT;
-		}
-		r->pentry_id = NULL;
-		return ext_buffer_pull_advance(pext, 4);
-	case RSF_ELID_ENTRYID:
-		r->pentry_id = pext->alloc(sizeof(BINARY*));
-		if (NULL == r->pentry_id) {
-			return EXT_ERR_ALLOC;
-		}
-		return ext_buffer_pull_binary(pext, r->pentry_id);
-	default:
-		return EXT_ERR_BAD_SWITCH;
-	}
-}
-
-static int ext_buffer_pull_persistdata(EXT_PULL *pext, PERSISTDATA *r)
-{
-	int status;
-	uint32_t offset;
-	uint16_t tmp_size;
-	
-	status = ext_buffer_pull_uint16(pext, &r->persist_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &tmp_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (PERSIST_SENTINEL == r->persist_id) {
-		if (0 != tmp_size) {
-			return EXT_ERR_FORMAT;
-		}
-		return EXT_ERR_SUCCESS;
-	}
-	offset = pext->offset + tmp_size;
-	status = ext_buffer_pull_persistelement(pext, &r->element);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (PERSIST_SENTINEL == r->persist_id) {
-		if (ELEMENT_SENTINEL != r->element.element_id) {
-			return EXT_ERR_FORMAT;
-		}
-	} else {
-		if (pext->offset > offset) {
-			return EXT_ERR_FORMAT;
-		}
-		pext->offset = offset;
-	}
-	return EXT_ERR_SUCCESS;
-}
-
-int ext_buffer_pull_persistdata_array(EXT_PULL *pext, PERSISTDATA_ARRAY *r)
-{
-	int status;
-	
-	for (r->count=0; r->count<256; r->count++) {
-		r->ppitems[r->count] = pext->alloc(sizeof(PERSISTDATA));
-		if (NULL == r->ppitems[r->count]) {
-			return EXT_ERR_ALLOC;
-		}
-		status = ext_buffer_pull_persistdata(pext, r->ppitems[r->count]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		if (PERSIST_SENTINEL == r->ppitems[r->count]->persist_id) {
-			return EXT_ERR_SUCCESS;
-		}
-	}
-	return EXT_ERR_FORMAT;
 }
 
 int ext_buffer_pull_eid_array(EXT_PULL *pext, EID_ARRAY *r)
@@ -3545,17 +3343,6 @@ int ext_buffer_push_uint32(EXT_PUSH *pext, uint32_t v)
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_int64(EXT_PUSH *pext, int64_t v)
-{
-	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(int64_t))) {
-		return EXT_ERR_BUFSIZE;
-	}
-	EXT_SIVAL(pext, pext->offset, (v & 0xFFFFFFFF));
-	EXT_SIVAL(pext, pext->offset+4, (v>>32));
-	pext->offset += sizeof(int64_t);
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_push_uint64(EXT_PUSH *pext, uint64_t v)
 {
 	if (FALSE == ext_buffer_push_check_overflow(pext, sizeof(uint64_t))) {
@@ -4485,17 +4272,6 @@ int ext_buffer_push_long_term_id_array(
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_long_term_id_rang(EXT_PUSH *pext, const LONG_TERM_ID_RANGE *r)
-{
-	int status;
-	
-	status = ext_buffer_push_long_term_id(pext, &r->min);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	return ext_buffer_push_long_term_id(pext, &r->max);
-}
-
 int ext_buffer_push_proptag_array(EXT_PUSH *pext, const PROPTAG_ARRAY *r)
 {
 	int i;
@@ -4704,26 +4480,6 @@ int ext_buffer_push_folder_entryid(
 	return ext_buffer_push_bytes(pext, r->pad, 2);
 }
 
-static int ext_buffer_push_ext_movecopy_action(
-	EXT_PUSH *pext, const EXT_MOVECOPY_ACTION *r)
-{
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, 1);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, 0);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, 46);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	return ext_buffer_push_folder_entryid(pext, &r->folder_eid);
-}
-
 int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r)
 {
 	int status;
@@ -4761,197 +4517,6 @@ int ext_buffer_push_message_entryid(EXT_PUSH *pext, const MESSAGE_ENTRYID *r)
 		return status;
 	}
 	return ext_buffer_push_bytes(pext, r->pad2, 2);
-}
-
-static int ext_buffer_push_ext_reply_action(
-	EXT_PUSH *pext, const EXT_REPLY_ACTION *r)
-{
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, 70);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_message_entryid(pext, &r->message_eid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	return ext_buffer_push_guid(pext, &r->template_guid);
-}
-
-static int ext_buffer_push_ext_recipient_block(
-	EXT_PUSH *pext, const EXT_RECIPIENT_BLOCK *r)
-{
-	int i;
-	int status;
-	
-	if (0 == r->count) {
-		return EXT_ERR_FORMAT;
-	}
-	status = ext_buffer_push_uint8(pext, r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_tagged_propval(pext, &r->ppropval[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	return EXT_ERR_SUCCESS;
-}
-
-static int ext_buffer_push_ext_forwarddelegate_action(
-	EXT_PUSH *pext, const EXT_FORWARDDELEGATE_ACTION *r)
-{
-	int i;
-	int status;
-	
-	if (0 == r->count) {
-		return EXT_ERR_FORMAT;
-	}
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_ext_recipient_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	return EXT_ERR_SUCCESS;
-}
-
-static int ext_buffer_push_ext_action_block(
-	EXT_PUSH *pext, const EXT_ACTION_BLOCK *r)
-{
-	int status;
-	uint32_t offset;
-	uint32_t offset1;
-	uint32_t tmp_len;
-	
-	status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	offset = pext->offset;
-	status = ext_buffer_push_uint8(pext, r->type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->flavor);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint32(pext, r->flags);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	switch (r->type) {
-	case ACTION_TYPE_OP_MOVE:
-	case ACTION_TYPE_OP_COPY:
-		status = ext_buffer_push_ext_movecopy_action(pext, r->pdata);
-		break;
-	case ACTION_TYPE_OP_REPLY:
-	case ACTION_TYPE_OP_OOF_REPLY:
-		status = ext_buffer_push_ext_reply_action(pext, r->pdata);
-		break;
-	case ACTION_TYPE_OP_DEFER_ACTION:
-		tmp_len = r->length - sizeof(uint8_t) - sizeof(uint32_t);
-		status = ext_buffer_push_bytes(pext, r->pdata, tmp_len);
-		break;
-	case ACTION_TYPE_OP_BOUNCE:
-		status = ext_buffer_push_uint32(pext, *(uint32_t*)r->pdata);
-		break;
-	case ACTION_TYPE_OP_FORWARD:
-	case ACTION_TYPE_OP_DELEGATE:
-		status = ext_buffer_push_ext_forwarddelegate_action(pext, r->pdata);
-		break;
-	case ACTION_TYPE_OP_TAG:
-		status = ext_buffer_push_tagged_propval(pext, r->pdata);
-	case ACTION_TYPE_OP_DELETE:
-	case ACTION_TYPE_OP_MARK_AS_READ:
-		status = EXT_ERR_SUCCESS;
-		break;
-	default:
-		return EXT_ERR_BAD_SWITCH;
-	}
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	tmp_len = pext->offset - offset;
-	offset1 = pext->offset;
-	pext->offset = offset - sizeof(uint32_t);
-	status = ext_buffer_push_uint32(pext, tmp_len);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	pext->offset = offset1;
-	return EXT_ERR_SUCCESS;
-}
-
-int ext_buffer_push_ext_rule_actions(EXT_PUSH *pext, const EXT_RULE_ACTIONS *r)
-{
-	int i;
-	int status;
-	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_ext_action_block(pext, &r->pblock[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	return EXT_ERR_SUCCESS;
-}
-
-int ext_buffer_push_namedproperty_information(
-	EXT_PUSH *pext, const NAMEDPROPERTY_INFOMATION *r)
-{
-	int i;
-	int status;
-	uint32_t size;
-	uint32_t offset;
-	uint32_t offset1;
-	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_uint16(pext, r->ppropid[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_property_name(pext, r->ppropname + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	offset1 = pext->offset;
-	size = offset1 - (offset + sizeof(uint32_t));
-	pext->offset = offset;
-	status = ext_buffer_push_uint32(pext, size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	pext->offset = offset1;
-	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_flagged_propval(EXT_PUSH *pext,
@@ -5023,25 +4588,6 @@ int ext_buffer_push_property_row(EXT_PUSH *pext,
 		return EXT_ERR_SUCCESS;
 	}
 	return EXT_ERR_BAD_SWITCH;
-}
-
-int ext_buffer_push_proprow_set(EXT_PUSH *pext,
-	const PROPTAG_ARRAY *pcolumns, const PROPROW_SET *r)
-{
-	int i;
-	int status;
-	
-	status = ext_buffer_push_uint16(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->count; i++) {
-		status = ext_buffer_push_property_row(pext, pcolumns, &r->prows[i]);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	return EXT_ERR_SUCCESS;
 }
 
 int ext_buffer_push_sort_order(EXT_PUSH *pext, const SORT_ORDER *r)
@@ -5257,45 +4803,6 @@ int ext_buffer_push_openrecipient_row(EXT_PUSH *pext,
 	return EXT_ERR_SUCCESS;
 }
 
-int ext_buffer_push_modifyrecipient_row(EXT_PUSH *pext,
-	PROPTAG_ARRAY *pproptags, const MODIFYRECIPIENT_ROW *r)
-{
-	int status;
-	uint32_t offset;
-	uint32_t offset1;
-	uint16_t row_size;
-	
-	status = ext_buffer_push_uint32(pext, r->row_id);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint8(pext, r->recipient_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (NULL == r->precipient_row) {
-		return ext_buffer_push_uint16(pext, 0);
-	}
-	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint16_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_recipient_row(pext, pproptags, r->precipient_row);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	row_size = pext->offset - (offset + sizeof(uint16_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
-	status = ext_buffer_push_uint16(pext, row_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	pext->offset = offset1;
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_push_readrecipient_row(EXT_PUSH *pext,
 	PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
 {
@@ -5428,61 +4935,6 @@ int ext_buffer_push_oneoff_entryid(EXT_PUSH *pext,
 		}
 		return ext_buffer_push_string(pext, r->pmail_address);
 	}
-}
-
-int ext_buffer_push_oneoff_array(EXT_PUSH *pext, const ONEOFF_ARRAY *r)
-{
-	int i;
-	int status;
-	uint32_t bytes;
-	uint8_t pad_len;
-	uint32_t offset;
-	uint32_t offset1;
-	uint32_t offset2;
-	uint8_t pad_bytes[3] = {0, 0, 0};
-	
-	status = ext_buffer_push_uint32(pext, r->count);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	offset = pext->offset;
-	status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	for (i=0; i<r->count; i++) {
-		offset1 = pext->offset;
-		status = ext_buffer_push_advance(pext, sizeof(uint32_t));
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		status = ext_buffer_push_oneoff_entryid(pext, r->pentry_id + i);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		offset2 = pext->offset;
-		bytes = offset2 - (offset1 + sizeof(uint32_t));
-		pext->offset = offset1;
-		status = ext_buffer_push_uint32(pext, bytes);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-		pext->offset = offset2;
-		pad_len = ((bytes + 3) & ~3) - bytes;
-		status = ext_buffer_push_bytes(pext, pad_bytes, pad_len);
-		if (EXT_ERR_SUCCESS != status) {
-			return status;
-		}
-	}
-	bytes = pext->offset - (offset + sizeof(uint32_t));
-	offset1 = pext->offset;
-	pext->offset = offset;
-	status = ext_buffer_push_uint32(pext, bytes);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	pext->offset = offset1;
-	return EXT_ERR_SUCCESS;
 }
 
 static int ext_buffer_push_persistelement(

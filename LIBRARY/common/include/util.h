@@ -31,8 +31,6 @@ extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t l
 extern BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len);
 extern BOOL set_digest(char *src, size_t length, const char *tag, const char *value);
 extern BOOL add_digest(char *src, size_t length, const char *tag, const char *value);
-void remove_digest(char *src, const char *tag);
-
 void swap_string(char *dest, const char *src);
 
 char* search_string(const char *haystack, const char *needle, 
@@ -56,10 +54,6 @@ uint64_t atobyte(const char *string);
 char* md5_crypt_wrapper(const char *pw);
 
 int wildcard_match(const char *data, const char *mask, BOOL icase);
-
-int wildcard_hierarchy_match(const char *data, char seperator,
-	const char *mask, BOOL icase);
-
 void randstring(char *buff, int length);
 extern int encode64(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern int encode64_ex(const void *in, size_t inlen, char *out, size_t outmax, size_t *outlen);

@@ -115,9 +115,6 @@ void ical_append_component(ICAL_COMPONENT *pparent, ICAL_COMPONENT *pchild);
 ICAL_LINE* ical_new_line(const char *name);
 
 void ical_append_line(ICAL_COMPONENT *pcomponent, ICAL_LINE *piline);
-
-void ical_delete_line(ICAL_COMPONENT *pcomponent, ICAL_LINE *piline);
-
 ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name);
 
 ICAL_PARAM* ical_new_param(const char*name);
@@ -180,23 +177,13 @@ BOOL ical_itime_to_utc(ICAL_COMPONENT *ptz_component,
 
 BOOL ical_datetime_to_utc(ICAL_COMPONENT *ptz_component,
 	const char *str_datetime, time_t *ptime);
-
-BOOL ical_date_to_utc(const char *str_date,
-	const char *str_zone, time_t *ptime);
-
 BOOL ical_utc_to_datetime(ICAL_COMPONENT *ptz_component,
 	time_t utc_time, ICAL_TIME *pitime);
 
 int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2);
 
 void ical_add_year(ICAL_TIME *pitime, int years);
-
-void ical_subtract_year(ICAL_TIME *pitime, int year);
-
 void ical_add_month(ICAL_TIME *pitime, int months);
-
-void ical_subtract_month(ICAL_TIME *pitime, int month);
-
 void ical_add_day(ICAL_TIME *pitime, int days);
 
 void ical_subtract_day(ICAL_TIME *pitime, int days);
@@ -212,9 +199,6 @@ void ical_add_minute(ICAL_TIME *pitime, int minutes);
 void ical_subtract_minute(ICAL_TIME *pitime, int minutes);
 
 void ical_add_second(ICAL_TIME *pitime, int seconds);
-
-void ical_subtract_second(ICAL_TIME *pitime, int seconds);
-
 BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	time_t start_time, DOUBLE_LIST *pvalue_list, ICAL_RRULE *pirrule);
 
@@ -239,9 +223,6 @@ ICAL_TIME ical_rrule_instance_itime(ICAL_RRULE *pirrule);
 int ical_rrule_interval(ICAL_RRULE *pirrule);
 
 int ical_rrule_frequency(ICAL_RRULE *pirrule);
-
-int ical_rrule_real_frequency(ICAL_RRULE *pirrule);
-
 BOOL ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by);
 
 #ifdef __cplusplus

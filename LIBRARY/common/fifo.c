@@ -143,25 +143,6 @@ void fifo_dequeue(FIFO* pfifo)
 	return;
 }
 
-void* fifo_remove_front(FIFO* pfifo)
-{
-	SINGLE_LIST_NODE   *node = NULL;
-	
-#ifdef _DEBUG_UMTA
-	if (NULL == pfifo) {
-		debug_info("[fifo]: fifo_dequeue, param NULL");
-		return NULL;
-	}
-#endif
-	if (pfifo->cur_size <= 0) {
-		return NULL;
-	}
-	node = single_list_get_from_head(&pfifo->mlist);
-
-	pfifo->cur_size -= 1;
-	return node->pdata;
-}
-
 /*
  *	return a pointer that point to the data at the
  *	front of the specified fifo.
@@ -191,28 +172,3 @@ void* fifo_get_front(FIFO* pfifo)
 	node = single_list_get_head(&pfifo->mlist);
 	return node->pdata;
 }
-
-/*
- *	test if the specified fifo is empty
- *
- *	@param	
- *		pfifo [in]	   the tested fifo
- *
- *	@return
- *		TRUE		if the fifo is empty
- *		FALSE		otherwise
- */
-BOOL fifo_is_empty(FIFO* pfifo)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pfifo) {
-		debug_info("[fifo]: fifo_is_empty, param NULL");
-		return TRUE;
-	}
-#endif
-	if (0 == pfifo->cur_size) {
-		return TRUE;
-	}
-	return FALSE;
-}
-

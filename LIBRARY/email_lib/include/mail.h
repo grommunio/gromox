@@ -26,9 +26,6 @@ void mail_init(MAIL *pmail, MIME_POOL *pmime_pool);
 void mail_clear(MAIL *pmail);
 
 BOOL mail_retrieve(MAIL *pmail, char *in_buff, size_t length);
-
-BOOL mail_retrieve_ex(MAIL *pmail, char *in_buff, size_t length);
-
 BOOL mail_serialize(MAIL *pmail, STREAM *pstream);
 
 BOOL mail_to_file(MAIL *pmail, int fd);
@@ -50,35 +47,9 @@ MIME* mail_get_head(MAIL *pmail);
 BOOL mail_get_charset(MAIL *pmail, char *charset);
 
 int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length);
-
-int mail_get_depth(MAIL *pmail);
-
-MIME* mail_get_mime_horizontal(MAIL *pmail, MIME *pmime_base,
-	unsigned int x, unsigned int y);
-
-MIME* mail_get_mime_vertical(MAIL *pmail, MIME *pmime_base,
-	unsigned int x, unsigned int y);
-extern MIME *mail_insert_sibling(MAIL *, MIME *base, int opt);
 MIME* mail_add_child(MAIL *pmail, MIME *pmime_base, int opt);
 
 void mail_enum_mime(MAIL *pmail, MAIL_MIME_ENUM enum_func, void *param);
-
-void mail_delete_mime(MAIL *pmail, MIME *pmime);
-
-void mail_empty_children(MAIL *pmail, MIME *pmime);
-
-BOOL mail_move_mime_to_child(MAIL *pmail_dst, MIME *pmime_dst,
-	MAIL *pmail_src, MIME *pmime_src, int opt);
-extern BOOL mail_move_mime_to_sibling(MAIL *mail_dst, MIME *mime_dst, MAIL *mail_src, MIME *mime_src, int opt);
-BOOL mail_move_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
-	MAIL *pmail_src, MIME *pmime_src, int opt);
-extern BOOL mail_move_children_to_sibling(MAIL *mail_dst, MIME *mime_dst, MAIL *mail_src, MIME *mime_src, int opt);
-BOOL mail_copy_mime_to_child(MAIL *pmail_dst, MIME *pmime_dst,
-	MIME *pmime_src, int opt);
-extern BOOL mail_copy_mime_to_sibling(MAIL *mail_dst, MIME *mime_dst, MIME *mime_src, int opt);
-BOOL mail_copy_children_to_child(MAIL *pmail_dst, MIME *pmime_dst,
-    MIME *pmime_src, int opt);
-extern BOOL mail_copy_children_to_sibling(MAIL *mail_dst, MIME *mime_dst, MIME *mime_src, int opt);
 BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst);
 
 #ifdef __cplusplus

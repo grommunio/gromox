@@ -285,63 +285,6 @@ BOOL idset_append_range(IDSET *pset, uint16_t replid,
 	return TRUE;
 }
 
-static int idset_qsort_cmp(const void *pvalue1, const void *pvalue2)
-{
-	return *(uint64_t*)pvalue1 - *(uint64_t*)pvalue2;
-}
-
-BOOL idset_batch_append(IDSET *pset, uint16_t replid,
-	uint64_t count, uint64_t *pvalues)
-{
-	int i;
-	RANGE_NODE *prange_node;
-	REPLID_NODE *prepl_node;
-	DOUBLE_LIST_NODE *pnode;
-	
-	
-	if (FALSE == pset->b_serialize) {
-		return FALSE;
-	}
-	if (0 == count) {
-		return FALSE;
-	}
-	qsort(pvalues, count, sizeof(uint64_t), idset_qsort_cmp);
-	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
-		pnode=double_list_get_after(&pset->repl_list, pnode)) {
-		prepl_node = (REPLID_NODE*)pnode->pdata;
-		if (replid == prepl_node->replid) {
-			return FALSE;
-		}
-	}
-	prepl_node = malloc(sizeof(REPLID_NODE));
-	if (NULL == prepl_node) {
-		return FALSE;
-	}
-	prepl_node->node.pdata = prepl_node;
-	prepl_node->replid = replid;
-	double_list_init(&prepl_node->range_list);
-	double_list_append_as_tail(&pset->repl_list, &prepl_node->node);
-	
-	prange_node = NULL;
-	for (i=0; i<count; i++) {
-		if (NULL != prange_node &&
-			prange_node->high_value + 1 == pvalues[i]) {
-			prange_node->high_value = pvalues[i];
-		} else {
-			prange_node = malloc(sizeof(RANGE_NODE));
-			if (NULL == prange_node) {
-				return FALSE;
-			}
-			prange_node->node.pdata = prange_node;
-			prange_node->low_value = pvalues[i];
-			prange_node->high_value = pvalues[i];
-			double_list_append_as_tail(&prepl_node->range_list,
-											&prange_node->node);
-		}
-	}
-	return TRUE;
-}
-
 void idset_remove(IDSET *pset, uint64_t eid)
 {
 	uint64_t value;

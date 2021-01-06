@@ -86,15 +86,6 @@ const char* cookie_parser_get(COOKIE_PARSER *pparser, const char *name)
 	return *ppvalue;
 }
 
-size_t cookie_parser_num(COOKIE_PARSER *pparser)
-{
-	if (NULL == pparser) {
-		return 0;
-	}
-	
-	return assoc_array_get_elements_num(pparser);
-}
-
 static void cookie_parser_enum(const char *key, char **ppvalue)
 {
 	free(*ppvalue);

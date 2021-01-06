@@ -46,21 +46,12 @@ SIMPLE_TREE_NODE* simple_tree_node_get_child(SIMPLE_TREE_NODE *pnode);
 
 SIMPLE_TREE_NODE* simple_tree_node_get_parent(SIMPLE_TREE_NODE *pnode);
 extern SIMPLE_TREE_NODE *simple_tree_node_get_sibling(SIMPLE_TREE_NODE *);
-SIMPLE_TREE_NODE* simple_tree_get_node_horizontal(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode_base, unsigned int x, unsigned int y);
-
-SIMPLE_TREE_NODE* simple_tree_get_node_vertical(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode_base, unsigned int x, unsigned int y);
 extern BOOL simple_tree_insert_sibling(SIMPLE_TREE *, SIMPLE_TREE_NODE *base, SIMPLE_TREE_NODE *pnode, int opt);
 BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt);
 
 void simple_tree_destroy_node(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);
-
-void simple_tree_empty_children(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);
-
 void simple_tree_enum_from_node(SIMPLE_TREE_NODE *pnode,
 	SIMPLE_TREE_ENUM enum_func, void *param);
 
@@ -68,21 +59,6 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE *ptree_src,
 	SIMPLE_TREE_NODE *pnode_src, int opt);
 extern BOOL simple_tree_move_node_to_sibling(SIMPLE_TREE *tdst, SIMPLE_TREE_NODE *ndst, SIMPLE_TREE *tsrc, SIMPLE_TREE_NODE *nsrc, int opt);
-BOOL simple_tree_move_children_to_child(SIMPLE_TREE *ptree_dst,
-	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE *ptree_src,
-	SIMPLE_TREE_NODE *pnode_src, int opt);
-extern BOOL simple_tree_move_children_to_sibling(SIMPLE_TREE *tdst, SIMPLE_TREE_NODE *ndst, SIMPLE_TREE *tsrc, SIMPLE_TREE_NODE *nsrc, int opt);
-BOOL simple_tree_copy_node_to_child(SIMPLE_TREE *ptree_dst,
-    SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE_NODE *pnode_src,
-	int opt, SIMPLE_TREE_DUPLICATE dup_func, void *param);
-extern BOOL simple_tree_copy_node_to_sibling(SIMPLE_TREE *tdst, SIMPLE_TREE_NODE *ndst, SIMPLE_TREE_NODE *nsrc, int opt, SIMPLE_TREE_DUPLICATE dup_func, void *param);
-BOOL simple_tree_copy_children_to_child(SIMPLE_TREE *ptree_dst,
-    SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE_NODE *pnode_src,
-	int opt, SIMPLE_TREE_DUPLICATE dup_func, void *param);
-extern BOOL simple_tree_copy_children_to_sibling(SIMPLE_TREE *tdst, SIMPLE_TREE_NODE *ndst, SIMPLE_TREE_NODE *nsrc, int opt, SIMPLE_TREE_DUPLICATE dup_func, void *param);
-BOOL simple_tree_dup(SIMPLE_TREE *ptree_src, SIMPLE_TREE *ptree_dst,
-	SIMPLE_TREE_DUPLICATE dup_func, void *param);
-
 void simple_tree_free(SIMPLE_TREE *ptree);
 
 #ifdef __cplusplus

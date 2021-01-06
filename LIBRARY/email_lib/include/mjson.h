@@ -110,41 +110,10 @@ int mjson_rfc822_fetch(MJSON *pjson, const char *storage_path,
 int mjson_seek_fd(MJSON *pjson, const char *id, int whence);
 
 void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param);
-
-int mjson_get_mail_depth(MJSON *pjson);
-
 const char* mjson_get_mail_filename(MJSON *pjson);
-
-const char* mjson_get_mail_from(MJSON *pjson);
-
-const char* mjson_get_mail_sender(MJSON *pjson);
-
-const char* mjson_get_mail_reply(MJSON *pjson);
-
-const char* mjson_get_mail_to(MJSON *pjson);
-
-const char* mjson_get_mail_cc(MJSON *pjson);
-
-const char* mjson_get_mail_inreply(MJSON *pjson);
-
-const char* mjson_get_mail_subject(MJSON *pjson);
-
 const char* mjson_get_mail_received(MJSON *pjson);
-
-const char* mjson_get_mail_date(MJSON *pjson);
-
 const char* mjson_get_mail_messageid(MJSON *pjson);
-
-const char* mjson_get_mail_references(MJSON *pjson);
-
 size_t mjson_get_mail_length(MJSON *pjson);
-
-int mjson_get_mail_flag(MJSON *pjson, int param);
-
-int mjson_get_mail_priority(MJSON *pjson);
-
-const char* mjson_get_mail_notification(MJSON *pjson);
-
 int mjson_get_mime_mtype(MJSON_MIME *pmime);
 
 const char* mjson_get_mime_ctype(MJSON_MIME *pmime);
@@ -152,13 +121,6 @@ const char* mjson_get_mime_ctype(MJSON_MIME *pmime);
 const char* mjson_get_mime_charset(MJSON_MIME *pmime);
 
 const char* mjson_get_mime_filename(MJSON_MIME *pmime);
-
-const char* mjson_get_mime_cid(MJSON_MIME *pmime);
-
-const char* mjson_get_mime_cntl(MJSON_MIME *pmime);
-
-const char* mjson_get_mime_cntdspn(MJSON_MIME *pmime);
-
 const char* mjson_get_mime_encoding(MJSON_MIME *pmime);
 
 const char* mjson_get_mime_id(MJSON_MIME *pmime);

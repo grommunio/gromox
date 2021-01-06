@@ -51,13 +51,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 
 void parse_mime_encode_string(char *in_buff, long buff_len,
 	ENCODE_STRING *encode_string);
-
-long decode_mime_string(char *in_buff, long buff_len, char *out_buff, long len);
-
 char* find_url (char *buf, size_t howmuch, int *count);
-
-char* find_mail_address(char *buf, size_t howmuch, int *count);
-
 int utf7_to_utf8 (const char *u7, size_t u7len, char *u8, size_t u8len);
 
 int utf8_to_utf7 (const char *u8, size_t u8len, char *u7, size_t u7len);

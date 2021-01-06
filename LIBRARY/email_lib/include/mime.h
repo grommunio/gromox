@@ -58,8 +58,6 @@ BOOL mime_retrieve(MIME *pmime_parent,
 	MIME *pmime, char* in_buff, size_t length);
 
 void mime_clear(MIME *pmime);
-
-BOOL mime_clear_content(MIME *pmime);
 extern BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 	int encoding_type);
 
@@ -112,9 +110,6 @@ long mime_get_length(MIME *pmime);
 int mime_get_type(MIME *pmime);
 
 BOOL mime_get_filename(MIME *pmime, char *file_name);
-
-const char* mime_get_boundary(MIME *pmime);
-
 void mime_copy(MIME *pmime_src, MIME *pmime_dst);
 
 MIME* mime_get_child(MIME *pmime);

@@ -28,9 +28,6 @@ void dsn_clear(DSN *pdsn);
 DSN_FIELDS* dsn_get_message_fileds(DSN *pdsn);
 
 DSN_FIELDS* dsn_new_rcpt_fields(DSN *pdsn);
-
-void dsn_delete_rcpt_fields(DSN *pdsn, DSN_FIELDS *pfields);
-
 BOOL dsn_append_field(DSN_FIELDS *pfields,
 	const char *tag, const char *value);
 

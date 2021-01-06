@@ -95,27 +95,6 @@ BOOL single_list_insert_as_head(SINGLE_LIST* plist, SINGLE_LIST_NODE* node)
 }
 
 /*
- *	test if the specified list is empty
- *
- *	@param
- *		plist [in]	the specified list
- *
- *	@return
- *		TRUE		if the list is empty
- *		FALSE		otherwise
- */
-BOOL single_list_is_empty(SINGLE_LIST* plist)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == plist) {
-		debug_info("[single_list]: single_list_is_empty, param NULL");
-		return TRUE;
-	}
-#endif
-	return (plist->cur_size == 0);
-}
-
-/*
  *	remove the front node from the specified list
  *
  *	@param	
@@ -146,50 +125,6 @@ SINGLE_LIST_NODE* single_list_get_from_head(SINGLE_LIST* plist)
 	} else {
 		plist->list_head = 
 			node->next;
-	}
-	plist->cur_size -= 1;
-	return node;
-}
-
-/*
- *	remove one node at the end of the specified list
- *
- *	@param
- *		plist [in]		the specified list
- *
- *	@return
- *		the pointer that pointer to the last node of
- *		the specified list
- *		NULL, if the list is empty
- */
-SINGLE_LIST_NODE* single_list_get_from_tail(SINGLE_LIST* plist)
-{
-	SINGLE_LIST_NODE*  node = NULL;
-	SINGLE_LIST_NODE*  iter = NULL;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == plist) {
-		debug_info("[single_list]: single_list_get_from_tail, param NULL");
-		return NULL;
-	}
-#endif
-	if (plist->cur_size <= 0) {
-		return NULL;
-	}
-
-	node = plist->list_tail;
-
-	if (1 == plist->cur_size) {
-		plist->list_head = NULL;
-		plist->list_tail = NULL;
-	} else {
-		iter = plist->list_head->next;
-		while ((iter = iter->next) != NULL) {
-			if (node == iter->next) {
-				break;
-			}
-		}
-		plist->list_tail = iter;
 	}
 	plist->cur_size -= 1;
 	return node;
