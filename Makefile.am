@@ -307,7 +307,7 @@ mkpublic_SOURCES = SYSTEM_ADMIN/mkpublic.c
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 rebuild_SOURCES = SYSTEM_ADMIN/rebuild.cpp
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-timer_SOURCES = SYSTEM_ADMIN/timer.c
+timer_SOURCES = SYSTEM_ADMIN/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
 # php_mapi

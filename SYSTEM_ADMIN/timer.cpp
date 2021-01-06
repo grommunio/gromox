@@ -75,8 +75,8 @@ static char *opt_config_file;
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
-	{.sh = 'c', .type = HXTYPE_STRING, .ptr = &opt_config_file, .help = "Config file to read", .htyp = "FILE"},
-	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
+	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -208,7 +208,7 @@ int main(int argc, const char **argv)
 	double_list_init(&g_exec_list);
 
 	item_num = list_file_get_item_num(pfile);
-	struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(pfile));
+	auto pitem = reinterpret_cast<srcitem *>(list_file_get_list(pfile));
 	for (i=0; i<item_num; i++) {
 		if (pitem[i].exectime == 0) {
 			for (j=0; j<item_num; j++) {
@@ -355,7 +355,7 @@ int main(int argc, const char **argv)
 			return 9;
 		}
 
-		const struct ipitem *parray = reinterpret_cast(struct ipitem *, list_file_get_list(plist));
+		auto parray = reinterpret_cast<const ipitem *>(list_file_get_list(plist));
 		num = list_file_get_item_num(plist);
 		for (i=0; i<num; i++) {
 			pacl = (ACL_ITEM*)malloc(sizeof(ACL_ITEM));
@@ -371,7 +371,7 @@ int main(int argc, const char **argv)
 	}
 	
 	int ret = pthread_create(&thr_accept_id, nullptr, accept_work_func,
-	          reinterpret_cast(void *, static_cast(intptr_t, sockd)));
+	          reinterpret_cast<void *>(static_cast<intptr_t>(sockd)));
 	if (ret != 0) {
 		printf("[system]: failed to create accept thread: %s\n", strerror(ret));
 		for (i=g_threads_num-1; i>=0; i--) {
@@ -422,7 +422,7 @@ int main(int argc, const char **argv)
 			pfile = list_file_init(g_list_path, "%d%l%s:512");
 			if (NULL != pfile) {
 				item_num = list_file_get_item_num(pfile);
-				pitem = list_file_get_list(pfile);
+				pitem = static_cast<srcitem *>(list_file_get_list(pfile));
 				
 				for (i=0; i<item_num; i++) {
 					if (pitem[i].exectime == 0) {
@@ -550,7 +550,7 @@ static void *accept_work_func(void *param)
 		if (-1 == sockd2) {
 			continue;
 		}
-		int ret = getnameinfo(reinterpret_cast(struct sockaddr *, &peer_name),
+		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
 		if (ret != 0) {
