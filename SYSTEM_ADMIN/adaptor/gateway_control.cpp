@@ -53,10 +53,10 @@ int gateway_control_run()
 		return -1;
 	}
 	
-	const CONSOLE_PORT *pitem = reinterpret_cast(CONSOLE_PORT *, list_file_get_list(plist_file));
+	auto pitem = reinterpret_cast<const CONSOLE_PORT *>(list_file_get_list(plist_file));
 	list_len = list_file_get_item_num(plist_file);
 	for (i=0; i<list_len; i++) {
-		CONSOLE_PNODE *pport = malloc(sizeof(*pport));
+		auto pport = static_cast<CONSOLE_PNODE *>(malloc(sizeof(CONSOLE_PNODE)));
 		if (NULL== pport) {
 			continue;
 		}
@@ -74,7 +74,7 @@ void gateway_control_notify(const char *command, int control_mask)
 	
 	for (pnode=single_list_get_head(&g_console_list); NULL!=pnode;
 		pnode=single_list_get_after(&g_console_list, pnode)) {
-		const CONSOLE_PORT *pconsole = &static_cast(CONSOLE_PNODE *, pnode->pdata)->u;
+		auto pconsole = &static_cast<const CONSOLE_PNODE *>(pnode->pdata)->u;
 		if (NOTIFY_SMTP&control_mask) {
 			gateway_control_send(pconsole->smtp_ip,
 				pconsole->smtp_port, command);

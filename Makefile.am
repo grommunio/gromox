@@ -292,7 +292,7 @@ rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_map
 # SYSTEM_ADMIN
 saphpdir = ${pkgdatadir}/sa
 saphp_DATA = SYSTEM_ADMIN/php/conf.php SYSTEM_ADMIN/php/db.php SYSTEM_ADMIN/php/submit.php
-adaptor_SOURCES = LIBRARY/system_log.c SYSTEM_ADMIN/adaptor/data_source.c SYSTEM_ADMIN/adaptor/engine.c SYSTEM_ADMIN/adaptor/file_operation.c SYSTEM_ADMIN/adaptor/gateway_control.c SYSTEM_ADMIN/adaptor/main.c
+adaptor_SOURCES = LIBRARY/system_log.c SYSTEM_ADMIN/adaptor/data_source.cpp SYSTEM_ADMIN/adaptor/engine.cpp SYSTEM_ADMIN/adaptor/file_operation.cpp SYSTEM_ADMIN/adaptor/gateway_control.cpp SYSTEM_ADMIN/adaptor/main.cpp
 adaptor_LDADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
 event_SOURCES = SYSTEM_ADMIN/event.c LIBRARY/common/fifo.c
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la

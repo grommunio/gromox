@@ -18,7 +18,6 @@ void file_operation_init(const char *gateway_path)
 
 int file_operation_compare(const char *file1, const char *file2)
 {
-	char *ptr;
 	int fd1, fd2;
 	struct stat node_stat1, node_stat2;
 
@@ -28,7 +27,7 @@ int file_operation_compare(const char *file1, const char *file2)
 	if (node_stat1.st_size != node_stat2.st_size) {
 		return FILE_COMPARE_DIFFERENT;
 	}
-	ptr = malloc(2*node_stat1.st_size);
+	auto ptr = static_cast<char *>(malloc(2 * node_stat1.st_size));
 	if (NULL == ptr) {
 		return FILE_COMPARE_FAIL;
 	}
@@ -66,7 +65,6 @@ void file_operation_broadcast(const char *src_file, const char *dst_file)
 {
 	int fd;
 	DIR *dirp;
-	char *pbuff;
 	char temp_path[256];
 	struct stat node_stat;
 	struct dirent *direntp;
@@ -74,7 +72,7 @@ void file_operation_broadcast(const char *src_file, const char *dst_file)
 	if (0 != stat(src_file, &node_stat)) {
 		return;
 	}
-	pbuff = malloc(node_stat.st_size);
+	auto pbuff = static_cast<char *>(malloc(node_stat.st_size));
 	if (NULL == pbuff) {
 		return;
 	}
