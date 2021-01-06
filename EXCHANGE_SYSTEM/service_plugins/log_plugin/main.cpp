@@ -94,7 +94,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[log_plugin]: failed to run log plugin\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("log_info", log_plugin_log_info)) {
+		if (!register_service("log_info", reinterpret_cast<void *>(log_plugin_log_info))) {
 			printf("[log_plugin]: failed to register \"log_info\" service\n");
 			return FALSE;
 		}

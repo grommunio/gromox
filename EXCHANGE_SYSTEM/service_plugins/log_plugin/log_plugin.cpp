@@ -57,7 +57,7 @@ static void* thread_work_func(void *arg);
 void log_plugin_init(const char *config_path, const char* log_file_name,
 	int log_level, int files_num, int cache_size)
 {
-	char *psearch;
+	const char *psearch;
 	
 	strcpy(g_config_path, config_path);
 	g_log_level = log_level;
@@ -107,12 +107,12 @@ int log_plugin_run()
 {
 	pthread_attr_t  attr;
 	
-	g_log_buf_ptr = malloc(g_log_buf_size);
+	g_log_buf_ptr = static_cast<char *>(malloc(g_log_buf_size));
 	if (NULL == g_log_buf_ptr) {
 		printf("[log_plugin]: Failed to allocate memory for cache buffer\n");
 		return -1;
 	}
-	g_files_name = malloc(256*g_files_num);
+	g_files_name = static_cast<char *>(malloc(256 * g_files_num));
 	if (NULL == g_files_name) {
 		printf("[log_plugin]: Failed to allocate memory for files name buffer\n");
 		return -2;
