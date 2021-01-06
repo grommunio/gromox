@@ -32,7 +32,6 @@ mta_plugins = \
 	libmtahook_mlist_expand.la \
 	libmtasvc_boundary_list.la \
 	libmtasvc_domain_list.la \
-	libmtasvc_invalid_user.la \
 	libmtasvc_midb_agent.la
 noinst_DATA += \
 	libmtaflh_message_enqueue.ldd \
@@ -42,7 +41,6 @@ noinst_DATA += \
 	libmtahook_mlist_expand.ldd \
 	libmtasvc_boundary_list.ldd \
 	libmtasvc_domain_list.ldd \
-	libmtasvc_invalid_user.la \
 	libmtasvc_midb_agent.la
 mra_system = pop3 imap
 mra_plugins = \
@@ -162,10 +160,6 @@ libmtasvc_domain_list_la_SOURCES = ${libmtasvc_boundary_list_la_SOURCES}
 libmtasvc_domain_list_la_LDFLAGS = ${libmtasvc_boundary_list_la_LDFLAGS}
 libmtasvc_domain_list_la_LIBADD = ${libmtasvc_boundary_list_la_LIBADD}
 EXTRA_libmtasvc_domain_list_la_DEPENDENCIES = ${default_sym}
-libmtasvc_invalid_user_la_SOURCES = MTA_SYSTEM/service_plugins/invalid_user/invalid_user.c MTA_SYSTEM/service_plugins/invalid_user/main.c
-libmtasvc_invalid_user_la_LDFLAGS = ${plugin_LDFLAGS}
-libmtasvc_invalid_user_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libmtasvc_invalid_user_la_DEPENDENCIES = ${default_sym}
 libmtasvc_midb_agent_la_SOURCES = MTA_SYSTEM/service_plugins/midb_agent.c
 libmtasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
