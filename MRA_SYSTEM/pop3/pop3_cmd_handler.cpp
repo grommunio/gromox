@@ -397,7 +397,7 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 	}
 	
 	snprintf(temp_buff, sizeof(temp_buff), "+OK %d %llu\r\n",
-	         pcontext->total_mail, static_cast(unsigned long long, pcontext->total_size));
+	         pcontext->total_mail, static_cast<unsigned long long>(pcontext->total_size));
 	string_length = strlen(temp_buff);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, temp_buff, string_length);
@@ -412,7 +412,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 {
 	int n, i;
 	int count;
-	int tmp_len;
+	unsigned int tmp_len;
     int string_length;
 	char temp_buff[1024];
 	char temp_command[1024];
@@ -449,8 +449,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		stream_write(&pcontext->stream, ".\r\n", 3);
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream,
-								&tmp_len);
+		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
@@ -516,7 +515,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 {
 	int i, n;
 	int count;
-	int tmp_len;
+	unsigned int tmp_len;
     int string_length;
 	char temp_buff[1024];
 	char temp_command[1024];
@@ -554,8 +553,8 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		stream_write(&pcontext->stream, ".\r\n", 3);
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = stream_getbuffer_for_reading(
-								&pcontext->stream, &tmp_len);
+		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
+		                       &pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");

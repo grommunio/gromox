@@ -142,7 +142,7 @@ int pop3_parser_run()
 			return -4;
 		}
 
-		g_ssl_mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
+		g_ssl_mutex_buf = static_cast<pthread_mutex_t *>(malloc(CRYPTO_num_locks() * sizeof(pthread_mutex_t)));
 		if (NULL == g_ssl_mutex_buf) {
 			printf("[pop3_parser]: Failed to allocate SSL locking buffer\n");
 			return -5;
@@ -154,7 +154,7 @@ int pop3_parser_run()
 		CRYPTO_set_locking_callback(pop3_parser_ssl_locking);
 	}
     
-    g_context_list = malloc(sizeof(POP3_CONTEXT)*g_context_num);
+	g_context_list = static_cast<POP3_CONTEXT *>(malloc(sizeof(POP3_CONTEXT) * g_context_num));
     if (NULL== g_context_list) {
 		printf("[pop3_parser]: Failed to allocate POP3 contexts\n");
         return -4;
@@ -231,7 +231,7 @@ struct timeval pop3_parser_get_context_timestamp(POP3_CONTEXT *pcontext)
 int pop3_parser_process(POP3_CONTEXT *pcontext)
 {
     int i, len;
-	int tmp_len;
+	unsigned int tmp_len;
 	int read_len;
 	int ssl_errno;
 	int written_len;
@@ -337,8 +337,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		}
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = stream_getbuffer_for_reading(
-								&pcontext->stream, &tmp_len);
+		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
+		                       &pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			stream_clear(&pcontext->stream);
@@ -392,8 +392,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream,
-								&tmp_len);
+		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			stream_clear(&pcontext->stream);
@@ -538,10 +537,8 @@ END_TRANSPORT:
 
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 {
-	int size;
-	int tmp_len;
+	unsigned int size, tmp_len, line_length;
 	int read_len;
-	int line_length;
 	int copy_result;
 	int last_result;
 	BOOL b_stop;
@@ -630,8 +627,8 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	}
 	stream_free(&temp_stream);
 	tmp_len = STREAM_BLOCK_SIZE;
-	pcontext->write_buff = stream_getbuffer_for_reading(
-							&pcontext->stream, &tmp_len);
+	pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
+	                       &pcontext->stream, &tmp_len));
 	pcontext->write_length = tmp_len;
 	if (NULL == pcontext->write_buff) {
 		pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");

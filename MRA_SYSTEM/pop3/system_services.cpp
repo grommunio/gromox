@@ -29,12 +29,14 @@ void (*system_services_log_info)(int, const char *, ...);
 int system_services_run()
 {
 #define E(f, s) do { \
-	(f) = service_query((s), "system"); \
+	(f) = reinterpret_cast<decltype(f)>(service_query((s), "system")); \
 	if ((f) == nullptr) { \
 		printf("[%s]: failed to get the \"%s\" service\n", "system_services", (s)); \
 		return -1; \
 	} \
 } while (false)
+#define E2(f, s) \
+	((f) = reinterpret_cast<decltype(f)>(service_query((s), "system")))
 
 	E(system_services_judge_ip, "ip_filter_judge");
 	E(system_services_container_add_ip, "ip_container_add");
@@ -45,14 +47,15 @@ int system_services_run()
 	E(system_services_auth_login, "auth_login_pop3");
 	E(system_services_list_mail, "list_mail");
 	E(system_services_delete_mail, "delete_mail");
-	system_services_list_cdn_mail = service_query("cdn_uidl", "system");
-	system_services_delete_cdn_mail = service_query("cdn_remove", "system");
-	system_services_check_cdn_user = service_query("cdn_check", "system");
-	system_services_auth_cdn_user = service_query("cdn_auth", "system");
-	system_services_create_cdn_user = service_query("cdn_create", "system");
-	system_services_broadcast_event = service_query("broadcast_event", "system");
+	E2(system_services_list_cdn_mail, "cdn_uidl");
+	E2(system_services_delete_cdn_mail, "cdn_remove");
+	E2(system_services_check_cdn_user, "cdn_check");
+	E2(system_services_auth_cdn_user, "cdn_auth");
+	E2(system_services_create_cdn_user, "cdn_create");
+	E2(system_services_broadcast_event, "broadcast_event");
 	return 0;
 #undef E
+#undef E2
 }
 
 /*
