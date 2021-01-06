@@ -249,8 +249,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	struct tm tm_buff;
 	FILE *fp;
 	size_t mess_len;
-	int j, write_len, tmp_len;
-	int size, smtp_type, copy_result;
+	int j, write_len, tmp_len, smtp_type, copy_result;
+	unsigned int size;
 
 	if (NULL == pentity->pflusher->flush_ptr) {
 		sprintf(name, "%s/mess/%d", g_path, pentity->pflusher->flush_ID);
