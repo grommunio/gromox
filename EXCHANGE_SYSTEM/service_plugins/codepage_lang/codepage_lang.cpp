@@ -58,7 +58,6 @@ static BOOL codepage_lang_load_langlist(SINGLE_LIST *plist,
 	int i, rstat;
 	int last_pos;
 	size_t temp_len;
-	LANG_NODE *plang;
 	char temp_tag[128];
 	char temp_value[2048];
 	char temp_value1[1024];
@@ -126,7 +125,7 @@ static BOOL codepage_lang_load_langlist(SINGLE_LIST *plist,
 					temp_value1, &temp_len)) {
 					return FALSE;
 				}
-				plang = malloc(sizeof(LANG_NODE));
+				auto plang = static_cast<LANG_NODE *>(malloc(sizeof(LANG_NODE)));
 				if (NULL == plang) {
 					return FALSE;
 				}
@@ -179,8 +178,6 @@ static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
 	char *ptr;
 	size_t temp_len;
 	char temp_line[64*1024];
-	CODEPAGE_NODE *pcodepage;
-	
 	
     fp = fopen(g_file_path, "r");
 	if (NULL == fp) {
@@ -206,7 +203,7 @@ static BOOL codepage_lang_load_cplist(SINGLE_LIST *plist)
 		*ptr = '\0';
 		ptr ++;
 		temp_len = strlen(ptr);
-		pcodepage = malloc(sizeof(CODEPAGE_NODE));
+		auto pcodepage = static_cast<CODEPAGE_NODE *>(malloc(sizeof(CODEPAGE_NODE)));
 		if (NULL == pcodepage) {
 			printf("[codepage_lang]: out of memory while loading file %s\n",
 				g_file_path);

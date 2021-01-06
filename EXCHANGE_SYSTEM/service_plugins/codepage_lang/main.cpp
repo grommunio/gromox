@@ -34,7 +34,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			printf("[codepage_lang]: failed to run the module\n");
 			return FALSE;
 		}
-		if (FALSE == register_service("get_lang", codepage_lang_get_lang)) {
+		if (!register_service("get_lang", reinterpret_cast<void *>(codepage_lang_get_lang))) {
 			printf("[codepage_lang]: failed to register \"get_lang\" service\n");
 			return FALSE;
 		}
