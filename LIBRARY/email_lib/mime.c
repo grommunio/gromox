@@ -155,8 +155,6 @@ BOOL mime_retrieve(MIME *pmime_parent,
 		pmime->content_length = 0;
 		pmime->mime_type = SINGLE_MIME;
 		return TRUE;
-	} else if (length < 0) {
-		return FALSE;
 	}
 	while (current_offset <= length) {
 		parsed_length = parse_mime_field(in_buff + current_offset,
