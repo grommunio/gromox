@@ -254,6 +254,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			node_type != NODE_TYPE_ROOM) {
 			return ecNotFound;
 		}
+		[[fallthrough]];
 	case PROP_TAG_DISPLAYNAME:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 		ab_tree_get_display_name(pnode, codepage, dn);
@@ -277,6 +278,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			node_type != NODE_TYPE_ROOM) {
 			return ecNotFound;
 		}
+		[[fallthrough]];
 	case PROP_TAG_DISPLAYNAME_STRING8:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
 		ab_tree_get_display_name(pnode, codepage, dn);

@@ -3280,6 +3280,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					break;
 				case PROP_TAG_HTML:
 					pinstance->change_mask |= CHANGE_MASK_HTML;
+					[[fallthrough]];
 				case PROP_TAG_BODYHTML:
 					body_type = NATIVE_BODY_HTML;
 					break;

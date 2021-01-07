@@ -2046,6 +2046,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			*ppvalue = NULL;
 			return TRUE;
 		}
+		[[fallthrough]];
 	case PROP_TAG_DISPLAYNAME:
 	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
 		ab_tree_get_display_name(pnode, codepage, dn);
