@@ -2141,14 +2141,8 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		pstate = icsdownctx_object_get_state(static_cast<ICSDOWNCTX_OBJECT *>(pobject));
-		if (NULL == pstate) {
-			return ecError;
-		}
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
 		pstate = icsupctx_object_get_state(static_cast<ICSUPCTX_OBJECT *>(pobject));
-		if (NULL == pstate) {
-			return ecError;
-		}
 	} else {
 		return ecNotSupported;
 	}
