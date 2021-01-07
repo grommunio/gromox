@@ -679,15 +679,6 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	proptag_array_free(pungroup_proptags);
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
-	/* trigger the rule evaluation under public mode 
-		when the message is first saved to the folder */
-	if (TRUE == b_new && FALSE == b_fai && 0 != pmessage->message_id
-		&& FALSE == store_object_check_private(pmessage->pstore)) {
-		exmdb_client_rule_new_message(dir, pinfo->username,
-			store_object_get_account(pmessage->pstore),
-			pmessage->cpid, pmessage->folder_id,
-			pmessage->message_id);
-	}
 	return GXERR_SUCCESS;
 	
 SAVE_FULL_CHANGE:
