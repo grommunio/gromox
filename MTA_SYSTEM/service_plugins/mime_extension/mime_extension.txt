@@ -1,1 +1,1 @@
-../../../EXCHANGE_SYSTEM/http/data/mime_extension.txt
+../../../exch/http/data/mime_extension.txt

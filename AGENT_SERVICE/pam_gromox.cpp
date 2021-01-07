@@ -17,7 +17,7 @@
 #include <gromox/tie.hpp>
 #include "config_file.h"
 #include "util.h"
-#include "../EXCHANGE_SYSTEM/http/service.h"
+#include "../exch/http/service.h"
 #ifndef PAM_EXTERN
 #	define PAM_EXTERN
 #endif

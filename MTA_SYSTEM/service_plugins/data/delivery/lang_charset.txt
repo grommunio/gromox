@@ -1,1 +1,1 @@
-../../../../EXCHANGE_SYSTEM/http/data/lang_charset.txt
+../../../../exch/http/data/lang_charset.txt

@@ -1,1 +1,0 @@
-../../hpm_plugins/proxy.txt

@@ -1,1 +1,1 @@
-../../EXCHANGE_SYSTEM/zcore/data/folder_lang.txt
+../../exch/zcore/data/folder_lang.txt

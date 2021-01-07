@@ -101,7 +101,7 @@ sbin_PROGRAMS = gromox-dbop gromox-mailq
 pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
 
 # LIBRARY
-BUILT_SOURCES = include/gromox/paths.h AGENT_SERVICE/php_mapi/zarafa_rpc.cpp EXCHANGE_SYSTEM/midb/exmdb_rpc.cpp EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_rpc.cpp
+BUILT_SOURCES = include/gromox/paths.h AGENT_SERVICE/php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
 libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
@@ -128,9 +128,9 @@ libgromox_webkit_la_SOURCES = LIBRARY/webkit_lib/idx_array.c LIBRARY/webkit_lib/
 libgromox_webkit_la_LIBADD = ${HX_LIBS} libgromox_common.la
 
 # MTA_SYSTEM
-delivery_SOURCES = EXCHANGE_SYSTEM/http/service.cpp MTA_SYSTEM/delivery_app/console_cmd_handler.cpp MTA_SYSTEM/delivery_app/console_server.cpp MTA_SYSTEM/delivery_app/main.cpp MTA_SYSTEM/delivery_app/message_dequeue.cpp MTA_SYSTEM/delivery_app/system_services.cpp MTA_SYSTEM/delivery_app/transporter.cpp
+delivery_SOURCES = exch/http/service.cpp MTA_SYSTEM/delivery_app/console_cmd_handler.cpp MTA_SYSTEM/delivery_app/console_server.cpp MTA_SYSTEM/delivery_app/main.cpp MTA_SYSTEM/delivery_app/message_dequeue.cpp MTA_SYSTEM/delivery_app/system_services.cpp MTA_SYSTEM/delivery_app/transporter.cpp
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-smtp_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MTA_SYSTEM/smtp/bndstack_allocator.cpp MTA_SYSTEM/smtp/console_cmd_handler.cpp MTA_SYSTEM/smtp/console_server.cpp MTA_SYSTEM/smtp/flusher.cpp MTA_SYSTEM/smtp/listener.cpp MTA_SYSTEM/smtp/main.cpp MTA_SYSTEM/smtp/resource.cpp MTA_SYSTEM/smtp/smtp_cmd_handler.cpp MTA_SYSTEM/smtp/smtp_parser.cpp MTA_SYSTEM/smtp/system_services.cpp
+smtp_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp MTA_SYSTEM/smtp/bndstack_allocator.cpp MTA_SYSTEM/smtp/console_cmd_handler.cpp MTA_SYSTEM/smtp/console_server.cpp MTA_SYSTEM/smtp/flusher.cpp MTA_SYSTEM/smtp/listener.cpp MTA_SYSTEM/smtp/main.cpp MTA_SYSTEM/smtp/resource.cpp MTA_SYSTEM/smtp/smtp_cmd_handler.cpp MTA_SYSTEM/smtp/smtp_parser.cpp MTA_SYSTEM/smtp/system_services.cpp
 smtp_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 libmtaflh_message_enqueue_la_SOURCES = MTA_SYSTEM/flusher_plugins/message_enqueue/main.cpp MTA_SYSTEM/flusher_plugins/message_enqueue/message_enqueue.cpp
 libmtaflh_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -152,7 +152,7 @@ libmtahook_mlist_expand_la_SOURCES = MTA_SYSTEM/mpc_plugins/mlist_expand/bounce_
 libmtahook_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtahook_mlist_expand_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
 EXTRA_libmtahook_mlist_expand_la_DEPENDENCIES = ${default_sym}
-libmtasvc_boundary_list_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_table/main.cpp EXCHANGE_SYSTEM/service_plugins/str_table/str_table.cpp
+libmtasvc_boundary_list_la_SOURCES = exch/str_table/main.cpp exch/str_table/str_table.cpp
 libmtasvc_boundary_list_la_LDFLAGS = ${plugin_LDFLAGS}
 libmtasvc_boundary_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmtasvc_boundary_list_la_DEPENDENCIES = ${default_sym}
@@ -166,9 +166,9 @@ libmtasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmtasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 # MRA_SYSTEM
-pop3_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/pop3/console_cmd_handler.cpp MRA_SYSTEM/pop3/console_server.cpp MRA_SYSTEM/pop3/listener.cpp MRA_SYSTEM/pop3/main.cpp MRA_SYSTEM/pop3/pop3_cmd_handler.cpp MRA_SYSTEM/pop3/pop3_parser.cpp MRA_SYSTEM/pop3/resource.cpp MRA_SYSTEM/pop3/system_services.cpp MRA_SYSTEM/pop3/units_allocator.cpp
+pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp MRA_SYSTEM/pop3/console_cmd_handler.cpp MRA_SYSTEM/pop3/console_server.cpp MRA_SYSTEM/pop3/listener.cpp MRA_SYSTEM/pop3/main.cpp MRA_SYSTEM/pop3/pop3_cmd_handler.cpp MRA_SYSTEM/pop3/pop3_parser.cpp MRA_SYSTEM/pop3/resource.cpp MRA_SYSTEM/pop3/system_services.cpp MRA_SYSTEM/pop3/units_allocator.cpp
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
-imap_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/service.cpp MRA_SYSTEM/imap/console_server.cpp MRA_SYSTEM/imap/console_cmd_handler.cpp MRA_SYSTEM/imap/imap_cmd_parser.cpp MRA_SYSTEM/imap/imap_parser.cpp MRA_SYSTEM/imap/listener.cpp MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.cpp MRA_SYSTEM/imap/system_services.cpp
+imap_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp MRA_SYSTEM/imap/console_server.cpp MRA_SYSTEM/imap/console_cmd_handler.cpp MRA_SYSTEM/imap/imap_cmd_parser.cpp MRA_SYSTEM/imap/imap_parser.cpp MRA_SYSTEM/imap/listener.cpp MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.cpp MRA_SYSTEM/imap/system_services.cpp
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la
 libgxsvc_event_proxy_la_SOURCES = MRA_SYSTEM/service_plugins/event_proxy.cpp
 libgxsvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
@@ -183,90 +183,90 @@ libmrasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 
-# EXCHANGE_SYSTEM
-http_SOURCES = EXCHANGE_SYSTEM/http/blocks_allocator.cpp EXCHANGE_SYSTEM/http/console_cmd_handler.cpp EXCHANGE_SYSTEM/http/console_server.cpp EXCHANGE_SYSTEM/http/hpm_processor.cpp EXCHANGE_SYSTEM/http/http_parser.cpp EXCHANGE_SYSTEM/http/listener.cpp EXCHANGE_SYSTEM/http/main.cpp EXCHANGE_SYSTEM/http/mod_cache.cpp EXCHANGE_SYSTEM/http/mod_fastcgi.cpp EXCHANGE_SYSTEM/http/mod_rewrite.cpp EXCHANGE_SYSTEM/http/pdu_ndr.cpp EXCHANGE_SYSTEM/http/pdu_processor.cpp EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/http/system_services.cpp
+# exch
+http_SOURCES = exch/http/blocks_allocator.cpp exch/http/console_cmd_handler.cpp exch/http/console_server.cpp exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp
 http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la libgromox_webkit.la
-midb_SOURCES = EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/midb/cmd_parser.cpp EXCHANGE_SYSTEM/midb/common_util.cpp EXCHANGE_SYSTEM/midb/console_cmd_handler.cpp EXCHANGE_SYSTEM/midb/console_server.cpp EXCHANGE_SYSTEM/midb/exmdb_client.cpp EXCHANGE_SYSTEM/midb/exmdb_ext.cpp EXCHANGE_SYSTEM/midb/exmdb_rpc.cpp EXCHANGE_SYSTEM/midb/listener.cpp EXCHANGE_SYSTEM/midb/mail_engine.cpp EXCHANGE_SYSTEM/midb/main.cpp EXCHANGE_SYSTEM/midb/system_services.cpp
+midb_SOURCES = exch/http/service.cpp exch/midb/cmd_parser.cpp exch/midb/common_util.cpp exch/midb/console_cmd_handler.cpp exch/midb/console_server.cpp exch/midb/exmdb_client.cpp exch/midb/exmdb_ext.cpp exch/midb/exmdb_rpc.cpp exch/midb/listener.cpp exch/midb/mail_engine.cpp exch/midb/main.cpp exch/midb/system_services.cpp
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-zcore_SOURCES = EXCHANGE_SYSTEM/http/service.cpp EXCHANGE_SYSTEM/zcore/ab_tree.cpp EXCHANGE_SYSTEM/zcore/attachment_object.cpp EXCHANGE_SYSTEM/zcore/bounce_producer.cpp EXCHANGE_SYSTEM/zcore/common_util.cpp EXCHANGE_SYSTEM/zcore/console_cmd_handler.cpp EXCHANGE_SYSTEM/zcore/console_server.cpp EXCHANGE_SYSTEM/zcore/container_object.cpp EXCHANGE_SYSTEM/zcore/exmdb_client.cpp EXCHANGE_SYSTEM/zcore/exmdb_ext.cpp EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp EXCHANGE_SYSTEM/zcore/folder_object.cpp EXCHANGE_SYSTEM/zcore/ics_state.cpp EXCHANGE_SYSTEM/zcore/icsdownctx_object.cpp EXCHANGE_SYSTEM/zcore/icsupctx_object.cpp EXCHANGE_SYSTEM/zcore/listener.cpp EXCHANGE_SYSTEM/zcore/main.cpp EXCHANGE_SYSTEM/zcore/message_object.cpp EXCHANGE_SYSTEM/zcore/msgchg_grouping.cpp EXCHANGE_SYSTEM/zcore/names.cpp EXCHANGE_SYSTEM/zcore/object_tree.cpp EXCHANGE_SYSTEM/zcore/rpc_ext.cpp EXCHANGE_SYSTEM/zcore/rpc_parser.cpp EXCHANGE_SYSTEM/zcore/store_object.cpp EXCHANGE_SYSTEM/zcore/system_services.cpp EXCHANGE_SYSTEM/zcore/table_object.cpp EXCHANGE_SYSTEM/zcore/user_object.cpp EXCHANGE_SYSTEM/zcore/zarafa_server.cpp
+zcore_SOURCES = exch/http/service.cpp exch/zcore/ab_tree.cpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.cpp exch/zcore/common_util.cpp exch/zcore/console_cmd_handler.cpp exch/zcore/console_server.cpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_ext.cpp exch/zcore/exmdb_rpc.cpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/listener.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/msgchg_grouping.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_parser.cpp exch/zcore/store_object.cpp exch/zcore/system_services.cpp exch/zcore/table_object.cpp exch/zcore/user_object.cpp exch/zcore/zarafa_server.cpp
 zcore_LDADD = -ldl -lpthread ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-libexsvc_codepage_lang_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/codepage_lang/codepage_lang.cpp EXCHANGE_SYSTEM/service_plugins/codepage_lang/main.cpp
+libexsvc_codepage_lang_la_SOURCES = exch/codepage_lang/codepage_lang.cpp exch/codepage_lang/main.cpp
 libexsvc_codepage_lang_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_codepage_lang_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexsvc_codepage_lang_la_DEPENDENCIES = ${default_sym}
-libexsvc_exmdb_provider_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/exmdb_provider/bounce_producer.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/common_util.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/db_engine.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_ext.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_listener.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_parser.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_rpc.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/notification_agent.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_server.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/folder.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/ics.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instance.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/instbody.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/main.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/message.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/names.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/store.cpp EXCHANGE_SYSTEM/service_plugins/exmdb_provider/table.cpp
+libexsvc_exmdb_provider_la_SOURCES = exch/exmdb_provider/bounce_producer.cpp exch/exmdb_provider/common_util.cpp exch/exmdb_provider/db_engine.cpp exch/exmdb_provider/exmdb_client.cpp exch/exmdb_provider/exmdb_ext.cpp exch/exmdb_provider/exmdb_listener.cpp exch/exmdb_provider/exmdb_parser.cpp exch/exmdb_provider/exmdb_rpc.cpp exch/exmdb_provider/notification_agent.cpp exch/exmdb_provider/exmdb_server.cpp exch/exmdb_provider/folder.cpp exch/exmdb_provider/ics.cpp exch/exmdb_provider/instance.cpp exch/exmdb_provider/instbody.cpp exch/exmdb_provider/main.cpp exch/exmdb_provider/message.cpp exch/exmdb_provider/names.cpp exch/exmdb_provider/store.cpp exch/exmdb_provider/table.cpp
 libexsvc_exmdb_provider_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_exmdb_provider_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 EXTRA_libexsvc_exmdb_provider_la_DEPENDENCIES = ${default_sym}
-libexsvc_timer_agent_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/timer_agent.cpp
+libexsvc_timer_agent_la_SOURCES = exch/timer_agent.cpp
 libexsvc_timer_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libexsvc_timer_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexsvc_timer_agent_la_DEPENDENCIES = ${default_sym}
-libexproc_exchange_emsmdb_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/asyncemsmdb_interface.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/asyncemsmdb_ndr.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/attachment_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/aux_ext.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/bounce_producer.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/common_util.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/emsmdb_interface.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/emsmdb_ndr.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/exmdb_client.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/fastdownctx_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/fastupctx_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/folder_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/ftstream_parser.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/ftstream_producer.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/ics_state.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/icsdownctx_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/icsupctx_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/logon_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/main.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/message_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/msgchg_grouping.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/names.c EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/notify_response.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxcfold.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxcfxics.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxcmsg.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxcnotif.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxcperm.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxcprpt.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxcstore.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxctabl.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxomsg.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/oxorule.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/rop_dispatch.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/rop_ext.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/rop_processor.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/stream_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/subscription_object.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_emsmdb/table_object.cpp LIBRARY/mapi_lib/lzxpress.c
+libexproc_exchange_emsmdb_la_SOURCES = exch/exchange_emsmdb/asyncemsmdb_interface.cpp exch/exchange_emsmdb/asyncemsmdb_ndr.cpp exch/exchange_emsmdb/attachment_object.cpp exch/exchange_emsmdb/aux_ext.cpp exch/exchange_emsmdb/bounce_producer.cpp exch/exchange_emsmdb/common_util.cpp exch/exchange_emsmdb/emsmdb_interface.cpp exch/exchange_emsmdb/emsmdb_ndr.cpp exch/exchange_emsmdb/exmdb_client.cpp exch/exchange_emsmdb/fastdownctx_object.cpp exch/exchange_emsmdb/fastupctx_object.cpp exch/exchange_emsmdb/folder_object.cpp exch/exchange_emsmdb/ftstream_parser.cpp exch/exchange_emsmdb/ftstream_producer.cpp exch/exchange_emsmdb/ics_state.cpp exch/exchange_emsmdb/icsdownctx_object.cpp exch/exchange_emsmdb/icsupctx_object.cpp exch/exchange_emsmdb/logon_object.cpp exch/exchange_emsmdb/main.cpp exch/exchange_emsmdb/message_object.cpp exch/exchange_emsmdb/msgchg_grouping.cpp exch/exchange_emsmdb/names.c exch/exchange_emsmdb/notify_response.cpp exch/exchange_emsmdb/oxcfold.cpp exch/exchange_emsmdb/oxcfxics.cpp exch/exchange_emsmdb/oxcmsg.cpp exch/exchange_emsmdb/oxcnotif.cpp exch/exchange_emsmdb/oxcperm.cpp exch/exchange_emsmdb/oxcprpt.cpp exch/exchange_emsmdb/oxcstore.cpp exch/exchange_emsmdb/oxctabl.cpp exch/exchange_emsmdb/oxomsg.cpp exch/exchange_emsmdb/oxorule.cpp exch/exchange_emsmdb/rop_dispatch.cpp exch/exchange_emsmdb/rop_ext.cpp exch/exchange_emsmdb/rop_processor.cpp exch/exchange_emsmdb/stream_object.cpp exch/exchange_emsmdb/subscription_object.cpp exch/exchange_emsmdb/table_object.cpp LIBRARY/mapi_lib/lzxpress.c
 libexproc_exchange_emsmdb_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_exchange_emsmdb_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
 EXTRA_libexproc_exchange_emsmdb_la_DEPENDENCIES = ${default_sym}
-libexproc_exchange_nsp_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/ab_tree.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/common_util.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/main.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/nsp_interface.cpp EXCHANGE_SYSTEM/proc_plugins/exchange_nsp/nsp_ndr.cpp
+libexproc_exchange_nsp_la_SOURCES = exch/exchange_nsp/ab_tree.cpp exch/exchange_nsp/common_util.cpp exch/exchange_nsp/main.cpp exch/exchange_nsp/nsp_interface.cpp exch/exchange_nsp/nsp_ndr.cpp
 libexproc_exchange_nsp_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_exchange_nsp_la_LIBADD = -lpthread ${crypto_LIBS} ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libexproc_exchange_nsp_la_DEPENDENCIES = ${default_sym}
-libexproc_exchange_rfr_la_SOURCES = EXCHANGE_SYSTEM/proc_plugins/exchange_rfr.cpp
+libexproc_exchange_rfr_la_SOURCES = exch/exchange_rfr.cpp
 libexproc_exchange_rfr_la_LDFLAGS = ${plugin_LDFLAGS}
 libexproc_exchange_rfr_la_LIBADD = ${HX_LIBS} libgromox_common.la libgromox_rpc.la
 EXTRA_libexproc_exchange_rfr_la_DEPENDENCIES = ${default_sym}
-libexhpm_proxy_la_SOURCES = EXCHANGE_SYSTEM/hpm_plugins/mod_proxy.cpp
+libexhpm_proxy_la_SOURCES = exch/mod_proxy.cpp
 libexhpm_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libexhpm_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libexhpm_proxy_la_DEPENDENCIES = ${default_sym}
-libgxsvc_abktplug_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/abktplug.cpp
+libgxsvc_abktplug_la_SOURCES = exch/abktplug.cpp
 libgxsvc_abktplug_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_abktplug_la_LIBADD = libgromox_cplus.la
 EXTRA_libgxsvc_abktplug_la_DEPENDENCIES = ${default_sym}
-libgxsvc_at_client_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/at_client.cpp
+libgxsvc_at_client_la_SOURCES = exch/at_client.cpp
 libgxsvc_at_client_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_at_client_la_LIBADD = ${HX_LIBS}
 EXTRA_libgxsvc_at_client_la_DEPENDENCIES = ${default_sym}
-libgxsvc_authmgr_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/authmgr.cpp
+libgxsvc_authmgr_la_SOURCES = exch/authmgr.cpp
 libgxsvc_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_authmgr_la_LIBADD = libgromox_common.la
 EXTRA_libgxsvc_authmgr_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ip_container_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_container/ip_container.cpp EXCHANGE_SYSTEM/service_plugins/ip_container/main.cpp
+libgxsvc_ip_container_la_SOURCES = exch/ip_container/ip_container.cpp exch/ip_container/main.cpp
 libgxsvc_ip_container_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ip_container_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libgxsvc_ip_container_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ip_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ip_filter/audit_filter.cpp EXCHANGE_SYSTEM/service_plugins/ip_filter/grey_list.cpp EXCHANGE_SYSTEM/service_plugins/ip_filter/ip_filter.cpp EXCHANGE_SYSTEM/service_plugins/ip_filter/main.cpp EXCHANGE_SYSTEM/service_plugins/ip_filter/temp_list.cpp
+libgxsvc_ip_filter_la_SOURCES = exch/ip_filter/audit_filter.cpp exch/ip_filter/grey_list.cpp exch/ip_filter/ip_filter.cpp exch/ip_filter/main.cpp exch/ip_filter/temp_list.cpp
 libgxsvc_ip_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ip_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_ip_filter_la_DEPENDENCIES = ${default_sym}
-libgxsvc_lang_charset_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/lang_charset.cpp
+libgxsvc_lang_charset_la_SOURCES = exch/lang_charset.cpp
 libgxsvc_lang_charset_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_lang_charset_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_lang_charset_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ldap_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ldap_adaptor.cpp
+libgxsvc_ldap_adaptor_la_SOURCES = exch/ldap_adaptor.cpp
 libgxsvc_ldap_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ldap_adaptor_la_LIBADD = libgromox_common.la -lldap_r
 EXTRA_libgxsvc_ldap_adaptor_la_DEPENDENCIES = ${default_sym}
-libgxsvc_localemap_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/localeplug.cpp
+libgxsvc_localemap_la_SOURCES = exch/localeplug.cpp
 libgxsvc_localemap_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_localemap_la_LIBADD = libgromox_cplus.la
 EXTRA_libgxsvc_localemap_la_DEPENDENCIES = ${default_sym}
-libgxsvc_log_plugin_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/log_plugin/log_plugin.cpp EXCHANGE_SYSTEM/service_plugins/log_plugin/main.cpp
+libgxsvc_log_plugin_la_SOURCES = exch/log_plugin/log_plugin.cpp exch/log_plugin/main.cpp
 libgxsvc_log_plugin_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_log_plugin_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libgxsvc_log_plugin_la_DEPENDENCIES = ${default_sym}
-libgxsvc_mime_extension_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mime_extension.cpp
+libgxsvc_mime_extension_la_SOURCES = exch/mime_extension.cpp
 libgxsvc_mime_extension_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mime_extension_la_LIBADD = ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_mime_extension_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ms_locale_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/ms_locale.cpp
+libgxsvc_ms_locale_la_SOURCES = exch/ms_locale.cpp
 libgxsvc_ms_locale_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ms_locale_la_LIBADD = ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_ms_locale_la_DEPENDENCIES = ${default_sym}
-libgxsvc_mysql_adaptor_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/main.cpp EXCHANGE_SYSTEM/service_plugins/mysql_adaptor/mysql_adaptor.cpp
+libgxsvc_mysql_adaptor_la_SOURCES = exch/mysql_adaptor/main.cpp exch/mysql_adaptor/mysql_adaptor.cpp
 libgxsvc_mysql_adaptor_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_mysql_adaptor_la_LIBADD = -lcrypt -lpthread ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 EXTRA_libgxsvc_mysql_adaptor_la_DEPENDENCIES = ${default_sym}
-libgxsvc_user_filter_la_SOURCES = EXCHANGE_SYSTEM/service_plugins/str_filter/audit_filter.cpp EXCHANGE_SYSTEM/service_plugins/str_filter/grey_list.cpp EXCHANGE_SYSTEM/service_plugins/str_filter/main.cpp EXCHANGE_SYSTEM/service_plugins/str_filter/str_filter.cpp EXCHANGE_SYSTEM/service_plugins/str_filter/temp_list.cpp
+libgxsvc_user_filter_la_SOURCES = exch/str_filter/audit_filter.cpp exch/str_filter/grey_list.cpp exch/str_filter/main.cpp exch/str_filter/str_filter.cpp exch/str_filter/temp_list.cpp
 libgxsvc_user_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_user_filter_la_DEPENDENCIES = ${default_sym}
@@ -277,7 +277,7 @@ digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
-pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp EXCHANGE_SYSTEM/http/service.cpp
+pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp exch/http/service.cpp
 pam_gromox_la_LIBADD = -lpam ${HX_LIBS} libgromox_common.la
 pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
 rtf2html_SOURCES = AGENT_SERVICE/rtf2html.cpp
@@ -352,13 +352,13 @@ include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status
 AGENT_SERVICE/php_mapi/zarafa_rpc.cpp: AGENT_SERVICE/php_mapi/zarafa_client.h zcidl
 	${AM_V_GEN}${top_srcdir}/zcidl <$< >$@
 
-EXCHANGE_SYSTEM/midb/exmdb_rpc.cpp: EXCHANGE_SYSTEM/midb/exmdb_client.h exmidl
+exch/midb/exmdb_rpc.cpp: exch/midb/exmdb_client.h exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
 
-EXCHANGE_SYSTEM/zcore/exmdb_rpc.cpp: EXCHANGE_SYSTEM/zcore/exmdb_client.h exmidl
+exch/zcore/exmdb_rpc.cpp: exch/zcore/exmdb_client.h exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl <$< >$@
 
-EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_rpc.cpp: EXCHANGE_SYSTEM/service_plugins/exmdb_provider/exmdb_client.h exmidl
+exch/exmdb_provider/exmdb_rpc.cpp: exch/exmdb_provider/exmdb_client.h exmidl
 	${AM_V_GEN}${top_srcdir}/exmidl -p <$< >$@
 
 install-data-local:
