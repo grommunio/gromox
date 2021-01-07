@@ -3172,7 +3172,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 					member_id = sqlite3_column_int64(pstmt1, 0);
 				}
 				sqlite3_finalize(pstmt1);
-			} else if (-1 == (int64_t)member_id) {
+			} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
 				sprintf(sql_string, "SELECT member_id "
 					"FROM permissions WHERE folder_id=%llu AND "
 					"username=?", LLU(fid_val));
@@ -3266,7 +3266,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 					sql_string, NULL, NULL, NULL)) {
 					goto PERMISSION_FAILURE;
 				}
-			} else if (-1 == (int64_t)member_id) {
+			} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
 				sprintf(sql_string, "DELETE FROM permissions WHERE "
 				        "folder_id=%llu and username=\"\"", LLU(fid_val));
 				if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,

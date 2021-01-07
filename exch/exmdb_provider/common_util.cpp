@@ -4664,7 +4664,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		if (0 == member_id) {
 			*ppvalue = deconst("default");
 			return TRUE;
-		} else if (-1 == (int64_t)member_id) {
+		} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
 			*ppvalue = deconst("anonymous");
 			return TRUE;
 		}
@@ -4688,7 +4688,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			sprintf(sql_string, "SELECT config_value "
 					"FROM configurations WHERE config_id=%d",
 					CONFIG_ID_DEFAULT_PERMISSION);
-		} else if (-1 == (int64_t)member_id) {
+		} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
 			sprintf(sql_string, "SELECT config_value "
 					"FROM configurations WHERE config_id=%d",
 					CONFIG_ID_ANONYMOUS_PERMISSION);
