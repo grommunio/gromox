@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
