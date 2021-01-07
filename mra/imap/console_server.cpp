@@ -2,7 +2,7 @@
 /*
  *  the console server which communicate with the telnet clients
  */
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
@@ -17,10 +17,10 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
 #include <pthread.h>
 
 #define TIMEOUT             300    

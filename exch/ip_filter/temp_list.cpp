@@ -6,8 +6,8 @@
 #include "ip4_hash.h"
 #include "util.h"
 #include <fcntl.h>
-#include <time.h>
-#include <string.h>
+#include <ctime>
+#include <cstring>
 #include <pthread.h>
 
 /* private global variable */

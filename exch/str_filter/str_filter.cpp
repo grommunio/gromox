@@ -6,7 +6,7 @@
  *  specified interval
  *
  */
-#include <stdlib.h>
+#include <cstdlib>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include "common_types.h"
@@ -16,9 +16,9 @@
 #include "grey_list.h"
 #include "temp_list.h"
 #include "util.h"
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdarg>
+#include <cstring>
 
 enum{
 	STR_FILTER_TEMP_DENY,

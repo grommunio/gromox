@@ -4,9 +4,9 @@
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include "util.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <mysql/mysql.h>
 
 #define DOMAIN_PRIVILEGE_SUBSYSTEM          0x8

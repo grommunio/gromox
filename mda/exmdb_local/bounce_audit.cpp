@@ -10,9 +10,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <time.h>
-
+#include <cstdio>
+#include <ctime>
 
 /* private global variable */
 static int g_audit_num;

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdbool.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <gromox/paths.h>
@@ -16,10 +15,9 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <dlfcn.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 #define FILENUM_PER_CONTROL		32
 #define FILENUM_PER_MIME		32
 #define MAX_THROWING_NUM		16

@@ -10,8 +10,8 @@
 #include "blocks_allocator.h"
 #include "util.h"
 #include "mail_func.h"
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 static BOOL smtp_cmd_handler_check_onlycmd(const char *cmd_line,
     int line_length, SMTP_CONTEXT *pcontext);

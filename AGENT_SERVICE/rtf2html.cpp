@@ -2,16 +2,16 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/paths.h>
 #include "rtf.h"
 #include "rtfcp.h"
 #include "list_file.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 
 struct srcitem {

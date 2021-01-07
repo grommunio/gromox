@@ -13,7 +13,7 @@
 #include "audit_filter.h"
 #include "ip4_hash.h"
 #include "util.h"
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/time.h>

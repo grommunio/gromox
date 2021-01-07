@@ -7,8 +7,8 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include "common_types.h"
 #include "message_enqueue.h"
 #include "util.h"
@@ -17,7 +17,7 @@
 #include <sys/msg.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>

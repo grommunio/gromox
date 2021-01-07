@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdlib.h>
+#include <cstdlib>
 #include <libHX/ctype_helper.h>
 #include "engine.h"
 #include "file_operation.h"
 #include <gromox/gateway_control.h>
 #include "data_source.h"
 #include "config_file.h"
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <pthread.h>
 #include <dirent.h>
 #include <unistd.h>

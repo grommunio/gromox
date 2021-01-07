@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
+#include <cerrno>
 #include <netdb.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 #include <gromox/defs.h>
 #include "cache_queue.h"
@@ -14,10 +14,9 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <fcntl.h>
-#include <stdio.h>
-
+#include <cstdio>
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 

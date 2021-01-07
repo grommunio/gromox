@@ -22,9 +22,9 @@
 #include "mail.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 
 

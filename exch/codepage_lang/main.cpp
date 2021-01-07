@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdbool.h>
 #include <gromox/svc_common.h>
 #include "codepage_lang.h"
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 DECLARE_API;
 

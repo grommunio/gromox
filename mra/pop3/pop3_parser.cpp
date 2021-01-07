@@ -16,9 +16,9 @@
 #include "util.h"
 #include "mail_func.h"
 #include <pthread.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdarg>
+#include <cstdio>
 #include <openssl/err.h>
 
 #define CALCULATE_INTERVAL(a, b) \

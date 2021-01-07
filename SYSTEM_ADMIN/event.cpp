@@ -2,8 +2,8 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -15,10 +15,10 @@
 #include "list_file.h"
 #include "config_file.h"
 #include "double_list.h"
-#include <time.h>
-#include <stdio.h>
+#include <ctime>
+#include <cstdio>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
 #include <sys/time.h>
 #include <sys/types.h>

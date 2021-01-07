@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdbool.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
@@ -7,13 +6,13 @@
 #include <gromox/svc_common.h>
 #include "double_list.h"
 #include "config_file.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <cerrno>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
 #include <sys/types.h>  
 #include <sys/socket.h>

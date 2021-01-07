@@ -2,7 +2,7 @@
 /*
  *  the console server which communicate with the telnet clients
  */
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
@@ -18,11 +18,10 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdio>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
 #define TIMEOUT             300    
 #define MAXLINE             65536  /* max line size */
 #define MAXARGS             128    /* max args on a command line */

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
 #include "message_enqueue.h"
 #include "config_file.h"
 #include "util.h"
-#include <stdio.h>
+#include <cstdio>
 
 DECLARE_API;
 

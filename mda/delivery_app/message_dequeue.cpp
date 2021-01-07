@@ -9,8 +9,8 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <gromox/defs.h>
 #include "message_dequeue.h"
 #include "system_services.h"
@@ -25,7 +25,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <pthread.h>
-#include <stdio.h>
+#include <cstdio>
 #include "transporter.h"
 #define DEF_MODE    S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 #define TOKEN_MESSAGE_QUEUE		1

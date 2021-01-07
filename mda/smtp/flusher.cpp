@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdbool.h>
 #include <gromox/paths.h>
 #include "flusher.h"
 #include "service.h"
@@ -9,10 +8,9 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <dlfcn.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #define FLUSHER_VERSION     0x00000001
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 

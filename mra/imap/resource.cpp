@@ -9,9 +9,9 @@
 #include "resource.h"
 #include "single_list.h"
 #include "util.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <pthread.h>
 #define MAX_FILE_LINE_LEN       1024
 

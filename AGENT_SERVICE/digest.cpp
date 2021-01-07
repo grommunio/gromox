@@ -5,9 +5,9 @@
 #include <libHX/option.h>
 #include <gromox/defs.h>
 #include "mail.h"
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

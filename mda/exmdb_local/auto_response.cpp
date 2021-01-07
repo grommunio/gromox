@@ -15,9 +15,8 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <time.h>
-
+#include <cstdio>
+#include <ctime>
 
 void auto_response_reply(const char *user_home,
 	const char *from, const char *rcpt)

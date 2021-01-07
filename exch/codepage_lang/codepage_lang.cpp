@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
+#include <cerrno>
 #include "codepage_lang.h"
 #include "single_list.h"
 #include "util.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <pthread.h>
 
 

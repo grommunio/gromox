@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/gateway_control.h>
@@ -7,9 +7,9 @@
 #include "util.h"
 #include "single_list.h"
 #include "list_file.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>

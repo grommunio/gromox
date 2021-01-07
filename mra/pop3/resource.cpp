@@ -4,14 +4,14 @@
  *  programmer to set and get the configuration dynamicly
  *
  */
-#include <errno.h>
+#include <cerrno>
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "resource.h"
 #include "util.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <pthread.h>
 #define MAX_FILE_LINE_LEN       1024
 

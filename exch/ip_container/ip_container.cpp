@@ -8,7 +8,7 @@
 #include "mail_func.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <pthread.h>
 

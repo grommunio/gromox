@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/mapidefs.h>
 #include "ext_pack.h"
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 #include <iconv.h>
 
 #define CVAL(buf, pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <gromox/database.h>
 #include <gromox/paths.h>
@@ -11,13 +11,13 @@
 #include "proptags.h"
 #include "guid.h"
 #include "pcl.h"
-#include <time.h>
-#include <stdio.h>
+#include <ctime>
+#include <cstdio>
 #include <fcntl.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <sqlite3.h>
 #include <sys/stat.h>
 #include <sys/types.h>

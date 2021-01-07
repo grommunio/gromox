@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
-#include <stdbool.h>
-#include <stdio.h>
+#include <cerrno>
+#include <cstdio>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>

@@ -2,7 +2,6 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <stdbool.h>
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
 #include "console_server.h"
@@ -13,9 +12,9 @@
 #include "resource.h"
 #include "service.h"
 #include "util.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
 

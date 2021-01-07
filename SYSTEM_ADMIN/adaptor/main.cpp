@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <errno.h>
+#include <cerrno>
 #include <unistd.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -14,10 +14,10 @@
 #include <gromox/system_log.h>
 #include <gromox/gateway_control.h>
 #include "config_file.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <signal.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <csignal>
 
 static BOOL g_notify_stop = FALSE;
 static char *opt_config_file;

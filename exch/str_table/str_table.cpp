@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -9,7 +9,7 @@
 #include "util.h"
 #include "list_file.h"
 #include <pthread.h>
-#include <stdarg.h>
+#include <cstdarg>
 
 enum{
 	STR_TABLE_REFRESH_OK,

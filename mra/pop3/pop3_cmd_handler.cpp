@@ -17,8 +17,8 @@
 #include "util.h"
 #include "array.h"
 #include "mail_func.h"
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>

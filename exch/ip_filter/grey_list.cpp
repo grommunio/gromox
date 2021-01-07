@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -10,7 +10,7 @@
 #include "list_file.h"
 #include "ip4_hash.h"
 #include "util.h"
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/time.h>

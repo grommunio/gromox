@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <unistd.h>
 #include <libHX/string.h>
 #include "str_filter.h"
@@ -10,7 +10,7 @@
 #include "util.h"
 #include <sys/time.h>
 #include <fcntl.h>
-#include <stdio.h>
+#include <cstdio>
 #include <pthread.h>
 
 struct GREY_LIST_ENTRY {

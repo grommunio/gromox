@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <gromox/fileio.h>
 #include "bounce_producer.h"
 #include "exmdb_local.h"
@@ -15,9 +15,9 @@
 #include <pthread.h>
 #include <dirent.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
-#include <time.h>
+#include <ctime>
 
 enum{
 	TAG_BEGIN,

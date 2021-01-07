@@ -2,7 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -11,11 +11,11 @@
 #include "double_list.h"
 #include "list_file.h"
 #include "config_file.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
 #include <fcntl.h>
 #include <sys/time.h>

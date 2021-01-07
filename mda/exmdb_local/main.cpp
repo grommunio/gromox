@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <errno.h>
-#include <stdbool.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
 #include "config_file.h"
@@ -12,7 +11,7 @@
 #include "exmdb_client.h"
 #include "bounce_producer.h"
 #include "util.h"
-#include <stdio.h>
+#include <cstdio>
 
 DECLARE_API;
 

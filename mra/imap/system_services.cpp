@@ -2,7 +2,7 @@
 #include <gromox/defs.h>
 #include "system_services.h"
 #include "service.h"
-#include <stdio.h>
+#include <cstdio>
 
 BOOL (*system_services_judge_ip)(const char*);
 BOOL (*system_services_judge_user)(const char*);

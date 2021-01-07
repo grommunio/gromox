@@ -19,9 +19,9 @@
 #include "util.h"
 #include "mail_func.h"
 #include <pthread.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdarg>
+#include <cstdio>
 #include <openssl/err.h>
 
 #define READ_BUFFER_SIZE    4096

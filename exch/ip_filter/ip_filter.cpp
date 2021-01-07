@@ -16,8 +16,8 @@
 #include "temp_list.h"
 #include "util.h"
 #include "mail_func.h"
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 
 enum{
 	IP_FILTER_TEMP_DENY,
