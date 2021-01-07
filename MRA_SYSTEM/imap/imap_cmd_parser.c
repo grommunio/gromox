@@ -768,7 +768,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	BOOL b_data, MITEM *pitem, int item_id, DOUBLE_LIST *pitem_list)
 {
 	char *ptr;
-	int errno;
+	int errnum;
 	int i, len;
 	char *pdot;
 	char *pend;
@@ -915,7 +915,7 @@ FETCH_BODYSTRUCTURE_SIMPLE:
 				0 == (pitem->flag_bits & FLAG_SEEN)) {
 				system_services_set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
-					FLAG_SEEN, &errno);
+					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_modify_flags(pcontext, pitem->mid);
 			}
@@ -953,7 +953,7 @@ FETCH_BODYSTRUCTURE_SIMPLE:
 				0 == (pitem->flag_bits & FLAG_SEEN)) {
 				system_services_set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
-					FLAG_SEEN, &errno);
+					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_modify_flags(pcontext, pitem->mid);
 			}
@@ -1034,7 +1034,7 @@ FETCH_BODYSTRUCTURE_SIMPLE:
 				0 == strncasecmp(pnode->pdata, "BODY[", 5)) {
 				system_services_set_flags(pcontext->maildir,
 					pcontext->selected_folder, pitem->mid,
-					FLAG_SEEN, &errno);
+					FLAG_SEEN, &errnum);
 				pitem->flag_bits |= FLAG_SEEN;
 				imap_parser_modify_flags(pcontext, pitem->mid);
 			}
@@ -1049,7 +1049,7 @@ FETCH_BODYSTRUCTURE_SIMPLE:
 		pitem->flag_bits &= ~FLAG_RECENT;
 		if (0 == (pitem->flag_bits & FLAG_SEEN)) {
 			system_services_unset_flags(pcontext->maildir,
-				pcontext->selected_folder, pitem->mid, FLAG_RECENT, &errno);
+				pcontext->selected_folder, pitem->mid, FLAG_RECENT, &errnum);
 			imap_parser_modify_flags(pcontext, pitem->mid);
 		}
 	}
@@ -1058,7 +1058,7 @@ FETCH_BODYSTRUCTURE_SIMPLE:
 static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 	int id, unsigned int uid, int flag_bits, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	char buff[1024];
 	int string_length;
 	char flags_string[128];
@@ -1068,9 +1068,9 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 		0 == strcasecmp(cmd, "FLAGS.SILENT")) {
 		system_services_unset_flags(pcontext->maildir,
 			pcontext->selected_folder, mid, FLAG_ANSWERED|
-			FLAG_FLAGGED|FLAG_DELETED|FLAG_SEEN|FLAG_DRAFT, &errno);
+			FLAG_FLAGGED|FLAG_DELETED|FLAG_SEEN|FLAG_DRAFT, &errnum);
 		system_services_set_flags(pcontext->maildir,
-			pcontext->selected_folder, mid, flag_bits, &errno);
+			pcontext->selected_folder, mid, flag_bits, &errnum);
 		if (0 == strcasecmp(cmd, "FLAGS")) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (0 != uid) {
@@ -1086,10 +1086,10 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 	} else if (0 == strcasecmp(cmd, "+FLAGS") ||
 		0 == strcasecmp(cmd, "+FLAGS.SILENT")) {
 		system_services_set_flags(pcontext->maildir,
-		pcontext->selected_folder, mid, flag_bits, &errno);
+		pcontext->selected_folder, mid, flag_bits, &errnum);
 		if (0 == strcasecmp(cmd, "+FLAGS") && 
 			MIDB_RESULT_OK == system_services_get_flags(pcontext->maildir,
-			pcontext->selected_folder, mid, &flag_bits, &errno)) {
+		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (0 != uid) {
 				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
@@ -1104,10 +1104,10 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 	} else if (0 == strcasecmp(cmd, "-FLAGS") ||
 		0 == strcasecmp(cmd, "-FLAGS.SILENT")) {
 		system_services_unset_flags(pcontext->maildir,
-			pcontext->selected_folder, mid, flag_bits, &errno);
+			pcontext->selected_folder, mid, flag_bits, &errnum);
 		if (0 == strcasecmp(cmd, "-FLAGS") &&
 			MIDB_RESULT_OK == system_services_get_flags(pcontext->maildir,
-			pcontext->selected_folder, mid, &flag_bits, &errno)) {
+		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (0 != uid) {
 				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
@@ -1811,7 +1811,7 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int exists;
 	int recent;
 	unsigned int uidnext;
@@ -1847,7 +1847,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	
 	switch (system_services_summary_folder(pcontext->maildir, temp_name,
-		&exists, &recent, NULL, &uidvalid, &uidnext, &firstunseen, &errno)) {
+	        &exists, &recent, nullptr, &uidvalid, &uidnext, &firstunseen, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -1869,7 +1869,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -1911,7 +1911,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int exists;
 	int recent;
 	unsigned int uidnext;
@@ -1947,7 +1947,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->selected_folder[0] = '\0';
 	}
 	switch (system_services_summary_folder(pcontext->maildir, temp_name,
-		&exists, &recent, NULL, &uidvalid, &uidnext, &firstunseen, &errno)) {
+	        &exists, &recent, nullptr, &uidvalid, &uidnext, &firstunseen, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -1969,7 +1969,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2011,7 +2011,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int i, len;
 	BOOL b_found;
 	char buff[1024];
@@ -2065,7 +2065,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	mem_file_init(&temp_file, imap_parser_get_allocator());
 	switch (system_services_enum_folders(
-		pcontext->maildir, &temp_file, &errno)) {
+	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -2089,7 +2089,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		mem_file_free(&temp_file);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2127,7 +2127,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				imap_cmd_parser_imapfolder_to_sysfolder(
 					pcontext->lang, temp_name1, converted_name);
 				switch (system_services_make_folder(
-					pcontext->maildir, converted_name, &errno)) {
+				        pcontext->maildir, converted_name, &errnum)) {
 				case MIDB_RESULT_OK:
 					break;
 				case MIDB_NO_SERVER:
@@ -2152,7 +2152,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 					return DISPATCH_CONTINUE;
 				default:
 					mem_file_free(&temp_file);
-					estring = resource_get_error_string(errno);
+					estring = resource_get_error_string(errnum);
 					/* IMAP_CODE_2190007: NO server internal error, */
 					imap_reply_str = resource_get_imap_code(
 						IMAP_CODE_2190007, 1, &string_length);
@@ -2180,7 +2180,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	char buff[1024];
 	int string_length;
 	char encoded_name[1024];
@@ -2218,7 +2218,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	switch (system_services_remove_folder(
-		pcontext->maildir, encoded_name, &errno)) {
+	        pcontext->maildir, encoded_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -2240,7 +2240,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2262,7 +2262,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	char buff[1024];
 	int string_length;
 	char encoded_name[1024];
@@ -2318,7 +2318,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	switch (system_services_rename_folder(pcontext->maildir,
-					encoded_name, encoded_name1, &errno)) {
+	        encoded_name, encoded_name1, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -2340,7 +2340,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2362,7 +2362,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	char buff[1024];
 	int string_length;
 	char temp_name[1024];
@@ -2388,7 +2388,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	switch (system_services_subscribe_folder(
-		pcontext->maildir, temp_name, &errno)) {
+	        pcontext->maildir, temp_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -2410,7 +2410,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2432,7 +2432,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	char buff[1024];
 	int string_length;
 	char temp_name[1024];
@@ -2458,7 +2458,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	switch (system_services_unsubscribe_folder(
-		pcontext->maildir, temp_name, &errno)) {
+	        pcontext->maildir, temp_name, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -2480,7 +2480,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2503,7 +2503,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int len;
-	int errno;
+	int errnum;
 	DIR_NODE *pdir;
 	int string_length;
 	MEM_FILE temp_file;
@@ -2555,7 +2555,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		snprintf(search_pattern, 1024, "%s%s", argv[2], argv[3]);
 		mem_file_init(&temp_file, imap_parser_get_allocator());
 		switch (system_services_enum_folders(
-			pcontext->maildir, &temp_file, &errno)) {
+		        pcontext->maildir, &temp_file, &errnum)) {
 		case MIDB_RESULT_OK:
 			break;
 		case MIDB_NO_SERVER:
@@ -2580,7 +2580,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		default:
 			mem_file_free(&temp_file);
-			estring = resource_get_error_string(errno);
+			estring = resource_get_error_string(errnum);
 			/* IMAP_CODE_2190007: NO server internal error, */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2190007, 1, &string_length);
@@ -2684,7 +2684,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int i, len;
 	DIR_NODE *pdir;
 	int string_length;
@@ -2723,7 +2723,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	snprintf(search_pattern, 1024, "%s%s", argv[2], *argv[3] == '\0' ? "*" : argv[3]);
 	mem_file_init(&temp_file, imap_parser_get_allocator());
 	switch (system_services_enum_folders(
-		pcontext->maildir, &temp_file, &errno)) {
+	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -2748,7 +2748,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		mem_file_free(&temp_file);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2824,7 +2824,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int len;
-	int errno;
+	int errnum;
 	DIR_NODE *pdir;
 	int string_length;
 	MEM_FILE temp_file;
@@ -2876,7 +2876,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	snprintf(search_pattern, 1024, "%s%s", argv[2], argv[3]);		
 	mem_file_init(&temp_file, imap_parser_get_allocator());
 	switch (system_services_enum_subscriptions(
-		pcontext->maildir, &temp_file, &errno)) {
+	        pcontext->maildir, &temp_file, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -2901,7 +2901,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		mem_file_free(&temp_file);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -2912,7 +2912,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	mem_file_init(&temp_file1, imap_parser_get_allocator());
-	system_services_enum_folders(pcontext->maildir, &temp_file1, &errno);
+	system_services_enum_folders(pcontext->maildir, &temp_file1, &errnum);
 	mem_file_writeline(&temp_file1, "inbox");
 	mem_file_writeline(&temp_file1, "draft");
 	mem_file_writeline(&temp_file1, "sent");
@@ -2957,7 +2957,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int i;
-	int errno;
+	int errnum;
 	int exists;
 	int recent;
 	int unseen;
@@ -3004,7 +3004,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	switch (system_services_summary_folder(
 		pcontext->maildir, temp_name, &exists, &recent,
-		&unseen, &uidvalid, &uidnext, NULL, &errno)) {
+	        &unseen, &uidvalid, &uidnext, nullptr, &errnum)) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER:
@@ -3026,7 +3026,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -3084,7 +3084,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	unsigned int uid;
-	int errno;
+	int errnum;
 	int i, fd;
 	MAIL imail;
 	BOOL b_seen;
@@ -3226,7 +3226,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	close(fd);
 	mail_free(&imail);
 	switch (system_services_insert_mail(pcontext->maildir,
-		temp_name, file_name, flag_buff, tmp_time, &errno)) {
+	        temp_name, file_name, flag_buff, tmp_time, &errnum)) {
 	case MIDB_RESULT_OK:
 		imap_parser_log_info(pcontext, 8,
 			"message %s is appended OK", temp_path);
@@ -3250,7 +3250,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -3270,11 +3270,11 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	imap_reply_str1 = resource_get_imap_code(
 		IMAP_CODE_2170015, 2, &string_length1);
 	for (i=0; i<10; i++) {
-		if (MIDB_RESULT_OK == system_services_summary_folder(
-			pcontext->maildir, temp_name, NULL, NULL, NULL,
-			&uidvalid, NULL, NULL, &errno) && MIDB_RESULT_OK == 
-			system_services_get_uid(pcontext->maildir, temp_name,
-			file_name, &uid)) {
+		if (system_services_summary_folder(pcontext->maildir,
+		    temp_name, nullptr, nullptr, nullptr, &uidvalid, nullptr,
+		    nullptr, &errnum) == MIDB_RESULT_OK &&
+		    system_services_get_uid(pcontext->maildir, temp_name,
+		    file_name, &uid) == MIDB_RESULT_OK) {
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 			                "%s %s [APPENDUID %u %d] %s",
 				argv[0], imap_reply_str, (unsigned int)uidvalid,
@@ -3409,7 +3409,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int i;
 	int fd;
 	unsigned int uid;
-	int errno;
+	int errnum;
 	MAIL imail;
 	int tmp_len;
 	char *pbuff;
@@ -3551,7 +3551,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	remove(pcontext->file_path);
 	pcontext->file_path[0] = '\0';
 	switch (system_services_insert_mail(pcontext->maildir,
-		temp_name, pcontext->mid, flag_buff, tmp_time, &errno)) {
+	        temp_name, pcontext->mid, flag_buff, tmp_time, &errnum)) {
 	case MIDB_RESULT_OK:
 		pcontext->mid[0] = '\0';
 		imap_parser_log_info(pcontext, 8,
@@ -3579,7 +3579,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		pcontext->mid[0] = '\0';
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -3599,11 +3599,11 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	imap_reply_str1 = resource_get_imap_code(
 		IMAP_CODE_2170015, 2, &string_length1);
 	for (i=0; i<10; i++) {
-		if (MIDB_RESULT_OK == system_services_summary_folder(
-			pcontext->maildir, temp_name, NULL, NULL, NULL,
-			&uidvalid, NULL, NULL, &errno) && MIDB_RESULT_OK == 
-			system_services_get_uid(pcontext->maildir, temp_name,
-			pcontext->mid, &uid)) {
+		if (system_services_summary_folder(pcontext->maildir,
+		    temp_name, nullptr, nullptr, nullptr, &uidvalid,
+		    nullptr, nullptr, &errnum) == MIDB_RESULT_OK &&
+		    system_services_get_uid(pcontext->maildir, temp_name,
+		    pcontext->mid, &uid) == MIDB_RESULT_OK) {
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s [APPENDUID %u %d] %s",
 				pcontext->tag_string, imap_reply_str, (unsigned int)uidvalid,
 				uid, imap_reply_str1);
@@ -3670,7 +3670,7 @@ int imap_cmd_parser_close(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int i, num;
 	int result;
 	int del_num;
@@ -3704,7 +3704,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	b_deleted = FALSE;
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_list_deleted(pcontext->maildir,
-				pcontext->selected_folder, &xarray, &errno);
+	         pcontext->selected_folder, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -3730,7 +3730,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -3750,7 +3750,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		single_list_append_as_tail(&temp_list, &pitem->node);
 	}
 	result = system_services_remove_mail(pcontext->maildir,
-			pcontext->selected_folder, &temp_list, &errno);
+	         pcontext->selected_folder, &temp_list, &errnum);
 	single_list_free(&temp_list);
 	switch(result) {
 	case MIDB_RESULT_OK:
@@ -3799,7 +3799,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	case MIDB_RDWR_ERROR:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
 		imap_reply_str = resource_get_imap_code(
@@ -3810,7 +3810,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -3850,7 +3850,7 @@ int imap_cmd_parser_unselect(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int result;
 	int buff_len;
 	int string_length;
@@ -3879,7 +3879,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	result = system_services_search(pcontext->maildir,
 		pcontext->selected_folder, resource_get_default_charset(
 		pcontext->lang), argc - 2, &argv[2], buff + 9, &buff_len,
-		&errno);
+		&errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -3902,7 +3902,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -3931,7 +3931,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int i, num;
 	int result;
 	BOOL b_data;
@@ -3967,10 +3967,10 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	if (TRUE == b_detail) {
 		result = system_services_fetch_detail(pcontext->maildir,
-			pcontext->selected_folder, &list_seq, &xarray, &errno);
+		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	} else {
 		result = system_services_fetch_simple(pcontext->maildir,
-			pcontext->selected_folder, &list_seq, &xarray, &errno);
+		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	}
 	switch(result) {
 	case MIDB_RESULT_OK:
@@ -3997,7 +3997,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4044,7 +4044,7 @@ FETCH_PARAM_ERR:
 
 int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int result;
 	int i, num;
 	MITEM *pitem;
@@ -4127,7 +4127,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple(pcontext->maildir,
-		pcontext->selected_folder, &list_seq, &xarray, &errno);
+	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -4153,7 +4153,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4183,7 +4183,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	unsigned int uid;
-	int errno;
+	int errnum;
 	int result;
 	MITEM *pitem;
 	BOOL b_first;
@@ -4223,7 +4223,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple(pcontext->maildir,
-		pcontext->selected_folder, &list_seq, &xarray, &errno);
+	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -4249,7 +4249,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4258,11 +4258,10 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (MIDB_RESULT_OK != system_services_summary_folder(
-		pcontext->maildir, temp_name, NULL, NULL, NULL,
-		&uidvalidity, NULL, NULL, &errno)) {
+	if (system_services_summary_folder(pcontext->maildir,
+	    temp_name, nullptr, nullptr, nullptr, &uidvalidity, nullptr,
+	    nullptr, &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
-	}
 	b_copied = TRUE;
 	b_first = FALSE;
 	string_length = 0;
@@ -4270,9 +4269,9 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	num = xarray_get_capacity(&xarray);
 	for (i=0; i<num; i++) {
 		pitem = (MITEM*)xarray_get_item(&xarray, i);
-		if (MIDB_RESULT_OK != system_services_copy_mail(pcontext->maildir, 
-			pcontext->selected_folder, pitem->mid, temp_name, pitem->mid,
-			&errno)) {
+		if (system_services_copy_mail(pcontext->maildir,
+		    pcontext->selected_folder, pitem->mid, temp_name,
+		    pitem->mid, &errnum) != MIDB_RESULT_OK) {
 			b_copied = FALSE;
 			break;
 		}
@@ -4312,7 +4311,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			single_list_append_as_tail(&temp_list, &pitem->node);
 		}
 		system_services_remove_mail(pcontext->maildir,
-						temp_name, &temp_list, &errno);
+			temp_name, &temp_list, &errnum);
 		single_list_free(&temp_list);
 	}
 	xarray_free(&xarray);
@@ -4348,7 +4347,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int result;
 	int buff_len;
 	int string_length;
@@ -4378,9 +4377,8 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	memcpy(buff, "* SEARCH ", 9);
 	buff_len = sizeof(buff) - 11;
 	result = system_services_search_uid(pcontext->maildir,
-		pcontext->selected_folder, resource_get_default_charset(
-		pcontext->lang), argc - 3, &argv[3], buff + 9, &buff_len,
-		&errno);
+	         pcontext->selected_folder, resource_get_default_charset(pcontext->lang),
+	         argc - 3, &argv[3], buff + 9, &buff_len, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -4403,7 +4401,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	default:
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4433,7 +4431,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int num;
-	int errno;
+	int errnum;
 	int i;
 	int result;
 	BOOL b_data;
@@ -4480,10 +4478,10 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	if (TRUE == b_detail) {
 		result = system_services_fetch_detail_uid(pcontext->maildir,
-			pcontext->selected_folder, &list_seq, &xarray, &errno);
+		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	} else {
 		result = system_services_fetch_simple_uid(pcontext->maildir,
-			pcontext->selected_folder, &list_seq, &xarray, &errno);
+		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	}
 	switch(result) {
 	case MIDB_RESULT_OK:
@@ -4510,7 +4508,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4559,7 +4557,7 @@ UID_FETCH_PARAM_ERR:
 int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int num;
-	int errno;
+	int errnum;
 	int i;
 	int result;
 	MITEM *pitem;
@@ -4642,7 +4640,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple_uid(pcontext->maildir,
-		pcontext->selected_folder, &list_seq, &xarray, &errno);
+	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -4668,7 +4666,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4698,7 +4696,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	unsigned int uid;
-	int errno;
+	int errnum;
 	int result;
 	BOOL b_first;
 	MITEM *pitem;
@@ -4739,7 +4737,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple_uid(pcontext->maildir,
-		pcontext->selected_folder, &list_seq, &xarray, &errno);
+	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -4765,7 +4763,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4774,19 +4772,19 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	if (MIDB_RESULT_OK != system_services_summary_folder(pcontext->maildir,
-		temp_name, NULL, NULL, NULL, &uidvalidity, NULL, NULL, &errno)) {
+	if (system_services_summary_folder(pcontext->maildir,
+	    temp_name, nullptr, nullptr, nullptr, &uidvalidity,
+	    nullptr, nullptr, &errnum) != MIDB_RESULT_OK)
 		uidvalidity = 0;
-	}
 	b_copied = TRUE;
 	b_first = FALSE;
 	string_length = 0;
 	num = xarray_get_capacity(&xarray);
 	for (i=0; i<num; i++) {
 		pitem = (MITEM*)xarray_get_item(&xarray, i);
-		if (MIDB_RESULT_OK != system_services_copy_mail(pcontext->maildir, 
-			pcontext->selected_folder, pitem->mid, temp_name, pitem->mid,
-			&errno)) {
+		if (system_services_copy_mail(pcontext->maildir,
+		    pcontext->selected_folder, pitem->mid, temp_name,
+		    pitem->mid, &errnum) != MIDB_RESULT_OK) {
 			b_copied = FALSE;
 			break;
 		}
@@ -4822,7 +4820,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			single_list_append_as_tail(&temp_list, &pitem->node);
 		}
 		system_services_remove_mail(pcontext->maildir,
-						temp_name, &temp_list, &errno);
+			temp_name, &temp_list, &errnum);
 		single_list_free(&temp_list);
 	}
 	xarray_free(&xarray);
@@ -4857,7 +4855,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int i, num;
 	int result;
 	int del_num;
@@ -4903,7 +4901,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	b_deleted = FALSE;
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_list_deleted(pcontext->maildir,
-				pcontext->selected_folder, &xarray, &errno);
+	         pcontext->selected_folder, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -4929,7 +4927,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -4964,7 +4962,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		single_list_append_as_tail(&temp_list, &pitem->node);
 	}
 	result = system_services_remove_mail(pcontext->maildir,
-			pcontext->selected_folder, &temp_list, &errno);
+	         pcontext->selected_folder, &temp_list, &errnum);
 	single_list_free(&temp_list);
 	switch(result) {
 	case MIDB_RESULT_OK:
@@ -5023,7 +5021,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -5036,7 +5034,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 
 void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 {
-	int errno;
+	int errnum;
 	int result;
 	int i, num;
 	MITEM *pitem;
@@ -5063,7 +5061,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	}
 	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_list_deleted(pcontext->maildir,
-							prev_selected, &xarray, &errno);
+	         prev_selected, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
@@ -5087,7 +5085,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		return;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
@@ -5108,7 +5106,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		single_list_append_as_tail(&temp_list, &pitem->node);
 	}
 	result = system_services_remove_mail(pcontext->maildir,
-				prev_selected, &temp_list, &errno);
+	         prev_selected, &temp_list, &errnum);
 	single_list_free(&temp_list);
 	switch(result) {
 	case MIDB_RESULT_OK:
@@ -5144,7 +5142,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		return;
 	default:
 		xarray_free(&xarray);
-		estring = resource_get_error_string(errno);
+		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190007, 1, &string_length);
