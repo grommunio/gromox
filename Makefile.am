@@ -104,7 +104,7 @@ pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
 BUILT_SOURCES = include/gromox/paths.h AGENT_SERVICE/php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/vstack.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
+libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
 libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/localemap.cpp lib/oxoabkt.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS}

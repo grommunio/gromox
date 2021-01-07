@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <string>
 #include <unistd.h>
+#include <vector>
 #include <libHX/defs.h>
 #include <gromox/paths.h>
 #include "hpm_processor.h"
@@ -8,7 +10,6 @@
 #include "resource.h"
 #include "service.h"
 #include "util.h"
-#include "vstack.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
@@ -476,22 +477,20 @@ int hpm_processor_run()
 
 int hpm_processor_stop()
 {
-	VSTACK stack;
-	LIB_BUFFER *pallocator;
+	std::vector<std::string> stack;
 	DOUBLE_LIST_NODE *pnode;
 	
-	pallocator = vstack_allocator_init(256, 1024, FALSE);
-	vstack_init(&stack, pallocator, 256, 1024);
 	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		vstack_push(&stack, ((HPM_PLUGIN*)(pnode->pdata))->file_name);
+		try {
+			stack.push_back(static_cast<HPM_PLUGIN *>(pnode->pdata)->file_name);
+		} catch (...) {
+		}
 	}
-	while (FALSE == vstack_is_empty(&stack)) {
-		hpm_processor_unload_library(static_cast<char *>(vstack_get_top(&stack)));
-        vstack_pop(&stack);
-    }
-	vstack_free(&stack);
-    vstack_allocator_free(pallocator);
+	while (!stack.empty()) {
+		hpm_processor_unload_library(stack.back().c_str());
+		stack.pop_back();
+	}
 	if (NULL != g_context_list) {
 		free(g_context_list);
 		g_context_list = NULL;

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <string>
+#include <vector>
 #include <libHX/defs.h>
 #include <gromox/paths.h>
 #include "pdu_processor.h"
@@ -11,7 +13,6 @@
 #include "int_hash.h"
 #include "resource.h"
 #include "service.h"
-#include "vstack.h"
 #include "guid.h"
 #include "util.h"
 #include <fcntl.h>
@@ -285,9 +286,7 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 
 int pdu_processor_stop()
 {
-	VSTACK stack;
 	uint64_t handle;
-	LIB_BUFFER *pallocator;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	DCERPC_CONTEXT *pcontext;
@@ -327,18 +326,18 @@ int pdu_processor_stop()
 	}
 	double_list_free(&g_processor_list);
 	
-	pallocator = vstack_allocator_init(256, 1024, FALSE);
-	vstack_init(&stack, pallocator, 256, 1024);
+	std::vector<std::string> stack;
 	for (pnode=double_list_get_head(&g_plugin_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_plugin_list, pnode)) {
-		vstack_push(&stack, ((PROC_PLUGIN*)(pnode->pdata))->file_name);
+		try {
+			stack.push_back(static_cast<PROC_PLUGIN *>(pnode->pdata)->file_name);
+		} catch (...) {
+		}
 	}
-	while (FALSE == vstack_is_empty(&stack)) {
-		pdu_processor_unload_library(static_cast<char *>(vstack_get_top(&stack)));
-        vstack_pop(&stack);
-    }
-	vstack_free(&stack);
-    vstack_allocator_free(pallocator);
+	while (!stack.empty()) {
+		pdu_processor_unload_library(stack.back().c_str());
+		stack.pop_back();
+	}
 	
 	while ((pnode = double_list_get_from_head(&g_endpoint_list)) != NULL) {
 		double_list_free(&((DCERPC_ENDPOINT*)pnode->pdata)->interface_list);

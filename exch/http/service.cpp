@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <string>
+#include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "double_list.h"
 #include "resource.h"
 #include "service.h"
-#include "vstack.h"
 #include "util.h"
 #include <sys/types.h>
 #include <cstring>
@@ -101,26 +102,20 @@ int service_run()
  */
 int service_stop()
 {
+	std::vector<std::string> stack;
 	DOUBLE_LIST_NODE *pnode;
-	VSTACK stack;
-	LIB_BUFFER *pallocator;
 
-	pallocator = vstack_allocator_init(256, 1024, FALSE);
-	if (NULL == pallocator) {
-		debug_info("[service]: Failed to init allocator"
-						" for stack in service_stop\n");
-		return -1;
-	}
-	vstack_init(&stack, pallocator, 256, 1024);
 	for (pnode = double_list_get_head(&g_list_plug); pnode != nullptr;
-	     pnode = double_list_get_after(&g_list_plug, pnode))
-		vstack_push(&stack, ((PLUG_ENTITY*)(pnode->pdata))->file_name);
-	while (FALSE == vstack_is_empty(&stack)) {
-		service_unload_library(static_cast<char *>(vstack_get_top(&stack)));
-		vstack_pop(&stack);
+	     pnode = double_list_get_after(&g_list_plug, pnode)) {
+		try {
+			stack.push_back(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name);
+		} catch (...) {
+		}
 	}
-	vstack_free(&stack);
-	vstack_allocator_free(pallocator);
+	while (!stack.empty()) {
+		service_unload_library(stack.back().c_str());
+		stack.pop_back();
+	}
 	double_list_free(&g_list_plug);
 	double_list_free(&g_list_service);
 	g_init_path[0] = '\0';

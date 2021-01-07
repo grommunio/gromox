@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstring>
+#include <string>
 #include <unistd.h>
+#include <vector>
 #include <libHX/defs.h>
 #include <gromox/paths.h>
 #include "transporter.h"
@@ -11,7 +13,6 @@
 #include "single_list.h"
 #include "double_list.h"
 #include "util.h"
-#include "vstack.h"
 #include <sys/types.h>
 #include <pthread.h>
 #include <dlfcn.h>
@@ -353,31 +354,23 @@ int transporter_run()
  */
 static void transporter_collect_hooks()
 {
+	std::vector<std::string> stack;
 	DOUBLE_LIST_NODE *pnode;
-    VSTACK stack;
-    LIB_BUFFER *pallocator;
 
-    pallocator = vstack_allocator_init(256, 1024, FALSE);
-    if (NULL == pallocator) {
-		debug_info("[transporter]: Failed to init allocator for stack in"
-                "transporter_stop\n");
-        return;
-    }
-    vstack_init(&stack, pallocator, 256, 1024);
     for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
          pnode=double_list_get_after(&g_lib_list, pnode)) {
-        vstack_push(&stack, ((PLUG_ENTITY*)(pnode->pdata))->file_name);
+		try {
+			stack.push_back(static_cast<PLUG_ENTITY *>(pnode->pdata)->file_name);
+		} catch (...) {
+		}
     }
-    while (FALSE == vstack_is_empty(&stack)) {
-		transporter_unload_library(static_cast<char *>(vstack_get_top(&stack)));
-        vstack_pop(&stack);
+	while (!stack.empty()) {
+		transporter_unload_library(stack.back().c_str());
+		stack.pop_back();
     }
 	transporter_clean_up_unloading();
 	while ((pnode = double_list_get_from_head(&g_hook_list)) != NULL)
 		free(pnode->pdata);
-    vstack_free(&stack);
-    vstack_allocator_free(pallocator);
-
 }
 
 /*
@@ -860,17 +853,8 @@ static void transporter_clean_up_unloading()
     PLUG_ENTITY *plib;
 	HOOK_ENTRY *phook;
 	BOOL can_clean;
-	VSTACK stack;
-	LIB_BUFFER *pallocator;
+	std::vector<DOUBLE_LIST_NODE *> stack;
 
-	pallocator = vstack_allocator_init(sizeof(DOUBLE_LIST_NODE*), 1024, FALSE);
-	if (NULL == pallocator) {
-		debug_info("[transporter]: Failed to init allocator for stack in"
-				"transporter_clean_up_unloading\n");
-		return;
-	}
-	vstack_init(&stack, pallocator, sizeof(DOUBLE_LIST_NODE*), 1024);
-	
 	for (pnode=double_list_get_head(&g_unloading_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_unloading_list, pnode)) {
 		plib = (PLUG_ENTITY*)pnode->pdata;
@@ -883,7 +867,10 @@ static void transporter_clean_up_unloading()
 			}
 		}
 		if (TRUE == can_clean) {
-			vstack_push(&stack, pnode);
+			try {
+				stack.push_back(pnode);
+			} catch (...) {
+			}
 			/* empty the list_hook of plib */
 			while ((pnode1 = double_list_get_from_head(&plib->list_hook)));
 			double_list_free(&plib->list_hook);
@@ -902,14 +889,10 @@ static void transporter_clean_up_unloading()
 			dlclose(plib->handle);
 		}
 	}
-	while (FALSE == vstack_is_empty(&stack)) {
-		pnode = *(DOUBLE_LIST_NODE**)vstack_get_top(&stack);
-		double_list_remove(&g_unloading_list, pnode);
-		free(pnode->pdata);
-		vstack_pop(&stack);
+	while (!stack.empty()) {
+		double_list_remove(&g_unloading_list, stack.back());
+		stack.pop_back();
 	}
-	vstack_free(&stack);
-	vstack_allocator_free(pallocator);
 }
 
 static const char *transporter_get_state_path()
