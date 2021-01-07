@@ -1164,7 +1164,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags,
 		pproptags->cvalues = 7;
 		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN,
 			sizeof(uint32_t) * pproptags->cvalues));
-		if (NULL == pproptags) {
+		if (pproptags->pproptag == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
@@ -1386,7 +1386,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		pproptags->cvalues = 7;
 		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN,
 			sizeof(uint32_t) * pproptags->cvalues));
-		if (NULL == pproptags) {
+		if (pproptags->pproptag == nullptr) {
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
@@ -3438,7 +3438,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		pproptags->cvalues = 7;
 		pproptags->pproptag = static_cast<uint32_t *>(ndr_stack_alloc(NDR_STACK_IN,
 		                      sizeof(uint32_t)*pproptags->cvalues));
-		if (NULL == pproptags) {
+		if (pproptags->pproptag == nullptr) {
 			*ppmids = NULL;
 			*pprows = NULL;
 			return ecMAPIOOM;

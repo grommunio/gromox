@@ -1411,9 +1411,8 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	}
 	auto pdst_stream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
 	                   logon_id, hdst, &object_type));
-	if (NULL == psrc_stream) {
+	if (pdst_stream == nullptr)
 		return ecDstNullObject;
-	}
 	if (stream_object_get_open_flags(pdst_stream)
 		== OPENSTREAM_FLAG_READONLY) {
 		return ecAccessDenied;

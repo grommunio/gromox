@@ -1160,9 +1160,8 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 	}
 	ptmp_proptags->pproptag = static_cast<uint32_t *>(common_util_alloc(
 	                          sizeof(uint32_t) * pproptags->count));
-	if (NULL == ptmp_proptags) {
+	if (ptmp_proptags->pproptag == nullptr)
 		return NULL;
-	}
 	ptmp_proptags->count = 0;
 	for (i=0; i<pproptags->count; i++) {
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT)
