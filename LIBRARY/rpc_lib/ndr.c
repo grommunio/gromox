@@ -222,28 +222,6 @@ int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
 	return NDR_ERR_SUCCESS;
 }
 
-int ndr_pull_int64(NDR_PULL *pndr, int64_t *v)
-{
-	int status;
-	
-	status = ndr_pull_align(pndr, 8);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size) {
-		return NDR_ERR_BUFSIZE;
-	}
-	if (NDR_BE(pndr)) {
-		*v = ((int64_t)NDR_IVAL(pndr, pndr->offset)) << 32;
-		*v |= NDR_IVAL(pndr, pndr->offset + 4);
-	} else {
-		*v = NDR_IVAL(pndr, pndr->offset);
-		*v |= (int64_t)(NDR_IVAL(pndr, pndr->offset + 4)) << 32;
-	}
-	pndr->offset += 8;
-	return NDR_ERR_SUCCESS;
-}
-
 int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v)
 {
 	int status;
@@ -627,28 +605,6 @@ int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 	}
 	NDR_SIVAL(pndr, pndr->offset, v);
 	pndr->offset += 4;
-	return NDR_ERR_SUCCESS;
-}
-
-int ndr_push_int64(NDR_PUSH *pndr, int64_t v)
-{
-	int status;
-	
-	status = ndr_push_align(pndr, 8);
-	if (NDR_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (FALSE == ndr_push_check_overflow(pndr, 8)) {
-		return NDR_ERR_BUFSIZE;
-	}
-	if (NDR_BE(pndr)) {
-		NDR_SIVAL(pndr, pndr->offset, (v>>32));
-		NDR_SIVAL(pndr, pndr->offset+4, (v & 0xFFFFFFFF));
-	} else {
-		NDR_SIVAL(pndr, pndr->offset, (v & 0xFFFFFFFF));
-		NDR_SIVAL(pndr, pndr->offset+4, (v>>32));
-	}
-	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
 

@@ -200,8 +200,6 @@ struct timeval smtp_parser_get_context_timestamp(SMTP_CONTEXT *pcontext);
 
 BOOL smtp_parser_validate_domainlist(BOOL b_valid);
 extern BOOL smtp_parser_domainlist_valid(void);
-BOOL smtp_parser_set_extra_value(SMTP_CONTEXT *pcontext, char* tag, char* pval);
-
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
 
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);

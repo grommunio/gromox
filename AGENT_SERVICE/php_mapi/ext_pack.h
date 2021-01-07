@@ -38,9 +38,6 @@ zend_bool ext_pack_pull_uint8(PULL_CTX *pctx, uint8_t *v);
 zend_bool ext_pack_pull_uint16(PULL_CTX *pctx, uint16_t *v);
 
 zend_bool ext_pack_pull_uint32(PULL_CTX *pctx, uint32_t *v);
-
-zend_bool ext_pack_pull_int32(PULL_CTX *pctx, int32_t *v);
-
 zend_bool ext_pack_pull_uint64(PULL_CTX *pctx, uint64_t *v);
 
 zend_bool ext_pack_pull_float(PULL_CTX *pctx, float *v);
@@ -66,17 +63,11 @@ zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r);
 zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r);
 
 zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r);
-
-zend_bool ext_pack_pull_wstring_array(PULL_CTX *pctx, STRING_ARRAY *r);
-
 zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r);
 
 zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r);
 
 zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r);
-
-zend_bool ext_pack_pull_svreid(PULL_CTX *pctx, SVREID *r);
-
 zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r);
 
 zend_bool ext_pack_pull_tagged_propval(PULL_CTX *pctx, TAGGED_PROPVAL *r);
@@ -92,17 +83,7 @@ zend_bool ext_pack_pull_propid_array(PULL_CTX *pctx, PROPID_ARRAY *r);
 zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r);
 
 zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r);
-
-zend_bool ext_pack_pull_sort_order(PULL_CTX *pctx, SORT_ORDER *r);
-
-zend_bool ext_pack_pull_sortorder_set(PULL_CTX *pctx, SORTORDER_SET *r);
-
 zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r);
-
-zend_bool ext_pack_pull_rule_data(PULL_CTX *pctx, RULE_DATA *r);
-
-zend_bool ext_pacl_pull_rule_list(PULL_CTX *pctx, RULE_LIST *r);
-
 zend_bool ext_pack_pull_oneoff_entryid(PULL_CTX *pctx, ONEOFF_ENTRYID *r);
 
 zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r);
@@ -117,9 +98,6 @@ void ext_pack_push_free(PUSH_CTX *pctx);
 zend_bool ext_pack_push_advance(PUSH_CTX *pctx, uint32_t size);
 extern zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n);
 zend_bool ext_pack_push_uint8(PUSH_CTX *pctx, uint8_t v);
-
-zend_bool ext_pack_push_int16(PUSH_CTX *pctx, int16_t v);
-
 zend_bool ext_pack_push_uint16(PUSH_CTX *pctx, uint16_t v);
 
 zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v);
@@ -127,9 +105,6 @@ zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v);
 zend_bool ext_pack_push_uint32(PUSH_CTX *pctx, uint32_t v);
 
 zend_bool ext_pack_push_int32(PUSH_CTX *pctx, int32_t v);
-
-zend_bool ext_pack_push_int64(PUSH_CTX *pctx, int64_t v);
-
 zend_bool ext_pack_push_uint64(PUSH_CTX *pctx, uint64_t v);
 
 zend_bool ext_pack_push_float(PUSH_CTX *pctx, float v);
@@ -152,19 +127,11 @@ zend_bool ext_pack_push_long_array(
 
 zend_bool ext_pack_push_longlong_array(
 	PUSH_CTX *pctx, const LONGLONG_ARRAY *r);
-
-zend_bool ext_pack_push_slonglong_array(
-	PUSH_CTX *pctx, const LONGLONG_ARRAY *r);
-
 zend_bool ext_pack_push_binary_array(
 	PUSH_CTX *pctx, const BINARY_ARRAY *r);
 
 zend_bool ext_pack_push_string_array(
 	PUSH_CTX *pctx, const STRING_ARRAY *r);
-
-zend_bool ext_pack_push_wstring_array(
-	PUSH_CTX *pctx, const STRING_ARRAY *r);
-
 zend_bool ext_pack_push_guid_array(
 	PUSH_CTX *pctx, const GUID_ARRAY *r);
 
@@ -173,10 +140,6 @@ zend_bool ext_pack_push_proptag_array(
 
 zend_bool ext_pack_push_restriction(
 	PUSH_CTX *pctx, const RESTRICTION *r);
-
-zend_bool ext_pack_push_svreid(
-	PUSH_CTX *pctx, const SVREID *r);
-
 zend_bool ext_pack_push_rule_actions(
 	PUSH_CTX *pctx, const RULE_ACTIONS *r);
 
@@ -218,9 +181,6 @@ zend_bool ext_pack_push_oneoff_entryid(
 	
 zend_bool ext_pack_push_state_array(
 	PUSH_CTX *pctx, const STATE_ARRAY *r);
-
-zend_bool ext_pack_push_znotification_array(
-	PUSH_CTX *pctx, const ZNOTIFICATION_ARRAY *r);
 
 #ifdef __cplusplus
 } /* extern "C" */

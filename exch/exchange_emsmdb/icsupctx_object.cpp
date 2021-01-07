@@ -159,11 +159,6 @@ ICS_STATE* icsupctx_object_get_state(ICSUPCTX_OBJECT *pctx)
 	return pctx->pstate;
 }
 
-BOOL icsupctx_object_check_started(ICSUPCTX_OBJECT *pctx)
-{
-	return pctx->b_started;
-}
-
 void icsupctx_object_mark_started(ICSUPCTX_OBJECT *pctx)
 {
 	pctx->b_started = TRUE;

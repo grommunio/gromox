@@ -174,10 +174,6 @@ int ext_buffer_pull_sort_order(EXT_PULL *pext, SORT_ORDER *r);
 int ext_buffer_pull_sortorder_set(EXT_PULL *pext, SORTORDER_SET *r);
 int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 	const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r);
-
-int ext_buffer_pull_openrecipient_row(EXT_PULL *pext,
-	const PROPTAG_ARRAY *pproptags, OPENRECIPIENT_ROW *r);
-
 int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 	PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r);
 int ext_buffer_pull_permission_data(EXT_PULL *pext, PERMISSION_DATA *r);

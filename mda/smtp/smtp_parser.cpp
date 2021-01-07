@@ -1202,36 +1202,3 @@ const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos)
 	}
 	return pcontext->ext_data.ext_data[pos];
 }
-
-BOOL smtp_parser_set_extra_value(SMTP_CONTEXT *pcontext, char* tag, char* pval)
-{
-	int i, index;
-	BOOL b_found;
-	
-	if (NULL == tag || NULL == pval) {
-		return FALSE;
-	}
-	if (pcontext->ext_data.cur_pos >= MAX_EXTRA_DATA_INDEX) {
-		return FALSE;
-	}
-	if (strlen(tag) > MAX_EXTRA_DATA_TAGLEN - 1 ||
-		strlen(pval) > MAX_EXTRA_DATA_DATALEN - 1) {
-		return FALSE;
-	}
-	index = pcontext->ext_data.cur_pos;
-	b_found = FALSE;
-	for (i=0; i<pcontext->ext_data.cur_pos; i++) {
-		if (0 == strcasecmp(tag, pcontext->ext_data.ext_tag[i])) {
-			index = i;
-			b_found = TRUE;
-		}
-	}
-	if (TRUE == b_found) {
-		strcpy(pcontext->ext_data.ext_data[index], pval);
-	} else {
-		strcpy(pcontext->ext_data.ext_data[index], pval);
-		strcpy(pcontext->ext_data.ext_tag[index], tag);
-		pcontext->ext_data.cur_pos++;
-	}
-	return TRUE;
-}

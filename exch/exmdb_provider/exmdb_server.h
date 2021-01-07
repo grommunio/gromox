@@ -446,10 +446,6 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 
 BOOL exmdb_server_unsubscribe_notification(
 	const char *dir, uint32_t sub_id);
-
-BOOL exmdb_server_notify_new_mail(const char *dir,
-	uint64_t folder_id, uint64_t message_id);
-
 BOOL exmdb_server_transport_new_mail(const char *dir, uint64_t folder_id,
 	uint64_t message_id, uint32_t message_flags, const char *pstr_class);
 

@@ -1360,16 +1360,6 @@ int transporter_console_talk(int argc, char** argv, char *result, int length)
     return PLUGIN_NO_FILE;
 }
 
-/*
- *	get the local delivery plugin name
- *	@return
- *		local delivery plugin string
- */
-const char* transporter_get_local()
-{
-	return g_local_path;
-}
-
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
     const char *format, ...)
 {

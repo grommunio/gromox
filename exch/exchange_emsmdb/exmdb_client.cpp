@@ -674,38 +674,6 @@ BOOL exmdb_client_get_store_property(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_client_set_store_property(const char *dir,
-	uint32_t cpid, const TAGGED_PROPVAL *ppropval,
-	uint32_t *presult)
-{
-	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
-	
-	tmp_propvals.count = 1;
-	tmp_propvals.ppropval = (TAGGED_PROPVAL*)ppropval;
-	if (FALSE == exmdb_client_set_store_properties(
-		dir, cpid, &tmp_propvals, &tmp_problems)) {
-		return FALSE;	
-	}
-	if (0 == tmp_problems.count) {
-		*presult = 0;
-	} else {
-		*presult = tmp_problems.pproblem->err;
-	}
-	return TRUE;
-}
-
-BOOL exmdb_client_remove_store_property(
-	const char *dir, uint32_t proptag)
-{
-	PROPTAG_ARRAY tmp_proptags;
-	
-	tmp_proptags.count = 1;
-	tmp_proptags.pproptag = &proptag;
-	return exmdb_client_remove_store_properties(
-							dir, &tmp_proptags);
-}
-
 BOOL exmdb_client_get_folder_property(const char *dir,
 	uint32_t cpid, uint64_t folder_id,
 	uint32_t proptag, void **ppval)
@@ -724,27 +692,6 @@ BOOL exmdb_client_get_folder_property(const char *dir,
 		*ppval = NULL;
 	} else {
 		*ppval = tmp_propvals.ppropval->pvalue;
-	}
-	return TRUE;
-}
-
-BOOL exmdb_client_set_folder_property(const char *dir,
-	uint32_t cpid, uint64_t folder_id,
-	const TAGGED_PROPVAL *ppropval, uint32_t *presult)
-{
-	PROBLEM_ARRAY tmp_problems;
-	TPROPVAL_ARRAY tmp_propvals;
-	
-	tmp_propvals.count = 1;
-	tmp_propvals.ppropval = (TAGGED_PROPVAL*)ppropval;
-	if (FALSE == exmdb_client_set_folder_properties(
-		dir, cpid, folder_id, &tmp_propvals, &tmp_problems)) {
-		return FALSE;	
-	}
-	if (0 == tmp_problems.count) {
-		*presult = 0;
-	} else {
-		*presult = tmp_problems.pproblem->err;
 	}
 	return TRUE;
 }

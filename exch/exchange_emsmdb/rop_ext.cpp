@@ -3127,20 +3127,6 @@ int rop_ext_push_pending_response(EXT_PUSH *pext,
 	return ext_buffer_push_uint16(pext, r->session_index);
 }
 
-int rop_ext_push_buffertoosmall_response(EXT_PUSH *pext,
-	const BUFFERTOOSMALL_RESPONSE *r)
-{
-	int status = ext_buffer_push_uint8(pext, ropBufferTooSmall);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_push_uint16(pext, r->size_needed);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	return ext_buffer_push_sbinary(pext, &r->buffer);
-}
-	
 static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 {
 	int status;

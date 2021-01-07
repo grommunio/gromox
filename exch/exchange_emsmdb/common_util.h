@@ -143,11 +143,6 @@ BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
 BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	READRECIPIENT_ROW *prow);
-
-/* should be involed before converting row to tagged property array */
-BOOL common_util_init_propvals_by_columns(
-	const PROPTAG_ARRAY *pcolumns, TPROPVAL_ARRAY *ppropvals);
-	
 BOOL common_util_row_to_propvals(
 	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals);

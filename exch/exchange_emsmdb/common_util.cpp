@@ -1316,18 +1316,6 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 	return TRUE;
 }
 
-BOOL common_util_init_propvals_by_columns(
-	const PROPTAG_ARRAY *pcolumns, TPROPVAL_ARRAY *ppropvals)
-{
-	ppropvals->count = 0;
-	ppropvals->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(
-	                      sizeof(TAGGED_PROPVAL) * pcolumns->count + 10));
-	if (NULL == ppropvals->ppropval) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
 BOOL common_util_row_to_propvals(
 	const PROPERTY_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals)

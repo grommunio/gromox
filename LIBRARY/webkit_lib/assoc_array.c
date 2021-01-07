@@ -153,51 +153,6 @@ void* assoc_array_get_by_key(ASSOC_ARRAY *parray, const char *key)
 	return str_hash_query(parray->phash, (char*)key);
 }
 
-void* assoc_array_get_by_index(ASSOC_ARRAY *parray, size_t index)
-{
-	if (index >= parray->capability) {
-		return NULL;
-	}
-
-	return parray->index_cache[index];
-
-}
-
-size_t assoc_array_get_elements_num(ASSOC_ARRAY *parray)
-{
-	if (NULL == parray) {
-		return 0;
-	}
-	return parray->entry_num;
-}
-
-void assoc_array_eliminate(ASSOC_ARRAY *parray, char *key)
-{
-	void *ptr;
-	size_t tmp_index;
-	STR_HASH_ITER *iter; 
-	
-	if (NULL == parray) {
-		return;
-	}
-	str_hash_remove(parray->phash, key);
-	iter = str_hash_iter_init(parray->phash);
-	if (NULL == iter) {
-		return;
-	}
-
-	tmp_index = 0;
-	memset(parray->index_cache, 0, sizeof(void*)*parray->capability);
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		ptr = str_hash_iter_get_value(iter, NULL);
-		*(size_t*)(ptr + parray->data_size) = tmp_index;
-		parray->index_cache[tmp_index] = ptr;
-	}
-
-	str_hash_iter_free(iter);
-}
-
 void assoc_array_foreach(ASSOC_ARRAY *parray, 
 	ASSOC_ARRAY_ENUM enum_func)
 {

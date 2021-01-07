@@ -14,9 +14,6 @@ extern void temp_list_free(void);
 BOOL temp_list_add_ip(const char *ip, int interval);
 
 BOOL temp_list_query(const char *ip);
-
-BOOL temp_list_judge(const char *ip);
-
 BOOL temp_list_remove_ip(const char *ip);
 
 BOOL temp_list_dump(const char *path);

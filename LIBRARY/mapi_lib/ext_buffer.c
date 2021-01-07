@@ -2151,42 +2151,6 @@ int ext_buffer_pull_recipient_row(EXT_PULL *pext,
 	return ext_buffer_pull_property_row(pext, &proptags, &r->properties);
 }
 
-int ext_buffer_pull_openrecipient_row(EXT_PULL *pext,
-	const PROPTAG_ARRAY *pproptags, OPENRECIPIENT_ROW *r)
-{
-	int status;
-	uint32_t offset;
-	uint16_t row_size;
-	
-	
-	status = ext_buffer_pull_uint8(pext, &r->recipient_type);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->cpid);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &r->reserved);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	status = ext_buffer_pull_uint16(pext, &row_size);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	offset = pext->offset + row_size;
-	status = ext_buffer_pull_recipient_row(pext, pproptags, &r->recipient_row);
-	if (EXT_ERR_SUCCESS != status) {
-		return status;
-	}
-	if (pext->offset > offset) {
-		return EXT_ERR_FORMAT;
-	}
-	pext->offset = offset;
-	return EXT_ERR_SUCCESS;
-}
-
 int ext_buffer_pull_modifyrecipient_row(EXT_PULL *pext,
 	PROPTAG_ARRAY *pproptags, MODIFYRECIPIENT_ROW *r)
 {

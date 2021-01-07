@@ -3424,63 +3424,6 @@ uint64_t common_util_convert_notification_folder_id(uint64_t folder_id)
 	}	
 }
 
-uint64_t common_util_tm_to_nttime(struct tm unix_tm)
-{
-	time_t unix_time;
-	USER_INFO *pinfo;
-	char timezone[64];
-	const struct state *sp;
-	
-	pinfo = zarafa_server_get_info();
-	if (FALSE == system_services_get_timezone(
-		pinfo->username, timezone) || '\0' == timezone[0]) {
-		strcpy(timezone, g_default_zone);
-	}
-	sp = tz_alloc(timezone);
-	if (NULL == sp) {
-		return 0;
-	}
-	unix_time = tz_mktime(sp, &unix_tm);
-	tz_free(sp);
-	return rop_util_unix_to_nttime(unix_time);
-}
-
-BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm)
-{
-	time_t unix_time;
-	USER_INFO *pinfo;
-	char timezone[64];
-	const struct state *sp;
-	
-	pinfo = zarafa_server_get_info();
-	if (FALSE == system_services_get_timezone(
-		pinfo->username, timezone) || '\0' == timezone[0]) {
-		strcpy(timezone, g_default_zone);
-	}
-	sp = tz_alloc(timezone);
-	if (NULL == sp) {
-		return FALSE;
-	}
-	unix_time = rop_util_nttime_to_unix(nt_time);
-	tz_localtime_r(sp, &unix_time, ptm);
-	tz_free(sp);
-	return TRUE;
-}
-
-const char* common_util_lang_to_i18n(const char *lang)
-{
-	int i, num;
-	
-	auto pitem = static_cast<LANGMAP_ITEM *>(list_file_get_list(g_langmap_list));
-	num = list_file_get_item_num(g_langmap_list);
-	for (i=0; i<num; i++) {
-		if (0 == strcasecmp(pitem[i].lang, lang)) {
-			return pitem[i].i18n;
-		}
-	}
-	return pitem[0].i18n;
-}
-
 const char* common_util_i18n_to_lang(const char *i18n)
 {
 	int i, num;

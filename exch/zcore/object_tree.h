@@ -51,9 +51,6 @@ void object_tree_touch_profile_sec(OBJECT_TREE *pobjtree);
 uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	BOOL b_private, int account_id);
 
-BOOL object_tree_get_addressbook_properties(OBJECT_TREE *pobjtree,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

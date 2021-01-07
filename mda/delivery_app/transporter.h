@@ -28,7 +28,6 @@ int transporter_unload_library(const char* path);
 int transporter_load_library(const char* path);
 
 int transporter_console_talk(int argc, char** argv, char *result, int length);
-extern const char *transporter_get_local(void);
 int transporter_get_param(int param);
 
 void transporter_validate_domainlist(BOOL b_valid);

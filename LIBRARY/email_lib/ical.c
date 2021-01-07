@@ -1490,18 +1490,6 @@ void ical_add_hour(ICAL_TIME *pitime, int hours)
 	}
 }
 
-void ical_subtract_hour(ICAL_TIME *pitime, int hours)
-{
-	if (hours > 23) {
-		ical_subtract_day(pitime, hours/24);
-	}
-	pitime->hour -= hours%24;
-	if (pitime->hour < 0) {
-		ical_subtract_day(pitime, 1);
-		pitime->hour += 24;
-	}
-}
-
 void ical_add_minute(ICAL_TIME *pitime, int minutes)
 {
 	if (minutes > 59) {
@@ -1511,18 +1499,6 @@ void ical_add_minute(ICAL_TIME *pitime, int minutes)
 	if (pitime->minute > 59) {
 		ical_add_hour(pitime, 1);
 		pitime->minute -= 60;
-	}
-}
-
-void ical_subtract_minute(ICAL_TIME *pitime, int minutes)
-{
-	if (minutes > 59) {
-		ical_subtract_hour(pitime, minutes/60);
-	}
-	pitime->minute -= minutes%60;
-	if (pitime->minute < 0) {
-		ical_subtract_hour(pitime, 1);
-		pitime->minute += 60;
 	}
 }
 

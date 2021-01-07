@@ -57,9 +57,6 @@ void table_object_seek_current(TABLE_OBJECT *ptable,
 	BOOL b_forward, uint16_t row_count);
 
 uint8_t table_object_get_rop_id(TABLE_OBJECT *ptable);
-
-uint8_t table_object_get_table_flags(TABLE_OBJECT *ptable);
-
 uint32_t table_object_get_table_id(TABLE_OBJECT *ptable);
 
 void table_object_set_handle(TABLE_OBJECT *ptable, uint32_t handle);

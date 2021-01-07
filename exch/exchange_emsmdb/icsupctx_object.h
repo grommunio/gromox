@@ -38,9 +38,6 @@ BOOL icsupctx_object_continue_state_stream(ICSUPCTX_OBJECT *pctx,
 BOOL icsupctx_object_end_state_stream(ICSUPCTX_OBJECT *pctx);
 
 ICS_STATE* icsupctx_object_get_state(ICSUPCTX_OBJECT *pctx);
-
-BOOL icsupctx_object_check_started(ICSUPCTX_OBJECT *pctx);
-
 void icsupctx_object_mark_started(ICSUPCTX_OBJECT *pctx);
 
 #ifdef __cplusplus

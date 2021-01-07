@@ -6,9 +6,6 @@
 extern "C" {
 #endif
 
-zend_bool utf16_to_utf8(const char *src,
-	size_t src_len, char *dst, size_t len);
-
 uint64_t unix_to_nttime(time_t unix_time);
 
 time_t nttime_to_unix(uint64_t nt_time);

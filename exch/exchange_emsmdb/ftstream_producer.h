@@ -48,10 +48,6 @@ BOOL ftstream_producer_write_uint32(
 
 BOOL ftstream_producer_write_proplist(FTSTREAM_PRODUCER *pstream,
 	const TPROPVAL_ARRAY *pproplist);
-
-BOOL ftstream_producer_write_errorinfo(
-	FTSTREAM_PRODUCER *pstream, const EXTENDED_ERROR *perror);
-	
 BOOL ftstream_producer_write_attachmentcontent(
 	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
 	const ATTACHMENT_CONTENT *pattachment);

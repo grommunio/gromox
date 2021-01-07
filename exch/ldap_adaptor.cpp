@@ -16,7 +16,6 @@
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
 #include "config_file.h"
-#include "ldap_adaptor.h"
 #include "util.h"
 
 using namespace gromox;

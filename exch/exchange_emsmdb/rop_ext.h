@@ -12,10 +12,6 @@ void rop_ext_set_rhe_flag_last(uint8_t *pdata, uint32_t last_offset);
 
 int rop_ext_push_rop_response(EXT_PUSH *pext,
 	uint8_t logon_id, ROP_RESPONSE *r);
-
-int rop_ext_push_buffertoosmall_response(EXT_PUSH *pext,
-	const BUFFERTOOSMALL_RESPONSE *r);
-
 int rop_ext_push_notify_response(EXT_PUSH *pext,
 	const NOTIFY_RESPONSE *r);
 

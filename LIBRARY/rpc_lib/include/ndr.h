@@ -82,9 +82,6 @@ int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v);
 int ndr_pull_int32(NDR_PULL *pndr, int32_t *v);
 
 int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v);
-
-int ndr_pull_int64(NDR_PULL *pndr, int64_t *v);
-
 int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v);
 int ndr_pull_ulong(NDR_PULL *pndr, uint32_t *v);
 
@@ -124,9 +121,6 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v);
 int ndr_push_int32(NDR_PUSH *pndr, int32_t v);
 
 int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v);
-
-int ndr_push_int64(NDR_PUSH *pndr, int64_t v);
-
 int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v);
 int ndr_push_ulong(NDR_PUSH *pndr, uint32_t v);
 

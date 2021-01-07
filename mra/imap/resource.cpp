@@ -454,33 +454,6 @@ static int resource_find_imap_code_index(int native_code)
     return -1;
 }
 
-BOOL resource_get_digest_integer(const char *src, const char *tag, long *pinteger)
-{
-	char num_buff[32];
-
-	if (TRUE == get_digest(src, tag, num_buff, 32)) {
-		*pinteger = atol(num_buff);
-		return TRUE;
-	}
-	return FALSE;
-}
-
-void resource_set_digest_string(char *src, int length, const char *tag, const char *value)
-{
-    char temp_value[256];
-	
-    snprintf(temp_value, 255, "\"%s\"", value);
-	set_digest(src, length, tag, temp_value); 
-}
-
-void resource_set_digest_integer(char *src, int length, const char *tag, long value)
-{
-	char num_buff[32];
-	
-	snprintf(num_buff, 32, "%ld", value);
-	set_digest(src, length, tag, num_buff); 
-}
-
 static int resource_construct_lang_list(SINGLE_LIST *plist)
 {
 	int total;

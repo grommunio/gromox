@@ -191,13 +191,7 @@ void ical_subtract_day(ICAL_TIME *pitime, int days);
 int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2);
 
 void ical_add_hour(ICAL_TIME *pitime, int hours);
-
-void ical_subtract_hour(ICAL_TIME *pitime, int hours);
-
 void ical_add_minute(ICAL_TIME *pitime, int minutes);
-
-void ical_subtract_minute(ICAL_TIME *pitime, int minutes);
-
 void ical_add_second(ICAL_TIME *pitime, int seconds);
 BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 	time_t start_time, DOUBLE_LIST *pvalue_list, ICAL_RRULE *pirrule);

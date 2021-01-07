@@ -46,18 +46,9 @@ BOOL exmdb_client_get_store_property(const char *dir,
 extern BOOL (*exmdb_client_get_store_properties)(const char *dir,
 	uint32_t cpid, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *ppropvals);
-
-BOOL exmdb_client_set_store_property(const char *dir,
-	uint32_t cpid, const TAGGED_PROPVAL *ppropval,
-	uint32_t *presult);
-
 extern BOOL (*exmdb_client_set_store_properties)(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *ppropval,
 	PROBLEM_ARRAY *pproblems);
-
-BOOL exmdb_client_remove_store_property(
-	const char *dir, uint32_t proptag);
-
 extern BOOL (*exmdb_client_remove_store_properties)(
 	const char *dir, const PROPTAG_ARRAY *pproptags);
 
@@ -101,11 +92,6 @@ BOOL exmdb_client_get_folder_property(const char *dir,
 extern BOOL (*exmdb_client_get_folder_properties)(
 	const char *dir, uint32_t cpid, uint64_t folder_id,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-
-BOOL exmdb_client_set_folder_property(const char *dir,
-	uint32_t cpid, uint64_t folder_id,
-	const TAGGED_PROPVAL *ppropval, uint32_t *presult);
-
 extern BOOL (*exmdb_client_set_folder_properties)(
 	const char *dir, uint32_t cpid, uint64_t folder_id,
 	const TPROPVAL_ARRAY *pproperties,

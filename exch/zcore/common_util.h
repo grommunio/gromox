@@ -420,10 +420,6 @@ void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief);
 
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals);
-
-BOOL common_util_convert_to_zrule(
-	STORE_OBJECT *pstore, TPROPVAL_ARRAY *ppropvals);
-
 BOOL common_util_load_file(const char *path, BINARY *pbin);
 BOOL common_util_convert_to_zrule_data(STORE_OBJECT *, TPROPVAL_ARRAY *);
 extern gxerr_t common_util_remote_copy_message(STORE_OBJECT *s0, uint64_t message_id, STORE_OBJECT *s1, uint64_t folder_id1);
@@ -452,13 +448,6 @@ BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
 	
 MESSAGE_CONTENT* common_util_vcf_to_message(
 	STORE_OBJECT *pstore, const BINARY *pvcf_bin);
-
-uint64_t common_util_tm_to_nttime(struct tm unix_tm);
-
-BOOL common_util_nttime_to_tm(uint64_t nt_time, struct tm *ptm);
-
-const char* common_util_lang_to_i18n(const char *lang);
-
 const char* common_util_i18n_to_lang(const char *i18n);
 extern const char *common_util_get_default_timezone(void);
 extern const char *common_util_get_submit_command(void);

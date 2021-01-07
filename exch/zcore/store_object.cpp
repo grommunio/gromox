@@ -283,36 +283,6 @@ GUID store_object_get_mailbox_guid(STORE_OBJECT *pstore)
 	return pstore->mailbox_guid;
 }
 
-BOOL store_object_get_named_propname(STORE_OBJECT *pstore,
-	uint16_t propid, PROPERTY_NAME *ppropname)
-{
-	PROPERTY_NAME *pname;
-	
-	if (propid < 0x8000) {
-		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
-		ppropname->kind = MNID_ID;
-		ppropname->plid = static_cast<uint32_t *>(common_util_alloc(sizeof(uint32_t)));
-		if (NULL == ppropname->plid) {
-			return FALSE;
-		}
-		*ppropname->plid = propid;
-	}
-	if (NULL != pstore->ppropid_hash) {
-		pname = static_cast<PROPERTY_NAME *>(int_hash_query(pstore->ppropid_hash, propid));
-		if (NULL != pname) {
-			*ppropname = *pname;
-			return TRUE;
-		}
-	}
-	if (FALSE == exmdb_client_get_named_propname(
-		pstore->dir, propid, ppropname)) {
-		return FALSE;	
-	}
-	if (ppropname->kind == MNID_ID || ppropname->kind == MNID_STRING)
-		store_object_cache_propname(pstore, propid, ppropname);
-	return TRUE;
-}
-
 BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {

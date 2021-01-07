@@ -111,17 +111,6 @@ zend_bool ext_pack_pull_uint32(PULL_CTX *pctx, uint32_t *v)
 	return 1;
 }
 
-zend_bool ext_pack_pull_int32(PULL_CTX *pctx, int32_t *v)
-{
-	if (pctx->data_size < sizeof(int32_t) ||
-		pctx->offset + sizeof(int32_t) > pctx->data_size) {
-		return 0;
-	}
-	*v = IVALS(pctx->data, pctx->offset);
-	pctx->offset += sizeof(int32_t);
-	return 1;
-}
-
 zend_bool ext_pack_pull_uint64(PULL_CTX *pctx, uint64_t *v)
 {
 	if (pctx->data_size < sizeof(uint64_t) ||
@@ -362,29 +351,6 @@ zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 	}
 	for (i=0; i<r->count; i++) {
 		if (!ext_pack_pull_string(pctx, &r->ppstr[i])) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
-zend_bool ext_pack_pull_wstring_array(PULL_CTX *pctx, STRING_ARRAY *r)
-{
-	int i;
-	
-	if (!ext_pack_pull_uint32(pctx, &r->count)) {
-		return 0;
-	}
-	if (0 == r->count) {
-		r->ppstr = NULL;
-		return 1;
-	}
-	r->ppstr = static_cast<char **>(emalloc(sizeof(char *) * r->count));
-	if (NULL == r->ppstr) {
-		return 0;
-	}
-	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_wstring(pctx, &r->ppstr[i])) {
 			return 0;
 		}
 	}
@@ -1094,49 +1060,6 @@ zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 	return 1;
 }
 
-zend_bool ext_pack_pull_sort_order(PULL_CTX *pctx, SORT_ORDER *r)
-{	
-	if (!ext_pack_pull_uint16(pctx, &r->type)) {
-		return 0;
-	}
-	if (r->type & 0x1000 && 0 == (r->type & 0x2000)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->propid)) {
-		return 0;
-	}
-	return ext_pack_pull_uint8(pctx, &r->table_sort);
-}
-
-zend_bool ext_pack_pull_sortorder_set(PULL_CTX *pctx, SORTORDER_SET *r)
-{
-	int i;
-	
-	if (!ext_pack_pull_uint16(pctx, &r->count)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->ccategories)) {
-		return 0;
-	}
-	if (!ext_pack_pull_uint16(pctx, &r->cexpanded)) {
-		return 0;
-	}
-	if (0 == r->count || r->ccategories > r->count ||
-		r->cexpanded > r->ccategories) {
-		return 0;
-	}
-	r->psort = static_cast<SORT_ORDER *>(emalloc(sizeof(SORT_ORDER) * r->count));
-	if (NULL == r->psort) {
-		return 0;
-	}
-	for (i=0; i<r->count; i++) {
-		if (!ext_pack_pull_sort_order(pctx, r->psort + i)) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
 static zend_bool ext_pack_pull_permission_row(
 	PULL_CTX *pctx, PERMISSION_ROW *r)
 {
@@ -1166,14 +1089,6 @@ zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r)
 		}
 	}
 	return 1;
-}
-
-zend_bool ext_pack_pull_rule_data(PULL_CTX *pctx, RULE_DATA *r)
-{
-	if (!ext_pack_pull_uint8(pctx, &r->flags)) {
-		return 0;
-	}
-	return ext_pack_pull_tpropval_array(pctx, &r->propvals);
 }
 
 zend_bool ext_pack_pull_oneoff_entryid(PULL_CTX *pctx, ONEOFF_ENTRYID *r)
@@ -1651,22 +1566,6 @@ zend_bool ext_pack_push_string_array(PUSH_CTX *pctx, const STRING_ARRAY *r)
 	}
 	for (i=0; i<r->count; i++) {
 		if (!ext_pack_push_string(pctx, r->ppstr[i])) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
-zend_bool ext_pack_push_wstring_array(
-	PUSH_CTX *pctx, const STRING_ARRAY *r)
-{
-	int i;
-	
-	if (!ext_pack_push_uint32(pctx, r->count)) {
-		return 0;
-	}
-	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_wstring(pctx, r->ppstr[i])) {
 			return 0;
 		}
 	}
@@ -2432,44 +2331,4 @@ static zend_bool ext_pack_push_object_znotification(
 		}
 		return ext_pack_push_proptag_array(pctx, r->pproptags);
 	}
-}
-
-static zend_bool ext_pack_push_znotification(
-	PUSH_CTX *pctx, const ZNOTIFICATION *r)
-{
-	if (!ext_pack_push_uint32(pctx, r->event_type)) {
-		return 0;
-	}
-	switch (r->event_type) {
-	case EVENT_TYPE_NEWMAIL:
-		return ext_pack_push_newmail_znotification(pctx,
-		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
-	case EVENT_TYPE_OBJECTCREATED:
-	case EVENT_TYPE_OBJECTDELETED:
-	case EVENT_TYPE_OBJECTMODIFIED:
-	case EVENT_TYPE_OBJECTMOVED:
-	case EVENT_TYPE_OBJECTCOPIED:
-	case EVENT_TYPE_SEARCHCOMPLETE:
-		return ext_pack_push_object_znotification(pctx,
-		       static_cast<OBJECT_ZNOTIFICATION *>(r->pnotification_data));
-	default:
-		return 1;
-	}
-}
-
-zend_bool ext_pack_push_znotification_array(
-	PUSH_CTX *pctx, const ZNOTIFICATION_ARRAY *r)
-{
-	int i;
-	
-	if (!ext_pack_push_uint16(pctx, r->count)) {
-		return 0;
-	}
-	for (i=0; i<r->count; i++) {
-		if (!ext_pack_push_znotification(
-			pctx, r->ppnotification[i])) {
-			return 0;
-		}
-	}
-	return 1;
 }

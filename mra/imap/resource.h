@@ -117,10 +117,6 @@ extern BOOL resource_refresh_imap_code_table(void);
 char** resource_get_folder_strings(const char*lang);
 
 const char* resource_get_default_charset(const char *lang);
-extern BOOL resource_get_digest_string(const char *src, const char *tag, char *buff, int buff_len);
-extern BOOL resource_get_digest_integer(const char *src, const char *tag, long *pinteger);
-extern void resource_set_digest_string(char *src, int length, const char *tag, const char *value);
-extern void resource_set_digest_integer(char *src, int length, const char *tag, long value);
 extern const char *resource_get_error_string(int);
 
 #ifdef __cplusplus

@@ -205,11 +205,6 @@ uint8_t table_object_get_rop_id(TABLE_OBJECT *ptable)
 	return ptable->rop_id;
 }
 
-uint8_t table_object_get_table_flags(TABLE_OBJECT *ptable)
-{
-	return ptable->table_flags;
-}
-
 uint32_t table_object_get_table_id(TABLE_OBJECT *ptable)
 {
 	return ptable->table_id;

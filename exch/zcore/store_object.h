@@ -38,10 +38,6 @@ const char* store_object_get_account(STORE_OBJECT *pstore);
 const char* store_object_get_dir(STORE_OBJECT *pstore);
 
 GUID store_object_get_mailbox_guid(STORE_OBJECT *pstore);
-
-BOOL store_object_get_named_propname(STORE_OBJECT *pstore,
-	uint16_t propid, PROPERTY_NAME *ppropname);
-
 BOOL store_object_get_named_propnames(STORE_OBJECT *pstore,
 	const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
 
