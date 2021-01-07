@@ -403,6 +403,7 @@ int main(int argc, const char **argv)
 	
 		
 	rpc_parser_init(threads_num);
+	auto cleanup_1 = make_scope_exit(rpc_parser_free);
 	
 	str_value = config_file_get_value(pconfig, "USER_TABLE_SIZE");
 	if (NULL == str_value) {
@@ -451,6 +452,7 @@ int main(int argc, const char **argv)
 	printf("[system]: mailbox ping interval is %s\n", temp_buff);
 	
 	zarafa_server_init(table_size, cache_interval, ping_interval);
+	auto cleanup_2 = make_scope_exit(zarafa_server_free);
 	
 	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_IP");
 	if (NULL == str_value || NULL == extract_ip(str_value, console_ip)) {
