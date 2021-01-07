@@ -29,7 +29,7 @@ enum {
 	POP3_RETRIEVE_ERROR
 };
 
-typedef struct    _CONNECTION{
+struct CONNECTION {
 	char client_ip[32]; /* client ip address string */
     int            client_port;        /* value of client port */
 	char server_ip[32]; /* server ip address */
@@ -37,10 +37,9 @@ typedef struct    _CONNECTION{
     int            sockd;              /* context's socket file description */
 	SSL            *ssl;
     struct timeval last_timestamp;     /* last time when system got data from */
-} CONNECTION;
+};
 
-
-typedef struct _POP3_CONTEXT{
+struct POP3_CONTEXT {
     SCHEDULE_CONTEXT sched_context;
     CONNECTION       connection;
 	char             read_buffer[1024];
@@ -64,7 +63,7 @@ typedef struct _POP3_CONTEXT{
 	int              auth_times;
 	char             username[256];
 	char             maildir[256];
-} POP3_CONTEXT;
+};
 
 #ifdef __cplusplus
 extern "C" {

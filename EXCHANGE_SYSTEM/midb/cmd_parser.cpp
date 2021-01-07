@@ -22,10 +22,10 @@
 
 #define CONN_BUFFLEN        (257*1024)
 
-typedef struct _COMMAND_ENTRY {
+struct COMMAND_ENTRY {
 	char cmd[64];
 	COMMAND_HANDLER cmd_handler;
-} COMMAND_ENTRY;
+};
 
 static int g_cmd_num;
 static int g_threads_num;

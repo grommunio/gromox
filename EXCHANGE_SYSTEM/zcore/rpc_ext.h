@@ -7,507 +7,507 @@
 #include "mapi_types.h"
 #include "common_util.h"
 
-typedef struct _REQ_LOGON {
+struct REQ_LOGON {
 	char *username;
 	char *password;
 	uint32_t flags;
-} REQ_LOGON;
+};
 
-typedef struct _REQ_CHECKSESSION {
+struct REQ_CHECKSESSION {
 	GUID hsession;
-} REQ_CHECKSESSION;
+};
 
-typedef struct _REQ_UINFO {
+struct REQ_UINFO {
 	char *username;
-} REQ_UINFO;
+};
 
-typedef struct _REQ_UNLOADOBJECT {
+struct REQ_UNLOADOBJECT {
 	GUID hsession;
 	uint32_t hobject;
-} REQ_UNLOADOBJECT;
+};
 
-typedef struct _REQ_OPENENTRY {
+struct REQ_OPENENTRY {
 	GUID hsession;
 	BINARY entryid;
 	uint32_t flags;
-} REQ_OPENENTRY;
+};
 
-typedef struct _REQ_OPENSTOREENTRY {
+struct REQ_OPENSTOREENTRY {
 	GUID hsession;
 	uint32_t hobject;
 	BINARY entryid;
 	uint32_t flags;
-} REQ_OPENSTOREENTRY;
+};
 
-typedef struct _REQ_OPENABENTRY {
+struct REQ_OPENABENTRY {
 	GUID hsession;
 	BINARY entryid;
-} REQ_OPENABENTRY;
+};
 
-typedef struct _REQ_RESOLVENAME {
+struct REQ_RESOLVENAME {
 	GUID hsession;
 	TARRAY_SET *pcond_set;
-} REQ_RESOLVENAME;
+};
 
-typedef struct _REQ_GETPERMISSIONS {
+struct REQ_GETPERMISSIONS {
 	GUID hsession;
 	uint32_t hobject;
-} REQ_GETPERMISSIONS;
+};
 
-typedef struct _REQ_MODIFYPERMISSIONS {
+struct REQ_MODIFYPERMISSIONS {
 	GUID hsession;
 	uint32_t hfolder;
 	PERMISSION_SET *pset;
-} REQ_MODIFYPERMISSIONS;
+};
 
-typedef struct _REQ_MODIFYRULES {
+struct REQ_MODIFYRULES {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 	RULE_LIST *plist;
-} REQ_MODIFYRULES;
+};
 
-typedef struct _REQ_GETABGAL {
+struct REQ_GETABGAL {
 	GUID hsession;
-} REQ_GETABGAL;
+};
 
-typedef struct _REQ_LOADSTORETABLE {
+struct REQ_LOADSTORETABLE {
 	GUID hsession;
-} REQ_LOADSTORETABLE;
+};
 
-typedef struct _REQ_OPENSTORE {
+struct REQ_OPENSTORE {
 	GUID hsession;
 	BINARY entryid;
-} REQ_OPENSTORE;
+};
 
-typedef struct _REQ_OPENPROPFILESEC {
+struct REQ_OPENPROPFILESEC {
 	GUID hsession;
 	const FLATUID *puid;
-} REQ_OPENPROPFILESEC;
+};
 
-typedef struct _REQ_LOADHIERARCHYTABLE {
+struct REQ_LOADHIERARCHYTABLE {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
-} REQ_LOADHIERARCHYTABLE;
+};
 
-typedef struct _REQ_LOADCONTENTTABLE {
+struct REQ_LOADCONTENTTABLE {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
-} REQ_LOADCONTENTTABLE;
+};
 
-typedef struct _REQ_LOADRECIPIENTTABLE {
+struct REQ_LOADRECIPIENTTABLE {
 	GUID hsession;
 	uint32_t hmessage;
-} REQ_LOADRECIPIENTTABLE;
+};
 
-typedef struct _REQ_LOADRULETABLE {
+struct REQ_LOADRULETABLE {
 	GUID hsession;
 	uint32_t hfolder;
-} REQ_LOADRULETABLE;
+};
 	
-typedef struct _REQ_CREATEMESSAGE {
+struct REQ_CREATEMESSAGE {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
-} REQ_CREATEMESSAGE;
+};
 
-typedef struct _REQ_DELETEMESSAGES {
+struct REQ_DELETEMESSAGES {
 	GUID hsession;
 	uint32_t hfolder;
 	BINARY_ARRAY *pentryids;
 	uint32_t flags;
-} REQ_DELETEMESSAGES;
+};
 
-typedef struct _REQ_COPYMESSAGES {
+struct REQ_COPYMESSAGES {
 	GUID hsession;
 	uint32_t hsrcfolder;
 	uint32_t hdstfolder;
 	BINARY_ARRAY *pentryids;
 	uint32_t flags;
-} REQ_COPYMESSAGES;
+};
 
-typedef struct _REQ_SETREADFLAGS {
+struct REQ_SETREADFLAGS {
 	GUID hsession;
 	uint32_t hfolder;
 	BINARY_ARRAY *pentryids;
 	uint32_t flags;
-} REQ_SETREADFLAGS;
+};
 
-typedef struct _REQ_CREATEFOLDER {
+struct REQ_CREATEFOLDER {
 	GUID hsession;
 	uint32_t hparent_folder;
 	uint32_t folder_type;
 	char *folder_name;
 	char *folder_comment;
 	uint32_t flags;
-} REQ_CREATEFOLDER;
+};
 
-typedef struct _REQ_DELETEFOLDER {
+struct REQ_DELETEFOLDER {
 	GUID hsession;
 	uint32_t hparent_folder;
 	BINARY entryid;
 	uint32_t flags;
-} REQ_DELETEFOLDER;
+};
 
-typedef struct _REQ_EMPTYFOLDER {
+struct REQ_EMPTYFOLDER {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
-} REQ_EMPTYFOLDER;
+};
 
-typedef struct _REQ_COPYFOLDER {
+struct REQ_COPYFOLDER {
 	GUID hsession;
 	uint32_t hsrc_folder;
 	BINARY entryid;
 	uint32_t hdst_folder;
 	char *new_name;
 	uint32_t flags;
-} REQ_COPYFOLDER;
+};
 
-typedef struct _REQ_GETSTOREENTRYID {
+struct REQ_GETSTOREENTRYID {
 	char *mailbox_dn;
-} REQ_GETSTOREENTRYID;
+};
 
-typedef struct _REQ_ENTRYIDFROMSOURCEKEY {
+struct REQ_ENTRYIDFROMSOURCEKEY {
 	GUID hsession;
 	uint32_t hstore;
 	BINARY folder_key;
 	BINARY *pmessage_key;
-} REQ_ENTRYIDFROMSOURCEKEY;
+};
 
-typedef struct _REQ_STOREADVISE {
+struct REQ_STOREADVISE {
 	GUID hsession;
 	uint32_t hstore;
 	BINARY *pentryid;
 	uint32_t event_mask;
-} REQ_STOREADVISE;
+};
 
-typedef struct _REQ_UNADVISE {
+struct REQ_UNADVISE {
 	GUID hsession;
 	uint32_t hstore;
 	uint32_t sub_id;
-} REQ_UNADVISE;
+};
 
-typedef struct _REQ_NOTIFDEQUEUE {
+struct REQ_NOTIFDEQUEUE {
 	NOTIF_SINK *psink;
 	uint32_t timeval;
-} REQ_NOTIFDEQUEUE;
+};
 
-typedef struct _REQ_QUERYROWS {
+struct REQ_QUERYROWS {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t start;
 	uint32_t count;
 	RESTRICTION *prestriction;
 	PROPTAG_ARRAY *pproptags;
-} REQ_QUERYROWS;
+};
 
-typedef struct _REQ_SETCOLUMNS {
+struct REQ_SETCOLUMNS {
 	GUID hsession;
 	uint32_t htable;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t flags;
-} REQ_SETCOLUMNS;
+};
 
-typedef struct _REQ_SEEKROW {
+struct REQ_SEEKROW {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
 	int32_t seek_rows;
-} REQ_SEEKROW;
+};
 
-typedef struct _REQ_SORTTABLE {
+struct REQ_SORTTABLE {
 	GUID hsession;
 	uint32_t htable;
 	SORTORDER_SET *psortset;
-} REQ_SORTTABLE;
+};
 
-typedef struct _REQ_GETROWCOUNT {
+struct REQ_GETROWCOUNT {
 	GUID hsession;
 	uint32_t htable;
-} REQ_GETROWCOUNT;
+};
 
-typedef struct _REQ_RESTRICTTABLE {
+struct REQ_RESTRICTTABLE {
 	GUID hsession;
 	uint32_t htable;
 	RESTRICTION *prestriction;
 	uint32_t flags;
-} REQ_RESTRICTTABLE;
+};
 
-typedef struct _REQ_FINDROW {
+struct REQ_FINDROW {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
 	RESTRICTION *prestriction;
 	uint32_t flags;
-} REQ_FINDROW;
+};
 
-typedef struct _REQ_CREATEBOOKMARK {
+struct REQ_CREATEBOOKMARK {
 	GUID hsession;
 	uint32_t htable;
-} REQ_CREATEBOOKMARK;
+};
 
-typedef struct _REQ_FREEBOOKMARK {
+struct REQ_FREEBOOKMARK {
 	GUID hsession;
 	uint32_t htable;
 	uint32_t bookmark;
-} REQ_FREEBOOKMARK;
+};
 
-typedef struct _REQ_GETRECEIVEFOLDER {
+struct REQ_GETRECEIVEFOLDER {
 	GUID hsession;
 	uint32_t hstore;
 	char *pstrclass;
-} REQ_GETRECEIVEFOLDER;
+};
 
-typedef struct _REQ_MODIFYRECIPIENTS {
+struct REQ_MODIFYRECIPIENTS {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t flags;
 	TARRAY_SET *prcpt_list;
-} REQ_MODIFYRECIPIENTS;
+};
 
-typedef struct _REQ_SUBMITMESSAGE {
+struct REQ_SUBMITMESSAGE {
 	GUID hsession;
 	uint32_t hmessage;
-} REQ_SUBMITMESSAGE;
+};
 
-typedef struct _REQ_LOADATTACHMENTTABLE {
+struct REQ_LOADATTACHMENTTABLE {
 	GUID hsession;
 	uint32_t hmessage;
-} REQ_LOADATTACHMENTTABLE;
+};
 
-typedef struct _REQ_OPENATTACHMENT {
-	GUID hsession;
-	uint32_t hmessage;
-	uint32_t attach_id;
-} REQ_OPENATTACHMENT;
-
-typedef struct _REQ_CREATEATTACHMENT {
-	GUID hsession;
-	uint32_t hmessage;
-} REQ_CREATEATTACHMENT;
-
-typedef struct _REQ_DELETEATTACHMENT {
+struct REQ_OPENATTACHMENT {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t attach_id;
-} REQ_DELETEATTACHMENT;
+};
 
-typedef struct _REQ_SETPROPVALS {
+struct REQ_CREATEATTACHMENT {
+	GUID hsession;
+	uint32_t hmessage;
+};
+
+struct REQ_DELETEATTACHMENT {
+	GUID hsession;
+	uint32_t hmessage;
+	uint32_t attach_id;
+};
+
+struct REQ_SETPROPVALS {
 	GUID hsession;
 	uint32_t hobject;
 	TPROPVAL_ARRAY *ppropvals;
-} REQ_SETPROPVALS;
+};
 
-typedef struct _REQ_GETPROPVALS {
+struct REQ_GETPROPVALS {
 	GUID hsession;
 	uint32_t hobject;
 	PROPTAG_ARRAY *pproptags;
-} REQ_GETPROPVALS;
+};
 
-typedef struct _REQ_DELETEPROPVALS {
+struct REQ_DELETEPROPVALS {
 	GUID hsession;
 	uint32_t hobject;
 	PROPTAG_ARRAY *pproptags;
-} REQ_DELETEPROPVALS;
+};
 
-typedef struct _REQ_SETMESSAGEREADFLAG {
+struct REQ_SETMESSAGEREADFLAG {
 	GUID hsession;
 	uint32_t hmessage;
 	uint32_t flags;
-} REQ_SETMESSAGEREADFLAG;
+};
 
-typedef struct _REQ_OPENEMBEDDED {
+struct REQ_OPENEMBEDDED {
 	GUID hsession;
 	uint32_t hattachment;
 	uint32_t flags;
-} REQ_OPENEMBEDDED;
+};
 
-typedef struct _REQ_GETNAMEDPROPIDS {
+struct REQ_GETNAMEDPROPIDS {
 	GUID hsession;
 	uint32_t hstore;
 	PROPNAME_ARRAY *ppropnames;
-} REQ_GETNAMEDPROPIDS;
+};
 
-typedef struct _REQ_GETPROPNAMES {
+struct REQ_GETPROPNAMES {
 	GUID hsession;
 	uint32_t hstore;
 	PROPID_ARRAY *ppropids;
-} REQ_GETPROPNAMES;
+};
 
-typedef struct _REQ_COPYTO {
+struct REQ_COPYTO {
 	GUID hsession;
 	uint32_t hsrcobject;
 	PROPTAG_ARRAY *pexclude_proptags;
 	uint32_t hdstobject;
 	uint32_t flags;
-} REQ_COPYTO;
+};
 
-typedef struct _REQ_SAVECHANGES {
+struct REQ_SAVECHANGES {
 	GUID hsession;
 	uint32_t hobject;
-} REQ_SAVECHANGES;
+};
 
-typedef struct _REQ_HIERARCHYSYNC {
+struct REQ_HIERARCHYSYNC {
 	GUID hsession;
 	uint32_t hfolder;
-} REQ_HIERARCHYSYNC;
+};
 
-typedef struct _REQ_CONTENTSYNC {
+struct REQ_CONTENTSYNC {
 	GUID hsession;
 	uint32_t hfolder;
-} REQ_CONTENTSYNC;
+};
 
-typedef struct _REQ_CONFIGSYNC {
+struct REQ_CONFIGSYNC {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 	BINARY *pstate;
 	RESTRICTION *prestriction;
-} REQ_CONFIGSYNC;
+};
 
-typedef struct _REQ_STATESYNC {
+struct REQ_STATESYNC {
 	GUID hsession;
 	uint32_t hctx;
-} REQ_STATESYNC;
+};
 
-typedef struct _REQ_SYNCMESSAGECHANGE {
+struct REQ_SYNCMESSAGECHANGE {
 	GUID hsession;
 	uint32_t hctx;
-} REQ_SYNCMESSAGECHANGE;
+};
 
-typedef struct _REQ_SYNCFOLDERCHANGE {
+struct REQ_SYNCFOLDERCHANGE {
 	GUID hsession;
 	uint32_t hctx;
-} REQ_SYNCFOLDERCHANGE;
+};
 
-typedef struct _REQ_SYNCREADSTATECHANGES {
+struct REQ_SYNCREADSTATECHANGES {
 	GUID hsession;
 	uint32_t hctx;
-} REQ_SYNCREADSTATECHANGES;
+};
 
-typedef struct _REQ_SYNCDELETIONS {
+struct REQ_SYNCDELETIONS {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
-} REQ_SYNCDELETIONS;
+};
 
-typedef struct _REQ_HIERARCHYIMPORT {
+struct REQ_HIERARCHYIMPORT {
 	GUID hsession;
 	uint32_t hfolder;
-} REQ_HIERARCHYIMPORT;
+};
 
-typedef struct _REQ_CONTENTIMPORT {
+struct REQ_CONTENTIMPORT {
 	GUID hsession;
 	uint32_t hfolder;
-} REQ_CONTENTIMPORT;
+};
 
-typedef struct _REQ_CONFIGIMPORT {
+struct REQ_CONFIGIMPORT {
 	GUID hsession;
 	uint32_t hctx;
 	uint8_t sync_type;
 	BINARY *pstate;
-} REQ_CONFIGIMPORT;
+};
 	
-typedef struct _REQ_STATEIMPORT {
+struct REQ_STATEIMPORT {
 	GUID hsession;
 	uint32_t hctx;
-} REQ_STATEIMPORT;
+};
 
-typedef struct _REQ_IMPORTMESSAGE {
+struct REQ_IMPORTMESSAGE {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 	TPROPVAL_ARRAY *pproplist;
-} REQ_IMPORTMESSAGE;
+};
 	
-typedef struct _REQ_IMPORTFOLDER {
+struct REQ_IMPORTFOLDER {
 	GUID hsession;
 	uint32_t hctx;
 	TPROPVAL_ARRAY *pproplist;
-} REQ_IMPORTFOLDER;
+};
 
-typedef struct _REQ_IMPORTDELETION {
+struct REQ_IMPORTDELETION {
 	GUID hsession;
 	uint32_t hctx;
 	uint32_t flags;
 	BINARY_ARRAY *pbins;
-} REQ_IMPORTDELETION;
+};
 
-typedef struct _REQ_IMPORTREADSTATES {
+struct REQ_IMPORTREADSTATES {
 	GUID hsession;
 	uint32_t hctx;
 	STATE_ARRAY *pstates;
-} REQ_IMPORTREADSTATES;
+};
 
-typedef struct _REQ_GETSEARCHCRITERIA {
+struct REQ_GETSEARCHCRITERIA {
 	GUID hsession;
 	uint32_t hfolder;
-} REQ_GETSEARCHCRITERIA;
+};
 	
-typedef struct _REQ_SETSEARCHCRITERIA {
+struct REQ_SETSEARCHCRITERIA {
 	GUID hsession;
 	uint32_t hfolder;
 	uint32_t flags;
 	BINARY_ARRAY *pfolder_array;
 	RESTRICTION *prestriction;
-} REQ_SETSEARCHCRITERIA;
+};
 
-typedef struct _REQ_MESSAGETORFC822 {
+struct REQ_MESSAGETORFC822 {
 	GUID hsession;
 	uint32_t hmessage;
-} REQ_MESSAGETORFC822;
+};
 
-typedef struct _REQ_RFC822TOMESSAGE {
+struct REQ_RFC822TOMESSAGE {
 	GUID hsession;
 	uint32_t hmessage;
 	BINARY *peml_bin;
-} REQ_RFC822TOMESSAGE;
+};
 
-typedef struct _REQ_MESSAGETOICAL {
+struct REQ_MESSAGETOICAL {
 	GUID hsession;
 	uint32_t hmessage;
-} REQ_MESSAGETOICAL;
+};
 
-typedef struct _REQ_ICALTOMESSAGE {
+struct REQ_ICALTOMESSAGE {
 	GUID hsession;
 	uint32_t hmessage;
 	BINARY *pical_bin;
-} REQ_ICALTOMESSAGE;
+};
 
-typedef struct _REQ_MESSAGETOVCF {
+struct REQ_MESSAGETOVCF {
 	GUID hsession;
 	uint32_t hmessage;
-} REQ_MESSAGETOVCF;
+};
 
-typedef struct _REQ_VCFTOMESSAGE {
+struct REQ_VCFTOMESSAGE {
 	GUID hsession;
 	uint32_t hmessage;
 	BINARY *pvcf_bin;
-} REQ_VCFTOMESSAGE;
+};
 
-typedef struct _REQ_GETUSERAVAILABILITY {
+struct REQ_GETUSERAVAILABILITY {
 	GUID hsession;
 	BINARY entryid;
 	uint64_t starttime;
 	uint64_t endtime;
-} REQ_GETUSERAVAILABILITY;
+};
 
-typedef struct _REQ_SETPASSWD {
+struct REQ_SETPASSWD {
 	char *username;
 	char *passwd;
 	char *new_passwd;
-} REQ_SETPASSWD;
+};
 
-typedef struct _REQ_LINKMESSAGE {
+struct REQ_LINKMESSAGE {
 	GUID hsession;
 	BINARY search_entryid;
 	BINARY message_entryid;
-} REQ_LINKMESSAGE;
+};
 
-typedef union _REQUEST_PAYLOAD {
+union REQUEST_PAYLOAD {
 	REQ_LOGON logon;
 	REQ_CHECKSESSION checksession;
 	REQ_UINFO uinfo;
@@ -592,235 +592,235 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_GETUSERAVAILABILITY getuseravailability;
 	REQ_SETPASSWD setpasswd;
 	REQ_LINKMESSAGE linkmessage;
-} REQUEST_PAYLOAD;
+};
 
-typedef struct _RPC_REQUEST {
+struct RPC_REQUEST {
 	uint8_t call_id;
 	REQUEST_PAYLOAD payload;
-} RPC_REQUEST;
+};
 
-typedef struct _RESP_LOGON {
+struct RESP_LOGON {
 	GUID hsession;
-} RESP_LOGON;
+};
 
-typedef struct _RESP_UINFO {
+struct RESP_UINFO {
 	BINARY entryid;
 	char *pdisplay_name;
 	char *px500dn;
 	uint32_t privilege_bits;
-} RESP_UINFO;
+};
 
-typedef struct _RESP_OPENENTRY {
+struct RESP_OPENENTRY {
 	uint8_t mapi_type;
 	uint32_t hobject;
-} RESP_OPENENTRY;
+};
 
-typedef struct _RESP_OPENSTOREENTRY {
+struct RESP_OPENSTOREENTRY {
 	uint8_t mapi_type;
 	uint32_t hxobject;
-} RESP_OPENSTOREENTRY;
+};
 
-typedef struct _RESP_OPENABENTRY {
+struct RESP_OPENABENTRY {
 	uint8_t mapi_type;
 	uint32_t hobject;
-} RESP_OPENABENTRY;
+};
 
-typedef struct _RESP_RESOLVENAME {
+struct RESP_RESOLVENAME {
 	TARRAY_SET result_set;
-} RESP_RESOLVENAME;
+};
 
-typedef struct _RESP_GETPERMISSIONS {
+struct RESP_GETPERMISSIONS {
 	PERMISSION_SET perm_set;
-} RESP_GETPERMISSIONS;
+};
 
-typedef struct _RESP_GETABGAL {
+struct RESP_GETABGAL {
 	BINARY entryid;
-} RESP_GETABGAL;
+};
 
-typedef struct _RESP_LOADSTORETABLE {
+struct RESP_LOADSTORETABLE {
 	uint32_t hobject;
-} RESP_LOADSTORETABLE;
+};
 
-typedef struct _RESP_OPENSTORE {
+struct RESP_OPENSTORE {
 	uint32_t hobject;
-} RESP_OPENSTORE;
+};
 
-typedef struct _RESP_OPENPROPFILESEC {
+struct RESP_OPENPROPFILESEC {
 	uint32_t hobject;
-} RESP_OPENPROPFILESEC;
+};
 
-typedef struct _RESP_LOADHIERARCHYTABLE {
+struct RESP_LOADHIERARCHYTABLE {
 	uint32_t hobject;
-} RESP_LOADHIERARCHYTABLE;
+};
 
-typedef struct _RESP_LOADCONTENTTABLE {
+struct RESP_LOADCONTENTTABLE {
 	uint32_t hobject;
-} RESP_LOADCONTENTTABLE;
+};
 
-typedef struct _RESP_LOADRECIPIENTTABLE {
+struct RESP_LOADRECIPIENTTABLE {
 	uint32_t hobject;
-} RESP_LOADRECIPIENTTABLE;
+};
 
-typedef struct _RESP_LOADRULETABLE {
+struct RESP_LOADRULETABLE {
 	uint32_t hobject;
-} RESP_LOADRULETABLE;
+};
 	
-typedef struct _RESP_CREATEMESSAGE {
+struct RESP_CREATEMESSAGE {
 	uint32_t hobject;
-} RESP_CREATEMESSAGE;
+};
 
-typedef struct _RESP_CREATEFOLDER {
+struct RESP_CREATEFOLDER {
 	uint32_t hobject;
-} RESP_CREATEFOLDER;
+};
 
-typedef struct _RESP_GETSTOREENTRYID {
+struct RESP_GETSTOREENTRYID {
 	BINARY entryid;
-} RESP_GETSTOREENTRYID;
+};
 
-typedef struct _RESP_ENTRYIDFROMSOURCEKEY {
+struct RESP_ENTRYIDFROMSOURCEKEY {
 	BINARY entryid;
-} RESP_ENTRYIDFROMSOURCEKEY;
+};
 
-typedef struct _RESP_STOREADVISE {
+struct RESP_STOREADVISE {
 	uint32_t sub_id;
-} RESP_STOREADVISE;
+};
 
-typedef struct _RESP_NOTIFDEQUEUE {
+struct RESP_NOTIFDEQUEUE {
 	ZNOTIFICATION_ARRAY notifications;
-} RESP_NOTIFDEQUEUE;
+};
 
-typedef struct _RESP_QUERYROWS {
+struct RESP_QUERYROWS {
 	TARRAY_SET rowset;
-} RESP_QUERYROWS;
+};
 
-typedef struct _RESP_SETCOLUMNS {
+struct RESP_SETCOLUMNS {
 	GUID hsession;
 	uint32_t htable;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t flags;
-} RESP_SETCOLUMNS;
+};
 
-typedef struct _RESP_SEEKROW {
+struct RESP_SEEKROW {
 	int32_t sought_rows;
-} RESP_SEEKROW;
+};
 
-typedef struct _RESP_GETROWCOUNT {
+struct RESP_GETROWCOUNT {
 	uint32_t count;
-} RESP_GETROWCOUNT;
+};
 
-typedef struct _RESP_FINDROW {
+struct RESP_FINDROW {
 	uint32_t row_idx;
-} RESP_FINDROW;
+};
 
-typedef struct _RESP_CREATEBOOKMARK {
+struct RESP_CREATEBOOKMARK {
 	uint32_t bookmark;
-} RESP_CREATEBOOKMARK;
+};
 
-typedef struct _RESP_GETRECEIVEFOLDER {
+struct RESP_GETRECEIVEFOLDER {
 	BINARY entryid;
-} RESP_GETRECEIVEFOLDER;
+};
 
-typedef struct _RESP_LOADATTACHMENTTABLE {
+struct RESP_LOADATTACHMENTTABLE {
 	uint32_t hobject;
-} RESP_LOADATTACHMENTTABLE;
+};
 
-typedef struct _RESP_OPENATTACHMENT {
+struct RESP_OPENATTACHMENT {
 	uint32_t hobject;
-} RESP_OPENATTACHMENT;
+};
 
-typedef struct _RESP_CREATEATTACHMENT {
+struct RESP_CREATEATTACHMENT {
 	uint32_t hobject;
-} RESP_CREATEATTACHMENT;
+};
 
-typedef struct _RESP_GETPROPVALS {
+struct RESP_GETPROPVALS {
 	TPROPVAL_ARRAY propvals;
-} RESP_GETPROPVALS;
+};
 
-typedef struct _RESP_OPENEMBEDDED {
+struct RESP_OPENEMBEDDED {
 	uint32_t hobject;
-} RESP_OPENEMBEDDED;
+};
 
-typedef struct _RESP_GETNAMEDPROPIDS {
+struct RESP_GETNAMEDPROPIDS {
 	PROPID_ARRAY propids;
-} RESP_GETNAMEDPROPIDS;
+};
 
-typedef struct _RESP_GETPROPNAMES {
+struct RESP_GETPROPNAMES {
 	PROPNAME_ARRAY propnames;
-} RESP_GETPROPNAMES;
+};
 
-typedef struct _RESP_HIERARCHYSYNC {
+struct RESP_HIERARCHYSYNC {
 	uint32_t hobject;
-} RESP_HIERARCHYSYNC;
+};
 
-typedef struct _RESP_CONTENTSYNC {
+struct RESP_CONTENTSYNC {
 	uint32_t hobject;
-} RESP_CONTENTSYNC;
+};
 
-typedef struct _RESP_CONFIGSYNC {
+struct RESP_CONFIGSYNC {
 	BOOL b_changed;
 	uint32_t count;
-} RESP_CONFIGSYNC;
+};
 
-typedef struct _RESP_STATESYNC {
+struct RESP_STATESYNC {
 	BINARY state;
-} RESP_STATESYNC;
+};
 
-typedef struct _RESP_SYNCMESSAGECHANGE {
+struct RESP_SYNCMESSAGECHANGE {
 	BOOL b_new;
 	TPROPVAL_ARRAY proplist;
-} RESP_SYNCMESSAGECHANGE;
+};
 
-typedef struct _RESP_SYNCFOLDERCHANGE {
+struct RESP_SYNCFOLDERCHANGE {
 	TPROPVAL_ARRAY proplist;
-} RESP_SYNCFOLDERCHANGE;
+};
 
-typedef struct _RESP_SYNCREADSTATECHANGES {
+struct RESP_SYNCREADSTATECHANGES {
 	STATE_ARRAY states;
-} RESP_SYNCREADSTATECHANGES;
+};
 
-typedef struct _RESP_SYNCDELETIONS {
+struct RESP_SYNCDELETIONS {
 	BINARY_ARRAY bins;
-} RESP_SYNCDELETIONS;
+};
 
-typedef struct _RESP_HIERARCHYIMPORT {
+struct RESP_HIERARCHYIMPORT {
 	uint32_t hobject;
-} RESP_HIERARCHYIMPORT;
+};
 
-typedef struct _RESP_CONTENTIMPORT {
+struct RESP_CONTENTIMPORT {
 	uint32_t hobject;
-} RESP_CONTENTIMPORT;
+};
 	
-typedef struct _RESP_STATEIMPORT {
+struct RESP_STATEIMPORT {
 	BINARY state;
-} RESP_STATEIMPORT;
+};
 
-typedef struct _RESP_IMPORTMESSAGE {
+struct RESP_IMPORTMESSAGE {
 	uint32_t hobject;
-} RESP_IMPORTMESSAGE;
+};
 
-typedef struct _RESP_GETSEARCHCRITERIA {
+struct RESP_GETSEARCHCRITERIA {
 	BINARY_ARRAY folder_array;
 	RESTRICTION *prestriction;
 	uint32_t search_stat;
-} RESP_GETSEARCHCRITERIA;
+};
 
-typedef struct _RESP_MESSAGETORFC822 {
+struct RESP_MESSAGETORFC822 {
 	BINARY eml_bin;
-} RESP_MESSAGETORFC822;
+};
 
-typedef struct _RESP_MESSAGETOICAL {
+struct RESP_MESSAGETOICAL {
 	BINARY ical_bin;
-} RESP_MESSAGETOICAL;
+};
 
-typedef struct _RESP_MESSAGETOVCF {
+struct RESP_MESSAGETOVCF {
 	BINARY vcf_bin;
-} RESP_MESSAGETOVCF;
+};
 
-typedef struct _RESP_GETUSERAVAILABILITY {
+struct RESP_GETUSERAVAILABILITY {
 	char *result_string;
-} RESP_GETUSERAVAILABILITY;
+};
 
-typedef union _RESPONSE_PAYLOAD {
+union RESPONSE_PAYLOAD {
 	RESP_LOGON logon;
 	RESP_UINFO uinfo;
 	RESP_OPENENTRY openentry;
@@ -872,13 +872,13 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_MESSAGETOICAL messagetoical;
 	RESP_MESSAGETOVCF messagetovcf;
 	RESP_GETUSERAVAILABILITY getuseravailability;
-} RESPONSE_PAYLOAD;
+};
 
-typedef struct _RPC_RESPONSE {
+struct RPC_RESPONSE {
 	uint8_t call_id;
 	uint32_t result;
 	RESPONSE_PAYLOAD payload;
-} RPC_RESPONSE;
+};
 
 #ifdef __cplusplus
 extern "C" {

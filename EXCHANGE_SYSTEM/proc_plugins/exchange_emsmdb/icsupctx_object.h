@@ -4,7 +4,7 @@
 #include "ics_state.h"
 #include "mem_file.h"
 
-typedef struct _ICSUPCTX_OBJECT {
+struct ICSUPCTX_OBJECT {
 	LOGON_OBJECT *plogon;
 	FOLDER_OBJECT *pfolder;
 	ICS_STATE *pstate; /* public member */
@@ -12,7 +12,7 @@ typedef struct _ICSUPCTX_OBJECT {
 	MEM_FILE f_state_stream;
 	BOOL b_started;
 	uint8_t sync_type;
-} ICSUPCTX_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

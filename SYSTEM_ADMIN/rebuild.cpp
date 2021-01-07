@@ -27,27 +27,27 @@
 #include <netinet/in.h>
 #define SOCKET_TIMEOUT								60
 
-typedef struct _EXMDB_ITEM {
+struct EXMDB_ITEM {
 	char prefix[256];
 	char type[16];
 	char ip_addr[32];
 	int port;
-} EXMDB_ITEM;
+};
 
-typedef struct _EXMDB_NODE {
+struct EXMDB_NODE {
 	DOUBLE_LIST_NODE node;
 	EXMDB_ITEM exmdb_info;
-} EXMDB_NODE;
+};
 
-typedef struct _CONNECT_REQUEST {
+struct CONNECT_REQUEST {
 	char *prefix;
 	char *remote_id;
 	BOOL b_private;
-} CONNECT_REQUEST;
+};
 
-typedef struct _UNLOAD_STORE_REQUEST {
+struct UNLOAD_STORE_REQUEST {
 	const char *dir;
-} UNLOAD_STORE_REQUEST;
+};
 
 static DOUBLE_LIST g_exmdb_list;
 

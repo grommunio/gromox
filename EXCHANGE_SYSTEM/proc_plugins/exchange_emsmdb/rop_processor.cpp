@@ -42,17 +42,17 @@
 /* maximum handle number per session */
 #define MAX_HANDLE_NUM					500
 
-typedef struct _LOGON_ITEM {
+struct LOGON_ITEM {
 	INT_HASH_TABLE *phash;
 	SIMPLE_TREE tree;
-} LOGON_ITEM;
+};
 
-typedef struct _OBJECT_NODE {
+struct OBJECT_NODE {
 	SIMPLE_TREE_NODE node;
 	uint32_t handle;
 	int type;
 	void *pobject;
-} OBJECT_NODE;
+};
 
 static int g_scan_interval;
 static pthread_t g_scan_id;

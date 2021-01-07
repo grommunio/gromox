@@ -34,19 +34,19 @@
 #include <cstdio>
 #include <poll.h>
 
-typedef struct _NOTIFY_ITEM {
+struct NOTIFY_ITEM {
 	DOUBLE_LIST notify_list;
 	GUID hsession;
 	uint32_t hstore;
 	time_t last_time;
-} NOTIFY_ITEM;
+};
 
-typedef struct _SINK_NODE {
+struct SINK_NODE {
 	DOUBLE_LIST_NODE node;
 	int clifd;
 	time_t until_time;
 	NOTIF_SINK sink;
-} SINK_NODE;
+};
 
 static int g_table_size;
 static BOOL g_notify_stop;

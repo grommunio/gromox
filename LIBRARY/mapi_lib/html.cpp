@@ -23,30 +23,30 @@
 
 #define MAX_TABLE_ITEMS						1024
 
-typedef struct _COLOR_ITEM {
+struct COLOR_ITEM {
 	const char *name;
 	int value;
-} COLOR_ITEM;
+};
 
-typedef struct _FONT_NODE {
+struct FONT_NODE {
 	DOUBLE_LIST_NODE node;
 	char font_name[128];
 	int index;
-} FONT_NODE;
+};
 
-typedef struct _COLOR_NODE {
+struct COLOR_NODE {
 	DOUBLE_LIST_NODE node;
 	int color;
 	int index;
-} COLOR_NODE;
+};
 
-typedef struct _RTF_WRITER {
+struct RTF_WRITER {
 	EXT_PUSH ext_push;
 	DOUBLE_LIST font_table;
 	STR_HASH_TABLE *pfont_hash;
 	INT_HASH_TABLE *pcolor_hash;
 	DOUBLE_LIST color_table;
-} RTF_WRITER;
+};
 
 static iconv_t g_conv_id;
 static STR_HASH_TABLE *g_color_hash;

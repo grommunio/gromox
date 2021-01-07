@@ -27,16 +27,16 @@ enum {
 	FUNC_ID_STATE
 };
 
-typedef struct _ICS_FLOW_NODE {
+struct ICS_FLOW_NODE {
 	DOUBLE_LIST_NODE node;
 	uint8_t func_id;
 	void *pparam;
-} ICS_FLOW_NODE;
+};
 
-typedef struct _GROUP_NODE {
+struct GROUP_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t group_id;
-} GROUP_NODE;
+};
 
 #define MAX_PARTIAL_ON_ROP		100	/* for limit of memory accumulation */
 

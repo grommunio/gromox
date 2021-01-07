@@ -2,16 +2,16 @@
 #include "emsmdb_interface.h"
 
 
-typedef struct _ECDODISCONNECT_IN {
+struct ECDODISCONNECT_IN {
 	CXH cxh;
-} ECDODISCONNECT_IN;
+};
 
-typedef struct _ECDODISCONNECT_OUT {
+struct ECDODISCONNECT_OUT {
 	CXH cxh;
 	int32_t result;
-} ECDODISCONNECT_OUT;
+};
 
-typedef struct _ECRREGISTERPUSHNOTIFICATION_IN {
+struct ECRREGISTERPUSHNOTIFICATION_IN {
 	CXH cxh;
 	uint32_t rpc;
 	uint8_t *pctx;
@@ -19,15 +19,15 @@ typedef struct _ECRREGISTERPUSHNOTIFICATION_IN {
 	uint32_t advise_bits;
 	uint8_t *paddr;
 	uint16_t cb_addr;
-} ECRREGISTERPUSHNOTIFICATION_IN;
+};
 
-typedef struct _ECRREGISTERPUSHNOTIFICATION_OUT {
+struct ECRREGISTERPUSHNOTIFICATION_OUT {
 	CXH cxh;
 	uint32_t hnotification;
 	int32_t result;
-} ECRREGISTERPUSHNOTIFICATION_OUT;
+};
 
-typedef struct _ECDOCONNECTEX_IN {
+struct ECDOCONNECTEX_IN {
 	char puserdn[1024];
 	uint32_t flags;
 	uint32_t conmod;
@@ -42,9 +42,9 @@ typedef struct _ECDOCONNECTEX_IN {
 	uint8_t *pauxin;
 	uint32_t cb_auxin;
 	uint32_t cb_auxout;
-} ECDOCONNECTEX_IN;
+};
 
-typedef struct _ECDOCONNECTEX_OUT {
+struct ECDOCONNECTEX_OUT {
 	CXH cxh;
 	uint32_t max_polls;
 	uint32_t max_retry;
@@ -58,9 +58,9 @@ typedef struct _ECDOCONNECTEX_OUT {
 	uint8_t pauxout[0x1008];
 	uint32_t cb_auxout;
 	int32_t result;
-} ECDOCONNECTEX_OUT;
+};
 
-typedef struct _ECDORPCEXT2_IN {
+struct ECDORPCEXT2_IN {
 	CXH cxh;
 	uint32_t flags;
 	uint8_t *pin;
@@ -69,9 +69,9 @@ typedef struct _ECDORPCEXT2_IN {
 	uint8_t *pauxin;
 	uint32_t cb_auxin;
 	uint32_t cb_auxout;
-} ECDORPCEXT2_IN;
+};
 
-typedef struct _ECDORPCEXT2_OUT {
+struct ECDORPCEXT2_OUT {
 	CXH cxh;
 	uint32_t flags;
 	uint8_t pout[0x40000];
@@ -80,16 +80,16 @@ typedef struct _ECDORPCEXT2_OUT {
 	uint32_t cb_auxout;
 	uint32_t trans_time;
 	int32_t result;
-} ECDORPCEXT2_OUT;
+};
 
-typedef struct _ECDOASYNCCONNECTEX_IN {
+struct ECDOASYNCCONNECTEX_IN {
 	CXH cxh;
-} ECDOASYNCCONNECTEX_IN;
+};
 
-typedef struct _ECDOASYNCCONNECTEX_OUT {
+struct ECDOASYNCCONNECTEX_OUT {
 	ACXH acxh;
 	int32_t result;
-} ECDOASYNCCONNECTEX_OUT;
+};
 
 #ifdef __cplusplus
 extern "C" {

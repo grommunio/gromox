@@ -903,7 +903,7 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 			pstream, &marker, &propval)) {
 		case FTSTREAM_PARSER_READ_OK: {
 			if (0 != marker) {
-				gxerr_t err = record_marker(static_cast<_FASTUPCTX_OBJECT *>(pparam), marker);
+				gxerr_t err = record_marker(static_cast<FASTUPCTX_OBJECT *>(pparam), marker);
 				if (err != GXERR_SUCCESS)
 					return err;
 				break;
@@ -922,7 +922,7 @@ gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
 					propval.pvalue = pvalue;
 				}
 			}
-			gxerr_t err = record_propval(static_cast<_FASTUPCTX_OBJECT *>(pparam), &propval);
+			gxerr_t err = record_propval(static_cast<FASTUPCTX_OBJECT *>(pparam), &propval);
 			if (err != GXERR_SUCCESS)
 				return err;
 			break;

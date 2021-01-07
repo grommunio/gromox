@@ -27,23 +27,23 @@
 #define MAX_TIMES_NOT_SERVED	5
 #define THREAD_STACK_SIZE       0x400000
 
-typedef struct _CONTROL_INFO{
+struct CONTROL_INFO {
     int         queue_ID;
     int         bound_type;
 	BOOL		is_spam;
     BOOL        need_bounce;
     char        from[256];
     MEM_FILE    f_rcpt_to;
-} CONTROL_INFO;
+};
 
-typedef struct _MESSAGE_CONTEXT{
+struct MESSAGE_CONTEXT {
     CONTROL_INFO *pcontrol;
     MAIL         *pmail;
-} MESSAGE_CONTEXT;
+};
 
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
 
-typedef struct _PLUG_ENTITY{
+struct PLUG_ENTITY {
     DOUBLE_LIST_NODE    node;
 	DOUBLE_LIST			list_reference;
     DOUBLE_LIST         list_hook;
@@ -53,48 +53,48 @@ typedef struct _PLUG_ENTITY{
     char                file_name[256];
     char                full_path[256];
 	bool completed_init;
-} PLUG_ENTITY;
+};
 
-typedef struct _HOOK_ENTRY{
+struct HOOK_ENTRY {
     DOUBLE_LIST_NODE    node_hook;
     DOUBLE_LIST_NODE    node_lib;
     HOOK_FUNCTION       hook_addr;
-    struct _PLUG_ENTITY *plib;
+	PLUG_ENTITY *plib;
 	int					count;
 	BOOL				valid;
-} HOOK_ENTRY;
+};
 
 /* structure for describing service reference */
-typedef struct _SERVICE_NODE{
+struct SERVICE_NODE {
     DOUBLE_LIST_NODE    node;
     void                *service_addr;
     char                *service_name;
-} SERVICE_NODE;
+};
 
-typedef struct _FIXED_CONTEXT{
+struct FIXED_CONTEXT {
 	CONTROL_INFO	mail_control;
     MAIL			mail;             /* mail object */
 	MESSAGE_CONTEXT context;
-} FIXED_CONTEXT;
+};
 
-typedef struct _FREE_CONTEXT{
+struct FREE_CONTEXT {
 	SINGLE_LIST_NODE	node;
 	CONTROL_INFO		mail_control;
 	MAIL				mail;
 	MESSAGE_CONTEXT		context;
-} FREE_CONTEXT;
+};
 
-typedef struct _CIRCLE_NODE{
+struct CIRCLE_NODE {
 	DOUBLE_LIST_NODE	node;
 	HOOK_FUNCTION		hook_addr;
-} CIRCLE_NODE;
+};
 
-typedef struct _ANTI_LOOP{
+struct ANTI_LOOP {
 	DOUBLE_LIST		free_list;
 	DOUBLE_LIST		throwed_list;
-} ANTI_LOOP;
+};
 
-typedef struct _THREAD_DATA{
+struct THREAD_DATA {
 	DOUBLE_LIST_NODE	node;
 	pthread_t			id;
 	BOOL				wait_on_event;
@@ -102,7 +102,7 @@ typedef struct _THREAD_DATA{
 	ANTI_LOOP			anti_loop;
 	HOOK_FUNCTION		last_hook;
 	HOOK_FUNCTION		last_thrower;
-} THREAD_DATA;
+};
 
 static char				g_path[256];
 static const char *const *g_plugin_names;

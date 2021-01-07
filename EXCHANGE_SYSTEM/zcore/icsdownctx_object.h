@@ -5,7 +5,7 @@
 #include "common_util.h"
 #include "folder_object.h"
 
-typedef struct _ICSDOWNCTX_OBJECT {
+struct ICSDOWNCTX_OBJECT {
 	uint8_t sync_type;
 	STORE_OBJECT *pstore;
 	uint64_t folder_id;
@@ -21,7 +21,7 @@ typedef struct _ICSDOWNCTX_OBJECT {
 	EID_ARRAY *pread_messags;
 	EID_ARRAY *punread_messags;
 	uint32_t eid_pos;
-} ICSDOWNCTX_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

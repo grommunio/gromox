@@ -14,10 +14,10 @@
 #include <string.h>
 #include <stdio.h>
 
-typedef struct _CPID_ITEM {
+struct CPID_ITEM {
 	uint32_t cpid;
 	char charset[64];
-} CPID_ITEM;
+};
 
 DECLARE_API;
 

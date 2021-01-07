@@ -8,10 +8,9 @@
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
 	so they can operate internal variables of each other */
 
-struct _ATTACHMENT_OBJECT;
+struct ATTACHMENT_OBJECT;
 
-
-typedef struct _MESSAGE_OBJECT {
+struct MESSAGE_OBJECT {
 	STORE_OBJECT *pstore;
 	BOOL b_new;
 	BOOL b_writable;
@@ -21,12 +20,12 @@ typedef struct _MESSAGE_OBJECT {
 	uint64_t message_id;
 	uint64_t folder_id;
 	uint32_t instance_id;
-	struct _ATTACHMENT_OBJECT *pembedding;
+	ATTACHMENT_OBJECT *pembedding;
 	uint32_t tag_access;
 	ICS_STATE *pstate;
 	PROPTAG_ARRAY *pchanged_proptags;
 	PROPTAG_ARRAY *premoved_proptags;
-} MESSAGE_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

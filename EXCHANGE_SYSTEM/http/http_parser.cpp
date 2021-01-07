@@ -35,7 +35,7 @@
 
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
 
-typedef struct _VIRTUAL_CONNECTION {
+struct VIRTUAL_CONNECTION {
 	char hash_key[256];
 	std::atomic<int> reference;
 	pthread_mutex_t lock;
@@ -44,7 +44,7 @@ typedef struct _VIRTUAL_CONNECTION {
 	HTTP_CONTEXT  *pcontext_insucc;
 	HTTP_CONTEXT  *pcontext_out;
 	HTTP_CONTEXT  *pcontext_outsucc;
-} VIRTUAL_CONNECTION;
+};
 
 static int g_context_num;
 static BOOL g_async_stop;

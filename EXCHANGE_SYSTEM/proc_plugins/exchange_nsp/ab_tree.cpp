@@ -62,18 +62,18 @@
 	CLASS: classname
 */
 
-typedef struct _AB_NODE {
+struct AB_NODE {
 	SIMPLE_TREE_NODE node;
 	uint8_t node_type;
 	uint32_t minid;
 	MEM_FILE f_info;
 	int id;
-} AB_NODE;
+};
 
-typedef struct _SORT_ITEM {
+struct SORT_ITEM {
 	SIMPLE_TREE_NODE *pnode;
 	char *string;
-} SORT_ITEM;
+};
 
 static int g_base_size;
 static int g_file_blocks;

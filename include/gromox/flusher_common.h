@@ -15,7 +15,7 @@
 #define FLUSH_TEMP_FAIL             2
 #define FLUSH_PERMANENT_FAIL        3
 
-typedef struct _ENVELOP_INFO {
+struct ENVELOP_INFO {
     char        parsed_domain[256];/* parsed domain according connection*/
     char        hello_domain[256]; /* domain name after helo */
     char        from[256];         /* envelop's from message */
@@ -24,34 +24,32 @@ typedef struct _ENVELOP_INFO {
 	BOOL        is_login;          /* user is logged in */
     BOOL        is_outbound;       /* in-bound or out-bound */
     BOOL        is_relay;          /* indicate whether this mail is relaying */
-} ENVELOP_INFO;
+};
 
-typedef struct _CONNECTION {
+struct CONNECTION {
 	char client_ip[32]; /* client ip address string */
     int            client_port;        /* value of client port */
 	char server_ip[32]; /* server ip address */
     int            server_port;        /* value of server port */
     int            sockd;              /* context's socket file description */
     struct timeval last_timestamp;     /* last time when system got data from */
-} CONNECTION;
+};
 
-
-typedef struct _FLUSH_INFO{
+struct FLUSH_INFO {
     int           flush_action; /* indicate flushing whole or part of mail */
     int           flush_result;
     int           flush_ID;
     void          *flush_ptr;     /* extended data pointer */
-} FLUSH_INFO;
+};
 
-
-typedef struct _FLUSH_ENTITY {
+struct FLUSH_ENTITY {
     STREAM           *pstream; 
     CONNECTION       *pconnection;
     FLUSH_INFO       *pflusher; /* the flusher for saving mail information */
     ENVELOP_INFO     *penvelop;
     BOOL             is_spam;   /* whether the mail is spam */
     int              context_ID;
-} FLUSH_ENTITY;
+};
 
 typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);

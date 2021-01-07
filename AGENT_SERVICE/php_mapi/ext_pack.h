@@ -2,23 +2,23 @@
 #include "types.h"
 #include "php.h"
 
-typedef struct _PULL_CTX {
+struct PULL_CTX {
 	union {
 		const void *data;
 		const char *sdata;
 	};
 	uint32_t data_size;
 	uint32_t offset;
-} PULL_CTX;
+};
 
-typedef struct _PUSH_CTX {
+struct PUSH_CTX {
 	union {
 		void *data;
 		char *sdata;
 	};
 	uint32_t alloc_size;
 	uint32_t offset;
-} PUSH_CTX;
+};
 
 
 #define ext_pack_pull_bool	ext_pack_pull_uint8

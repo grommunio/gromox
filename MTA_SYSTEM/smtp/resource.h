@@ -6,10 +6,10 @@
 #define resource_get_integer(k, vp) config_file_get_int(g_config_file, (k), (vp))
 #define resource_set_integer(k, v) config_file_set_int(g_config_file, (k), (v))
 
-typedef struct _SMTP_ERROR_CODE {
+struct SMTP_ERROR_CODE {
     int     code;
     char    comment[512];
-} SMTP_ERROR_CODE;
+};
 
 enum {
     SMTP_CODE_2172001 = 0,

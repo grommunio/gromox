@@ -11,7 +11,7 @@ enum {
 	USER_TABLE_USED
 };
 
-typedef struct _USER_INFO {
+struct USER_INFO {
 	GUID hsession;
 	std::atomic<int> reference;
 	int user_id;
@@ -28,7 +28,7 @@ typedef struct _USER_INFO {
 	OBJECT_TREE *ptree;
 	pthread_mutex_t lock;
 	DOUBLE_LIST sink_list;
-} USER_INFO;
+};
 
 #ifdef __cplusplus
 extern "C" {

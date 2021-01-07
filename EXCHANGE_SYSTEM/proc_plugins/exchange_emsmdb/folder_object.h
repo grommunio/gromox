@@ -3,12 +3,12 @@
 #include "logon_object.h"
 
 
-typedef struct _FOLDER_OBJECT {
+struct FOLDER_OBJECT {
 	LOGON_OBJECT *plogon;
 	uint64_t folder_id;
 	uint8_t type;
 	uint32_t tag_access;
-} FOLDER_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

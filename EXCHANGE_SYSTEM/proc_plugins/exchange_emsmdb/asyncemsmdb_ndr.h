@@ -2,15 +2,15 @@
 #include "emsmdb_interface.h"
 #include <gromox/proc_common.h>
 
-typedef struct _ECDOASYNCWAITEX_IN {
+struct ECDOASYNCWAITEX_IN {
 	ACXH acxh;
 	uint32_t flags_in;
-} ECDOASYNCWAITEX_IN;
+};
 
-typedef struct _ECDOASYNCWAITEX_OUT {
+struct ECDOASYNCWAITEX_OUT {
 	uint32_t flags_out;
 	int32_t result;
-} ECDOASYNCWAITEX_OUT;
+};
 
 #ifdef __cplusplus
 extern "C" {

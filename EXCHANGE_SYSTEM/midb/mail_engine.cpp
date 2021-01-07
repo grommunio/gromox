@@ -99,33 +99,33 @@ enum {
 	CONJUNCTION_NOT
 };
 
-typedef struct _CONDITION_RESULT {
+struct CONDITION_RESULT {
 	SINGLE_LIST list;
 	SINGLE_LIST_NODE *pcur_node;
-} CONDITION_RESULT;
+};
 
-typedef struct _CONDITION_TREE_NODE {
+struct CONDITION_TREE_NODE {
 	DOUBLE_LIST_NODE node;
 	int conjunction;
 	DOUBLE_LIST *pbranch;
 	int condition;
 	void *pstatment;
-} CONDITION_TREE_NODE;
+};
 
-typedef struct _SEQUENCE_NODE {
+struct SEQUENCE_NODE {
 	DOUBLE_LIST_NODE node;
 	unsigned int min;
 	unsigned int max;
-} SEQUENCE_NODE;
+};
 
-typedef struct _KEYWORD_ENUM {
+struct KEYWORD_ENUM {
 	MJSON *pjson;
 	BOOL b_result;
 	const char *charset;
 	const char *keyword;
-} KEYWORD_ENUM;
+};
 
-typedef struct _IDB_ITEM {
+struct IDB_ITEM {
 	sqlite3 *psqlite;
 	/* client reference count, item can be flushed into file system only count is 0 */
 	char *username;
@@ -134,7 +134,7 @@ typedef struct _IDB_ITEM {
 	uint32_t sub_id;
 	std::atomic<int> reference;
 	pthread_mutex_t lock;
-} IDB_ITEM;
+};
 
 enum {
 	FIELD_NONE = 0,
@@ -148,32 +148,31 @@ enum {
 	FIELD_FLAG
 };
 
-typedef struct _IDL_NODE {
+struct IDL_NODE {
 	DOUBLE_LIST_NODE node;
 	char *mid_string;
 	uint32_t size;
-} IDL_NODE;
+};
 
-typedef struct _DTLU_NODE {
+struct DTLU_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t idx;
 	char *mid_string;
-} DTLU_NODE;
+};
 
-typedef struct _SIMU_NODE {
+struct SIMU_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t idx;
 	uint32_t uid;
 	char *mid_string;
 	char *flags_buff;
-} SIMU_NODE;
+};
 
-typedef struct _SUB_NODE {
+struct SUB_NODE {
 	DOUBLE_LIST_NODE node;
 	char maildir[256];
 	uint32_t sub_id;
-} SUB_NODE;
-
+};
 
 static BOOL g_wal;
 static BOOL g_async;

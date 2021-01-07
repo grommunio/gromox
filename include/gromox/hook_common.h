@@ -14,19 +14,19 @@
 #define BOUND_RELAY					3    /* message smtp relay */
 #define	BOUND_SELF					4    /* message creted by hook */
 
-typedef struct _CONTROL_INFO{
+struct CONTROL_INFO {
 	int         queue_ID;
 	int			bound_type;
 	BOOL        is_spam;
 	BOOL        need_bounce;
 	char        from[256];
 	MEM_FILE    f_rcpt_to;
-} CONTROL_INFO;
+};
 
-typedef struct _MESSAGE_CONTEXT{
+struct MESSAGE_CONTEXT {
 	CONTROL_INFO *pcontrol;
 	MAIL         *pmail;
-} MESSAGE_CONTEXT;
+};
 
 typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
 typedef void (*TALK_MAIN)(int, char**, char*, int);

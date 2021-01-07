@@ -14,25 +14,24 @@
 #include <dirent.h>
 #include <cstdio>
 
-typedef struct _TAG_NODE {
+struct TAG_NODE {
 	DOUBLE_LIST_NODE node;
 	uint16_t propid;
 	uint16_t type;
 	PROPERTY_NAME *ppropname;
-} TAG_NODE;
+};
 
-typedef struct _GROUP_NODE { 
+struct GROUP_NODE { 
 	DOUBLE_LIST_NODE node;
 	uint32_t index;
 	DOUBLE_LIST tag_list;
-} GROUP_NODE;
+};
 
-typedef struct _INFO_NODE {
+struct INFO_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t group_id;
 	DOUBLE_LIST group_list;
-} INFO_NODE;
-
+};
 
 static char g_folder_path[256];
 static DOUBLE_LIST g_info_list;

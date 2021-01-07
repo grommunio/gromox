@@ -11,11 +11,11 @@
 #define ROOT_HANDLE						0
 #define INVALID_HANDLE					0xFFFFFFFF
 
-typedef struct _OBJECT_TREE {
+struct OBJECT_TREE {
 	uint32_t last_handle;
 	INT_HASH_TABLE *phash;
 	SIMPLE_TREE tree;
-} OBJECT_TREE;
+};
 
 #ifdef __cplusplus
 extern "C" {

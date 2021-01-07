@@ -4,7 +4,7 @@
 #include "str_hash.h"
 #include "int_hash.h"
 
-typedef struct _STORE_OBJECT {
+struct STORE_OBJECT {
 	BOOL b_private;
 	int account_id;
 	char account[256];
@@ -14,10 +14,9 @@ typedef struct _STORE_OBJECT {
 	INT_HASH_TABLE *ppropid_hash;
 	STR_HASH_TABLE *ppropname_hash;
 	DOUBLE_LIST group_list;
-} STORE_OBJECT;
+};
 
-
-struct _PERMISSION_SET;
+struct PERMISSION_SET;
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,9 +75,7 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 
 BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 	const PROPTAG_ARRAY *pproptags);
-	
-BOOL store_object_get_permissions(STORE_OBJECT *pstore,
-	struct _PERMISSION_SET *pperm_set);
+extern BOOL store_object_get_permissions(STORE_OBJECT *, PERMISSION_SET *);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -45,7 +45,7 @@
 	parsing email object into message object!
 */
 
-typedef struct _FIELD_ENUM_PARAM {
+struct FIELD_ENUM_PARAM {
 	EXT_BUFFER_ALLOC alloc;
 	MESSAGE_CONTENT *pmsg;
 	INT_HASH_TABLE *phash;
@@ -54,9 +54,9 @@ typedef struct _FIELD_ENUM_PARAM {
 	BOOL b_classified;
 	BOOL b_flag_del;
 	MAIL *pmail;
-} FIELD_ENUM_PARAM;
+};
 
-typedef struct _MIME_ENUM_PARAM {
+struct MIME_ENUM_PARAM {
 	BOOL b_result;
 	int attach_id;
 	const char *charset;
@@ -73,15 +73,15 @@ typedef struct _MIME_ENUM_PARAM {
 	MIME *penriched;
 	MIME *pcalendar;
 	MIME *preport;
-} MIME_ENUM_PARAM;
+};
 
-typedef struct _DSN_ENUM_INFO {
+struct DSN_ENUM_INFO {
 	int action_severity;
 	TARRAY_SET *prcpts;
 	uint64_t submit_time;
-} DSN_ENUM_INFO;
+};
 
-typedef struct _DSN_FILEDS_INFO {
+struct DSN_FILEDS_INFO {
 	char final_recipient[256];
 	int action_severity;
 	char remote_mta[128];
@@ -89,7 +89,7 @@ typedef struct _DSN_FILEDS_INFO {
 	const char *diagnostic_code;
 	const char *x_supplementary_info;
 	const char *x_display_name;
-} DSN_FILEDS_INFO;
+};
 
 enum {
 	MAIL_TYPE_NORMAL,
@@ -101,7 +101,7 @@ enum {
 	MAIL_TYPE_TNEF
 };
 
-typedef struct _MIME_SKELETON {
+struct MIME_SKELETON {
 	int mail_type;
 	int body_type;
 	char *pplain;
@@ -112,7 +112,7 @@ typedef struct _MIME_SKELETON {
 	const char *charset;
 	const char *pmessage_class;
 	ATTACHMENT_LIST *pattachments;
-} MIME_SKELETON;
+};
 
 static uint8_t MACBINARY_ENCODING[] =
 	{0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B, 0x01};

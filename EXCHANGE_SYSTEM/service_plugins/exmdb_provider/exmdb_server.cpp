@@ -7,14 +7,13 @@
 #include <pthread.h>
 #include <cstdio>
 
-typedef struct _ENVIRONMENT_CONTEXT {
+struct ENVIRONMENT_CONTEXT {
 	BOOL b_local;
 	ALLOC_CONTEXT alloc_ctx;
 	BOOL b_private;
 	const char *dir;
 	int account_id;
-} ENVIRONMENT_CONTEXT;
-
+};
 
 static pthread_key_t g_id_key;
 static pthread_key_t g_env_key;

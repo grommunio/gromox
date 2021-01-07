@@ -198,25 +198,25 @@ enum {
 	PICT_EMF
 };
 
-typedef struct _COLLECTION_NODE {
+struct COLLECTION_NODE {
 	DOUBLE_LIST_NODE node;
 	int nr;
 	char *text;
-} COLLECTION_NODE;
+};
 
-typedef struct _ATTRSTACK_NODE {
+struct ATTRSTACK_NODE {
 	DOUBLE_LIST_NODE node;
 	uint8_t attr_stack[MAX_ATTRS];
 	int attr_params[MAX_ATTRS];
 	int tos;
-} ATTRSTACK_NODE;
+};
 
-typedef struct _FONTENTRY {
+struct FONTENTRY {
 	char name[MAX_FINTNAME_LEN];
 	char encoding[32];
-} FONTENTRY;
+};
 
-typedef struct _RTF_READER {
+struct RTF_READER {
 	int coming_pars_tabular;
 	BOOL is_within_table;
 	BOOL b_printed_row_begin;
@@ -260,12 +260,12 @@ typedef struct _RTF_READER {
 	EXT_PUSH iconv_push;
 	SIMPLE_TREE element_tree;
 	ATTACHMENT_LIST *pattachments;
-} RTF_READER;
+};
 
-typedef struct _GROUP_NODE {
+struct GROUP_NODE {
 	SIMPLE_TREE_NODE node;
 	DOUBLE_LIST collection_list;
-} GROUP_NODE;
+};
 
 enum {
 	CMD_RESULT_ERROR = -1,
@@ -276,10 +276,10 @@ enum {
 
 typedef int (*CMD_PROC_FUNC)(RTF_READER*, SIMPLE_TREE_NODE*, int, BOOL, int);
 
-typedef struct _MAP_ITEM {
+struct MAP_ITEM {
 	const char *tag;
 	CMD_PROC_FUNC func;
-} MAP_ITEM;
+};
 
 static STR_HASH_TABLE *g_cmd_hash;
 static const char* (*rtf_cpid_to_charset)(uint32_t cpid);

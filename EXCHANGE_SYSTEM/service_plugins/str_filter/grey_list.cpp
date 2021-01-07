@@ -13,18 +13,18 @@
 #include <stdio.h>
 #include <pthread.h>
 
-typedef struct _GREY_LIST_ENTRY {
+struct GREY_LIST_ENTRY {
 	int				current_times;
 	int				allowed_times;
 	int				interval;
 	struct timeval	last_access;
-} GREY_LIST_ENTRY;
+};
 
-typedef struct _LIST_ITEM {
+struct LIST_ITEM {
 	char    string[256];
 	int     allow_times;
 	char    interval[32];
-} LIST_ITEM;
+};
 
 static STR_HASH_TABLE *g_grey_table;
 static pthread_rwlock_t  g_refresh_lock;

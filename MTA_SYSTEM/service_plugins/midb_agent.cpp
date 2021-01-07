@@ -38,21 +38,21 @@
 
 #define MIDB_MAILBOX_FULL		4
 
-typedef struct _BACK_SVR {
+struct BACK_SVR {
 	DOUBLE_LIST_NODE node;
 	char prefix[256];
 	int prefix_len;
 	char ip_addr[32];
 	int port;
 	DOUBLE_LIST conn_list;
-} BACK_SVR;
+};
 
-typedef struct _BACK_CONN {
+struct BACK_CONN {
     DOUBLE_LIST_NODE node;
     int sockd;
 	time_t last_time;
 	BACK_SVR *psvr;
-} BACK_CONN;
+};
 
 static void* scan_work_func(void *param);
 
@@ -133,10 +133,10 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 
 
 		list_num = list_file_get_item_num(plist);
-		typedef struct _MIDB_ITEM {
+		struct MIDB_ITEM {
 			char prefix[256], ip_addr[32];
 			int port;
-		} MIDB_ITEM;
+		};
 		MIDB_ITEM *pitem = (MIDB_ITEM*)list_file_get_list(plist);
 		for (i=0; i<list_num; i++) {
 			pserver = (BACK_SVR*)malloc(sizeof(BACK_SVR));

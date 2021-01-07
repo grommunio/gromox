@@ -8,14 +8,14 @@
 #	include <stdint.h>
 #endif
 
-struct _RPC_REQUEST;
-struct _RPC_RESPONSE;
+struct RPC_REQUEST;
+struct RPC_RESPONSE;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern zend_bool zarafa_client_do_rpc(const struct _RPC_REQUEST *, struct _RPC_RESPONSE *);
+extern zend_bool zarafa_client_do_rpc(const RPC_REQUEST *, RPC_RESPONSE *);
 extern uint32_t zarafa_client_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag, const void *pvalue);
 extern uint32_t zarafa_client_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag, void **ppvalue);
 

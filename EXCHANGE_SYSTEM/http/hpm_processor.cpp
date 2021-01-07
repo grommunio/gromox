@@ -22,13 +22,13 @@ enum {
 };
 
 /* structure for describing service reference */
-typedef struct _SERVICE_NODE{
+struct SERVICE_NODE {
 	DOUBLE_LIST_NODE node;
 	void *service_addr;
 	char *service_name;
-} SERVICE_NODE;
+};
 
-typedef struct _HPM_CONTEXT {
+struct HPM_CONTEXT {
 	HPM_INTERFACE *pinterface;
 	BOOL b_preproc;
 	BOOL b_chunked;
@@ -38,15 +38,15 @@ typedef struct _HPM_CONTEXT {
 	BOOL b_end;
 	int cache_fd;
 	uint64_t cache_size;
-} HPM_CONTEXT;
+};
 
-typedef struct _HTTP_AUTH_INFO {
+struct HTTP_AUTH_INFO {
 	BOOL b_authed;
 	const char* username;
 	const char* password;
 	const char* maildir;
 	const char* lang;
-} HTTP_AUTH_INFO;
+};
 
 static int g_context_num;
 static uint64_t g_max_size;

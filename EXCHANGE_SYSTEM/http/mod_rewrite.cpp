@@ -10,11 +10,11 @@
 
 #define MAX_LINE					16*1024
 
-typedef struct _REWRITE_NODE {
+struct REWRITE_NODE {
 	DOUBLE_LIST_NODE node;
 	regex_t search_pattern;
 	char *replace_string;
-} REWRITE_NODE;
+};
 
 static char g_list_path[256];
 static DOUBLE_LIST g_rewite_list;

@@ -59,25 +59,25 @@
 #define PROTOCOL_STATUS_OVERLOADED				2
 #define PROTOCOL_STATUS_UNKNOWN_ROLE			3
 
-typedef struct _FCGI_ENDREQUESTBODY {
+struct FCGI_ENDREQUESTBODY {
 	uint32_t app_status;
 	uint8_t protocol_status;
 	uint8_t reserved[3];
-} FCGI_ENDREQUESTBODY;
+};
 
-typedef struct _FCGI_STDSTREAM {
+struct FCGI_STDSTREAM {
 	uint8_t buffer[0xFFFF];
 	uint16_t length;
-} FCGI_STDSTREAM;
+};
 
-typedef struct _RECORD_HEADER {
+struct RECORD_HEADER {
 	uint8_t version;
 	uint8_t type;
 	uint16_t request_id;
 	uint16_t content_len;
 	uint8_t padding_len;
 	uint8_t reserved;
-} RECORD_HEADER;
+};
 
 static int g_context_num;
 static int g_exec_timeout;

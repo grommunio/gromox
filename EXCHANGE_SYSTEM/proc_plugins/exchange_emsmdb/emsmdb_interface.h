@@ -3,7 +3,7 @@
 #include <gromox/proc_common.h>
 #include "mapi_types.h"
 
-typedef struct _EMSMDB_INFO {
+struct EMSMDB_INFO {
 	uint32_t cpid;
 	uint32_t lcid_string;
 	uint32_t lcid_sort;
@@ -11,7 +11,7 @@ typedef struct _EMSMDB_INFO {
 	uint16_t client_mode;
 	void *plogmap;
 	int upctx_ref;
-} EMSMDB_INFO;
+};
 
 typedef CONTEXT_HANDLE CXH;
 

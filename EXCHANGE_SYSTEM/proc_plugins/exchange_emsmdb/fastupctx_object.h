@@ -10,7 +10,7 @@
 #define ROOT_ELEMENT_MESSAGELIST			4
 #define ROOT_ELEMENT_TOPFOLDER				5
 
-typedef struct _FASTUPCTX_OBJECT {
+struct FASTUPCTX_OBJECT {
 	FTSTREAM_PARSER *pstream;
 	void *pobject;
 	BOOL b_ended;
@@ -18,7 +18,7 @@ typedef struct _FASTUPCTX_OBJECT {
 	TPROPVAL_ARRAY *pproplist;
 	MESSAGE_CONTENT *pmsgctnt;
 	DOUBLE_LIST marker_stack;
-} FASTUPCTX_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

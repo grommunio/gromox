@@ -3,12 +3,12 @@
 #include "mapi_types.h"
 #include "ics_state.h"
 
-typedef struct _ICSUPCTX_OBJECT {
+struct ICSUPCTX_OBJECT {
 	STORE_OBJECT *pstore;
 	uint64_t folder_id;
 	ICS_STATE *pstate; /* public member */
 	uint8_t sync_type;
-} ICSUPCTX_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -23,16 +23,16 @@
 #include <ctime>
 #define SOCKET_TIMEOUT							180
 
-typedef struct _PROXY_NODE {
+struct PROXY_NODE {
 	DOUBLE_LIST_NODE node;
 	char *domain;
 	char *path;
 	char *remote_host;
 	uint16_t remote_port;
 	char *remote_path;
-} PROXY_NODE;
+};
 
-typedef struct _PROXY_CONTEXT {
+struct PROXY_CONTEXT {
 	PROXY_NODE *pxnode;
 	int sockd;
 	time_t last_time;
@@ -40,7 +40,7 @@ typedef struct _PROXY_CONTEXT {
 	char *pmore_buff;
 	int buff_offset;
 	int buff_length;
-} PROXY_CONTEXT;
+};
 
 DECLARE_API;
 

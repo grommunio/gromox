@@ -3,7 +3,7 @@
 #include "logon_object.h"
 #include "mapi_types.h"
 
-typedef struct _TABLE_OBJECT {
+struct TABLE_OBJECT {
 	LOGON_OBJECT *plogon;
 	CXH cxh;
 	void *plogmap;
@@ -19,7 +19,7 @@ typedef struct _TABLE_OBJECT {
 	uint32_t table_id;
 	uint32_t bookmark_index;
 	DOUBLE_LIST bookmark_list;
-} TABLE_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

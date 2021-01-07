@@ -34,27 +34,25 @@
 
 #define DEF_MODE			S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
-
-typedef struct _ACL_ITEM {
+struct ACL_ITEM {
 	DOUBLE_LIST_NODE node;
 	char ip_addr[32];
-} ACL_ITEM;
+};
 
-typedef struct _CONNECTION_NODE {
+struct CONNECTION_NODE {
 	DOUBLE_LIST_NODE node;
 	int sockd;
 	int offset;
 	char buffer[1024];
 	char line[1024];
-} CONNECTION_NODE;
+};
 
-typedef struct _TIMER {
+struct TIMER {
 	DOUBLE_LIST_NODE node;
 	int t_id;
 	time_t exec_time;
 	char command[COMMAND_LENGTH];
-} TIMER;
-
+};
 
 static BOOL g_notify_stop;
 static int g_threads_num;

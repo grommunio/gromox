@@ -18,14 +18,14 @@
 #include <cstdlib>
 #include <cstring>
 
-typedef struct _BOOKMARK_NODE {
+struct BOOKMARK_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t index;
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
 	uint32_t position;
-} BOOKMARK_NODE;
+};
 
 static void table_object_set_table_id(
 	TABLE_OBJECT *ptable, uint32_t table_id)

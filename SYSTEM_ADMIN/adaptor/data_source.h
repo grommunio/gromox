@@ -2,23 +2,21 @@
 #include "common_types.h"
 #include "double_list.h"
 
-
-
-typedef struct _DOMAIN_ITEM {
+struct DOMAIN_ITEM {
 	char domainname[64];
 	char homedir[128];
 	int type;
-} DOMAIN_ITEM;
+};
 
-typedef struct _ALIAS_ITEM {
+struct ALIAS_ITEM {
 	char aliasname[128];
 	char mainname[128];
-} ALIAS_ITEM;
+};
 
-typedef struct _DATA_COLLECT {
+struct DATA_COLLECT {
 	DOUBLE_LIST list;
 	DOUBLE_LIST_NODE *pnode;
-} DATA_COLLECT;
+};
 
 extern DATA_COLLECT *data_source_collect_init(void);
 void data_source_collect_free(DATA_COLLECT *pcollect);

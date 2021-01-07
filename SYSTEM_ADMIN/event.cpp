@@ -40,23 +40,21 @@
 
 #define HASH_CAPABILITY			10000
 
-
-
-typedef struct _ACL_ITEM {
+struct ACL_ITEM {
 	DOUBLE_LIST_NODE node;
 	char ip_addr[32];
-} ACL_ITEM;
+};
 
-typedef struct _ENQUEUE_NODE {
+struct ENQUEUE_NODE {
 	DOUBLE_LIST_NODE node;
 	char res_id[128];
 	int sockd;
 	int offset;
 	char buffer[MAX_CMD_LENGTH];
 	char line[MAX_CMD_LENGTH];
-} ENQUEUE_NODE;
+};
 
-typedef struct _DEQUEUE_NODE {
+struct DEQUEUE_NODE {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST_NODE node_host;
 	char res_id[128];
@@ -65,15 +63,15 @@ typedef struct _DEQUEUE_NODE {
 	pthread_mutex_t lock;
 	pthread_mutex_t cond_mutex;
 	pthread_cond_t waken_cond;
-} DEQUEUE_NODE;
+};
 
-typedef struct _HOST_NODE {
+struct HOST_NODE {
 	DOUBLE_LIST_NODE node;
 	char res_id[128];
 	time_t last_time;
 	STR_HASH_TABLE *phash;
 	DOUBLE_LIST list;
-} HOST_NODE;
+};
 
 static BOOL g_notify_stop = FALSE;
 static int g_threads_num;

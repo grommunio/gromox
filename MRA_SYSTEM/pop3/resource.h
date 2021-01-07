@@ -6,10 +6,10 @@
 #define resource_get_integer(k, vp) config_file_get_int(g_config_file, (k), (vp))
 #define resource_set_integer(k, v) config_file_set_int(g_config_file, (k), (v))
 
-typedef struct _POP3_ERROR_CODE {
+struct POP3_ERROR_CODE {
     int     code;
     char    comment[512];
-} POP3_ERROR_CODE;
+};
 
 enum {
     POP3_CODE_2170000 = 0,

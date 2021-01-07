@@ -15,7 +15,7 @@
 #include <pthread.h>
 #define MAX_FILE_LINE_LEN       1024
 
-typedef struct _LANG_FOLDER {
+struct LANG_FOLDER {
 	SINGLE_LIST_NODE node;
 	char lang[32];
 	char *folders[4];
@@ -24,7 +24,7 @@ typedef struct _LANG_FOLDER {
 	char sent[256];
 	char trash[256];
 	char junk[256];
-} LANG_FOLDER;
+};
 
 static IMAP_RETURN_CODE g_default_code_table[] = {
 	{2160001, "BYE logging out"},

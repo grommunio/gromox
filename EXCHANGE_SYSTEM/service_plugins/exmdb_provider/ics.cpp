@@ -12,37 +12,36 @@
 #include <cstdio>
 #define IDSET_CACHE_MIN_RANGE				10
 
-typedef struct _ENUM_PARAM {
+struct ENUM_PARAM {
 	sqlite3_stmt *pstmt;
 	sqlite3_stmt *pstmt1;
 	EID_ARRAY *pdeleted_eids;
 	EID_ARRAY *pnolonger_mids;
 	BOOL b_result;
-} ENUM_PARAM;
+};
 
-typedef struct _REPLID_ARRAY {
+struct REPLID_ARRAY {
 	int count;
 	uint16_t replids[1024];
-} REPLID_ARRAY;
+};
 
-typedef struct _RANGE_NODE {
+struct RANGE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint64_t low_value;
 	uint64_t high_value;
-} RANGE_NODE;
+};
 
-typedef struct _REPLID_NODE {
+struct REPLID_NODE {
 	DOUBLE_LIST_NODE node;
 	uint16_t replid;
 	DOUBLE_LIST range_list;
-} REPLID_NODE;
+};
 
-typedef struct _IDSET_CACHE {
+struct IDSET_CACHE {
 	sqlite3 *psqlite;
 	sqlite3_stmt *pstmt;
 	DOUBLE_LIST range_list;
-} IDSET_CACHE;
-
+};
 
 static void ics_free_idset_cache(IDSET_CACHE *pcache)
 {

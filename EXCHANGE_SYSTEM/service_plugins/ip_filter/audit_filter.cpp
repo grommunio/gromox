@@ -18,11 +18,11 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-typedef struct _IP_AUDIT {
+struct IP_AUDIT {
     struct timeval  first_time_stamp;/* time stamp of first time of visit */
     struct timeval  last_time_stamp; /* time stamp of last time of visit  */
     int				times;
-} IP_AUDIT;
+};
 
 /* private global variable */
 static IP4_HASH_TABLE *g_audit_hash;

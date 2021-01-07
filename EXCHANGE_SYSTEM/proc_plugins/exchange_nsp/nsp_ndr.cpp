@@ -2167,7 +2167,7 @@ static int nsp_ndr_push_proprow_set(NDR_PUSH *pndr, int flag, const PROPROW_SET 
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, struct _RESTRICTION_AND_OR *r)
+static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, RESTRICTION_AND_OR *r)
 {
 	int status;
 	uint32_t ptr;
@@ -2231,7 +2231,7 @@ static int nsp_ndr_pull_restriction_and_or(NDR_PULL *pndr, int flag, struct _RES
 	return NDR_ERR_SUCCESS;
 }
 
-static int nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr, int flag, const struct _RESTRICTION_AND_OR *r)
+static int nsp_ndr_push_restriction_and_or(NDR_PUSH *pndr, int flag, const RESTRICTION_AND_OR *r)
 {
 	int status;
 	uint32_t cnt;

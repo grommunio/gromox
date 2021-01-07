@@ -30,11 +30,11 @@
 typedef CONTEXT_HANDLE NSPI_HANDLE;
 
 
-typedef struct _FLATUID {
+struct FLATUID {
 	uint8_t ab[16];
-} FLATUID;
+};
 
-typedef struct _STAT {
+struct STAT {
 	uint32_t sort_type;
 	uint32_t container_id;
 	uint32_t cur_rec;
@@ -44,69 +44,69 @@ typedef struct _STAT {
 	uint32_t codepage;
 	uint32_t template_locale;
 	uint32_t sort_locale;
-} STAT;
+};
 
-typedef struct _PROPTAG_ARRAY {
+struct PROPTAG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pproptag;
-} PROPTAG_ARRAY;
+};
 
-typedef struct _PROPERTY_NAME {
+struct PROPERTY_NAME {
 	FLATUID *pguid;
 	uint32_t reserved;
 	uint32_t id;
-} PROPERTY_NAME;
+};
 
-typedef struct _STRING_ARRAY {
+struct STRING_ARRAY {
 	uint32_t cvalues;
 	char **ppstr;
-} STRING_ARRAY;
+};
 
-typedef struct _STRINGS_ARRAY {
+struct STRINGS_ARRAY {
 	uint32_t count;
 	char **ppstrings;
-} STRINGS_ARRAY;
+};
 
-typedef struct _BINARY {
+struct BINARY {
 	uint32_t cb;
 	union {
 		uint8_t *pb;
 		char *pc;
 		void *pv;
 	};
-} BINARY;
+};
 
-typedef struct _FILETIME {
+struct FILETIME {
 	uint32_t low_datetime;
 	uint32_t high_datetime;
-} FILETIME;
+};
 
-typedef struct _SHORT_ARRAY {
+struct SHORT_ARRAY {
 	uint32_t cvalues;
 	uint16_t *ps;
-} SHORT_ARRAY;
+};
 
-typedef struct _LONG_ARRAY {
+struct LONG_ARRAY {
 	uint32_t cvalues;
 	uint32_t *pl;
-} LONG_ARRAY;
+};
 
-typedef struct _BINARY_ARRAY {
+struct BINARY_ARRAY {
 	uint32_t cvalues;
 	BINARY *pbin;
-} BINARY_ARRAY;
+};
 
-typedef struct _FLATUID_ARRAY {
+struct FLATUID_ARRAY {
 	uint32_t cvalues;
 	FLATUID **ppguid;
-} FLATUID_ARRAY;
+};
 
-typedef struct _FILETIME_ARRAY {
+struct FILETIME_ARRAY {
 	uint32_t cvalues;
 	FILETIME *pftime;
-} FILETIME_ARRAY;
+};
 
-typedef union _PROP_VAL_UNION {
+union PROP_VAL_UNION {
 	uint16_t s;
 	uint32_t l;
 	uint8_t b;
@@ -123,76 +123,78 @@ typedef union _PROP_VAL_UNION {
 	FLATUID_ARRAY guid_array;
 	FILETIME_ARRAY ftime_array;
 	uint32_t reserved;
-} PROP_VAL_UNION;
+};
 
-typedef struct _PROPERTY_VALUE {
+struct PROPERTY_VALUE {
 	uint32_t proptag;
 	uint32_t reserved;
 	PROP_VAL_UNION value; /* type is PROP_TYPE(proptag) */
-} PROPERTY_VALUE;
+};
 
-typedef struct _PROPERTY_ROW {
+struct PROPERTY_ROW {
 	uint32_t reserved;
 	uint32_t cvalues;
 	PROPERTY_VALUE *pprops;
-} PROPERTY_ROW;
+};
 
-typedef struct _PROPROW_SET {
+struct PROPROW_SET {
 	uint32_t crows;
 	PROPERTY_ROW *prows;
-} PROPROW_SET;
+};
 
-typedef struct _RESTRICTION_AND_OR {
+struct RESTRICTION;
+struct RESTRICTION_AND_OR {
 	uint32_t cres;
-	struct _RESTRICTION *pres;
-} RESTRICTION_AND, RESTRICTION_OR;
+	RESTRICTION *pres;
+};
+typedef struct RESTRICTION_AND_OR RESTRICTION_AND, RESTRICTION_OR;
 
-typedef struct _RESTRICTION_NOT {
-	struct _RESTRICTION *pres;
-} RESTRICTION_NOT;
+struct RESTRICTION_NOT {
+	RESTRICTION *pres;
+};
 
-typedef struct _RESTRICTION_CONTENT {
+struct RESTRICTION_CONTENT {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
 	PROPERTY_VALUE *pprop;
-} RESTRICTION_CONTENT;
+};
 
-typedef struct _RESTRICTION_PROPERTY {
+struct RESTRICTION_PROPERTY {
 	uint32_t relop;
 	uint32_t proptag;
 	PROPERTY_VALUE *pprop;
-} RESTRICTION_PROPERTY;
+};
 
-typedef struct _RESTRICTION_PROPCOMPARE {
+struct RESTRICTION_PROPCOMPARE {
 	uint32_t relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
-} RESTRICTION_PROPCOMPARE;
+};
 
-typedef struct _RESTRICTION_BITMASK {
+struct RESTRICTION_BITMASK {
 	uint32_t rel_mbr;
 	uint32_t proptag;
 	uint32_t mask;
-} RESTRICTION_BITMASK;
+};
 
-typedef struct _RESTRICTION_SIZE {
+struct RESTRICTION_SIZE {
 	uint32_t relop;
 	uint32_t proptag;
 	uint32_t cb;
-} RESTRICTION_SIZE;
+};
 
-typedef struct _RESTRICTION_EXIST {
+struct RESTRICTION_EXIST {
 	uint32_t reserved1;
 	uint32_t proptag;
 	uint32_t reserved2;
-} RESTRICTION_EXIST;
+};
 
-typedef struct _RESTRICTION_SUB {
+struct RESTRICTION_SUB {
 	uint32_t subobject;
-	struct _RESTRICTION *pres;
-} RESTRICTION_SUB;
+	RESTRICTION *pres;
+};
 
-typedef union _RESTRICTION_UNION {
+union RESTRICTION_UNION {
 	RESTRICTION_AND res_and;
 	RESTRICTION_OR res_or;
 	RESTRICTION_NOT res_not;
@@ -203,14 +205,14 @@ typedef union _RESTRICTION_UNION {
 	RESTRICTION_SIZE res_size;
 	RESTRICTION_EXIST res_exist;
 	RESTRICTION_SUB res_sub;
-} RESTRICTION_UNION;
+};
 
-typedef struct _RESTRICTION {
+struct RESTRICTION {
 	uint32_t res_type;
 	RESTRICTION_UNION res;
-} RESTRICTION;
+};
 
-typedef struct _PERMANENT_ENTRYID {
+struct PERMANENT_ENTRYID {
 	uint8_t id_type;	/* constant: 0x0	*/
 	uint8_t r1;			/* reserved: 0x0	*/
 	uint8_t r2;			/* reserved: 0x0	*/
@@ -219,10 +221,10 @@ typedef struct _PERMANENT_ENTRYID {
 	uint32_t r4;			/* constant: 0x1	*/
 	uint32_t display_type;	/* must match one of the existing display type value */
 	char *pdn;				/* DN string representing the object GUID */
-} PERMANENT_ENTRYID;
+};
 
 
-typedef struct _EPHEMERAL_ENTRYID {
+struct EPHEMERAL_ENTRYID {
 	uint8_t id_type;	/* constant: 0x87	*/
 	uint8_t r1;			/* reserved: 0x0	*/
 	uint8_t r2;			/* reserved: 0x0	*/
@@ -231,4 +233,4 @@ typedef struct _EPHEMERAL_ENTRYID {
 	uint32_t r4;			/* constant: 0x1	*/
 	uint32_t display_type;	/* must match one of the existing display type value */
 	uint32_t mid;			/* mid of this object	*/
-} EPHEMERAL_ENTRYID;
+};

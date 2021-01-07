@@ -8,15 +8,15 @@ enum {
 	ALIVE_ROUTER_CONNECTIONS
 };
 
-typedef struct _EXMDB_CONNECTION {
+struct EXMDB_CONNECTION {
 	DOUBLE_LIST_NODE node;
 	BOOL b_stop;
 	pthread_t thr_id;
 	char remote_id[128];
 	int sockd;
-} EXMDB_CONNECTION;
+};
 
-typedef struct _ROUTER_CONNECTION {
+struct ROUTER_CONNECTION {
 	DOUBLE_LIST_NODE node;
 	BOOL b_stop;
 	pthread_t thr_id;
@@ -27,7 +27,7 @@ typedef struct _ROUTER_CONNECTION {
 	pthread_mutex_t cond_mutex;
 	pthread_cond_t waken_cond;
 	DOUBLE_LIST datagram_list;
-} ROUTER_CONNECTION;
+};
 
 #ifdef __cplusplus
 extern "C" {

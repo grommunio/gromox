@@ -22,7 +22,7 @@ enum{
 };
 
 /* message struct for dequeuing from mail queue */
-typedef struct _MESSAGE {
+struct MESSAGE {
 	SINGLE_LIST_NODE	node;				/* node for list */
 	int					flush_ID;			/* flush_ID by smtp server */
 	int					bound_type;			/* BOUND_IN, BOUND_OUT, BOUND_RELAY ... */
@@ -35,7 +35,7 @@ typedef struct _MESSAGE {
 	size_t				mail_length;		/* mail length */
 	char				*envelop_from;		/* envelop mail from */
 	char				*envelop_rcpt;		/* envelop rcpt to */
-} MESSAGE;
+};
 
 #ifdef __cplusplus
 extern "C" {

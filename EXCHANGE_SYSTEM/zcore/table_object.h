@@ -12,7 +12,7 @@
 #define USER_TABLE									8
 
 
-typedef struct _TABLE_OBJECT {
+struct TABLE_OBJECT {
 	STORE_OBJECT *pstore;
 	uint32_t handle;
 	void *pparent_obj;
@@ -25,7 +25,7 @@ typedef struct _TABLE_OBJECT {
 	uint32_t table_id;
 	uint32_t bookmark_index;
 	DOUBLE_LIST bookmark_list;
-} TABLE_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

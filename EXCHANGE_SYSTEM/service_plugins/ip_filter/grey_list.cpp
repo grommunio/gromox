@@ -15,12 +15,12 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-typedef struct _GREY_LIST_ENTRY {
+struct GREY_LIST_ENTRY {
 	int				current_times;
 	int				allowed_times;
 	int				interval;
 	struct timeval  last_access;
-} GREY_LIST_ENTRY;
+};
 
 static IP4_HASH_TABLE *g_grey_table;
 static pthread_rwlock_t  g_refresh_lock;
@@ -223,11 +223,11 @@ int grey_list_refresh()
         return GREY_REFRESH_FILE_ERROR;
 	}
 
-	typedef struct _LIST_ITEM {
+	struct LIST_ITEM {
 		char ip[32];
 		int allow_times;
 		char interval[32];
-	} LIST_ITEM;
+	};
 	auto pitem = reinterpret_cast<LIST_ITEM *>(list_file_get_list(plist_file));
     list_len = list_file_get_item_num(plist_file);
 	hash_cap = list_len + g_growing_num;

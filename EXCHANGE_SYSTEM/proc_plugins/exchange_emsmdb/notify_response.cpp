@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 
-typedef struct _NOTIFICATION_DATA_MEMORY {
+struct NOTIFICATION_DATA_MEMORY {
 	uint16_t table_event;
 	uint64_t row_folder_id;
 	uint64_t row_message_id;
@@ -23,7 +23,7 @@ typedef struct _NOTIFICATION_DATA_MEMORY {
 	uint32_t unread_count;
 	uint32_t message_flags;
 	uint8_t unicode_flag;
-} NOTIFICATION_DATA_MEMORY;
+};
 
 static inline NOTIFICATION_DATA_MEMORY *notify_to_ndm(NOTIFY_RESPONSE *z)
 {

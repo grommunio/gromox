@@ -6,7 +6,7 @@
 	so they can operate internal variables of each other */
 
 
-typedef struct _ATTACHMENT_OBJECT {
+struct ATTACHMENT_OBJECT {
 	BOOL b_new;
 	BOOL b_touched;
 	MESSAGE_OBJECT *pparent;
@@ -14,7 +14,7 @@ typedef struct _ATTACHMENT_OBJECT {
 	uint32_t attachment_num;
 	uint8_t open_flags;
 	DOUBLE_LIST stream_list;
-} ATTACHMENT_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -3,7 +3,7 @@
 #include "ics_state.h"
 
 
-typedef struct _FASTDOWNCTX_OBJECT {
+struct FASTDOWNCTX_OBJECT {
 	FTSTREAM_PRODUCER *pstream;
 	BOOL b_back;
 	BOOL b_last;
@@ -13,7 +13,7 @@ typedef struct _FASTDOWNCTX_OBJECT {
 	DOUBLE_LIST flow_list;
 	uint32_t total_steps;
 	uint32_t progress_steps;
-} FASTDOWNCTX_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

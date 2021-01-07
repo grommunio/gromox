@@ -16,7 +16,7 @@
 #define FLUSHER_VERSION     0x00000001
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 
-typedef struct _FLUSH_ENTITY {
+struct FLUSH_ENTITY {
 	STREAM           *pstream; 
 	CONNECTION       *pconn;
 	FLUSH_INFO       *pflusher;     /* the flusher for saving mail 
@@ -26,17 +26,17 @@ typedef struct _FLUSH_ENTITY {
 	int              context_ID;
 	SMTP_CONTEXT     *pcontext;     /* put at the last of the structure */
 	SINGLE_LIST_NODE        node;
-} FLUSH_ENTITY;
+};
 
 typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY*);
 
-typedef struct _SERVICE_NODE{
+struct SERVICE_NODE {
 	SINGLE_LIST_NODE		node;
 	void			*service_addr;
 	char			*service_name;
-} SERVICE_NODE;
+};
 
-typedef struct _PLUG_ENTITY {
+struct PLUG_ENTITY {
 	void*           handle;
 	PLUGIN_MAIN     appmain;
 	CANCEL_FUNCTION flush_cancel;
@@ -45,7 +45,7 @@ typedef struct _PLUG_ENTITY {
 	char			file_name[256];
 	char            path[256];
 	bool completed_init;
-} PLUG_ENTITY;
+};
 
 static BOOL flusher_load_plugin(char* path);
 static BOOL flusher_unload_plugin(void);

@@ -44,20 +44,20 @@
 #define MINID_TYPE_GROUP					0x5
 #define MINID_TYPE_CLASS					0x6
 
-typedef struct _DOMAIN_NODE {
+struct DOMAIN_NODE {
 	SINGLE_LIST_NODE node;
 	int domain_id;
 	SIMPLE_TREE tree;
-} DOMAIN_NODE;
+};
 
-typedef struct _AB_BASE {
+struct AB_BASE {
 	std::atomic<int> status, reference;
 	time_t load_time;
 	int base_id;
 	SINGLE_LIST list;
 	SINGLE_LIST gal_list;
 	INT_HASH_TABLE *phash;
-} AB_BASE;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -47,49 +47,49 @@
 
 #define FLAG_LOADED				0x80
 
-typedef struct _MIDB_ITEM {
+struct MIDB_ITEM {
 	char prefix[256];
 	char ip_addr[32];
 	int port;
-} MIDB_ITEM;
+};
 
-typedef struct _MITEM {
+struct MITEM {
 	SINGLE_LIST_NODE node;
 	char mid[128];
 	int id;
 	int uid;
 	char flag_bits;
 	MEM_FILE f_digest;
-} MITEM;
+};
 
-typedef struct _SEQUENCE_NODE {
+struct SEQUENCE_NODE {
 	DOUBLE_LIST_NODE node;
 	int min;
 	int max;
-} SEQUENCE_NODE;
+};
 
-typedef struct _BACK_SVR {
+struct BACK_SVR {
 	DOUBLE_LIST_NODE node;
 	char prefix[256];
 	int prefix_len;
 	char ip_addr[32];
 	int port;
 	DOUBLE_LIST conn_list;
-} BACK_SVR;
+};
 
-typedef struct _BACK_CONN {
+struct BACK_CONN {
     DOUBLE_LIST_NODE node;
     int sockd;
 	time_t last_time;
 	BACK_SVR *psvr;
-} BACK_CONN;
+};
 
-typedef struct _MSG_UNIT {
+struct MSG_UNIT {
 	SINGLE_LIST_NODE node;
 	size_t size;
 	char file_name[128];
 	BOOL b_deleted;
-} MSG_UNIT;
+};
 
 static void* scan_work_func(void *param);
 

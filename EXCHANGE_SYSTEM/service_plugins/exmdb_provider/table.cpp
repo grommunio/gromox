@@ -23,13 +23,13 @@
 #include <cstdio>
 #define LLU(x) static_cast<unsigned long long>(x)
 
-typedef struct _CONDITION_NODE {
+struct CONDITION_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t proptag;
 	void *pvalue;
-} CONDITION_NODE;
+};
 
-typedef struct _CONTENT_ROW_PARAM {
+struct CONTENT_ROW_PARAM {
 	uint32_t cpid;
 	sqlite3 *psqlite;
 	sqlite3_stmt *pstmt;
@@ -41,14 +41,14 @@ typedef struct _CONTENT_ROW_PARAM {
 	const SORTORDER_SET *psorts;
 	uint32_t instance_tag;
 	uint32_t extremum_tag;
-} CONTENT_ROW_PARAM;
+};
 
-typedef struct _HIERARCHY_ROW_PARAM {
+struct HIERARCHY_ROW_PARAM {
 	uint32_t cpid;
 	sqlite3 *psqlite;
 	sqlite3_stmt *pstmt;
 	uint64_t folder_id;
-} HIERARCHY_ROW_PARAM;
+};
 
 typedef BOOL (*TABLE_GET_ROW_PROPERTY)(void*, uint32_t, void **);
 

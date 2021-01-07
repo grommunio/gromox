@@ -21,10 +21,10 @@ enum {
 	DISPATCH_CONTINUE
 };
 
-typedef struct _CLIENT_NODE {
+struct CLIENT_NODE {
 	DOUBLE_LIST_NODE node;
 	int clifd;
-} CLIENT_NODE;
+};
 
 static int g_thread_num;
 static BOOL g_notify_stop;

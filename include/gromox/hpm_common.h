@@ -17,16 +17,16 @@
 #define HPM_RETRIEVE_DONE			4
 #define HPM_RETRIEVE_SOCKET			5
 
-typedef struct _HPM_INTERFACE {
+struct HPM_INTERFACE {
 	BOOL (*preproc)(int);
 	BOOL (*proc)(int, const void*, uint64_t);
 	int (*retr)(int);
 	BOOL (*send)(int, const void*, int);
 	int (*receive)(int, void*, int length);
 	void (*term)(int);
-} HPM_INTERFACE;
+};
 
-typedef struct _CONNECTION {
+struct CONNECTION {
 	char client_ip[32];
 	int				client_port;
 	char server_ip[32];
@@ -34,9 +34,9 @@ typedef struct _CONNECTION {
 	int				sockd;
 	SSL				*ssl;
 	struct timeval	last_timestamp;
-} CONNECTION;
+};
 
-typedef struct _HTTP_REQUEST {
+struct HTTP_REQUEST {
 	char		method[32];
 	MEM_FILE	f_request_uri;
 	char		version[8];
@@ -50,15 +50,15 @@ typedef struct _HTTP_REQUEST {
 	MEM_FILE	f_transfer_encoding;
 	MEM_FILE	f_cookie;
     MEM_FILE    f_others;
-} HTTP_REQUEST;
+};
 
-typedef struct _HTTP_AUTH_INFO {
+struct HTTP_AUTH_INFO {
 	BOOL b_authed;
 	const char* username;
 	const char* password;
 	const char* maildir;
 	const char* lang;
-} HTTP_AUTH_INFO;
+};
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void *(*QUERY_SERVICE)(const char *);

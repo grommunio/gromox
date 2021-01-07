@@ -27,13 +27,13 @@
 #include <cstdio>
 #include <fcntl.h>
 
-typedef struct _SORT_ITEM {
+struct SORT_ITEM {
 	uint32_t minid;
 	union {
 		char *string;
 		void *strv;
 	};
-} SORT_ITEM;
+};
 
 struct dlgitem {
 	char user[256];

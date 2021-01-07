@@ -30,19 +30,19 @@
 
 #define PROP_TAG_PROPFILESECLSID		0x00480048
 
-typedef struct _ROOT_OBJECT {
+struct ROOT_OBJECT {
 	BOOL b_touched;
 	char *maildir;
 	TPROPVAL_ARRAY *pprivate_proplist;
 	TARRAY_SET *pprof_set;
-} ROOT_OBJECT;
+};
 
-typedef struct _OBJECT_NODE {
+struct OBJECT_NODE {
 	SIMPLE_TREE_NODE node;
 	uint32_t handle;
 	uint8_t type;
 	void *pobject;
-} OBJECT_NODE;
+};
 
 static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 {

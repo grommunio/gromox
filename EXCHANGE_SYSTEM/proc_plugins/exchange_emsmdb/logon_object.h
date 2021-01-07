@@ -8,7 +8,7 @@
 #define LOGON_MODE_DELEGATE				1
 #define LOGON_MODE_GUEST				2
 
-typedef struct _LOGON_OBJECT {
+struct LOGON_OBJECT {
 	uint8_t logon_flags;
 	uint32_t open_flags;
 	int logon_mode;
@@ -20,7 +20,7 @@ typedef struct _LOGON_OBJECT {
 	INT_HASH_TABLE *ppropid_hash;
 	STR_HASH_TABLE *ppropname_hash;
 	DOUBLE_LIST group_list;
-} LOGON_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

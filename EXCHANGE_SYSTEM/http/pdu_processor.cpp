@@ -39,24 +39,24 @@
 
 
 /* structure for describing service reference */
-typedef struct _SERVICE_NODE{
+struct SERVICE_NODE {
 	DOUBLE_LIST_NODE node;
 	void *service_addr;
 	char *service_name;
-} SERVICE_NODE;
+};
 
-typedef struct _INTERFACE_NODE {
+struct INTERFACE_NODE {
 	DOUBLE_LIST_NODE node;
 	DCERPC_ENDPOINT *pendpoint;
 	DCERPC_INTERFACE *pinterface;
-} INTERFACE_NODE;
+};
 
-typedef struct _NDR_STACK_ROOT {
+struct NDR_STACK_ROOT {
 	ALLOC_CONTEXT in_stack;
 	ALLOC_CONTEXT out_stack;
-} NDR_STACK_ROOT;
+};
 
-typedef struct _ASYNC_NODE {
+struct ASYNC_NODE {
 	DOUBLE_LIST_NODE node;
 	BOOL b_cancelled;
 	uint32_t async_id;
@@ -65,7 +65,7 @@ typedef struct _ASYNC_NODE {
 	char vconn_host[128];
 	int vconn_port;
 	char vconn_cookie[64];
-} ASYNC_NODE;
+};
 
 static BOOL g_bigendian;
 static int g_connection_num;

@@ -36,13 +36,13 @@
 #define USER_CREATE_DAY						8
 #define USER_STORE_PATH						9
 
-typedef struct _DOMAIN_NODE {
+struct DOMAIN_NODE {
 	SINGLE_LIST_NODE node;
 	int domain_id;
 	SIMPLE_TREE tree;
-} DOMAIN_NODE;
+};
 
-typedef struct _AB_BASE {
+struct AB_BASE {
 	GUID guid;
 	std::atomic<int> status, reference;
 	time_t load_time;
@@ -51,7 +51,7 @@ typedef struct _AB_BASE {
 	SINGLE_LIST gal_list;
 	SINGLE_LIST remote_list;
 	INT_HASH_TABLE *phash;
-} AB_BASE;
+};
 
 #ifdef __cplusplus
 extern "C" {

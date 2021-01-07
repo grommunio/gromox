@@ -28,14 +28,14 @@
 
 #define SOCKET_TIMEOUT								60
 
-typedef struct _EXMDB_ITEM {
+struct EXMDB_ITEM {
 	char prefix[256];
 	char type[16];
 	char ip_addr[32];
 	int port;
-} EXMDB_ITEM;
+};
 
-typedef struct _REMOTE_SVR {
+struct REMOTE_SVR {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST conn_list;
 	char ip_addr[32];
@@ -43,34 +43,34 @@ typedef struct _REMOTE_SVR {
 	int prefix_len;
 	BOOL b_private;
 	int port;
-} REMOTE_SVR;
+};
 
-typedef struct _REMOTE_CONN {
+struct REMOTE_CONN {
     DOUBLE_LIST_NODE node;
 	time_t last_time;
 	REMOTE_SVR *psvr;
 	int sockd;
-} REMOTE_CONN;
+};
 
-typedef struct _CONNECT_REQUEST {
+struct CONNECT_REQUEST {
 	char *prefix;
 	char *remote_id;
 	BOOL b_private;
-} CONNECT_REQUEST;
+};
 
-typedef struct _DELIVERY_MESSAGE_REQUEST {
+struct DELIVERY_MESSAGE_REQUEST {
 	const char *dir;
 	const char *from_address;
 	const char *account;
 	uint32_t cpid;
 	const MESSAGE_CONTENT *pmsg;
 	const char *pdigest;
-} DELIVERY_MESSAGE_REQUEST;
+};
 
-typedef struct _CHECK_CONTACT_ADDRESS_REQUEST {
+struct CHECK_CONTACT_ADDRESS_REQUEST {
 	const char *dir;
 	const char *paddress;
-} CHECK_CONTACT_ADDRESS_REQUEST;
+};
 
 static int g_conn_num;
 static BOOL g_notify_stop;

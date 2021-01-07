@@ -1,9 +1,7 @@
 #pragma once
 #include "common_types.h"
 
-struct _HTTP_CONTEXT;
-
-typedef struct _HTTP_CONTEXT HTTP_CONTEXT;
+struct HTTP_CONTEXT;
 
 #ifdef __cplusplus
 extern "C" {

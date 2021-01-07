@@ -13,7 +13,7 @@
 #define RESPONSE_WAITING				0
 #define RESPONSE_AVAILABLE				1
 
-typedef struct _FASTCGI_NODE {
+struct FASTCGI_NODE {
 	DOUBLE_LIST_NODE node;
 	char *domain;
 	char *path;
@@ -22,9 +22,9 @@ typedef struct _FASTCGI_NODE {
 	char *index;
 	DOUBLE_LIST header_list;
 	char *sock_path;
-} FASTCGI_NODE;
+};
 
-typedef struct _FASTCGI_CONTEXT {
+struct FASTCGI_CONTEXT {
 	BOOL b_index;
 	BOOL b_chunked;
 	uint32_t chunk_size;
@@ -37,11 +37,9 @@ typedef struct _FASTCGI_CONTEXT {
 	int cli_sockd;
 	BOOL b_header; /* is response header met */
 	time_t last_time;
-} FASTCGI_CONTEXT;
+};
 
-struct _HTTP_CONTEXT;
-
-typedef struct _HTTP_CONTEXT HTTP_CONTEXT;
+struct HTTP_CONTEXT;
 
 #ifdef __cplusplus
 extern "C" {

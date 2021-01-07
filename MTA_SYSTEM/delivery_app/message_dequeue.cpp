@@ -32,10 +32,10 @@
 #define BLOCK_SIZE				64*1024*2
 #define SLEEP_INTERVAL			50000
 
-typedef struct _MSG_BUFF {
+struct MSG_BUFF {
 	long msg_type;
 	int msg_content;
-} MSG_BUFF;
+};
 
 static char				g_path[256];    /* directory name for message queue */
 static int				g_msg_id;	    /* message queue id */

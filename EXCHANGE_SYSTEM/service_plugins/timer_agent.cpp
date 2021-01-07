@@ -28,12 +28,11 @@
 
 #define MAX_CMD_LENGTH			64*1024
 
-typedef struct _BACK_CONN {
+struct BACK_CONN {
     DOUBLE_LIST_NODE node;
     int sockd;
 	time_t last_time;
-} BACK_CONN;
-
+};
 
 static BOOL g_notify_stop;
 static char g_timer_ip[32];

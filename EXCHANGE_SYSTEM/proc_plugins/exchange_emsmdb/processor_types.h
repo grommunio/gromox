@@ -1,14 +1,14 @@
 #pragma once
 #include "mapi_types.h"
 
-typedef struct _LOGON_REQUEST {
+struct LOGON_REQUEST {
 	uint8_t logon_flags;
 	uint32_t open_flags;
 	uint32_t store_stat;
 	char *pessdn;
-} LOGON_REQUEST;
+};
 
-typedef struct _LOGON_PMB_RESPONSE {
+struct LOGON_PMB_RESPONSE {
 	uint8_t logon_flags;
 	uint64_t folder_ids[13];
 	uint8_t response_flags;
@@ -18,123 +18,123 @@ typedef struct _LOGON_PMB_RESPONSE {
 	LOGON_TIME logon_time;
 	uint64_t gwart_time;
 	uint32_t store_stat;
-} LOGON_PMB_RESPONSE;
+};
 
-typedef struct _LOGON_PF_RESPONSE {
+struct LOGON_PF_RESPONSE {
 	uint8_t logon_flags;
 	uint64_t folder_ids[13];
 	uint16_t replica_id;
 	GUID replica_guid;
 	GUID per_user_guid;
-} LOGON_PF_RESPONSE;
+};
 
-typedef struct _LOGON_REDIRECT_RESPONSE {
+struct LOGON_REDIRECT_RESPONSE {
 	uint8_t logon_flags;
 	char pserver_name[1024];
-} LOGON_REDIRECT_RESPONSE;
+};
 
-typedef struct _GETRECEIVEFOLDER_REQUEST {
+struct GETRECEIVEFOLDER_REQUEST {
 	char *pstr_class;
-} GETRECEIVEFOLDER_REQUEST;
+};
 
-typedef struct _GETRECEIVEFOLDER_RESPONSE {
+struct GETRECEIVEFOLDER_RESPONSE {
 	uint64_t folder_id;
 	char *pstr_class;
-} GETRECEIVEFOLDER_RESPONSE;
+};
 
-typedef struct _SETRECEIVEFOLDER_REQUEST {
+struct SETRECEIVEFOLDER_REQUEST {
 	uint64_t folder_id;
 	char * pstr_class;
-} SETRECEIVEFOLDER_REQUEST;
+};
 
-typedef struct _GETRECEIVEFOLDERTABLE_RESPONSE {
+struct GETRECEIVEFOLDERTABLE_RESPONSE {
 	PROPROW_SET rows;
-} GETRECEIVEFOLDERTABLE_RESPONSE;
+};
 
-typedef struct _GETSTORESTAT_RESPONSE {
+struct GETSTORESTAT_RESPONSE {
 	uint32_t stat;
-} GETSTORESTAT_RESPONSE;
+};
 
-typedef struct _GETOWNINGSERVERS_REQUEST {
+struct GETOWNINGSERVERS_REQUEST {
 	uint64_t folder_id;
-} GETOWNINGSERVERS_REQUEST;
+};
 
-typedef struct _GETOWNINGSERVERS_RESPONSE {
+struct GETOWNINGSERVERS_RESPONSE {
 	GHOST_SERVER ghost;
-} GETOWNINGSERVERS_RESPONSE;
+};
 
-typedef struct _PUBLICFOLDERISGHOSTED_REQUEST {
+struct PUBLICFOLDERISGHOSTED_REQUEST {
 	uint64_t folder_id;
-} PUBLICFOLDERISGHOSTED_REQUEST;
+};
 
-typedef struct _PUBLICFOLDERISGHOSTED_RESPONSE {
+struct PUBLICFOLDERISGHOSTED_RESPONSE {
 	GHOST_SERVER *pghost;
-} PUBLICFOLDERISGHOSTED_RESPONSE;
+};
 
-typedef struct _LONGTERMIDFROMID_REQUEST {
+struct LONGTERMIDFROMID_REQUEST {
 	uint64_t id;
-} LONGTERMIDFROMID_REQUEST;
+};
 
-typedef struct _LONGTERMIDFROMID_RESPONSE {
+struct LONGTERMIDFROMID_RESPONSE {
 	LONG_TERM_ID long_term_id;
-} LONGTERMIDFROMID_RESPONSE;
+};
 
-typedef struct _IDFROMLONGTERMID_REQUEST {
+struct IDFROMLONGTERMID_REQUEST {
 	LONG_TERM_ID long_term_id;
-} IDFROMLONGTERMID_REQUEST;
+};
 
-typedef struct _IDFROMLONGTERMID_RESPONSE {
+struct IDFROMLONGTERMID_RESPONSE {
 	uint64_t id;
-} IDFROMLONGTERMID_RESPONSE;
+};
 
-typedef struct _GETPERUSERLONGTERMIDS_REQUEST {
+struct GETPERUSERLONGTERMIDS_REQUEST {
 	GUID guid;
-} GETPERUSERLONGTERMIDS_REQUEST;
+};
 
-typedef struct _GETPERUSERLONGTERMIDS_RESPONSE {
+struct GETPERUSERLONGTERMIDS_RESPONSE {
 	LONG_TERM_ID_ARRAY ids;
-} GETPERUSERLONGTERMIDS_RESPONSE;
+};
 
-typedef struct _GETPERUSERGUID_REQUEST {
+struct GETPERUSERGUID_REQUEST {
 	LONG_TERM_ID long_term_id;
-} GETPERUSERGUID_REQUEST;
+};
 
-typedef struct _GETPERUSERGUID_RESPONSE {
+struct GETPERUSERGUID_RESPONSE {
 	GUID guid;
-} GETPERUSERGUID_RESPONSE;
+};
 
-typedef struct _READPERUSERINFORMATION_REQUEST {
+struct READPERUSERINFORMATION_REQUEST {
 	LONG_TERM_ID long_folder_id;
 	uint8_t reserved;
 	uint32_t data_offset;
 	uint16_t max_data_size;
-} READPERUSERINFORMATION_REQUEST;
+};
 
-typedef struct _READPERUSERINFORMATION_RESPONSE {
+struct READPERUSERINFORMATION_RESPONSE {
 	uint8_t has_finished;
 	BINARY data;
-} READPERUSERINFORMATION_RESPONSE;
+};
 
-typedef struct _WRITEPERUSERINFORMATION_REQUEST {
+struct WRITEPERUSERINFORMATION_REQUEST {
 	LONG_TERM_ID long_folder_id;
 	uint8_t has_finished;
 	uint32_t offset;
 	BINARY data;
 	GUID *pguid;
-} WRITEPERUSERINFORMATION_REQUEST;
+};
 
-typedef struct _OPENFOLDER_REQUEST {
+struct OPENFOLDER_REQUEST {
 	uint8_t hindex;
 	uint64_t folder_id;
 	uint8_t open_flags;
-} OPENFOLDER_REQUEST;
+};
 
-typedef struct _OPENFOLDER_RESPONSE {
+struct OPENFOLDER_RESPONSE {
 	uint8_t has_rules;
 	GHOST_SERVER *pghost;
-} OPENFOLDER_RESPONSE;
+};
 
-typedef struct _CREATEFOLDER_REQUEST {
+struct CREATEFOLDER_REQUEST {
 	uint8_t hindex;
 	uint8_t folder_type;
 	uint8_t use_unicode;
@@ -142,293 +142,293 @@ typedef struct _CREATEFOLDER_REQUEST {
 	uint8_t reserved;
 	char *pfolder_name;
 	char *pfolder_comment;
-} CREATEFOLDER_REQUEST;
+};
 
-typedef struct _CREATEFOLDER_RESPONSE {
+struct CREATEFOLDER_RESPONSE {
 	uint64_t folder_id;
 	uint8_t is_existing;
 	uint8_t has_rules;
 	GHOST_SERVER *pghost;
-} CREATEFOLDER_RESPONSE;
+};
 
-typedef struct _DELETEFOLDER_REQUEST {
+struct DELETEFOLDER_REQUEST {
 	uint8_t flags;
 	uint64_t folder_id;
-} DELETEFOLDER_REQUEST;
+};
 
-typedef struct _DELETEFOLDER_RESPONSE {
+struct DELETEFOLDER_RESPONSE {
 	uint8_t partial_completion;
-} DELETEFOLDER_RESPONSE;
+};
 
 
-typedef struct _SETSEARCHCRITERIA_REQUEST {
+struct SETSEARCHCRITERIA_REQUEST {
 	RESTRICTION *pres;
 	LONGLONG_ARRAY folder_ids;
 	uint32_t search_flags;
-} SETSEARCHCRITERIA_REQUEST;
+};
 
-typedef struct _GETSEARCHCRITERIA_REQUEST {
+struct GETSEARCHCRITERIA_REQUEST {
 	uint8_t use_unicode;
 	uint8_t include_restriction;
 	uint8_t include_folders;
-} GETSEARCHCRITERIA_REQUEST;
+};
 
-typedef struct _GETSEARCHCRITERIA_RESPONSE {
+struct GETSEARCHCRITERIA_RESPONSE {
 	RESTRICTION *pres;
 	uint8_t logon_id;
 	LONGLONG_ARRAY folder_ids;
 	uint32_t search_status;
-} GETSEARCHCRITERIA_RESPONSE;
+};
 
-typedef struct _MOVECOPYMESSAGES_REQUEST {
+struct MOVECOPYMESSAGES_REQUEST {
 	uint8_t hindex;
 	LONGLONG_ARRAY message_ids;
 	uint8_t want_asynchronous;
 	uint8_t want_copy;
-} MOVECOPYMESSAGES_REQUEST;
+};
 
-typedef struct _MOVECOPYMESSAGES_RESPONSE {
+struct MOVECOPYMESSAGES_RESPONSE {
 	uint8_t partial_completion;
-} MOVECOPYMESSAGES_RESPONSE;
+};
 
-typedef struct _NULL_DST_RESPONSE {
+struct NULL_DST_RESPONSE {
 	uint32_t hindex;
 	uint8_t partial_completion;
-} NULL_DST_RESPONSE;
+};
 
-typedef struct _MOVEFOLDER_REQUEST {
+struct MOVEFOLDER_REQUEST {
 	uint8_t hindex;
 	uint8_t want_asynchronous;
 	uint8_t use_unicode;
 	uint64_t folder_id;
 	char *pnew_name;
-} MOVEFOLDER_REQUEST;
+};
 
-typedef struct _MOVEFOLDER_RESPONSE {
+struct MOVEFOLDER_RESPONSE {
 	uint8_t partial_completion;
-} MOVEFOLDER_RESPONSE;
+};
 
-typedef struct _COPYFOLDER_REQUEST {
+struct COPYFOLDER_REQUEST {
 	uint8_t hindex;
 	uint8_t want_asynchronous;
 	uint8_t want_recursive;
 	uint8_t use_unicode;
 	uint64_t folder_id;
 	char *pnew_name;
-} COPYFOLDER_REQUEST;
+};
 
-typedef struct _COPYFOLDER_RESPONSE {
+struct COPYFOLDER_RESPONSE {
 	uint8_t partial_completion;
-} COPYFOLDER_RESPONSE;
+};
 
-typedef struct _EMPTYFOLDER_REQUEST {
+struct EMPTYFOLDER_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t want_delete_associated;
-} EMPTYFOLDER_REQUEST;
+};
 
-typedef struct _EMPTYFOLDER_RESPONSE {
+struct EMPTYFOLDER_RESPONSE {
 	uint8_t partial_completion;
-} EMPTYFOLDER_RESPONSE;
+};
 
-typedef struct _HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST {
+struct HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t want_delete_associated;
-} HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST;
+};
 
-typedef struct _HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE {
+struct HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE {
 	uint8_t partial_completion;
-} HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE;
+};
 
-typedef struct _DELETEMESSAGES_REQUEST {
+struct DELETEMESSAGES_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t notify_non_read;
 	LONGLONG_ARRAY message_ids;
-} DELETEMESSAGES_REQUEST;
+};
 
-typedef struct _DELETEMESSAGES_RESPONSE {
+struct DELETEMESSAGES_RESPONSE {
 	uint8_t partial_completion;
-} DELETEMESSAGES_RESPONSE;
+};
 
-typedef struct _HARDDELETEMESSAGES_REQUEST {
+struct HARDDELETEMESSAGES_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t notify_non_read;
 	LONGLONG_ARRAY message_ids;
-} HARDDELETEMESSAGES_REQUEST;
+};
 
-typedef struct _HARDDELETEMESSAGES_RESPONSE {
+struct HARDDELETEMESSAGES_RESPONSE {
 	uint8_t partial_completion;
-} HARDDELETEMESSAGES_RESPONSE;
+};
 
-typedef struct _GETHIERARCHYTABLE_REQUEST {
+struct GETHIERARCHYTABLE_REQUEST {
 	uint8_t hindex;
 	uint8_t table_flags;
-} GETHIERARCHYTABLE_REQUEST;
+};
 
-typedef struct _GETHIERARCHYTABLE_RESPONSE {
+struct GETHIERARCHYTABLE_RESPONSE {
 	uint32_t row_count;
-} GETHIERARCHYTABLE_RESPONSE;
+};
 
-typedef struct _GETCONTENTSTABLE_REQUEST {
+struct GETCONTENTSTABLE_REQUEST {
 	uint8_t hindex;
 	uint8_t table_flags;
-} GETCONTENTSTABLE_REQUEST;
+};
 
-typedef struct _GETCONTENTSTABLE_RESPONSE {
+struct GETCONTENTSTABLE_RESPONSE {
 	uint32_t row_count;
-} GETCONTENTSTABLE_RESPONSE;
+};
 
 
-typedef struct _SETCOLUMNS_REQUEST {
+struct SETCOLUMNS_REQUEST {
 	uint8_t table_flags;
 	PROPTAG_ARRAY proptags;
-} SETCOLUMNS_REQUEST;
+};
 
-typedef struct _SETCOLUMNS_RESPONSE {
+struct SETCOLUMNS_RESPONSE {
 	uint8_t table_status;
-} SETCOLUMNS_RESPONSE;
+};
 
-typedef struct _SORTTABLE_REQUEST {
+struct SORTTABLE_REQUEST {
 	uint8_t table_flags;
 	SORTORDER_SET sort_criteria;
-} SORTTABLE_REQUEST;
+};
 
-typedef struct _SORTTABLE_RESPONSE {
+struct SORTTABLE_RESPONSE {
 	uint8_t table_status;
-} SORTTABLE_RESPONSE;
+};
 
-typedef struct _RESTRICT_REQUEST {
+struct RESTRICT_REQUEST {
 	uint8_t res_flags;
 	RESTRICTION *pres;
-} RESTRICT_REQUEST;
+};
 
-typedef struct _RESTRICT_RESPONSE {
+struct RESTRICT_RESPONSE {
 	uint8_t table_status;
-} RESTRICT_RESPONSE;
+};
 
-typedef struct _QUERYROWS_REQUEST {
+struct QUERYROWS_REQUEST {
 	uint8_t flags;
 	uint8_t forward_read;
 	uint16_t row_count;
-} QUERYROWS_REQUEST;
+};
 
-typedef struct _QUERYROWS_RESPONSE {
+struct QUERYROWS_RESPONSE {
 	uint8_t seek_pos;
 	uint16_t count;
 	BINARY bin_rows;
-} QUERYROWS_RESPONSE;
+};
 
-typedef struct _ABORT_RESPONSE {
+struct ABORT_RESPONSE {
 	uint8_t table_status;
-} ABORT_RESPONSE;
+};
 
-typedef struct _GETSTATUS_RESPONSE {
+struct GETSTATUS_RESPONSE {
 	uint8_t table_status;
-} GETSTATUS_RESPONSE;
+};
 
-typedef struct _QUERYPOSITION_RESPONSE {
+struct QUERYPOSITION_RESPONSE {
 	uint32_t numerator;
 	uint32_t denominator;
-} QUERYPOSITION_RESPONSE;
+};
 
-typedef struct _SEEKROW_REQUEST {
+struct SEEKROW_REQUEST {
 	uint8_t seek_pos;
 	int32_t offset;
 	uint8_t want_moved_count;
-} SEEKROW_REQUEST;
+};
 
-typedef struct _SEEKROW_RESPONSE {
+struct SEEKROW_RESPONSE {
 	uint8_t has_soughtless;
 	int32_t offset_sought;
-} SEEKROW_RESPONSE;
+};
 
-typedef struct _SEEKROWBOOKMARK_REQUEST {
+struct SEEKROWBOOKMARK_REQUEST {
 	BINARY bookmark;
 	int32_t offset;
 	uint8_t want_moved_count;
-} SEEKROWBOOKMARK_REQUEST;
+};
 
-typedef struct _SEEKROWBOOKMARK_RESPONSE {
+struct SEEKROWBOOKMARK_RESPONSE {
 	uint8_t row_invisible;
 	uint8_t has_soughtless;
 	uint32_t offset_sought;
-} SEEKROWBOOKMARK_RESPONSE;
+};
 
-typedef struct _SEEKROWFRACTIONAL_REQUEST {
+struct SEEKROWFRACTIONAL_REQUEST {
 	uint32_t numerator;
 	uint32_t denominator;
-} SEEKROWFRACTIONAL_REQUEST;
+};
 
-typedef struct _CREATEBOOKMARK_RESPONSE {
+struct CREATEBOOKMARK_RESPONSE {
 	BINARY bookmark;
-} CREATEBOOKMARK_RESPONSE;
+};
 
-typedef struct _QUERYCOLUMNSALL_RESPONSE {
+struct QUERYCOLUMNSALL_RESPONSE {
 	PROPTAG_ARRAY proptags;
-} QUERYCOLUMNSALL_RESPONSE;
+};
 
-typedef struct _FINDROW_REQUEST {
+struct FINDROW_REQUEST {
 	uint8_t flags;
 	RESTRICTION *pres;
 	uint8_t seek_pos;
 	BINARY bookmark;
-} FINDROW_REQUEST;
+};
 
-typedef struct _FINDROW_RESPONSE {
+struct FINDROW_RESPONSE {
 	uint8_t bookmark_invisible;
 	PROPERTY_ROW *prow;
 	PROPTAG_ARRAY *pcolumns;
-} FINDROW_RESPONSE;
+};
 
-typedef struct _FREEBOOKMARK_REQUEST {
+struct FREEBOOKMARK_REQUEST {
 	BINARY bookmark;
-} FREEBOOKMARK_REQUEST;
+};
 
-typedef struct _EXPANDROW_REQUEST {
+struct EXPANDROW_REQUEST {
 	uint16_t max_count;
 	uint64_t category_id;
-} EXPANDROW_REQUEST;
+};
 
-typedef struct _EXPANDROW_RESPONSE {
+struct EXPANDROW_RESPONSE {
 	uint32_t expanded_count;
 	uint16_t count;
 	BINARY bin_rows;
-} EXPANDROW_RESPONSE;
+};
 
-typedef struct _COLLAPSEROW_REQUEST {
+struct COLLAPSEROW_REQUEST {
 	uint64_t category_id;
-} COLLAPSEROW_REQUEST;
+};
 
-typedef struct _COLLAPSEROW_RESPONSE {
+struct COLLAPSEROW_RESPONSE {
 	uint32_t collapsed_count;
-} COLLAPSEROW_RESPONSE;
+};
 
-typedef struct _GETCOLLAPSESTATE_REQUEST {
+struct GETCOLLAPSESTATE_REQUEST {
 	uint64_t row_id;
 	uint32_t row_instance;
-} GETCOLLAPSESTATE_REQUEST;
+};
 
-typedef struct _GETCOLLAPSESTATE_RESPONSE {
+struct GETCOLLAPSESTATE_RESPONSE {
 	BINARY collapse_state;
-} GETCOLLAPSESTATE_RESPONSE;
+};
 
-typedef struct _SETCOLLAPSESTATE_REQUEST {
+struct SETCOLLAPSESTATE_REQUEST {
 	BINARY collapse_state;
-} SETCOLLAPSESTATE_REQUEST;
+};
 
-typedef struct _SETCOLLAPSESTATE_RESPONSE {
+struct SETCOLLAPSESTATE_RESPONSE {
 	BINARY bookmark;
-} SETCOLLAPSESTATE_RESPONSE;
+};
 
-typedef struct _OPENMESSAGE_REQUEST {
+struct OPENMESSAGE_REQUEST {
 	uint8_t hindex;
 	uint16_t cpid;
 	uint64_t folder_id;
 	uint8_t open_mode_flags;
 	uint64_t message_id;
-} OPENMESSAGE_REQUEST;
+};
 
 
-typedef struct _OPENMESSAGE_RESPONSE {
+struct OPENMESSAGE_RESPONSE {
 	uint8_t has_named_properties;
 	TYPED_STRING subject_prefix;
 	TYPED_STRING normalized_subject;
@@ -436,55 +436,55 @@ typedef struct _OPENMESSAGE_RESPONSE {
 	PROPTAG_ARRAY recipient_columns;
 	uint8_t row_count;
 	OPENRECIPIENT_ROW *precipient_row;
-} OPENMESSAGE_RESPONSE;
+};
 
 
-typedef struct _CREATEMESSAGE_REQUEST {
+struct CREATEMESSAGE_REQUEST {
 	uint8_t hindex;
 	uint16_t cpid;
 	uint64_t folder_id;
 	uint8_t associated_flag;
-} CREATEMESSAGE_REQUEST;
+};
 
-typedef struct _CREATEMESSAGE_RESPONSE {
+struct CREATEMESSAGE_RESPONSE {
 	uint64_t *pmessage_id;
-} CREATEMESSAGE_RESPONSE;
+};
 
-typedef struct _SAVECHANGESMESSAGE_REQUEST {
+struct SAVECHANGESMESSAGE_REQUEST {
 	uint8_t hindex;
 	uint8_t save_flags;
-} SAVECHANGESMESSAGE_REQUEST;
+};
 
-typedef struct _SAVECHANGESMESSAGE_RESPONSE {
+struct SAVECHANGESMESSAGE_RESPONSE {
 	uint8_t hindex;
 	uint64_t message_id;
-} SAVECHANGESMESSAGE_RESPONSE;
+};
 
-typedef struct _REMOVEALLRECIPIENTS_REQUEST {
+struct REMOVEALLRECIPIENTS_REQUEST {
 	uint32_t reserved;
-} REMOVEALLRECIPIENTS_REQUEST;
+};
 
-typedef struct _MODIFYRECIPIENTS_REQUEST {
+struct MODIFYRECIPIENTS_REQUEST {
 	PROPTAG_ARRAY proptags;
 	uint16_t count;
 	MODIFYRECIPIENT_ROW *prow;
-} MODIFYRECIPIENTS_REQUEST;
+};
 
-typedef struct _READRECIPIENTS_REQUEST {
+struct READRECIPIENTS_REQUEST {
 	uint32_t row_id;
 	uint16_t reserved;
-} READRECIPIENTS_REQUEST;
+};
 
-typedef struct _READRECIPIENTS_RESPONSE {
+struct READRECIPIENTS_RESPONSE {
 	uint8_t count;
 	BINARY bin_recipients;
-} READRECIPIENTS_RESPONSE;
+};
 
-typedef struct _RELOADCACHEDINFORMATION_REQUEST {
+struct RELOADCACHEDINFORMATION_REQUEST {
 	uint16_t reserved;
-} RELOADCACHEDINFORMATION_REQUEST;
+};
 
-typedef struct _RELOADCACHEDINFORMATION_RESPONSE {
+struct RELOADCACHEDINFORMATION_RESPONSE {
 	uint8_t has_named_properties;
 	TYPED_STRING subject_prefix;
 	TYPED_STRING normalized_subject;
@@ -492,78 +492,78 @@ typedef struct _RELOADCACHEDINFORMATION_RESPONSE {
 	PROPTAG_ARRAY recipient_columns;
 	uint8_t row_count;
 	OPENRECIPIENT_ROW *precipient_row;
-} RELOADCACHEDINFORMATION_RESPONSE;
+};
 
-typedef struct _SETREADFLAGS_REQUEST {
+struct SETREADFLAGS_REQUEST {
 	uint8_t want_asynchronous;
 	uint8_t read_flags;
 	LONGLONG_ARRAY message_ids;
-} SETREADFLAGS_REQUEST;
+};
 
-typedef struct _SETMESSAGESTATUS_REQUEST {
+struct SETMESSAGESTATUS_REQUEST {
 	uint64_t message_id;
 	uint32_t message_status;
 	uint32_t status_mask;
-} SETMESSAGESTATUS_REQUEST;
+};
 
-typedef struct _SETMESSAGESTATUS_RESPONSE {
+struct SETMESSAGESTATUS_RESPONSE {
 	uint32_t message_status;
-} SETMESSAGESTATUS_RESPONSE;
+};
 
-typedef struct _GETMESSAGESTATUS_REQUEST {
+struct GETMESSAGESTATUS_REQUEST {
 	uint64_t message_id;
-} GETMESSAGESTATUS_REQUEST;
+};
 
-typedef struct _GETMESSAGESTATUS_RESPONSE {
+struct GETMESSAGESTATUS_RESPONSE {
 	uint32_t message_status;
-} GETMESSAGESTATUS_RESPONSE;
+};
 
-typedef struct _SETREADFLAGS_RESPONSE {
+struct SETREADFLAGS_RESPONSE {
 	uint8_t partial_completion;
-} SETREADFLAGS_RESPONSE;
+};
 
-typedef struct _SETMESSAGEREADFLAG_REQUEST {
+struct SETMESSAGEREADFLAG_REQUEST {
 	uint8_t hindex;
 	uint8_t flags;
 	LONG_TERM_ID *pclient_data;
-} SETMESSAGEREADFLAG_REQUEST;
+};
 
-typedef struct _SETMESSAGEREADFLAG_RESPONSE {
+struct SETMESSAGEREADFLAG_RESPONSE {
 	uint8_t read_changed;
 	uint8_t logon_id;
 	LONG_TERM_ID *pclient_data;
-} SETMESSAGEREADFLAG_RESPONSE;
+};
 
-typedef struct _OPENATTACHMENT_REQUEST {
+struct OPENATTACHMENT_REQUEST {
 	uint8_t hindex;
 	uint8_t flags;
 	uint32_t attachment_id;
-} OPENATTACHMENT_REQUEST;
+};
 
-typedef struct _CREATEATTACHMENT_REQUEST {
+struct CREATEATTACHMENT_REQUEST {
 	uint8_t hindex;
-} CREATEATTACHMENT_REQUEST;
+};
 
-typedef struct _CREATEATTACHMENT_RESPONSE {
+struct CREATEATTACHMENT_RESPONSE {
 	uint32_t attachment_id;
-} CREATEATTACHMENT_RESPONSE;
+};
 
-typedef struct _DELETEATTACHMENT_REQUEST {
+struct DELETEATTACHMENT_REQUEST {
 	uint32_t attachment_id;
-} DELETEATTACHMENT_REQUEST;
+};
 
-typedef struct _SAVECHANGESATTACHMENT_REQUEST {
+struct SAVECHANGESATTACHMENT_REQUEST {
 	uint8_t hindex;
 	uint8_t save_flags;
-} SAVECHANGESATTACHMENT_REQUEST;
+};
 
-typedef struct _OPENEMBEDDEDMESSAGE_REQUEST {
+struct OPENEMBEDDEDMESSAGE_REQUEST {
 	uint8_t hindex;
 	uint16_t cpid;
 	uint8_t open_embedded_flags;
-} OPENEMBEDDEDMESSAGE_REQUEST;
+};
 
-typedef struct _OPENEMBEDDEDMESSAGE_RESPONSE {
+struct OPENEMBEDDEDMESSAGE_RESPONSE {
 	uint8_t reserved;
 	uint64_t message_id;
 	uint8_t has_named_properties;
@@ -573,355 +573,355 @@ typedef struct _OPENEMBEDDEDMESSAGE_RESPONSE {
 	PROPTAG_ARRAY recipient_columns;
 	uint8_t row_count;
 	OPENRECIPIENT_ROW *precipient_row;
-} OPENEMBEDDEDMESSAGE_RESPONSE;
+};
 
-typedef struct _GETATTACHMENTTABLE_REQUEST {
+struct GETATTACHMENTTABLE_REQUEST {
 	uint8_t hindex;
 	uint8_t table_flags;
-} GETATTACHMENTTABLE_REQUEST;
+};
 
-typedef struct _GETVALIDATTACHMENTS_RESPONSE {
+struct GETVALIDATTACHMENTS_RESPONSE {
 	LONG_ARRAY attachment_ids;
-} GETVALIDATTACHMENTS_RESPONSE;
+};
 
-typedef struct _SUBMITMESSAGE_REQUEST {
+struct SUBMITMESSAGE_REQUEST {
 	uint8_t submit_flags;
-} SUBMITMESSAGE_REQUEST;
+};
 
-typedef struct _ABORTSUBMIT_REQUEST {
+struct ABORTSUBMIT_REQUEST {
 	uint64_t folder_id;
 	uint64_t message_id;
-} ABORTSUBMIT_REQUEST;
+};
 
-typedef struct _GETADDRESSTYPES_RESPONSE {
+struct GETADDRESSTYPES_RESPONSE {
 	STRING_ARRAY address_types;
-} GETADDRESSTYPES_RESPONSE;
+};
 
-typedef struct _SPOOLERLOCKMESSAGE_REQUEST {
+struct SPOOLERLOCKMESSAGE_REQUEST {
 	uint64_t message_id;
 	uint8_t lock_stat;
-} SPOOLERLOCKMESSAGE_REQUEST;
+};
 
-typedef struct _TRANSPORTSEND_RESPONSE {
+struct TRANSPORTSEND_RESPONSE {
 	TPROPVAL_ARRAY *ppropvals;
-} TRANSPORTSEND_RESPONSE;
+};
 
-typedef struct _TRANSPORTNEWMAIL_REQUEST {
+struct TRANSPORTNEWMAIL_REQUEST {
 	uint64_t message_id;
 	uint64_t folder_id;
 	char *pstr_class;
 	uint32_t message_flags;
-} TRANSPORTNEWMAIL_REQUEST;
+};
 
-typedef struct _GETTRANSPORTFOLDER_RESPONSE {
+struct GETTRANSPORTFOLDER_RESPONSE {
 	uint64_t folder_id;
-} GETTRANSPORTFOLDER_RESPONSE;
+};
 
-typedef struct _OPTIONSDATA_REQUEST {
+struct OPTIONSDATA_REQUEST {
 	char *paddress_type;
 	uint8_t want_win32;
-} OPTIONSDATA_REQUEST;
+};
 
-typedef struct _OPTIONSDATA_RESPONSE {
+struct OPTIONSDATA_RESPONSE {
 	uint8_t reserved;
 	BINARY options_info;
 	BINARY help_file;
 	char *pfile_name;
-} OPTIONSDATA_RESPONSE;
+};
 
-typedef struct _GETPROPERTYIDSFROMNAMES_REQUEST {
+struct GETPROPERTYIDSFROMNAMES_REQUEST {
 	uint8_t flags;
 	PROPNAME_ARRAY propnames;
-} GETPROPERTYIDSFROMNAMES_REQUEST;
+};
 
-typedef struct _GETPROPERTYIDSFROMNAMES_RESPONSE {
+struct GETPROPERTYIDSFROMNAMES_RESPONSE {
 	PROPID_ARRAY propids;
-} GETPROPERTYIDSFROMNAMES_RESPONSE;
+};
 
-typedef struct _GETNAMESFROMPROPERTYIDS_REQUEST {
+struct GETNAMESFROMPROPERTYIDS_REQUEST {
 	PROPID_ARRAY propids;
-} GETNAMESFROMPROPERTYIDS_REQUEST;
+};
 
-typedef struct _GETNAMESFROMPROPERTYIDS_RESPONSE {
+struct GETNAMESFROMPROPERTYIDS_RESPONSE {
 	PROPNAME_ARRAY propnames;
-} GETNAMESFROMPROPERTYIDS_RESPONSE;
+};
 
-typedef struct _GETPROPERTIESSPECIFIC_REQUEST {
+struct GETPROPERTIESSPECIFIC_REQUEST {
 	uint16_t size_limit;
 	uint16_t want_unicode;
 	PROPTAG_ARRAY proptags;
-} GETPROPERTIESSPECIFIC_REQUEST;
+};
 
-typedef struct _GETPROPERTIESSPECIFIC_RESPONSE {
+struct GETPROPERTIESSPECIFIC_RESPONSE {
 	PROPTAG_ARRAY *pproptags;    /* only for pushing row data into stream */
 	PROPERTY_ROW row;
-} GETPROPERTIESSPECIFIC_RESPONSE;
+};
 
-typedef struct _GETPROPERTIESALL_REQUEST {
+struct GETPROPERTIESALL_REQUEST {
 	uint16_t size_limit;
 	uint16_t want_unicode;
-} GETPROPERTIESALL_REQUEST;
+};
 
-typedef struct _GETPROPERTIESALL_RESPONSE {
+struct GETPROPERTIESALL_RESPONSE {
 	TPROPVAL_ARRAY propvals;
-} GETPROPERTIESALL_RESPONSE;
+};
 
-typedef struct _GETPROPERTIESLIST_RESPONSE {
+struct GETPROPERTIESLIST_RESPONSE {
 	PROPTAG_ARRAY proptags;
-} GETPROPERTIESLIST_RESPONSE;
+};
 
-typedef struct _SETPROPERTIES_REQUEST {
+struct SETPROPERTIES_REQUEST {
 	TPROPVAL_ARRAY propvals;
-} SETPROPERTIES_REQUEST;
+};
 
-typedef struct _SETPROPERTIES_RESPONSE {
+struct SETPROPERTIES_RESPONSE {
 	PROBLEM_ARRAY problems;
-} SETPROPERTIES_RESPONSE;
+};
 
-typedef struct _SETPROPERTIESNOREPLICATE_REQUEST {
+struct SETPROPERTIESNOREPLICATE_REQUEST {
 	TPROPVAL_ARRAY propvals;
-} SETPROPERTIESNOREPLICATE_REQUEST;
+};
 
-typedef struct _SETPROPERTIESNOREPLICATE_RESPONSE {
+struct SETPROPERTIESNOREPLICATE_RESPONSE {
 	PROBLEM_ARRAY problems;
-} SETPROPERTIESNOREPLICATE_RESPONSE;
+};
 
-typedef struct _DELETEPROPERTIES_REQUEST {
+struct DELETEPROPERTIES_REQUEST {
 	PROPTAG_ARRAY proptags;
-} DELETEPROPERTIES_REQUEST;
+};
 
-typedef struct _DELETEPROPERTIES_RESPONSE {
+struct DELETEPROPERTIES_RESPONSE {
 	PROBLEM_ARRAY problems;
-} DELETEPROPERTIES_RESPONSE;
+};
 
-typedef struct _DELETEPROPERTIESNOREPLICATE_REQUEST {
+struct DELETEPROPERTIESNOREPLICATE_REQUEST {
 	PROPTAG_ARRAY proptags;
-} DELETEPROPERTIESNOREPLICATE_REQUEST;
+};
 
-typedef struct _DELETEPROPERTIESNOREPLICATE_RESPONSE {
+struct DELETEPROPERTIESNOREPLICATE_RESPONSE {
 	PROBLEM_ARRAY problems;
-} DELETEPROPERTIESNOREPLICATE_RESPONSE;
+};
 
-typedef struct _QUERYNAMEDPROPERTIES_REQUEST {
+struct QUERYNAMEDPROPERTIES_REQUEST {
 	uint8_t query_flags;
 	GUID *pguid;
-} QUERYNAMEDPROPERTIES_REQUEST;
+};
 
-typedef struct _QUERYNAMEDPROPERTIES_RESPONSE {
+struct QUERYNAMEDPROPERTIES_RESPONSE {
 	PROPIDNAME_ARRAY propidnames;
-} QUERYNAMEDPROPERTIES_RESPONSE;
+};
 
-typedef struct _COPYPROPERTIES_REQUEST {
+struct COPYPROPERTIES_REQUEST {
 	uint8_t hindex;
 	uint8_t want_asynchronous;
 	uint8_t copy_flags;
 	PROPTAG_ARRAY proptags;
-} COPYPROPERTIES_REQUEST;
+};
 
-typedef struct _COPYPROPERTIES_RESPONSE {
+struct COPYPROPERTIES_RESPONSE {
 	PROBLEM_ARRAY problems;
-} COPYPROPERTIES_RESPONSE;
+};
 
-typedef struct _COPYTO_REQUEST {
+struct COPYTO_REQUEST {
 	uint8_t hindex;
 	uint8_t want_asynchronous;
 	uint8_t want_subobjects;
 	uint8_t copy_flags;
 	PROPTAG_ARRAY excluded_proptags;
-} COPYTO_REQUEST;
+};
 
-typedef struct _COPYTO_RESPONSE {
+struct COPYTO_RESPONSE {
 	PROBLEM_ARRAY problems;
-} COPYTO_RESPONSE;
+};
 
-typedef struct _PROGRESS_REQUEST {
+struct PROGRESS_REQUEST {
 	uint8_t want_cancel;
-} PROGRESS_REQUEST;
+};
 
-typedef struct _PROGRESS_RESPONSE {
+struct PROGRESS_RESPONSE {
 	uint8_t logon_id;
 	uint32_t completed_count;
 	uint32_t total_count;
-} PROGRESS_RESPONSE;
+};
 
-typedef struct _OPENSTREAM_REQUEST {
+struct OPENSTREAM_REQUEST {
 	uint8_t hindex;
 	uint32_t proptag;
 	uint8_t flags;
-} OPENSTREAM_REQUEST;
+};
 
-typedef struct _OPENSTREAM_RESPONSE {
+struct OPENSTREAM_RESPONSE {
 	uint32_t stream_size;
-} OPENSTREAM_RESPONSE;
+};
 
-typedef struct _READSTREAM_REQUEST {
+struct READSTREAM_REQUEST {
 	uint16_t byte_count;
 	uint32_t max_byte_count;
-} READSTREAM_REQUEST;
+};
 
-typedef struct _READSTREAM_RESPONSE {
+struct READSTREAM_RESPONSE {
 	BINARY data;
-} READSTREAM_RESPONSE;
+};
 
-typedef struct _WRITESTREAM_REQUEST {
+struct WRITESTREAM_REQUEST {
 	BINARY data;
-} WRITESTREAM_REQUEST;
+};
 
-typedef struct _WRITESTREAM_RESPONSE {
+struct WRITESTREAM_RESPONSE {
 	uint16_t written_size;
-} WRITESTREAM_RESPONSE;
+};
 
-typedef struct _GETSTREAMSIZE_RESPONSE {
+struct GETSTREAMSIZE_RESPONSE {
 	uint32_t stream_size;
-} GETSTREAMSIZE_RESPONSE;
+};
 
-typedef struct _SETSTREAMSIZE_REQUEST {
+struct SETSTREAMSIZE_REQUEST {
 	uint64_t stream_size;
-} SETSTREAMSIZE_REQUEST;
+};
 
-typedef struct _SEEKSTREAM_REQUEST {
+struct SEEKSTREAM_REQUEST {
 	uint8_t seek_pos;
 	int64_t offset;
-} SEEKSTREAM_REQUEST;
+};
 
-typedef struct _SEEKSTREAM_RESPONSE {
+struct SEEKSTREAM_RESPONSE {
 	uint64_t new_pos;
-} SEEKSTREAM_RESPONSE;
+};
 
-typedef struct _COPYTOSTREAM_REQUEST {
+struct COPYTOSTREAM_REQUEST {
 	uint8_t hindex;
 	uint64_t byte_count;
-} COPYTOSTREAM_REQUEST;
+};
 
-typedef struct _COPYTOSTREAM_RESPONSE {
+struct COPYTOSTREAM_RESPONSE {
 	uint64_t read_bytes;
 	uint64_t written_bytes;
-} COPYTOSTREAM_RESPONSE;
+};
 
-typedef struct _COPYTOSTREAM_NULL_DEST_RESPONSE {
+struct COPYTOSTREAM_NULL_DEST_RESPONSE {
 	uint32_t hindex;
 	uint64_t read_bytes;
 	uint64_t written_bytes;
-} COPYTOSTREAM_NULL_DEST_RESPONSE;
+};
 
-typedef struct _LOCKREGIONSTREAM_REQUEST {
+struct LOCKREGIONSTREAM_REQUEST {
 	uint64_t region_offset;
 	uint64_t region_size;
 	uint32_t lock_flags;
-} LOCKREGIONSTREAM_REQUEST;
+};
 
-typedef struct _UNLOCKREGIONSTREAM_REQUEST {
+struct UNLOCKREGIONSTREAM_REQUEST {
 	uint64_t region_offset;
 	uint64_t region_size;
 	uint32_t lock_flags;
-} UNLOCKREGIONSTREAM_REQUEST;
+};
 
-typedef struct _WRITEANDCOMMITSTREAM_REQUEST {
+struct WRITEANDCOMMITSTREAM_REQUEST {
 	BINARY data;
-} WRITEANDCOMMITSTREAM_REQUEST;
+};
 
-typedef struct _WRITEANDCOMMITSTREAM_RESPONSE {
+struct WRITEANDCOMMITSTREAM_RESPONSE {
 	uint16_t written_size;
-} WRITEANDCOMMITSTREAM_RESPONSE;
+};
 
-typedef struct _CLONESTREAM_REQUEST {
+struct CLONESTREAM_REQUEST {
 	uint8_t hindex;
-} CLONESTREAM_REQUEST;
+};
 
-typedef struct _MODIFYPERMISSIONS_REQUEST {
+struct MODIFYPERMISSIONS_REQUEST {
 	uint8_t flags;
 	uint16_t count;
 	PERMISSION_DATA *prow;
-} MODIFYPERMISSIONS_REQUEST;
+};
 
 
-typedef struct _GETPERMISSIONSTABLE_REQUEST {
+struct GETPERMISSIONSTABLE_REQUEST {
 	uint8_t hindex;
 	uint8_t flags;
-} GETPERMISSIONSTABLE_REQUEST;
+};
 
 
-typedef struct _MODIFYRULES_REQUEST {
+struct MODIFYRULES_REQUEST {
 	uint8_t flags;
 	uint16_t count;
 	RULE_DATA *prow;
-} MODIFYRULES_REQUEST;
+};
 
-typedef struct _GETRULESTABLE_REQUEST {
+struct GETRULESTABLE_REQUEST {
 	uint8_t hindex;
 	uint8_t flags;
-} GETRULESTABLE_REQUEST;
+};
 
-typedef struct _UPDATEDEFERREDACTIONMESSAGES_REQUEST {
+struct UPDATEDEFERREDACTIONMESSAGES_REQUEST {
 	BINARY server_entry_id;
 	BINARY client_entry_id;
-} UPDATEDEFERREDACTIONMESSAGES_REQUEST;
+};
 
-typedef struct _FASTTRANSFERDESTCONFIGURE_REQUEST {
+struct FASTTRANSFERDESTCONFIGURE_REQUEST {
 	uint8_t hindex;
 	uint8_t source_operation;
 	uint8_t flags;
-} FASTTRANSFERDESTCONFIGURE_REQUEST;
+};
 
-typedef struct _FASTTRANSFERDESTPUTBUFFER_REQUEST {
+struct FASTTRANSFERDESTPUTBUFFER_REQUEST {
 	BINARY transfer_data;
-} FASTTRANSFERDESTPUTBUFFER_REQUEST;
+};
 
-typedef struct _FASTTRANSFERDESTPUTBUFFER_RESPONSE {
+struct FASTTRANSFERDESTPUTBUFFER_RESPONSE {
 	uint16_t transfer_status;
 	uint16_t in_progress_count;
 	uint16_t total_step_count;
 	uint8_t reserved;
 	uint16_t used_size;
-} FASTTRANSFERDESTPUTBUFFER_RESPONSE;
+};
 
-typedef struct _FASTTRANSFERSOURCEGETBUFFER_REQUEST {
+struct FASTTRANSFERSOURCEGETBUFFER_REQUEST {
 	uint16_t buffer_size;
 	uint16_t max_buffer_size;
-} FASTTRANSFERSOURCEGETBUFFER_REQUEST;
+};
 
-typedef struct _FASTTRANSFERSOURCEGETBUFFER_RESPONSE {
+struct FASTTRANSFERSOURCEGETBUFFER_RESPONSE {
 	uint16_t transfer_status;
 	uint16_t in_progress_count;
 	uint16_t total_step_count;
 	uint8_t reserved;
 	BINARY transfer_data;
-} FASTTRANSFERSOURCEGETBUFFER_RESPONSE;
+};
 
-typedef struct _FASTTRANSFERSOURCECOPYFOLDER_REQUEST {
+struct FASTTRANSFERSOURCECOPYFOLDER_REQUEST {
 	uint8_t hindex;
 	uint8_t flags;
 	uint8_t send_options;
-} FASTTRANSFERSOURCECOPYFOLDER_REQUEST;
+};
 
-typedef struct _FASTTRANSFERSOURCECOPYMESSAGES_REQUEST {
+struct FASTTRANSFERSOURCECOPYMESSAGES_REQUEST {
 	uint8_t hindex;
 	LONGLONG_ARRAY message_ids;
 	uint8_t flags;
 	uint8_t send_options;
-} FASTTRANSFERSOURCECOPYMESSAGES_REQUEST;
+};
 
-typedef struct _FASTTRANSFERSOURCECOPYTO_REQUEST {
+struct FASTTRANSFERSOURCECOPYTO_REQUEST {
 	uint8_t hindex;
 	uint8_t level;
 	uint32_t flags;
 	uint8_t send_options;
 	PROPTAG_ARRAY proptags;
-} FASTTRANSFERSOURCECOPYTO_REQUEST;
+};
 
-typedef struct _FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST {
+struct FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST {
 	uint8_t hindex;
 	uint8_t level;
 	uint8_t flags;
 	uint8_t send_options;
 	PROPTAG_ARRAY proptags;
-} FASTTRANSFERSOURCECOPYPROPERTIES_REQUEST;
+};
 
-typedef struct _TELLVERSION_REQUEST {
+struct TELLVERSION_REQUEST {
 	uint16_t version[3];
-} TELLVERSION_REQUEST;
+};
 
-typedef struct _SYNCCONFIGURE_REQUEST {
+struct SYNCCONFIGURE_REQUEST {
 	uint8_t hindex;
 	uint8_t sync_type;
 	uint8_t send_options;
@@ -929,117 +929,117 @@ typedef struct _SYNCCONFIGURE_REQUEST {
 	RESTRICTION *pres;
 	uint32_t extra_flags;
 	PROPTAG_ARRAY proptags;
-} SYNCCONFIGURE_REQUEST;
+};
 
-typedef struct _SYNCIMPORTMESSAGECHANGE_REQUEST {
+struct SYNCIMPORTMESSAGECHANGE_REQUEST {
 	uint8_t hindex;
 	uint8_t import_flags;
 	TPROPVAL_ARRAY propvals;
-} SYNCIMPORTMESSAGECHANGE_REQUEST;
+};
 
-typedef struct _SYNCIMPORTMESSAGECHANGE_RESPONSE {
+struct SYNCIMPORTMESSAGECHANGE_RESPONSE {
 	uint64_t message_id;
-} SYNCIMPORTMESSAGECHANGE_RESPONSE;
+};
 
-typedef struct _SYNCIMPORTREADSTATECHANGES_REQUEST {
+struct SYNCIMPORTREADSTATECHANGES_REQUEST {
 	uint16_t count;
 	MESSAGE_READ_STAT *pread_stat;
-} SYNCIMPORTREADSTATECHANGES_REQUEST;
+};
 
-typedef struct _SYNCIMPORTHIERARCHYCHANGE_REQUEST {
+struct SYNCIMPORTHIERARCHYCHANGE_REQUEST {
 	TPROPVAL_ARRAY hichyvals;
 	TPROPVAL_ARRAY propvals;
-} SYNCIMPORTHIERARCHYCHANGE_REQUEST;
+};
 
-typedef struct _SYNCIMPORTHIERARCHYCHANGE_RESPONSE {
+struct SYNCIMPORTHIERARCHYCHANGE_RESPONSE {
 	uint64_t folder_id;
-} SYNCIMPORTHIERARCHYCHANGE_RESPONSE;
+};
 
-typedef struct _SYNCIMPORTDELETES_REQUEST {
+struct SYNCIMPORTDELETES_REQUEST {
 	uint8_t flags;
 	TPROPVAL_ARRAY propvals;
-} SYNCIMPORTDELETES_REQUEST;
+};
 
-typedef struct _SYNCIMPORTMESSAGEMOVE_REQUEST {
+struct SYNCIMPORTMESSAGEMOVE_REQUEST {
 	BINARY src_folder_id;
 	BINARY src_message_id;
 	BINARY change_list;
 	BINARY dst_message_id;
 	BINARY change_number;
-} SYNCIMPORTMESSAGEMOVE_REQUEST;
+};
 
-typedef struct _SYNCIMPORTMESSAGEMOVE_RESPONSE {
+struct SYNCIMPORTMESSAGEMOVE_RESPONSE {
 	uint64_t message_id;
-} SYNCIMPORTMESSAGEMOVE_RESPONSE;
+};
 
-typedef struct _SYNCOPENCOLLECTOR_REQUEST {
+struct SYNCOPENCOLLECTOR_REQUEST {
 	uint8_t hindex;
 	uint8_t is_content_collector;
-} SYNCOPENCOLLECTOR_REQUEST;
+};
 
-typedef struct _SYNCGETTRANSFERSTATE_REQUEST {
+struct SYNCGETTRANSFERSTATE_REQUEST {
 	uint8_t hindex;
-} SYNCGETTRANSFERSTATE_REQUEST;
+};
 
-typedef struct _SYNCUPLOADSTATESTREAMBEGIN_REQUEST {
+struct SYNCUPLOADSTATESTREAMBEGIN_REQUEST {
 	uint32_t proptag_stat;
 	uint32_t buffer_size;
-} SYNCUPLOADSTATESTREAMBEGIN_REQUEST;
+};
 
-typedef struct _SYNCUPLOADSTATESTREAMCONTINUE_REQUEST {
+struct SYNCUPLOADSTATESTREAMCONTINUE_REQUEST {
 	BINARY stream_data;
-} SYNCUPLOADSTATESTREAMCONTINUE_REQUEST;
+};
 
-typedef struct _SETLOCALREPLICAMIDSETDELETED_REQUEST {
+struct SETLOCALREPLICAMIDSETDELETED_REQUEST {
 	uint32_t count;
 	LONG_TERM_ID_RANGE *prange;
-} SETLOCALREPLICAMIDSETDELETED_REQUEST;
+};
 
-typedef struct _GETLOCALREPLICAIDS_REQUEST {
+struct GETLOCALREPLICAIDS_REQUEST {
 	uint32_t count;
-} GETLOCALREPLICAIDS_REQUEST;
+};
 
-typedef struct _GETLOCALREPLICAIDS_RESPONSE {
+struct GETLOCALREPLICAIDS_RESPONSE {
 	GUID guid;
 	uint8_t global_count[6];
-} GETLOCALREPLICAIDS_RESPONSE;
+};
 
-typedef struct _REGISTERNOTIFICATION_REQUEST {
+struct REGISTERNOTIFICATION_REQUEST {
 	uint8_t hindex;
 	uint8_t notification_types;
 	uint8_t reserved;
 	uint8_t want_whole_store;
 	uint64_t *pfolder_id;
 	uint64_t *pmessage_id;
-} REGISTERNOTIFICATION_REQUEST;
+};
 
-typedef struct _NOTIFY_RESPONSE {
+struct NOTIFY_RESPONSE {
 	uint32_t handle;
 	uint8_t logon_id;
 	NOTIFICATION_DATA notification_data;
-} NOTIFY_RESPONSE;
+};
 
-typedef struct _PENDING_RESPONSE {
+struct PENDING_RESPONSE {
 	uint16_t session_index;
-} PENDING_RESPONSE;
+};
 
-typedef struct _BACKOFF_ROP {
+struct BACKOFF_ROP {
 	uint8_t rop_id;
 	uint32_t duration;
-} BACKOFF_ROP;
+};
 
-typedef struct _BACKOFF_RESPONSE {
+struct BACKOFF_RESPONSE {
 	uint8_t logon_id;
 	uint32_t duration;
 	uint8_t rop_count;
-	BACKOFF_ROP *prop_data;
+	struct BACKOFF_ROP *prop_data;
 	BINARY additional_data;
-} BACKOFF_RESPONSE;
+};
 
-typedef struct _BUFFERTOOSMALL_RESPONSE {
+struct BUFFERTOOSMALL_RESPONSE {
 	uint16_t size_needed;
 	BINARY buffer;
-} BUFFERTOOSMALL_RESPONSE;
+};
 
 /* end of rop request and response structure */
 
@@ -1176,28 +1176,28 @@ enum {
 	ropBufferTooSmall = 0xFF,
 };
 
-typedef struct _ROP_REQUEST {
+struct ROP_REQUEST {
 	uint8_t rop_id;
 	uint8_t logon_id;
 	uint8_t hindex;
 	void *ppayload;
 	BINARY bookmark;
-} ROP_REQUEST;
+};
 
-typedef struct _ROP_RESPONSE {
+struct ROP_RESPONSE {
 	uint8_t rop_id;
 	uint8_t hindex;
 	uint32_t result;
 	void *ppayload;
-} ROP_RESPONSE;
+};
 
-typedef struct _ROP_BUFFER {
+struct ROP_BUFFER {
 	uint16_t rhe_version;
 	uint16_t rhe_flags;
 	DOUBLE_LIST rop_list;
 	uint8_t hnum;
 	uint32_t *phandles;
-} ROP_BUFFER;
+};
 
 #ifdef __cplusplus
 extern "C" {

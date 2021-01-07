@@ -85,7 +85,7 @@ enum {
 
 //////////////////////////////////////////////////////////////////////////
 
-typedef struct _ENVELOP_INFO{
+struct ENVELOP_INFO {
     char        parsed_domain[256];/* parsed domain according connection*/
     char        hello_domain[256]; /* domain name after helo */
     char        from[256];         /* envelop's from message */
@@ -95,9 +95,9 @@ typedef struct _ENVELOP_INFO{
     BOOL        is_outbound;       /* in-bound or out-bound */
     BOOL        is_relay;           /* indicate whether this mail is relaying */
     int         auth_times;        /* recording the times of auth */
-} ENVELOP_INFO;
+};
 
-typedef struct _MAIL_HEAD{
+struct MAIL_HEAD {
     MEM_FILE    f_mime_from;      /* from message in mime including nick name */
     MEM_FILE    f_mime_to;        /* to message in mime */
     MEM_FILE    f_mime_cc;        /* cc message in mime */
@@ -110,21 +110,21 @@ typedef struct _MAIL_HEAD{
 	char x_original_ip[32]; /* oringinal ip information in mime */
     char        compose_time[64];    /* compose time in mime */
     int         mail_part;             /* single part mail or multi-parts */
-} MAIL_HEAD;
+};
 
-typedef struct _MAIL_BODY{
+struct MAIL_BODY {
     size_t          mail_length;
     int             parts_num;
     MEM_FILE        f_mail_parts;
-} MAIL_BODY;
+};
 
-typedef struct _MAIL_INFO{
+struct MAIL_INFO {
     ENVELOP_INFO    envelop;
     MAIL_HEAD       head;
     MAIL_BODY       body;
-} MAIL_INFO;
+};
 
-typedef struct    _CONNECTION{
+struct CONNECTION {
 	char client_ip[32]; /* client ip address string */
     int            client_port;        /* value of client port */
 	char server_ip[32]; /* server ip address */
@@ -132,21 +132,21 @@ typedef struct    _CONNECTION{
     int            sockd;              /* context's socket file description */
 	SSL            *ssl;
     struct timeval last_timestamp;     /* last time when system got data from */
-} CONNECTION;
+};
 
-typedef struct _FLUSH_INFO{
+struct FLUSH_INFO {
     int           flush_action; /* indicate flushing whole or part of mail */
     int           flush_result;
     int           flush_ID;
     void          *flush_ptr;    /* extended data pointer */
-} FLUSH_INFO;
+};
 
-typedef struct _BOUNDARY_STRING {
+struct BOUNDARY_STRING {
     int     bndstr_len;
     char    bndstr[MAX_BOUNDARY_STRING_LENGTH];
-} BOUNDARY_STRING;
+};
 
-typedef struct _PARSING_BLOCK{
+struct PARSING_BLOCK {
     int             state;
     BOUNDARY_STRING cur_bndstr;
     VSTACK			stack_bndstr;
@@ -159,15 +159,15 @@ typedef struct _PARSING_BLOCK{
     MEM_FILE        f_last_blkmime;
     char            remains_encode[4];
     int             remains_len;
-} PARSING_BLOCK;
+};
 
-typedef struct _EXT_DATA {
+struct EXT_DATA {
     char             ext_data[MAX_EXTRA_DATA_INDEX][MAX_EXTRA_DATA_DATALEN];
     char             ext_tag[MAX_EXTRA_DATA_INDEX][MAX_EXTRA_DATA_TAGLEN];
     int              cur_pos;
-} EXT_DATA;
+};
 
-typedef struct _SMTP_CONTEXT{
+struct SMTP_CONTEXT {
     SCHEDULE_CONTEXT sched_context;
     CONNECTION       connection;
     STREAM           stream;       /* stream accepted from smtp client */
@@ -183,7 +183,7 @@ typedef struct _SMTP_CONTEXT{
     PARSING_BLOCK    block_info;   /* parsing block information */
     int              pre_rstlen;   /* previous bytes rested by last flushing */
     EXT_DATA         ext_data;
-} SMTP_CONTEXT;
+};
 
 #ifdef __cplusplus
 extern "C" {

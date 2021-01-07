@@ -69,7 +69,7 @@ enum {
 	IMAP_RETRIEVE_ERROR
 };
 
-typedef struct _CONNECTION{
+struct CONNECTION {
 	char client_ip[32]; /* client ip address string */
     int            client_port;        /* value of client port */
 	char server_ip[32]; /* server ip address */
@@ -77,20 +77,18 @@ typedef struct _CONNECTION{
     int            sockd;              /* context's socket file description */
 	SSL            *ssl;
     struct timeval last_timestamp;     /* last time when system got data from */
-} CONNECTION;
+};
 
-
-typedef struct _MITEM {
+struct MITEM {
 	SINGLE_LIST_NODE node;
 	char mid[128];
 	int id;
 	int uid;
 	char flag_bits;
 	MEM_FILE f_digest;
-} MITEM;
+};
 
-
-typedef struct _IMAP_CONTEXT{
+struct IMAP_CONTEXT {
     SCHEDULE_CONTEXT sched_context;
     CONNECTION       connection;
 	DOUBLE_LIST_NODE hash_node;
@@ -121,7 +119,7 @@ typedef struct _IMAP_CONTEXT{
 	char             username[256];
 	char             maildir[256];
 	char             lang[32];
-} IMAP_CONTEXT;
+};
 
 #ifdef __cplusplus
 extern "C" {

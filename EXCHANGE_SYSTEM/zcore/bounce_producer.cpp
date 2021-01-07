@@ -35,28 +35,28 @@ enum{
 	TAG_TOTAL_LEN = TAG_END
 };
 
-typedef struct _FORMAT_DATA {
+struct FORMAT_DATA {
 	int	position;
 	int tag;
-} FORMAT_DATA;
+};
 
 /*
  * <time> <from> <rcpts> <rcpt>
  * <subject> <parts> <length>
  */
-typedef struct _RESOURCE_NODE{
+struct RESOURCE_NODE {
 	SINGLE_LIST_NODE	node;
 	char				charset[32];
 	char				subject[BOUNCE_TOTAL_NUM][256];
 	char				content_type[BOUNCE_TOTAL_NUM][256];
 	char*				content[BOUNCE_TOTAL_NUM];
 	FORMAT_DATA			format[BOUNCE_TOTAL_NUM][TAG_TOTAL_LEN + 1];
-} RESOURCE_NODE;
+};
 
-typedef struct _TAG_ITEM{
+struct TAG_ITEM {
 	const char	*name;
 	int			length;
-} TAG_ITEM;
+};
 
 static char g_path[256];
 static char g_separator[16];

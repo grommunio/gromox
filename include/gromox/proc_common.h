@@ -17,8 +17,7 @@
 #define DCERPC_CALL_STAT_FLAG_HEADER_SIGNING		0x04
 #define DCERPC_CALL_STAT_FLAG_MULTIPLEXED			0x10
 
-
-typedef struct _DCERPC_INFO {
+struct DCERPC_INFO {
 	const char *client_ip;
 	int client_port;
 	const char *server_ip; /* http server ip */
@@ -30,9 +29,9 @@ typedef struct _DCERPC_INFO {
 	const char *maildir;
 	const char *lang;
 	uint32_t stat_flags;   /* state flags of rpc context */
-} DCERPC_INFO; /* used for proc plugin to get dcerpc information */
+}; /* used for proc plugin to get dcerpc information */
 
-typedef struct _DCERPC_INTERFACE {
+struct DCERPC_INTERFACE {
 	char name[128];
 	GUID uuid;
 	uint32_t version;
@@ -47,8 +46,7 @@ typedef struct _DCERPC_INTERFACE {
 	void (*unbind)(uint64_t handle);
 	/* the reclaim function for the chosen interface */
 	void (*reclaim)(uint32_t async_id);
-} DCERPC_INTERFACE;
-
+};
 
 typedef void (*TALK_MAIN)(int, char**, char*, int);
 typedef void *(*QUERY_SERVICE)(const char *);

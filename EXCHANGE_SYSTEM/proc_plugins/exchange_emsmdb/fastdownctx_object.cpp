@@ -15,11 +15,11 @@ enum {
 	FUNC_ID_MESSAGE
 };
 
-typedef struct _FAST_FLOW_NODE {
+struct FAST_FLOW_NODE {
 	DOUBLE_LIST_NODE node;
 	uint8_t func_id;
 	void *pparam;
-} FAST_FLOW_NODE;
+};
 
 static BOOL fastdownctx_object_record_subfoldernodelprops(
 	DOUBLE_LIST *pflow_list, const FOLDER_CONTENT *pfldctnt);

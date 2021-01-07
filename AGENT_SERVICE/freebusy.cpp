@@ -35,39 +35,39 @@
 
 #define SOCKET_TIMEOUT								60
 
-typedef struct _EXMDB_ITEM {
+struct EXMDB_ITEM {
 	char prefix[256];
 	char type[16];
 	char ip_addr[32];
 	int port;
-} EXMDB_ITEM;
+};
 
-typedef struct _EXMDB_NODE {
+struct EXMDB_NODE {
 	DOUBLE_LIST_NODE node;
 	int sockd;
 	time_t last_time;
 	EXMDB_ITEM exmdb_info;
-} EXMDB_NODE;
+};
 
-typedef struct _CONNECT_REQUEST {
+struct CONNECT_REQUEST {
 	char *prefix;
 	char *remote_id;
 	BOOL b_private;
-} CONNECT_REQUEST;
+};
 
-typedef struct _GET_NAMED_PROPIDS_REQUEST {
+struct GET_NAMED_PROPIDS_REQUEST {
 	const char *dir;
 	BOOL b_create;
 	const PROPNAME_ARRAY *ppropnames;
-} GET_NAMED_PROPIDS_REQUEST;
+};
 
-typedef struct _CHECK_FOLDER_PERMISSION_REQUEST {
+struct CHECK_FOLDER_PERMISSION_REQUEST {
 	const char *dir;
 	uint64_t folder_id;
 	const char *username;
-} CHECK_FOLDER_PERMISSION_REQUEST;
+};
 
-typedef struct _LOAD_CONTENT_TABLE_REQUEST {
+struct LOAD_CONTENT_TABLE_REQUEST {
 	const char *dir;
 	uint32_t cpid;
 	uint64_t folder_id;
@@ -75,14 +75,14 @@ typedef struct _LOAD_CONTENT_TABLE_REQUEST {
 	uint8_t table_flags;
 	const RESTRICTION *prestriction;
 	const SORTORDER_SET *psorts;
-} LOAD_CONTENT_TABLE_REQUEST;
+};
 
-typedef struct _UNLOAD_TABLE_REQUEST {
+struct UNLOAD_TABLE_REQUEST {
 	const char *dir;
 	uint32_t table_id;
-} UNLOAD_TABLE_REQUEST;
+};
 
-typedef struct _QUERY_TABLE_REQUEST {
+struct QUERY_TABLE_REQUEST {
 	const char *dir;
 	const char *username;
 	uint32_t cpid;
@@ -90,15 +90,15 @@ typedef struct _QUERY_TABLE_REQUEST {
 	const PROPTAG_ARRAY *pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
-} QUERY_TABLE_REQUEST;
+};
 
-typedef struct _EVENT_NODE {
+struct EVENT_NODE {
 	DOUBLE_LIST_NODE node;
 	time_t start_time;
 	time_t end_time;
 	EXCEPTIONINFO *pexception;
 	EXTENDEDEXCEPTION *pex_exception;
-} EVENT_NODE;
+};
 
 using namespace gromox;
 

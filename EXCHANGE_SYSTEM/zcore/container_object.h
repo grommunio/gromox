@@ -12,7 +12,7 @@
 #define CONTAINER_TYPE_FOLDER					1
 #define CONTAINER_TYPE_ABTREE					2
 
-typedef union _CONTAINER_ID {
+union CONTAINER_ID {
 	struct {
 		BOOL b_private;
 		uint64_t folder_id;
@@ -21,16 +21,16 @@ typedef union _CONTAINER_ID {
 		int base_id;
 		uint32_t minid;
 	} abtree_id;
-} CONTAINER_ID;
+};
 
-typedef struct _CONTAINER_OBJECT {
+struct CONTAINER_OBJECT {
 	uint8_t type;
 	CONTAINER_ID id;
 	union {
 		TARRAY_SET *prow_set;
 		LONG_ARRAY *pminid_array;
 	} contents;
-} CONTAINER_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

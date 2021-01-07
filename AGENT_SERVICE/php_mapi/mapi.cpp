@@ -39,21 +39,21 @@
 		ZVAL_RES(return_value, zend_register_resource(ses, le_mapi_thing)); \
 	} while (false)
 
-typedef struct _MAPI_RESOURCE {
+struct MAPI_RESOURCE {
 	uint8_t type;
 	GUID hsession;
 	uint32_t hobject;
-} MAPI_RESOURCE;
+};
 
-typedef struct _STREAM_OBJECT {
+struct STREAM_OBJECT {
 	GUID hsession;
 	uint32_t hparent;
 	uint32_t proptag;
 	uint32_t seek_offset;
 	BINARY content_bin;
-} STREAM_OBJECT;
+};
 
-typedef struct _ICS_IMPORT_CTX {
+struct ICS_IMPORT_CTX {
 	GUID hsession;
 	uint32_t hobject;
 	uint8_t ics_type;
@@ -61,9 +61,9 @@ typedef struct _ICS_IMPORT_CTX {
 #ifdef ZTS
 	TSRMLS_D;
 #endif
-} ICS_IMPORT_CTX;
+};
 
-typedef struct _ICS_EXPORT_CTX {
+struct ICS_EXPORT_CTX {
 	GUID hsession;
 	uint32_t hobject;
 	uint8_t ics_type;
@@ -75,7 +75,7 @@ typedef struct _ICS_EXPORT_CTX {
 	uint32_t progress;
 	uint32_t sync_steps;
 	uint32_t total_steps;
-} ICS_EXPORT_CTX;
+};
 
 /* Not defined anymore in PHP 5.3.0 */
 #if ZEND_MODULE_API_NO >= 20071006

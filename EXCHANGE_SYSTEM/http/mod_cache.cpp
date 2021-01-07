@@ -23,7 +23,7 @@
 
 #define BOUNDARY_STRING				"00000000000000000001"
 
-typedef struct _CAHCE_ITEM {
+struct CACHE_ITEM {
 	DOUBLE_LIST_NODE node;
 	char extention[16];
 	DATA_BLOB blob;
@@ -31,14 +31,14 @@ typedef struct _CAHCE_ITEM {
 	time_t mtime;
 	BOOL b_expired;
 	int reference;
-} CACHE_ITEM;
+};
 
-typedef struct _RANGE {
+struct RANGE {
 	uint32_t begin;
 	uint32_t end;
-} RANGE;
+};
 
-typedef struct _CACHE_CONTEXT {
+struct CACHE_CONTEXT {
 	CACHE_ITEM *pitem;
 	BOOL b_header;
 	uint32_t offset;
@@ -46,14 +46,14 @@ typedef struct _CACHE_CONTEXT {
 	int range_pos;
 	int range_num;
 	RANGE *prange;
-} CACHE_CONTEXT;
+};
 
-typedef struct _DIRECTORY_NODE {
+struct DIRECTORY_NODE {
 	DOUBLE_LIST_NODE node;
 	char *domain;
 	char *path;
 	char *directory;
-} DIRECTORY_NODE;
+};
 
 static int g_context_num;
 static BOOL g_notify_stop;

@@ -36,30 +36,30 @@
 #define STATUS_PRIMARY_STORE						0x00001000
 #define STATUS_SECONDARY_STORE						0x00002000
 
-typedef struct _FLATUID {
+struct FLATUID {
 	uint8_t ab[16];
-} FLATUID;
+};
 
-typedef struct _ZMOVECOPY_ACTION {
+struct ZMOVECOPY_ACTION {
 	BINARY store_eid;
 	BINARY folder_eid;
-} ZMOVECOPY_ACTION;
+};
 
-typedef struct _ZREPLY_ACTION {
+struct ZREPLY_ACTION {
 	BINARY message_eid;
 	GUID template_guid;
-} ZREPLY_ACTION;
+};
 
-typedef struct _ADVISE_INFO {
+struct ADVISE_INFO {
 	uint32_t hstore;
 	uint32_t sub_id;
-} ADVISE_INFO;
+};
 
-typedef struct _NOTIF_SINK {
+struct NOTIF_SINK {
 	GUID hsession;
 	uint16_t count;
 	ADVISE_INFO *padvise;
-} NOTIF_SINK;
+};
 
 #define ACCESS_TYPE_DENIED							1
 #define ACCESS_TYPE_GRANT							2
@@ -99,22 +99,22 @@ typedef struct _NOTIF_SINK {
 #define MAPI_ICSUPCTX								14
 #define MAPI_INVALID								255
 
-typedef struct _NEWMAIL_ZNOTIFICATION {
+struct NEWMAIL_ZNOTIFICATION {
 	BINARY entryid;
 	BINARY parentid;
 	uint32_t flags; /* unicode or not */
 	char *message_class;
 	uint32_t message_flags;
-} NEWMAIL_ZNOTIFICATION;
+};
 
-typedef struct _OBJECT_ZNOTIFICATION {
+struct OBJECT_ZNOTIFICATION {
 	uint32_t object_type;
 	BINARY *pentryid;
 	BINARY *pparentid;
 	BINARY *pold_entryid;
 	BINARY *pold_parentid;
 	PROPTAG_ARRAY *pproptags;
-} OBJECT_ZNOTIFICATION;
+};
 
 #define EVENT_TYPE_NEWMAIL							0x00000002
 #define EVENT_TYPE_OBJECTCREATED					0x00000004
@@ -124,44 +124,44 @@ typedef struct _OBJECT_ZNOTIFICATION {
 #define EVENT_TYPE_OBJECTCOPIED						0x00000040
 #define EVENT_TYPE_SEARCHCOMPLETE					0x00000080
 
-typedef struct _ZNOTIFICATION {
+struct ZNOTIFICATION {
 	uint32_t event_type;
 	void *pnotification_data; /* NEWMAIL_ZNOTIFICATION or OBJECT_ZNOTIFICATION */
-} ZNOTIFICATION;
+};
 
-typedef struct _ZNOTIFICATION_ARRAY {
+struct ZNOTIFICATION_ARRAY {
 	uint16_t count;
 	ZNOTIFICATION **ppnotification;
-} ZNOTIFICATION_ARRAY;
+};
 
-typedef struct _PERMISSION_ROW {
+struct PERMISSION_ROW {
 	uint32_t flags;
 	BINARY entryid;
 	uint32_t member_rights;
-} PERMISSION_ROW;
+};
 
-typedef struct _PERMISSION_SET {
+struct PERMISSION_SET {
 	uint16_t count;
 	PERMISSION_ROW *prows;
-} PERMISSION_SET;
+};
 
-typedef struct _RULE_LIST {
+struct RULE_LIST {
 	uint16_t count;
 	RULE_DATA *prule;
-} RULE_LIST;
+};
 
 #define SYNC_NEW_MESSAGE							0x800
 #define SYNC_SOFT_DELETE							0x01
 
-typedef struct _MESSAGE_STATE {
+struct MESSAGE_STATE {
 	BINARY source_key;
 	uint32_t message_flags;
-} MESSAGE_STATE;
+};
 
-typedef struct _STATE_ARRAY {
+struct STATE_ARRAY {
 	uint32_t count;
 	MESSAGE_STATE *pstate;
-} STATE_ARRAY;
+};
 
 #define ICS_TYPE_CONTENTS							1
 #define ICS_TYPE_HIERARCHY							2

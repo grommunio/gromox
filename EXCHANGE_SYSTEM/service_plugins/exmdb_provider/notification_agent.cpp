@@ -8,11 +8,10 @@
 #include <ctime>
 #include <poll.h>
 
-
-typedef struct _DATAGRAM_NODE {
+struct DATAGRAM_NODE {
 	DOUBLE_LIST_NODE node;
 	BINARY data_bin;
-} DATAGRAM_NODE;
+};
 
 void notification_agent_backward_notify(
 	const char *remote_id, DB_NOTIFY_DATAGRAM *pnotify)

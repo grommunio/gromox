@@ -27,8 +27,7 @@
 #include <ctime>
 #include <poll.h>
 
-
-typedef struct _REMOTE_SVR {
+struct REMOTE_SVR {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST conn_list;
 	char ip_addr[32];
@@ -36,21 +35,21 @@ typedef struct _REMOTE_SVR {
 	int prefix_len;
 	BOOL b_private;
 	int port;
-} REMOTE_SVR;
+};
 
-typedef struct _REMOTE_CONN {
+struct REMOTE_CONN {
     DOUBLE_LIST_NODE node;
 	time_t last_time;
 	REMOTE_SVR *psvr;
 	int sockd;
-} REMOTE_CONN;
+};
 
-typedef struct _AGENT_THREAD {
+struct AGENT_THREAD {
 	DOUBLE_LIST_NODE node;
 	REMOTE_SVR *pserver;
 	pthread_t thr_id;
 	int sockd;
-} AGENT_THREAD;
+};
 
 static int g_conn_num;
 static int g_threads_num;

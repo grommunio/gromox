@@ -2,14 +2,14 @@
 #include "emsmdb_interface.h"
 #include "logon_object.h"
 
-typedef struct _SUBSCRIPTION_OBJECT {
+struct SUBSCRIPTION_OBJECT {
 	LOGON_OBJECT *plogon;
 	CXH cxh;
 	uint16_t client_mode;
 	uint8_t logon_id;
 	uint32_t handle;
 	uint32_t sub_id;
-} SUBSCRIPTION_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -12,19 +12,19 @@
 #define MAX_DAMS_PER_RULE_FOLDER							128
 #define MAX_FAI_COUNT										1024
 
-typedef struct _EXMDB_ITEM {
+struct EXMDB_ITEM {
 	char prefix[256];
 	char type[16];
 	char ip_addr[32];
 	int port;
-} EXMDB_ITEM;
+};
 
-typedef struct _LOCAL_SVR {
+struct LOCAL_SVR {
 	DOUBLE_LIST_NODE node;
 	char prefix[256];
 	int prefix_len;
 	BOOL b_private;
-} LOCAL_SVR;
+};
 
 #define ID_TAG_BODY 												0x00010014
 #define ID_TAG_BODY_STRING8											0x00020014
@@ -43,116 +43,116 @@ enum {
 	ATTACHMENT_PROPERTIES_TABLE
 };
 
-typedef struct _REQ_CONNECT {
+struct REQ_CONNECT {
 	char *prefix;
 	char *remote_id;
 	BOOL b_private;
-} REQ_CONNECT;
+};
 
 
-typedef struct _REQ_LISTEN_NOTIFICATION {
+struct REQ_LISTEN_NOTIFICATION {
 	char *remote_id;
-} REQ_LISTEN_NOTIFICATION;
+};
 
-typedef struct _REQ_GET_NAMED_PROPIDS {
+struct REQ_GET_NAMED_PROPIDS {
 	BOOL b_create;
 	PROPNAME_ARRAY *ppropnames;
-} REQ_GET_NAMED_PROPIDS;
+};
 
-typedef struct _REQ_GET_NAMED_PROPNAMES {
+struct REQ_GET_NAMED_PROPNAMES {
 	PROPID_ARRAY *ppropids;
-} REQ_GET_NAMED_PROPNAMES;
+};
 
-typedef struct _REQ_GET_MAPPING_GUID {
+struct REQ_GET_MAPPING_GUID {
 	uint16_t replid;
-} REQ_GET_MAPPING_GUID;
+};
 
-typedef struct _REQ_GET_MAPPING_REPLID {
+struct REQ_GET_MAPPING_REPLID {
 	GUID guid;
-} REQ_GET_MAPPING_REPLID;
+};
 
-typedef struct _REQ_GET_STORE_PROPERTIES {
+struct REQ_GET_STORE_PROPERTIES {
 	uint32_t cpid;
 	PROPTAG_ARRAY *pproptags;
-} REQ_GET_STORE_PROPERTIES;
+};
 
-typedef struct _REQ_SET_STORE_PROPERTIES {
+struct REQ_SET_STORE_PROPERTIES {
 	uint32_t cpid;
 	TPROPVAL_ARRAY *ppropvals;
-} REQ_SET_STORE_PROPERTIES;
+};
 
-typedef struct _REQ_REMOVE_STORE_PROPERTIES {
+struct REQ_REMOVE_STORE_PROPERTIES {
 	PROPTAG_ARRAY *pproptags;
-} REQ_REMOVE_STORE_PROPERTIES;
+};
 
-typedef struct _REQ_CHECK_MAILBOX_PERMISSION {
+struct REQ_CHECK_MAILBOX_PERMISSION {
 	char *username;
-} REQ_CHECK_MAILBOX_PERMISSION;
+};
 
-typedef struct _REQ_GET_FOLDER_BY_CLASS {
+struct REQ_GET_FOLDER_BY_CLASS {
 	char *str_class;
-} REQ_GET_FOLDER_BY_CLASS;
+};
 
-typedef struct _REQ_SET_FOLDER_BY_CLASS {
+struct REQ_SET_FOLDER_BY_CLASS {
 	uint64_t folder_id;
 	char *str_class;
-} REQ_SET_FOLDER_BY_CLASS;
+};
 
-typedef struct _REQ_CHECK_FOLDER_ID {
+struct REQ_CHECK_FOLDER_ID {
 	uint64_t folder_id;
-} REQ_CHECK_FOLDER_ID;
+};
 
-typedef struct _REQ_QUERY_FOLDER_MESSAGES {
+struct REQ_QUERY_FOLDER_MESSAGES {
 	uint64_t folder_id;
-} REQ_QUERY_FOLDER_MESSAGES;
+};
 
-typedef struct _REQ_CHECK_FOLDER_DELETED {
+struct REQ_CHECK_FOLDER_DELETED {
 	uint64_t folder_id;
-} REQ_CHECK_FOLDER_DELETED;
+};
 
-typedef struct _REQ_GET_FOLDER_BY_NAME {
+struct REQ_GET_FOLDER_BY_NAME {
 	uint64_t parent_id;
 	char *str_name;
-} REQ_GET_FOLDER_BY_NAME;
+};
 
-typedef struct _REQ_CHECK_FOLDER_PERMISSION {
+struct REQ_CHECK_FOLDER_PERMISSION {
 	uint64_t folder_id;
 	char *username;
-} REQ_CHECK_FOLDER_PERMISSION;
+};
 
-typedef struct _REQ_CREATE_FOLDER_BY_PROPERTIES {
+struct REQ_CREATE_FOLDER_BY_PROPERTIES {
 	uint32_t cpid;
 	TPROPVAL_ARRAY *pproperties;
-} REQ_CREATE_FOLDER_BY_PROPERTIES;
+};
 
-typedef struct _REQ_DELETE_FOLDER {
+struct REQ_DELETE_FOLDER {
 	uint32_t cpid;
 	uint64_t folder_id;
 	BOOL b_hard;
-} REQ_DELETE_FOLDER;
+};
 
-typedef struct _REQ_GET_FOLDER_ALL_PROPTAGS {
+struct REQ_GET_FOLDER_ALL_PROPTAGS {
 	uint64_t folder_id;
-} REQ_GET_FOLDER_ALL_PROPTAGS;
+};
 
-typedef struct _REQ_GET_FOLDER_PROPERTIES {
+struct REQ_GET_FOLDER_PROPERTIES {
 	uint32_t cpid;
 	uint64_t folder_id;
 	PROPTAG_ARRAY *pproptags;
-} REQ_GET_FOLDER_PROPERTIES;
+};
 
-typedef struct _REQ_SET_FOLDER_PROPERTIES {
+struct REQ_SET_FOLDER_PROPERTIES {
 	uint32_t cpid;
 	uint64_t folder_id;
 	TPROPVAL_ARRAY *pproperties;
-} REQ_SET_FOLDER_PROPERTIES;
+};
 
-typedef struct _REQ_REMOVE_FOLDER_PROPERTIES {
+struct REQ_REMOVE_FOLDER_PROPERTIES {
 	uint64_t folder_id;
 	PROPTAG_ARRAY *pproptags;
-} REQ_REMOVE_FOLDER_PROPERTIES;
+};
 
-typedef struct _REQ_EMPTY_FOLDER {
+struct REQ_EMPTY_FOLDER {
 	uint32_t cpid;
 	char *username;
 	uint64_t folder_id;
@@ -160,14 +160,14 @@ typedef struct _REQ_EMPTY_FOLDER {
 	BOOL b_normal;
 	BOOL b_fai;
 	BOOL b_sub;
-} REQ_EMPTY_FOLDER;
+};
 
-typedef struct _REQ_CHECK_FOLDER_CYCLE {
+struct REQ_CHECK_FOLDER_CYCLE {
 	uint64_t src_fid;
 	uint64_t dst_fid;
-} REQ_CHECK_FOLDER_CYCLE;
+};
 
-typedef struct _REQ_COPY_FOLDER_INTERNAL {
+struct REQ_COPY_FOLDER_INTERNAL {
 	uint32_t account_id;
 	uint32_t cpid;
 	BOOL b_guest;
@@ -177,30 +177,30 @@ typedef struct _REQ_COPY_FOLDER_INTERNAL {
 	BOOL b_fai;
 	BOOL b_sub;
 	uint64_t dst_fid;
-} REQ_COPY_FOLDER_INTERNAL;
+};
 
-typedef struct _REQ_GET_SEARCH_CRITERIA {
+struct REQ_GET_SEARCH_CRITERIA {
 	uint64_t folder_id;
-} REQ_GET_SEARCH_CRITERIA;
+};
 
-typedef struct _REQ_SET_SEARCH_CRITERIA {
+struct REQ_SET_SEARCH_CRITERIA {
 	uint32_t cpid;
 	uint64_t folder_id;
 	uint32_t search_flags;
 	RESTRICTION *prestriction;
 	LONGLONG_ARRAY *pfolder_ids;
-} REQ_SET_SEARCH_CRITERIA;
+};
 
-typedef struct _REQ_MOVECOPY_MESSAGE {
+struct REQ_MOVECOPY_MESSAGE {
 	uint32_t account_id;
 	uint32_t cpid;
 	uint64_t message_id;
 	uint64_t dst_fid;
 	uint64_t dst_id;
 	BOOL b_move;
-} REQ_MOVECOPY_MESSAGE;
+};
 
-typedef struct _REQ_MOVECOPY_MESSAGES {
+struct REQ_MOVECOPY_MESSAGES {
 	uint32_t account_id;
 	uint32_t cpid;
 	BOOL b_guest;
@@ -209,9 +209,9 @@ typedef struct _REQ_MOVECOPY_MESSAGES {
 	uint64_t dst_fid;
 	BOOL b_copy;
 	EID_ARRAY *pmessage_ids;
-} REQ_MOVECOPY_MESSAGES;
+};
 
-typedef struct _REQ_MOVECOPY_FOLDER {
+struct REQ_MOVECOPY_FOLDER {
 	uint32_t account_id;
 	uint32_t cpid;
 	BOOL b_guest;
@@ -221,83 +221,83 @@ typedef struct _REQ_MOVECOPY_FOLDER {
 	uint64_t dst_fid;
 	char *str_new;
 	BOOL b_copy; 
-} REQ_MOVECOPY_FOLDER;
+};
 
-typedef struct _REQ_DELETE_MESSAGES {
+struct REQ_DELETE_MESSAGES {
 	uint32_t account_id;
 	uint32_t cpid;
 	char *username;
 	uint64_t folder_id;
 	EID_ARRAY *pmessage_ids;
 	BOOL b_hard;
-} REQ_DELETE_MESSAGES;
+};
 
-typedef struct _REQ_GET_MESSAGE_BRIEF {
+struct REQ_GET_MESSAGE_BRIEF {
 	uint32_t cpid;
 	uint64_t message_id;
-} REQ_GET_MESSAGE_BRIEF;
+};
 
-typedef struct _REQ_SUM_HIERARCHY {
+struct REQ_SUM_HIERARCHY {
 	uint64_t folder_id;
 	char *username;
 	BOOL b_depth;
-} REQ_SUM_HIERARCHY;
+};
 
-typedef struct _REQ_SUM_CONTENT {
+struct REQ_SUM_CONTENT {
 	uint64_t folder_id;
 	BOOL b_fai;
 	BOOL b_deleted;
-} REQ_SUM_CONTENT;
+};
 
-typedef struct _REQ_LOAD_HIERARCHY_TABLE {
+struct REQ_LOAD_HIERARCHY_TABLE {
 	uint64_t folder_id;
 	char *username;
 	uint8_t table_flags;
 	RESTRICTION *prestriction;
-} REQ_LOAD_HIERARCHY_TABLE;
+};
 
-typedef struct _REQ_LOAD_CONTENT_TABLE {
+struct REQ_LOAD_CONTENT_TABLE {
 	uint32_t cpid;
 	uint64_t folder_id;
 	char *username;
 	uint8_t table_flags;
 	RESTRICTION *prestriction;
 	SORTORDER_SET *psorts;
-} REQ_LOAD_CONTENT_TABLE;
+};
 
-typedef struct _REQ_RELOAD_CONTENT_TABLE {
+struct REQ_RELOAD_CONTENT_TABLE {
 	uint32_t table_id;
-} REQ_RELOAD_CONTENT_TABLE;
+};
 
-typedef struct _REQ_LOAD_PERMISSION_TABLE {
+struct REQ_LOAD_PERMISSION_TABLE {
 	uint64_t folder_id;
 	uint8_t table_flags;
-} REQ_LOAD_PERMISSION_TABLE;
+};
 
-typedef struct _REQ_LOAD_RULE_TABLE {
+struct REQ_LOAD_RULE_TABLE {
 	uint64_t folder_id;
 	uint8_t table_flags;
 	RESTRICTION *prestriction;
-} REQ_LOAD_RULE_TABLE;
+};
 
-typedef struct _REQ_UNLOAD_TABLE {
+struct REQ_UNLOAD_TABLE {
 	uint32_t table_id;
-} REQ_UNLOAD_TABLE;
+};
 
-typedef struct _REQ_SUM_TABLE {
+struct REQ_SUM_TABLE {
 	uint32_t table_id;
-} REQ_SUM_TABLE;
+};
 
-typedef struct _REQ_QUERY_TABLE {
+struct REQ_QUERY_TABLE {
 	char *username;
 	uint32_t cpid;
 	uint32_t table_id;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
-} REQ_QUERY_TABLE;
+};
 
-typedef struct _REQ_MATCH_TABLE {
+struct REQ_MATCH_TABLE {
 	char *username;
 	uint32_t cpid;
 	uint32_t table_id;
@@ -305,354 +305,354 @@ typedef struct _REQ_MATCH_TABLE {
 	uint32_t start_pos;
 	RESTRICTION *pres;
 	PROPTAG_ARRAY *pproptags;
-} REQ_MATCH_TABLE;
+};
 
-typedef struct _REQ_LOCATE_TABLE {
+struct REQ_LOCATE_TABLE {
 	uint32_t table_id;
 	uint64_t inst_id;
 	uint32_t inst_num;
-} REQ_LOCATE_TABLE;
+};
 
-typedef struct _REQ_READ_TABLE_ROW {
+struct REQ_READ_TABLE_ROW {
 	char *username;
 	uint32_t cpid;
 	uint32_t table_id;
 	PROPTAG_ARRAY *pproptags;
 	uint64_t inst_id;
 	uint32_t inst_num;
-} REQ_READ_TABLE_ROW;
+};
 
-typedef struct _REQ_MARK_TABLE {
+struct REQ_MARK_TABLE {
 	uint32_t table_id;
 	uint32_t position;
-} REQ_MARK_TABLE;
+};
 
-typedef struct _REQ_GET_TABLE_ALL_PROPTAGS {
+struct REQ_GET_TABLE_ALL_PROPTAGS {
 	uint32_t table_id;
-} REQ_GET_TABLE_ALL_PROPTAGS;
+};
 
-typedef struct _REQ_EXPAND_TABLE {
-	uint32_t table_id;
-	uint64_t inst_id;
-} REQ_EXPAND_TABLE;
-
-typedef struct _REQ_COLLAPSE_TABLE {
+struct REQ_EXPAND_TABLE {
 	uint32_t table_id;
 	uint64_t inst_id;
-} REQ_COLLAPSE_TABLE;
+};
 
-typedef struct _REQ_STORE_TABLE_STATE {
+struct REQ_COLLAPSE_TABLE {
+	uint32_t table_id;
+	uint64_t inst_id;
+};
+
+struct REQ_STORE_TABLE_STATE {
 	uint32_t table_id;
 	uint64_t inst_id;
 	uint32_t inst_num;
-} REQ_STORE_TABLE_STATE;
+};
 
-typedef struct _REQ_RESTORE_TABLE_STATE {
+struct REQ_RESTORE_TABLE_STATE {
 	uint32_t table_id;
 	uint32_t state_id;
-} REQ_RESTORE_TABLE_STATE;
+};
 
-typedef struct _REQ_CHECK_MESSAGE {
+struct REQ_CHECK_MESSAGE {
 	uint64_t folder_id;
 	uint64_t message_id;
-} REQ_CHECK_MESSAGE;
+};
 
-typedef struct _REQ_CHECK_MESSAGE_DELETED {
+struct REQ_CHECK_MESSAGE_DELETED {
 	uint64_t message_id;
-} REQ_CHECK_MESSAGE_DELETED;
+};
 
-typedef struct _REQ_LOAD_MESSAGE_INSTANCE {
+struct REQ_LOAD_MESSAGE_INSTANCE {
 	char *username;
 	uint32_t cpid;
 	BOOL b_new;
 	uint64_t folder_id;
 	uint64_t message_id;
-} REQ_LOAD_MESSAGE_INSTANCE;
+};
 
-typedef struct _REQ_LOAD_EMBEDDED_INSTANCE {
+struct REQ_LOAD_EMBEDDED_INSTANCE {
 	BOOL b_new;
 	uint32_t attachment_instance_id;
-} REQ_LOAD_EMBEDDED_INSTANCE;
+};
 
-typedef struct _REQ_GET_EMBEDDED_CN {
+struct REQ_GET_EMBEDDED_CN {
 	uint32_t instance_id;
-} REQ_GET_EMBEDDED_CN;
+};
 
-typedef struct _REQ_RELOAD_MESSAGE_INSTANCE {
+struct REQ_RELOAD_MESSAGE_INSTANCE {
 	uint32_t instance_id;
-} REQ_RELOAD_MESSAGE_INSTANCE;
+};
 
-typedef struct _REQ_CLEAR_MESSAGE_INSTANCE {
+struct REQ_CLEAR_MESSAGE_INSTANCE {
 	uint32_t instance_id;
-} REQ_CLEAR_MESSAGE_INSTANCE;
+};
 
-typedef struct _REQ_READ_MESSAGE_INSTANCE {
+struct REQ_READ_MESSAGE_INSTANCE {
 	uint32_t instance_id;
-} REQ_READ_MESSAGE_INSTANCE;
+};
 
-typedef struct _REQ_WRITE_MESSAGE_INSTANCE {
+struct REQ_WRITE_MESSAGE_INSTANCE {
 	uint32_t instance_id;
 	MESSAGE_CONTENT *pmsgctnt;
 	BOOL b_force;
-} REQ_WRITE_MESSAGE_INSTANCE;
+};
 
-typedef struct _REQ_LOAD_ATTACHMENT_INSTANCE {
+struct REQ_LOAD_ATTACHMENT_INSTANCE {
 	uint32_t message_instance_id;
 	uint32_t attachment_num;
-} REQ_LOAD_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _REQ_CREATE_ATTACHMENT_INSTANCE {
+struct REQ_CREATE_ATTACHMENT_INSTANCE {
 	uint32_t message_instance_id;
-} REQ_CREATE_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _REQ_READ_ATTACHMENT_INSTANCE {
+struct REQ_READ_ATTACHMENT_INSTANCE {
 	uint32_t instance_id;
-} REQ_READ_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _REQ_WRITE_ATTACHMENT_INSTANCE {
+struct REQ_WRITE_ATTACHMENT_INSTANCE {
 	uint32_t instance_id;
 	ATTACHMENT_CONTENT *pattctnt;
 	BOOL b_force;
-} REQ_WRITE_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _REQ_DELETE_MESSAGE_INSTANCE_ATTACHMENT {
+struct REQ_DELETE_MESSAGE_INSTANCE_ATTACHMENT {
 	uint32_t message_instance_id;
 	uint32_t attachment_num;
-} REQ_DELETE_MESSAGE_INSTANCE_ATTACHMENT;
+};
 
-typedef struct _REQ_FLUSH_INSTANCE {
+struct REQ_FLUSH_INSTANCE {
 	uint32_t instance_id;
 	char *account;
-} REQ_FLUSH_INSTANCE;
+};
 
-typedef struct _REQ_UNLOAD_INSTANCE {
+struct REQ_UNLOAD_INSTANCE {
 	uint32_t instance_id;
-} REQ_UNLOAD_INSTANCE;
+};
 
-typedef struct _REQ_GET_INSTANCE_ALL_PROPTAGS {
+struct REQ_GET_INSTANCE_ALL_PROPTAGS {
 	uint32_t instance_id;
-} REQ_GET_INSTANCE_ALL_PROPTAGS;
+};
 
-typedef struct _REQ_GET_INSTANCE_PROPERTIES {
+struct REQ_GET_INSTANCE_PROPERTIES {
 	uint32_t size_limit;
 	uint32_t instance_id;
 	PROPTAG_ARRAY *pproptags;
-} REQ_GET_INSTANCE_PROPERTIES;
+};
 
-typedef struct _REQ_SET_INSTANCE_PROPERTIES {
+struct REQ_SET_INSTANCE_PROPERTIES {
 	uint32_t instance_id;
 	TPROPVAL_ARRAY *pproperties;
-} REQ_SET_INSTANCE_PROPERTIES;
+};
 
-typedef struct _REQ_REMOVE_INSTANCE_PROPERTIES {
+struct REQ_REMOVE_INSTANCE_PROPERTIES {
 	uint32_t instance_id;
 	PROPTAG_ARRAY *pproptags;
-} REQ_REMOVE_INSTANCE_PROPERTIES;
+};
 
-typedef struct _REQ_CHECK_INSTANCE_CYCLE {
+struct REQ_CHECK_INSTANCE_CYCLE {
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
-} REQ_CHECK_INSTANCE_CYCLE;
+};
 
-typedef struct _REQ_EMPTY_MESSAGE_INSTANCE_RCPTS {
+struct REQ_EMPTY_MESSAGE_INSTANCE_RCPTS {
 	uint32_t instance_id;
-} REQ_EMPTY_MESSAGE_INSTANCE_RCPTS;
+};
 
-typedef struct _REQ_GET_MESSAGE_INSTANCE_RCPTS_NUM {
+struct REQ_GET_MESSAGE_INSTANCE_RCPTS_NUM {
 	uint32_t instance_id;
-} REQ_GET_MESSAGE_INSTANCE_RCPTS_NUM;
+};
 
-typedef struct _REQ_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS {
+struct REQ_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS {
 	uint32_t instance_id;
-} REQ_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS;
+};
 
-typedef struct _REQ_GET_MESSAGE_INSTANCE_RCPTS {
+struct REQ_GET_MESSAGE_INSTANCE_RCPTS {
 	uint32_t instance_id;
 	uint32_t row_id;
 	uint16_t need_count;
-} REQ_GET_MESSAGE_INSTANCE_RCPTS;
+};
 
-typedef struct _REQ_UPDATE_MESSAGE_INSTANCE_RCPTS {
+struct REQ_UPDATE_MESSAGE_INSTANCE_RCPTS {
 	uint32_t instance_id;
 	TARRAY_SET *pset;
-} REQ_UPDATE_MESSAGE_INSTANCE_RCPTS;
+};
 
-typedef struct _REQ_COPY_INSTANCE_RCPTS {
+struct REQ_COPY_INSTANCE_RCPTS {
 	BOOL b_force;
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
-} REQ_COPY_INSTANCE_RCPTS;
+};
 
-typedef struct _REQ_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS {
+struct REQ_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS {
 	uint32_t instance_id;
-} REQ_EMPTY_MESSAGE_INSTANCE_ATTACHMENTS;
+};
 
-typedef struct _REQ_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM {
+struct REQ_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM {
 	uint32_t instance_id;
-} REQ_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM;
+};
 
-typedef struct _REQ_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS {
+struct REQ_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS {
 	uint32_t instance_id;
-} REQ_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS;
+};
 
-typedef struct _REQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE {
+struct REQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE {
 	uint32_t instance_id;
 	PROPTAG_ARRAY *pproptags;
 	uint32_t start_pos;
 	int32_t row_needed;
-} REQ_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE;
+};
 
-typedef struct _REQ_COPY_INSTANCE_ATTACHMENTS {
+struct REQ_COPY_INSTANCE_ATTACHMENTS {
 	BOOL b_force;
 	uint32_t src_instance_id;
 	uint32_t dst_instance_id;
-} REQ_COPY_INSTANCE_ATTACHMENTS;
+};
 
-typedef struct _REQ_SET_MESSAGE_INSTANCE_CONFLICT {
+struct REQ_SET_MESSAGE_INSTANCE_CONFLICT {
 	uint32_t instance_id;
 	MESSAGE_CONTENT *pmsgctnt;
-} REQ_SET_MESSAGE_INSTANCE_CONFLICT;
+};
 
-typedef struct _REQ_GET_MESSAGE_RCPTS {
+struct REQ_GET_MESSAGE_RCPTS {
 	uint64_t message_id;
-} REQ_GET_MESSAGE_RCPTS;
+};
 
-typedef struct _REQ_GET_MESSAGE_PROPERTIES {
+struct REQ_GET_MESSAGE_PROPERTIES {
 	char *username;
 	uint32_t cpid;
 	uint64_t message_id;
 	PROPTAG_ARRAY *pproptags;
-} REQ_GET_MESSAGE_PROPERTIES;
+};
 
-typedef struct _REQ_SET_MESSAGE_PROPERTIES {
+struct REQ_SET_MESSAGE_PROPERTIES {
 	char *username;
 	uint32_t cpid;
 	uint64_t message_id;
 	TPROPVAL_ARRAY *pproperties;
-} REQ_SET_MESSAGE_PROPERTIES;
+};
 
-typedef struct _REQ_SET_MESSAGE_READ_STATE {
+struct REQ_SET_MESSAGE_READ_STATE {
 	char *username;
 	uint64_t message_id;
 	uint8_t mark_as_read;
-} REQ_SET_MESSAGE_READ_STATE;
+};
 
-typedef struct _REQ_REMOVE_MESSAGE_PROPERTIES {
+struct REQ_REMOVE_MESSAGE_PROPERTIES {
 	uint32_t cpid;
 	uint64_t message_id;
 	PROPTAG_ARRAY *pproptags;
-} REQ_REMOVE_MESSAGE_PROPERTIES;
+};
 
-typedef struct _REQ_ALLOCATE_MESSAGE_ID {
+struct REQ_ALLOCATE_MESSAGE_ID {
 	uint64_t folder_id;
-} REQ_ALLOCATE_MESSAGE_ID;
+};
 
-typedef struct _REQ_GET_MESSAGE_GROUP_ID {
+struct REQ_GET_MESSAGE_GROUP_ID {
 	uint64_t message_id;
-} REQ_GET_MESSAGE_GROUP_ID;
+};
 
-typedef struct _REQ_SET_MESSAGE_GROUP_ID {
+struct REQ_SET_MESSAGE_GROUP_ID {
 	uint64_t message_id;
 	uint32_t group_id;
-} REQ_SET_MESSAGE_GROUP_ID;
+};
 
-typedef struct _REQ_SAVE_CHANGE_INDICES {
+struct REQ_SAVE_CHANGE_INDICES {
 	uint64_t message_id;
 	uint64_t cn;
 	INDEX_ARRAY *pindices;
 	PROPTAG_ARRAY *pungroup_proptags;
-} REQ_SAVE_CHANGE_INDICES;
+};
 
-typedef struct _REQ_GET_CHANGE_INDICES {
+struct REQ_GET_CHANGE_INDICES {
 	uint64_t message_id;
 	uint64_t cn;
-} REQ_GET_CHANGE_INDICES;
+};
 
-typedef struct _REQ_MARK_MODIFIED {
+struct REQ_MARK_MODIFIED {
 	uint64_t message_id;
-} REQ_MARK_MODIFIED;
+};
 
-typedef struct _REQ_TRY_MARK_SUBMIT {
+struct REQ_TRY_MARK_SUBMIT {
 	uint64_t message_id;
-} REQ_TRY_MARK_SUBMIT;
+};
 
-typedef struct _REQ_CLEAR_SUBMIT {
+struct REQ_CLEAR_SUBMIT {
 	uint64_t message_id;
 	BOOL b_unsent;
-} REQ_CLEAR_SUBMIT;
+};
 
-typedef struct _REQ_LINK_MESSAGE {
+struct REQ_LINK_MESSAGE {
 	uint32_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
-} REQ_LINK_MESSAGE;
+};
 
-typedef struct _REQ_UNLINK_MESSAGE {
+struct REQ_UNLINK_MESSAGE {
 	uint32_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
-} REQ_UNLINK_MESSAGE;
+};
 
-typedef struct _REQ_RULE_NEW_MESSAGE {
+struct REQ_RULE_NEW_MESSAGE {
 	char *username;
 	char *account;
 	uint32_t cpid;
 	uint64_t folder_id;
 	uint64_t message_id;
-} REQ_RULE_NEW_MESSAGE;
+};
 
-typedef struct _REQ_SET_MESSAGE_TIMER {
+struct REQ_SET_MESSAGE_TIMER {
 	uint64_t message_id;
 	uint32_t timer_id;
-} REQ_SET_MESSAGE_TIMER;
+};
 
-typedef struct _REQ_GET_MESSAGE_TIMER {
+struct REQ_GET_MESSAGE_TIMER {
 	uint64_t message_id;
-} REQ_GET_MESSAGE_TIMER;
+};
 
-typedef struct _REQ_EMPTY_FOLDER_PERMISSION {
+struct REQ_EMPTY_FOLDER_PERMISSION {
 	uint64_t folder_id;
-} REQ_EMPTY_FOLDER_PERMISSION;
+};
 
-typedef struct _REQ_UPDATE_FOLDER_PERMISSION {
+struct REQ_UPDATE_FOLDER_PERMISSION {
 	uint64_t folder_id;
 	BOOL b_freebusy;
 	uint16_t count;
 	PERMISSION_DATA *prow;
-} REQ_UPDATE_FOLDER_PERMISSION;
+};
 
-typedef struct _REQ_EMPTY_FOLDER_RULE {
+struct REQ_EMPTY_FOLDER_RULE {
 	uint64_t folder_id;
-} REQ_EMPTY_FOLDER_RULE;
+};
 
-typedef struct _REQ_UPDATE_FOLDER_RULE {
+struct REQ_UPDATE_FOLDER_RULE {
 	uint64_t folder_id;
 	uint16_t count;
 	RULE_DATA *prow;
-} REQ_UPDATE_FOLDER_RULE;
+};
 
-typedef struct _REQ_DELIVERY_MESSAGE {
+struct REQ_DELIVERY_MESSAGE {
 	char *from_address;
 	char *account;
 	uint32_t cpid;
 	MESSAGE_CONTENT *pmsg;
 	char *pdigest;
-} REQ_DELIVERY_MESSAGE;
+};
 
-typedef struct _REQ_WRITE_MESSAGE {
+struct REQ_WRITE_MESSAGE {
 	char *account;
 	uint32_t cpid;
 	uint64_t folder_id;
 	MESSAGE_CONTENT *pmsgctnt;
-} REQ_WRITE_MESSAGE;
+};
 
-typedef struct _REQ_READ_MESSAGE {
+struct REQ_READ_MESSAGE {
 	char *username;
 	uint32_t cpid;
 	uint64_t message_id;
-} REQ_READ_MESSAGE;
+};
 
-typedef struct _REQ_GET_CONTENT_SYNC {
+struct REQ_GET_CONTENT_SYNC {
 	uint64_t folder_id;
 	char *username;
 	IDSET *pgiven;
@@ -662,47 +662,47 @@ typedef struct _REQ_GET_CONTENT_SYNC {
 	uint32_t cpid;
 	RESTRICTION *prestriction;
 	BOOL b_ordered;
-} REQ_GET_CONTENT_SYNC;
+};
 
-typedef struct _REQ_GET_HIERARCHY_SYNC {
+struct REQ_GET_HIERARCHY_SYNC {
 	uint64_t folder_id;
 	char *username;
 	IDSET *pgiven;
 	IDSET *pseen;
-} REQ_GET_HIERARCHY_SYNC;
+};
 
-typedef struct _REQ_ALLOCATE_IDS {
+struct REQ_ALLOCATE_IDS {
 	uint32_t count;
-} REQ_ALLOCATE_IDS;
+};
 
-typedef struct _REQ_SUBSCRIBE_NOTIFICATION {
+struct REQ_SUBSCRIBE_NOTIFICATION {
 	uint16_t notificaton_type;
 	BOOL b_whole;
 	uint64_t folder_id;
 	uint64_t message_id;
-} REQ_SUBSCRIBE_NOTIFICATION;
+};
 
-typedef struct _REQ_UNSUBSCRIBE_NOTIFICATION {
+struct REQ_UNSUBSCRIBE_NOTIFICATION {
 	uint32_t sub_id;
-} REQ_UNSUBSCRIBE_NOTIFICATION;
+};
 
-typedef struct _REQ_TRANSPORT_NEW_MAIL {
+struct REQ_TRANSPORT_NEW_MAIL {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t message_flags;
 	char *pstr_class;
-} REQ_TRANSPORT_NEW_MAIL;
+};
 
-typedef struct _REQ_CHECK_CONTACT_ADDRESS {
+struct REQ_CHECK_CONTACT_ADDRESS {
 	char *paddress;
-} REQ_CHECK_CONTACT_ADDRESS;
+};
 
-typedef struct _REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+struct REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT {
 	char *username;
 	uint64_t folder_id;
-} REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT;
+};
 
-typedef union _REQUEST_PAYLOAD {
+union REQUEST_PAYLOAD {
 	REQ_CONNECT connect;
 	REQ_GET_NAMED_PROPIDS get_named_propids;
 	REQ_GET_NAMED_PROPNAMES get_named_propnames;
@@ -821,397 +821,397 @@ typedef union _REQUEST_PAYLOAD {
 	REQ_CHECK_CONTACT_ADDRESS check_contact_address;
 	REQ_TRANSPORT_NEW_MAIL transport_new_mail;
 	REQ_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
-} REQUEST_PAYLOAD;
+};
 
-typedef struct _EXMDB_REQUEST {
+struct EXMDB_REQUEST {
 	uint8_t call_id;
 	char *dir;
 	REQUEST_PAYLOAD payload;
-} EXMDB_REQUEST;
+};
 
-typedef struct _RESP_GET_ALL_NAMED_PROPIDS {
+struct RESP_GET_ALL_NAMED_PROPIDS {
 	PROPID_ARRAY propids;
-} RESP_GET_ALL_NAMED_PROPIDS;
+};
 
-typedef struct _RESP_GET_NAMED_PROPIDS {
+struct RESP_GET_NAMED_PROPIDS {
 	PROPID_ARRAY propids;
-} RESP_GET_NAMED_PROPIDS;
+};
 
-typedef struct _RESP_GET_NAMED_PROPNAMES {
+struct RESP_GET_NAMED_PROPNAMES {
 	PROPNAME_ARRAY propnames;
-} RESP_GET_NAMED_PROPNAMES;
+};
 
-typedef struct _RESP_GET_MAPPING_GUID {
+struct RESP_GET_MAPPING_GUID {
 	BOOL b_found;
 	GUID guid;
-} RESP_GET_MAPPING_GUID;
+};
 
-typedef struct _RESP_GET_MAPPING_REPLID {
+struct RESP_GET_MAPPING_REPLID {
 	BOOL b_found;
 	uint16_t replid;
-} RESP_GET_MAPPING_REPLID;
+};
 
-typedef struct _RESP_GET_STORE_ALL_PROPTAGS {
+struct RESP_GET_STORE_ALL_PROPTAGS {
 	PROPTAG_ARRAY proptags;
-} RESP_GET_STORE_ALL_PROPTAGS;
+};
 
-typedef struct _RESP_GET_STORE_PROPERTIES {
+struct RESP_GET_STORE_PROPERTIES {
 	TPROPVAL_ARRAY propvals;
-} RESP_GET_STORE_PROPERTIES;
+};
 
-typedef struct _RESP_SET_STORE_PROPERTIES {
+struct RESP_SET_STORE_PROPERTIES {
 	PROBLEM_ARRAY problems;
-} RESP_SET_STORE_PROPERTIES;
+};
 
-typedef struct _RESP_CHECK_MAILBOX_PERMISSION {
+struct RESP_CHECK_MAILBOX_PERMISSION {
 	uint32_t permission;
-} RESP_CHECK_MAILBOX_PERMISSION;
+};
 
-typedef struct _RESP_GET_FOLDER_BY_CLASS {
+struct RESP_GET_FOLDER_BY_CLASS {
 	uint64_t id;
 	char *str_explicit;
-} RESP_GET_FOLDER_BY_CLASS;
+};
 
-typedef struct _RESP_SET_FOLDER_BY_CLASS {
+struct RESP_SET_FOLDER_BY_CLASS {
 	BOOL b_result;
-} RESP_SET_FOLDER_BY_CLASS;
+};
 
-typedef struct _RESP_GET_FOLDER_CLASS_TABLE {
+struct RESP_GET_FOLDER_CLASS_TABLE {
 	TARRAY_SET table;
-} RESP_GET_FOLDER_CLASS_TABLE;
+};
 
-typedef struct _RESP_CHECK_FOLDER_ID {
+struct RESP_CHECK_FOLDER_ID {
 	BOOL b_exist;
-} RESP_CHECK_FOLDER_ID;
+};
 
-typedef struct _RESP_QUERY_FOLDER_MESSAGES {
+struct RESP_QUERY_FOLDER_MESSAGES {
 	TARRAY_SET set;
-} RESP_QUERY_FOLDER_MESSAGES;
+};
 
-typedef struct _RESP_CHECK_FOLDER_DELETED {
+struct RESP_CHECK_FOLDER_DELETED {
 	BOOL b_del;
-} RESP_CHECK_FOLDER_DELETED;
+};
 
-typedef struct _RESP_GET_FOLDER_BY_NAME {
+struct RESP_GET_FOLDER_BY_NAME {
 	uint64_t folder_id;
-} RESP_GET_FOLDER_BY_NAME;
+};
 
-typedef struct _RESP_CHECK_FOLDER_PERMISSION {
+struct RESP_CHECK_FOLDER_PERMISSION {
 	uint32_t permission;
-} RESP_CHECK_FOLDER_PERMISSION;
+};
 
-typedef struct _RESP_CREATE_FOLDER_BY_PROPERTIES {
+struct RESP_CREATE_FOLDER_BY_PROPERTIES {
 	uint64_t folder_id;
-} RESP_CREATE_FOLDER_BY_PROPERTIES;
+};
 
-typedef struct _RESP_GET_FOLDER_ALL_PROPTAGS {
+struct RESP_GET_FOLDER_ALL_PROPTAGS {
 	PROPTAG_ARRAY proptags;
-} RESP_GET_FOLDER_ALL_PROPTAGS;
+};
 
-typedef struct _RESP_GET_FOLDER_PROPERTIES {
+struct RESP_GET_FOLDER_PROPERTIES {
 	TPROPVAL_ARRAY propvals;
-} RESP_GET_FOLDER_PROPERTIES;
+};
 
-typedef struct _RESP_SET_FOLDER_PROPERTIES {
+struct RESP_SET_FOLDER_PROPERTIES {
 	PROBLEM_ARRAY problems;
-} RESP_SET_FOLDER_PROPERTIES;
+};
 
-typedef struct _RESP_DELETE_FOLDER {
+struct RESP_DELETE_FOLDER {
 	BOOL b_result;
-} RESP_DELETE_FOLDER;
+};
 
-typedef struct _RESP_EMPTY_FOLDER {
+struct RESP_EMPTY_FOLDER {
 	BOOL b_partial;
-} RESP_EMPTY_FOLDER;
+};
 
-typedef struct _RESP_CHECK_FOLDER_CYCLE {
+struct RESP_CHECK_FOLDER_CYCLE {
 	BOOL b_cycle;
-} RESP_CHECK_FOLDER_CYCLE;
+};
 
-typedef struct _RESP_COPY_FOLDER_INTERNAL {
+struct RESP_COPY_FOLDER_INTERNAL {
 	BOOL b_collid;
 	BOOL b_partial;
-} RESP_COPY_FOLDER_INTERNAL;
+};
 
-typedef struct _RESP_GET_SEARCH_CRITERIA {
+struct RESP_GET_SEARCH_CRITERIA {
 	uint32_t search_status;
 	RESTRICTION *prestriction;
 	LONGLONG_ARRAY folder_ids;
-} RESP_GET_SEARCH_CRITERIA;
+};
 
-typedef struct _RESP_SET_SEARCH_CRITERIA {
+struct RESP_SET_SEARCH_CRITERIA {
 	BOOL b_result;
-} RESP_SET_SEARCH_CRITERIA;
+};
 
-typedef struct _RESP_MOVECOPY_MESSAGE {
+struct RESP_MOVECOPY_MESSAGE {
 	BOOL b_result;
-} RESP_MOVECOPY_MESSAGE;
+};
 
-typedef struct _RESP_MOVECOPY_MESSAGES {
+struct RESP_MOVECOPY_MESSAGES {
 	BOOL b_partial;
-} RESP_MOVECOPY_MESSAGES;
+};
 
-typedef struct _RESP_MOVECOPY_FOLDER {
+struct RESP_MOVECOPY_FOLDER {
 	BOOL b_exist;
 	BOOL b_partial;
-} RESP_MOVECOPY_FOLDER;
+};
 
-typedef struct _RESP_DELETE_MESSAGES {
+struct RESP_DELETE_MESSAGES {
 	BOOL b_partial;
-} RESP_DELETE_MESSAGES;
+};
 
-typedef struct _RESP_GET_MESSAGE_BRIEF {
+struct RESP_GET_MESSAGE_BRIEF {
 	MESSAGE_CONTENT *pbrief;
-} RESP_GET_MESSAGE_BRIEF;
+};
 
-typedef struct _RESP_SUM_HIERARCHY {
+struct RESP_SUM_HIERARCHY {
 	uint32_t count;
-} RESP_SUM_HIERARCHY;
+};
 
-typedef struct _RESP_LOAD_HIERARCHY_TABLE {
+struct RESP_LOAD_HIERARCHY_TABLE {
 	uint32_t table_id;
 	uint32_t row_count;
-} RESP_LOAD_HIERARCHY_TABLE;
+};
 
-typedef struct _RESP_SUM_CONTENT {
+struct RESP_SUM_CONTENT {
 	uint32_t count;
-} RESP_SUM_CONTENT;
+};
 
-typedef struct _RESP_LOAD_CONTENT_TABLE {
+struct RESP_LOAD_CONTENT_TABLE {
 	uint32_t table_id;
 	uint32_t row_count;
-} RESP_LOAD_CONTENT_TABLE;
+};
 
-typedef struct _RESP_LOAD_PERMISSION_TABLE {
+struct RESP_LOAD_PERMISSION_TABLE {
 	uint32_t table_id;
 	uint32_t row_count;
-} RESP_LOAD_PERMISSION_TABLE;
+};
 
-typedef struct _RESP_LOAD_RULE_TABLE {
+struct RESP_LOAD_RULE_TABLE {
 	uint32_t table_id;
 	uint32_t row_count;
-} RESP_LOAD_RULE_TABLE;
+};
 
-typedef struct _RESP_SUM_TABLE {
+struct RESP_SUM_TABLE {
 	uint32_t rows;
-} RESP_SUM_TABLE;
+};
 
-typedef struct _RESP_QUERY_TABLE {
+struct RESP_QUERY_TABLE {
 	TARRAY_SET set;
-} RESP_QUERY_TABLE;
+};
 
-typedef struct _RESP_MATCH_TABLE {
+struct RESP_MATCH_TABLE {
 	int32_t position;
 	TPROPVAL_ARRAY propvals;
-} RESP_MATCH_TABLE;
+};
 
-typedef struct _RESP_LOCATE_TABLE {
+struct RESP_LOCATE_TABLE {
 	int32_t position;
 	uint32_t row_type;
-} RESP_LOCATE_TABLE;
+};
 
-typedef struct _RESP_READ_TABLE_ROW {
+struct RESP_READ_TABLE_ROW {
 	TPROPVAL_ARRAY propvals;
-} RESP_READ_TABLE_ROW;
+};
 
-typedef struct _RESP_MARK_TABLE {
+struct RESP_MARK_TABLE {
 	uint64_t inst_id;
 	uint32_t inst_num;
 	uint32_t row_type;
-} RESP_MARK_TABLE;
+};
 
-typedef struct _RESP_GET_TABLE_ALL_PROPTAGS {
+struct RESP_GET_TABLE_ALL_PROPTAGS {
 	PROPTAG_ARRAY proptags;
-} RESP_GET_TABLE_ALL_PROPTAGS;
+};
 
-typedef struct _RESP_EXPAND_TABLE {
+struct RESP_EXPAND_TABLE {
 	BOOL b_found;
 	int32_t position;
 	uint32_t row_count;
-} RESP_EXPAND_TABLE;
+};
 
-typedef struct _RESP_COLLAPSE_TABLE {
+struct RESP_COLLAPSE_TABLE {
 	BOOL b_found;
 	int32_t position;
 	uint32_t row_count;
-} RESP_COLLAPSE_TABLE;
+};
 
-typedef struct _RESP_STORE_TABLE_STATE {
+struct RESP_STORE_TABLE_STATE {
 	uint32_t state_id;
-} RESP_STORE_TABLE_STATE;
+};
 
-typedef struct _RESP_RESTORE_TABLE_STATE {
+struct RESP_RESTORE_TABLE_STATE {
 	int32_t position;
-} RESP_RESTORE_TABLE_STATE;
+};
 
-typedef struct _RESP_CHECK_MESSAGE {
+struct RESP_CHECK_MESSAGE {
 	BOOL b_exist;
-} RESP_CHECK_MESSAGE;
+};
 
-typedef struct _RESP_CHECK_MESSAGE_DELETED {
+struct RESP_CHECK_MESSAGE_DELETED {
 	BOOL b_del;
-} RESP_CHECK_MESSAGE_DELETED;
+};
 
-typedef struct _RESP_LOAD_MESSAGE_INSTANCE {
+struct RESP_LOAD_MESSAGE_INSTANCE {
 	uint32_t instance_id;
-} RESP_LOAD_MESSAGE_INSTANCE;
+};
 
-typedef struct _RESP_LOAD_EMBEDDED_INSTANCE {
+struct RESP_LOAD_EMBEDDED_INSTANCE {
 	uint32_t instance_id;
-} RESP_LOAD_EMBEDDED_INSTANCE;
+};
 
-typedef struct _RESP_GET_EMBEDDED_CN {
+struct RESP_GET_EMBEDDED_CN {
 	uint64_t *pcn;
-} RESP_GET_EMBEDDED_CN;
+};
 
-typedef struct _RESP_RELOAD_MESSAGE_INSTANCE {
+struct RESP_RELOAD_MESSAGE_INSTANCE {
 	BOOL b_result;
-} RESP_RELOAD_MESSAGE_INSTANCE;
+};
 
-typedef struct _RESP_READ_MESSAGE_INSTANCE {
+struct RESP_READ_MESSAGE_INSTANCE {
 	MESSAGE_CONTENT msgctnt;
-} RESP_READ_MESSAGE_INSTANCE;
+};
 
-typedef struct _RESP_WRITE_MESSAGE_INSTANCE {
+struct RESP_WRITE_MESSAGE_INSTANCE {
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY problems;
-} RESP_WRITE_MESSAGE_INSTANCE;
+};
 
-typedef struct _RESP_LOAD_ATTACHMENT_INSTANCE {
+struct RESP_LOAD_ATTACHMENT_INSTANCE {
 	uint32_t instance_id;
-} RESP_LOAD_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _RESP_CREATE_ATTACHMENT_INSTANCE {
+struct RESP_CREATE_ATTACHMENT_INSTANCE {
 	uint32_t instance_id;
 	uint32_t attachment_num;
-} RESP_CREATE_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _RESP_READ_ATTACHMENT_INSTANCE {
+struct RESP_READ_ATTACHMENT_INSTANCE {
 	ATTACHMENT_CONTENT attctnt;
-} RESP_READ_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _RESP_WRITE_ATTACHMENT_INSTANCE {
+struct RESP_WRITE_ATTACHMENT_INSTANCE {
 	PROBLEM_ARRAY problems;
-} RESP_WRITE_ATTACHMENT_INSTANCE;
+};
 
-typedef struct _RESP_FLUSH_INSTANCE {
+struct RESP_FLUSH_INSTANCE {
 	gxerr_t e_result;
-} RESP_FLUSH_INSTANCE;
+};
 
-typedef struct _RESP_GET_INSTANCE_ALL_PROPTAGS {
+struct RESP_GET_INSTANCE_ALL_PROPTAGS {
 	PROPTAG_ARRAY proptags;
-} RESP_GET_INSTANCE_ALL_PROPTAGS;
+};
 
-typedef struct _RESP_GET_INSTANCE_PROPERTIES {
+struct RESP_GET_INSTANCE_PROPERTIES {
 	TPROPVAL_ARRAY propvals;
-} RESP_GET_INSTANCE_PROPERTIES;
+};
 
-typedef struct _RESP_SET_INSTANCE_PROPERTIES {
+struct RESP_SET_INSTANCE_PROPERTIES {
 	PROBLEM_ARRAY problems;
-} RESP_SET_INSTANCE_PROPERTIES;
+};
 
-typedef struct _RESP_REMOVE_INSTANCE_PROPERTIES {
+struct RESP_REMOVE_INSTANCE_PROPERTIES {
 	PROBLEM_ARRAY problems;
-} RESP_REMOVE_INSTANCE_PROPERTIES;
+};
 
-typedef struct _RESP_CHECK_INSTANCE_CYCLE {
+struct RESP_CHECK_INSTANCE_CYCLE {
 	BOOL b_cycle;
-} RESP_CHECK_INSTANCE_CYCLE;
+};
 
-typedef struct _RESP_GET_MESSAGE_INSTANCE_RCPTS_NUM {
+struct RESP_GET_MESSAGE_INSTANCE_RCPTS_NUM {
 	uint16_t num;
-} RESP_GET_MESSAGE_INSTANCE_RCPTS_NUM;
+};
 
-typedef struct _RESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS {
+struct RESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS {
 	PROPTAG_ARRAY proptags;
-} RESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS;
+};
 
-typedef struct _RESP_GET_MESSAGE_INSTANCE_RCPTS {
+struct RESP_GET_MESSAGE_INSTANCE_RCPTS {
 	TARRAY_SET set;
-} RESP_GET_MESSAGE_INSTANCE_RCPTS;
+};
 
-typedef struct _RESP_COPY_INSTANCE_RCPTS {
+struct RESP_COPY_INSTANCE_RCPTS {
 	BOOL b_result;
-} RESP_COPY_INSTANCE_RCPTS;
+};
 
-typedef struct _RESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM {
+struct RESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM {
 	uint16_t num;
-} RESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM;
+};
 
-typedef struct _RESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS {
+struct RESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS {
 	PROPTAG_ARRAY proptags;
-} RESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS;
+};
 
-typedef struct _RESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE {
+struct RESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE {
 	TARRAY_SET set;
-} RESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE;
+};
 
-typedef struct _RESP_COPY_INSTANCE_ATTACHMENTS {
+struct RESP_COPY_INSTANCE_ATTACHMENTS {
 	BOOL b_result;
-} RESP_COPY_INSTANCE_ATTACHMENTS;
+};
 
-typedef struct _RESP_GET_MESSAGE_RCPTS {
+struct RESP_GET_MESSAGE_RCPTS {
 	TARRAY_SET set;
-} RESP_GET_MESSAGE_RCPTS;
+};
 
-typedef struct _RESP_GET_MESSAGE_PROPERTIES {
+struct RESP_GET_MESSAGE_PROPERTIES {
 	TPROPVAL_ARRAY propvals;
-} RESP_GET_MESSAGE_PROPERTIES;
+};
 
-typedef struct _RESP_SET_MESSAGE_PROPERTIES {
+struct RESP_SET_MESSAGE_PROPERTIES {
 	PROBLEM_ARRAY problems;
-} RESP_SET_MESSAGE_PROPERTIES;
+};
 
-typedef struct _RESP_SET_MESSAGE_READ_STATE {
+struct RESP_SET_MESSAGE_READ_STATE {
 	uint64_t read_cn;
-} RESP_SET_MESSAGE_READ_STATE;
+};
 
-typedef struct _RESP_ALLOCATE_MESSAGE_ID {
+struct RESP_ALLOCATE_MESSAGE_ID {
 	uint64_t message_id;
-} RESP_ALLOCATE_MESSAGE_ID;
+};
 
-typedef struct _RESP_ALLOCATE_CN {
+struct RESP_ALLOCATE_CN {
 	uint64_t cn;
-} RESP_ALLOCATE_CN;
+};
 
-typedef struct _RESP_GET_MESSAGE_GROUP_ID {
+struct RESP_GET_MESSAGE_GROUP_ID {
 	uint32_t *pgroup_id;
-} RESP_GET_MESSAGE_GROUP_ID;
+};
 
-typedef struct _RESP_GET_CHANGE_INDICES {
+struct RESP_GET_CHANGE_INDICES {
 	INDEX_ARRAY indices;
 	PROPTAG_ARRAY ungroup_proptags;
-} RESP_GET_CHANGE_INDICES;
+};
 
-typedef struct _RESP_TRY_MARK_SUBMIT {
+struct RESP_TRY_MARK_SUBMIT {
 	BOOL b_marked;
-} RESP_TRY_MARK_SUBMIT;
+};
 
-typedef struct _RESP_LINK_MESSAGE {
+struct RESP_LINK_MESSAGE {
 	BOOL b_result;
-} RESP_LINK_MESSAGE;
+};
 
-typedef struct _RESP_GET_MESSAGE_TIMER {
+struct RESP_GET_MESSAGE_TIMER {
 	uint32_t *ptimer_id;
-} RESP_GET_MESSAGE_TIMER;
+};
 
-typedef struct _RESP_UPDATE_FOLDER_RULE {
+struct RESP_UPDATE_FOLDER_RULE {
 	BOOL b_exceed;
-} RESP_UPDATE_FOLDER_RULE;
+};
 
-typedef struct _RESP_DELIVERY_MESSAGE {
+struct RESP_DELIVERY_MESSAGE {
 	uint32_t result;
-} RESP_DELIVERY_MESSAGE;
+};
 
-typedef struct _RESP_WRITE_MESSAGE {
+struct RESP_WRITE_MESSAGE {
 	gxerr_t e_result;
-} RESP_WRITE_MESSAGE;
+};
 
-typedef struct _RESP_READ_MESSAGE {
+struct RESP_READ_MESSAGE {
 	MESSAGE_CONTENT *pmsgctnt;
-} RESP_READ_MESSAGE;
+};
 
-typedef struct _RESP_GET_CONTENT_SYNC {
+struct RESP_GET_CONTENT_SYNC {
 	uint32_t fai_count;
 	uint64_t fai_total;
 	uint32_t normal_count;
@@ -1225,32 +1225,32 @@ typedef struct _RESP_GET_CONTENT_SYNC {
 	EID_ARRAY read_mids;
 	EID_ARRAY unread_mids;
 	uint64_t last_readcn;
-} RESP_GET_CONTENT_SYNC;
+};
 
-typedef struct _RESP_GET_HIERARCHY_SYNC {
+struct RESP_GET_HIERARCHY_SYNC {
 	FOLDER_CHANGES fldchgs;
 	uint64_t last_cn;
 	EID_ARRAY given_fids;
 	EID_ARRAY deleted_fids;
-} RESP_GET_HIERARCHY_SYNC;
+};
 
-typedef struct _RESP_ALLOCATE_IDS {
+struct RESP_ALLOCATE_IDS {
 	uint64_t begin_eid;
-} RESP_ALLOCATE_IDS;
+};
 
-typedef struct _RESP_SUBSCRIBE_NOTIFICATION {
+struct RESP_SUBSCRIBE_NOTIFICATION {
 	uint32_t sub_id;
-} RESP_SUBSCRIBE_NOTIFICATION;
+};
 
-typedef struct _RESP_CHECK_CONTACT_ADDRESS {
+struct RESP_CHECK_CONTACT_ADDRESS {
 	BOOL b_found;
-} RESP_CHECK_CONTACT_ADDRESS;
+};
 
-typedef struct _RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT {
+struct RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT {
 	uint32_t count;
-} RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT;
+};
 
-typedef union _RESPONSE_PAYLOAD {
+union RESPONSE_PAYLOAD {
 	RESP_GET_ALL_NAMED_PROPIDS get_all_named_propids;
 	RESP_GET_NAMED_PROPIDS get_named_propids;
 	RESP_GET_NAMED_PROPNAMES get_named_propnames;
@@ -1347,19 +1347,19 @@ typedef union _RESPONSE_PAYLOAD {
 	RESP_SUBSCRIBE_NOTIFICATION subscribe_notification;
 	RESP_CHECK_CONTACT_ADDRESS check_contact_address;
 	RESP_GET_PUBLIC_FOLDER_UNREAD_COUNT get_public_folder_unread_count;
-} RESPONSE_PAYLOAD;
+};
 
-typedef struct _EXMDB_RESPONSE {
+struct EXMDB_RESPONSE {
 	uint8_t call_id;
 	RESPONSE_PAYLOAD payload;
-} EXMDB_RESPONSE;
+};
 
-typedef struct _DB_NOTIFY_DATAGRAM {
+struct DB_NOTIFY_DATAGRAM {
 	char *dir;
 	BOOL b_table;
 	LONG_ARRAY id_array;
 	DB_NOTIFY db_notify;
-} DB_NOTIFY_DATAGRAM;
+};
 
 enum {
 	COMMON_UTIL_MAX_RULE_NUMBER,

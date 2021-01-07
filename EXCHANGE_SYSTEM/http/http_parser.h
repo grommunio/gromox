@@ -40,7 +40,7 @@ enum {
 	CHANNEL_STAT_RECYCLED
 };
 
-typedef struct _CONNECTION {
+struct CONNECTION {
 	char client_ip[32]; /* client ip address string */
 	int				client_port;        /* value of client port */
 	char server_ip[32]; /* server ip address */
@@ -48,9 +48,9 @@ typedef struct _CONNECTION {
 	int				sockd;              /* context's socket file description */
 	SSL				*ssl;
 	struct timeval last_timestamp;     /* last time when system got data from */
-} CONNECTION;
+};
 
-typedef struct _HTTP_REQUEST {
+struct HTTP_REQUEST {
 	char		method[32];
 	MEM_FILE	f_request_uri;
 	char		version[8];
@@ -64,7 +64,7 @@ typedef struct _HTTP_REQUEST {
 	MEM_FILE	f_transfer_encoding;
 	MEM_FILE	f_cookie;
     MEM_FILE    f_others;
-} HTTP_REQUEST;
+};
 
 enum {
 	CHANNEL_TYPE_NONE = 0,
@@ -73,7 +73,7 @@ enum {
 };
 
 
-typedef struct _HTTP_CONTEXT {
+struct HTTP_CONTEXT {
 	SCHEDULE_CONTEXT	sched_context;
 	CONNECTION			connection;
 	HTTP_REQUEST		request;
@@ -98,9 +98,9 @@ typedef struct _HTTP_CONTEXT {
 	int					channel_type;
 	void				*pchannel;
 	FASTCGI_CONTEXT		*pfast_context;
-} HTTP_CONTEXT;
+};
 
-typedef struct _RPC_IN_CHANNEL {
+struct RPC_IN_CHANNEL {
 	uint16_t			frag_length;			/* indicating in coming PDU length */
 	char				channel_cookie[64];
 	char				connection_cookie[64];
@@ -111,9 +111,9 @@ typedef struct _RPC_IN_CHANNEL {
 	char				assoc_group_id[64];
 	DOUBLE_LIST			pdu_list;
 	int					channel_stat;
-} RPC_IN_CHANNEL;
+};
 
-typedef struct _RPC_OUT_CHANNEL {
+struct RPC_OUT_CHANNEL {
 	uint16_t			frag_length;
 	char				channel_cookie[64];
 	char				connection_cookie[64];
@@ -125,7 +125,7 @@ typedef struct _RPC_OUT_CHANNEL {
 	DCERPC_CALL			*pcall;		/* first output pcall of PDU by out channel itself */
 	DOUBLE_LIST			pdu_list;
 	int					channel_stat;
-} RPC_OUT_CHANNEL;
+};
 
 #ifdef __cplusplus
 extern "C" {

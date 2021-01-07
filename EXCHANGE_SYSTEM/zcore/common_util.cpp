@@ -53,15 +53,15 @@ enum {
 	SMTP_PERMANENT_ERROR
 };
 
-typedef struct _ENVIRONMENT_CONTEXT {
+struct ENVIRONMENT_CONTEXT {
 	ALLOC_CONTEXT allocator;
 	int clifd;
-} ENVIRONMENT_CONTEXT;
+};
 
-typedef struct _LANGMAP_ITEM {
+struct LANGMAP_ITEM {
 	char lang[32];
 	char i18n[32];
-} LANGMAP_ITEM;
+};
 
 static int g_max_rcpt;
 static int g_mime_num;

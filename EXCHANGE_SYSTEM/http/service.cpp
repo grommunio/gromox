@@ -13,13 +13,13 @@
 #include <dlfcn.h>
 #include <cstdio>
 
-typedef struct _REFERENCE_NODE{
+struct REFERENCE_NODE {
 	DOUBLE_LIST_NODE	node;
 	char				module_name[256];
 	int					ref_count;
-} REFERENCE_NODE;
+};
 
-typedef struct _PLUG_ENTITY{
+struct PLUG_ENTITY {
 	DOUBLE_LIST_NODE	node;
 	DOUBLE_LIST			list_service;
 	int					ref_count;
@@ -29,16 +29,16 @@ typedef struct _PLUG_ENTITY{
     char				file_name[256];
 	char				full_path[256];
 	bool completed_init;
-} PLUG_ENTITY;
+};
 
-typedef struct _SERVICE_ENTRY{
+struct SERVICE_ENTRY {
 	DOUBLE_LIST_NODE	node_service;
 	DOUBLE_LIST_NODE	node_lib;
     char				service_name[256];
     void				*service_addr;
-	struct _PLUG_ENTITY	*plib;	
+	PLUG_ENTITY *plib;	
 	DOUBLE_LIST			list_reference;
-} SERVICE_ENTRY;
+};
 
 static void* service_query_service(const char *service);
 static BOOL service_register_talk(TALK_MAIN talk);

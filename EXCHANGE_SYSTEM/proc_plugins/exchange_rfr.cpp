@@ -10,29 +10,29 @@
 
 DECLARE_API;
 
-typedef struct _RFRGETNEWDSA_IN {
+struct RFRGETNEWDSA_IN {
 	uint32_t flags;
 	char puserdn[1024];
 	char punused[256];
 	char pserver[256];
-} RFRGETNEWDSA_IN;
+};
 
-typedef struct _RFRGETNEWDSA_OUT {
+struct RFRGETNEWDSA_OUT {
 	char punused[256];
 	char pserver[256];
 	uint32_t result;
-} RFRGETNEWDSA_OUT;
+};
 
-typedef struct _RFRGETFQDNFROMLEGACYDN_IN {
+struct RFRGETFQDNFROMLEGACYDN_IN {
 	uint32_t flags;
 	uint32_t cb;
 	char mbserverdn[1024];
-} RFRGETFQDNFROMLEGACYDN_IN;
+};
 
-typedef struct _RFRGETFQDNFROMLEGACYDN_OUT {
+struct RFRGETFQDNFROMLEGACYDN_OUT {
 	char serverfqdn[256];
 	uint32_t result;
-} RFRGETFQDNFROMLEGACYDN_OUT;
+};
 
 static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
 

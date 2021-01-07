@@ -30,7 +30,7 @@ enum {
 	PDU_PROCESSOR_TERMINATE
 };
 
-typedef struct _DCERPC_INFO {
+struct DCERPC_INFO {
 	const char *client_ip;
 	int client_port;
 	const char *server_ip; /* http server ipaddr */
@@ -42,9 +42,9 @@ typedef struct _DCERPC_INFO {
 	const char *maildir;
 	const char *lang;
 	uint32_t stat_flags;  /* state flags of rpc context */
-} DCERPC_INFO; /* used for proc plugin to get dcerpc information */
+}; /* used for proc plugin to get dcerpc information */
 
-typedef struct _PROC_PLUGIN {
+struct PROC_PLUGIN {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST list_reference;
 	DOUBLE_LIST interface_list;
@@ -53,17 +53,17 @@ typedef struct _PROC_PLUGIN {
 	TALK_MAIN talk_main;
 	char file_name[256];
 	bool completed_init;
-} PROC_PLUGIN;
+};
 
-typedef struct _DCERPC_ENDPOINT {
+struct DCERPC_ENDPOINT {
 	DOUBLE_LIST_NODE node;
 	char host[128];
 	int tcp_port;		/* only for ncacn_http */
 	DOUBLE_LIST interface_list;
 	uint32_t last_group_id;
-} DCERPC_ENDPOINT;
+};
 
-typedef struct _DCERPC_INTERFACE {
+struct DCERPC_INTERFACE {
 	char name[128];
 	GUID uuid;
 	uint32_t version;
@@ -78,10 +78,10 @@ typedef struct _DCERPC_INTERFACE {
 	void (*unbind)(uint64_t handle);
 	/* the reclaim function for the chosen interface */
 	void (*reclaim)(uint32_t async_id);
-} DCERPC_INTERFACE;
+};
 
 /* virtual connection to DCE RPC server, actually only data structure of context */
-typedef struct _PDU_PROCESSOR {
+struct PDU_PROCESSOR {
 	DOUBLE_LIST_NODE node;
 	int async_num;
 	DCERPC_ENDPOINT *pendpoint;
@@ -90,17 +90,17 @@ typedef struct _PDU_PROCESSOR {
 	DOUBLE_LIST auth_list;
 	DOUBLE_LIST fragmented_list;
 	uint32_t cli_max_recv_frag;	/* the maximum size the client wants to receive */
-} PDU_PROCESSOR;
+};
 
-typedef struct _DCERPC_AUTH_CONTEXT {
+struct DCERPC_AUTH_CONTEXT {
 	DOUBLE_LIST_NODE node;
 	NTLMSSP_CTX *pntlmssp;
 	DCERPC_AUTH auth_info;	/* auth_context_id is inside this structure */
 	NTLMSSP_SESSION_INFO session_info;
 	BOOL is_login;
-} DCERPC_AUTH_CONTEXT;
+};
 
-typedef struct _DCERPC_CONTEXT {
+struct DCERPC_CONTEXT {
 	DOUBLE_LIST_NODE node;
 	uint32_t context_id;
 	BOOL b_ndr64;
@@ -109,10 +109,10 @@ typedef struct _DCERPC_CONTEXT {
 	DCERPC_INTERFACE *pinterface; /* the ndr function table for the chosen interface */
 	DCERPC_ENDPOINT *pendpoint;
 	DOUBLE_LIST async_list;
-} DCERPC_CONTEXT;
+};
 
 /* the state of an ongoing dcerpc call */
-typedef struct _DCERPC_CALL {
+struct DCERPC_CALL {
 	DOUBLE_LIST_NODE node;
 	PDU_PROCESSOR *pprocessor;
 	DCERPC_CONTEXT *pcontext;
@@ -124,14 +124,14 @@ typedef struct _DCERPC_CALL {
 	struct timeval time; /* the time the request arrived in the server */
 	DOUBLE_LIST reply_list;
 	uint32_t ptr_cnt;
-} DCERPC_CALL;
+};
 
 /* PDU blob for output */
-typedef struct _BLOB_NODE {
+struct BLOB_NODE {
 	DOUBLE_LIST_NODE node;
 	BOOL b_rts;
 	DATA_BLOB blob;
-} BLOB_NODE;
+};
 
 #ifdef __cplusplus
 extern "C" {

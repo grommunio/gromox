@@ -5,7 +5,7 @@
 #include "folder_object.h"
 #include "ftstream_producer.h"
 
-typedef struct _ICSDOWNCTX_OBJECT {
+struct ICSDOWNCTX_OBJECT {
 	FTSTREAM_PRODUCER *pstream;
 	uint8_t sync_type;
 	FOLDER_OBJECT *pfolder;
@@ -33,7 +33,7 @@ typedef struct _ICSDOWNCTX_OBJECT {
 	uint64_t next_progress_steps;
 	uint64_t ratio;
 	PROPERTY_GROUPINFO fake_gpinfo;
-} ICSDOWNCTX_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -3,42 +3,42 @@
 #include "ndr.h"
 
 
-typedef struct _NSPIBIND_IN {
+struct NSPIBIND_IN {
 	uint32_t flags;
 	STAT stat;
 	FLATUID *pserver_guid;
-} NSPIBIND_IN;
+};
 
-typedef struct _NSPIBIND_OUT {
+struct NSPIBIND_OUT {
 	FLATUID *pserver_guid;
 	NSPI_HANDLE handle;
 	uint32_t result;
-} NSPIBIND_OUT;
+};
 
-typedef struct _NSPIUNBIND_IN {
+struct NSPIUNBIND_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
-} NSPIUNBIND_IN;
+};
 
-typedef struct _NSPIUNBIND_OUT {
+struct NSPIUNBIND_OUT {
 	NSPI_HANDLE handle;
 	uint32_t result;
-} NSPIUNBIND_OUT;
+};
 
-typedef struct _NSPIUPDATESTAT_IN {
+struct NSPIUPDATESTAT_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
 	int32_t *pdelta;
-} NSPIUPDATESTAT_IN;
+};
 
-typedef struct _NSPIUPDATESTAT_OUT {
+struct NSPIUPDATESTAT_OUT {
 	STAT stat;
 	int32_t *pdelta;
 	uint32_t result;
-} NSPIUPDATESTAT_OUT;
+};
 
-typedef struct _NSPIQUERYROWS_IN {
+struct NSPIQUERYROWS_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	STAT stat;
@@ -46,30 +46,30 @@ typedef struct _NSPIQUERYROWS_IN {
 	uint32_t *ptable;
 	uint32_t count;
 	PROPTAG_ARRAY *pproptags;
-} NSPIQUERYROWS_IN;
+};
 
-typedef struct _NSPIQUERYROWS_OUT {
+struct NSPIQUERYROWS_OUT {
 	STAT stat;
 	PROPROW_SET *prows;
 	uint32_t result;
-} NSPIQUERYROWS_OUT;
+};
 
-typedef struct _NSPISEEKENTRIES_IN {
+struct NSPISEEKENTRIES_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
 	PROPERTY_VALUE target;
 	PROPTAG_ARRAY *ptable;
 	PROPTAG_ARRAY *pproptags;
-} NSPISEEKENTRIES_IN;
+};
 
-typedef struct _NSPISEEKENTRIES_OUT {
+struct NSPISEEKENTRIES_OUT {
 	STAT stat;
 	PROPROW_SET *prows;
 	uint32_t result;
-} NSPISEEKENTRIES_OUT;
+};
 
-typedef struct _NSPIGETMATCHES_IN {
+struct NSPIGETMATCHES_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved1;
 	STAT stat;
@@ -79,166 +79,166 @@ typedef struct _NSPIGETMATCHES_IN {
 	PROPERTY_NAME *ppropname;
 	uint32_t requested;
 	PROPTAG_ARRAY *pproptags;
-} NSPIGETMATCHES_IN;
+};
 
-typedef struct _NSPIGETMATCHES_OUT {
+struct NSPIGETMATCHES_OUT {
 	STAT stat;
 	PROPTAG_ARRAY *poutmids;
 	PROPROW_SET *prows;
 	uint32_t result;
-} NSPIGETMATCHES_OUT;
+};
 
-typedef struct _NSPIRESORTRESTRICTION_IN {
+struct NSPIRESORTRESTRICTION_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
 	PROPTAG_ARRAY inmids;
 	PROPTAG_ARRAY *poutmids;
-} NSPIRESORTRESTRICTION_IN;
+};
 
-typedef struct _NSPIRESORTRESTRICTION_OUT {
+struct NSPIRESORTRESTRICTION_OUT {
 	STAT stat;
 	PROPTAG_ARRAY *poutmids;
 	uint32_t result;
-} NSPIRESORTRESTRICTION_OUT;
+};
 
-typedef struct _NSPIDNTOMID_IN {
+struct NSPIDNTOMID_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STRINGS_ARRAY names;
-} NSPIDNTOMID_IN;
+};
 
-typedef struct _NSPIDNTOMID_OUT {
+struct NSPIDNTOMID_OUT {
 	PROPTAG_ARRAY *poutmids;
 	uint32_t result;
-} NSPIDNTOMID_OUT;
+};
 
-typedef struct _NSPIGETPROPLIST_IN {
+struct NSPIGETPROPLIST_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	uint32_t mid;
 	uint32_t codepage;
-} NSPIGETPROPLIST_IN;
+};
 
-typedef struct _NSPIGETPROPLIST_OUT {
+struct NSPIGETPROPLIST_OUT {
 	PROPTAG_ARRAY *pproptags;
 	uint32_t result;
-} NSPIGETPROPLIST_OUT;
+};
 
-typedef struct _NSPIGETPROPS_IN {
+struct NSPIGETPROPS_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	STAT stat;
 	PROPTAG_ARRAY *pproptags;
-} NSPIGETPROPS_IN;
+};
 
-typedef struct _NSPIGETPROPS_OUT {
+struct NSPIGETPROPS_OUT {
 	PROPERTY_ROW *prows;
 	uint32_t result;
-} NSPIGETPROPS_OUT;
+};
 
-typedef struct _NSPICOMPAREMIDS_IN {
+struct NSPICOMPAREMIDS_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
 	uint32_t mid1;
 	uint32_t mid2;
-} NSPICOMPAREMIDS_IN;
+};
 
-typedef struct _NSPICOMPAREMIDS_OUT {
+struct NSPICOMPAREMIDS_OUT {
 	uint32_t result;
 	uint32_t result1;
-} NSPICOMPAREMIDS_OUT;
+};
 
-typedef struct _NSPIMODPROPS_IN {
+struct NSPIMODPROPS_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
 	PROPTAG_ARRAY *pproptags;
 	PROPERTY_ROW row;
-} NSPIMODPROPS_IN;
+};
 
-typedef struct _NSPIMODPROPS_OUT {
+struct NSPIMODPROPS_OUT {
 	uint32_t result;
-} NSPIMODPROPS_OUT;
+};
 
-typedef struct _NSPIGETSPECIALTABLE_IN {
+struct NSPIGETSPECIALTABLE_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	STAT stat;
 	uint32_t version;
-} NSPIGETSPECIALTABLE_IN;
+};
 
-typedef struct _NSPIGETSPECIALTABLE_OUT {
+struct NSPIGETSPECIALTABLE_OUT {
 	uint32_t version;
 	PROPROW_SET *prows;
 	uint32_t result;
-} NSPIGETSPECIALTABLE_OUT;
+};
 
-typedef struct _NSPIGETTEMPLATEINFO_IN {
+struct NSPIGETTEMPLATEINFO_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	uint32_t type;
 	char *pdn;
 	uint32_t codepage;
 	uint32_t locale_id;
-} NSPIGETTEMPLATEINFO_IN;
+};
 
-typedef struct _NSPIGETTEMPLATEINFO_OUT {
+struct NSPIGETTEMPLATEINFO_OUT {
 	PROPERTY_ROW *pdata;
 	uint32_t result;
-} NSPIGETTEMPLATEINFO_OUT;
+};
 
-typedef struct _NSPIMODLINKATT_IN {
+struct NSPIMODLINKATT_IN {
 	NSPI_HANDLE handle;
 	uint32_t flags;
 	uint32_t proptag;
 	uint32_t mid;
 	BINARY_ARRAY entry_ids;
-} NSPIMODLINKATT_IN;
+};
 
-typedef struct _NSPIMODLINKATT_OUT {
+struct NSPIMODLINKATT_OUT {
 	uint32_t result;
-} NSPIMODLINKATT_OUT;
+};
 
-typedef struct _NSPIQUERYCOLUMNS_IN {
+struct NSPIQUERYCOLUMNS_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	uint32_t flags;
-} NSPIQUERYCOLUMNS_IN;
+};
 
-typedef struct _NSPIQUERYCOLUMNS_OUT {
+struct NSPIQUERYCOLUMNS_OUT {
 	PROPTAG_ARRAY *pcolumns;
 	uint32_t result;
-} NSPIQUERYCOLUMNS_OUT;
+};
 
-typedef struct _NSPIRESOLVENAMES_IN {
+struct NSPIRESOLVENAMES_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
 	PROPTAG_ARRAY *pproptags;
 	STRINGS_ARRAY strs;
-} NSPIRESOLVENAMES_IN;
+};
 
-typedef struct _NSPIRESOLVENAMES_OUT {
+struct NSPIRESOLVENAMES_OUT {
 	PROPTAG_ARRAY *pmids;
 	PROPROW_SET *prows;
 	uint32_t result;
-} NSPIRESOLVENAMES_OUT;
+};
 
-typedef struct _NSPIRESOLVENAMESW_IN {
+struct NSPIRESOLVENAMESW_IN {
 	NSPI_HANDLE handle;
 	uint32_t reserved;
 	STAT stat;
 	PROPTAG_ARRAY *pproptags;
 	STRINGS_ARRAY strs;
-} NSPIRESOLVENAMESW_IN;
+};
 
-typedef struct _NSPIRESOLVENAMESW_OUT {
+struct NSPIRESOLVENAMESW_OUT {
 	PROPTAG_ARRAY *pmids;
 	PROPROW_SET *prows;
 	uint32_t result;
-} NSPIRESOLVENAMESW_OUT;
+};
 
 #ifdef __cplusplus
 extern "C" {

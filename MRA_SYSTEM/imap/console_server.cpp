@@ -41,16 +41,16 @@ typedef struct sockaddr     SA;
 
 typedef BOOL (*COMMAND_HANDLER)(int argc, char** argv);
 
-typedef struct _COMMAND_ENTRY {
+struct COMMAND_ENTRY {
     char    cmd[MAX_CMD_LENGTH];
     COMMAND_HANDLER cmd_handler;
-} COMMAND_ENTRY;
+};
 
-typedef struct _CONSOLE_NODE {
+struct CONSOLE_NODE {
 	DOUBLE_LIST_NODE	node;
 	pthread_t			tid;
 	int					client_fd;
-} CONSOLE_NODE;
+};
 
 extern BOOL g_notify_stop;
 /* declare private global variables */

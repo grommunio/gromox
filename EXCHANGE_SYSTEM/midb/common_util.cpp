@@ -15,11 +15,11 @@
 #include <cstring>
 #include <cstdlib>
 
-typedef struct _COMMAND_CONTEXT {
+struct COMMAND_CONTEXT {
 	ALLOC_CONTEXT alloc_ctx;
 	ALLOC_CONTEXT *ptmp_ctx;
 	char maildir[256];
-} COMMAND_CONTEXT;
+};
 
 static pthread_key_t g_ctx_key;
 

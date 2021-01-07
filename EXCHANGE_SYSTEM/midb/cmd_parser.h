@@ -3,12 +3,12 @@
 #include <pthread.h>
 
 
-typedef struct _CONNECTION {
+struct CONNECTION {
 	DOUBLE_LIST_NODE node;
 	int sockd;
 	BOOL is_selecting;
 	pthread_t thr_id;
-} CONNECTION;
+};
 
 typedef int (*COMMAND_HANDLER)(int argc, char** argv, int sockd);
 

@@ -16,7 +16,7 @@
 #include "rop_util.h"
 #include <cstdlib>
 
-typedef struct _MARKER_NODE {
+struct MARKER_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t marker;
 	union {
@@ -24,8 +24,7 @@ typedef struct _MARKER_NODE {
 		uint32_t instance_id;
 		uint64_t folder_id;
 	} data;
-} MARKER_NODE;
-
+};
 
 FASTUPCTX_OBJECT* fastupctx_object_create(
 	LOGON_OBJECT *plogon, void *pobject, int root_element)

@@ -33,28 +33,28 @@
 
 #define MIN_BATCH_MESSAGE_NUM						20
 
-typedef struct _RULE_NODE {
+struct RULE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t sequence;
 	uint32_t state;
 	uint64_t id;
 	char *provider;
-} RULE_NODE;
+};
 
-typedef struct _DAM_NODE {
+struct DAM_NODE {
 	DOUBLE_LIST_NODE node;
 	uint64_t rule_id;
 	uint64_t folder_id;
 	uint64_t message_id;
 	char *provider;
 	ACTION_BLOCK *pblock;
-} DAM_NODE;
+};
 
-typedef struct _MESSAGE_NODE {
+struct MESSAGE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint64_t folder_id;
 	uint64_t message_id;
-} MESSAGE_NODE;
+};
 
 /* Caution: If a message is soft deleted from a public folder,
 	it also should be removed from read_states! if someone's

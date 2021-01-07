@@ -16,17 +16,17 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-typedef struct CONSOLE_PORT {
+struct CONSOLE_PORT {
 	char smtp_ip[32];
 	int smtp_port;
 	char delivery_ip[32];
 	int delivery_port;
-} CONSOLE_PORT;
+};
 
-typedef struct CONSOLE_PNODE {
+struct CONSOLE_PNODE {
 	SINGLE_LIST_NODE node;
 	CONSOLE_PORT u;
-} CONSOLE_PNODE;
+};
 
 static char g_list_path[256];
 static SINGLE_LIST g_console_list;

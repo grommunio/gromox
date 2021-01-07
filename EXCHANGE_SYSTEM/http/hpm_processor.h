@@ -13,20 +13,18 @@
 #define HPM_RETRIEVE_DONE					4
 #define HPM_RETRIEVE_SOCKET					5
 
-struct _HTTP_CONTEXT;
+struct HTTP_CONTEXT;
 
-typedef struct _HTTP_CONTEXT HTTP_CONTEXT;
-
-typedef struct _HPM_INTERFACE {
+struct HPM_INTERFACE {
 	BOOL (*preproc)(int);
 	BOOL (*proc)(int, const void*, uint64_t);
 	int (*retr)(int);
 	BOOL (*send)(int, const void*, int);
 	int (*receive)(int, void*, int length);
 	void (*term)(int);
-} HPM_INTERFACE;
+};
 
-typedef struct _HPM_PLUGIN {
+struct HPM_PLUGIN {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST list_reference;
 	HPM_INTERFACE interface;
@@ -35,7 +33,7 @@ typedef struct _HPM_PLUGIN {
 	TALK_MAIN talk_main;
 	char file_name[256];
 	bool completed_init;
-} HPM_PLUGIN;
+};
 
 #ifdef __cplusplus
 extern "C" {

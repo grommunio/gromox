@@ -18,7 +18,7 @@
 
 #define FLAG_NOTIFICATION_PENDING				0x00000001
 
-typedef struct _ASYNC_WAIT {
+struct ASYNC_WAIT {
 	DOUBLE_LIST_NODE node;
 	time_t wait_time;
 	char username[256];
@@ -28,7 +28,7 @@ typedef struct _ASYNC_WAIT {
 		ECDOASYNCWAITEX_OUT *pout;
 		int context_id; /* when async_id is 0 */
 	} out_payload;
-} ASYNC_WAIT;
+};
 
 static int g_threads_num;
 static pthread_t g_scan_id;

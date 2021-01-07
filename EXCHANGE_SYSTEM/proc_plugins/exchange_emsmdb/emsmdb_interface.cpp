@@ -42,8 +42,7 @@
 
 #define MAX_HANDLE_PER_USER				100
 
-
-typedef struct _HANDLE_DATA {
+struct HANDLE_DATA {
 	DOUBLE_LIST_NODE node;
 	GUID guid;
 	char username[256];
@@ -56,13 +55,13 @@ typedef struct _HANDLE_DATA {
 	int rop_num;
 	uint16_t rop_left;	/* size left in rop response buffer */
 	time_t last_time;
-} HANDLE_DATA;
+};
 
-typedef struct _NOTIFY_ITEM {
+struct NOTIFY_ITEM {
 	uint32_t handle;
 	uint8_t logon_id;
 	GUID guid;
-} NOTIFY_ITEM;
+};
 
 static time_t g_start_time;
 static pthread_t g_scan_id;

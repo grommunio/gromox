@@ -29,32 +29,32 @@
 
 
 /* header for compressed rtf */
-typedef struct _COMPRESS_HEADER {
+struct COMPRESS_HEADER {
 	uint32_t size;
 	uint32_t rawsize;
 	uint32_t magic;
 	uint32_t crc;
-} COMPRESS_HEADER;
+};
 
-typedef struct _DECOMPRESSION_STATE {
+struct DECOMPRESSION_STATE {
 	uint8_t dict[RTF_DICTLENGTH];
 	uint32_t dict_writeoffset;
 	uint8_t *compressed_data;
 	uint32_t in_size;
 	uint32_t in_pos;
-} DECOMPRESSION_STATE;
+};
 
-typedef struct _OUTPUT_STATE {
+struct OUTPUT_STATE {
 	uint32_t out_size;
 	uint32_t out_pos;
 	char *pbuff_out;
 	size_t max_length;
-} OUTPUT_STATE;
+};
 
-typedef struct _DICTIONARYREF {
+struct DICTIONARYREF {
 	uint8_t length;
 	uint16_t offset;
-} DICTIONARYREF;
+};
 
 static void rtfcp_init_decompress_state(uint8_t *compressed_data,
 	uint32_t in_size, DECOMPRESSION_STATE *pstate)

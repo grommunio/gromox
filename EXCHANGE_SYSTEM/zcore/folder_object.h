@@ -4,12 +4,12 @@
 #include "store_object.h"
 
 
-typedef struct _FOLDER_OBJECT {
+struct FOLDER_OBJECT {
 	STORE_OBJECT *pstore;
 	uint64_t folder_id;
 	uint8_t type;
 	uint32_t tag_access;
-} FOLDER_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

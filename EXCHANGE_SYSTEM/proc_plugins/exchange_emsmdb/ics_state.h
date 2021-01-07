@@ -10,13 +10,13 @@ enum {
 	ICS_STATE_HIERARCHY_UP
 };
 
-typedef struct _ICS_STATE {
+struct ICS_STATE {
 	int type;
 	IDSET *pgiven;
 	IDSET *pseen;
 	IDSET *pseen_fai;
 	IDSET *pread;
-} ICS_STATE;
+};
 
 #ifdef __cplusplus
 extern "C" {

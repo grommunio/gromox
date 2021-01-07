@@ -15,7 +15,7 @@
 #define STRING_OPTION_FORCE_UNICODE				0x08
 
 
-typedef struct _FTSTREAM_PRODUCER {
+struct FTSTREAM_PRODUCER {
 	int type;
 	int fd;
 	uint32_t offset;
@@ -27,7 +27,7 @@ typedef struct _FTSTREAM_PRODUCER {
 	LOGON_OBJECT *plogon;	/* plogon is a protected member */
 	DOUBLE_LIST bp_list;
 	BOOL b_read;
-} FTSTREAM_PRODUCER;
+};
 
 #ifdef __cplusplus
 extern "C" {

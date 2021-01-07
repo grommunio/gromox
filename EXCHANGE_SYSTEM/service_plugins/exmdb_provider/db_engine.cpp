@@ -30,7 +30,7 @@
 
 #define MAX_DYNAMIC_NODES				100
 
-typedef struct _POPULATING_NODE {
+struct POPULATING_NODE {
 	DOUBLE_LIST_NODE node;
 	char *dir;
 	uint32_t cpid;
@@ -38,33 +38,33 @@ typedef struct _POPULATING_NODE {
 	BOOL b_recursive;
 	RESTRICTION *prestriction;
 	LONGLONG_ARRAY folder_ids;
-} POPULATING_NODE;
+};
 
-typedef struct _SUBLIST_NODE {
+struct SUBLIST_NODE {
 	DOUBLE_LIST_NODE node;
 	const char *remote_id;
 	DOUBLE_LIST list;
-} SUBLIST_NODE;
+};
 
-typedef struct _ID_ARRAYS {
+struct ID_ARRAYS {
 	int count;
 	const char **remote_ids;
 	LONG_ARRAY *parray;
-} ID_ARRAYS;
+};
 
-typedef struct _ID_NODE {
+struct ID_NODE {
 	DOUBLE_LIST_NODE node;
 	const char *remote_id;
 	uint32_t id;
-} ID_NODE;
+};
 
-typedef struct _ROWINFO_NODE {
+struct ROWINFO_NODE {
 	DOUBLE_LIST_NODE node;
 	BOOL b_added;
 	uint64_t row_id;
-} ROWINFO_NODE;
+};
 
-typedef struct _ROWDEL_NODE {
+struct ROWDEL_NODE {
 	DOUBLE_LIST_NODE node;
 	uint64_t row_id;
 	uint32_t idx;
@@ -74,7 +74,7 @@ typedef struct _ROWDEL_NODE {
 	uint32_t depth;
 	uint32_t inst_num;
 	BOOL b_read;
-} ROWDEL_NODE;
+};
 
 static BOOL g_wal;
 static BOOL g_async;

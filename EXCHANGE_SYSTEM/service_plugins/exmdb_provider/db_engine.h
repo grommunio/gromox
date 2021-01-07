@@ -21,13 +21,13 @@ enum {
 	DYNAMIC_EVENT_MOVE_FOLDER
 };
 
-typedef struct _DYNAMIC_NODE {
+struct DYNAMIC_NODE {
 	DOUBLE_LIST_NODE node;
 	uint64_t folder_id;
 	uint32_t search_flags;
 	RESTRICTION *prestriction;
 	LONGLONG_ARRAY folder_ids;
-} DYNAMIC_NODE;
+};
 
 enum {
 	TABLE_TYPE_HIERARCHY,
@@ -41,7 +41,7 @@ enum {
 	INSTANCE_TYPE_ATTACHMENT
 };
 
-typedef struct _TABLE_NODE {
+struct TABLE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t table_id;
 	char *remote_id;
@@ -58,9 +58,9 @@ typedef struct _TABLE_NODE {
 	uint32_t extremum_tag;
 	uint32_t header_id;
 	BOOL b_hint;		/* is table touched in batch-mode */
-} TABLE_NODE;
+};
 
-typedef struct _NSUB_NODE {
+struct NSUB_NODE {
 	DOUBLE_LIST_NODE node;
 	char *remote_id;
 	uint32_t sub_id;
@@ -68,12 +68,12 @@ typedef struct _NSUB_NODE {
 	BOOL b_whole;
 	uint64_t folder_id;
 	uint64_t message_id;
-} NSUB_NODE;
+};
 
 #define CHANGE_MASK_HTML						0x01
 #define CHANGE_MASK_BODY						0x02
 
-typedef struct _INSTANCE_NODE {
+struct INSTANCE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint32_t instance_id;
 	uint32_t parent_id;
@@ -85,17 +85,17 @@ typedef struct _INSTANCE_NODE {
 	BOOL b_new;
 	uint8_t change_mask;
 	void *pcontent;
-} INSTANCE_NODE;
+};
 
 /* memory database for holding rop table objects instance */
-typedef struct _MEMORY_TABLES {
+struct MEMORY_TABLES {
 	uint32_t last_id;
 	BOOL b_batch;			/* message database is in batch-mode */
 	DOUBLE_LIST table_list;
 	sqlite3 *psqlite;
-} MEMORY_TABLES;
+};
 
-typedef struct _DB_ITEM {
+struct DB_ITEM {
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference;
 	time_t last_time;
@@ -105,7 +105,7 @@ typedef struct _DB_ITEM {
 	DOUBLE_LIST nsub_list;
 	DOUBLE_LIST instance_list;
 	MEMORY_TABLES tables;
-} DB_ITEM;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -130,50 +130,50 @@
 #define RTS_FLAG_ECHO								0x0040
 
 
-typedef struct _DCERPC_CTX_LIST {
+struct DCERPC_CTX_LIST {
 	uint16_t context_id;
 	uint8_t num_transfer_syntaxes;
 	SYNTAX_ID abstract_syntax;
 	SYNTAX_ID *transfer_syntaxes;
-} DCERPC_CTX_LIST;
+};
 
-typedef union _DCERPC_OBJECT {
+union DCERPC_OBJECT {
 	char empty;
 	GUID object;
-} DCERPC_OBJECT;
+};
 
-typedef struct _DCERPC_ACK_CTX {
+struct DCERPC_ACK_CTX {
 	uint16_t result;
 	uint16_t reason;
 	SYNTAX_ID syntax;
-} DCERPC_ACK_CTX;
+};
 
-typedef struct _DCERPC_REQUEST {
+struct DCERPC_REQUEST {
 	uint32_t alloc_hint;
 	uint16_t context_id;
 	uint16_t opnum;
 	DCERPC_OBJECT object;
 	DATA_BLOB pad;
 	DATA_BLOB stub_and_verifier;
-} DCERPC_REQUEST;
+};
 
-typedef struct _DCERPC_RESPONSE {
+struct DCERPC_RESPONSE {
 	uint32_t alloc_hint;
 	uint16_t context_id;
 	uint8_t cancel_count;
 	DATA_BLOB pad;
 	DATA_BLOB stub_and_verifier;
-} DCERPC_RESPONSE;
+};
 
-typedef struct _DCERPC_FAULT {
+struct DCERPC_FAULT {
 	uint32_t alloc_hint;
 	uint16_t context_id;
 	uint8_t cancel_count;
 	int status;  /*dcerpc ncan status */
 	DATA_BLOB pad;
-} DCERPC_FAULT;
+};
 
-typedef struct _DCERPC_FACK {
+struct DCERPC_FACK {
 	uint32_t version;
 	uint8_t pad;
 	uint16_t window_size;
@@ -182,24 +182,24 @@ typedef struct _DCERPC_FACK {
 	uint16_t serial_no;
 	uint16_t selack_size;
 	uint32_t *selack;
-} DCERPC_FACK;
+};
 
-typedef struct _DCERPC_CANCEL_ACK {
+struct DCERPC_CANCEL_ACK {
 	uint32_t version;
 	uint32_t id;
 	uint32_t server_is_accepting;
-} DCERPC_CANCEL_ACK;
+};
 
-typedef struct _DCERPC_BIND  {
+struct DCERPC_BIND {
 	uint16_t max_xmit_frag;
 	uint16_t max_recv_frag;
 	uint32_t assoc_group_id;
 	uint8_t num_contexts;
 	DCERPC_CTX_LIST *ctx_list;
 	DATA_BLOB auth_info;
-} DCERPC_BIND;
+};
 
-typedef struct _DCERPC_BIND_ACK {
+struct DCERPC_BIND_ACK {
 	uint16_t max_xmit_frag;
 	uint16_t max_recv_frag;
 	uint32_t assoc_group_id;
@@ -209,48 +209,48 @@ typedef struct _DCERPC_BIND_ACK {
 	uint8_t num_contexts;
 	DCERPC_ACK_CTX *ctx_list;
 	DATA_BLOB auth_info;
-} DCERPC_BIND_ACK;
+};
 
-typedef struct _DCERPC_BIND_NAK {
+struct DCERPC_BIND_NAK {
 	uint16_t reject_reason;
 	uint32_t num_versions;
 	uint32_t *versions;
-} DCERPC_BIND_NAK;
+};
 
-typedef struct _DCERPC_CO_CANCEL {
+struct DCERPC_CO_CANCEL {
 	DATA_BLOB auth_info;
-} DCERPC_CO_CANCEL;
+};
 
-typedef struct _DCERPC_AUTH {
+struct DCERPC_AUTH {
 	uint8_t auth_type;
 	uint8_t auth_level;
 	uint8_t auth_pad_length;
 	uint8_t auth_reserved;
 	uint32_t auth_context_id;
 	DATA_BLOB credentials;
-} DCERPC_AUTH;
+};
 
-typedef struct _DCERPC_AUTH3 {
+struct DCERPC_AUTH3 {
 	uint32_t pad;
 	DATA_BLOB auth_info;
-} DCERPC_AUTH3;
+};
 
-typedef struct _DCERPC_ORPHANED {
+struct DCERPC_ORPHANED {
 	DATA_BLOB auth_info;
-} DCERPC_ORPHANED;
+};
 
-typedef struct _RTS_FLOWCONTROLACK {
+struct RTS_FLOWCONTROLACK {
 	uint32_t bytes_received;
 	uint32_t available_window;
 	GUID channel_cookie;
-} RTS_FLOWCONTROLACK;
+};
 
-typedef struct _RTS_CLIENTADDRESS {
+struct RTS_CLIENTADDRESS {
 	uint32_t address_type;
 	char client_address[64];
-} RTS_CLIENTADDRESS;
+};
 
-typedef union _RTS_CMDS {
+union RTS_CMDS {
 	uint32_t receivewindowsize;
 	RTS_FLOWCONTROLACK flowcontrolack;
 	uint32_t connectiontimeout;
@@ -266,20 +266,20 @@ typedef union _RTS_CMDS {
 	GUID associationgroupid;
 	uint32_t destination;
 	uint32_t pingtrafficsentnotify;
-} RTS_CMDS;
+};
 
-typedef struct _RTS_CMD {
+struct RTS_CMD {
 	uint32_t command_type;
 	RTS_CMDS command;
-} RTS_CMD;
+};
 
-typedef struct _DCERPC_RTS {
+struct DCERPC_RTS {
 	uint16_t flags;
 	uint16_t num;
 	RTS_CMD *commands;
-} DCERPC_RTS;
+};
 
-typedef union _DCERPC_PAYLOAD {
+union DCERPC_PAYLOAD {
 	DCERPC_REQUEST request;
 	char ping;
 	DCERPC_RESPONSE response;
@@ -300,9 +300,9 @@ typedef union _DCERPC_PAYLOAD {
 	DCERPC_ORPHANED orphaned;
 	DCERPC_AUTH3 auth3;
 	DCERPC_RTS rts;
-} DCERPC_PAYLOAD;
+};
 
-typedef struct _DCERPC_NCACN_PACKET {
+struct DCERPC_NCACN_PACKET {
 	uint8_t rpc_vers;
 	uint8_t rpc_vers_minor;
 	uint8_t pfc_flags;
@@ -312,7 +312,7 @@ typedef struct _DCERPC_NCACN_PACKET {
 	uint32_t call_id;
 	uint8_t pkt_type;
 	DCERPC_PAYLOAD payload;
-} DCERPC_NCACN_PACKET;
+};
 
 #ifdef __cplusplus
 extern "C" {

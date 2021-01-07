@@ -7,10 +7,10 @@
 #include "mail_func.h"
 #include "mapi_types.h"
 
-typedef struct _USER_OBJECT {
+struct USER_OBJECT {
 	int base_id;
 	uint32_t minid;
-} USER_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

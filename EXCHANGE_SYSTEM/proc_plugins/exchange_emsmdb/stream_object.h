@@ -3,7 +3,7 @@
 
 #define MAX_LENGTH_FOR_FOLDER						64*1024
 
-typedef struct _STREAM_OBJECT {
+struct STREAM_OBJECT {
 	void *pparent;
 	int object_type;
 	uint8_t open_flags;
@@ -12,7 +12,7 @@ typedef struct _STREAM_OBJECT {
 	BINARY content_bin;
 	BOOL b_touched;
 	uint32_t max_length;
-} STREAM_OBJECT;
+};
 
 #ifdef __cplusplus
 extern "C" {

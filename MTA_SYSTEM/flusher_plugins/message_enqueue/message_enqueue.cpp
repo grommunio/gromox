@@ -27,10 +27,10 @@
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
 
-typedef struct _MSG_BUFF {
+struct MSG_BUFF {
     long msg_type;
     int msg_content;
-} MSG_BUFF;
+};
 
 static void* thread_work_func(void* arg);
 static BOOL message_enqueue_check(void);

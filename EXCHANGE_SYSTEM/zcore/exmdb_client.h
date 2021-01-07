@@ -8,8 +8,8 @@ enum {
 	LOST_PROXY_CONNECTIONS
 };
 
-struct _EXMDB_REQUEST;
-struct _EXMDB_RESPONSE;
+struct EXMDB_REQUEST;
+struct EXMDB_RESPONSE;
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,7 +59,7 @@ BOOL exmdb_client_remove_message_property(const char *dir,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag);
 
 void exmdb_client_register_proc(void *pproc);
-extern BOOL exmdb_client_do_rpc(const char *dir, const struct _EXMDB_REQUEST *, struct _EXMDB_RESPONSE *);
+extern BOOL exmdb_client_do_rpc(const char *dir, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
 
 #define IDLOUT
 #define EXMIDL(n) extern BOOL exmdb_client_ ## n

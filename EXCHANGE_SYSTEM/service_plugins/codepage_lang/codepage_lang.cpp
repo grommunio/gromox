@@ -20,18 +20,17 @@ enum {
 	RETRIEVE_END
 };
 
-typedef struct _CODEPAGE_NODE {
+struct CODEPAGE_NODE {
 	SINGLE_LIST_NODE node;
 	uint32_t codepage;
 	SINGLE_LIST lang_list;
-} CODEPAGE_NODE;
+};
 
-typedef struct _LANG_NODE {
+struct LANG_NODE {
 	SINGLE_LIST_NODE node;
 	char *tag;
 	char *value;
-} LANG_NODE;
-
+};
 
 static char g_file_path[256];
 static SINGLE_LIST g_cp_list;

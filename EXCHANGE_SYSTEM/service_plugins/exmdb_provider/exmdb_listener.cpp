@@ -21,11 +21,10 @@
 #include <fcntl.h>
 #include <netdb.h>
 
-
-typedef struct _ACL_ITEM {
+struct ACL_ITEM {
 	DOUBLE_LIST_NODE node;
 	char ip_addr[32];
-} ACL_ITEM;
+};
 
 static int g_listen_port;
 static int g_listen_sockd;
