@@ -23,7 +23,7 @@ static LIST_FILE *g_list_file;
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
-	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -33,7 +33,7 @@ static const char* cpid_to_charset_to(uint32_t cpid)
 	int i, item_num;
 	
 	item_num = list_file_get_item_num(g_list_file);
-	const struct srcitem *pitem = reinterpret_cast(struct srcitem *, list_file_get_list(g_list_file));
+	auto pitem = reinterpret_cast<const srcitem *>(list_file_get_list(g_list_file));
 	for (i = 0; i < item_num; ++i)
 		if (pitem[i].cpid == cpid)
 			return pitem[i].s;
@@ -43,7 +43,6 @@ static const char* cpid_to_charset_to(uint32_t cpid)
 int main(int argc, const char **argv)
 {
 	int offset;
-	char *pbuff;
 	int read_len;
 	int buff_len;
 	BINARY rtf_bin;
@@ -60,7 +59,7 @@ int main(int argc, const char **argv)
 	}
 	offset = 0;
 	buff_len = 64*1024;
-	pbuff = malloc(buff_len);
+	auto pbuff = static_cast<char *>(malloc(buff_len));
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
 		return 1;
@@ -69,7 +68,7 @@ int main(int argc, const char **argv)
 		offset += read_len;
 		if (offset == buff_len) {
 			buff_len *= 2;
-			pbuff = realloc(pbuff, buff_len);
+			pbuff = static_cast<char *>(realloc(pbuff, buff_len));
 			if (NULL == pbuff) {
 				fprintf(stderr, "out of memory\n");
 				return 1;
@@ -83,7 +82,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Input does not appear to be RTFCP\n");
 		return EXIT_FAILURE;
 	}
-	pbuff = malloc(unc_size);
+	pbuff = static_cast<char *>(malloc(unc_size));
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
 		return 1;

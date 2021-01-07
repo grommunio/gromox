@@ -16,7 +16,7 @@
 static unsigned int opt_show_version;
 
 static struct HXoption g_options_table[] = {
-	{.ln = "version", .type = HXTYPE_NONE, .ptr = &opt_show_version, .help = "Output version information and exit"},
+	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -24,8 +24,6 @@ static struct HXoption g_options_table[] = {
 int main(int argc, const char **argv)
 {
 	MAIL imail;
-	char *pbuff;
-	char *pbuff1;
 	size_t offset;
 	int fd, tmp_len;
 	MIME_POOL *ppool;
@@ -53,8 +51,7 @@ int main(int argc, const char **argv)
 		return 2;
 	}
 	
-	pbuff = malloc(node_stat.st_size);
-
+	auto pbuff = static_cast<char *>(malloc(node_stat.st_size));
 	if (NULL == pbuff) {
 		printf("Failed to allocate memory\n");
 		return 3;
@@ -94,7 +91,7 @@ int main(int argc, const char **argv)
 		return 7;
 	}
 
-	pbuff1 = malloc(1024*1024);
+	auto pbuff1 = static_cast<char *>(malloc(1024 * 1024));
 	if (NULL == pbuff1) {
 		printf("Failed to allocate digest memory\n");
 		free(pbuff);

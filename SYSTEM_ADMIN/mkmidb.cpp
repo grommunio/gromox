@@ -26,7 +26,6 @@ int main(int argc, const char **argv)
 	int mysql_port;
 	char *str_value;
 	MYSQL_ROW myrow;
-	char *sql_string;
 	sqlite3 *psqlite;
 	char db_name[256];
 	MYSQL_RES *pmyres;
@@ -157,7 +156,7 @@ int main(int argc, const char **argv)
 	}
 	str_size = node_stat.st_size;
 	
-	sql_string = malloc(str_size + 1);
+	auto sql_string = static_cast<char *>(malloc(str_size + 1));
 	if (NULL == sql_string) {
 		printf("Failed to allocate memory\n");
 		return 8;

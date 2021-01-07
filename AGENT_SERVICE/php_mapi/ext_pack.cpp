@@ -190,23 +190,22 @@ zend_bool ext_pack_pull_string(PULL_CTX *pctx, char **ppstr)
 	if (pctx->offset >= pctx->data_size) {
 		return 0;
 	}
-	len = strnlen(pctx->data + pctx->offset, pctx->data_size - pctx->offset);
+	len = strnlen(static_cast<const char *>(pctx->data) + pctx->offset, pctx->data_size - pctx->offset);
 	if (len + 1 > pctx->data_size - pctx->offset) {
 		return 0;
 	}
 	len ++;
-	*ppstr = emalloc(len);
+	*ppstr = static_cast<char *>(emalloc(len));
 	if (NULL == *ppstr) {
 		return 0;
 	}
-	memcpy(*ppstr, pctx->data + pctx->offset, len);
+	memcpy(*ppstr, static_cast<const char *>(pctx->data) + pctx->offset, len);
 	return ext_pack_pull_advance(pctx, len);
 }
 
 zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 {
 	int i;
-	char *pbuff;
 	int len, max_len;
 	
 	if (pctx->offset >= pctx->data_size) {
@@ -222,15 +221,15 @@ zend_bool ext_pack_pull_wstring(PULL_CTX *pctx, char **ppstr)
 		return 0;
 	}
 	len = i + 2;
-	*ppstr = emalloc(2*len);
+	*ppstr = static_cast<char *>(emalloc(2 * len));
 	if (NULL == *ppstr) {
 		return 0;
 	}
-	pbuff = malloc(len);
+	auto pbuff = static_cast<char *>(malloc(len));
 	if (0 == pbuff) {
 		return 0;
 	}
-	memcpy(pbuff, pctx->data + pctx->offset, len);
+	memcpy(pbuff, static_cast<const char *>(pctx->data) + pctx->offset, len);
 	if (0 == utf16le_to_utf8(pbuff, len, *ppstr, 2*len)) {
 		free(pbuff);
 		return 0;
@@ -248,10 +247,9 @@ zend_bool ext_pack_pull_binary(PULL_CTX *pctx, BINARY *r)
 		r->pb = NULL;
 		return 1;
 	}
-	r->pb = emalloc(r->cb);
-	if (NULL == r->pb) {
+	r->pv = emalloc(r->cb);
+	if (r->pv == nullptr)
 		return 0;
-	}
 	return ext_pack_pull_bytes(pctx, r->pb, r->cb);
 }
 
@@ -266,7 +264,7 @@ zend_bool ext_pack_pull_short_array(PULL_CTX *pctx, SHORT_ARRAY *r)
 		r->ps = NULL;
 		return 1;
 	}
-	r->ps = emalloc(sizeof(uint16_t)*r->count);
+	r->ps = static_cast<uint16_t *>(emalloc(sizeof(uint16_t) * r->count));
 	if (NULL == r->ps) {
 		return 0;
 	}
@@ -289,7 +287,7 @@ zend_bool ext_pack_pull_long_array(PULL_CTX *pctx, LONG_ARRAY *r)
 		r->pl = NULL;
 		return 1;
 	}
-	r->pl = emalloc(sizeof(uint32_t)*r->count);
+	r->pl = static_cast<uint32_t *>(emalloc(sizeof(uint32_t) * r->count));
 	if (NULL == r->pl) {
 		return 0;
 	}
@@ -312,7 +310,7 @@ zend_bool ext_pack_pull_longlong_array(PULL_CTX *pctx, LONGLONG_ARRAY *r)
 		r->pll = NULL;
 		return 1;
 	}
-	r->pll = emalloc(sizeof(uint64_t)*r->count);
+	r->pll = static_cast<uint64_t *>(emalloc(sizeof(uint64_t) * r->count));
 	if (NULL == r->pll) {
 		return 0;
 	}
@@ -335,7 +333,7 @@ zend_bool ext_pack_pull_binary_array(PULL_CTX *pctx, BINARY_ARRAY *r)
 		r->pbin = NULL;
 		return 1;
 	}
-	r->pbin = emalloc(sizeof(BINARY)*r->count);
+	r->pbin = static_cast<BINARY *>(emalloc(sizeof(BINARY) * r->count));
 	if (NULL == r->pbin) {
 		return 0;
 	}
@@ -358,7 +356,7 @@ zend_bool ext_pack_pull_string_array(PULL_CTX *pctx, STRING_ARRAY *r)
 		r->ppstr = NULL;
 		return 1;
 	}
-	r->ppstr = emalloc(sizeof(char*)*r->count);
+	r->ppstr = static_cast<char **>(emalloc(sizeof(char *) * r->count));
 	if (NULL == r->ppstr) {
 		return 0;
 	}
@@ -381,7 +379,7 @@ zend_bool ext_pack_pull_wstring_array(PULL_CTX *pctx, STRING_ARRAY *r)
 		r->ppstr = NULL;
 		return 1;
 	}
-	r->ppstr = emalloc(sizeof(char*)*r->count);
+	r->ppstr = static_cast<char **>(emalloc(sizeof(char *) * r->count));
 	if (NULL == r->ppstr) {
 		return 0;
 	}
@@ -404,7 +402,7 @@ zend_bool ext_pack_pull_guid_array(PULL_CTX *pctx, GUID_ARRAY *r)
 		r->pguid = NULL;
 		return 1;
 	}
-	r->pguid = emalloc(sizeof(GUID)*r->count);
+	r->pguid = static_cast<GUID *>(emalloc(sizeof(GUID) * r->count));
 	if (NULL == r->pguid) {
 		return 0;
 	}
@@ -428,7 +426,7 @@ static zend_bool ext_pack_pull_restriction_and_or(
 		r->pres = NULL;
 		return 1;
 	}
-	r->pres = emalloc(r->count*sizeof(RESTRICTION));
+	r->pres = static_cast<RESTRICTION *>(emalloc(r->count * sizeof(RESTRICTION)));
 	if (NULL == r->pres) {
 		return 0;
 	}
@@ -533,7 +531,7 @@ static zend_bool ext_pack_pull_restriction_comment(
 	if (0 == r->count) {
 		return 0;
 	}
-	r->ppropval = emalloc(sizeof(TAGGED_PROPVAL)*r->count);
+	r->ppropval = static_cast<TAGGED_PROPVAL *>(emalloc(sizeof(TAGGED_PROPVAL) * r->count));
 	if (NULL == r->ppropval) {
 		return 0;
 	}
@@ -546,7 +544,7 @@ static zend_bool ext_pack_pull_restriction_comment(
 		return 0;
 	}
 	if (0 != res_present) {
-		r->pres = emalloc(sizeof(RESTRICTION));
+		r->pres = static_cast<RESTRICTION *>(emalloc(sizeof(RESTRICTION)));
 		if (NULL == r->pres) {
 			return 0;
 		}
@@ -577,67 +575,78 @@ zend_bool ext_pack_pull_restriction(PULL_CTX *pctx, RESTRICTION *r)
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_and_or(pctx, r->pres);
+		return ext_pack_pull_restriction_and_or(pctx,
+		       static_cast<RESTRICTION_AND_OR *>(r->pres));
 	case RESTRICTION_TYPE_NOT:
 		r->pres = emalloc(sizeof(RESTRICTION_NOT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_not(pctx, r->pres);
+		return ext_pack_pull_restriction_not(pctx,
+		       static_cast<RESTRICTION_NOT *>(r->pres));
 	case RESTRICTION_TYPE_CONTENT:
 		r->pres = emalloc(sizeof(RESTRICTION_CONTENT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_content(pctx, r->pres);
+		return ext_pack_pull_restriction_content(pctx,
+		       static_cast<RESTRICTION_CONTENT *>(r->pres));
 	case RESTRICTION_TYPE_PROPERTY:
 		r->pres = emalloc(sizeof(RESTRICTION_PROPERTY));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_property(pctx, r->pres);
+		return ext_pack_pull_restriction_property(pctx,
+		       static_cast<RESTRICTION_PROPERTY *>(r->pres));
 	case RESTRICTION_TYPE_PROPCOMPARE:
 		r->pres = emalloc(sizeof(RESTRICTION_PROPCOMPARE));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_propcompare(pctx, r->pres);
+		return ext_pack_pull_restriction_propcompare(pctx,
+		       static_cast<RESTRICTION_PROPCOMPARE *>(r->pres));
 	case RESTRICTION_TYPE_BITMASK:
 		r->pres = emalloc(sizeof(RESTRICTION_BITMASK));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_bitmask(pctx, r->pres);
+		return ext_pack_pull_restriction_bitmask(pctx,
+		       static_cast<RESTRICTION_BITMASK *>(r->pres));
 	case RESTRICTION_TYPE_SIZE:
 		r->pres = emalloc(sizeof(RESTRICTION_SIZE));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_size(pctx, r->pres);
+		return ext_pack_pull_restriction_size(pctx,
+		       static_cast<RESTRICTION_SIZE *>(r->pres));
 	case RESTRICTION_TYPE_EXIST:
 		r->pres = emalloc(sizeof(RESTRICTION_EXIST));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_exist(pctx, r->pres);
+		return ext_pack_pull_restriction_exist(pctx,
+		       static_cast<RESTRICTION_EXIST *>(r->pres));
 	case RESTRICTION_TYPE_SUBOBJ:
 		r->pres = emalloc(sizeof(RESTRICTION_SUBOBJ));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_subobj(pctx, r->pres);
+		return ext_pack_pull_restriction_subobj(pctx,
+		       static_cast<RESTRICTION_SUBOBJ *>(r->pres));
 	case RESTRICTION_TYPE_COMMENT:
 		r->pres = emalloc(sizeof(RESTRICTION_COMMENT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_comment(pctx, r->pres);
+		return ext_pack_pull_restriction_comment(pctx,
+		       static_cast<RESTRICTION_COMMENT *>(r->pres));
 	case RESTRICTION_TYPE_COUNT:
 		r->pres = emalloc(sizeof(RESTRICTION_COUNT));
 		if (NULL == r->pres) {
 			return 0;
 		}
-		return ext_pack_pull_restriction_count(pctx, r->pres);
+		return ext_pack_pull_restriction_count(pctx,
+		       static_cast<RESTRICTION_COUNT *>(r->pres));
 	case RESTRICTION_TYPE_NULL:
 		r->pres = NULL;
 		return 1;
@@ -675,7 +684,7 @@ static zend_bool ext_pack_pull_recipient_block(PULL_CTX *pctx, RECIPIENT_BLOCK *
 	if (0 == r->count) {
 		return 0;
 	}
-	r->ppropval = emalloc(sizeof(TAGGED_PROPVAL)*r->count);
+	r->ppropval = static_cast<TAGGED_PROPVAL *>(emalloc(sizeof(TAGGED_PROPVAL) * r->count));
 	if (NULL == r->ppropval) {
 		return 0;
 	}
@@ -698,7 +707,7 @@ static zend_bool ext_pack_pull_forwarddelegate_action(
 	if (0 == r->count) {
 		return 0;
 	}
-	r->pblock = emalloc(sizeof(RECIPIENT_BLOCK)*r->count);
+	r->pblock = static_cast<RECIPIENT_BLOCK *>(emalloc(sizeof(RECIPIENT_BLOCK) * r->count));
 	if (NULL == r->pblock) {
 		return 0;
 	}
@@ -733,40 +742,45 @@ static zend_bool ext_pack_pull_action_block(PULL_CTX *pctx, ACTION_BLOCK *r)
 		if (NULL == r->pdata) {
 			return 0;
 		}
-		return ext_pack_pull_movecopy_action(pctx, r->pdata);
+		return ext_pack_pull_movecopy_action(pctx, static_cast<MOVECOPY_ACTION *>(r->pdata));
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
 		r->pdata = emalloc(sizeof(REPLY_ACTION));
 		if (NULL == r->pdata) {
 			return 0;
 		}
-		return ext_pack_pull_reply_action(pctx, r->pdata);
+		return ext_pack_pull_reply_action(pctx,
+		       static_cast<REPLY_ACTION *>(r->pdata));
 	case ACTION_TYPE_OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = emalloc(tmp_len);
 		if (NULL == r->pdata) {
 			return 0;
 		}
-		return ext_pack_pull_bytes(pctx, r->pdata, tmp_len);
+		return ext_pack_pull_bytes(pctx,
+		       static_cast<uint8_t *>(r->pdata), tmp_len);
 	case ACTION_TYPE_OP_BOUNCE:
 		r->pdata = emalloc(sizeof(uint32_t));
 		if (NULL == r->pdata) {
 			return 0;
 		}
-		return ext_pack_pull_uint32(pctx, r->pdata);
+		return ext_pack_pull_uint32(pctx,
+		       static_cast<uint32_t *>(r->pdata));
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
 		r->pdata = emalloc(sizeof(FORWARDDELEGATE_ACTION));
 		if (NULL == r->pdata) {
 			return 0;
 		}
-		return ext_pack_pull_forwarddelegate_action(pctx, r->pdata);
+		return ext_pack_pull_forwarddelegate_action(pctx,
+		       static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
 	case ACTION_TYPE_OP_TAG:
 		r->pdata = emalloc(sizeof(TAGGED_PROPVAL));
 		if (NULL == r->pdata) {
 			return 0;
 		}
-		return ext_pack_pull_tagged_propval(pctx, r->pdata);
+		return ext_pack_pull_tagged_propval(pctx,
+		       static_cast<TAGGED_PROPVAL *>(r->pdata));
 	case ACTION_TYPE_OP_DELETE:
 	case ACTION_TYPE_OP_MARK_AS_READ:
 		r->pdata = NULL;
@@ -786,7 +800,7 @@ zend_bool ext_pack_pull_rule_actions(PULL_CTX *pctx, RULE_ACTIONS *r)
 	if (0 == r->count) {
 		return 0;
 	}
-	r->pblock = emalloc(sizeof(ACTION_BLOCK)*r->count);
+	r->pblock = static_cast<ACTION_BLOCK *>(emalloc(sizeof(ACTION_BLOCK) * r->count));
 	if (NULL == r->pblock) {
 		return 0;
 	}
@@ -810,40 +824,40 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_uint16(pctx, *ppval);
+		return ext_pack_pull_uint16(pctx, static_cast<uint16_t *>(*ppval));
 	case PT_LONG:
 	case PT_ERROR:
 		*ppval = emalloc(sizeof(uint32_t));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_uint32(pctx, *ppval);
+		return ext_pack_pull_uint32(pctx, static_cast<uint32_t *>(*ppval));
 	case PT_FLOAT:
 		*ppval = emalloc(sizeof(float));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_float(pctx, *ppval);
+		return ext_pack_pull_float(pctx, static_cast<float *>(*ppval));
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		*ppval = emalloc(sizeof(double));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_double(pctx, *ppval);
+		return ext_pack_pull_double(pctx, static_cast<double *>(*ppval));
 	case PT_BOOLEAN:
 		*ppval = emalloc(sizeof(uint8_t));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_uint8(pctx, *ppval);
+		return ext_pack_pull_uint8(pctx, static_cast<uint8_t *>(*ppval));
 	case PT_I8:
 	case PT_SYSTIME:
 		*ppval = emalloc(sizeof(uint64_t));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_uint64(pctx, *ppval);
+		return ext_pack_pull_uint64(pctx, static_cast<uint64_t *>(*ppval));
 	case PT_STRING8:
 	case PT_UNICODE:
 		return ext_pack_pull_string(pctx, (char**)ppval);
@@ -852,62 +866,62 @@ zend_bool ext_pack_pull_propval(PULL_CTX *pctx, uint16_t type, void **ppval)
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_guid(pctx, *ppval);
+		return ext_pack_pull_guid(pctx, static_cast<GUID *>(*ppval));
 	case PT_SRESTRICT:
 		*ppval = emalloc(sizeof(RESTRICTION));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_restriction(pctx, *ppval);
+		return ext_pack_pull_restriction(pctx, static_cast<RESTRICTION *>(*ppval));
 	case PT_ACTIONS:
 		*ppval = emalloc(sizeof(RULE_ACTIONS));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_rule_actions(pctx, *ppval);
+		return ext_pack_pull_rule_actions(pctx, static_cast<RULE_ACTIONS *>(*ppval));
 	case PT_BINARY:
 		*ppval = emalloc(sizeof(BINARY));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_binary(pctx, *ppval);
+		return ext_pack_pull_binary(pctx, static_cast<BINARY *>(*ppval));
 	case PT_MV_SHORT:
 		*ppval = emalloc(sizeof(SHORT_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_short_array(pctx, *ppval);
+		return ext_pack_pull_short_array(pctx, static_cast<SHORT_ARRAY *>(*ppval));
 	case PT_MV_LONG:
 		*ppval = emalloc(sizeof(LONG_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_long_array(pctx, *ppval);
+		return ext_pack_pull_long_array(pctx, static_cast<LONG_ARRAY *>(*ppval));
 	case PT_MV_I8:
 		*ppval = emalloc(sizeof(LONGLONG_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_longlong_array(pctx, *ppval);
+		return ext_pack_pull_longlong_array(pctx, static_cast<LONGLONG_ARRAY *>(*ppval));
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		*ppval = emalloc(sizeof(STRING_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_string_array(pctx, *ppval);
+		return ext_pack_pull_string_array(pctx, static_cast<STRING_ARRAY *>(*ppval));
 	case PT_MV_CLSID:
 		*ppval = emalloc(sizeof(GUID_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_guid_array(pctx, *ppval);
+		return ext_pack_pull_guid_array(pctx, static_cast<GUID_ARRAY *>(*ppval));
 	case PT_MV_BINARY:
 		*ppval = emalloc(sizeof(BINARY_ARRAY));
 		if (NULL == *ppval) {
 			return 0;
 		}
-		return ext_pack_pull_binary_array(pctx, *ppval);
+		return ext_pack_pull_binary_array(pctx, static_cast<BINARY_ARRAY *>(*ppval));
 	default:
 		return 0;
 	}
@@ -932,7 +946,7 @@ zend_bool ext_pack_pull_proptag_array(PULL_CTX *pctx, PROPTAG_ARRAY *r)
 		r->pproptag = NULL;
 		return 1;
 	}
-	r->pproptag = emalloc(sizeof(uint32_t)*r->count);
+	r->pproptag = static_cast<uint32_t *>(emalloc(sizeof(uint32_t) * r->count));
 	if (NULL == r->pproptag) {
 		return 0;
 	}
@@ -958,7 +972,7 @@ zend_bool ext_pack_pull_property_name(PULL_CTX *pctx, PROPERTY_NAME *r)
 	r->plid = NULL;
 	r->pname = NULL;
 	if (r->kind == MNID_ID) {
-		r->plid = emalloc(sizeof(uint32_t));
+		r->plid = static_cast<uint32_t *>(emalloc(sizeof(uint32_t)));
 		if (NULL == r->plid) {
 			return 0;
 		}
@@ -995,7 +1009,7 @@ zend_bool ext_pack_pull_propname_array(PULL_CTX *pctx, PROPNAME_ARRAY *r)
 		r->ppropname = NULL;
 		return 1;
 	}
-	r->ppropname = emalloc(sizeof(PROPERTY_NAME)*r->count);
+	r->ppropname = static_cast<PROPERTY_NAME *>(emalloc(sizeof(PROPERTY_NAME) * r->count));
 	if (NULL == r->ppropname) {
 		return 0;
 	}
@@ -1018,7 +1032,7 @@ zend_bool ext_pack_pull_propid_array(PULL_CTX *pctx, PROPID_ARRAY *r)
 		r->ppropid = NULL;
 		return 1;
 	}
-	r->ppropid = emalloc(sizeof(uint16_t)*r->count);
+	r->ppropid = static_cast<uint16_t *>(emalloc(sizeof(uint16_t) * r->count));
 	if (NULL == r->ppropid) {
 		return 0;
 	}
@@ -1041,7 +1055,7 @@ zend_bool ext_pack_pull_tpropval_array(PULL_CTX *pctx, TPROPVAL_ARRAY *r)
 		r->ppropval = NULL;
 		return 1;
 	}
-	r->ppropval = emalloc(sizeof(TAGGED_PROPVAL)*r->count);
+	r->ppropval = static_cast<TAGGED_PROPVAL *>(emalloc(sizeof(TAGGED_PROPVAL) * r->count));
 	if (NULL == r->ppropval) {
 		return 0;
 	}
@@ -1064,12 +1078,12 @@ zend_bool ext_pack_pull_tarray_set(PULL_CTX *pctx, TARRAY_SET *r)
 		r->pparray = NULL;
 		return 1;
 	}
-	r->pparray = emalloc(sizeof(TPROPVAL_ARRAY*)*r->count);
+	r->pparray = static_cast<TPROPVAL_ARRAY **>(emalloc(sizeof(TPROPVAL_ARRAY *) * r->count));
 	if (NULL == r->pparray) {
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		r->pparray[i] = emalloc(sizeof(TPROPVAL_ARRAY));
+		r->pparray[i] = static_cast<TPROPVAL_ARRAY *>(emalloc(sizeof(TPROPVAL_ARRAY)));
 		if (NULL == r->pparray[i]) {
 			return 0;
 		}
@@ -1111,7 +1125,7 @@ zend_bool ext_pack_pull_sortorder_set(PULL_CTX *pctx, SORTORDER_SET *r)
 		r->cexpanded > r->ccategories) {
 		return 0;
 	}
-	r->psort = emalloc(sizeof(SORT_ORDER)*r->count);
+	r->psort = static_cast<SORT_ORDER *>(emalloc(sizeof(SORT_ORDER) * r->count));
 	if (NULL == r->psort) {
 		return 0;
 	}
@@ -1142,7 +1156,7 @@ zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r)
 	if (!ext_pack_pull_uint16(pctx, &r->count)) {
 		return 0;
 	}
-	r->prows = emalloc(sizeof(PERMISSION_ROW)*r->count);
+	r->prows = static_cast<PERMISSION_ROW *>(emalloc(sizeof(PERMISSION_ROW) * r->count));
 	if (NULL == r->prows) {
 		return 0;
 	}
@@ -1214,7 +1228,7 @@ zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r)
 		r->pstate = NULL;
 		return 1;
 	}
-	r->pstate = emalloc(sizeof(MESSAGE_STATE)*r->count);
+	r->pstate = static_cast<MESSAGE_STATE *>(emalloc(sizeof(MESSAGE_STATE) * r->count));
 	if (NULL == r->pstate) {
 		return 0;
 	}
@@ -1258,7 +1272,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pentryid = NULL;
 	} else {
-		r->pentryid = emalloc(sizeof(BINARY));
+		r->pentryid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
 		if (NULL == r->pentryid) {
 			return 0;
 		}
@@ -1272,7 +1286,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pparentid = NULL;
 	} else {
-		r->pparentid = emalloc(sizeof(BINARY));
+		r->pparentid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
 		if (NULL == r->pparentid) {
 			return 0;
 		}
@@ -1286,7 +1300,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pold_entryid = NULL;
 	} else {
-		r->pold_entryid = emalloc(sizeof(BINARY));
+		r->pold_entryid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
 		if (NULL == r->pold_entryid) {
 			return 0;
 		}
@@ -1300,7 +1314,7 @@ static zend_bool ext_pack_pull_object_znotification(
 	if (0 == tmp_byte) {
 		r->pold_parentid = NULL;
 	} else {
-		r->pold_parentid = emalloc(sizeof(BINARY));
+		r->pold_parentid = static_cast<BINARY *>(emalloc(sizeof(BINARY)));
 		if (NULL == r->pold_parentid) {
 			return 0;
 		}
@@ -1315,7 +1329,7 @@ static zend_bool ext_pack_pull_object_znotification(
 		r->pproptags = NULL;
 		return 1;
 	} else {
-		r->pproptags = emalloc(sizeof(PROPTAG_ARRAY));
+		r->pproptags = static_cast<PROPTAG_ARRAY *>(emalloc(sizeof(PROPTAG_ARRAY)));
 		if (NULL == r->pproptags) {
 			return 0;
 		}
@@ -1335,8 +1349,8 @@ static zend_bool ext_pack_pull_znotification(
 		if (NULL == r->pnotification_data) {
 			return 0;
 		}
-		return ext_pack_pull_newmail_znotification(
-					pctx, r->pnotification_data);
+		return ext_pack_pull_newmail_znotification(pctx,
+		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
 	case EVENT_TYPE_OBJECTCREATED:
 	case EVENT_TYPE_OBJECTDELETED:
 	case EVENT_TYPE_OBJECTMODIFIED:
@@ -1347,8 +1361,8 @@ static zend_bool ext_pack_pull_znotification(
 		if (NULL == r->pnotification_data) {
 			return 0;
 		}
-		return ext_pack_pull_object_znotification(
-					pctx, r->pnotification_data);
+		return ext_pack_pull_object_znotification(pctx,
+		       static_cast<OBJECT_ZNOTIFICATION *>(r->pnotification_data));
 	default:
 		r->pnotification_data = NULL;
 		return 1;
@@ -1367,12 +1381,12 @@ zend_bool ext_pack_pull_znotification_array(
 		r->ppnotification = NULL;
 		return 1;
 	}
-	r->ppnotification = emalloc(sizeof(ZNOTIFICATION*)*r->count);
+	r->ppnotification = static_cast<ZNOTIFICATION **>(emalloc(sizeof(ZNOTIFICATION *) * r->count));
 	if (NULL == r->ppnotification) {
 		return 0;
 	}
 	for (i=0; i<r->count; i++) {
-		r->ppnotification[i] = emalloc(sizeof(ZNOTIFICATION));
+		r->ppnotification[i] = static_cast<ZNOTIFICATION *>(emalloc(sizeof(ZNOTIFICATION)));
 		if (NULL == r->ppnotification[i]) {
 			return 0;
 		}
@@ -1405,7 +1419,6 @@ void ext_pack_push_free(PUSH_CTX *pctx)
 static zend_bool ext_pack_push_check_overflow(PUSH_CTX *pctx, uint32_t extra_size)
 {
 	uint32_t size;
-	uint8_t *pdata;
 	uint32_t alloc_size;
 	
 	size = extra_size + pctx->offset;
@@ -1414,7 +1427,7 @@ static zend_bool ext_pack_push_check_overflow(PUSH_CTX *pctx, uint32_t extra_siz
 	}
 	for (alloc_size=pctx->alloc_size; alloc_size<size;
 		alloc_size+=GROWING_BLOCK_SIZE);
-	pdata = erealloc(pctx->data, alloc_size);
+	auto pdata = static_cast<uint8_t *>(erealloc(pctx->data, alloc_size));
 	if (NULL == pdata) {
 		return 0;
 	}
@@ -1437,7 +1450,7 @@ zend_bool ext_pack_push_bytes(PUSH_CTX *pctx, const void *pdata, uint32_t n)
 	if (!ext_pack_push_check_overflow(pctx, n)) {
 		return 0;
 	}
-	memcpy(pctx->data + pctx->offset, pdata, n);
+	memcpy(static_cast<char *>(pctx->data) + pctx->offset, pdata, n);
 	pctx->offset += n;
 	return 1;
 }
@@ -1498,7 +1511,7 @@ zend_bool ext_pack_push_float(PUSH_CTX *pctx, float v)
 	if (!ext_pack_push_check_overflow(pctx, sizeof(float))) {
 		return 0;
 	}
-	memcpy(pctx->data + pctx->offset, &v, 4);
+	memcpy(static_cast<char *>(pctx->data) + pctx->offset, &v, 4);
 	pctx->offset += sizeof(float);
 	return 1;
 }
@@ -1508,7 +1521,7 @@ zend_bool ext_pack_push_double(PUSH_CTX *pctx, double v)
 	if (!ext_pack_push_check_overflow(pctx, sizeof(double))) {
 		return 0;
 	}
-	memcpy(pctx->data + pctx->offset, &v, 8);
+	memcpy(static_cast<char *>(pctx->data) + pctx->offset, &v, 8);
 	pctx->offset += sizeof(double);
 	return 1;
 }
@@ -1549,10 +1562,9 @@ zend_bool ext_pack_push_string(PUSH_CTX *pctx, const char *pstr)
 zend_bool ext_pack_push_wstring(PUSH_CTX *pctx, const char *pstr)
 {
 	int len;
-	char *pbuff;
 	
 	len = 2*strlen(pstr) + 2;
-	pbuff = malloc(len);
+	auto pbuff = static_cast<char *>(malloc(len));
 	if (0 == pbuff) {
 		return 0;
 	}
@@ -1815,27 +1827,38 @@ zend_bool ext_pack_push_restriction(PUSH_CTX *pctx, const RESTRICTION *r)
 	switch (r->rt) {
 	case RESTRICTION_TYPE_AND:
 	case RESTRICTION_TYPE_OR:
-		return ext_pack_push_restriction_and_or(pctx, r->pres);
+		return ext_pack_push_restriction_and_or(pctx,
+		       static_cast<RESTRICTION_AND_OR *>(r->pres));
 	case RESTRICTION_TYPE_NOT:
-		return ext_pack_push_restriction_not(pctx, r->pres);
+		return ext_pack_push_restriction_not(pctx,
+		       static_cast<RESTRICTION_NOT *>(r->pres));
 	case RESTRICTION_TYPE_CONTENT:
-		return ext_pack_push_restriction_content(pctx, r->pres);
+		return ext_pack_push_restriction_content(pctx,
+		       static_cast<RESTRICTION_CONTENT *>(r->pres));
 	case RESTRICTION_TYPE_PROPERTY:
-		return ext_pack_push_restriction_property(pctx, r->pres);
+		return ext_pack_push_restriction_property(pctx,
+		       static_cast<RESTRICTION_PROPERTY *>(r->pres));
 	case RESTRICTION_TYPE_PROPCOMPARE:
-		return ext_pack_push_restriction_propcompare(pctx, r->pres);
+		return ext_pack_push_restriction_propcompare(pctx,
+		       static_cast<RESTRICTION_PROPCOMPARE *>(r->pres));
 	case RESTRICTION_TYPE_BITMASK:
-		return ext_pack_push_restriction_bitmask(pctx, r->pres);
+		return ext_pack_push_restriction_bitmask(pctx,
+		       static_cast<RESTRICTION_BITMASK *>(r->pres));
 	case RESTRICTION_TYPE_SIZE:
-		return ext_pack_push_restriction_size(pctx, r->pres);
+		return ext_pack_push_restriction_size(pctx,
+		       static_cast<RESTRICTION_SIZE *>(r->pres));
 	case RESTRICTION_TYPE_EXIST:
-		return ext_pack_push_restriction_exist(pctx, r->pres);
+		return ext_pack_push_restriction_exist(pctx,
+		       static_cast<RESTRICTION_EXIST *>(r->pres));
 	case RESTRICTION_TYPE_SUBOBJ:
-		return ext_pack_push_restriction_subobj(pctx, r->pres);
+		return ext_pack_push_restriction_subobj(pctx,
+		       static_cast<RESTRICTION_SUBOBJ *>(r->pres));
 	case RESTRICTION_TYPE_COMMENT:
-		return ext_pack_push_restriction_comment(pctx, r->pres);
+		return ext_pack_push_restriction_comment(pctx,
+		       static_cast<RESTRICTION_COMMENT *>(r->pres));
 	case RESTRICTION_TYPE_COUNT:
-		return ext_pack_push_restriction_count(pctx, r->pres);
+		return ext_pack_push_restriction_count(pctx,
+		       static_cast<RESTRICTION_COUNT *>(r->pres));
 	case RESTRICTION_TYPE_NULL:
 		return 1;
 	}
@@ -1924,15 +1947,15 @@ static zend_bool ext_pack_push_action_block(
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
-		if (!ext_pack_push_movecopy_action(pctx, r->pdata)) {
+		if (!ext_pack_push_movecopy_action(pctx,
+		    static_cast<MOVECOPY_ACTION *>(r->pdata)))
 			return 0;
-		}
 		break;
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
-		if (!ext_pack_push_reply_action(pctx, r->pdata)) {
+		if (!ext_pack_push_reply_action(pctx,
+		    static_cast<REPLY_ACTION *>(r->pdata)))
 			return 0;
-		}
 		break;
 	case ACTION_TYPE_OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
@@ -1947,14 +1970,14 @@ static zend_bool ext_pack_push_action_block(
 		break;
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
-		if (!ext_pack_push_forwarddelegate_action(pctx, r->pdata)) {
+		if (!ext_pack_push_forwarddelegate_action(pctx,
+		    static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)))
 			return 0;
-		}
 		break;
 	case ACTION_TYPE_OP_TAG:
-		if (!ext_pack_push_tagged_propval(pctx, r->pdata)) {
+		if (!ext_pack_push_tagged_propval(pctx,
+		    static_cast<TAGGED_PROPVAL *>(r->pdata)))
 			return 0;
-		}
 	case ACTION_TYPE_OP_DELETE:
 	case ACTION_TYPE_OP_MARK_AS_READ:
 		break;
@@ -2015,28 +2038,39 @@ static zend_bool ext_pack_push_propval(PUSH_CTX *pctx, uint16_t type,
 		return ext_pack_push_uint64(pctx, *(uint64_t*)pval);
 	case PT_STRING8:
 	case PT_UNICODE:
-		return ext_pack_push_string(pctx, pval);
+		return ext_pack_push_string(pctx,
+		       static_cast<const char *>(pval));
 	case PT_CLSID:
-		return ext_pack_push_guid(pctx, pval);
+		return ext_pack_push_guid(pctx,
+		       static_cast<const GUID *>(pval));
 	case PT_SRESTRICT:
-		return ext_pack_push_restriction(pctx, pval);
+		return ext_pack_push_restriction(pctx,
+		       static_cast<const RESTRICTION *>(pval));
 	case PT_ACTIONS:
-		return ext_pack_push_rule_actions(pctx, pval);
+		return ext_pack_push_rule_actions(pctx,
+		       static_cast<const RULE_ACTIONS *>(pval));
 	case PT_BINARY:
-		return ext_pack_push_binary(pctx, pval);
+		return ext_pack_push_binary(pctx,
+		       static_cast<const BINARY *>(pval));
 	case PT_MV_SHORT:
-		return ext_pack_push_short_array(pctx, pval);
+		return ext_pack_push_short_array(pctx,
+		       static_cast<const SHORT_ARRAY *>(pval));
 	case PT_MV_LONG:
-		return ext_pack_push_long_array(pctx, pval);
+		return ext_pack_push_long_array(pctx,
+		       static_cast<const LONG_ARRAY *>(pval));
 	case PT_MV_I8:
-		return ext_pack_push_longlong_array(pctx, pval);
+		return ext_pack_push_longlong_array(pctx,
+		       static_cast<const LONGLONG_ARRAY *>(pval));
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
-		return ext_pack_push_string_array(pctx, pval);
+		return ext_pack_push_string_array(pctx,
+		       static_cast<const STRING_ARRAY *>(pval));
 	case PT_MV_CLSID:
-		return ext_pack_push_guid_array(pctx, pval);
+		return ext_pack_push_guid_array(pctx,
+		       static_cast<const GUID_ARRAY *>(pval));
 	case PT_MV_BINARY:
-		return ext_pack_push_binary_array(pctx, pval);
+		return ext_pack_push_binary_array(pctx,
+		       static_cast<const BINARY_ARRAY *>(pval));
 	default:
 		return 0;
 	}
@@ -2408,16 +2442,16 @@ static zend_bool ext_pack_push_znotification(
 	}
 	switch (r->event_type) {
 	case EVENT_TYPE_NEWMAIL:
-		return ext_pack_push_newmail_znotification(
-					pctx, r->pnotification_data);
+		return ext_pack_push_newmail_znotification(pctx,
+		       static_cast<NEWMAIL_ZNOTIFICATION *>(r->pnotification_data));
 	case EVENT_TYPE_OBJECTCREATED:
 	case EVENT_TYPE_OBJECTDELETED:
 	case EVENT_TYPE_OBJECTMODIFIED:
 	case EVENT_TYPE_OBJECTMOVED:
 	case EVENT_TYPE_OBJECTCOPIED:
 	case EVENT_TYPE_SEARCHCOMPLETE:
-		return ext_pack_push_object_znotification(
-					pctx, r->pnotification_data);
+		return ext_pack_push_object_znotification(pctx,
+		       static_cast<OBJECT_ZNOTIFICATION *>(r->pnotification_data));
 	default:
 		return 1;
 	}

@@ -272,7 +272,7 @@ libgxsvc_user_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_user_filter_la_DEPENDENCIES = ${default_sym}
 
 # AGENT_SERVICE
-digest_SOURCES = AGENT_SERVICE/digest.c
+digest_SOURCES = AGENT_SERVICE/digest.cpp
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
 freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
@@ -280,7 +280,7 @@ pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp EXCHANGE_SYSTEM/http/service.cpp
 pam_gromox_la_LIBADD = -lpam ${HX_LIBS} libgromox_common.la
 pam_gromox_la_LDFLAGS = -avoid-version -module ${plugin_LDFLAGS}
-rtf2html_SOURCES = AGENT_SERVICE/rtf2html.c
+rtf2html_SOURCES = AGENT_SERVICE/rtf2html.cpp
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 
 # SYSTEM_ADMIN
@@ -293,7 +293,7 @@ event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 gromox_mailq_SOURCES = SYSTEM_ADMIN/mailq.cpp
-mkmidb_SOURCES = SYSTEM_ADMIN/mkmidb.c
+mkmidb_SOURCES = SYSTEM_ADMIN/mkmidb.cpp
 mkmidb_LDADD = ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la
 mkprivate_SOURCES = SYSTEM_ADMIN/mkprivate.cpp
 mkprivate_LDADD = ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
@@ -306,7 +306,7 @@ timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
 # php_mapi
 mapi_la_CPPFLAGS = ${AM_CPPFLAGS} ${PHP_INCLUDES}
-mapi_la_SOURCES = AGENT_SERVICE/php_mapi/ext_pack.c AGENT_SERVICE/php_mapi/mapi.cpp AGENT_SERVICE/php_mapi/rpc_ext.cpp AGENT_SERVICE/php_mapi/type_conversion.cpp AGENT_SERVICE/php_mapi/zarafa_client.cpp AGENT_SERVICE/php_mapi/zarafa_rpc.cpp
+mapi_la_SOURCES = AGENT_SERVICE/php_mapi/ext_pack.cpp AGENT_SERVICE/php_mapi/mapi.cpp AGENT_SERVICE/php_mapi/rpc_ext.cpp AGENT_SERVICE/php_mapi/type_conversion.cpp AGENT_SERVICE/php_mapi/zarafa_client.cpp AGENT_SERVICE/php_mapi/zarafa_rpc.cpp
 mapi_la_LDFLAGS = ${plugin_LDFLAGS} ${PHP_LDFLAGS}
 mapi_la_LIBADD = ${HX_LIBS}
 EXTRA_mapi_la_DEPENDENCIES = ${default_sym}
