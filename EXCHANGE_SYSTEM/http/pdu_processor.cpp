@@ -3621,7 +3621,7 @@ static int pdu_processor_get_context_num()
 }
 
 /* this function can also be invoked from hpm_plugins,
-	you should firt set context TLS before call this
+	you should first set context TLS before call this
 	function, if you don't do that, you will get nothing
 */
 static DCERPC_INFO pdu_processor_get_rpc_info()
