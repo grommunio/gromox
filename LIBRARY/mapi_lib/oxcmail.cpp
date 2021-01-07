@@ -6530,7 +6530,7 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 			prcpts->pparray[i], PROP_TAG_DISPLAYNAME);
 		if (NULL != pvalue) {
 			if (oxcmail_encode_mime_string(charset,
-			    static_cast<char *>(pvalue), tmp_buff, 256)) {
+			    static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) > 0) {
 				if (FALSE == dsn_append_field(pdsn_fields,
 					"X-Display-Name", tmp_buff)) {
 					dsn_free(&dsn);
@@ -6645,8 +6645,8 @@ EXPORT_MDN_CONTENT:
 		}
 	}
 	if (NULL != pdisplay_name) {
-		if (TRUE == oxcmail_encode_mime_string(
-			charset, pdisplay_name, tmp_buff, 256)) {
+		if (oxcmail_encode_mime_string(charset, pdisplay_name,
+		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) > 0) {
 			if (FALSE == dsn_append_field(pdsn_fields,
 				"X-Display-Name", tmp_buff)) {
 				dsn_free(&dsn);
