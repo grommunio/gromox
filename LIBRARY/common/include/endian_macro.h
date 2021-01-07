@@ -7,10 +7,9 @@
 
 #define CVAL(buf, pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
 #define CVAL_NC(buf, pos) (((uint8_t *)(buf))[pos]) /* Non-const version of CVAL */
-#define PVAL(buf, pos) (CVAL(buf,pos))
 #define SCVAL(buf, pos, val) (CVAL_NC(buf,pos) = (val))
 
-#define SVAL(buf, pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
+#define SVAL(buf, pos) (CVAL((buf), (pos)) | CVAL((buf), (pos) + 1) << 8)
 #define IVAL(buf, pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
 #define SSVALX(buf, pos, val) (CVAL_NC(buf,pos)=(uint8_t)((val)&0xFF),CVAL_NC(buf,pos+1)=(uint8_t)((val)>>8))
 #define SIVALX(buf, pos, val) (SSVALX(buf,pos,val&0xFFFF),SSVALX(buf,pos+2,val>>16))
