@@ -12,7 +12,6 @@
 #include "resource.h" 
 #include "flusher.h" 
 #include "smtp_parser.h" 
-#include "bndstack_allocator.h" 
 #include "files_allocator.h" 
 #include "blocks_allocator.h" 
 #include "threads_pool.h" 
@@ -553,17 +552,6 @@ int main(int argc, const char **argv)
 	auto cleanup_11 = make_scope_exit(blocks_allocator_free);
 	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
  
-	bndstack_allocator_init(context_num * 3); 
- 
-	if (0 != bndstack_allocator_run()) { 
-		printf("[system]: can not run bndstack allocator\n"); 
-		return EXIT_FAILURE;
-	} else {
-		printf("[system]: run bndstack allocator OK\n");
-	}
-	auto cleanup_13 = make_scope_exit(bndstack_allocator_free);
-	auto cleanup_14 = make_scope_exit(bndstack_allocator_stop);
-	 
 	if (0 == smtp_need_auth) {
 		 smtp_auth_needed	 = FALSE;
 	} else {

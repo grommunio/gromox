@@ -130,7 +130,7 @@ libgromox_webkit_la_LIBADD = ${HX_LIBS} libgromox_common.la
 # MTA_SYSTEM
 delivery_SOURCES = exch/http/service.cpp mda/delivery_app/console_cmd_handler.cpp mda/delivery_app/console_server.cpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-smtp_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mda/smtp/bndstack_allocator.cpp mda/smtp/console_cmd_handler.cpp mda/smtp/console_server.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
+smtp_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mda/smtp/console_cmd_handler.cpp mda/smtp/console_server.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
 smtp_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 libmtaflh_message_enqueue_la_SOURCES = mda/message_enqueue/main.cpp mda/message_enqueue/message_enqueue.cpp
 libmtaflh_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}

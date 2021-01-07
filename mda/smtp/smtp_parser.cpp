@@ -10,7 +10,6 @@
 #include "smtp_cmd_handler.h"
 #include "files_allocator.h"
 #include "blocks_allocator.h"
-#include "bndstack_allocator.h"
 #include "threads_pool.h"
 #include "system_services.h"
 #include "flusher.h"
@@ -1010,14 +1009,13 @@ void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext)
  */
 static void smtp_parser_context_init(SMTP_CONTEXT *pcontext)
 {
-	LIB_BUFFER *palloc_stream, *palloc_file, *palloc_bndstack;
+	LIB_BUFFER *palloc_stream, *palloc_file;
 	
 	if (NULL == pcontext) {
 		return;
 	}
 	palloc_stream = blocks_allocator_get_allocator();
 	palloc_file = files_allocator_get_allocator();
-	palloc_bndstack = bndstack_allocator_get_allocator();
 	memset(pcontext, 0, sizeof(SMTP_CONTEXT));
 	pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file);
@@ -1032,8 +1030,6 @@ static void smtp_parser_context_init(SMTP_CONTEXT *pcontext)
 	mem_file_init(&pcontext->mail.head.f_others, palloc_file);
 	mem_file_init(&pcontext->mail.body.f_mail_parts, palloc_file);
 	stream_init(&pcontext->stream, palloc_stream);
-	vstack_init(&pcontext->block_info.stack_bndstr, palloc_bndstack,
-			   MAX_BOUNDARY_STRING_LENGTH, 8);
 }
 
 /*
@@ -1087,7 +1083,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->mail.body.mail_length        = 0;
 	pcontext->mail.body.parts_num          = 0;
 	stream_clear(&pcontext->stream);
-	vstack_clear(&pcontext->block_info.stack_bndstr);
 	mem_file_clear(&pcontext->block_info.f_last_blkmime);
 	strcpy(pcontext->mail.envelop.parsed_domain, "unknown");
 	memset(&pcontext->mail.envelop.hello_domain, 0, 256);
@@ -1105,9 +1100,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	mem_file_clear(&pcontext->mail.head.f_content_type);
 	mem_file_clear(&pcontext->mail.head.f_others);
 	mem_file_clear(&pcontext->mail.body.f_mail_parts);
-	memset(&pcontext->block_info.cur_bndstr.bndstr, 0,
-			MAX_BOUNDARY_STRING_LENGTH);
-	pcontext->block_info.cur_bndstr.bndstr_len = 0;
 	memset(&pcontext->mail.head.x_original_ip, 0, sizeof(pcontext->mail.head.x_original_ip));
 	memset(&pcontext->mail.head.compose_time, 0, 64);
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
@@ -1136,7 +1128,6 @@ static void smtp_parser_context_free(SMTP_CONTEXT *pcontext)
 		stream_free(&pcontext->stream_second);
 		pcontext->is_splitted = FALSE;
 	}
-	vstack_free(&pcontext->block_info.stack_bndstr);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_shutdown(pcontext->connection.ssl);
 		SSL_free(pcontext->connection.ssl);

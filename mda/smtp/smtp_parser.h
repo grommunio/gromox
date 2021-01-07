@@ -3,12 +3,10 @@
 #include "contexts_pool.h"
 #include "stream.h"
 #include "mem_file.h"
-#include "vstack.h"
 #include <sys/time.h>
 #include <openssl/ssl.h>
 
 #define MAX_BLOCK_MIME_LEN                  4096
-#define MAX_BOUNDARY_STRING_LENGTH          128
 #define MAX_EXTRA_DATA_INDEX                8
 #define MAX_EXTRA_DATA_TAGLEN               16
 #define MAX_EXTRA_DATA_DATALEN              48
@@ -141,15 +139,8 @@ struct FLUSH_INFO {
     void          *flush_ptr;    /* extended data pointer */
 };
 
-struct BOUNDARY_STRING {
-    int     bndstr_len;
-    char    bndstr[MAX_BOUNDARY_STRING_LENGTH];
-};
-
 struct PARSING_BLOCK {
     int             state;
-    BOUNDARY_STRING cur_bndstr;
-    VSTACK			stack_bndstr;
     char            block_mime[MAX_BLOCK_MIME_LEN];
     size_t          block_mime_len;
     int             last_block_ID;    /* last block ID for as filter */
