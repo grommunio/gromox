@@ -1,1 +1,1 @@
-../../../MRA_SYSTEM/service_plugins/data/imap/midb_list.txt
+../../../MRA_SYSTEM/data/imap/midb_list.txt

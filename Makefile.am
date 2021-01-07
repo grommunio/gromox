@@ -166,19 +166,19 @@ libmtasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmtasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 # MRA_SYSTEM
-pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp MRA_SYSTEM/pop3/console_cmd_handler.cpp MRA_SYSTEM/pop3/console_server.cpp MRA_SYSTEM/pop3/listener.cpp MRA_SYSTEM/pop3/main.cpp MRA_SYSTEM/pop3/pop3_cmd_handler.cpp MRA_SYSTEM/pop3/pop3_parser.cpp MRA_SYSTEM/pop3/resource.cpp MRA_SYSTEM/pop3/system_services.cpp MRA_SYSTEM/pop3/units_allocator.cpp
+pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mra/pop3/console_cmd_handler.cpp mra/pop3/console_server.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp mra/pop3/units_allocator.cpp
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
-imap_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp MRA_SYSTEM/imap/console_server.cpp MRA_SYSTEM/imap/console_cmd_handler.cpp MRA_SYSTEM/imap/imap_cmd_parser.cpp MRA_SYSTEM/imap/imap_parser.cpp MRA_SYSTEM/imap/listener.cpp MRA_SYSTEM/imap/main.cpp MRA_SYSTEM/imap/resource.cpp MRA_SYSTEM/imap/system_services.cpp
+imap_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mra/imap/console_cmd_handler.cpp mra/imap/console_server.cpp mra/imap/imap_cmd_parser.cpp mra/imap/imap_parser.cpp mra/imap/listener.cpp mra/imap/main.cpp mra/imap/resource.cpp mra/imap/system_services.cpp
 imap_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la
-libgxsvc_event_proxy_la_SOURCES = MRA_SYSTEM/service_plugins/event_proxy.cpp
+libgxsvc_event_proxy_la_SOURCES = mra/event_proxy.cpp
 libgxsvc_event_proxy_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_event_proxy_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libgxsvc_event_proxy_la_DEPENDENCIES = ${default_sym}
-libmrasvc_event_stub_la_SOURCES = MRA_SYSTEM/service_plugins/event_stub.cpp
+libmrasvc_event_stub_la_SOURCES = mra/event_stub.cpp
 libmrasvc_event_stub_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_event_stub_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_event_stub_la_DEPENDENCIES = ${default_sym}
-libmrasvc_midb_agent_la_SOURCES = MRA_SYSTEM/service_plugins/midb_agent.cpp
+libmrasvc_midb_agent_la_SOURCES = mra/midb_agent.cpp
 libmrasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
 libmrasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
