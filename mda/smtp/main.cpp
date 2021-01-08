@@ -49,7 +49,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libmtasvc_boundary_list.so",
 	"libmtasvc_domain_list.so",
 	"libgxsvc_ip6_container.so",
-	"libgxsvc_ip_filter.so",
+	"libgxsvc_ip6_filter.so",
 	"libgxsvc_log_plugin.so",
 	"libmtasvc_midb_agent.so",
 	"libgxsvc_ldap_adaptor.so",

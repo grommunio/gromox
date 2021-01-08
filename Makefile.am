@@ -64,7 +64,7 @@ exchange_plugins = \
 	libgxsvc_at_client.la \
 	libgxsvc_authmgr.la \
 	libgxsvc_ip_container.la libgxsvc_ip6_container.la \
-	libgxsvc_ip_filter.la \
+	libgxsvc_ip_filter.la libgxsvc_ip6_filter.la \
 	libgxsvc_lang_charset.la \
 	libgxsvc_ldap_adaptor.la \
 	libgxsvc_localemap.la \
@@ -85,7 +85,7 @@ noinst_DATA += \
 	libgxsvc_at_client.ldd \
 	libgxsvc_authmgr.ldd \
 	libgxsvc_ip_container.ldd libgxsvc_ip6_container.ldd \
-	libgxsvc_ip_filter.ldd \
+	libgxsvc_ip_filter.ldd libgxsvc_ip6_filter.ldd \
 	libgxsvc_lang_charset.ldd \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_localemap.ldd \
@@ -242,6 +242,10 @@ libgxsvc_ip_filter_la_SOURCES = exch/ip_filter/audit_filter.cpp exch/ip_filter/g
 libgxsvc_ip_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ip_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libgxsvc_ip_filter_la_DEPENDENCIES = ${default_sym}
+libgxsvc_ip6_filter_la_SOURCES = exch/ip6_filter.cpp
+libgxsvc_ip6_filter_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_ip6_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
+EXTRA_libgxsvc_ip6_filter_la_DEPENDENCIES = ${default_sym}
 libgxsvc_lang_charset_la_SOURCES = exch/lang_charset.cpp
 libgxsvc_lang_charset_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_lang_charset_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
