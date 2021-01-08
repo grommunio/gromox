@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/socket.h>
 #include <libHX/string.h>
 #include "notification_agent.h"
 #include "exmdb_parser.h"
@@ -1096,9 +1097,8 @@ int exmdb_parser_run()
 			list_file_free(plist);
 			return 2;
 		}
-		if (FALSE == common_util_check_local_ip(pitem[i].ip_addr)) {
+		if (!gx_peer_is_local(pitem[i].ip_addr))
 			continue;
-		}
 		plocal = static_cast<LOCAL_SVR *>(malloc(sizeof(LOCAL_SVR)));
 		if (NULL == plocal) {
 			printf("[exmdb_provider]: Failed to allocate memory\n");

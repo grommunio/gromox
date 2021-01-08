@@ -516,9 +516,8 @@ int exmdb_client_run()
 	pitem = (EXMDB_ITEM*)list_file_get_list(plist);
 	for (i=0; i<list_num; i++) {
 		if (0 != strcasecmp(pitem[i].type, "private") ||
-			FALSE == common_util_check_local_ip(pitem[i].ip_addr)) {
+		    !gx_peer_is_local(pitem[i].ip_addr))
 			continue;	
-		}
 		pserver = static_cast<REMOTE_SVR *>(malloc(sizeof(REMOTE_SVR)));
 		if (NULL == pserver) {
 			printf("[exmdb_client]: Failed to allocate memory for exmdb\n");

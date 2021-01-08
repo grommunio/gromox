@@ -539,7 +539,7 @@ int exmdb_client_run()
 			g_notify_stop = TRUE;
 			return 2;
 		}
-		if (TRUE == common_util_check_local_ip(pitem[i].ip_addr)) {
+		if (gx_peer_is_local(pitem[i].ip_addr)) {
 			plocal = static_cast<LOCAL_SVR *>(malloc(sizeof(LOCAL_SVR)));
 			if (NULL == plocal) {
 				printf("[exmdb_provider]: Failed to allocate memory\n");
