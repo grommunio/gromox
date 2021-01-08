@@ -63,7 +63,7 @@ exchange_plugins = \
 	libgxsvc_abktplug.la \
 	libgxsvc_at_client.la \
 	libgxsvc_authmgr.la \
-	libgxsvc_ip_container.la \
+	libgxsvc_ip_container.la libgxsvc_ip6_container.la \
 	libgxsvc_ip_filter.la \
 	libgxsvc_lang_charset.la \
 	libgxsvc_ldap_adaptor.la \
@@ -84,7 +84,7 @@ noinst_DATA += \
 	libgxsvc_abktplug.ldd \
 	libgxsvc_at_client.ldd \
 	libgxsvc_authmgr.ldd \
-	libgxsvc_ip_container.ldd \
+	libgxsvc_ip_container.ldd libgxsvc_ip6_container.ldd \
 	libgxsvc_ip_filter.ldd \
 	libgxsvc_lang_charset.ldd \
 	libgxsvc_ldap_adaptor.ldd \
@@ -234,6 +234,10 @@ libgxsvc_ip_container_la_SOURCES = exch/ip_container/ip_container.cpp exch/ip_co
 libgxsvc_ip_container_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ip_container_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libgxsvc_ip_container_la_DEPENDENCIES = ${default_sym}
+libgxsvc_ip6_container_la_SOURCES = exch/ip6_container.cpp
+libgxsvc_ip6_container_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxsvc_ip6_container_la_LIBADD = -lpthread libgromox_common.la
+EXTRA_libgxsvc_ip6_container_la_DEPENDENCIES = ${default_sym}
 libgxsvc_ip_filter_la_SOURCES = exch/ip_filter/audit_filter.cpp exch/ip_filter/grey_list.cpp exch/ip_filter/ip_filter.cpp exch/ip_filter/main.cpp exch/ip_filter/temp_list.cpp
 libgxsvc_ip_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ip_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -331,7 +335,8 @@ man_MANS = \
 	doc/gromox-exch.target.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mra.target.8gx doc/gromox-mta.target.8gx \
 	doc/gromox-sa.target.8gx doc/http.8gx \
-	doc/imap.8gx doc/ldap_adaptor.4gx doc/localemap.4gx \
+	doc/imap.8gx doc/ip6_container.4gx \
+	doc/ldap_adaptor.4gx doc/localemap.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx \
 	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mysql_adaptor.4gx \

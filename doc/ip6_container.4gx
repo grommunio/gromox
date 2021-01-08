@@ -1,0 +1,19 @@
+.TH ip6_container 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+ip6_container \(em trivial source connection counter
+.SH Description
+.PP
+ip6_container is used by one or more daemons to keep track of the number of
+connections made by every source address, and to block them from exceeding a
+connection limit.
+.SH Configuration file directives
+.SS connection_max_num
+.PP
+The maximum number of concurrent connections any one source address is allowed
+to make.
+.PP
+Default: \fI200\fP
+.SH See also
+.PP
+gromox(7)

@@ -63,7 +63,7 @@ static const char *const g_dfl_svc_plugins[] = {
 	"libgxsvc_abktplug.so",
 	"libexsvc_codepage_lang.so",
 	"libexsvc_exmdb_provider.so",
-	"libgxsvc_ip_container.so",
+	"libgxsvc_ip6_container.so",
 	"libgxsvc_ip_filter.so",
 	"libgxsvc_lang_charset.so",
 	"libgxsvc_log_plugin.so",
