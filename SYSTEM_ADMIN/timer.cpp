@@ -153,7 +153,6 @@ int main(int argc, const char **argv)
 		printf("[system]: listen ipaddr is 127.0.0.1\n");
 	} else {
 		HX_strlcpy(listen_ip, str_value, sizeof(listen_ip));
-		g_acl_path[0] = '\0';
 		printf("[system]: listen ipaddr is %s\n", listen_ip);
 	}
 
