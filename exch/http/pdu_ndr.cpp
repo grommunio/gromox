@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <gromox/defs.h>
 #include "pdu_ndr.h"
 #include "common_types.h"
 #include <cstdio>
@@ -824,42 +825,26 @@ static int pdu_ndr_pull_rts_padding(NDR_PULL *pndr, uint32_t *r)
 	
 }
 
-static int pdu_ndr_pull_ipv4address(NDR_PULL *pndr, char *address)
+static int pdu_ndr_pull_ipv4address(NDR_PULL *pndr, char *address, size_t asz)
 {
-	int status;
-	uint32_t addr;
-	struct in_addr in;
-	
-	status = ndr_pull_uint32(pndr, &addr);
+	struct in_addr in{};
+	auto status = ndr_pull_uint32(pndr, &in.s_addr);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	in.s_addr = htonl(addr);
-	strcpy(address, inet_ntoa(in));
+	in.s_addr = htonl(in.s_addr);
+	inet_ntop(AF_INET, &in, address, asz);
 	return NDR_ERR_SUCCESS;
 }
 
-static int pdu_ndr_pull_ipv6address(NDR_PULL *pndr, char *address)
+static int pdu_ndr_pull_ipv6address(NDR_PULL *pndr, char *address, size_t asz)
 {
-	int i;
-	int offset;
-	int status;
-	uint8_t addr[16];
-	
-	status = ndr_pull_array_uint8(pndr, addr, 16);
+	struct in6_addr in6;
+	auto status = ndr_pull_array_uint8(pndr, in6.s6_addr, GX_ARRAY_SIZE(in6.s6_addr));
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
-	offset = 0;
-	for (i=0; i<16; i++) {
-		offset += sprintf(address + offset, "%02x", addr[i]);
-		/* We need a ':' every second byte but the last one */
-		if (i%2 == 1 && i != (16 - 1)) {
-			address[offset] = ':';
-			offset ++;
-		}
-	}
-	address[offset] = '\0';
+	inet_ntop(AF_INET6, &in6, address, asz);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -885,13 +870,13 @@ static int pdu_ndr_pull_rts_clientaddress(NDR_PULL *pndr,
 	}
 	switch (r->address_type) {
 	case RTS_IPV4:
-		status = pdu_ndr_pull_ipv4address(pndr, r->client_address);
+		status = pdu_ndr_pull_ipv4address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address));
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
 		}
 		break;
 	case RTS_IPV6:
-		status = pdu_ndr_pull_ipv6address(pndr, r->client_address);
+		status = pdu_ndr_pull_ipv6address(pndr, r->client_address, GX_ARRAY_SIZE(r->client_address));
 		if (NDR_ERR_SUCCESS != status) {
 			return status;
 		}
@@ -1802,11 +1787,11 @@ static int pdu_ndr_push_rts_padding(NDR_PUSH *pndr, uint32_t v)
 
 static int pdu_ndr_push_ipv4address(NDR_PUSH *pndr, const char *address)
 {
-	int status;
-	uint32_t addr;
-	
-	addr = inet_addr(address);
-	status = ndr_push_uint32(pndr, htonl(addr));
+	struct in_addr in;
+	uint32_t v = ntohl(0);
+	if (inet_pton(AF_INET, address, &in) > 0)
+		v = ntohl(in.s_addr);
+	auto status = ndr_push_uint32(pndr, v);
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
@@ -1815,17 +1800,12 @@ static int pdu_ndr_push_ipv4address(NDR_PUSH *pndr, const char *address)
 
 static int pdu_ndr_push_ipv6address(NDR_PUSH *pndr, const char *address)
 {
-
-	int ret;
-	int status;
-	uint8_t addr[IPV6_BYTES];
-	
-	ret = inet_pton(AF_INET6, address, addr);
+	struct in6_addr in6;
+	auto ret = inet_pton(AF_INET6, address, &in6);
 	if (ret <= 0) {
 		return NDR_ERR_IPV6ADDRESS;
 	}
-
-	status = ndr_push_array_uint8(pndr, addr, IPV6_BYTES);
+	auto status = ndr_push_array_uint8(pndr, in6.s6_addr, GX_ARRAY_SIZE(in6.s6_addr));
 	if (NDR_ERR_SUCCESS != status) {
 		return status;
 	}
