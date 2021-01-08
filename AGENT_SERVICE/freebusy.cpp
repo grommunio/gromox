@@ -18,18 +18,14 @@
 #include "util.h"
 #include <sys/select.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <arpa/inet.h>
 #include <sys/stat.h>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
 #include <csignal>
-#include <net/if.h>
 #include <cerrno>
-#include <netdb.h>
 #include <cstdio>
 #include <ctime>
 

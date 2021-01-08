@@ -11,8 +11,6 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <cerrno>
-#include <netdb.h>
-#include <net/if.h>
 #include <cstdint>
 #include <cstdlib>
 #include <unistd.h>
@@ -20,11 +18,9 @@
 #include <sqlite3.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #define SOCKET_TIMEOUT								60
 
 struct EXMDB_ITEM {

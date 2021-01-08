@@ -32,10 +32,8 @@
 #include "system_services.h"
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
 #include <sys/stat.h>
 #include <pthread.h>
-#include <ifaddrs.h>
 #include <cstring>
 #include <cstdarg>
 #include <cstdlib>
@@ -1116,29 +1114,6 @@ int common_util_convert_string(BOOL to_utf8,
 	} else {
 		return common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
 	}
-}
-
-
-BOOL common_util_check_local_ip(const char *ip_addr)
-{
-	void *paddr;
-	char tmp_ip[32];
-	struct ifaddrs *ifa;
-	struct ifaddrs *if_addr;
-	
-	getifaddrs(&if_addr);
-	for (ifa=if_addr; ifa!=NULL; ifa=ifa->ifa_next) {
-		if (NULL != ifa->ifa_addr && AF_INET == ifa->ifa_addr->sa_family) {
-			paddr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-			inet_ntop(AF_INET, paddr, tmp_ip, INET_ADDRSTRLEN);
-			if (0 == strcmp(tmp_ip, ip_addr)) {
-				freeifaddrs(if_addr);
-				return TRUE;
-			}
-		}
-	}
-	freeifaddrs(if_addr);
-	return FALSE;
 }
 
 BOOL common_util_addressbook_entryid_to_username(

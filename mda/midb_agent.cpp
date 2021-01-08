@@ -20,11 +20,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <netdb.h>
-
 #define SOCKET_TIMEOUT			60
 
 #define MIDB_RESULT_OK			0

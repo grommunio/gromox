@@ -367,9 +367,6 @@ int common_util_mb_to_utf8(uint32_t cpid,
 	
 int common_util_convert_string(BOOL to_utf8,
 	const char *src, char *dst, size_t len);
-
-BOOL common_util_check_local_ip(const char *ip_addr);
-
 BOOL common_util_addressbook_entryid_to_username(
 	BINARY entryid_bin, char *username);
 

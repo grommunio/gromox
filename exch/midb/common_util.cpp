@@ -7,11 +7,8 @@
 #include "ext_buffer.h"
 #include "rop_util.h"
 #include "pcl.h"
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/types.h>
 #include <pthread.h>
-#include <ifaddrs.h>
 #include <cstring>
 #include <cstdlib>
 
@@ -132,28 +129,6 @@ char* common_util_dup(const char *pstr)
 	}
 	memcpy(pstr1, pstr, len);
 	return pstr1;
-}
-
-BOOL common_util_check_local_ip(const char *ip_addr)
-{
-	void *paddr;
-	char tmp_ip[32];
-	struct ifaddrs *ifa;
-	struct ifaddrs *if_addr;
-	
-	getifaddrs(&if_addr);
-	for (ifa=if_addr; ifa!=NULL; ifa=ifa->ifa_next) {
-		if (NULL != ifa->ifa_addr && AF_INET == ifa->ifa_addr->sa_family) {
-			paddr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-			inet_ntop(AF_INET, paddr, tmp_ip, INET_ADDRSTRLEN);
-			if (0 == strcmp(tmp_ip, ip_addr)) {
-				freeifaddrs(if_addr);
-				return TRUE;
-			}
-		}
-	}
-	freeifaddrs(if_addr);
-	return FALSE;
 }
 
 void* common_util_get_propvals(const TPROPVAL_ARRAY *parray, uint32_t proptag)

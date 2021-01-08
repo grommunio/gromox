@@ -10,19 +10,15 @@
 #include "ext_buffer.h"
 #include "list_file.h"
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <arpa/inet.h>
 #include <sys/stat.h>
 #include <pthread.h>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
 #include <csignal>
-#include <net/if.h>
 #include <cerrno>
-#include <netdb.h>
 #include <cstdio>
 #include <ctime>
 

@@ -20,12 +20,9 @@
 #include <gromox/fileio.h>
 #include <gromox/svc_common.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
 #include <sys/stat.h>
 #include <pthread.h>
-#include <ifaddrs.h>
 #include <unistd.h>
-#include <net/if.h>
 #include <cstring>
 #include <fcntl.h>
 #include <cstdio>
@@ -313,28 +310,6 @@ void* common_util_alloc(size_t size)
 		return alloc_context_alloc(pctx, size);
 	}
 	return ndr_stack_alloc(NDR_STACK_IN, size);
-}
-
-BOOL common_util_check_local_ip(const char *ip_addr)
-{
-	void *paddr;
-	char tmp_ip[32];
-	struct ifaddrs *ifa;
-	struct ifaddrs *if_addr;
-	
-	getifaddrs(&if_addr);
-	for (ifa=if_addr; ifa!=NULL; ifa=ifa->ifa_next) {
-		if (NULL != ifa->ifa_addr && AF_INET == ifa->ifa_addr->sa_family) {
-			paddr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-			inet_ntop(AF_INET, paddr, tmp_ip, INET_ADDRSTRLEN);
-			if (0 == strcmp(tmp_ip, ip_addr)) {
-				freeifaddrs(if_addr);
-				return TRUE;
-			}
-		}
-	}
-	freeifaddrs(if_addr);
-	return FALSE;
 }
 
 char* common_util_dup(const char *pstr)

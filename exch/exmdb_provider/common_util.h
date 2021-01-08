@@ -1437,9 +1437,6 @@ extern int common_util_sequence_ID(void);
 void* common_util_alloc(size_t size);
 
 char* common_util_dup(const char *pstr);
-
-BOOL common_util_check_local_ip(const char *ip_addr);
-
 char* common_util_convert_copy(BOOL to_utf8,
 	uint32_t cpid, const char *pstring);
 extern STRING_ARRAY *common_util_convert_copy_string_array(BOOL to_utf8, uint32_t cpid, const STRING_ARRAY *);

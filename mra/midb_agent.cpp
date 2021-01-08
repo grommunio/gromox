@@ -24,10 +24,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <netdb.h>
 #include <poll.h>
 
 #define SOCKET_TIMEOUT			60
