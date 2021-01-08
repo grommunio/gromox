@@ -63,8 +63,7 @@ exchange_plugins = \
 	libgxsvc_abktplug.la \
 	libgxsvc_at_client.la \
 	libgxsvc_authmgr.la \
-	libgxsvc_ip_container.la libgxsvc_ip6_container.la \
-	libgxsvc_ip_filter.la libgxsvc_ip6_filter.la \
+	libgxsvc_ip6_container.la libgxsvc_ip6_filter.la \
 	libgxsvc_lang_charset.la \
 	libgxsvc_ldap_adaptor.la \
 	libgxsvc_localemap.la \
@@ -84,8 +83,7 @@ noinst_DATA += \
 	libgxsvc_abktplug.ldd \
 	libgxsvc_at_client.ldd \
 	libgxsvc_authmgr.ldd \
-	libgxsvc_ip_container.ldd libgxsvc_ip6_container.ldd \
-	libgxsvc_ip_filter.ldd libgxsvc_ip6_filter.ldd \
+	libgxsvc_ip6_container.ldd libgxsvc_ip6_filter.ldd \
 	libgxsvc_lang_charset.ldd \
 	libgxsvc_ldap_adaptor.ldd \
 	libgxsvc_localemap.ldd \
@@ -104,7 +102,7 @@ pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
 BUILT_SOURCES = include/gromox/paths.h AGENT_SERVICE/php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/ip4_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
+libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
 libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/localemap.cpp lib/oxoabkt.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS}
@@ -230,18 +228,10 @@ libgxsvc_authmgr_la_SOURCES = exch/authmgr.cpp
 libgxsvc_authmgr_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_authmgr_la_LIBADD = libgromox_common.la
 EXTRA_libgxsvc_authmgr_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ip_container_la_SOURCES = exch/ip_container/ip_container.cpp exch/ip_container/main.cpp
-libgxsvc_ip_container_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_ip_container_la_LIBADD = -lpthread libgromox_common.la
-EXTRA_libgxsvc_ip_container_la_DEPENDENCIES = ${default_sym}
 libgxsvc_ip6_container_la_SOURCES = exch/ip6_container.cpp
 libgxsvc_ip6_container_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ip6_container_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libgxsvc_ip6_container_la_DEPENDENCIES = ${default_sym}
-libgxsvc_ip_filter_la_SOURCES = exch/ip_filter/audit_filter.cpp exch/ip_filter/grey_list.cpp exch/ip_filter/ip_filter.cpp exch/ip_filter/main.cpp exch/ip_filter/temp_list.cpp
-libgxsvc_ip_filter_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxsvc_ip_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxsvc_ip_filter_la_DEPENDENCIES = ${default_sym}
 libgxsvc_ip6_filter_la_SOURCES = exch/ip6_filter.cpp
 libgxsvc_ip6_filter_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxsvc_ip6_filter_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
