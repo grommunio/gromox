@@ -680,7 +680,8 @@ CONTEXT_PROCESSING:
 				strncpy(pcontext->username, tmp_buff1, 256);
 				strncpy(pcontext->password, ptoken, 128);
 				
-				if (FALSE == system_services_judge_user(pcontext->username)) {
+				if (system_services_judge_user != nullptr &&
+				    !system_services_judge_user(pcontext->username)) {
 					http_parser_rfc1123_dstring(dstring);
 					response_len = gx_snprintf(
 						response_buff, GX_ARRAY_SIZE(response_buff),
@@ -736,10 +737,10 @@ CONTEXT_PROCESSING:
 					pcontext->b_authed = FALSE;
 					http_parser_log_info(pcontext, 8, "login fail");
 					pcontext->auth_times ++;
-					if (pcontext->auth_times >= g_max_auth_times) {
+					if (system_services_add_user_into_temp_list != nullptr &&
+					    pcontext->auth_times >= g_max_auth_times)
 						system_services_add_user_into_temp_list(
 							pcontext->username, g_block_auth_fail);
-					}
 					http_parser_rfc1123_dstring(dstring);
 					response_len = gx_snprintf(
 						response_buff, GX_ARRAY_SIZE(response_buff),

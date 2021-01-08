@@ -151,7 +151,8 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
         memcpy(pcontext->username, cmd_line + 5, line_length - 5);
         pcontext->username[line_length - 5] = '\0';
 		HX_strltrim(pcontext->username);
-		if (FALSE == system_services_judge_user(pcontext->username)) {
+		if (system_services_judge_user != nullptr &&
+		    !system_services_judge_user(pcontext->username)) {
 			string_length = sprintf(buff, "%s%s%s", resource_get_pop3_code(
 								POP3_CODE_2170017, 1, &string_length),
 								pcontext->username, resource_get_pop3_code(
@@ -342,8 +343,9 @@ NORMAL_LOGIN:
 		pop3_parser_log_info(pcontext, 8, "login fail");
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= pop3_parser_get_param(MAX_AUTH_TIMES)) {
-			system_services_add_user_into_temp_list(pcontext->username,
-				pop3_parser_get_param(BLOCK_AUTH_FAIL));
+			if (system_services_add_user_into_temp_list != nullptr)
+				system_services_add_user_into_temp_list(pcontext->username,
+					pop3_parser_get_param(BLOCK_AUTH_FAIL));
 			pop3_reply_str = resource_get_pop3_code(
 				POP3_CODE_2170006, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {

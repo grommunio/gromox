@@ -1613,7 +1613,8 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_CONTINUE;
 	}
 	HX_strltrim(pcontext->username);
-	if (FALSE == system_services_judge_user(pcontext->username)) {
+	if (system_services_judge_user != nullptr &&
+	    !system_services_judge_user(pcontext->username)) {
 		/* IMAP_CODE_2190001: NO access denied by user filter */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190001, 1, &string_length);
@@ -1652,8 +1653,9 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 8, "login fail");
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
-			system_services_add_user_into_temp_list(pcontext->username,
-				imap_parser_get_param(BLOCK_AUTH_FAIL));
+			if (system_services_add_user_into_temp_list != nullptr)
+				system_services_add_user_into_temp_list(pcontext->username,
+					imap_parser_get_param(BLOCK_AUTH_FAIL));
 			/* IMAP_CODE_2190003: NO too many failures,
 				user will be blocked for a while */
 			imap_reply_str = resource_get_imap_code(
@@ -1714,7 +1716,8 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	strcpy(pcontext->username, argv[2]);
 	HX_strltrim(pcontext->username);
-	if (FALSE == system_services_judge_user(pcontext->username)) {
+	if (system_services_judge_user != nullptr &&
+	    !system_services_judge_user(pcontext->username)) {
 		/* IMAP_CODE_2190001: NO access denied by user filter */
 		imap_reply_str = resource_get_imap_code(
 			IMAP_CODE_2190001, 1, &string_length);
@@ -1755,8 +1758,9 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, 8, "login fail");
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
-			system_services_add_user_into_temp_list(pcontext->username,
-				imap_parser_get_param(BLOCK_AUTH_FAIL));
+			if (system_services_add_user_into_temp_list != nullptr)
+				system_services_add_user_into_temp_list(pcontext->username,
+					imap_parser_get_param(BLOCK_AUTH_FAIL));
 			/* IMAP_CODE_2190003: NO too many failures, user will be blocked for a while */
 			imap_reply_str = resource_get_imap_code(
 				IMAP_CODE_2190003, 1, &string_length);

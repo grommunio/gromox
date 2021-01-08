@@ -932,8 +932,9 @@ static int smtp_parser_dispatch_cmd(const char *cmd_line, int line_length,
 		} else {
 			write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
-		system_services_add_ip_into_temp_list(pcontext->connection.client_ip,
-			g_blktime_sessions);
+		if (system_services_add_ip_into_temp_list != nullptr)
+			system_services_add_ip_into_temp_list(pcontext->connection.client_ip,
+				g_blktime_sessions);
 		smtp_parser_log_info(pcontext, 8, "add %s into temporary list because"
 							" it exceeds the maximum mail number on session",
 							pcontext->connection.client_ip);

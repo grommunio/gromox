@@ -34,13 +34,13 @@ int system_services_run()
 } while (false)
 #define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system")))
 
-	E(system_services_judge_ip, "ip_filter_judge");
-	E(system_services_add_ip_into_temp_list, "ip_filter_add");
-	E(system_services_container_add_ip, "ip_container_add");
-	E(system_services_container_remove_ip, "ip_container_remove");
+	E2(system_services_judge_ip, "ip_filter_judge");
+	E2(system_services_add_ip_into_temp_list, "ip_filter_add");
+	E2(system_services_container_add_ip, "ip_container_add");
+	E2(system_services_container_remove_ip, "ip_container_remove");
 	E(system_services_log_info, "log_info");
-	E(system_services_judge_user, "user_filter_judge");
-	E(system_services_add_user_into_temp_list, "user_filter_add");
+	E2(system_services_judge_user, "user_filter_judge");
+	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_check_domain, "check_domain");
 	E2(system_services_check_user, "check_user");
 	E2(system_services_check_full, "check_full");

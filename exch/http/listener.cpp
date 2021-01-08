@@ -267,7 +267,8 @@ static void* thread_work_func(void* arg)
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
 		/* pass the client ipaddr into the ipaddr filter */
-		if (FALSE == system_services_judge_ip(client_hostip)) {
+		if (system_services_judge_ip != nullptr &&
+		    !system_services_judge_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"
@@ -393,7 +394,8 @@ static void* thread_work_ssl_func(void* arg)
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
 		/* pass the client ipaddr into the ipaddr filter */
-		if (FALSE == system_services_judge_ip(client_hostip)) {
+		if (system_services_judge_ip != nullptr &&
+		    !system_services_judge_ip(client_hostip)) {
 			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 Service Unavailable\r\n"
 								"Server: %s\r\n"

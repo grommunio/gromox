@@ -60,13 +60,14 @@ int system_services_run()
 		return -1; \
 	} \
 } while (false)
+#define E2(f, s) ((f) = reinterpret_cast<decltype(f)>(service_query((s), "system")))
 
-	E(system_services_judge_ip, "ip_filter_judge");
-	E(system_services_container_add_ip, "ip_container_add");
-	E(system_services_container_remove_ip, "ip_container_remove");
+	E2(system_services_judge_ip, "ip_filter_judge");
+	E2(system_services_container_add_ip, "ip_container_add");
+	E2(system_services_container_remove_ip, "ip_container_remove");
 	E(system_services_log_info, "log_info");
-	E(system_services_judge_user, "user_filter_judge");
-	E(system_services_add_user_into_temp_list, "user_filter_add");
+	E2(system_services_judge_user, "user_filter_judge");
+	E2(system_services_add_user_into_temp_list, "user_filter_add");
 	E(system_services_auth_login, "auth_login_pop3");
 	E(system_services_get_id, "get_mail_id");
 	E(system_services_get_uid, "get_mail_uid");
@@ -101,6 +102,7 @@ int system_services_run()
 	E(system_services_broadcast_unselect, "broadcast_unselect");
 	return 0;
 #undef E
+#undef E2
 }
 
 /*

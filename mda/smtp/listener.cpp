@@ -250,7 +250,8 @@ static void* thread_work_func(void* arg)
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
 		/* pass the client ipaddr into the ipaddr filter */
-		if (FALSE == system_services_judge_ip(client_hostip)) {
+		if (system_services_judge_ip != nullptr &&
+		    !system_services_judge_ip(client_hostip)) {
 			/* access denied */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
@@ -384,7 +385,8 @@ static void* thread_work_ssl_func(void* arg)
 		}
 		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
 		/* pass the client ipaddr into the ipaddr filter */
-		if (FALSE == system_services_judge_ip(client_hostip)) {
+		if (system_services_judge_ip != nullptr &&
+		    !system_services_judge_ip(client_hostip)) {
 			/* access denied */
 			smtp_reply_str = resource_get_smtp_code(SMTP_CODE_2174007, 1,
 							 &string_length);
