@@ -32,7 +32,6 @@
 #include <cstring>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
 #include <sys/socket.h>
 
 #define SOCKET_TIMEOUT						60

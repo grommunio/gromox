@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 
 #define IPV6_BYTES		16

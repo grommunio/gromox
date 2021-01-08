@@ -12,9 +12,7 @@
 #include "list_file.h"
 #include "idset.h"
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include <cstdlib>

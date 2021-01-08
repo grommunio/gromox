@@ -14,7 +14,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include <unistd.h>

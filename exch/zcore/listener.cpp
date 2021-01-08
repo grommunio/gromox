@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <pthread.h>
 #include <unistd.h>
+#include <netinet/in.h>
 #include <sys/stat.h>
 #include <libHX/defs.h>
 #include <gromox/defs.h>

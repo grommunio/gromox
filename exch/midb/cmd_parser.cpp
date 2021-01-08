@@ -14,9 +14,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-
 #define MAX_ARGS			(32*1024)
 
 #define CONN_BUFFLEN        (257*1024)

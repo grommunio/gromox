@@ -9,6 +9,7 @@
 #include "ext.hpp"
 #include "zarafa_client.h"
 #include "rpc_ext.h"
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
