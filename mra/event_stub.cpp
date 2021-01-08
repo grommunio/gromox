@@ -151,6 +151,10 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		if (FALSE == g_notify_stop) {
 			g_notify_stop = TRUE;
+			while ((pnode = double_list_get_from_head(&g_back_list)) != nullptr) {
+				pback = static_cast<BACK_CONN *>(pnode->pdata);
+				pthread_join(pback->thr_id, nullptr);
+			}
 		}
 		double_list_free(&g_back_list);
 		g_event_stub_func = NULL;
@@ -259,7 +263,6 @@ static void* thread_work_func(void *param)
 		close(pback->sockd);
 		pback->sockd = -1;
 	}
-	free(pback);
 	pthread_exit(0);
 }
 
