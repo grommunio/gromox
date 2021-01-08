@@ -1413,10 +1413,13 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
 	imap_reply_str = resource_get_imap_code(IMAP_CODE_2170001, 1, &string_length);
+	char starttls_str[16]{};
+	if (pcontext->connection.ssl != nullptr)
+		HX_strlcpy(starttls_str, " STARTTLS", GX_ARRAY_SIZE(starttls_str));
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 	                "* CAPABILITY IMAP4rev1 XLIST SPECIAL-USE "
-						"ID UNSELECT UIDPLUS IDLE AUTH=LOGIN STARTTLS\r\n%s %s",
-						argv[0], imap_reply_str);
+	                "ID UNSELECT UIDPLUS IDLE AUTH=LOGIN%s\r\n%s %s",
+	                starttls_str, argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
