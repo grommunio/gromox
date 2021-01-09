@@ -122,7 +122,7 @@ libgromox_rpc_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_rpc_la_SOURCES = LIBRARY/rpc_lib/arcfour.cpp LIBRARY/rpc_lib/crc32.cpp LIBRARY/rpc_lib/hmacmd5.cpp LIBRARY/rpc_lib/ndr.cpp LIBRARY/rpc_lib/ntlmdes.cpp LIBRARY/rpc_lib/ntlmssp.cpp
 libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la
 libgromox_webkit_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
-libgromox_webkit_la_SOURCES = LIBRARY/webkit_lib/cookie_parser.c LIBRARY/webkit_lib/assoc_array.c
+libgromox_webkit_la_SOURCES = LIBRARY/webkit_lib/cookie_parser.cpp LIBRARY/webkit_lib/assoc_array.cpp
 libgromox_webkit_la_LIBADD = ${HX_LIBS} libgromox_common.la
 
 # MTA_SYSTEM

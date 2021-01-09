@@ -14,7 +14,7 @@ ASSOC_ARRAY* assoc_array_init(size_t data_size)
 	if (NULL == parray) {
 		return NULL;
 	}
-	parray->index_cache = malloc(sizeof(void*)*ASSOC_ARRAY_ENTRY_INIT);
+	parray->index_cache = static_cast<void **>(malloc(sizeof(void *) * ASSOC_ARRAY_ENTRY_INIT));
 	if (NULL == parray->index_cache) {
 		free(parray->index_cache);
 		return NULL;
@@ -73,8 +73,7 @@ static BOOL assoc_array_enlarge(ASSOC_ARRAY *parray)
 	if (NULL == phash) {
 		return FALSE;
 	}
-
-	index_cache = malloc(sizeof(void*)*tmp_capability);
+	index_cache = static_cast<void **>(malloc(sizeof(void *) * tmp_capability));
 	if (NULL == index_cache) {
 		str_hash_free(phash);
 		return FALSE;
