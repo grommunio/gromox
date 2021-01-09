@@ -1306,7 +1306,7 @@ FETCH_STRUCTURE_LOOP:
 	HX_strupper(ctype);
 	psubtype = strchr(ctype, '/');
 	if (NULL == psubtype) {
-		psubtype = const_cast(char *, "NIL");
+		psubtype = deconst("NIL");
 	} else {
 		*psubtype = '\0';
 		psubtype ++;
@@ -1417,7 +1417,7 @@ FETCH_STRUCTURE_LOOP:
 			
 			if (0 == stat(temp_path, &node_stat)) {
 				offset += gx_snprintf(buff + offset, length - offset,
-				          " %llu", reinterpret_cast(unsigned long long, node_stat.st_size));
+				          " %llu", static_cast<unsigned long long>(node_stat.st_size));
 			} else {
 				memcpy(buff + offset, " NIL", 4);
 				offset += 4;
@@ -1455,8 +1455,7 @@ FETCH_STRUCTURE_LOOP:
 				node_stat.st_size > MAX_DIGLEN) {
 				goto RFC822_FAILURE;
 			}
-			
-			digest_buff = malloc(MAX_DIGLEN);
+			digest_buff = static_cast<char *>(malloc(MAX_DIGLEN));
 			if (NULL == digest_buff) {
 				goto RFC822_FAILURE;
 			}
@@ -1983,7 +1982,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	}
 	
 	length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
-	pbuff = malloc(((length - 1)/(64 * 1024) + 1) * 64 * 1024);
+	pbuff = static_cast<char *>(malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
 		close(fd);
 		pbuild->build_result = FALSE;
@@ -2001,7 +2000,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	close(fd);
 	
 	if (0 == strcasecmp(pmime->encoding, "base64")) {
-		pbuff1 = malloc(((length - 1)/(64 * 1024) + 1) * 64 * 1024);
+		pbuff1 = static_cast<char *>(malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024));
 		if (NULL == pbuff1) {
 			free(pbuff);
 			pbuild->build_result = FALSE;
@@ -2017,7 +2016,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		pbuff = pbuff1;
 		length = length1;
 	} else if (0 == strcasecmp(pmime->encoding, "quoted-printable")) {
-		pbuff1 = malloc(((length - 1)/(64 * 1024) + 1) * 64 * 1024);
+		pbuff1 = static_cast<char *>(malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024));
 		if (NULL == pbuff1) {
 			free(pbuff);
 			pbuild->build_result = FALSE;

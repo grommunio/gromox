@@ -97,10 +97,10 @@ static void vcard_free_line(VCARD_LINE *pvline)
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_get_from_head(&pvline->param_list)) != NULL)
-		vcard_free_param(pnode->pdata);
+		vcard_free_param(static_cast<VCARD_PARAM *>(pnode->pdata));
 	double_list_free(&pvline->param_list);
 	while ((pnode = double_list_get_from_head(&pvline->value_list)) != NULL)
-		vcard_free_value(pnode->pdata);
+		vcard_free_value(static_cast<VCARD_VALUE *>(pnode->pdata));
 	double_list_free(&pvline->value_list);
 	free(pvline);
 }
@@ -110,7 +110,7 @@ void vcard_free(VCARD *pvcard)
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
-		vcard_free_line(pnode->pdata);
+		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	double_list_free(pvcard);
 }
 
@@ -419,7 +419,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
-		vcard_free_line(pnode->pdata);
+		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	b_begin = FALSE;
 	pline = in_buff;
 	length = strlen(in_buff);
@@ -483,7 +483,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 		
 	} while ((pline = pnext) != NULL);
 	while ((pnode = double_list_get_from_head(pvcard)) != NULL)
-		vcard_free_line(pnode->pdata);
+		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	return FALSE;
 }
 
@@ -605,7 +605,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 					offset ++;
 				}
 				offset += vcard_serialize_string(out_buff + offset,
-							max_length - offset, -1, pnode2->pdata);
+				          max_length - offset, -1, static_cast<char *>(pnode2->pdata));
 				if (offset >= max_length) {
 					return FALSE;
 				}
@@ -644,7 +644,8 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 				}
 				if (NULL != pnode2->pdata) {
 					offset += vcard_serialize_string(out_buff + offset,
-						max_length - offset, offset - line_begin, pnode2->pdata);
+					          max_length - offset, offset - line_begin,
+					          static_cast<char *>(pnode2->pdata));
 					if (offset >= max_length) {
 						return FALSE;
 					}
@@ -668,9 +669,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 
 VCARD_LINE* vcard_new_line(const char *name)
 {
-	VCARD_LINE *pvline;
-	
-	pvline = malloc(sizeof(VCARD_LINE));
+	auto pvline = static_cast<VCARD_LINE *>(malloc(sizeof(VCARD_LINE)));
 	if (NULL == pvline) {
 		return NULL;
 	}
@@ -688,9 +687,7 @@ void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline)
 
 VCARD_PARAM* vcard_new_param(const char*name)
 {
-	VCARD_PARAM *pvparam;
-	
-	pvparam = malloc(sizeof(VCARD_PARAM));
+	auto pvparam = static_cast<VCARD_PARAM *>(malloc(sizeof(VCARD_PARAM)));
 	if (NULL == pvparam) {
 		return NULL;
 	}
@@ -703,11 +700,10 @@ VCARD_PARAM* vcard_new_param(const char*name)
 BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 {
 	BOOL b_list;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (NULL == pvparam->pparamval_list) {
 		b_list = TRUE;
-		pvparam->pparamval_list = malloc(sizeof(DOUBLE_LIST));
+		pvparam->pparamval_list = static_cast<DOUBLE_LIST *>(malloc(sizeof(DOUBLE_LIST)));
 		if (NULL == pvparam->pparamval_list) {
 			return FALSE;
 		}
@@ -715,7 +711,7 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	} else {
 		b_list = FALSE;
 	}
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
 		if (TRUE == b_list) {
 			double_list_free(pvparam->pparamval_list);
@@ -745,9 +741,7 @@ void vcard_append_param(VCARD_LINE *pvline, VCARD_PARAM *pvparam)
 
 VCARD_VALUE* vcard_new_value()
 {
-	VCARD_VALUE *pvvalue;
-	
-	pvvalue = malloc(sizeof(VCARD_VALUE));
+	auto pvvalue = static_cast<VCARD_VALUE *>(malloc(sizeof(VCARD_VALUE)));
 	if (NULL == pvvalue) {
 		return NULL;
 	}
@@ -758,9 +752,7 @@ VCARD_VALUE* vcard_new_value()
 
 BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -797,7 +789,7 @@ const char* vcard_get_first_subvalue(VCARD_LINE *pvline)
 	if (NULL == pnode1) {
 		return NULL;
 	}
-	return pnode1->pdata;
+	return static_cast<char *>(pnode1->pdata);
 }
 
 VCARD_LINE* vcard_new_simple_line(const char *name, const char *value)

@@ -14,15 +14,14 @@
 MIME_POOL* mime_pool_init(size_t number, int ratio, BOOL thread_safe)
 {
 	size_t i;
-	MIME_POOL *pmime_pool;
 	MIME_POOL_NODE *ptemp_mime;
 
-	pmime_pool = malloc(sizeof(MIME_POOL));
+	auto pmime_pool = static_cast<MIME_POOL *>(malloc(sizeof(MIME_POOL)));
 	if (NULL == pmime_pool) {
 		debug_info("[mime_pool]: Failed to allocate MIME pool memory");
 		return NULL;
 	}
-	pmime_pool->pbegin = malloc(sizeof(MIME_POOL_NODE)*number);
+	pmime_pool->pbegin = static_cast<MIME_POOL_NODE *>(malloc(sizeof(MIME_POOL_NODE) * number));
 	if (NULL == pmime_pool->pbegin) {
 		debug_info("[mime_pool]: Failed to allocate MIME list");
 		free(pmime_pool->pbegin);

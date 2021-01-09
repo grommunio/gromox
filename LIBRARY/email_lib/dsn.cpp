@@ -92,9 +92,7 @@ DSN_FIELDS* dsn_get_message_fileds(DSN *pdsn)
 
 DSN_FIELDS* dsn_new_rcpt_fields(DSN *pdsn)
 {
-	RCPT_DSN_FIELDS *pfields;
-	
-	pfields = malloc(sizeof(RCPT_DSN_FIELDS));
+	auto pfields = static_cast<RCPT_DSN_FIELDS *>(malloc(sizeof(RCPT_DSN_FIELDS)));
 	if (NULL == pfields) {
 		return NULL;
 	}
@@ -123,9 +121,7 @@ static void dsn_delete_rcpt_fields(DSN *pdsn, DSN_FIELDS *pfields)
 BOOL dsn_append_field(DSN_FIELDS *pfields,
 	const char *tag, const char *value)
 {
-	DSN_FIELD *pfield;
-	
-	pfield = malloc(sizeof(DSN_FIELD));
+	auto pfield = static_cast<DSN_FIELD *>(malloc(sizeof(DSN_FIELD)));
 	if (NULL == pfield) {
 		return FALSE;
 	}

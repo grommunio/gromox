@@ -37,7 +37,7 @@ bool mail_set_header(struct _MAIL *mail, const char *hdr, const char *val)
 	SIMPLE_TREE_NODE *node = simple_tree_get_root(&mail->tree);
 	if (node == nullptr)
 		return false;
-	return mime_set_field(node->pdata, hdr, val);
+	return mime_set_field(static_cast<MIME *>(node->pdata), hdr, val);
 }
 
 /*
@@ -383,7 +383,7 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 			added_crlf = FALSE;
 		}
 		buff_length = ((2 * length) / (64 * 1024) + 1) * 64 * 1024;
-		pmime->content_begin = malloc(buff_length);
+		pmime->content_begin = static_cast<char *>(malloc(buff_length));
 		if (NULL == pmime->content_begin) {
 			return FALSE;
 		}
@@ -412,11 +412,11 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 		return TRUE;
 	case MIME_ENCODING_QP:
 		buff_length = ((4 * length) / (64 * 1024) + 1) * 64 * 1024;
-		pbuff = malloc(buff_length);
+		pbuff = static_cast<char *>(malloc(buff_length));
 		if (NULL == pbuff) {
 			return FALSE;
 		}
-		pmime->content_begin = malloc(buff_length);
+		pmime->content_begin = static_cast<char *>(malloc(buff_length));
 		if (NULL == pmime->content_begin) {
 			free(pbuff);
 			return FALSE;
@@ -447,7 +447,7 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 		return TRUE;
 	case MIME_ENCODING_BASE64:
 		buff_length = ((2 * length) / (64 * 1024) + 1) * 64 * 1024;
-		pmime->content_begin = malloc(buff_length);
+		pmime->content_begin = static_cast<char *>(malloc(buff_length));
 		if (NULL == pmime->content_begin) {
 			return FALSE;
 		}
@@ -487,7 +487,7 @@ BOOL mime_write_mail(MIME *pmime, struct _MAIL *pmail)
 		pmime->content_length = 0;
     }
 	/* content_begin is not NULL and content_length is 0 means mail object */
-	pmime->content_begin = (void*)pmail;
+	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
 	pmime->content_touched = TRUE;
 	mime_set_field(pmime, "Content-Transfer-Encoding", "8bit");
@@ -1514,7 +1514,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		}
 	}
 	
-	pbuff = malloc(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
+	pbuff = static_cast<char *>(malloc(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mime]: Failed to allocate memory in mime_read_content");
 		*plength = 0;
@@ -2912,7 +2912,7 @@ void mime_copy(MIME *pmime_src, MIME *pmime_dst)
 		NULL != pmime_src->content_begin) {
 		buff_length = ((pmime_src->content_length - 1) /
 					  (64 * 1024) + 1) * 64 * 1024;
-		pmime_dst->content_begin = malloc(buff_length);
+		pmime_dst->content_begin = static_cast<char *>(malloc(buff_length));
     	if (NULL != pmime_dst->content_begin) {
     		memcpy(pmime_dst->content_begin, pmime_src->content_begin,
 					pmime_src->content_length);

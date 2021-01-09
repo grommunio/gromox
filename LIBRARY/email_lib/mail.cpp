@@ -962,8 +962,7 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 		lib_buffer_free(pallocator);
 		return FALSE;
 	}
-		
-	pbuff = malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
+	pbuff = static_cast<char *>(malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		stream_free(&tmp_stream);
@@ -1023,8 +1022,7 @@ BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst)
 		lib_buffer_free(pallocator);
 		return FALSE;
 	}
-		
-	pbuff = malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
+	pbuff = static_cast<char *>(malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		stream_free(&tmp_stream);

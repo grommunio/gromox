@@ -135,9 +135,7 @@ static void ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
 
 ICAL_COMPONENT* ical_new_component(const char *name)
 {
-	ICAL_COMPONENT *pcomponent;
-	
-	pcomponent = malloc(sizeof(ICAL_COMPONENT));
+	auto pcomponent = static_cast<ICAL_COMPONENT *>(malloc(sizeof(ICAL_COMPONENT)));
 	if (NULL == pcomponent) {
 		return NULL;
 	}
@@ -186,10 +184,10 @@ static void ical_free_line(ICAL_LINE *piline)
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_get_from_head(&piline->param_list)) != NULL)
-		ical_free_param(pnode->pdata);
+		ical_free_param(static_cast<ICAL_PARAM *>(pnode->pdata));
 	double_list_free(&piline->param_list);
 	while ((pnode = double_list_get_from_head(&piline->value_list)) != NULL)
-		ical_free_value(pnode->pdata);
+		ical_free_value(static_cast<ICAL_VALUE *>(pnode->pdata));
 	double_list_free(&piline->value_list);
 	free(piline);
 }
@@ -199,9 +197,9 @@ static void ical_clear_component(ICAL_COMPONENT *pcomponent)
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_get_from_head(&pcomponent->line_list)) != NULL)
-		ical_free_line(pnode->pdata);
+		ical_free_line(static_cast<ICAL_LINE *>(pnode->pdata));
 	while ((pnode = double_list_get_from_head(&pcomponent->component_list)) != NULL) {
-		ical_free_component(pnode->pdata);
+		ical_free_component(static_cast<ICAL_COMPONENT *>(pnode->pdata));
 		free(pnode->pdata);
 	}
 }
@@ -479,7 +477,6 @@ static BOOL ical_retrieve_component(
 	ICAL_LINE *piline;
 	LINE_ITEM tmp_item;
 	ICAL_VALUE *pivalue;
-	ICAL_COMPONENT *pcomponent1;
 	
 	ical_clear_component(pcomponent);
 	pline = in_buff;
@@ -496,7 +493,7 @@ static BOOL ical_retrieve_component(
 			if (NULL == tmp_item.pvalue) {
 				break;
 			}
-			pcomponent1 = malloc(sizeof(ICAL_COMPONENT));
+			auto pcomponent1 = static_cast<ICAL_COMPONENT *>(malloc(sizeof(ICAL_COMPONENT)));
 			if (NULL == pcomponent1) {
 				break;
 			}
@@ -734,7 +731,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 					offset ++;
 				}
 				offset += ical_serialize_tag_string(out_buff + offset,
-								max_length - offset, pnode2->pdata);
+				          max_length - offset, static_cast<char *>(pnode2->pdata));
 				if (offset >= max_length) {
 					return 0;
 				}
@@ -781,7 +778,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 				if (NULL != pnode2->pdata) {
 					offset += ical_serialize_value_string(
 						out_buff + offset, max_length - offset,
-						offset - line_begin, pnode2->pdata);
+					          offset - line_begin, static_cast<char *>(pnode2->pdata));
 					if (offset >= max_length) {
 						return 0;
 					}
@@ -798,8 +795,8 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	}
 	for (pnode=double_list_get_head(&pcomponent->component_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcomponent->component_list, pnode)) {
-		offset1 = ical_serialize_component(pnode->pdata,
-				out_buff + offset, max_length - offset);
+		offset1 = ical_serialize_component(static_cast<ICAL_COMPONENT *>(pnode->pdata),
+		          out_buff + offset, max_length - offset);
 		if (0 == offset1) {
 			return 0;
 		}
@@ -823,9 +820,7 @@ BOOL ical_serialize(ICAL *pical, char *out_buff, size_t max_length)
 
 ICAL_LINE* ical_new_line(const char *name)
 {
-	ICAL_LINE *piline;
-	
-	piline = malloc(sizeof(ICAL_LINE));
+	auto piline = static_cast<ICAL_LINE *>(malloc(sizeof(ICAL_LINE)));
 	if (NULL == piline) {
 		return NULL;
 	}
@@ -848,7 +843,7 @@ ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
 	for (pnode=double_list_get_head(&pcomponent->line_list); NULL!=pnode;
 		pnode=double_list_get_after(&pcomponent->line_list, pnode)) {
 		if (0 == strcasecmp(((ICAL_LINE*)pnode->pdata)->name, name)) {
-			return pnode->pdata;
+			return static_cast<ICAL_LINE *>(pnode->pdata);
 		}
 	}
 	return NULL;
@@ -856,9 +851,7 @@ ICAL_LINE* ical_get_line(ICAL_COMPONENT *pcomponent, const char *name)
 
 ICAL_PARAM* ical_new_param(const char*name)
 {
-	ICAL_PARAM *piparam;
-	
-	piparam = malloc(sizeof(ICAL_PARAM));
+	auto piparam = static_cast<ICAL_PARAM *>(malloc(sizeof(ICAL_PARAM)));
 	if (NULL == piparam) {
 		return NULL;
 	}
@@ -870,9 +863,7 @@ ICAL_PARAM* ical_new_param(const char*name)
 
 BOOL ical_append_paramval(ICAL_PARAM *piparam, const char *paramval)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -909,14 +900,12 @@ const char* ical_get_first_paramval(ICAL_LINE *piline, const char *name)
 		return NULL;
 	}
 	pnode = double_list_get_head(&piparam->paramval_list);
-	return pnode->pdata;
+	return static_cast<char *>(pnode->pdata);
 }
 
 ICAL_VALUE* ical_new_value(const char *name)
 {
-	ICAL_VALUE *pivalue;
-	
-	pivalue = malloc(sizeof(ICAL_VALUE));
+	auto pivalue = static_cast<ICAL_VALUE *>(malloc(sizeof(ICAL_VALUE)));
 	if (NULL == pivalue) {
 		return NULL;
 	}
@@ -932,9 +921,7 @@ ICAL_VALUE* ical_new_value(const char *name)
 
 BOOL ical_append_subval(ICAL_VALUE *pivalue, const char *subval)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = malloc(sizeof(DOUBLE_LIST_NODE));
+	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -989,7 +976,7 @@ static const char *ical_get_first_subvalue_by_name_internal(
 		return NULL;
 	}
 	pnode = double_list_get_head(plist);
-	return pnode->pdata;
+	return static_cast<char *>(pnode->pdata);
 }
 
 const char* ical_get_first_subvalue_by_name(
@@ -1016,7 +1003,7 @@ const char* ical_get_first_subvalue(ICAL_LINE *piline)
 		return NULL;
 	}
 	pnode = double_list_get_head(&pivalue->subval_list);
-	return pnode->pdata;
+	return static_cast<char *>(pnode->pdata);
 }
 
 DOUBLE_LIST* ical_get_subval_list(ICAL_LINE *piline, const char *name)
@@ -2617,7 +2604,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
 				return FALSE;
 			}
@@ -2636,7 +2623,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 59) {
 				return FALSE;
 			}
@@ -2655,7 +2642,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 0 || tmp_int > 23) {
 				return FALSE;
 			}
@@ -2674,7 +2661,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31) {
 				return FALSE;
 			}
@@ -2697,7 +2684,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
 				return FALSE;
 			}	
@@ -2725,10 +2712,9 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			if (FALSE == ical_parse_byday(pnode->pdata,
-				&dayofweek, &weekorder)) {
+			if (!ical_parse_byday(static_cast<char *>(pnode->pdata),
+			    &dayofweek, &weekorder))
 				return FALSE;
-			}
 			if (ICAL_FREQUENCY_MONTH == pirrule->frequency) {
 				if (weekorder > 5 || weekorder < -5) {
 					return FALSE;
@@ -2775,7 +2761,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53) {
 				return FALSE;
 			}	
@@ -2798,7 +2784,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < 1 || tmp_int > 12) {
 				return FALSE;
 			}
@@ -2885,7 +2871,7 @@ BOOL ical_parse_rrule(ICAL_COMPONENT *ptz_component,
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			tmp_int = atoi(pnode->pdata);
+			tmp_int = strtol(static_cast<char *>(pnode->pdata), nullptr, 0);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366) {
 				return FALSE;
 			}
