@@ -66,7 +66,7 @@ static size_t ndr_align_size(uint32_t offset, size_t n)
 void ndr_pull_init(NDR_PULL *pndr, void *pdata,
 	uint32_t data_size, uint32_t flags)
 {
-	pndr->data = pdata;
+	pndr->data = static_cast<uint8_t *>(pdata);
 	pndr->data_size = data_size;
 	pndr->offset = 0;
 	pndr->flags = flags;
@@ -368,7 +368,7 @@ int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 		pndr->offset + length > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	pblob->data = malloc(length);
+	pblob->data = static_cast<uint8_t *>(malloc(length));
 	if (NULL == pblob->data) {
 		return NDR_ERR_ALLOC;
 	}
@@ -458,7 +458,7 @@ void ndr_push_set_ptrcnt(NDR_PUSH *pndr, uint32_t ptr_count)
 void ndr_push_init(NDR_PUSH *pndr, void *pdata,
 	uint32_t alloc_size, uint32_t flags)
 {
-	pndr->data = pdata;
+	pndr->data = static_cast<uint8_t *>(pdata);
 	pndr->alloc_size = alloc_size;
 	pndr->flags = flags;
 	pndr->offset = 0;

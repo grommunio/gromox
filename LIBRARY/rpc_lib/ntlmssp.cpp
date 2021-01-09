@@ -79,12 +79,11 @@ static int ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
-	char *pin, *pout;
 	iconv_t conv_id;
 
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
-	pin = (char*)src;
-	pout = dst;
+	auto pin  = const_cast<char *>(src);
+	auto pout = static_cast<char *>(dst);
 	in_len = strlen(src);
 	memset(dst, 0, len);
 	out_len = len;
@@ -118,7 +117,7 @@ static BOOL ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 
 static void ntlmssp_md4hash(const char *passwd, void *p16v)
 {
-	uint8_t *p16 = p16v;
+	auto p16 = static_cast<uint8_t *>(p16v);
 	int passwd_len;
 	MD4_CTX md4_ctx;
 	char upasswd[256];
@@ -1248,7 +1247,7 @@ static BOOL ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	HMACMD5_CTX hmac_ctx;
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[32];
-	static const uint8_t zeros[24];
+	static constexpr uint8_t zeros[24]{};
 
 	plm_key = &pauth->lm_session_key;
 	puser_key = &pauth->user_session_key;
@@ -1416,7 +1415,7 @@ BOOL ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	if (0 == tmp_blob.length) {
 		pblob->data = NULL;
 	} else {
-		pblob->data = malloc(tmp_blob.length);
+		pblob->data = static_cast<uint8_t *>(malloc(tmp_blob.length));
 		if (NULL == pblob->data) {
 			return FALSE;
 		}

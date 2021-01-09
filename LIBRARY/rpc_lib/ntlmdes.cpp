@@ -43,10 +43,8 @@
    should confirm it for yourself (and maybe let me know if you come
    up with a different answer to the one above)
 */
-
-
-#include <string.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstdint>
 #include "ntlmdes.h"
 
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
@@ -176,7 +174,7 @@ static void concat(char *out, char *in1, char *in2, int l1, int l2)
 		*out++ = *in2++;
 }
 
-static void xor(char *out, char *in1, char *in2, int n)
+static void xxor(char *out, char *in1, char *in2, int n)
 {
 	int i;
 	for (i=0;i<n;i++)
@@ -226,9 +224,7 @@ static void dohash(char *out, char *in, char *key, int forw)
 		char r2[32];
 
 		permute(er, r, perm4, 48);
-
-		xor(erk, er, ki[forw ? i : 15 - i], 48);
-
+		xxor(erk, er, ki[forw ? i : 15 - i], 48);
 		for (j=0;j<8;j++)
 			for (k=0;k<6;k++)
 				b[j][k] = erk[j*6 + k];
@@ -247,9 +243,7 @@ static void dohash(char *out, char *in, char *key, int forw)
 			for (k=0;k<4;k++)
 				cb[j*4+k] = b[j][k];
 		permute(pcb, cb, perm5, 32);
-
-		xor(r2, l, pcb, 32);
-
+		xxor(r2, l, pcb, 32);
 		for (j=0;j<32;j++)
 			l[j] = r[j];
 
@@ -313,8 +307,8 @@ void des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7], int 
 void E_P16(const void *p14, uint8_t *p16)
 {
 	const uint8_t sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
-	des_crypt56(p16, sp8, p14, 1);
-	des_crypt56(p16+8, sp8, p14+7, 1);
+	des_crypt56(p16, sp8, static_cast<const uint8_t *>(p14), 1);
+	des_crypt56(p16 + 8, sp8, static_cast<const uint8_t *>(p14) + 7, 1);
 }
 
 void E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)

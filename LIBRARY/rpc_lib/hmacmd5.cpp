@@ -31,9 +31,9 @@ void hmacmd5_final(HMACMD5_CTX *ctx, void *digest)
 {
 	MD5_CTX ctx_o;
 
-	MD5_Final(digest, &ctx->ctx);          
+	MD5_Final(static_cast<uint8_t *>(digest), &ctx->ctx);
 	MD5_Init(&ctx_o);
 	MD5_Update(&ctx_o, ctx->k_opad, 64);   
 	MD5_Update(&ctx_o, digest, 16); 
-	MD5_Final(digest, &ctx_o);
+	MD5_Final(static_cast<uint8_t *>(digest), &ctx_o);
 }
