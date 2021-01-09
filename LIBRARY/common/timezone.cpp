@@ -177,16 +177,11 @@ static int leaps_thru_end_of(int y);
 static int long_increment_overflow(long *number, int delta);
 static int long_normalize_overflow(long *tensptr, int *unitsptr, int base);
 static int normalize_overflow(int *tensptr, int *unitsptr, int base);
-static time_t time1(register const struct state* const sp,
-	struct tm *tmp, struct tm* (*funcp)(const struct state* const sp,
-	const time_t*, long, struct tm*), long offset);
+static time_t time1(const struct state *const sp, struct tm *tmp, struct tm *(*funcp)(const struct state *const sp, const time_t *, long, struct tm *), long offset);
 static time_t time2(const struct state* const sp, struct tm *tmp,
 	struct tm* (*funcp)(const struct state* const sp, const time_t*,
 	long, struct tm*), long offset, int *okayp);
-static time_t time2sub(register const struct state* const sp,
-	struct tm *tmp, struct tm * (*funcp)(const struct state* const sp,
-	const time_t *, long, struct tm*), long offset, int *okayp,
-	int do_norm_secs);
+static time_t time2sub(const struct state *const sp, struct tm *tmp, struct tm *(*funcp)(const struct state *const sp, const time_t *, long, struct tm *), long offset, int *okayp, int do_norm_secs);
 static struct tm* timesub(const time_t *timep, long offset,
 	const struct state* const sp, struct tm *tmp);
 static int tmcomp(const struct tm *atmp, const struct tm *btmp);
@@ -243,8 +238,7 @@ static int differ_by_repeat(const time_t t1, const time_t t0)
 	return t1 - t0 == SECSPERREPEAT;
 }
 
-static int tzload(register const char *name, register struct
-	state* const sp, register const int doextend)
+static int tzload(const char *name, struct state *const sp, const int doextend)
 {
 	const char *p;
 	int i;
@@ -534,8 +528,7 @@ static const int year_lengths[2] = {
 ** a valid character in a zone name is found. Return a pointer to that
 ** character.
 */
-
-static const char *getzname(register const char *strp)
+static const char *getzname(const char *strp)
 {
 	char c;
 
@@ -554,8 +547,7 @@ static const char *getzname(register const char *strp)
 ** restricted, with other characters producing undefined results.
 ** We don't do any checking here; checking is done later in common-case code.
 */
-
-static const char* getqzname(register const char *strp, const int delim)
+static const char *getqzname(const char *strp, const int delim)
 {
 	int c;
 
@@ -571,9 +563,8 @@ static const char* getqzname(register const char *strp, const int delim)
 ** NULL.
 ** Otherwise, return a pointer to the first character not part of the number.
 */
-
-static const char* getnum(register const char *strp,
-	int* const nump,const int  min, const int max)
+static const char *getnum(const char *strp, int *const nump,
+    const int min, const int max)
 {
 	char c;
 	int num;
@@ -602,8 +593,7 @@ static const char* getnum(register const char *strp,
 ** Otherwise, return a pointer to the first character not part of the number
 ** of seconds.
 */
-
-static const char* getsecs(register const char *strp, long* const secsp)
+static const char *getsecs(const char *strp, long *const secsp)
 {
 	int	num;
 	/*
@@ -642,8 +632,7 @@ static const char* getsecs(register const char *strp, long* const secsp)
 ** If any error occurs, return NULL.
 ** Otherwise, return a pointer to the first character not part of the time.
 */
-
-static const char *getoffset(register const char *strp, long* const offsetp)
+static const char *getoffset(const char *strp, long *const offsetp)
 {
 	int neg = 0;
 
@@ -669,8 +658,7 @@ static const char *getoffset(register const char *strp, long* const offsetp)
 ** If a valid rule is not found, return NULL.
 ** Otherwise, return a pointer to the first character not part of the rule.
 */
-
-static const char* getrule(const char *strp, register struct rule* const rulep)
+static const char *getrule(const char *strp, struct rule *const rulep)
 {
 	if (*strp == 'J') {
 		/*
@@ -810,9 +798,7 @@ static time_t transtime(const time_t janfirst, const int year,
 ** Given a POSIX section 8-style TZ string, fill in the rule tables as
 ** appropriate.
 */
-
-static int tzparse(const char *name, register struct
-	state* const sp, const int lastditch)
+static int tzparse(const char *name, struct state *const sp, const int lastditch)
 {
 	const char *stdname;
 	const char *dstname;
@@ -1057,14 +1043,14 @@ static void gmtload(struct state* const sp)
 	}
 }
 
-static void tzsetwall(register struct state* const sp)
+static void tzsetwall(struct state *const sp)
 {
 	if (tzload((char *) NULL, sp, TRUE) != 0) {
 		gmtload(sp);
 	}
 }
 
-const struct state* tz_alloc(register const char *name)
+const struct state *tz_alloc(const char *name)
 {
 	auto sp = static_cast<state *>(malloc(sizeof(struct state)));
 	if (sp == NULL) {
@@ -1110,8 +1096,8 @@ void tz_free(const struct state * const sp)
 */
 
 /*ARGSUSED*/
-static struct tm* localsub(register const struct state* const sp,
-	const time_t* const timep, const long offset, struct tm* const tmp)
+static struct tm *localsub(const struct state *const sp,
+    const time_t *const timep, const long offset, struct tm *const tmp)
 {
 	const struct ttinfo *ttisp;
 	int i;
@@ -1259,7 +1245,7 @@ static struct tm* gmtsub(const time_t* const timep,
 ** Return the number of leap years through the end of the given year
 ** where, to make the math easy, the answer for year zero is defined as zero.
 */
-static int leaps_thru_end_of(register const int y)
+static int leaps_thru_end_of(const int y)
 {
 	return (y >= 0) ? (y / 4 - y / 100 + y / 400) :
 		-(leaps_thru_end_of(-(y + 1)) + 1);
@@ -1467,8 +1453,7 @@ static int long_normalize_overflow(long* const tensptr,
 	return long_increment_overflow(tensptr, tensdelta);
 }
 
-static int tmcomp(register const struct tm* const atmp,
-    const struct tm *const btmp)
+static int tmcomp(const struct tm *const atmp, const struct tm *const btmp)
 {
 	int result;
 
@@ -1482,10 +1467,9 @@ static int tmcomp(register const struct tm* const atmp,
 	return result;
 }
 
-static time_t time2sub(register const struct state* const sp,
-	struct tm* const tmp, struct tm* (* const funcp)(
-	const struct state* const sp, const time_t*, long, struct tm*),
-	const long offset, int* const okayp, const int do_norm_secs)
+static time_t time2sub(const struct state *const sp,
+    struct tm *const tmp, struct tm *(*const funcp)(const struct state *const sp, const time_t *, long, struct tm *),
+    const long offset, int *const okayp, const int do_norm_secs)
 {
 	int dir, i, j, saved_seconds;
 	long li;
@@ -1704,9 +1688,9 @@ static time_t time2(const struct state* const sp, struct tm* const tmp,
 	return *okayp ? t : time2sub(sp, tmp, funcp, offset, okayp, TRUE);
 }
 
-static time_t time1(register const struct state* const sp, struct tm* const tmp,
-	struct tm* (*const funcp)(const struct state* const sp, const time_t*,
-	long, struct tm*), const long offset)
+static time_t time1(const struct state *const sp, struct tm *const tmp,
+    struct tm *(*const funcp)(const struct state *const sp, const time_t *, long, struct tm *),
+    const long offset)
 {
 	time_t t;
 	int samei, otheri, sameind, otherind, i, nseen;
