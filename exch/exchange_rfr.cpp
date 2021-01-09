@@ -305,7 +305,7 @@ static int exchange_rfr_ndr_pull(int opnum, NDR_PULL* pndr, void **ppin)
 	}
 }
 
-static BOOL exchange_rfr_dispatch(int opnum, const GUID *pobject,
+static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 	uint64_t handle, void *pin, void **ppout)
 {
 	RFRGETNEWDSA_IN *prfr_in;
