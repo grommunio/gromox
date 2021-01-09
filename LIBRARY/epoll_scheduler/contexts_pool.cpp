@@ -83,7 +83,7 @@ static void* thread_work_func(void *pparam)
 			continue;
 		}
 		for (i=0; i<num; i++) {
-			pcontext = g_events[i].data.ptr;
+			pcontext = static_cast<SCHEDULE_CONTEXT *>(g_events[i].data.ptr);
 			pthread_mutex_lock(&g_context_locks[CONTEXT_POLLING]);
 			if (CONTEXT_POLLING != pcontext->type) {
 				/* context may be waked up and modified by
@@ -225,7 +225,7 @@ int contexts_pool_run()
 		printf("[contexts_pool]: failed to create epoll instance: %s\n", strerror(errno));
 		return -1;
 	}
-	g_events = malloc(sizeof(struct epoll_event)*g_context_num);
+	g_events = static_cast<epoll_event *>(malloc(sizeof(epoll_event) * g_context_num));
 	if (NULL == g_events) {
 		close(g_epoll_fd);
 		g_epoll_fd = -1;
