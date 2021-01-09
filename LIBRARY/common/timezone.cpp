@@ -5,17 +5,15 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <libintl.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <limits.h>
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
+#include <climits>
 #include <unistd.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <errno.h>
-#include <float.h>
-
-
+#include <cstdio>
+#include <cerrno>
+#include <cfloat>
 /* Unlike <ctype.h>'s isdigit, this also works if c < 0 | c > UCHAR_MAX. */
 #define is_digit(c) ((unsigned)(c) - '0' <= 9)
 
@@ -826,7 +824,7 @@ static int tzparse(const char *name, register struct
 	unsigned char *typep;
 	char *cp;
 	int load_result;
-	static const struct ttinfo zttinfo;
+	static constexpr struct ttinfo zttinfo{};
 
 	INITIALIZE(dstname);
 	stdname = name;
@@ -1068,8 +1066,7 @@ static void tzsetwall(register struct state* const sp)
 
 const struct state* tz_alloc(register const char *name)
 {
-	struct state *const sp = malloc(sizeof(struct state));
-
+	auto sp = static_cast<state *>(malloc(sizeof(struct state)));
 	if (sp == NULL) {
 		return sp;
 	}

@@ -5,7 +5,7 @@
 #include "common_types.h"
 #include "stream.h"
 #include "util.h"
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 
 #define CR			0x100
@@ -788,22 +788,20 @@ unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size)
 	/* if the read node is the last node of the mem file */
 	if (pstream->pnode_rd == pstream->pnode_wr) {
 		if (actual_size >= size) {
-			memcpy(pbuff, pnode->pdata + pstream->rd_total_pos, size);
+			memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, size);
 			return size;
 		} else {
-			memcpy(pbuff, pnode->pdata + pstream->rd_total_pos, actual_size);
+			memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, actual_size);
 			return actual_size;
 		}
 	} else {
 		tmp_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
 		 
 		if (tmp_size >= size) {
-			memcpy(pbuff, pnode->pdata + pstream->rd_total_pos, size);
+			memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, size);
 			return size;
 		}
-			
-		memcpy(pbuff, pnode->pdata + pstream->rd_total_pos, tmp_size);
-			
+		memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, tmp_size);
 		while ((pnode = double_list_get_after(&pstream->list,
 			pnode)) != pstream->pnode_wr) {
 			if (tmp_size + STREAM_BLOCK_SIZE >= size) {
@@ -908,7 +906,7 @@ int stream_write(STREAM *pstream, const void *pbuff, size_t size)
 		buff_size = STREAM_BLOCK_SIZE;
 		void *pstream_buff = stream_getbuffer_for_writing(pstream, &buff_size);
 		actual_size = (size - offset > buff_size)?buff_size:(size - offset);
-		memcpy(pstream_buff, pbuff + offset, actual_size);
+		memcpy(pstream_buff, static_cast<const char *>(pbuff) + offset, actual_size);
 		stream_forward_writing_ptr(pstream, actual_size);
 		offset += actual_size;
 	}

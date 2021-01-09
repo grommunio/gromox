@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdbool.h>
 #include <gromox/defs.h>
 #include "util.h"
 #include "simple_tree.h"
-#include <string.h>
+#include <cstring>
 
 static void simple_tree_node_enum(SIMPLE_TREE_NODE *pnode, 
 	SIMPLE_TREE_ENUM enum_func, void *param);

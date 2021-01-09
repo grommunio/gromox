@@ -4,14 +4,14 @@
 /*
  *	  Addr_kids, for parse the email addr
  */
-#include <stdlib.h>
+#include <cstdlib>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include "common_types.h"
 #include "mail_func.h"
 #include "timezone.h"
 #include "util.h"
-#include <string.h>
+#include <cstring>
 
 enum {
 	SW_USUAL = 0,
@@ -856,7 +856,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 
 	ptr = in_buff;
 	prev_section = NULL;
-	while ((ptr = memchr(ptr, ';', buff_len - (ptr - in_buff))) != NULL) {
+	while ((ptr = static_cast<char *>(memchr(ptr, ';', buff_len - (ptr - in_buff)))) != nullptr) {
 		if (NULL == prev_section) {
 			distance = ptr - in_buff;
 			paratag_len = (val_len - 1 > distance)?distance:(val_len - 1);
@@ -865,7 +865,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 			HX_strrtrim(value);
 			HX_strltrim(value);
 		} else {
-			ptr_equal = memchr(prev_section, '=', (ptr - prev_section));
+			ptr_equal = static_cast<char *>(memchr(prev_section, '=', (ptr - prev_section)));
 			if (NULL == ptr_equal) {
 				paratag_len = ptr - prev_section;
 				memcpy(param_tag, prev_section, paratag_len);
@@ -904,7 +904,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 		HX_strrtrim(value);
 		HX_strltrim(value);
 	} else {
-		ptr_equal = memchr(prev_section, '=', (ptr - prev_section));
+		ptr_equal = static_cast<char *>(memchr(prev_section, '=', (ptr - prev_section)));
 		if (NULL == ptr_equal) {
 			paratag_len = ptr - prev_section;
 			memcpy(param_tag, prev_section, paratag_len);
@@ -1210,7 +1210,8 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	is_quoted = FALSE;
 	while (ptr - cmdline < cmdlen && argc < argmax - 1) {
 		if ('{' == *ptr && NULL == last_quota) {
-			if (NULL != (last_brace = memchr(ptr + 1, '}', 16))) {
+			last_brace = static_cast<char *>(memchr(ptr + 1, '}', 16));
+			if (last_brace == nullptr) {
 				*last_brace = '\0';
 				length = atoi(ptr + 1);
 				memmove(ptr, last_brace + 1, cmdline + cmdlen - 1 - last_brace);
@@ -1756,24 +1757,24 @@ int html_to_plain(const void *inbuf, int len, char **outbufp)
 	char is_xml = 0;
 	uint8_t state = 0;
 	int depth = 0, in_q = 0;
-	char *tbuf, *buf, *p, *tp, *rp, c, lc;
+	char *tp, lc;
 	
 	*outbufp = nullptr;
-	char *rbuf = malloc(len + 1);
+	auto rbuf = static_cast<char *>(malloc(len + 1));
 	if (rbuf == nullptr)
 		return -1;
 	memcpy(rbuf, inbuf, len);
 	rbuf[len] = '\0';
-	buf = malloc(len + 1);
+	auto buf = static_cast<char *>(malloc(len + 1));
 	if (NULL == buf) {
 		return -1;
 	}
 	memcpy(buf, rbuf, len);
 	buf[len] = '\0';
-	c = *buf;
-	p = buf;
-	rp = rbuf;
-	tbuf = tp = NULL;
+	char c = *buf;
+	char *p = buf;
+	char *rp = rbuf;
+	char *tbuf = tp = NULL;
 	while (i < len) {
 		switch (c) {
 		case '\0':
@@ -1957,7 +1958,7 @@ char *plain_to_html(const char *rbuf)
 	char *body = HX_strquote(rbuf, HXQUOTE_HTML, nullptr);
 	if (body == nullptr)
 		return nullptr;
-	char *out = malloc(strlen(head) + strlen(body) + strlen(footer) + 1);
+	auto out = static_cast<char *>(malloc(strlen(head) + strlen(body) + strlen(footer) + 1));
 	if (out != nullptr) {
 		strcpy(out, head);
 		strcat(out, body);

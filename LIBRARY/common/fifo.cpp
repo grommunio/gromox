@@ -96,8 +96,6 @@ void fifo_free(FIFO* pfifo)
  */
 BOOL fifo_enqueue(FIFO* pfifo, void* pdata)
 {
-	SINGLE_LIST_NODE   *node = NULL;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == pfifo || NULL == pdata) {
 		debug_info("[fifo]: fifo_enqueue, param NULL");
@@ -107,7 +105,7 @@ BOOL fifo_enqueue(FIFO* pfifo, void* pdata)
 	if (pfifo->cur_size >= pfifo->max_size) {
 		return FALSE;
 	}
-	node = lib_buffer_get(pfifo->mbuf_pool);
+	auto node = static_cast<SINGLE_LIST_NODE *>(lib_buffer_get(pfifo->mbuf_pool));
 	node->pdata = (char*)node + sizeof(SINGLE_LIST_NODE);
 	memcpy(node->pdata, pdata, pfifo->data_size);
 

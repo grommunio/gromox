@@ -37,7 +37,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 
 	proot = simple_tree_get_root(&ptree->tree);
 	if (NULL == proot) {
-		pdir = lib_buffer_get(ptree->ppool);
+		pdir = static_cast<DIR_NODE *>(lib_buffer_get(ptree->ppool));
 		pdir->node.pdata = pdir;
 		pdir->name[0] = '\0';
 		pdir->b_loaded = TRUE;
@@ -71,7 +71,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 			}
 
 			if (NULL == pnode) {
-				pdir = lib_buffer_get(ptree->ppool);
+				pdir = static_cast<DIR_NODE *>(lib_buffer_get(ptree->ppool));
 				pdir->node.pdata = pdir;
 				strncpy(pdir->name, ptr1, sizeof(pdir->name));
 				pdir->b_loaded = FALSE;
@@ -115,7 +115,7 @@ DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path)
 	}
 
 	if ('\0' == path[0]) {
-		return pnode->pdata;
+		return static_cast<DIR_NODE *>(pnode->pdata);
 	}
 
 	len = strlen(path);
@@ -159,7 +159,7 @@ DIR_NODE* dir_tree_get_child(DIR_NODE* pdir)
 
 	pnode = simple_tree_node_get_child(&pdir->node);
 	if (NULL != pnode) {
-		return pnode->pdata;
+		return static_cast<DIR_NODE *>(pnode->pdata);
 	} else {
 		return NULL;
 	}

@@ -8,13 +8,13 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include "util.h"
-#include <time.h>
-#include <stdio.h>
+#include <ctime>
+#include <cstdio>
 #include <crypt.h>
 #include <iconv.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdarg>
 #include <unistd.h>
 #include <sys/time.h>
 
@@ -119,7 +119,7 @@ void utf8_filter(char *string)
 	int m;
 	int count_s = 0;
 	int minus_s = 0;
-	unsigned char *bytes = reinterpret_cast(unsigned char *, string);
+	auto bytes = reinterpret_cast<unsigned char *>(string);
 	unsigned char *end = bytes + strlen(string);
   
 	while (bytes < end) {
@@ -208,7 +208,7 @@ void utf8_filter(char *string)
 
 void wchar_to_utf8(uint32_t wchar, char *zstring)
 {
-	unsigned char *string = reinterpret_cast(unsigned char *, zstring);
+	auto string = reinterpret_cast<unsigned char *>(zstring);
 	if (wchar < 0x7f) {
 		string[0] = wchar;
 		string[1] = '\0';
@@ -353,12 +353,11 @@ int utf8_to_utf16le(const char *src, void *dst, size_t len)
 {
 	size_t in_len;
 	size_t out_len;
-	char *pin, *pout;
 	iconv_t conv_id;
 
 	conv_id = iconv_open("UTF-16LE", "UTF-8");
-	pin = (char*)src;
-	pout = dst;
+	auto pin  = const_cast<char *>(src);
+	auto pout = static_cast<char *>(dst);
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
@@ -404,7 +403,7 @@ BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len)
 	}
 
 	ptr1 += len;
-	ptr1 = memchr(ptr1, ':', length - (ptr1 - src));
+	ptr1 = static_cast<const char *>(memchr(ptr1, ':', length - (ptr1 - src)));
 	if (NULL == ptr1) {
 		return FALSE;
 	}
@@ -465,7 +464,7 @@ BOOL set_digest(char *src, size_t length, const char *tag, const char *value)
 	}
 
 	ptr1 += len;
-	ptr1 = memchr(ptr1, ':', temp_len - (ptr1 - src));
+	ptr1 = static_cast<char *>(memchr(ptr1, ':', temp_len - (ptr1 - src)));
 	if (NULL == ptr1) {
 		return FALSE;
 	}
@@ -916,7 +915,7 @@ long atoitvl(const char *string)
 char* bytetoa(uint64_t byte, char *string)
 {
 	if (byte < 1024) {
-		sprintf(string, "%llu", reinterpret_cast(unsigned long long, byte));
+		sprintf(string, "%llu", static_cast<unsigned long long>(byte));
 	} else if (byte >= 1024 && byte < 1024*1024) {
 		sprintf(string, "%4.1lfK", (double)byte/1024);
 	} else if (byte >= 1024*1024 && byte < 1024*1024*1024) {
@@ -1109,10 +1108,10 @@ static char index_64[128] = {
 };
 
 
-int encode64(const void *_in, size_t inlen, char *out,
+int encode64(const void *vin, size_t inlen, char *out,
     size_t outmax, size_t *outlen)
 {
-	const unsigned char *in = _in;
+	auto in = static_cast<const unsigned char *>(vin);
 	unsigned char oval;
 	size_t olen;
 
@@ -1151,7 +1150,7 @@ int encode64(const void *_in, size_t inlen, char *out,
 
 int decode64(const char *in, size_t inlen, void *vout, size_t *outlen)
 {
-	uint8_t *out = vout;
+	auto out = static_cast<uint8_t *>(vout);
 	size_t len = 0,lup;
 	int c1, c2, c3, c4;
 
@@ -1228,7 +1227,7 @@ static char hextab[] = "0123456789ABCDEF";
 int encode64_ex(const void *vin, size_t inlen, char *_out,
 	size_t outmax, size_t *outlen)
 {
-	const uint8_t *_in = vin;
+	auto _in = static_cast<const uint8_t *>(vin);
 	size_t inLen = inlen;
 	size_t i;
 	char* out = _out;
@@ -1306,10 +1305,10 @@ int encode64_ex(const void *vin, size_t inlen, char *_out,
 }
 
 
-int decode64_ex(const char *_in, size_t inlen, void *_out,
+int decode64_ex(const char *_in, size_t inlen, void *vout,
 	size_t outmax, size_t *outlen)
 {
-	uint8_t *out = _out;
+	auto out = static_cast<uint8_t *>(vout);
 	size_t inLen = inlen;
 	size_t outsize = ( ( inLen + 3 ) / 4 ) * 3;
 	/* Get four input chars at a time and decode them. Ignore white space
@@ -1324,9 +1323,8 @@ int decode64_ex(const char *_in, size_t inlen, void *_out,
 	size_t inpos = 0;
 	size_t outPos = 0;
 	
-	if (NULL == _in || NULL == _out || NULL == outlen) {
+	if (_in == nullptr || vout == nullptr || outlen == nullptr)
 		return -1;
-	}
 	if (outmax < outsize) {
 		*outlen = 0;
 		return -1;
@@ -1428,7 +1426,7 @@ int decode64_ex(const char *_in, size_t inlen, void *_out,
 
 int qp_encode_ex(void *voutput, size_t outlen, const char *input, size_t length)
 {
-	uint8_t *output = voutput;
+	auto output = static_cast<uint8_t *>(voutput);
 	size_t inpos, outpos, linelen;
 	int ch;
 
@@ -1581,7 +1579,7 @@ static const unsigned char hex_tab[256] =
 
 int qp_decode(void *voutput, const char *input, size_t length)
 {
-	uint8_t *output = voutput;
+	auto output = static_cast<uint8_t *>(voutput);
 	int c;
 	size_t i, cnt = 0;
 	for (i = 0; i < length; i++) {
@@ -1623,7 +1621,7 @@ int qp_decode(void *voutput, const char *input, size_t length)
 int qp_decode_ex(void *voutput, size_t out_len, const char *input,
     size_t length)
 {
-	uint8_t *output = voutput;
+	auto output = static_cast<uint8_t *>(voutput);
 	int c;
 	size_t i, cnt = 0;
 	for (i = 0; i < length; i++) {
@@ -1700,7 +1698,7 @@ int decode_hex_int(const char *in)
 
 BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
 {
-	const uint8_t *src = vsrc;
+	auto src = static_cast<const uint8_t *>(vsrc);
 	static const char codes[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 							 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	int i, j;
@@ -1720,7 +1718,7 @@ BOOL encode_hex_binary(const void *vsrc, int srclen, char *dst, int dstlen)
 
 BOOL decode_hex_binary(const char *src, void *vdst, int dstlen)
 {
-	uint8_t *dst = vdst;
+	auto dst = static_cast<uint8_t *>(vdst);
 	char t_buff[3];
 	int i, j, len;
 

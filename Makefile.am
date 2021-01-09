@@ -102,7 +102,7 @@ pkglibexec_SCRIPTS = SYSTEM_ADMIN/scripts/sa_format_area.sh
 BUILT_SOURCES = include/gromox/paths.h AGENT_SERVICE/php_mapi/zarafa_rpc.cpp exch/midb/exmdb_rpc.cpp exch/zcore/exmdb_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
 libgromox_common_la_CXXFLAGS = ${AM_CXXFLAGS} -fvisibility=default
-libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.c LIBRARY/common/array.c LIBRARY/common/config_file.c LIBRARY/common/dir_tree.c LIBRARY/common/double_list.c LIBRARY/common/files_allocator.c LIBRARY/common/guid.c LIBRARY/common/int_hash.c LIBRARY/common/lib_buffer.c LIBRARY/common/list_file.c LIBRARY/common/mail_func.c LIBRARY/common/mem_file.c LIBRARY/common/simple_tree.c LIBRARY/common/single_list.c LIBRARY/common/stream.c LIBRARY/common/str_hash.c LIBRARY/common/timezone.c LIBRARY/common/util.c LIBRARY/common/xarray.c lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
+libgromox_common_la_SOURCES = LIBRARY/common/alloc_context.cpp LIBRARY/common/array.cpp LIBRARY/common/config_file.cpp LIBRARY/common/dir_tree.cpp LIBRARY/common/double_list.cpp LIBRARY/common/files_allocator.cpp LIBRARY/common/guid.cpp LIBRARY/common/int_hash.cpp LIBRARY/common/lib_buffer.cpp LIBRARY/common/list_file.cpp LIBRARY/common/mail_func.cpp LIBRARY/common/mem_file.cpp LIBRARY/common/simple_tree.cpp LIBRARY/common/single_list.cpp LIBRARY/common/str_hash.cpp LIBRARY/common/stream.cpp LIBRARY/common/timezone.cpp LIBRARY/common/util.cpp LIBRARY/common/xarray.cpp lib/errno.cpp lib/rfbl.cpp lib/socket.cpp
 libgromox_common_la_LIBADD = -lcrypt ${HX_LIBS}
 libgromox_cplus_la_SOURCES = lib/fileio.cpp lib/localemap.cpp lib/oxoabkt.cpp
 libgromox_cplus_la_LIBADD = -lpthread ${HX_LIBS} ${jsoncpp_LIBS}
@@ -286,7 +286,7 @@ saphpdir = ${pkgdatadir}/sa
 saphp_DATA = SYSTEM_ADMIN/php/conf.php SYSTEM_ADMIN/php/db.php SYSTEM_ADMIN/php/submit.php
 adaptor_SOURCES = LIBRARY/system_log.c SYSTEM_ADMIN/adaptor/data_source.cpp SYSTEM_ADMIN/adaptor/engine.cpp SYSTEM_ADMIN/adaptor/file_operation.cpp SYSTEM_ADMIN/adaptor/gateway_control.cpp SYSTEM_ADMIN/adaptor/main.cpp
 adaptor_LDADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
-event_SOURCES = SYSTEM_ADMIN/event.cpp LIBRARY/common/fifo.c
+event_SOURCES = SYSTEM_ADMIN/event.cpp LIBRARY/common/fifo.cpp
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp SYSTEM_ADMIN/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la

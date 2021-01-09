@@ -6,16 +6,16 @@
  *	The comments is start with '#' at the leading of each comment line
  *
  */
-#include <errno.h>
+#include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "config_file.h"
 #include "util.h"
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -33,7 +33,7 @@ char *config_default_path(const char *filename)
 	if (ed == NULL || *ed == '\0')
 		ed = PKGSYSCONFDIR;
 	size_t bs = strlen(ed) + strlen(filename) + 2;
-	char *ret = malloc(bs);
+	auto ret = static_cast<char *>(malloc(bs));
 	if (ret == NULL)
 		return NULL;
 	HX_strlcpy(ret, ed, bs);
@@ -44,11 +44,11 @@ char *config_default_path(const char *filename)
 
 static CONFIG_FILE *config_file_alloc(size_t z)
 {
-	CONFIG_FILE *cfg = calloc(1, sizeof(*cfg));
+	auto cfg = static_cast<CONFIG_FILE *>(calloc(1, sizeof(CONFIG_FILE)));
 	if (cfg == NULL)
 		return NULL;
 	cfg->total_entries = z;
-	cfg->config_table = calloc(z, sizeof(*cfg->config_table));
+	cfg->config_table = static_cast<CONFIG_ENTRY *>(calloc(z, sizeof(CONFIG_ENTRY)));
 	if (cfg->config_table == NULL) {
 		free(cfg);
 		return NULL;
@@ -296,7 +296,7 @@ BOOL config_file_save(CONFIG_FILE* cfg_file)
 {
 	size_t i, fd, size, len, written;
 	struct stat node_stat;
-	char *pbuff, *ptr, *psearch;
+	char *ptr, *psearch;
 	char *plf, *psharp;
 	char *pequal, *plf2;
 
@@ -312,7 +312,7 @@ BOOL config_file_save(CONFIG_FILE* cfg_file)
 		0 == S_ISREG(node_stat.st_mode)) {
 		return FALSE;
 	}
-	pbuff = malloc(node_stat.st_size + MAX_LINE_LEN * EXT_ENTRY_NUM);
+	auto pbuff = static_cast<char *>(malloc(node_stat.st_size + MAX_LINE_LEN * EXT_ENTRY_NUM));
 	if (NULL == pbuff) {
 		return FALSE;
 	}
@@ -337,15 +337,15 @@ BOOL config_file_save(CONFIG_FILE* cfg_file)
 			plf = (char*)memrchr(pbuff, '\n', psearch - pbuff);
 			psharp = (char*)memrchr(pbuff, '#', psearch - pbuff);
 			if (NULL == psharp || psharp < plf) {
-				pequal = memchr(psearch, '=', size - (psearch - pbuff));
+				pequal = static_cast<char *>(memchr(psearch, '=', size - (psearch - pbuff)));
 				if (NULL == pequal) {
 					continue;
 				}
-				plf2 = memchr(psearch, '\n', size - (psearch - pbuff));
+				plf2 = static_cast<char *>(memchr(psearch, '\n', size - (psearch - pbuff)));
 				if (NULL == plf2) {
 					plf2 = pbuff + size;
 				}
-				psharp = memchr(psearch, '#', size - (psearch - pbuff));
+				psharp = static_cast<char *>(memchr(psearch, '#', size - (psearch - pbuff)));
 				if (NULL == psharp) {
 					psharp = pbuff + size;
 				}

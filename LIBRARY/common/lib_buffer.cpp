@@ -15,14 +15,14 @@
  */
 LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_safe)
 {
-	PLIB_BUFFER lib_buffer	= NULL;
 	void*	head_listp		= NULL;
 	
 	if (item_size <= 0 || item_num <= 0) {
 		debug_info("[lib_buffer]: lib_buffer_init, invalid parameter");
 		return NULL;
 	}
-	if (NULL == (lib_buffer = malloc(sizeof(LIB_BUFFER)))) {
+	auto lib_buffer = static_cast<LIB_BUFFER *>(malloc(sizeof(LIB_BUFFER)));
+	if (lib_buffer == nullptr) {
 		debug_info("[lib_buffer]: lib_buffer_init, malloc lib_buffer fail");
 		return NULL;
 	}

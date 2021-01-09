@@ -9,7 +9,7 @@
 
 #include "array.h"
 #include "util.h"
-#include <string.h>
+#include <cstring>
 
 /* the extra memory ocupation for array node */
 #define EXTRA_ARRAYNODE_SIZE		sizeof(SINGLE_LIST_NODE)
@@ -38,8 +38,7 @@ void array_init(ARRAY* parray, LIB_BUFFER* pbuf_pool, size_t data_size)
 	parray->mbuf_pool = pbuf_pool;
 	parray->cur_size = 0;
 	parray->data_size = data_size;
-	parray->cache_ptrs = malloc(sizeof(void*)*ARRAY_CACHEITEM_NUMBER);
-   
+	parray->cache_ptrs = static_cast<void **>(malloc(sizeof(void *) * ARRAY_CACHEITEM_NUMBER));
 	if (data_size > lib_buffer_get_param(pbuf_pool, 
 		MEM_ITEM_SIZE) - EXTRA_ARRAYNODE_SIZE) {
 		debug_info("[array]: array_init warning: array data"
@@ -119,7 +118,6 @@ void array_allocator_free(LIB_BUFFER* buf)
 long array_append(ARRAY* parray, void* pdata)
 {
 	long ret_index;
-	SINGLE_LIST_NODE *pnode;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == parray || NULL == pdata) {	  
@@ -127,8 +125,7 @@ long array_append(ARRAY* parray, void* pdata)
 		return -1;
 	}
 #endif
-
-	pnode = lib_buffer_get(parray->mbuf_pool);
+	auto pnode = static_cast<SINGLE_LIST_NODE *>(lib_buffer_get(parray->mbuf_pool));
 	if (NULL == pnode) {
 		return -1;
 	}

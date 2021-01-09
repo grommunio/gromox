@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
-#include <errno.h>
-#include <stdbool.h>
+#include <cerrno>
 #include "list_file.h"
 #include "common_types.h"
 #include "util.h"
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #define MAX_LINE			1024
 
 static BOOL list_file_analyse_format(LIST_FILE* list_file, const char* format);
@@ -16,7 +15,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file);
 
 static LIST_FILE *list_file_alloc(const char *format)
 {
-	LIST_FILE *lf = calloc(1, sizeof(*lf));
+	auto lf = static_cast<LIST_FILE *>(calloc(1, sizeof(LIST_FILE)));
 	if (lf == NULL)
 		return NULL;
 	if (!list_file_analyse_format(lf, format)) {
@@ -196,7 +195,7 @@ void* list_file_get_list(LIST_FILE* list_file)
  */
 static BOOL list_file_construct_list(LIST_FILE* list_file)
 {
-	char line[MAX_LINE], *ptr;
+	char line[MAX_LINE];
 	int table_size;
 
 #ifdef _DEBUG_UMTA
@@ -214,7 +213,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	list_file->item_num = 0;
 
 	rewind(list_file->file_ptr);
-	ptr = malloc(table_size * list_file->item_size);
+	auto ptr = static_cast<char *>(malloc(table_size * list_file->item_size));
 	if (NULL == ptr) {
 		printf("[list_file]: allocate memory fail\n");
 		return FALSE;

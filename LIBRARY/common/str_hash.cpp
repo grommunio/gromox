@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /*
- * A simple ip hash table data structure, which takes a string ip address as
- * the key. Remember the ip hash table is thread-unsafe!
- *
- * Caution:
- *		In multithread enviroment, we must consider mutual exclusion and 
- *		synchronized problems. 
+ * A simple string hash table data structure
  */
 #include "common_types.h"
-#include "int_hash.h"
+#include "str_hash.h"
 #include "util.h"
-#include <string.h>
+#include <cstring>
 
 static size_t g_num_of_collision;
 
-static unsigned int default_int_hash_function(unsigned int);
-
+static size_t DJBHash(const char* str)
+{
+	size_t hash = 5381;
+	size_t i	= 0;
+	size_t len	= strlen(str);
+	
+	for(i = 0; i < len; str++, i++) {
+		hash = ((hash << 5) + hash) + (*str);
+	}
+	return (hash & 0x7FFFFFFF);
+}
 
 /*
  *	init a hash table with the specified property
@@ -31,28 +35,27 @@ static unsigned int default_int_hash_function(unsigned int);
  *	@return		
  *		a pointer that point to the hash table object
  */
-INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size)
+STR_HASH_TABLE* str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC fun)
 {
 	DOUBLE_LIST* p_map = NULL;
-	PINT_HASH_TABLE	 table = NULL;
+	PSTR_HASH_TABLE	 table = NULL;
 	size_t	i = 0;
 
 	if (max_items <= 0 || item_size <= 0) {
-		debug_info("[int_hash]: parameter is invalid");
+		debug_info("[str_hash]: str_hash_init, parameter is invalid");
 		return NULL;
 	}
-	table = (PINT_HASH_TABLE)malloc(sizeof(INT_HASH_TABLE));
+	table = (PSTR_HASH_TABLE)malloc(sizeof(STR_HASH_TABLE));
 	if (NULL == table) {
-		debug_info("[int_hash]: can not alloc hash table");
+		debug_info("[str_hash]: can not alloc hash table");
 		return NULL;
 	}
 	table->entry_num = 8 * max_items;	/* we always allocate eight times 
-										   entries of the max items 
-										 */
+										   entries of the max items */
 	p_map = (DOUBLE_LIST*)malloc(sizeof(DOUBLE_LIST) * table->entry_num);
 	
 	if (NULL == p_map) {
-		debug_info("[int_hash]: can not alloc hash map");
+		debug_info("[str_hash]: can not alloc hash map");
 		free(table);
 		return NULL;
 	}
@@ -63,14 +66,19 @@ INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size)
 		double_list_init(&(p_map[i]));
 	}
 
-	table->buf_pool = lib_buffer_init(sizeof(INT_HASH_ITEM) + item_size,
+	table->buf_pool = lib_buffer_init(sizeof(STR_HASH_ITEM) + item_size, 
 						max_items, FALSE);
 	if (NULL == table->buf_pool) {
-		debug_info("[int_hash]: int_hash_init, lib_buffer_init fail");
+		debug_info("[str_hash]: str_hash_init, lib_buffer_init fail");
 		free(table);
 		free(p_map);
 		return NULL;
 
+	}
+	if (NULL == fun) {
+		table->hash_func = DJBHash;
+	} else {
+		table->hash_func = fun;
 	}
 	table->hash_map		= p_map;
 	table->capacity		= max_items;
@@ -87,14 +95,16 @@ INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size)
  *	@param	
  *		ptbl [in]	pointer to the hash table 
  */
-void int_hash_free(INT_HASH_TABLE* ptbl)
+void str_hash_free(STR_HASH_TABLE* ptbl)
 {
 	size_t	i = 0;
 
+#ifdef _DEBUG_UMTA
 	if (NULL == ptbl) {
+		debug_info("[str_hash]: str_hash_free, param NULL");
 		return;
 	}
-
+#endif
 	double_list_free(&(ptbl->iter_list));
 	if (NULL != ptbl->hash_map) {
 		for (i = 0; i < ptbl->entry_num; i++) {
@@ -130,41 +140,42 @@ void int_hash_free(INT_HASH_TABLE* ptbl)
  *		-3	memory alloc fail
  *		-4	the key already exist	
  */
-int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
+int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value)
 {
-
 	DOUBLE_LIST_NODE* next	= NULL;
 	DOUBLE_LIST*	dlist	= NULL;
-
+	
+	STR_HASH_ITEM* item = NULL;
 	void* list_node = NULL;
-	INT_HASH_ITEM* item = NULL;
 	size_t index = -1;
 	
-	if (NULL == ptbl || NULL == value) {
-		debug_info("[int_hash]: int_hash_add, invalid parameter");
+#ifdef _DEBUG_UMTA 
+	if (NULL == ptbl || NULL == key || NULL == value) {
+		debug_info("[str_hash]: str_hash_add, param NULL");
 		return -1;
 	}
-
+#endif
 	if (ptbl->item_num >= ptbl->capacity) {
-		debug_info("[int_hash]: int_hash_add, the hash table is full");
 		return -2;
 	}
 	
 	list_node = lib_buffer_get(ptbl->buf_pool);
 
 	if (NULL == list_node) {
-		debug_info("[int_hash]: int_hash_add, lib_buffer_get fail");
+		debug_info("[str_hash]: str_hash_add, lib_buffer_get fail");
 		return -3;
 	}
 
-	index = default_int_hash_function(key) % ptbl->entry_num;
-	item  = (INT_HASH_ITEM *)list_node;
-	item->hash_key	= key;
-	item->map_index = index;
-	item->list_node.pdata = item;
-	item->iter_node.pdata = item;
+	index = ptbl->hash_func(key) % (ptbl->entry_num);
 
-	memcpy((char*)list_node + sizeof(INT_HASH_ITEM), value, ptbl->data_size);
+	item  = (STR_HASH_ITEM *)list_node;
+
+	item->map_index = index;
+	item->list_node.pdata	= item;
+	item->iter_node.pdata	= item;
+	strncpy(item->key, key, MAX_KEY_LENGTH);
+
+	memcpy((char*)list_node + sizeof(STR_HASH_ITEM), value, ptbl->data_size);
 
 	dlist	= (DOUBLE_LIST*)&(ptbl->hash_map[index]);
 
@@ -177,16 +188,14 @@ int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
 		 check if the key is already exist to avoid inserting
 		 the same key twice.
 		 */
-		if (key == ((INT_HASH_ITEM*)dlist->phead->pdata)->hash_key) {
-			debug_info("[int_hash]: int_hash_add, the key already exist");
+		if (0 == strcmp(((STR_HASH_ITEM*)dlist->phead->pdata)->key, key)) {
 			lib_buffer_put(ptbl->buf_pool, list_node);
 			return -4;
 		}
+		
 		next = dlist->phead->pnext;
-		while (next != dlist->phead) 
-		{
-			if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key) {
-				debug_info("[int_hash]: int_hash_add, the key already exist");
+		while (next != dlist->phead) {
+			if (0 == strcmp(((STR_HASH_ITEM*)next->pdata)->key, key)) {
 				lib_buffer_put(ptbl->buf_pool, list_node);
 				return -4;
 			}
@@ -206,40 +215,41 @@ int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
  * 
  *	@param	
  *		ptbl [in]	pointer to the hash table
- *		key			the queried key
+ *		key	 [in]	the queried key
  *
  *	@return 
  *		the value that map the key, NULL if some error occurs
  */
-void* int_hash_query(INT_HASH_TABLE* ptbl, int key)
+void* str_hash_query(STR_HASH_TABLE* ptbl, const char *key)
 {
 	DOUBLE_LIST_NODE* next	= NULL;
 	size_t	index = -1;
 	void*	pdata = NULL;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == ptbl) {
-		debug_info("[int_hash]: int_hash_query, invalid param");
+	if (NULL == ptbl || NULL == key) {
+		debug_info("[str_hash]: str_hash_query, param NULL");
 		return NULL;
 	}
 #endif
-	index = default_int_hash_function(key) % ptbl->entry_num;
+
+	index = ptbl->hash_func(key) % (ptbl->entry_num);
+
 	if (NULL == ptbl->hash_map[index].phead) {
 		return NULL;
 	}
 
 	next = ptbl->hash_map[index].phead;
 
-	if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key) {
-		pdata = (char*)next->pdata + sizeof(INT_HASH_ITEM);
+	if (0 == strcmp(key, ((STR_HASH_ITEM*)next->pdata)->key)) {
+		pdata = (char*)next->pdata + sizeof(STR_HASH_ITEM);
 		return pdata;
 	}
 	next = next->pnext;
 
 	while (next != ptbl->hash_map[index].phead) {
-		if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key)
-		{
-			pdata = (char*)next->pdata + sizeof(INT_HASH_ITEM);
+		if (0 == strcmp(key, ((STR_HASH_ITEM*)next->pdata)->key)) {
+			pdata = (char*)next->pdata + sizeof(STR_HASH_ITEM);
 			return pdata;
 		}
 		next = next->pnext;
@@ -253,37 +263,36 @@ void* int_hash_query(INT_HASH_TABLE* ptbl, int key)
  *	
  *	@param	
  *		ptbl [in]	pointer to the hash table
- *		key			the key that will be removed
+ *		key	 [in]	the key that will be removed
  *
  *	@return	 
  *		 1		succeed
  *		-1		invalid parameter
  *		-2		the key does not exist
  */
-int int_hash_remove(INT_HASH_TABLE* ptbl, int key)
+int str_hash_remove(STR_HASH_TABLE* ptbl, const char *key)
 {
 	DOUBLE_LIST_NODE* next	= NULL;
 	size_t index = -1;
-
+	
 #ifdef _DEBUG_UMTA
-	if (NULL == ptbl) {
-		debug_info("[int_hash]: int_hash_remove, invalid param");
+	if (NULL == ptbl || NULL == key) {
+		debug_info("[str_hash]: str_hash_remove, param NULL");
 		return -1;
 	}
 #endif
-	index = default_int_hash_function(key) % ptbl->entry_num;
+	index = ptbl->hash_func(key) % (ptbl->entry_num);
 	if (NULL == ptbl->hash_map[index].phead) {
 		return -2;
 	}
 	
 	next = ptbl->hash_map[index].phead;
-	if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key)
+	if (0 == strcmp(key, ((STR_HASH_ITEM*)next->pdata)->key))
 		goto DONE;
 
 	next = next->pnext;
 	while (next != ptbl->hash_map[index].phead) {
-		if (key == ((INT_HASH_ITEM*)next->pdata)->hash_key)
-		{
+		if (0 == strcmp(key, ((STR_HASH_ITEM*)next->pdata)->key)) {
 			break;
 		}
 		next = next->pnext;
@@ -297,7 +306,7 @@ DONE:
 
 	double_list_remove(&(ptbl->hash_map[index]), next);
 	double_list_remove(&(ptbl->iter_list), 
-				&(((INT_HASH_ITEM*)next->pdata)->iter_node));
+				&(((STR_HASH_ITEM*)next->pdata)->iter_node));
 	lib_buffer_put(ptbl->buf_pool, next->pdata);
 	ptbl->item_num -= 1;
 	return 1;
@@ -312,19 +321,19 @@ DONE:
  *	@return		
  *		pointer to the hash iterator object, NULL if error occurs
  */
-INT_HASH_ITER* int_hash_iter_init(INT_HASH_TABLE* ptbl)
+STR_HASH_ITER* str_hash_iter_init(STR_HASH_TABLE* ptbl)
 {
-	PINT_HASH_ITER iter = NULL;
+	PSTR_HASH_ITER iter = NULL;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == ptbl) {
-		debug_info("[int_hash]: int_hash_iter_init, invalid parameter");
+		debug_info("[str_hash]: str_hash_iter_init, param NULL");
 		return NULL;
 	}
 #endif
-	
-	if (NULL == (iter = malloc(sizeof(INT_HASH_ITER)))) {
-		debug_info("[int_hash]: can not alloc hash iter");
+	iter = static_cast<STR_HASH_ITER *>(malloc(sizeof(STR_HASH_ITER)));
+	if (iter == nullptr) {
+		debug_info("[str_hash]: can not alloc hash iter");
 		return NULL;
 	}
 	
@@ -342,8 +351,14 @@ INT_HASH_ITER* int_hash_iter_init(INT_HASH_TABLE* ptbl)
  *		piter [in]	pointer to the iterator that 
  *					will be released
  */
-void int_hash_iter_free(INT_HASH_ITER *piter)
+void str_hash_iter_free(STR_HASH_ITER *piter)
 {
+#ifdef _DEBUG_UMTA
+	if (NULL == piter) {
+		debug_info("[str_hash]: str_hash_iter_free, param NULL");
+		return;
+	}
+#endif
 	if (NULL != piter) {
 		free(piter);
 	}
@@ -358,14 +373,21 @@ void int_hash_iter_free(INT_HASH_ITER *piter)
  *		how to use the iterator
  *			
  *		[code]:
- *		for (piter=int_hash_iter_begin(piter); !int_hash_iter_done(piter)
- *			int_hash_iter_forward(piter)) {
- *			value = int_hash_iter_get_value(piter, NULL);
+ *		for (ip_hash_iter_begin(piter); !ip_hash_iter_done(piter)
+ *			ip_hash_iter_forward(piter)) {
+ *			value = ip_hash_iter_get_value(piter, NULL);
  *		}
  */
-void int_hash_iter_begin(INT_HASH_ITER *piter)
+void str_hash_iter_begin(STR_HASH_ITER *piter)
 {
-	piter->cur_node = piter->ptable->iter_list.phead;
+#ifdef _DEBUG_UMTA
+	if (NULL == piter) {	
+		debug_info("[str_hash]: str_hash_iter_begin, param NULL");
+		return;
+	}
+#endif
+	piter->cur_node = 
+		piter->ptable->iter_list.phead;
 }
 
 /*
@@ -378,8 +400,14 @@ void int_hash_iter_begin(INT_HASH_ITER *piter)
  *		1		is finished
  *		0		not finished
  */
-int int_hash_iter_done(INT_HASH_ITER *piter)
+int str_hash_iter_done(STR_HASH_ITER *piter)
 {
+#ifdef _DEBUG_UMTA
+	if (NULL == piter) {	
+		debug_info("[str_hash]: str_hash_iter_done, param NULL");
+		return 0;
+	}
+#endif
 	return (piter->ptable->item_num <=
 		piter->iter_curr_pos);
 }
@@ -396,20 +424,23 @@ int int_hash_iter_done(INT_HASH_ITER *piter)
  *		the value of the current iterator position, NULL if some error
  *		occurs
  */
-void* int_hash_iter_get_value(INT_HASH_ITER *piter, int *key)
+void* str_hash_iter_get_value(STR_HASH_ITER *piter, char *key)
 {
-	void* pvalue   = NULL;
+	char*	pkey	 = NULL;
+	void*	pvalue	 = NULL;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[int_hash]: int_hash_iter_get_value, invalid param");
+		debug_info("[str_hash]: str_hash_iter_get_value, param NULL");
 		return NULL;
 	}
 #endif
-	pvalue = (char *)piter->cur_node->pdata + sizeof(INT_HASH_ITEM);
+	pvalue = (char *)piter->cur_node->pdata +
+		sizeof(STR_HASH_ITEM);
 	
 	if (NULL != key) {
-		*key = ((INT_HASH_ITEM*)piter->cur_node->pdata)->hash_key;
+		pkey = ((STR_HASH_ITEM*)piter->cur_node->pdata)->key;
+		strcpy(key, pkey);
 	}
 	return pvalue;
 }
@@ -425,11 +456,11 @@ void* int_hash_iter_get_value(INT_HASH_ITER *piter, int *key)
  *		 1		succeed
  *		-1		invalid parameter
  */
-int int_hash_iter_forward(INT_HASH_ITER *piter)
+int str_hash_iter_forward(STR_HASH_ITER *piter)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[int_hash]: int_hash_iter_forward, invalid param");
+		debug_info("[str_hash]: str_hash_iter_forward, param NULL");
 		return -1;
 	}
 #endif
@@ -455,39 +486,35 @@ int int_hash_iter_forward(INT_HASH_ITER *piter)
  *		-2		the hash table is empty
  *		-3		the remove item does not exist
  */
-int int_hash_iter_remove(INT_HASH_ITER *piter)
+int str_hash_iter_remove(STR_HASH_ITER *piter)
 {
-	DOUBLE_LIST* hash_map = NULL;
-	DOUBLE_LIST_NODE* node= NULL;
-	INT_HASH_ITEM* list_item  = NULL;
+	DOUBLE_LIST* hash_map	= NULL;
+	DOUBLE_LIST_NODE* node	= NULL;
+	STR_HASH_ITEM* list_item= NULL;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == piter) {
-		debug_info("[int_hash]: int_hash_iter_remove, invalid param");
+		debug_info("[str_hash]: str_hash_iter_remove, param NULL");
 		return -1;
 	}
 #endif
 	hash_map = piter->ptable->hash_map;
 
 	if (piter->ptable->item_num < 1) {
-		debug_info("[int_hash]: the hash table is empty");
 		return -2;
 	}
 	if (NULL == piter->cur_node) {
-		debug_info("[int_hash]: the removed item does not exist");
 		return -3;
 	}
-	node = piter->cur_node;
+	node	= piter->cur_node;
 	if (piter->cur_node == piter->ptable->iter_list.phead ||
-			piter->ptable->item_num <= 1) { 
+			piter->ptable->item_num <= 1) {
 		piter->cur_node = NULL;
-	}
-	else {
+	} else {
 		piter->cur_node = piter->cur_node->pprev;
 	}
-	list_item = (INT_HASH_ITEM*)node->pdata;
-	double_list_remove(&(hash_map[list_item->map_index]),
-		&(list_item->list_node));
+	list_item = (STR_HASH_ITEM*)node->pdata;
+	double_list_remove(&(hash_map[list_item->map_index]), &(list_item->list_node));
 	double_list_remove(&(piter->ptable->iter_list), node);
 	lib_buffer_put(piter->ptable->buf_pool, node->pdata);
 	piter->ptable->item_num -= 1;
@@ -495,20 +522,3 @@ int int_hash_iter_remove(INT_HASH_ITER *piter)
 	return 1;
 	
 }
-
-/*
- *	derived from hashpjw, Dragon Book P436
- */
-static unsigned int default_int_hash_function(unsigned int key)
-{
-	key += (key << 12);
-	key ^= (key >> 22);
-	key += (key << 4);
-	key ^= (key >> 9);
-	key += (key << 10);
-	key ^= (key >> 2);
-	key += (key << 7);
-	key ^= (key >> 12);
-	return key;
-}
-

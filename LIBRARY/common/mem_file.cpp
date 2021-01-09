@@ -560,12 +560,12 @@ size_t mem_file_write(MEM_FILE *pfile, const void *pbuff, size_t size)
 	pfile->pnode_wr = double_list_get_after(&pfile->list, pfile->pnode_wr);
 	remains -= actual_written;
 	for (i = 0; i < blocks; i++) {
-		memcpy((char*)pfile->pnode_wr->pdata, pbuff + actual_written, FILE_BLOCK_SIZE);
+		memcpy(pfile->pnode_wr->pdata, static_cast<const char *>(pbuff) + actual_written, FILE_BLOCK_SIZE);
 		actual_written += FILE_BLOCK_SIZE;
 		pfile->pnode_wr = double_list_get_after(&pfile->list, pfile->pnode_wr);
 		remains -= FILE_BLOCK_SIZE;
 	}
-	memcpy(pfile->pnode_wr->pdata, pbuff + actual_written, remains);
+	memcpy(pfile->pnode_wr->pdata, static_cast<const char *>(pbuff) + actual_written, remains);
 	pfile->wr_total_pos += size;
 	pfile->wr_block_pos = remains;
 

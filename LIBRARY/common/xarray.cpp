@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "xarray.h"
 #include "util.h"
-#include <string.h>
+#include <cstring>
 
 /* the extra memory ocupation for xarray node */
 #define EXTRA_XARRAYNODE_SIZE		 sizeof(XARRAY_UNIT)
@@ -105,7 +105,6 @@ void xarray_allocator_free(LIB_BUFFER* buf)
  */
 int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
 {
-	void *pdata1;
 	int ret_index;
 	XARRAY_UNIT *punit;
 
@@ -126,7 +125,7 @@ int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
 	punit->node.pdata = punit;
 	punit->node_hash.pdata = punit;
 	punit->xtag =  xtag;
-	pdata1 = (void*)punit + sizeof(XARRAY_UNIT);
+	void *pdata1 = reinterpret_cast<char *>(punit) + sizeof(XARRAY_UNIT);
 	memcpy(pdata1, pdata, pxarray->data_size);
 
 	double_list_append_as_tail(&pxarray->mlist, &punit->node);
@@ -155,8 +154,6 @@ int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
 void* xarray_get_item(XARRAY* pxarray, int index)
 {
 	int i;
-	DOUBLE_LIST_NODE   *pnode;
-	XARRAY_UNIT *punit;
 	
 #ifdef _DEBUG_UMTA
 	if (NULL == pxarray) {
@@ -173,13 +170,12 @@ void* xarray_get_item(XARRAY* pxarray, int index)
 	if (index < XARRAY_CACHEITEM_NUMBER) {
 		return pxarray->cache_ptrs[index];
 	}
-	punit = (XARRAY_UNIT*)(pxarray->cache_ptrs[XARRAY_CACHEITEM_NUMBER-1]
-				- sizeof(XARRAY_UNIT));
-	pnode = &punit->node;
+	auto punit = reinterpret_cast<XARRAY_UNIT *>(static_cast<char *>(pxarray->cache_ptrs[XARRAY_CACHEITEM_NUMBER-1]) - sizeof(XARRAY_UNIT));
+	auto pnode = &punit->node;
 	for(i=XARRAY_CACHEITEM_NUMBER; i<=index; i++) {
 		pnode = double_list_get_after(&pxarray->mlist, pnode);
 	}
-	return pnode->pdata + sizeof(XARRAY_UNIT);
+	return static_cast<char *>(pnode->pdata) + sizeof(XARRAY_UNIT);
 }
 
 /*
@@ -211,7 +207,7 @@ void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag)
 		pnode=double_list_get_after(plist, pnode)) {
 		punit = (XARRAY_UNIT*)pnode->pdata;
 		if (xtag == punit->xtag) {
-			return pnode->pdata + sizeof(XARRAY_UNIT);
+			return static_cast<char *>(pnode->pdata) + sizeof(XARRAY_UNIT);
 		}
 	}
 
