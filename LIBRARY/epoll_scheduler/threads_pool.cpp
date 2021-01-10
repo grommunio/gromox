@@ -3,9 +3,9 @@
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
-#include "contexts_pool.h"
+#include <gromox/contexts_pool.hpp>
 #include <gromox/lib_buffer.hpp>
-#include "threads_pool.h"
+#include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include <stdio.h>
 #include <unistd.h>

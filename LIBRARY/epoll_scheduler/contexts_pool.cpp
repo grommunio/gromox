@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <string.h>
 #include <gromox/defs.h>
-#include "contexts_pool.h"
-#include "threads_pool.h"
+#include <gromox/contexts_pool.hpp>
+#include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
 #include <sys/socket.h>
 #include <sys/epoll.h>

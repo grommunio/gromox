@@ -13,9 +13,9 @@
 #include "pop3_parser.h" 
 #include "units_allocator.h" 
 #include "blocks_allocator.h" 
-#include "threads_pool.h" 
+#include <gromox/threads_pool.hpp>
 #include "console_server.h" 
-#include "contexts_pool.h" 
+#include <gromox/contexts_pool.hpp>
 #include "service.h" 
 #include "system_services.h"
 #include <gromox/util.hpp>

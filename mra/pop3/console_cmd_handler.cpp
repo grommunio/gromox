@@ -6,8 +6,8 @@
 #include "blocks_allocator.h"
 #include "units_allocator.h"
 #include "console_server.h"
-#include "contexts_pool.h"
-#include "threads_pool.h"
+#include <gromox/contexts_pool.hpp>
+#include <gromox/threads_pool.hpp>
 #include "pop3_parser.h"
 #include <gromox/lib_buffer.hpp>
 #include "resource.h"

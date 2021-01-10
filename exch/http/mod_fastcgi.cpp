@@ -3,8 +3,8 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "contexts_pool.h"
-#include "threads_pool.h"
+#include <gromox/contexts_pool.hpp>
+#include <gromox/threads_pool.hpp>
 #include "mod_fastcgi.h"
 #include "http_parser.h"
 #include <gromox/list_file.hpp>

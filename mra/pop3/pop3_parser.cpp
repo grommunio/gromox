@@ -9,7 +9,7 @@
 #include "pop3_cmd_handler.h"
 #include "blocks_allocator.h"
 #include "units_allocator.h"
-#include "threads_pool.h"
+#include <gromox/threads_pool.hpp>
 #include "system_services.h"
 #include "resource.h"
 #include <gromox/lib_buffer.hpp>

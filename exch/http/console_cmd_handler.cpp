@@ -8,8 +8,8 @@
 #include "console_server.h"
 #include "hpm_processor.h"
 #include "pdu_processor.h"
-#include "contexts_pool.h"
-#include "threads_pool.h"
+#include <gromox/contexts_pool.hpp>
+#include <gromox/threads_pool.hpp>
 #include "http_parser.h"
 #include <gromox/lib_buffer.hpp>
 #include "resource.h"

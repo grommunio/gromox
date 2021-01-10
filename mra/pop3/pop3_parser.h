@@ -5,7 +5,7 @@
 #	include <stdint.h>
 #endif
 #include <gromox/common_types.hpp>
-#include "contexts_pool.h"
+#include <gromox/contexts_pool.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/array.hpp>
 #include <sys/time.h>

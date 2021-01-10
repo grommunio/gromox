@@ -16,7 +16,7 @@
 #include "mod_rewrite.h"
 #include "http_parser.h"
 #include <gromox/endian_macro.hpp>
-#include "threads_pool.h"
+#include <gromox/threads_pool.hpp>
 #include "hpm_processor.h"
 #include "system_services.h"
 #include "blocks_allocator.h"

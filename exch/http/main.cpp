@@ -18,10 +18,10 @@
 #include "mod_rewrite.h"
 #include "mod_fastcgi.h"
 #include "http_parser.h"
-#include "threads_pool.h"
+#include <gromox/threads_pool.hpp>
 #include "hpm_processor.h"
 #include "pdu_processor.h"
-#include "contexts_pool.h"
+#include <gromox/contexts_pool.hpp>
 #include "console_server.h"
 #include "system_services.h"
 #include "blocks_allocator.h"

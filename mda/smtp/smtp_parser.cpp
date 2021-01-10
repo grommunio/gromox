@@ -10,7 +10,7 @@
 #include "smtp_cmd_handler.h"
 #include <gromox/files_allocator.hpp>
 #include "blocks_allocator.h"
-#include "threads_pool.h"
+#include <gromox/threads_pool.hpp>
 #include "system_services.h"
 #include "flusher.h"
 #include "resource.h"

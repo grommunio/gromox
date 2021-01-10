@@ -2,7 +2,7 @@
 #include <atomic>
 #include "mod_fastcgi.h"
 #include <gromox/common_types.hpp>
-#include "contexts_pool.h"
+#include <gromox/contexts_pool.hpp>
 #include "pdu_processor.h"
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>

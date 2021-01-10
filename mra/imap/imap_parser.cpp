@@ -17,7 +17,7 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/lib_buffer.hpp>
 #include "imap_parser.h"
-#include "threads_pool.h"
+#include <gromox/threads_pool.hpp>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
 #include "blocks_allocator.h"

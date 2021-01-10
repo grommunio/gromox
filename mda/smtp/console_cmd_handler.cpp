@@ -5,8 +5,8 @@
 #include "console_cmd_handler.h"
 #include "blocks_allocator.h"
 #include "console_server.h"
-#include "contexts_pool.h"
-#include "threads_pool.h"
+#include <gromox/contexts_pool.hpp>
+#include <gromox/threads_pool.hpp>
 #include <gromox/lib_buffer.hpp>
 #include "resource.h"
 #include "flusher.h"
