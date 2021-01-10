@@ -12,14 +12,12 @@ static RESTRICTION_AND_OR* restriction_dup_and_or(
 	const RESTRICTION_AND_OR *prestriction)
 {
 	int i;
-	RESTRICTION_AND_OR *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_AND_OR));
+	auto pres = static_cast<RESTRICTION_AND_OR *>(malloc(sizeof(RESTRICTION_AND_OR)));
 	if (NULL == pres) {
 		return NULL;
 	}
 	pres->count = prestriction->count;
-	pres->pres = malloc(sizeof(RESTRICTION)*pres->count);
+	pres->pres = static_cast<RESTRICTION *>(malloc(sizeof(RESTRICTION) * pres->count));
 	if (NULL == pres->pres) {
 		free(pres);
 		return NULL;
@@ -58,9 +56,7 @@ static void restriction_free_and_or(RESTRICTION_AND_OR *prestriction)
 static RESTRICTION_NOT* restriction_dup_not(
 	const RESTRICTION_NOT *prestriction)
 {
-	RESTRICTION_NOT *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_NOT));
+	auto pres = static_cast<RESTRICTION_NOT *>(malloc(sizeof(RESTRICTION_NOT)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -85,9 +81,7 @@ static void restriction_free_not(
 static RESTRICTION_CONTENT* restriction_dup_content(
 	const RESTRICTION_CONTENT *prestriction)
 {
-	RESTRICTION_CONTENT *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_CONTENT));
+	auto pres = static_cast<RESTRICTION_CONTENT *>(malloc(sizeof(RESTRICTION_CONTENT)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -113,9 +107,7 @@ static void restriction_free_content(RESTRICTION_CONTENT *prestriction)
 static RESTRICTION_PROPERTY* restriction_dup_property(
 	const RESTRICTION_PROPERTY *prestriction)
 {
-	RESTRICTION_PROPERTY *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_PROPERTY));
+	auto pres = static_cast<RESTRICTION_PROPERTY *>(malloc(sizeof(RESTRICTION_PROPERTY)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -142,9 +134,7 @@ static void restriction_free_property(
 static RESTRICTION_PROPCOMPARE* restriction_dup_propcompare(
 	const RESTRICTION_PROPCOMPARE *prestriction)
 {
-	RESTRICTION_PROPCOMPARE *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_PROPCOMPARE));
+	auto pres = static_cast<RESTRICTION_PROPCOMPARE *>(malloc(sizeof(RESTRICTION_PROPCOMPARE)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -163,9 +153,7 @@ static void restriction_free_propcompare(
 static RESTRICTION_BITMASK* restriction_dup_bitmask(
 	const RESTRICTION_BITMASK *prestriction)
 {
-	RESTRICTION_BITMASK *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_BITMASK));
+	auto pres = static_cast<RESTRICTION_BITMASK *>(malloc(sizeof(RESTRICTION_BITMASK)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -184,9 +172,7 @@ static void restriction_free_bitmask(
 static RESTRICTION_SIZE* restriction_dup_size(
 	const RESTRICTION_SIZE *prestriction)
 {
-	RESTRICTION_SIZE *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_SIZE));
+	auto pres = static_cast<RESTRICTION_SIZE *>(malloc(sizeof(RESTRICTION_SIZE)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -205,9 +191,7 @@ static void restriction_free_size(
 static RESTRICTION_EXIST* restriction_dup_exist(
 	const RESTRICTION_EXIST *prestriction)
 {
-	RESTRICTION_EXIST *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_EXIST));
+	auto pres = static_cast<RESTRICTION_EXIST *>(malloc(sizeof(RESTRICTION_EXIST)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -223,9 +207,7 @@ static void restriction_free_exist(RESTRICTION_EXIST *prestriction)
 static RESTRICTION_SUBOBJ* restriction_dup_subobj(
 	const RESTRICTION_SUBOBJ *prestriction)
 {
-	RESTRICTION_SUBOBJ *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_SUBOBJ));
+	auto pres = static_cast<RESTRICTION_SUBOBJ *>(malloc(sizeof(RESTRICTION_SUBOBJ)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -252,14 +234,12 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 	const RESTRICTION_COMMENT *prestriction)
 {
 	int i;
-	RESTRICTION_COMMENT *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_COMMENT));
+	auto pres = static_cast<RESTRICTION_COMMENT *>(malloc(sizeof(RESTRICTION_COMMENT)));
 	if (NULL == pres) {
 		return NULL;
 	}
 	pres->count = prestriction->count;
-	pres->ppropval = malloc(sizeof(TAGGED_PROPVAL)*pres->count);
+	pres->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL) * pres->count));
 	if (NULL == pres->ppropval) {
 		free(pres);
 		return NULL;
@@ -314,9 +294,7 @@ static void restriction_free_comment(
 static RESTRICTION_COUNT* restriction_dup_count(
 	const RESTRICTION_COUNT *prestriction)
 {
-	RESTRICTION_COUNT *pres;
-	
-	pres = malloc(sizeof(RESTRICTION_COUNT));
+	auto pres = static_cast<RESTRICTION_COUNT *>(malloc(sizeof(RESTRICTION_COUNT)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -345,27 +323,27 @@ static void* restriction_dup_by_type(
 	switch (rt) {
 	case RESTRICTION_TYPE_AND:
 	case RESTRICTION_TYPE_OR:
-		return restriction_dup_and_or(prestriction);
+		return restriction_dup_and_or(static_cast<RESTRICTION_AND_OR *>(prestriction));
 	case RESTRICTION_TYPE_NOT:
-		return restriction_dup_not(prestriction);
+		return restriction_dup_not(static_cast<RESTRICTION_NOT *>(prestriction));
 	case RESTRICTION_TYPE_CONTENT:
-		return restriction_dup_content(prestriction);
+		return restriction_dup_content(static_cast<RESTRICTION_CONTENT *>(prestriction));
 	case RESTRICTION_TYPE_PROPERTY:
-		return restriction_dup_property(prestriction);
+		return restriction_dup_property(static_cast<RESTRICTION_PROPERTY *>(prestriction));
 	case RESTRICTION_TYPE_PROPCOMPARE:
-		return restriction_dup_propcompare(prestriction);
+		return restriction_dup_propcompare(static_cast<RESTRICTION_PROPCOMPARE *>(prestriction));
 	case RESTRICTION_TYPE_BITMASK:
-		return restriction_dup_bitmask(prestriction);
+		return restriction_dup_bitmask(static_cast<RESTRICTION_BITMASK *>(prestriction));
 	case RESTRICTION_TYPE_SIZE:
-		return restriction_dup_size(prestriction);
+		return restriction_dup_size(static_cast<RESTRICTION_SIZE *>(prestriction));
 	case RESTRICTION_TYPE_EXIST:
-		return restriction_dup_exist(prestriction);
+		return restriction_dup_exist(static_cast<RESTRICTION_EXIST *>(prestriction));
 	case RESTRICTION_TYPE_SUBOBJ:
-		return restriction_dup_subobj(prestriction);
+		return restriction_dup_subobj(static_cast<RESTRICTION_SUBOBJ *>(prestriction));
 	case RESTRICTION_TYPE_COMMENT:
-		return restriction_dup_comment(prestriction);
+		return restriction_dup_comment(static_cast<RESTRICTION_COMMENT *>(prestriction));
 	case RESTRICTION_TYPE_COUNT:
-		return restriction_dup_count(prestriction);
+		return restriction_dup_count(static_cast<RESTRICTION_COUNT *>(prestriction));
 	default:
 		return NULL;
 	}
@@ -377,35 +355,33 @@ static void restriction_free_by_type(
 	switch (rt) {
 	case RESTRICTION_TYPE_AND:
 	case RESTRICTION_TYPE_OR:
-		return restriction_free_and_or(prestriction);
+		return restriction_free_and_or(static_cast<RESTRICTION_AND_OR *>(prestriction));
 	case RESTRICTION_TYPE_NOT:
-		return restriction_free_not(prestriction);
+		return restriction_free_not(static_cast<RESTRICTION_NOT *>(prestriction));
 	case RESTRICTION_TYPE_CONTENT:
-		return restriction_free_content(prestriction);
+		return restriction_free_content(static_cast<RESTRICTION_CONTENT *>(prestriction));
 	case RESTRICTION_TYPE_PROPERTY:
-		return restriction_free_property(prestriction);
+		return restriction_free_property(static_cast<RESTRICTION_PROPERTY *>(prestriction));
 	case RESTRICTION_TYPE_PROPCOMPARE:
-		return restriction_free_propcompare(prestriction);
+		return restriction_free_propcompare(static_cast<RESTRICTION_PROPCOMPARE *>(prestriction));
 	case RESTRICTION_TYPE_BITMASK:
-		return restriction_free_bitmask(prestriction);
+		return restriction_free_bitmask(static_cast<RESTRICTION_BITMASK *>(prestriction));
 	case RESTRICTION_TYPE_SIZE:
-		return restriction_free_size(prestriction);
+		return restriction_free_size(static_cast<RESTRICTION_SIZE *>(prestriction));
 	case RESTRICTION_TYPE_EXIST:
-		return restriction_free_exist(prestriction);
+		return restriction_free_exist(static_cast<RESTRICTION_EXIST *>(prestriction));
 	case RESTRICTION_TYPE_SUBOBJ:
-		return restriction_free_subobj(prestriction);
+		return restriction_free_subobj(static_cast<RESTRICTION_SUBOBJ *>(prestriction));
 	case RESTRICTION_TYPE_COMMENT:
-		return restriction_free_comment(prestriction);
+		return restriction_free_comment(static_cast<RESTRICTION_COMMENT *>(prestriction));
 	case RESTRICTION_TYPE_COUNT:
-		return restriction_free_count(prestriction);
+		return restriction_free_count(static_cast<RESTRICTION_COUNT *>(prestriction));
 	}
 }
 
 RESTRICTION* restriction_dup(const RESTRICTION *prestriction)
 {
-	RESTRICTION *pres;
-	
-	pres = malloc(sizeof(RESTRICTION));
+	auto pres = static_cast<RESTRICTION *>(malloc(sizeof(RESTRICTION)));
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -515,27 +491,27 @@ uint32_t restriction_size(const RESTRICTION *r)
 	switch (r->rt) {
 	case RESTRICTION_TYPE_AND:
 	case RESTRICTION_TYPE_OR:
-		return restriction_and_or_size(r->pres) + sizeof(uint8_t);
+		return restriction_and_or_size(static_cast<RESTRICTION_AND_OR *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_NOT:
-		return restriction_not_size(r->pres) + sizeof(uint8_t);
+		return restriction_not_size(static_cast<RESTRICTION_NOT *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_CONTENT:
-		return restriction_content_size(r->pres) + sizeof(uint8_t);
+		return restriction_content_size(static_cast<RESTRICTION_CONTENT *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_PROPERTY:
-		return restriction_property_size(r->pres) + sizeof(uint8_t);
+		return restriction_property_size(static_cast<RESTRICTION_PROPERTY *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_PROPCOMPARE:
-		return restriction_propcompare_size(r->pres) + sizeof(uint8_t);
+		return restriction_propcompare_size(static_cast<RESTRICTION_PROPCOMPARE *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_BITMASK:
-		return restriction_bitmask_size(r->pres) + sizeof(uint8_t);
+		return restriction_bitmask_size(static_cast<RESTRICTION_BITMASK *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_SIZE:
-		return restriction_size_size(r->pres) + sizeof(uint8_t);
+		return restriction_size_size(static_cast<RESTRICTION_SIZE *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_EXIST:
-		return restriction_exist_size(r->pres) + sizeof(uint8_t);
+		return restriction_exist_size(static_cast<RESTRICTION_EXIST *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_SUBOBJ:
-		return restriction_size_subobj(r->pres) + sizeof(uint8_t);
+		return restriction_size_subobj(static_cast<RESTRICTION_SUBOBJ *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_COMMENT:
-		return restriction_comment_size(r->pres) + sizeof(uint8_t);
+		return restriction_comment_size(static_cast<RESTRICTION_COMMENT *>(r->pres)) + sizeof(uint8_t);
 	case RESTRICTION_TYPE_COUNT:
-		return restriction_count_size(r->pres) + sizeof(uint8_t);
+		return restriction_count_size(static_cast<RESTRICTION_COUNT *>(r->pres)) + sizeof(uint8_t);
 	}
 	return 0;
 }

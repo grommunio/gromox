@@ -8,9 +8,7 @@
 
 static STORE_ENTRYID* store_entryid_dup(STORE_ENTRYID *peid)
 {
-	STORE_ENTRYID *pstore;
-	
-	pstore = malloc(sizeof(STORE_ENTRYID));
+	auto pstore = static_cast<STORE_ENTRYID *>(malloc(sizeof(STORE_ENTRYID)));
 	if (NULL == pstore) {
 		return NULL;
 	}
@@ -38,9 +36,7 @@ static void store_entryid_free(STORE_ENTRYID *peid)
 
 static MOVECOPY_ACTION* movecopy_action_dup(const MOVECOPY_ACTION *paction)
 {
-	MOVECOPY_ACTION *pmovecopy;
-	
-	pmovecopy = malloc(sizeof(MOVECOPY_ACTION));
+	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(malloc(sizeof(MOVECOPY_ACTION)));
 	if (NULL == pmovecopy) {
 		return NULL;
 	}
@@ -87,9 +83,7 @@ static void movecopy_action_free(MOVECOPY_ACTION *paction)
 
 static REPLY_ACTION* reply_action_dup(const REPLY_ACTION *paction)
 {
-	REPLY_ACTION *preply;
-	
-	preply = malloc(sizeof(REPLY_ACTION));
+	auto preply = static_cast<REPLY_ACTION *>(malloc(sizeof(REPLY_ACTION)));
 	if (NULL == preply) {
 		return NULL;
 	}
@@ -114,7 +108,7 @@ static BOOL recipient_block_dup_internal(
 	}
 	precipient->reserved = pblock->reserved;
 	precipient->count = pblock->count;
-	precipient->ppropval = malloc(sizeof(TAGGED_PROPVAL)*pblock->count);
+	precipient->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL) * pblock->count));
 	if (NULL == pblock->ppropval) {
 		return FALSE;
 	}
@@ -149,17 +143,16 @@ static FORWARDDELEGATE_ACTION* forwarddelegate_action_dup(
 	const FORWARDDELEGATE_ACTION *paction)
 {
 	int i;
-	FORWARDDELEGATE_ACTION *pblock;
 	
 	if (0 == paction->count) {
 		return NULL;
 	}
-	pblock = malloc(sizeof(FORWARDDELEGATE_ACTION));
+	auto pblock = static_cast<FORWARDDELEGATE_ACTION *>(malloc(sizeof(FORWARDDELEGATE_ACTION)));
 	if (NULL == pblock) {
 		return NULL;
 	}
 	pblock->count = paction->count;
-	pblock->pblock = malloc(sizeof(RECIPIENT_BLOCK)*pblock->count);
+	pblock->pblock = static_cast<RECIPIENT_BLOCK *>(malloc(sizeof(RECIPIENT_BLOCK) * pblock->count));
 	if (NULL == pblock->pblock) {
 		free(pblock);
 		return NULL;
@@ -202,14 +195,14 @@ static BOOL action_block_dup_internal(
 	switch (paction->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
-		pblock->pdata = movecopy_action_dup(paction->pdata);
+		pblock->pdata = movecopy_action_dup(static_cast<MOVECOPY_ACTION *>(paction->pdata));
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
 		return TRUE;
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
-		pblock->pdata = reply_action_dup(paction->pdata);
+		pblock->pdata = reply_action_dup(static_cast<REPLY_ACTION *>(paction->pdata));
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
@@ -232,15 +225,15 @@ static BOOL action_block_dup_internal(
 		return TRUE;
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
-		pblock->pdata = forwarddelegate_action_dup(paction->pdata);
+		pblock->pdata = forwarddelegate_action_dup(static_cast<FORWARDDELEGATE_ACTION *>(paction->pdata));
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
 		return TRUE;
 	case ACTION_TYPE_OP_TAG: {
 		pblock->pdata = malloc(sizeof(TAGGED_PROPVAL));
-		TAGGED_PROPVAL *s = paction->pdata;
-		TAGGED_PROPVAL *d = pblock->pdata;
+		auto s = static_cast<TAGGED_PROPVAL *>(paction->pdata);
+		auto d = static_cast<TAGGED_PROPVAL *>(pblock->pdata);
 		if (d == nullptr)
 			return FALSE;
 		d->proptag = s->proptag;
@@ -264,11 +257,11 @@ static void action_block_free_internal(ACTION_BLOCK *paction)
 	switch (paction->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
-		movecopy_action_free(paction->pdata);
+		movecopy_action_free(static_cast<MOVECOPY_ACTION *>(paction->pdata));
 		break;
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
-		reply_action_free(paction->pdata);
+		reply_action_free(static_cast<REPLY_ACTION *>(paction->pdata));
 		break;
 	case ACTION_TYPE_OP_DEFER_ACTION:
 	case ACTION_TYPE_OP_BOUNCE:
@@ -276,10 +269,10 @@ static void action_block_free_internal(ACTION_BLOCK *paction)
 		break;
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
-		forwarddelegate_action_free(paction->pdata);
+		forwarddelegate_action_free(static_cast<FORWARDDELEGATE_ACTION *>(paction->pdata));
 		break;
 	case ACTION_TYPE_OP_TAG: {
-		TAGGED_PROPVAL *p = paction->pdata;
+		auto p = static_cast<TAGGED_PROPVAL *>(paction->pdata);
 		propval_free(PROP_TYPE(p->proptag), p->pvalue);
 		free(p);
 		break;
@@ -293,17 +286,16 @@ static void action_block_free_internal(ACTION_BLOCK *paction)
 RULE_ACTIONS* rule_actions_dup(const RULE_ACTIONS *prule)
 {
 	int i;
-	RULE_ACTIONS *paction;
 	
 	if (0 == prule->count) {
 		return NULL;
 	}
-	paction = malloc(sizeof(RULE_ACTIONS));
+	auto paction = static_cast<RULE_ACTIONS *>(malloc(sizeof(RULE_ACTIONS)));
 	if (NULL == paction) {
 		return NULL;
 	}
 	paction->count = prule->count;
-	paction->pblock = malloc(sizeof(ACTION_BLOCK)*paction->count);
+	paction->pblock = static_cast<ACTION_BLOCK *>(malloc(sizeof(ACTION_BLOCK) * paction->count));
 	if (NULL == paction->pblock) {
 		return NULL;
 	}
@@ -391,11 +383,11 @@ static uint32_t action_block_size(const ACTION_BLOCK *r)
 	switch (r->type) {
 	case ACTION_TYPE_OP_MOVE:
 	case ACTION_TYPE_OP_COPY:
-		size += movecopy_action_size(r->pdata);
+		size += movecopy_action_size(static_cast<MOVECOPY_ACTION *>(r->pdata));
 		break;
 	case ACTION_TYPE_OP_REPLY:
 	case ACTION_TYPE_OP_OOF_REPLY:
-		size += reply_action_size(r->pdata);
+		size += reply_action_size(static_cast<REPLY_ACTION *>(r->pdata));
 		break;
 	case ACTION_TYPE_OP_DEFER_ACTION:
 		size += r->length - sizeof(uint8_t) - 
@@ -406,10 +398,10 @@ static uint32_t action_block_size(const ACTION_BLOCK *r)
 		break;
 	case ACTION_TYPE_OP_FORWARD:
 	case ACTION_TYPE_OP_DELEGATE:
-		size += forwarddelegate_action_size(r->pdata);
+		size += forwarddelegate_action_size(static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
 		break;
 	case ACTION_TYPE_OP_TAG: {
-		TAGGED_PROPVAL *p = r->pdata;
+		auto p = static_cast<TAGGED_PROPVAL *>(r->pdata);
 		size += sizeof(uint32_t) + propval_size(PROP_TYPE(p->proptag), p->pvalue);
 	}
 	}
