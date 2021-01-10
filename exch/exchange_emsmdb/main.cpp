@@ -4,7 +4,7 @@
 #include <gromox/paths.h>
 #include "guid.h"
 #include "util.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "mail_func.h"
 #include "emsmdb_ndr.h"
 #include <gromox/proc_common.h>

@@ -1,6 +1,6 @@
 #pragma once
-#include "element_data.h"
-#include "ext_buffer.h"
+#include <gromox/element_data.hpp>
+#include <gromox/ext_buffer.hpp>
 #include "ical.h"
 
 #ifdef __cplusplus

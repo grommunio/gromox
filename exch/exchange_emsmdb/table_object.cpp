@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "restriction.h"
+#include <gromox/restriction.hpp>
 #include <gromox/proc_common.h>
 #include "exmdb_client.h"
 #include "table_object.h"
-#include "sortorder_set.h"
+#include <gromox/sortorder_set.hpp>
 #include "folder_object.h"
-#include "proptag_array.h"
+#include <gromox/proptag_array.hpp>
 #include "rop_processor.h"
 #include "message_object.h"
 #include "processor_types.h"

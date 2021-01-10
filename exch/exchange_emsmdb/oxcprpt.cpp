@@ -5,7 +5,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "rops.h"
-#include "propval.h"
+#include <gromox/propval.hpp>
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include "exmdb_client.h"

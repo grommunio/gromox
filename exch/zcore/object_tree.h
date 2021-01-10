@@ -4,7 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
-#include "tpropval_array.h"
+#include <gromox/tpropval_array.hpp>
 #include "simple_tree.h"
 #include "int_hash.h"
 

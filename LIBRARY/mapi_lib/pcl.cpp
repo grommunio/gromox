@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "pcl.h"
-#include "rop_util.h"
+#include <gromox/pcl.hpp>
+#include <gromox/rop_util.hpp>
 #include <stdlib.h>
 #include <string.h>
 

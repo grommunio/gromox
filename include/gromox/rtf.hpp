@@ -1,7 +1,6 @@
 #pragma once
 #include <gromox/defs.h>
-#include "element_data.h"
-
+#include <gromox/element_data.hpp>
 
 #ifdef __cplusplus
 extern "C" {

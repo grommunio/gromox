@@ -1,5 +1,5 @@
 #pragma once
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 
 #define MAX_LENGTH_FOR_FOLDER						64*1024
 

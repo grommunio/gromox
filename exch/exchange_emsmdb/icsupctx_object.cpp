@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "icsupctx_object.h"
 #include "common_util.h"
-#include "idset.h"
+#include <gromox/idset.hpp>
 #include <cstdlib>
 
 ICSUPCTX_OBJECT* icsupctx_object_create(

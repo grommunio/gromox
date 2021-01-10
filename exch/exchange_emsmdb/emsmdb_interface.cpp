@@ -8,7 +8,7 @@
 #include "rop_processor.h"
 #include <gromox/proc_common.h>
 #include "common_util.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "int_hash.h"
 #include "str_hash.h"
 #include "aux_ext.h"

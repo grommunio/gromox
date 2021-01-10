@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "sortorder_set.h"
+#include <gromox/sortorder_set.hpp>
 #include <string.h>
 #include <stdlib.h>
 

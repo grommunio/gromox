@@ -4,11 +4,11 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "attachment_object.h"
-#include "proptag_array.h"
+#include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
 #include "logon_object.h"
 #include "common_util.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include <cstdlib>
 #include <cstring>
 

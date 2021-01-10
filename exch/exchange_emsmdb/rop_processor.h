@@ -7,7 +7,7 @@
 #	include <time.h>
 #endif
 #include "logon_object.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "mem_file.h"
 
 #define OBJECT_TYPE_NONE					0

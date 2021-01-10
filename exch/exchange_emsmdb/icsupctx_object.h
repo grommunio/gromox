@@ -1,6 +1,6 @@
 #pragma once
 #include "folder_object.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "ics_state.h"
 #include "mem_file.h"
 

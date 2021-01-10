@@ -1,6 +1,6 @@
 #pragma once
 #include "mail.h"
-#include "element_data.h"
+#include <gromox/element_data.hpp>
 
 enum{
 	BOUNCE_NOTIFY_READ,

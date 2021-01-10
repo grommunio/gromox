@@ -6,8 +6,8 @@
 #include "endian_macro.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
-#include "ext_buffer.h"
-#include "lzxpress.h"
+#include <gromox/ext_buffer.hpp>
+#include <gromox/lzxpress.hpp>
 #include "rop_ext.h"
 
 static int rop_ext_push_logon_time(EXT_PUSH *pext, const LOGON_TIME *r)

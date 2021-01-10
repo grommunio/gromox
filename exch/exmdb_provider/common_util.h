@@ -2,7 +2,7 @@
 #include <gromox/defs.h>
 #include "mail.h"
 #include "common_types.h"
-#include "element_data.h"
+#include <gromox/element_data.hpp>
 #include <sqlite3.h>
 
 #define SOCKET_TIMEOUT										60

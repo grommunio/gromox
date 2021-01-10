@@ -4,12 +4,12 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "emsmdb_interface.h"
-#include "tpropval_array.h"
+#include <gromox/tpropval_array.hpp>
 #include "folder_object.h"
 #include "exmdb_client.h"
 #include "common_util.h"
-#include "ext_buffer.h"
-#include "rop_util.h"
+#include <gromox/ext_buffer.hpp>
+#include <gromox/rop_util.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

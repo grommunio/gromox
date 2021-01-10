@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/defs.h>
 #include "util.h"
-#include "binhex.h"
+#include <gromox/binhex.hpp>
 #include "endian_macro.h"
 #include <string.h>
 #include <stdlib.h>

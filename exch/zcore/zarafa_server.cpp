@@ -13,10 +13,10 @@
 #include "guid.h"
 #include "rpc_ext.h"
 #include "ab_tree.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "int_hash.h"
 #include "str_hash.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "user_object.h"
 #include "common_util.h"
 #include "table_object.h"
@@ -29,7 +29,7 @@
 #include "icsdownctx_object.h"
 #include "attachment_object.h"
 #include "exmdb_client.h"
-#include "idset.h"
+#include <gromox/idset.hpp>
 #include <sys/socket.h>
 #include <cstdio>
 #include <poll.h>

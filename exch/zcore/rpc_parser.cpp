@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
-#include "idset.h"
+#include <gromox/idset.hpp>
 #include "rpc_ext.h"
 #include "rpc_parser.h"
 #include "common_util.h"
 #include "zarafa_server.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include <sys/socket.h>
 #include <pthread.h>
 #include <cstdlib>

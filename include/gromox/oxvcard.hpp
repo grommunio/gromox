@@ -1,5 +1,5 @@
 #pragma once
-#include "element_data.h"
+#include <gromox/element_data.hpp>
 #include "vcard.h"
 
 #define VCARD_MAX_BUFFER_LEN				1024*1024

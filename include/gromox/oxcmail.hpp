@@ -1,6 +1,6 @@
 #pragma once
-#include "element_data.h"
-#include "ext_buffer.h"
+#include <gromox/element_data.hpp>
+#include <gromox/ext_buffer.hpp>
 #include "mail.h"
 
 #define OXCMAIL_BODY_PLAIN_ONLY				1

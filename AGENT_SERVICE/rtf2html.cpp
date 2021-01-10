@@ -6,8 +6,8 @@
 #include <libHX/defs.h>
 #include <libHX/option.h>
 #include <gromox/paths.h>
-#include "rtf.h"
-#include "rtfcp.h"
+#include <gromox/rtf.hpp>
+#include <gromox/rtfcp.hpp>
 #include "list_file.h"
 #include <cstdio>
 #include <cstdlib>

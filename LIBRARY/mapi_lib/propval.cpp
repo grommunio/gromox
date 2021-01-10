@@ -4,9 +4,9 @@
 #include <gromox/mapidefs.h>
 #include "guid.h"
 #include "util.h"
-#include "propval.h"
-#include "restriction.h"
-#include "rule_actions.h"
+#include <gromox/propval.hpp>
+#include <gromox/restriction.hpp>
+#include <gromox/rule_actions.hpp>
 #include <stdlib.h>
 #include <string.h>
 

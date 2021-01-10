@@ -3,18 +3,18 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <gromox/mapidefs.h>
-#include "tarray_set.h"
+#include <gromox/tarray_set.hpp>
 #include "object_tree.h"
-#include "restriction.h"
+#include <gromox/restriction.hpp>
 #include "exmdb_client.h"
 #include "table_object.h"
-#include "sortorder_set.h"
+#include <gromox/sortorder_set.hpp>
 #include "folder_object.h"
-#include "proptag_array.h"
+#include <gromox/proptag_array.hpp>
 #include "zarafa_server.h"
 #include "message_object.h"
 #include "container_object.h"
-#include "propval.h"
+#include <gromox/propval.hpp>
 #include <cstdlib>
 #include <cstring>
 

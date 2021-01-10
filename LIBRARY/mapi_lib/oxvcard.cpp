@@ -4,9 +4,9 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include "tpropval_array.h"
-#include "rop_util.h"
-#include "oxvcard.h"
+#include <gromox/tpropval_array.hpp>
+#include <gromox/rop_util.hpp>
+#include <gromox/oxvcard.hpp>
 #include "vcard.h"
 #include "util.h"
 #include <string.h>

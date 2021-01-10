@@ -1,5 +1,5 @@
 #pragma once
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "common_util.h"
 #include "store_object.h"
 

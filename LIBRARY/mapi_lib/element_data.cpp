@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/mapidefs.h>
-#include "proptag_array.h"
-#include "tpropval_array.h"
-#include "element_data.h"
-#include "tarray_set.h"
-#include "eid_array.h"
-#include "propval.h"
-#include "idset.h"
+#include <gromox/proptag_array.hpp>
+#include <gromox/tpropval_array.hpp>
+#include <gromox/element_data.hpp>
+#include <gromox/tarray_set.hpp>
+#include <gromox/eid_array.hpp>
+#include <gromox/propval.hpp>
+#include <gromox/idset.hpp>
 #include <stdlib.h>
 #include <string.h>
 

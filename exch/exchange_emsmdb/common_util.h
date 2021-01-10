@@ -1,6 +1,6 @@
 #pragma once
 #include "logon_object.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "mem_file.h"
 #include "mail.h"
 

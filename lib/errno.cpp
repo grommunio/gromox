@@ -1,5 +1,5 @@
 #include <gromox/defs.h>
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 
 unsigned int gxerr_to_hresult(gxerr_t e)
 {

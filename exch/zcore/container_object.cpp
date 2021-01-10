@@ -7,13 +7,13 @@
 #include "container_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"
-#include "ext_buffer.h"
-#include "tarray_set.h"
+#include <gromox/ext_buffer.hpp>
+#include <gromox/tarray_set.hpp>
 #include "mail_func.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "ab_tree.h"
 #include "exmdb_client.h"
-#include "propval.h"
+#include <gromox/propval.hpp>
 #include <cstdio>
 
 CONTAINER_OBJECT* container_object_create(

@@ -1,5 +1,5 @@
 #pragma once
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "processor_types.h"
 
 #ifdef __cplusplus

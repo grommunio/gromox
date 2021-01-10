@@ -9,7 +9,7 @@
 #include "single_list.h"
 #include "mail_func.h"
 #include "timezone.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "util.h"
 #include "dsn.h"
 #include <sys/types.h>

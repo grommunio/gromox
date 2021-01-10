@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "apple_util.h"
-#include "ext_buffer.h"
+#include <gromox/apple_util.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <string.h>
 #include <stdlib.h>
 #include <gromox/defs.h>

@@ -11,8 +11,8 @@
 #include "util.h"
 #include "mail.h"
 #include "mjson.h"
-#include "oxcmail.h"
-#include "rop_util.h"
+#include <gromox/oxcmail.hpp>
+#include <gromox/rop_util.hpp>
 #include "mem_file.h"
 #include "str_hash.h"
 #include "mail_func.h"
@@ -23,7 +23,7 @@
 #include "double_list.h"
 #include "single_list.h"
 #include "exmdb_client.h"
-#include "tpropval_array.h"
+#include <gromox/tpropval_array.hpp>
 #include "system_services.h"
 #include <ctime>
 #include <iconv.h>

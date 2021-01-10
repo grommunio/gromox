@@ -5,9 +5,9 @@
 #else
 #	include <stdint.h>
 #endif
-#include "element_data.h"
+#include <gromox/element_data.hpp>
 #include "double_list.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include <pthread.h>
 #include <sqlite3.h>
 

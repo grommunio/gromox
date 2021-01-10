@@ -4,8 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
-#include "mapi_types.h"
-
+#include <gromox/mapi_types.hpp>
 #define SPECIAL_CONTAINER_GAL					0
 #define SPECIAL_CONTAINER_PROVIDER				1
 

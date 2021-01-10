@@ -9,7 +9,7 @@
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include "list_file.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "rops.h"
 #include <cstdio>
 

@@ -3,12 +3,11 @@
 // This file is part of Gromox.
 #include <climits>
 #include <gromox/defs.h>
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "endian_macro.h"
 #include <cstring>
 #include <cstdlib>
-#include "rtfcp.h"
-
+#include <gromox/rtfcp.hpp>
 #define	RTF_COMPRESSED			0x75465a4c
 #define	RTF_UNCOMPRESSED		0x414c454d
 

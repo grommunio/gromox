@@ -4,9 +4,9 @@
 #include "alloc_context.h"
 #include "exmdb_client.h"
 #include "common_util.h"
-#include "ext_buffer.h"
-#include "rop_util.h"
-#include "pcl.h"
+#include <gromox/ext_buffer.hpp>
+#include <gromox/rop_util.hpp>
+#include <gromox/pcl.hpp>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>

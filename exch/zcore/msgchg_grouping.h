@@ -4,9 +4,9 @@
 #else
 #	include <stdint.h>
 #endif
-#include "element_data.h"
+#include <gromox/element_data.hpp>
 #include "store_object.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 
 #ifdef __cplusplus
 extern "C" {

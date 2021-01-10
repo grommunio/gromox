@@ -1,7 +1,7 @@
 #pragma once
-#include "binhex.h"
-#include "macbinary.h"
-#include "applefile.h"
+#include <gromox/binhex.hpp>
+#include <gromox/macbinary.hpp>
+#include <gromox/applefile.hpp>
 
 #ifdef __cplusplus
 extern "C" {

@@ -8,12 +8,12 @@
 #include "fastupctx_object.h"
 #include "emsmdb_interface.h"
 #include "message_object.h"
-#include "tpropval_array.h"
+#include <gromox/tpropval_array.hpp>
 #include "folder_object.h"
 #include "exmdb_client.h"
 #include "common_util.h"
-#include "tarray_set.h"
-#include "rop_util.h"
+#include <gromox/tarray_set.hpp>
+#include <gromox/rop_util.hpp>
 #include <cstdlib>
 
 struct MARKER_NODE {

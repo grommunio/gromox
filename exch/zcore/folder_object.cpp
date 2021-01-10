@@ -5,13 +5,13 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <gromox/mapidefs.h>
-#include "tpropval_array.h"
+#include <gromox/tpropval_array.hpp>
 #include "folder_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"
 #include "exmdb_client.h"
-#include "ext_buffer.h"
-#include "rop_util.h"
+#include <gromox/ext_buffer.hpp>
+#include <gromox/rop_util.hpp>
 #include <cstdio>
 #include <fcntl.h>
 #include <cstdlib>

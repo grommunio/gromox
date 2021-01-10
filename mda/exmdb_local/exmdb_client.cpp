@@ -7,7 +7,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/socket.h>
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "list_file.h"
 #include <sys/socket.h>
 #include <sys/types.h>

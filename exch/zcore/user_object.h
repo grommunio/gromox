@@ -5,7 +5,7 @@
 #	include <stdint.h>
 #endif
 #include "mail_func.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 
 struct USER_OBJECT {
 	int base_id;

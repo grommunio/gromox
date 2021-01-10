@@ -1,6 +1,6 @@
 #pragma once
-#include "mapi_types.h"
-#include "element_data.h"
+#include <gromox/mapi_types.hpp>
+#include <gromox/element_data.hpp>
 
 #define EXT_ERR_SUCCESS						0
 #define EXT_ERR_FORMAT						1

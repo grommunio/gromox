@@ -2,7 +2,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/zcore_rpc.hpp>
 #include "rpc_ext.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 
 static BOOL rpc_ext_pull_zmovecopy_action(

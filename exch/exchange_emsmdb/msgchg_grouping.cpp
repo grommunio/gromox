@@ -4,10 +4,10 @@
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
-#include "proptag_array.h"
+#include <gromox/proptag_array.hpp>
 #include "double_list.h"
 #include "list_file.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "guid.h"
 #include "util.h"
 #include <sys/types.h>

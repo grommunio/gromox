@@ -1,6 +1,6 @@
 #pragma once
-#include "element_data.h"
-#include "mapi_types.h"
+#include <gromox/element_data.hpp>
+#include <gromox/mapi_types.hpp>
 #include "str_hash.h"
 #include "int_hash.h"
 

@@ -6,9 +6,9 @@
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "db_engine.h"
-#include "eid_array.h"
-#include "rop_util.h"
-#include "idset.h"
+#include <gromox/eid_array.hpp>
+#include <gromox/rop_util.hpp>
+#include <gromox/idset.hpp>
 #include <cstdio>
 #define IDSET_CACHE_MIN_RANGE				10
 

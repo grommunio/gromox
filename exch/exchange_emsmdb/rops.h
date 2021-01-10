@@ -1,6 +1,6 @@
 #pragma once
-#include "mapi_types.h"
-#include "ext_buffer.h"
+#include <gromox/mapi_types.hpp>
+#include <gromox/ext_buffer.hpp>
 
 #ifdef __cplusplus
 extern "C" {

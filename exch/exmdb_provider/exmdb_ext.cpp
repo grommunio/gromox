@@ -3,8 +3,8 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include "exmdb_ext.h"
-#include "rop_util.h"
-#include "idset.h"
+#include <gromox/rop_util.hpp>
+#include <gromox/idset.hpp>
 
 static int exmdb_ext_pull_connect_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)

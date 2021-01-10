@@ -6,8 +6,7 @@
 #	include <stdint.h>
 #	include <time.h>
 #endif
-#include "ext_buffer.h"
-
+#include <gromox/ext_buffer.hpp>
 #define ORIGINAL_FLAG_ISALIAS				0x80
 #define ORIGINAL_FLAG_ISINVISIBLE			0x40
 #define ORIGINAL_FLAG_HASBUNDLE				0x20

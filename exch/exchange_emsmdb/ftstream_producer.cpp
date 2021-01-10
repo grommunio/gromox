@@ -4,7 +4,7 @@
 #include "emsmdb_interface.h"
 #include "endian_macro.h"
 #include "common_util.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "util.h"
 #include <sys/stat.h>
 #include <cstring>

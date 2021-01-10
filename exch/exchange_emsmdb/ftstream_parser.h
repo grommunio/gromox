@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/defs.h>
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "logon_object.h"
 
 struct FASTUPCTX_OBJECT;

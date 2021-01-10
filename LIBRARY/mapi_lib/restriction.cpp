@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/mapidefs.h>
-#include "restriction.h"
-#include "propval.h"
+#include <gromox/restriction.hpp>
+#include <gromox/propval.hpp>
 #include <stdlib.h>
 
 static void* restriction_dup_by_type(uint8_t rt, void *prestriction);

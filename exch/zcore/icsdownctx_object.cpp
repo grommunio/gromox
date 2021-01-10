@@ -2,15 +2,15 @@
 #include <cstdint>
 #include <libHX/defs.h>
 #include "icsdownctx_object.h"
-#include "tpropval_array.h"
-#include "proptag_array.h"
+#include <gromox/tpropval_array.hpp>
+#include <gromox/proptag_array.hpp>
 #include "zarafa_server.h"
 #include "exmdb_client.h"
-#include "restriction.h"
-#include "ext_buffer.h"
-#include "eid_array.h"
-#include "rop_util.h"
-#include "idset.h"
+#include <gromox/restriction.hpp>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/eid_array.hpp>
+#include <gromox/rop_util.hpp>
+#include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
 

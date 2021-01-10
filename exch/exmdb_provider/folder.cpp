@@ -5,10 +5,10 @@
 #include <gromox/database.h>
 #include "exmdb_server.h"
 #include "common_util.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "db_engine.h"
-#include "rop_util.h"
-#include "proptags.h"
+#include <gromox/rop_util.hpp>
+#include <gromox/proptags.hpp>
 #include <cstring>
 #include <cstdio>
 #define LLD(x) static_cast<long long>(x)

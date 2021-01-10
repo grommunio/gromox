@@ -6,7 +6,7 @@
 #include <gromox/paths.h>
 #include <gromox/socket.h>
 #include "list_file.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "double_list.h"
 #include <cstdio>
 #include <fcntl.h>

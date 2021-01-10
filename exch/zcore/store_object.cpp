@@ -16,7 +16,7 @@
 #include "object_tree.h"
 #include "config_file.h"
 #include "mail_func.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "util.h"
 #include "guid.h"
 #include <cstdio>

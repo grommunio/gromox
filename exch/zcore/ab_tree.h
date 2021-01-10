@@ -9,7 +9,7 @@
 #endif
 #include "simple_tree.h"
 #include "single_list.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "int_hash.h"
 #include "mem_file.h"
 

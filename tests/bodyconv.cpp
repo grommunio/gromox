@@ -9,11 +9,11 @@
 #include <string_view>
 #include <unistd.h>
 #include <gromox/tie.hpp>
-#include "html.h"
+#include <gromox/html.hpp>
 #include "mail_func.h"
-#include "oxcmail.h"
-#include "rtf.h"
-#include "rtfcp.h"
+#include <gromox/oxcmail.hpp>
+#include <gromox/rtf.hpp>
+#include <gromox/rtfcp.hpp>
 
 using namespace gromox;
 

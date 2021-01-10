@@ -4,7 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "common_util.h"
 
 struct REQ_LOGON {

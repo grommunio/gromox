@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "tarray_set.h"
-#include "tpropval_array.h"
+#include <gromox/tarray_set.hpp>
+#include <gromox/tpropval_array.hpp>
 #include <stdlib.h>
 #include <string.h>
 

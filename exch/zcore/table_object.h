@@ -1,7 +1,6 @@
 #pragma once
 #include "store_object.h"
-#include "mapi_types.h"
-
+#include <gromox/mapi_types.hpp>
 #define STORE_TABLE									1
 #define HIERARCHY_TABLE								2
 #define CONTENT_TABLE								3

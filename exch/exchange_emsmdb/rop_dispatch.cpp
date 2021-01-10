@@ -3,7 +3,7 @@
 #include "emsmdb_interface.h"
 #include "rop_dispatch.h"
 #include "common_util.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "rops.h"
 #include "util.h"
 

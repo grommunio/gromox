@@ -4,11 +4,11 @@
 #include <memory>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "html.h"
+#include <gromox/html.hpp>
 #include "util.h"
 #include "int_hash.h"
 #include "str_hash.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "double_list.h"
 #include <cstdio>
 #include <gumbo.h>

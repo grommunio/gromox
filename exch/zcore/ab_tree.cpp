@@ -12,11 +12,11 @@
 #include "util.h"
 #include "guid.h"
 #include "ab_tree.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #include "zarafa_server.h"
-#include "propval.h"
-#include "rop_util.h"
+#include <gromox/propval.hpp>
+#include <gromox/rop_util.hpp>
 #include "system_services.h"
 #include <cstdio>
 #include <cstring>

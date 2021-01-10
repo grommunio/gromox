@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "lzxpress.h"
+#include <gromox/lzxpress.hpp>
 #include "endian_macro.h"
 #include "common_types.h"
 #include <string.h>

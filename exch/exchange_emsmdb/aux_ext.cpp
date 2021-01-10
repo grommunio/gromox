@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "lzxpress.h"
+#include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include "aux_ext.h"

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <libHX/defs.h>
-#include "tpropval_array.h"
+#include <gromox/tpropval_array.hpp>
 #include "common_util.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 #include "ics_state.h"
-#include "rop_util.h"
-#include "idset.h"
+#include <gromox/rop_util.hpp>
+#include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
 

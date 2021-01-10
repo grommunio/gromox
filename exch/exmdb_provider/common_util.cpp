@@ -7,12 +7,12 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
-#include "pcl.h"
+#include <gromox/pcl.hpp>
 #include "util.h"
 #include "guid.h"
-#include "propval.h"
-#include "rop_util.h"
-#include "ext_buffer.h"
+#include <gromox/propval.hpp>
+#include <gromox/rop_util.hpp>
+#include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
 #include "alloc_context.h"

@@ -1,5 +1,5 @@
 #pragma once
-#include "proptags.h"
+#include <gromox/proptags.hpp>
 #include "common_types.h"
 #include "double_list.h"
 

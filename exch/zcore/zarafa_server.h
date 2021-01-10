@@ -1,6 +1,6 @@
 #pragma once
 #include <atomic>
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "common_util.h"
 #include "object_tree.h"
 #include <pthread.h>

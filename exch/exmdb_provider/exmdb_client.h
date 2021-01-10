@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/defs.h>
-#include "mapi_types.h"
-#include "element_data.h"
+#include <gromox/mapi_types.hpp>
+#include <gromox/element_data.hpp>
 
 enum {
 	ALIVE_PROXY_CONNECTIONS,

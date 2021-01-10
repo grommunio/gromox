@@ -6,8 +6,7 @@
 #	include <stdint.h>
 #	include <time.h>
 #endif
-#include "ext_buffer.h"
-
+#include <gromox/ext_buffer.hpp>
 #define APPLESINGLE_MAGIC	0x00051600
 #define APPLEDOUBLE_MAGIC	0x00051607
 

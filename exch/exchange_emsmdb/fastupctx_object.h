@@ -1,9 +1,7 @@
 #pragma once
 #include <gromox/defs.h>
 #include "ftstream_parser.h"
-#include "element_data.h"
-
-
+#include <gromox/element_data.hpp>
 #define ROOT_ELEMENT_FOLDERCONTENT			1
 #define ROOT_ELEMENT_MESSAGECONTENT			2
 #define ROOT_ELEMENT_ATTACHMENTCONTENT		3

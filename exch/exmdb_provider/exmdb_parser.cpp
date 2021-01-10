@@ -7,10 +7,10 @@
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
 #include "common_util.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 #include "exmdb_ext.h"
 #include "list_file.h"
-#include "idset.h"
+#include <gromox/idset.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>

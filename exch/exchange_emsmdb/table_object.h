@@ -1,7 +1,7 @@
 #pragma once
 #include "emsmdb_interface.h"
 #include "logon_object.h"
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 
 struct TABLE_OBJECT {
 	LOGON_OBJECT *plogon;

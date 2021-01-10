@@ -8,11 +8,11 @@
 #include <gromox/tie.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
-#include "html.h"
+#include <gromox/html.hpp>
 #include "mail_func.h"
-#include "rtf.h"
-#include "rtfcp.h"
-#include "tpropval_array.h"
+#include <gromox/rtf.hpp>
+#include <gromox/rtfcp.hpp>
+#include <gromox/tpropval_array.hpp>
 
 using namespace gromox;
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/defs.h>
 #include "rops.h"
-#include "rop_util.h"
-#include "ext_buffer.h"
+#include <gromox/rop_util.hpp>
+#include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include "exmdb_client.h"

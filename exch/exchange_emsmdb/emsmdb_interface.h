@@ -1,7 +1,7 @@
 #pragma once
 #include "common_types.h"
 #include <gromox/proc_common.h>
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 
 struct EMSMDB_INFO {
 	uint32_t cpid;

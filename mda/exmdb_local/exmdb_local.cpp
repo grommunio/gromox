@@ -9,9 +9,9 @@
 #include <libHX/string.h>
 #include "util.h"
 #include "guid.h"
-#include "oxcmail.h"
+#include <gromox/oxcmail.hpp>
 #include "str_hash.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "list_file.h"
 #include "config_file.h"
 #include "cache_queue.h"
@@ -21,7 +21,7 @@
 #include "bounce_audit.h"
 #include "auto_response.h"
 #include "alloc_context.h"
-#include "tpropval_array.h"
+#include <gromox/tpropval_array.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>

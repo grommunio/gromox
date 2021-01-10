@@ -1,6 +1,6 @@
 #pragma once
 #include "common_util.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 
 #ifdef __cplusplus
 extern "C" {

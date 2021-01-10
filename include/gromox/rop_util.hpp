@@ -4,7 +4,7 @@
 #else
 #	include <time.h>
 #endif
-#include "mapi_types.h"
+#include <gromox/mapi_types.hpp>
 
 enum {
 	PS_PUBLIC_STRINGS = 0,

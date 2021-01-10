@@ -8,7 +8,7 @@
 #include "common_util.h"
 #include "list_file.h"
 #include "db_engine.h"
-#include "rop_util.h"
+#include <gromox/rop_util.hpp>
 #include "guid.h"
 #include "util.h"
 #include <cstdlib>

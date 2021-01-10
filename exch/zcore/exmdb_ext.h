@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/defs.h>
 #include "common_util.h"
-#include "ext_buffer.h"
+#include <gromox/ext_buffer.hpp>
 
 struct EXMDB_ITEM {
 	char prefix[256];

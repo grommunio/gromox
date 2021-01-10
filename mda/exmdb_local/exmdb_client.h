@@ -1,6 +1,5 @@
 #pragma once
-#include "element_data.h"
-
+#include <gromox/element_data.hpp>
 
 #define EXMDB_RESULT_OK			0
 #define EXMDB_RUNTIME_ERROR		1
