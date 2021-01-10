@@ -35,7 +35,7 @@ Flag that controls whether to bind to 0.0.0.0 (false), or event_listen_ip
 Default: \fIfalse\fP
 .SS event_listen_ip
 .PP
-The IPv4 address for exposing the event service on.
+An IPv6 address (or v4-mapped address) for exposing the event service on.
 .PP
 Default: \fI::1\fP
 .SS event_listen_port

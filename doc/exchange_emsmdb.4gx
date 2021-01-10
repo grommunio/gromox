@@ -36,7 +36,7 @@ Default: \fI256\fP
 Default: \fI;\fP (semicolon)
 .SS smtp_server_ip
 .PP
-SMTP server IPv4 address to connect to for outgoing mail.
+SMTP server hostname or address to contact for outgoing mail.
 .PP
 Default: \fI::1\fP
 .SS smtp_server_port

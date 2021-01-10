@@ -57,7 +57,7 @@ A portion of the store path to match on
 .IP \(bu 4
 The type of store ("private" or "public")
 .IP \(bu 4
-IPv4 address of the server running exmdb_provider(4gx)
+An IPv6 address (or v4-mapped address) of the server running exmdb_provider(4gx)
 .IP \(bu 4
 The TCP port number of the server
 .SH Files
@@ -91,7 +91,8 @@ Directory where plugin instances will look for their configuration overrides.
 Default: \fI/etc/gromox/zcore\fP
 .SS console_server_ip
 .PP
-The IPv4 address to expose the management console frontend on.
+An IPv6 address (or v4-mapped address) to expose the management console
+frontend on.
 .PP
 Default: \fI::1\fP
 .SS console_server_port
@@ -162,7 +163,7 @@ primary search in standard directories (as per ld.so(8)) was unsuccessful.
 Default: \fI/usr/lib/gromox\fP
 .SS smtp_server_ip
 .PP
-SMTP server IPv4 address to contact for outgoing mail.
+SMTP server hostname or address to contact for outgoing mail.
 .PP
 Default: \fI::1\fP
 .SS smtp_server_port

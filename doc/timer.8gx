@@ -37,11 +37,9 @@ and persist them across restarts.
 Default: \fI/etc/gromox/timer_acl.txt\fP
 .SS timer_listen_ip
 .PP
-The IPv4 address for exposing the timer service on. When an address is set,
-timer_acl.txt will be ignored; be aware that if the address is 0.0.0.0, this
-would enable global access.
+An IPv6 address (or v4-mapped address) for exposing the timer service on.
 .PP
-Default: \fI::1\fP and ACL is ignored
+Default: \fI::1\fP
 .SS timer_listen_port
 .PP
 The TCP port number for exposing the timer service on.

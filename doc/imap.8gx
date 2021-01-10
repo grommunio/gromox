@@ -33,7 +33,8 @@ Directory where plugin instances will look for their configuration overrides.
 Default: \fI/etc/gromox/imap\fP
 .SS console_server_ip
 .PP
-The IPv4 address to expose the management console frontend on.
+An IPv6 address (or v4-mapped address) to expose the management console
+frontend on.
 .PP
 Default: \fI::1\fP
 .SS console_server_port
