@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
 #include <gromox/common_types.hpp>

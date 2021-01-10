@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mapi_types.hpp>
 #include <gromox/ext_buffer.hpp>
 

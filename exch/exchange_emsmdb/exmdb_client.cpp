@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdint>
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
 #include "common_util.h"

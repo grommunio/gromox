@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mapi_types.hpp>
 
 extern TPROPVAL_ARRAY *tpropval_array_init(void);

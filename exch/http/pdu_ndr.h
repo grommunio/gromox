@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/ndr.hpp>
 #define DCERPC_SECURITY_CONTEXT_MULTIPLEXING		0x1
 #define DCERPC_CONNECTION_ORPHAN_SUPPORTED			0x2

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "types.h"
 #include "php.h"
 

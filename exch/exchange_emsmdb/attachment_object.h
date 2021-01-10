@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/defs.h>
 #include "message_object.h"
 

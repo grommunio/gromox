@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mapi_types.hpp>
 
 RULE_ACTIONS* rule_actions_dup(const RULE_ACTIONS *prule);

@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <gromox/hmacmd5.hpp>
 #include <cstring>
 

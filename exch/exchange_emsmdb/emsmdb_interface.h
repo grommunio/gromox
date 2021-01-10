@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/common_types.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/mapi_types.hpp>

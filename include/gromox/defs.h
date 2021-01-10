@@ -1,6 +1,7 @@
 #pragma once
 #include <endian.h>
 #include <cstddef>
+#include <cstdint>
 template<typename T, size_t N> constexpr inline size_t GX_ARRAY_SIZE(T (&)[N]) { return N; }
 #define GX_EXPORT __attribute__((visibility("default")))
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mapi_types.hpp>
 #include "logon_object.h"
 

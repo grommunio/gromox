@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <climits>
 #include <cstdarg>
+#include <cstdint>
 #include <cstring>
 #include <unistd.h>
 #include <libHX/defs.h>

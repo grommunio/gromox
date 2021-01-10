@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <cerrno>
+#include <cstdint>
 
 static int zarafa_client_connect()
 {

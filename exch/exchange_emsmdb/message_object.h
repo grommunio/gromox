@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/defs.h>
 #include "ics_state.h"
 #include <gromox/mapi_types.hpp>

@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iconv.h>
-
+#include <cstdint>
 #define CVAL(buf, pos) ((unsigned int)(((const uint8_t *)(buf))[pos]))
 #define CVAL_NC(buf, pos) (((uint8_t *)(buf))[pos])
 #define PVAL(buf, pos) (CVAL(buf,pos))

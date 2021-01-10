@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "processor_types.h"
 
 int rop_dispatch(ROP_REQUEST *prequest,

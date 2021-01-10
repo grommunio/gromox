@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/defs.h>
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>

@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <cstdint>
 #include <gromox/mapi_types.hpp>
 #include "common_util.h"
 #include "object_tree.h"

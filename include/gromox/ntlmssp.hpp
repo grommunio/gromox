@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/arcfour.hpp>
 #include <gromox/rpc_types.hpp>
 #include <gromox/common_types.hpp>

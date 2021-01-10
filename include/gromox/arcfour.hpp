@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/rpc_types.hpp>
 
 struct ARCFOUR_STATE {

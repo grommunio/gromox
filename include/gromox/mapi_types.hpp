@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/proptags.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>

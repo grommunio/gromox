@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "nsp_types.h"
 
 #define HANDLE_EXCHANGE_NSP				1

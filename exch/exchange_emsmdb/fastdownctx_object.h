@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "ftstream_producer.h"
 #include "ics_state.h"
 

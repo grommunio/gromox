@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "ext_pack.h"
 
 struct REQ_LOGON {

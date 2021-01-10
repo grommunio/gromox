@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <climits>
+#include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/endian_macro.hpp>

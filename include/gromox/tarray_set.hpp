@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mapi_types.hpp>
 
 extern TARRAY_SET *tarray_set_init(void);

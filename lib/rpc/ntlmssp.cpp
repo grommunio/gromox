@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+#include <cstdint>
 #include <libHX/string.h>
 #include <gromox/ndr.hpp>
 #include <gromox/util.hpp>

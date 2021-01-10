@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 

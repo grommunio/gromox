@@ -3,6 +3,7 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
+#include <cstdint>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdint>
 #include <gromox/lzxpress.hpp>
 #include <gromox/endian_macro.hpp>
 #include <gromox/common_types.hpp>

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <ctime>
 #include <gromox/mapi_types.hpp>
 

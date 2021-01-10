@@ -4,6 +4,7 @@
 /*
  *	  Addr_kids, for parse the email addr
  */
+#include <cstdint>
 #include <cstdlib>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>

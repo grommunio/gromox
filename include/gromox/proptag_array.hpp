@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mapi_types.hpp>
 
 BOOL proptag_array_init_internal(PROPTAG_ARRAY *pproptags);

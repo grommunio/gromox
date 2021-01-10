@@ -28,7 +28,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <ctime>
-
+#include <cstdint>
 #define SOCKET_TIMEOUT								60
 
 struct EXMDB_ITEM {

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/mem_file.hpp>
 #include <gromox/common_types.hpp>
 #include <openssl/ssl.h>

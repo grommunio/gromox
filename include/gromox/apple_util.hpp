@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/binhex.hpp>
 #include <gromox/macbinary.hpp>
 #include <gromox/applefile.hpp>

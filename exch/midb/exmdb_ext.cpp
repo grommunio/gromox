@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include "exmdb_ext.h"

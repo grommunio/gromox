@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "emsmdb_interface.h"
 #include "logon_object.h"
 #include <gromox/mapi_types.hpp>

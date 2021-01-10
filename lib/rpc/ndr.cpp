@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2003 Andrew Tridgell
 // This file is part of Gromox.
 #include <cassert>
+#include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/endian_macro.hpp>

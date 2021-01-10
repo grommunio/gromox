@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/str_hash.hpp>

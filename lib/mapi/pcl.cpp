@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdint>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <cstdlib>

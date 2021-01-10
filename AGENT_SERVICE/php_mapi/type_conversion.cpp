@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <cstdint>
 #include <gromox/mapidefs.h>
 #include "type_conversion.h"
 #include "ext.hpp"

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdint>
 #include "ftstream_parser.h"
 #include "rop_processor.h"
 #include <gromox/endian_macro.hpp>
