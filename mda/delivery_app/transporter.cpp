@@ -1096,7 +1096,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 		}
 	}
 	if (NULL != pnode) {
-		printf("[transporter]: message infinitive loop is detected\n");
+		printf("[transporter]: message infinite loop is detected\n");
 		transporter_put_context(pcontext);
 		return FALSE;
 	}
