@@ -11,7 +11,7 @@
 
 #define	GROWING_BLOCK_SIZE			64*1024
 
-typedef struct _READ_STAT {
+struct READ_STAT {
 	uint8_t *pbuff;
 	uint32_t length;
 	uint32_t offset;
@@ -19,24 +19,23 @@ typedef struct _READ_STAT {
 	int state86;
 	uint8_t runlen;
 	uint8_t lastch;
-} READ_STAT;
+};
 
-typedef struct _BINHEX_STREAM {
+struct BINHEX_STREAM {
 	uint8_t *data;
 	uint32_t alloc_size;
 	uint32_t offset;
-} BINHEXT_STREAM;
+};
 
-typedef struct _WRITE_STAT {
-	BINHEXT_STREAM stream;
+struct WRITE_STAT {
+	BINHEX_STREAM stream;
 	char line[MAXLINELEN];
 	uint8_t linelen;
 	uint16_t crc;
 	int state86;
 	uint8_t runlen;
 	uint8_t lastch;
-} WRITE_STAT;
-
+};
 
 static char g_hqxheader[] = "(This file must be converted with BinHex 4.0)\r\n";
 

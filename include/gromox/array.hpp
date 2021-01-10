@@ -3,13 +3,13 @@
 #include <gromox/single_list.hpp>
 #define ARRAY_CACHEITEM_NUMBER  200000
 
-typedef struct _ARRAY {
+struct ARRAY {
 	LIB_BUFFER* mbuf_pool;
 	SINGLE_LIST mlist;
 	size_t data_size;
 	size_t cur_size;
 	void **cache_ptrs;
-} ARRAY;
+};
 
 #ifdef __cplusplus
 extern "C" {

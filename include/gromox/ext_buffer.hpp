@@ -21,7 +21,7 @@
 
 typedef void* (*EXT_BUFFER_ALLOC)(size_t);
 
-typedef struct _EXT_PULL {
+struct EXT_PULL {
 	EXT_BUFFER_ALLOC alloc;
 	union {
 		const uint8_t *data;
@@ -31,9 +31,9 @@ typedef struct _EXT_PULL {
 	uint32_t data_size;
 	uint32_t offset;
 	uint32_t flags;
-} EXT_PULL;
+};
 
-typedef struct _EXT_PUSH {
+struct EXT_PUSH {
 	BOOL b_alloc;
 	union {
 		uint8_t *data;
@@ -43,19 +43,19 @@ typedef struct _EXT_PUSH {
 	uint32_t alloc_size;
 	uint32_t offset;
 	uint32_t flags;
-} EXT_PUSH;
+};
 
 /* bitmap RPC_HEADER_EXT flags */
 #define RHE_FLAG_COMPRESSED							0x0001
 #define RHE_FLAG_XORMAGIC							0x0002
 #define RHE_FLAG_LAST								0x0004
 
-typedef struct _RPC_HEADER_EXT {
+struct RPC_HEADER_EXT {
 	uint16_t version;
 	uint16_t flags;
 	uint16_t size;
 	uint16_t size_actual;
-} RPC_HEADER_EXT;
+};
 
 #ifdef __cplusplus
 extern "C" {

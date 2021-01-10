@@ -8,7 +8,7 @@
 
 #define MJSON_MIME_MULTIPLE		2
 
-typedef struct _MJSON_MIME {
+struct MJSON_MIME {
 	SIMPLE_TREE_NODE node;
 	LIB_BUFFER  *ppool;
 	int			mime_type;
@@ -23,10 +23,9 @@ typedef struct _MJSON_MIME {
 	size_t      head;
 	size_t      begin;
 	size_t		length;
-} MJSON_MIME;
+};
 
-
-typedef struct _MJSON{
+struct MJSON {
 	SIMPLE_TREE tree;
 	LIB_BUFFER  *ppool;
 	unsigned int uid;
@@ -53,7 +52,7 @@ typedef struct _MJSON{
 	int          priority;
 	char         notification[1024];
 	size_t       size;
-} MJSON;
+};
 
 typedef void (*MJSON_MIME_ENUM)(MJSON_MIME*, void*);
 

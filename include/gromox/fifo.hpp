@@ -3,14 +3,13 @@
 #include <gromox/single_list.hpp>
 #define EXTRA_FIFOITEM_SIZE sizeof(SINGLE_LIST)
 
-typedef struct _FIFO {
+struct FIFO {
     LIB_BUFFER* mbuf_pool;
     SINGLE_LIST mlist;
     size_t      data_size;
     size_t      cur_size;
     size_t      max_size;
-} FIFO;
-
+};
 
 #ifdef __cplusplus
 extern "C" {

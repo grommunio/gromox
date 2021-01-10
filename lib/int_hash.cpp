@@ -34,14 +34,13 @@ static unsigned int default_int_hash_function(unsigned int);
 INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size)
 {
 	DOUBLE_LIST* p_map = NULL;
-	PINT_HASH_TABLE	 table = NULL;
 	size_t	i = 0;
 
 	if (max_items <= 0 || item_size <= 0) {
 		debug_info("[int_hash]: parameter is invalid");
 		return NULL;
 	}
-	table = (PINT_HASH_TABLE)malloc(sizeof(INT_HASH_TABLE));
+	auto table = static_cast<INT_HASH_TABLE *>(malloc(sizeof(INT_HASH_TABLE)));
 	if (NULL == table) {
 		debug_info("[int_hash]: can not alloc hash table");
 		return NULL;
@@ -314,15 +313,13 @@ DONE:
  */
 INT_HASH_ITER* int_hash_iter_init(INT_HASH_TABLE* ptbl)
 {
-	PINT_HASH_ITER iter = NULL;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == ptbl) {
 		debug_info("[int_hash]: int_hash_iter_init, invalid parameter");
 		return NULL;
 	}
 #endif
-	iter = static_cast<INT_HASH_ITER *>(malloc(sizeof(INT_HASH_ITER)));
+	auto iter = static_cast<INT_HASH_ITER *>(malloc(sizeof(INT_HASH_ITER)));
 	if (iter == nullptr) {
 		debug_info("[int_hash]: can not alloc hash iter");
 		return NULL;

@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/mapi_types.hpp>
 
-typedef struct _BINHEX {
+struct BINHEX {
 	char file_name[64];
 	uint32_t type;
 	uint32_t creator;
@@ -10,7 +10,7 @@ typedef struct _BINHEX {
 	uint8_t *pdata;
 	uint32_t res_len;
 	uint8_t *presource;
-} BINHEX;
+};
 
 #ifdef __cplusplus
 extern "C" {

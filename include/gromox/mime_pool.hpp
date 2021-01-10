@@ -4,20 +4,20 @@
 #include <gromox/mime.hpp>
 #include <pthread.h>
 
-typedef struct _MIME_POOL_NODE {
+struct MIME_POOL_NODE {
 	SINGLE_LIST_NODE	node;
 	MIME				mime;
 	void*				pool;
-} MIME_POOL_NODE;
+};
 
-typedef struct _MIME_POOL{
+struct MIME_POOL {
 	SINGLE_LIST		free_list;
 	BOOL			thread_safe;
 	pthread_mutex_t mutex;
 	MIME_POOL_NODE	*pbegin;
 	size_t			number;
 	LIB_BUFFER		*allocator;
-} MIME_POOL;
+};
 
 #ifdef __cplusplus
 extern "C" {

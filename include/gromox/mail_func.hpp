@@ -13,24 +13,24 @@
 #define MIME_FIELD_LEN			64*1024
 
 /* address following RFC2822 */
-typedef struct _EMAIL_ADDR{
+struct EMAIL_ADDR {
     char display_name[256];
     char local_part[64];
     char domain[64];
-} EMAIL_ADDR;
+};
 
-typedef struct _MIME_FIELD{
+struct MIME_FIELD {
     int  field_name_len;
     char field_name[MIME_NAME_LEN];
     int  field_value_len;
     char field_value[MIME_FIELD_LEN];
-} MIME_FIELD;
+};
 
-typedef struct _ENCODE_STRING{
+struct ENCODE_STRING {
     char encoding[32];
     char charset[32];
     char title[1024];
-} ENCODE_STRING;
+};
 
 #ifdef __cplusplus
 extern "C" {

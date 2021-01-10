@@ -49,46 +49,44 @@
 #define NTLMSSP_REVISION_W2K3_RC10x0A				0x0A
 #define NTLMSSP_REVISION_W2K3						0x0F
 
-
-typedef struct _NTLMSSP_VERSION {
+struct NTLMSSP_VERSION {
 	uint8_t major_vers;
 	uint8_t minor_vers;
 	uint16_t product_build;
 	uint8_t reserved[3];
 	uint8_t ntlm_revers;
-} NTLMSSP_VERSION;
+};
 
-
-typedef struct _NTLMSSP_CRYPT_DIRECTION {
+struct NTLMSSP_CRYPT_DIRECTION {
 	uint32_t seq_num;
 	uint8_t sign_key[16];
 	ARCFOUR_STATE seal_state;
-} NTLMSSP_CRYPT_DIRECTION;
+};
 
-typedef struct _NTLMSSP_CRYPT_DIRECTION_V2 {
+struct NTLMSSP_CRYPT_DIRECTION_V2 {
 	NTLMSSP_CRYPT_DIRECTION sending;
 	NTLMSSP_CRYPT_DIRECTION receiving;
-} NTLMSSP_CRYPT_DIRECTION_V2;
+};
 
-typedef union _NTLMSSP_CRYPT_STATE {
+union NTLMSSP_CRYPT_STATE {
 	NTLMSSP_CRYPT_DIRECTION ntlm;     /* NTLM */
 	NTLMSSP_CRYPT_DIRECTION_V2 ntlm2; /* NTLM2 */
-} NTLMSSP_CRYPT_STATE;
+};
 
-typedef struct _NTLM_AUTH_CHALLENGE {
+struct NTLM_AUTH_CHALLENGE {
 	DATA_BLOB blob;
 	uint8_t blob_buff[8]; /* buffer for DATA_BLOB's data */
-} NTLM_AUTH_CHALLENGE;
+};
 
-typedef struct _NTLMSSP_SESSION_INFO {
+struct NTLMSSP_SESSION_INFO {
 	char username[128];
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[16];
-} NTLMSSP_SESSION_INFO;
+};
 
 typedef BOOL (*NTLMSSP_GET_PASSWORD)(const char*, char*);
 
-typedef struct _NTLMSSP_CTX {
+struct NTLMSSP_CTX {
 	pthread_mutex_t lock;
 	uint32_t expected_state;
 	BOOL unicode;
@@ -120,7 +118,7 @@ typedef struct _NTLMSSP_CTX {
 	NTLM_AUTH_CHALLENGE challenge;
 	
 	NTLMSSP_GET_PASSWORD get_password;
-} NTLMSSP_CTX;
+};
 
 #ifdef __cplusplus
 extern "C" {

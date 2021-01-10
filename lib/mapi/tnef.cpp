@@ -82,20 +82,20 @@
 #define FMS_LOCAL								0x02
 #define FMS_HASATTACH							0x80
 
-typedef struct _TNEF_ATTRIBUTE {
+struct TNEF_ATTRIBUTE {
 	uint8_t lvl;
 	uint32_t attr_id;
 	void *pvalue;
-} TNEF_ATTRIBUTE;
+};
 
-typedef struct _TRP_HEADER {
+struct TRP_HEADER {
 	uint16_t trp_id;
 	uint16_t total_len;
 	uint16_t displayname_len;
 	uint16_t address_len;
-} TRP_HEADER;
+};
 
-typedef struct _DTR {
+struct DTR {
     uint16_t year;
 	uint16_t month;
 	uint16_t day;
@@ -103,37 +103,37 @@ typedef struct _DTR {
 	uint16_t min;
 	uint16_t sec;
     uint16_t dow;
-} DTR;
+};
 
-typedef struct _ATTR_ADDR {
+struct ATTR_ADDR {
 	char *displayname;
 	char *address;
-} ATTR_ADDR;
+};
 
-typedef struct _REND_DATA {
+struct REND_DATA {
 	uint16_t attach_type;
 	uint32_t attach_position;
 	uint16_t render_width;
 	uint16_t render_height;
 	uint32_t data_flags;
-} REND_DATA;
+};
 
-typedef struct _TNEF_PROPVAL {
+struct TNEF_PROPVAL {
 	uint16_t proptype;
 	uint16_t propid;
 	PROPERTY_NAME *ppropname;
 	void *pvalue;
-} TNEF_PROPVAL;
+};
 
-typedef struct _TNEF_PROPLIST {
+struct TNEF_PROPLIST {
 	uint32_t count;
 	TNEF_PROPVAL *ppropval;
-} TNEF_PROPLIST;
+};
 
-typedef struct _TNEF_PROPSET {
+struct TNEF_PROPSET {
 	uint32_t count;
 	TNEF_PROPLIST **pplist;
-} TNEF_PROPSET;
+};
 
 static uint8_t IID_IMessage[] = {
 	0x07, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,

@@ -7,17 +7,18 @@
 #	include <string.h>
 #endif
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <pthread.h>
 #define WSIZE           sizeof(void*)  /* word size (bytes) */
 
-typedef enum _PARAM_TYPE {
+enum PARAM_TYPE {
     FREE_LIST_SIZE,
     ALLOCATED_NUM,
     MEM_ITEM_SIZE,
     MEM_ITEM_NUM
-} PARAM_TYPE;
+};
 
-typedef struct _LIB_BUFFER {
+struct LIB_BUFFER {
     void*   heap_list_head;
     void*   free_list_head;
     void*   cur_heap_head;
@@ -27,21 +28,16 @@ typedef struct _LIB_BUFFER {
     size_t  item_num;
     BOOL    is_thread_safe;
     pthread_mutex_t m_mutex;
-} LIB_BUFFER, *PLIB_BUFFER;
-
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_safe);
-
-void lib_buffer_free(PLIB_BUFFER m_buf);
-
-void* lib_buffer_get(PLIB_BUFFER m_buf);
-
-void lib_buffer_put(PLIB_BUFFER m_buf, void *item);
-
+extern GX_EXPORT void lib_buffer_free(LIB_BUFFER *);
+extern GX_EXPORT void *lib_buffer_get(LIB_BUFFER *);
+extern GX_EXPORT void lib_buffer_put(LIB_BUFFER *, void *item);
 size_t lib_buffer_get_param(LIB_BUFFER* m_buf, PARAM_TYPE type);
 
 #ifdef __cplusplus

@@ -34,8 +34,7 @@
 #define SRV_SIGN		"session key to server-to-client signing key magic constant"
 #define SRV_SEAL		"session key to server-to-client sealing key magic constant"
 
-
-typedef struct _NTLMSSP_SERVER_AUTH_STATE {
+struct NTLMSSP_SERVER_AUTH_STATE {
 	DATA_BLOB user_session_key;
 	uint8_t user_session_key_buff[32];
 	DATA_BLOB lm_session_key;
@@ -44,7 +43,7 @@ typedef struct _NTLMSSP_SERVER_AUTH_STATE {
 	uint8_t encrypted_session_key_buff[32];
 	BOOL doing_ntlm2;
 	uint8_t session_nonce[16]; /* internal variables used by NTLM2 */
-} NTLMSSP_SERVER_AUTH_STATE;
+};
 
 static void ntlmssp_lm_session_key(const uint8_t lm_hash[16],
 	const uint8_t lm_resp[24], uint8_t session_key[16])

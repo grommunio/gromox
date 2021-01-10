@@ -4,21 +4,21 @@
 #define XARRAY_CACHEITEM_NUMBER  (16*1024)
 #define XARRAY_HASHITEM_NUMBER   (4*1024)
 
-typedef struct _XARRAY_UNIT {
+struct XARRAY_UNIT {
 	DOUBLE_LIST_NODE    node;
 	DOUBLE_LIST_NODE    node_hash;
 	int                 index;
 	unsigned int        xtag;
-} XARRAY_UNIT;
+};
 
-typedef struct _XARRAY {
+struct XARRAY {
     LIB_BUFFER*  mbuf_pool;
     DOUBLE_LIST  mlist;
     size_t       data_size;
     size_t       cur_size;
     void*        cache_ptrs[XARRAY_CACHEITEM_NUMBER];
 	DOUBLE_LIST  hash_lists[XARRAY_HASHITEM_NUMBER];
-} XARRAY;
+};
 
 #ifdef __cplusplus
 extern "C" {

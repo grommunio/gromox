@@ -2,14 +2,14 @@
 #include <gromox/lib_buffer.hpp>
 #include <gromox/double_list.hpp>
 
-typedef struct _INT_HASH_ITEM {
+struct INT_HASH_ITEM {
     int         hash_key;
     size_t      map_index;
     DOUBLE_LIST_NODE list_node; 
     DOUBLE_LIST_NODE iter_node;
-} INT_HASH_ITEM, *INT_PHASH_ITEM;
+};
 
-typedef struct _INT_HASH_TABLE {
+struct INT_HASH_TABLE {
     size_t      capacity;
     size_t      entry_num;
     size_t      data_size;
@@ -17,13 +17,13 @@ typedef struct _INT_HASH_TABLE {
     DOUBLE_LIST iter_list;
     DOUBLE_LIST*    hash_map;
     LIB_BUFFER* buf_pool;
-} INT_HASH_TABLE, *PINT_HASH_TABLE;
+};
 
-typedef struct _INT_HASH_ITER {
+struct INT_HASH_ITER {
     DOUBLE_LIST_NODE* cur_node;
     size_t      iter_curr_pos;
     INT_HASH_TABLE* ptable;
-} INT_HASH_ITER, *PINT_HASH_ITER;
+};
 
 #ifdef __cplusplus
 extern "C" {

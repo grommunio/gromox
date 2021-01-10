@@ -18,21 +18,17 @@
 #include <unistd.h>
 #include <stdio.h>
 
-extern BOOL mail_serialize(struct _MAIL *pmail, STREAM *pstream);
-
-extern BOOL mail_to_file(struct _MAIL *pmail, int fd);
-
-extern long mail_get_length(struct _MAIL *pmail);
-
-extern BOOL mail_check_dot(struct _MAIL *pmail);
-
+extern BOOL mail_serialize(MAIL *, STREAM *);
+extern BOOL mail_to_file(MAIL *, int fd);
+extern long mail_get_length(MAIL *);
+extern BOOL mail_check_dot(MAIL *);
 static BOOL mime_parse_multiple(MIME *pmime);
 
 static void mime_produce_boundary(MIME *pmime);
 
 static BOOL mime_check_ascii_printable(const char *astring);
 
-bool mail_set_header(struct _MAIL *mail, const char *hdr, const char *val)
+bool mail_set_header(MAIL *mail, const char *hdr, const char *val)
 {
 	SIMPLE_TREE_NODE *node = simple_tree_get_root(&mail->tree);
 	if (node == nullptr)
@@ -468,7 +464,7 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL mime_write_mail(MIME *pmime, struct _MAIL *pmail)
+BOOL mime_write_mail(MIME *pmime, MAIL *pmail)
 {
 #ifdef _DEBUG_UMTA
     if (NULL == pmime || NULL == pmail) {
@@ -1168,7 +1164,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 				stream_write(pstream, pmime->content_begin,
 					pmime->content_length);
 			} else {
-				mail_serialize((struct _MAIL*)(pmime->content_begin), pstream);
+				mail_serialize(reinterpret_cast<MAIL *>(pmime->content_begin), pstream);
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
@@ -1455,7 +1451,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	
 	/* content is an email object */
 	if (0 == pmime->content_length) {
-		mail_len = mail_get_length((struct _MAIL*)(pmime->content_begin));
+		mail_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
 		if (mail_len <= 0) {
 			debug_info("[mime]: fail to get mail"
 				" length in mime_read_content");
@@ -1475,8 +1471,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 			return FALSE;
 		}
 		stream_init(&tmp_stream, pallocator);
-		if (FALSE == mail_serialize((struct _MAIL*)(pmime->content_begin),
-			&tmp_stream)) {
+		if (!mail_serialize(reinterpret_cast<MAIL *>(pmime->content_begin), &tmp_stream)) {
 			stream_free(&tmp_stream);
 			lib_buffer_free(pallocator);
 			*plength = 0;
@@ -1708,10 +1703,8 @@ BOOL mime_to_file(MIME *pmime, int fd)
 					return FALSE;
 				}
 			} else {
-				if(FALSE == mail_to_file((struct _MAIL*)
-						(pmime->content_begin), fd)) {
+				if (!mail_to_file(reinterpret_cast<MAIL *>(pmime->content_begin), fd))
 					return FALSE;
-				}
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
@@ -1914,10 +1907,8 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 					return FALSE;
 				}
 			} else {
-				if (FALSE == mail_to_ssl((struct _MAIL*)
-					pmime->content_begin, ssl)) {
+				if (!mail_to_ssl(reinterpret_cast<MAIL *>(pmime->content_begin), ssl))
 					return FALSE;
-				}
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
@@ -2062,10 +2053,8 @@ BOOL mime_check_dot(MIME *pmime)
 					return TRUE;
 				}
 			} else {
-				if(TRUE == mail_check_dot((struct _MAIL*)
-					(pmime->content_begin))) {
+				if (mail_check_dot(reinterpret_cast<MAIL *>(pmime->content_begin)))
 					return TRUE;
-				}
 			}
 		} 
 	} else {
@@ -2173,7 +2162,7 @@ long mime_get_length(MIME *pmime)
 			if (0 != pmime->content_length) {
 				mime_len += pmime->content_length;
 			} else {
-				tmp_len =mail_get_length((struct _MAIL*)(pmime->content_begin));
+				tmp_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
 				if (-1 == tmp_len) {
 					return -1;
 				}
@@ -2442,7 +2431,7 @@ int mime_get_mimes_digest(MIME *pmime, const char* id_string,
 				*poffset += pmime->content_length;
 				content_len = pmime->content_length;
 			} else {
-				tmp_len =mail_get_length((struct _MAIL*)(pmime->content_begin));
+				tmp_len =mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
 				if (-1 == tmp_len) {
 					return -1;
 				}
@@ -2664,7 +2653,7 @@ int mime_get_structure_digest(MIME *pmime, const char* id_string,
 			if (0 != pmime->content_length) {
 				*poffset += pmime->content_length;
 			} else {
-				tmp_len = mail_get_length((struct _MAIL*)(pmime->content_begin));
+				tmp_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
 				if (-1 == tmp_len) {
 					return -1;
 				}

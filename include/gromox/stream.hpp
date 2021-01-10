@@ -36,7 +36,7 @@ enum {
 	STREAM_WRITE_OK
 };
 
-typedef struct _STREAM{
+struct STREAM {
     DOUBLE_LIST_NODE  *pnode_rd;
     DOUBLE_LIST_NODE  *pnode_wr;
     int               line_result;
@@ -50,7 +50,7 @@ typedef struct _STREAM{
     size_t            block_line_pos;
     LIB_BUFFER        *allocator;
     DOUBLE_LIST       list;
-} STREAM; 
+};
 
 #ifdef __cplusplus
 extern "C" {

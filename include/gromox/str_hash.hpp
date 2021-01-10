@@ -5,14 +5,14 @@
 
 typedef size_t (*PSTR_HASH_FUNC)(const char* key);
 
-typedef struct _STR_HASH_ITEM {
+struct STR_HASH_ITEM {
     char        key[MAX_KEY_LENGTH];
     size_t      map_index;
     DOUBLE_LIST_NODE list_node; 
     DOUBLE_LIST_NODE iter_node;
-} STR_HASH_ITEM, *PSTR_HASH_ITEM;
+};
 
-typedef struct _STR_HASH_TABLE {
+struct STR_HASH_TABLE {
     size_t      capacity;
     size_t      entry_num;
     size_t      data_size;
@@ -21,13 +21,13 @@ typedef struct _STR_HASH_TABLE {
     DOUBLE_LIST*    hash_map;
     LIB_BUFFER* buf_pool;
     PSTR_HASH_FUNC  hash_func;
-} STR_HASH_TABLE, *PSTR_HASH_TABLE;
+};
 
-typedef struct _STR_HASH_ITER {
+struct STR_HASH_ITER {
     DOUBLE_LIST_NODE* cur_node;
     size_t      iter_curr_pos;
     STR_HASH_TABLE* ptable;
-} STR_HASH_ITER, *PSTR_HASH_ITER;
+};
 
 /* 
  init a hash table with the specified max_items capacity and item_size

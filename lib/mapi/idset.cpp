@@ -7,31 +7,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-typedef struct _RANGE_NODE {
+struct RANGE_NODE {
 	DOUBLE_LIST_NODE node;
 	uint64_t low_value;
 	uint64_t high_value;
-} RANGE_NODE;
+};
 
-typedef struct _REPLID_NODE {
+struct REPLID_NODE {
 	DOUBLE_LIST_NODE node;
 	uint16_t replid;
 	DOUBLE_LIST range_list; /* GLOBSET */
-} REPLID_NODE;
+};
 
-typedef struct _REPLGUID_NODE {
+struct REPLGUID_NODE {
 	DOUBLE_LIST_NODE node;
 	GUID replguid;
 	DOUBLE_LIST range_list; /* GLOBSET */
-} REPLGUID_NODE;
+};
 
-typedef struct _STACK_NODE {
+struct STACK_NODE {
 	DOUBLE_LIST_NODE node;
 	uint8_t common_length;
 	uint8_t *pcommon_bytes;
-} STACK_NODE;
-
+};
 
 IDSET* idset_init(BOOL b_serialize, uint8_t repl_type)
 {

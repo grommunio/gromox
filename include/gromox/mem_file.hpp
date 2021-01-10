@@ -22,7 +22,7 @@ enum {
 };
 
 /* struct for describing the mem file */
-typedef struct _MEM_FILE{
+struct MEM_FILE {
     DOUBLE_LIST_NODE    *pnode_rd;    /* node of current reading */
     DOUBLE_LIST_NODE    *pnode_wr;    /* node of current writing */
     size_t            rd_block_pos;   /* read position in block(node) */
@@ -32,9 +32,8 @@ typedef struct _MEM_FILE{
     size_t            file_total_len; /* total file length */
     LIB_BUFFER        *allocator;     /* allocator for get blocks */
     DOUBLE_LIST        list;          /* list of blocks */
-} MEM_FILE;
+};
     
-
 #ifdef __cplusplus
 extern "C" {
 #endif

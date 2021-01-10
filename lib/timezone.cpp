@@ -245,11 +245,11 @@ static int tzload(const char *name, struct state *const sp, const int doextend)
 	int fid;
 	int stored;
 	int nread;
-	typedef union {
+	union u_t {
 		struct tzhead tzhead;
 		char buf[2 * sizeof(struct tzhead) +
 			2 * sizeof *sp + 4 * TZ_MAX_TIMES];
-	} u_t;
+	};
 #ifdef ALL_STATE
 	u_t *up;
 	up = (u_t *) calloc(1, sizeof *up);

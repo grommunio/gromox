@@ -37,13 +37,12 @@ enum{
 #define POLLING_READ						0x1
 #define POLLING_WRITE						0x2
 
-
-typedef struct _SCHEDULE_CONTEXT{
+struct SCHEDULE_CONTEXT {
 	DOUBLE_LIST_NODE node;
 	int type;
 	BOOL b_waiting;		/* is still in epoll queue */
 	int polling_mask;
-} SCHEDULE_CONTEXT;
+};
 
 #ifdef __cplusplus
 extern "C" {

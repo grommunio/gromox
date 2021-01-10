@@ -6,16 +6,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct _DSN_FIELD {
+struct DSN_FIELD {
 	DOUBLE_LIST_NODE node;
 	char *tag;
 	char *value;
-} DSN_FIELD;
+};
 
-typedef struct _RCPT_DSN_FIELDS {
+struct RCPT_DSN_FIELDS {
 	DOUBLE_LIST_NODE node;
 	DSN_FIELDS fields;
-} RCPT_DSN_FIELDS;
+};
 
 static void dsn_delete_rcpt_fields(DSN *, DSN_FIELDS *);
 

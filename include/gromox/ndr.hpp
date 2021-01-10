@@ -37,22 +37,22 @@
 
 #define NDR_ALIGN_FLAGS (NDR_FLAG_NOALIGN|NDR_FLAG_REMAINING|NDR_FLAG_ALIGN2|NDR_FLAG_ALIGN4|NDR_FLAG_ALIGN8)
 
-typedef struct _NDR_PULL {
+struct NDR_PULL {
 	uint32_t flags;
 	uint8_t *data;
 	uint32_t data_size;
 	uint32_t offset;
 	uint32_t ptr_count;
-} NDR_PULL;
+};
 
-typedef struct _NDR_PUSH {
+struct NDR_PUSH {
 	uint32_t flags;
 	uint8_t *data;
 	uint32_t alloc_size;
 	uint32_t offset;
 	uint32_t ptr_count;
 	DOUBLE_LIST full_ptr_list;
-} NDR_PUSH;
+};
 
 #ifdef __cplusplus
 extern "C" {

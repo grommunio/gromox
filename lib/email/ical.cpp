@@ -12,10 +12,10 @@
 
 #define MAX_LINE							73
 
-typedef struct _LINE_ITEM {
+struct LINE_ITEM {
 	char *ptag;
 	char *pvalue;
-} LINE_ITEM;
+};
 
 static void ical_free_component(ICAL_COMPONENT *pcomponent);
 

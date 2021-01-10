@@ -1,11 +1,11 @@
 #pragma once
 #include <gromox/rpc_types.hpp>
 
-typedef struct _ARCFOUR_STATE {
+struct ARCFOUR_STATE {
 	uint8_t sbox[256];
 	uint8_t index_i;
 	uint8_t index_j;
-} ARCFOUR_STATE;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -24,7 +24,7 @@ enum{
 
 typedef BOOL (*MIME_FIELD_ENUM)(const char*, char*, void*);
 
-typedef struct _MIME {
+struct MIME {
 	SIMPLE_TREE_NODE node;
 	int			mime_type;
 	char 		content_type[VALUE_LEN];
@@ -40,15 +40,15 @@ typedef struct _MIME {
 	size_t		content_length;
 	char		*first_boundary;
 	char		*last_boundary;
-} MIME;
+};
 
-struct _MAIL;
+struct MAIL;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern bool mail_set_header(struct _MAIL *, const char *hdr, const char *val);
+extern GX_EXPORT bool mail_set_header(MAIL *, const char *hdr, const char *val);
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 
 void mime_free(MIME *pmime);
@@ -59,9 +59,7 @@ BOOL mime_retrieve(MIME *pmime_parent,
 void mime_clear(MIME *pmime);
 extern BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 	int encoding_type);
-
-BOOL mime_write_mail(MIME *pmime, struct _MAIL *pmail);
-
+extern GX_EXPORT BOOL mime_write_mail(MIME *, MAIL *);
 BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength);
 
 BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength);

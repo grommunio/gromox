@@ -1,44 +1,44 @@
 #pragma once
 #include <gromox/mapi_types.hpp>
 
-struct _ATTACHMENT_CONTENT;
+struct ATTACHMENT_CONTENT;
 
-typedef struct _PROPERTY_GROUPINFO {
+struct PROPERTY_GROUPINFO {
 	uint32_t group_id;
 	uint32_t reserved;
 	uint32_t count;
 	PROPTAG_ARRAY *pgroups;
-} PROPERTY_GROUPINFO;
+};
 
-typedef struct _ATTACHMENT_LIST {
+struct ATTACHMENT_LIST {
 	uint16_t count;
-	struct _ATTACHMENT_CONTENT **pplist;
-} ATTACHMENT_LIST;
+	ATTACHMENT_CONTENT **pplist;
+};
 
-typedef struct _MESSAGE_CHILDREN {
+struct MESSAGE_CHILDREN {
 	TARRAY_SET *prcpts;
 	ATTACHMENT_LIST *pattachments;
-} MESSAGE_CHILDREN;
+};
 
-typedef struct _CHANGE_PART {
+struct CHANGE_PART {
 	uint32_t index;
 	TPROPVAL_ARRAY proplist;
-} CHANGE_PART;
+};
 
-typedef struct _MSGCHG_PARTIAL {
+struct MSGCHG_PARTIAL {
 	const PROPERTY_GROUPINFO *pgpinfo; /* this memory is only a reference */
 	uint32_t group_id;
 	uint32_t count;
 	CHANGE_PART *pchanges;
 	MESSAGE_CHILDREN children;
-} MSGCHG_PARTIAL;
+};
 
-typedef struct _PROGRESS_MESSAGE {
+struct PROGRESS_MESSAGE {
 	uint32_t message_size;
 	BOOL b_fai;
-} PROGRESS_MESSAGE;
+};
 
-typedef struct _PROGRESS_INFORMATION {
+struct PROGRESS_INFORMATION {
 	uint16_t version;
 	uint16_t padding1;
 	uint32_t fai_count;
@@ -46,34 +46,34 @@ typedef struct _PROGRESS_INFORMATION {
 	uint32_t normal_count;
 	uint32_t padding2;
 	uint64_t normal_size;
-} PROGRESS_INFORMATION;
+};
 
-typedef struct _MESSAGE_CONTENT {
+struct MESSAGE_CONTENT {
 	TPROPVAL_ARRAY proplist;
 	MESSAGE_CHILDREN children;
-} MESSAGE_CONTENT;
+};
 
-typedef struct _ATTACHMENT_CONTENT {
+struct ATTACHMENT_CONTENT {
 	TPROPVAL_ARRAY proplist; /* PROP_TAG_ATTACHNUMBER must be the first */
 	MESSAGE_CONTENT *pembedded;
-} ATTACHMENT_CONTENT;
+};
 
-typedef struct _FOLDER_MESSAGES {
+struct FOLDER_MESSAGES {
 	EID_ARRAY *pfai_msglst;
 	EID_ARRAY *pnormal_msglst;
-} FOLDER_MESSAGES;
+};
 
-typedef struct _FOLDER_CONTENT {
+struct FOLDER_CONTENT {
 	TPROPVAL_ARRAY proplist;
 	FOLDER_MESSAGES fldmsgs;
 	uint32_t count;
-	struct _FOLDER_CONTENT *psubflds;
-} FOLDER_CONTENT;
+	struct FOLDER_CONTENT *psubflds;
+};
 
-typedef struct _FOLDER_CHANGES {
+struct FOLDER_CHANGES {
 	uint32_t count;
 	TPROPVAL_ARRAY *pfldchgs;
-} FOLDER_CHANGES;
+};
 
 #ifdef __cplusplus
 extern "C" {

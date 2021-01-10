@@ -6,17 +6,16 @@
 #endif
 
 /* double list is composed by the base unit DOUBLE_LIST_NODE */
-typedef struct _DOUBLE_LIST_NODE{
+struct DOUBLE_LIST_NODE {
     void*    pdata;    /* pointer for recording the actual data */
-    struct _DOUBLE_LIST_NODE *pnext;
-    struct _DOUBLE_LIST_NODE *pprev;
-} DOUBLE_LIST_NODE;
+	DOUBLE_LIST_NODE *pnext, *pprev;
+};
 
 /* this struct actually represent the double list object */
-typedef struct _DOUBLE_LIST{
+struct DOUBLE_LIST {
     DOUBLE_LIST_NODE *phead;    /* indicate the first node of the double list*/
     size_t    nodes_num;           /* indicate the current number of nodes */
-} DOUBLE_LIST;
+};
 
 #ifdef __cplusplus
 extern "C" {

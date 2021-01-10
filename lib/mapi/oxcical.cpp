@@ -23,11 +23,11 @@
 
 #define MAX_TZDEFINITION_LENGTH					(68*MAX_TZRULE_NUMBER+270)
 
-typedef struct _UID_EVENTS {
+struct UID_EVENTS {
 	DOUBLE_LIST_NODE node;
 	const char *puid;
 	DOUBLE_LIST list;
-} UID_EVENTS;
+};
 
 static BOOL oxcical_parse_vtsubcomponent(
 	ICAL_COMPONENT *psub_component,

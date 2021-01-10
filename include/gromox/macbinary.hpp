@@ -25,7 +25,7 @@
 #define FINDER_FLAG_COLIR_BIT1				0x02
 #define FINDER_FLAG_ISONDESK				0x01
 
-typedef struct _MACBINARY_HEADER {
+struct MACBINARY_HEADER {
 	uint8_t old_version;
 	char file_name[64];
 	uint32_t type;
@@ -52,15 +52,15 @@ typedef struct _MACBINARY_HEADER {
 	uint8_t version;
 	uint8_t mini_version;
 	uint8_t pads2[2];
-} MACBINARY_HEADER;
+};
 
-typedef struct _MACBINARY {
+struct MACBINARY {
 	MACBINARY_HEADER header;
 	const uint8_t *pxheader;
 	const uint8_t *pdata;
 	const uint8_t *presource;
 	const uint8_t *pcomment;
-} MACBINARY;
+};
 
 #ifdef __cplusplus
 extern "C" {

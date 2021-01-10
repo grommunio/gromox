@@ -5,24 +5,23 @@
 
 #define VCARD_NAME_LEN		32
 
-typedef struct _VCARD_PARAM {
+struct VCARD_PARAM {
 	DOUBLE_LIST_NODE node;
 	char name[VCARD_NAME_LEN];
 	DOUBLE_LIST *pparamval_list;
-} VCARD_PARAM;
+};
 
-typedef struct _VCARD_VALUE {
+struct VCARD_VALUE {
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST subval_list;
-} VCARD_VALUE;
+};
 
-typedef struct _VCARD_LINE {
+struct VCARD_LINE {
 	DOUBLE_LIST_NODE node;
 	char name[VCARD_NAME_LEN];
 	DOUBLE_LIST param_list;
 	DOUBLE_LIST value_list;
-} VCARD_LINE;
-
+};
 
 #ifdef __cplusplus
 extern "C" {

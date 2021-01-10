@@ -1,11 +1,11 @@
 #pragma once
 #include <gromox/double_list.hpp>
 
-typedef struct _ALLOC_CONTEXT {
+struct ALLOC_CONTEXT {
 	DOUBLE_LIST list;
 	int offset;
 	size_t total;
-} ALLOC_CONTEXT;
+};
 
 #ifdef __cplusplus
 extern "C" {

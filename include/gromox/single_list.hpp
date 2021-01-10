@@ -1,16 +1,16 @@
 #pragma once
 #include <gromox/common_types.hpp>
 
-typedef struct _SINGLE_LIST_NODE {
+struct SINGLE_LIST_NODE {
     void*   pdata;
-    struct _SINGLE_LIST_NODE* next;
-} SINGLE_LIST_NODE;
+	SINGLE_LIST_NODE *next;
+};
 
-typedef struct _LIST {
+struct SINGLE_LIST {
     SINGLE_LIST_NODE  *list_head;
     SINGLE_LIST_NODE  *list_tail;
     size_t      cur_size;
-} SINGLE_LIST;
+};
 
 #ifdef __cplusplus
 extern "C" {

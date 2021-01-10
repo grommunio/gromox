@@ -34,10 +34,10 @@
 #define AS_AFPINFO		14	/* AFP file info, attrib., etc */
 #define AS_AFPDIRID		15	/* AFP directory ID */
 
-typedef struct _FINDER_POINT {
+struct FINDER_POINT {
    int16_t v; /* vertical coordinate */
    int16_t h; /* horizontal coordinate */
-} FINDER_POINT;
+};
 
 #define FD_FLAGS_FONDESK		0x0001	/* file is on desktop (HFS only) */
 #define FD_FLAGS_MASKCOLOR		0x000E	/* color coding (3 bits) */
@@ -53,30 +53,30 @@ typedef struct _FINDER_POINT {
 #define FD_FLAGS_FALIAS			0x8000	/* file is an alias file (System 7) */
 
 /* Finder information */
-typedef struct _FINFO {
+struct FINFO {
 	uint32_t fd_type;			/* File type, 4 ASCII chars */
 	uint32_t fd_creator;		/* File's creator, 4 ASCII chars */
 	uint16_t fd_flags;			/* Finder flag bits */
 	FINDER_POINT fd_location;	/* file's location in folder */
 	int16_t fd_folder;			/* file 's folder (aka window) */
-} FINFO;
+};
 
 /* Extended finder information */
-typedef struct _FXINFO {
+struct FXINFO {
 	int16_t fd_iconid;		/* icon ID number */
 	int16_t fd_unused[3];	/* spare */
 	int8_t fd_script; /* scrip flag and code */
 	int8_t fd_xflags; /* reserved */
 	int16_t fd_comment;		/* comment ID number */
 	int32_t fd_putaway;		/* home directory ID */
-} FXINFO;
+};
 
 /* header portion of AppleSingle */
-typedef struct _ASHEADER {
+struct ASHEADER {
 	uint32_t magic_num;		/* internal file type tag */
 	uint32_t version_num;	/* format version: 2 = 0x00020000 */
 	uint8_t filler[16];		/* filler, currently all bits 0 */
-} ASHEADER;
+};
 
 /*
 * matrix of entry types and their usage:
@@ -114,9 +114,9 @@ typedef struct _ASHEADER {
 */
 
 /* entry ID 5, standard Mac black and white icon */
-typedef struct _ASICONBW {
+struct ASICONBW {
    uint32_t bitrow[32]; /* 32 rows of 32 1-bit pixels */
-} ASICONBW;
+};
 
 /*
 * entry ID 6, "standard" Macintosh color icon - several competing
@@ -140,29 +140,28 @@ typedef struct _ASICONBW {
 */
 
 /* entry ID 8, file dates info */
-typedef struct _ASFILEDATES {
+struct ASFILEDATES {
 	time_t create;	/* file creation date/time */
 	time_t modify;	/* last modification date/time */
 	time_t backup;	/* last backup date/time */
 	time_t access;	/* last access date/time */
-} ASFILEDATES;
+};
 
 /* entry ID 9, Macintosh Finder info & extended info */
-typedef struct _ASFINDERINFO {
+struct ASFINDERINFO {
 	uint8_t valid_count; /* 0 means all subitems are valid */
 	FINFO finfo;
 	FXINFO fxinfo;
-} ASFINDERINFO;
-
+};
 
 #define AS_PROTECTED    0x0002 /* protected bit */
 #define AS_LOCKED       0x0001 /* locked bit */
 
 /* entry ID 10, Macintosh file information */
-typedef struct _ASMACINFO {
+struct ASMACINFO {
 	uint8_t filler[3]; /* filler, currently all bits 0 */
 	uint8_t attribute;
-} ASMACINFO;
+};
 
 /*
 * NOTE: ProDOS-16 and GS/OS use entire fields.  ProDOS-8 uses low
@@ -171,12 +170,11 @@ typedef struct _ASMACINFO {
 */
 
 /* entry ID 11, ProDOS file information */
-typedef struct _ASPRODOSINFO {
+struct ASPRODOSINFO {
 	uint16_t access;	/* access word */
 	uint16_t filetype;	/* file type of original file */
 	uint32_t auxtype;	/* auxiliary type of the orig file */
-} ASPRODOSINFO;
-
+};
 
 /*
 * MS-DOS file attributes occupy 1 octet; since the Developer Note
@@ -185,11 +183,11 @@ typedef struct _ASPRODOSINFO {
 */
 
 /* entry ID 12, MS-DOS file information */
-typedef struct _ASMSDOSINFO {
+struct ASMSDOSINFO {
 	uint8_t filler;	/* filler, currently all bits 0 */
 	uint8_t attr;	/* _dos_getfileattr(), MS-DOS */
 					/* interrupt 21h function 4300h */
-} ASMSDOSINFO;
+};
 
 #define AS_DOS_NORMAL   0x00 /* normal file (all bits clear) */
 #define AS_DOS_READONLY 0x01 /* file is read-only */
@@ -205,10 +203,10 @@ typedef struct _ASMSDOSINFO {
 */
 
 /* entry ID 12, AFP server file information */
-typedef struct _ASAFPINFO {
+struct ASAFPINFO {
    uint8_t filler[3];	/* filler, currently all bits 0 */
    uint8_t attr;		/* file attributes */
-} ASAFPINFO;
+};
 
 #define AS_AFP_INVISIBLE    0x01 /* file is invisible */
 #define AS_AFP_MULTIUSER    0x02 /* simultaneous access allowed */
@@ -216,21 +214,21 @@ typedef struct _ASAFPINFO {
 #define AS_AFP_BACKUPNEEDED 0x40 /* new or modified (needs backup) */
 
 /* entry ID 15, AFP server directory ID */
-typedef struct _ASAFPDIRID {
+struct ASAFPDIRID {
    uint32_t dirid; /* file's directory ID on AFP server */
-} ASAFPDIRID;
+};
 
-typedef struct _ENTRY_DATA {
+struct ENTRY_DATA {
 	uint32_t entry_id;
 	void *pentry;
-} ENTRY_DATA;
+};
 
 /* The format of an AppleSingle/AppleDouble header */
-typedef struct _APPLEFILE {
+struct APPLEFILE {
    ASHEADER header;		/* AppleSingle header part */
    uint16_t count;
    ENTRY_DATA *pentries;	/* array of entry descriptors */
-} APPLEFILE;
+};
 
 #ifdef __cplusplus
 extern "C" {

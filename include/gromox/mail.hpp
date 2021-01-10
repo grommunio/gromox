@@ -10,11 +10,11 @@
 
 typedef void (*MAIL_MIME_ENUM)(MIME*, void*);
 
-typedef struct _MAIL{
+struct MAIL {
 	SIMPLE_TREE tree;
 	MIME_POOL  *pmime_pool;
 	char *buffer;
-} MAIL;
+};
 
 #ifdef __cplusplus
 extern "C" {

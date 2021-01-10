@@ -16,11 +16,11 @@
 
 #define THREAD_STACK_SIZE           	16 * 1024 * 1024
 
-typedef struct _THR_DATA {
+struct THR_DATA {
 	DOUBLE_LIST_NODE node;
 	BOOL notify_stop;
 	pthread_t id;
-} THR_DATA;
+};
 
 static pthread_t g_scan_id;
 static BOOL g_notify_stop= TRUE;

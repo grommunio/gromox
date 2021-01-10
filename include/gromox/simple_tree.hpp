@@ -8,19 +8,17 @@ enum {
 	SIMPLE_TREE_ADD_LAST
 };
 
-typedef struct _SIMPLE_TREE_NODE{
-	struct _SIMPLE_TREE_NODE *pnode_sibling;
-	struct _SIMPLE_TREE_NODE	*pnode_child;
-	struct _SIMPLE_TREE_NODE	*pnode_parent;
+struct SIMPLE_TREE_NODE {
+	SIMPLE_TREE_NODE *pnode_sibling, *pnode_child, *pnode_parent;
 	size_t						node_depth;
 	size_t						node_children;
 	void						*pdata;
-} SIMPLE_TREE_NODE;
+};
 
-typedef struct _SIMPLE_TREE{
+struct SIMPLE_TREE {
 	SIMPLE_TREE_NODE *root;
 	size_t	nodes_num;
-} SIMPLE_TREE;
+};
 
 typedef void (*SIMPLE_TREE_ENUM)(SIMPLE_TREE_NODE*, void*);
 typedef void (*SIMPLE_TREE_DELETE)(SIMPLE_TREE_NODE*);

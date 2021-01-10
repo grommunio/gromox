@@ -26,33 +26,34 @@
 #define RRULE_BY_WEEKNO					7
 #define RRULE_BY_MONTH					8
 
-typedef struct _ICAL_COMPONENT {
+struct ICAL_COMPONENT {
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST line_list;
 	DOUBLE_LIST component_list;
-} ICAL_COMPONENT, ICAL;
+};
+using ICAL = ICAL_COMPONENT;
 
-typedef struct _ICAL_PARAM {
+struct ICAL_PARAM {
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST paramval_list;
-} ICAL_PARAM;
+};
 
-typedef struct _ICAL_VALUE {
+struct ICAL_VALUE {
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST subval_list;
-} ICAL_VALUE;
+};
 
-typedef struct _ICAL_LINE {
+struct ICAL_LINE {
 	DOUBLE_LIST_NODE node;
 	char name[ICAL_NAME_LEN];
 	DOUBLE_LIST param_list;
 	DOUBLE_LIST value_list;
-} ICAL_LINE;
+};
 
-typedef struct _ICAL_TIME {
+struct ICAL_TIME {
 	int year;
 	int month;
 	int day;
@@ -60,9 +61,9 @@ typedef struct _ICAL_TIME {
 	int minute;
 	int second;
 	int leap_second;
-} ICAL_TIME;
+};
 
-typedef struct _ICAL_RRULE {
+struct ICAL_RRULE {
 	int total_count;
 	int current_instance;
 	ICAL_TIME base_itime;
@@ -93,7 +94,7 @@ typedef struct _ICAL_RRULE {
 	unsigned char month_bitmap[2];
 	unsigned char setpos_bitmap[46];
 	unsigned char nsetpos_bitmap[46];
-} ICAL_RRULE;
+};
 
 #ifdef __cplusplus
 extern "C" {

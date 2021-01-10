@@ -1,14 +1,13 @@
 #pragma once
 #include <gromox/str_hash.hpp>
 
-typedef struct _ASSOC_ARRAY {
+struct ASSOC_ARRAY {
 	STR_HASH_TABLE	*phash;
 	size_t			capability;
 	size_t			data_size;
     size_t			entry_num;
 	void			**index_cache;
-} ASSOC_ARRAY;
-
+};
 
 typedef void (*ASSOC_ARRAY_ENUM)(const char *, void *);
 

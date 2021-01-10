@@ -3,44 +3,44 @@
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 
-typedef struct _BINARY {
+struct BINARY {
 	uint32_t cb;
 	union {
 		uint8_t *pb;
 		char *pc;
 		void *pv;
 	};
-} BINARY;
+};
 
-typedef struct _BINARY_ARRAY {
+struct BINARY_ARRAY {
 	uint32_t count;
 	BINARY *pbin;
-} BINARY_ARRAY;
+};
 
-typedef struct _STRING_ARRAY {
+struct STRING_ARRAY {
 	uint32_t count;
 	char **ppstr;
-} STRING_ARRAY;
+};
 
-typedef struct _SHORT_ARRAY {
+struct SHORT_ARRAY {
 	uint32_t count;
 	uint16_t *ps;
-} SHORT_ARRAY;
+};
 
-typedef struct _LONG_ARRAY {
+struct LONG_ARRAY {
 	uint32_t count;
 	uint32_t *pl;
-} LONG_ARRAY;
+};
 
-typedef struct _LONGLONG_ARRAY {
+struct LONGLONG_ARRAY {
 	uint32_t count;
 	uint64_t *pll;
-} LONGLONG_ARRAY;
+};
 
-typedef struct _GUID_ARRAY {
+struct GUID_ARRAY {
 	uint32_t count;
 	GUID *pguid;
-} GUID_ARRAY;
+};
 
 enum {
 	MNID_ID = 0,
@@ -48,17 +48,17 @@ enum {
 	KIND_NONE = 0xff,
 };
 
-typedef struct _PROPERTY_NAME {
+struct PROPERTY_NAME {
 	uint8_t kind;
 	GUID guid;
 	uint32_t *plid;
 	char *pname;
-} PROPERTY_NAME;
+};
 
-typedef struct _TAGGED_PROPVAL {
+struct TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;
-} TAGGED_PROPVAL;
+};
 
 #define RESTRICTION_TYPE_AND						0x00
 #define RESTRICTION_TYPE_OR							0x01
@@ -74,19 +74,19 @@ typedef struct _TAGGED_PROPVAL {
 #define RESTRICTION_TYPE_COUNT						0x0b
 #define RESTRICTION_TYPE_NULL						0xff
 
-typedef struct _RESTRICTION {
+struct RESTRICTION {
 	uint8_t rt;
 	void *pres;
-} RESTRICTION;
+};
 
-typedef struct _RESTRICTION_AND_OR {
+struct RESTRICTION_AND_OR {
 	uint32_t count;
 	RESTRICTION *pres;
-} RESTRICTION_AND_OR;
+};
 
-typedef struct _RESTRICTION_NOT {
+struct RESTRICTION_NOT {
 	RESTRICTION res;
-} RESTRICTION_NOT;
+};
 
 #define FUZZY_LEVEL_FULLSTRING						0x00000
 #define FUZZY_LEVEL_SUBSTRING						0x00001
@@ -95,11 +95,11 @@ typedef struct _RESTRICTION_NOT {
 #define FUZZY_LEVEL_IGNORENONSPACE					0x20000
 #define FUZZY_LEVEL_LOOSE							0x40000
 
-typedef struct _RESTRICTION_CONTENT {
+struct RESTRICTION_CONTENT {
 	uint32_t fuzzy_level;
 	uint32_t proptag;
 	TAGGED_PROPVAL propval;
-} RESTRICTION_CONTENT;
+};
 
 #define RELOP_LT									0x00
 #define RELOP_LE									0x01
@@ -109,61 +109,61 @@ typedef struct _RESTRICTION_CONTENT {
 #define RELOP_NE									0x05
 #define RELOP_MEMBER_OF_DL							0x64
 
-typedef struct _RESTRICTION_PROPERTY {
+struct RESTRICTION_PROPERTY {
 	uint8_t relop;
 	uint32_t proptag;
 	TAGGED_PROPVAL propval;
-} RESTRICTION_PROPERTY;
+};
 
-typedef struct _RESTRICTION_PROPCOMPARE {
+struct RESTRICTION_PROPCOMPARE {
 	uint8_t relop;
 	uint32_t proptag1;
 	uint32_t proptag2;
-} RESTRICTION_PROPCOMPARE;
+};
 
 #define BITMASK_RELOP_EQZ							0x0
 #define BITMASK_RELOP_NEZ							0x1
 
-typedef struct _RESTRICTION_BITMASK {
+struct RESTRICTION_BITMASK {
 	uint8_t bitmask_relop;
 	uint32_t proptag;
 	uint32_t mask;
-} RESTRICTION_BITMASK;
+};
 
-typedef struct _RESTRICTION_SIZE {
+struct RESTRICTION_SIZE {
 	uint8_t relop;
 	uint32_t proptag;
 	uint32_t size;
-} RESTRICTION_SIZE;
+};
 
-typedef struct _RESTRICTION_EXIST {
+struct RESTRICTION_EXIST {
 	uint32_t proptag;
-} RESTRICTION_EXIST;
+};
 
-typedef struct _RESTRICTION_SUBOBJ {
+struct RESTRICTION_SUBOBJ {
 	uint32_t subobject;
 	RESTRICTION res;
-} RESTRICTION_SUBOBJ;
+};
 
-typedef struct _RESTRICTION_COMMENT {
+struct RESTRICTION_COMMENT {
 	uint8_t count;
 	TAGGED_PROPVAL *ppropval;
 	RESTRICTION *pres;
-} RESTRICTION_COMMENT;
+};
 
-typedef struct _RESTRICTION_COUNT {
+struct RESTRICTION_COUNT {
 	uint32_t count;
 	RESTRICTION sub_res;
-} RESTRICTION_COUNT;
+};
 
-typedef struct _SVREID {
+struct SVREID {
 	BINARY *pbin;
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t instance;
-} SVREID;
+};
 
-typedef struct _STORE_ENTRYID {
+struct STORE_ENTRYID {
 	uint32_t flags;
 	 /* 38.A1.BB.10.05.E5.10.1A.A1.BB.08.00.2B.2A.56.C2 */
 	uint8_t provider_uid[16];
@@ -183,7 +183,7 @@ typedef struct _STORE_ENTRYID {
 	uint32_t wrapped_type;
 	char *pserver_name;
 	char *pmailbox_dn;
-} STORE_ENTRYID;
+};
 
 #define EITLT_PRIVATE_FOLDER						0x0001
 #define EITLT_PUBLIC_FOLDER							0x0003
@@ -193,16 +193,16 @@ typedef struct _STORE_ENTRYID {
 #define EITLT_WACKY_MESSAGE							0x000b
 #define EITLT_PUBLIC_FOLDER_BY_NAME					0x000c
 
-typedef struct _FOLDER_ENTRYID {
+struct FOLDER_ENTRYID {
 	uint32_t flags;
 	uint8_t provider_uid[16];
 	uint16_t folder_type;
 	GUID database_guid;
 	uint8_t global_counter[6];
 	uint8_t pad[2];
-} FOLDER_ENTRYID;
+};
 
-typedef struct _MESSAGE_ENTRYID {
+struct MESSAGE_ENTRYID {
 	uint32_t flags;
 	uint8_t provider_uid[16];
 	uint16_t message_type;
@@ -212,55 +212,55 @@ typedef struct _MESSAGE_ENTRYID {
 	GUID message_database_guid;
 	uint8_t message_global_counter[6];
 	uint8_t pad2[2];
-} MESSAGE_ENTRYID;
+};
 
-typedef struct _MOVECOPY_ACTION {
+struct MOVECOPY_ACTION {
 	uint8_t same_store;
 	STORE_ENTRYID *pstore_eid;
 	void *pfolder_eid; /* SVREID or BINARY */
-} MOVECOPY_ACTION;
+};
 
-typedef struct _EXT_MOVECOPY_ACTION {
+struct EXT_MOVECOPY_ACTION {
 	FOLDER_ENTRYID folder_eid;
-} EXT_MOVECOPY_ACTION;
+};
 
 /* reply or OOF action */
-typedef struct _REPLY_ACTION {
+struct REPLY_ACTION {
 	uint64_t template_folder_id;
 	uint64_t template_message_id;
 	GUID template_guid;
-} REPLY_ACTION;
+};
 
-typedef struct _EXT_REPLY_ACTION {
+struct EXT_REPLY_ACTION {
 	MESSAGE_ENTRYID message_eid;
 	GUID template_guid;
-} EXT_REPLY_ACTION;
+};
 
 #define BOUNCE_CODE_MESSAGE_TOO_LARGE				0x0000000d
 #define BOUNCE_CODE_MESSAGE_NOT_DISPLAYED			0x0000001f
 #define BOUNCE_CODE_MESSAGE_DENIED					0x00000026
 
-typedef struct _RECIPIENT_BLOCK {
+struct RECIPIENT_BLOCK {
 	uint8_t reserved;
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
-} RECIPIENT_BLOCK;
+};
 
-typedef struct _FORWARDDELEGATE_ACTION {
+struct FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
-} FORWARDDELEGATE_ACTION;
+};
 
-typedef struct _EXT_RECIPIENT_BLOCK {
+struct EXT_RECIPIENT_BLOCK {
 	uint8_t reserved;
 	uint32_t count;
 	TAGGED_PROPVAL *ppropval;
-} EXT_RECIPIENT_BLOCK;
+};
 
-typedef struct _EXT_FORWARDDELEGATE_ACTION {
+struct EXT_FORWARDDELEGATE_ACTION {
 	uint32_t count;
 	EXT_RECIPIENT_BLOCK *pblock;
-} EXT_FORWARDDELEGATE_ACTION;
+};
 
 #define ACTION_TYPE_OP_MOVE							0x1
 #define ACTION_TYPE_OP_COPY							0x2
@@ -282,31 +282,31 @@ typedef struct _EXT_FORWARDDELEGATE_ACTION {
 #define ACTION_FLAVOR_NS							0x00000001
 #define ACTION_FLAVOR_ST							0x00000002
 
-typedef struct _ACTION_BLOCK {
+struct ACTION_BLOCK {
 	uint16_t length;
 	uint8_t type;
 	uint32_t flavor;
 	uint32_t flags;
 	void *pdata;
-} ACTION_BLOCK;
+};
 
-typedef struct _EXT_ACTION_BLOCK {
+struct EXT_ACTION_BLOCK {
 	uint32_t length;
 	uint8_t type;
 	uint32_t flavor;
 	uint32_t flags;
 	void *pdata;
-} EXT_ACTION_BLOCK;
+};
 
-typedef struct _RULE_ACTIONS {
+struct RULE_ACTIONS {
 	uint16_t count;
 	ACTION_BLOCK *pblock;
-} RULE_ACTIONS;
+};
 
-typedef struct _EXT_RULE_ACTIONS {
+struct EXT_RULE_ACTIONS {
 	uint32_t count;
 	EXT_ACTION_BLOCK *pblock;
-} EXT_RULE_ACTIONS;
+};
 
 #define RULE_STATE_ENABLED							0x00000001
 #define RULE_STATE_ERROR							0x00000002
@@ -331,66 +331,66 @@ typedef struct _EXT_RULE_ACTIONS {
 #define RULE_ERROR_TOO_MANY_RCPTS					0x0000000D
 #define RULE_ERROR_FOLDER_QUOTA						0x0000000E			
 
-typedef struct _NAMEDPROPERTY_INFOMATION {
+struct NAMEDPROPERTY_INFOMATION {
 	uint16_t count;
 	uint16_t *ppropid;
 	PROPERTY_NAME *ppropname;
-} NAMEDPROPERTY_INFOMATION;
+};
 
-typedef struct _TPROPVAL_ARRAY {
+struct TPROPVAL_ARRAY {
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
-} TPROPVAL_ARRAY;
+};
 
-typedef struct _TARRAY_SET {
+struct TARRAY_SET {
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;
-} TARRAY_SET;
+};
 
 #define FLAGGED_PROPVAL_FLAG_AVAILABLE				0x0
 #define FLAGGED_PROPVAL_FLAG_UNAVAILABLE			0x1
 #define FLAGGED_PROPVAL_FLAG_ERROR					0xA
 
-typedef struct _FLAGGED_PROPVAL {
+struct FLAGGED_PROPVAL {
 	uint8_t flag;
 	void *pvalue;
-} FLAGGED_PROPVAL;
+};
 
-typedef struct _PROPTAG_ARRAY {
+struct PROPTAG_ARRAY {
 	uint16_t count;
 	uint32_t *pproptag;
-} PROPTAG_ARRAY;
+};
 
-typedef struct _TYPED_PROPVAL {
+struct TYPED_PROPVAL {
 	uint16_t type;
 	void *pvalue;
-} TYPED_PROPVAL;
+};
 
-typedef struct _LONG_TERM_ID {
+struct LONG_TERM_ID {
 	GUID guid;
 	uint8_t global_counter[6];
 	uint16_t padding;
-} LONG_TERM_ID;
+};
 
-typedef struct _LONG_TERM_ID_ARRAY {
+struct LONG_TERM_ID_ARRAY {
 	uint16_t count;
 	LONG_TERM_ID *pids;
-} LONG_TERM_ID_ARRAY;
+};
 
-typedef struct _LONG_TERM_ID_RANGE {
+struct LONG_TERM_ID_RANGE {
 	LONG_TERM_ID min;
 	LONG_TERM_ID max;
-} LONG_TERM_ID_RANGE;
+};
 
-typedef struct _XID {
+struct XID {
 	GUID guid;
 	uint8_t local_id[8];
-} XID;
+};
 
-typedef struct _SIZED_XID {
+struct SIZED_XID {
 	uint8_t size;
 	XID xid;
-} SIZED_XID;
+};
 
 #define STRING_TYPE_NONE							0x0
 #define STRING_TYPE_EMPTY							0x1
@@ -398,10 +398,10 @@ typedef struct _SIZED_XID {
 #define STRING_TYPE_UNICODE_REDUCED					0x3
 #define STRING_TYPE_UNICODE							0x4
 
-typedef struct _TYPED_STRING {
+struct TYPED_STRING {
 	uint8_t string_type;
 	char *pstring;
-} TYPED_STRING;
+};
 
 #define PROPERTY_ROW_NO_ERROR						0x00
 #define PROGRESS_ROW_WITH_ERROR						0x01
@@ -409,65 +409,65 @@ typedef struct _TYPED_STRING {
 #define PROPERTY_ROW_FLAG_NONE						0x00
 #define PROPERTY_ROW_FLAG_FLAGGED					0x01
 
-typedef struct _PROPERTY_ROW {
+struct PROPERTY_ROW {
 	uint8_t flag;
 	void **pppropval;
-} PROPERTY_ROW;
+};
 
-typedef struct _PROPROW_SET {
+struct PROPROW_SET {
 	uint16_t count;
 	PROPERTY_ROW *prows;
-} PROPROW_SET;
+};
 
 #define TABLE_SORT_ASCEND							0x0
 #define TABLE_SORT_DESCEND							0x1
 #define TABLE_SORT_MAXIMUM_CATEGORY					0x4
 #define TABLE_SORT_MINIMUM_CATEGORY					0x8
 
-typedef struct SORT_ORDER {
+struct SORT_ORDER {
 	uint16_t type; /* pay attention to the 0x2000 bit */
 	uint16_t propid;
 	uint8_t table_sort;
-} SORT_ORDER;
+};
 
 #define MAXIMUM_SORT_COUNT							8
 
-typedef struct _SORTORDER_SET {
+struct SORTORDER_SET {
 	uint16_t count;
 	uint16_t ccategories;
 	uint16_t cexpanded;
 	SORT_ORDER *psort;
-} SORTORDER_SET;
+};
 
-typedef struct _PROPNAME_ARRAY {
+struct PROPNAME_ARRAY {
 	uint16_t count;
 	PROPERTY_NAME *ppropname;
-} PROPNAME_ARRAY;
+};
 
-typedef struct _PROPID_ARRAY {
+struct PROPID_ARRAY {
 	uint16_t count;
 	uint16_t *ppropid;
-} PROPID_ARRAY;
+};
 
-typedef struct _PROPERTY_PROBLEM {
+struct PROPERTY_PROBLEM {
 	uint16_t index;
 	uint32_t proptag;
 	uint32_t err;
-} PROPERTY_PROBLEM;
+};
 
-typedef struct _PROBLEM_ARRAY {
+struct PROBLEM_ARRAY {
 	uint16_t count;
 	PROPERTY_PROBLEM *pproblem;
-} PROBLEM_ARRAY;
+};
 
 #define RULE_DATA_FLAG_ADD_ROW						0x01
 #define RULE_DATA_FLAG_MODIFY_ROW					0x02
 #define RULE_DATA_FLAG_REMOVE_ROW					0x04
 
-typedef struct _RULE_DATA {
+struct RULE_DATA {
 	uint8_t flags;
 	TPROPVAL_ARRAY propvals;
-} RULE_DATA;
+};
 
 #define PROVIDER_UID_ADDRESS_BOOK					1
 #define PROVIDER_UID_PUBLIC							2
@@ -489,15 +489,14 @@ typedef struct _RULE_DATA {
 #define ADDRESSBOOK_ENTRYID_TYPE_ONE_OFF_USER		0x00000102
 #define ADDRESSBOOK_ENTRYID_TYPE_SEARCH				0x00000200
 
-typedef struct _ADDRESSBOOK_ENTRYID {
+struct ADDRESSBOOK_ENTRYID {
 	uint32_t flags;
 	 /* DC.A7.40.C8.C0.42.10.1A.B4.B9.08.00.2B.2F.E1.82 */
 	uint8_t provider_uid[16];
 	uint32_t version; /* should be 0x00000001 */
 	uint32_t type;
 	char *px500dn;
-} ADDRESSBOOK_ENTRYID;
-
+};
 
 #define CTRL_FLAG_BINHEX						0x0000
 #define CTRL_FLAG_UUENCODE						0x0020
@@ -512,7 +511,7 @@ typedef struct _ADDRESSBOOK_ENTRYID {
 #define CTRL_FLAG_UNICODE						0x8000
 #define CTRL_FLAG_DONTLOOKUP					0x1000
 
-typedef struct _ONEOFF_ENTRYID {
+struct ONEOFF_ENTRYID {
 	uint32_t flags;
 	 /* 81.2B.1F.A4.BE.A3.10.19.9D.6E.00.DD.01.0F.54.02 */
 	uint8_t provider_uid[16];
@@ -521,12 +520,12 @@ typedef struct _ONEOFF_ENTRYID {
 	char *pdisplay_name;
 	char *paddress_type;
 	char *pmail_address;
-} ONEOFF_ENTRYID;
+};
 
-typedef struct _ONEOFF_ARRAY {
+struct ONEOFF_ARRAY {
 	uint32_t count;
 	ONEOFF_ENTRYID *pentry_id;
-} ONEOFF_ARRAY;
+};
 
 #define DAYOFWEEK_SUNDAY							0x0
 #define DAYOFWEEK_MONDAY							0x1
@@ -536,7 +535,7 @@ typedef struct _ONEOFF_ARRAY {
 #define DAYOFWEEK_FRIDAY							0x5
 #define DAYOFWEEK_SATURDAY							0x6
 
-typedef struct _LOGON_TIME {
+struct LOGON_TIME {
 	uint8_t second;
 	uint8_t minute;
 	uint8_t hour;
@@ -544,13 +543,13 @@ typedef struct _LOGON_TIME {
 	uint8_t day;
 	uint8_t month;
 	uint16_t year;
-} LOGON_TIME;
+};
 
-typedef struct _GHOST_SERVER {
+struct GHOST_SERVER {
 	uint16_t server_count;
 	uint16_t cheap_server_count;
 	char **ppservers;
-} GHOST_SERVER;
+};
 
 #define RECIPIENT_ROW_FLAG_RESPONSIBLE				0x0080
 #define RECIPIENT_ROW_FLAG_SAME						0x0040
@@ -595,8 +594,7 @@ typedef struct _GHOST_SERVER {
 #define OBJECT_ATTACHMENT							0x00000007
 #define OBJECT_DLIST								0x00000008
 
-
-typedef struct _RECIPIENT_ROW {
+struct RECIPIENT_ROW {
 	uint16_t flags;
 	uint8_t *pprefix_used;
 	uint8_t *pdisplay_type;
@@ -610,7 +608,7 @@ typedef struct _RECIPIENT_ROW {
 	char *ptransmittable_name;
 	uint16_t count;
 	PROPERTY_ROW properties;
-} RECIPIENT_ROW;
+};
 
 #define CP_USASCII									0x04E4
 #define CP_UNICODE									0x04B0
@@ -627,46 +625,46 @@ typedef struct _RECIPIENT_ROW {
 #define RECIPIENT_TYPE_NEED_RESEND					0x10000000
 #define RECIPIENT_TYPE_NOT_NEED_RESEND				0x80000000
 
-typedef struct _OPENRECIPIENT_ROW {
+struct OPENRECIPIENT_ROW {
 	uint8_t recipient_type;
 	uint16_t cpid;
 	uint16_t reserved;
 	RECIPIENT_ROW recipient_row;
-} OPENRECIPIENT_ROW;
+};
 
-typedef struct _MODIFYRECIPIENT_ROW {
+struct MODIFYRECIPIENT_ROW {
 	uint32_t row_id;
 	uint8_t recipient_type;
 	RECIPIENT_ROW *precipient_row;
-} MODIFYRECIPIENT_ROW;
+};
 
-typedef struct _READRECIPIENT_ROW {
+struct READRECIPIENT_ROW {
 	uint32_t row_id;
 	uint8_t recipient_type;
 	uint16_t cpid;
 	uint16_t reserved;
 	RECIPIENT_ROW recipient_row;
-} READRECIPIENT_ROW;
+};
 
 #define PERMISSION_DATA_FLAG_ADD_ROW				0x01
 #define PERMISSION_DATA_FLAG_MODIFY_ROW				0x02
 #define PERMISSION_DATA_FLAG_REMOVE_ROW				0x04
 
-typedef struct _PERMISSION_DATA {
+struct PERMISSION_DATA {
 	uint8_t flags;
 	TPROPVAL_ARRAY propvals;
-} PERMISSION_DATA;
+};
 
-typedef struct _PROPIDNAME_ARRAY {
+struct PROPIDNAME_ARRAY {
 	uint16_t count;
 	uint16_t *ppropid;
 	PROPERTY_NAME *ppropname;
-} PROPIDNAME_ARRAY;
+};
 
-typedef struct _MESSAGE_READ_STAT {
+struct MESSAGE_READ_STAT {
 	BINARY message_xid;
 	uint8_t mark_as_read;
-} MESSAGE_READ_STAT;
+};
 
 /* Folders Markers [MS-OXCFXICS] - 2.2.4.1.4 */
 #define STARTTOPFLD								0x40090003
@@ -819,7 +817,7 @@ typedef struct _MESSAGE_READ_STAT {
 #define TABLE_EVENT_ROW_MODIFIED					0x0005
 #define TABLE_EVENT_RESTRICTION_CHANGED				0x0007
 
-typedef struct _NOTIFICATION_DATA {
+struct NOTIFICATION_DATA {
 	uint16_t notification_flags;
 	uint16_t *ptable_event;
 	uint64_t *prow_folder_id;
@@ -841,7 +839,7 @@ typedef struct _NOTIFICATION_DATA {
 	uint32_t *pmessage_flags;
 	uint8_t *punicode_flag;
 	char *pstr_class;
-} NOTIFICATION_DATA;
+};
 
 #define PRIVATE_FID_ROOT							0x01
 #define PRIVATE_FID_DEFERRED_ACTION					0x02
@@ -884,10 +882,10 @@ typedef struct _NOTIFICATION_DATA {
 #define RSF_ELID_ENTRYID							0x0001
 #define ELEMENT_SENTINEL							0x0000
 
-typedef struct _PERSISTELEMENT {
+struct PERSISTELEMENT {
 	uint16_t element_id;
 	BINARY *pentry_id;
-} PERSISTELEMENT;
+};
 
 #define RSF_PID_RSS_SUBSCRIPTION					0x8001
 #define RSF_PID_SEND_AND_TRACK						0x8002
@@ -900,15 +898,15 @@ typedef struct _PERSISTELEMENT {
 #define RSF_PID_BUDDYLIST_CONTACTS					0x800B
 #define PERSIST_SENTINEL							0x0000
 
-typedef struct _PERSISTDATA {
+struct PERSISTDATA {
 	uint16_t persist_id;
 	PERSISTELEMENT element;
-} PERSISTDATA;
+};
 
-typedef struct _PERSISTDATA_ARRAY {
+struct PERSISTDATA_ARRAY {
 	uint8_t count;
 	PERSISTDATA **ppitems;
-} PERSISTDATA_ARRAY;
+};
 
 #define PERMISSION_NONE								0x00000000
 #define PERMISSION_READANY							0x00000001
@@ -931,7 +929,7 @@ typedef struct _PERSISTDATA_ARRAY {
 #define DELEGATE_PERMISSION_AUTHOR					0x0000001B
 #define DELEGATE_PERMISSION_EDITOR					0x0000007B
 
-typedef struct _SYSTEMTIME {
+struct SYSTEMTIME {
 	int16_t year;
 	int16_t month;
 	int16_t dayofweek;
@@ -940,10 +938,10 @@ typedef struct _SYSTEMTIME {
 	int16_t minute;
 	int16_t second;
 	int16_t milliseconds;
-} SYSTEMTIME;
+};
 
 /* pidLidTimeZoneStruct */
-typedef struct _TIMEZONESTRUCT {
+struct TIMEZONESTRUCT {
 	int32_t bias;
 	int32_t standardbias;
 	int32_t daylightbias;
@@ -951,12 +949,12 @@ typedef struct _TIMEZONESTRUCT {
 	SYSTEMTIME standarddate;
 	int16_t daylightyear;
 	SYSTEMTIME daylightdate;
-} TIMEZONESTRUCT;
+};
 
 #define TZRULE_FLAG_RECUR_CURRENT_TZREG				0x0001
 #define TZRULE_FLAG_EFFECTIVE_TZREG					0x0002
 
-typedef struct _TZRULE {
+struct TZRULE {
 	uint8_t major; /* 0x02 */
 	uint8_t minor; /* 0x01 */
 	uint16_t reserved; /* must be 0x003E */
@@ -968,17 +966,16 @@ typedef struct _TZRULE {
 	int32_t daylightbias;
 	SYSTEMTIME standarddate;
 	SYSTEMTIME daylightdate;
-} TZRULE;
+};
 
-typedef struct _TIMEZONEDEFINITION {
+struct TIMEZONEDEFINITION {
 	uint8_t major; /* 0x02 */
 	uint8_t minor; /* 0x01 */
 	uint16_t reserved; /* 0x0002 */
 	char* keyname;
 	uint16_t crules;
 	TZRULE *prules;
-} TIMEZONEDEFINITION;
-
+};
 
 #define RECURFREQUENCY_DAILY						0x200A
 #define RECURFREQUENCY_WEEKLY						0x200B
@@ -1030,16 +1027,16 @@ typedef struct _TIMEZONEDEFINITION {
 #define RECURRENCENUM_FOURTH						0x00000004
 #define RECURRENCENUM_LAST							0x00000005
 
-typedef struct _PATTERNTYPESPECIFIC_MONTHNTH {
+struct PATTERNTYPESPECIFIC_MONTHNTH {
 	uint32_t weekrecurrence;
 	uint32_t recurrencenum;
-} PATTERNTYPESPECIFIC_MONTHNTH;
+};
 
-typedef union _PATTERNTYPESPECIFIC {
+union PATTERNTYPESPECIFIC {
 	uint32_t weekrecurrence;
 	uint32_t dayofmonth;
 	PATTERNTYPESPECIFIC_MONTHNTH monthnth;
-} PATTERNTYPESPECIFIC;
+};
 
 #define ENDTYPE_AFTER_DATE							0x00002021
 #define ENDTYPE_AFTER_N_OCCURRENCES					0x00002022
@@ -1056,7 +1053,7 @@ typedef union _PATTERNTYPESPECIFIC {
 
 #define ENDDATE_MISSING								0x5AE980DF	
 
-typedef struct _RECURRENCEPATTERN {
+struct RECURRENCEPATTERN {
 	uint16_t readerversion; /* 0x3004 */
 	uint16_t writerversion; /* 0x3004 */
 	uint16_t recurfrequency;
@@ -1075,7 +1072,7 @@ typedef struct _RECURRENCEPATTERN {
 	uint32_t *pmodifiedinstancedates;
 	uint32_t startdate;
 	uint32_t enddate; /* if no enddate, shoule be set to 0x5AE980DF */
-} RECURRENCEPATTERN;
+};
 
 #define OVERRIDEFLAG_SUBJECT						0x0001
 #define OVERRIDEFLAG_MEETINGTYPE					0x0002
@@ -1088,7 +1085,7 @@ typedef struct _RECURRENCEPATTERN {
 #define OVERRIDEFLAG_APPTCOLOR						0x0100
 #define OVERRIDEFLAG_EXCEPTIONAL_BODY				0x0200
 
-typedef struct _EXCEPTIONINFO {
+struct EXCEPTIONINFO {
 	uint32_t startdatetime;
 	uint32_t enddatetime;
 	uint32_t originalstartdate;
@@ -1102,7 +1099,7 @@ typedef struct _EXCEPTIONINFO {
 	uint32_t attachment;
 	uint32_t subtype;
 	uint32_t appointmentcolor;
-} EXCEPTIONINFO;
+};
 
 #define CHANGEHIGHLIGHT_VALUE_BIT_CH_START			0x00000001
 #define CHANGEHIGHLIGHT_VALUE_BIT_CH_END			0x00000002
@@ -1115,13 +1112,13 @@ typedef struct _EXCEPTIONINFO {
 #define CHANGEHIGHLIGHT_VALUE_BIT_CH_RESPONSE		0x00000200
 #define CHANGEHIGHLIGHT_VALUE_BIT_CH_ALLOWPROPOSE	0x00000400
 
-typedef struct _CHANGEHIGHLIGHT {
+struct CHANGEHIGHLIGHT {
 	uint32_t size;
 	uint32_t value;
 	uint8_t *preserved;
-} CHANGEHIGHLIGHT;
+};
 
-typedef struct _EXTENDEDEXCEPTION {
+struct EXTENDEDEXCEPTION {
 	CHANGEHIGHLIGHT changehighlight;
 	uint32_t reservedblockee1size;
 	uint8_t *preservedblockee1;
@@ -1132,9 +1129,9 @@ typedef struct _EXTENDEDEXCEPTION {
 	char *location;
 	uint32_t reservedblockee2size;
 	uint8_t *preservedblockee2;
-} EXTENDEDEXCEPTION;
+};
 
-typedef struct _APPOINTMENTRECURRENCEPATTERN {
+struct APPOINTMENTRECURRENCEPATTERN {
 	RECURRENCEPATTERN recurrencepattern;
 	uint32_t readerversion2; /* 0x00003006 */
 	uint32_t writerversion2; /* SHOULD be 0x00003009, can be 0x00003008 */
@@ -1148,9 +1145,9 @@ typedef struct _APPOINTMENTRECURRENCEPATTERN {
 	EXTENDEDEXCEPTION *pextendedexception;
 	uint32_t reservedblock2size;
 	uint8_t *preservedblock2;
-} APPOINTMENTRECURRENCEPATTERN;
+};
 
-typedef struct _GLOBALOBJECTID {
+struct GLOBALOBJECTID {
 	uint8_t arrayid[16]; /* SHOULD be 0x04, 0x00, 0x00, 0x00,
 							0x82, 0x00, 0xE0, 0x00, 0x74, 0xC5,
 							0xB7, 0x10, 0x1A, 0x82, 0xE0, 0x08 */
@@ -1160,14 +1157,14 @@ typedef struct _GLOBALOBJECTID {
 	uint64_t creationtime;
 	uint8_t x[8];
 	BINARY data;
-} GLOBALOBJECTID;
+};
 
-typedef struct _EID_ARRAY {
+struct EID_ARRAY {
 	uint32_t count;
 	uint64_t *pids;
-} EID_ARRAY;
+};
 
-typedef PROPTAG_ARRAY INDEX_ARRAY;
+using INDEX_ARRAY = PROPTAG_ARRAY;
 
 #define MESSAGE_FORMAT_PLAIN_AND_HTML				0x00100000
 #define MESSAGE_FORMAT_HTML_ONLY					0x00080000
@@ -1196,8 +1193,7 @@ typedef PROPTAG_ARRAY INDEX_ARRAY;
 
 #define MAX_ATTACHMENT_NUM							200
 
-
-typedef struct _EXTENDED_ERROR {
+struct EXTENDED_ERROR {
 	uint16_t version;
 	uint16_t padding;
 	uint32_t errcode;
@@ -1205,8 +1201,7 @@ typedef struct _EXTENDED_ERROR {
 	LONG_TERM_ID message_gid;
 	uint8_t reserved[24];
 	BINARY *paux_bytes;
-} EXTENDED_ERROR;
-
+};
 
 #define	REPL_TYPE_ID								0
 #define REPL_TYPE_GUID								1
@@ -1217,14 +1212,14 @@ typedef void (*REPLIST_ENUM)(void*, uint16_t);
 
 typedef void (*REPLICA_ENUM)(void*, uint64_t);
 
-typedef struct _IDSET {
+struct IDSET {
 	void *pparam;
 	REPLICA_MAPPING mapping;
 	BOOL b_serialize; /* if b_serialize is FALSE in idset and repl_type is
 						REPL_TYPE_GUID, nodes in repl_list is REPLGUID_NODE */
 	uint8_t repl_type;
 	DOUBLE_LIST repl_list;
-} IDSET;
+};
 
 #define PCL_CONFLICT											0x0
 #define PCL_INCLUDE												0x1
@@ -1260,107 +1255,109 @@ typedef DOUBLE_LIST PCL;
 #define DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED				0x19
 #define DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED				0x20
 
-typedef struct _DB_NOTIFY {
+struct DB_NOTIFY {
 	uint8_t type;
 	void *pdata;
-} DB_NOTIFY;
+};
 
-typedef struct _DB_NOTIFY_NEW_MAIL {
+struct DB_NOTIFY_NEW_MAIL {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t message_flags;
 	const char *pmessage_class;
-} DB_NOTIFY_NEW_MAIL;
+};
 
-typedef struct _DB_NOTIFY_FOLDER_CREATED {
+struct DB_NOTIFY_FOLDER_CREATED {
 	uint64_t folder_id;
 	uint64_t parent_id;
 	PROPTAG_ARRAY proptags;
-} DB_NOTIFY_FOLDER_CREATED;
+};
 
-typedef struct _DB_NOTIFY_MESSAGE_CREATED {
+struct DB_NOTIFY_MESSAGE_CREATED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	PROPTAG_ARRAY proptags;
-} DB_NOTIFY_MESSAGE_CREATED;
+};
 
-typedef struct _DB_NOTIFY_LINK_CREATED {
+struct DB_NOTIFY_LINK_CREATED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint64_t parent_id;
 	PROPTAG_ARRAY proptags;
-} DB_NOTIFY_LINK_CREATED;
+};
 
-typedef struct _DB_NOTIFY_FOLDER_DELETED {
+struct DB_NOTIFY_FOLDER_DELETED {
 	uint64_t folder_id;
 	uint64_t parent_id;
-} DB_NOTIFY_FOLDER_DELETED;
+};
 
-typedef struct _DB_NOTIFY_MESSAGE_DELETED {
+struct DB_NOTIFY_MESSAGE_DELETED {
 	uint64_t folder_id;
 	uint64_t message_id;
-} DB_NOTIFY_MESSAGE_DELETED;
+};
 	
-typedef struct _DB_NOTIFY_LINK_DELETED {
+struct DB_NOTIFY_LINK_DELETED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint64_t parent_id;
-} DB_NOTIFY_LINK_DELETED;
+};
 
-typedef struct _DB_NOTIFY_FOLDER_MODIFIED {
+struct DB_NOTIFY_FOLDER_MODIFIED {
 	uint64_t folder_id;
 	uint32_t *ptotal;
 	uint32_t *punread;
 	PROPTAG_ARRAY proptags;
-} DB_NOTIFY_FOLDER_MODIFIED;
+};
 	
-typedef struct _DB_NOTIFY_MESSAGE_MODIFIED {
+struct DB_NOTIFY_MESSAGE_MODIFIED {
 	uint64_t folder_id;
 	uint64_t message_id;
 	PROPTAG_ARRAY proptags;
-} DB_NOTIFY_MESSAGE_MODIFIED;
+};
 
-typedef struct _DB_NOTIFY_FOLDER_MVCP {
+struct DB_NOTIFY_FOLDER_MVCP {
 	uint64_t folder_id;
 	uint64_t parent_id;
 	uint64_t old_folder_id;
 	uint64_t old_parent_id;
-} DB_NOTIFY_FOLDER_MVCP;
+};
 
-typedef struct _DB_NOTIFY_MESSAGE_MVCP {
+struct DB_NOTIFY_MESSAGE_MVCP {
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint64_t old_folder_id;
 	uint64_t old_message_id;
-} DB_NOTIFY_MESSAGE_MVCP;
+};
 
-typedef struct _DB_NOTIFY_SEARCH_COMPLETED {
+struct DB_NOTIFY_SEARCH_COMPLETED {
 	uint64_t folder_id;
-} DB_NOTIFY_SEARCH_COMPLETED;
+};
 
-typedef struct _DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED {
+struct DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED {
 	uint64_t row_folder_id;
 	uint64_t after_folder_id;
-} DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED, DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED;
+};
+using DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED = DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED;
 
-typedef struct _DB_NOTIFY_CONTENT_TABLE_ROW_ADDED {
+struct DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED {
 	uint64_t row_folder_id;
 	uint64_t row_message_id;
 	uint64_t row_instance;
 	uint64_t after_folder_id;
 	uint64_t after_row_id;
 	uint64_t after_instance;
-} DB_NOTIFY_CONTENT_TABLE_ROW_ADDED, DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED;
+};
+using DB_NOTIFY_CONTENT_TABLE_ROW_ADDED = DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED;
 
-typedef struct _DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED {
+struct DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED {
 	uint64_t row_folder_id;
-} DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED;
+};
 
-typedef struct _DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
+struct DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
 	uint64_t row_folder_id;
 	uint64_t row_message_id;
 	uint64_t row_instance;
-} DB_NOTIFY_CONTENT_TABLE_ROW_DELETED;
+};
 
 #define LOGON_FLAG_PRIVATE							0x1
 #define LOGON_FLAG_UNDER_COVER						0x2

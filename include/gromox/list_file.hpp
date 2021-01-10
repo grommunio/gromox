@@ -6,7 +6,7 @@
 #	include <stdio.h>
 #endif
 
-typedef struct _LIST_FILE {
+struct LIST_FILE {
     FILE*       file_ptr;
     char        format[32];
     int         type_size[32];
@@ -14,7 +14,7 @@ typedef struct _LIST_FILE {
     int         item_size;
     int         item_num;
     void*       pfile;
-} LIST_FILE;
+};
 
 #ifdef __cplusplus
 extern "C" {

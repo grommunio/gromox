@@ -3,17 +3,17 @@
 #include <gromox/lib_buffer.hpp>
 #include <gromox/mem_file.hpp>
 
-typedef struct _DIR_NODE {
+struct DIR_NODE {
 	SIMPLE_TREE_NODE node;
 	BOOL b_loaded;
 	char name[256];
 	LIB_BUFFER *ppool;
-} DIR_NODE;
+};
 
-typedef struct _DIR_TREE {
+struct DIR_TREE {
 	SIMPLE_TREE tree;
 	LIB_BUFFER  *ppool;
-} DIR_TREE;
+};
 
 typedef void (*DIR_TREE_ENUM)(DIR_NODE*, void*);
 

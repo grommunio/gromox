@@ -18,13 +18,11 @@
 #define NDR_SIVAL(pndr, ofs, v) NDR_BE(pndr)?RSIVAL(pndr->data,ofs,v):SIVAL(pndr->data,ofs,v)
 #define NDR_SIVALS(pndr, ofs, v) NDR_BE(pndr)?RSIVALS(pndr->data,ofs,v):SIVALS(pndr->data,ofs,v)
 
-
-typedef struct _PTR_NODE {
+struct PTR_NODE {
 	DOUBLE_LIST_NODE node;
 	const void *pointer;
 	uint32_t ptr_count;
-} PTR_NODE;
-
+};
 
 int ndr_pull_advance(NDR_PULL *pndr, uint32_t size)
 {

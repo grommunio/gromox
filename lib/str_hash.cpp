@@ -38,14 +38,13 @@ static size_t DJBHash(const char* str)
 STR_HASH_TABLE* str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC fun)
 {
 	DOUBLE_LIST* p_map = NULL;
-	PSTR_HASH_TABLE	 table = NULL;
 	size_t	i = 0;
 
 	if (max_items <= 0 || item_size <= 0) {
 		debug_info("[str_hash]: str_hash_init, parameter is invalid");
 		return NULL;
 	}
-	table = (PSTR_HASH_TABLE)malloc(sizeof(STR_HASH_TABLE));
+	auto table = static_cast<STR_HASH_TABLE *>(malloc(sizeof(STR_HASH_TABLE)));
 	if (NULL == table) {
 		debug_info("[str_hash]: can not alloc hash table");
 		return NULL;
@@ -323,15 +322,13 @@ DONE:
  */
 STR_HASH_ITER* str_hash_iter_init(STR_HASH_TABLE* ptbl)
 {
-	PSTR_HASH_ITER iter = NULL;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == ptbl) {
 		debug_info("[str_hash]: str_hash_iter_init, param NULL");
 		return NULL;
 	}
 #endif
-	iter = static_cast<STR_HASH_ITER *>(malloc(sizeof(STR_HASH_ITER)));
+	auto iter = static_cast<STR_HASH_ITER *>(malloc(sizeof(STR_HASH_ITER)));
 	if (iter == nullptr) {
 		debug_info("[str_hash]: can not alloc hash iter");
 		return NULL;

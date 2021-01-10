@@ -1,19 +1,18 @@
 #pragma once
 #include <gromox/common_types.hpp>
 
-typedef struct _CONFIG_ENTRY {
+struct CONFIG_ENTRY {
     char keyname[256];
     char value[256];
 	BOOL is_touched;
-} CONFIG_ENTRY;
+};
 
-typedef struct _CONFIG_FILE {
+struct CONFIG_FILE {
     CONFIG_ENTRY *config_table;
     size_t num_entries;
 	size_t total_entries;
 	char file_name[256];
-} CONFIG_FILE;
-
+};
 
 #ifdef __cplusplus
 extern "C" {

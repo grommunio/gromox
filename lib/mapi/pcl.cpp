@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct _XID_NODE {
+struct XID_NODE {
 	DOUBLE_LIST_NODE node;
 	SIZED_XID xid;
-} XID_NODE;
+};
 
 static void pcl_pull_xid(const BINARY *pbin,
 	uint16_t offset, uint8_t size, XID *pxid)

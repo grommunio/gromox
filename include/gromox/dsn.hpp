@@ -7,11 +7,10 @@ typedef BOOL (*RCPTS_FIELDS_ENUM)(DSN_FIELDS*, void*);
 
 typedef BOOL (*DSN_FIELDS_ENUM)(const char*, const char*, void*);
 
-typedef struct _DSN {
+struct DSN {
 	DSN_FIELDS message_fields;
 	DOUBLE_LIST rcpts_fields;
-} DSN;
-
+};
 
 #ifdef __cplusplus
 extern "C" {
