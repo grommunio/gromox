@@ -1,6 +1,5 @@
 #pragma once
-#include "assoc_array.h"
-
+#include <gromox/assoc_array.hpp>
 #define COOKIE_PARSER			ASSOC_ARRAY
 
 #ifdef __cplusplus

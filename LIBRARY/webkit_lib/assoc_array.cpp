@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "assoc_array.h"
-
-
+#include <gromox/assoc_array.hpp>
 #define ASSOC_ARRAY_ENTRY_INIT		4096
 
 #define ASSOC_ARRAY_ENTRY_STEP		16

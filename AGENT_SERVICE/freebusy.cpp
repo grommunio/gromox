@@ -6,7 +6,7 @@
 #include <gromox/socket.h>
 #include <gromox/paths.h>
 #include <gromox/tpropval_array.hpp>
-#include "cookie_parser.h"
+#include <gromox/cookie_parser.hpp>
 #include <gromox/endian_macro.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/ext_buffer.hpp>
