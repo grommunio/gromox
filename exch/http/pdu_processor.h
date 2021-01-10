@@ -2,9 +2,9 @@
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
-#include "ndr.h"
+#include <gromox/ndr.hpp>
 #include "plugin.h"
-#include "ntlmssp.h"
+#include <gromox/ntlmssp.hpp>
 #include "stream.h"
 #include "int_hash.h"
 #include "double_list.h"

@@ -1,7 +1,6 @@
 #pragma once
 #include "nsp_types.h"
-#include "ndr.h"
-
+#include <gromox/ndr.hpp>
 
 struct NSPIBIND_IN {
 	uint32_t flags;

@@ -5,7 +5,7 @@
 #include <gromox/defs.h>
 #include "common_types.h"
 #include "endian_macro.h"
-#include "ndr.h"
+#include <gromox/ndr.hpp>
 #include <stdlib.h>
 #include <string.h>
 

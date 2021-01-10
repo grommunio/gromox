@@ -1,6 +1,6 @@
 #pragma once
-#include "arcfour.h"
-#include "rpc_types.h"
+#include <gromox/arcfour.hpp>
+#include <gromox/rpc_types.hpp>
 #include "common_types.h"
 #include <pthread.h>
 

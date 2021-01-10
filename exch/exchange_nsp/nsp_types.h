@@ -4,7 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
-#include "rpc_types.h"
+#include <gromox/rpc_types.hpp>
 #include "proptags.h"
 
 #define RESTRICTION_TYPE_AND				0x0

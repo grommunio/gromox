@@ -1,5 +1,5 @@
 #pragma once
-#include "rpc_types.h"
+#include <gromox/rpc_types.hpp>
 
 typedef struct _ARCFOUR_STATE {
 	uint8_t sbox[256];

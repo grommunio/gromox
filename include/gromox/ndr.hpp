@@ -4,7 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
-#include "rpc_types.h"
+#include <gromox/rpc_types.hpp>
 #include "double_list.h"
 
 #define NDR_ERR_SUCCESS					0

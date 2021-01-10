@@ -45,8 +45,7 @@
 */
 #include <cstring>
 #include <cstdint>
-#include "ntlmdes.h"
-
+#include <gromox/ntlmdes.hpp>
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
 
 

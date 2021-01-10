@@ -1,8 +1,8 @@
 #pragma once
 #include <gromox/defs.h>
 #include "common_types.h"
-#include "rpc_types.h"
-#include "ndr.h"
+#include <gromox/rpc_types.hpp>
+#include <gromox/ndr.hpp>
 
 #define PLUGIN_INIT                 0
 #define PLUGIN_FREE                 1

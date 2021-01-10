@@ -11,7 +11,7 @@
 #include "mail_func.h"
 #include "resource.h"
 #include "util.h"
-#include "ndr.h"
+#include <gromox/ndr.hpp>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>

@@ -1,4 +1,4 @@
-#include "hmacmd5.h"
+#include <gromox/hmacmd5.hpp>
 #include <string.h>
 
 /* the microsoft version of hmac_md5 initialisation */

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <libHX/string.h>
-#include "ndr.h"
+#include <gromox/ndr.hpp>
 #include "util.h"
-#include "crc32.h"
-#include "hmacmd5.h"
-#include "ntlmssp.h"
-#include "ntlmdes.h"
+#include <gromox/crc32.hpp>
+#include <gromox/hmacmd5.hpp>
+#include <gromox/ntlmssp.hpp>
+#include <gromox/ntlmdes.hpp>
 #include "endian_macro.h"
 #include <stdio.h>
 #include <iconv.h>
