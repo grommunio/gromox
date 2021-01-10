@@ -6,14 +6,12 @@
 
 TARRAY_SET* tarray_set_init()
 {
-	TARRAY_SET *pset;
-	
-	pset = malloc(sizeof(TARRAY_SET));
+	auto pset = static_cast<TARRAY_SET *>(malloc(sizeof(TARRAY_SET)));
 	if (NULL == pset) {
 		return NULL;
 	}
 	pset->count = 0;
-	pset->pparray = malloc(100*sizeof(TPROPVAL_ARRAY*));
+	pset->pparray = static_cast<TPROPVAL_ARRAY **>(malloc(100 * sizeof(TPROPVAL_ARRAY *)));
 	if (NULL == pset->pparray) {
 		free(pset);
 		return NULL;
@@ -61,7 +59,7 @@ BOOL tarray_set_append_internal(TARRAY_SET *pset, TPROPVAL_ARRAY *pproplist)
 	count = (pset->count / 100 + 1) * 100;
 	if (pset->count + 1 >= count) {
 		count += 100;
-		pparray = realloc(pset->pparray, count*sizeof(TPROPVAL_ARRAY*));
+		pparray = static_cast<TPROPVAL_ARRAY **>(realloc(pset->pparray, count * sizeof(TPROPVAL_ARRAY *)));
 		if (NULL == pparray) {
 			return FALSE;
 		}
