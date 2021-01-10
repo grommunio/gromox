@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <stddef.h>
 #include <libHX/defs.h>
-#include <gromox/defs.h>
-#include "processor_types.h"
+#include "rop_ids.h"
 
 #define E(s) [s] = #s
 static const char *const rop_names[] = {
@@ -142,6 +142,6 @@ static const char *const rop_names[] = {
 
 const char *rop_idtoname(unsigned int i)
 {
-	const char *s = i < ARRAY_SIZE(rop_names) ? rop_names[i] : nullptr;
-	return s != nullptr ? s : "";
+	const char *s = i < ARRAY_SIZE(rop_names) ? rop_names[i] : NULL;
+	return s != NULL ? s : "";
 }
