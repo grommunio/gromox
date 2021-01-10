@@ -245,7 +245,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (psrc->count == 0) {
 			preturn->pguid = nullptr;
 		} else {
-			preturn->pguid = malloc(sizeof(uint32_t) * psrc->count);
+			preturn->pguid = malloc(sizeof(GUID) * psrc->count);
 			if (preturn->pguid == nullptr) {
 				free(preturn);
 				return NULL;
