@@ -93,7 +93,7 @@ static BOOL assoc_array_enlarge(ASSOC_ARRAY *parray)
 		str_hash_add(phash, tmp_key, ptr);
 		ptr = str_hash_query(phash, tmp_key);
 		if (NULL != ptr) {
-			*(size_t*)(ptr + parray->data_size) = tmp_index;
+			*reinterpret_cast<size_t *>(static_cast<char *>(ptr) + parray->data_size) = tmp_index;
 			index_cache[tmp_index] = ptr;
 		}
 		tmp_index ++;
@@ -137,7 +137,7 @@ BOOL assoc_array_assign(ASSOC_ARRAY *parray, const char *key, void *value)
 	}
 
 	parray->index_cache[parray->entry_num] = ptr;
-	*(size_t*)(ptr + parray->data_size) = parray->entry_num;
+	*reinterpret_cast<size_t *>(static_cast<char *>(ptr) + parray->data_size) = parray->entry_num;
 	parray->entry_num ++;
 	return TRUE;
 }

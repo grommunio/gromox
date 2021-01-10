@@ -1189,8 +1189,8 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		if (MJSON_MIME_NONE != pmime->mime_type) {
 			return FALSE;
 		}
-		memcpy((void*)pmime + sizeof(SIMPLE_TREE_NODE), 
-			(void*)&temp_mime + sizeof(SIMPLE_TREE_NODE),
+		memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE), 
+		       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
 			sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
 		return TRUE;
 	} else {
@@ -1241,8 +1241,8 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		if (MJSON_MIME_NONE != pmime->mime_type) {
 			return FALSE;
 		}
-		memcpy((void*)pmime + sizeof(SIMPLE_TREE_NODE), 
-			(void*)&temp_mime + sizeof(SIMPLE_TREE_NODE),
+		memcpy(reinterpret_cast<char *>(pmime) + sizeof(SIMPLE_TREE_NODE), 
+		       reinterpret_cast<char *>(&temp_mime) + sizeof(SIMPLE_TREE_NODE),
 			sizeof(MJSON_MIME) - sizeof(SIMPLE_TREE_NODE));
 		return TRUE;
 	}	

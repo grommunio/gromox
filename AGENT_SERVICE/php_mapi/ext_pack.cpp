@@ -129,7 +129,7 @@ zend_bool ext_pack_pull_float(PULL_CTX *pctx, float *v)
 		pctx->offset + sizeof(float) > pctx->data_size) {
 		return 0;
 	}
-	memcpy(v, pctx->data + pctx->offset, sizeof(float));
+	memcpy(v, static_cast<const char *>(pctx->data) + pctx->offset, sizeof(float));
 	pctx->offset += sizeof(float);
 	return 1;
 }
@@ -140,7 +140,7 @@ zend_bool ext_pack_pull_double(PULL_CTX *pctx, double *v)
 		pctx->offset + sizeof(double) > pctx->data_size) {
 		return 0;
 	}
-	memcpy(v, pctx->data + pctx->offset, sizeof(double));
+	memcpy(v, static_cast<const char *>(pctx->data) + pctx->offset, sizeof(double));
 	pctx->offset += sizeof(double);
 	return 1;
 }
@@ -150,7 +150,7 @@ zend_bool ext_pack_pull_bytes(PULL_CTX *pctx, uint8_t *data, uint32_t n)
 	if (pctx->data_size < n || pctx->offset + n > pctx->data_size) {
 		return 0;
 	}
-	memcpy(data, pctx->data + pctx->offset, n);
+	memcpy(data, static_cast<const char *>(pctx->data) + pctx->offset, n);
 	pctx->offset += n;
 	return 1;
 }

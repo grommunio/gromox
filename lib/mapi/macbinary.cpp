@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <libHX/string.h>
 #include <gromox/endian_macro.hpp>
 #include <gromox/macbinary.hpp>
 #include <gromox/util.hpp>
@@ -286,8 +287,9 @@ static int macbinary_push_header(EXT_PUSH *pext, const MACBINARY_HEADER *r)
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	memset((void*)r->file_name + tmp_byte, 0, 64 - tmp_byte);
-	status = ext_buffer_push_bytes(pext, r->file_name, 63);
+	char newfile[64]{};
+	HX_strlcpy(newfile, r->file_name, sizeof(newfile));
+	status = ext_buffer_push_bytes(pext, newfile, 63);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
