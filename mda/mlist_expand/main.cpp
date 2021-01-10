@@ -2,7 +2,7 @@
 #include <gromox/hook_common.h>
 #include "bounce_producer.h"
 #include <cstdio>
-#include "../../../exch/mysql_adaptor/mysql_adaptor.h"
+#include "../../exch/mysql_adaptor/mysql_adaptor.h"
 
 DECLARE_API;
 
