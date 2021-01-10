@@ -4,10 +4,6 @@
 
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void str_table_init(const char *module_name, BOOL case_sensitive,
 	const char *path, int growing_num);
 extern void str_table_free(void);
@@ -22,7 +18,3 @@ BOOL str_table_remove(const char* str);
 void str_table_console_talk(int argc, char **argv, char *result, int length);
 
 void str_table_echo(const char *format, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

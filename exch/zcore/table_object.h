@@ -26,10 +26,6 @@ struct TABLE_OBJECT {
 	DOUBLE_LIST bookmark_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 TABLE_OBJECT* table_object_create(STORE_OBJECT *pstore,
 	void *pparent_obj, uint8_t table_type, uint32_t table_flags);
 
@@ -104,7 +100,3 @@ BOOL table_object_store_state(TABLE_OBJECT *ptable,
 
 BOOL table_object_restore_state(TABLE_OBJECT *ptable,
 	uint32_t state_id, uint32_t *pindex);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

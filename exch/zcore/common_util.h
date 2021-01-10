@@ -262,10 +262,6 @@ enum {
 	RES_TOTAL_NUM
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
 	int max_rcpt, int max_message, unsigned int max_mail_len,
@@ -450,7 +446,3 @@ extern const char *common_util_get_default_timezone(void);
 extern const char *common_util_get_submit_command(void);
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(unsigned int i);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

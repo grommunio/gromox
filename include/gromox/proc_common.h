@@ -66,10 +66,6 @@ typedef void (*ASYNC_REPLY)(int, void*);
 /* represent function type of log_info */
 typedef void (*LOG_INFO)(int, const char *, ...);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern QUERY_SERVICE query_service;
 extern EP_REGISTRATION register_endpoint;
 extern IF_REGISTRATION register_interface;
@@ -144,8 +140,6 @@ extern ASYNC_REPLY async_reply;
 	rpc_free_environment = (FREE_ENVIRONMENT)query_service("rpc_free_environment"); \
 	async_reply = (ASYNC_REPLY)query_service("async_reply")
 
+extern "C" { /* dlsym */
 extern GX_EXPORT BOOL PROC_LibMain(int reason, void **ptrs);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+}

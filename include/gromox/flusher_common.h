@@ -68,10 +68,6 @@ typedef BOOL (*CHECKING_FUNCTION)(char*);
 /* is domain list valid, if TRUE, check_domain will functionate */
 typedef BOOL (*IS_DOMAINLIST_VALID)(void);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern QUERY_SERVICE query_service;
 extern GET_QUEUE_LENGTH get_queue_length;
 extern LOG_INFO log_info;
@@ -132,8 +128,6 @@ extern IS_DOMAINLIST_VALID is_domainlist_valid;
 	check_domain = (CHECKING_FUNCTION)query_service("check_domain"); \
 	is_domainlist_valid=(IS_DOMAINLIST_VALID)query_service("is_domainlist_valid")
 
+extern "C" { /* dlsym */
 extern GX_EXPORT BOOL FLH_LibMain(int reason, void **ptrs);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+}

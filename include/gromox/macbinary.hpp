@@ -62,14 +62,6 @@ struct MACBINARY {
 	const uint8_t *pcomment;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int macbinary_pull_binary(EXT_PULL *pext, MACBINARY *r);
 
 int macbinary_push_binary(EXT_PUSH *pext, const MACBINARY *r);
-
-#ifdef __cplusplus
-}
-#endif

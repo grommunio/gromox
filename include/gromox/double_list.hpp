@@ -17,10 +17,6 @@ struct DOUBLE_LIST {
     size_t    nodes_num;           /* indicate the current number of nodes */
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void double_list_init(DOUBLE_LIST* plist);
 
 void double_list_free(DOUBLE_LIST* plist);
@@ -87,7 +83,3 @@ DOUBLE_LIST_NODE* double_list_get_head(DOUBLE_LIST *plist);
 
 /* get tail node and does not remove it from list */
 DOUBLE_LIST_NODE* double_list_get_tail(DOUBLE_LIST *plist);
-
-#ifdef __cplusplus
-}
-#endif

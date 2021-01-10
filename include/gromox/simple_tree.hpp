@@ -24,10 +24,6 @@ typedef void (*SIMPLE_TREE_ENUM)(SIMPLE_TREE_NODE*, void*);
 typedef void (*SIMPLE_TREE_DELETE)(SIMPLE_TREE_NODE*);
 typedef SIMPLE_TREE_NODE* (*SIMPLE_TREE_DUPLICATE)(SIMPLE_TREE_NODE*, void*);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void simple_tree_init(SIMPLE_TREE *ptree);
 
 SIMPLE_TREE_NODE* simple_tree_get_root(SIMPLE_TREE *ptree);
@@ -58,7 +54,3 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_src, int opt);
 extern BOOL simple_tree_move_node_to_sibling(SIMPLE_TREE *tdst, SIMPLE_TREE_NODE *ndst, SIMPLE_TREE *tsrc, SIMPLE_TREE_NODE *nsrc, int opt);
 void simple_tree_free(SIMPLE_TREE *ptree);
-
-#ifdef __cplusplus
-}
-#endif

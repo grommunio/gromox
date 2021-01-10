@@ -11,10 +11,6 @@ struct FIFO {
     size_t      max_size;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 LIB_BUFFER* fifo_allocator_init(size_t data_size, size_t max_size, BOOL thread_safe);
 
 void fifo_allocator_free(LIB_BUFFER* pallocator);
@@ -28,7 +24,3 @@ BOOL fifo_enqueue(FIFO* pfifo, void* pdata);
 
 void* fifo_get_front(FIFO* pfifo);
 void fifo_dequeue(FIFO* pfifo);
-
-#ifdef __cplusplus
-}
-#endif

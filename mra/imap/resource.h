@@ -102,10 +102,6 @@ enum {
 	IMAP_CODE_2200010
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern CONFIG_FILE *g_config_file;
 
 extern void resource_init(void);
@@ -118,7 +114,3 @@ char** resource_get_folder_strings(const char*lang);
 
 const char* resource_get_default_charset(const char *lang);
 extern const char *resource_get_error_string(int);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

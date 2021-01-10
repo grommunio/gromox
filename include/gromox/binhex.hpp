@@ -12,15 +12,7 @@ struct BINHEX {
 	uint8_t *presource;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 BOOL binhex_deserialize(BINHEX *pbinhex,
 	void *pbuff, uint32_t length);
 
 void binhex_clear(BINHEX *pbinhex);
-
-#ifdef __cplusplus
-}
-#endif

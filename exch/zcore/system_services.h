@@ -3,10 +3,6 @@
 #include <gromox/mem_file.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int system_services_run(void);
 extern int system_services_stop(void);
 
@@ -46,7 +42,3 @@ extern BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 extern BOOL (*system_services_check_same_org)(int, int);
 extern int (*system_services_add_timer)(const char *, int);
 extern void (*system_services_log_info)(int, const char *, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

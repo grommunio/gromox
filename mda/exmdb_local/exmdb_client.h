@@ -8,10 +8,6 @@
 #define EXMDB_RESULT_ERROR		4
 #define EXMDB_MAILBOX_FULL		5
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 void exmdb_client_init(int conn_num, const char *list_path);
 extern int exmdb_client_run(void);
 extern int exmdb_client_stop(void);
@@ -27,7 +23,3 @@ int exmdb_client_check_contact_address(const char *dir,
 BOOL exmdb_client_get_exmdb_information(
 	const char *dir, char *ip_addr, int *pport,
 	int *pconn_num, int *palive_conn);
-
-#ifdef  __cplusplus
-}
-#endif

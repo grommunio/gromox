@@ -11,10 +11,6 @@ struct SUBSCRIPTION_OBJECT {
 	uint32_t sub_id;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 SUBSCRIPTION_OBJECT* subscription_object_create(
 	LOGON_OBJECT *plogon, uint8_t logon_id,
 	uint16_t notification_types, BOOL b_whole,
@@ -24,7 +20,3 @@ void subscription_object_set_handle(
 	SUBSCRIPTION_OBJECT *psub, uint32_t handle);
 	
 void subscription_object_free(SUBSCRIPTION_OBJECT *psub);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

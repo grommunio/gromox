@@ -16,10 +16,6 @@ struct OBJECT_TREE {
 	SIMPLE_TREE tree;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 OBJECT_TREE* object_tree_create(const char *maildir);
 
 void object_tree_free(OBJECT_TREE *ptree);
@@ -49,7 +45,3 @@ void object_tree_touch_profile_sec(OBJECT_TREE *pobjtree);
 
 uint32_t object_tree_get_store_handle(OBJECT_TREE *pobjtree,
 	BOOL b_private, int account_id);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

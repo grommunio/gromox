@@ -17,10 +17,6 @@ typedef CONTEXT_HANDLE CXH;
 
 typedef CONTEXT_HANDLE ACXH;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern const char* (*emsmdb_interface_cpid_to_charset)(uint32_t cpid);
 extern void emsmdb_interface_init(void);
 extern int emsmdb_interface_run(void);
@@ -91,7 +87,3 @@ void emsmdb_interface_remove_subscription_notify(
 
 void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	uint32_t notify_id, const DB_NOTIFY *pdb_notify);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

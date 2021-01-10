@@ -75,10 +75,6 @@ struct FOLDER_CHANGES {
 	TPROPVAL_ARRAY *pfldchgs;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern ATTACHMENT_CONTENT *attachment_content_init(void);
 extern void attachment_content_set_embedded_internal(ATTACHMENT_CONTENT *, MESSAGE_CONTENT *embed);
 void attachment_content_free(ATTACHMENT_CONTENT *pattachment);
@@ -138,7 +134,3 @@ BOOL property_groupinfo_get_partial_index(PROPERTY_GROUPINFO *pgpinfo,
 void property_groupinfo_free(PROPERTY_GROUPINFO *pgpinfo);
 
 void property_groupinfo_free_internal(PROPERTY_GROUPINFO *pgpinfo);
-
-#ifdef __cplusplus
-}
-#endif

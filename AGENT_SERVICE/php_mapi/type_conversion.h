@@ -2,10 +2,6 @@
 #include "php.h"
 #include "types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 uint64_t unix_to_nttime(time_t unix_time);
 
 time_t nttime_to_unix(uint64_t nt_time);
@@ -61,7 +57,3 @@ zend_bool znotification_array_to_php(
 
 zend_bool php_to_propname_array(zval *pzval_names,
 	zval *pzval_guids, PROPNAME_ARRAY *ppropnames TSRMLS_DC);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

@@ -880,16 +880,8 @@ struct RPC_RESPONSE {
 	RESPONSE_PAYLOAD payload;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	RPC_REQUEST *prequest);
 
 BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	BINARY *pbin_out);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

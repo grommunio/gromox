@@ -16,10 +16,6 @@ struct ATTACHMENT_OBJECT {
 	DOUBLE_LIST stream_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 ATTACHMENT_OBJECT* attachment_object_create(MESSAGE_OBJECT *pparent,
 	uint32_t attachment_num, uint8_t open_flags);
 
@@ -71,7 +67,3 @@ BOOL attachment_object_copy_properties(
 	ATTACHMENT_OBJECT *pattachment, ATTACHMENT_OBJECT *pattachment_src,
 	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force,
 	BOOL *pb_cycle, PROBLEM_ARRAY *pproblems);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

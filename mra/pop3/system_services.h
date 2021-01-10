@@ -8,10 +8,6 @@
 #include <gromox/array.hpp>
 #include <gromox/single_list.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int system_services_run(void);
 extern int system_services_stop(void);
 
@@ -30,7 +26,3 @@ extern int (*system_services_check_cdn_user)(const char*);
 extern int (*system_services_create_cdn_user)(const char*);
 extern void (*system_services_broadcast_event)(const char*);
 extern void (*system_services_log_info)(int, const char *, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

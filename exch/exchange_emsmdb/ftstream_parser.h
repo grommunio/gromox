@@ -15,10 +15,6 @@ struct FTSTREAM_PARSER {
 	LOGON_OBJECT *plogon;	/* plogon is a protected member */
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 FTSTREAM_PARSER* ftstream_parser_create(LOGON_OBJECT *plogon);
 	
 void ftstream_parser_free(FTSTREAM_PARSER *pstream);
@@ -27,7 +23,3 @@ BOOL ftstream_parser_write_buffer(
 	FTSTREAM_PARSER *pstream,
 	const BINARY *ptransfer_data);
 extern gxerr_t ftstream_parser_process(FTSTREAM_PARSER *, RECORD_MARKER, RECORD_PROPVAL, void *param);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

@@ -22,10 +22,6 @@
 #define OBJECT_TYPE_ICSUPCTX				10
 #define OBJECT_TYPE_SUBSCRIPTION			11
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void *rop_processor_create_logmap(void);
 void rop_processor_release_logmap(void *plogmap);
 
@@ -49,7 +45,3 @@ void rop_processor_release_object_handle(void *plogmap,
 	uint8_t logon_id, uint32_t obj_handle);
 	
 LOGON_OBJECT* rop_processor_get_logon_object(void *plogmap, uint8_t logon_id);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

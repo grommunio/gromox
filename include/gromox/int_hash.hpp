@@ -25,9 +25,6 @@ struct INT_HASH_ITER {
     INT_HASH_TABLE* ptable;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 /* 
  init a hash table with the specified max_items capacity and item_size
  of data size, the fun and a hash function which takes a string and 
@@ -68,7 +65,3 @@ int int_hash_iter_remove(INT_HASH_ITER *piter);
 
 /* forward the iterator by one item */
 int int_hash_iter_forward(INT_HASH_ITER *piter);
-
-#ifdef __cplusplus
-}
-#endif

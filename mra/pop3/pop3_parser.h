@@ -65,10 +65,6 @@ struct POP3_CONTEXT {
 	char             maildir[256];
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_stls, BOOL force_stls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path,
@@ -90,7 +86,3 @@ int pop3_parser_threads_event_proc(int action);
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);
 extern void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *format, ...);
 extern char *pop3_parser_cdn_path(void);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

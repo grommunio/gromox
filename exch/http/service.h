@@ -13,10 +13,6 @@ struct service_init_param {
 };
 
 #ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef __cplusplus
 extern void service_init(const struct service_init_param &);
 #endif
 extern int service_run(void);
@@ -31,7 +27,3 @@ void service_release(const char *service_name, const char *module);
 
 int service_console_talk(int argc, char **argv, char *reason, int len);
 extern BOOL service_register_service(const char *func_name, void *addr);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

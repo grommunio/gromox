@@ -6,17 +6,9 @@
 #define resource_get_integer(k, vp) config_file_get_int(g_config_file, (k), (vp))
 #define resource_set_integer(k, v) config_file_set_int(g_config_file, (k), (v))
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern CONFIG_FILE *g_config_file;
 
 extern void resource_init(void);
 extern void resource_free(void);
 extern int resource_run(void);
 extern int resource_stop(void);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

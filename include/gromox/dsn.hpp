@@ -12,10 +12,6 @@ struct DSN {
 	DOUBLE_LIST rcpts_fields;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void dsn_init(DSN *pdsn);
 
 BOOL dsn_retrieve(DSN *pdsn, char *in_buff, size_t length);
@@ -37,7 +33,3 @@ BOOL dsn_enum_fields(DSN_FIELDS *pfields,
 BOOL dsn_serialize(DSN *pdsn, char *out_buff, size_t max_length);
 
 void dsn_free(DSN *pdsn);
-
-#ifdef __cplusplus
-}
-#endif

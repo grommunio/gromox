@@ -27,10 +27,6 @@ enum {
 	PSETID_GROMOX,
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 uint16_t rop_util_get_replid(uint64_t eid);
 
 uint64_t rop_util_get_gc_value(uint64_t eid);
@@ -64,7 +60,3 @@ extern BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid);
 BOOL rop_util_get_provider_uid(int provider_type, uint8_t *pflat_guid);
 
 void rop_util_free_binary(BINARY *pbin);
-
-#ifdef __cplusplus
-}
-#endif

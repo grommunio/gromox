@@ -34,10 +34,6 @@ struct MEM_FILE {
     DOUBLE_LIST        list;          /* list of blocks */
 };
     
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc);
 
 size_t mem_file_read(MEM_FILE *pfile, void* pbuff, size_t size);
@@ -53,7 +49,3 @@ void mem_file_free(MEM_FILE *pfile);
 extern size_t mem_file_write(MEM_FILE *pfile, const void *buf, size_t size);
 extern size_t mem_file_writeline(MEM_FILE *pfile, const char *buf);
 size_t mem_file_copy(MEM_FILE *pfile_src, MEM_FILE *pfile_dst);
-
-#ifdef __cplusplus
-}
-#endif

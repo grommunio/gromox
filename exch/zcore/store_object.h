@@ -18,10 +18,6 @@ struct STORE_OBJECT {
 
 struct PERMISSION_SET;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 STORE_OBJECT* store_object_create(BOOL b_private,
 	int account_id, const char *account, const char *dir);
 
@@ -72,7 +68,3 @@ BOOL store_object_set_properties(STORE_OBJECT *pstore,
 BOOL store_object_remove_properties(STORE_OBJECT *pstore,
 	const PROPTAG_ARRAY *pproptags);
 extern BOOL store_object_get_permissions(STORE_OBJECT *, PERMISSION_SET *);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

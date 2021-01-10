@@ -11,10 +11,6 @@
 struct RPC_REQUEST;
 struct RPC_RESPONSE;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern zend_bool zarafa_client_do_rpc(const RPC_REQUEST *, RPC_RESPONSE *);
 extern uint32_t zarafa_client_setpropval(GUID hsession, uint32_t hobject, uint32_t proptag, const void *pvalue);
 extern uint32_t zarafa_client_getpropval(GUID hsession, uint32_t hobject, uint32_t proptag, void **ppvalue);
@@ -107,7 +103,3 @@ ZCIDL(linkmessage)(GUID hsession, BINARY search_entryid, BINARY message_entryid)
 ZCIDL(checksession)(GUID hsession);
 #undef ZCIDL
 #undef IDLOUT
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

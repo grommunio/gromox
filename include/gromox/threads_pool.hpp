@@ -26,10 +26,6 @@ enum{
 
 typedef int (*THREADS_EVENT_PROC)(int);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void threads_pool_init(int init_pool_num,
 	int (*process_func)(SCHEDULE_CONTEXT*));
 extern int threads_pool_run(void);
@@ -40,7 +36,3 @@ int threads_pool_get_param(int type);
 THREADS_EVENT_PROC threads_pool_register_event_proc(THREADS_EVENT_PROC proc);
 extern void threads_pool_wakeup_thread(void);
 extern void threads_pool_wakeup_all_threads(void);
-
-#ifdef __cplusplus
-}
-#endif

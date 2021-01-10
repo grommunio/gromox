@@ -10,10 +10,6 @@ struct ICSUPCTX_OBJECT {
 	uint8_t sync_type;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 ICSUPCTX_OBJECT* icsupctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type);
 
@@ -29,7 +25,3 @@ STORE_OBJECT* icsupctx_object_get_store(ICSUPCTX_OBJECT *pctx);
 uint8_t icsupctx_object_get_type(ICSUPCTX_OBJECT *pctx);
 
 uint64_t icsupctx_object_get_parent_folder_id(ICSUPCTX_OBJECT *pctx);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

@@ -52,10 +52,6 @@ struct AB_BASE {
 	INT_HASH_TABLE *phash;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void ab_tree_init(const char *org_name, int base_size,
 	int cache_interval, int file_blocks);
 extern int ab_tree_run(void);
@@ -104,7 +100,3 @@ void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode,
 void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length);
 
 int ab_tree_get_guid_base_id(GUID guid);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

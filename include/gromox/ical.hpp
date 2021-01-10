@@ -96,10 +96,6 @@ struct ICAL_RRULE {
 	unsigned char nsetpos_bitmap[46];
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void ical_init(ICAL *pical);
 
 void ical_free(ICAL *pical);
@@ -218,7 +214,3 @@ int ical_rrule_interval(ICAL_RRULE *pirrule);
 
 int ical_rrule_frequency(ICAL_RRULE *pirrule);
 BOOL ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by);
-
-#ifdef __cplusplus
-}
-#endif

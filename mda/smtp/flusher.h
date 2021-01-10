@@ -23,10 +23,6 @@ enum {
 	FLUSH_PERMANENT_FAIL
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void flusher_init(const char* path, size_t queue_len);
 extern void flusher_free(void);
 extern int flusher_run(void);
@@ -36,7 +32,3 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext);
 void flusher_cancel(SMTP_CONTEXT *pcontext);
 
 void flusher_console_talk(int argc, char** argv, char* reason, int len);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

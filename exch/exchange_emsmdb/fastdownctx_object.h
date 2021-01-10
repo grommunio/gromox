@@ -15,10 +15,6 @@ struct FASTDOWNCTX_OBJECT {
 	uint32_t progress_steps;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* make_xxx function can be invoked only once on the object */
 FASTDOWNCTX_OBJECT* fastdownctx_object_create(
 	LOGON_OBJECT *plogon, uint8_t string_option);
@@ -49,7 +45,3 @@ void fastdownctx_object_free(FASTDOWNCTX_OBJECT *pctx);
 BOOL fastdownctx_object_get_buffer(FASTDOWNCTX_OBJECT *pctx,
 	void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

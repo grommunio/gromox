@@ -12,10 +12,6 @@ enum{
 	TRANSPORTER_CREATED_THREADS
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void transporter_init(const char *path, const char *const *names,
 	int threads_min, int threads_max, int free_num, int mime_ratio, BOOL dm_valid,
 	bool ignerr);
@@ -32,7 +28,3 @@ int transporter_get_param(int param);
 
 void transporter_validate_domainlist(BOOL b_valid);
 extern BOOL transporter_domainlist_valid(void);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

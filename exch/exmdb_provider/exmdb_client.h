@@ -11,10 +11,6 @@ enum {
 struct EXMDB_REQUEST;
 struct EXMDB_RESPONSE;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int exmdb_client_get_param(int param);
 
 void exmdb_client_init(int conn_num,
@@ -154,7 +150,3 @@ EXMIDL(get_public_folder_unread_count)(const char *dir, const char *username, ui
 EXMIDL(unload_store)(const char *dir);
 #undef EXMIDL
 #undef IDLOUT
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

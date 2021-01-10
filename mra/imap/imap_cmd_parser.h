@@ -8,10 +8,6 @@ enum{
     DISPATCH_BREAK
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext);
 
 int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext);
@@ -87,7 +83,3 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext);
 
 int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

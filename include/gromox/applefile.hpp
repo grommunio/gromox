@@ -230,14 +230,6 @@ struct APPLEFILE {
    ENTRY_DATA *pentries;	/* array of entry descriptors */
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int applefile_pull_file(EXT_PULL *pext, APPLEFILE *r);
 
 int applefile_push_file(EXT_PUSH *pext, const APPLEFILE *r);
-
-#ifdef __cplusplus
-}
-#endif

@@ -30,10 +30,6 @@ struct USER_INFO {
 	DOUBLE_LIST sink_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void zarafa_server_init(int table_size,
 	int cache_interval, int ping_interval);
 extern int zarafa_server_run(void);
@@ -308,7 +304,3 @@ uint32_t zarafa_server_setpasswd(const char *username,
 
 uint32_t zarafa_server_linkmessage(GUID hsession,
 	BINARY search_entryid, BINARY message_entryid);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

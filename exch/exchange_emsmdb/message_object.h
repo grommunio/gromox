@@ -30,10 +30,6 @@ struct MESSAGE_OBJECT {
 	DOUBLE_LIST stream_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 MESSAGE_OBJECT* message_object_create(LOGON_OBJECT *plogon,
 	BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
 	uint32_t tag_access, uint8_t open_flags, ICS_STATE *pstate);
@@ -127,7 +123,3 @@ BOOL message_object_copy_attachments(MESSAGE_OBJECT *pmessage,
 
 BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
 	uint8_t read_flag, BOOL *pb_changed);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

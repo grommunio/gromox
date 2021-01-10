@@ -11,10 +11,6 @@ struct ARRAY {
 	void **cache_ptrs;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void array_init(ARRAY* parray, LIB_BUFFER* pbuf_pool, size_t data_size);
 
 void array_free(ARRAY* parray);
@@ -31,7 +27,3 @@ void* array_get_item(ARRAY* parray, size_t index);
 size_t array_get_capacity(ARRAY* parray);
 
 void array_clear(ARRAY* parray);
-
-#ifdef __cplusplus
-}
-#endif

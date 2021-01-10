@@ -2,10 +2,6 @@
 #include "nsp_types.h"
 #include <gromox/simple_tree.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void nsp_interface_init(BOOL b_check);
 extern int nsp_interface_run(void);
 int nsp_interface_bind(uint64_t hrpc, uint32_t flags, STAT *pstat,
@@ -70,7 +66,3 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

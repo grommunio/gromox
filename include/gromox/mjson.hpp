@@ -70,11 +70,6 @@ enum {
 	MJSON_MIME_ENTIRE
 };
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 LIB_BUFFER* mjson_allocator_init(size_t max_size, BOOL thread_safe);
 
 void mjson_allocator_free(LIB_BUFFER *pallocator);
@@ -128,8 +123,3 @@ size_t mjson_get_mime_length(MJSON_MIME *pmime, int param);
 size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param);
 
 MJSON_MIME *mjson_get_mime(MJSON *pjson, const char *id);
-
-
-#ifdef __cplusplus
-}
-#endif

@@ -44,10 +44,6 @@ struct MIME {
 
 struct MAIL;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern GX_EXPORT bool mail_set_header(MAIL *, const char *hdr, const char *val);
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 
@@ -114,7 +110,3 @@ MIME* mime_get_child(MIME *pmime);
 MIME* mime_get_parent(MIME *pmime);
 extern MIME *mime_get_sibling(MIME *);
 size_t mime_get_children_num(MIME *pmime);
-
-#ifdef __cplusplus
-}
-#endif

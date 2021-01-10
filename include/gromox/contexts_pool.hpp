@@ -44,10 +44,6 @@ struct SCHEDULE_CONTEXT {
 	int polling_mask;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void contexts_pool_init(void *pcontexts, int context_num,
 	int unit_offset, int (*get_socket)(void*),
 	struct timeval (*get_timestamp)(void*),
@@ -64,7 +60,3 @@ void context_pool_activate_context(SCHEDULE_CONTEXT *);
 void contexts_pool_signal(SCHEDULE_CONTEXT *pcontext);
 
 int contexts_pool_get_param(int type);
-
-#ifdef __cplusplus
-}
-#endif

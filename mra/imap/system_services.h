@@ -5,10 +5,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/single_list.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern int system_services_run(void);
 extern int system_services_stop(void);
 
@@ -52,7 +48,3 @@ extern void (*system_services_broadcast_event)(const char*);
 extern void (*system_services_broadcast_select)(const char*, const char*);
 extern void (*system_services_broadcast_unselect)(const char*, const char*);
 extern void (*system_services_log_info)(int, const char *, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

@@ -16,10 +16,6 @@ struct MAIL {
 	char *buffer;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void mail_init(MAIL *pmail, MIME_POOL *pmime_pool);
 
 void mail_clear(MAIL *pmail);
@@ -50,7 +46,3 @@ MIME* mail_add_child(MAIL *pmail, MIME *pmime_base, int opt);
 
 void mail_enum_mime(MAIL *pmail, MAIL_MIME_ENUM enum_func, void *param);
 BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst);
-
-#ifdef __cplusplus
-}
-#endif

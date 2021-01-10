@@ -57,10 +57,6 @@ struct RPC_HEADER_EXT {
 	uint16_t size_actual;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void ext_buffer_pull_init(EXT_PULL *pext, const void *pdata,
 	uint32_t data_size, EXT_BUFFER_ALLOC alloc, uint32_t flags);
 
@@ -343,7 +339,3 @@ int ext_buffer_push_globalobjectid(EXT_PUSH *pext, const GLOBALOBJECTID *r);
 
 int ext_buffer_push_message_content(
 	EXT_PUSH *pext, const MESSAGE_CONTENT *pmsg);
-
-#ifdef __cplusplus
-}
-#endif

@@ -52,10 +52,6 @@ struct STREAM {
     DOUBLE_LIST       list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void stream_init(STREAM *pstream, LIB_BUFFER *palloc);
 
 int stream_has_newline(STREAM *pstream);
@@ -92,7 +88,3 @@ unsigned int stream_peek_buffer(STREAM *pstream, char *pbuff, unsigned int size)
 
 int stream_dump(STREAM *pstream, int fd);
 extern int stream_write(STREAM *pstream, const void *pbuff, size_t size);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

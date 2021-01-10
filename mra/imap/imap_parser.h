@@ -121,10 +121,6 @@ struct IMAP_CONTEXT {
 	char             lang[32];
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	unsigned int timeout, unsigned int autologout_time, int max_auth_times,
 	int block_auth_fail, BOOL support_starttls, BOOL force_starttls,
@@ -164,7 +160,3 @@ extern LIB_BUFFER *imap_parser_get_xpool(void);
 extern LIB_BUFFER *imap_parser_get_dpool(void);
 extern int imap_parser_get_sequence_ID(void);
 extern void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

@@ -2,10 +2,6 @@
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void tnef_init_library(CPID_TO_CHARSET cpid_to_charset);
 
 MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
@@ -14,7 +10,3 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 
 BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 	EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname);
-
-#ifdef __cplusplus
-}
-#endif

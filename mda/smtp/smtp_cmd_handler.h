@@ -8,10 +8,6 @@ enum{
     DISPATCH_BREAK
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);
 
@@ -53,7 +49,3 @@ int smtp_cmd_handler_etrn(const char* cmd_line, int line_length,
 
 int smtp_cmd_handler_else(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

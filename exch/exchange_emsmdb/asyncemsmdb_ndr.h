@@ -12,16 +12,8 @@ struct ECDOASYNCWAITEX_OUT {
 	int32_t result;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr,
 	ECDOASYNCWAITEX_IN *r);
 	
 int asyncemsmdb_ndr_push_ecdoasyncwaitex(NDR_PUSH *pndr,
 	const ECDOASYNCWAITEX_OUT *r);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

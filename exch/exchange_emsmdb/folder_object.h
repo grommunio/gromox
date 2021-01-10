@@ -10,10 +10,6 @@ struct FOLDER_OBJECT {
 	uint32_t tag_access;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 FOLDER_OBJECT* folder_object_create(LOGON_OBJECT *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access);
 
@@ -39,7 +35,3 @@ BOOL folder_object_set_properties(FOLDER_OBJECT *pfolder,
 
 BOOL folder_object_remove_properties(FOLDER_OBJECT *pfolder,
 	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

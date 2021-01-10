@@ -19,10 +19,6 @@ enum {
 	COMMON_UTIL_MAX_EXTRULE_LENGTH
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void* common_util_alloc(size_t size);
 
 int common_util_mb_from_utf8(uint32_t cpid,
@@ -236,7 +232,3 @@ extern const char *common_util_get_submit_command(void);
 extern uint32_t common_util_get_ftstream_id(void);
 extern MIME_POOL *common_util_get_mime_pool(void);
 extern void common_util_log_info(int level, const char *format, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

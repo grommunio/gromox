@@ -7,10 +7,6 @@
 #endif
 #include <gromox/common_types.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 BOOL utf8_check(const char *str);
 
 BOOL utf8_len(const char *str, int *plen);
@@ -74,7 +70,3 @@ int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern void debug_info(const char *format, ...);
 extern bool parse_bool(const char *s);
-
-#ifdef __cplusplus
-}
-#endif

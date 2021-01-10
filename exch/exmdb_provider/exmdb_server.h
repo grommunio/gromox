@@ -4,10 +4,6 @@
 #include <gromox/element_data.hpp>
 #include <gromox/alloc_context.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 extern void exmdb_server_init(void);
@@ -460,7 +456,3 @@ void exmdb_server_register_proc(void *pproc);
 BOOL exmdb_server_unload_store(const char *dir);
 extern void *instance_read_cid_content(uint64_t cid, uint32_t *plen);
 extern int instance_get_message_body(MESSAGE_CONTENT *, unsigned int tag, unsigned int cpid, TPROPVAL_ARRAY *);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

@@ -6,10 +6,6 @@
 #define OXCMAIL_BODY_HTML_ONLY				2
 #define OXCMAIL_BODY_PLAIN_AND_HTML			3
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 BOOL oxcmail_init_library(const char *org_name,
 	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
 	LTAG_TO_LCID ltag_to_lcid, LCID_TO_LTAG lcid_to_ltag,
@@ -25,7 +21,3 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	BOOL b_tnef, int body_type, MIME_POOL *ppool,
 	MAIL *pmail, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname);
-
-#ifdef __cplusplus
-}
-#endif

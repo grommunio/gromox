@@ -2,10 +2,6 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/double_list.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 IDSET* idset_init(BOOL b_serialize, uint8_t repl_type);
 	
 BOOL idset_register_mapping(IDSET *pset,
@@ -47,7 +43,3 @@ BOOL idset_enum_replist(IDSET *pset, void *pparam,
 
 BOOL idset_enum_repl(IDSET *pset, uint16_t replid,
 	void *pparam, REPLICA_ENUM repl_enum);
-
-#ifdef __cplusplus
-}
-#endif

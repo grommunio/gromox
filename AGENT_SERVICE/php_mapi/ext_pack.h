@@ -24,10 +24,6 @@ struct PUSH_CTX {
 #define ext_pack_pull_bool	ext_pack_pull_uint8
 #define ext_pack_pusg_bool	ext_pack_push_uint8
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void ext_pack_pull_init(PULL_CTX *pctx,
 	const uint8_t *pdata, uint32_t data_size);
 	
@@ -181,7 +177,3 @@ zend_bool ext_pack_push_oneoff_entryid(
 	
 zend_bool ext_pack_push_state_array(
 	PUSH_CTX *pctx, const STATE_ARRAY *r);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

@@ -1,10 +1,6 @@
 #pragma once
 #include <gromox/mapi_types.hpp>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 BOOL proptag_array_init_internal(PROPTAG_ARRAY *pproptags);
 extern PROPTAG_ARRAY *proptag_array_init(void);
 void proptag_array_free_internal(PROPTAG_ARRAY *pproptags);
@@ -23,7 +19,3 @@ PROPTAG_ARRAY* proptag_array_dup(const PROPTAG_ARRAY *pproptags);
 
 BOOL proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 	PROPTAG_ARRAY *pproptags_dst);
-
-#ifdef __cplusplus
-}
-#endif

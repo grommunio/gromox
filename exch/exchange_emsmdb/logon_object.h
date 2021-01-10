@@ -21,10 +21,6 @@ struct LOGON_OBJECT {
 	DOUBLE_LIST group_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
 	uint32_t open_flags, int logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid);
@@ -79,7 +75,3 @@ BOOL logon_object_set_properties(LOGON_OBJECT *plogon,
 
 BOOL logon_object_remove_properties(LOGON_OBJECT *plogon,
 	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

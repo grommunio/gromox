@@ -29,10 +29,6 @@ struct ROUTER_CONNECTION {
 	DOUBLE_LIST datagram_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int exmdb_parser_get_param(int param);
 
 void exmdb_parser_init(int max_threads,
@@ -48,7 +44,3 @@ ROUTER_CONNECTION* exmdb_parser_get_router(const char *remote_id);
 void exmdb_parser_put_router(ROUTER_CONNECTION *pconnection);
 
 BOOL exmdb_parser_remove_router(ROUTER_CONNECTION *pconnection);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

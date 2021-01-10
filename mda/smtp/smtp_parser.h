@@ -176,10 +176,6 @@ struct SMTP_CONTEXT {
     EXT_DATA         ext_data;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void smtp_parser_init(int context_num, int threads_num,
 	BOOL dm_valid, BOOL need_auth, size_t max_mail_length,
 	size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size,
@@ -210,7 +206,3 @@ int smtp_parser_threads_event_proc(int action);
 
 void smtp_parser_reset_context_envelop(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

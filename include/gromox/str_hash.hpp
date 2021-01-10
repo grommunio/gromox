@@ -36,10 +36,6 @@ struct STR_HASH_ITER {
  be used
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 STR_HASH_TABLE* str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC fun);
 
 /* free the specified hash table */
@@ -74,7 +70,3 @@ int str_hash_iter_remove(STR_HASH_ITER *piter);
 
 /* forward the iterator by one item */
 int str_hash_iter_forward(STR_HASH_ITER *piter);
-
-#ifdef __cplusplus
-}
-#endif

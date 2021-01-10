@@ -32,10 +32,6 @@ struct ENCODE_STRING {
     char title[1024];
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif 
-
 extern const char *extract_ip(const char *in, char *out);
 void parse_email_addr(EMAIL_ADDR *e_addr, const char *email);
 
@@ -70,7 +66,3 @@ void enriched_to_html(const char *enriched_txt,
 	char *html, int max_len);
 extern GX_EXPORT int html_to_plain(const void *inbuf, int inlen, char **outbufp);
 extern GX_EXPORT char *plain_to_html(const char *rbuf);
-
-#ifdef __cplusplus
-}
-#endif

@@ -15,10 +15,6 @@ typedef const char *(*GET_ENVIRONMENT)(void);
 typedef int (*GET_INTEGER)(void);
 typedef void* (*NDR_STACK_ALLOC)(int, size_t);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern QUERY_SERVICE query_service;
 extern SERVICE_REGISTRATION register_service;
 extern TALK_REGISTRATION register_talk;
@@ -52,8 +48,6 @@ extern NDR_STACK_ALLOC ndr_stack_alloc;
 	get_host_ID = (GET_ENVIRONMENT)query_service("get_host_ID"); \
 	ndr_stack_alloc = (NDR_STACK_ALLOC)query_service("ndr_stack_alloc")
 
+extern "C" { /* dlsym */
 extern GX_EXPORT BOOL SVC_LibMain(int reason, void **ptrs);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif
+}

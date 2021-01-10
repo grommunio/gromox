@@ -19,10 +19,6 @@ struct MIME_POOL {
 	LIB_BUFFER		*allocator;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 MIME_POOL* mime_pool_init(size_t number, int ratio, BOOL thread_safe);
 
 void mime_pool_free(MIME_POOL *pmime_pool);
@@ -30,7 +26,3 @@ void mime_pool_free(MIME_POOL *pmime_pool);
 MIME* mime_pool_get(MIME_POOL *pmime_pool);
 
 void mime_pool_put(MIME *pmime);
-
-#ifdef __cplusplus
-}
-#endif

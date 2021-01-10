@@ -14,10 +14,6 @@ struct ICSUPCTX_OBJECT {
 	uint8_t sync_type;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 ICSUPCTX_OBJECT* icsupctx_object_create(
 	LOGON_OBJECT *plogon, FOLDER_OBJECT *pfolder,
 	uint8_t sync_type);
@@ -39,7 +35,3 @@ BOOL icsupctx_object_end_state_stream(ICSUPCTX_OBJECT *pctx);
 
 ICS_STATE* icsupctx_object_get_state(ICSUPCTX_OBJECT *pctx);
 void icsupctx_object_mark_started(ICSUPCTX_OBJECT *pctx);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

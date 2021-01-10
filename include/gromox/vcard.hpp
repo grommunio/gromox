@@ -23,10 +23,6 @@ struct VCARD_LINE {
 	DOUBLE_LIST value_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void vcard_init(VCARD *pvcard);
 
 void vcard_free(VCARD *pvcard);
@@ -51,7 +47,3 @@ void vcard_append_value(VCARD_LINE *pvline, VCARD_VALUE *pvvalue);
 const char* vcard_get_first_subvalue(VCARD_LINE *pvline);
 
 VCARD_LINE* vcard_new_simple_line(const char *name, const char *value);
-
-#ifdef __cplusplus
-}
-#endif

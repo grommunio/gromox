@@ -20,10 +20,6 @@ struct XARRAY {
 	DOUBLE_LIST  hash_lists[XARRAY_HASHITEM_NUMBER];
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void xarray_init(XARRAY* pxarray, LIB_BUFFER* pbuf_pool, int data_size);
 
 void xarray_free(XARRAY* pxarray);
@@ -39,7 +35,3 @@ void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag);
 int xarray_get_capacity(XARRAY* pxarray);
 
 void xarray_clear(XARRAY* pxarray);
-
-#ifdef __cplusplus
-}
-#endif

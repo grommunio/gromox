@@ -107,10 +107,6 @@ struct DB_ITEM {
 	MEMORY_TABLES tables;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void db_engine_init(int table_size, int cache_interval,
 	BOOL b_async, BOOL b_wal, uint64_t mmap_size, int threads_num);
 extern int db_engine_run(void);
@@ -182,7 +178,3 @@ void db_engine_begin_batch_mode(DB_ITEM *pdb);
 void db_engine_commit_batch_mode(DB_ITEM *pdb);
 
 void db_engine_cancel_batch_mode(DB_ITEM *pdb);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

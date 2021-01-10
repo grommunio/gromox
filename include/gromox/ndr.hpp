@@ -54,10 +54,6 @@ struct NDR_PUSH {
 	DOUBLE_LIST full_ptr_list;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
 
 uint32_t ndr_pull_get_ptrcnt(NDR_PULL *pndr);
@@ -135,7 +131,3 @@ int ndr_push_zero(NDR_PUSH *pndr, uint32_t n);
 
 int ndr_push_unique_ptr(NDR_PUSH *pndr, const void *p);
 int ndr_push_context_handle(NDR_PUSH *pndr, const CONTEXT_HANDLE *r);
-
-#ifdef __cplusplus
-}
-#endif

@@ -1319,10 +1319,6 @@ struct DB_NOTIFY_DATAGRAM {
 	DB_NOTIFY db_notify;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void common_util_init(void);
 extern int common_util_run(void);
 extern int common_util_stop(void);
@@ -1352,7 +1348,3 @@ BOOL common_util_get_propids(const PROPNAME_ARRAY *ppropnames,
 extern BOOL common_util_get_propids_create(const PROPNAME_ARRAY *, PROPID_ARRAY *);
 BOOL common_util_get_propname(
 	uint16_t propid, PROPERTY_NAME **pppropname);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

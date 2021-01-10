@@ -59,10 +59,6 @@ struct AB_BASE {
 	INT_HASH_TABLE *phash;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void ab_tree_init(const char *org_name, int base_size,
 	int cache_interval, int file_blocks);
 extern int ab_tree_run(void);
@@ -104,7 +100,3 @@ BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

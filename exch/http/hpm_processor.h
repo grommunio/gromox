@@ -35,10 +35,6 @@ struct HPM_PLUGIN {
 	bool completed_init;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void hpm_processor_init(int context_num, const char *plugins_path, const char *const *names, uint64_t cache_size, uint64_t max_size, bool ignerr);
 extern int hpm_processor_run(void);
 extern int hpm_processor_stop(void);
@@ -63,7 +59,3 @@ BOOL hpm_processor_send(HTTP_CONTEXT *phttp,
 
 int hpm_processor_receive(HTTP_CONTEXT *phttp,
 	char *pbuff, int length);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

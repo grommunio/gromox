@@ -30,16 +30,8 @@ struct LIB_BUFFER {
     pthread_mutex_t m_mutex;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_safe);
 extern GX_EXPORT void lib_buffer_free(LIB_BUFFER *);
 extern GX_EXPORT void *lib_buffer_get(LIB_BUFFER *);
 extern GX_EXPORT void lib_buffer_put(LIB_BUFFER *, void *item);
 size_t lib_buffer_get_param(LIB_BUFFER* m_buf, PARAM_TYPE type);
-
-#ifdef __cplusplus
-}
-#endif

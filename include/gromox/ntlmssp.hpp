@@ -120,10 +120,6 @@ struct NTLMSSP_CTX {
 	NTLMSSP_GET_PASSWORD get_password;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 NTLMSSP_CTX* ntlmssp_init(const char *netbios_name, const char *dns_name,
 	const char *dns_domain, BOOL b_lm_key, uint32_t net_flags,
 	NTLMSSP_GET_PASSWORD get_password);
@@ -153,7 +149,3 @@ BOOL ntlmssp_session_info(NTLMSSP_CTX *pntlmssp,
 	NTLMSSP_SESSION_INFO *psession);
 
 void ntlmssp_destroy(NTLMSSP_CTX *pntlmssp);
-
-#ifdef __cplusplus
-}
-#endif

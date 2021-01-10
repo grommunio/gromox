@@ -14,10 +14,6 @@ struct CONFIG_FILE {
 	char file_name[256];
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern char *config_default_path(const char *filename);
 extern CONFIG_FILE *config_file_init(const char *filename);
 extern CONFIG_FILE *config_file_init2(const char *ov, const char *fb);
@@ -27,7 +23,3 @@ extern BOOL config_file_set_value(CONFIG_FILE *, const char *key, const char *va
 BOOL config_file_save(CONFIG_FILE* cfg_file);
 extern BOOL config_file_get_int(CONFIG_FILE *, const char *key, int *);
 extern BOOL config_file_set_int(CONFIG_FILE *, const char *key, int);
-
-#ifdef __cplusplus
-}
-#endif
