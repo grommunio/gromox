@@ -35,9 +35,7 @@ typedef struct _STACK_NODE {
 
 IDSET* idset_init(BOOL b_serialize, uint8_t repl_type)
 {
-	IDSET *pset;
-	
-	pset = malloc(sizeof(IDSET));
+	auto pset = static_cast<IDSET *>(malloc(sizeof(IDSET)));
 	if (NULL == pset) {
 		return NULL;
 	}
@@ -130,7 +128,7 @@ static BOOL idset_append_internal(IDSET *pset,
 		}
 	}
 	if (NULL == pnode) {
-		prepl_node = malloc(sizeof(REPLID_NODE));
+		prepl_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
 		if (NULL == prepl_node) {
 			return FALSE;
 		}
@@ -173,7 +171,7 @@ static BOOL idset_append_internal(IDSET *pset,
 			break;
 		}
 	}
-	prange_node = malloc(sizeof(RANGE_NODE));
+	prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 	if (NULL == prange_node) {
 		return FALSE;
 	}
@@ -223,7 +221,7 @@ BOOL idset_append_range(IDSET *pset, uint16_t replid,
 		}
 	}
 	if (NULL == pnode) {
-		prepl_node = malloc(sizeof(REPLID_NODE));
+		prepl_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
 		if (NULL == prepl_node) {
 			return FALSE;
 		}
@@ -243,7 +241,7 @@ BOOL idset_append_range(IDSET *pset, uint16_t replid,
 				prange_node1->high_value = high_value;
 			} else if (low_value > prange_node->high_value && (NULL == pnode1
 				|| high_value <= ((RANGE_NODE*)pnode1->pdata)->low_value)) {
-				prange_node1 = malloc(sizeof(RANGE_NODE));
+				prange_node1 = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 				if (NULL == prange_node1) {
 					return FALSE;
 				}
@@ -274,7 +272,7 @@ BOOL idset_append_range(IDSET *pset, uint16_t replid,
 	if (NULL != prange_node1) {
 		return TRUE;
 	}
-	prange_node = malloc(sizeof(RANGE_NODE));
+	prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 	if (NULL == prange_node) {
 		return FALSE;
 	}
@@ -325,7 +323,7 @@ void idset_remove(IDSET *pset, uint64_t eid)
 			return;
 		} else if (value > prange_node->low_value &&
 			value < prange_node->high_value) {
-			prange_node1 = malloc(sizeof(RANGE_NODE));
+			prange_node1 = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node1) {
 				return;
 			}
@@ -413,15 +411,13 @@ BOOL idset_hint(IDSET *pset, uint64_t eid)
 
 static BINARY* idset_init_binary()
 {
-	BINARY *pbin;
-	
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
 	pbin->cb = 0;
-	pbin->pb = malloc(4096);
-	if (NULL == pbin->pb) {
+	pbin->pv = malloc(4096);
+	if (pbin->pv == nullptr) {
 		free(pbin);
 		return NULL;
 	}
@@ -440,7 +436,7 @@ static BOOL idset_write_to_binary(BINARY *pbin, const void *pb, uint8_t len)
 		if (NULL == pdata) {
 			return FALSE;
 		}
-		pbin->pb = pdata;
+		pbin->pv = pdata;
 	}
 	memcpy(pbin->pb + pbin->cb, pb, len);
 	pbin->cb += len;
@@ -515,15 +511,13 @@ static void idset_statck_free(DOUBLE_LIST *pstack)
 static BOOL idset_statck_push(DOUBLE_LIST *pstack,
 	uint8_t common_length, uint8_t *pcommon_bytes)
 {
-	STACK_NODE *pstack_node;
-	
-	pstack_node = malloc(sizeof(STACK_NODE));
+	auto pstack_node = static_cast<STACK_NODE *>(malloc(sizeof(STACK_NODE)));
 	if (NULL == pstack_node) {
 		return FALSE;
 	}
 	pstack_node->node.pdata = pstack_node;
 	pstack_node->common_length = common_length;
-	pstack_node->pcommon_bytes = malloc(common_length);
+	pstack_node->pcommon_bytes = static_cast<uint8_t *>(malloc(common_length));
 	if (NULL == pstack_node->pcommon_bytes) {
 		free(pstack_node);
 		return FALSE;
@@ -802,7 +796,7 @@ static uint32_t idset_decoding_globset(
 			stack_length = idset_statck_get_common_bytes(
 							&bytes_statck, common_bytes);
 			if (6 == stack_length) {
-				prange_node = malloc(sizeof(RANGE_NODE));
+				prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 				if (NULL == prange_node) {
 					idset_statck_free(&bytes_statck);
 					return 0;
@@ -835,7 +829,7 @@ static uint32_t idset_decoding_globset(
 				idset_statck_free(&bytes_statck);
 				return 0;
 			}
-			prange_node = malloc(sizeof(RANGE_NODE));
+			prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
 				idset_statck_free(&bytes_statck);
 				return 0;
@@ -848,7 +842,7 @@ static uint32_t idset_decoding_globset(
 			for (i=0; i<8; i++) {
 				if (bitmask & (1<<i)) {
 					if (NULL == prange_node) {
-						prange_node = malloc(sizeof(RANGE_NODE));
+						prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 						if (NULL == prange_node) {
 							idset_statck_free(&bytes_statck);
 							return 0;
@@ -875,7 +869,7 @@ static uint32_t idset_decoding_globset(
 			idset_statck_pop(&bytes_statck);
 			break;
 		case 0x52: /* range */
-			prange_node = malloc(sizeof(RANGE_NODE));
+			prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
 				idset_statck_free(&bytes_statck);
 				return 0;
@@ -906,8 +900,9 @@ static uint32_t idset_decoding_globset(
 	return 0;
 }
 
-static void idset_read_guid(const void *pb, uint32_t offset, GUID *pguid)
+static void idset_read_guid(const void *pv, uint32_t offset, GUID *pguid)
 {
+	auto pb = static_cast<const uint8_t *>(pv);
 	pguid->time_low = IVAL(pb, offset);
 	offset += sizeof(uint32_t);
 	pguid->time_mid = SVAL(pb, offset);
@@ -935,7 +930,7 @@ BOOL idset_deserialize(IDSET *pset, const BINARY *pbin)
 	offset = 0;
 	while (offset < pbin->cb) {
 		if (REPL_TYPE_ID == pset->repl_type) {
-			preplid_node = malloc(sizeof(REPLID_NODE));
+			preplid_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
 			if (NULL == preplid_node) {
 				return FALSE;
 			}
@@ -945,7 +940,7 @@ BOOL idset_deserialize(IDSET *pset, const BINARY *pbin)
 			plist = &preplid_node->range_list;
 			pnode = &preplid_node->node;
 		} else {
-			preplguid_node = malloc(sizeof(REPLGUID_NODE));
+			preplguid_node = static_cast<REPLGUID_NODE *>(malloc(sizeof(REPLGUID_NODE)));
 			if (NULL == preplguid_node) {
 				return FALSE;
 			}
@@ -995,7 +990,7 @@ BOOL idset_convert(IDSET *pset)
 				&replid, &preplguid_node->replguid)) {
 				goto CLEAN_TEMP_LIST;
 			}
-			prepl_node = malloc(sizeof(REPLID_NODE));
+			prepl_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
 			if (NULL == prepl_node) {
 				goto CLEAN_TEMP_LIST;
 			}
