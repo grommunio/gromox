@@ -201,7 +201,7 @@ BOOL folder_content_append_subfolder_internal(
 	count = (pfldctnt->count / 10 + 1) * 10;
 	if (pfldctnt->count + 1 >= count) {
 		count += 10;
-		psubflds = realloc(pfldctnt->psubflds, count*sizeof(TPROPVAL_ARRAY*));
+		psubflds = realloc(pfldctnt->psubflds, count * sizeof(FOLDER_CONTENT));
 		if (NULL == psubflds) {
 			return FALSE;
 		}
