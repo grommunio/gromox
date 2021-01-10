@@ -20,7 +20,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <gromox/arcfour.hpp>
-#include <stdint.h>
+#include <cstdint>
 
 /* initialise the arcfour sbox with key */
 void arcfour_init(ARCFOUR_STATE *pstate, const DATA_BLOB *pkey) 

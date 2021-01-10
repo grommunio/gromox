@@ -3,8 +3,8 @@
 #include <gromox/mapidefs.h>
 #include <gromox/rule_actions.hpp>
 #include <gromox/propval.hpp>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 static STORE_ENTRYID* store_entryid_dup(STORE_ENTRYID *peid)
 {

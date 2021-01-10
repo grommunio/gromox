@@ -7,9 +7,8 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/idset.hpp>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdlib>
+#include <cstring>
 
 ATTACHMENT_CONTENT* attachment_content_init()
 {

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2003 Andrew Tridgell
 // This file is part of Gromox.
-#include <assert.h>
+#include <cassert>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/endian_macro.hpp>
 #include <gromox/ndr.hpp>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdlib>
+#include <cstring>
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
 
 #define NDR_SVAL(pndr, ofs) (NDR_BE(pndr)?RSVAL(pndr->data,ofs):SVAL(pndr->data,ofs))

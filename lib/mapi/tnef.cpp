@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -14,10 +14,9 @@
 #include <gromox/tnef.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 
 #define TNEF_LEGACY								0x0001
 #define TNEF_VERSION							0x10000

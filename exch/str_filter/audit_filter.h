@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/common_types.hpp>
-#include <time.h>
+#include <ctime>
 
 /* the index of audit param is from 0 to 99 */
 enum {

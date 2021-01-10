@@ -7,8 +7,8 @@
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rule_actions.hpp>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 void* propval_dup(uint16_t type, void *pvi)
 {

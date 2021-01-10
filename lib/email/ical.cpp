@@ -6,10 +6,9 @@
 #include <gromox/timezone.hpp>
 #include <gromox/ical.hpp>
 #include <gromox/util.hpp>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #define MAX_LINE							73
 
 struct LINE_ITEM {

@@ -3,7 +3,7 @@
 #include <gromox/endian_macro.hpp>
 #include <gromox/macbinary.hpp>
 #include <gromox/util.hpp>
-#include <string.h>
+#include <cstring>
 
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */
 #define TIMEDIFF 0x7c25b080

@@ -3,9 +3,8 @@
 #include <gromox/util.hpp>
 #include <gromox/binhex.hpp>
 #include <gromox/endian_macro.hpp>
-#include <string.h>
-#include <stdlib.h>
-
+#include <cstring>
+#include <cstdlib>
 #define HEADERMATCH					40
 #define MAXLINELEN					64
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <string.h>
+#include <cstring>
 #include <gromox/defs.h>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/threads_pool.hpp>
@@ -7,11 +7,10 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <pthread.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
-#include <stdio.h>
-#include <errno.h>
-
+#include <cstdio>
+#include <cerrno>
 
 static int g_time_out;
 static int g_context_num;

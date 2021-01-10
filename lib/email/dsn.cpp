@@ -2,9 +2,9 @@
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/dsn.hpp>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 struct DSN_FIELD {
 	DOUBLE_LIST_NODE node;

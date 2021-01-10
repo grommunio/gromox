@@ -9,11 +9,10 @@
 #include <gromox/oxvcard.hpp>
 #include <gromox/vcard.hpp>
 #include <gromox/util.hpp>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 
 static uint32_t g_kind_imaddress = 0x00008062;
 static uint32_t g_kind_categories = 0x00002328;

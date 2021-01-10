@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 struct XID_NODE {
 	DOUBLE_LIST_NODE node;

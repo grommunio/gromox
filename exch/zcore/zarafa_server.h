@@ -4,7 +4,7 @@
 #include "common_util.h"
 #include "object_tree.h"
 #include <pthread.h>
-#include <time.h>
+#include <ctime>
 
 enum {
 	USER_TABLE_SIZE,

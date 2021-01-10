@@ -5,7 +5,7 @@
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
-#include <time.h>
+#include <ctime>
 #include <sys/time.h>
 #include <openssl/ssl.h>
 

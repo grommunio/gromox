@@ -1,5 +1,5 @@
 #include <gromox/hmacmd5.hpp>
-#include <string.h>
+#include <cstring>
 
 /* the microsoft version of hmac_md5 initialisation */
 void hmacmd5_init(HMACMD5_CTX *ctx, const void *key, int key_len)

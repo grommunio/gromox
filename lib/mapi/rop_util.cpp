@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/pcl.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/endian_macro.hpp>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sys/time.h>
 
 

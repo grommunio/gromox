@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/common_types.hpp>
-#include <time.h>
+#include <ctime>
 
 enum {
     BOUNCE_AUDIT_INTERVAL = 0,

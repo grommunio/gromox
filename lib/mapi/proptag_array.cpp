@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/proptag_array.hpp>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 BOOL proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
 {

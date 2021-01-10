@@ -2,8 +2,7 @@
 #include <gromox/lzxpress.hpp>
 #include <gromox/endian_macro.hpp>
 #include <gromox/common_types.hpp>
-#include <string.h>
-
+#include <cstring>
 #define WINDOWS_SIZE				0x20
 
 #define CLASSIC_MATCH_LENGTH		9	/* 3 + 6 */

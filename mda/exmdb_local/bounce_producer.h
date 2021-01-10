@@ -1,5 +1,5 @@
 #pragma once
-#include <time.h>
+#include <ctime>
 #include <gromox/hook_common.h>
 
 enum{

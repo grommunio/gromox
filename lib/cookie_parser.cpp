@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/cookie_parser.hpp>
-#include <stdio.h>
+#include <cstdio>
 
 static void cookie_parser_unencode(const char *src, char *dest);
 

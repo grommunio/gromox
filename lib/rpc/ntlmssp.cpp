@@ -7,11 +7,11 @@
 #include <gromox/ntlmssp.hpp>
 #include <gromox/ntlmdes.hpp>
 #include <gromox/endian_macro.hpp>
-#include <stdio.h>
+#include <cstdio>
 #include <iconv.h>
-#include <stdarg.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdarg>
+#include <cstring>
+#include <cstdlib>
 #include <openssl/md4.h>  
 #include <openssl/md5.h>
 

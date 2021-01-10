@@ -3,9 +3,8 @@
 #include <gromox/endian_macro.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/util.hpp>
-#include <stdlib.h>
-#include <string.h>
-
+#include <cstdlib>
+#include <cstring>
 #define EXT_SVAL(pext, ofs)			SVAL(pext->data,ofs)
 #define EXT_IVAL(pext, ofs)			IVAL(pext->data,ofs)
 #define EXT_IVALS(pext, ofs)		IVALS(pext->data,ofs)

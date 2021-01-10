@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdint.h>
+#include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
@@ -13,12 +13,10 @@
 #include <gromox/oxcical.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-
-
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 #define MAX_TZRULE_NUMBER						128
 
 #define MAX_TZDEFINITION_LENGTH					(68*MAX_TZRULE_NUMBER+270)

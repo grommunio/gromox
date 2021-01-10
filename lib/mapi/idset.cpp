@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <stdbool.h>
 #include <gromox/util.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/endian_macro.hpp>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 struct RANGE_NODE {
 	DOUBLE_LIST_NODE node;

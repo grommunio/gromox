@@ -5,8 +5,8 @@
 #include <gromox/mail.hpp>
 #include <gromox/util.hpp>
 #include <gromox/mail_func.hpp>
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 enum {
 	TAG_SIGNED,

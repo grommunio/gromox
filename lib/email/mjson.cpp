@@ -11,9 +11,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
-#include <stdio.h>
-
+#include <cstring>
+#include <cstdio>
 #define MAX_RFC822_DEPTH	5
 
 #define MAX_DIGLEN			256*1024

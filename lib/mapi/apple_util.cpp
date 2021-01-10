@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/apple_util.hpp>
 #include <gromox/ext_buffer.hpp>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <gromox/defs.h>
 
 BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)

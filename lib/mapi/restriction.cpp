@@ -2,7 +2,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/restriction.hpp>
 #include <gromox/propval.hpp>
-#include <stdlib.h>
+#include <cstdlib>
 
 static void* restriction_dup_by_type(uint8_t rt, void *prestriction);
 

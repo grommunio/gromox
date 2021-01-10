@@ -6,7 +6,7 @@
 #include "pdu_processor.h"
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
-#include <time.h>
+#include <ctime>
 #include <pthread.h>
 #include <sys/time.h>
 #include <openssl/ssl.h>

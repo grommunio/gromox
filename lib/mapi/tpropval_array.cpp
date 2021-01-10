@@ -3,8 +3,8 @@
 #include <gromox/tpropval_array.hpp>
 #include <gromox/util.hpp>
 #include <gromox/propval.hpp>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 static BOOL tpropval_array_append(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval)

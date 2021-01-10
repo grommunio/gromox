@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <string.h>
+#include <cstring>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -7,7 +7,7 @@
 #include <gromox/lib_buffer.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 
 #define MAX_TIMES_NOT_SERVED			100

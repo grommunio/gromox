@@ -1,7 +1,7 @@
 #ifndef _H_TEMP_LIST_
 #define _H_TEMP_LIST_
 #include <gromox/common_types.hpp>
-#include <time.h>
+#include <ctime>
 
 void temp_list_init(BOOL case_sensive, int size);
 extern int temp_list_run(void);

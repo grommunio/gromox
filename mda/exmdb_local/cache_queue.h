@@ -1,6 +1,6 @@
 #pragma once
 #include "bounce_producer.h"
-#include <time.h>
+#include <ctime>
 #include <gromox/hook_common.h>
 
 enum{

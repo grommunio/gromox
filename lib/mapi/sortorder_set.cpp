@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/sortorder_set.hpp>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 
 void sortorder_set_free(SORTORDER_SET *pset)
 {

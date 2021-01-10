@@ -5,7 +5,6 @@
  * point. if user uses mime_write_content function, the mime will then maintain
  * its own buffer
  */
-#include <stdbool.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
@@ -13,10 +12,10 @@
 #include <gromox/mime.hpp>
 #include <gromox/util.hpp>
 #include <gromox/mail_func.hpp>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
-#include <stdio.h>
+#include <cstdio>
 
 extern BOOL mail_serialize(MAIL *, STREAM *);
 extern BOOL mail_to_file(MAIL *, int fd);
