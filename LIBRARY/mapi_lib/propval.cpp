@@ -20,8 +20,8 @@ void* propval_dup(uint16_t type, void *pvi)
 	}
 	switch (type) {
 	case PT_UNSPECIFIED: {
-		TYPED_PROPVAL *preturn = malloc(sizeof(TYPED_PROPVAL));
-		TYPED_PROPVAL *psrc = pvi;
+		auto preturn = static_cast<TYPED_PROPVAL *>(malloc(sizeof(TYPED_PROPVAL)));
+		auto psrc = static_cast<TYPED_PROPVAL *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -34,62 +34,62 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_SHORT: {
-		uint16_t *preturn = malloc(sizeof(uint16_t));
+		auto preturn = static_cast<uint16_t *>(malloc(sizeof(uint16_t)));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*preturn = *static_cast(uint16_t *, pvi);
+		*preturn = *static_cast<uint16_t *>(pvi);
 		return preturn;
 	}
 	case PT_ERROR:
 	case PT_LONG: {
-		uint32_t *preturn = malloc(sizeof(uint32_t));
+		auto preturn = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*preturn = *static_cast(uint32_t *, pvi);
+		*preturn = *static_cast<uint32_t *>(pvi);
 		return preturn;
 	}
 	case PT_FLOAT: {
-		float *preturn = malloc(sizeof(float));
+		auto preturn = static_cast<float *>(malloc(sizeof(float)));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*preturn = *static_cast(float *, pvi);
+		*preturn = *static_cast<float *>(pvi);
 		return preturn;
 	}
 	case PT_DOUBLE:
 	case PT_APPTIME: {
-		double *preturn = malloc(sizeof(double));
+		auto preturn = static_cast<double *>(malloc(sizeof(double)));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*preturn = *static_cast(double *, pvi);
+		*preturn = *static_cast<double *>(pvi);
 		return preturn;
 	}
 	case PT_BOOLEAN: {
-		uint8_t *preturn = malloc(sizeof(uint8_t));
+		auto preturn = static_cast<uint8_t *>(malloc(sizeof(uint8_t)));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*preturn = *static_cast(uint8_t *, pvi);
+		*preturn = *static_cast<uint8_t *>(pvi);
 		return preturn;
 	}
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME: {
-		uint64_t *preturn = malloc(sizeof(uint64_t));
+		auto preturn = static_cast<uint64_t *>(malloc(sizeof(uint64_t)));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*preturn = *static_cast(uint64_t *, pvi);
+		*preturn = *static_cast<uint64_t *>(pvi);
 		return preturn;
 	}
 	case PT_STRING8:
 	case PT_UNICODE:
-		return strdup(pvi);
+		return strdup(static_cast<char *>(pvi));
 	case PT_CLSID: {
-		GUID *preturn = malloc(sizeof(GUID));
+		auto preturn = static_cast<GUID *>(malloc(sizeof(GUID)));
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -97,13 +97,13 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_SVREID: {
-		SVREID *preturn = malloc(sizeof(SVREID));
-		SVREID *psrc = pvi;
+		auto preturn = static_cast<SVREID *>(malloc(sizeof(SVREID)));
+		auto psrc = static_cast<SVREID *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
 		if (psrc->pbin != nullptr) {
-			preturn->pbin = malloc(sizeof(BINARY));
+			preturn->pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 			if (preturn->pbin == nullptr) {
 				free(preturn);
 				return NULL;
@@ -126,13 +126,13 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_SRESTRICT:
-		return restriction_dup(pvi);
+		return restriction_dup(static_cast<RESTRICTION *>(pvi));
 	case PT_ACTIONS:
-		return rule_actions_dup(pvi);
+		return rule_actions_dup(static_cast<RULE_ACTIONS *>(pvi));
 	case PT_BINARY:
 	case PT_OBJECT: {
-		BINARY *preturn = malloc(sizeof(BINARY));
-		BINARY *psrc = pvi;
+		auto preturn = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+		auto psrc = static_cast<BINARY *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -150,8 +150,8 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_MV_SHORT: {
-		SHORT_ARRAY *preturn = malloc(sizeof(SHORT_ARRAY));
-		SHORT_ARRAY *psrc = pvi;
+		auto preturn = static_cast<SHORT_ARRAY *>(malloc(sizeof(SHORT_ARRAY)));
+		auto psrc = static_cast<SHORT_ARRAY *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -159,7 +159,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (psrc->count == 0) {
 			preturn->ps = nullptr;
 		} else {
-			preturn->ps = malloc(sizeof(uint16_t) * psrc->count);
+			preturn->ps = static_cast<uint16_t *>(malloc(sizeof(uint16_t) * psrc->count));
 			if (preturn->ps == nullptr) {
 				free(preturn);
 				return NULL;
@@ -169,8 +169,8 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_MV_LONG: {
-		LONG_ARRAY *preturn = malloc(sizeof(LONG_ARRAY));
-		LONG_ARRAY *psrc = pvi;
+		auto preturn = static_cast<LONG_ARRAY *>(malloc(sizeof(LONG_ARRAY)));
+		auto psrc = static_cast<LONG_ARRAY *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -178,7 +178,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (psrc->count == 0) {
 			preturn->pl = NULL;
 		} else {
-			preturn->pl = malloc(sizeof(uint32_t) * psrc->count);
+			preturn->pl = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * psrc->count));
 			if (preturn->pl == nullptr) {
 				free(preturn);
 				return NULL;
@@ -188,8 +188,8 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_MV_I8: {
-		LONGLONG_ARRAY *preturn = malloc(sizeof(LONGLONG_ARRAY));
-		LONGLONG_ARRAY *psrc = pvi;
+		auto preturn = static_cast<LONGLONG_ARRAY *>(malloc(sizeof(LONGLONG_ARRAY)));
+		auto psrc = static_cast<LONGLONG_ARRAY *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -197,7 +197,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (psrc->count == 0) {
 			preturn->pll = nullptr;
 		} else {
-			preturn->pll = malloc(sizeof(uint64_t) * psrc->count);
+			preturn->pll = static_cast<uint64_t *>(malloc(sizeof(uint64_t) * psrc->count));
 			if (preturn->pll == nullptr) {
 				free(preturn);
 				return NULL;
@@ -208,8 +208,8 @@ void* propval_dup(uint16_t type, void *pvi)
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
-		STRING_ARRAY *preturn = malloc(sizeof(STRING_ARRAY));
-		STRING_ARRAY *psrc = pvi;
+		auto preturn = static_cast<STRING_ARRAY *>(malloc(sizeof(STRING_ARRAY)));
+		auto psrc = static_cast<STRING_ARRAY *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -217,7 +217,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (psrc->count == 0) {
 			preturn->ppstr = nullptr;
 		} else {
-			preturn->ppstr = malloc(sizeof(char *) * psrc->count);
+			preturn->ppstr = static_cast<char **>(malloc(sizeof(char *) * psrc->count));
 			if (preturn->ppstr == nullptr) {
 				free(preturn);
 				return NULL;
@@ -236,8 +236,8 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_MV_CLSID: {
-		GUID_ARRAY *preturn = malloc(sizeof(GUID_ARRAY));
-		GUID_ARRAY *psrc = pvi;
+		auto preturn = static_cast<GUID_ARRAY *>(malloc(sizeof(GUID_ARRAY)));
+		auto psrc = static_cast<GUID_ARRAY *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -245,7 +245,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (psrc->count == 0) {
 			preturn->pguid = nullptr;
 		} else {
-			preturn->pguid = malloc(sizeof(GUID) * psrc->count);
+			preturn->pguid = static_cast<GUID *>(malloc(sizeof(GUID) * psrc->count));
 			if (preturn->pguid == nullptr) {
 				free(preturn);
 				return NULL;
@@ -255,8 +255,8 @@ void* propval_dup(uint16_t type, void *pvi)
 		return preturn;
 	}
 	case PT_MV_BINARY: {
-		BINARY_ARRAY *preturn = malloc(sizeof(BINARY_ARRAY));
-		BINARY_ARRAY *psrc = pvi;
+		auto preturn = static_cast<BINARY_ARRAY *>(malloc(sizeof(BINARY_ARRAY)));
+		auto psrc = static_cast<BINARY_ARRAY *>(pvi);
 		if (NULL == preturn) {
 			return NULL;
 		}
@@ -264,7 +264,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (psrc->count == 0) {
 			preturn->pbin = nullptr;
 		} else {
-			preturn->pbin = malloc(sizeof(BINARY) * psrc->count);
+			preturn->pbin = static_cast<BINARY *>(malloc(sizeof(BINARY) * psrc->count));
 			if (preturn->pbin == nullptr) {
 				free(preturn);
 				return NULL;
@@ -320,63 +320,45 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_CLSID:
 		break;
 	case PT_SRESTRICT:
-		restriction_free(pvalue);
+		restriction_free(static_cast<RESTRICTION *>(pvalue));
 		return;
 	case PT_ACTIONS:
-		rule_actions_free(pvalue);
+		rule_actions_free(static_cast<RULE_ACTIONS *>(pvalue));
 		return;
 	case PT_SVREID:
 		if (NULL != ((SVREID*)pvalue)->pbin) {
-			if (NULL != ((SVREID*)pvalue)->pbin->pb) {
-				free(((SVREID*)pvalue)->pbin->pb);
-			}
+			free(((SVREID*)pvalue)->pbin->pb);
 			free(((SVREID*)pvalue)->pbin);
 		}
 		break;
 	case PT_BINARY:
 	case PT_OBJECT:
-		if (NULL != ((BINARY*)pvalue)->pb) {
-			free(((BINARY*)pvalue)->pb);
-		}
+		free(((BINARY*)pvalue)->pb);
 		break;
 	case PT_MV_SHORT:
-		if (NULL != ((SHORT_ARRAY*)pvalue)->ps) {
-			free(((SHORT_ARRAY*)pvalue)->ps);
-		}
+		free(((SHORT_ARRAY*)pvalue)->ps);
 		break;
 	case PT_MV_LONG:
-		if (NULL != ((LONG_ARRAY*)pvalue)->pl) {
-			free(((LONG_ARRAY*)pvalue)->pl);
-		}
+		free(((LONG_ARRAY*)pvalue)->pl);
 		break;
 	case PT_MV_I8:
-		if (NULL != ((LONGLONG_ARRAY*)pvalue)->pll) {
-			free(((LONGLONG_ARRAY*)pvalue)->pll);
-		}
+		free(((LONGLONG_ARRAY*)pvalue)->pll);
 		break;
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
 			free(((STRING_ARRAY*)pvalue)->ppstr[i]);
 		}
-		if (NULL != ((STRING_ARRAY*)pvalue)->ppstr) {
-			free(((STRING_ARRAY*)pvalue)->ppstr);
-		}
+		free(((STRING_ARRAY*)pvalue)->ppstr);
 		break;
 	case PT_MV_CLSID:
-		if (NULL != ((GUID_ARRAY*)pvalue)->pguid) {
-			free(((GUID_ARRAY*)pvalue)->pguid);
-		}
+		free(((GUID_ARRAY*)pvalue)->pguid);
 		break;
 	case PT_MV_BINARY:
 		for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
-			if (NULL != ((BINARY_ARRAY*)pvalue)->pbin[i].pb) {
-				free(((BINARY_ARRAY*)pvalue)->pbin[i].pb);
-			}
+			free(((BINARY_ARRAY*)pvalue)->pbin[i].pb);
 		}
-		if (NULL != ((BINARY_ARRAY*)pvalue)->pbin) {
-			free(((BINARY_ARRAY*)pvalue)->pbin);
-		}
+		free(((BINARY_ARRAY*)pvalue)->pbin);
 		break;
 	}
 	free(pvalue);
@@ -421,9 +403,9 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_SYSTIME:
 		return sizeof(uint64_t);
 	case PT_STRING8:
-		return strlen(pvalue) + 1;
+		return strlen(static_cast<char *>(pvalue)) + 1;
 	case PT_UNICODE:
-		return propval_utf16_len(pvalue);
+		return propval_utf16_len(static_cast<char *>(pvalue));
 	case PT_CLSID:
 		return 16;
 	case PT_SVREID:
@@ -432,9 +414,9 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		}
 		return 21;
 	case PT_SRESTRICT:
-		return restriction_size(pvalue);
+		return restriction_size(static_cast<RESTRICTION *>(pvalue));
 	case PT_ACTIONS:
-		return rule_actions_size(pvalue);
+		return rule_actions_size(static_cast<RULE_ACTIONS *>(pvalue));
 	case PT_MV_SHORT:
 		return sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count;
 	case PT_MV_LONG:
@@ -679,76 +661,82 @@ BOOL propval_compare_relop(uint8_t relop,
 		}
 		return FALSE;
 	case PT_STRING8:
-	case PT_UNICODE:
+	case PT_UNICODE: {
+		auto s1 = static_cast<char *>(pvalue1), s2 = static_cast<char *>(pvalue2);
 		switch (relop) {
 		case RELOP_LT:
-			if (strcasecmp(pvalue1, pvalue2) < 0) {
+			if (strcasecmp(s1, s2) < 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_LE:
-			if (strcasecmp(pvalue1, pvalue2) <= 0) {
+			if (strcasecmp(s1, s2) <= 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_GT:
-			if (strcasecmp(pvalue1, pvalue2) > 0) {
+			if (strcasecmp(s1, s2) > 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_GE:
-			if (strcasecmp(pvalue1, pvalue2) >= 0) {
+			if (strcasecmp(s1, s2) >= 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_EQ:
-			if (strcasecmp(pvalue1, pvalue2) == 0) {
+			if (strcasecmp(s1, s2) == 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_NE:
-			if (strcasecmp(pvalue1, pvalue2) != 0) {
+			if (strcasecmp(s1, s2) != 0) {
 				return TRUE;
 			}
 			return FALSE;
 		}
 		return FALSE;
-	case PT_CLSID:
+	}
+	case PT_CLSID: {
+		auto g1 = static_cast<GUID *>(pvalue1);
+		auto g2 = static_cast<GUID *>(pvalue2);
 		switch (relop) {
 		case RELOP_LT:
-			if (guid_compare(pvalue1, pvalue2) < 0) {
+			if (guid_compare(g1, g2) < 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_LE:
-			if (guid_compare(pvalue1, pvalue2) <= 0) {
+			if (guid_compare(g1, g2) <= 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_GT:
-			if (guid_compare(pvalue1, pvalue2) > 0) {
+			if (guid_compare(g1, g2) > 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_GE:
-			if (guid_compare(pvalue1, pvalue2) >= 0) {
+			if (guid_compare(g1, g2) >= 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_EQ:
-			if (guid_compare(pvalue1, pvalue2) == 0) {
+			if (guid_compare(g1, g2) == 0) {
 				return TRUE;
 			}
 			return FALSE;
 		case RELOP_NE:
-			if (guid_compare(pvalue1, pvalue2) != 0) {
+			if (guid_compare(g1, g2) != 0) {
 				return TRUE;
 			}
 			return FALSE;
 		}
 		return FALSE;
+	}
 	case PT_BINARY: {
-		BINARY *bv1 = pvalue1, *bv2 = pvalue2;
+		auto bv1 = static_cast<BINARY *>(pvalue1);
+		auto bv2 = static_cast<BINARY *>(pvalue2);
 		switch (relop) {
 		case RELOP_LT:
 			if (bv1->cb == 0 && bv2->cb != 0)
@@ -822,7 +810,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_SVREID: {
-		SVREID *sv1 = pvalue1, *sv2 = pvalue2;
+		auto sv1 = static_cast<SVREID *>(pvalue1);
+		auto sv2 = static_cast<SVREID *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if ((sv1->pbin == nullptr && sv2->pbin != nullptr) ||
@@ -868,7 +857,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_MV_SHORT: {
-		SHORT_ARRAY *sa1 = pvalue1, *sa2 = pvalue2;
+		auto sa1 = static_cast<SHORT_ARRAY *>(pvalue1);
+		auto sa2 = static_cast<SHORT_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (sa1->count != sa2->count)
@@ -886,7 +876,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_MV_LONG: {
-		LONG_ARRAY *la1 = pvalue1, *la2 = pvalue2;
+		auto la1 = static_cast<LONG_ARRAY *>(pvalue1);
+		auto la2 = static_cast<LONG_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (la1->count != la2->count)
@@ -904,7 +895,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_MV_I8: {
-		LONGLONG_ARRAY *la1 = pvalue1, *la2 = pvalue2;
+		auto la1 = static_cast<LONGLONG_ARRAY *>(pvalue1);
+		auto la2 = static_cast<LONGLONG_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (la1->count != la2->count)
@@ -923,7 +915,8 @@ BOOL propval_compare_relop(uint8_t relop,
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
-		STRING_ARRAY *sa1 = pvalue1, *sa2 = pvalue2;
+		auto sa1 = static_cast<STRING_ARRAY *>(pvalue1);
+		auto sa2 = static_cast<STRING_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (sa1->count != sa2->count)
@@ -943,7 +936,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_MV_BINARY: {
-		BINARY_ARRAY *bv1 = pvalue1, *bv2 = pvalue2;
+		auto bv1 = static_cast<BINARY_ARRAY *>(pvalue1);
+		auto bv2 = static_cast<BINARY_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (bv1->count != bv2->count)
