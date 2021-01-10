@@ -13,9 +13,7 @@
 
 ATTACHMENT_CONTENT* attachment_content_init()
 {
-	ATTACHMENT_CONTENT *pattachment;
-	
-	pattachment = malloc(sizeof(ATTACHMENT_CONTENT));
+	auto pattachment = static_cast<ATTACHMENT_CONTENT *>(malloc(sizeof(ATTACHMENT_CONTENT)));
 	if (NULL == pattachment) {
 		return NULL;
 	}
@@ -77,14 +75,12 @@ ATTACHMENT_CONTENT* attachment_content_dup(
 
 ATTACHMENT_LIST* attachment_list_init()
 {
-	ATTACHMENT_LIST *plist;
-	
-	plist = malloc(sizeof(ATTACHMENT_LIST));
+	auto plist = static_cast<ATTACHMENT_LIST *>(malloc(sizeof(ATTACHMENT_LIST)));
 	if (NULL == plist) {
 		return NULL;
 	}
 	plist->count = 0;
-	plist->pplist = malloc(20*sizeof(ATTACHMENT_CONTENT*));
+	plist->pplist = static_cast<ATTACHMENT_CONTENT **>(malloc(20 * sizeof(ATTACHMENT_CONTENT *)));
 	if (NULL == plist->pplist) {
 		free(plist);
 		return NULL;
@@ -131,7 +127,7 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	count = (plist->count / 20 + 1) * 20;
 	if (plist->count + 1 >= count) {
 		count += 20;
-		pplist = realloc(plist->pplist, count*sizeof(ATTACHMENT_CONTENT*));
+		pplist = static_cast<ATTACHMENT_CONTENT **>(realloc(plist->pplist, count * sizeof(ATTACHMENT_CONTENT *)));
 		if (NULL == pplist) {
 			return FALSE;
 		}
@@ -170,9 +166,7 @@ ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist)
 
 FOLDER_CONTENT* folder_content_init()
 {
-	FOLDER_CONTENT *pfldctnt;
-	
-	pfldctnt = malloc(sizeof(FOLDER_CONTENT));
+	auto pfldctnt = static_cast<FOLDER_CONTENT *>(malloc(sizeof(FOLDER_CONTENT)));
 	if (NULL == pfldctnt) {
 		return NULL;
 	}
@@ -183,7 +177,7 @@ FOLDER_CONTENT* folder_content_init()
 	pfldctnt->fldmsgs.pfai_msglst = NULL;
 	pfldctnt->fldmsgs.pnormal_msglst = NULL;
 	pfldctnt->count = 0;
-	pfldctnt->psubflds = malloc(10*sizeof(FOLDER_CONTENT));
+	pfldctnt->psubflds = static_cast<FOLDER_CONTENT *>(malloc(10 * sizeof(FOLDER_CONTENT)));
 	if (NULL == pfldctnt->psubflds) {
 		tpropval_array_free_internal(&pfldctnt->proplist);
 		free(pfldctnt);
@@ -201,7 +195,7 @@ BOOL folder_content_append_subfolder_internal(
 	count = (pfldctnt->count / 10 + 1) * 10;
 	if (pfldctnt->count + 1 >= count) {
 		count += 10;
-		psubflds = realloc(pfldctnt->psubflds, count * sizeof(FOLDER_CONTENT));
+		psubflds = static_cast<FOLDER_CONTENT *>(realloc(pfldctnt->psubflds, count * sizeof(FOLDER_CONTENT)));
 		if (NULL == psubflds) {
 			return FALSE;
 		}
@@ -272,9 +266,7 @@ BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt)
 
 MESSAGE_CONTENT* message_content_init()
 {
-	MESSAGE_CONTENT *pmsgctnt;
-	
-	pmsgctnt = malloc(sizeof(MESSAGE_CONTENT));
+	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(malloc(sizeof(MESSAGE_CONTENT)));
 	if (NULL == pmsgctnt) {
 		return NULL;
 	}
@@ -402,7 +394,7 @@ BOOL property_groupinfo_init_internal(
 	pgpinfo->group_id = group_id;
 	pgpinfo->reserved = 0;
 	pgpinfo->count = 0;
-	pgpinfo->pgroups = malloc(sizeof(PROPTAG_ARRAY)*20);
+	pgpinfo->pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * 20));
 	if (NULL == pgpinfo->pgroups) {
 		return FALSE;
 	}
@@ -411,9 +403,7 @@ BOOL property_groupinfo_init_internal(
 
 PROPERTY_GROUPINFO* property_groupinfo_init(uint32_t group_id)
 {
-	PROPERTY_GROUPINFO *pgpinfo;
-	
-	pgpinfo = malloc(sizeof(PROPERTY_GROUPINFO));
+	auto pgpinfo = static_cast<PROPERTY_GROUPINFO *>(malloc(sizeof(PROPERTY_GROUPINFO)));
 	if (NULL == pgpinfo) {
 		return NULL;
 	}
@@ -433,7 +423,7 @@ BOOL property_groupinfo_append_internal(
 	count = (pgpinfo->count / 20 + 1) * 20;
 	if (pgpinfo->count + 1 >= count) {
 		count += 20;
-		pgroups = realloc(pgpinfo->pgroups, sizeof(PROPTAG_ARRAY)*count);
+		pgroups = static_cast<PROPTAG_ARRAY *>(realloc(pgpinfo->pgroups, sizeof(PROPTAG_ARRAY) * count));
 		if (NULL == pgroups) {
 			return FALSE;
 		}

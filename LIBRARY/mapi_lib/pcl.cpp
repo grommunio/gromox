@@ -51,9 +51,7 @@ static void pcl_push_sized_xid(BINARY *pbin, const SIZED_XID *pxid)
 
 PCL* pcl_init()
 {
-	PCL *ppcl;
-	
-	ppcl = malloc(sizeof(PCL));
+	auto ppcl = static_cast<PCL *>(malloc(sizeof(PCL)));
 	if (NULL == ppcl) {
 		return NULL;
 	}
@@ -107,7 +105,7 @@ BOOL pcl_append(PCL *ppcl, const SIZED_XID *pxid)
 			}
 			return TRUE;
 		}
-		pxnode = malloc(sizeof(XID_NODE));
+		pxnode = static_cast<XID_NODE *>(malloc(sizeof(XID_NODE)));
 		if (NULL == pxnode) {
 			return FALSE;
 		}
@@ -116,7 +114,7 @@ BOOL pcl_append(PCL *ppcl, const SIZED_XID *pxid)
 		double_list_insert_before(ppcl, pnode, &pxnode->node);
 		return TRUE;
 	}
-	pxnode = malloc(sizeof(XID_NODE));
+	pxnode = static_cast<XID_NODE *>(malloc(sizeof(XID_NODE)));
 	if (NULL == pxnode) {
 		return FALSE;
 	}
@@ -143,7 +141,6 @@ BOOL pcl_merge(PCL *ppcl1, const PCL *ppcl2)
 
 BINARY* pcl_serialize(PCL *ppcl)
 {
-	BINARY *pbin;
 	BINARY tmp_bin;
 	SIZED_XID *pxid;
 	uint8_t buff[0x8000];
@@ -160,7 +157,7 @@ BINARY* pcl_serialize(PCL *ppcl)
 		}
 		pcl_push_sized_xid(&tmp_bin, pxid);
 	}
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -168,12 +165,12 @@ BINARY* pcl_serialize(PCL *ppcl)
 	if (0 == tmp_bin.cb) {
 		pbin->pb = NULL;
 	} else {
-		pbin->pb = malloc(pbin->cb);
-		if (NULL == pbin->pb) {
+		pbin->pv = malloc(pbin->cb);
+		if (pbin->pv == nullptr) {
 			free(pbin);
 			return NULL;
 		}
-		memcpy(pbin->pb, buff, pbin->cb);
+		memcpy(pbin->pv, buff, pbin->cb);
 	}
 	return pbin;
 }
