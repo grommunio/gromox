@@ -11,7 +11,7 @@
 #include "timezone.h"
 #include <gromox/rop_util.hpp>
 #include "util.h"
-#include "dsn.h"
+#include <gromox/dsn.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>

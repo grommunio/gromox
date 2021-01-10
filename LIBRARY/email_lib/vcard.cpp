@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
-#include "vcard.h"
+#include <gromox/vcard.hpp>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

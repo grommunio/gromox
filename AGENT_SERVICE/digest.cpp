@@ -4,7 +4,7 @@
 #endif
 #include <libHX/option.h>
 #include <gromox/defs.h>
-#include "mail.h"
+#include <gromox/mail.hpp>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>

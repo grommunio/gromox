@@ -1,8 +1,7 @@
 #pragma once
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "mail.h"
-
+#include <gromox/mail.hpp>
 #define OXCMAIL_BODY_PLAIN_ONLY				1
 #define OXCMAIL_BODY_HTML_ONLY				2
 #define OXCMAIL_BODY_PLAIN_AND_HTML			3

@@ -17,9 +17,9 @@
 #include "mem_file.h"
 #include "dir_tree.h"
 #include "resource.h"
-#include "mjson.h"
+#include <gromox/mjson.hpp>
 #include "util.h"
-#include "mail.h"
+#include <gromox/mail.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cstring>

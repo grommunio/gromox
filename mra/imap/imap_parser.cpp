@@ -9,11 +9,11 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include "util.h"
-#include "mjson.h"
+#include <gromox/mjson.hpp>
 #include "str_hash.h"
 #include "dir_tree.h"
 #include "resource.h"
-#include "mime_pool.h"
+#include <gromox/mime_pool.hpp>
 #include "mail_func.h"
 #include "lib_buffer.h"
 #include "imap_parser.h"

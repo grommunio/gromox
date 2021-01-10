@@ -4,7 +4,7 @@
 #endif
 #include "message_dequeue.h"
 #include "plugin.h"
-#include "mail.h"
+#include <gromox/mail.hpp>
 
 enum{
 	TRANSPORTER_MIN_THREADS,

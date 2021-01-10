@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "ical.h"
+#include <gromox/ical.hpp>
 
 #ifdef __cplusplus
 extern "C" {

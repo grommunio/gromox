@@ -1,7 +1,7 @@
 #pragma once
-#include "mime.h"
+#include <gromox/mime.hpp>
 #include "stream.h"
-#include "mime_pool.h"
+#include <gromox/mime_pool.hpp>
 #include "simple_tree.h"
 
 #define	MIME_INSERT_BEFORE	SIMPLE_TREE_INSERT_BEFORE

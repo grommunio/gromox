@@ -7,7 +7,7 @@
 #include <gromox/tpropval_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/oxvcard.hpp>
-#include "vcard.h"
+#include <gromox/vcard.hpp>
 #include "util.h"
 #include <string.h>
 #include <stdlib.h>

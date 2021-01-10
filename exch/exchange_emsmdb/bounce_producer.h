@@ -1,5 +1,5 @@
 #pragma once
-#include "mail.h"
+#include <gromox/mail.hpp>
 #include <gromox/element_data.hpp>
 
 enum{

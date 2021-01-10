@@ -4,7 +4,7 @@
 #include "xarray.h"
 #include "stream.h"
 #include "mem_file.h"
-#include "mime_pool.h"
+#include <gromox/mime_pool.hpp>
 #include <time.h>
 #include <sys/time.h>
 #include <openssl/ssl.h>

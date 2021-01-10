@@ -1,7 +1,7 @@
 #pragma once
 #include "single_list.h"
 #include "lib_buffer.h"
-#include "mime.h"
+#include <gromox/mime.hpp>
 #include <pthread.h>
 
 typedef struct _MIME_POOL_NODE {

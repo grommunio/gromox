@@ -4,7 +4,7 @@
 #include <gromox/fileio.h>
 #include "mail_func.h"
 #include "timezone.h"
-#include "ical.h"
+#include <gromox/ical.hpp>
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>

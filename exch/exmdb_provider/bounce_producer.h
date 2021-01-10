@@ -1,5 +1,5 @@
 #pragma once
-#include "mail.h"
+#include <gromox/mail.hpp>
 #include <sqlite3.h>
 
 enum{

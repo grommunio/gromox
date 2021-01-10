@@ -9,8 +9,8 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "mail.h"
-#include "mime.h"
+#include <gromox/mail.hpp>
+#include <gromox/mime.hpp>
 #include "util.h"
 #include "mail_func.h"
 #include <string.h>

@@ -13,7 +13,7 @@
 #include "list_file.h"
 #include <gromox/proptags.hpp>
 #include <gromox/rop_util.hpp>
-#include "ical.h"
+#include <gromox/ical.hpp>
 #include "guid.h"
 #include "util.h"
 #include <sys/select.h>

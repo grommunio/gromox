@@ -1,8 +1,7 @@
 #pragma once
 #include "simple_tree.h"
 #include "lib_buffer.h"
-#include "mime_pool.h"
-
+#include <gromox/mime_pool.hpp>
 #define MJSON_MIME_NONE			0
 
 #define MJSON_MIME_SINGLE		1

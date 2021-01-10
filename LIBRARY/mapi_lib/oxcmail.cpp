@@ -10,7 +10,7 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
-#include "dsn.h"
+#include <gromox/dsn.hpp>
 #include <gromox/rtf.hpp>
 #include <gromox/html.hpp>
 #include "guid.h"

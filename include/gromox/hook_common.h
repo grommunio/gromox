@@ -2,8 +2,7 @@
 #include <gromox/defs.h>
 #include "common_types.h"
 #include "mem_file.h"
-#include "mail.h"
-
+#include <gromox/mail.hpp>
 #define PLUGIN_INIT                 0
 #define PLUGIN_FREE                 1
 #define SYS_THREAD_CREATE           2

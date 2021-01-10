@@ -9,14 +9,14 @@
 #include <gromox/database.h>
 #include <gromox/fileio.h>
 #include "util.h"
-#include "mail.h"
-#include "mjson.h"
+#include <gromox/mail.hpp>
+#include <gromox/mjson.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include "mem_file.h"
 #include "str_hash.h"
 #include "mail_func.h"
-#include "mime_pool.h"
+#include <gromox/mime_pool.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"
 #include "mail_engine.h"
