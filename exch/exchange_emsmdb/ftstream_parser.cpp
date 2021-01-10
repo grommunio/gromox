@@ -136,7 +136,7 @@ static char* ftstream_parser_read_string(
 	}
 	if (len >= common_util_get_param(
 		COMMON_UTIL_MAX_MAIL_LENGTH)) {
-		return FALSE;	
+		return nullptr;
 	}
 	if (origin_offset + sizeof(uint32_t) + len >
 		pstream->st_size) {
@@ -338,7 +338,7 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 		}
 		if (FALSE == ftstream_parser_read_uint32(
 			pstream, pname->plid)) {
-			return FALSE;
+			return nullptr;
 		}
 		return pname;
 	case MNID_STRING:

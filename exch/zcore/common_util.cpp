@@ -3311,7 +3311,7 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	}
 	auto pbuff = static_cast<char *>(common_util_alloc(pical_bin->cb + 1));
 	if (NULL == pbuff) {
-		return FALSE;
+		return nullptr;
 	}
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
@@ -3374,14 +3374,14 @@ MESSAGE_CONTENT* common_util_vcf_to_message(
 	
 	auto pbuff = static_cast<char *>(common_util_alloc(pvcf_bin->cb + 1));
 	if (NULL == pbuff) {
-		return FALSE;
+		return nullptr;
 	}
 	memcpy(pbuff, pvcf_bin->pb, pvcf_bin->cb);
 	pbuff[pvcf_bin->cb] = '\0';
 	vcard_init(&vcard);
 	if (FALSE == vcard_retrieve(&vcard, pbuff)) {
 		vcard_free(&vcard);
-		return FALSE;
+		return nullptr;
 	}
 	common_util_set_dir(store_object_get_dir(pstore));
 	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);

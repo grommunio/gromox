@@ -1021,7 +1021,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 				logon_object_get_dir(plogon),
 				folder_object_get_id(pfolder),
 				rpc_info.username, &permission)) {
-				return FALSE;	
+				return ecError;
 			}
 			if (0 == (permission & PERMISSION_FOLDEROWNER) &&
 				0 == (permission & PERMISSION_READANY)) {

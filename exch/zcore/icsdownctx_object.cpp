@@ -260,14 +260,14 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 		for (i=0; i<pctx->pgiven_eids->count; i++) {
 			if (FALSE == idset_append(pctx->pstate->pgiven,
 				pctx->pgiven_eids->pids[i])) {
-				return FALSE;	
+				return nullptr;
 			}
 		}
 		idset_clear(pctx->pstate->pseen);
 		if (0 != pctx->last_changenum) {
 			if (FALSE == idset_append_range(pctx->pstate->pseen, 1,
 				1, rop_util_get_gc_value(pctx->last_changenum))) {
-				return FALSE;
+				return nullptr;
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
@@ -275,7 +275,7 @@ BINARY* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
 			if (0 != pctx->last_changenum) {
 				if (FALSE == idset_append_range(pctx->pstate->pseen_fai,
 					1, 1, rop_util_get_gc_value(pctx->last_changenum))) {
-					return FALSE;
+					return nullptr;
 				}
 			}
 		}

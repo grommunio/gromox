@@ -2011,7 +2011,7 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 		LLU(message_id), PROP_TAG_BODY,
 		LLU(message_id), PROP_TAG_BODY_STRING8);
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
-		return FALSE;
+		return nullptr;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		return NULL;
@@ -2074,7 +2074,7 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 		LLU(message_id), PROP_TAG_TRANSPORTMESSAGEHEADERS,
 		LLU(message_id), PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
-		return FALSE;
+		return nullptr;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		return NULL;
@@ -2135,7 +2135,7 @@ static void* common_util_get_message_cid_value(
 		"message_properties WHERE message_id=%llu AND "
 		"proptag=%u", LLU(message_id), UI(proptag));
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
-		return FALSE;
+		return nullptr;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		return NULL;
@@ -2193,7 +2193,7 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 		"attachment_properties WHERE attachment_id=%llu"
 		" AND proptag=%u", LLU(attachment_id), UI(proptag));
 	if (!gx_sql_prep(psqlite, sql_string, &pstmt))
-		return FALSE;
+		return nullptr;
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
 		sqlite3_finalize(pstmt);
 		return NULL;
@@ -4911,12 +4911,12 @@ BINARY* common_util_to_private_folder_entryid(
 	tmp_entryid.flags = 0;
 	pbin = common_util_get_mailbox_guid(psqlite);
 	if (NULL == pbin) {
-		return FALSE;
+		return nullptr;
 	}
 	memcpy(tmp_entryid.provider_uid, pbin->pb, 16);
 	if (FALSE == common_util_get_id_from_username(
 		username, &user_id)) {
-		return FALSE;
+		return nullptr;
 	}
 	tmp_entryid.database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
@@ -4951,12 +4951,12 @@ BINARY* common_util_to_private_message_entryid(
 	tmp_entryid.flags = 0;
 	pbin = common_util_get_mailbox_guid(psqlite);
 	if (NULL == pbin) {
-		return FALSE;
+		return nullptr;
 	}
 	memcpy(tmp_entryid.provider_uid, pbin->pb, 16);
 	if (FALSE == common_util_get_id_from_username(
 		username, &user_id)) {
-		return FALSE;
+		return nullptr;
 	}
 	tmp_entryid.folder_database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
