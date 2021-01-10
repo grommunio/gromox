@@ -1,8 +1,9 @@
 #pragma once
-#include <gromox/assoc_array.hpp>
-#define COOKIE_PARSER			ASSOC_ARRAY
+#include <map>
+#include <string>
+#include <gromox/defs.h>
 
-COOKIE_PARSER* cookie_parser_init(const char *cookie_string);
+using cookie_jar = std::map<std::string, std::string, std::less<>>;
 
-const char* cookie_parser_get(COOKIE_PARSER *pparser, const char *name);
-void cookie_parser_free(COOKIE_PARSER *pparser);
+extern GX_EXPORT cookie_jar cookie_parser_init(const char *cookie_string);
+extern GX_EXPORT const char *cookie_parser_get(const cookie_jar &, const char *name);

@@ -2230,7 +2230,6 @@ int main(int argc, const char **argv)
 	const char *pstdmonth;
 	const char *pdtlmonth;
 	const char *pstarttime;
-	COOKIE_PARSER *pparser;
 	TIMEZONESTRUCT tzstruct;
 	const char *pstddayorder;
 	const char *pdtldayorder;
@@ -2268,8 +2267,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to read parameters from stdin\n");
 		exit(2);
 	}
-	pparser = cookie_parser_init(line);
-	auto cleanup = make_scope_exit([&]() { cookie_parser_free(pparser); });
+	auto pparser = cookie_parser_init(line);
 	g_username = cookie_parser_get(pparser, "username");
 	pstarttime = cookie_parser_get(pparser, "starttime");
 	if (NULL == pstarttime) {

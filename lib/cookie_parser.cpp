@@ -1,29 +1,27 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <string>
+#include <utility>
 #include <gromox/cookie_parser.hpp>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 static void cookie_parser_unencode(const char *src, char *dest);
 
-COOKIE_PARSER* cookie_parser_init(const char *cookie_string)
+cookie_jar cookie_parser_init(const char *cookie_string)
 {
 	int len;
 	char *ptr;
 	char *ptr1;
 	char *ptoken;
-	char *pparam;
 	char *last_ptr;
-	ASSOC_ARRAY *parray;
+	cookie_jar jar;
 	char *decoded_string;
 	
-	parray = assoc_array_init(sizeof(char*));
-	if (NULL == parray) {
-		return NULL;
-	}
 	len = strlen(cookie_string);
 	decoded_string = (char*)malloc(len + 2);
 	if (NULL == decoded_string) {
-		assoc_array_free(parray);
-		return NULL;
+		return jar;
 	}
 	cookie_parser_unencode(cookie_string, decoded_string);
 	len = strlen(decoded_string);
@@ -55,14 +53,15 @@ COOKIE_PARSER* cookie_parser_init(const char *cookie_string)
 			if (NULL != ptoken) {
 				*ptoken = '\0';
 				ptoken ++;
-				pparam = strdup(ptoken);
-				if (NULL != pparam) {
+				try {
+					std::string pparam = ptoken;
 					while (' ' == *last_ptr && '\0' != *last_ptr) {
 						last_ptr ++;
 					}
 					if ('\0' != *last_ptr) {
-						assoc_array_assign(parray, last_ptr, &pparam);
+						jar.emplace(last_ptr, std::move(pparam));
 					}
+				} catch (...) {
 				}
 			}
 			last_ptr = ptr + 1;
@@ -71,30 +70,13 @@ COOKIE_PARSER* cookie_parser_init(const char *cookie_string)
 	}
 	
 	free(decoded_string);
-	return parray;
+	return jar;
 }
 
-const char* cookie_parser_get(COOKIE_PARSER *pparser, const char *name)
+const char *cookie_parser_get(const cookie_jar &jar, const char *name)
 {
-	char **ppvalue;
-	
-	ppvalue = (char**)assoc_array_get_by_key(pparser, name);
-	if (NULL == ppvalue) {
-		return NULL;
-	}
-	
-	return *ppvalue;
-}
-
-static void cookie_parser_enum(const char *key, char **ppvalue)
-{
-	free(*ppvalue);
-}
-
-void cookie_parser_free(COOKIE_PARSER *pparser)
-{
-	assoc_array_foreach(pparser, (ASSOC_ARRAY_ENUM)cookie_parser_enum);
-	assoc_array_free(pparser);
+	auto i = jar.find(name);
+	return i != jar.cend() ? i->second.c_str() : nullptr;
 }
 
 static void cookie_parser_unencode(const char *src, char *dest)

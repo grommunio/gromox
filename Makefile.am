@@ -269,7 +269,7 @@ EXTRA_libgxsvc_user_filter_la_DEPENDENCIES = ${default_sym}
 # AGENT_SERVICE
 digest_SOURCES = AGENT_SERVICE/digest.cpp
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
-freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp lib/cookie_parser.cpp lib/assoc_array.cpp
+freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp lib/cookie_parser.cpp
 freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp exch/http/service.cpp
