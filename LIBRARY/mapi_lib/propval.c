@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "guid.h"
 #include "util.h"
@@ -8,284 +10,284 @@
 #include <stdlib.h>
 #include <string.h>
 
-void* propval_dup(uint16_t type, void *pvalue)
+void* propval_dup(uint16_t type, void *pvi)
 {
 	int i;
-	void *preturn;
-	uint32_t length;
 	
-	if (NULL == pvalue) {
+	if (pvi == nullptr) {
 		debug_info("[propval]: cannot duplicate NULL propval");
 		return NULL;
 	}
 	switch (type) {
-	case PT_UNSPECIFIED:
-		preturn = malloc(sizeof(TYPED_PROPVAL));
+	case PT_UNSPECIFIED: {
+		TYPED_PROPVAL *preturn = malloc(sizeof(TYPED_PROPVAL));
+		TYPED_PROPVAL *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((TYPED_PROPVAL*)preturn)->type = ((TYPED_PROPVAL*)pvalue)->type;
-		((TYPED_PROPVAL*)preturn)->pvalue = propval_dup(
-											((TYPED_PROPVAL*)pvalue)->type,
-											((TYPED_PROPVAL*)pvalue)->pvalue);
-		if (NULL == ((TYPED_PROPVAL*)preturn)->pvalue) {
+		preturn->type = psrc->type;
+		preturn->pvalue = propval_dup(psrc->type, psrc->pvalue);
+		if (preturn->pvalue == nullptr) {
 			free(preturn);
 			return NULL;
 		}
 		return preturn;
-	case PT_SHORT:
-		preturn = malloc(sizeof(uint16_t));
+	}
+	case PT_SHORT: {
+		uint16_t *preturn = malloc(sizeof(uint16_t));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*(uint16_t*)preturn = *(uint16_t*)pvalue;
+		*preturn = *static_cast(uint16_t *, pvi);
 		return preturn;
+	}
 	case PT_ERROR:
-	case PT_LONG:
-		preturn = malloc(sizeof(uint32_t));
+	case PT_LONG: {
+		uint32_t *preturn = malloc(sizeof(uint32_t));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*(uint32_t*)preturn = *(uint32_t*)pvalue;
+		*preturn = *static_cast(uint32_t *, pvi);
 		return preturn;
-	case PT_FLOAT:
-		preturn = malloc(sizeof(float));
+	}
+	case PT_FLOAT: {
+		float *preturn = malloc(sizeof(float));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*(float*)preturn = *(float*)pvalue;
+		*preturn = *static_cast(float *, pvi);
 		return preturn;
+	}
 	case PT_DOUBLE:
-	case PT_APPTIME:
-		preturn = malloc(sizeof(double));
+	case PT_APPTIME: {
+		double *preturn = malloc(sizeof(double));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*(double*)preturn = *(double*)pvalue;
+		*preturn = *static_cast(double *, pvi);
 		return preturn;
-	case PT_BOOLEAN:
-		preturn = malloc(sizeof(uint8_t));
+	}
+	case PT_BOOLEAN: {
+		uint8_t *preturn = malloc(sizeof(uint8_t));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*(uint8_t*)preturn = *(uint8_t*)pvalue;
+		*preturn = *static_cast(uint8_t *, pvi);
 		return preturn;
+	}
 	case PT_CURRENCY:
 	case PT_I8:
-	case PT_SYSTIME:
-		preturn = malloc(sizeof(uint64_t));
+	case PT_SYSTIME: {
+		uint64_t *preturn = malloc(sizeof(uint64_t));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		*(uint64_t*)preturn = *(uint64_t*)pvalue;
+		*preturn = *static_cast(uint64_t *, pvi);
 		return preturn;
+	}
 	case PT_STRING8:
 	case PT_UNICODE:
-		return strdup(pvalue);
-	case PT_CLSID:
-		preturn = malloc(sizeof(GUID));
+		return strdup(pvi);
+	case PT_CLSID: {
+		GUID *preturn = malloc(sizeof(GUID));
 		if (NULL == preturn) {
 			return NULL;
 		}
-		memcpy(preturn, pvalue, sizeof(GUID));
+		memcpy(preturn, pvi, sizeof(GUID));
 		return preturn;
-	case PT_SVREID:
-		preturn = malloc(sizeof(SVREID));
+	}
+	case PT_SVREID: {
+		SVREID *preturn = malloc(sizeof(SVREID));
+		SVREID *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		if (NULL != ((SVREID*)pvalue)->pbin) {
-			((SVREID*)preturn)->pbin = malloc(sizeof(BINARY));
-			if (NULL == ((SVREID*)preturn)->pbin) {
+		if (psrc->pbin != nullptr) {
+			preturn->pbin = malloc(sizeof(BINARY));
+			if (preturn->pbin == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			((SVREID*)preturn)->pbin->cb = ((SVREID*)pvalue)->pbin->cb;
-			length = ((SVREID*)pvalue)->pbin->cb;
-			if (0 == length) {
-				((SVREID*)preturn)->pbin->pb = NULL;
+			preturn->pbin->cb = psrc->pbin->cb;
+			if (psrc->pbin->cb == 0) {
+				preturn->pbin->pv = nullptr;
 			} else {
-				((SVREID*)preturn)->pbin->pb = malloc(length);
-				if (NULL == ((SVREID*)preturn)->pbin->pb) {
-					free(((SVREID*)preturn)->pbin);
+				preturn->pbin->pv = malloc(psrc->pbin->cb);
+				if (preturn->pbin->pv == nullptr) {
+					free(preturn->pbin);
 					free(preturn);
 					return NULL;
 				}
-				memcpy(((SVREID*)preturn)->pbin->pb,
-					((SVREID*)pvalue)->pbin->pb, length);
+				memcpy(preturn->pbin->pv, psrc->pbin->pv, psrc->pbin->cb);
 			}
 		} else {
-			memcpy(preturn, pvalue, sizeof(SVREID));
+			memcpy(preturn, pvi, sizeof(SVREID));
 		}
 		return preturn;
+	}
 	case PT_SRESTRICT:
-		return restriction_dup(pvalue);
+		return restriction_dup(pvi);
 	case PT_ACTIONS:
-		return rule_actions_dup(pvalue);
+		return rule_actions_dup(pvi);
 	case PT_BINARY:
-	case PT_OBJECT:
-		preturn = malloc(sizeof(BINARY));
+	case PT_OBJECT: {
+		BINARY *preturn = malloc(sizeof(BINARY));
+		BINARY *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((BINARY*)preturn)->cb = ((BINARY*)pvalue)->cb;
-		length = ((BINARY*)pvalue)->cb;
-		if (0 == length) {
-			((BINARY*)preturn)->pb = NULL;
+		preturn->cb = psrc->cb;
+		if (psrc->cb == 0) {
+			preturn->pv = NULL;
 		} else {
-			((BINARY*)preturn)->pb = malloc(length);
-			if (NULL == ((BINARY*)preturn)->pb) {
+			preturn->pv = malloc(psrc->cb);
+			if (preturn->pv == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			memcpy(((BINARY*)preturn)->pb, ((BINARY*)pvalue)->pb, length);
+			memcpy(preturn->pv, psrc->pv, psrc->cb);
 		}
 		return preturn;
-	case PT_MV_SHORT:
-		preturn = malloc(sizeof(SHORT_ARRAY));
+	}
+	case PT_MV_SHORT: {
+		SHORT_ARRAY *preturn = malloc(sizeof(SHORT_ARRAY));
+		SHORT_ARRAY *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((SHORT_ARRAY*)preturn)->count = ((SHORT_ARRAY*)pvalue)->count;
-		if (0 == ((SHORT_ARRAY*)pvalue)->count) {
-			((SHORT_ARRAY*)preturn)->ps = NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->ps = nullptr;
 		} else {
-			((SHORT_ARRAY*)preturn)->ps = 
-					malloc(sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count);
-			if (NULL == ((SHORT_ARRAY*)preturn)->ps) {
+			preturn->ps = malloc(sizeof(uint16_t) * psrc->count);
+			if (preturn->ps == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			memcpy(((SHORT_ARRAY*)preturn)->ps, ((SHORT_ARRAY*)pvalue)->ps,
-						sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count);
+			memcpy(preturn->ps, psrc->ps, sizeof(uint16_t) * psrc->count);
 		}
 		return preturn;
-	case PT_MV_LONG:
-		preturn = malloc(sizeof(LONG_ARRAY));
+	}
+	case PT_MV_LONG: {
+		LONG_ARRAY *preturn = malloc(sizeof(LONG_ARRAY));
+		LONG_ARRAY *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((LONG_ARRAY*)preturn)->count = ((LONG_ARRAY*)pvalue)->count;
-		if (0 == ((LONG_ARRAY*)pvalue)->count) {
-			((LONG_ARRAY*)preturn)->pl = NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->pl = NULL;
 		} else {
-			((LONG_ARRAY*)preturn)->pl =
-					malloc(sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count);
-			if (NULL == ((LONG_ARRAY*)preturn)->pl) {
+			preturn->pl = malloc(sizeof(uint32_t) * psrc->count);
+			if (preturn->pl == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			memcpy(((LONG_ARRAY*)preturn)->pl, ((LONG_ARRAY*)pvalue)->pl,
-						sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count);
+			memcpy(preturn->pl, psrc->pl, sizeof(uint32_t) * psrc->count);
 		}
 		return preturn;
-	case PT_MV_I8:
-		preturn = malloc(sizeof(LONGLONG_ARRAY));
+	}
+	case PT_MV_I8: {
+		LONGLONG_ARRAY *preturn = malloc(sizeof(LONGLONG_ARRAY));
+		LONGLONG_ARRAY *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((LONGLONG_ARRAY*)preturn)->count = ((LONGLONG_ARRAY*)pvalue)->count;
-		if (0 == ((LONGLONG_ARRAY*)pvalue)->count) {
-			((LONGLONG_ARRAY*)preturn)->pll = NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->pll = nullptr;
 		} else {
-			((LONGLONG_ARRAY*)preturn)->pll =
-					malloc(sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count);
-			if (NULL == ((LONGLONG_ARRAY*)preturn)->pll) {
+			preturn->pll = malloc(sizeof(uint64_t) * psrc->count);
+			if (preturn->pll == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			memcpy(((LONGLONG_ARRAY*)preturn)->pll, ((LONGLONG_ARRAY*)pvalue)->pll,
-						sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count);
+			memcpy(preturn->pll, psrc->pll, sizeof(uint64_t) * psrc->count);
 		}
 		return preturn;
+	}
 	case PT_MV_STRING8:
-	case PT_MV_UNICODE:
-		preturn = malloc(sizeof(STRING_ARRAY));
+	case PT_MV_UNICODE: {
+		STRING_ARRAY *preturn = malloc(sizeof(STRING_ARRAY));
+		STRING_ARRAY *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((STRING_ARRAY*)preturn)->count = ((STRING_ARRAY*)pvalue)->count;
-		if (0 == ((STRING_ARRAY*)pvalue)->count) {
-			((STRING_ARRAY*)preturn)->ppstr = NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->ppstr = nullptr;
 		} else {
-			((STRING_ARRAY*)preturn)->ppstr =
-					malloc(sizeof(void*)*((STRING_ARRAY*)pvalue)->count);
-			if (NULL == ((STRING_ARRAY*)preturn)->ppstr) {
+			preturn->ppstr = malloc(sizeof(char *) * psrc->count);
+			if (preturn->ppstr == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			for (i=0; i<((STRING_ARRAY*)pvalue)->count; i++) {
-				((STRING_ARRAY*)preturn)->ppstr[i] =
-						strdup(((STRING_ARRAY*)pvalue)->ppstr[i]);
-				if (NULL == ((STRING_ARRAY*)preturn)->ppstr[i]) {
-					for (i-=1;i>=0; i--) {
-						free(((STRING_ARRAY*)preturn)->ppstr[i]);
-					}
-					free(((STRING_ARRAY*)preturn)->ppstr);
+			for (i = 0; i < psrc->count; ++i) {
+				preturn->ppstr[i] = strdup(psrc->ppstr[i]);
+				if (preturn->ppstr[i] == nullptr) {
+					for (i -= 1; i >= 0; --i)
+						free(preturn->ppstr[i]);
+					free(preturn->ppstr);
 					free(preturn);
 					return NULL;
 				}
 			}
 		}
 		return preturn;
-	case PT_MV_CLSID:
-		preturn = malloc(sizeof(GUID_ARRAY));
+	}
+	case PT_MV_CLSID: {
+		GUID_ARRAY *preturn = malloc(sizeof(GUID_ARRAY));
+		GUID_ARRAY *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((GUID_ARRAY*)preturn)->count = ((GUID_ARRAY*)pvalue)->count;
-		if (0 == ((GUID_ARRAY*)pvalue)->count) {
-			((GUID_ARRAY*)preturn)->pguid = NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->pguid = nullptr;
 		} else {
-			((GUID_ARRAY*)preturn)->pguid =
-				malloc(sizeof(uint32_t)*((GUID_ARRAY*)pvalue)->count);
-			if (NULL == ((GUID_ARRAY*)preturn)->pguid) {
+			preturn->pguid = malloc(sizeof(uint32_t) * psrc->count);
+			if (preturn->pguid == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			memcpy(((GUID_ARRAY*)preturn)->pguid,((GUID_ARRAY*)pvalue)->pguid,
-									sizeof(GUID)*((GUID_ARRAY*)pvalue)->count);
+			memcpy(preturn->pguid, psrc->pguid, sizeof(GUID) * psrc->count);
 		}
 		return preturn;
-	case PT_MV_BINARY:
-		preturn = malloc(sizeof(BINARY_ARRAY));
+	}
+	case PT_MV_BINARY: {
+		BINARY_ARRAY *preturn = malloc(sizeof(BINARY_ARRAY));
+		BINARY_ARRAY *psrc = pvi;
 		if (NULL == preturn) {
 			return NULL;
 		}
-		((BINARY_ARRAY*)preturn)->count = ((BINARY_ARRAY*)pvalue)->count;
-		if (0 == ((BINARY_ARRAY*)pvalue)->count) {
-			((BINARY_ARRAY*)preturn)->pbin = NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->pbin = nullptr;
 		} else {
-			((BINARY_ARRAY*)preturn)->pbin =
-				malloc(sizeof(BINARY)*((BINARY_ARRAY*)pvalue)->count);
-			if (NULL == ((BINARY_ARRAY*)preturn)->pbin) {
+			preturn->pbin = malloc(sizeof(BINARY) * psrc->count);
+			if (preturn->pbin == nullptr) {
 				free(preturn);
 				return NULL;
 			}
-			for (i=0; i<((BINARY_ARRAY*)pvalue)->count; i++) {
-				((BINARY_ARRAY*)preturn)->pbin[i].cb =
-						((BINARY_ARRAY*)pvalue)->pbin[i].cb;
-				length = ((BINARY_ARRAY*)pvalue)->pbin[i].cb;
-				if (0 == length) {
-					((BINARY_ARRAY*)preturn)->pbin[i].pb = NULL;
+			for (i = 0; i < psrc->count; ++i) {
+				preturn->pbin[i].cb = psrc->pbin[i].cb;
+				if (psrc->pbin[i].cb == 0) {
+					preturn->pbin[i].pb = NULL;
 					continue;
 				}
-				((BINARY_ARRAY*)preturn)->pbin[i].pb = malloc(length);
-				if (NULL == ((BINARY_ARRAY*)preturn)->pbin[i].pb) {
-					for (i-=1; i>=0; i--) {
-						if (NULL != ((BINARY_ARRAY*)preturn)->pbin[i].pb) {
-							free(((BINARY_ARRAY*)preturn)->pbin[i].pb);
-						}
-					}
-					free(((BINARY_ARRAY*)preturn)->pbin);
+				preturn->pbin[i].pv = malloc(psrc->pbin[i].cb);
+				if (preturn->pbin[i].pv == nullptr) {
+					for (i -= 1; i >= 0; --i)
+						free(preturn->pbin[i].pv);
+					free(preturn->pbin);
 					free(preturn);
 					return NULL;
 				}
-				memcpy(((BINARY_ARRAY*)preturn)->pbin[i].pb,
-					((BINARY_ARRAY*)pvalue)->pbin[i].pb, length);
+				memcpy(preturn->pbin[i].pv, psrc->pbin[i].pv, psrc->pbin[i].cb);
 			}
 		}
 		return preturn;
+	}
 	}
 	return NULL;
 }
@@ -745,345 +747,227 @@ BOOL propval_compare_relop(uint8_t relop,
 			return FALSE;
 		}
 		return FALSE;
-	case PT_BINARY:
+	case PT_BINARY: {
+		BINARY *bv1 = pvalue1, *bv2 = pvalue2;
 		switch (relop) {
 		case RELOP_LT:
-			if (0 == ((BINARY*)pvalue1)->cb &&
-				0 != ((BINARY*)pvalue2)->cb) {
+			if (bv1->cb == 0 && bv2->cb != 0)
 				return TRUE;
-			}
-			if (0 == ((BINARY*)pvalue1)->cb ||
-				0 == ((BINARY*)pvalue2)->cb) {
+			if (bv1->cb == 0 || bv2->cb == 0)
 				return FALSE;	
-			}
-			if (((BINARY*)pvalue1)->cb >
-				((BINARY*)pvalue2)->cb) {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue2)->cb) < 0) {
+			if (bv1->cb > bv2->cb) {
+				if (memcmp(bv1->pv, bv2->pv, bv2->cb) < 0)
 					return TRUE;
-				}
 			} else {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue1)->cb) < 0) {
+				if (memcmp(bv1->pv, bv2->pv, bv1->cb) < 0)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case RELOP_LE:
-			if (0 == ((BINARY*)pvalue1)->cb) {
+			if (bv1->cb == 0)
 				return TRUE;
-			}
-			if (0 == ((BINARY*)pvalue2)->cb) {
+			if (bv2->cb == 0)
 				return FALSE;
-			}
-			if (((BINARY*)pvalue1)->cb >
-				((BINARY*)pvalue2)->cb) {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue2)->cb) <= 0) {
+			if (bv1->cb > bv2->cb) {
+				if (memcmp(bv1->pv, bv2->pv, bv2->cb) <= 0)
 					return TRUE;
-				}
 			} else {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue1)->cb) <= 0) {
+				if (memcmp(bv1->pv, bv2->pv, bv1->cb) <= 0)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case RELOP_GT:
-			if (0 != ((BINARY*)pvalue1)->cb &&
-				0 == ((BINARY*)pvalue2)->cb) {
+			if (bv1->cb != 0 && bv2->cb == 0)
 				return TRUE;
-			}
-			if (0 == ((BINARY*)pvalue1)->cb ||
-				0 == ((BINARY*)pvalue2)->cb) {
+			if (bv1->cb == 0 || bv2->cb == 0)
 				return FALSE;	
-			}
-			if (((BINARY*)pvalue1)->cb >
-				((BINARY*)pvalue2)->cb) {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue2)->cb) > 0) {
+			if (bv1->cb > bv2->cb) {
+				if (memcmp(bv1->pv, bv2->pv, bv2->cb) > 0)
 					return TRUE;
-				}
 			} else {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue1)->cb) > 0) {
+				if (memcmp(bv1->pv, bv2->pv, bv1->cb) > 0)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case RELOP_GE:
-			if (0 == ((BINARY*)pvalue2)->cb) {
+			if (bv2->cb == 0)
 				return TRUE;
-			}
-			if (0 == ((BINARY*)pvalue1)->cb) {
+			if (bv1->cb == 0)
 				return FALSE;	
-			}
-			if (((BINARY*)pvalue1)->cb >
-				((BINARY*)pvalue2)->cb) {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue2)->cb) >= 0) {
+			if (bv1->cb > bv2->cb) {
+				if (memcmp(bv1->pv, bv2->pv, bv2->cb) >= 0)
 					return TRUE;
-				}
 			} else {
-				if (memcmp(((BINARY*)pvalue1)->pb,
-					((BINARY*)pvalue2)->pb,
-					((BINARY*)pvalue1)->cb) >= 0) {
+				if (memcmp(bv1->pv, bv2->pv, bv1->cb) >= 0)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		case RELOP_EQ:
-			if (((BINARY*)pvalue1)->cb != ((BINARY*)pvalue2)->cb) {
+			if (bv1->cb != bv2->cb)
 				return FALSE;
-			}
-			if (NULL == ((BINARY*)pvalue1)->pb) {
+			if (bv1->pv == nullptr)
 				return TRUE;
-			}
-			if (memcmp(((BINARY*)pvalue1)->pb, ((BINARY*)pvalue2)->pb,
-				((BINARY*)pvalue1)->cb) == 0) {
+			if (memcmp(bv1->pv, bv2->pv, bv1->cb) == 0)
 				return TRUE;
-			}
 			return FALSE;
 		case RELOP_NE:
-			if (((BINARY*)pvalue1)->cb != ((BINARY*)pvalue2)->cb) {
+			if (bv1->cb != bv2->cb)
 				return TRUE;
-			}
-			if (NULL == ((BINARY*)pvalue1)->pb) {
+			if (bv1->pv == nullptr)
 				return FALSE;
-			}
-			if (memcmp(((BINARY*)pvalue1)->pb, ((BINARY*)pvalue2)->pb,
-				((BINARY*)pvalue1)->cb) != 0) {
+			if (memcmp(bv1->pv, bv2->pv, bv1->cb) != 0)
 				return TRUE;
-			}
 			return FALSE;
 		}
 		return FALSE;
-	case PT_SVREID:
+	}
+	case PT_SVREID: {
+		SVREID *sv1 = pvalue1, *sv2 = pvalue2;
 		switch (relop) {
 		case RELOP_EQ:
-			if ((NULL == ((SVREID*)pvalue1)->pbin &&
-				NULL != ((SVREID*)pvalue2)->pbin) ||
-				(NULL != ((SVREID*)pvalue1)->pbin &&
-				NULL == ((SVREID*)pvalue2)->pbin)) {
+			if ((sv1->pbin == nullptr && sv2->pbin != nullptr) ||
+			    (sv1->pbin != nullptr && sv2->pbin == nullptr)) {
 				return FALSE;	
-			} else if (NULL != ((SVREID*)pvalue1)->pbin
-				&& NULL != ((SVREID*)pvalue2)->pbin) {
-				if (((SVREID*)pvalue1)->pbin->cb !=
-					((SVREID*)pvalue2)->pbin->cb) {
+			} else if (NULL != sv1->pbin && NULL != sv2->pbin) {
+				if (sv1->pbin->cb != sv2->pbin->cb)
 					return FALSE;	
-				}
-				if (0 == ((SVREID*)pvalue1)->pbin->cb) {
+				if (sv1->pbin->cb == 0)
 					return TRUE;
-				}
-				if (0 == memcmp(((SVREID*)pvalue1)->pbin->pb,
-					((SVREID*)pvalue2)->pbin->pb,
-					((SVREID*)pvalue1)->pbin->cb)) {
+				if (memcmp(sv1->pbin->pv, sv2->pbin->pv, sv1->pbin->cb) == 0)
 					return TRUE;	
-				}
 				return FALSE;
 			}
-			if (((SVREID*)pvalue1)->folder_id !=
-				((SVREID*)pvalue2)->folder_id) {
+			if (sv1->folder_id != sv2->folder_id)
 				return FALSE;
-			}
-			if (((SVREID*)pvalue1)->message_id !=
-				((SVREID*)pvalue2)->message_id) {
+			if (sv1->message_id != sv2->message_id)
 				return FALSE;
-			}
-			if (((SVREID*)pvalue1)->instance !=
-				((SVREID*)pvalue2)->instance) {
+			if (sv1->instance != sv2->instance)
 				return FALSE;
-			}
 			return TRUE;
 		case RELOP_NE:
-			if ((NULL == ((SVREID*)pvalue1)->pbin &&
-				NULL != ((SVREID*)pvalue2)->pbin) ||
-				(NULL != ((SVREID*)pvalue1)->pbin &&
-				NULL == ((SVREID*)pvalue2)->pbin)) {
+			if ((sv1->pbin == nullptr && sv2->pbin != nullptr) ||
+			    (sv1->pbin != nullptr && sv2->pbin == nullptr)) {
 				return TRUE;	
-			} else if (NULL != ((SVREID*)pvalue1)->pbin
-				&& NULL != ((SVREID*)pvalue2)->pbin) {
-				if (((SVREID*)pvalue1)->pbin->cb !=
-					((SVREID*)pvalue2)->pbin->cb) {
+			} else if (sv1->pbin != nullptr && sv2->pbin != nullptr) {
+				if (sv1->pbin->cb != sv2->pbin->cb)
 					return TRUE;	
-				}
-				if (0 == ((SVREID*)pvalue1)->pbin->cb) {
+				if (sv1->pbin->cb == 0)
 					return FALSE;
-				}
-				if (0 != memcmp(((SVREID*)pvalue1)->pbin->pb,
-					((SVREID*)pvalue2)->pbin->pb,
-					((SVREID*)pvalue1)->pbin->cb)) {
+				if (memcmp(sv1->pbin->pv, sv2->pbin->pv, sv1->pbin->cb) != 0)
 					return TRUE;	
-				}
 				return FALSE;
 			}
-			if (((SVREID*)pvalue1)->folder_id ==
-				((SVREID*)pvalue2)->folder_id) {
+			if (sv1->folder_id == sv2->folder_id)
 				return FALSE;
-			}
-			if (((SVREID*)pvalue1)->message_id ==
-				((SVREID*)pvalue2)->message_id) {
+			if (sv1->message_id == sv2->message_id)
 				return FALSE;
-			}
-			if (((SVREID*)pvalue1)->instance ==
-				((SVREID*)pvalue2)->instance) {
+			if (sv1->instance == sv2->instance)
 				return FALSE;
-			}
 			return TRUE;
 		}
 		return FALSE;
-	case PT_MV_SHORT:
+	}
+	case PT_MV_SHORT: {
+		SHORT_ARRAY *sa1 = pvalue1, *sa2 = pvalue2;
 		switch (relop) {
 		case RELOP_EQ:
-			if (((SHORT_ARRAY*)pvalue1)->count !=
-				((SHORT_ARRAY*)pvalue2)->count) {
+			if (sa1->count != sa2->count)
 				return FALSE;
-			}
-			if (0 != memcmp(((SHORT_ARRAY*)pvalue1)->ps,
-				((SHORT_ARRAY*)pvalue2)->ps, sizeof(uint16_t)
-				*((SHORT_ARRAY*)pvalue1)->count)) {
+			if (memcmp(sa1->ps, sa2->ps, sizeof(uint16_t) * sa1->count) != 0)
 				return FALSE;
-			}
 			return TRUE;
 		case RELOP_NE:
-			if (((SHORT_ARRAY*)pvalue1)->count !=
-				((SHORT_ARRAY*)pvalue2)->count) {
+			if (sa1->count != sa2->count)
 				return TRUE;
-			}
-			if (0 != memcmp(((SHORT_ARRAY*)pvalue1)->ps,
-				((SHORT_ARRAY*)pvalue2)->ps, sizeof(uint16_t)
-				*((SHORT_ARRAY*)pvalue1)->count)) {
+			if (memcmp(sa1->ps, sa2->ps, sizeof(uint16_t) * sa1->count) != 0)
 				return TRUE;
-			}
 			return FALSE;
 		}
 		return FALSE;
-	case PT_MV_LONG:
+	}
+	case PT_MV_LONG: {
+		LONG_ARRAY *la1 = pvalue1, *la2 = pvalue2;
 		switch (relop) {
 		case RELOP_EQ:
-			if (((LONG_ARRAY*)pvalue1)->count !=
-				((LONG_ARRAY*)pvalue2)->count) {
+			if (la1->count != la2->count)
 				return FALSE;
-			}
-			if (0 != memcmp(((LONG_ARRAY*)pvalue1)->pl,
-				((LONG_ARRAY*)pvalue2)->pl, sizeof(uint32_t)
-				*((LONG_ARRAY*)pvalue1)->count)) {
+			if (memcmp(la1->pl, la2->pl, sizeof(uint32_t) * la1->count) != 0)
 				return FALSE;
-			}
 			return TRUE;
 		case RELOP_NE:
-			if (((LONG_ARRAY*)pvalue1)->count !=
-				((LONG_ARRAY*)pvalue2)->count) {
+			if (la1->count != la2->count)
 				return TRUE;
-			}
-			if (0 != memcmp(((LONG_ARRAY*)pvalue1)->pl,
-				((LONG_ARRAY*)pvalue2)->pl, sizeof(uint32_t)
-				*((LONG_ARRAY*)pvalue1)->count)) {
+			if (memcmp(la1->pl, la2->pl, sizeof(uint32_t) * la1->count) != 0)
 				return TRUE;
-			}
 			return FALSE;
 		}
 		return FALSE;
-	case PT_MV_I8:
+	}
+	case PT_MV_I8: {
+		LONGLONG_ARRAY *la1 = pvalue1, *la2 = pvalue2;
 		switch (relop) {
 		case RELOP_EQ:
-			if (((LONGLONG_ARRAY*)pvalue1)->count !=
-				((LONGLONG_ARRAY*)pvalue2)->count) {
+			if (la1->count != la2->count)
 				return FALSE;
-			}
-			if (0 != memcmp(((LONGLONG_ARRAY*)pvalue1)->pll,
-				((LONGLONG_ARRAY*)pvalue2)->pll, sizeof(uint64_t)
-				*((LONGLONG_ARRAY*)pvalue1)->count)) {
+			if (memcmp(la1->pll, la2->pll, sizeof(uint64_t) * la1->count) != 0)
 				return FALSE;
-			}
 			return TRUE;
 		case RELOP_NE:
-			if (((LONGLONG_ARRAY*)pvalue1)->count !=
-				((LONGLONG_ARRAY*)pvalue2)->count) {
+			if (la1->count != la2->count)
 				return TRUE;
-			}
-			if (0 != memcmp(((LONGLONG_ARRAY*)pvalue1)->pll,
-				((LONGLONG_ARRAY*)pvalue2)->pll, sizeof(uint64_t)
-				*((LONGLONG_ARRAY*)pvalue1)->count)) {
+			if (memcmp(la1->pll, la2->pll, sizeof(uint64_t) * la1->count) != 0)
 				return TRUE;
-			}
 			return FALSE;
 		}
 		return FALSE;
+	}
 	case PT_MV_STRING8:
-	case PT_MV_UNICODE:
+	case PT_MV_UNICODE: {
+		STRING_ARRAY *sa1 = pvalue1, *sa2 = pvalue2;
 		switch (relop) {
 		case RELOP_EQ:
-			if (((STRING_ARRAY*)pvalue1)->count !=
-				((STRING_ARRAY*)pvalue2)->count) {
+			if (sa1->count != sa2->count)
 				return FALSE;
-			}
-			for (i=0; i<((STRING_ARRAY*)pvalue1)->count; i++) {
-				if (0 != strcasecmp(((STRING_ARRAY*)pvalue1)->ppstr[i],
-					((STRING_ARRAY*)pvalue2)->ppstr[i])) {
+			for (i = 0; i < sa1->count; ++i)
+				if (strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) != 0)
 					return FALSE;	
-				}
-			}
 			return TRUE;
 		case RELOP_NE:
-			if (((STRING_ARRAY*)pvalue1)->count !=
-				((STRING_ARRAY*)pvalue2)->count) {
+			if (sa1->count != sa2->count)
 				return TRUE;
-			}
-			for (i=0; i<((STRING_ARRAY*)pvalue1)->count; i++) {
-				if (0 != strcasecmp(((STRING_ARRAY*)pvalue1)->ppstr[i],
-					((STRING_ARRAY*)pvalue2)->ppstr[i])) {
+			for (i = 0; i < sa1->count; ++i)
+				if (strcasecmp(sa1->ppstr[i], sa2->ppstr[i]) != 0)
 					return TRUE;	
-				}
-			}
 			return FALSE;
 		}
 		return FALSE;
-	case PT_MV_BINARY:
+	}
+	case PT_MV_BINARY: {
+		BINARY_ARRAY *bv1 = pvalue1, *bv2 = pvalue2;
 		switch (relop) {
 		case RELOP_EQ:
-			if (((BINARY_ARRAY*)pvalue1)->count !=
-				((BINARY_ARRAY*)pvalue2)->count) {
+			if (bv1->count != bv2->count)
 				return FALSE;
-			}
-			for (i=0; i<((BINARY_ARRAY*)pvalue1)->count; i++) {
-				if (((BINARY_ARRAY*)pvalue1)->pbin[i].cb !=
-					((BINARY_ARRAY*)pvalue2)->pbin[i].cb) {
+			for (i = 0; i < bv1->count; ++i) {
+				if (bv1->pbin[i].cb != bv2->pbin[i].cb)
 					return FALSE;	
-				}
-				if (0 != memcmp(((BINARY_ARRAY*)pvalue1)->pbin[i].pb,
-					((BINARY_ARRAY*)pvalue2)->pbin[i].pb,
-					((BINARY_ARRAY*)pvalue1)->pbin[i].cb)) {
+				if (memcmp(bv1->pbin[i].pv, bv2->pbin[i].pv, bv1->pbin[i].cb) != 0)
 					return FALSE;
-				}
 			}
 			return TRUE;
 		case RELOP_NE:
-			if (((BINARY_ARRAY*)pvalue1)->count !=
-				((BINARY_ARRAY*)pvalue2)->count) {
+			if (bv1->count != bv2->count)
 				return TRUE;
-			}
-			for (i=0; i<((BINARY_ARRAY*)pvalue1)->count; i++) {
-				if (((BINARY_ARRAY*)pvalue1)->pbin[i].cb !=
-					((BINARY_ARRAY*)pvalue2)->pbin[i].cb) {
+			for (i = 0; i < bv1->count; ++i) {
+				if (bv1->pbin[i].cb != bv2->pbin[i].cb)
 					return TRUE;	
-				}
-				if (0 != memcmp(((BINARY_ARRAY*)pvalue1)->pbin[i].pb,
-					((BINARY_ARRAY*)pvalue2)->pbin[i].pb,
-					((BINARY_ARRAY*)pvalue1)->pbin[i].cb)) {
+				if (memcmp(bv1->pbin[i].pv, bv2->pbin[i].pv, bv1->pbin[i].cb) != 0)
 					return TRUE;
-				}
 			}
 			return FALSE;
 		}
 		return FALSE;
+	}
 	}
 	return FALSE;
 }
