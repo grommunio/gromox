@@ -6,14 +6,12 @@
 
 EID_ARRAY* eid_array_init()
 {
-	EID_ARRAY *parray;
-	
-	parray = malloc(sizeof(EID_ARRAY));
+	auto parray = static_cast<EID_ARRAY *>(malloc(sizeof(EID_ARRAY)));
 	if (NULL == parray) {
 		return NULL;
 	}
 	parray->count = 0;
-	parray->pids = malloc(100 * sizeof(uint64_t));
+	parray->pids = static_cast<uint64_t *>(malloc(100 * sizeof(uint64_t)));
 	if (NULL == parray->pids) {
 		free(parray);
 		return NULL;
@@ -37,7 +35,7 @@ BOOL eid_array_append(EID_ARRAY *parray, uint64_t id)
 	count = (parray->count / 100 + 1) * 100;
 	if (parray->count + 1 >= count) {
 		count += 100;
-		pids = realloc(parray->pids, count*sizeof(uint64_t));
+		pids = static_cast<uint64_t *>(realloc(parray->pids, count * sizeof(uint64_t)));
 		if (NULL == pids) {
 			return FALSE;
 		}
@@ -60,7 +58,7 @@ BOOL eid_array_batch_append(EID_ARRAY *parray,
 	count = (parray->count / 100 + 1) * 100;
 	if (parray->count + id_count >= count) {
 		for (; count<=parray->count+id_count; count+=100);
-		ptmp_ids = realloc(parray->pids, count*sizeof(uint64_t));
+		ptmp_ids = static_cast<uint64_t *>(realloc(parray->pids, count * sizeof(uint64_t)));
 		if (NULL == ptmp_ids) {
 			return FALSE;
 		}
@@ -74,15 +72,13 @@ BOOL eid_array_batch_append(EID_ARRAY *parray,
 EID_ARRAY* eid_array_dup(const EID_ARRAY *parray)
 {
 	uint32_t count;
-	EID_ARRAY *parray1;
-	
-	parray1 = malloc(sizeof(EID_ARRAY));
+	auto parray1 = static_cast<EID_ARRAY *>(malloc(sizeof(EID_ARRAY)));
 	if (NULL == parray1) {
 		return NULL;
 	}
 	parray1->count = parray->count;
 	count = (parray->count / 100 + 1) * 100;
-	parray1->pids = malloc(count * sizeof(uint64_t));
+	parray1->pids = static_cast<uint64_t *>(malloc(count * sizeof(uint64_t)));
 	if (NULL == parray1->pids) {
 		free(parray1);
 		return NULL;

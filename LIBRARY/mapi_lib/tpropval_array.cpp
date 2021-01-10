@@ -20,7 +20,7 @@ static BOOL tpropval_array_append(TPROPVAL_ARRAY *parray,
 	count = (parray->count/100 + 1) * 100;
 	if (parray->count + 1 >= count) {
 		count += 100;
-		ppropvals = realloc(parray->ppropval, count*sizeof(TAGGED_PROPVAL));
+		ppropvals = static_cast<TAGGED_PROPVAL *>(realloc(parray->ppropval, count * sizeof(TAGGED_PROPVAL)));
 		if (NULL == ppropvals) {
 			return FALSE;
 		}
@@ -89,7 +89,7 @@ void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
 BOOL tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
 {
 	parray->count = 0;
-	parray->ppropval = malloc(100*sizeof(TAGGED_PROPVAL));
+	parray->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(100 * sizeof(TAGGED_PROPVAL)));
 	if (NULL == parray->ppropval) {
 		return FALSE;
 	}
@@ -98,9 +98,7 @@ BOOL tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
 
 TPROPVAL_ARRAY* tpropval_array_init()
 {
-	TPROPVAL_ARRAY *parray;
-	
-	parray = malloc(sizeof(TPROPVAL_ARRAY));
+	auto parray = static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY)));
 	if (NULL == parray) {
 		return NULL;
 	}

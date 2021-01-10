@@ -7,7 +7,7 @@ BOOL proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
 {
 	
 	pproptags->count = 0;
-	pproptags->pproptag = malloc(sizeof(uint32_t) * 100);
+	pproptags->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * 100));
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
@@ -16,9 +16,7 @@ BOOL proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
 
 PROPTAG_ARRAY* proptag_array_init()
 {
-	PROPTAG_ARRAY* pproptags;
-	
-	pproptags = malloc(sizeof(PROPTAG_ARRAY));
+	auto pproptags = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY)));
 	if (NULL == pproptags) {
 		return NULL;
 	}
@@ -59,7 +57,7 @@ BOOL proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 	count = (pproptags->count / 100 + 1) * 100;
 	if (pproptags->count + 1 >= count) {
 		count += 100;
-		pproptag = realloc(pproptags->pproptag, sizeof(uint32_t)*count);
+		pproptag = static_cast<uint32_t *>(realloc(pproptags->pproptag, sizeof(uint32_t) * count));
 		if (NULL == pproptag) {
 			return FALSE;
 		}
@@ -105,7 +103,7 @@ BOOL proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 	
 	count = (pproptags->count / 100 + 1) * 100;
 	pproptags_dst->count = pproptags->count;
-	pproptags_dst->pproptag = malloc(sizeof(uint32_t) * count);
+	pproptags_dst->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * count));
 	if (NULL == pproptags_dst->pproptag) {
 		return FALSE;
 	}
@@ -116,9 +114,7 @@ BOOL proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 
 PROPTAG_ARRAY* proptag_array_dup(const PROPTAG_ARRAY *pproptags)
 {
-	PROPTAG_ARRAY* pproptags1;
-	
-	pproptags1 = malloc(sizeof(PROPTAG_ARRAY));
+	auto pproptags1 = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY)));
 	if (NULL == pproptags1) {
 		return NULL;
 	}
