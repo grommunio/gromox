@@ -552,48 +552,41 @@ BOOL container_object_load_user_table(
 			}
 			propval.proptag = PROP_TAG_SMTPADDRESS;
 			propval.pvalue = username;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ACCOUNT;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
 			propval.pvalue  = deconst("SMTP");
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_EMAILADDRESS;
 			propval.pvalue = username;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			if (NULL != pdisplayname) {
 				propval.proptag = PROP_TAG_DISPLAYNAME;
 				propval.pvalue = pdisplayname;
-				if (FALSE == tpropval_array_set_propval(
-					ppropvals, &propval)) {
+				if (!tpropval_array_set_propval(ppropvals, &propval)) {
 					tpropval_array_free(ppropvals);
 					return FALSE;
 				}
 				propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
-				if (FALSE == tpropval_array_set_propval(
-					ppropvals, &propval)) {
+				if (!tpropval_array_set_propval(ppropvals, &propval)) {
 					tpropval_array_free(ppropvals);
 					return FALSE;
 				}
 				propval.proptag = PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
-				if (FALSE == tpropval_array_set_propval(
-					ppropvals, &propval)) {
+				if (!tpropval_array_set_propval(ppropvals, &propval)) {
 					tpropval_array_free(ppropvals);
 					return FALSE;
 				}
@@ -603,8 +596,7 @@ BOOL container_object_load_user_table(
 				propval.pvalue = common_util_get_propvals(
 					tmp_set.pparray[i], propval.proptag);
 				if (NULL != propval.pvalue) {
-					if (FALSE == tpropval_array_set_propval(
-						ppropvals, &propval)) {
+					if (!tpropval_array_set_propval(ppropvals, &propval)) {
 						tpropval_array_free(ppropvals);
 						return FALSE;
 					}
@@ -612,8 +604,7 @@ BOOL container_object_load_user_table(
 			}
 			propval.proptag = PROP_TAG_PARENTENTRYID;
 			propval.pvalue = pparent_entryid;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
@@ -630,26 +621,22 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_RECORDKEY;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_TEMPLATEID;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_ORIGINALENTRYID;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
@@ -657,30 +644,26 @@ BOOL container_object_load_user_table(
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 16;
 			tmp_bin.pb = deconst(common_util_get_muidzcsab());
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_OBJECTTYPE;
 			propval.pvalue = &tmp_int;
 			tmp_int = OBJECT_USER;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_DISPLAYTYPE;
 			propval.pvalue = &tmp_int;
 			tmp_int = DISPLAY_TYPE_MAILUSER;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			propval.proptag = PROP_TAG_DISPLAYTYPEEX;
-			if (FALSE == tpropval_array_set_propval(
-				ppropvals, &propval)) {
+			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}

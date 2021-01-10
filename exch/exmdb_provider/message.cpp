@@ -3333,43 +3333,43 @@ static BOOL message_make_deferred_error_message(
 	nt_time = rop_util_current_nttime();
 	propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_CREATIONTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Error");
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_RULEACTIONTYPE;
 	propval.pvalue = &action_type;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_RULEACTIONNUMBER;
 	propval.pvalue = &block_index;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3380,7 +3380,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3391,20 +3391,20 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_RULEPROVIDER;
 	propval.pvalue = (void*)provider;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	tmp_eid = rop_util_make_eid_ex(1, rule_id);
 	propval.proptag = PROP_TAG_RULEID;
 	propval.pvalue = &tmp_eid;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -4040,38 +4040,38 @@ static BOOL message_make_deferred_action_message(
 	nt_time = rop_util_current_nttime();
 	propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_CREATIONTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Action");
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_DAMBACKPATCHED;
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 0;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -4082,7 +4082,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -4092,14 +4092,14 @@ static BOOL message_make_deferred_action_message(
 	svreid.folder_id = rop_util_make_eid_ex(1, folder_id);
 	svreid.message_id = rop_util_make_eid_ex(1, message_id);
 	svreid.instance = 0;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_RULEFOLDERFID;
 	propval.pvalue = &tmp_eid;
 	tmp_eid = rop_util_make_eid_ex(1, folder_id);
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -4110,13 +4110,13 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	propval.proptag = PROP_TAG_RULEPROVIDER;
 	propval.pvalue = (void*)provider;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -4160,7 +4160,7 @@ static BOOL message_make_deferred_action_message(
 	tmp_bin.cb = ext_push.offset;
 	propval.proptag = PROP_TAG_CLIENTACTIONS;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		ext_buffer_push_free(&ext_push);
 		message_content_free(pmsg);
 		return FALSE;
@@ -4170,7 +4170,7 @@ static BOOL message_make_deferred_action_message(
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
 	propval.proptag = PROP_TAG_RULEIDS;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}

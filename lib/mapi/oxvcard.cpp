@@ -219,10 +219,8 @@ MESSAGE_CONTENT* oxvcard_import(
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	propval.pvalue  = deconst("IPM.Contact");
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		goto IMPORT_FAILURE;
-	}
 	plist = (DOUBLE_LIST*)pvcard;
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
@@ -243,22 +241,16 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_DISPLAYNAME;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 			propval.proptag = PROP_TAG_NORMALIZEDSUBJECT;
 			propval.pvalue = tmp_buff;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 			propval.proptag = PROP_TAG_CONVERSATIONTOPIC;
 			propval.pvalue = tmp_buff;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "N")) {
 			count = 0;
 			for (pnode1=double_list_get_head(&pvline->value_list);
@@ -277,10 +269,8 @@ MESSAGE_CONTENT* oxvcard_import(
 					if (NULL != pnode2->pdata) {
 						propval.proptag = g_n_proptags[count];
 						propval.pvalue = pnode2->pdata;
-						if (FALSE == tpropval_array_set_propval(
-							&pmsg->proplist, &propval)) {
+						if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 							goto IMPORT_FAILURE;
-						}
 					}
 				}
 				count ++;
@@ -290,10 +280,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != pstring) {
 				propval.proptag = PROP_TAG_NICKNAME;
 				propval.pvalue = (void*)pstring;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
-				}
 			}
 		} else if (0 == strcasecmp(pvline->name, "PHOTO")) {
 			if (NULL != pmsg->children.pattachments) {
@@ -361,30 +349,22 @@ MESSAGE_CONTENT* oxvcard_import(
 			tmp_bin.cb = decode_len;
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
 			propval.pvalue = &tmp_bin;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 			propval.proptag = PROP_TAG_ATTACHEXTENSION;
 			propval.pvalue = (void*)photo_type;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 			sprintf(tmp_buff, "ContactPhoto.%s", photo_type);
 			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
 			propval.pvalue = tmp_buff;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 			propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 1;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "BDAY")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
@@ -393,10 +373,8 @@ MESSAGE_CONTENT* oxvcard_import(
 							mktime(&tmp_tm) - timezone);
 				propval.proptag = PROP_TAG_BIRTHDAY;
 				propval.pvalue = &tmp_int64;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
-				}
 			}
 		} else if (0 == strcasecmp(pvline->name, "ADR")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -435,10 +413,8 @@ MESSAGE_CONTENT* oxvcard_import(
 						propval.proptag = g_otheraddr_proptags[count];
 					}
 					propval.pvalue = pnode2->pdata;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsg->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 						goto IMPORT_FAILURE;
-					}
 				}
 				count ++;
 			}
@@ -509,10 +485,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			} else {
 				continue;
 			}
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "EMAIL")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -522,10 +496,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (mail_count > 2)
 				continue;
 			propval.proptag = g_email_proptags[mail_count++];
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "TITLE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -533,10 +505,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_TITLE;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "ROLE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -544,10 +514,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_PROFESSION;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "ORG")) {
 			pnode1 = double_list_get_head(&pvline->value_list);
 			if (NULL == pnode1) {
@@ -559,10 +527,8 @@ MESSAGE_CONTENT* oxvcard_import(
 				if (NULL != pnode2 && NULL != pnode2->pdata) {
 					propval.proptag = PROP_TAG_COMPANYNAME;
 					propval.pvalue = pnode2->pdata;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsg->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 						goto IMPORT_FAILURE;
-					}
 				}
 			}
 			pnode1 = double_list_get_after(&pvline->value_list, pnode1);
@@ -572,10 +538,8 @@ MESSAGE_CONTENT* oxvcard_import(
 				if (NULL != pnode2 && NULL != pnode2->pdata) {
 					propval.proptag = PROP_TAG_DEPARTMENTNAME;
 					propval.pvalue = pnode2->pdata;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsg->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 						goto IMPORT_FAILURE;
-					}
 				}
 			}
 		} else if (0 == strcasecmp(pvline->name, "CATEGORIS")) {
@@ -598,10 +562,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (0 != strings_array.count && strings_array.count < 128) {
 				propval.proptag = g_categories_proptag;
 				propval.pvalue = &strings_array;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
-				}
 			}
 		} else if (0 == strcasecmp(pvline->name, "NOTE")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -610,10 +572,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_BODY;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "REV")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -625,10 +585,8 @@ MESSAGE_CONTENT* oxvcard_import(
 						mktime(&tmp_tm) - timezone);
 				propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
 				propval.pvalue = &tmp_int64;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
-				}
 			}
 		} else if (0 == strcasecmp(pvline->name, "URL")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -657,10 +615,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			} else {
 				continue;
 			}
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "CLASS")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (0 == strcasecmp(pstring, "PRIVATE")) {
@@ -672,10 +628,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_SENSITIVITY;
 			propval.pvalue = &tmp_int32;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "KEY")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (NULL == pnode1) {
@@ -704,10 +658,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			bin_array.pbin = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-OL-DESIGN")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -717,10 +669,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = strlen(pstring);
 			tmp_bin.pv = deconst(pstring);
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-CHILD")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -742,10 +692,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = g_ufld_proptags[ufld_count];
 			ufld_count ++;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-IMADDRESS") ||
 			0 == strcasecmp(pvline->name, "X-MS-RM-IMACCOUNT")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -754,10 +702,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = g_im_proptag;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-TEL")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (NULL == pnode1) {
@@ -786,10 +732,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			} else {
 				goto IMPORT_FAILURE;
 			}
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ANNIVERSARY")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
@@ -798,10 +742,8 @@ MESSAGE_CONTENT* oxvcard_import(
 							mktime(&tmp_tm) - timezone);
 				propval.proptag = PROP_TAG_WEDDINGANNIVERSARY;
 				propval.pvalue = &tmp_int64;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
-				}
 			}	
 		} else if (0 == strcasecmp(pvline->name, "X-MS-SPOUSE")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -819,10 +761,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_SPOUSENAME;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-MANAGER")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (NULL == pnode1) {
@@ -839,10 +779,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_MANAGERNAME;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ASSISTANT")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
 			if (NULL == pnode1) {
@@ -859,10 +797,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = PROP_TAG_ASSISTANT;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "FBURL")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -870,10 +806,8 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			propval.proptag = g_fbl_proptag;
 			propval.pvalue = (void*)pstring;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "X-MS-INTERESTS")) {
 			pnode1 = double_list_get_head(&pvline->value_list);
 			if (NULL == pnode1) {
@@ -894,20 +828,16 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (0 != strings_array.count && strings_array.count < 128) {
 				propval.proptag = PROP_TAG_HOBBIES;
 				propval.pvalue = &strings_array;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 					goto IMPORT_FAILURE;
-				}
 			}
 		}
 	}
 	if (0 != child_strings.count) {
 		propval.proptag = PROP_TAG_CHILDRENSNAMES;
 		propval.pvalue = &child_strings;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			goto IMPORT_FAILURE;
-		}
 	}
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;

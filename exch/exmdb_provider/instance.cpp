@@ -119,8 +119,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				propval.proptag = ID_TAG_BODY_STRING8;
 			}
 			propval.pvalue = &cid;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsgctnt->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 				message_content_free(pmsgctnt);
 				return FALSE;	
 			}
@@ -147,8 +146,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				propval.proptag = ID_TAG_RTFCOMPRESSED;
 			}
 			propval.pvalue = &cid;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsgctnt->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -178,8 +176,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				propval.proptag = ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
 			}
 			propval.pvalue = &cid;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsgctnt->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 				message_content_free(pmsgctnt);
 				return FALSE;	
 			}
@@ -190,8 +187,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				MESSAGE_PROPERTIES_TABLE, message_id,
 				0, psqlite, propval.proptag,
 				&propval.pvalue) || NULL == propval.pvalue
-				|| FALSE == tpropval_array_set_propval(
-				&pmsgctnt->proplist, &propval)) {
+				||
+			    !tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 				message_content_free(pmsgctnt);
 				return FALSE;
 			}
@@ -236,8 +233,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		propval.proptag = PROP_TAG_ROWID;
 		propval.pvalue = &row_id;
-		if (FALSE == tpropval_array_set_propval(
-			pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
 			message_content_free(pmsgctnt);
@@ -252,8 +248,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 				RECIPIENT_PROPERTIES_TABLE, rcpt_id,
 				0, psqlite, propval.proptag,
 				&propval.pvalue) || NULL == propval.pvalue
-				|| FALSE == tpropval_array_set_propval(
-				pproplist, &propval)) {
+				||
+			    !tpropval_array_set_propval(pproplist, &propval)) {
 				sqlite3_finalize(pstmt);
 				sqlite3_finalize(pstmt1);
 				message_content_free(pmsgctnt);
@@ -301,8 +297,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		propval.proptag = PROP_TAG_ATTACHNUMBER;
 		propval.pvalue = plast_id;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
 			message_content_free(pmsgctnt);
@@ -347,8 +342,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					propval.proptag = ID_TAG_ATTACHDATAOBJECT;
 				}
 				propval.pvalue = &cid;
-				if (FALSE == tpropval_array_set_propval(
-					&pattachment->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 					sqlite3_finalize(pstmt);
 					sqlite3_finalize(pstmt1);
 					message_content_free(pmsgctnt);
@@ -361,8 +355,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 					ATTACHMENT_PROPERTIES_TABLE, attachment_id,
 					0, psqlite, propval.proptag,
 					&propval.pvalue) || NULL == propval.pvalue
-					|| FALSE == tpropval_array_set_propval(
-					&pattachment->proplist, &propval)) {
+					||
+				    !tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 					sqlite3_finalize(pstmt);
 					sqlite3_finalize(pstmt1);
 					message_content_free(pmsgctnt);
@@ -454,9 +448,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		}
 		propval.proptag = PROP_TAG_MID;
 		propval.pvalue = &message_id;
-		if (FALSE == tpropval_array_set_propval(
-			&((MESSAGE_CONTENT*)pinstance->pcontent)->proplist,
-			&propval)) {
+		if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval)) {
 			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
 			if (NULL != pinstance->username) {
 				free(pinstance->username);
@@ -607,9 +599,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 		}
 		propval.proptag = PROP_TAG_MID;
 		propval.pvalue = &message_id;
-		if (FALSE == tpropval_array_set_propval(
-			&((MESSAGE_CONTENT*)pinstance->pcontent)->proplist,
-			&propval)) {
+		if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval)) {
 			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
 			if (NULL != pinstance->username) {
 				free(pinstance->username);
@@ -829,8 +819,7 @@ BOOL exmdb_server_clear_message_instance(
 	}
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = pvalue;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		db_engine_put_db(pdb);
 		return FALSE;
@@ -1215,10 +1204,8 @@ static BOOL instance_identify_rcpts(TARRAY_SET *prcpts)
 	for (i=0; i<prcpts->count; i++) {
 		propval.proptag = PROP_TAG_ROWID;
 		propval.pvalue = &i;
-		if (FALSE == tpropval_array_set_propval(
-			prcpts->pparray[i], &propval)) {
+		if (!tpropval_array_set_propval(prcpts->pparray[i], &propval))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -1231,11 +1218,8 @@ static BOOL instance_identify_attachments(ATTACHMENT_LIST *pattachments)
 	for (i=0; i<pattachments->count; i++) {
 		propval.proptag = PROP_TAG_ATTACHNUMBER;
 		propval.pvalue = &i;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachments->pplist[i]->proplist,
-			&propval)) {
+		if (!tpropval_array_set_propval(&pattachments->pplist[i]->proplist, &propval))
 			return FALSE;	
-		}
 		if (NULL != pattachments->pplist[i]->pembedded) {
 			if (FALSE == instance_identify_message(
 				pattachments->pplist[i]->pembedded)) {
@@ -1395,8 +1379,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 				pproplist, ID_TAG_RTFCOMPRESSED);
 			break;
 		}
-		if (FALSE == tpropval_array_set_propval(
-			pproplist, pmsgctnt->proplist.ppropval + i)) {
+		if (!tpropval_array_set_propval(pproplist, pmsgctnt->proplist.ppropval + i)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -1621,8 +1604,7 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	pinstance1->last_id ++;
 	propval.proptag = PROP_TAG_ATTACHNUMBER;
 	propval.pvalue = pattachment_num;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		attachment_content_free(pattachment);
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
@@ -1747,8 +1729,7 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 				pproplist, ID_TAG_ATTACHDATAOBJECT);
 			break;
 		}
-		if (FALSE == tpropval_array_set_propval(
-			pproplist, pattctnt->proplist.ppropval + i)) {
+		if (!tpropval_array_set_propval(pproplist, pattctnt->proplist.ppropval + i)) {
 			db_engine_put_db(pdb);
 			return FALSE;
 		}
@@ -3134,8 +3115,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.proptag = PROP_TAG_READ;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsgctnt->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 						db_engine_put_db(pdb);
 						return FALSE;
 					}
@@ -3144,8 +3124,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.proptag = PROP_TAG_ASSOCIATED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsgctnt->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 						db_engine_put_db(pdb);
 						return FALSE;
 					}	
@@ -3154,8 +3133,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsgctnt->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 						db_engine_put_db(pdb);
 						return FALSE;
 					}	
@@ -3164,8 +3142,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsgctnt->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 						db_engine_put_db(pdb);
 						return FALSE;
 					}	
@@ -3200,8 +3177,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 						return FALSE;
 					}
 				}
-				if (FALSE == tpropval_array_set_propval(
-					&pmsgctnt->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 					db_engine_put_db(pdb);
 					return FALSE;
 				}
@@ -3264,8 +3240,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				propval = pproperties->ppropval[i];
 				break;
 			}
-			if (FALSE == tpropval_array_set_propval(
-				&pmsgctnt->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
@@ -3290,8 +3265,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				}
 				propval.proptag = PROP_TAG_NATIVEBODY;
 				propval.pvalue = &body_type;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsgctnt->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 					db_engine_put_db(pdb);
 					return FALSE;
 				}
@@ -3362,8 +3336,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				propval = pproperties->ppropval[i];
 				break;
 			}
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				db_engine_put_db(pdb);
 				return FALSE;
 			}

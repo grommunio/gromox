@@ -521,25 +521,21 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		} else {
 			propval.pvalue = utf8_field;
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
 		propval.pvalue = utf8_field;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	} else {
 		propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
 		propval.pvalue = display_name;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8;
 		propval.pvalue = display_name;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	if (paddr->local_part[0] != '\0' && paddr->domain[0] != '\0' &&
 	    oxcmail_check_ascii(paddr->local_part) &&
@@ -553,38 +549,32 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			HX_strupper(tmp_buff);
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
 			propval.pvalue  = deconst("SMTP");
-			if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_EMAILADDRESS;
 			propval.pvalue = username;
-			if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
-			}
 		} else {
 			tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
 			propval.pvalue  = deconst("EX");
-			if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_EMAILADDRESS;
 			propval.pvalue = essdn;
-			if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
-			}
 		}
 		propval.proptag = PROP_TAG_SMTPADDRESS;
 		propval.pvalue = username;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		tmp_bin.pc = tmp_buff;
 		propval.proptag = PROP_TAG_SEARCHKEY;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_ENTRYID;
 		tmp_bin.cb = 0;
 		tmp_bin.pc = tmp_buff;
@@ -599,19 +589,16 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 				return FALSE;
 			}
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_RECIPIENTENTRYID;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_RECORDKEY;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_OBJECTTYPE;
 		propval.pvalue = &tmp_int32;
 		if (ADDRESS_TYPE_MLIST == address_type) {
@@ -619,9 +606,8 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		} else {
 			tmp_int32 = OBJECT_USER;
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_DISPLAYTYPE;
 		propval.pvalue = &tmp_int32;
 		switch (address_type) {
@@ -638,31 +624,27 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			tmp_int32 = DISPLAY_TYPE_MAILUSER;
 			break;
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_RECIPIENTFLAGS;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 1;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	tmp_byte = 1;
 	propval.proptag = PROP_TAG_RESPONSIBILITY;
 	propval.pvalue = &tmp_byte;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	tmp_int32 = 1;
 	propval.proptag = PROP_TAG_RECIPIENTFLAGS;
 	propval.pvalue = &tmp_int32;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_RECIPIENTTYPE;
 	propval.pvalue = &rcpt_type;
-	return tpropval_array_set_propval(pproplist, &propval);
+	return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_addresses(const char *charset,
@@ -732,17 +714,15 @@ static BOOL oxcmail_parse_address(const char *charset,
 			propval.proptag = CHANGE_PROP_TYPE(proptag1, PT_STRING8);
 			propval.pvalue = paddr->display_name;
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	} else if ('\0' != paddr->local_part[0] && '\0' != paddr->domain[0]) {
 		sprintf(username, "%s@%s", paddr->local_part, paddr->domain);
 		propval.proptag = oxcmail_check_ascii(username) ? proptag1 :
 		                  CHANGE_PROP_TYPE(proptag1, PT_STRING8);
 		propval.pvalue = username;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	if (paddr->local_part[0] != '\0' && paddr->domain[0] != '\0' &&
 	    oxcmail_check_ascii(paddr->local_part) &&
@@ -750,19 +730,16 @@ static BOOL oxcmail_parse_address(const char *charset,
 		sprintf(username, "%s@%s", paddr->local_part, paddr->domain);
 		propval.proptag = proptag2;
 		propval.pvalue  = deconst("SMTP");
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = proptag3;
 		propval.pvalue = username;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = proptag4;
 		propval.pvalue = username;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		if (FALSE == oxcmail_username_to_essdn(username, essdn, NULL)) {
 			essdn[0] = '\0';
 			tmp_bin.cb = sprintf(tmp_buff, "SMTP:%s", username) + 1;
@@ -773,9 +750,8 @@ static BOOL oxcmail_parse_address(const char *charset,
 		tmp_bin.pc = tmp_buff;
 		propval.proptag = proptag5;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = proptag6;
 		tmp_bin.cb = 0;
 		tmp_bin.pc = tmp_buff;
@@ -790,9 +766,8 @@ static BOOL oxcmail_parse_address(const char *charset,
 				return FALSE;
 			}
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -936,16 +911,14 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 		}
 		propval.proptag = PROP_TAG_REPLYRECIPIENTENTRIES;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	if (str_offset > 0) {
 		propval.proptag = PROP_TAG_REPLYRECIPIENTNAMES;
 		propval.pvalue = str_buff;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -984,9 +957,8 @@ static BOOL oxcmail_parse_subject(const char *charset,
 		utf16le_to_utf8(tmp_buff, subject_len, tmp_buff1, sizeof(tmp_buff1));
 		propval.proptag = PROP_TAG_SUBJECT;
 		propval.pvalue = tmp_buff1;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		ptoken = static_cast<char *>(memmem(tmp_buff, subject_len, seperator, 4));
 		if (NULL == ptoken) {
 			return TRUE;
@@ -1011,19 +983,18 @@ static BOOL oxcmail_parse_subject(const char *charset,
 			prefix_buff, sizeof(prefix_buff));
 		propval.proptag = PROP_TAG_SUBJECTPREFIX;
 		propval.pvalue = prefix_buff;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		utf16le_to_utf8(tmp_buff + tmp_len,
 			subject_len - tmp_len, tmp_buff1,
 			sizeof(tmp_buff1));
 		propval.proptag = PROP_TAG_NORMALIZEDSUBJECT;
 		propval.pvalue = tmp_buff1;
-		return tpropval_array_set_propval(pproplist, &propval);
+		return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 	} else {
 		propval.proptag = PROP_TAG_SUBJECT_STRING8;
 		propval.pvalue = field;
-		return tpropval_array_set_propval(pproplist, &propval);
+		return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 	}
 }
 
@@ -1037,11 +1008,11 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 		charset, field, utf8_field)) {
 		propval.proptag = PROP_TAG_CONVERSATIONTOPIC;
 		propval.pvalue = utf8_field;
-		return tpropval_array_set_propval(pproplist, &propval);
+		return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 	} else {
 		propval.proptag = PROP_TAG_CONVERSATIONTOPIC_STRING8;
 		propval.pvalue = field;
-		return tpropval_array_set_propval(pproplist, &propval);
+		return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 	}
 }
 
@@ -1071,7 +1042,7 @@ static BOOL oxcmail_parse_thread_index(
 	tmp_bin.cb = len;
 	propval.proptag = PROP_TAG_CONVERSATIONINDEX;
 	propval.pvalue = &tmp_bin;
-	return tpropval_array_set_propval(pproplist, &propval);
+	return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_keywords(const char *charset,
@@ -1118,7 +1089,7 @@ static BOOL oxcmail_parse_keywords(const char *charset,
 		return TRUE;
 	}
 	propval.pvalue = &strings;
-	return tpropval_array_set_propval(pproplist, &propval);
+	return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_response_suppress(
@@ -1136,7 +1107,7 @@ static BOOL oxcmail_parse_response_suppress(
 		tmp_int32 = 0xFFFFFFFF;
 		propval.proptag = PROP_TAG_AUTORESPONSESUPPRESS;
 		propval.pvalue = &tmp_int32;
-		return tpropval_array_set_propval(pproplist, &propval);
+		return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 	}
 	len = strlen(field);
 	field[len] = ';';
@@ -1174,7 +1145,7 @@ static BOOL oxcmail_parse_response_suppress(
 	}
 	propval.proptag = PROP_TAG_AUTORESPONSESUPPRESS;
 	propval.pvalue = &tmp_int32;
-	return tpropval_array_set_propval(pproplist, &propval);
+	return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_content_class(
@@ -1270,10 +1241,8 @@ static BOOL oxcmail_parse_content_class(
 				}
 				propval1.proptag = PROP_TAG(pick_strtype(ptoken), *plast_propid);
 				propval1.pvalue = ptoken;
-				if (FALSE == tpropval_array_set_propval(
-					pproplist, &propval1)) {
+				if (!tpropval_array_set_propval(pproplist, &propval1))
 					return FALSE;
-				}
 				(*plast_propid) ++;
 			}
 		}
@@ -1289,14 +1258,12 @@ static BOOL oxcmail_parse_content_class(
 		}
 		propval.proptag = PROP_TAG(pick_strtype(field), *plast_propid);
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		(*plast_propid) ++;
 		return TRUE;
 	}
-	return tpropval_array_set_propval(pproplist, &propval);
+	return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_message_flag(
@@ -1325,17 +1292,15 @@ static BOOL oxcmail_parse_message_flag(
 	}
 	propval.proptag = PROP_TAG(pick_strtype(field), *plast_propid);
 	propval.pvalue = field;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	
 	propval.proptag = PROP_TAG_FLAGSTATUS;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = FLAG_STATUS_FOLLOWUPFLAGGED;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	
 	/* PidLidToDoTitle */
 	pvalue = tpropval_array_get_propval(pproplist, PROP_TAG_SUBJECT);
@@ -1359,9 +1324,8 @@ static BOOL oxcmail_parse_message_flag(
 			propval.proptag = PROP_TAG(PT_STRING8, *plast_propid);
 		}
 		propval.pvalue = pvalue;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		(*plast_propid) ++;
 	}
 	
@@ -1375,9 +1339,8 @@ static BOOL oxcmail_parse_message_flag(
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	
 	/* PidLidTaskComplete */
@@ -1390,9 +1353,8 @@ static BOOL oxcmail_parse_message_flag(
 	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 0;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	
 	/* PidLidPercentComplete */
@@ -1405,15 +1367,14 @@ static BOOL oxcmail_parse_message_flag(
 	propval.proptag = PROP_TAG(PT_DOUBLE, *plast_propid);
 	propval.pvalue = &tmp_double;
 	tmp_double = 0.0;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	
 	propval.proptag = PROP_TAG_TODOITEMFLAGS;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = TODO_ITEM_RECIPIENTFLAGGED;
-	return tpropval_array_set_propval(pproplist, &propval);
+	return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_classified(char *field,
@@ -1436,9 +1397,8 @@ static BOOL oxcmail_parse_classified(char *field,
 		propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		(*plast_propid) ++;
 	}
 	return TRUE;
@@ -1468,9 +1428,8 @@ static BOOL oxcmail_parse_classkeep(char *field,
 			tmp_byte = 0;
 		}
 		propval.pvalue = &tmp_byte;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		(*plast_propid) ++;
 	}
 	return TRUE;
@@ -1493,9 +1452,8 @@ static BOOL oxcmail_parse_classification(char *field,
 	}
 	propval.proptag = PROP_TAG(pick_strtype(field), *plast_propid);
 	propval.pvalue = field;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1517,9 +1475,8 @@ static BOOL oxcmail_parse_classdesc(char *field,
 	}
 	propval.proptag = PROP_TAG(pick_strtype(field), *plast_propid);
 	propval.pvalue = field;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1541,9 +1498,8 @@ static BOOL oxcmail_parse_classid(char *field,
 	}
 	propval.proptag = PROP_TAG(pick_strtype(field), *plast_propid);
 	propval.pvalue = field;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1618,25 +1574,19 @@ static BOOL oxcmail_enum_mail_head(
 		propval.proptag = PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Disposition-Notification-To")) {
 		propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag =  PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 		parse_mime_addr(&email_addr, field);
 		if (FALSE == oxcmail_parse_address(penum_param->charset,
 			&email_addr, PROP_TAG_READRECEIPTNAME,
@@ -1653,29 +1603,23 @@ static BOOL oxcmail_enum_mail_head(
 		                  PROP_TAG_INTERNETMESSAGEID :
 		                  PROP_TAG_INTERNETMESSAGEID_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Date")) {
 		if (TRUE == parse_rfc822_timestamp(field, &tmp_time)) {
 			propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
 			propval.pvalue = &tmp_int64;
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-			if (FALSE == tpropval_array_set_propval(
-				&penum_param->pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			}
 		}
 	} else if (0 == strcasecmp(tag, "References")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_INTERNETREFERENCES :
 		                  PROP_TAG_INTERNETREFERENCES_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Sensitivity")) {
 		propval.proptag = PROP_TAG_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
@@ -1692,10 +1636,8 @@ static BOOL oxcmail_enum_mail_head(
 		}
 		propval.proptag = PROP_TAG_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Importance") ||
 		0 == strcasecmp(tag, "X-MSMail-Priority")) {
 		if (0 == strcasecmp(field, "Low")) {
@@ -1709,10 +1651,8 @@ static BOOL oxcmail_enum_mail_head(
 		}
 		propval.proptag = PROP_TAG_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Priority")) {
 		if (0 == strcasecmp(field, "Non-Urgent")) {
 			tmp_int32 = 0;
@@ -1725,10 +1665,8 @@ static BOOL oxcmail_enum_mail_head(
 		}
 		propval.proptag = PROP_TAG_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-Priority")) {
 		switch (field[0]) {
 		case '5':
@@ -1748,10 +1686,8 @@ static BOOL oxcmail_enum_mail_head(
 		}
 		propval.proptag = PROP_TAG_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Subject")) {
 		if (FALSE == oxcmail_parse_subject(
 			penum_param->charset, field,
@@ -1763,10 +1699,8 @@ static BOOL oxcmail_enum_mail_head(
 			propval.proptag = PROP_TAG_SUBJECTPREFIX;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = '\0';
-			if (FALSE == tpropval_array_set_propval(
-				&penum_param->pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			}
 			pvalue = tpropval_array_get_propval(
 				&penum_param->pmsg->proplist, PROP_TAG_SUBJECT);
 			if (NULL == pvalue) {
@@ -1776,18 +1710,14 @@ static BOOL oxcmail_enum_mail_head(
 				if (NULL != pvalue) {
 					propval.proptag = PROP_TAG_NORMALIZEDSUBJECT_STRING8;
 					propval.pvalue = pvalue;
-					if (FALSE == tpropval_array_set_propval(
-						&penum_param->pmsg->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 						return FALSE;
-					}
 				}
 			} else {
 				propval.proptag = PROP_TAG_NORMALIZEDSUBJECT;
 				propval.pvalue = pvalue;
-				if (FALSE == tpropval_array_set_propval(
-					&penum_param->pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 					return FALSE;
-				}
 			}
 		}
 	} else if (0 == strcasecmp(tag, "Thread-Topic")) {
@@ -1806,29 +1736,23 @@ static BOOL oxcmail_enum_mail_head(
 		                  PROP_TAG_INREPLYTOID :
 		                  PROP_TAG_INREPLYTOID_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Reply-By")) {
 		if (TRUE == parse_rfc822_timestamp(field, &tmp_time)) {
 			propval.proptag = PROP_TAG_REPLYTIME;
 			propval.pvalue = &tmp_int64;
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-			if (FALSE == tpropval_array_set_propval(
-				&penum_param->pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			}
 		}
 	} else if (0 == strcasecmp(tag, "Content-Language")) {
 		tmp_int32 = oxcmail_ltag_to_lcid(field);
 		if (0 != tmp_int32) {
 			propval.proptag = PROP_TAG_MESSAGELOCALEID;
 			propval.pvalue = &tmp_int32;
-			if (FALSE == tpropval_array_set_propval(
-				&penum_param->pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			}
 		}
 	} else if (0 == strcasecmp(tag, "Accept-Language") ||
 		0 == strcasecmp(tag, "X-Accept-Language")) {
@@ -1842,10 +1766,8 @@ static BOOL oxcmail_enum_mail_head(
 		propval.proptag = PROP_TAG(pick_strtype(field), penum_param->last_propid);
 		propval.pvalue = field;
 		penum_param->last_propid ++;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Keywords")) {
 		/* PidNameKeywords */
 		rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
@@ -1868,10 +1790,8 @@ static BOOL oxcmail_enum_mail_head(
 			propval.proptag = PROP_TAG_EXPIRYTIME;
 			propval.pvalue = &tmp_int64;
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-			if (FALSE == tpropval_array_set_propval(
-				&penum_param->pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			}
 		}
 	} else if (0 == strcasecmp(tag, "X-Auto-Response-Suppress")) {
 		if (FALSE == oxcmail_parse_response_suppress(
@@ -1896,48 +1816,38 @@ static BOOL oxcmail_enum_mail_head(
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_LISTHELP : PROP_TAG_LISTHELP_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "List-Subscribe") ||
 		0 == strcasecmp(tag, "X-List-Subscribe")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_LISTSUBSCRIBE :
 		                  PROP_TAG_LISTSUBSCRIBE_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "List-Unsubscribe") ||
 		0 == strcasecmp(tag, "X-List-Unsubscribe")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_LISTUNSUBSCRIBE :
 		                  PROP_TAG_LISTUNSUBSCRIBE_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-Payload-Class")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_ATTACHPAYLOADCLASS :
 		                  PROP_TAG_ATTACHPAYLOADCLASS_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-PRD")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_PURPORTEDSENDERDOMAIN :
 		                  PROP_TAG_PURPORTEDSENDERDOMAIN_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag,
 		"X-MS-Exchange-Organization-SenderIdResult")) {
 		if (0 == strcasecmp(field, "Neutral")) {
@@ -1960,19 +1870,15 @@ static BOOL oxcmail_enum_mail_head(
 		if (0 != tmp_int32) {
 			propval.proptag = PROP_TAG_SENDERIDSTATUS;
 			propval.pvalue = &tmp_int32;
-			if (FALSE == tpropval_array_set_propval(
-				&penum_param->pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			}
 		}
 	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-SCL")) {
 		tmp_int32 = atoi(field);
 		propval.proptag = PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL;
 		propval.pvalue = &tmp_int32;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-Microsoft-Classified")) {
 		if (0 == strcasecmp(field, "true") ||
 			0 == strcasecmp(field, "false")) {
@@ -2019,52 +1925,40 @@ static BOOL oxcmail_enum_mail_head(
 		                  PROP_TAG_SENDERTELEPHONENUMBER :
 		                  PROP_TAG_SENDERTELEPHONENUMBER_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-VoiceMessageSenderName")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_VOICEMESSAGESENDERNAME :
 		                  PROP_TAG_VOICEMESSAGESENDERNAME_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-AttachmentOrder")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_VOICEMESSAGEATTACHMENTORDER :
 		                  PROP_TAG_VOICEMESSAGEATTACHMENTORDER_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-CallID")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_CALLID : PROP_TAG_CALLID_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-VoiceMessageDuration")) {
 		propval.proptag = PROP_TAG_VOICEMESSAGEDURATION;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = atoi(field);
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-FaxNumverOfPages")) {
 		propval.proptag = PROP_TAG_FAXNUMBEROFPAGES;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = atoi(field);
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Content-ID")) {
 		tmp_int32 = strlen(field);
 		if (tmp_int32 > 0) {
@@ -2080,10 +1974,8 @@ static BOOL oxcmail_enum_mail_head(
 			                  PROP_TAG_BODYCONTENTID :
 			                  PROP_TAG_BODYCONTENTID_STRING8;
 			propval.pvalue = pvalue;
-			if (FALSE == tpropval_array_set_propval(
-				&penum_param->pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			}
 		}
 	} else if (0 == strcasecmp(tag, "Content-Base")) {
 		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
@@ -2096,19 +1988,15 @@ static BOOL oxcmail_enum_mail_head(
 		propval.proptag = PROP_TAG(pick_strtype(field), penum_param->last_propid);
 		propval.pvalue = field;
 		penum_param->last_propid ++;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Content-Location")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
 		                  PROP_TAG_BODYCONTENTLOCATION :
 		                  PROP_TAG_BODYCONTENTLOCATION_STRING8;
 		propval.pvalue = field;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthAs") ||
 		0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthDomain") ||
 		0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthMechanism") ||
@@ -2129,10 +2017,8 @@ static BOOL oxcmail_enum_mail_head(
 		propval.proptag = PROP_TAG(pick_strtype(field), penum_param->last_propid);
 		propval.pvalue = field;
 		penum_param->last_propid ++;
-		if (FALSE == tpropval_array_set_propval(
-			&penum_param->pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -2151,9 +2037,8 @@ static BOOL oxcmail_parse_transport_message_header(
 		                  PROP_TAG_TRANSPORTMESSAGEHEADERS :
 		                  PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
 		propval.pvalue = tmp_buff;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -2189,7 +2074,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		propval.proptag = PROP_TAG_INTERNETCODEPAGE;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = oxcmail_charset_to_cpid(best_charset);
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
 			free(pcontent);
 			return FALSE;
 		}
@@ -2215,7 +2100,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		propval.proptag = PROP_TAG_INTERNETCODEPAGE;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = oxcmail_charset_to_cpid(best_charset);
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
 			free(pcontent);
 			return FALSE;
 		}
@@ -2224,7 +2109,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		propval.proptag = PROP_TAG_HTML;
 		propval.pvalue = &tmp_bin;
 	}
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2282,22 +2167,19 @@ static BOOL oxcmail_set_mac_attachname(TPROPVAL_ARRAY *pproplist,
 	if (FALSE == b_description) {
 		propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
 		propval.pvalue = tmp_buff;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	if ('\0' != extension[0]) {
 		propval.proptag = PROP_TAG_ATTACHEXTENSION_STRING8;
 		propval.pvalue = extension;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	propval.proptag = PROP_TAG_ATTACHLONGFILENAME_STRING8;
 	propval.pvalue = tmp_buff;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2318,10 +2200,8 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
 	tmp_bin.pb = MACBINARY_ENCODING;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	content_len = mime_get_length(pmime);
 	auto pcontent = static_cast<char *>(malloc(content_len));
 	if (NULL == pcontent) {
@@ -2349,8 +2229,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 	oxcmail_compose_mac_additional(binhex.type, binhex.creator, &tmp_bin);
 	propval.proptag = PROP_TAG_ATTACHADDITIONALINFORMATION;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		binhex_clear(&binhex);
 		return FALSE;
 	}
@@ -2370,8 +2249,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
 		binhex_clear(&binhex);
 		return FALSE;
@@ -2385,8 +2263,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 	}
 	propval.proptag = PROP_TAG_ATTACHDATABINARY;
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
 		binhex_clear(&binhex);
 		return FALSE;
@@ -2445,10 +2322,8 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
 	tmp_bin.pb = MACBINARY_ENCODING;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	/* PidNameAttachmentMacContentType */
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
 	propname.kind = MNID_STRING;
@@ -2458,10 +2333,8 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = (void*)mime_get_content_type(pdmime);
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	content_len = mime_get_length(phmime);
 	auto pcontent = static_cast<char *>(malloc(content_len));
@@ -2484,8 +2357,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
 	tmp_bin.pb = (uint8_t*)pcontent;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2518,8 +2390,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 				as->finfo.fd_creator, &tmp_bin);
 			propval.proptag = PROP_TAG_ATTACHADDITIONALINFORMATION;
 			propval.pvalue = &tmp_bin;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(pcontent);
 				return FALSE;
 			}
@@ -2545,8 +2416,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	}
 	propval.proptag = PROP_TAG_ATTACHDATABINARY;
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
 		free(pcontent1);
 		free(pcontent);
@@ -2590,8 +2460,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
 	tmp_bin.pb = MACBINARY_ENCODING;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2619,8 +2488,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
 		free(pcontent);
 		return FALSE;
@@ -2632,8 +2500,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 					macbin.header.creator, &tmp_bin);
 	propval.proptag = PROP_TAG_ATTACHADDITIONALINFORMATION;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2641,8 +2508,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
 	tmp_bin.pc = pcontent;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2685,8 +2551,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
 	tmp_bin.pb = MACBINARY_ENCODING;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2705,8 +2570,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
 		free(pcontent);
 		return FALSE;
@@ -2736,8 +2600,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 				as->finfo.fd_creator, &tmp_bin);
 			propval.proptag = PROP_TAG_ATTACHADDITIONALINFORMATION;
 			propval.pvalue = &tmp_bin;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(pcontent);
 				return FALSE;
 			}
@@ -2750,8 +2613,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	}
 	propval.proptag = PROP_TAG_ATTACHDATABINARY;
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		rop_util_free_binary(pbin);
 		free(pcontent);
 		return FALSE;
@@ -2842,8 +2704,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	} else {
 		propval.pvalue = (void*)mime_get_content_type(pmime);
 	}
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		pmime_enum->b_result = FALSE;
 		return;
 	}
@@ -2885,8 +2746,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	if ('\0' != extension[0]) {
 		propval.proptag = PROP_TAG_ATTACHEXTENSION;
 		propval.pvalue = extension;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -2897,8 +2757,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		propval.proptag = PROP_TAG_ATTACHLONGFILENAME_STRING8;
 	}
 	propval.pvalue = file_name;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		pmime_enum->b_result = FALSE;
 		return;
 	}
@@ -2919,8 +2778,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
 		}
 		propval.pvalue = display_name;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -2934,8 +2792,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 				propval.proptag = PROP_TAG_CREATIONTIME;
 				propval.pvalue = &tmp_int64;
-				if (FALSE == tpropval_array_set_propval(
-					&pattachment->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 					pmime_enum->b_result = FALSE;
 					return;
 				}
@@ -2948,8 +2805,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 				propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
 				propval.pvalue = &tmp_int64;
-				if (FALSE == tpropval_array_set_propval(
-					&pattachment->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 					pmime_enum->b_result = FALSE;
 					return;
 				}
@@ -2960,8 +2816,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		&pattachment->proplist, PROP_TAG_CREATIONTIME)) {
 		propval.proptag = PROP_TAG_CREATIONTIME;
 		propval.pvalue = &pmime_enum->nttime_stamp;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -2970,8 +2825,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		&pattachment->proplist, PROP_TAG_LASTMODIFICATIONTIME)) {
 		propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
 		propval.pvalue = &pmime_enum->nttime_stamp;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -2992,8 +2846,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			propval.proptag = oxcmail_check_ascii(static_cast<char *>(propval.pvalue)) ?
 			                  PROP_TAG_ATTACHCONTENTID :
 			                  PROP_TAG_ATTACHCONTENTID_STRING8;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				pmime_enum->b_result = FALSE;
 				return;
 			}
@@ -3005,8 +2858,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		                  PROP_TAG_ATTACHCONTENTLOCATION :
 		                  PROP_TAG_ATTACHCONTENTLOCATION_STRING8;
 		propval.pvalue = tmp_buff;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -3016,8 +2868,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		                  PROP_TAG_ATTACHCONTENTBASE :
 		                  PROP_TAG_ATTACHCONTENTBASE_STRING8;
 		propval.pvalue = tmp_buff;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -3053,8 +2904,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		propval.proptag = PROP_TAG_ATTACHFLAGS;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -3064,8 +2914,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		propval.proptag = PROP_TAG_ATTACHMETHOD;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = ATTACH_METHOD_BY_VALUE;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -3112,10 +2961,8 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					propval.proptag = PROP_TAG_ATTACHMETHOD;
 					propval.pvalue = &tmp_int32;
 					tmp_int32 = ATTACH_METHOD_EMBEDDED;
-					if (FALSE == tpropval_array_set_propval(
-						&pattachment->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 						pmime_enum->b_result = FALSE;
-					}
 					vcard_free(&vcard);
 					free(pcontent);
 					return;
@@ -3123,8 +2970,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				vcard_free(&vcard);
 			}
 			tmp_int32 = ATTACH_METHOD_EMBEDDED;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				pmime_enum->b_result = FALSE;
 				free(pcontent);
 				return;
@@ -3134,7 +2980,8 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			tmp_bin.cb = content_len;
 			tmp_bin.pc = pcontent;
 			pmime_enum->b_result = tpropval_array_set_propval(
-							&pattachment->proplist, &propval);
+			                       &pattachment->proplist, &propval) ?
+			                       TRUE : false;
 			free(pcontent);
 			return;
 		}
@@ -3169,8 +3016,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 						pmime_enum->charset, tmp_buff, file_name)) {
 						propval.proptag = PROP_TAG_DISPLAYNAME;
 						propval.pvalue = file_name;
-						if (FALSE == tpropval_array_set_propval(
-							&pattachment->proplist, &propval)) {
+						if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 							mail_free(&mail);
 							free(pcontent);
 							pmime_enum->b_result = FALSE;
@@ -3182,8 +3028,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			propval.proptag = PROP_TAG_ATTACHMETHOD;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_METHOD_EMBEDDED;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				mail_free(&mail);
 				free(pcontent);
 				pmime_enum->b_result = FALSE;
@@ -3229,8 +3074,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		tmp_bin.pc = mode_buff;
 		propval.proptag = PROP_TAG_ATTACHDATABINARY;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -3246,17 +3090,14 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			propval.proptag = PROP_TAG_ATTACHLONGFILENAME_STRING8;
 		}
 		propval.pvalue = file_name;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			pmime_enum->b_result = FALSE;
-		}
 		return;
 	}
 	propval.proptag = PROP_TAG_ATTACHMETHOD;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = ATTACH_METHOD_BY_VALUE;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		pmime_enum->b_result = FALSE;
 		return;
 	}
@@ -3282,8 +3123,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			                  PROP_TAG_TEXTATTACHMENTCHARSET :
 			                  PROP_TAG_TEXTATTACHMENTCHARSET_STRING8;
 			propval.pvalue = tmp_buff;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				pmime_enum->b_result = FALSE;
 				return;
 			}
@@ -3305,7 +3145,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	tmp_bin.cb = content_len;
 	tmp_bin.pc = pcontent;
 	pmime_enum->b_result = tpropval_array_set_propval(
-					&pattachment->proplist, &propval);
+	                       &pattachment->proplist, &propval) ? TRUE : false;
 	free(pcontent);
 }
 
@@ -3461,10 +3301,8 @@ static BOOL oxcmail_copy_message_proplist(
 	for (i=0; i<pmsg->proplist.count; i++) {
 		if (NULL == tpropval_array_get_propval(&pmsg1->proplist,
 			pmsg->proplist.ppropval[i].proptag)) {
-			if (FALSE == tpropval_array_set_propval(&pmsg1->proplist,
-				&pmsg->proplist.ppropval[i])) {
+			if (!tpropval_array_set_propval(&pmsg1->proplist, &pmsg->proplist.ppropval[i]))
 				return FALSE;
-			}
 		}
 	}
 	return TRUE;
@@ -3655,20 +3493,16 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	propval.proptag = PROP_TAG_RECIPIENTTYPE;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = RECIPIENT_TYPE_TO;
-	if (FALSE == tpropval_array_set_propval(
-		pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	if (NULL != f_info.x_display_name) {
 		if (strlen(f_info.x_display_name) < 256 &&
 			TRUE == mime_string_to_utf8("utf-8",
 			f_info.x_display_name, display_name)) {
 			propval.proptag = PROP_TAG_DISPLAYNAME;
 			propval.pvalue = display_name;
-			if (FALSE == tpropval_array_set_propval(
-				pproplist, &propval)) {
+			if (!tpropval_array_set_propval(pproplist, &propval))
 				return FALSE;
-			}
 		}
 	}
 	if (FALSE == oxcmail_username_to_essdn(
@@ -3680,38 +3514,32 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 		HX_strupper(tmp_buff);
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
 		propval.pvalue  = deconst("SMTP");
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_EMAILADDRESS;
 		propval.pvalue = f_info.final_recipient;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	} else {
 		tmp_bin.cb = sprintf(tmp_buff, "EX:%s", essdn) + 1;
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
 		propval.pvalue  = deconst("EX");
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_EMAILADDRESS;
 		propval.pvalue = essdn;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	propval.proptag = PROP_TAG_SMTPADDRESS;
 	propval.pvalue = f_info.final_recipient;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	tmp_bin.pc = tmp_buff;
 	propval.proptag = PROP_TAG_SEARCHKEY;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ENTRYID;
 	tmp_bin.cb = 0;
 	tmp_bin.pc = tmp_buff;
@@ -3726,19 +3554,16 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 			return FALSE;
 		}
 	}
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_RECIPIENTENTRYID;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_RECORDKEY;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_OBJECTTYPE;
 	propval.pvalue = &tmp_int32;
 	if (ADDRESS_TYPE_MLIST == address_type) {
@@ -3746,9 +3571,8 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	} else {
 		tmp_int32 = OBJECT_USER;
 	}
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_DISPLAYTYPE;
 	propval.pvalue = &tmp_int32;
 	switch (address_type) {
@@ -3765,27 +3589,23 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 		tmp_int32 = DISPLAY_TYPE_MAILUSER;
 		break;
 	}
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_RECIPIENTFLAGS;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 1;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	if ('\0' != f_info.remote_mta[0]) {
 		propval.proptag = PROP_TAG_REMOTEMESSAGETRANSFERAGENT;
 		propval.pvalue = f_info.remote_mta;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	propval.proptag = PROP_TAG_REPORTTIME;
 	propval.pvalue = &pinfo->submit_time;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SUPPLEMENTARYINFO;
 	if (NULL != f_info.x_supplementary_info) {
 		propval.pvalue = (void*)f_info.x_supplementary_info;
@@ -3803,9 +3623,8 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	status_code = 100*kind + 10*subject + detail;
 	propval.proptag = PROP_TAG_NONDELIVERYREPORTSTATUSCODE;
 	propval.pvalue = &status_code;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	reason_code = 0;
 	diagnostic_code = -1;
 	switch (subject) {
@@ -3933,14 +3752,12 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	}
 	propval.proptag = PROP_TAG_NONDELIVERYREPORTDIAGCODE;
 	propval.pvalue = &diagnostic_code;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_NONDELIVERYREPORTREASONCODE;
 	propval.pvalue = &reason_code;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -3953,7 +3770,8 @@ static BOOL oxcmail_enum_dsn_reporting_mta(
 		propval.proptag = PROP_TAG_REPORTINGMESSAGETRANSFERAGENT;
 		propval.pvalue = (void*)value;
 		return tpropval_array_set_propval(
-			&((MESSAGE_CONTENT*)pparam)->proplist, &propval);
+		       &static_cast<MESSAGE_CONTENT *>(pparam)->proplist, &propval) ?
+		       TRUE : false;
 	}
 	return TRUE;
 }
@@ -4045,8 +3863,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	}
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	propval.pvalue = tmp_buff;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		dsn_free(&dsn);
 		return NULL;
 	}
@@ -4078,7 +3895,8 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 				PROP_TAG_ORIGINALDISPLAYTO)) {
 				propval.proptag = PROP_TAG_ORIGINALDISPLAYTO;
 				propval.pvalue = (char*)value + 7;
-				return tpropval_array_set_propval(&mcparam->proplist, &propval);
+				return tpropval_array_set_propval(&mcparam->proplist, &propval) ?
+				       TRUE : false;
 			}
 		}
 	} else if (0 == strcasecmp(tag, "Disposition")) {
@@ -4110,7 +3928,8 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 			return FALSE;
 		propval.proptag = PROP_TAG_REPORTTEXT;
 		propval.pvalue = (char*)value;
-		return tpropval_array_set_propval(&mcparam->proplist, &propval);
+		return tpropval_array_set_propval(&mcparam->proplist, &propval) ?
+		       TRUE : false;
 	} else if (0 == strcasecmp(tag, "X-MSExch-Correlation-Key")) {
 		len = strlen(value);
 		if (len <= 1024 && 0 == decode64(value, len, tmp_buff, &len)) {
@@ -4118,7 +3937,8 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 			propval.pvalue = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = len;
-			return tpropval_array_set_propval(&mcparam->proplist, &propval);
+			return tpropval_array_set_propval(&mcparam->proplist, &propval) ?
+			       TRUE : false;
 		}
 	} else if (0 == strcasecmp(tag, "Original-Message-ID")) {
 		propval.proptag = PROP_TAG_ORIGINALMESSAGEID;
@@ -4127,7 +3947,8 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 			return FALSE;
 		propval.proptag = PROP_TAG_INTERNETREFERENCES;
 		propval.pvalue = (char*)value;
-		return tpropval_array_set_propval(&mcparam->proplist, &propval);
+		return tpropval_array_set_propval(&mcparam->proplist, &propval) ?
+		       TRUE : false;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
 		if (TRUE == mime_string_to_utf8("utf-8", value, tmp_buff)) {
 			propval.proptag = PROP_TAG_DISPLAYNAME;
@@ -4136,7 +3957,8 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 			propval.proptag = PROP_TAG_DISPLAYNAME_STRING8;
 			propval.pvalue = (char*)value;
 		}
-		return tpropval_array_set_propval(&mcparam->proplist, &propval);
+		return tpropval_array_set_propval(&mcparam->proplist, &propval) ?
+		       TRUE : false;
 	}
 	return TRUE;
 }
@@ -4190,23 +4012,17 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		&pmsg->proplist, PROP_TAG_CLIENTSUBMITTIME);
 	propval.proptag = PROP_TAG_ORIGINALDELIVERYTIME;
 	propval.pvalue = pvalue;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return NULL;
-	}
 	propval.proptag = PROP_TAG_RECEIPTTIME;
 	propval.pvalue = pvalue;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return NULL;
-	}
 	propval.proptag = PROP_TAG_REPORTTIME;
 	propval.pvalue = pvalue;
 	for (i=0; i<pmsg->children.prcpts->count; i++) {
-		if (FALSE == tpropval_array_set_propval(
-			pmsg->children.prcpts->pparray[i], &propval)) {
+		if (!tpropval_array_set_propval(pmsg->children.prcpts->pparray[i], &propval))
 			return NULL;
-		}
 	}
 	return pmime;
 }
@@ -4231,10 +4047,8 @@ static BOOL oxcmail_parse_encrypted(MIME *phead,
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = tmp_buff;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -4301,8 +4115,7 @@ static BOOL oxcmail_parse_smime_message(
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = offset;
 	tmp_bin.pc = pcontent;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -4310,38 +4123,26 @@ static BOOL oxcmail_parse_smime_message(
 	propval.proptag = PROP_TAG_ATTACHMETHOD;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = ATTACH_METHOD_BY_VALUE;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHMIMETAG;
 	propval.pvalue = (void*)content_type;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHEXTENSION;
 	propval.pvalue  = deconst(".p7m");
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHFILENAME;
 	propval.pvalue  = deconst("SMIME.p7m");
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_DISPLAYNAME;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -4360,7 +4161,7 @@ static BOOL oxcmail_try_assign_propval(TPROPVAL_ARRAY *pproplist,
 	}
 	propval.proptag = proptag1;
 	propval.pvalue = pvalue;
-	return tpropval_array_set_propval(pproplist, &propval);
+	return tpropval_array_set_propval(pproplist, &propval) ? TRUE : false;
 }
 
 MESSAGE_CONTENT* oxcmail_import(const char *charset,
@@ -4409,8 +4210,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	/* set default message class */
 	propval.proptag = PROP_TAG_MESSAGECLASS;
 	propval.pvalue  = deconst("IPM.Note");
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return NULL;
 	}
@@ -4507,8 +4307,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		propval.proptag = PROP_TAG_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 1;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
@@ -4519,8 +4318,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		propval.proptag = PROP_TAG_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
@@ -4538,8 +4336,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
 		propval.pvalue = &mime_enum.nttime_stamp;
 		mime_enum.nttime_stamp = rop_util_unix_to_nttime(time(NULL));
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
@@ -4549,16 +4346,14 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	}
 	propval.proptag = PROP_TAG_CREATIONTIME;
 	propval.pvalue = &mime_enum.nttime_stamp;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		int_hash_free(phash);
 		message_content_free(pmsg);
 		return NULL;
 	}
 	propval.proptag = PROP_TAG_LASTMODIFICATIONTIME;
 	propval.pvalue = &mime_enum.nttime_stamp;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		int_hash_free(phash);
 		message_content_free(pmsg);
 		return NULL;
@@ -4682,8 +4477,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		mime_get_content_type(phead))) {
 		propval.proptag = PROP_TAG_MESSAGECLASS;
 		propval.pvalue  = deconst("IPM.Note.SMIME.MultipartSigned");
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
@@ -4695,8 +4489,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		mime_get_content_type(phead))) {
 		propval.proptag = PROP_TAG_MESSAGECLASS;
 		propval.pvalue  = deconst("IPM.Note.SMIME");
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
@@ -5051,8 +4844,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			propval.proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 1;
-			if (FALSE == tpropval_array_set_propval(
-				&pmsg->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				message_content_free(pmsg);
 				return nullptr;
 			}

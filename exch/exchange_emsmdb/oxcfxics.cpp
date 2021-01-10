@@ -148,8 +148,8 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 	}
 	pproplist = folder_content_get_proplist(pfldctnt);
 	for (i=0; i<tmp_propvals.count; i++) {
-		if (FALSE == tpropval_array_set_propval(
-			pproplist, tmp_propvals.ppropval + i)) {
+		if (!tpropval_array_set_propval(pproplist,
+		    tmp_propvals.ppropval + i)) {
 			folder_content_free(pfldctnt);
 			return NULL;
 		}
@@ -176,8 +176,8 @@ static FOLDER_CONTENT* oxcfxics_load_folder_content(
 		}
 		tmp_propval.proptag = META_TAG_NEWFXFOLDER;
 		tmp_propval.pvalue = pbin;
-		if (FALSE == tpropval_array_set_propval(
-			pproplist, &tmp_propval)) {
+		if (!tpropval_array_set_propval(pproplist,
+		    &tmp_propval)) {
 			folder_content_free(pfldctnt);
 			return NULL;
 		}

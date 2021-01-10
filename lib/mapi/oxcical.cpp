@@ -771,10 +771,8 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -819,10 +817,8 @@ static BOOL oxcical_parse_recurring_timezone(
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = (void*)ptzid;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
 	tmp_bin.pb = bin_buff;
@@ -841,10 +837,8 @@ static BOOL oxcical_parse_recurring_timezone(
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	tmp_bin.pb = bin_buff;
 	tmp_bin.cb = 0;
@@ -863,10 +857,8 @@ static BOOL oxcical_parse_recurring_timezone(
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -890,10 +882,8 @@ static BOOL oxcical_parse_proposal(INT_HASH_TABLE *phash,
 	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -962,32 +952,27 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 		}
 		propval.proptag = PROP_TAG_ADDRESSTYPE;
 		propval.pvalue  = deconst("SMTP");
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_EMAILADDRESS;
 		propval.pvalue = (void*)paddress;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_SMTPADDRESS;
 		propval.pvalue = (void*)paddress;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		if (NULL == pdisplay_name) {
 			pdisplay_name = paddress;
 		}
 		propval.proptag = PROP_TAG_DISPLAYNAME;
 		propval.pvalue = (void*)pdisplay_name;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
 		propval.pvalue = (void*)pdisplay_name;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		tmp_bin.pb = tmp_buff;
 		tmp_bin.cb = 0;
 		if (FALSE == username_to_entryid(paddress,
@@ -996,19 +981,16 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 		}
 		propval.proptag = PROP_TAG_ENTRYID;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_RECIPIENTENTRYID;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_RECORDKEY;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		if (NULL != prole && 0 == strcasecmp(prole, "CHAIR")) {
 			tmp_int32 = 1;
 		} else if (NULL != prole && 0 == strcasecmp(
@@ -1031,9 +1013,8 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 		}
 		propval.proptag = PROP_TAG_RECIPIENTTYPE;
 		propval.pvalue = &tmp_int32;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_OBJECTTYPE;
 		propval.pvalue = &tmp_int32;
 		if (ADDRESS_TYPE_MLIST == address_type) {
@@ -1041,9 +1022,8 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 		} else {
 			tmp_int32 = OBJECT_USER;
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_DISPLAYTYPE;
 		propval.pvalue = &tmp_int32;
 		switch (address_type) {
@@ -1060,34 +1040,27 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 			tmp_int32 = DISPLAY_TYPE_MAILUSER;
 			break;
 		}
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		tmp_byte = 1;
 		propval.proptag = PROP_TAG_RESPONSIBILITY;
 		propval.pvalue = &tmp_byte;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 		tmp_int32 = 1;
 		propval.proptag = PROP_TAG_RECIPIENTFLAGS;
 		propval.pvalue = &tmp_int32;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
-		}
 	}
 	propval.proptag = PROP_TAG_RESPONSEREQUESTED;
 	propval.pvalue = &tmp_byte;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_REPLYREQUESTED;
 	propval.pvalue = &tmp_byte;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1132,10 +1105,8 @@ static BOOL oxcical_parse_categoris(ICAL_LINE *piline,
 		}
 		propval.proptag = PROP_TAG(PT_MV_UNICODE, *plast_propid);
 		propval.pvalue = &strings_array;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
-		}
 		(*plast_propid) ++;
 	}
 	return TRUE;
@@ -1165,10 +1136,8 @@ static BOOL oxcical_parse_class(ICAL_LINE *piline, MESSAGE_CONTENT *pmsg)
 	}
 	propval.proptag = PROP_TAG_SENSITIVITY;
 	propval.pvalue = &tmp_int32;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1183,10 +1152,8 @@ static BOOL oxcical_parse_body(ICAL_LINE *piline, MESSAGE_CONTENT *pmsg)
 	}
 	propval.proptag = PROP_TAG_BODY;
 	propval.pvalue = (void*)pvalue;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1205,17 +1172,13 @@ static BOOL oxcical_parse_html(ICAL_LINE *piline, MESSAGE_CONTENT *pmsg)
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = strlen(pvalue);
 	tmp_bin.pc = deconst(pvalue);
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_INTERNETCODEPAGE;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 65001;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1256,10 +1219,8 @@ static BOOL oxcical_parse_dtstamp(ICAL_LINE *piline,
 	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1295,10 +1256,8 @@ static BOOL oxcical_parse_start_end(BOOL b_start,
 		}
 		propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 		propval.pvalue = &tmp_int64;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
-		}
 		(*plast_propid) ++;
 	}
 	if (FALSE == b_proposal ||
@@ -1320,10 +1279,8 @@ static BOOL oxcical_parse_start_end(BOOL b_start,
 		}
 		propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 		propval.pvalue = &tmp_int64;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
-		}
 		(*plast_propid) ++;
 	}
 	return TRUE;
@@ -1349,10 +1306,8 @@ static BOOL oxcical_parse_subtype(INT_HASH_TABLE *phash,
 	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	if (NULL != pexception) {
 		pexception->overrideflags |= OVERRIDEFLAG_SUBTYPE;
@@ -1453,10 +1408,8 @@ static BOOL oxcical_parse_duration(uint32_t minutes,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &minutes;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1582,10 +1535,8 @@ MAKE_GLOBALOBJID:
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	globalobjectid.year = 0;
 	globalobjectid.month = 0;
@@ -1607,10 +1558,8 @@ MAKE_GLOBALOBJID:
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1658,10 +1607,8 @@ static BOOL oxcical_parse_location(
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = tmp_buff;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	pvalue = ical_get_first_paramval(piline, "ALTREP");
 	if (NULL == pvalue) {
@@ -1676,10 +1623,8 @@ static BOOL oxcical_parse_location(
 	}
 	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
 	propval.pvalue = (void*)pvalue;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	if (NULL != pexception && NULL != pext_exception) {
 		pexception->overrideflags |= OVERRIDEFLAG_LOCATION;
@@ -1731,16 +1676,12 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 	if (NULL != pdisplay_name) {
 		propval.proptag = PROP_TAG_SENTREPRESENTINGNAME;
 		propval.pvalue = (void*)pdisplay_name;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_SENDERNAME;
 		propval.pvalue = (void*)pdisplay_name;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
-		}
 	}
 	if (NULL == paddress) {
 		return TRUE;
@@ -1753,52 +1694,36 @@ static BOOL oxcical_parse_organizer(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
 	propval.pvalue  = deconst("SMTP");
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	propval.pvalue = (void*)paddress;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	propval.pvalue = (void*)paddress;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SENTREPRESENTINGENTRYID;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SENDERADDRESSTYPE;
 	propval.pvalue  = deconst("SMTP");
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
 	propval.pvalue = (void*)paddress;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval.pvalue = (void*)paddress;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_SENDERENTRYID;
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1827,10 +1752,8 @@ static BOOL oxcical_parse_sequence(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1872,10 +1795,8 @@ static BOOL oxcical_parse_busystatus(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	if (NULL != pexception) {
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
@@ -1896,10 +1817,8 @@ static BOOL oxcical_parse_busystatus(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &intented_val;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -1937,10 +1856,8 @@ static BOOL oxcical_parse_transp(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	if (NULL != pexception) {
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
@@ -1961,10 +1878,8 @@ static BOOL oxcical_parse_transp(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &intented_val;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -2004,10 +1919,8 @@ static BOOL oxcical_parse_status(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &tmp_int32;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	if (NULL != pexception) {
 		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
@@ -2028,10 +1941,8 @@ static BOOL oxcical_parse_status(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &intented_val;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -2068,10 +1979,8 @@ static BOOL oxcical_parse_summary(
 	}
 	propval.proptag = PROP_TAG_SUBJECT;
 	propval.pvalue = tmp_buff;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	if (NULL != pexception && NULL != pext_exception) {
 		pexception->overrideflags |= OVERRIDEFLAG_SUBJECT;
 		pexception->subject = static_cast<char *>(alloc(tmp_len + 1));
@@ -2102,10 +2011,8 @@ static BOOL oxcical_parse_ownerapptid(
 	tmp_int32 = atoi(pvalue);
 	propval.proptag = PROP_TAG_OWNERAPPOINTMENTID;
 	propval.pvalue = &tmp_int32;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2136,10 +2043,8 @@ static BOOL oxcical_parse_recurrence_id(ICAL_COMPONENT *ptz_component,
 	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -2175,10 +2080,8 @@ static BOOL oxcical_parse_disallow_counter(ICAL_LINE *piline,
 	}
 	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 	propval.pvalue = &tmp_byte;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -2223,8 +2126,7 @@ static BOOL oxcical_parse_appointment_recurrence(
 	}
 	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
 	propval.pvalue = &tmp_bin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
@@ -2248,10 +2150,8 @@ static BOOL oxcical_parse_appointment_recurrence(
 	}
 	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	nt_time = papprecurr->recurrencepattern.startdate;
 	nt_time *= 600000000;
@@ -2265,10 +2165,8 @@ static BOOL oxcical_parse_appointment_recurrence(
 	}
 	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &nt_time;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -2383,25 +2281,19 @@ static BOOL oxcical_parse_exceptional_attachment(
 	propval.proptag = PROP_TAG_ATTACHMETHOD;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = ATTACH_METHOD_EMBEDDED;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_RENDERINGPOSITION;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0xFFFFFFFF;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_DISPLAYNAME;
 	propval.pvalue = tpropval_array_get_propval(
 		&pattachment->pembedded->proplist, PROP_TAG_SUBJECT);
 	if (NULL != propval.pvalue) {
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 	}
 	if (FALSE == ical_itime_to_utc(NULL,
 		start_itime, &tmp_time)) {
@@ -2410,10 +2302,8 @@ static BOOL oxcical_parse_exceptional_attachment(
 	propval.proptag = PROP_TAG_EXCEPTIONSTARTTIME;
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	if (FALSE == ical_itime_to_utc(NULL,
 		end_itime, &tmp_time)) {
 		return FALSE;
@@ -2421,53 +2311,39 @@ static BOOL oxcical_parse_exceptional_attachment(
 	propval.proptag = PROP_TAG_EXCEPTIONENDTIME;
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHENCODING;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 0;
 	tmp_bin.pb = NULL;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHMENTFLAGS;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000002;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHMENTLINKID;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000000;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHFLAGS;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000000;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHMENTHIDDEN;
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 0;
-	if (FALSE == tpropval_array_set_propval(
-		&pattachment->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2514,24 +2390,18 @@ static BOOL oxcical_parse_attachment(
 			tmp_bin.pc = tmp_buff;
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
 			propval.pvalue = &tmp_bin;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_ATTACHENCODING;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_ATTACHEXTENSION;
 			propval.pvalue  = deconst(".URL");
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			pvalue1 = strrchr(pvalue, '/');
 			if (NULL == pvalue1) {
 				pvalue1 = pvalue;
@@ -2539,15 +2409,11 @@ static BOOL oxcical_parse_attachment(
 			snprintf(tmp_buff, 256, "%s.url", pvalue1);
 			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
 			propval.pvalue = tmp_buff;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_DISPLAYNAME;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_ATTACHMETHOD;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_METHOD_BY_VALUE;
@@ -2555,58 +2421,42 @@ static BOOL oxcical_parse_attachment(
 			if (NULL != pvalue1) {
 				propval.proptag = PROP_TAG_ATTACHMIMETAG;
 				propval.pvalue = (void*)pvalue1;
-				if (FALSE == tpropval_array_set_propval(
-					&pattachment->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 					return FALSE;
-				}
 			}
 			propval.proptag = PROP_TAG_ATTACHFLAGS;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_ATTACHMENTLINKID;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 0;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 0;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_EXCEPTIONSTARTTIME;
 			propval.pvalue = &tmp_int64;
 			tmp_int64 = 0x0CB34557A3DD4000;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_EXCEPTIONENDTIME;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 			propval.proptag = PROP_TAG_RENDERINGPOSITION;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0xFFFFFFFF;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 		}
 	} else if (0 == strcasecmp(pvalue, "BINARY")) {
 		pvalue = ical_get_first_paramval(piline, "ENCODING");
@@ -2649,10 +2499,8 @@ static BOOL oxcical_parse_attachment(
 		}
 		propval.proptag = PROP_TAG_ATTACHDATABINARY;
 		propval.pvalue = &tmp_bin;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		if (NULL != tmp_bin.pb) {
 			free(tmp_bin.pb);
 		}
@@ -2660,10 +2508,8 @@ static BOOL oxcical_parse_attachment(
 		propval.pvalue = &tmp_bin;
 		tmp_bin.cb = 0;
 		tmp_bin.pb = NULL;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		pvalue = ical_get_first_paramval(piline, "X-FILENAME");
 		if (NULL == pvalue) {
 			pvalue = ical_get_first_paramval(piline, "FILENAME");
@@ -2678,21 +2524,15 @@ static BOOL oxcical_parse_attachment(
 		}
 		propval.proptag = PROP_TAG_ATTACHEXTENSION;
 		propval.pvalue = (void*)pvalue1;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
 		propval.pvalue = (void*)pvalue;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_DISPLAYNAME;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_ATTACHMETHOD;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = ATTACH_METHOD_BY_VALUE;
@@ -2700,58 +2540,42 @@ static BOOL oxcical_parse_attachment(
 		if (NULL != pvalue1) {
 			propval.proptag = PROP_TAG_ATTACHMIMETAG;
 			propval.pvalue = (void*)pvalue1;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			}
 		}
 		propval.proptag = PROP_TAG_ATTACHFLAGS;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_ATTACHMENTLINKID;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 0;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 0;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_EXCEPTIONSTARTTIME;
 		propval.pvalue = &tmp_int64;
 		tmp_int64 = 0x0CB34557A3DD4000;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_EXCEPTIONENDTIME;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 		propval.proptag = PROP_TAG_RENDERINGPOSITION;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0xFFFFFFFF;
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -2779,10 +2603,8 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	}
 	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
 	propval.pvalue = &reminder_delta;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	/* PidLidReminderTime */
 	lid1 = 0x00008502;
@@ -2795,10 +2617,8 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(start_time);
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	/* PidLidReminderSignalTime */
 	lid2 = 0x00008560;
@@ -2812,10 +2632,8 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(
 		start_time - reminder_delta*60);
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	/* PidLidReminderSet */
 	lid3 = 0x00008503;
@@ -2828,10 +2646,8 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta,
 	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	return TRUE;
 }
@@ -2953,8 +2769,7 @@ static BOOL oxcical_import_internal(
 		propval.proptag = PROP_TAG_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
 			return FALSE;
 		}
@@ -3203,8 +3018,7 @@ static BOOL oxcical_import_internal(
 			if (0 == tmp_int32 || 1 == tmp_int32 || 2 == tmp_int32) {
 				propval.proptag = PROP_TAG_IMPORTANCE;
 				propval.pvalue = &tmp_int32;
-				if (FALSE == tpropval_array_set_propval(
-					&pmsg->proplist, &propval)) {
+				if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 					int_hash_free(phash);
 					return FALSE;
 				}
@@ -3223,16 +3037,14 @@ static BOOL oxcical_import_internal(
 				case 3:
 				case 4:
 					tmp_int32 = 2;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsg->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 						int_hash_free(phash);
 						return FALSE;
 					}
 					break;
 				case 5:
 					tmp_int32 = 1;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsg->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 						int_hash_free(phash);
 						return FALSE;
 					}
@@ -3242,8 +3054,7 @@ static BOOL oxcical_import_internal(
 				case 8:
 				case 9:
 					tmp_int32 = 0;
-					if (FALSE == tpropval_array_set_propval(
-						&pmsg->proplist, &propval)) {
+					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 						int_hash_free(phash);
 						return FALSE;
 					}
@@ -3257,8 +3068,7 @@ static BOOL oxcical_import_internal(
 		propval.proptag = PROP_TAG_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 1;
-		if (FALSE == tpropval_array_set_propval(
-			&pmsg->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			int_hash_free(phash);
 			return FALSE;
 		}
@@ -3443,8 +3253,7 @@ static BOOL oxcical_import_internal(
 			attachment_content_set_embedded_internal(pattachment, pembedded);
 			propval.proptag = PROP_TAG_MESSAGECLASS;
 			propval.pvalue  = deconst("IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}");
-			if (FALSE == tpropval_array_set_propval(
-				&pembedded->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pembedded->proplist, &propval)) {
 				int_hash_free(phash);
 				return FALSE;
 			}
@@ -3647,10 +3456,8 @@ static BOOL oxcical_import_events(
 		attachment_content_set_embedded_internal(pattachment, pembedded);
 		propval.proptag = PROP_TAG_MESSAGECLASS;
 		propval.pvalue  = deconst("IPM.Appointment");
-		if (FALSE == tpropval_array_set_propval(
-			&pembedded->proplist, &propval)) {
+		if (!tpropval_array_set_propval(&pembedded->proplist, &propval))
 			return FALSE;
-		}
 		if (FALSE == oxcical_import_internal(str_zone, "PUBLISH",
 			FALSE, calendartype, pical, &puid_events->list, alloc,
 			get_propids, username_to_entryid, pembedded, NULL,
@@ -3899,9 +3706,8 @@ MESSAGE_CONTENT* oxcical_import(
 			return pmsg;
 		}
 	}
-	if (FALSE == tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		goto IMPORT_FAILURE;
-	}
 	pnode = double_list_get_head(&events_list);
 	puid_events = (UID_EVENTS*)pnode->pdata;
 	if (TRUE == oxcical_import_internal(str_zone, pvalue,

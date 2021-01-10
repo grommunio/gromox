@@ -404,8 +404,8 @@ BOOL object_tree_set_zarafa_store_propval(
 	}
 	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
-	return tpropval_array_set_propval(
-		prootobj->pprivate_proplist, ppropval);
+	return tpropval_array_set_propval(prootobj->pprivate_proplist, ppropval) ?
+	       TRUE : false;
 }
 
 void object_tree_remove_zarafa_store_propval(
@@ -456,9 +456,8 @@ TPROPVAL_ARRAY* object_tree_get_profile_sec(
 	}
 	propval.proptag = PROP_TAG_PROPFILESECLSID;
 	propval.pvalue = &sec_guid;
-	if (FALSE == tpropval_array_set_propval(pproplist,
-		&propval) || FALSE == tarray_set_append_internal(
-		prootobj->pprof_set, pproplist)) {
+	if (!tpropval_array_set_propval(pproplist, &propval) || 
+	    FALSE == tarray_set_append_internal(prootobj->pprof_set, pproplist)) {
 		tpropval_array_free(pproplist);
 		return NULL;
 	}

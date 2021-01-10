@@ -109,7 +109,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	}
 	propval.proptag = META_TAG_IDSETGIVEN1;
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval)) {
 		rop_util_free_binary(pbin);
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -123,7 +123,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	}
 	propval.proptag = META_TAG_CNSETSEEN;
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+	if (!tpropval_array_set_propval(pproplist, &propval)) {
 		rop_util_free_binary(pbin);
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -138,7 +138,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		}
 		propval.proptag = META_TAG_CNSETSEENFAI;
 		propval.pvalue = pbin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -155,7 +155,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		}
 		propval.proptag = META_TAG_CNSETREAD;
 		propval.pvalue = pbin;
-		if (FALSE == tpropval_array_set_propval(pproplist, &propval)) {
+		if (!tpropval_array_set_propval(pproplist, &propval)) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;

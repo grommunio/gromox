@@ -3840,15 +3840,13 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	mail_engine_put_idb(pidb);
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = &message_id;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -3861,16 +3859,14 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}   
 	propval.proptag = PROP_TAG_CHANGEKEY;
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
 	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval.pvalue = common_util_pcl_append(NULL, pbin);
 	if (NULL == propval.pvalue ||
-		FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	    !tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -4381,15 +4377,13 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	mail_engine_put_idb(pidb);
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = &message_id;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
@@ -4402,16 +4396,14 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}   
 	propval.proptag = PROP_TAG_CHANGEKEY;
 	propval.pvalue = pbin;
-	if (FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}
 	propval.proptag = PROP_TAG_PREDECESSORCHANGELIST;
 	propval.pvalue = common_util_pcl_append(NULL, pbin);
 	if (NULL == propval.pvalue ||
-		FALSE == tpropval_array_set_propval(
-		&pmsgctnt->proplist, &propval)) {
+	    !tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
 		message_content_free(pmsgctnt);
 		return 4;
 	}

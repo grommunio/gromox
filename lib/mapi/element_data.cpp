@@ -16,8 +16,7 @@ ATTACHMENT_CONTENT* attachment_content_init()
 	if (NULL == pattachment) {
 		return NULL;
 	}
-	if (FALSE == tpropval_array_init_internal(
-		&pattachment->proplist)) {
+	if (!tpropval_array_init_internal(&pattachment->proplist)) {
 		free(pattachment);
 		return NULL;
 	}
@@ -54,9 +53,8 @@ ATTACHMENT_CONTENT* attachment_content_dup(
 		return NULL;
 	}
 	for (i=0; i<pattachment->proplist.count; i++) {
-		if (FALSE == tpropval_array_set_propval(
-			&pattachment1->proplist,
-			pattachment->proplist.ppropval + i)) {
+		if (!tpropval_array_set_propval(&pattachment1->proplist,
+		    pattachment->proplist.ppropval + i)) {
 			attachment_content_free(pattachment1);
 			return NULL;
 		}
@@ -169,7 +167,7 @@ FOLDER_CONTENT* folder_content_init()
 	if (NULL == pfldctnt) {
 		return NULL;
 	}
-	if (FALSE == tpropval_array_init_internal(&pfldctnt->proplist)) {
+	if (!tpropval_array_init_internal(&pfldctnt->proplist)) {
 		free(pfldctnt);
 		return NULL;
 	}
@@ -255,9 +253,8 @@ void folder_content_append_normallist_internal(
 
 BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt)
 {
-	if (FALSE == tpropval_array_init_internal(&pmsgctnt->proplist)) {
+	if (!tpropval_array_init_internal(&pmsgctnt->proplist))
 		return FALSE;
-	}
 	pmsgctnt->children.prcpts = NULL;
 	pmsgctnt->children.pattachments = NULL;
 	return TRUE;
@@ -361,9 +358,8 @@ MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
 		return NULL;
 	}
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
-		if (FALSE == tpropval_array_set_propval(
-			&pmsgctnt1->proplist,
-			pmsgctnt->proplist.ppropval + i)) {
+		if (!tpropval_array_set_propval(&pmsgctnt1->proplist,
+		    pmsgctnt->proplist.ppropval + i)) {
 			message_content_free(pmsgctnt1);
 			return NULL;
 		}

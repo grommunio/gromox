@@ -47,7 +47,7 @@ void *tpropval_array_get_propval(const TPROPVAL_ARRAY *parray, uint32_t proptag)
 	return NULL;
 }
 
-BOOL tpropval_array_set_propval(TPROPVAL_ARRAY *parray,
+bool tpropval_array_set_propval(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval)
 {
 	int i;
@@ -60,13 +60,13 @@ BOOL tpropval_array_set_propval(TPROPVAL_ARRAY *parray,
 				PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			if (NULL == parray->ppropval[i].pvalue) {
 				parray->ppropval[i].pvalue = pvalue;
-				return FALSE;
+				return false;
 			}
 			propval_free(PROP_TYPE(ppropval->proptag), pvalue);
-			return TRUE;
+			return true;
 		}
 	}
-	return tpropval_array_append(parray, ppropval);
+	return tpropval_array_append(parray, ppropval) ? TRUE : false;
 }
 
 void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
@@ -86,14 +86,11 @@ void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
 	}
 }
 
-BOOL tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
+bool tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
 {
 	parray->count = 0;
 	parray->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(100 * sizeof(TAGGED_PROPVAL)));
-	if (NULL == parray->ppropval) {
-		return FALSE;
-	}
-	return TRUE;
+	return parray->ppropval != nullptr;
 }
 
 TPROPVAL_ARRAY* tpropval_array_init()
@@ -102,7 +99,7 @@ TPROPVAL_ARRAY* tpropval_array_init()
 	if (NULL == parray) {
 		return NULL;
 	}
-	if (FALSE == tpropval_array_init_internal(parray)) {
+	if (!tpropval_array_init_internal(parray)) {
 		free(parray);
 		return NULL;
 	}

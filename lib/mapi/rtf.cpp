@@ -3897,44 +3897,38 @@ static BOOL rtf_convert_group_node(
 			}
 			propval.proptag = PROP_TAG_ATTACHMIMETAG;
 			propval.pvalue = (void*)img_ctype;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_ATTACHCONTENTID;
 			propval.pvalue = cid_name;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_ATTACHEXTENSION;
 			propval.pvalue = (void*)pext;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_ATTACHLONGFILENAME;
 			propval.pvalue = picture_name;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_ATTACHFLAGS;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;
 			}
 			propval.proptag = PROP_TAG_ATTACHDATABINARY;
 			propval.pvalue = &tmp_bin;
-			if (FALSE == tpropval_array_set_propval(
-				&pattachment->proplist, &propval)) {
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				goto CONVERT_FAILURE;
 			}
