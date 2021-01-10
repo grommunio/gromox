@@ -311,7 +311,7 @@ static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
 			break;
 		}
 	}
-	pctx->ratio = 1 << i;
+	pctx->ratio = 1ULL << i;
 	return TRUE;
 }
 
