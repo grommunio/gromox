@@ -472,16 +472,16 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
 	tmp_propvals.count ++;
 	
-	if (FALSE == proptag_array_check(pmessage->pchanged_proptags,
-		PROP_TAG_LASTMODIFICATIONTIME)) {
+	if (!proptag_array_check(pmessage->pchanged_proptags,
+	    PROP_TAG_LASTMODIFICATIONTIME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
 								PROP_TAG_LASTMODIFICATIONTIME;
 		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
 		tmp_propvals.count ++;
 	}
 	
-	if (FALSE == proptag_array_check(pmessage->pchanged_proptags,
-		PROP_TAG_LASTMODIFIERNAME)) {
+	if (!proptag_array_check(pmessage->pchanged_proptags,
+	    PROP_TAG_LASTMODIFIERNAME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
 									PROP_TAG_LASTMODIFIERNAME;
 		pvalue = common_util_alloc(1024);
@@ -631,8 +631,8 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 		return GXERR_CALL_FAILED;
 	}
 	/* always mark PROP_TAG_MESSAGEFLAGS as changed */
-	if (FALSE == proptag_array_append(
-		pmessage->pchanged_proptags, PROP_TAG_MESSAGEFLAGS)) {
+	if (!proptag_array_append(pmessage->pchanged_proptags,
+	    PROP_TAG_MESSAGEFLAGS)) {
 		proptag_array_free(pindices);
 		proptag_array_free(pungroup_proptags);
 		return GXERR_CALL_FAILED;
@@ -640,14 +640,14 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
 		if (FALSE == property_groupinfo_get_partial_index(pgpinfo,
 			pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
-			if (FALSE == proptag_array_append(pungroup_proptags,
-				pmessage->pchanged_proptags->pproptag[i])) {
+			if (!proptag_array_append(pungroup_proptags,
+			    pmessage->pchanged_proptags->pproptag[i])) {
 				proptag_array_free(pindices);
 				proptag_array_free(pungroup_proptags);
 				return GXERR_CALL_FAILED;
 			}
 		} else {
-			if (FALSE == proptag_array_append(pindices, tmp_index)) {
+			if (!proptag_array_append(pindices, tmp_index)) {
 				proptag_array_free(pindices);
 				proptag_array_free(pungroup_proptags);
 				return GXERR_CALL_FAILED;
@@ -661,7 +661,7 @@ gxerr_t message_object_save(MESSAGE_OBJECT *pmessage)
 			proptag_array_free(pungroup_proptags);
 			goto SAVE_FULL_CHANGE;
 		} else {
-			if (FALSE == proptag_array_append(pindices, tmp_index)) {
+			if (!proptag_array_append(pindices, tmp_index)) {
 				proptag_array_free(pindices);
 				proptag_array_free(pungroup_proptags);
 				return GXERR_CALL_FAILED;
@@ -1347,10 +1347,8 @@ static BOOL message_object_set_properties_internal(
 		proptag = ppropvals->ppropval[i].proptag;
 		proptag_array_remove(
 			pmessage->premoved_proptags, proptag);
-		if (FALSE == proptag_array_append(
-			pmessage->pchanged_proptags, proptag)) {
+		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }
@@ -1468,10 +1466,8 @@ BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
 		proptag = pproptags->pproptag[i];
 		proptag_array_remove(
 			pmessage->pchanged_proptags, proptag);
-		if (FALSE == proptag_array_append(
-			pmessage->premoved_proptags, proptag)) {
+		if (!proptag_array_append(pmessage->premoved_proptags, proptag))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }

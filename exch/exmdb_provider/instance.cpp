@@ -3630,8 +3630,8 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 	prcpts = pmsgctnt->children.prcpts;
 	for (i=0; i<prcpts->count; i++) {
 		for (j=0; j<prcpts->pparray[i]->count; j++) {
-			if (FALSE == proptag_array_append(pproptags1,
-				prcpts->pparray[i]->ppropval[j].proptag)) {
+			if (!proptag_array_append(pproptags1,
+			    prcpts->pparray[i]->ppropval[j].proptag)) {
 				db_engine_put_db(pdb);
 				proptag_array_free(pproptags1);
 				return FALSE;
@@ -3971,8 +3971,8 @@ BOOL exmdb_server_get_message_instance_attachment_table_all_proptags(
 	pattachments = pmsgctnt->children.pattachments;
 	for (i=0; i<pattachments->count; i++) {
 		for (j=0; j<pattachments->pplist[i]->proplist.count; j++) {
-			if (FALSE == proptag_array_append(pproptags1,
-				pattachments->pplist[i]->proplist.ppropval[j].proptag)) {
+			if (!proptag_array_append(pproptags1,
+			    pattachments->pplist[i]->proplist.ppropval[j].proptag)) {
 				db_engine_put_db(pdb);
 				proptag_array_free(pproptags1);
 				return FALSE;

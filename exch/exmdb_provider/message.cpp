@@ -1652,8 +1652,8 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 				return FALSE;
 			}
 			for (i=0; i<tmp_indices.count; i++) {
-				if (FALSE == proptag_array_append(ptmp_indices,
-					tmp_indices.pproptag[i])) {
+				if (!proptag_array_append(ptmp_indices,
+				    tmp_indices.pproptag[i])) {
 					sqlite3_finalize(pstmt);
 					proptag_array_free(ptmp_indices);
 					proptag_array_free(ptmp_proptags);
@@ -1676,8 +1676,8 @@ BOOL exmdb_server_get_change_indices(const char *dir,
 				return FALSE;
 			}
 			for (i=0; i<tmp_proptags.count; i++) {
-				if (FALSE == proptag_array_append(ptmp_proptags,
-					tmp_proptags.pproptag[i])) {
+				if (!proptag_array_append(ptmp_proptags,
+				    tmp_proptags.pproptag[i])) {
 					sqlite3_finalize(pstmt);
 					proptag_array_free(ptmp_indices);
 					proptag_array_free(ptmp_proptags);

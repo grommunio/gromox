@@ -2006,14 +2006,13 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 	}
 	if (FALSE == property_groupinfo_get_partial_index(
 		pgpinfo, PROP_TAG_CHANGEKEY, &tmp_index)) {
-		if (FALSE == proptag_array_append(
-			pungroup_proptags, PROP_TAG_CHANGEKEY)) {
+		if (!proptag_array_append(pungroup_proptags, PROP_TAG_CHANGEKEY)) {
 			proptag_array_free(pindices);
 			proptag_array_free(pungroup_proptags);
 			return FALSE;
 		}
 	} else {
-		if (FALSE == proptag_array_append(pindices, tmp_index)) {
+		if (!proptag_array_append(pindices, tmp_index)) {
 			proptag_array_free(pindices);
 			proptag_array_free(pungroup_proptags);
 			return FALSE;
@@ -2023,14 +2022,14 @@ BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
 		for (i=0; i<pchanged_proptags->count; i++) {
 			if (FALSE == property_groupinfo_get_partial_index(
 				pgpinfo, pchanged_proptags->pproptag[i], &tmp_index)) {
-				if (FALSE == proptag_array_append(pungroup_proptags,
-					pchanged_proptags->pproptag[i])) {
+				if (!proptag_array_append(pungroup_proptags,
+				    pchanged_proptags->pproptag[i])) {
 					proptag_array_free(pindices);
 					proptag_array_free(pungroup_proptags);
 					return FALSE;
 				}
 			} else {
-				if (FALSE == proptag_array_append(pindices, tmp_index)) {
+				if (!proptag_array_append(pindices, tmp_index)) {
 					proptag_array_free(pindices);
 					proptag_array_free(pungroup_proptags);
 					return FALSE;

@@ -470,7 +470,7 @@ PROPERTY_GROUPINFO* msgchg_grouping_get_groupinfo(
 				}
 				proptag = PROP_TAG(ptag_node->type, propid);
 			}
-			if (FALSE == proptag_array_append(pproptags, proptag)) {
+			if (!proptag_array_append(pproptags, proptag)) {
 				property_groupinfo_free(pinfo);
 				proptag_array_free(pproptags);
 				return NULL;

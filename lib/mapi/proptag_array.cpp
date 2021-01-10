@@ -3,15 +3,12 @@
 #include <cstdlib>
 #include <cstring>
 
-BOOL proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
+static bool proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
 {
 	
 	pproptags->count = 0;
 	pproptags->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * 100));
-	if (NULL == pproptags->pproptag) {
-		return FALSE;
-	}
-	return TRUE;
+	return pproptags->pproptag != nullptr;
 }
 
 PROPTAG_ARRAY* proptag_array_init()
@@ -20,7 +17,7 @@ PROPTAG_ARRAY* proptag_array_init()
 	if (NULL == pproptags) {
 		return NULL;
 	}
-	if (FALSE == proptag_array_init_internal(pproptags)) {
+	if (!proptag_array_init_internal(pproptags)) {
 		free(pproptags);
 		return NULL;
 	}
@@ -43,7 +40,7 @@ void proptag_array_clear(PROPTAG_ARRAY *pproptags)
 	pproptags->count = 0;
 }
 
-BOOL proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
+bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 {
 	int i;
 	uint32_t count;
@@ -51,7 +48,7 @@ BOOL proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 	
 	for (i=0; i<pproptags->count; i++) {
 		if (pproptags->pproptag[i] == proptag) {
-			return TRUE;
+			return true;
 		}
 	}
 	count = (pproptags->count / 100 + 1) * 100;
@@ -59,13 +56,13 @@ BOOL proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 		count += 100;
 		pproptag = static_cast<uint32_t *>(realloc(pproptags->pproptag, sizeof(uint32_t) * count));
 		if (NULL == pproptag) {
-			return FALSE;
+			return false;
 		}
 		pproptags->pproptag = pproptag;
 	}
 	pproptags->pproptag[pproptags->count] = proptag;
 	pproptags->count ++;
-	return TRUE;
+	return true;
 }
 
 void proptag_array_remove(PROPTAG_ARRAY *pproptags, uint32_t proptag)
@@ -84,20 +81,20 @@ void proptag_array_remove(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 	}
 }
 
-BOOL proptag_array_check(const PROPTAG_ARRAY *pproptags, uint32_t proptag)
+bool proptag_array_check(const PROPTAG_ARRAY *pproptags, uint32_t proptag)
 {
 	int i;
 	
 	for (i=0; i<pproptags->count; i++) {
 		if (proptag == pproptags->pproptag[i]) {
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
-BOOL proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
-	PROPTAG_ARRAY *pproptags_dst)
+static bool proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
+    PROPTAG_ARRAY *pproptags_dst)
 {
 	uint32_t count;
 	
@@ -105,11 +102,11 @@ BOOL proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 	pproptags_dst->count = pproptags->count;
 	pproptags_dst->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * count));
 	if (NULL == pproptags_dst->pproptag) {
-		return FALSE;
+		return false;
 	}
 	memcpy(pproptags_dst->pproptag, pproptags->pproptag,
 				sizeof(uint32_t)*pproptags->count);
-	return TRUE;
+	return true;
 }
 
 PROPTAG_ARRAY* proptag_array_dup(const PROPTAG_ARRAY *pproptags)
@@ -118,7 +115,7 @@ PROPTAG_ARRAY* proptag_array_dup(const PROPTAG_ARRAY *pproptags)
 	if (NULL == pproptags1) {
 		return NULL;
 	}
-	if (FALSE == proptag_array_dup_internal(pproptags, pproptags1)) {
+	if (!proptag_array_dup_internal(pproptags, pproptags1)) {
 		free(pproptags1);
 		return NULL;
 	}

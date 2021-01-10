@@ -3317,10 +3317,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		return FALSE;
 	}
 	for (i=0; i<pmsg->proplist.count; i++) {
-		if (TRUE == proptag_array_check(&tmp_proptags,
-			pmsg->proplist.ppropval[i].proptag)) {
+		if (proptag_array_check(&tmp_proptags,
+		    pmsg->proplist.ppropval[i].proptag))
 			continue;
-		}
 		tnef_proplist.ppropval[tnef_proplist.count].propid =
 			PROP_ID(pmsg->proplist.ppropval[i].proptag);
 		if (PROP_TAG_MESSAGECLASS == pmsg->proplist.ppropval[i].proptag) {
@@ -3532,10 +3531,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			return FALSE;
 		}
 		for (j=0; j<pattachment->proplist.count; j++) {
-			if (TRUE == proptag_array_check(&tmp_proptags,
-				pattachment->proplist.ppropval[j].proptag)) {
+			if (proptag_array_check(&tmp_proptags,
+			    pattachment->proplist.ppropval[j].proptag))
 				continue;
-			}
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(pattachment->proplist.ppropval[j].proptag);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PROP_TYPE(pattachment->proplist.ppropval[j].proptag);
