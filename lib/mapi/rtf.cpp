@@ -2455,10 +2455,8 @@ static int rtf_cmd_f(RTF_READER *preader,
         return CMD_RESULT_CONTINUE;
 	}
 	const FONTENTRY *pentry = rtf_lookup_font(preader, num);
-	if (NULL == pentry || NULL == pentry->name ||
-		NULL != strcasestr(pentry->name, "symbol")) {
+	if (pentry == nullptr || strcasestr(pentry->name, "symbol") != nullptr)
 		return CMD_RESULT_CONTINUE;
-	}
 	if (FALSE == rtf_attrstack_push_express(
 		preader, ATTR_FONTFACE, num)) {
 		return CMD_RESULT_ERROR;
