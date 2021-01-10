@@ -5,8 +5,8 @@ AM_CPPFLAGS = -D_GNU_SOURCE -I${top_srcdir}/include ${HX_CFLAGS} ${gumbo_CFLAGS}
 AM_CFLAGS = ${my_CFLAGS} -fvisibility=default
 AM_CXXFLAGS = ${my_CXXFLAGS}
 
-lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la libgromox_webkit.la
-noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_webkit.ldd libgromox_rpc.ldd libgromox_mapi.ldd
+lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_epoll.la libgromox_email.la libgromox_mapi.la libgromox_rpc.la
+noinst_DATA = libgromox_common.ldd libgromox_epoll.ldd libgromox_email.ldd libgromox_rpc.ldd libgromox_mapi.ldd
 pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
 pkglib_LTLIBRARIES = ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
@@ -121,9 +121,6 @@ libgromox_mapi_la_LIBADD = ${gumbo_LIBS} ${HX_LIBS} libgromox_common.la libgromo
 libgromox_rpc_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
 libgromox_rpc_la_SOURCES = lib/rpc/arcfour.cpp lib/rpc/crc32.cpp lib/rpc/hmacmd5.cpp lib/rpc/ndr.cpp lib/rpc/ntlmdes.cpp lib/rpc/ntlmssp.cpp
 libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la
-libgromox_webkit_la_CXXFLAGS = ${libgromox_common_la_CXXFLAGS}
-libgromox_webkit_la_SOURCES = lib/cookie_parser.cpp lib/assoc_array.cpp
-libgromox_webkit_la_LIBADD = ${HX_LIBS} libgromox_common.la
 
 # MTA_SYSTEM
 delivery_SOURCES = exch/http/service.cpp mda/delivery_app/console_cmd_handler.cpp mda/delivery_app/console_server.cpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
@@ -183,7 +180,7 @@ EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 # exch
 http_SOURCES = exch/http/blocks_allocator.cpp exch/http/console_cmd_handler.cpp exch/http/console_server.cpp exch/http/hpm_processor.cpp exch/http/http_parser.cpp exch/http/listener.cpp exch/http/main.cpp exch/http/mod_cache.cpp exch/http/mod_fastcgi.cpp exch/http/mod_rewrite.cpp exch/http/pdu_ndr.cpp exch/http/pdu_processor.cpp exch/http/service.cpp exch/http/system_services.cpp
-http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la libgromox_webkit.la
+http_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la libgromox_email.la libgromox_rpc.la libgromox_mapi.la
 midb_SOURCES = exch/http/service.cpp exch/midb/cmd_parser.cpp exch/midb/common_util.cpp exch/midb/console_cmd_handler.cpp exch/midb/console_server.cpp exch/midb/exmdb_client.cpp exch/midb/exmdb_ext.cpp exch/midb/exmdb_rpc.cpp exch/midb/listener.cpp exch/midb/mail_engine.cpp exch/midb/main.cpp exch/midb/system_services.cpp
 midb_LDADD = -ldl -lpthread -lresolv ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 zcore_SOURCES = exch/http/service.cpp exch/zcore/ab_tree.cpp exch/zcore/attachment_object.cpp exch/zcore/bounce_producer.cpp exch/zcore/common_util.cpp exch/zcore/console_cmd_handler.cpp exch/zcore/console_server.cpp exch/zcore/container_object.cpp exch/zcore/exmdb_client.cpp exch/zcore/exmdb_ext.cpp exch/zcore/exmdb_rpc.cpp exch/zcore/folder_object.cpp exch/zcore/ics_state.cpp exch/zcore/icsdownctx_object.cpp exch/zcore/icsupctx_object.cpp exch/zcore/listener.cpp exch/zcore/main.cpp exch/zcore/message_object.cpp exch/zcore/msgchg_grouping.cpp exch/zcore/names.cpp exch/zcore/object_tree.cpp exch/zcore/rpc_ext.cpp exch/zcore/rpc_parser.cpp exch/zcore/store_object.cpp exch/zcore/system_services.cpp exch/zcore/table_object.cpp exch/zcore/user_object.cpp exch/zcore/zarafa_server.cpp
@@ -272,8 +269,8 @@ EXTRA_libgxsvc_user_filter_la_DEPENDENCIES = ${default_sym}
 # AGENT_SERVICE
 digest_SOURCES = AGENT_SERVICE/digest.cpp
 digest_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la
-freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp
-freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_webkit.la libgromox_mapi.la
+freebusy_SOURCES = AGENT_SERVICE/freebusy.cpp lib/cookie_parser.cpp lib/assoc_array.cpp
+freebusy_LDADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 pam_gromox_la_CPPFLAGS = ${AM_CPPFLAGS}
 pam_gromox_la_SOURCES = AGENT_SERVICE/pam_gromox.cpp exch/http/service.cpp
 pam_gromox_la_LIBADD = -lpam ${HX_LIBS} libgromox_common.la
