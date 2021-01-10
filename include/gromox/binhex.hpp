@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 
 struct BINHEX {
@@ -13,7 +14,5 @@ struct BINHEX {
 	uint8_t *presource;
 };
 
-BOOL binhex_deserialize(BINHEX *pbinhex,
-	void *pbuff, uint32_t length);
-
+extern GX_EXPORT bool binhex_deserialize(BINHEX *, void *buf, uint32_t len);
 void binhex_clear(BINHEX *pbinhex);

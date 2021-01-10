@@ -112,8 +112,8 @@ static uint16_t binhex_crc(const uint8_t *ptr,
 	return crc;
 }
 
-static BOOL binhex_init_read_stat(READ_STAT *pstat,
-	void *pbuff, uint32_t length)
+static bool binhex_init_read_stat(READ_STAT *pstat,
+    void *pbuff, uint32_t length)
 {
 	pstat->pbuff = static_cast<uint8_t *>(pbuff);
 	pstat->length = length;
@@ -124,7 +124,7 @@ static BOOL binhex_init_read_stat(READ_STAT *pstat,
 	auto ptr = memmem(pbuff, length, g_hqxheader, HEADERMATCH);
 	if (NULL == ptr) {
 		debug_info("[binhex]: hqx buffer header not found");
-		return FALSE;
+		return false;
 	}
 	for (pstat->offset = static_cast<char *>(ptr) - static_cast<char *>(pbuff) + HEADERMATCH;
 		pstat->offset<length; pstat->offset++) {
@@ -135,7 +135,7 @@ static BOOL binhex_init_read_stat(READ_STAT *pstat,
 	}
 	if (pstat->offset >= length) {
 		debug_info("[binhex]: corrupt hqx buffer");
-		return FALSE;
+		return false;
 	}
 	for (;pstat->offset<length; pstat->offset++) {
 		if ('\r' != pstat->pbuff[pstat->offset] &&
@@ -147,17 +147,17 @@ static BOOL binhex_init_read_stat(READ_STAT *pstat,
 	}
 	if (pstat->offset >= length) {
 		debug_info("[binhex]: corrupt hqx buffer");
-		return FALSE;
+		return false;
 	}
 	if (':' != pstat->pbuff[pstat->offset]) {
 		debug_info("[binhex]: corrupt hqx buffer");
-		return FALSE;
+		return false;
 	}
 	pstat->offset ++;
-	return TRUE;
+	return true;
 }
 
-static BOOL binhex_read_char(READ_STAT *pstat, uint8_t *pchar)
+static bool binhex_read_char(READ_STAT *pstat, uint8_t *pchar)
 {
 	uint8_t c;
 	
@@ -170,29 +170,27 @@ static BOOL binhex_read_char(READ_STAT *pstat, uint8_t *pchar)
 	}
 	if (pstat->offset >= pstat->length) {
 		debug_info("[binhex]: unexpected end of hqx buffer");
-		return FALSE;
+		return false;
 	}
 	c = g_demap[c];
 	if (0 == c) {
 		debug_info("[binhex]: illegal character in hqx buffer");
-		return FALSE;
+		return false;
 	}
 	*pchar = c - 1;
-	return TRUE;
+	return true;
 }
 
-static BOOL binhex_decode_char(READ_STAT *pstat, uint8_t *pb)
+static bool binhex_decode_char(READ_STAT *pstat, uint8_t *pb)
 {
 	uint8_t c, c2, ch;
 
-	if (FALSE == binhex_read_char(pstat, &c)) {
-		return FALSE;
-	}
+	if (!binhex_read_char(pstat, &c))
+		return false;
 	switch (pstat->state86 & 0xFF00) {
 	case 0x0000:
-		if (FALSE == binhex_read_char(pstat, &c2)) {
-			return FALSE;
-		}
+		if (!binhex_read_char(pstat, &c2))
+			return false;
 		ch = (c << 2) | (c2 >> 4);
 		pstat->state86 = 0x0100 | (c2 & 0x0F);
 		break;
@@ -206,11 +204,10 @@ static BOOL binhex_decode_char(READ_STAT *pstat, uint8_t *pb)
 		break;
 	}
 	*pb = ch;
-	return TRUE;
+	return true;
 }
 
-static BOOL binhex_read_buffer(
-	READ_STAT *pstat, void *pbuff, uint32_t len)
+static bool binhex_read_buffer(READ_STAT *pstat, void *pbuff, uint32_t len)
 {
 	uint32_t i;
 	uint8_t c, rl;
@@ -223,13 +220,11 @@ static BOOL binhex_read_buffer(
 			pstat->runlen --;
 			continue;
 		}
-		if (FALSE == binhex_decode_char(pstat, &c)) {
-			return FALSE;
-		}
+		if (!binhex_decode_char(pstat, &c))
+			return false;
 		if (0x90 == c) {
-			if (FALSE == binhex_decode_char(pstat, &rl)) {
-				return FALSE;
-			}
+			if (!binhex_decode_char(pstat, &rl))
+				return false;
 			if (rl > 0) {
 				pstat->runlen = rl - 1;
 				i --;
@@ -241,79 +236,67 @@ static BOOL binhex_read_buffer(
 		ptr ++;
 	}
 	pstat->crc = binhex_crc(static_cast<uint8_t *>(pbuff), len, pstat->crc);
-	return TRUE;
+	return true;
 }
 
-static BOOL binhex_read_crc(READ_STAT *pstat)
+static bool binhex_read_crc(READ_STAT *pstat)
 {
 	uint16_t check;
 	uint8_t tmp_buff[2];
 
 	check = binhex_crc(g_zero, 2, pstat->crc);
-	if (FALSE == binhex_read_buffer(pstat, tmp_buff, 2)) {
-		return FALSE;
-	}
+	if (!binhex_read_buffer(pstat, tmp_buff, 2))
+		return false;
 	pstat->crc = RSVAL(tmp_buff, 0);
 	if (pstat->crc != check) {
 		debug_info("[binhex]: CRC checksum error");
 	}
 	pstat->crc = 0;
-	return TRUE;
+	return true;
 }
 
-BOOL binhex_deserialize(BINHEX *pbinhex,
-	void *pbuff, uint32_t length)
+bool binhex_deserialize(BINHEX *pbinhex, void *pbuff, uint32_t length)
 {
 	uint8_t tmp_byte;
 	uint8_t tmp_buff[4];
 	READ_STAT read_stat;
 	
-	if (FALSE == binhex_init_read_stat(&read_stat, pbuff, length)) {
-		return FALSE;
-	}
-	if (FALSE == binhex_read_buffer(&read_stat, &tmp_byte, 1)) {
-		return FALSE;
-	}
+	if (!binhex_init_read_stat(&read_stat, pbuff, length))
+		return false;
+	if (!binhex_read_buffer(&read_stat, &tmp_byte, 1))
+		return false;
 	if (tmp_byte > 63) {
-		return FALSE;
+		return false;
 	}
-	if (FALSE == binhex_read_buffer(&read_stat,
-		pbinhex->file_name, tmp_byte + 1)) {
-		return FALSE;
-	}
-	if (FALSE == binhex_read_buffer(&read_stat, &pbinhex->type, 4)) {
-		return FALSE;
-	}
-	if (FALSE == binhex_read_buffer(&read_stat, &pbinhex->creator, 4)) {
-		return FALSE;
-	}
-	if (FALSE == binhex_read_buffer(&read_stat, tmp_buff, 2)) {
-		return FALSE;
-	}
+	if (!binhex_read_buffer(&read_stat, pbinhex->file_name, tmp_byte + 1))
+		return false;
+	if (!binhex_read_buffer(&read_stat, &pbinhex->type, 4))
+		return false;
+	if (!binhex_read_buffer(&read_stat, &pbinhex->creator, 4))
+		return false;
+	if (!binhex_read_buffer(&read_stat, tmp_buff, 2))
+		return false;
 	pbinhex->flags = RSVAL(tmp_buff, 0);
-	if (FALSE == binhex_read_buffer(&read_stat, tmp_buff, 4)) {
-		return FALSE;
-	}
+	if (!binhex_read_buffer(&read_stat, tmp_buff, 4))
+		return false;
 	pbinhex->data_len = RIVAL(tmp_buff, 0);
 	if (pbinhex->data_len >= length) {
-		return FALSE;
+		return false;
 	}
-	if (FALSE == binhex_read_buffer(&read_stat, tmp_buff, 4)) {
-		return FALSE;
-	}
+	if (!binhex_read_buffer(&read_stat, tmp_buff, 4))
+		return false;
 	pbinhex->res_len = RIVAL(tmp_buff, 0);
 	if (pbinhex->res_len >= length) {
-		return FALSE;
+		return false;
 	}
-	if (FALSE == binhex_read_crc(&read_stat)) {
-		return FALSE;
-	}
+	if (!binhex_read_crc(&read_stat))
+		return false;
 	if (0 == pbinhex->data_len) {
 		pbinhex->pdata = NULL;
 	} else {
 		pbinhex->pdata = static_cast<uint8_t *>(malloc(pbinhex->data_len));
 		if (NULL == pbinhex->pdata) {
-			return FALSE;
+			return false;
 		}
 	}
 	if (0 == pbinhex->res_len) {
@@ -322,26 +305,23 @@ BOOL binhex_deserialize(BINHEX *pbinhex,
 		pbinhex->presource = static_cast<uint8_t *>(malloc(pbinhex->res_len));
 		if (NULL == pbinhex->presource) {
 			free(pbinhex->pdata);
-			return FALSE;
+			return false;
 		}
 	}
 	if (NULL != pbinhex->pdata) {
-		if (FALSE == binhex_read_buffer(&read_stat,
-			pbinhex->pdata, pbinhex->data_len)) {
+		if (!binhex_read_buffer(&read_stat, pbinhex->pdata, pbinhex->data_len)) {
 			free(pbinhex->pdata);
 			free(pbinhex->presource);
-			return FALSE;
+			return false;
 		}
 	}
-	if (FALSE == binhex_read_crc(&read_stat)) {
-		return FALSE;
-	}
+	if (!binhex_read_crc(&read_stat))
+		return false;
 	if (NULL != pbinhex->presource) {
-		if (FALSE == binhex_read_buffer(&read_stat,
-			pbinhex->presource, pbinhex->res_len)) {
+		if (!binhex_read_buffer(&read_stat, pbinhex->presource, pbinhex->res_len)) {
 			free(pbinhex->pdata);
 			free(pbinhex->presource);
-			return FALSE;
+			return false;
 		}
 	}
 	return binhex_read_crc(&read_stat);

@@ -2331,7 +2331,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	if (FALSE == binhex_deserialize(&binhex, pcontent, content_len)) {
+	if (!binhex_deserialize(&binhex, pcontent, content_len)) {
 		free(pcontent);
 		return FALSE;
 	}
