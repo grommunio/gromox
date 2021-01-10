@@ -116,20 +116,18 @@ static uint16_t binhex_crc(const uint8_t *ptr,
 static BOOL binhex_init_read_stat(READ_STAT *pstat,
 	void *pbuff, uint32_t length)
 {
-	void *ptr;
-	
-	pstat->pbuff = pbuff;
+	pstat->pbuff = static_cast<uint8_t *>(pbuff);
 	pstat->length = length;
 	pstat->offset = 0;
 	pstat->state86 = 0;
 	pstat->runlen = 0;
 	pstat->crc = 0;
-	ptr = memmem(pbuff, length, g_hqxheader, HEADERMATCH);
+	auto ptr = memmem(pbuff, length, g_hqxheader, HEADERMATCH);
 	if (NULL == ptr) {
 		debug_info("[binhex]: hqx buffer header not found");
 		return FALSE;
 	}
-	for (pstat->offset=ptr-pbuff+HEADERMATCH;
+	for (pstat->offset = static_cast<char *>(ptr) - static_cast<char *>(pbuff) + HEADERMATCH;
 		pstat->offset<length; pstat->offset++) {
 		if ('\r' == pstat->pbuff[pstat->offset] ||
 			'\n' == pstat->pbuff[pstat->offset]) {
@@ -216,10 +214,9 @@ static BOOL binhex_read_buffer(
 	READ_STAT *pstat, void *pbuff, uint32_t len)
 {
 	uint32_t i;
-	uint8_t *ptr;
 	uint8_t c, rl;
 	
-	ptr = pbuff;
+	auto ptr = static_cast<uint8_t *>(pbuff);
 	for (i=0; i<len; i++) {
 		if (0 != pstat->runlen) {
 			*ptr = pstat->lastch;
@@ -244,7 +241,7 @@ static BOOL binhex_read_buffer(
 		*ptr = c;
 		ptr ++;
 	}
-	pstat->crc = binhex_crc(pbuff, len, pstat->crc);
+	pstat->crc = binhex_crc(static_cast<uint8_t *>(pbuff), len, pstat->crc);
 	return TRUE;
 }
 
@@ -315,7 +312,7 @@ BOOL binhex_deserialize(BINHEX *pbinhex,
 	if (0 == pbinhex->data_len) {
 		pbinhex->pdata = NULL;
 	} else {
-		pbinhex->pdata = malloc(pbinhex->data_len);
+		pbinhex->pdata = static_cast<uint8_t *>(malloc(pbinhex->data_len));
 		if (NULL == pbinhex->pdata) {
 			return FALSE;
 		}
@@ -323,7 +320,7 @@ BOOL binhex_deserialize(BINHEX *pbinhex,
 	if (0 == pbinhex->res_len) {
 		pbinhex->presource = NULL;
 	} else {
-		pbinhex->presource = malloc(pbinhex->res_len);
+		pbinhex->presource = static_cast<uint8_t *>(malloc(pbinhex->res_len));
 		if (NULL == pbinhex->presource) {
 			free(pbinhex->pdata);
 			return FALSE;

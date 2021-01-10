@@ -3,11 +3,10 @@
 #include "ext_buffer.h"
 #include <string.h>
 #include <stdlib.h>
-
+#include <gromox/defs.h>
 
 BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 {
-	BINARY *pbin;
 	BINARY tmp_bin;
 	BINARY tmp_bin1;
 	EXT_PUSH ext_push;
@@ -33,7 +32,7 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 	entry_buff[1].entry_id = AS_REALNAME;
 	entry_buff[1].pentry = &tmp_bin;
 	tmp_bin.cb = strlen(pbinhex->file_name);
-	tmp_bin.pb = (void*)pbinhex->file_name;
+	tmp_bin.pv = deconst(pbinhex->file_name);
 	if (0 != pbinhex->res_len) {
 		entry_buff[2].entry_id = AS_RESOURCE;
 		entry_buff[2].pentry = &tmp_bin1;
@@ -47,7 +46,7 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 		ext_buffer_push_free(&ext_push);
 		return FALSE;
 	}
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		ext_buffer_push_free(&ext_push);
 		return NULL;
@@ -59,7 +58,6 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 
 BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 {
-	BINARY *pbin;
 	BINARY tmp_bin;
 	BINARY tmp_bin1;
 	EXT_PUSH ext_push;
@@ -77,7 +75,7 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 	entry_buff[applefile.count].entry_id = AS_REALNAME;
 	entry_buff[applefile.count].pentry = &tmp_bin;
 	tmp_bin.cb = strlen(pmacbin->header.file_name);
-	tmp_bin.pb = (void*)pmacbin->header.file_name;
+	tmp_bin.pv = deconst(pmacbin->header.file_name);
 	applefile.count ++;
 	entry_buff[applefile.count].entry_id = AS_FILEDATES;
 	entry_buff[applefile.count].pentry = &entry_date;
@@ -107,7 +105,7 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 		entry_buff[applefile.count].entry_id = AS_RESOURCE;
 		entry_buff[applefile.count].pentry = &tmp_bin1;
 		tmp_bin1.cb = pmacbin->header.res_len;
-		tmp_bin1.pb = (void*)pmacbin->presource;
+		tmp_bin1.pb = deconst(pmacbin->presource);
 		applefile.count ++;
 	}
 	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
@@ -117,7 +115,7 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		ext_buffer_push_free(&ext_push);
 		return NULL;
@@ -131,7 +129,6 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 	const void *pdata, uint32_t data_len)
 {
 	int i;
-	BINARY *pbin;
 	MACBINARY macbin;
 	EXT_PUSH ext_push;
 	
@@ -181,7 +178,7 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 	macbin.header.mini_version = 129; 
 	memcpy(&macbin.header.signature, "mBIN", 4);
 	macbin.header.data_len = data_len;
-	macbin.pdata = (void*)pdata;
+	macbin.pdata = static_cast<const uint8_t *>(pdata);
 	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 		return NULL;
 	}
@@ -189,7 +186,7 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		ext_buffer_push_free(&ext_push);
 		return NULL;
@@ -202,7 +199,6 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 {
 	int i;
-	BINARY *pbin;
 	MACBINARY macbin;
 	EXT_PUSH ext_push;
 	
@@ -261,7 +257,7 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		ext_buffer_push_free(&ext_push);
 		return NULL;
@@ -273,7 +269,6 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 
 BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 {
-	BINARY *pbin;
 	MACBINARY macbin;
 	EXT_PUSH ext_push;
 	
@@ -301,7 +296,7 @@ BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 		ext_buffer_push_free(&ext_push);
 		return NULL;
 	}
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		ext_buffer_push_free(&ext_push);
 		return NULL;
@@ -314,14 +309,13 @@ BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 {
 	int i;
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	APPLEFILE applefile;
 	
 	applefile.header = papplefile->header;
 	applefile.header.magic_num = APPLEDOUBLE_MAGIC;
 	applefile.count = 0;
-	applefile.pentries = malloc(sizeof(ENTRY_DATA)*papplefile->count);
+	applefile.pentries = static_cast<ENTRY_DATA *>(malloc(sizeof(ENTRY_DATA) * papplefile->count));
 	if (NULL == applefile.pentries) {
 		return NULL;
 	}
@@ -342,7 +336,7 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 		return FALSE;
 	}
 	free(applefile.pentries);
-	pbin = malloc(sizeof(BINARY));
+	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
 		ext_buffer_push_free(&ext_push);
 		return NULL;
