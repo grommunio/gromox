@@ -1211,10 +1211,8 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		idset_remove(pctx->pstate->pgiven, message_id);
 		if (TRUE == b_downloaded) {
 			if (0 == (SYNC_FLAG_NODELETIONS & pctx->sync_flags)) {
-				if (FALSE == eid_array_append(
-					pctx->pdeleted_messages, message_id)) {
+				if (!eid_array_append(pctx->pdeleted_messages, message_id))
 					return FALSE;	
-				}
 			}
 			if (SYNC_FLAG_READSTATE & pctx->sync_flags) {
 				eid_array_remove(pctx->pread_messags, message_id);

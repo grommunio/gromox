@@ -439,8 +439,8 @@ static BOOL db_engine_search_folder(const char *dir,
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (FALSE == eid_array_append(pmessage_ids,
-			sqlite3_column_int64(pstmt, 0))) {
+		if (!eid_array_append(pmessage_ids,
+		    sqlite3_column_int64(pstmt, 0))) {
 			eid_array_free(pmessage_ids);
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
@@ -511,8 +511,8 @@ static BOOL db_engine_load_folder_descendant(const char *dir,
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (FALSE == eid_array_append(pfolder_ids,
-			sqlite3_column_int64(pstmt, 0))) {
+		if (!eid_array_append(pfolder_ids,
+		    sqlite3_column_int64(pstmt, 0))) {
 			sqlite3_finalize(pstmt);
 			db_engine_put_db(pdb);
 			return FALSE;
@@ -701,8 +701,8 @@ NEXT_SEARCH:
 			goto NEXT_SEARCH;	
 		}
 		for (i=0; i<psearch->folder_ids.count; i++) {
-			if (FALSE == eid_array_append(pfolder_ids,
-				psearch->folder_ids.pll[i])) {
+			if (!eid_array_append(pfolder_ids,
+			    psearch->folder_ids.pll[i])) {
 				eid_array_free(pfolder_ids);
 				db_engine_free_populating_node(psearch);
 				goto NEXT_SEARCH;	

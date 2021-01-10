@@ -237,10 +237,8 @@ BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (FALSE == eid_array_append(
-			pctx->pchg_eids, *(uint64_t*)pvalue)) {
+		if (!eid_array_append(pctx->pchg_eids, *static_cast<uint64_t *>(pvalue)))
 			return FALSE;	
-		}
 	}
 	if (fldchgs.count > 0) {
 		*pb_changed = TRUE;
@@ -347,11 +345,7 @@ BOOL icsdownctx_object_sync_message_change(ICSDOWNCTX_OBJECT *pctx,
 			return FALSE;	
 		}
 	} while (NULL == pvalue);
-	if (FALSE == eid_array_check(pctx->pupdated_eids, message_id)) {
-		*pb_new = TRUE;	
-	} else {
-		*pb_new = FALSE;
-	}
+	*pb_new = !eid_array_check(pctx->pupdated_eids, message_id) ? TRUE : false;
 	pproplist->count = 2;
 	pproplist->ppropval = static_cast<TAGGED_PROPVAL *>(common_util_alloc(2 * sizeof(TAGGED_PROPVAL)));
 	if (NULL == pproplist->ppropval) {

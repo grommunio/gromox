@@ -78,7 +78,7 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 			eid_array_free(pmessage_ids);
 			return NULL;
 		}
-		if (FALSE == eid_array_append(pmessage_ids, *pmid)) {
+		if (!eid_array_append(pmessage_ids, *pmid)) {
 			eid_array_free(pmessage_ids);
 			return NULL;
 		}
@@ -602,8 +602,8 @@ uint32_t rop_fasttransfersourcecopymessages(
 	if (NULL == pmids) {
 		return ecMAPIOOM;
 	}
-	if (FALSE == eid_array_batch_append(pmids,
-		pmessage_ids->count, pmessage_ids->pll)) {
+	if (!eid_array_batch_append(pmids, pmessage_ids->count,
+	    pmessage_ids->pll)) {
 		eid_array_free(pmids);
 		return ecMAPIOOM;
 	}
