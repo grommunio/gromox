@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
 

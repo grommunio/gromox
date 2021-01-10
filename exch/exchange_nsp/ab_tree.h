@@ -1,14 +1,9 @@
 #pragma once
-#ifdef __cplusplus
-#	include <atomic>
-#	include <cstdint>
-#	include <ctime>
-#	include <string>
-#	include <vector>
-#else
-#	include <stdint.h>
-#	include <time.h>
-#endif
+#include <atomic>
+#include <cstdint>
+#include <ctime>
+#include <string>
+#include <vector>
 #include <gromox/proc_common.h>
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
@@ -79,11 +74,7 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
 
 void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, char *str_dname);
-
-#ifdef __cplusplus
 extern std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *, unsigned int type);
-#endif
-	
 void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value);
 	
 void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,

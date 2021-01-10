@@ -1,7 +1,4 @@
 #pragma once
-#ifndef __cplusplus
-#	include <stdbool.h>
-#endif
 #include <gromox/plugin.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/common_types.hpp>

@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstddef>
-#else
-#	include <stddef.h>
-#endif
+#include <cstddef>
 
 /* double list is composed by the base unit DOUBLE_LIST_NODE */
 struct DOUBLE_LIST_NODE {

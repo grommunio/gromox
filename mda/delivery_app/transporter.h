@@ -1,7 +1,4 @@
 #pragma once
-#ifndef __cplusplus
-#	include <stdbool.h>
-#endif
 #include "message_dequeue.h"
 #include <gromox/plugin.hpp>
 #include <gromox/mail.hpp>

@@ -1,11 +1,6 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#	include <ctime>
-#else
-#	include <stdint.h>
-#	include <time.h>
-#endif
+#include <cstdint>
+#include <ctime>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #define RESPONSE_TIMEOUT				-1

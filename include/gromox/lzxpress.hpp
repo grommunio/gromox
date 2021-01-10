@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 
 uint32_t lzxpress_compress(const uint8_t *uncompressed,
 	uint32_t uncompressed_size, uint8_t *compressed);

@@ -1,17 +1,10 @@
 #pragma once
-#ifndef __cplusplus
-#	include <stdbool.h>
-#	include <stdio.h>
-#	include <string.h>
-#else
-#	include <cstdio>
-#	include <cstring>
-#endif
+#include <cstdio>
+#include <cstring>
 #include <mysql.h>
 #include <sqlite3.h>
 #include <gromox/defs.h>
 
-#ifdef __cplusplus
 namespace gromox {
 
 using DB_LENGTHS = unsigned long *;
@@ -55,7 +48,6 @@ class GX_EXPORT DB_RESULT final {
 };
 
 }
-#endif
 
 static inline bool gx_sql_prep(sqlite3 *db, const char *query, sqlite3_stmt **out)
 {

@@ -1,7 +1,4 @@
 #pragma once
-#ifndef __cplusplus
-#	include <stdbool.h>
-#endif
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>

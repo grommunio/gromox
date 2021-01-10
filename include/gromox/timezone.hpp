@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <ctime>
-#else
-#	include <time.h>
-#endif
+#include <ctime>
 
 extern const struct state *tz_alloc(const char *name);
 void tz_free(const struct state* const sp);

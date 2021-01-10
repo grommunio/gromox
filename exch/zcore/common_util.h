@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include "store_object.h"

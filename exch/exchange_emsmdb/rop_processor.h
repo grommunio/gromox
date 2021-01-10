@@ -1,11 +1,6 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#	include <ctime>
-#else
-#	include <stdint.h>
-#	include <time.h>
-#endif
+#include <cstdint>
+#include <ctime>
 #include "logon_object.h"
 #include <gromox/mapi_types.hpp>
 #include <gromox/mem_file.hpp>

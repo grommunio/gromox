@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/stream.hpp>

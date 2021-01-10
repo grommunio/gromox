@@ -1,10 +1,6 @@
 #pragma once
-#ifdef __cplusplus
-#	include <atomic>
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <atomic>
+#include <cstdint>
 #include <gromox/element_data.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>

@@ -1,12 +1,7 @@
 #pragma once
 #include "php.h"
 #include "types.h"
-
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 
 struct RPC_REQUEST;
 struct RPC_RESPONSE;

@@ -2,11 +2,7 @@
  * Email Address Kids Lib Header
  */
 #pragma once
-#ifdef __cplusplus
-#	include <ctime>
-#else
-#	include <time.h>
-#endif
+#include <ctime>
 #include <gromox/defs.h>
 #include <gromox/mem_file.hpp>
 #define MIME_NAME_LEN			80

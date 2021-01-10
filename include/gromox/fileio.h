@@ -1,12 +1,7 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdarg>
-#	include <cstddef>
-#	include <string>
-#else
-#	include <stdarg.h>
-#	include <stddef.h>
-#endif
+#include <cstdarg>
+#include <cstddef>
+#include <string>
 #include <gromox/defs.h>
 
 #define gx_snprintf(buf, size, fmt, ...) gx_snprintf1((buf), (size), __FILE__, __LINE__, (fmt), ## __VA_ARGS__)
@@ -15,10 +10,8 @@ extern GX_EXPORT int gx_snprintf1(char *, size_t, const char *, unsigned int, co
 extern GX_EXPORT int gx_vsnprintf1(char *, size_t, const char *, unsigned int, const char *, va_list);
 extern char **read_file_by_line(const char *file);
 
-#ifdef __cplusplus
 namespace gromox {
 
 extern std::string iconvtext(const char *, size_t, const char *from, const char *to);
 
 }
-#endif

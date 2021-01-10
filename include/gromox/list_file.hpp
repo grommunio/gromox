@@ -1,10 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdio>
-#else
-#	include <stdbool.h>
-#	include <stdio.h>
-#endif
+#include <cstdio>
 
 struct LIST_FILE {
     FILE*       file_ptr;

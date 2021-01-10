@@ -1,7 +1,4 @@
 #pragma once
-#ifndef __cplusplus
-#	include <stdbool.h>
-#endif
 #include <gromox/common_types.hpp>
 #include <gromox/plugin.hpp>
 
@@ -12,9 +9,7 @@ struct service_init_param {
 	int context_num;
 };
 
-#ifdef __cplusplus
 extern void service_init(const struct service_init_param &);
-#endif
 extern int service_run(void);
 extern int service_stop(void);
 int service_load_library(const char *path);

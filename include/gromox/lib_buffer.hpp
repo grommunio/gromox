@@ -1,11 +1,6 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdlib>
-#	include <cstring>
-#else
-#	include <stdlib.h>
-#	include <string.h>
-#endif
+#include <cstdlib>
+#include <cstring>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <pthread.h>

@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 #include <gromox/rpc_types.hpp>
 #include <gromox/double_list.hpp>
 #define AUX_VERSION_1								0x1

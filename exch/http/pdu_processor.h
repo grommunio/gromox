@@ -1,7 +1,4 @@
 #pragma once
-#ifndef __cplusplus
-#	include <stdbool.h>
-#endif
 #include <gromox/ndr.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/ntlmssp.hpp>

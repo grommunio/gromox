@@ -1,11 +1,6 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#	include <ctime>
-#else
-#	include <stdint.h>
-#	include <time.h>
-#endif
+#include <cstdint>
+#include <ctime>
 #include <gromox/ext_buffer.hpp>
 #define APPLESINGLE_MAGIC	0x00051600
 #define APPLEDOUBLE_MAGIC	0x00051607

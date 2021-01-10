@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <ctime>
-#else
-#	include <time.h>
-#endif
+#include <ctime>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #define ICAL_NAME_LEN					64

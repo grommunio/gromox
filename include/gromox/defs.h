@@ -1,15 +1,7 @@
 #pragma once
 #include <endian.h>
-#ifndef __cplusplus
-#	define nullptr NULL
-#endif
-#ifdef __cplusplus
-#	include <cstddef>
+#include <cstddef>
 template<typename T, size_t N> constexpr inline size_t GX_ARRAY_SIZE(T (&)[N]) { return N; }
-#else
-#	include <libHX/defs.h>
-#	define GX_ARRAY_SIZE ARRAY_SIZE
-#endif
 #define GX_EXPORT __attribute__((visibility("default")))
 
 #if (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || \
@@ -104,6 +96,4 @@ enum {
 
 extern GX_EXPORT unsigned int gxerr_to_hresult(gxerr_t);
 
-#ifdef __cplusplus
 template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x); }
-#endif

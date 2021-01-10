@@ -1,12 +1,6 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstddef>
-#	include <cstdint>
-#else
-#	include <stddef.h>
-#	include <stdint.h>
-#endif
-
+#include <cstddef>
+#include <cstdint>
 #ifndef BOOL
 #define BOOL    int
 #endif

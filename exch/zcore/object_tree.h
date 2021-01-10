@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/int_hash.hpp>

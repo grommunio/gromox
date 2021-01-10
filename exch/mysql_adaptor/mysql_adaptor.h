@@ -39,10 +39,7 @@ struct sql_class {
 	std::string name;
 };
 
-#ifdef __cplusplus
 extern void mysql_adaptor_init(const struct mysql_adaptor_init_param &);
-#endif
-
 extern int mysql_adaptor_run(void);
 extern int mysql_adaptor_stop(void);
 extern void mysql_adaptor_free(void);

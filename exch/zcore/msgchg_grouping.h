@@ -1,9 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdint.h>
-#endif
+#include <cstdint>
 #include <gromox/element_data.hpp>
 #include "store_object.h"
 #include <gromox/mapi_types.hpp>

@@ -1,10 +1,5 @@
 #pragma once
-#ifdef __cplusplus
-#	include <cstdint>
-#else
-#	include <stdbool.h>
-#	include <stdint.h>
-#endif
+#include <cstdint>
 #include <gromox/common_types.hpp>
 
 BOOL utf8_check(const char *str);

@@ -1,12 +1,7 @@
 #pragma once
-#ifdef __cplusplus
-#	include <atomic>
-#	include <cstdint>
-#	include <ctime>
-#else
-#	include <stdint.h>
-#	include <time.h>
-#endif
+#include <atomic>
+#include <cstdint>
+#include <ctime>
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/mapi_types.hpp>
