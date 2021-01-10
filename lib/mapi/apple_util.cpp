@@ -40,11 +40,11 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 		tmp_bin1.pb = pbinhex->presource;
 	}
 	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
-		return FALSE;
+		return nullptr;
 	}
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
 		ext_buffer_push_free(&ext_push);
-		return FALSE;
+		return nullptr;
 	}
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 	if (NULL == pbin) {
@@ -328,12 +328,12 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 	}
 	if (FALSE == ext_buffer_push_init(&ext_push, NULL, 0, 0)) {
 		free(applefile.pentries);
-		return FALSE;
+		return nullptr;
 	}
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
 		ext_buffer_push_free(&ext_push);
 		free(applefile.pentries);
-		return FALSE;
+		return nullptr;
 	}
 	free(applefile.pentries);
 	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));

@@ -5046,7 +5046,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			propnames.ppropname = &propname;
 			if (FALSE == get_propids(&propnames, &propids)) {
 				message_content_free(pmsg);
-				return FALSE;
+				return nullptr;
 			}
 			propval.proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
 			propval.pvalue = &tmp_byte;
@@ -5054,7 +5054,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			if (FALSE == tpropval_array_set_propval(
 				&pmsg->proplist, &propval)) {
 				message_content_free(pmsg);
-				return FALSE;	
+				return nullptr;
 			}
 		}
 	}

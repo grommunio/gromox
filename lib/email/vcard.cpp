@@ -316,7 +316,7 @@ static VCARD_PARAM* vcard_retrieve_param(char *ptag)
 		pnext = vcard_get_comma(ptr);
 		if (FALSE == vcard_append_paramval(pvparam, ptr)) {
 			vcard_free_param(pvparam);
-			return FALSE;
+			return nullptr;
 		}
 	} while ((ptr = pnext) != NULL);
 	return pvparam;
@@ -345,7 +345,7 @@ static VCARD_LINE* vcard_retrieve_tag(char *ptag)
 		pnext = vcard_get_semicolon(ptr);
 		pvparam = vcard_retrieve_param(ptr);
 		if (NULL == pvparam) {
-			return FALSE;
+			return nullptr;
 		}
 		vcard_append_param(pvline, pvparam);
 	} while ((ptr = pnext) != NULL);

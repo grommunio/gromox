@@ -377,7 +377,7 @@ static ICAL_LINE* ical_retrieve_tag(char *ptag)
 		pnext = ical_get_tag_semicolon(ptr);
 		piparam = ical_retrieve_param(ptr);
 		if (NULL == piparam) {
-			return FALSE;
+			return nullptr;
 		}
 		ical_append_param(piline, piparam);
 	} while ((ptr = pnext) != NULL);
@@ -1744,11 +1744,11 @@ static const char* ical_get_datetime_offset(
 			itime2.leap_second = 0;
 			if (FALSE == ical_parse_date(pvalue, &itime2.year,
 				&itime2.month, &itime2.day)) {
-				return FALSE;
+				return nullptr;
 			}
 		} else {
 			if (FALSE == ical_datetime_to_utc(NULL, pvalue, &tmp_time)) {
-				return FALSE;
+				return nullptr;
 			}
 			piline = ical_get_line(pcomponent, "TZOFFSETTO");
 			if (NULL == piline) {
@@ -1759,7 +1759,7 @@ static const char* ical_get_datetime_offset(
 				return NULL;
 			}
 			if (FALSE == ical_parse_utc_offset(pvalue, &hour, &minute)) {
-				return FALSE;
+				return nullptr;
 			}
 			tmp_time -= 60*60*hour + 60*minute;
 			make_gmtm(tmp_time, &tmp_tm);
@@ -3116,7 +3116,7 @@ BOOL ical_rrule_endless(ICAL_RRULE *pirrule)
 const ICAL_TIME* ical_rrule_until_itime(ICAL_RRULE *pirrule)
 {
 	if (FALSE == pirrule->b_until) {
-		return FALSE;
+		return nullptr;
 	} else {
 		return &pirrule->until_itime;
 	}

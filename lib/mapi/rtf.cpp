@@ -849,7 +849,7 @@ static BOOL rtf_express_attr_begin(
 			}
 		}
 		if (FALSE == rtf_iconv_open(preader, encoding)) {
-			return CMD_RESULT_ERROR;
+			return false;
 		}
 		return TRUE;
 	case ATTR_FOREGROUND:
@@ -954,7 +954,7 @@ static BOOL rtf_express_attr_begin(
 		preader->is_within_htmltag = TRUE;
 		if (FALSE == rtf_iconv_open(preader,
 			preader->default_encoding)) {
-			return CMD_RESULT_ERROR;
+			return false;
 		}
 		break;
 	}
@@ -1054,7 +1054,7 @@ static BOOL rtf_express_attr_end(
 			}
 		}
 		if (FALSE == rtf_iconv_open(preader, encoding)) {
-			return CMD_RESULT_ERROR;
+			return false;
 		}
 		return TRUE;
 	case ATTR_FOREGROUND:
