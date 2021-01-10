@@ -1,7 +1,6 @@
 #pragma once
-#include "lib_buffer.h"
-#include "single_list.h"
-
+#include <gromox/lib_buffer.hpp>
+#include <gromox/single_list.hpp>
 #define EXTRA_FIFOITEM_SIZE sizeof(SINGLE_LIST)
 
 typedef struct _FIFO {

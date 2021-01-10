@@ -4,7 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
 
 struct USER_OBJECT {

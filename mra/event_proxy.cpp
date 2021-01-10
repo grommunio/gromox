@@ -4,8 +4,8 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
-#include "double_list.h"
-#include "config_file.h"
+#include <gromox/double_list.hpp>
+#include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

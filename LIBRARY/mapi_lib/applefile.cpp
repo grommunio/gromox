@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/applefile.hpp>
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include <string.h>
 
 /* Mac time of 00:00:00 GMT, Jan 1, 1970 */

@@ -2,9 +2,9 @@
 /*
  * A simple string hash table data structure
  */
-#include "common_types.h"
-#include "str_hash.h"
-#include "util.h"
+#include <gromox/common_types.hpp>
+#include <gromox/str_hash.hpp>
+#include <gromox/util.hpp>
 #include <cstring>
 
 static size_t g_num_of_collision;

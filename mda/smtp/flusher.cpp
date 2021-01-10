@@ -2,9 +2,9 @@
 #include <gromox/paths.h>
 #include "flusher.h"
 #include "service.h"
-#include "single_list.h"
+#include <gromox/single_list.hpp>
 #include "resource.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <pthread.h>
 #include <sys/types.h>
 #include <dlfcn.h>

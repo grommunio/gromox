@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "util.h"
+#include <gromox/util.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "common_util.h"

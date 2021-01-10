@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <libHX/string.h>
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include "exmdb_client.h"
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/socket.h>
 #include <gromox/ext_buffer.hpp>
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>

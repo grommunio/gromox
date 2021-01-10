@@ -1,9 +1,8 @@
 #pragma once
-#include "mem_file.h"
-#include "common_types.h"
+#include <gromox/mem_file.hpp>
+#include <gromox/common_types.hpp>
 #include <openssl/ssl.h>
 #include <gromox/defs.h>
-
 #define PLUGIN_INIT                 0
 #define PLUGIN_FREE                 1
 

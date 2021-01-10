@@ -2,10 +2,10 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "mail_func.h"
-#include "timezone.h"
+#include <gromox/mail_func.hpp>
+#include <gromox/timezone.hpp>
 #include <gromox/ical.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

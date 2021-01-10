@@ -8,10 +8,10 @@
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include <gromox/socket.h>
-#include "util.h"
-#include "double_list.h"
-#include "list_file.h"
-#include "config_file.h"
+#include <gromox/util.hpp>
+#include <gromox/double_list.hpp>
+#include <gromox/list_file.hpp>
+#include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

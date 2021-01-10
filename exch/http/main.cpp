@@ -8,13 +8,13 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include "config_file.h"
-#include "util.h"
+#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 #include "service.h"
 #include "listener.h"
 #include "resource.h"
 #include "mod_cache.h"
-#include "lib_buffer.h"
+#include <gromox/lib_buffer.hpp>
 #include "mod_rewrite.h"
 #include "mod_fastcgi.h"
 #include "http_parser.h"

@@ -8,8 +8,8 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include "ab_tree.h"
 #include <cstdio>
 #include <cstring>

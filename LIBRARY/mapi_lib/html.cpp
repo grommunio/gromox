@@ -5,11 +5,11 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/html.hpp>
-#include "util.h"
-#include "int_hash.h"
-#include "str_hash.h"
+#include <gromox/util.hpp>
+#include <gromox/int_hash.hpp>
+#include <gromox/str_hash.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include <cstdio>
 #include <gumbo.h>
 #include <iconv.h>

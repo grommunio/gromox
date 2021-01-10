@@ -8,8 +8,7 @@
 #endif
 #include "logon_object.h"
 #include <gromox/mapi_types.hpp>
-#include "mem_file.h"
-
+#include <gromox/mem_file.hpp>
 #define OBJECT_TYPE_NONE					0
 #define OBJECT_TYPE_LOGON					1
 #define OBJECT_TYPE_FOLDER					2

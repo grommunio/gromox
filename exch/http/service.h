@@ -2,8 +2,8 @@
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
-#include "common_types.h"
-#include "plugin.h"
+#include <gromox/common_types.hpp>
+#include <gromox/plugin.hpp>
 
 struct service_init_param {
 	const char *plugin_dir, *config_dir, *data_dir, *state_dir;

@@ -3,9 +3,9 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/svc_common.h>
-#include "str_hash.h"
-#include "list_file.h"
-#include "util.h"
+#include <gromox/str_hash.hpp>
+#include <gromox/list_file.hpp>
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <cstring>
 #include <sys/stat.h>

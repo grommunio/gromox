@@ -12,8 +12,8 @@
 #include <libHX/string.h>
 #include "str_filter.h"
 #include "audit_filter.h"
-#include "str_hash.h"
-#include "util.h"
+#include <gromox/str_hash.hpp>
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <fcntl.h>
 #include <pthread.h>

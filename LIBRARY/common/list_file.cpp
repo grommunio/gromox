@@ -2,9 +2,9 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cerrno>
-#include "list_file.h"
-#include "common_types.h"
-#include "util.h"
+#include <gromox/list_file.hpp>
+#include <gromox/common_types.hpp>
+#include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
 #define MAX_LINE			1024

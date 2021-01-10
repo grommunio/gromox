@@ -4,10 +4,9 @@
  *	push ... Caution: double_list is not thread-safe, use mutex to control
  *	the visiting of double list.
  */
-
-#include "double_list.h"
-#include "common_types.h"
-#include "util.h"
+#include <gromox/double_list.hpp>
+#include <gromox/common_types.hpp>
+#include <gromox/util.hpp>
 
 /*	  double list's construct function
  *	  @param

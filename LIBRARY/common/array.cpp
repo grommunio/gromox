@@ -6,9 +6,8 @@
  *	permanently assigned to this item. access the data according index will be 
  *	slow if the index is very large (e.g. 1000000). 
  */
-
-#include "array.h"
-#include "util.h"
+#include <gromox/array.hpp>
+#include <gromox/util.hpp>
 #include <cstring>
 
 /* the extra memory ocupation for array node */

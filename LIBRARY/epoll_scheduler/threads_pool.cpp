@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <string.h>
 #include <gromox/defs.h>
-#include "common_types.h"
-#include "double_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 #include "contexts_pool.h"
-#include "lib_buffer.h"
+#include <gromox/lib_buffer.hpp>
 #include "threads_pool.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <stdio.h>
 #include <unistd.h>
 

@@ -8,7 +8,7 @@
 #include "exmdb_client.h"
 #include <gromox/proc_common.h>
 #include "common_util.h"
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include <gromox/rop_util.hpp>
 #include "rops.h"
 #include <cstdio>

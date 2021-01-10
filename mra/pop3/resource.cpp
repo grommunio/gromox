@@ -8,7 +8,7 @@
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include "resource.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>

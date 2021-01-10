@@ -3,7 +3,7 @@
 #include <libHX/string.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

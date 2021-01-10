@@ -8,8 +8,7 @@
 #	include <time.h>
 #endif
 #include <gromox/defs.h>
-#include "mem_file.h"
-
+#include <gromox/mem_file.hpp>
 #define MIME_NAME_LEN			80
 #define MIME_FIELD_LEN			64*1024
 

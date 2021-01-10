@@ -9,7 +9,7 @@
 #include "http_parser.h"
 #include "resource.h"
 #include "service.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dlfcn.h>

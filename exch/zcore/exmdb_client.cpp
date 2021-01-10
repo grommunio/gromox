@@ -6,9 +6,9 @@
 #include <gromox/socket.h>
 #include <libHX/string.h>
 #include "exmdb_client.h"
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include "common_util.h"
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include "exmdb_ext.h"
 #include <sys/socket.h>
 #include <sys/types.h>

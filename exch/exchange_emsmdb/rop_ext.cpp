@@ -3,7 +3,7 @@
 #include "emsmdb_interface.h"
 #include "rop_processor.h"
 #include "logon_object.h"
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include <gromox/ext_buffer.hpp>

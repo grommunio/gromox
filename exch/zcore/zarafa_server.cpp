@@ -9,13 +9,13 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/zcore_rpc.hpp>
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include "rpc_ext.h"
 #include "ab_tree.h"
 #include <gromox/rop_util.hpp>
-#include "int_hash.h"
-#include "str_hash.h"
+#include <gromox/int_hash.hpp>
+#include <gromox/str_hash.hpp>
 #include <gromox/ext_buffer.hpp>
 #include "user_object.h"
 #include "common_util.h"

@@ -7,7 +7,7 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include "listener.h" 
 #include "resource.h" 
 #include "imap_parser.h" 
@@ -17,8 +17,8 @@
 #include "contexts_pool.h" 
 #include "service.h" 
 #include "system_services.h"
-#include "util.h"
-#include "lib_buffer.h"
+#include <gromox/util.hpp>
+#include <gromox/lib_buffer.hpp>
 #include <pwd.h>
 #include <cstdio>
 #include <unistd.h>

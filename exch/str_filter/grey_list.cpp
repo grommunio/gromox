@@ -5,9 +5,9 @@
 #include <libHX/string.h>
 #include "str_filter.h"
 #include "grey_list.h"
-#include "list_file.h"
-#include "str_hash.h"
-#include "util.h"
+#include <gromox/list_file.hpp>
+#include <gromox/str_hash.hpp>
+#include <gromox/util.hpp>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <cstdio>

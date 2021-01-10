@@ -4,10 +4,10 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
-#include "common_types.h"
-#include "double_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 #include "cmd_parser.h"
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include "listener.h"
 #include <sys/socket.h>
 #include <sys/types.h>

@@ -1,6 +1,5 @@
 #pragma once
-#include "double_list.h"
-
+#include <gromox/double_list.hpp>
 
 typedef struct _ALLOC_CONTEXT {
 	DOUBLE_LIST list;

@@ -4,7 +4,7 @@
 #include <climits>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <gromox/rtfcp.hpp>

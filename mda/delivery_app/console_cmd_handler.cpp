@@ -4,12 +4,12 @@
 #endif
 #include "console_cmd_handler.h"
 #include "console_server.h"
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include "message_dequeue.h"
 #include "transporter.h"
 #include "resource.h"
 #include "service.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>

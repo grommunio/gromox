@@ -3,7 +3,7 @@
 #include <gromox/defs.h>
 #include "contexts_pool.h"
 #include "threads_pool.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <pthread.h>

@@ -1,11 +1,11 @@
 #pragma once
 #include <atomic>
 #include "mod_fastcgi.h"
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include "contexts_pool.h"
 #include "pdu_processor.h"
-#include "stream.h"
-#include "mem_file.h"
+#include <gromox/stream.hpp>
+#include <gromox/mem_file.hpp>
 #include <time.h>
 #include <pthread.h>
 #include <sys/time.h>

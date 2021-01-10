@@ -11,8 +11,8 @@
 #include "exmdb_client.h"
 #include "common_util.h"
 #include <gromox/rop_util.hpp>
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

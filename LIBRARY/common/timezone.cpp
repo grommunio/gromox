@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "tzfile.h"
-#include "timezone.h"
+#include <gromox/tzfile.hpp>
+#include <gromox/timezone.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>

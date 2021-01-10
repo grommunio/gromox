@@ -2,7 +2,7 @@
 #include "folder_object.h"
 #include <gromox/mapi_types.hpp>
 #include "ics_state.h"
-#include "mem_file.h"
+#include <gromox/mem_file.hpp>
 
 struct ICSUPCTX_OBJECT {
 	LOGON_OBJECT *plogon;

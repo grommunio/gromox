@@ -1,8 +1,7 @@
 #pragma once
-#include "simple_tree.h"
-#include "lib_buffer.h"
-#include "mem_file.h"
-
+#include <gromox/simple_tree.hpp>
+#include <gromox/lib_buffer.hpp>
+#include <gromox/mem_file.hpp>
 
 typedef struct _DIR_NODE {
 	SIMPLE_TREE_NODE node;

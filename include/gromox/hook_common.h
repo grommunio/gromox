@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/defs.h>
-#include "common_types.h"
-#include "mem_file.h"
+#include <gromox/common_types.hpp>
+#include <gromox/mem_file.hpp>
 #include <gromox/mail.hpp>
 #define PLUGIN_INIT                 0
 #define PLUGIN_FREE                 1

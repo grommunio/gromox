@@ -5,8 +5,8 @@
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/socket.h>
-#include "list_file.h"
-#include "double_list.h"
+#include <gromox/list_file.hpp>
+#include <gromox/double_list.hpp>
 #include "common_util.h"
 #include "exmdb_parser.h"
 #include "exmdb_listener.h"

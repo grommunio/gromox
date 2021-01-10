@@ -9,10 +9,10 @@
 #include "system_services.h"
 #include "resource.h"
 #include "service.h"
-#include "plugin.h"
-#include "single_list.h"
-#include "double_list.h"
-#include "util.h"
+#include <gromox/plugin.hpp>
+#include <gromox/single_list.hpp>
+#include <gromox/double_list.hpp>
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <pthread.h>
 #include <dlfcn.h>

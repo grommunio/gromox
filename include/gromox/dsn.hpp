@@ -1,8 +1,6 @@
 #pragma once
-#include "common_types.h"
-#include "double_list.h"
-
-
+#include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 #define DSN_FIELDS			DOUBLE_LIST
 
 typedef BOOL (*RCPTS_FIELDS_ENUM)(DSN_FIELDS*, void*);

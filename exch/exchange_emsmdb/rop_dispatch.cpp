@@ -5,8 +5,7 @@
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include "rops.h"
-#include "util.h"
-
+#include <gromox/util.hpp>
 
 int rop_dispatch(ROP_REQUEST *prequest,
 	ROP_RESPONSE **ppresponse,

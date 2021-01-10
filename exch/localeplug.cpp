@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <gromox/localemap.hpp>
 #include <gromox/svc_common.h>
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 DECLARE_API;
 

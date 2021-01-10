@@ -7,11 +7,11 @@
 #	include <stdint.h>
 #	include <time.h>
 #endif
-#include "simple_tree.h"
-#include "single_list.h"
+#include <gromox/simple_tree.hpp>
+#include <gromox/single_list.hpp>
 #include <gromox/mapi_types.hpp>
-#include "int_hash.h"
-#include "mem_file.h"
+#include <gromox/int_hash.hpp>
+#include <gromox/mem_file.hpp>
 
 /* PROP_TAG_CONTAINERFLAGS values */
 #define	AB_RECIPIENTS						0x1

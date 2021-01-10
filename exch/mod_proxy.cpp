@@ -3,13 +3,13 @@
 #include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include <gromox/defs.h>
 #include <gromox/hpm_common.h>
 #include <gromox/socket.h>
-#include "list_file.h"
-#include "mail_func.h"
-#include "util.h"
+#include <gromox/list_file.hpp>
+#include <gromox/mail_func.hpp>
+#include <gromox/util.hpp>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/epoll.h>

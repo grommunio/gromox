@@ -5,9 +5,8 @@
  *	node him of herself.
  *
  */
-
-#include "single_list.h"
-#include "util.h"
+#include <gromox/single_list.hpp>
+#include <gromox/util.hpp>
 
 /*
  *	init a single linked list

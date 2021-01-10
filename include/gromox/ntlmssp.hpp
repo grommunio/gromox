@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/arcfour.hpp>
 #include <gromox/rpc_types.hpp>
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include <pthread.h>
 
 #define NTLMSSP_PROCESS_NEGOTIATE		1

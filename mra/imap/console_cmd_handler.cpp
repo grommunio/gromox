@@ -8,10 +8,10 @@
 #include "contexts_pool.h"
 #include "threads_pool.h"
 #include "imap_parser.h"
-#include "lib_buffer.h"
+#include <gromox/lib_buffer.hpp>
 #include "resource.h"
 #include "service.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>

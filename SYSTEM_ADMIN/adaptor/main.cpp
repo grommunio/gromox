@@ -7,13 +7,13 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
-#include "util.h"
+#include <gromox/util.hpp>
 #include "engine.h"
 #include "data_source.h"
 #include "file_operation.h"
 #include <gromox/system_log.h>
 #include <gromox/gateway_control.h>
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>

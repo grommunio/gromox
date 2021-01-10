@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <gromox/defs.h>
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 namespace gromox {
 extern GX_EXPORT void localemap_init();
 extern GX_EXPORT bool verify_cpid(uint32_t);

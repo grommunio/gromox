@@ -9,7 +9,7 @@
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include <gromox/tarray_set.hpp>
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
 #include "ab_tree.h"
 #include "exmdb_client.h"

@@ -1,5 +1,5 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 #ifdef __cplusplus
 extern "C" {

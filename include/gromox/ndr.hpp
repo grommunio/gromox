@@ -5,8 +5,7 @@
 #	include <stdint.h>
 #endif
 #include <gromox/rpc_types.hpp>
-#include "double_list.h"
-
+#include <gromox/double_list.hpp>
 #define NDR_ERR_SUCCESS					0
 #define NDR_ERR_FAILURE					1
 #define NDR_ERR_CHARCNV					2

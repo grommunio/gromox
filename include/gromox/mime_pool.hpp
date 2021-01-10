@@ -1,6 +1,6 @@
 #pragma once
-#include "single_list.h"
-#include "lib_buffer.h"
+#include <gromox/single_list.hpp>
+#include <gromox/lib_buffer.hpp>
 #include <gromox/mime.hpp>
 #include <pthread.h>
 

@@ -8,8 +8,8 @@
 #include "exmdb_client.h"
 #include "common_util.h"
 #include "service.h"
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>

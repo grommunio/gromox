@@ -1,9 +1,9 @@
 #pragma once
-#include "common_types.h"
-#include "mem_file.h"
-#include "xarray.h"
-#include "double_list.h"
-#include "single_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/mem_file.hpp>
+#include <gromox/xarray.hpp>
+#include <gromox/double_list.hpp>
+#include <gromox/single_list.hpp>
 
 #ifdef __cplusplus
 extern "C" {

@@ -4,10 +4,10 @@
 #else
 #	include <stdint.h>
 #endif
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include "contexts_pool.h"
-#include "stream.h"
-#include "array.h"
+#include <gromox/stream.hpp>
+#include <gromox/array.hpp>
 #include <sys/time.h>
 #include <openssl/ssl.h>
 

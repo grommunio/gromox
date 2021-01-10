@@ -1,7 +1,7 @@
 #pragma once
-#include "common_types.h"
-#include "lib_buffer.h"
-#include "double_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/lib_buffer.hpp>
+#include <gromox/double_list.hpp>
 #include <sys/types.h>
 
 #define FILE_BLOCK_SIZE         0x100

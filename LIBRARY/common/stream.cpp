@@ -2,9 +2,9 @@
 /* 
  *	  stream is specified for smtp protocol
  */
-#include "common_types.h"
-#include "stream.h"
-#include "util.h"
+#include <gromox/common_types.hpp>
+#include <gromox/stream.hpp>
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <unistd.h>
 

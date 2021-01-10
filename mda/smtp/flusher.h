@@ -1,5 +1,5 @@
 #pragma once
-#include "plugin.h"
+#include <gromox/plugin.hpp>
 #include "smtp_parser.h"
 
 #define FLUSHING_INVALID_FD -1

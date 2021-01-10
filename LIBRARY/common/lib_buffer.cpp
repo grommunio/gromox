@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "util.h"
-#include "lib_buffer.h"
+#include <gromox/util.hpp>
+#include <gromox/lib_buffer.hpp>
 
 /*
  *	init a buffer pool with specified item size and number

@@ -12,8 +12,8 @@
 #include <string>
 #include <utility>
 #include <gromox/svc_common.h>
-#include "config_file.h"
-#include "util.h"
+#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 
 using namespace std::string_literals;
 using time_point = std::chrono::time_point<std::chrono::steady_clock>;

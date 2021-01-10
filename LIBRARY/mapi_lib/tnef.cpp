@@ -8,12 +8,12 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/rop_util.hpp>
-#include "str_hash.h"
-#include "int_hash.h"
+#include <gromox/str_hash.hpp>
+#include <gromox/int_hash.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/tnef.hpp>
-#include "guid.h"
-#include "util.h"
+#include <gromox/guid.hpp>
+#include <gromox/util.hpp>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>

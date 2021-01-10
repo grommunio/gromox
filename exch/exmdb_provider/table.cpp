@@ -10,10 +10,10 @@
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include "db_engine.h"
-#include "int_hash.h"
+#include <gromox/int_hash.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/propval.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

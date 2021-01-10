@@ -5,9 +5,9 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include <gromox/socket.h>
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include <cstdio>
 #include <fcntl.h>
 #include <cerrno>

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "xarray.h"
-#include "util.h"
+#include <gromox/xarray.hpp>
+#include <gromox/util.hpp>
 #include <cstring>
 
 /* the extra memory ocupation for xarray node */

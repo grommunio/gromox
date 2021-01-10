@@ -3,9 +3,9 @@
 #include <libHX/string.h>
 #include "temp_list.h"
 #include "str_filter.h"
-#include "str_hash.h"
+#include <gromox/str_hash.hpp>
 #include "grey_list.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <fcntl.h>
 #include <ctime>
 #include <cstring>

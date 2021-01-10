@@ -1,5 +1,5 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 typedef struct _CONFIG_ENTRY {
     char keyname[256];

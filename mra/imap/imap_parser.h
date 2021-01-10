@@ -1,9 +1,9 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include "contexts_pool.h"
-#include "xarray.h"
-#include "stream.h"
-#include "mem_file.h"
+#include <gromox/xarray.hpp>
+#include <gromox/stream.hpp>
+#include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
 #include <time.h>
 #include <sys/time.h>

@@ -1,6 +1,6 @@
 #ifndef _H_TEMP_LIST_
 #define _H_TEMP_LIST_
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include <time.h>
 
 #ifdef __cplusplus

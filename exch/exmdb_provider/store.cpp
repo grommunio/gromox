@@ -6,11 +6,11 @@
 #include <gromox/mapidefs.h>
 #include "exmdb_server.h"
 #include "common_util.h"
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include "db_engine.h"
 #include <gromox/rop_util.hpp>
-#include "guid.h"
-#include "util.h"
+#include <gromox/guid.hpp>
+#include <gromox/util.hpp>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>

@@ -1,7 +1,6 @@
 #pragma once
-#include "lib_buffer.h"
-#include "double_list.h"
-
+#include <gromox/lib_buffer.hpp>
+#include <gromox/double_list.hpp>
 #define XARRAY_CACHEITEM_NUMBER  (16*1024)
 #define XARRAY_HASHITEM_NUMBER   (4*1024)
 

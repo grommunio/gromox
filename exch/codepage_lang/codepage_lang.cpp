@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include "codepage_lang.h"
-#include "single_list.h"
-#include "util.h"
+#include <gromox/single_list.hpp>
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

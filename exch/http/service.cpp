@@ -4,10 +4,10 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include "resource.h"
 #include "service.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <cstring>
 #include <cstdlib>

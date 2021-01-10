@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/mapi_types.hpp>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 
 #ifdef __cplusplus
 extern "C" {

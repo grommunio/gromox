@@ -10,7 +10,7 @@
 #include <libHX/option.h>
 #include <gromox/dbop.h>
 #include <gromox/paths.h>
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 
 using namespace std::string_literals;
 

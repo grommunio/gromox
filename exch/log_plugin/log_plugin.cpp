@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <gromox/defs.h>
 #include "log_plugin.h"
-#include "config_file.h"
-#include "util.h"
+#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <cstdarg>
 #include <cstring>

@@ -7,9 +7,9 @@
  *		In multithread enviroment, we must consider mutual exclusion and 
  *		synchronized problems. 
  */
-#include "common_types.h"
-#include "int_hash.h"
-#include "util.h"
+#include <gromox/common_types.hpp>
+#include <gromox/int_hash.hpp>
+#include <gromox/util.hpp>
 #include <cstring>
 
 static size_t g_num_of_collision;

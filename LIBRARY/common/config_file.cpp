@@ -10,8 +10,8 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/paths.h>
-#include "config_file.h"
-#include "util.h"
+#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>

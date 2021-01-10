@@ -2,12 +2,12 @@
 #include <cerrno>
 #include <cstring>
 #include "bounce_producer.h"
-#include "single_list.h"
+#include <gromox/single_list.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
-#include "mail_func.h"
-#include "timezone.h"
-#include "util.h"
+#include <gromox/mail_func.hpp>
+#include <gromox/timezone.hpp>
+#include <gromox/util.hpp>
 #include <gromox/dsn.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>

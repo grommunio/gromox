@@ -2,10 +2,10 @@
 #include <gromox/mapidefs.h>
 #include "ftstream_producer.h"
 #include "emsmdb_interface.h"
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <sys/stat.h>
 #include <cstring>
 #include <unistd.h>

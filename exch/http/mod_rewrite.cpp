@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/string.h>
 #include "mod_rewrite.h"
-#include "double_list.h"
-#include "util.h"
+#include <gromox/double_list.hpp>
+#include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>

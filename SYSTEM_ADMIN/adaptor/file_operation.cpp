@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/defs.h>
 #include "file_operation.h"
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

@@ -4,9 +4,9 @@
 #else
 #	include <stdint.h>
 #endif
-#include "common_types.h"
-#include "array.h"
-#include "single_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/array.hpp>
+#include <gromox/single_list.hpp>
 
 #ifdef __cplusplus
 extern "C" {

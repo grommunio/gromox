@@ -2,7 +2,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 #include <gromox/element_data.hpp>
-#include "alloc_context.h"
+#include <gromox/alloc_context.hpp>
 
 #ifdef __cplusplus
 extern "C" {

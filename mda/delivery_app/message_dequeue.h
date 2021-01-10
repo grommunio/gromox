@@ -1,6 +1,6 @@
 #pragma once
-#include "common_types.h"
-#include "single_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/single_list.hpp>
 
 enum{
 	MESSAGE_MESS = 2,

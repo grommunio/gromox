@@ -5,9 +5,8 @@
 #	include <stdint.h>
 #endif
 #include <gromox/tpropval_array.hpp>
-#include "simple_tree.h"
-#include "int_hash.h"
-
+#include <gromox/simple_tree.hpp>
+#include <gromox/int_hash.hpp>
 #define ROOT_HANDLE						0
 #define INVALID_HANDLE					0xFFFFFFFF
 

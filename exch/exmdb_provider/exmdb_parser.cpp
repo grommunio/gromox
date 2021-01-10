@@ -9,7 +9,7 @@
 #include "common_util.h"
 #include <gromox/mapi_types.hpp>
 #include "exmdb_ext.h"
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include <gromox/idset.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>

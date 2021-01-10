@@ -1,5 +1,5 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 enum{
     SERVICE_AUTH_ERROR,       /* auth session fail  */

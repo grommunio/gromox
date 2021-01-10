@@ -8,7 +8,7 @@
 #include <gromox/paths.h>
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

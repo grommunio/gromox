@@ -14,9 +14,9 @@
 #include "resource.h"
 #include "blocks_allocator.h"
 #include "units_allocator.h"
-#include "util.h"
-#include "array.h"
-#include "mail_func.h"
+#include <gromox/util.hpp>
+#include <gromox/array.hpp>
+#include <gromox/mail_func.hpp>
 #include <cstring>
 #include <cstdio>
 #include <fcntl.h>

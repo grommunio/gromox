@@ -7,10 +7,10 @@
 #include <gromox/fileio.h>
 #include <gromox/svc_common.h>
 #include "common_util.h"
-#include "single_list.h"
-#include "mail_func.h"
-#include "timezone.h"
-#include "util.h"
+#include <gromox/single_list.hpp>
+#include <gromox/mail_func.hpp>
+#include <gromox/timezone.hpp>
+#include <gromox/util.hpp>
 #include <gromox/dsn.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>

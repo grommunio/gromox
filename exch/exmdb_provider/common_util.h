@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include <gromox/element_data.hpp>
 #include <sqlite3.h>
 

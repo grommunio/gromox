@@ -3,8 +3,8 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
-#include "util.h"
-#include "mail_func.h"
+#include <gromox/util.hpp>
+#include <gromox/mail_func.hpp>
 #include <string.h>
 #include <stdio.h>
 

@@ -4,9 +4,9 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <gromox/mjson.hpp>
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

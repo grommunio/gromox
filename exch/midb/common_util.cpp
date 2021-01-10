@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/defs.h>
 #include <libHX/string.h>
-#include "alloc_context.h"
+#include <gromox/alloc_context.hpp>
 #include "exmdb_client.h"
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>

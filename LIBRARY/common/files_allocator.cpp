@@ -2,9 +2,9 @@
 /*
  *    files allocator is a memory pool for mem files
  */
-#include "common_types.h"
-#include "mem_file.h"
-#include "files_allocator.h"
+#include <gromox/common_types.hpp>
+#include <gromox/mem_file.hpp>
+#include <gromox/files_allocator.hpp>
 
 static size_t g_blocks_num;
 static LIB_BUFFER *g_allocator;

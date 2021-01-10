@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/mapi_types.hpp>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include "logon_object.h"
 #include <sys/types.h>
 

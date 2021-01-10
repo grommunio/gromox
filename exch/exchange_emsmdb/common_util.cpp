@@ -10,7 +10,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/socket.h>
 #include <gromox/pcl.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>

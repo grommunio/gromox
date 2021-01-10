@@ -4,8 +4,8 @@
 #include <cstdio>
 #include <string>
 #include <gromox/svc_common.h>
-#include "common_types.h"
-#include "config_file.h"
+#include <gromox/common_types.hpp>
+#include <gromox/config_file.hpp>
 #include "mysql_adaptor/mysql_adaptor.h"
 
 using namespace std::string_literals;

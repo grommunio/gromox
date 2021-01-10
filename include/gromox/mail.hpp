@@ -1,9 +1,8 @@
 #pragma once
 #include <gromox/mime.hpp>
-#include "stream.h"
+#include <gromox/stream.hpp>
 #include <gromox/mime_pool.hpp>
-#include "simple_tree.h"
-
+#include <gromox/simple_tree.hpp>
 #define	MIME_INSERT_BEFORE	SIMPLE_TREE_INSERT_BEFORE
 #define MIME_INSERT_AFTER	SIMPLE_TREE_INSERT_AFTER
 #define MIME_ADD_FIRST		SIMPLE_TREE_ADD_FIRST

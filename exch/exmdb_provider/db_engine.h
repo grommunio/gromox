@@ -6,7 +6,7 @@
 #	include <stdint.h>
 #endif
 #include <gromox/element_data.hpp>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>
 #include <pthread.h>
 #include <sqlite3.h>

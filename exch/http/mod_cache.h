@@ -1,5 +1,5 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 struct HTTP_CONTEXT;
 

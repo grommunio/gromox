@@ -3,7 +3,7 @@
  *  console talk actions.
  */
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 /* enumeration for indicate the ation of plugin_main function */
 enum{

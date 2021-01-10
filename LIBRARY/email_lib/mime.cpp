@@ -11,8 +11,8 @@
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
 #include <gromox/mime.hpp>
-#include "util.h"
-#include "mail_func.h"
+#include <gromox/util.hpp>
+#include <gromox/mail_func.hpp>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>

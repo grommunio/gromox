@@ -5,8 +5,7 @@
 #	include <stdint.h>
 #endif
 #include <gromox/rpc_types.hpp>
-#include "double_list.h"
-
+#include <gromox/double_list.hpp>
 #define AUX_VERSION_1								0x1
 #define AUX_VERSION_2								0x2
 

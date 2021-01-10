@@ -4,10 +4,10 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
-#include "util.h"
-#include "list_file.h"
-#include "config_file.h"
-#include "double_list.h"
+#include <gromox/util.hpp>
+#include <gromox/list_file.hpp>
+#include <gromox/config_file.hpp>
+#include <gromox/double_list.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

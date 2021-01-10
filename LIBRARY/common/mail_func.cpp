@@ -7,10 +7,10 @@
 #include <cstdlib>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
-#include "common_types.h"
-#include "mail_func.h"
-#include "timezone.h"
-#include "util.h"
+#include <gromox/common_types.hpp>
+#include <gromox/mail_func.hpp>
+#include <gromox/timezone.hpp>
+#include <gromox/util.hpp>
 #include <cstring>
 
 enum {

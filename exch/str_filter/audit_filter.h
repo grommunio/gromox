@@ -1,5 +1,5 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include <time.h>
 
 /* the index of audit param is from 0 to 99 */

@@ -1,6 +1,5 @@
 #pragma once
-#include "str_hash.h"
-
+#include <gromox/str_hash.hpp>
 
 typedef struct _ASSOC_ARRAY {
 	STR_HASH_TABLE	*phash;

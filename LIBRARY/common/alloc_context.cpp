@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "alloc_context.h"
+#include <gromox/alloc_context.hpp>
 #include <cstdlib>
 #define ALLOC_FRAME_SIZE					64*1024
 

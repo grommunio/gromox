@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/lzxpress.hpp>
-#include "endian_macro.h"
-#include "common_types.h"
+#include <gromox/endian_macro.hpp>
+#include <gromox/common_types.hpp>
 #include <string.h>
 
 #define WINDOWS_SIZE				0x20

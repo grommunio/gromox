@@ -1,5 +1,5 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 enum{
 	GREY_LIST_ALLOW = 0,

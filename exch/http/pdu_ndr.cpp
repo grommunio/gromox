@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/defs.h>
 #include "pdu_ndr.h"
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

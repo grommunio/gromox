@@ -1,5 +1,5 @@
 #pragma once
-#include "array.h"
+#include <gromox/array.hpp>
 
 struct MSG_UNIT {
 	SINGLE_LIST_NODE node;

@@ -9,9 +9,9 @@
  */
 #include <cerrno>
 #include <cstring>
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include "message_enqueue.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>

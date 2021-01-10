@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <gromox/svc_common.h>
 #include "str_table.h"
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstring>
 

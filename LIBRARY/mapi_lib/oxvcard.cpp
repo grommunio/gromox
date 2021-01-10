@@ -8,7 +8,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/oxvcard.hpp>
 #include <gromox/vcard.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

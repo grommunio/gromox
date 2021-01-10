@@ -6,7 +6,7 @@
 #	include <stdlib.h>
 #	include <string.h>
 #endif
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include <pthread.h>
 #define WSIZE           sizeof(void*)  /* word size (bytes) */
 

@@ -13,12 +13,12 @@
 #include <gromox/fileio.h>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
-#include "mail_func.h"
-#include "mem_file.h"
-#include "dir_tree.h"
+#include <gromox/mail_func.hpp>
+#include <gromox/mem_file.hpp>
+#include <gromox/dir_tree.hpp>
 #include "resource.h"
 #include <gromox/mjson.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <gromox/mail.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>

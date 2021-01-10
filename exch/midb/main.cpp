@@ -9,13 +9,13 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include "service.h"
 #include "listener.h"
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include "mail_engine.h"
 #include "exmdb_client.h"
 #include "console_server.h"

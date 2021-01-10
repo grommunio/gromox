@@ -1,6 +1,6 @@
 #pragma once
 #include "nsp_types.h"
-#include "simple_tree.h"
+#include <gromox/simple_tree.hpp>
 
 #ifdef __cplusplus
 extern "C" {

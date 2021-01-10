@@ -7,10 +7,10 @@
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
-#include "util.h"
+#include <gromox/util.hpp>
 #include "console_server.h"
 #include "console_cmd_handler.h"
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/types.h>

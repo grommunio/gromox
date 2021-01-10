@@ -12,7 +12,7 @@
 #include "common_util.h"
 #include <gromox/tarray_set.hpp>
 #include "db_engine.h"
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>

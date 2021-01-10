@@ -15,8 +15,8 @@
 #include <gromox/resource_pool.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
-#include "config_file.h"
-#include "util.h"
+#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 using namespace std::string_literals;

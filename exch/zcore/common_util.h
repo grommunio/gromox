@@ -5,7 +5,7 @@
 #	include <stdint.h>
 #endif
 #include <gromox/defs.h>
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include "store_object.h"
 #include "message_object.h"
 #define SOCKET_TIMEOUT								60

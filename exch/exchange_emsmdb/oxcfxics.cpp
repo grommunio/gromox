@@ -2,7 +2,7 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "rops.h"
-#include "guid.h"
+#include <gromox/guid.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/eid_array.hpp>

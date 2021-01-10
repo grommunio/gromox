@@ -2,9 +2,9 @@
 #include <stdint.h>
 #include <libHX/defs.h>
 #include <gromox/pcl.hpp>
-#include "guid.h"
+#include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

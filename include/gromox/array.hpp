@@ -1,7 +1,6 @@
 #pragma once
-#include "lib_buffer.h"
-#include "single_list.h"
-
+#include <gromox/lib_buffer.hpp>
+#include <gromox/single_list.hpp>
 #define ARRAY_CACHEITEM_NUMBER  200000
 
 typedef struct _ARRAY {

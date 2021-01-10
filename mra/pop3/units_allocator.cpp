@@ -2,8 +2,8 @@
 /*
  *    files allocator is a memory pool for mem files
  */
-#include "common_types.h"
-#include "array.h"
+#include <gromox/common_types.hpp>
+#include <gromox/array.hpp>
 #include "units_allocator.h"
 
 static size_t g_blocks_num;

@@ -15,10 +15,10 @@
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include "ab_tree.h"
-#include "guid.h"
-#include "util.h"
+#include <gromox/guid.hpp>
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

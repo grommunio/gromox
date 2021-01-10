@@ -2,9 +2,9 @@
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
-#include "plugin.h"
-#include "double_list.h"
-#include "common_types.h"
+#include <gromox/plugin.hpp>
+#include <gromox/double_list.hpp>
+#include <gromox/common_types.hpp>
 
 #define HPM_RETRIEVE_ERROR					0
 #define HPM_RETRIEVE_WRITE					1

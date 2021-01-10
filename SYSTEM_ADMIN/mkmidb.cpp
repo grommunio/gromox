@@ -2,7 +2,7 @@
 #include <cerrno>
 #include <gromox/database.h>
 #include <gromox/paths.h>
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include <ctime>
 #include <cstdio>
 #include <fcntl.h>

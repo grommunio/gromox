@@ -1,7 +1,6 @@
 #pragma once
-#include "lib_buffer.h"
-#include "double_list.h"
-
+#include <gromox/lib_buffer.hpp>
+#include <gromox/double_list.hpp>
 #define MAX_KEY_LENGTH      512
 
 typedef size_t (*PSTR_HASH_FUNC)(const char* key);

@@ -14,8 +14,8 @@
 #include <gromox/defs.h>
 #include "message_dequeue.h"
 #include "system_services.h"
-#include "util.h"
-#include "int_hash.h"
+#include <gromox/util.hpp>
+#include <gromox/int_hash.hpp>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>

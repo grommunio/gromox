@@ -7,12 +7,12 @@
 #include <gromox/tpropval_array.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "mail_func.h"
-#include "int_hash.h"
+#include <gromox/mail_func.hpp>
+#include <gromox/int_hash.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/oxcical.hpp>
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

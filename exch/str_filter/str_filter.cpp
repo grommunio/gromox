@@ -9,13 +9,13 @@
 #include <cstdlib>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "common_types.h"
-#include "config_file.h"
+#include <gromox/common_types.hpp>
+#include <gromox/config_file.hpp>
 #include "str_filter.h"
 #include "audit_filter.h"
 #include "grey_list.h"
 #include "temp_list.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <cstdarg>
 #include <cstring>

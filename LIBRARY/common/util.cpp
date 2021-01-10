@@ -7,7 +7,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <ctime>
 #include <cstdio>
 #include <crypt.h>

@@ -1,8 +1,8 @@
 #pragma once
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
-#include "str_hash.h"
-#include "int_hash.h"
+#include <gromox/str_hash.hpp>
+#include <gromox/int_hash.hpp>
 
 struct STORE_OBJECT {
 	BOOL b_private;

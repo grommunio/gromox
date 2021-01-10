@@ -8,9 +8,9 @@
 #include "exmdb_server.h"
 #include "exmdb_parser.h"
 #include "common_util.h"
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include "db_engine.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>

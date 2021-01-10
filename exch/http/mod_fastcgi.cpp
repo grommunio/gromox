@@ -7,10 +7,10 @@
 #include "threads_pool.h"
 #include "mod_fastcgi.h"
 #include "http_parser.h"
-#include "list_file.h"
-#include "mail_func.h"
+#include <gromox/list_file.hpp>
+#include <gromox/mail_func.hpp>
 #include "resource.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <gromox/ndr.hpp>
 #include <netinet/in.h>
 #include <sys/socket.h>

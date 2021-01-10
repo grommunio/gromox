@@ -3,11 +3,11 @@
 #	include <stdbool.h>
 #endif
 #include <gromox/ndr.hpp>
-#include "plugin.h"
+#include <gromox/plugin.hpp>
 #include <gromox/ntlmssp.hpp>
-#include "stream.h"
-#include "int_hash.h"
-#include "double_list.h"
+#include <gromox/stream.hpp>
+#include <gromox/int_hash.hpp>
+#include <gromox/double_list.hpp>
 #include "pdu_ndr.h"
 #include <pthread.h>
 

@@ -8,14 +8,14 @@
 #include <libHX/string.h>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
-#include "alloc_context.h"
+#include <gromox/alloc_context.hpp>
 #include <gromox/database.h>
 #include <gromox/fileio.h>
 #include <gromox/svc_common.h>

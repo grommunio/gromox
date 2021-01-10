@@ -5,9 +5,9 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include "str_table.h"
-#include "str_hash.h"
-#include "util.h"
-#include "list_file.h"
+#include <gromox/str_hash.hpp>
+#include <gromox/util.hpp>
+#include <gromox/list_file.hpp>
 #include <pthread.h>
 #include <cstdarg>
 

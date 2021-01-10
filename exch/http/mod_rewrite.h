@@ -1,6 +1,6 @@
 #pragma once
-#include "common_types.h"
-#include "mem_file.h"
+#include <gromox/common_types.hpp>
+#include <gromox/mem_file.hpp>
 
 #ifdef __cplusplus
 extern "C" {

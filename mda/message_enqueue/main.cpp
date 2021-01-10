@@ -4,8 +4,8 @@
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
 #include "message_enqueue.h"
-#include "config_file.h"
-#include "util.h"
+#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 #include <cstdio>
 
 DECLARE_API;

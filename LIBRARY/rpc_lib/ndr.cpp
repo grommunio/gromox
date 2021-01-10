@@ -3,8 +3,8 @@
 // This file is part of Gromox.
 #include <assert.h>
 #include <gromox/defs.h>
-#include "common_types.h"
-#include "endian_macro.h"
+#include <gromox/common_types.hpp>
+#include <gromox/endian_macro.hpp>
 #include <gromox/ndr.hpp>
 #include <stdlib.h>
 #include <string.h>

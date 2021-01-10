@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include <gromox/svc_common.h>
 #include "str_filter.h"
-#include "config_file.h"
-#include "util.h"
+#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 #include <fcntl.h>
 #include <cstdio>
 #include <cstring>

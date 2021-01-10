@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "ftstream_parser.h"
 #include "rop_processor.h"
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "common_util.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cstring>

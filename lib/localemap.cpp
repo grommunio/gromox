@@ -13,7 +13,7 @@
 #include <libHX/string.h>
 #include <gromox/paths.h>
 #include <gromox/localemap.hpp>
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 namespace gromox {
 

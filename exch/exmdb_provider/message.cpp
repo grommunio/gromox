@@ -13,14 +13,14 @@
 #include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
 #include "exmdb_server.h"
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include "db_engine.h"
 #include <gromox/rop_util.hpp>
 #include <gromox/oxcmail.hpp>
-#include "guid.h"
-#include "util.h"
+#include <gromox/guid.hpp>
+#include <gromox/util.hpp>
 #include <openssl/md5.h>
 #include <sys/types.h>
 #include <sys/stat.h>

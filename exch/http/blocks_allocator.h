@@ -1,5 +1,5 @@
 #pragma once
-#include "lib_buffer.h"
+#include <gromox/lib_buffer.hpp>
 
 #ifdef __cplusplus
 extern "C" {

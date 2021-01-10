@@ -4,7 +4,7 @@
 #else
 #	include <stdint.h>
 #endif
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 typedef struct _CONTEXT_HANDLE {
 	uint32_t handle_type;

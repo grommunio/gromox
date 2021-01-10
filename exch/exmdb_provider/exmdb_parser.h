@@ -1,6 +1,6 @@
 #pragma once
-#include "common_types.h"
-#include "double_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 #include <pthread.h>
 
 

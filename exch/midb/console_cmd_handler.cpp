@@ -6,10 +6,10 @@
 #include "console_server.h"
 #include "exmdb_client.h"
 #include "mail_engine.h"
-#include "lib_buffer.h"
+#include <gromox/lib_buffer.hpp>
 #include "service.h"
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>

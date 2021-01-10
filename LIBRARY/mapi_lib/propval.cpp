@@ -2,8 +2,8 @@
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include "guid.h"
-#include "util.h"
+#include <gromox/guid.hpp>
+#include <gromox/util.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rule_actions.hpp>

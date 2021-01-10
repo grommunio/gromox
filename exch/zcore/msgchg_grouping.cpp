@@ -6,11 +6,11 @@
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
 #include <gromox/proptag_array.hpp>
-#include "double_list.h"
-#include "list_file.h"
+#include <gromox/double_list.hpp>
+#include <gromox/list_file.hpp>
 #include <gromox/rop_util.hpp>
-#include "guid.h"
-#include "util.h"
+#include <gromox/guid.hpp>
+#include <gromox/util.hpp>
 #include <sys/types.h>
 #include <dirent.h>
 #include <cstdio>

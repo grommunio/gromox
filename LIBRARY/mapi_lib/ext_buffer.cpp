@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/mapidefs.h>
-#include "endian_macro.h"
+#include <gromox/endian_macro.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <stdlib.h>
 #include <string.h>
 

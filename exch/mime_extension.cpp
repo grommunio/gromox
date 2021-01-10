@@ -3,10 +3,10 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/svc_common.h>
-#include "list_file.h"
-#include "int_hash.h"
-#include "str_hash.h"
-#include "util.h"
+#include <gromox/list_file.hpp>
+#include <gromox/int_hash.hpp>
+#include <gromox/str_hash.hpp>
+#include <gromox/util.hpp>
 #include <pthread.h>
 #include <cstdint>
 #include <cstdlib>

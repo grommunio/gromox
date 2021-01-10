@@ -17,8 +17,8 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/idset.hpp>
-#include "guid.h"
-#include "util.h"
+#include <gromox/guid.hpp>
+#include <gromox/util.hpp>
 #include <gromox/pcl.hpp>
 #include <cstdio>
 #include <cstdlib>

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <gromox/defs.h>
-#include "dir_tree.h"
+#include <gromox/dir_tree.hpp>
 
 static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 {

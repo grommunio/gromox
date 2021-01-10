@@ -8,8 +8,8 @@
 #include "system_services.h"
 #include "resource.h"
 #include "blocks_allocator.h"
-#include "util.h"
-#include "mail_func.h"
+#include <gromox/util.hpp>
+#include <gromox/mail_func.hpp>
 #include <cstring>
 #include <cstdio>
 

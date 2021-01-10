@@ -4,9 +4,9 @@
 #include <libHX/string.h>
 #include <gromox/gateway_control.h>
 #include <gromox/socket.h>
-#include "util.h"
-#include "single_list.h"
-#include "list_file.h"
+#include <gromox/util.hpp>
+#include <gromox/single_list.hpp>
+#include <gromox/list_file.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

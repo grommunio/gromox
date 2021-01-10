@@ -1,7 +1,7 @@
 #pragma once
 #include <gromox/proptags.hpp>
-#include "common_types.h"
-#include "double_list.h"
+#include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 
 typedef struct _BINARY {
 	uint32_t cb;

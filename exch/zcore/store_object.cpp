@@ -14,11 +14,11 @@
 #include "exmdb_client.h"
 #include "common_util.h"
 #include "object_tree.h"
-#include "config_file.h"
-#include "mail_func.h"
+#include <gromox/config_file.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
-#include "util.h"
-#include "guid.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
 #include <cstdio>
 #include <fcntl.h>
 #include <unistd.h>

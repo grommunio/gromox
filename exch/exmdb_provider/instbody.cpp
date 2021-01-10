@@ -9,7 +9,7 @@
 #include "common_util.h"
 #include "exmdb_server.h"
 #include <gromox/html.hpp>
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
 #include <gromox/tpropval_array.hpp>

@@ -1,8 +1,8 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 #include "contexts_pool.h"
-#include "stream.h"
-#include "mem_file.h"
+#include <gromox/stream.hpp>
+#include <gromox/mem_file.hpp>
 #include <sys/time.h>
 #include <openssl/ssl.h>
 

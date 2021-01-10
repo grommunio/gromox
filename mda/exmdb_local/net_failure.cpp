@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include "net_failure.h"
 #include <gromox/hook_common.h>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <ctime>
 #include <pthread.h>

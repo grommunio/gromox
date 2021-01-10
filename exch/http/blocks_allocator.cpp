@@ -2,8 +2,8 @@
 /*
  *  blocks allocator is a memory pool for stream
  */
-#include "common_types.h"
-#include "stream.h"
+#include <gromox/common_types.hpp>
+#include <gromox/stream.hpp>
 #include "blocks_allocator.h"
 
 static size_t g_blocks_num;

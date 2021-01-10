@@ -2,11 +2,10 @@
 #ifndef __cplusplus
 #	include <stdbool.h>
 #endif
-#include "stream.h"
-#include "mem_file.h"
-#include "simple_tree.h"
+#include <gromox/stream.hpp>
+#include <gromox/mem_file.hpp>
+#include <gromox/simple_tree.hpp>
 #include <openssl/ssl.h>
-
 #define VALUE_LEN	256
 
 enum{

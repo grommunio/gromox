@@ -14,7 +14,7 @@
 #include "system_services.h"
 #include "contexts_pool.h"
 #include "http_parser.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include "resource.h"
 #include <cstdio>
 #include <unistd.h>

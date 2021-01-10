@@ -3,7 +3,7 @@
 #	include <stdbool.h>
 #endif
 #include "message_dequeue.h"
-#include "plugin.h"
+#include <gromox/plugin.hpp>
 #include <gromox/mail.hpp>
 
 enum{

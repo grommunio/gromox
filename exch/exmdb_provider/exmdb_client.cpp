@@ -6,8 +6,8 @@
 #include "exmdb_client.h"
 #include "exmdb_server.h"
 #include "common_util.h"
-#include "double_list.h"
-#include "list_file.h"
+#include <gromox/double_list.hpp>
+#include <gromox/list_file.hpp>
 #include "exmdb_ext.h"
 #include <sys/socket.h>
 #include <sys/types.h>

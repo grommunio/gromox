@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <gromox/svc_common.h>
 #include "ip_container.h"
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstring>
 

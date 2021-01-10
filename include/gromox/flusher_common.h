@@ -1,10 +1,9 @@
 #pragma once
 #include <sys/time.h>
 #include <gromox/defs.h>
-#include "common_types.h"
-#include "mem_file.h"
-#include "stream.h"
-
+#include <gromox/common_types.hpp>
+#include <gromox/mem_file.hpp>
+#include <gromox/stream.hpp>
 #define PLUGIN_INIT                 0
 #define PLUGIN_FREE                 1
 #define FLUSH_WHOLE_MAIL            0

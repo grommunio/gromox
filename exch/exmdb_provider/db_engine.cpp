@@ -2,13 +2,13 @@
 #include <libHX/defs.h>
 #include <gromox/database.h>
 #include <gromox/mapidefs.h>
-#include "util.h"
-#include "guid.h"
-#include "str_hash.h"
+#include <gromox/util.hpp>
+#include <gromox/guid.hpp>
+#include <gromox/str_hash.hpp>
 #include "db_engine.h"
 #include <gromox/eid_array.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include <gromox/restriction.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"

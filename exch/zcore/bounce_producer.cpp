@@ -6,11 +6,11 @@
 #include "bounce_producer.h"
 #include "system_services.h"
 #include "common_util.h"
-#include "single_list.h"
-#include "mail_func.h"
-#include "timezone.h"
+#include <gromox/single_list.hpp>
+#include <gromox/mail_func.hpp>
+#include <gromox/timezone.hpp>
 #include <gromox/rop_util.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include <gromox/dsn.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>

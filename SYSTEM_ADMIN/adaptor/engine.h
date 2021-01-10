@@ -1,5 +1,5 @@
 #pragma once
-#include "common_types.h"
+#include <gromox/common_types.hpp>
 
 extern void engine_init(const char *mount_path, const char *domainlist_path, const char *aliasaddress_path, const char *unchkusr_path);
 extern int engine_run(void);

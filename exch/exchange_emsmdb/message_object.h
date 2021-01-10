@@ -2,7 +2,7 @@
 #include <gromox/defs.h>
 #include "ics_state.h"
 #include <gromox/mapi_types.hpp>
-#include "double_list.h"
+#include <gromox/double_list.hpp>
 #include "logon_object.h"
 #include "stream_object.h"
 

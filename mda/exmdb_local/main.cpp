@@ -3,14 +3,14 @@
 #include <cstring>
 #include <libHX/string.h>
 #include <gromox/hook_common.h>
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include "exmdb_local.h"
 #include "cache_queue.h"
 #include "net_failure.h"
 #include "bounce_audit.h"
 #include "exmdb_client.h"
 #include "bounce_producer.h"
-#include "util.h"
+#include <gromox/util.hpp>
 #include <cstdio>
 
 DECLARE_API;

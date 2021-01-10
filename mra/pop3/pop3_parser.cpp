@@ -12,9 +12,9 @@
 #include "threads_pool.h"
 #include "system_services.h"
 #include "resource.h"
-#include "lib_buffer.h"
-#include "util.h"
-#include "mail_func.h"
+#include <gromox/lib_buffer.hpp>
+#include <gromox/util.hpp>
+#include <gromox/mail_func.hpp>
 #include <pthread.h>
 #include <cstring>
 #include <cstdarg>

@@ -11,14 +11,14 @@
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include "util.h"
+#include <gromox/util.hpp>
 #include "service.h"
 #include "ab_tree.h"
 #include "listener.h"
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include "rpc_parser.h"
 #include "common_util.h"
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include "exmdb_client.h"
 #include "zarafa_server.h"
 #include "console_server.h"

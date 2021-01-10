@@ -4,9 +4,8 @@
 #else
 #	include <time.h>
 #endif
-#include "common_types.h"
-#include "double_list.h"
-
+#include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 #define ICAL_NAME_LEN					64
 
 #define ICAL_FREQUENCY_SECOND			1

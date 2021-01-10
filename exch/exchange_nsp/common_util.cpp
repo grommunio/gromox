@@ -3,7 +3,7 @@
 #include "common_util.h"
 #include <gromox/fileio.h>
 #include <gromox/proc_common.h>
-#include "guid.h"
+#include <gromox/guid.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

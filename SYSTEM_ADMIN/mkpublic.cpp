@@ -3,13 +3,13 @@
 #include <libHX/defs.h>
 #include <gromox/database.h>
 #include <gromox/paths.h>
-#include "config_file.h"
+#include <gromox/config_file.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
-#include "list_file.h"
+#include <gromox/list_file.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/proptags.hpp>
-#include "guid.h"
+#include <gromox/guid.hpp>
 #include <gromox/pcl.hpp>
 #include <ctime>
 #include <cstdio>

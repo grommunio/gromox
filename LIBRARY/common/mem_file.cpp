@@ -3,8 +3,8 @@
  *	  mem file is actually like the file in disk, but mem file get blocks form
  *	  memory, it is virtual file. Caution: Not thread-safe.
  */
-#include "mem_file.h"
-#include "util.h"
+#include <gromox/mem_file.hpp>
+#include <gromox/util.hpp>
 
 static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile); 
 

@@ -6,11 +6,11 @@
 #include "emsmdb_interface.h"
 #include <gromox/proc_common.h>
 #include "common_util.h"
-#include "double_list.h"
-#include "lib_buffer.h"
-#include "int_hash.h"
-#include "str_hash.h"
-#include "util.h"
+#include <gromox/double_list.hpp>
+#include <gromox/lib_buffer.hpp>
+#include <gromox/int_hash.hpp>
+#include <gromox/str_hash.hpp>
+#include <gromox/util.hpp>
 #include <pthread.h>
 #include <unistd.h>
 #include <cstdio>

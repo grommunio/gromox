@@ -15,8 +15,8 @@
 #include <gromox/defs.h>
 #include <gromox/resource_pool.hpp>
 #include "mysql_adaptor.h"
-#include "mem_file.h"
-#include "util.h"
+#include <gromox/mem_file.hpp>
+#include <gromox/util.hpp>
 #include <cstdio>
 #include <unistd.h>
 #include <pthread.h>

@@ -1,6 +1,6 @@
 #pragma once
-#include "lib_buffer.h"
-#include "double_list.h"
+#include <gromox/lib_buffer.hpp>
+#include <gromox/double_list.hpp>
 
 typedef struct _INT_HASH_ITEM {
     int         hash_key;

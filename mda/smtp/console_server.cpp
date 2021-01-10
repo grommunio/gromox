@@ -9,8 +9,8 @@
 #include <gromox/socket.h>
 #include "console_server.h"
 #include "console_cmd_handler.h"
-#include "util.h"
-#include "double_list.h"
+#include <gromox/util.hpp>
+#include <gromox/double_list.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>

@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <gromox/tie.hpp>
 #include <gromox/html.hpp>
-#include "mail_func.h"
+#include <gromox/mail_func.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
