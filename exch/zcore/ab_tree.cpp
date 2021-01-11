@@ -1767,7 +1767,7 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 {
 	int minid;
 	void *pvalue;
-	char dn[1280];
+	char dn[1280]{};
 	GUID temp_guid;
 	time_t tmp_time;
 	struct tm tmp_tm;

@@ -59,7 +59,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 {
 	int minid;
 	int temp_len;
-	char dn[1280];
+	char dn[1280]{};
 	GUID temp_guid;
 	uint8_t node_type;
 	const uint8_t *pguid;
