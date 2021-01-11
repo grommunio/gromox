@@ -23,9 +23,7 @@ struct XARRAY {
 void xarray_init(XARRAY* pxarray, LIB_BUFFER* pbuf_pool, int data_size);
 
 void xarray_free(XARRAY* pxarray);
-
-LIB_BUFFER* xarray_allocator_init(int data_size, int max_size, BOOL thread_safe);
-
+extern GX_EXPORT LIB_BUFFER *xarray_allocator_init(int data_size, int max_size, bool thread_safe);
 void xarray_allocator_free(LIB_BUFFER* buf);
 
 int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag);
