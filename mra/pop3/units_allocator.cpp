@@ -27,7 +27,7 @@ void units_allocator_init(size_t blocks)
  */
 int units_allocator_run()
 {
-    g_allocator = array_allocator_init(sizeof(MSG_UNIT), g_blocks_num, TRUE);
+	g_allocator = array_allocator_init(sizeof(MSG_UNIT), g_blocks_num, true);
     if (NULL == g_allocator) {
         return -1;
     }

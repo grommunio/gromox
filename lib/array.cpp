@@ -80,11 +80,10 @@ void array_free(ARRAY* parray)
  *	@return
  *		the allocator pointer, NULL if fail
  */
-LIB_BUFFER* array_allocator_init(size_t data_size,
-	size_t max_size, BOOL thread_safe)
+LIB_BUFFER *array_allocator_init(size_t data_size, size_t max_size, bool thread_safe)
 {
-	return lib_buffer_init(data_size +
-		EXTRA_ARRAYNODE_SIZE, max_size, thread_safe);
+	return lib_buffer_init(data_size + EXTRA_ARRAYNODE_SIZE, max_size,
+	       thread_safe ? TRUE : false);
 }
 
 
