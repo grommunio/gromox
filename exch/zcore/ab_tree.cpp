@@ -1876,9 +1876,8 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
+		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return FALSE;
-		}
 		pvalue = common_util_dup(dn);
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1985,9 +1984,8 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 		}
-		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
+		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return FALSE;
-		}
 		ab_entryid.px500dn = dn;
 		bv->pv = common_util_alloc(1280);
 		if (bv->pv == nullptr)
@@ -2011,9 +2009,8 @@ BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		auto bv = static_cast<BINARY *>(pvalue);
-		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
+		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return FALSE;
-		}
 		bv->cb = strlen(dn) + 4;
 		bv->pv = common_util_alloc(bv->cb);
 		if (bv->pv == nullptr)

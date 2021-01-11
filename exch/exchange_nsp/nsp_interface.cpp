@@ -118,9 +118,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		break;
 	case PROP_TAG_EMAILADDRESS:
 	case PROP_TAG_EMAILADDRESS_STRING8:
-		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
+		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecInvalidObject;
-		}
 		if (NULL == pbuff) {
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
@@ -179,9 +178,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			display_type = DT_MAILUSER;
 		}
-		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
+		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
-		}
 		if (FALSE == common_util_set_permanententryid(
 			display_type, NULL, dn, &permeid) || FALSE ==
 			common_util_permanent_entryid_to_binary(
@@ -198,9 +196,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			display_type = DT_MAILUSER;
 		}
 		if (FALSE == b_ephid) {
-			if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
+			if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 				return ecNotFound;
-			}
 			if (FALSE == common_util_set_permanententryid(
 				display_type, NULL, dn, &permeid) || FALSE ==
 				common_util_permanent_entryid_to_binary(
@@ -217,9 +214,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		break;
 	case PROP_TAG_SEARCHKEY:
-		if (FALSE == ab_tree_node_to_dn(pnode, dn, 1024)) {
+		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
-		}
 		pprop->value.bin.cb = strlen(dn) + 4;
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(
