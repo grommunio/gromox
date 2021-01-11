@@ -1330,8 +1330,9 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	if (0 != strncasecmp(pdn, prefix_string, temp_len)) {
 		return NULL;
 	}
-	if (0 == strncasecmp(pdn + temp_len,
-		"/cn=Configuration/cn=Servers/cn=", 32)) {
+	if (strncasecmp(pdn + temp_len, "/cn=Configuration/cn=Servers/cn=", 32) == 0 &&
+	    strlen(pdn) >= temp_len + 60) {
+		/* Reason for 60: see DN format in ab_tree_get_server_dn */
 		id = decode_hex_int(pdn + temp_len + 60);
 		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, id);
 		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, minid));
