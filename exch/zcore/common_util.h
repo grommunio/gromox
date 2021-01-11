@@ -431,10 +431,7 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 
 MESSAGE_CONTENT* common_util_ical_to_message(
 	STORE_OBJECT *pstore, const BINARY *pical_bin);
-
-BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
-	uint64_t message_id, BINARY *pvcf_bin);
-	
+extern BOOL common_util_message_to_vcf(MESSAGE_OBJECT *, BINARY *vcfout);
 MESSAGE_CONTENT* common_util_vcf_to_message(
 	STORE_OBJECT *pstore, const BINARY *pvcf_bin);
 const char* common_util_i18n_to_lang(const char *i18n);

@@ -7606,9 +7606,7 @@ uint32_t zarafa_server_messagetovcf(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNotSupported;
 	}
-	if (FALSE == common_util_message_to_vcf(
-		message_object_get_store(pmessage),
-		message_object_get_id(pmessage), pvcf_bin)) {
+	if (!common_util_message_to_vcf(pmessage, pvcf_bin)) {
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}

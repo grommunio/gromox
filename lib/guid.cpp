@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-License-Identifier: GPL-3.0-or-later
+// samba commit 6c9a185be260a914bc0bd2dcf76c9dcb9664a687 or earlier
 /*
    Unix SMB/CIFS implementation.
 

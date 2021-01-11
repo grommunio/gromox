@@ -1934,3 +1934,19 @@ bool parse_bool(const char *s)
 		return false;
 	return true;
 }
+
+std::string bin2hex(const void *vin, size_t len)
+{
+	std::string buffer;
+	if (vin == nullptr)
+		return buffer;
+	static constexpr char digits[] = "0123456789abcdef";
+	auto input = static_cast<const char *>(vin);
+	buffer.resize(len * 2);
+	for (size_t j = 0; len-- > 0; j += 2) {
+		buffer[j]   = digits[(*input >> 4) & 0x0F];
+		buffer[j+1] = digits[*input & 0x0F];
+		++input;
+	}
+	return buffer;
+}

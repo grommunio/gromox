@@ -25,6 +25,7 @@
 #include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #include "exmdb_client.h"
+#include "message_object.h"
 #include <gromox/proptag_array.hpp>
 #include "zarafa_server.h"
 #include <gromox/alloc_context.hpp>
@@ -3328,9 +3329,10 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	return pmsgctnt;
 }
 
-BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
-	uint64_t message_id, BINARY *pvcf_bin)
+BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
 {
+	STORE_OBJECT *pstore = message_object_get_store(pmessage);
+	uint64_t message_id = message_object_get_id(pmessage);
 	VCARD vcard;
 	uint32_t cpid;
 	USER_INFO *pinfo;
@@ -3363,6 +3365,8 @@ BOOL common_util_message_to_vcf(STORE_OBJECT *pstore,
 	}
 	vcard_free(&vcard);
 	pvcf_bin->cb = strlen(pvcf_bin->pc);
+	if (!message_object_write_message(pmessage, pmsgctnt))
+		/* ignore */;
 	return TRUE;
 }
 	

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
+#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/rop_util.hpp>
@@ -869,8 +870,7 @@ IMPORT_FAILURE:
 	return NULL;
 }
 
-BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
-	VCARD *pvcard, GET_PROPIDS get_propids)
+BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propids)
 {
 	int i;
 	BINARY *pbin;
@@ -1513,6 +1513,16 @@ BOOL oxvcard_export(const MESSAGE_CONTENT *pmsg,
 	
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist,
 	         PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000])));
+	if (pvalue == nullptr) {
+		auto guid = guid_random_new();
+		auto gstr = "uuid:" + bin2hex(&guid, sizeof(guid));
+		TAGGED_PROPVAL pv2;
+		pv2.proptag = PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]);
+		pv2.pvalue  = deconst(gstr.c_str());
+		tpropval_array_set_propval(&pmsg->proplist, &pv2);
+		pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist,
+		         PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000])));
+	}
 	if (pvalue != nullptr) {
 		pvline = vcard_new_simple_line("UID", pvalue);
 		if (pvline == nullptr)

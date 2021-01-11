@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 
 BOOL utf8_check(const char *str);
 
@@ -65,3 +67,4 @@ int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern void debug_info(const char *format, ...);
 extern bool parse_bool(const char *s);
+extern GX_EXPORT std::string bin2hex(const void *, size_t);
