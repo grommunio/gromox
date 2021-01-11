@@ -2081,7 +2081,7 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 						if ('\\' != ((char*)pword2->pdata)[0]) {
 							if (!rtf_flush_iconv_cache(preader))
 								return false;
-							if (rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
+							if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
 								return false;
 						} else if ('\'' == ((char*)pword2->pdata)[1]) {
 							ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
