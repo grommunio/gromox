@@ -530,6 +530,7 @@ BOOL bounce_producer_make_content(const char *from,
 			if (FALSE == common_util_get_property(
 				MESSAGE_PROPERTIES_TABLE, message_id, 0,
 				psqlite, PROP_TAG_SUBJECT, &pvalue)) {
+				pthread_rwlock_unlock(&g_list_lock);
 				return FALSE;
 			}
 			if (NULL != pvalue) {

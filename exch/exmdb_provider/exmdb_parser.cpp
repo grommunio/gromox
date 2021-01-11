@@ -1130,6 +1130,7 @@ int exmdb_parser_stop()
 	if (num > 0) {
 		pthr_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * num));
 		if (NULL == pthr_ids) {
+			pthread_mutex_unlock(&g_connection_lock);
 			return -1;
 		}
 	}
@@ -1154,6 +1155,7 @@ int exmdb_parser_stop()
 	if (num > 0) {
 		pthr_ids = static_cast<pthread_t *>(malloc(sizeof(pthread_t) * num));
 		if (NULL == pthr_ids) {
+			pthread_mutex_unlock(&g_router_lock);
 			return -2;
 		}
 	}
