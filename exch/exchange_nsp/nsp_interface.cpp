@@ -1678,6 +1678,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode,
 					pfilter->res.res_property.pprop->value.s) {
 					return TRUE;
 				}
+				return FALSE;
 			case RELOP_GT:
 				if (prop_val.value.s >
 					pfilter->res.res_property.pprop->value.s) {

@@ -465,6 +465,7 @@ BOOL propval_compare_relop(uint8_t relop,
 			if (*(uint16_t*)pvalue1 <= *(uint16_t*)pvalue2) {
 				return TRUE;
 			}
+			return FALSE;
 		case RELOP_GT:
 			if (*(uint16_t*)pvalue1 > *(uint16_t*)pvalue2) {
 				return TRUE;
