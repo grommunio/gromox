@@ -623,8 +623,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				return GXERR_CALL_FAILED;
 			}
 			pmsgctnt = static_cast<MESSAGE_CONTENT *>(static_cast<MARKER_NODE *>(pnode->pdata)->data.pelement);
-			if (FALSE == tarray_set_append_internal(
-				pmsgctnt->children.prcpts, prcpt)) {
+			if (!tarray_set_append_internal(pmsgctnt->children.prcpts, prcpt)) {
 				tpropval_array_free(prcpt);
 				return GXERR_CALL_FAILED;
 			}

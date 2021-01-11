@@ -223,8 +223,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
-		if (FALSE == tarray_set_append_internal(
-			prcpts, pproplist)) {
+		if (!tarray_set_append_internal(prcpts, pproplist)) {
 			sqlite3_finalize(pstmt);
 			sqlite3_finalize(pstmt1);
 			tpropval_array_free(pproplist);
@@ -3776,8 +3775,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 				db_engine_put_db(pdb);
 				return FALSE;
 			}
-			if (FALSE == tarray_set_append_internal(
-				pmsgctnt->children.prcpts, prcpt)) {
+			if (!tarray_set_append_internal(pmsgctnt->children.prcpts, prcpt)) {
 				tpropval_array_free(prcpt);
 				db_engine_put_db(pdb);
 				return FALSE;

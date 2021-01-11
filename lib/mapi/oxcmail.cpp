@@ -486,7 +486,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	} else {
 		return TRUE;
 	}
-	if (FALSE == tarray_set_append_internal(pset, pproplist)) {
+	if (!tarray_set_append_internal(pset, pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;
 	}
@@ -3485,8 +3485,7 @@ static BOOL oxcmail_enum_dsn_rcpt_fields(
 	if (NULL == pproplist) {
 		return FALSE;
 	}
-	if (FALSE == tarray_set_append_internal(
-		pinfo->prcpts, pproplist)) {
+	if (!tarray_set_append_internal(pinfo->prcpts, pproplist)) {
 		tpropval_array_free(pproplist);
 		return FALSE;
 	}

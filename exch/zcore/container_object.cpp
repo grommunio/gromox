@@ -673,8 +673,7 @@ BOOL container_object_load_user_table(
 				tpropval_array_free(ppropvals);
 				continue;
 			}
-			if (FALSE == tarray_set_append_internal(
-				pcontainer->contents.prow_set, ppropvals)) {
+			if (!tarray_set_append_internal(pcontainer->contents.prow_set, ppropvals)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}

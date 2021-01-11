@@ -457,7 +457,7 @@ TPROPVAL_ARRAY* object_tree_get_profile_sec(
 	propval.proptag = PROP_TAG_PROPFILESECLSID;
 	propval.pvalue = &sec_guid;
 	if (!tpropval_array_set_propval(pproplist, &propval) || 
-	    FALSE == tarray_set_append_internal(prootobj->pprof_set, pproplist)) {
+	    !tarray_set_append_internal(prootobj->pprof_set, pproplist)) {
 		tpropval_array_free(pproplist);
 		return NULL;
 	}

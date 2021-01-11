@@ -1737,8 +1737,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					message_content_free(pmsg);
 					return NULL;
 				}
-				if (FALSE == tarray_set_append_internal(
-					prcpts, pproplist)) {
+				if (!tarray_set_append_internal(prcpts, pproplist)) {
 					tpropval_array_free(pproplist);
 					str_hash_free(phash);
 					message_content_free(pmsg);

@@ -946,7 +946,7 @@ static BOOL oxcical_parse_recipients(ICAL_COMPONENT*pmain_event,
 		if (NULL == pproplist) {
 			return FALSE;
 		}
-		if (FALSE == tarray_set_append_internal(prcpts, pproplist)) {
+		if (!tarray_set_append_internal(prcpts, pproplist)) {
 			tpropval_array_free(pproplist);
 			return FALSE;
 		}
