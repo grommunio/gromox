@@ -87,7 +87,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "out of memory\n");
 		return 1;
 	}
-	if (FALSE == rtfcp_uncompress(&rtf_bin, pbuff, &rtf_len)) {
+	if (!rtfcp_uncompress(&rtf_bin, pbuff, &rtf_len)) {
 		fprintf(stderr, "fail to uncompress rtf\n");
 		return 2;
 	}

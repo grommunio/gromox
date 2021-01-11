@@ -75,7 +75,7 @@ static void rtfcp_init_output_state(OUTPUT_STATE *pstate,
 	pstate->max_length = max_length;
 }
 
-static BOOL rtfcp_verify_header(uint8_t *header_data,
+static bool rtfcp_verify_header(uint8_t *header_data,
 	uint32_t in_size, COMPRESS_HEADER *pheader)
 {
 	pheader->size = IVAL(header_data, 0);   
@@ -83,13 +83,13 @@ static BOOL rtfcp_verify_header(uint8_t *header_data,
 	pheader->magic = IVAL(header_data, 2*sizeof(uint32_t));  
 	pheader->crc = IVAL(header_data, 3*sizeof(uint32_t));
 	if (pheader->size != in_size - 4) {
-		return FALSE;
+		return false;
 	}
 	if (pheader->magic != RTF_COMPRESSED &&
 		pheader->magic != RTF_UNCOMPRESSED) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 static uint8_t rtfcp_get_next_byte(DECOMPRESSION_STATE *pstate)
@@ -151,23 +151,23 @@ static char rtfcp_get_dictionary_entry(
 	return pstate->dict[index%RTF_DICTLENGTH];
 }
 
-static BOOL rtfcp_check_output_overflow(OUTPUT_STATE *poutput)
+static bool rtfcp_check_output_overflow(OUTPUT_STATE *poutput)
 {
 	if (poutput->out_pos > poutput->out_size) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
-static BOOL rtfcp_check_input_overflow(DECOMPRESSION_STATE *state)
+static bool rtfcp_check_input_overflow(DECOMPRESSION_STATE *state)
 {
 	if (state->in_pos > state->in_size) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
-BOOL rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
+bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 {
 	int i;
 	char c;
@@ -179,20 +179,18 @@ BOOL rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 	DECOMPRESSION_STATE	state;
 
 	if (prtf_bin->cb < 4*sizeof(uint32_t)) {
-		return FALSE;
+		return false;
 	}
 	rtfcp_init_decompress_state(prtf_bin->pb, prtf_bin->cb, &state);
-	if (FALSE == rtfcp_verify_header(
-		prtf_bin->pb, state.in_size, &header)) {
-		return FALSE;
-	}
+	if (!rtfcp_verify_header(prtf_bin->pb, state.in_size, &header))
+		return false;
 	if (RTF_UNCOMPRESSED == header.magic) {
 		if (*plength < prtf_bin->cb - 4*sizeof(uint32_t)) {
-			return FALSE;
+			return false;
 		}
 		memcpy(pbuff_out, prtf_bin->pb + 4*sizeof(uint32_t),
 			prtf_bin->cb - 4*sizeof(uint32_t));
-		return TRUE;
+		return true;
 	}
 	rtfcp_init_output_state(&output,
 		header.rawsize, pbuff_out, *plength);
@@ -203,31 +201,28 @@ BOOL rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 				dictref = rtfcp_get_next_dictionary_reference(&state);
 				if (dictref.offset == state.dict_writeoffset) {
 					*plength = output.out_pos;
-					return TRUE;
+					return true;
 				}
 				for (i =0; i<dictref.length; i++) {
-					if (FALSE == rtfcp_check_output_overflow(&output)) {
-						return FALSE;
-					}
+					if (!rtfcp_check_output_overflow(&output))
+						return false;
 					c = rtfcp_get_dictionary_entry(
 						&state, (dictref.offset + i));
 					rtfcp_append_to_output(&output, c);
 					rtfcp_append_to_dictionary(&state, c);
 				}
 			} else { /* its a literal */
-				if (FALSE == rtfcp_check_output_overflow(&output)) {
-					return FALSE;
-				}
+				if (!rtfcp_check_output_overflow(&output))
+					return false;
 				c = rtf_get_next_literal(&state);
-				if (FALSE == rtfcp_check_input_overflow(&state)) {
-					return FALSE;
-				}
+				if (!rtfcp_check_input_overflow(&state))
+					return false;
 				rtfcp_append_to_output(&output, c);
 				rtfcp_append_to_dictionary(&state, c);
 			}
 		}
 	}
-	return TRUE;
+	return true;
 }
 
 BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
