@@ -1149,9 +1149,7 @@ struct APPOINTMENTRECURRENCEPATTERN {
 };
 
 struct GLOBALOBJECTID {
-	uint8_t arrayid[16]; /* SHOULD be 0x04, 0x00, 0x00, 0x00,
-							0x82, 0x00, 0xE0, 0x00, 0x74, 0xC5,
-							0xB7, 0x10, 0x1A, 0x82, 0xE0, 0x08 */
+	uint8_t arrayid[16]; /* SHOULD be EncodedGlobalId */
 	uint16_t year;
 	uint8_t month;
 	uint8_t day;

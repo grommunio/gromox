@@ -27,6 +27,13 @@ struct UID_EVENTS {
 	DOUBLE_LIST list;
 };
 
+static constexpr char EncodedGlobalId_hex[] =
+	"040000008200E00074C5B7101A82E008";
+static constexpr uint8_t EncodedGlobalId[16] =
+	{0x04, 0x00, 0x00, 0x00, 0x82, 0x00, 0xE0, 0x00, 0x74, 0xC5, 0xB7, 0x10, 0x1A, 0x82, 0xE0, 0x08};
+static constexpr uint8_t ThirdPartyGlobalId[12] =
+	{0x76, 0x43, 0x61, 0x6c, 0x2d, 0x55, 0x69, 0x64, 0x01, 0x00, 0x00, 0x00};
+
 static BOOL oxcical_parse_vtsubcomponent(
 	ICAL_COMPONENT *psub_component,
 	int32_t *pbias, int16_t *pyear,
@@ -1479,16 +1486,13 @@ static BOOL oxcical_parse_uid(ICAL_LINE *piline,
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
 	GLOBALOBJECTID globalobjectid;
-	static const uint8_t arrayid[] = {
-		0x04, 0x00, 0x00, 0x00, 0x82, 0x00, 0xE0, 0x00,
-		0x74, 0xC5, 0xB7, 0x10, 0x1A, 0x82, 0xE0, 0x08};
 	
 	pvalue = ical_get_first_subvalue(piline);
 	if (NULL == pvalue) {
 		return TRUE;
 	}
 	tmp_len = strlen(pvalue);
-	if (0 == strncasecmp(pvalue, "040000008200E00074C5B7101A82E008", 32)) {
+	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0) {
 		if (TRUE == decode_hex_binary(pvalue, tmp_buff, 1024)) {
 			ext_buffer_pull_init(&ext_pull, tmp_buff, tmp_len/2, alloc, 0);
 			if (EXT_ERR_SUCCESS == ext_buffer_pull_globalobjectid(
@@ -1506,7 +1510,7 @@ static BOOL oxcical_parse_uid(ICAL_LINE *piline,
 		}
 	}
 	memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
-	memcpy(globalobjectid.arrayid, arrayid, 16);
+	memcpy(globalobjectid.arrayid, EncodedGlobalId, 16);
 	globalobjectid.year = effective_itime.year;
 	globalobjectid.month = effective_itime.month;
 	globalobjectid.day = effective_itime.day;
@@ -1515,7 +1519,7 @@ static BOOL oxcical_parse_uid(ICAL_LINE *piline,
 	globalobjectid.data.pv = alloc(globalobjectid.data.cb);
 	if (globalobjectid.data.pv == nullptr)
 		return FALSE;
-	memcpy(globalobjectid.data.pb, "\x76\x43\x61\x6c\x2d\x55\x69\x64\x01\x00\x00\x00", 12);
+	memcpy(globalobjectid.data.pb, ThirdPartyGlobalId, 12);
 	memcpy(globalobjectid.data.pb + 12, pvalue, tmp_len);
 MAKE_GLOBALOBJID:
 	ext_buffer_push_init(&ext_push, tmp_buff, 1024, 0);
@@ -5511,9 +5515,9 @@ EXPORT_VEVENT:
 			&ext_pull, &globalobjectid)) {
 			return FALSE;
 		}
-		if (NULL != globalobjectid.data.pb &&
-			0 == memcmp(globalobjectid.data.pb,
-			"\x76\x43\x61\x6c\x2d\x55\x69\x64\x01\x00\x00\x00", 12)) {
+		if (globalobjectid.data.pb != nullptr &&
+		    globalobjectid.data.cb >= 12 &&
+		    memcmp(globalobjectid.data.pb, ThirdPartyGlobalId, 12) == 0) {
 			if (globalobjectid.data.cb - 12 > sizeof(tmp_buff) - 1) {
 				memcpy(tmp_buff, globalobjectid.data.pb + 12,
 									sizeof(tmp_buff) - 1);
@@ -5547,9 +5551,7 @@ EXPORT_VEVENT:
 	} else {
 		time(&cur_time);
 		memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
-		memcpy(globalobjectid.arrayid,
-			"\x04\x00\x00\x00\x82\x00\xE0\x00"
-			"\x74\xC5\xB7\x10\x1A\x82\xE0\x08", 16);
+		memcpy(globalobjectid.arrayid, EncodedGlobalId, 16);
 		globalobjectid.creationtime = rop_util_unix_to_nttime(cur_time);
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pc = tmp_buff1;
