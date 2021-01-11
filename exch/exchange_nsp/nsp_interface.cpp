@@ -708,7 +708,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		pprop->value.string_array.cvalues = 2;
 		if (NULL == pbuff) {
 			pprop->value.string_array.ppstr =
-				static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, 2 * sizeof(char **)));
+				static_cast<char **>(ndr_stack_alloc(NDR_STACK_OUT, 2 * sizeof(char *)));
 			if (NULL == pprop->value.string_array.ppstr) {
 				return ecMAPIOOM;
 			}
