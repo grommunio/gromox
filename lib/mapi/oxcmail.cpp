@@ -143,7 +143,7 @@ BOOL oxcmail_init_library(const char *org_name,
 	oxcmail_mime_to_extension = mime_to_extension;
 	oxcmail_extension_to_mime = extension_to_mime;
 	tnef_init_library(cpid_to_charset);
-	if (FALSE == rtf_init_library(cpid_to_charset) ||
+	if (!rtf_init_library(cpid_to_charset) ||
 		FALSE == html_init_library(cpid_to_charset)) {
 		return FALSE;	
 	}

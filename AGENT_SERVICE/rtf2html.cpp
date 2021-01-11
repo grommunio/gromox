@@ -101,7 +101,7 @@ int main(int argc, const char **argv)
 	if (NULL == pattachments) {
 		return 1;
 	}
-	if (FALSE == rtf_init_library(cpid_to_charset_to)) {
+	if (!rtf_init_library(cpid_to_charset_to)) {
 		fprintf(stderr, "Failed to init RTF library\n");
 		return 4;
 	}
