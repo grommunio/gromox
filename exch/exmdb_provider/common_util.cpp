@@ -6481,7 +6481,7 @@ BOOL common_util_increase_store_size(sqlite3 *psqlite,
 	}
 	if (0 != fai_size) {
 		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, normal_size);
+		sqlite3_bind_int64(pstmt, 1, fai_size);
 		sqlite3_bind_int64(pstmt, 2, PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);
@@ -6519,7 +6519,7 @@ BOOL common_util_decrease_store_size(sqlite3 *psqlite,
 	}
 	if (0 != fai_size) {
 		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, normal_size);
+		sqlite3_bind_int64(pstmt, 1, fai_size);
 		sqlite3_bind_int64(pstmt, 2, PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			sqlite3_finalize(pstmt);

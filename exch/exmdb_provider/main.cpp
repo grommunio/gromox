@@ -257,7 +257,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 			max_ext_rule = atoi(str_value);
 			if (max_ext_rule <= 0 || max_ext_rule > 100) {
 				max_ext_rule = 20;
-				config_file_set_value(pconfig, "MAX_RULE_NUMBER", "20");
+				config_file_set_value(pconfig, "MAX_EXT_RULE_NUMBER", "20");
 			}
 		}
 		printf("[exmdb_provider]: maximum ext rule "
