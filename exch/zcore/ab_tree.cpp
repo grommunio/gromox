@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
 #include <new>
 #include <string>
@@ -73,7 +73,7 @@ struct AB_NODE {
 	SIMPLE_TREE_NODE node;
 	uint8_t node_type;
 	uint32_t minid;
-	MEM_FILE f_info;
+	void *d_info;
 	int id;
 };
 
@@ -178,14 +178,30 @@ static AB_NODE* ab_tree_get_abnode()
 	auto n = new(std::nothrow) AB_NODE;
 	if (n == nullptr)
 		return nullptr;
-	mem_file_init(&n->f_info, g_file_allocator);
+	n->d_info = nullptr;
 	n->minid = 0;
 	return n;
 }
 
 static void ab_tree_put_abnode(AB_NODE *pabnode)
 {
-	mem_file_free(&pabnode->f_info);
+	switch (pabnode->node_type) {
+	case NODE_TYPE_DOMAIN:
+		delete static_cast<sql_domain *>(pabnode->d_info);
+		break;
+	case NODE_TYPE_PERSON:
+	case NODE_TYPE_ROOM:
+	case NODE_TYPE_EQUIPMENT:
+	case NODE_TYPE_MLIST:
+		delete static_cast<sql_user *>(pabnode->d_info);
+		break;
+	case NODE_TYPE_GROUP:
+		delete static_cast<sql_group *>(pabnode->d_info);
+		break;
+	case NODE_TYPE_CLASS:
+		delete static_cast<sql_class *>(pabnode->d_info);
+		break;
+	}
 	delete pabnode;
 }
 
@@ -345,24 +361,8 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
 	return TRUE;
 }
 
-static std::string aliases_serialize(const sql_user::alias_map_type &amap,
-   const std::string &addr)
-{
-	auto stop = amap.upper_bound(addr);
-	std::string s;
-	for (auto i = amap.lower_bound(addr); i != stop; ++i) {
-		s += i->second;
-		s.push_back('\0');
-	}
-	return s;
-}
-
 static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 {
-	int i;
-	int temp_len;
-	char temp_buff[1024];
-	
 	switch (usr.addr_type) {
 	case ADDRESS_TYPE_ROOM:
 		pabnode->node_type = NODE_TYPE_ROOM;
@@ -383,31 +383,14 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 			return FALSE;
 		}
 	}
-	static const std::string empty;
-	const std::string *const ar[] = {
-		&usr.username, &usr.realname, &usr.title, &usr.memo, &usr.cell,
-		&usr.tel, &usr.nickname, &usr.homeaddr, &empty, &usr.maildir,
-	};
-	for (i=0; i<10; i++) {
-		/* username,  real_name, title, memo, cell, tell,
-			nickname, homeaddress, create_day, maildir */
-		HX_strlcpy(temp_buff, ar[i]->c_str(), sizeof(temp_buff));
-		temp_len = ar[i]->size();
-		if (FALSE == utf8_check(temp_buff)) {
-			utf8_filter(temp_buff);
-			temp_len = strlen(temp_buff);
-		}
-		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-		mem_file_write(&pabnode->f_info, temp_buff, temp_len);
-	}
+	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
+	if (pabnode->d_info == nullptr)
+		return false;
 	return TRUE;
 }
 
 static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 {
-	int temp_len;
-	char temp_buff[1024];
-	
 	pabnode->node_type = NODE_TYPE_MLIST;
 	pabnode->id = usr.id;
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
@@ -418,35 +401,9 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 			return FALSE;
 		}
 	}
-	/* listname */
-	HX_strlcpy(temp_buff, usr.username.c_str(), sizeof(temp_buff));
-	temp_len = usr.username.size();
-	if (FALSE == utf8_check(temp_buff)) {
-		utf8_filter(temp_buff);
-		temp_len = strlen(temp_buff);
-	}
-	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
-	/* create_day */
-	*temp_buff = '\0';
-	temp_len = 0;
-	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
-	/* list_type */
-	mem_file_write(&pabnode->f_info, &usr.list_type, sizeof(int));
-	/* list_privilege */
-	mem_file_write(&pabnode->f_info, &usr.list_priv, sizeof(int));
-	if (usr.list_type == MLIST_TYPE_GROUP || usr.list_type == MLIST_TYPE_CLASS) {
-		/* title */
-		temp_len = usr.title.size();
-		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-		mem_file_write(&pabnode->f_info, usr.title.c_str(), temp_len);
-	}
-	/* alias list */
-	auto atxt = aliases_serialize(usr.aliases, usr.username);
-	temp_len = atxt.size();
-	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, atxt.c_str(), temp_len);
+	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
+	if (pabnode->d_info == nullptr)
+		return false;
 	return TRUE;
 }
 
@@ -461,7 +418,6 @@ static BOOL ab_tree_load_class(
 {
 	int i;
 	int rows;
-	int temp_len;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
 	char temp_buff[1024];
@@ -470,7 +426,7 @@ static BOOL ab_tree_load_class(
 	
 	if (!system_services_get_sub_classes(class_id, file_subclass))
 		return FALSE;
-	for (const auto &cls : file_subclass) {
+	for (auto &&cls : file_subclass) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
 			return FALSE;
@@ -483,14 +439,9 @@ static BOOL ab_tree_load_class(
 				return FALSE;
 			}
 		}
-		/* classname */
-		HX_strlcpy(temp_buff, cls.name.c_str(), sizeof(temp_buff));
-		if (FALSE == utf8_check(temp_buff)) {
-			utf8_filter(temp_buff);
-			temp_len = strlen(temp_buff);
-		}
-		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-		mem_file_write(&pabnode->f_info, temp_buff, temp_len);
+		pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
+		if (pabnode->d_info == nullptr)
+			return false;
 		pclass = (SIMPLE_TREE_NODE*)pabnode;
 		simple_tree_add_child(ptree, pnode,
 			pclass, SIMPLE_TREE_ADD_LAST);
@@ -558,11 +509,9 @@ static BOOL ab_tree_load_tree(int domain_id,
 {
 	int i;
 	int rows;
-	int temp_len;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
 	sql_domain dinfo;
-	char group_name[256];
 	SIMPLE_TREE_NODE *pgroup;
 	SIMPLE_TREE_NODE *pclass;
 	SIMPLE_TREE_NODE *pdomain;
@@ -580,31 +529,22 @@ static BOOL ab_tree_load_tree(int domain_id,
 	if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
 		return FALSE;
 	}
-	/* domainname */
 	if (!utf8_check(dinfo.name.c_str()))
 		utf8_filter(dinfo.name.data());
-	temp_len = strlen(dinfo.name.c_str());
-	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, dinfo.name.c_str(), temp_len);
-	/* domain title */
 	if (!utf8_check(dinfo.title.c_str()))
 		utf8_filter(dinfo.title.data());
-	temp_len = strlen(dinfo.title.c_str());
-	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, dinfo.title.c_str(), temp_len);
-	/* address */
 	if (!utf8_check(dinfo.address.c_str()))
 		utf8_filter(dinfo.address.data());
-	temp_len = strlen(dinfo.address.c_str());
-	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, dinfo.address.c_str(), temp_len);
+	pabnode->d_info = new(std::nothrow) sql_domain(std::move(dinfo));
+	if (pabnode->d_info == nullptr)
+		return false;
 	pdomain = (SIMPLE_TREE_NODE*)pabnode;
 	simple_tree_set_root(ptree, pdomain);
 
 	std::vector<sql_group> file_group;
 	if (!system_services_get_domain_groups(domain_id, file_group))
 		return FALSE;
-	for (const auto &grp : file_group) {
+	for (auto &&grp : file_group) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
 			return FALSE;
@@ -615,30 +555,17 @@ static BOOL ab_tree_load_tree(int domain_id,
 		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
 			return FALSE;
 		}
-		/* groupname */
-		HX_strlcpy(group_name, grp.name.c_str(), sizeof(group_name));
-		if (FALSE == utf8_check(group_name)) {
-			utf8_filter(group_name);
-			temp_len = strlen(group_name);
-		}
-		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-		mem_file_write(&pabnode->f_info, group_name, temp_len);
-		/* group title */
-		char temp_buff[1024];
-		HX_strlcpy(temp_buff, grp.title.c_str(), sizeof(temp_buff));
-		if (FALSE == utf8_check(temp_buff)) {
-			utf8_filter(temp_buff);
-			temp_len = strlen(temp_buff);
-		}
-		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-		mem_file_write(&pabnode->f_info, temp_buff, temp_len);
+		auto grp_id = grp.id;
+		pabnode->d_info = new(std::nothrow) sql_group(std::move(grp));
+		if (pabnode->d_info == nullptr)
+			return false;
 		pgroup = (SIMPLE_TREE_NODE*)pabnode;
 		simple_tree_add_child(ptree, pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
 		
 		std::vector<sql_class> file_class;
-		if (!system_services_get_group_classes(grp.id, file_class))
+		if (!system_services_get_group_classes(grp_id, file_class))
 			return FALSE;
-		for (const auto &cls : file_class) {
+		for (auto &&cls : file_class) {
 			pabnode = ab_tree_get_abnode();
 			if (NULL == pabnode) {
 				return FALSE;
@@ -652,14 +579,9 @@ static BOOL ab_tree_load_tree(int domain_id,
 					return FALSE;
 				}
 			}
-			/* classname */
-			HX_strlcpy(temp_buff, cls.name.c_str(), sizeof(temp_buff));
-			if (FALSE == utf8_check(temp_buff)) {
-				utf8_filter(temp_buff);
-				temp_len = strlen(temp_buff);
-			}
-			mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-			mem_file_write(&pabnode->f_info, temp_buff, temp_len);
+			pabnode->d_info = new(std::nothrow) sql_class(std::move(cls));
+			if (pabnode->d_info == nullptr)
+				return false;
 			pclass = (SIMPLE_TREE_NODE*)pabnode;
 			simple_tree_add_child(ptree, pgroup,
 				pclass, SIMPLE_TREE_ADD_LAST);
@@ -668,7 +590,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		
 		std::vector<sql_user> file_user;
-		rows = system_services_get_group_users(grp.id, file_user);
+		rows = system_services_get_group_users(grp_id, file_user);
 		if (-1 == rows) {
 			return FALSE;
 		} else if (0 == rows) {
@@ -696,6 +618,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 				}
 			}
 			parray[i].pnode = (SIMPLE_TREE_NODE*)pabnode;
+			char temp_buff[1024];
 			ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff);
 			parray[i].string = strdup(temp_buff);
 			if (NULL == parray[i].string) {
@@ -1216,7 +1139,6 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 {
 	int id;
 	GUID guid;
-	int temp_len;
 	char *ptoken;
 	int domain_id;
 	BOOL b_remote;
@@ -1283,17 +1205,13 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 				g_org_name, hex_string1, hex_string, username);
 		HX_strupper(pbuff);
 		break;
-	case NODE_TYPE_MLIST:
+	case NODE_TYPE_MLIST: try {
 		id = pabnode->id;
-		mem_file_seek(&pabnode->f_info,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		mem_file_read(&pabnode->f_info, &temp_len, sizeof(int));
-		mem_file_read(&pabnode->f_info, username, temp_len);
-		username[temp_len] = '\0';
-		ptoken = strchr(username, '@');
-		if (NULL != ptoken) {
-			*ptoken = '\0';
-		}
+		auto obj = static_cast<sql_user *>(pabnode->d_info);
+		std::string username = obj->username;
+		auto pos = username.find('@');
+		if (pos != username.npos)
+			username.erase(pos);
 		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
 			pabnode = (AB_NODE*)pnode;
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
@@ -1307,9 +1225,14 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		encode_hex_int(domain_id, hex_string1);
 		sprintf(pbuff, "/o=%s/ou=Exchange Administrative Group"
 				" (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
-				g_org_name, hex_string1, hex_string, username);
+				g_org_name, hex_string1, hex_string, username.c_str());
 		HX_strupper(pbuff);
 		break;
+	} catch (...) {
+		if (b_remote)
+			ab_tree_put_base(pbase);
+		return false;
+	}
 	default:
 		if (TRUE == b_remote) {
 			ab_tree_put_base(pbase);
@@ -1356,49 +1279,34 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 	uint32_t codepage, char *str_dname)
 {
 	char *ptoken;
-	int temp_len;
-	int list_type;
-	char title[1024];
 	AB_NODE *pabnode;
-	MEM_FILE fake_file;
 	char lang_string[256];
 	
 	pabnode = (AB_NODE*)pnode;
 	str_dname[0] = '\0';
-	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	switch (pabnode->node_type) {
-	case NODE_TYPE_DOMAIN:
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-			temp_len, MEM_FILE_SEEK_CUR);
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_read(&fake_file, str_dname, temp_len);
-		str_dname[temp_len] = '\0';
+	case NODE_TYPE_DOMAIN: {
+		auto obj = static_cast<sql_domain *>(pabnode->d_info);
+		strcpy(str_dname, obj->title.c_str());
 		break;
-	case NODE_TYPE_GROUP:
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-			temp_len, MEM_FILE_SEEK_CUR);
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_read(&fake_file, str_dname, temp_len);
-		str_dname[temp_len] = '\0';
+	}
+	case NODE_TYPE_GROUP: {
+		auto obj = static_cast<sql_group *>(pabnode->d_info);
+		strcpy(str_dname, obj->title.c_str());
 		break;
-	case NODE_TYPE_CLASS:
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_read(&fake_file, str_dname, temp_len);
-		str_dname[temp_len] = '\0';
+	}
+	case NODE_TYPE_CLASS: {
+		auto obj = static_cast<sql_class *>(pabnode->d_info);
+		strcpy(str_dname, obj->name.c_str());
 		break;
+	}
 	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
-	case NODE_TYPE_EQUIPMENT:
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_read(&fake_file, str_dname, temp_len);
-		str_dname[temp_len] = '\0';
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		if (0 != temp_len) {
-			mem_file_read(&fake_file, str_dname, temp_len);
-			str_dname[temp_len] = '\0';
+	case NODE_TYPE_EQUIPMENT: {
+		auto obj = static_cast<sql_user *>(pabnode->d_info);
+		strcpy(str_dname, obj->username.c_str());
+		if (obj->realname.size() > 0) {
+			strcpy(str_dname, obj->realname.c_str());
 		} else {
 			ptoken = strchr(str_dname, '@');
 			if (NULL != ptoken) {
@@ -1406,30 +1314,20 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 			}
 		}
 		break;
-	case NODE_TYPE_MLIST:
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-			temp_len, MEM_FILE_SEEK_CUR);
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-			temp_len, MEM_FILE_SEEK_CUR);
-		mem_file_read(&fake_file, &list_type, sizeof(int));
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-			sizeof(int), MEM_FILE_SEEK_CUR);
-		switch (list_type) {
+	}
+	case NODE_TYPE_MLIST: {
+		auto obj = static_cast<sql_user *>(pabnode->d_info);
+		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
 			if (FALSE == system_services_get_lang(codepage, "mlist0", str_dname, 256)) {
 				strcpy(str_dname, "custom address list");
 			}
 			break;
 		case MLIST_TYPE_GROUP:
-			mem_file_read(&fake_file, &temp_len, sizeof(int));
-			mem_file_read(&fake_file, title, temp_len);
-			title[temp_len] = '\0';
 			if (FALSE == system_services_get_lang(codepage, "mlist1", lang_string, 256)) {
 				strcpy(lang_string, "all users in department of %s");
 			}
-			snprintf(str_dname, 256, lang_string, title);
+			snprintf(str_dname, 256, lang_string, obj->title.c_str());
 			break;
 		case MLIST_TYPE_DOMAIN:
 			if (FALSE == system_services_get_lang(codepage, "mlist2", str_dname, 256)) {
@@ -1437,18 +1335,16 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 			}
 			break;
 		case MLIST_TYPE_CLASS:
-			mem_file_read(&fake_file, &temp_len, sizeof(int));
-			mem_file_read(&fake_file, title, temp_len);
-			title[temp_len] = '\0';
 			if (FALSE == system_services_get_lang(codepage, "mlist3", lang_string, 256)) {
 				strcpy(lang_string, "all users in group of %s");
 			}
-			snprintf(str_dname, 256, lang_string, title);
+			snprintf(str_dname, 256, lang_string, obj->title.c_str());
 			break;
 		default:
-			strcpy(str_dname, "unknown address list");
+			snprintf(str_dname, 256, "unknown address list type %u", obj->list_type);
 		}
 		break;
+	}
 	}
 }
 
@@ -1456,53 +1352,15 @@ static std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *pno
 {
 	std::vector<std::string> alist;
 	auto pabnode = reinterpret_cast<AB_NODE *>(pnode);
-	MEM_FILE fake_file;
-	uint32_t tmp;
-
-	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-
-	switch (type) {
-	case NODE_TYPE_PERSON:
-	case NODE_TYPE_ROOM:
-	case NODE_TYPE_EQUIPMENT:
-		for (unsigned int i = 0; i < 10; ++i) {
-			mem_file_read(&fake_file, &tmp, sizeof(tmp));
-			mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
-		}
-		break;
-	case NODE_TYPE_MLIST:
-		mem_file_read(&fake_file, &tmp, sizeof(tmp));
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
-		mem_file_read(&fake_file, &tmp, sizeof(tmp));
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR, tmp, MEM_FILE_SEEK_CUR);
-		mem_file_read(&fake_file, &tmp, sizeof(tmp));
-		mem_file_read(&fake_file, &tmp, sizeof(tmp));
-		break;
-	default:
-		printf("[exchange_nsp]: ab_tree_get_object_aliases does not support type %u\n", type);
-		return alist;
-	}
-
-	mem_file_read(&fake_file, &tmp, sizeof(tmp));
-	std::string s;
-	s.resize(tmp);
-	mem_file_read(&fake_file, &s[0], tmp);
-	size_t start = 0, end;
-	while ((end = s.find('\0', start)) != s.npos && end > start) {
-		alist.push_back(s.substr(start, end));
-		start = end + 1;
-	}
+	for (const auto &pair : static_cast<sql_user *>(pabnode->d_info)->aliases)
+		alist.push_back(pair.second);
 	return alist;
 }
 
 static void ab_tree_get_user_info(
 	SIMPLE_TREE_NODE *pnode, int type, char *value)
 {
-	int i;
-	int temp_len;
 	AB_NODE *pabnode;
-	MEM_FILE fake_file;
 	
 	value[0] = '\0';
 	pabnode = (AB_NODE*)pnode;
@@ -1512,27 +1370,25 @@ static void ab_tree_get_user_info(
 		pabnode->node_type != NODE_TYPE_REMOTE) {
 		return;
 	}
-	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	for (i=0; i<10; i++) {
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		if (type == i) {
-			mem_file_read(&fake_file, value, temp_len);
-			value[temp_len] = '\0';
-			return;
-		}	
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-						temp_len, MEM_FILE_SEEK_CUR);
+	auto u = static_cast<sql_user *>(pabnode->d_info);
+	switch (type) {
+	case USER_MAIL_ADDRESS: strcpy(value, u->username.c_str()); break;
+	case USER_REAL_NAME: strcpy(value, u->realname.c_str()); break;
+	case USER_JOB_TITLE: strcpy(value, u->title.c_str()); break;
+	case USER_COMMENT: strcpy(value, u->memo.c_str()); break;
+	case USER_MOBILE_TEL: strcpy(value, u->cell.c_str()); break;
+	case USER_BUSINESS_TEL: strcpy(value, u->tel.c_str()); break;
+	case USER_NICK_NAME: strcpy(value, u->nickname.c_str()); break;
+	case USER_HOME_ADDRESS: strcpy(value, u->homeaddr.c_str()); break;
+	case USER_CREATE_DAY: *value = '\0'; break;
+	case USER_STORE_PATH: strcpy(value, u->maildir.c_str()); break;
 	}
 }
 
 static void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
 	char *mail_address, char *create_day, int *plist_privilege)
 {
-	int temp_len;
-	int list_type;
 	AB_NODE *pabnode;
-	MEM_FILE fake_file;
 	
 	pabnode = (AB_NODE*)pnode;
 	if (pabnode->node_type != NODE_TYPE_MLIST &&
@@ -1541,28 +1397,13 @@ static void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
 		*plist_privilege = 0;
 		return;
 	}
-	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_read(&fake_file, &temp_len, sizeof(int));
-	if (NULL == mail_address) {
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-			temp_len, MEM_FILE_SEEK_CUR);
-	} else {
-		mem_file_read(&fake_file, mail_address, temp_len);
-		mail_address[temp_len] = '\0';
-	}
-	mem_file_read(&fake_file, &temp_len, sizeof(int));
-	if (NULL == create_day) {
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-			temp_len, MEM_FILE_SEEK_CUR);
-	} else {
-		mem_file_read(&fake_file, create_day, temp_len);
-		create_day[temp_len] = '\0';
-	}
-	if (NULL != plist_privilege) {
-		mem_file_read(&fake_file, &list_type, sizeof(int));
-		mem_file_read(&fake_file, plist_privilege, sizeof(int));
-	}	
+	auto obj = static_cast<sql_user *>(pabnode->d_info);
+	if (mail_address != nullptr)
+		strcpy(mail_address, obj->username.c_str());
+	if (create_day != nullptr)
+		*create_day = '\0';
+	if (plist_privilege != nullptr)
+		*plist_privilege = obj->list_priv;
 }
 
 static void ab_tree_get_mlist_title(uint32_t codepage, char *str_title)
@@ -1609,11 +1450,9 @@ static void ab_tree_get_server_dn(
 static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	char *str_name, char *str_address)
 {
-	int temp_len;
 	BOOL b_remote;
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
-	MEM_FILE fake_file;
 	SIMPLE_TREE_NODE **ppnode;
 	
 	b_remote = FALSE;
@@ -1638,24 +1477,11 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	}
 	while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
 		pabnode = (AB_NODE*)pnode;
-	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_read(&fake_file, &temp_len, sizeof(int));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-					temp_len, MEM_FILE_SEEK_CUR);
-	mem_file_read(&fake_file, &temp_len, sizeof(int));
-	if (NULL == str_name) {
-		mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-						temp_len, MEM_FILE_SEEK_CUR);
-	} else {
-		mem_file_read(&fake_file, str_name, temp_len);
-		str_name[temp_len] = '\0';
-	}
-	if (NULL != str_address) {
-		mem_file_read(&fake_file, &temp_len, sizeof(int));
-		mem_file_read(&fake_file, str_address, temp_len);
-		str_address[temp_len] = '\0';
-	}
+	auto obj = static_cast<sql_domain *>(pabnode->d_info);
+	if (str_name != nullptr)
+		strcpy(str_name, obj->title.c_str());
+	if (str_address != nullptr)
+		strcpy(str_address, obj->address.c_str());
 	if (TRUE == b_remote) {
 		ab_tree_put_base(pbase);
 	}
@@ -1663,11 +1489,9 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 
 static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 {
-	int temp_len;
 	BOOL b_remote;
 	AB_BASE *pbase;
 	AB_NODE *pabnode;
-	MEM_FILE fake_file;
 	SIMPLE_TREE_NODE **ppnode;
 	
 	b_remote = FALSE;
@@ -1697,14 +1521,8 @@ static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 		str_name[0] = '\0';
 		return;
 	}
-	memcpy(&fake_file, &pabnode->f_info, sizeof(MEM_FILE));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_read(&fake_file, &temp_len, sizeof(int));
-	mem_file_seek(&fake_file, MEM_FILE_READ_PTR,
-				temp_len, MEM_FILE_SEEK_CUR);
-	mem_file_read(&fake_file, &temp_len, sizeof(int));
-	mem_file_read(&fake_file, str_name, temp_len);
-	str_name[temp_len] = '\0';
+	auto obj = static_cast<sql_group *>(pabnode->d_info);
+	strcpy(str_name, obj->title.c_str());
 	if (TRUE == b_remote) {
 		ab_tree_put_base(pbase);
 	}

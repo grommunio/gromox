@@ -1,6 +1,5 @@
 #pragma once
 #include <gromox/common_types.hpp>
-#include <gromox/mem_file.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
 extern int system_services_run(void);

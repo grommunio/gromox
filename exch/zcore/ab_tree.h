@@ -6,7 +6,6 @@
 #include <gromox/single_list.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/int_hash.hpp>
-#include <gromox/mem_file.hpp>
 
 /* PROP_TAG_CONTAINERFLAGS values */
 #define	AB_RECIPIENTS						0x1
