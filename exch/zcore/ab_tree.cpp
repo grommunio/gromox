@@ -561,19 +561,15 @@ static BOOL ab_tree_load_tree(int domain_id,
 	int temp_len;
 	AB_NODE *pabnode;
 	SORT_ITEM *parray;
-	char address[1024];
-	char temp_buff[1024];
+	sql_domain dinfo;
 	char group_name[256];
-	char domain_name[256];
 	SIMPLE_TREE_NODE *pgroup;
 	SIMPLE_TREE_NODE *pclass;
 	SIMPLE_TREE_NODE *pdomain;
 	
     {
-	if (FALSE == system_services_get_domain_info(domain_id,
-		domain_name, temp_buff, address)) {
+	if (!system_services_get_domain_info(domain_id, dinfo))
 		return FALSE;
-	}
 	pabnode = ab_tree_get_abnode();
 	if (NULL == pabnode) {
 		return FALSE;
@@ -585,26 +581,23 @@ static BOOL ab_tree_load_tree(int domain_id,
 		return FALSE;
 	}
 	/* domainname */
-	if (FALSE == utf8_check(domain_name)) {
-		utf8_filter(domain_name);
-	}
-	temp_len = strlen(domain_name);
+	if (!utf8_check(dinfo.name.c_str()))
+		utf8_filter(dinfo.name.data());
+	temp_len = strlen(dinfo.name.c_str());
 	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, domain_name, temp_len);
+	mem_file_write(&pabnode->f_info, dinfo.name.c_str(), temp_len);
 	/* domain title */
-	if (FALSE == utf8_check(temp_buff)) {
-		utf8_filter(temp_buff);
-	}
-	temp_len = strlen(temp_buff);
+	if (!utf8_check(dinfo.title.c_str()))
+		utf8_filter(dinfo.title.data());
+	temp_len = strlen(dinfo.title.c_str());
 	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, temp_buff, temp_len);
+	mem_file_write(&pabnode->f_info, dinfo.title.c_str(), temp_len);
 	/* address */
-	if (FALSE == utf8_check(address)) {
-		utf8_filter(address);
-	}
-	temp_len = strlen(address);
+	if (!utf8_check(dinfo.address.c_str()))
+		utf8_filter(dinfo.address.data());
+	temp_len = strlen(dinfo.address.c_str());
 	mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
-	mem_file_write(&pabnode->f_info, address, temp_len);
+	mem_file_write(&pabnode->f_info, dinfo.address.c_str(), temp_len);
 	pdomain = (SIMPLE_TREE_NODE*)pabnode;
 	simple_tree_set_root(ptree, pdomain);
 
@@ -631,6 +624,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		mem_file_write(&pabnode->f_info, &temp_len, sizeof(int));
 		mem_file_write(&pabnode->f_info, group_name, temp_len);
 		/* group title */
+		char temp_buff[1024];
 		HX_strlcpy(temp_buff, grp.title.c_str(), sizeof(temp_buff));
 		if (FALSE == utf8_check(temp_buff)) {
 			utf8_filter(temp_buff);
@@ -749,6 +743,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			}
 		}
 		parray[i].pnode = (SIMPLE_TREE_NODE*)pabnode;
+		char temp_buff[1024];
 		ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff);
 		parray[i].string = strdup(temp_buff);
 		if (NULL == parray[i].string) {

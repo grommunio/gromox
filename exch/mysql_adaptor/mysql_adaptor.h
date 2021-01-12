@@ -21,6 +21,10 @@ struct mysql_adaptor_init_param {
 	enum sql_schema_upgrade schema_upgrade;
 };
 
+struct sql_domain {
+	std::string name, title, address;
+};
+
 struct sql_user {
 	using alias_map_type = std::multimap<std::string, std::string>;
 
@@ -85,9 +89,7 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 BOOL mysql_adaptor_get_mlist_ids(int user_id,
 	int *pgroup_id, int *pdomain_id);
 extern BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &);
-BOOL mysql_adaptor_get_domain_info(int domain_id,
-	char *name, char *title, char *address);
-
+extern BOOL mysql_adaptor_get_domain_info(int domain_id, sql_domain &);
 BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2);
 extern BOOL mysql_adaptor_get_domain_groups(int domain_id, std::vector<sql_group> &);
 extern BOOL mysql_adaptor_get_group_classes(int group_id, std::vector<sql_class> &);

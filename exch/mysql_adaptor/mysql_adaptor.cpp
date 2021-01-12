@@ -967,8 +967,7 @@ BOOL mysql_adaptor_get_org_domains(int org_id, std::vector<int> &pfile) try
 	return false;
 }
 
-BOOL mysql_adaptor_get_domain_info(int domain_id,
-	char *name, char *title, char *address)
+BOOL mysql_adaptor_get_domain_info(int domain_id, sql_domain &dinfo) try
 {
 	char sql_string[1024];
 
@@ -984,12 +983,16 @@ BOOL mysql_adaptor_get_domain_info(int domain_id,
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	strncpy(name, myrow[0], 256);
-	strncpy(title, myrow[1], 1024);
-	strncpy(address, myrow[2], 1024);
+	if (myrow == nullptr)
+		return false;
+	dinfo.name = myrow[0];
+	dinfo.title = myrow[1];
+	dinfo.address = myrow[2];
 	return TRUE;
+} catch (const std::exception &e) {
+	printf("[mysql_adaptor]: %s %s\n", __func__, e.what());
+	return false;
 }
-
 BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2)
 {
 	int org_id1;
