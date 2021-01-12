@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
+#include <new>
 #include <string>
 #include <utility>
 #include <vector>
@@ -94,11 +95,8 @@ static BOOL g_notify_stop;
 static pthread_t g_scan_id;
 static int g_cache_interval;
 static char g_org_name[256];
-static SINGLE_LIST g_snode_list;
-static SINGLE_LIST g_abnode_list;
 static INT_HASH_TABLE *g_base_hash;
 static pthread_mutex_t g_base_lock;
-static pthread_mutex_t g_list_lock;
 static LIB_BUFFER *g_file_allocator;
 static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,
 									   0xC0, 0x42, 0x10, 0x1A,
@@ -167,48 +165,28 @@ uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode)
 
 static SINGLE_LIST_NODE* ab_tree_get_snode()
 {
-	SINGLE_LIST_NODE *psnode;
-	
-	pthread_mutex_lock(&g_list_lock);
-	psnode = single_list_get_from_head(&g_snode_list);
-	pthread_mutex_unlock(&g_list_lock);
-	if (NULL == psnode) {
-		psnode = static_cast<decltype(psnode)>(malloc(sizeof(*psnode)));
-	}
-	return psnode;
+	return new(std::nothrow) SINGLE_LIST_NODE;
 }
 
 static void ab_tree_put_snode(SINGLE_LIST_NODE *psnode)
 {
-	pthread_mutex_lock(&g_list_lock);
-	single_list_append_as_tail(&g_snode_list, psnode);
-	pthread_mutex_unlock(&g_list_lock);
+	delete psnode;
 }
 
 static AB_NODE* ab_tree_get_abnode()
 {
-	AB_NODE *pabnode;
-	
-	pthread_mutex_lock(&g_list_lock);
-	pabnode = (AB_NODE*)single_list_get_from_head(&g_abnode_list);
-	pthread_mutex_unlock(&g_list_lock);
-	if (NULL == pabnode) {
-		pabnode = static_cast<decltype(pabnode)>(malloc(sizeof(*pabnode)));
-	}
-	if (NULL != pabnode) {
-		mem_file_init(&pabnode->f_info, g_file_allocator);
-		pabnode->minid = 0;
-	}
-	return pabnode;
+	auto n = new(std::nothrow) AB_NODE;
+	if (n == nullptr)
+		return nullptr;
+	mem_file_init(&n->f_info, g_file_allocator);
+	n->minid = 0;
+	return n;
 }
 
 static void ab_tree_put_abnode(AB_NODE *pabnode)
 {
 	mem_file_free(&pabnode->f_info);
-	pthread_mutex_lock(&g_list_lock);
-	single_list_append_as_tail(&g_abnode_list,
-				(SINGLE_LIST_NODE*)pabnode);
-	pthread_mutex_unlock(&g_list_lock);
+	delete pabnode;
 }
 
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
@@ -227,9 +205,6 @@ void ab_tree_init(const char *org_name, int base_size,
 	g_base_size = base_size;
 	g_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;
-	single_list_init(&g_snode_list);
-	single_list_init(&g_abnode_list);
-	pthread_mutex_init(&g_list_lock, NULL);
 	pthread_mutex_init(&g_base_lock, NULL);
 	g_notify_stop = TRUE;
 }
@@ -308,7 +283,6 @@ int ab_tree_stop()
 {
 	AB_BASE **ppbase;
 	INT_HASH_ITER *iter;
-	SINGLE_LIST_NODE *pnode;
 	
 	if (FALSE == g_notify_stop) {
 		g_notify_stop = TRUE;
@@ -327,10 +301,6 @@ int ab_tree_stop()
 		int_hash_free(g_base_hash);
 		g_base_hash = NULL;
 	}
-	while ((pnode = single_list_get_from_head(&g_snode_list)) != NULL)
-		free(pnode);
-	while ((pnode = single_list_get_from_head(&g_abnode_list)) != NULL)
-		free(pnode);
 	if (NULL != g_file_allocator) {
 		lib_buffer_free(g_file_allocator);
 		g_file_allocator = NULL;
@@ -341,9 +311,6 @@ int ab_tree_stop()
 void ab_tree_free()
 {
 	pthread_mutex_destroy(&g_base_lock);
-	pthread_mutex_destroy(&g_list_lock);
-	single_list_free(&g_abnode_list);
-	single_list_free(&g_snode_list);
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
