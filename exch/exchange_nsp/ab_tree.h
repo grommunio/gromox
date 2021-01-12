@@ -8,7 +8,6 @@
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/int_hash.hpp>
-#include <gromox/mem_file.hpp>
 #define NODE_TYPE_DOMAIN					0x81
 #define NODE_TYPE_GROUP						0x82
 #define NODE_TYPE_CLASS						0x83
