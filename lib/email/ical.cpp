@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/timezone.hpp>
@@ -128,7 +129,7 @@ static void ical_init_component(ICAL_COMPONENT *pcomponent, const char *name)
 	pcomponent->node.pdata = pcomponent;
 	double_list_init(&pcomponent->line_list);
 	double_list_init(&pcomponent->component_list);
-	strncpy(pcomponent->name, name, ICAL_NAME_LEN);
+	HX_strlcpy(pcomponent->name, name, GX_ARRAY_SIZE(pcomponent->name));
 }
 
 
@@ -824,7 +825,7 @@ ICAL_LINE* ical_new_line(const char *name)
 		return NULL;
 	}
 	piline->node.pdata = piline;
-	strncpy(piline->name, name, ICAL_NAME_LEN);
+	HX_strlcpy(piline->name, name, GX_ARRAY_SIZE(piline->name));
 	double_list_init(&piline->param_list);
 	double_list_init(&piline->value_list);
 	return piline;
@@ -855,7 +856,7 @@ ICAL_PARAM* ical_new_param(const char*name)
 		return NULL;
 	}
 	piparam->node.pdata = piparam;
-	strncpy(piparam->name, name, ICAL_NAME_LEN);
+	HX_strlcpy(piparam->name, name, GX_ARRAY_SIZE(piparam->name));
 	double_list_init(&piparam->paramval_list);
 	return piparam;
 }
@@ -1041,7 +1042,7 @@ BOOL ical_parse_utc_offset(const char *str_offset,
 	char tmp_buff[8];
 	char str_zone[16];
 	
-	strncpy(str_zone, str_offset, 16);
+	HX_strlcpy(str_zone, str_offset, GX_ARRAY_SIZE(str_zone));
 	HX_strrtrim(str_zone);
 	HX_strltrim(str_zone);
 	if ('-' == str_zone[0]) {
@@ -1079,7 +1080,7 @@ BOOL ical_parse_date(const char *str_date,
 {
 	char tmp_buff[128];
 	
-	strncpy(tmp_buff, str_date, 128);
+	HX_strlcpy(tmp_buff, str_date, GX_ARRAY_SIZE(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	if (sscanf(tmp_buff, "%04d%02d%02d", pyear, pmonth, pday) < 3) {
@@ -1095,7 +1096,7 @@ BOOL ical_parse_datetime(const char *str_datetime,
 	char tsep;
 	char tmp_buff[128];
 	
-	strncpy(tmp_buff, str_datetime, 128);
+	HX_strlcpy(tmp_buff, str_datetime, GX_ARRAY_SIZE(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	len = strlen(tmp_buff);
@@ -1508,7 +1509,7 @@ BOOL ical_parse_byday(const char *str_byday,
 	char tmp_num[3];
 	char tmp_buff[16];
 	
-	strncpy(tmp_buff, str_byday, 16);
+	HX_strlcpy(tmp_buff, str_byday, GX_ARRAY_SIZE(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	if ('-' == tmp_buff[0]) {
@@ -1574,7 +1575,7 @@ BOOL ical_parse_duration(const char *str_duration, long *pseconds)
 	char *ptoken1;
 	char tmp_buff[128];
 	
-	strncpy(tmp_buff, str_duration, 128);
+	HX_strlcpy(tmp_buff, str_duration, GX_ARRAY_SIZE(tmp_buff));
 	HX_strrtrim(tmp_buff);
 	HX_strltrim(tmp_buff);
 	ptoken = tmp_buff;

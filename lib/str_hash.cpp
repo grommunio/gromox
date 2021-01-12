@@ -2,7 +2,9 @@
 /*
  * A simple string hash table data structure
  */
+#include <libHX/string.h>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 #include <cstring>
@@ -172,8 +174,7 @@ int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value)
 	item->map_index = index;
 	item->list_node.pdata	= item;
 	item->iter_node.pdata	= item;
-	strncpy(item->key, key, MAX_KEY_LENGTH);
-
+	HX_strlcpy(item->key, key, GX_ARRAY_SIZE(item->key));
 	memcpy((char*)list_node + sizeof(STR_HASH_ITEM), value, ptbl->data_size);
 
 	dlist	= (DOUBLE_LIST*)&(ptbl->hash_map[index]);

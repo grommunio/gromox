@@ -5,6 +5,7 @@
  *
  */
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include "resource.h"
 #include <gromox/single_list.hpp>
@@ -347,8 +348,9 @@ static int resource_parse_imap_line(char* dest, char* src_str, int len)
     if (NULL == (ptr = strchr(src_str, '<')) || ptr == src_str) {
         dest[0] = (char)(len + 3);
         strncpy(dest + 1, src_str, len);
-        strncpy(dest + len + 1, "\r\n", 2);
-        dest[len + 3] = '\0';
+		dest[len+1] = '\r';
+		dest[len+2] = '\n';
+		dest[len+3] = '\0';
     } else {
         sub_len = (char)(ptr - src_str);
         dest[0] = sub_len + 1;          /* include null terminator */
@@ -366,8 +368,9 @@ static int resource_parse_imap_line(char* dest, char* src_str, int len)
         sub_len = dest[sub_len + 2];
 
         strncpy(ptr, end_ptr, sub_len);
-        strncpy(ptr + sub_len - 3, "\r\n", 2);
-        *(ptr + sub_len - 1) = '\0';
+		ptr[sub_len-3] = '\r';
+		ptr[sub_len-2] = '\n';
+		ptr[sub_len-1] = '\0';
     }
     return 0;
 
@@ -508,7 +511,7 @@ static int resource_construct_lang_list(SINGLE_LIST *plist)
 		}
 		
 		plang->node.pdata = plang;
-		strncpy(plang->lang, line, 32);
+		HX_strlcpy(plang->lang, line, GX_ARRAY_SIZE(plang->lang));
 		HX_strrtrim(plang->lang);
 		HX_strltrim(plang->lang);
 		plang->folders[0] = plang->draft;

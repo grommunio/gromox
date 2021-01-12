@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include <gromox/list_file.hpp>
 #include <gromox/int_hash.hpp>
@@ -27,7 +28,7 @@ static const char* mime_to_extension(const char *ptype)
 {
 	char tmp_type[256];
 	
-	strncpy(tmp_type, ptype, 256);
+	HX_strlcpy(tmp_type, ptype, GX_ARRAY_SIZE(tmp_type));
 	HX_strlower(tmp_type);
 	pthread_mutex_lock(&g_mime_lock);
 	auto pextension = static_cast<char *>(str_hash_query(g_mime_hash, tmp_type));
@@ -39,7 +40,7 @@ static const char* extension_to_mime(const char *pextension)
 {
 	char tmp_extension[16];
 	
-	strncpy(tmp_extension, pextension, 16);
+	HX_strlcpy(tmp_extension, pextension, GX_ARRAY_SIZE(tmp_extension));
 	HX_strlower(tmp_extension);
 	pthread_mutex_lock(&g_extension_lock);
 	auto ptype = static_cast<char *>(str_hash_query(g_extension_hash, tmp_extension));

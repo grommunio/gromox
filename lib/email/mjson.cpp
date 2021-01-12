@@ -2,6 +2,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
 #include <gromox/util.hpp>
@@ -1300,7 +1301,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	offset = 0;
 	
 FETCH_STRUCTURE_LOOP:
-	strncpy(ctype, pmime->ctype, 256);
+	HX_strlcpy(ctype, pmime->ctype, GX_ARRAY_SIZE(ctype));
 	HX_strupper(ctype);
 	psubtype = strchr(ctype, '/');
 	if (NULL == psubtype) {

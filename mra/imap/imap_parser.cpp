@@ -7,6 +7,7 @@
 #include <climits>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include <gromox/mjson.hpp>
@@ -1242,11 +1243,11 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 
 static void imap_parser_event_touch(char *username, char *folder)
 {
-	char temp_string[256];
+	char temp_string[324];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
-	strncpy(temp_string, username, 256);
+	HX_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
@@ -1295,11 +1296,11 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 static void imap_parser_event_flag(const char *username, const char *folder,
 	const char *mid_string)
 {
-	char temp_string[256];
+	char temp_string[324];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
-	strncpy(temp_string, username, 256);
+	HX_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_hash_lock);
 	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
@@ -1817,10 +1818,10 @@ static void imap_parser_event_proc(char *event)
 
 void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 {
-	char temp_string[256];
+	char temp_string[324];
 	DOUBLE_LIST *plist, temp_list;
 	
-	strncpy(temp_string, pcontext->username, 256);
+	HX_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	time(&pcontext->selected_time);
 	pthread_mutex_lock(&g_hash_lock);
@@ -1845,13 +1846,13 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 {
 	BOOL should_remove;
 	DOUBLE_LIST *plist;
-	char temp_string[256];
+	char temp_string[324];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	
 	should_remove = TRUE;
 	pcontext->selected_time = 0;
-	strncpy(temp_string, pcontext->username, 256);
+	HX_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	pthread_mutex_lock(&g_hash_lock);
 	plist = (DOUBLE_LIST*)str_hash_query(g_select_hash, temp_string);

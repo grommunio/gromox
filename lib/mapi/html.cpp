@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/html.hpp>
 #include <gromox/util.hpp>
@@ -234,7 +235,7 @@ static void html_set_fonttable(RTF_WRITER *pwriter, const char* font_name)
 {
 	FONT_NODE tmp_node;
 	
-	strncpy(tmp_node.font_name, font_name, sizeof(tmp_node.font_name));
+	HX_strlcpy(tmp_node.font_name, font_name, GX_ARRAY_SIZE(tmp_node.font_name));
 	HX_strlower(tmp_node.font_name);
 	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_node.font_name));
 	if (NULL != pfnode) {
@@ -254,7 +255,7 @@ static int html_get_fonttable(RTF_WRITER *pwriter, const char* font_name)
 {
 	char tmp_buff[128];
 	
-	strncpy(tmp_buff, font_name, 128);
+	HX_strlcpy(tmp_buff, font_name, GX_ARRAY_SIZE(tmp_buff));
 	HX_strlower(tmp_buff);
 	auto pfnode = static_cast<FONT_NODE *>(str_hash_query(pwriter->pfont_hash, tmp_buff));
 	if (NULL == pfnode) {

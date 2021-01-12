@@ -175,7 +175,7 @@ libmrasvc_event_stub_la_LIBADD = -lpthread libgromox_common.la
 EXTRA_libmrasvc_event_stub_la_DEPENDENCIES = ${default_sym}
 libmrasvc_midb_agent_la_SOURCES = mra/midb_agent.cpp
 libmrasvc_midb_agent_la_LDFLAGS = ${plugin_LDFLAGS}
-libmrasvc_midb_agent_la_LIBADD = -lpthread libgromox_common.la
+libmrasvc_midb_agent_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
 EXTRA_libmrasvc_midb_agent_la_DEPENDENCIES = ${default_sym}
 
 # exch

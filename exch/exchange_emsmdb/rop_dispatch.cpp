@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "emsmdb_interface.h"
 #include "rop_dispatch.h"
@@ -47,7 +48,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		auto rq = static_cast<LOGON_REQUEST *>(prequest->ppayload);
 		auto rdr = static_cast<LOGON_REDIRECT_RESPONSE *>(perr_response);
 		if (rq->pessdn != nullptr)
-			strncpy(rdr->pserver_name, rq->pessdn, 1024);
+			HX_strlcpy(rdr->pserver_name, rq->pessdn, GX_ARRAY_SIZE(rdr->pserver_name));
 		else
 			rdr->pserver_name[0] = '\0';
 		if (rq->logon_flags & LOGON_FLAG_PRIVATE) {

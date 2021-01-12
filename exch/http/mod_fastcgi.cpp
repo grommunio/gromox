@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/threads_pool.hpp>
@@ -636,7 +637,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	ptoken = strrchr(request_uri, '/');
 	if (NULL != ptoken) {
 		*ptoken = '\0';
-		strncpy(file_name, ptoken + 1, 256);
+		HX_strlcpy(file_name, ptoken + 1, GX_ARRAY_SIZE(file_name));
 	} else {
 		http_parser_log_info(phttp, 8, "request uri format "
 					"error, missing slash for mod_fastcgi");

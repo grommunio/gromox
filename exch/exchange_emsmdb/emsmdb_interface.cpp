@@ -46,7 +46,7 @@
 struct HANDLE_DATA {
 	DOUBLE_LIST_NODE node;
 	GUID guid;
-	char username[256];
+	char username[324];
 	uint16_t cxr;
 	uint32_t last_handle;
 	EMSMDB_INFO info;
@@ -241,7 +241,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	temp_handle.info.client_mode = client_mode;
 	temp_handle.info.upctx_ref = 0;
 	time(&temp_handle.last_time);
-	strncpy(temp_handle.username, username, 256);
+	HX_strlcpy(temp_handle.username, username, GX_ARRAY_SIZE(temp_handle.username));
 	HX_strlower(temp_handle.username);
 	guid_to_string(&temp_handle.guid, guid_string, sizeof(guid_string));
 	pthread_mutex_lock(&g_lock);

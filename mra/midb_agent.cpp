@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
@@ -1855,7 +1856,7 @@ static int list_simple(char *path, char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
-						strncpy(mitem.mid, temp_line, sizeof(mitem.mid));
+						HX_strlcpy(mitem.mid, temp_line, GX_ARRAY_SIZE(mitem.mid));
 						mitem.id = count;
 						mitem.uid = atoi(pspace);
 						mitem.flag_bits = 0;
@@ -2031,7 +2032,7 @@ static int list_deleted(char *path, char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
-						strncpy(mitem.mid, pspace, sizeof(mitem.mid));
+						HX_strlcpy(mitem.mid, pspace, GX_ARRAY_SIZE(mitem.mid));
 						mitem.id = atoi(temp_line) + 1;
 						mitem.uid = atoi(pspace1);
 						mitem.flag_bits = FLAG_DELETED;

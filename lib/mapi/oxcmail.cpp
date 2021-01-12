@@ -8,6 +8,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/dsn.hpp>
@@ -82,7 +83,7 @@ struct DSN_ENUM_INFO {
 };
 
 struct DSN_FILEDS_INFO {
-	char final_recipient[256];
+	char final_recipient[324];
 	int action_severity;
 	char remote_mta[128];
 	const char *status;
@@ -133,7 +134,7 @@ BOOL oxcmail_init_library(const char *org_name,
 	cpid_to_charset, MIME_TO_EXTENSION mime_to_extension,
 	EXTENSION_TO_MIME extension_to_mime)
 {
-	strncpy(g_org_name, org_name, 128);
+	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	oxcmail_get_user_ids = get_user_ids;
 	oxcmail_get_username = get_username;
 	oxcmail_ltag_to_lcid = ltag_to_lcid;
@@ -157,11 +158,11 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[256];
+	char tmp_name[324];
 	char hex_string[16];
 	char hex_string2[16];
 	
-	strncpy(tmp_name, username, 256);
+	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -492,9 +493,9 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	}
 	utf8_field[0] = '\0';
 	if ('\0' != paddr->display_name[0]) {
-		strncpy(display_name, paddr->display_name, 256);
+		HX_strlcpy(display_name, paddr->display_name, GX_ARRAY_SIZE(display_name));
 	} else {
-		snprintf(display_name, 256, "%s@%s",
+		snprintf(display_name, GX_ARRAY_SIZE(display_name), "%s@%s",
 			paddr->local_part, paddr->domain);
 	}
 	if (TRUE == mime_string_to_utf8(charset, display_name, utf8_field)) {
@@ -3375,7 +3376,7 @@ static BOOL oxcmail_enum_dsn_rcpt_field(
 	pinfo = (DSN_FILEDS_INFO*)pparam;
 	if (0 == strcasecmp(tag, "Final-Recipient") &&
 		0 == strncasecmp(value, "rfc822;", 7)) {
-		strncpy(pinfo->final_recipient, value + 7, 256);
+		HX_strlcpy(pinfo->final_recipient, value + 7, GX_ARRAY_SIZE(pinfo->final_recipient));
 		HX_strrtrim(pinfo->final_recipient);
 		HX_strltrim(pinfo->final_recipient);
 	} else if (0 == strcasecmp(tag, "Action")) {
@@ -3395,7 +3396,7 @@ static BOOL oxcmail_enum_dsn_rcpt_field(
 	} else if (0 == strcasecmp(tag, "Diagnostic-Code")) {
 		pinfo->diagnostic_code = value;
 	} else if (0 == strcasecmp(tag, "Remote-MTA")) {
-		strncpy(pinfo->remote_mta, value, sizeof(pinfo->remote_mta));
+		HX_strlcpy(pinfo->remote_mta, value, GX_ARRAY_SIZE(pinfo->remote_mta));
 	} else if (0 == strcasecmp(tag, "X-Supplementary-Info")) {
 		pinfo->x_supplementary_info = value;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
@@ -3904,7 +3905,7 @@ static BOOL oxcmail_enum_mdn(const char *tag,
 			return TRUE;
 		}
 		++ptoken2;
-		strncpy(tmp_buff, ptoken2, 1024);
+		HX_strlcpy(tmp_buff, ptoken2, GX_ARRAY_SIZE(tmp_buff));
 		HX_strltrim(tmp_buff);
 		ptoken = strchr(tmp_buff, '/');
 		if (NULL != ptoken) {
@@ -6349,7 +6350,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 	void *pvalue;
 	size_t base64_len;
 	char tmp_buff[1024];
-	char tmp_address[256];
+	char tmp_address[324];
 	DSN_FIELDS *pdsn_fields;
 	const char *pdisplay_name;
 	
@@ -6368,7 +6369,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 			pvalue = tpropval_array_get_propval(
 				&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS);
 			if (NULL != pvalue) {
-				strncpy(tmp_address, static_cast<char *>(pvalue), 256);
+				HX_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 			}
 		}
 	}
@@ -6380,7 +6381,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 	pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
 	                &pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME));
 	if (NULL != pvalue) {
-		strncpy(tmp_address, static_cast<char *>(pvalue), 256);
+		HX_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 	} else {
 		pvalue = tpropval_array_get_propval(&pmsg->proplist,
 					PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
@@ -6389,7 +6390,7 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 			pvalue = tpropval_array_get_propval(&pmsg->proplist,
 						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
 			if (NULL != pvalue) {
-				strncpy(tmp_address, static_cast<char *>(pvalue), 256);
+				HX_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 			}
 		}
 	}

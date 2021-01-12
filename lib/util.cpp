@@ -7,6 +7,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include <ctime>
@@ -287,9 +288,7 @@ BOOL string_to_utf8(const char *charset,
 		out_string[0] = '\0';
 		return TRUE;
 	}
-	strncpy(tmp_charset,
-		replace_iconv_charset(charset),
-		sizeof(tmp_charset));
+	HX_strlcpy(tmp_charset, replace_iconv_charset(charset), GX_ARRAY_SIZE(tmp_charset));
 	if (0 != strcasecmp("utf-7", tmp_charset)) {
 		length ++;
 	}

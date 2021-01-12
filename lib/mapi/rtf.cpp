@@ -5,6 +5,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/rtf.hpp>
 #include <gromox/util.hpp>
@@ -1957,7 +1958,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		if (NULL != ptoken) {
 			*ptoken = '\0';
 		}
-		strncpy(tmp_entry.name, name, MAX_FINTNAME_LEN);
+		HX_strlcpy(tmp_entry.name, name, GX_ARRAY_SIZE(tmp_entry.name));
 		int_hash_add(preader->pfont_hash, num, &tmp_entry);
 	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 	if ('\0' == preader->default_encoding[0]) {

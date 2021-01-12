@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "rops.h"
 #include <gromox/rop_util.hpp>
@@ -75,7 +76,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags,
 		*presponse_flags = RESPONSE_FLAG_RESERVED |
 							RESPONSE_FLAG_OWNERRIGHT |
 							RESPONSE_FLAG_SENDASRIGHT;
-		strncpy(maildir, rpc_info.maildir, 256);
+		HX_strlcpy(maildir, rpc_info.maildir, GX_ARRAY_SIZE(maildir));
 		logon_mode = LOGON_MODE_OWNER;
 	}
 	proptags.count = 2;

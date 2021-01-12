@@ -127,7 +127,7 @@ static uint32_t rfr_get_fqdnfromlegacydn(uint32_t flags,
 	char tmp_unused[16];
 	char tmp_buff[1024];
 	
-	strncpy(tmp_buff, mbserverdn, sizeof(tmp_buff));
+	HX_strlcpy(tmp_buff, mbserverdn, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strrchr(tmp_buff, '/');
 	if (NULL == ptoken || 0 != strncasecmp(ptoken, "/cn=", 4)) {
 		return rfr_get_newdsa(flags, NULL, tmp_unused, serverfqdn);

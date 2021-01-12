@@ -13,7 +13,7 @@ struct LOGON_OBJECT {
 	uint32_t open_flags;
 	int logon_mode;
 	int account_id;
-	char account[256];
+	char account[324];
 	char dir[256];
 	GUID mailbox_guid;
 	PROPERTY_GROUPINFO *pgpinfo;

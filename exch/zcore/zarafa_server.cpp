@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/zcore_rpc.hpp>
@@ -810,7 +811,7 @@ uint32_t zarafa_server_logon(const char *username,
 	USER_INFO *pinfo;
 	char homedir[256];
 	char maildir[256];
-	char tmp_name[256];
+	char tmp_name[324];
 	USER_INFO tmp_info;
 	
 	auto pdomain = strchr(username, '@');
@@ -825,7 +826,7 @@ uint32_t zarafa_server_logon(const char *username,
 			return ecLoginFailure;
 		}
 	}
-	strncpy(tmp_name, username, sizeof(tmp_name));
+	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
 	pthread_mutex_lock(&g_table_lock);
 	puser_id = static_cast<int *>(str_hash_query(g_user_table, tmp_name));
@@ -3376,7 +3377,7 @@ uint32_t zarafa_server_getstoreentryid(
 	const char *mailbox_dn, BINARY *pentryid)
 {
 	EXT_PUSH ext_push;
-	char username[256];
+	char username[324];
 	char tmp_buff[1024];
 	STORE_ENTRYID store_entryid = {};
 	
@@ -3386,7 +3387,7 @@ uint32_t zarafa_server_getstoreentryid(
 			return ecError;
 		}
 	} else {
-		strncpy(username, mailbox_dn, 256);
+		HX_strlcpy(username, mailbox_dn, GX_ARRAY_SIZE(username));
 		if (FALSE == common_util_username_to_essdn(
 			username, tmp_buff)) {
 			return ecError;

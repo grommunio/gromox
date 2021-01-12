@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <unistd.h>
 #include <libHX/defs.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/tpropval_array.hpp>
 #include "folder_object.h"
@@ -1052,7 +1054,7 @@ static BOOL folder_object_flush_delegates(int fd,
 	char *ptype;
 	char *paddress;
 	BINARY *pentryid;
-	char address_buff[256];
+	char address_buff[324];
 
 	for (i=0; i<paction->count; i++) {
 		ptype = NULL;
@@ -1074,7 +1076,7 @@ static BOOL folder_object_flush_delegates(int fd,
 		address_buff[0] = '\0';
 		if (NULL != ptype && NULL != paddress) {
 			if (0 == strcasecmp(ptype, "SMTP")) {
-				strncpy(address_buff, paddress, sizeof(address_buff));
+				HX_strlcpy(address_buff, paddress, GX_ARRAY_SIZE(address_buff));
 			} else if (0 == strcasecmp(ptype, "EX")) {
 				common_util_essdn_to_username(paddress, address_buff);
 			}

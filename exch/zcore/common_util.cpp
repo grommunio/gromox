@@ -7,6 +7,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/socket.h>
@@ -537,11 +538,11 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn)
 	int domain_id;
 	char *pdomain;
 	int address_type;
-	char tmp_name[256];
+	char tmp_name[324];
 	char hex_string[16];
 	char hex_string2[16];
 	
-	strncpy(tmp_name, username, 256);
+	HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	pdomain = strchr(tmp_name, '@');
 	if (NULL == pdomain) {
 		return FALSE;
@@ -1274,14 +1275,14 @@ BOOL common_util_username_to_entryid(const char *username,
 	int address_type;
 	char x500dn[1024];
 	EXT_PUSH ext_push;
-	char tmp_name[256];
+	char tmp_name[324];
 	char hex_string[16];
 	char hex_string2[16];
 	ONEOFF_ENTRYID oneoff_entry;
 	
 	if (TRUE == system_services_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
-		strncpy(tmp_name, username, 256);
+		HX_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 		pdomain = strchr(tmp_name, '@');
 		if (NULL == pdomain) {
 			return FALSE;

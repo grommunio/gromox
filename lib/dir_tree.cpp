@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstring>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/dir_tree.hpp>
+#include <gromox/mem_file.hpp>
+#include <gromox/simple_tree.hpp>
 
 static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 {
@@ -73,7 +77,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 			if (NULL == pnode) {
 				pdir = static_cast<DIR_NODE *>(lib_buffer_get(ptree->ppool));
 				pdir->node.pdata = pdir;
-				strncpy(pdir->name, ptr1, sizeof(pdir->name));
+				HX_strlcpy(pdir->name, ptr1, GX_ARRAY_SIZE(pdir->name));
 				pdir->b_loaded = FALSE;
 				pdir->ppool = ptree->ppool;
 				pnode = &pdir->node;

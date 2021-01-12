@@ -3,6 +3,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/alloc_context.hpp>
+#include <gromox/defs.h>
 #include "exmdb_client.h"
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
@@ -51,7 +52,7 @@ BOOL common_util_build_environment(const char *maildir)
 	}
 	alloc_context_init(&pctx->alloc_ctx);
 	pctx->ptmp_ctx = NULL;
-	strncpy(pctx->maildir, maildir, 256);
+	HX_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 	pthread_setspecific(g_ctx_key, pctx);
 	return TRUE;
 }

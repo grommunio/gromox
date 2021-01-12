@@ -5,6 +5,8 @@
 #include <cstring>
 #include <libHX/defs.h>
 #include <libHX/option.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
@@ -145,7 +147,7 @@ int main(int argc, const char **argv)
 			"used as host ID\n");
 	}
 	printf("[system]: host ID is %s\n", str_val);
-	strncpy(host_name, str_val, 256);
+	HX_strlcpy(host_name, str_val, GX_ARRAY_SIZE(host_name));
 	dns_name = str_val;
 	
 	str_val = resource_get_string("DEFAULT_DOMAIN");

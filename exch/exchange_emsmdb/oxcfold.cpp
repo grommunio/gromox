@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "rops.h"
 #include <gromox/rop_util.hpp>
@@ -225,7 +226,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 			return ecInvalidParam;
 		}
 		strcpy(folder_name, pfolder_name);
-		strncpy(folder_comment, pfolder_comment, sizeof(folder_comment));
+		HX_strlcpy(folder_comment, pfolder_comment, GX_ARRAY_SIZE(folder_comment));
 	}
 	rpc_info = get_rpc_info();
 	if (LOGON_MODE_OWNER != logon_object_get_mode(plogon)) {

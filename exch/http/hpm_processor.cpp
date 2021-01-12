@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <vector>
 #include <libHX/defs.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include "hpm_processor.h"
 #include "pdu_processor.h"
@@ -218,7 +220,7 @@ static void hpm_processor_set_ep_info(
 	HTTP_CONTEXT *phttp;
 	
 	phttp = http_parser_get_contexts_list() + context_id;
-	strncpy(phttp->host, host, sizeof(phttp->host));
+	HX_strlcpy(phttp->host, host, GX_ARRAY_SIZE(phttp->host));
 	phttp->port = port;
 }
 

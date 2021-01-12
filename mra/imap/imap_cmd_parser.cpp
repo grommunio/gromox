@@ -10,6 +10,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
@@ -1562,7 +1563,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	strncpy(pcontext->tag_string, argv[0], 32);
+	HX_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	pcontext->proto_stat = PROTO_STAT_USERNAME;
 	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "+ VXNlciBOYW1lAA==\r\n");
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -1808,7 +1809,7 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return DISPATCH_CONTINUE;
 	}
-	strncpy(pcontext->tag_string, argv[0], 32);
+	HX_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	pcontext->sched_stat = SCHED_STAT_IDLING;
 	/* IMAP_CODE_2160002: + Idling */
 	imap_reply_str = resource_get_imap_code(
@@ -3348,7 +3349,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		str_received = NULL;
 	}
 	if (NULL != flags_string) {
-		strncpy(str_flags, flags_string, 128);
+		HX_strlcpy(str_flags, flags_string, GX_ARRAY_SIZE(str_flags));
 		if ('(' != flags_string[0] || ')' != flags_string[
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
@@ -3407,7 +3408,7 @@ int imap_cmd_parser_append_begin(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	*(int*)buff = len;
 	write(fd, buff, len);
 	pcontext->message_fd = fd;
-	strncpy(pcontext->tag_string, argv[0], 32);
+	HX_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
 	stream_clear(&pcontext->stream);
 	return DISPATCH_CONTINUE;
 }
@@ -3503,7 +3504,7 @@ int imap_cmd_parser_append_end(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	str_flags = str_name + name_len + 1;
 	flags_len = strlen(str_flags);
 	str_internal = str_flags + flags_len + 1;
-	strncpy(temp_name, str_name, 1024);
+	HX_strlcpy(temp_name, str_name, GX_ARRAY_SIZE(temp_name));
 	if (NULL != search_string(str_flags, "\\Seen", flags_len)) {
 		b_seen = TRUE;
 	}

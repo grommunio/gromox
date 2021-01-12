@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/ndr.hpp>
 #include <gromox/util.hpp>
 #include <gromox/crc32.hpp>
@@ -534,9 +535,9 @@ NTLMSSP_CTX* ntlmssp_init(const char *netbios_name, const char *dns_name,
 	pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	
-	strncpy(pntlmssp->netbios_name, netbios_name, 128);
-	strncpy(pntlmssp->dns_name, dns_name, 128);
-	strncpy(pntlmssp->dns_domain, dns_domain, 128);
+	HX_strlcpy(pntlmssp->netbios_name, netbios_name, GX_ARRAY_SIZE(pntlmssp->netbios_name));
+	HX_strlcpy(pntlmssp->dns_name, dns_name, GX_ARRAY_SIZE(pntlmssp->dns_name));
+	HX_strlcpy(pntlmssp->dns_domain, dns_domain, GX_ARRAY_SIZE(pntlmssp->dns_domain));
 	pntlmssp->get_password = get_password;
 	return pntlmssp;
 	
@@ -875,7 +876,7 @@ static BOOL ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	int domain_len;
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	char user_in[256];
-	char tmp_user[128];
+	char tmp_user[324];
 	char domain_in[256];
 	HMACMD5_CTX hmac_ctx;
 	DATA_BLOB client_key;
@@ -895,8 +896,7 @@ static BOOL ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 
 	client_key.data = pntv2_response->data + 16;
 	client_key.length = pntv2_response->length - 16;
-	
-	strncpy(tmp_user, user, 128);
+	HX_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
 	user_len = ntlmssp_utf8_to_utf16le(tmp_user, user_in, sizeof(user_in));
 	domain_len = ntlmssp_utf8_to_utf16le(domain, domain_in, sizeof(domain_in));
@@ -932,7 +932,7 @@ static BOOL ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	int domain_len;
 	uint8_t kr[16]; /* Finish the encryption of part_passwd. */
 	char user_in[256];
-	char tmp_user[128];
+	char tmp_user[324];
 	char domain_in[256];
 	DATA_BLOB client_key;
 	HMACMD5_CTX hmac_ctx;
@@ -954,7 +954,7 @@ static BOOL ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	client_key.data = pntv2_response->data + 16;
 	client_key.length = pntv2_response->length - 16;
 
-	strncpy(tmp_user, user, 128);
+	HX_strlcpy(tmp_user, user, GX_ARRAY_SIZE(tmp_user));
 	HX_strupper(tmp_user);
 	user_len = ntlmssp_utf8_to_utf16le(
 		tmp_user, user_in, sizeof(user_in));
@@ -999,8 +999,7 @@ static BOOL ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	plm_response = &pntlmssp->lm_resp;
 	pnt_response = &pntlmssp->nt_resp;
 	
-	
-	strncpy(upper_domain, pntlmssp->domain, sizeof(upper_domain));
+	HX_strlcpy(upper_domain, pntlmssp->domain, GX_ARRAY_SIZE(upper_domain));
 	HX_strupper(upper_domain);
 	memset(nt_p16, 0, 16);
 	ntlmssp_md4hash(plain_passwd, nt_p16);
@@ -1330,7 +1329,7 @@ static BOOL ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 static BOOL ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	const DATA_BLOB in, DATA_BLOB *pout)
 {
-	char username[128];
+	char username[324];
 	char plain_passwd[128];
 	NTLMSSP_SERVER_AUTH_STATE auth_state;
 	
@@ -1350,9 +1349,10 @@ static BOOL ntlmssp_server_auth(NTLMSSP_CTX *pntlmssp,
 	auth_state.lm_session_key.length = 0;
 	
 	if (NULL == strchr(pntlmssp->user, '@')) {
-			snprintf(username, 128, "%s@%s", pntlmssp->user, pntlmssp->domain);
+			snprintf(username, GX_ARRAY_SIZE(username), "%s@%s",
+			         pntlmssp->user, pntlmssp->domain);
 		} else {
-			strncpy(username, pntlmssp->user, 128);
+			HX_strlcpy(username, pntlmssp->user, GX_ARRAY_SIZE(username));
 		}
 		if (FALSE == pntlmssp->get_password(username, plain_passwd)) {
 			return FALSE;
@@ -1670,10 +1670,10 @@ BOOL ntlmssp_session_info(NTLMSSP_CTX *pntlmssp,
 	NTLMSSP_SESSION_INFO *psession)
 {
 	if (NULL == strchr(pntlmssp->user, '@')) {
-		snprintf(psession->username, 128, "%s@%s",
-			pntlmssp->user, pntlmssp->domain);
+		snprintf(psession->username, GX_ARRAY_SIZE(psession->username),
+		         "%s@%s", pntlmssp->user, pntlmssp->domain);
 	} else {
-		strncpy(psession->username, pntlmssp->user, 128);
+		HX_strlcpy(psession->username, pntlmssp->user, GX_ARRAY_SIZE(psession->username));
 	}
 	psession->session_key.data = psession->session_key_buff;
 	return ntlmssp_session_key(pntlmssp, &psession->session_key);

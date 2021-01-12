@@ -159,8 +159,8 @@ LOGON_OBJECT* logon_object_create(uint8_t logon_flags,
 	plogon->open_flags = open_flags;
 	plogon->logon_mode = logon_mode;
 	plogon->account_id = account_id;
-	strncpy(plogon->account, account, 256);
-	strncpy(plogon->dir, dir, 256);
+	HX_strlcpy(plogon->account, account, GX_ARRAY_SIZE(plogon->account));
+	HX_strlcpy(plogon->dir, dir, GX_ARRAY_SIZE(plogon->dir));
 	plogon->mailbox_guid = mailbox_guid;
 	plogon->pgpinfo = NULL;
 	plogon->ppropid_hash = NULL;

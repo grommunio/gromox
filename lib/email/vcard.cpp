@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
-#include <gromox/vcard.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/vcard.hpp>
 #define MAX_LINE							73
 
 struct LINE_ITEM {
@@ -673,7 +675,7 @@ VCARD_LINE* vcard_new_line(const char *name)
 		return NULL;
 	}
 	pvline->node.pdata = pvline;
-	strncpy(pvline->name, name, VCARD_NAME_LEN);
+	HX_strlcpy(pvline->name, name, GX_ARRAY_SIZE(pvline->name));
 	double_list_init(&pvline->param_list);
 	double_list_init(&pvline->value_list);
 	return pvline;
@@ -691,7 +693,7 @@ VCARD_PARAM* vcard_new_param(const char*name)
 		return NULL;
 	}
 	pvparam->node.pdata = pvparam;
-	strncpy(pvparam->name, name, VCARD_NAME_LEN);
+	HX_strlcpy(pvparam->name, name, GX_ARRAY_SIZE(pvparam->name));
 	pvparam->pparamval_list = NULL;
 	return pvparam;
 }

@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include <gromox/list_file.hpp>
 #include <gromox/int_hash.hpp>
@@ -73,7 +74,7 @@ static uint32_t ltag_to_lcid(const char *lang_tag)
 {
 	char tmp_ltag[32];
 	
-	strncpy(tmp_ltag, lang_tag, sizeof(tmp_ltag));
+	HX_strlcpy(tmp_ltag, lang_tag, GX_ARRAY_SIZE(tmp_ltag));
 	HX_strlower(tmp_ltag);
 	pthread_mutex_lock(&g_ltag_lock);
 	auto plcid = static_cast<uint32_t *>(str_hash_query(g_ltag_hash, tmp_ltag));

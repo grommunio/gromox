@@ -80,7 +80,7 @@ struct NTLM_AUTH_CHALLENGE {
 };
 
 struct NTLMSSP_SESSION_INFO {
-	char username[128];
+	char username[324];
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[16];
 };
