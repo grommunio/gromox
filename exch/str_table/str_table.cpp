@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "str_table.h"
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
@@ -32,9 +33,9 @@ static int g_hash_cap;
 void str_table_init(const char *module_name, BOOL case_sensitive,
 	const char *path, int growing_num)
 {
-	strcpy(g_module_name, module_name);
+	HX_strlcpy(g_module_name, module_name, GX_ARRAY_SIZE(g_module_name));
 	g_case_sensitive = case_sensitive;
-	strcpy(g_list_path, path);
+	HX_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
 	g_growing_num = growing_num;
 	g_hash_cap = 0;
 }

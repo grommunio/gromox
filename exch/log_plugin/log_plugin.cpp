@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <unistd.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "log_plugin.h"
 #include <gromox/config_file.hpp>
@@ -59,7 +60,7 @@ void log_plugin_init(const char *config_path, const char* log_file_name,
 {
 	const char *psearch;
 	
-	strcpy(g_config_path, config_path);
+	HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
 	g_log_level = log_level;
 	g_files_num = files_num;
 	g_redirect_fp = NULL;
@@ -69,12 +70,12 @@ void log_plugin_init(const char *config_path, const char* log_file_name,
 	g_log_buf_size = cache_size;
 	psearch = strrchr(log_file_name, '.');
 	if (NULL == psearch) {
-		strcpy(g_file_name, log_file_name);
+		HX_strlcpy(g_file_name, log_file_name, GX_ARRAY_SIZE(g_file_name));
 		strcpy(g_file_postfix, "txt");
 	} else {
 		memcpy(g_file_name, log_file_name, psearch - log_file_name);
 		g_file_name[psearch - log_file_name] = '\0';
-		strcpy(g_file_postfix, psearch + 1);
+		HX_strlcpy(g_file_postfix, psearch + 1, GX_ARRAY_SIZE(g_file_postfix));
 	}
 	psearch = strrchr(log_file_name, '/');
 	if (NULL == psearch) {
@@ -412,7 +413,7 @@ static int log_plugin_open_redirect(const char *filename)
 	if (NULL == fp) {
 		return REDIRECT_FAIL_OPEN;
 	}
-	strcpy(g_redirect_name, filename);
+	HX_strlcpy(g_redirect_name, filename, GX_ARRAY_SIZE(g_redirect_name));
 	pthread_mutex_lock(&g_redirect_lock);
 	g_redirect_fp = fp;
 	pthread_mutex_unlock(&g_redirect_lock);

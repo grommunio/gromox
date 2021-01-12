@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/hook_common.h>
 #include <gromox/str_hash.hpp>
 #include <gromox/list_file.hpp>
@@ -40,9 +41,7 @@ BOOL HOOK_LibMain(int reason, void **ppdata)
     switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		
-		/* get the plugin name from system api */
-		strcpy(file_name, get_plugin_name());
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
@@ -80,7 +79,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	char from_buff[256];
 
 	if (TRUE == table_query(pcontext->pcontrol->from, from_buff)) {
-		strcpy(pcontext->pcontrol->from, from_buff);
+		HX_strlcpy(pcontext->pcontrol->from, from_buff, GX_ARRAY_SIZE(pcontext->pcontrol->from));
 	}
 	return FALSE;
 }

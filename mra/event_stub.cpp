@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
@@ -62,9 +63,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		g_notify_stop = TRUE;
 		g_event_stub_func = NULL;
 		double_list_init(&g_back_list);
-
-		/* get the plugin name from system api */
-		strcpy(file_name, get_plugin_name());
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';

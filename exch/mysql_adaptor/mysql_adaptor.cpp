@@ -337,11 +337,11 @@ static BOOL firsttime_password(const char *username, const char *password,
 
 	size_t k, rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
 	for (k = 0; k < rows1; k++) {
-		char virtual_address[256];
+		char virtual_address[324];
 		char *pat;
 
 		auto myrow1 = pmyres1.fetch_row();
-		strcpy(virtual_address, username);
+		HX_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow1[0]);
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
@@ -361,10 +361,10 @@ static BOOL firsttime_password(const char *username, const char *password,
 		mysql_data_seek(pmyres1.get(), 0);
 		size_t k;
 		for (k = 0; k < rows1; k++) {
-			char virtual_address[256], *pat;
+			char virtual_address[324], *pat;
 
 			auto myrow1 = pmyres1.fetch_row();
-			strcpy(virtual_address, myrow[0]);
+			HX_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
 			mysql_adaptor_encode_squote(virtual_address, temp_name);
@@ -417,7 +417,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	char temp_name[512];
 	char sql_string[1024];
 	char encrypt_passwd[40];
-	char virtual_address[256];
+	char virtual_address[324];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	snprintf(sql_string, 1024, "SELECT password, address_type,"
@@ -490,7 +490,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	size_t rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
 	for (k=0; k<rows1; k++) {
 		auto myrow1 = pmyres1.fetch_row();
-		strcpy(virtual_address, username);
+		HX_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
 		pat = strchr(virtual_address, '@') + 1;
 		strcpy(pat, myrow1[0]);
 		mysql_adaptor_encode_squote(virtual_address, temp_name);
@@ -509,7 +509,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		mysql_data_seek(pmyres1.get(), 0);
 		for (k=0; k<rows1; k++) {
 			auto myrow1 = pmyres1.fetch_row();
-			strcpy(virtual_address, myrow[0]);
+			HX_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
 			pat = strchr(virtual_address, '@') + 1;
 			strcpy(pat, myrow1[0]);
 			mysql_adaptor_encode_squote(virtual_address, temp_name);

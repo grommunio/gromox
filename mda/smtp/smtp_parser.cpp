@@ -122,13 +122,13 @@ void smtp_parser_init(int context_num, int threads_num,
 	g_ssl_mutex_buf         = NULL;
 	if (TRUE == support_starttls) {
 		g_force_starttls = force_starttls;
-		strcpy(g_certificate_path, certificate_path);
+		HX_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
 		if (NULL != cb_passwd) {
-			strcpy(g_certificate_passwd, cb_passwd);
+			HX_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		strcpy(g_private_key_path, key_path);
+		HX_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
 	}
 }
 

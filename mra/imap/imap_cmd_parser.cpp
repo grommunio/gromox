@@ -507,7 +507,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 		return -1;
 	}
 	lseek(fd, offset, SEEK_SET);
-	strcpy(temp_buff, tags);
+	HX_strlcpy(temp_buff, tags, GX_ARRAY_SIZE(temp_buff));
 	if ('(' == tags[0]) {
 		tmp_argc = parse_imap_args(temp_buff + 1,
 			strlen(tags) - 2, tmp_argv, sizeof(tmp_argv));
@@ -1286,7 +1286,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	
 	ptoken = strchr(temp_name, '/');
 	if (NULL == ptoken) {
-		strcpy(temp_folder, temp_name);
+		HX_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
 	} else {
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
@@ -1297,7 +1297,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 		f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(f_strings[i], temp_folder)) {
-				strcpy(temp_folder, g_folder_list[i]);
+				HX_strlcpy(temp_folder, g_folder_list[i], GX_ARRAY_SIZE(temp_folder));
 				break;
 			}
 		}
@@ -1356,7 +1356,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 	}
 	ptoken = strchr(temp_name, '/');
 	if (NULL == ptoken) {
-		strcpy(temp_folder, temp_name);
+		HX_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
 	} else {
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
@@ -1367,7 +1367,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(g_folder_list[i], temp_folder)) {
-				strcpy(temp_folder, f_strings[i]);
+				HX_strlcpy(temp_folder, f_strings[i], GX_ARRAY_SIZE(temp_folder));
 				break;
 			}
 		}
@@ -1642,7 +1642,7 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			strcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"));
+			HX_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");
@@ -1747,7 +1747,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return DISPATCH_CONTINUE;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			strcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"));
+			HX_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, 8, "login success");

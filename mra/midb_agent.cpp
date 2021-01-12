@@ -207,9 +207,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		double_list_init(&g_server_list);
 		double_list_init(&g_lost_list);
 		pthread_mutex_init(&g_server_lock, NULL);
-
-		/* get the plugin name from system api */
-		strcpy(file_name, get_plugin_name());
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';

@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <libHX/defs.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include "pdu_processor.h"
 #include "hpm_processor.h"
@@ -171,11 +173,11 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	g_connection_ratio = connection_ratio;
 	g_connection_num = connection_num;
 	g_max_request_mem = max_request_mem;
-	strcpy(g_netbios_name, netbios_name);
-	strcpy(g_dns_name, dns_name);
-	strcpy(g_dns_domain, dns_domain);
+	HX_strlcpy(g_netbios_name, netbios_name, GX_ARRAY_SIZE(g_netbios_name));
+	HX_strlcpy(g_dns_name, dns_name, GX_ARRAY_SIZE(g_dns_name));
+	HX_strlcpy(g_dns_domain, dns_domain, GX_ARRAY_SIZE(g_dns_domain));
 	g_header_signing = header_signing;
-	strcpy(g_plugins_path, plugins_path);
+	HX_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = names;
 	g_ign_loaderr = ignerr;
 	double_list_init(&g_plugin_list);
@@ -3436,7 +3438,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 		return NULL;
 	}
 	pendpoint->node.pdata = pendpoint;
-	strcpy(pendpoint->host, host);
+	HX_strlcpy(pendpoint->host, host, GX_ARRAY_SIZE(pendpoint->host));
 	pendpoint->tcp_port = tcp_port;
 	pendpoint->last_group_id = 0;
 	double_list_init(&pendpoint->interface_list);

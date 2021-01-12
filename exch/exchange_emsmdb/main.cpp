@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
@@ -75,9 +76,7 @@ BOOL PROC_LibMain(int reason, void **ppdata)
 	switch (reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-		
-		/* get the plugin name from system api */
-		strcpy(file_name, get_plugin_name());
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';

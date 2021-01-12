@@ -1060,7 +1060,7 @@ static BOOL oxcmail_parse_keywords(const char *charset,
 	if (FALSE == mime_string_to_utf8(
 		charset, field, tmp_buff)) {
 		propval.proptag = PROP_TAG(PT_MV_STRING8, propid);
-		strcpy(tmp_buff, field);
+		HX_strlcpy(tmp_buff, field, GX_ARRAY_SIZE(tmp_buff));
 	} else {
 		propval.proptag = PROP_TAG(PT_MV_UNICODE, propid);
 	}
@@ -2066,9 +2066,9 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	}
 	if (TRUE == oxcmail_get_content_param(
 		pmime, "charset", temp_charset, 32)) {
-		strcpy(best_charset, temp_charset);
+		HX_strlcpy(best_charset, temp_charset, GX_ARRAY_SIZE(best_charset));
 	} else {
-		strcpy(best_charset, charset);
+		HX_strlcpy(best_charset, charset, GX_ARRAY_SIZE(best_charset));
 	}
 	content_type = mime_get_content_type(pmime);
 	if (0 == strcasecmp(content_type, "text/html")) {
@@ -4226,7 +4226,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	if (FALSE == mail_get_charset(pmail, default_charset)) {
-		strcpy(default_charset, charset);
+		HX_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
 	}
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;

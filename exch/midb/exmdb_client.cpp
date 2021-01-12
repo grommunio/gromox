@@ -486,7 +486,7 @@ void exmdb_client_init(int conn_num,
 	g_notify_stop = TRUE;
 	g_conn_num = conn_num;
 	g_threads_num = threads_num;
-	strcpy(g_list_path, list_path);
+	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
 	double_list_init(&g_agent_list);

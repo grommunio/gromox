@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "auto_response.h"
 #include "bounce_audit.h"
 #include "exmdb_client.h"
@@ -178,7 +179,7 @@ void auto_response_reply(const char *user_home,
 					ptoken ++;
 					ptoken = strcasestr(ptoken, "charset=");
 					if (NULL != ptoken) {
-						strcpy(charset, ptoken + 8);
+						HX_strlcpy(charset, ptoken + 8, GX_ARRAY_SIZE(charset));
 						ptoken = strchr(charset, ';');
 						if (NULL != ptoken) {
 							*ptoken = '\0';

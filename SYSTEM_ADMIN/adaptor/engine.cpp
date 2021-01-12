@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdlib>
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include "engine.h"
 #include "file_operation.h"
 #include <gromox/gateway_control.h>
@@ -26,10 +28,10 @@ static void* thread_work_func1(void *param);
 void engine_init(const char *mount_path, const char *domainlist_path,
 	const char *aliasaddress_path, const char *unchkusr_path)
 {
-	strcpy(g_mount_path, mount_path);
-	strcpy(g_domainlist_path, domainlist_path);
-	strcpy(g_aliasaddress_path, aliasaddress_path);
-	strcpy(g_unchkusr_path, unchkusr_path);
+	HX_strlcpy(g_mount_path, mount_path, GX_ARRAY_SIZE(g_mount_path));
+	HX_strlcpy(g_domainlist_path, domainlist_path, GX_ARRAY_SIZE(g_domainlist_path));
+	HX_strlcpy(g_aliasaddress_path, aliasaddress_path, GX_ARRAY_SIZE(g_aliasaddress_path));
+	HX_strlcpy(g_unchkusr_path, unchkusr_path, GX_ARRAY_SIZE(g_unchkusr_path));
 }
 
 

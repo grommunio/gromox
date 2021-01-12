@@ -58,7 +58,7 @@ static uint32_t charset_to_cpid(const char *charset)
 {
 	char tmp_charset[32];
 	
-	strcpy(tmp_charset, charset);
+	HX_strlcpy(tmp_charset, charset, GX_ARRAY_SIZE(tmp_charset));
 	HX_strlower(tmp_charset);
 	pthread_mutex_lock(&g_charset_lock);
 	auto pcpid = static_cast<uint32_t *>(str_hash_query(g_charset_hash, tmp_charset));

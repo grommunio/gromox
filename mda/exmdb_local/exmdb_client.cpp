@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/endian_macro.hpp>
 #include "exmdb_client.h"
 #include <gromox/double_list.hpp>
@@ -532,7 +533,7 @@ void exmdb_client_init(int conn_num, const char *list_path)
 {
 	g_notify_stop = TRUE;
 	g_conn_num = conn_num;
-	strcpy(g_list_path, list_path);
+	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	double_list_init(&g_server_list);
 	double_list_init(&g_lost_list);
 	pthread_mutex_init(&g_server_lock, NULL);

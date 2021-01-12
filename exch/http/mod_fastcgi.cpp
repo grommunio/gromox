@@ -131,7 +131,7 @@ void mod_fastcgi_init(int context_num, const char *list_path,
 {
 	g_context_num = context_num;
 	g_unavailable_times = 0;
-	strcpy(g_list_path, list_path);
+	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	g_cache_size = cache_size;
 	g_max_size = max_size;
 	g_exec_timeout = exec_timeout;
@@ -548,7 +548,7 @@ static int mod_fastcgi_connect_backend(const char *path)
 	/* fill socket address structure with server's address */
 	memset(&un, 0, sizeof(un));
 	un.sun_family = AF_UNIX;
-	strcpy(un.sun_path, path);
+	HX_strlcpy(un.sun_path, path, GX_ARRAY_SIZE(un.sun_path));
 	len = offsetof(struct sockaddr_un, sun_path) + strlen(un.sun_path);
 	if (connect(sockd, (struct sockaddr *)&un, len) < 0) {
 		close(sockd);

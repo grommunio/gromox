@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstring>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include "bounce_producer.h"
 #include "exmdb_local.h"
@@ -117,7 +119,7 @@ static void bounce_producer_unload_list(SINGLE_LIST *plist);
  */
 void bounce_producer_init(const char *path, const char* separator)
 {
-	strcpy(g_path, path);
+	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	strcpy(g_separator, separator);
 	g_default_resource = NULL;
 }
@@ -413,7 +415,7 @@ static void bounce_producer_load_subdir(const char *dir_name, SINGLE_LIST *plist
 		}
 	}
     closedir(sub_dirp);
-	strcpy(presource->charset, dir_name);
+	HX_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
 	single_list_append_as_tail(plist, &presource->node);
 	return;
 

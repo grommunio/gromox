@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include "net_failure.h"
 #include <gromox/hook_common.h>
 #include <gromox/util.hpp>
@@ -151,7 +153,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 			return;
 		}
 		if (0 == strcasecmp(pdomain, get_default_domain())) {
-			strcpy(pcontext->pcontrol->from, "local-alarm@system.mail");
+			HX_strlcpy(pcontext->pcontrol->from, "local-alarm@system.mail", GX_ARRAY_SIZE(pcontext->pcontrol->from));
 		} else {
 			sprintf(pcontext->pcontrol->from, "local-alarm@%s",
 				get_default_domain());

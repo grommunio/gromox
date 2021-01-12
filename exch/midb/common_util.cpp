@@ -109,7 +109,7 @@ void common_util_set_maildir(const char *maildir)
 {
 	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
 	if (NULL != pctx) {
-		strcpy(pctx->maildir, maildir);
+		HX_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 	}
 }
 

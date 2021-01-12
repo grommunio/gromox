@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include "mysql_adaptor.h"
@@ -27,15 +28,13 @@ BOOL SVC_LibMain(int reason, void** ppdata)
     switch(reason) {
     case PLUGIN_INIT:
 		LINK_API(ppdata);
-
-		/* get the plugin name from system api */
-		strcpy(file_name, get_plugin_name());
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
 		sprintf(config_path, "%s/%s.cfg", get_config_path(), file_name);
-		strcpy(g_config_path, config_path);
+		HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
 		sprintf(uncheck_path, "%s/uncheck_domains.txt", get_state_path());
 		pfile = config_file_init2(NULL, config_path);
 		if (NULL == pfile) {
@@ -60,7 +59,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			strcpy(mysql_host, "localhost");
 			config_file_set_value(pfile, "MYSQL_HOST", "localhost");
 		} else {
-			strcpy(mysql_host, str_value);
+			HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 		}
 		printf("[mysql_adaptor]: mysql host is %s\n", mysql_host);
 
@@ -103,7 +102,7 @@ BOOL SVC_LibMain(int reason, void** ppdata)
 			strcpy(db_name, "email");
 			config_file_set_value(pfile, "MYSQL_DBNAME", "email");
 		} else {
-			strcpy(db_name, str_value);
+			HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 		}
 		printf("[mysql_adaptor]: mysql database name is %s\n", db_name);
 

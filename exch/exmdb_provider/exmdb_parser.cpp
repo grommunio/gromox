@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/socket.h>
-#include <libHX/string.h>
 #include "notification_agent.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
@@ -47,7 +48,7 @@ void exmdb_parser_init(int max_threads,
 {
 	g_max_threads = max_threads;
 	g_max_routers = max_routers;
-	strcpy(g_list_path, list_path);
+	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	pthread_mutex_init(&g_router_lock, NULL);
 	pthread_mutex_init(&g_connection_lock, NULL);
 	double_list_init(&g_connection_list);

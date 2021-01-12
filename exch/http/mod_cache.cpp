@@ -4,6 +4,7 @@
 #include <cstring>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include <gromox/str_hash.hpp>
@@ -138,7 +139,7 @@ void mod_cache_init(int context_num, const char *list_path)
 {
 	g_notify_stop = TRUE;
 	g_context_num = context_num;
-	strcpy(g_list_path, list_path);
+	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	pthread_mutex_init(&g_hash_lock, NULL);
 	double_list_init(&g_item_list);
 	double_list_init(&g_directory_list);

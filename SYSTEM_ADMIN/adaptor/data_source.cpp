@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "data_source.h"
 #include <gromox/system_log.h>
 #include <gromox/util.hpp>
@@ -106,7 +107,7 @@ void* data_source_collect_get_value(DATA_COLLECT *pcollect)
 void data_source_init(const char *host, int port, const char *user,
 	const char *password, const char *db_name)
 {
-	strcpy(g_host, host);
+	HX_strlcpy(g_host, host, GX_ARRAY_SIZE(g_host));
 	g_port = port;
 	strcpy(g_user, user);
 	if (NULL == password || '\0' == password[0]) {
@@ -175,10 +176,9 @@ RETRYING:
 		}
 		pnode->pdata = pitem;
 		myrow = mysql_fetch_row(pmyres);
-		
-		strcpy(pitem->domainname, myrow[0]);
+		HX_strlcpy(pitem->domainname, myrow[0], GX_ARRAY_SIZE(pitem->domainname));
 		HX_strlower(pitem->domainname);
-		strcpy(pitem->homedir, myrow[1]);
+		HX_strlcpy(pitem->homedir, myrow[1], GX_ARRAY_SIZE(pitem->homedir));
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}
 	
@@ -244,10 +244,9 @@ RETRYING:
 		pnode->pdata = pitem;
 		
 		myrow = mysql_fetch_row(pmyres);
-		
-		strcpy(pitem->aliasname, myrow[0]);
+		HX_strlcpy(pitem->aliasname, myrow[0], GX_ARRAY_SIZE(pitem->aliasname));
 		HX_strlower(pitem->aliasname);
-		strcpy(pitem->mainname, myrow[1]);
+		HX_strlcpy(pitem->mainname, myrow[1], GX_ARRAY_SIZE(pitem->mainname));
 		HX_strlower(pitem->mainname);
 		double_list_append_as_tail(&pcollect->list, pnode);
 	}

@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/svc_common.h>
 #include <gromox/str_hash.hpp>
 #include <gromox/list_file.hpp>
@@ -36,8 +37,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 	switch(reason) {
 	case PLUGIN_INIT:
 		LINK_API(ppdata);
-		/* get the plugin name from system api */
-		strcpy(file_name, get_plugin_name());
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';

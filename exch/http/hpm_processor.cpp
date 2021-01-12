@@ -67,7 +67,7 @@ void hpm_processor_init(int context_num, const char *plugins_path,
 {
 	g_context_num = context_num;
 	double_list_init(&g_plugin_list);
-	strcpy(g_plugins_path, plugins_path);
+	HX_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = names;
 	g_cache_size = cache_size;
 	g_max_size = max_size;

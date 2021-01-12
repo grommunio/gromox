@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/oxcmail.hpp>
@@ -89,11 +90,11 @@ void exmdb_local_init(const char *config_path,
 	const char *org_name, const char *default_charset,
 	const char *default_timezone, const char *propname_path)
 {
-	strcpy(g_config_path, config_path);
-	strcpy(g_org_name, org_name);
-	strcpy(g_default_charset, default_charset);
-	strcpy(g_default_timezone, default_timezone);
-	strcpy(g_propname_path, propname_path);
+	HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
+	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
+	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	HX_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
+	HX_strlcpy(g_propname_path, propname_path, GX_ARRAY_SIZE(g_propname_path));
 	pthread_key_create(&g_alloc_key, NULL);
 }
 

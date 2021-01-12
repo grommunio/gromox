@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstring>
 #include <unistd.h>
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include "cache_queue.h"
 #include "exmdb_local.h"
@@ -40,7 +41,7 @@ static void* thread_work_func(void* arg);
  */
 void cache_queue_init(const char *path, int scan_interval, int retrying_times)
 {
-	strcpy(g_path, path);
+	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_scan_interval = scan_interval;
 	g_retrying_times = retrying_times;
 	g_notify_stop = TRUE;
@@ -250,8 +251,7 @@ static void* thread_work_func(void* arg)
 	time_t scan_begin, scan_end, original_time;
     struct dirent *direntp;
 	struct stat node_stat;
-	char temp_from[256];
-	char temp_rcpt[256];
+	char temp_from[324], temp_rcpt[324];
     char temp_path[256];
 	char *ptr;
 	MESSAGE_CONTEXT *pcontext, *pbounce_context;
@@ -340,12 +340,12 @@ static void* thread_work_func(void* arg)
 			ptr += sizeof(BOOL);
 			pcontext->pcontrol->need_bounce = *(BOOL*)ptr;
 			ptr += sizeof(BOOL);
-			strcpy(pcontext->pcontrol->from, ptr);
-			strcpy(temp_from, ptr);
+			HX_strlcpy(pcontext->pcontrol->from, ptr, GX_ARRAY_SIZE(pcontext->pcontrol->from));
+			HX_strlcpy(temp_from, ptr, GX_ARRAY_SIZE(temp_from));
 			ptr += strlen(pcontext->pcontrol->from) + 1;
 			mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
 			mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
-			strcpy(temp_rcpt, ptr);
+			HX_strlcpy(temp_rcpt, ptr, GX_ARRAY_SIZE(temp_rcpt));
 			
 			if (g_retrying_times <= times) {
 				need_bounce = TRUE;

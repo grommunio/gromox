@@ -3,6 +3,7 @@
 #include <cstring>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/hook_common.h>
 #include <gromox/str_hash.hpp>
 #include <gromox/list_file.hpp>
@@ -91,7 +92,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	    address_table_query(pcontext->pcontrol->from, mainname)) {
 		alias_log_info(pcontext, 8, "replace alias from-address "
 				"from %s to %s", pcontext->pcontrol->from, mainname);
-		strcpy(pcontext->pcontrol->from, mainname);
+		HX_strlcpy(pcontext->pcontrol->from, mainname, GX_ARRAY_SIZE(pcontext->pcontrol->from));
 	}
 
 	b_replaced = FALSE;

@@ -9,7 +9,9 @@
  */
 #include <cerrno>
 #include <cstring>
+#include <libHX/string.h>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include "message_enqueue.h"
 #include <gromox/util.hpp>
 #include <sys/types.h>
@@ -53,7 +55,7 @@ static int			g_last_pos;
  */
 void message_enqueue_init(const char *path)
 {
-    strcpy(g_path, path);
+	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
     g_notify_stop = TRUE;
     g_last_flush_ID = 0;
 	g_enqueued_num = 0;

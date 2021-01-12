@@ -18,7 +18,7 @@ struct CONTROL_INFO {
 	int			bound_type;
 	BOOL        is_spam;
 	BOOL        need_bounce;
-	char        from[256];
+	char from[324];
 	MEM_FILE    f_rcpt_to;
 };
 

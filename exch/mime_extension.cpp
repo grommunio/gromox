@@ -64,9 +64,7 @@ BOOL SVC_LibMain(int reason, void **ppdata)
 		
 		pthread_mutex_init(&g_mime_lock, NULL);
 		pthread_mutex_init(&g_extension_lock, NULL);
-		
-		/* get the plugin name from system api */
-		strcpy(file_name, get_plugin_name());
+		HX_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {
 			*psearch = '\0';

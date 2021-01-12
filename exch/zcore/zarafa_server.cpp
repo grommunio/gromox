@@ -864,7 +864,7 @@ uint32_t zarafa_server_logon(const char *username,
 	tmp_info.user_id = user_id;
 	tmp_info.domain_id = domain_id;
 	tmp_info.org_id = org_id;
-	strcpy(tmp_info.username, username);
+	HX_strlcpy(tmp_info.username, username, GX_ARRAY_SIZE(tmp_info.username));
 	HX_strlower(tmp_info.username);
 	strcpy(tmp_info.lang, lang);
 	if (FALSE == system_services_lang_to_charset(
@@ -3604,7 +3604,7 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecError;
 	}
-	strcpy(dir, store_object_get_dir(pstore));
+	HX_strlcpy(dir, store_object_get_dir(pstore), GX_ARRAY_SIZE(dir));
 	zarafa_server_put_user_info(pinfo);
 	double_list_init(&tmp_item.notify_list);
 	tmp_item.hsession = hsession;
@@ -3646,7 +3646,7 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 		zarafa_server_put_user_info(pinfo);
 		return ecNotSupported;
 	}
-	strcpy(dir, store_object_get_dir(pstore));
+	HX_strlcpy(dir, store_object_get_dir(pstore), GX_ARRAY_SIZE(dir));
 	zarafa_server_put_user_info(pinfo);
 	exmdb_client_unsubscribe_notification(dir, sub_id);
 	sprintf(tmp_buff, "%u|%s", sub_id, dir);

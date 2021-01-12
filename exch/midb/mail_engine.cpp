@@ -7,6 +7,7 @@
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include <gromox/mail.hpp>
@@ -6913,9 +6914,9 @@ void mail_engine_init(const char *default_charset,
 	uint64_t mmap_size, int cache_interval, int mime_num)
 {
 	g_sequence_id = 0;
-	strcpy(g_default_charset, default_charset);
-	strcpy(g_default_timezone, default_timezone);
-	strcpy(g_org_name, org_name);
+	HX_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
+	HX_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
+	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_async = b_async;
 	g_wal = b_wal;
 	g_mmap_size = mmap_size;

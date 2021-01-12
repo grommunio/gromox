@@ -217,7 +217,7 @@ SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 void ab_tree_init(const char *org_name, int base_size,
 	int cache_interval, int file_blocks)
 {
-	strcpy(g_org_name, org_name);
+	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_base_size = base_size;
 	g_cache_interval = cache_interval;
 	g_file_blocks = file_blocks;

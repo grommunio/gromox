@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -181,7 +182,7 @@ int cmd_parser_stop()
 
 void cmd_parser_register_command(const char *command, COMMAND_HANDLER handler)
 {
-	strcpy(g_cmd_entry[g_cmd_num].cmd, command);
+	HX_strlcpy(g_cmd_entry[g_cmd_num].cmd, command, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
 	g_cmd_entry[g_cmd_num].cmd_handler = handler;
 	g_cmd_num ++;
 }

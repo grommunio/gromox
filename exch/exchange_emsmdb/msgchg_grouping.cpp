@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstring>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
 #include <gromox/proptag_array.hpp>
@@ -38,7 +39,7 @@ static DOUBLE_LIST g_info_list;
 
 void msgchg_grouping_init(const char *path)
 {
-	strcpy(g_folder_path, path);
+	HX_strlcpy(g_folder_path, path, GX_ARRAY_SIZE(g_folder_path));
 	double_list_init(&g_info_list);
 }
 
@@ -168,7 +169,7 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 	GROUP_NODE *pgp_node;
 	INFO_NODE *pinfo_node;
 	
-	strcpy(file_path, file_name + 2);
+	HX_strlcpy(file_path, file_name + 2, GX_ARRAY_SIZE(file_path));
 	ptoken = strchr(file_path, '.');
 	if (NULL != ptoken) {
 		*ptoken = '\0';

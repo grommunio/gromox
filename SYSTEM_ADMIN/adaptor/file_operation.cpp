@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/defs.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include "file_operation.h"
 #include <gromox/list_file.hpp>
 #include <sys/types.h>
@@ -13,7 +15,7 @@ static char g_gateway_path[256];
 
 void file_operation_init(const char *gateway_path)
 {
-	strcpy(g_gateway_path, gateway_path);
+	HX_strlcpy(g_gateway_path, gateway_path, GX_ARRAY_SIZE(g_gateway_path));
 }
 
 int file_operation_compare(const char *file1, const char *file2)

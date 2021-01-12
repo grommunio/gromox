@@ -95,7 +95,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 {
 	int user_id;
 	char *ptoken;
-	char username[256];
+	char username[324];
 	char hex_string[32];
 	DCERPC_INFO rpc_info;
 	
@@ -103,7 +103,7 @@ static uint32_t rfr_get_newdsa(uint32_t flags, const char *puserdn,
 	rpc_info = get_rpc_info();
 	get_id_from_username(rpc_info.username, &user_id);
 	memset(username, 0, sizeof(username));
-	strcpy(username, rpc_info.username);
+	HX_strlcpy(username, rpc_info.username, GX_ARRAY_SIZE(username));
 	ptoken = strchr(username, '@');
 	HX_strlower(username);
 	if (NULL != ptoken) {

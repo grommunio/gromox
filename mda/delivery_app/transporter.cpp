@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <vector>
 #include <libHX/defs.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include "transporter.h"
 #include "system_services.h"
@@ -31,7 +33,7 @@ struct CONTROL_INFO {
     int         bound_type;
 	BOOL		is_spam;
     BOOL        need_bounce;
-    char        from[256];
+	char from[324];
     MEM_FILE    f_rcpt_to;
 };
 
@@ -182,7 +184,7 @@ void transporter_init(const char *path, const char *const *names,
     int threads_min, int threads_max, int free_num, int mime_radito,
     BOOL dm_valid, bool ignerr)
 {
-	strcpy(g_path, path);
+	HX_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_plugin_names = names;
 	g_local_path[0] = '\0';
 	g_notify_stop = FALSE;
@@ -617,7 +619,7 @@ static void* thread_work_func(void* arg)
 			pcontext->pcontrol->bound_type = pmessage->bound_type;
 			pcontext->pcontrol->is_spam = pmessage->is_spam;
 			pcontext->pcontrol->need_bounce = TRUE;
-			strcpy(pcontext->pcontrol->from, pmessage->envelop_from);
+			HX_strlcpy(pcontext->pcontrol->from, pmessage->envelop_from, GX_ARRAY_SIZE(pcontext->pcontrol->from));
 			ptr = pmessage->envelop_rcpt;
 			while ((len = strlen(ptr)) != 0) {
 				len ++;

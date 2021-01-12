@@ -2594,7 +2594,7 @@ void common_util_init(const char *org_name, int average_blocks,
 	unsigned int max_rule_len, const char *smtp_ip, int smtp_port,
 	const char *submit_command)
 {
-	strcpy(g_org_name, org_name);
+	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_average_blocks = average_blocks;
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
@@ -2602,7 +2602,7 @@ void common_util_init(const char *org_name, int average_blocks,
 	g_max_rule_len = max_rule_len;
 	HX_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
-	strcpy(g_submit_command, submit_command);
+	HX_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	g_faststream_id = 0;
 	pthread_mutex_init(&g_id_lock, NULL);
 	pthread_key_create(&g_dir_key, NULL);

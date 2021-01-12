@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <unistd.h>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/system_log.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -16,7 +18,7 @@ static int g_log_fd;
 
 void system_log_init(const char *path)
 {
-	strcpy(g_log_path, path);
+	HX_strlcpy(g_log_path, path, GX_ARRAY_SIZE(g_log_path));
 }
 
 int system_log_run()

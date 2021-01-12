@@ -8,6 +8,7 @@
  */
 #include <cstdlib>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -49,8 +50,8 @@ void str_filter_init(const char *module_name, const char *config_path,
 	BOOL case_sensitive, int audit_num, int audit_interval, int audit_times,
 	int temp_list_size, const char *list_path, int growing_num) 
 {
-	strcpy(g_module_name, module_name);
-	strcpy(g_config_path, config_path);
+	HX_strlcpy(g_module_name, module_name, GX_ARRAY_SIZE(g_module_name));
+	HX_strlcpy(g_config_path, config_path, GX_ARRAY_SIZE(g_config_path));
     audit_filter_init(case_sensitive, audit_num, audit_interval, audit_times);
     grey_list_init(case_sensitive, list_path, growing_num);
     temp_list_init(case_sensitive, temp_list_size);

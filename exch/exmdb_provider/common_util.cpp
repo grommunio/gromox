@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
 #include <gromox/util.hpp>
@@ -249,7 +250,7 @@ void common_util_pass_service(int service_id, void *func)
 void common_util_init(const char *org_name, uint32_t max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num)
 {
-	strcpy(g_org_name, org_name);
+	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	g_max_msg = max_msg;
 	g_max_rule_num = max_rule_num;
 	g_max_ext_rule_num = max_ext_rule_num;

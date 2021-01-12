@@ -3,6 +3,7 @@
 #include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include <gromox/double_list.hpp>
 #include "resource.h"
@@ -424,7 +425,7 @@ BOOL service_register_service(const char *func_name, void *addr)
 	pservice->service_addr			= addr;
 	pservice->plib = plug;
 	double_list_init(&pservice->list_reference);
-	strcpy(pservice->service_name, func_name);
+	HX_strlcpy(pservice->service_name, func_name, GX_ARRAY_SIZE(pservice->service_name));
 	double_list_append_as_tail(&g_list_service, &pservice->node_service);
 	/* append also the service into service list */
 	double_list_append_as_tail(&plug->list_service, &pservice->node_lib);
@@ -492,7 +493,7 @@ void* service_query(const char *service_name, const char *module)
 		}
 		memset(pmodule, 0, sizeof(REFERENCE_NODE));
 		pmodule->node.pdata = pmodule;
-		strcpy(pmodule->module_name, module);
+		HX_strlcpy(pmodule->module_name, module, GX_ARRAY_SIZE(pmodule->module_name));
 		double_list_append_as_tail(&pservice->list_reference, &pmodule->node);
 	}
 	/*

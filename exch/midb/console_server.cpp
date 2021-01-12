@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include "console_server.h"
@@ -339,7 +340,7 @@ static BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER han
         return FALSE;
     }
 	if (NULL != cmd) {
-		strcpy(g_cmd_entry[g_cmd_num].cmd, cmd);
+		HX_strlcpy(g_cmd_entry[g_cmd_num].cmd, cmd, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
 	} else {
 		*(g_cmd_entry[g_cmd_num].cmd) = '\0';
 	}

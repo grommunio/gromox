@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <libHX/defs.h>
+#include <libHX/string.h>
 #include <gromox/database.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include <gromox/config_file.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -274,7 +276,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");
 	} else {
-		strcpy(mysql_host, str_value);
+		HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 	}
 	
 	str_value = config_file_get_value(pconfig, "MYSQL_PORT");
@@ -300,7 +302,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		strcpy(db_name, "email");
 	} else {
-		strcpy(db_name, str_value);
+		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
 	
 	if (NULL == (pmysql = mysql_init(NULL))) {
@@ -354,7 +356,7 @@ int main(int argc, const char **argv)
 	if (max_size > 0x7FFFFFFF) {
 		max_size = 0x7FFFFFFF;
 	}
-	strcpy(dir, myrow[1]);
+	HX_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
 	domain_id = atoi(myrow[4]);
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);

@@ -113,7 +113,7 @@ void exmdb_listener_init(const char *ip,
 		g_list_path[0] = '\0';
 	} else {
 		g_listen_ip[0] = '\0';
-		strcpy(g_list_path, list_path);
+		HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	}
 	g_listen_port = port;
 	g_listen_sockd = -1;

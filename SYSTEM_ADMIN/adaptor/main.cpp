@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
 #include "engine.h"
@@ -95,7 +96,7 @@ int main(int argc, const char **argv)
 		strcpy(mysql_host, "localhost");
 		config_file_set_value(pconfig, "MYSQL_HOST", "localhost");
 	} else {
-		strcpy(mysql_host, str_value);
+		HX_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 	}
 	printf("[system]: mysql host is %s\n", mysql_host);
 
@@ -138,7 +139,7 @@ int main(int argc, const char **argv)
 		strcpy(db_name, "email");
 		config_file_set_value(pconfig, "MYSQL_DBNAME", "email");
 	} else {
-		strcpy(db_name, str_value);
+		HX_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
 	printf("[system]: mysql database name is %s\n", db_name);
 

@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2020 grammm GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/list_file.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/util.hpp>
@@ -129,7 +131,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 				ptr ++;
 				temp_ptr = strchr(ptr, '%');
 				if (NULL == temp_ptr) {
-					strcpy(temp_buf, ptr);
+					HX_strlcpy(temp_buf, ptr, GX_ARRAY_SIZE(temp_buf));
 					/* make the while loop exit */
 					ptr = (char*)format + strlen(format) - 1;
 				} else {

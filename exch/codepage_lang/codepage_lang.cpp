@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include "codepage_lang.h"
 #include <gromox/single_list.hpp>
 #include <gromox/util.hpp>
@@ -247,7 +249,7 @@ static void codepage_lang_unload_cplist(SINGLE_LIST *plist)
 
 void codepage_lang_init(const char *path)
 {
-    strcpy(g_file_path, path);
+	HX_strlcpy(g_file_path, path, GX_ARRAY_SIZE(g_file_path));
 	single_list_init(&g_cp_list);
 	pthread_rwlock_init(&g_list_lock, NULL);
 }

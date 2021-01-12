@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include "flusher.h"
 #include "service.h"
@@ -88,9 +90,10 @@ void flusher_init(const char* path, size_t queue_len)
 	g_flusher_plug->handle       = NULL;
 	g_flusher_plug->flush_cancel = NULL;
 	g_flusher_plug->console_talk = NULL;
-	strcpy(g_flusher_plug->path, path);
+	HX_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
 	auto pname = strrchr(path, '/');
-	strcpy(g_flusher_plug->file_name, pname != NULL ? pname + 1 : path);
+	HX_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
+		GX_ARRAY_SIZE(g_flusher_plug->file_name));
 	single_list_init(&g_flusher_plug->list_reference);
 	g_max_queue_len = queue_len;
 }

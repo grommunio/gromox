@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "mod_rewrite.h"
 #include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
@@ -37,8 +38,8 @@ static BOOL mod_rewrite_rreplace(char *buf,
 		strncpy(buf, rp + 2, size);
 		return TRUE;
 	}
-	strcpy(original_buf, buf);
-	strcpy(original_rp, rp);
+	HX_strlcpy(original_buf, buf, GX_ARRAY_SIZE(original_buf));
+	HX_strlcpy(original_rp, rp, GX_ARRAY_SIZE(original_rp));
 	for (i=0; i<10; i++) {
 		rp_offsets[i] = -1;
 	}
@@ -85,7 +86,7 @@ static BOOL mod_rewrite_rreplace(char *buf,
 
 void mod_rewrite_init(const char *list_path)
 {
-	strcpy(g_list_path, list_path);
+	HX_strlcpy(g_list_path, list_path, GX_ARRAY_SIZE(g_list_path));
 	double_list_init(&g_rewite_list);
 }
 

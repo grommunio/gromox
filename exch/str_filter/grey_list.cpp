@@ -3,6 +3,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include "str_filter.h"
 #include "grey_list.h"
 #include <gromox/list_file.hpp>
@@ -41,7 +42,7 @@ static void grey_list_flush(void);
 void grey_list_init(BOOL case_sensitive, const char *path, int growing_num)
 {
 	g_case_sensitive = case_sensitive;
-    strcpy(g_list_path, path);
+	HX_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
 	g_growing_num = growing_num;
 	g_hash_cap = 0;
     pthread_rwlock_init(&g_refresh_lock, NULL);

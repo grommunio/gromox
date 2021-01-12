@@ -3,6 +3,7 @@
 #include <string>
 #include <utility>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
@@ -2480,7 +2481,7 @@ int main(int argc, const char **argv)
 		tzstruct.standarddate.dayofweek = 6;
 	}
 	tzstruct.standarddate.day = atoi(pstddayorder);
-	strcpy(tmp_buff, pstdtime);
+	HX_strlcpy(tmp_buff, pstdtime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"stdtime\" format error\n");
@@ -2521,7 +2522,7 @@ int main(int argc, const char **argv)
 		tzstruct.daylightdate.dayofweek = 6;
 	}
 	tzstruct.daylightdate.day = atoi(pdtldayorder);
-	strcpy(tmp_buff, pdtltime);
+	HX_strlcpy(tmp_buff, pdtltime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"dtltime\" format error\n");

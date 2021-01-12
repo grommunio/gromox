@@ -669,7 +669,7 @@ static int html_convert_color(const char *value)
 		color |= tmp_val;
 		return color;
 	}
-	strcpy(color_string, value);
+	HX_strlcpy(color_string, value, GX_ARRAY_SIZE(color_string));
 	HX_strlower(color_string);
 	auto pcolor = static_cast<int *>(str_hash_query(g_color_hash, color_string));
 	if (NULL != pcolor) {

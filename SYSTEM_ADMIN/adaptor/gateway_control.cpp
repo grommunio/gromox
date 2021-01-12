@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/gateway_control.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
@@ -34,7 +35,7 @@ static BOOL gateway_control_send(const char *ip, int port, const char *command);
 void gateway_control_init(const char *path)
 {
 	if (NULL != path) {
-		strcpy(g_list_path, path);
+		HX_strlcpy(g_list_path, path, GX_ARRAY_SIZE(g_list_path));
 	} else {
 		g_list_path[0] = '\0';
 	}

@@ -5,6 +5,7 @@
 #include <atomic>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include "pdu_ndr.h"
@@ -88,13 +89,13 @@ void http_parser_init(int context_num, unsigned int timeout,
 	pthread_mutex_init(&g_vconnection_lock, NULL);
 	
 	if (TRUE == support_ssl) {
-		strcpy(g_certificate_path, certificate_path);
+		HX_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
 		if (NULL != cb_passwd) {
-			strcpy(g_certificate_passwd, cb_passwd);
+			HX_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		strcpy(g_private_key_path, key_path);
+		HX_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
 	}
 }
 

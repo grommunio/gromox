@@ -631,7 +631,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	const char *freebusy_path, const char *langmap_path,
 	const char *folderlang_path, const char *submit_command)
 {
-	strcpy(g_org_name, org_name);
+	HX_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	strcpy(g_hostname, hostname);
 	strcpy(g_default_charset, default_charset);
 	strcpy(g_default_zone, default_zone);
@@ -645,7 +645,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	strcpy(g_freebusy_path, freebusy_path);
 	strcpy(g_langmap_path, langmap_path);
 	strcpy(g_folderlang_path, folderlang_path);
-	strcpy(g_submit_command, submit_command);
+	HX_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	pthread_key_create(&g_dir_key, NULL);
 	pthread_key_create(&g_env_key, NULL);
 }

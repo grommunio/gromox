@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/paths.h>
 #include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
@@ -103,7 +104,7 @@ CONFIG_FILE *config_file_init(const char *filename)
 	}
 
 	fclose(fin);
-	strcpy(cfg->file_name, filename);
+	HX_strlcpy(cfg->file_name, filename, GX_ARRAY_SIZE(cfg->file_name));
 	return cfg;
 }
 
@@ -236,9 +237,9 @@ static void config_file_parse_line(CONFIG_FILE *cfg, char* line)
 	index = cfg->num_entries;
 	cfg->num_entries ++;
 	cfg->config_table[index].is_touched = FALSE;
-	strcpy(cfg->config_table[index].keyname, temp_buf);
+	HX_strlcpy(cfg->config_table[index].keyname, temp_buf, GX_ARRAY_SIZE(cfg->config_table[index].keyname));
 	HX_strlower(cfg->config_table[index].keyname);
-	strcpy(cfg->config_table[index].value, equal_ptr);
+	HX_strlcpy(cfg->config_table[index].value, equal_ptr, GX_ARRAY_SIZE(cfg->config_table[index].value));
 	return;
 }
 
@@ -273,7 +274,7 @@ BOOL config_file_set_value(CONFIG_FILE *cfg_file, const char *key,
 	for (i=0; i<cfg_file->num_entries; i++) {
 		if (0 == strcasecmp(key, cfg_file->config_table[i].keyname)) {
 			if (cfg_file->config_table[i].value != value) {
-				strcpy(cfg_file->config_table[i].value, value);
+				HX_strlcpy(cfg_file->config_table[i].value, value, GX_ARRAY_SIZE(cfg_file->config_table[i].value));
 				cfg_file->config_table[i].is_touched = TRUE;
 			}
 			return TRUE;
@@ -286,9 +287,9 @@ BOOL config_file_set_value(CONFIG_FILE *cfg_file, const char *key,
 	index = cfg_file->num_entries;
 	cfg_file->num_entries ++;
 	cfg_file->config_table[index].is_touched = TRUE;
-	strcpy(cfg_file->config_table[index].keyname, key);
+	HX_strlcpy(cfg_file->config_table[index].keyname, key, GX_ARRAY_SIZE(cfg_file->config_table[index].keyname));
 	HX_strlower(cfg_file->config_table[index].keyname);
-	strcpy(cfg_file->config_table[index].value, value);
+	HX_strlcpy(cfg_file->config_table[index].value, value, GX_ARRAY_SIZE(cfg_file->config_table[index].value));
 	return TRUE;
 }
 

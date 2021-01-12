@@ -3,6 +3,7 @@
 #include <cstring>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
 #include <gromox/proptag_array.hpp>
@@ -39,7 +40,7 @@ static DOUBLE_LIST g_info_list;
 
 void msgchg_grouping_init(const char *path)
 {
-	strcpy(g_folder_path, path);
+	HX_strlcpy(g_folder_path, path, GX_ARRAY_SIZE(g_folder_path));
 	double_list_init(&g_info_list);
 }
 

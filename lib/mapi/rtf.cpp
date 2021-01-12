@@ -332,7 +332,7 @@ static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
 	if ((iconv_t)-1 == preader->conv_id) {
 		return false;
 	}
-	strcpy(preader->current_encoding, fromcode);
+	HX_strlcpy(preader->current_encoding, fromcode, GX_ARRAY_SIZE(preader->current_encoding));
 	return true;
 }
 
@@ -3128,8 +3128,7 @@ static int rtf_cmd_ansicpg(RTF_READER *preader,
 	SIMPLE_TREE_NODE *pword, int align,
 	BOOL b_param, int num)
 {
-	strcpy(preader->default_encoding,
-        rtf_cpid_to_encoding(num));
+	HX_strlcpy(preader->default_encoding, rtf_cpid_to_encoding(num), GX_ARRAY_SIZE(preader->default_encoding));
 	preader->have_ansicpg = true;
 	return CMD_RESULT_CONTINUE;
 }
