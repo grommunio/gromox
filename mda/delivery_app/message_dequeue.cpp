@@ -575,6 +575,10 @@ void message_dequeue_save(MESSAGE *pmessage)
 		link(old_file, new_file);		
 	} else {
 		fd = open(new_file, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);	
+		if (fd < 0) {
+			printf("[message_dequeue]: open/w %s: %s\n", new_file, strerror(errno));
+			return;
+		}
 		write(fd, pmessage->begin_address, pmessage->mail_length + 4*sizeof(int));
 		len = strlen(pmessage->envelop_from);
 		write(fd, pmessage->envelop_from, len + 1);

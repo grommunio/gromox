@@ -859,7 +859,7 @@ BOOL ftstream_parser_write_buffer(
 static BOOL ftstream_parser_truncate_fd(
 	FTSTREAM_PARSER *pstream)
 {
-	uint32_t len;
+	ssize_t len;
 	char buff[0x10000];
 	
 	if (0 == pstream->offset) {

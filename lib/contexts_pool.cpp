@@ -240,6 +240,7 @@ int contexts_pool_run()
 		g_events = NULL;
 		close(g_epoll_fd);
 		g_epoll_fd = -1;
+		return -3;
 	}
 	pthread_setname_np(g_thread_id, "epollctx/work");
 	ret = pthread_create(&g_scan_id, nullptr, scan_work_func, nullptr);
@@ -251,6 +252,7 @@ int contexts_pool_run()
 		g_epoll_fd = -1;
 		free(g_events);
 		g_events = NULL;
+		return -4;
 	}
 	pthread_setname_np(g_scan_id, "epollctx/scan");
 	return 0;    
