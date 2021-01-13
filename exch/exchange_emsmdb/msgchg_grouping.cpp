@@ -328,9 +328,9 @@ static INFO_NODE* msgchg_grouping_load_gpinfo(char *file_name)
 				if (0 == *ptag_node->ppropname->plid) {
 					free(ptag_node->ppropname);
 					free(ptag_node);
-					printf("[exchange_emsmdb]: lid %s error "
+					printf("[exchange_emsmdb]: lid \"%s\" error "
 						"with guid \"%s\"\n",
-						ptag_node->ppropname->plid, pline + 5);
+						ptoken + 4, pline + 5);
 					list_file_free(pfile);
 					return NULL;
 				}

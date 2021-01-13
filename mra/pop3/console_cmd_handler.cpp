@@ -211,10 +211,9 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 {
 	LIB_BUFFER* block_allocator;
 	LIB_BUFFER* units_allocator;
-	int max_units_num, current_alloc_units;
+	long max_units_num, current_alloc_units;
 	size_t max_block_num, current_alloc_num, block_size;
-	int max_context_num, parsing_context_num, current_thread_num;
-	
+	long max_context_num, parsing_context_num, current_thread_num;
 
 	if (1 == argc) {
 		console_server_reply_to_client("550 too few auguments");
@@ -252,14 +251,14 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		current_alloc_units = lib_buffer_get_param(units_allocator, ALLOCATED_NUM);
 		current_thread_num  = threads_pool_get_param(THREADS_POOL_CUR_THR_NUM);
 		console_server_reply_to_client("250 pop3 system running status of %s:\r\n"
-			"\tmaximum contexts number      %d\r\n"
-			"\tcurrent parsing contexts     %d\r\n"
-			"\tmaximum memory blocks        %ld\r\n"
-			"\tmaximum units number         %d\r\n"
-			"\tmemory block size            %ldK\r\n"
-			"\tcurrent allocated blocks     %ld\r\n"
+			"\tmaximum contexts number      %ld\r\n"
+			"\tcurrent parsing contexts     %ld\r\n"
+			"\tmaximum memory blocks        %zu\r\n"
+			"\tmaximum units number         %ld\r\n"
+			"\tmemory block size            %zuK\r\n"
+			"\tcurrent allocated blocks     %zu\r\n"
 			"\tcurrent allocated units      %ld\r\n"
-			"\tcurrent threads number       %d",
+			"\tcurrent threads number       %ld",
 			resource_get_string("HOST_ID"),
 			max_context_num,
 			parsing_context_num,

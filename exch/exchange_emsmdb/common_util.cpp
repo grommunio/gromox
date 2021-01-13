@@ -2345,7 +2345,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
-	
+#define LLU(x) static_cast<unsigned long long>(x)
 	
 	pinfo = emsmdb_interface_get_emsmdb_info();
 	if (NULL == pinfo) {
@@ -2358,7 +2358,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		message_id, PROP_TAG_PARENTFOLDERID,
 		&pvalue) || NULL == pvalue) {
 		common_util_log_info(0, "cannot get parent folder_id "
-				"of message %llx when sending it", message_id);
+			"of message %llu when sending it", LLU(message_id));
 		return FALSE;
 	}
 	parent_id = *(uint64_t*)pvalue;
@@ -2387,7 +2387,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		&pmsgctnt->proplist, PROP_TAG_MESSAGEFLAGS);
 	if (NULL == pvalue) {
 		common_util_log_info(0, "fail to get message_flag"
-			" of message %llu when sending it", message_id);
+			" of message %llu when sending it", LLU(message_id));
 		return FALSE;
 	}
 	message_flags = *(uint32_t*)pvalue;
@@ -2400,7 +2400,7 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 	prcpts = pmsgctnt->children.prcpts;
 	if (NULL == prcpts) {
 		common_util_log_info(0, "mssing recipients"
-			" when sending message %llu", message_id);
+			" when sending message %llu", LLU(message_id));
 		return FALSE;
 	}
 	double_list_init(&temp_list);
@@ -2443,12 +2443,12 @@ CONVERT_ENTRYID:
 				prcpts->pparray[i], PROP_TAG_ENTRYID);
 			if (NULL == pvalue) {
 				common_util_log_info(0, "cannot get recipient "
-					"entryid when sending message %llu", message_id);
+					"entryid when sending message %llu", LLU(message_id));
 				return FALSE;
 			}
 			if (!common_util_entryid_to_username(static_cast<BINARY *>(pvalue), username)) {
 				common_util_log_info(0, "cannot convert recipient entryid "
-					"to smtp address when sending message %llu", message_id);
+					"to smtp address when sending message %llu", LLU(message_id));
 				return FALSE;	
 			}
 			tmp_len = strlen(username) + 1;
@@ -2464,7 +2464,7 @@ CONVERT_ENTRYID:
 				if (NULL == pnode->pdata) {
 					common_util_log_info(0, "cannot get email address "
 						"of recipient of SMTP address type when sending"
-						" message %llu", message_id);
+						" message %llu", LLU(message_id));
 					return FALSE;
 				}
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
@@ -2489,7 +2489,7 @@ CONVERT_ENTRYID:
 	}
 	if (0 == double_list_get_nodes_num(&temp_list)) {
 		common_util_log_info(0, "empty converted recipients "
-				"list when sending message %llu", message_id);
+			"list when sending message %llu", LLU(message_id));
 		return FALSE;
 	}
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist,
@@ -2511,14 +2511,14 @@ CONVERT_ENTRYID:
 		body_type, g_mime_pool, &imail, common_util_alloc,
 		common_util_get_propids, common_util_get_propname)) {
 		common_util_log_info(0, "fail to export to rfc822"
-			" mail when sending message %llu", message_id);
+			" mail when sending message %llu", LLU(message_id));
 		return FALSE;	
 	}
 	if (FALSE == common_util_send_mail(&imail,
 		logon_object_get_account(plogon), &temp_list)) {
 		mail_free(&imail);
 		common_util_log_info(0, "fail to send "
-			"message %llu via SMTP", message_id);
+			"message %llu via SMTP", LLU(message_id));
 		return FALSE;
 	}
 	mail_free(&imail);
@@ -2536,14 +2536,14 @@ CONVERT_ENTRYID:
 		if (FALSE == common_util_from_message_entryid(
 			plogon, ptarget, &folder_id, &new_id)) {
 			common_util_log_info(0, "fail to retrieve target "
-				"entryid when sending message %llu", message_id);
+				"entryid when sending message %llu", LLU(message_id));
 			return FALSE;	
 		}
 		if (FALSE == exmdb_client_clear_submit(
 			logon_object_get_dir(plogon),
 			message_id, FALSE)) {
 			common_util_log_info(0, "fail to clear submit "
-				"flag when sending message %llu", message_id);
+				"flag when sending message %llu", LLU(message_id));
 			return FALSE;
 		}
 		if (FALSE == exmdb_client_movecopy_message(
@@ -2552,7 +2552,7 @@ CONVERT_ENTRYID:
 			cpid, message_id, folder_id, new_id,
 			TRUE, &b_result)) {
 			common_util_log_info(0, "fail to move to target "
-				"folder when sending message %llu", message_id);
+				"folder when sending message %llu", LLU(message_id));
 			return FALSE;
 		}
 	} else if (TRUE == b_delete) {
@@ -2565,7 +2565,7 @@ CONVERT_ENTRYID:
 			logon_object_get_dir(plogon),
 			message_id, FALSE)) {
 			common_util_log_info(0, "fail to clear submit "
-				"flag when sending message %llu", message_id);
+				"flag when sending message %llu", LLU(message_id));
 			return FALSE;
 		}
 		ids.count = 1;
@@ -2577,7 +2577,7 @@ CONVERT_ENTRYID:
 			rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS),
 			FALSE, &ids, &b_partial)) {
 			common_util_log_info(0, "fail to move to \"sent\""
-				" folder when sending message %llu", message_id);
+				" folder when sending message %llu", LLU(message_id));
 			return FALSE;	
 		}
 	}
